@@ -1,0 +1,149 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "IvyPresto Display";
+  src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Headline-Thin.otf") format("opentype");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IvyPresto Display";
+  src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Headline-Light.otf") format("opentype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IvyPresto Display";
+  src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Headline-Semi-Bold.otf") format("opentype");
+  font-weight: 600 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IvyPresto Display";
+  src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Display-Thin.otf") format("opentype");
+  font-weight: 100;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IvyPresto Display";
+  src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Display-Light.otf") format("opentype");
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IvyPresto Display";
+  src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Display-Semi-Bold.otf") format("opentype");
+  font-weight: 600;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IvyPresto Display";
+  src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Display-.otf") format("opentype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+@layer base {
+  :root {
+    --tes-color-brand-primary: #6c3d91;
+    --tes-color-brand-primary-hover: #5b337a;
+    --tes-color-brand-primary-pressed: #482861;
+    --tes-color-brand-deep: #261433;
+    --tes-color-brand-lavender: #e2d1ec;
+    --tes-color-brand-lavender-soft: #f1e8f6;
+    --tes-color-brand-cyan: #81bae0;
+    --tes-color-brand-cyan-soft: #f6fbfe;
+    --tes-color-brand-mint: #beebd8;
+
+    --tes-color-surface-default: #ffffff;
+    --tes-color-surface-page: #ffffff;
+    --tes-color-surface-soft: #f7f4ff;
+    --tes-color-surface-mist: #f1effa;
+    --tes-color-surface-elevated: #ffffff;
+
+    --tes-color-text-primary: #261433;
+    --tes-color-text-secondary: #5e5a8a;
+    --tes-color-text-muted: #8c87b2;
+    --tes-color-text-subtle: #a9a4c6;
+    --tes-color-text-inverse: #ffffff;
+    --tes-color-text-link: #6c3d91;
+
+    --tes-color-status-success: #2fae78;
+    --tes-color-status-success-bg: #eaf8f1;
+    --tes-color-status-warning: #f29b4b;
+    --tes-color-status-warning-bg: #fff3e8;
+    --tes-color-status-danger: #ef5b7a;
+    --tes-color-status-danger-bg: #fdecf1;
+    --tes-color-status-info: #5ea3d2;
+    --tes-color-status-info-bg: #f6fbfe;
+
+    --tes-font-display: "IvyPresto Display", "Cormorant Garamond", "Playfair Display", serif;
+    --tes-font-accent: "IvyPresto Display", "Cormorant Garamond", serif;
+    --tes-font-body: "Manrope", Inter, system-ui, sans-serif;
+
+    --tes-radius-xs: 6px;
+    --tes-radius-sm: 8px;
+    --tes-radius-md: 12px;
+    --tes-radius-card: 18px;
+    --tes-radius-panel: 22px;
+    --tes-radius-hero: 28px;
+
+    --tes-shadow-soft: 0 12px 36px rgba(38, 20, 51, 0.08);
+    --tes-shadow-card: 0 8px 24px rgba(38, 20, 51, 0.06);
+    --tes-shadow-float: 0 18px 48px rgba(38, 20, 51, 0.14);
+    --tes-shadow-focus: 0 0 0 4px rgba(108, 61, 145, 0.18);
+
+    --tes-layout-sidebar-width: 220px;
+    --tes-layout-topbar-height: 72px;
+
+    --background: 0 0% 100%;
+    --foreground: 275 43.7% 13.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 275 43.7% 13.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 275 43.7% 13.9%;
+    --primary: 274 40.8% 40.4%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 279 43.8% 93.7%;
+    --secondary-foreground: 275 43.7% 13.9%;
+    --muted: 254 45% 95%;
+    --muted-foreground: 245 21.1% 44.7%;
+    --accent: 204 60.5% 69.2%;
+    --accent-foreground: 275 43.7% 13.9%;
+    --destructive: 347 82.2% 64.7%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 258 52.6% 92.5%;
+    --input: 258 52.6% 92.5%;
+    --ring: 274 40.8% 40.4%;
+    color-scheme: light;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--tes-font-body);
+  }
+
+  ::selection {
+    background: var(--tes-color-brand-lavender);
+    color: var(--tes-color-brand-deep);
+  }
+}

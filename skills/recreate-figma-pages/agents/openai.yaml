@@ -1,0 +1,6 @@
+interface:
+  display_name: "Recreate Figma Pages"
+  short_description: "Recreate static Figma pages with TES spacing, typography, icons and QA."
+  default_prompt: "Use $recreate-figma-pages to recreate one static Figma screen from ↳ Design Telas as a high-quality editable page beside its reference, reusing Design System components and icons from the ícones page."
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,123 @@
+# Inventário de Páginas
+
+Lista funcional das páginas do produto. Cada item descreve persona, objetivo, conteúdo, componentes, estados e ações.
+
+Fonte primária: Figma `↳ Jornadas dos Usuários`, node `12272:2`, frame principal `12280:2`. Páginas ausentes desse node ficam marcadas como necessidade de produto, suporte, legal ou inferência controlada.
+
+## Público
+
+| Página | Rota | Persona | Objetivo | Conteúdo | Componentes | Estados | Ações |
+|---|---|---|---|---|---|---|---|
+| Home | `/` | Visitante | Explicar o TES e iniciar escolha. | Proposta, etapas, jornada, terapeutas, terapias, planos e FAQ. | PublicHeader, HeroCard, CTA, TherapyCard, TherapistCard, FAQ. | Loading, erro, sem recomendações. | Começar jornada, ver terapeutas. |
+| Como funciona | `/como-funciona` | Visitante | Reduzir incerteza. | Etapas, reserva, sessão online e dúvidas. | Stepper, InfoCard, FAQ. | Conteúdo indisponível. | Começar jornada. |
+| Sua jornada | `/sua-jornada` | Visitante/Paciente | Coletar momento sem julgamento. | Perguntas, temas e progresso. | MatchingQuestionCard, CheckboxCard, StickyCTA. | Nenhuma seleção, máximo atingido, loading. | Selecionar, avançar, revisar. |
+| Resultado | `/sua-jornada/resultado` | Visitante/Paciente | Sugerir caminhos. | Caminhos sugeridos, terapeutas relacionados e CTA. | JourneyResultCard, TherapyCard, TherapistCard. | Carregando, sem resultado, erro. | Ver caminho, ver terapeutas, refazer. |
+| Busca de terapeutas | `/terapeutas` | Visitante/Paciente | Encontrar profissionais. | Busca, filtros, cards e ordenação. | SearchInput, FilterChips, TherapistCard, Pagination. | Sem resultado, loading, erro. | Filtrar, favoritar, ver perfil. |
+| Perfil do terapeuta | `/terapeutas/:slug` | Visitante/Paciente | Construir confiança. | Sobre, terapias, serviços, horários, avaliações e FAQ. | ProfileHero, ServiceCard, AvailabilityPicker, ReviewList. | Sem horários, sem avaliações. | Escolher serviço, reservar, favoritar. |
+| Reserva | `/reserva` | Visitante/Paciente | Fechar serviço, horário, conta e pagamento. | Resumo, dados mínimos, autenticação, pagamento e políticas. | BookingStepper, ReservationSummary, AuthStep, PaymentForm. | Horário expirado, erro de pagamento, loading. | Confirmar, entrar/cadastrar, pagar. |
+| Reserva confirmada | `/reserva/sucesso` | Paciente | Confirmar sessão online. | Resumo da sessão, agenda e suporte. | SuccessState, SessionSummary, CalendarCTA, SupportCard. | Confirmação pendente. | Ir para `/app`, ver sessão, pedir ajuda. |
+| Terapias | `/terapias` | Visitante/Paciente | Explorar caminhos terapêuticos. | Grid, categorias e busca. | TherapyCard, SearchInput, Chips, Banner. | Sem resultado, loading. | Conhecer caminho, encontrar terapeuta. |
+| Detalhe da terapia | `/terapias/:slug` | Visitante/Paciente | Educar sem promessa de resultado. | Explicação, contexto e profissionais relacionados. | TherapyHero, ContentSection, RelatedTherapists, FAQ. | Sem terapeutas relacionados. | Ver terapeutas. |
+| Para terapeutas | `/para-terapeutas` | Terapeuta visitante | Apresentar valor da plataforma. | Benefícios, recursos, planos e processo de entrada. | HeroCard, FeatureCards, Timeline, PlanPreview. | Conteúdo indisponível. | Ver planos, criar conta. |
+| Planos | `/para-terapeutas/planos` | Terapeuta visitante | Comparar Básico, Pro e Plus. | Cards de plano, comparação e perguntas. | PlanCard, ComparisonTable, FAQ. | Plano indisponível. | Escolher plano. |
+| Login | `/entrar` | Todos | Entrar depois de intenção clara. | Email, senha e recuperação. | AuthCard, Input, Button. | Erro, loading, bloqueio. | Entrar, criar conta, recuperar senha. |
+| Cadastro | `/cadastro` | Paciente/Terapeuta | Criar conta no momento certo. | Dados mínimos, perfil e aceite. | AuthStepper, Input, TermsCheckbox. | Validação, loading, erro. | Criar conta, continuar. |
+| Recuperar senha | `/reset-senha` | Todos | Recuperar acesso. | Email, confirmação e volta ao login. | ResetPasswordForm, SuccessMessage. | Email inválido, enviado. | Enviar link. |
+| Ajuda pública | `/ajuda` | Visitante | Tirar dúvidas. | Busca, FAQ e contato. | HelpSearch, FAQAccordion, ContactCTA. | Sem resultados. | Buscar, abrir tópico. |
+| Termos | `/termos` | Visitante | Expor regras. | Texto legal e índice. | LegalLayout, TOC. | Conteúdo indisponível. | Ler. |
+| Privacidade | `/privacidade` | Visitante | Explicar dados e privacidade. | Política e índice. | LegalLayout, TOC. | Conteúdo indisponível. | Ler. |
+
+## Paciente
+
+| Página | Rota | Objetivo | Conteúdo | Componentes | Estados | Ações |
+|---|---|---|---|---|---|---|
+| Visão geral | `/app` | Dar continuidade. | Saudação, próxima sessão, atalhos, favoritos e suporte. | AppSidebar, Topbar, HeroCard, SessionCard, SupportPanel. | Sem próxima sessão, sem favoritos. | Entrar na sessão, ver sessões, agendar. |
+| Sessões | `/app/sessoes` | Organizar sessões. | Próximas, histórico, pendentes e canceladas. | Tabs, SessionCard, StatusBadge. | Vazio, confirmado, ao vivo, cancelado. | Ver detalhes, reagendar, cancelar, avaliar. |
+| Próximas | `/app/sessoes/proximas` | Mostrar o que vem a seguir. | Sessões futuras. | SessionList, EmptyState. | Sem próximas sessões. | Agendar, ver detalhe. |
+| Histórico | `/app/sessoes/historico` | Consultar passado quando a experiência separar histórico em subrota. | Sessões anteriores, avaliação e comprovantes. | SessionHistoryList, Filters. | Sem histórico. | Ver detalhe, avaliar. |
+| Detalhe da sessão | `/app/sessoes/:slug` | Acessar sessão. | Terapeuta, link, data, política e suporte. | SessionDetail, LinkCard, Timeline, SupportCard. | Ao vivo, aguardando pagamento, concluída. | Entrar, copiar link, mensagem. |
+| Mensagens | `/app/mensagens` | Conversar com segurança. | Conversas com terapeuta, suporte e notificações. | ChatLayout, ConversationList, MessageBubble, Composer. | Sem conversa, erro de envio. | Enviar, anexar, arquivar. |
+| Favoritos | `/app/favoritos` | Retomar escolhas. | Abas de terapeutas e terapias salvas. | FavoriteTabs, EmptyState. | Vazio, removido. | Abrir lista específica. |
+| Terapeutas favoritos | `/app/favoritos/terapeutas` | Retomar profissionais. | Cards de terapeutas salvos. | FavoriteTherapistList, TherapistCard. | Vazio, removido. | Ver perfil, reservar, remover. |
+| Terapias favoritas | `/app/favoritos/terapias` | Retomar caminhos. | Cards de terapias salvas. | FavoriteTherapyList, TherapyCard. | Vazio, removido. | Ver terapia, remover. |
+| Pagamentos | `/app/pagamentos` | Consultar valores. | Resumo, faturas, métodos e reembolsos. | PaymentSummary, TransactionTable, PaymentMethodCard. | Sem pagamento, reembolso em análise. | Ver fatura, adicionar método. |
+| Faturas | `/app/pagamentos/faturas` | Ver comprovantes. | Faturas, status e recibos. | InvoiceList, StatusBadge. | Sem faturas. | Baixar comprovante, pedir ajuda. |
+| Métodos | `/app/pagamentos/metodos` | Gerenciar meios. | Cartões e método padrão. | PaymentMethodCard, AddPaymentMethodForm. | Sem método, erro validação. | Adicionar, remover, definir padrão. |
+| Configurações | `/app/configuracoes` | Gerir conta. | Perfil, notificações, privacidade e segurança. | SettingsNav, FormSection, SaveBar. | Salvando, erro, sucesso. | Salvar, abrir seção. |
+| Perfil | `/app/configuracoes/perfil` | Editar dados. | Nome, telefone, avatar e preferências básicas. | ProfileForm, AvatarUpload. | Validação, sucesso. | Salvar. |
+| Notificações | `/app/configuracoes/notificacoes` | Ajustar comunicações. | Email, lembretes e mensagens. | ToggleList, SaveBar. | Salvando. | Ativar/desativar. |
+| Privacidade | `/app/configuracoes/privacidade` | Controlar dados. | Consentimentos, visibilidade e políticas. | PrivacyControls, ConsentCard. | Erro, sucesso. | Atualizar. |
+| Segurança | `/app/configuracoes/seguranca` | Proteger acesso. | Senha, dispositivos e autenticação. | PasswordForm, DeviceList. | Senha fraca, sucesso. | Alterar senha. |
+| Ajuda | `/app/ajuda` | Resolver dúvidas. | Busca, categorias, tickets e guias. | HelpSearch, FAQAccordion, TicketList. | Sem tickets, em análise, resolvido. | Abrir ticket, falar com suporte. |
+
+## Terapeutas
+
+| Plano | Página | Rota | Objetivo | Componentes | Estados | Ações |
+|---|---|---|---|---|---|---|
+| Básico | Dashboard | `/basico` | Organizar presença inicial. | DashboardHero, ProfileChecklist, PlanCard, UpgradeBanner. | Perfil incompleto, sem agenda, limite. | Completar perfil, ver upgrade. |
+| Básico | Agenda | `/basico/agenda` | Criar disponibilidade simples. | Calendar, AvailabilityPicker, SideTips. | Sem horários, conflito. | Criar horário. |
+| Básico | Pacientes | `/basico/pacientes` | Ver pacientes ativos. | PatientTable, Filters, UpgradeHint. | Sem pacientes, limite de histórico. | Enviar mensagem, ver sessão. |
+| Básico | Sessões | `/basico/sessoes` | Controlar atendimentos. | SessionTable, StatusBadge, FilterBar. | Confirmada, aguardando, realizada, cancelada. | Ver, reagendar, mensagem. |
+| Básico | Mensagens | `/basico/mensagens` | Responder pacientes. | Chat, QuickActions. | Sem conversa, limite pré-sessão. | Responder. |
+| Básico | Serviços | `/basico/servicos` | Cadastrar oferta limitada. | ServiceCard, ServiceForm, LimitNotice. | Limite atingido, pausado. | Criar, editar, pausar, upgrade. |
+| Básico | Meus serviços | `/basico/servicos/meus` | Listar serviços cadastrados. | ServiceList, EmptyState. | Sem serviços, limite. | Criar, editar. |
+| Básico | Pagamento | `/basico/pagamento` | Ver recebimentos básicos. | PaymentSummary, TransactionList, BankDataCard. | Dados incompletos, sem recebimentos. | Atualizar dados. |
+| Básico | Perfil | `/basico/perfil` | Publicar perfil claro. | ProfilePreview, FormSection, QualityChecklist. | Não publicado, incompleto. | Editar, publicar, ver público. |
+| Básico | Upgrade | `/basico/upgrade` | Mostrar evolução de plano. | PlanCard, ComparisonTable, FAQ. | Checkout, erro. | Ir para Pro/Plus. |
+| Básico | Configurações | `/basico/configuracoes` | Ajustar conta. | FormSection, Toggle, SaveBar. | Salvando, erro. | Salvar. |
+| Básico | Suporte | `/basico/suporte` | Pedir ajuda. | SupportPanel, TicketForm. | Sem tickets. | Abrir ticket. |
+| Pro | Dashboard | `/pro` | Operação profissional. | KPIGrid, WeekSummary, SessionList, ReviewList. | Sem dados, período vazio. | Ver agenda, métricas, perfil. |
+| Pro | Agenda | `/pro/agenda` | Gerir disponibilidade avançada. | CalendarGrid, AvailabilityEditor, RequestList. | Conflito, bloqueio. | Criar sessão, ajustar horários. |
+| Pro | Pacientes | `/pro/pacientes` | Acompanhar relacionamento. | PatientTable, PatientStatus, SideInsights. | Sem pacientes, recorrente. | Ver histórico, mensagem. |
+| Pro | Sessões | `/pro/sessoes` | Operar agenda e status. | SessionTable, BulkActions, StatusBadge. | Pendente, confirmada, cancelada. | Ver, remarcar, suporte. |
+| Pro | Mensagens | `/pro/mensagens` | Atender com agilidade. | Chat, Tags, QuickReplies. | Não lida, arquivada. | Responder, etiquetar. |
+| Pro | Serviços | `/pro/servicos` | Gerir serviços completos. | ServiceTable, ServiceDrawer, StatsCard. | Pausado, sem valor, sem agenda. | Criar, editar, pausar. |
+| Pro | Financeiro | `/pro/financeiro` | Acompanhar dinheiro com clareza. | FinanceKPI, Chart, TransactionTable. | Pendente, pago, falha. | Exportar, ver repasse. |
+| Pro | Métricas | `/pro/metricas` | Entender descoberta e retorno. | MetricCard, LineChart, Heatmap, InsightCard. | Dados insuficientes. | Trocar período, ver Plus. |
+| Pro | Avaliações | `/pro/avaliacoes` | Ver e responder avaliações. | RatingSummary, ReviewCard, ReplyBox. | Sem avaliações, resposta pendente. | Responder, solicitar. |
+| Pro | Meu plano | `/pro/plano` | Gerir Pro e evolução. | PlanStatus, BillingTable, ComparisonCard. | Falha cobrança, cancelamento. | Evoluir plano, ver fatura. |
+| Pro | Perfil | `/pro/perfil` | Editar perfil público. | ProfilePreview, ProfileChecklist. | Incompleto. | Salvar, ver público. |
+| Pro | Configurações | `/pro/configuracoes` | Ajustar conta. | SettingsNav, FormSection, SaveBar. | Salvando, erro. | Salvar. |
+| Pro | Suporte | `/pro/suporte` | Pedir ajuda. | SupportPanel, TicketForm. | Sem tickets. | Abrir ticket. |
+| Plus | Dashboard | `/plus` | Mostrar inteligência completa. | PremiumHero, KPIGrid, InsightCard, AIRecommendationCard. | Dados insuficientes, período vazio. | Ver recomendações, abrir insights. |
+| Plus | Agenda | `/plus/agenda` | Otimizar horários. | CalendarGrid, DemandHeatmap, SuggestionCard. | Conflito, sem dados. | Ajustar disponibilidade. |
+| Plus | Pacientes | `/plus/pacientes` | Acompanhar relacionamento. | PatientTable, ReturnCard, AlertCard. | Sem histórico, dados restritos. | Ver histórico, mensagem. |
+| Plus | Histórico do paciente | `/plus/pacientes/:slug-do-paciente` | Detalhar jornada operacional. | PlusPatientJourney, ProfileSummary, Timeline, SessionHistory. | Sem histórico, informação bloqueada. | Registrar observação operacional, mensagem. |
+| Plus | Sessões | `/plus/sessoes` | Gerir qualidade e fluxo. | SessionTable, QualityIndicator, InsightSidebar. | Problema, concluída. | Ver, remarcar, suporte. |
+| Plus | Mensagens | `/plus/mensagens` | Conversas com inteligência. | Chat, AIHelper, QuickReplies. | Sugestão IA, sem conversa. | Responder, revisar sugestão. |
+| Plus | Serviços | `/plus/servicos` | Otimizar oferta. | ServiceDemandTable, AIRecommendationCard. | Serviço pouco claro. | Melhorar descrição. |
+| Plus | Meus serviços | `/plus/servicos/meus` | Listar serviços. | ServiceList, DemandIndicators. | Sem serviços. | Criar, editar, pausar. |
+| Plus | Financeiro | `/plus/financeiro` | Ver finanças e previsões. | FinanceDashboard, Chart, InsightCard. | Sem dados, falha. | Exportar. |
+| Plus | Avaliações | `/plus/avaliacoes` | Entender retornos recebidos. | SentimentChart, ReviewCard, WordCloud. | Sem avaliações, comentário denunciado. | Responder, ver padrão. |
+| Plus | Insights | `/plus/insights` | Reunir recomendações avançadas. | InsightKPI, RecommendationList, AIRecommendationCard. | Sem dados suficientes. | Aplicar recomendação. |
+| Plus | Assessor IA | `/plus/assessor-ia` | Apoiar revisão de perfil, serviços e presença. | AIAssessorPanel, SuggestionCard, ReviewBeforeApply. | Sugestão indisponível, loading, aplicado. | Gerar, revisar, aplicar. |
+| Plus | Perfil | `/plus/perfil` | Fortalecer presença pública. | ProfilePreview, ProfileChecklist, AIRecommendationCard. | Incompleto. | Salvar, revisar descrição. |
+| Plus | Configurações | `/plus/configuracoes` | Ajustar conta. | SettingsNav, FormSection, SaveBar. | Salvando, erro. | Salvar. |
+| Plus | Suporte | `/plus/suporte` | Acessar suporte prioritário. | SupportPanel, PriorityBadge, TicketForm. | Sem tickets. | Abrir ticket. |
+
+## Admin
+
+| Página | Rota | Objetivo | Componentes | Estados | Ações |
+|---|---|---|---|---|---|
+| Visão geral | `/admin` | Priorizar atenção da operação. | AdminSidebar, KPIGrid, Charts, ModerationQueue. | Crítico, sem dados. | Revisar filas. |
+| Profissionais | `/admin/profissionais` | Gerir terapeutas. | DataTable, FilterBar, StatusBadge, SidePanel. | Pendente, ativo, suspenso. | Aprovar, suspender, alterar plano. |
+| Verificações | `/admin/profissionais/verificacoes` | Validar documentos. | VerificationPanel, DocumentPreview, Timeline. | Pendente, aprovado, reprovado. | Aprovar, solicitar ajuste, reprovar. |
+| Pacientes | `/admin/pacientes` | Acompanhar base. | DataTable, Chart, JourneyStats. | Ativo, inativo, denúncia. | Ver histórico, bloquear. |
+| Sessões | `/admin/sessoes` | Monitorar sessões. | SessionTable, StatusCards, PolicyCard. | Pendente, problema, reembolso. | Abrir caso, reembolsar. |
+| Pagamentos | `/admin/pagamentos` | Controlar financeiro. | FinanceKPI, Chart, TransactionTable. | Falha, pendente, concluído. | Ver transação, processar. |
+| Avaliações | `/admin/avaliacoes` | Moderar confiança. | ReviewTable, SentimentCard, DecisionPanel. | Denunciada, pendente, aprovada. | Manter, ocultar, solicitar revisão. |
+| Assinaturas | `/admin/assinaturas` | Gerir planos. | SubscriptionTable, PlanChart, CouponPanel. | Ativa, cancelada, inadimplente. | Alterar plano, aplicar cupom. |
+| Terapias | `/admin/terapias` | Curar catálogo. | TherapyTable, TagManager, MatchingPanel. | Em revisão, ativa. | Criar, editar, ajustar matching. |
+| Matching | `/admin/matching` | Regras de recomendação. | RuleBuilder, TestPanel, Metrics. | Regra conflitante. | Testar, publicar. |
+| Integrações | `/admin/integracoes` | Manter sistemas externos. | IntegrationCard, StatusList, LogTable. | Operacional, instável, erro. | Conectar, testar. |
+| Segurança | `/admin/seguranca` | Moderação e privacidade. | IncidentTable, PolicyCard. | Crítico, resolvido. | Bloquear, auditar. |
+| Relatórios | `/admin/relatorios` | Exportar e acompanhar. | ReportBuilder, ExportButton. | Gerando, sem dados. | Exportar. |
+| Configurações | `/admin/configuracoes` | Configurar plataforma. | SettingsSection, SaveBar. | Salvando, erro. | Salvar. |
+| Suporte | `/admin/suporte` | Acompanhar suporte. | TicketTable, PriorityBadge. | Sem tickets. | Responder, escalar. |
+
+## Observações de Fonte
+
+- A Jornada `12272:2` confirma os 6 perfis, 24 fluxos e 92 etapas usados neste inventário.
+- `/ajuda`, `/termos` e `/privacidade` não aparecem como etapas da Jornada. Permanecem por necessidade institucional, suporte e legal.
+- `/app/sessoes/historico` não aparece como etapa própria da Jornada. Usa-se como subrota opcional quando o produto separar o histórico de `/app/sessoes`.
+- Favoritos separados por terapeutas e terapias, sessões/mensagens do Básico, catálogo de Admin, matching, integrações, segurança, relatórios, configurações e suporte aparecem na Jornada `12272:2`.

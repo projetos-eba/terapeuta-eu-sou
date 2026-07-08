@@ -1,0 +1,142 @@
+# Mapa de Rotas
+
+Contrato de implementação para rotas, permissões, layouts, componentes, estados e ações. A rota canônica sempre usa slug sem acento.
+
+## Legenda
+
+- `Jornada`: Figma `↳ Jornadas dos Usuários`, node `12272:2` (`12272-2` na URL), frame principal `12280:2`.
+- `Design Telas`: Figma `Design Telas`, node `5999:10563`.
+- `Produto`: documentação de regras e planos.
+- `Referencias`: imagens locais por perfil.
+- `inferido`: necessário para fechar a arquitetura.
+
+## Público
+
+| Rota | Página | Origem | Permissão | Objetivo | Layout | Componentes | Estados | Ações | Referência visual |
+|---|---|---|---|---|---|---|---|---|---|
+| `/` | Home | Jornada/Design Telas | Visitante | Apresentar TES e iniciar escolha. | Landing | PublicHeader, HeroCard, TherapyCard, TherapistCard, FAQ | Loading, erro, sem recomendações | Começar jornada, ver terapeutas | Publico |
+| `/como-funciona` | Como funciona | Jornada/Design Telas | Visitante | Explicar etapas e reduzir incerteza. | Educativo | Stepper, InfoCard, FAQ | Conteúdo indisponível | Começar jornada | Publico |
+| `/sua-jornada` | Sua jornada | Jornada/Design Telas | Visitante/Paciente | Entender momento da pessoa. | Questionário | MatchingQuestionCard, Progress, StickyCTA | Seleção vazia, limite, loading | Selecionar, avançar | Publico |
+| `/sua-jornada/resultado` | Resultado | Jornada/Design Telas | Visitante/Paciente | Sugerir caminhos e terapeutas. | Recomendações | JourneyResultCard, TherapyCard, CTAGroup | Carregando, sem resultado, erro | Ver caminho, ver terapeutas | Publico |
+| `/terapeutas` | Terapeutas | Jornada/Design Telas | Visitante/Paciente | Encontrar profissionais. | Lista com filtros | SearchInput, FilterChips, TherapistCard, Pagination | Sem resultados, filtros ativos, loading | Filtrar, favoritar, ver perfil | Publico |
+| `/terapeutas/:slug` | Perfil do terapeuta | Jornada/Design Telas | Visitante/Paciente | Construir confiança e conduzir à reserva. | Perfil público | ProfileHero, ServiceCard, AvailabilityPicker, ReviewList | Sem horários, sem avaliações | Escolher serviço, reservar | Publico |
+| `/reserva` | Reserva | Jornada | Visitante/Paciente | Confirmar serviço, horário, conta e pagamento. | Fluxo guiado | BookingStepper, ReservationSummary, AuthStep, PaymentForm | Horário indisponível, erro de pagamento | Confirmar, entrar, cadastrar, pagar | Publico |
+| `/reserva/sucesso` | Reserva confirmada | Jornada | Paciente | Confirmar sessão online. | Confirmação | SuccessState, SessionSummary, CalendarCTA, SupportCard | Confirmação pendente | Ir para `/app`, ver sessão | Publico |
+| `/terapias` | Terapias | Jornada/Design Telas | Visitante/Paciente | Explorar caminhos terapêuticos. | Grade com busca | TherapyCard, SearchInput, Chips, Banner | Sem resultados, loading | Conhecer caminho | Publico |
+| `/terapias/:slug` | Detalhe da terapia | Jornada/Design Telas | Visitante/Paciente | Educar sem promessa terapêutica. | Conteúdo + lista | TherapyHero, ContentSections, RelatedTherapists, FAQ | Sem terapeutas relacionados | Ver terapeutas | Publico |
+| `/para-terapeutas` | Para terapeutas | Jornada/Design Telas | Terapeuta visitante | Apresentar valor para profissionais. | Landing | HeroCard, FeatureCards, Timeline, PlanPreview | Conteúdo vazio | Ver planos, criar conta | Publico |
+| `/para-terapeutas/planos` | Planos | Jornada/Design Telas/Produto | Terapeuta visitante | Comparar Básico, Pro e Plus. | Comparativo | PlanCard, ComparisonTable, FAQ | Plano indisponível | Escolher plano | Publico |
+| `/entrar` | Login | Jornada | Todos | Acessar conta. | Auth | AuthCard, Input, Button | Erro, loading, bloqueio | Entrar, criar conta | Publico |
+| `/cadastro` | Cadastro | Jornada | Paciente/Terapeuta | Criar conta no momento adequado. | Auth em etapas | AuthStepper, Input, TermsCheckbox | Validação, loading, erro | Criar conta | Publico |
+| `/reset-senha` | Recuperar senha | Jornada | Todos | Recuperar acesso. | Auth | ResetPasswordForm, SuccessMessage | Email inválido, enviado | Enviar link | Publico |
+| `/ajuda` | Ajuda pública | Produto | Visitante | Resolver dúvidas. | Central | HelpSearch, FAQAccordion, ContactCTA | Sem resultados | Buscar, abrir tópico | Publico |
+| `/termos` | Termos | Produto/Legal | Visitante | Expor regras legais. | Documento | LegalLayout, TOC | Conteúdo indisponível | Ler | Publico |
+| `/privacidade` | Privacidade | Produto/Legal | Visitante | Expor política de dados. | Documento | LegalLayout, TOC | Conteúdo indisponível | Ler | Publico |
+
+## Paciente
+
+| Rota | Página | Origem | Permissão | Objetivo | Layout | Componentes | Estados | Ações | Referência visual |
+|---|---|---|---|---|---|---|---|---|---|
+| `/app` | Visão geral | Jornada | Paciente | Dar continuidade após reserva. | App shell | AppSidebar, Topbar, HeroCard, SessionCard, SupportPanel | Sem sessão, sem favoritos | Entrar na sessão, ver sessões | Paciente |
+| `/app/sessoes` | Sessões | Jornada/Design Telas | Paciente | Organizar próximas e histórico. | Lista com tabs | Tabs, SessionCard, SessionTable | Vazio, pendente, cancelada, concluída | Ver detalhe, reagendar | Paciente |
+| `/app/sessoes/proximas` | Próximas sessões | Jornada | Paciente | Separar o que vem a seguir. | Lista filtrada | SessionList, EmptyState | Sem próximas sessões | Agendar, ver detalhe | Paciente |
+| `/app/sessoes/historico` | Histórico | Produto/inferido | Paciente | Consultar sessões passadas quando houver separação por aba ou subrota. | Lista filtrada | SessionHistoryList, Filters | Sem histórico | Ver detalhe, avaliar | Paciente |
+| `/app/sessoes/:slug` | Detalhe da sessão | Jornada/Design Telas | Paciente | Concentrar acesso e informações. | Detalhe | SessionDetail, LinkCard, Timeline, SupportCard | Ao vivo, pagamento pendente, cancelada | Entrar, copiar link, mensagem | Paciente |
+| `/app/mensagens` | Mensagens | Jornada/Design Telas | Paciente | Conversar com terapeuta e suporte. | Chat | ConversationList, MessageThread, Composer | Sem conversa, erro envio | Enviar, pedir ajuda | Paciente |
+| `/app/favoritos` | Favoritos | Jornada/Design Telas | Paciente | Retomar escolhas salvas. | Hub/lista | FavoriteTabs, EmptyState | Vazio, removido | Abrir terapeutas ou terapias | Paciente |
+| `/app/favoritos/terapeutas` | Terapeutas favoritos | Jornada | Paciente | Separar profissionais salvos. | Lista/cards | FavoriteTherapistList, TherapistCard | Vazio, removido | Agendar, remover, ver perfil | Paciente |
+| `/app/favoritos/terapias` | Terapias favoritas | Jornada | Paciente | Separar caminhos salvos. | Lista/cards | FavoriteTherapyList, TherapyCard | Vazio, removido | Ver terapia, remover | Paciente |
+| `/app/pagamentos` | Pagamentos | Jornada/Design Telas | Paciente | Consultar pagamentos. | Financeiro simples | PaymentSummary, TransactionList, PaymentMethodCard | Sem pagamentos, reembolso | Ver faturas, adicionar método | Paciente |
+| `/app/pagamentos/faturas` | Faturas | Jornada | Paciente | Ver comprovantes. | Lista | InvoiceList, ReceiptLink | Sem faturas | Baixar comprovante | Paciente |
+| `/app/pagamentos/metodos` | Métodos | Jornada | Paciente | Gerenciar meios. | Cards/form | PaymentMethodCard, AddPaymentMethodForm | Sem método, erro validação | Adicionar, remover | Paciente |
+| `/app/configuracoes` | Configurações | Jornada/Design Telas | Paciente | Gerenciar conta. | Formulários | SettingsNav, FormSection, SaveBar | Salvando, erro, sucesso | Salvar, abrir seção | Paciente |
+| `/app/configuracoes/perfil` | Perfil | Jornada | Paciente | Editar dados pessoais. | Form | ProfileForm, AvatarUpload | Validação, sucesso | Salvar | Paciente |
+| `/app/configuracoes/notificacoes` | Notificações | Jornada | Paciente | Ajustar comunicações. | Toggles | ToggleList, SaveBar | Salvando | Ativar/desativar | Paciente |
+| `/app/configuracoes/privacidade` | Privacidade | Jornada | Paciente | Controlar dados. | Sensível | PrivacyControls, ConsentCards | Erro, sucesso | Atualizar preferências | Paciente |
+| `/app/configuracoes/seguranca` | Segurança | Jornada | Paciente | Gerenciar senha e acesso. | Segurança | PasswordForm, SessionsList | Senha fraca, sucesso | Alterar senha | Paciente |
+| `/app/ajuda` | Ajuda | Jornada/Design Telas | Paciente | Acessar suporte. | Central logada | HelpSearch, FAQ, TicketList | Sem tickets, em análise | Abrir ticket | Paciente |
+
+## Terapeuta Básico
+
+| Rota | Página | Origem | Permissão | Objetivo | Layout | Componentes | Estados | Ações | Referência visual |
+|---|---|---|---|---|---|---|---|---|---|
+| `/basico` | Dashboard Básico | Jornada/Design Telas | Básico | Começar operação e completar perfil. | Dashboard simples | DashboardHero, ProfileChecklist, PlanCard, UpgradeBanner | Perfil incompleto, sem agenda, limite | Completar perfil, ver agenda | Terapeuta Básico |
+| `/basico/agenda` | Agenda | Jornada/Design Telas | Básico | Gerenciar disponibilidade. | Calendário | Calendar, AvailabilityPicker, SideTips | Sem horários, conflito | Criar horário | Terapeuta Básico |
+| `/basico/pacientes` | Pacientes | Jornada/Design Telas | Básico | Ver pacientes ativos. | Lista/tabela | PatientTable, Filters, UpgradeHint | Sem pacientes | Ver sessão, enviar mensagem | Terapeuta Básico |
+| `/basico/sessoes` | Sessões | Jornada/Produto | Básico | Controlar atendimentos. | Lista/tabela | SessionTable, Tabs, StatusBadge | Confirmada, aguardando, realizada, cancelada | Ver, reagendar | Terapeuta Básico |
+| `/basico/mensagens` | Mensagens | Jornada/Produto | Básico | Responder pacientes. | Chat simples | MessageThread, ConversationList | Sem conversa, limite pré-sessão | Responder | Terapeuta Básico |
+| `/basico/servicos` | Serviços | Jornada/Design Telas | Básico | Gerir oferta limitada. | Lista + editor | ServiceCard, ServiceForm, LimitNotice | Limite atingido, pausado | Criar, editar, pausar | Terapeuta Básico |
+| `/basico/servicos/meus` | Meus serviços | Jornada | Básico | Separar listagem de serviços. | Lista | ServiceList, EmptyState | Sem serviço, limite | Criar serviço | Terapeuta Básico |
+| `/basico/pagamento` | Pagamento | Jornada/Design Telas | Básico | Ver repasses simples. | Financeiro simples | PaymentSummary, BankDataCard, TransactionList | Sem repasse, dados incompletos | Atualizar dados | Terapeuta Básico |
+| `/basico/perfil` | Perfil | Jornada/Design Telas | Básico | Editar presença pública. | Preview + formulário | ProfilePreview, FormSection, QualityChecklist | Não publicado, incompleto | Editar, publicar | Terapeuta Básico |
+| `/basico/upgrade` | Upgrade | Jornada/Design Telas | Básico | Comparar planos. | Comparativo | PlanCard, ComparisonTable, FAQ | Checkout, erro | Assinar Pro/Plus | Terapeuta Básico |
+| `/basico/configuracoes` | Configurações | Jornada/Design Telas | Básico | Ajustar conta. | Formulários | SettingsNav, Toggle, SaveBar | Salvando, erro | Salvar | Terapeuta Básico |
+| `/basico/suporte` | Suporte | Jornada/Produto | Básico | Pedir ajuda. | Central | SupportPanel, TicketForm | Sem tickets | Abrir ticket | Terapeuta Básico |
+
+## Terapeuta Pro
+
+| Rota | Página | Origem | Permissão | Objetivo | Layout | Componentes | Estados | Ações | Referência visual |
+|---|---|---|---|---|---|---|---|---|---|
+| `/pro` | Dashboard Pro | Jornada | Pro | Operação profissional. | Dashboard denso | KPIGrid, WeekSummary, SessionList, ReviewList | Sem dados, período vazio | Ver agenda, métricas, perfil | Terapeuta Pro |
+| `/pro/agenda` | Agenda | Jornada/Design Telas | Pro | Gerenciar disponibilidade avançada. | Calendário | CalendarGrid, AvailabilityEditor, RequestList | Conflito, bloqueio | Ajustar horários | Terapeuta Pro |
+| `/pro/pacientes` | Pacientes | Jornada/Design Telas | Pro | Acompanhar relacionamento. | Tabela + indicadores | PatientTable, SideInsights | Sem pacientes | Ver histórico, mensagem | Terapeuta Pro |
+| `/pro/sessoes` | Sessões | Jornada/Design Telas | Pro | Gerir sessões. | Tabela operacional | SessionTable, StatusBadge, Filters | Pendente, confirmada, cancelada | Ver, remarcar | Terapeuta Pro |
+| `/pro/mensagens` | Mensagens | Jornada/Design Telas | Pro | Conversas com recursos Pro. | Chat avançado | MessageThread, Tags, QuickReplies | Não lida, arquivada | Responder, etiquetar | Terapeuta Pro |
+| `/pro/servicos` | Serviços | Jornada/Design Telas | Pro | Gerir serviços completos. | Lista + editor | ServiceTable, ServiceDrawer, StatsCard | Pausado, sem valor | Criar, editar | Terapeuta Pro |
+| `/pro/financeiro` | Financeiro | Jornada/Design Telas | Pro | Acompanhar repasses e transações. | Dashboard financeiro | FinanceKPI, Chart, TransactionTable | Pendente, pago, falha | Exportar, ver repasse | Terapeuta Pro |
+| `/pro/metricas` | Métricas | Jornada/Design Telas | Pro | Entender descoberta e agenda. | Analytics intermediário | MetricCard, LineChart, Heatmap, InsightCard | Dados insuficientes | Trocar período | Terapeuta Pro |
+| `/pro/avaliacoes` | Avaliações | Jornada/Design Telas | Pro | Ver e responder avaliações. | Lista + resumo | RatingSummary, ReviewCard, ReplyBox | Sem avaliações, pendente de resposta | Responder | Terapeuta Pro |
+| `/pro/plano` | Meu plano | Jornada | Pro | Gerenciar plano e evolução. | Plano/comparativo | PlanStatus, BillingTable, ComparisonCard | Falha cobrança | Ver faturas, evoluir plano | Terapeuta Pro |
+| `/pro/perfil` | Perfil | Jornada/Produto | Pro | Editar perfil público. | Preview + form | ProfilePreview, ProfileChecklist | Incompleto | Salvar, ver público | Terapeuta Pro |
+| `/pro/configuracoes` | Configurações | Jornada/Produto | Pro | Ajustar conta. | Formulários | SettingsNav, SaveBar | Salvando, erro | Salvar | Terapeuta Pro |
+| `/pro/suporte` | Suporte | Jornada/Produto | Pro | Pedir ajuda. | Central | SupportPanel, TicketForm | Sem tickets | Abrir ticket | Terapeuta Pro |
+
+## Terapeuta Plus
+
+| Rota | Página | Origem | Permissão | Objetivo | Layout | Componentes | Estados | Ações | Referência visual |
+|---|---|---|---|---|---|---|---|---|---|
+| `/plus` | Dashboard Plus | Jornada/Design Telas | Plus | Mostrar inteligência completa. | Dashboard premium | PremiumHero, KPIGrid, InsightCard, AIRecommendationCard | Dados insuficientes, período vazio | Ver insights, abrir recomendações | Terapeuta Plus |
+| `/plus/agenda` | Agenda Plus | Jornada/Design Telas | Plus | Otimizar disponibilidade. | Calendário + sinais | CalendarGrid, DemandHeatmap, SuggestionCard | Conflito, sem dados | Ajustar disponibilidade | Terapeuta Plus |
+| `/plus/pacientes` | Pacientes | Jornada/Design Telas | Plus | Acompanhar relacionamento. | Tabela + sinais | PatientTable, ReturnCard, AlertCard | Sem pacientes | Ver histórico, mensagem | Terapeuta Plus |
+| `/plus/pacientes/:slug-do-paciente` | Histórico do paciente | Jornada/Design Telas | Plus | Acompanhar histórico operacional. | Detalhe | PlusPatientJourney, ProfileSummary, Timeline, SessionHistory | Sem histórico, restrito, bloqueado | Registrar observação operacional, mensagem | Terapeuta Plus |
+| `/plus/sessoes` | Sessões | Jornada/Design Telas | Plus | Gerir sessões com visão de qualidade. | Tabela + indicadores | SessionTable, QualityIndicator, InsightSidebar | Pendente, realizada, cancelada | Ver, reagendar | Terapeuta Plus |
+| `/plus/mensagens` | Mensagens | Jornada/Design Telas | Plus | Conversas com apoio inteligente. | Chat + sugestões | MessageThread, AIHelper, QuickReplies | Sem conversa, sugestão IA | Responder, revisar sugestão | Terapeuta Plus |
+| `/plus/servicos` | Serviços Plus | Jornada/Design Telas | Plus | Otimizar oferta. | Lista + recomendações | ServiceDemandTable, AIRecommendationCard, DetailDrawer | Serviço pouco claro, demanda alta | Melhorar descrição | Terapeuta Plus |
+| `/plus/servicos/meus` | Meus serviços | Jornada | Plus | Listar serviços. | Lista avançada | ServiceList, DemandIndicators | Sem serviço | Criar, editar | Terapeuta Plus |
+| `/plus/financeiro` | Financeiro | Jornada/Design Telas | Plus | Ver finanças com insights. | Analytics financeiro | FinanceKPI, Chart, TransactionTable, InsightCard | Sem dados, pendência | Exportar | Terapeuta Plus |
+| `/plus/avaliacoes` | Avaliações | Jornada/Design Telas | Plus | Entender retornos recebidos. | Avaliações + análise | SentimentChart, ReviewCard, WordCloud | Sem avaliações, comentário sensível | Responder, ver padrões | Terapeuta Plus |
+| `/plus/insights` | Insights | Jornada/Design Telas | Plus | Reunir recomendações avançadas. | Analytics premium | InsightKPI, RecommendationList, AIRecommendationCard | Dados insuficientes | Aplicar recomendação | Terapeuta Plus |
+| `/plus/assessor-ia` | Assessor IA | Jornada | Plus | Apoiar revisão de perfil, serviços e presença. | Ferramenta assistida | AIAssessorPanel, PromptCard, SuggestionReview | Sugestão indisponível, loading | Gerar, revisar, aplicar | Terapeuta Plus |
+| `/plus/perfil` | Perfil | Jornada/Produto | Plus | Editar presença pública. | Preview + inteligência | ProfilePreview, ProfileChecklist, AIRecommendationCard | Incompleto | Salvar, revisar descrição | Terapeuta Plus |
+| `/plus/configuracoes` | Configurações | Jornada/Produto | Plus | Ajustar conta. | Formulários | SettingsNav, SaveBar | Salvando, erro | Salvar | Terapeuta Plus |
+| `/plus/suporte` | Suporte prioritário | Jornada/Produto | Plus | Acessar suporte prioritário. | Central priorizada | SupportPanel, PriorityBadge, TicketForm | Sem tickets | Abrir ticket | Terapeuta Plus |
+
+## Admin
+
+| Rota | Página | Origem | Permissão | Objetivo | Layout | Componentes | Estados | Ações | Referência visual |
+|---|---|---|---|---|---|---|---|---|---|
+| `/admin` | Visão geral | Jornada/Design Telas | Admin | Monitorar saúde da plataforma. | Dashboard | AdminKPIGrid, Charts, ModerationQueue | Sem dados, crítico | Revisar filas | Admin |
+| `/admin/profissionais` | Profissionais | Jornada/Design Telas | Admin | Gerir terapeutas. | Tabela + filtros | DataTable, FilterBar, StatusBadge, SidePanel | Pendente, ativo, suspenso | Aprovar, suspender | Admin |
+| `/admin/profissionais/verificacoes` | Verificações | Jornada/Design Telas | Admin | Revisar documentos. | Detalhe + checklist | VerificationPanel, DocumentPreview, Timeline | Pendente, aprovado, reprovado | Aprovar, solicitar ajuste | Admin |
+| `/admin/pacientes` | Pacientes | Jornada/Design Telas | Admin | Acompanhar base. | Tabela + indicadores | DataTable, JourneyStats | Ativo, denúncia | Ver histórico, bloquear | Admin |
+| `/admin/sessoes` | Sessões | Jornada/Design Telas | Admin | Monitorar sessões. | Tabela operacional | SessionTable, StatusCards, PolicyCard | Problema, reembolso, pendente | Abrir caso | Admin |
+| `/admin/pagamentos` | Pagamentos | Jornada/Design Telas | Admin | Gerir transações e repasses. | Financeiro denso | FinanceKPI, Chart, TransactionTable | Falha, pendente, reembolsado | Ver transação | Admin |
+| `/admin/avaliacoes` | Avaliações | Jornada/Design Telas | Admin | Moderar avaliações. | Lista + análise | ReviewTable, SentimentCard, DecisionPanel | Denunciada, pendente, aprovada | Manter, ocultar | Admin |
+| `/admin/assinaturas` | Assinaturas | Jornada/Design Telas | Admin | Gerir planos e cobranças. | Dashboard + tabela | SubscriptionTable, PlanChart, CouponPanel | Inadimplente, cancelado, ativo | Alterar plano | Admin |
+| `/admin/terapias` | Terapias | Jornada/Design Telas | Admin | Curar catálogo. | Tabela + detalhe | TherapyTable, TagManager, MatchingPanel | Ativa, revisão | Criar, editar tags | Admin |
+| `/admin/matching` | Matching | Jornada | Admin | Ajustar regras de recomendação. | Configuração | RuleBuilder, TestPanel, Metrics | Regra conflitante | Testar, publicar | Admin |
+| `/admin/integracoes` | Integrações | Jornada | Admin | Configurar sistemas externos. | Lista | IntegrationStatusCard, LogTable | Operacional, instável, erro | Conectar, testar | Admin |
+| `/admin/seguranca` | Segurança | Jornada | Admin | Moderação e privacidade. | Operacional | IncidentTable, PolicyCard | Crítico, resolvido | Bloquear, auditar | Admin |
+| `/admin/relatorios` | Relatórios | Jornada | Admin | Exportar e analisar dados. | Relatórios | ReportBuilder, ExportButton | Sem dados, gerando | Exportar | Admin |
+| `/admin/configuracoes` | Configurações | Jornada | Admin | Configurar plataforma. | Formulários | SettingsSection, SaveBar | Salvando, erro | Salvar | Admin |
+| `/admin/suporte` | Suporte | Jornada | Admin | Acompanhar suporte. | Central/tickets | TicketTable, PriorityBadge | Sem tickets | Responder, escalar | Admin |
+
+## Guardas
+
+- Visitante acessa público.
+- Paciente acessa `/app/**`.
+- Básico acessa `/basico/**`.
+- Pro acessa `/pro/**`.
+- Plus acessa `/plus/**`.
+- Admin acessa `/admin/**`.
+- Recurso fora do plano renderiza ausência, bloqueio contextual ou convite, conforme perfil.

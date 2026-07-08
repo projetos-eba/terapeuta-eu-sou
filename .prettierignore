@@ -1,0 +1,14 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+.cache/
+.turbo/
+coverage/
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+package-lock.json
+Referencias/
+Fonts/
+public/fonts/
