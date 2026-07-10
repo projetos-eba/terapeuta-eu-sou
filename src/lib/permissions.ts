@@ -1,19 +1,71 @@
-export type TherapistPlan = 'basic' | 'pro' | 'plus';
-export type UserRole = 'visitor' | 'patient' | 'therapist' | 'admin';
+import {
+  canAccessAdvancedFinancials,
+  canAccessAdvancedMetrics,
+  canAccessAura,
+  canAccessFullCrm,
+  canAccessStrategicReviews,
+  canRequestNewTherapy,
+  canUseAgendaInsights,
+  canUseTherapistCapability,
+  normalizeLegacyTherapistPlan,
+  TherapistPlan,
+  UserRole,
+  type TherapistCapability,
+} from "@/domain/tes";
 
-export const therapistCapabilities: Record<string, TherapistPlan[]> = {
-  sessions: ['basic', 'pro', 'plus'],
-  messages: ['basic', 'pro', 'plus'],
-  limitedServices: ['basic', 'pro', 'plus'],
-  completeFinance: ['pro', 'plus'],
-  reviews: ['pro', 'plus'],
-  intermediateMetrics: ['pro', 'plus'],
-  advancedInsights: ['plus'],
-  aiRecommendations: ['plus'],
-  patientJourneyHistory: ['plus'],
-  prioritySupport: ['plus'],
+export { TherapistPlan, UserRole };
+export type { TherapistCapability };
+
+export type LegacyTherapistPlan = "basic" | "pro" | "plus";
+
+export type LegacyTherapistCapability =
+  | "sessions"
+  | "messages"
+  | "limitedServices"
+  | "completeFinance"
+  | "reviews"
+  | "intermediateMetrics"
+  | "advancedInsights"
+  | "auraRecommendations"
+  | "patientJourneyHistory"
+  | "prioritySupport";
+
+const legacyCapabilityMap: Record<
+  LegacyTherapistCapability,
+  TherapistCapability
+> = {
+  sessions: "operation_essentials",
+  messages: "operation_essentials",
+  limitedServices: "operation_essentials",
+  completeFinance: "advanced_financials",
+  reviews: "strategic_reviews",
+  intermediateMetrics: "advanced_metrics",
+  advancedInsights: "aura_full",
+  auraRecommendations: "aura_limited",
+  patientJourneyHistory: "full_crm",
+  prioritySupport: "full_crm",
 };
 
-export function canUseCapability(plan: TherapistPlan, capability: keyof typeof therapistCapabilities) {
-  return therapistCapabilities[capability].includes(plan);
+export const therapistCapabilities = legacyCapabilityMap;
+
+export function canUseCapability(
+  plan: TherapistPlan | LegacyTherapistPlan,
+  capability: LegacyTherapistCapability,
+) {
+  return canUseTherapistCapability(
+    normalizeLegacyTherapistPlan(plan),
+    legacyCapabilityMap[capability],
+  );
 }
+
+export {
+  canAccessAdvancedFinancials,
+  canAccessAdvancedMetrics,
+  canAccessAura,
+  canAccessFullCrm,
+  canAccessStrategicReviews,
+  canRequestNewTherapy,
+  canUseAgendaInsights,
+  canUseTherapistCapability,
+  normalizeLegacyTherapistPlan,
+};

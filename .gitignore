@@ -17,6 +17,8 @@ dist/
 # generated
 tsconfig.tsbuildinfo
 *.tsbuildinfo
+supabase/.branches/
+supabase/.temp/
 
 # caches
 .cache/
