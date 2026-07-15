@@ -21,7 +21,10 @@ const groups: Array<{
   {
     title: "Para terapeutas",
     items: [
-      { label: "Seja um terapeuta", href: routes.public.signUp as Route },
+      {
+        label: "Seja um terapeuta",
+        href: routes.public.therapistSignUp as Route,
+      },
       {
         label: "Planos e benefícios",
         href: routes.public.therapistPlans as Route,

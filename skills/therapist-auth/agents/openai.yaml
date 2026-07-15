@@ -1,0 +1,29 @@
+name: therapist-auth
+version: 2026-07-15
+description: Fluxo público de cadastro e login separados para terapeutas no Terapeuta Eu Sou.
+entrypoint: SKILL.md
+sources:
+  - AGENTS.md
+  - docs/product/sitemap.md
+  - docs/product/routes-map.md
+  - docs/product/page-inventory.md
+  - docs/design-system/design-system.md
+  - src/lib/routes.ts
+  - src/domain/tes/plan-definitions.ts
+  - src/features/therapist-auth/
+routes:
+  - /terapeuta/cadastro
+  - /terapeuta/login
+api:
+  - /api/auth/therapist/signup
+  - /api/auth/therapist/login
+pending:
+  - email_confirmation
+  - password_recovery
+  - authenticated_layout_guards
+  - therapist_documents
+  - payout_bank_account
+  - stripe_billing
+  - stripe_connect_payouts
+  - lgpd_consent_audit
+  - rate_limit_captcha_antifraud

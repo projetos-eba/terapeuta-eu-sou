@@ -1,0 +1,1 @@
+export { ForTherapistsPage } from "./page";

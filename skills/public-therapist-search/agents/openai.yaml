@@ -1,0 +1,7 @@
+interface:
+  display_name: "Public Therapist Search"
+  short_description: "Guia da página pública de terapeutas"
+  default_prompt: "Use $public-therapist-search para alterar ou auditar a página pública /terapeutas com filtros, Supabase e QA."
+
+policy:
+  allow_implicit_invocation: true

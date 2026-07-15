@@ -1,0 +1,7 @@
+name: public-for-therapists
+version: 1
+description: Local skill for the TES public for-therapists landing page.
+instructions:
+  - Read SKILL.md before changing /para-terapeutas.
+  - Keep plan data in src/domain/tes/plan-definitions.ts.
+  - Do not implement Stripe Checkout or webhook inside the public page.

@@ -163,6 +163,14 @@ Uso:
 
 Usa header horizontal, hero com imagem integrada, seções largas, cards de terapia e terapeuta, comparativo de planos, FAQ e footer.
 
+Nota de implementação da Home pública (`/`), atualizada em 2026-07-13: a página segue o Figma `Page / Público / Home` (`13273:1844`) e consolida um padrão público premium com hero fotográfico, cards informativos, passos ilustrados, marquee de terapias, cards de motivos, terapeutas em destaque, depoimentos e FAQ. O conteúdo dinâmico vem de views públicas Supabase seguras, com fallback local para manter a página íntegra em ambientes sem Supabase configurado.
+
+Nota de implementação da busca pública de terapeutas (`/terapeutas`), atualizada em 2026-07-14: a página segue o Figma `Page / Público / Pesquisa Terapeuta` (`13273:3587`) e consolida o padrão público de busca com hero acolhedor, formulário destacado em superfície suave, selects arredondados, contagem/ordenação, cards densos de terapeuta, paginação e banner de jornada. Filtros devem ser linkáveis por URL e a copy não deve prometer cura, diagnóstico ou resultado garantido.
+
+Nota de implementação do perfil público do terapeuta (`/terapeutas/:slug`), atualizada em 2026-07-14: a página segue o Figma `Page / Público / Perfil Juliana Almeida` (`13273:3393`) com adaptação de dados para Ana Oliveira. O padrão visual usa hero editorial com foto orgânica, badges de confiança, títulos IvyPresto, cards brancos com borda lavanda, serviços compactos, painel roxo de disponibilidade com seleção de serviço e avaliações em cards. Métricas devem usar apenas dados verificáveis da plataforma, como sessões pagas e concluídas.
+
+Nota de implementação da página pública Para Terapeutas (`/para-terapeutas`), atualizada em 2026-07-15: a página segue o Figma `Page / Público / Para Terapeutas` (`13457:848`) com hero central, itens de confiança, bento grid de benefícios, painel roxo de planos e comparativo responsivo. A tabela visual deve consumir o catálogo único `PlanDefinition`; preços pagos aparecem como “a partir de” e recursos não devem prometer IA real, renda, cura, diagnóstico ou resultado garantido.
+
 ### Paciente
 
 Usa sidebar, topbar, cards, listas, favoritos separados, suporte lateral e ilustrações suaves. A rota raiz é `/app`.
@@ -394,3 +402,9 @@ Componentes Figma adicionados em 2026-06-15:
 - `Product/JourneyResultCard/Wide` (`12548:175`).
 
 QA das 10 páginas públicas recriadas: largura `1055px`, 0 nomes genéricos, 0 placeholders e 0 overflow horizontal.
+
+## Padrão Auth Terapeuta
+
+As páginas `/terapeuta/login` e `/terapeuta/cadastro` usam um padrão de autenticação centralizado e simples, diferente das landings públicas: fundo lavanda suave, um card principal, `Brand/OfficialLogo` no topo, coluna de contexto escura e formulário com labels reais, mensagens por campo e CTA com altura mínima de 44px.
+
+O padrão deve deixar claro que perfil público, documentos pessoais e conta bancária de repasse são etapas recomendadas do onboarding, mas não bloqueiam a criação inicial da conta. A copy não deve prometer renda, aprovação automática, cura, diagnóstico ou resultado garantido.

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Public Therapist Profile"
+  short_description: "Guia do perfil público do terapeuta"
+  default_prompt: "Use $public-therapist-profile para alterar ou auditar /terapeutas/:slug com dados públicos, agenda, avaliações e SEO."
+
+policy:
+  allow_implicit_invocation: true

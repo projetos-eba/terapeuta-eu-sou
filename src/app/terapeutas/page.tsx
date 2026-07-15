@@ -1,297 +1,392 @@
 import Image from "next/image";
+import Link from "next/link";
+import type { Route } from "next";
+import { CalendarDays, ChevronDown, Filter, Heart, Search, Star } from "lucide-react";
+
+import { PublicFooter, PublicHeader, TESButton, TESCard } from "@/components/tes";
 import {
-  CalendarDays,
-  ChevronDown,
-  CircleDollarSign,
-  Filter,
-  Grid2X2,
-  Heart,
-  Leaf,
-  Search,
-  Star,
-} from "lucide-react";
+  availabilityOptions,
+  getPublicTherapistSearchResult,
+  parseTherapistSearchParams,
+  priceOptions,
+  ratingOptions,
+  sortOptions,
+  therapistSearchHero,
+  toSearchParams,
+  type TherapistSearchCard,
+  type TherapistSearchFilters,
+  type TherapistSearchOption,
+} from "@/features/public-therapist-search";
+import { routes } from "@/lib/routes";
 
-import {
-  FilterButton,
-  JourneyBanner,
-  PublicFooter,
-  PublicHeader,
-  TESInput,
-  TherapistCard,
-  type TherapistCardData,
-} from "@/components/tes";
+export const revalidate = 900;
 
-const filters = [
-  { label: "Tipo de terapia", icon: Leaf },
-  { label: "Tema buscado", icon: Grid2X2 },
-  { label: "Emoção ou momento", icon: Heart },
-  { label: "Disponibilidade", icon: CalendarDays },
-  { label: "Preço", icon: CircleDollarSign },
-  { label: "Avaliação", icon: Star },
-];
-
-const therapists: TherapistCardData[] = [
-  {
-    name: "Ana Oliveira",
-    slug: "ana-oliveira",
-    specialty: "Terapeuta Integrativa",
-    description:
-      "Um espaço de acolhimento para quem busca mais clareza, equilíbrio e leveza emocional.",
-    image: "/therapists/ana-oliveira.png",
-    nextSlot: "Hoje, 18:00",
-    price: "R$ 120 / sessão",
-    rating: "4,9",
-    reviews: "98 avaliações",
-    quote: "Me senti acolhida desde a primeira sessão.",
-    tags: ["Ansiedade", "Autoestima", "Autoconhecimento"],
-    highlight: "Destaque TES",
-    highlightTone: "featured",
-  },
-  {
-    name: "Rafael Santos",
-    slug: "rafael-santos",
-    specialty: "Terapeuta Holístico",
-    description:
-      "Apoio para quem está vivendo mudanças importantes e deseja encontrar novos caminhos.",
-    image: "/therapists/rafael-santos.png",
-    nextSlot: "Amanhã, 09:30",
-    price: "R$ 120 / sessão",
-    rating: "4,8",
-    reviews: "74 avaliações",
-    quote: "Ajudou a organizar um momento muito difícil.",
-    tags: ["Mudanças de vida", "Propósito", "Equilíbrio emocional"],
-    highlight: "Destaque TES",
-    highlightTone: "featured",
-  },
-  {
-    name: "Célia Martins",
-    slug: "celia-martins",
-    specialty: "Terapeuta Integrativa",
-    description:
-      "Escuta cuidadosa para relações, luto e processos de transformação.",
-    image: "/therapists/celia-martins.png",
-    nextSlot: "Sex, 14:00",
-    price: "R$ 120 / sessão",
-    rating: "4,9",
-    reviews: "112 avaliações",
-    quote: "Ela me ajudou a me reconstruir com amor.",
-    tags: ["Relacionamentos", "Luto", "Autoestima"],
-    highlight: "Perfil Verificado",
-    highlightTone: "verified",
-  },
-  {
-    name: "Juliana Costa",
-    slug: "juliana-costa",
-    specialty: "Terapeuta Holística",
-    description:
-      "Apoio para famílias construírem diálogos mais leves e seguros.",
-    image: "/therapists/juliana-costa.png",
-    nextSlot: "Seg, 10:00",
-    price: "R$ 120 / sessão",
-    rating: "4,8",
-    reviews: "88 avaliações",
-    quote: "Nossas conversas em família mudaram completamente.",
-    tags: ["Família", "Relacionamentos", "Comunicação"],
-    highlight: "Perfil Verificado",
-    highlightTone: "verified",
-  },
-  {
-    name: "Lucas Pereira",
-    slug: "lucas-pereira",
-    specialty: "Terapeuta Integrativo",
-    description:
-      "Cuidado para autoconhecimento, escolhas e transições de vida.",
-    image: "/therapists/lucas-pereira.png",
-    nextSlot: "Ter, 16:30",
-    price: "R$ 130 / sessão",
-    rating: "4,9",
-    reviews: "101 avaliações",
-    quote: "Me ajudou a entender meu propósito.",
-    tags: ["Autoconhecimento", "Propósito", "Mudanças de vida"],
-    highlight: "Destaque TES",
-    highlightTone: "featured",
-  },
-  {
-    name: "Patrícia Lima",
-    slug: "patricia-lima",
-    specialty: "Terapeuta Integrativa",
-    description:
-      "Sessões para perceber o corpo, respirar melhor e cultivar presença.",
-    image: "/therapists/patricia-lima.png",
-    nextSlot: "Qua, 11:00",
-    price: "R$ 120 / sessão",
-    rating: "4,8",
-    reviews: "69 avaliações",
-    quote: "Voltei a dormir bem e a viver o presente.",
-    tags: ["Corpo e mente", "Ansiedade", "Presença"],
-    highlight: "Perfil Verificado",
-    highlightTone: "verified",
-  },
-  {
-    name: "Márcio Andrade",
-    slug: "marcio-andrade",
-    specialty: "Terapeuta Holístico",
-    description:
-      "Apoio para lidar com estresse, ansiedade e cobranças internas.",
-    image: "/therapists/marcio-andrade.png",
-    nextSlot: "Qui, 15:00",
-    price: "R$ 120 / sessão",
-    rating: "4,7",
-    reviews: "63 avaliações",
-    quote: "Encontrei uma forma mais gentil de olhar para mim.",
-    tags: ["Ansiedade", "Estresse", "Autoestima"],
-    highlight: "Perfil Verificado",
-    highlightTone: "verified",
-  },
-  {
-    name: "Fernanda Rocha",
-    slug: "fernanda-rocha",
-    specialty: "Terapeuta Integrativa",
-    description:
-      "Acolhimento para fortalecer a autoestima e construir relações mais saudáveis.",
-    image: "/therapists/fernanda-rocha.png",
-    nextSlot: "Sex, 15:30",
-    price: "R$ 120 / sessão",
-    rating: "4,8",
-    reviews: "91 avaliações",
-    quote: "Senti segurança para falar do que eu sentia.",
-    tags: ["Autoestima", "Relacionamentos", "Autoconhecimento"],
-    highlight: "Perfil Verificado",
-    highlightTone: "verified",
-  },
-];
+type TherapistsPageProps = {
+  searchParams?: Record<string, string | string[] | undefined>;
+};
 
 function HeroIllustration() {
   return (
-    <div className="pointer-events-none absolute right-0 top-0 hidden h-[350px] w-[56%] overflow-hidden lg:block">
+    <div className="pointer-events-none absolute right-[-74px] top-[-27px] hidden h-[351px] w-[765px] overflow-hidden lg:block">
       <Image
         src="/therapists/hero-therapists.png"
         alt=""
         fill
-        sizes="900px"
+        sizes="765px"
         className="object-cover object-center"
         priority
       />
-      <div className="absolute inset-y-0 left-0 w-40 bg-gradient-to-r from-white to-white/0" />
-      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white to-white/0" />
     </div>
   );
 }
 
-function Pagination() {
+function SelectField({
+  label,
+  name,
+  options,
+  value,
+}: {
+  label: string;
+  name: keyof TherapistSearchFilters;
+  options: TherapistSearchOption[];
+  value?: string;
+}) {
   return (
-    <nav
-      className="mt-10 flex items-center justify-center gap-4"
-      aria-label="Paginação"
-    >
-      {[1, 2, 3, 4].map((page) => (
-        <button
-          key={page}
-          type="button"
-          aria-current={page === 1 ? "page" : undefined}
-          className={`grid size-9 place-items-center rounded-full text-sm font-extrabold ${
-            page === 1
-              ? "bg-brand-primary text-white shadow-card"
-              : "border border-border bg-white text-tesText-secondary"
+    <label className="relative flex h-[52px] min-w-[158px] shrink-0 items-center rounded-[16px] border border-[#ded5f2] bg-white text-[16px] font-medium text-[#8c87b2] focus-within:ring-4 focus-within:ring-ring/20">
+      <span className="sr-only">{label}</span>
+      <select
+        name={name}
+        defaultValue={value ?? ""}
+        className="h-full w-full appearance-none rounded-[16px] bg-transparent px-4 pr-12 text-[16px] font-medium leading-[22px] outline-none"
+      >
+        <option value="">{label}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-4 size-6 text-brand-primary" />
+    </label>
+  );
+}
+
+function SearchFilters({
+  filters,
+  themeOptions,
+  therapyOptions,
+}: {
+  filters: TherapistSearchFilters;
+  themeOptions: TherapistSearchOption[];
+  therapyOptions: TherapistSearchOption[];
+}) {
+  return (
+    <section className="relative z-10 mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-[68px]">
+      <form
+        action={routes.public.therapists}
+        className="rounded-[30px] border border-[#e8e2f6] bg-[#f7f4ff] p-[24px] shadow-[0_11px_16px_rgba(58,36,128,0.06)]"
+      >
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-4 top-1/2 size-6 -translate-y-1/2 text-brand-primary" />
+          <input
+            aria-label="Buscar terapeuta"
+            className="h-[54px] w-full rounded-[16px] border border-[#ded5f2] bg-white px-14 text-[16px] font-medium text-tesText-primary outline-none placeholder:text-[#8c87b2] focus:ring-4 focus:ring-ring/20"
+            defaultValue={filters.q ?? ""}
+            name="q"
+            placeholder="Nome, abordagem ou especialidade"
+            type="search"
+          />
+        </div>
+
+        <div className="mt-[37px] flex flex-wrap items-start gap-[14px]">
+          <SelectField label="Tipo de terapia" name="therapy" options={therapyOptions} value={filters.therapy} />
+          <SelectField label="Tema buscado" name="theme" options={themeOptions} value={filters.theme} />
+          <SelectField label="Disponibilidade" name="availability" options={availabilityOptions} value={filters.availability} />
+          <SelectField label="Preço" name="price" options={priceOptions} value={filters.price} />
+          <SelectField label="Avaliação" name="rating" options={ratingOptions} value={filters.rating} />
+          <input type="hidden" name="sort" value={filters.sort} />
+          <Link
+            href={routes.public.therapists as Route}
+            className="inline-flex h-[52px] w-[177px] items-center justify-center gap-2 rounded-full bg-brand-primary px-4 text-[15px] font-semibold text-white transition hover:bg-brand-primaryHover focus:outline-none focus:ring-4 focus:ring-ring/20"
+          >
+            Limpar Filtros
+            <Filter className="size-[17px]" />
+          </Link>
+          <button className="sr-only">Aplicar filtros</button>
+        </div>
+      </form>
+    </section>
+  );
+}
+
+function ResultsHeader({
+  activeFilterCount,
+  filters,
+  totalCount,
+}: {
+  activeFilterCount: number;
+  filters: TherapistSearchFilters;
+  totalCount: number;
+}) {
+  return (
+    <div className="mb-[26px] grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
+      <div>
+        <h2 className="text-[26px] font-extrabold leading-8 tracking-normal text-brand-deep">
+          Caminhos que podem fazer sentido para você
+        </h2>
+        <p className="mt-1 max-w-[600px] text-[15px] font-semibold leading-6 text-[#5e5a8a]">
+          Com calma, compare abordagens, histórias e formas de acolhimento.
+          <br />
+          Escolha quando sentir que encontrou alguém com quem deseja caminhar.
+        </p>
+        {activeFilterCount > 0 ? (
+          <p className="mt-2 text-xs font-bold text-brand-primary">
+            {activeFilterCount} filtro{activeFilterCount > 1 ? "s" : ""} ativo
+            {activeFilterCount > 1 ? "s" : ""}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="space-y-3 lg:text-right">
+        <p className="text-[16px] font-semibold leading-7 text-[#5e5a8a]">
+          Encontramos {totalCount} terapeuta{totalCount === 1 ? "" : "s"}
+        </p>
+        <form action={routes.public.therapists}>
+          {filters.q ? <input type="hidden" name="q" value={filters.q} /> : null}
+          {filters.therapy ? <input type="hidden" name="therapy" value={filters.therapy} /> : null}
+          {filters.theme ? <input type="hidden" name="theme" value={filters.theme} /> : null}
+          {filters.availability ? <input type="hidden" name="availability" value={filters.availability} /> : null}
+          {filters.price ? <input type="hidden" name="price" value={filters.price} /> : null}
+          {filters.rating ? <input type="hidden" name="rating" value={filters.rating} /> : null}
+          <label className="relative inline-flex h-[42px] w-[220px] items-center rounded-full border border-[#e2d1ec] bg-white text-[13px] font-bold text-[#5e5a8a] shadow-[0_6px_8px_rgba(38,20,51,0.04)]">
+            <span className="sr-only">Ordenar terapeutas</span>
+            <select
+              name="sort"
+              defaultValue={filters.sort}
+              className="h-full w-full appearance-none rounded-full bg-transparent px-[15px] pr-9 text-[13px] font-bold outline-none"
+            >
+              {sortOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  Ordenar por: {option.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-4 size-4 text-brand-primary" />
+          </label>
+          <button className="sr-only">Ordenar</button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function Rating({ rating, ratingLabel }: { rating: number; ratingLabel: string }) {
+  return (
+    <div className="flex items-center justify-end gap-2 text-[14px] font-extrabold text-brand-deep">
+      <span>{ratingLabel}</span>
+      <span className="flex gap-[1px] text-[#F4B84A]" aria-label={`${ratingLabel} de 5 estrelas`}>
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Star
+            key={index}
+            className={`size-[13px] ${index + 1 <= Math.round(rating) ? "fill-current" : ""}`}
+          />
+        ))}
+      </span>
+    </div>
+  );
+}
+
+function TherapistResultCard({ therapist }: { therapist: TherapistSearchCard }) {
+  const isVerified = therapist.highlightTone === "verified";
+  const specialty =
+    therapist.therapyName === "Terapia Integrativa"
+      ? "Terapeuta Integrativa"
+      : therapist.therapyName === "Terapia Floral"
+        ? "Terapeuta Floral"
+        : therapist.therapyName;
+
+  return (
+    <TESCard className="relative h-auto min-h-[300px] overflow-hidden rounded-[18px] border border-[rgba(226,209,236,0.75)] bg-white p-0 shadow-[0_8px_11px_rgba(38,20,51,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_18px_rgba(38,20,51,0.08)] sm:h-[300px]">
+      <div className="relative left-[11px] top-[13px] h-[208px] w-[178px] overflow-hidden rounded-[12px] bg-[#f7f0e8]">
+        <Image
+          src={therapist.image}
+          alt={`Retrato de ${therapist.name}`}
+          fill
+          sizes="178px"
+          className="object-cover object-center"
+        />
+      </div>
+
+      <div className="absolute left-[23px] top-[237px]">
+        <p className="text-[11px] font-semibold leading-none text-[#8c87b2]">Próximo horário</p>
+        <p className="mt-1 text-[18px] font-extrabold leading-normal text-brand-primary">
+          {therapist.nextSlotLabel}
+        </p>
+      </div>
+
+      <div className="absolute left-[215px] right-[184px] top-[20px] flex flex-wrap gap-[6px]">
+        <span
+          className={`inline-flex h-[25px] items-center justify-center rounded-full px-[6px] text-center text-[9px] font-bold ${
+            isVerified
+              ? "border border-[#f1e8f6] bg-[#f1e8f6] text-brand-primary"
+              : "border border-brand-primary bg-brand-primary text-white"
           }`}
         >
-          {page}
+          {therapist.highlight}
+        </span>
+        {therapist.hasVideo ? (
+          <span className="inline-flex h-[25px] items-center justify-center rounded-full border border-[#f1e8f6] bg-[#f1e8f6] px-[6px] text-center text-[9px] font-bold text-brand-primary">
+            Vídeo de apresentação
+          </span>
+        ) : null}
+      </div>
+
+      <div className="absolute left-[215px] top-[58px] flex items-start gap-2">
+        <h3 className="max-w-[196px] text-[24px] font-extrabold leading-normal tracking-normal text-brand-deep">
+          {therapist.name}
+        </h3>
+        <button aria-label={`Favoritar ${therapist.name}`} className="mt-0.5 text-brand-primary">
+          <Heart className="size-5" />
         </button>
-      ))}
-      <span className="text-tesText-muted">...</span>
-      <button
-        type="button"
-        className="grid size-9 place-items-center rounded-full border border-border bg-white text-sm font-extrabold text-tesText-secondary"
+      </div>
+
+      <p className="absolute left-[215px] top-[91px] h-[19px] w-[230px] text-[14px] font-bold leading-normal text-brand-primary">
+        {specialty}
+      </p>
+      <p className="absolute left-[215px] top-[119px] w-[217px] text-[11px] font-semibold leading-[21px] text-[#5e5a8a]">
+        {therapist.description}
+      </p>
+
+      <div className="absolute right-[24px] top-[63px] w-[160px] text-right">
+        <Rating rating={therapist.rating} ratingLabel={therapist.ratingLabel} />
+        <p className="mt-[7px] text-[12px] font-semibold leading-normal text-[#8c87b2]">
+          {therapist.reviewsLabel}
+        </p>
+      </div>
+
+      <div className="absolute left-[215px] top-[194px] flex w-[238px] flex-wrap gap-[3px] overflow-hidden">
+        {therapist.tags.slice(0, 3).map((tag) => (
+          <span
+            key={tag}
+            className="inline-flex h-5 items-center justify-center rounded-full bg-[#f1e8f6] px-3 text-[10px] font-semibold leading-[19px] text-[#825aa2]"
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+
+      <p className="absolute left-[215px] top-[251px] h-[25px] w-[170px] text-[17px] font-extrabold leading-normal text-brand-primary">
+        {therapist.priceLabel}
+      </p>
+
+      <Link
+        href={therapist.href as Route}
+        className="absolute right-[21px] top-[182px] flex h-[34px] w-[126px] items-center justify-center rounded-full bg-brand-primary px-2 text-center text-[9.5px] font-bold leading-[13px] text-white transition hover:bg-brand-primaryHover"
       >
-        6
-      </button>
-      <button
-        type="button"
-        className="grid size-10 place-items-center rounded-full border border-border bg-white text-brand-primary"
-        aria-label="Próxima página"
+        Conhecer terapeuta
+      </Link>
+      <Link
+        href={routes.public.reservation as Route}
+        className="absolute right-[21px] top-[220px] flex h-[28px] w-[126px] items-center justify-center rounded-full border border-[#e2d1ec] bg-white px-2 text-center text-[9.5px] font-bold leading-[13px] text-brand-primary transition hover:border-brand-lavender"
       >
-        <ChevronDown className="size-5 -rotate-90" />
-      </button>
+        Agendar sessão
+      </Link>
+    </TESCard>
+  );
+}
+
+function EmptyState() {
+  return (
+    <TESCard className="p-10 text-center">
+      <CalendarDays className="mx-auto size-10 text-brand-primary" />
+      <h3 className="mt-4 text-2xl font-extrabold text-brand-deep">Nenhum terapeuta encontrado</h3>
+      <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-6 text-tesText-secondary">
+        Tente limpar filtros ou buscar por outro tema. A escolha pode acontecer com calma, no seu tempo.
+      </p>
+      <TESButton href={routes.public.therapists} variant="secondary" className="mt-6">
+        Limpar filtros
+      </TESButton>
+    </TESCard>
+  );
+}
+
+function Pagination({ filters, totalPages }: { filters: TherapistSearchFilters; totalPages: number }) {
+  if (totalPages <= 1) return null;
+
+  const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
+
+  return (
+    <nav className="mt-[29px] flex flex-wrap items-center justify-center gap-[18px]" aria-label="Paginação">
+      {pages.map((page) => {
+        const params = toSearchParams(filters, { page });
+        const href = `${routes.public.therapists}${params ? `?${params}` : ""}`;
+        const isCurrent = page === filters.page;
+
+        return (
+          <Link
+            key={page}
+            href={href as Route}
+            aria-current={isCurrent ? "page" : undefined}
+            className={`grid size-[34px] place-items-center rounded-full text-[12px] font-bold ${
+              isCurrent
+                ? "border border-brand-primary bg-brand-primary text-white"
+                : "border border-[#e2d1ec] bg-white text-brand-primary"
+            }`}
+          >
+            {page}
+          </Link>
+        );
+      })}
     </nav>
   );
 }
 
-export default function TherapistsPage() {
+export default async function TherapistsPage({ searchParams }: TherapistsPageProps) {
+  const filters = parseTherapistSearchParams(searchParams);
+  const result = await getPublicTherapistSearchResult(filters);
+
   return (
-    <main className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_78%_2%,#FFF0E8_0%,rgba(255,240,232,0)_25%),radial-gradient(circle_at_8%_22%,#F7F1FF_0%,rgba(247,241,255,0)_30%),#FFFFFF] text-tesText-primary">
+    <main className="min-h-screen overflow-hidden bg-[linear-gradient(180deg,#FFFFFF_0%,#F8F5FF_42%,#FFFFFF_100%)] text-tesText-primary">
       <PublicHeader />
 
-      <section className="relative mx-auto max-w-[1680px] px-5 pb-8 pt-6 sm:px-8 lg:px-12">
+      <section className="relative mx-auto max-w-[1440px] px-5 pb-[29px] pt-[25px] sm:px-8 lg:px-[68px]">
         <HeroIllustration />
-        <div className="relative max-w-2xl py-8 lg:min-h-[300px]">
-          <h1 className="font-display text-5xl font-semibold leading-[1.04] text-brand-deep md:text-7xl">
-            Encontre alguém para{" "}
-            <em className="font-display font-light text-brand-primary">
+        <div className="relative max-w-[794px] lg:min-h-[261px]">
+          <h1 className="max-w-[794px] font-display text-[44px] font-light italic leading-[1.08] text-brand-deep md:text-[54px]">
+            <span className="block">Encontre alguém</span>
+            <span>para </span>
+            <em className="font-display font-semibold text-transparent [background:linear-gradient(90deg,#6c3d91_0%,#81bae0_100%)] bg-clip-text">
               caminhar com você.
             </em>
           </h1>
-          <p className="mt-6 max-w-xl text-lg font-semibold leading-8 text-tesText-secondary">
-            Cada jornada é única. Conheça terapeutas preparados para acolher o
-            momento que você está vivendo e encontre um caminho que faça sentido
-            para você.
+          <p className="mt-6 max-w-[530px] text-[16px] font-semibold leading-7 text-[#5e5a8a]">
+            {therapistSearchHero.body}
           </p>
         </div>
-
-        <TESInput
-          aria-label="Buscar terapeutas"
-          placeholder="O que você está buscando hoje?"
-          leftIcon={<Search className="size-7 shrink-0 text-brand-primary" />}
-          wrapperClassName="mt-2"
-        />
       </section>
 
-      <section className="mx-auto max-w-[1680px] px-5 py-8 sm:px-8 lg:px-12">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[repeat(6,minmax(0,1fr))_190px]">
-          {filters.map((filter) => (
-            <FilterButton key={filter.label} {...filter} />
-          ))}
-          <button className="flex h-12 items-center justify-center gap-3 rounded-xl bg-brand-primary px-4 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus:outline-none focus:ring-4 focus:ring-ring/20">
-            Limpar filtros
-            <Filter className="size-5" />
-          </button>
-        </div>
-      </section>
+      <SearchFilters filters={result.filters} themeOptions={result.options.themes} therapyOptions={result.options.therapies} />
 
-      <section className="mx-auto max-w-[1680px] px-5 pb-12 sm:px-8 lg:px-12">
-        <div className="mb-7 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
-          <div>
-            <h2 className="flex items-center gap-3 text-3xl font-extrabold tracking-normal text-brand-deep">
-              <Heart className="size-7 fill-brand-lavender text-brand-lavender" />
-              Caminhos que podem fazer sentido para você
-            </h2>
-            <p className="mt-4 max-w-2xl text-base font-semibold leading-7 text-tesText-secondary">
-              Com calma, compare abordagens, histórias e formas de acolhimento.
-              Escolha quando sentir que encontrou alguém com quem deseja
-              caminhar.
-            </p>
+      <section className="mx-auto max-w-[1440px] px-5 pb-[29px] pt-[41px] sm:px-8 lg:px-[68px]">
+        <ResultsHeader activeFilterCount={result.activeFilterCount} filters={result.filters} totalCount={result.totalCount} />
+
+        {result.therapists.length ? (
+          <div className="grid gap-x-[20px] gap-y-[20px] xl:grid-cols-2">
+            {result.therapists.map((therapist) => (
+              <TherapistResultCard key={`${therapist.slug}-${therapist.serviceTitle}`} therapist={therapist} />
+            ))}
           </div>
-          <div className="space-y-4 lg:text-right">
-            <p className="text-xl font-bold text-tesText-secondary">
-              Encontramos <span className="text-brand-deep">32 terapeutas</span>
-            </p>
-            <button className="inline-flex h-12 items-center gap-3 rounded-full border border-border bg-white px-6 text-sm font-extrabold text-tesText-secondary shadow-card">
-              Ordenar por: Relevância
-              <ChevronDown className="size-4 text-brand-primary" />
-            </button>
-          </div>
-        </div>
+        ) : (
+          <EmptyState />
+        )}
 
-        <div className="grid gap-5 xl:grid-cols-2">
-          {therapists.map((therapist) => (
-            <TherapistCard key={therapist.name} therapist={therapist} />
-          ))}
-        </div>
-
-        <Pagination />
+        <Pagination filters={result.filters} totalPages={result.totalPages} />
       </section>
 
-      <section className="mx-auto max-w-[1680px] px-5 pb-8 sm:px-8 lg:px-12">
-        <JourneyBanner />
+      <section className="mx-auto max-w-[1440px] px-5 pb-[62px] sm:px-8 lg:px-[68px]">
+        <div className="flex h-[178px] items-center justify-center rounded-[18px] border border-[rgba(226,209,236,0.4)] bg-[rgba(241,232,246,0.7)] shadow-[0_8px_10px_rgba(38,20,51,0.04)]">
+          <p className="text-center text-[26px] font-extrabold leading-8 text-brand-deep">Fazer banner novo</p>
+        </div>
       </section>
 
       <PublicFooter />

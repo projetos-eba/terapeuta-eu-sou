@@ -1,13 +1,27 @@
+versão: 2026-07-12
+fonte: project.md — MVP Transacional TES consolidado
+próxima revisão: ao alterar stack, perfis, planos ou integrações
+
+> **NUNCA:**
+>
+> - Inventar stack, rota, componente, integração, token, regra de negócio ou estrutura do Figma.
+> - Alterar código sem consultar as fontes relevantes listadas neste arquivo.
+> - Criar componente equivalente a um já existente em `src/components/`.
+> - Refatorar fora do escopo da solicitação recebida.
+> - Expor secrets, credenciais ou valores de `.env` em qualquer output.
+> - Afirmar que validação ocorreu sem tê-la executado de fato.
+> - Remover rota, componente ou migration sem plano de transição aprovado.
+> - Prometer cura, diagnóstico ou resultado garantido em qualquer copy ou comentário de código.
+> - Ignorar divergência entre Figma, código, docs e sitemap — registrar sempre.
+
 # AGENTS.md — Terapeuta Eu Sou
 
 Este arquivo orienta o trabalho do Codex neste repositório. Ele deve ser curto, operacional e complementar às fontes principais do projeto, sem repetir o conteúdo completo da documentação.
-
 Raiz real do projeto: `/Users/antoniofelipe/Projeto_Terapeuta_Eu_Sou`.
 
 ## 1. Papel do Codex
 
 O Codex atua como agente de desenvolvimento, manutenção, refatoração, controle de qualidade e auditoria de consistência do Terapeuta Eu Sou.
-
 Toda alteração deve respeitar:
 
 - a solicitação atual do usuário;
@@ -18,8 +32,7 @@ Toda alteração deve respeitar:
 - os tokens TES;
 - o código existente;
 - as regras de segurança e rastreabilidade deste arquivo.
-
-O produto deve manter uma experiência clara, acolhedora, premium, humana e responsável, sem promessa de cura, diagnóstico ou resultado garantido.
+  O produto deve manter uma experiência clara, acolhedora, premium, humana e responsável, sem promessa de cura, diagnóstico ou resultado garantido.
 
 ## 2. Ordem de leitura obrigatória
 
@@ -32,8 +45,7 @@ Antes de alterar arquivos, ler somente o necessário para a tarefa, nesta ordem:
 5. `docs/product/routes-map.md`.
 6. `README.md`.
 7. Arquivos diretamente afetados pela tarefa.
-
-Consultar documentos adicionais somente quando necessário e solicitado:
+   Consultar documentos adicionais somente quando necessário e solicitado:
 
 - `docs/design-system/tokens.md`: tokens, design tokens.
 - `docs/product/product.md`: entender sobre o produto.
@@ -46,8 +58,7 @@ Consultar documentos adicionais somente quando necessário e solicitado:
 - `docs/design-system/qa-checklist.md`: QA detalhado.
 - `docs/design-system/implementation-notes.md`: arquitetura planejada, setup, permissões e variáveis.
 - `skills/recreate-figma-pages/*`: recriação de telas rasterizadas do Figma.
-
-Não alterar código, tokens, rotas ou documentação sem consultar as fontes relevantes.
+  Não alterar código, tokens, rotas ou documentação sem consultar as fontes relevantes.
 
 ## 3. Fontes de verdade
 
@@ -63,8 +74,7 @@ Quando houver conflito, usar esta prioridade:
 8. `docs/design-system/tokens.md`.
 9. Código existente.
 10. Padrões inferidos por recorrência documentada.
-
-Regras de conflito:
+    Regras de conflito:
 
 - Registrar a inconsistência explicitamente.
 - Explicar impacto e risco.
@@ -79,29 +89,39 @@ Arquivo principal:
 - Nome: `Projeto Terapeuta Eu Sou Atualizado`.
 - File key: `OSXJi8tknHHCj82MTY2NbG`.
 - URL prioritária: `https://www.figma.com/design/OSXJi8tknHHCj82MTY2NbG/Projeto-Terapeuta-Eu-Sou-Atualizado?node-id=12272-2`.
-
-Páginas essenciais:
-
+  Páginas essenciais:
 - `↳ Jornadas dos Usuários`, node `12272:2`, frame principal `12280:2`: navegação, fluxos e permissões.
 - `↳ Design Telas`, node `5999:10563`: telas por perfil e referência visual.
 - `ícones`, node `12450-506`: componentes de ícone antes de criar qualquer placeholder.
 - `↳ Sitemap`, node `12259:2`: estrutura visual de navegação.
 - `↳ Design System`, node `12304-2`: foundations, component library, product patterns e `Design System / Phase 2 Expansion`.
-
-Status de acesso registrado:
-
+  Status de acesso registrado:
 - Acessado com sucesso via MCP para os nodes `12272:2`, `5999:10563` e `12259:2`.
 - `ícones` e `↳ Design System` existem como páginas essenciais, mas seus node IDs diretos ainda precisam ser resolvidos para auditorias futuras via MCP.
-
-Ao trabalhar com Figma:
-
+  Ao trabalhar com Figma:
 - Usar `↳ Jornadas dos Usuários` para fluxo e permissão.
 - Usar `↳ Design Telas` para comparação visual.
 - Usar `↳ Design System` para componentes, estilos e tokens.
 - Usar `ícones` antes de desenhar ícones locais.
 - Registrar node IDs relevantes no resumo final.
+  Se o Figma não estiver acessível, declarar o bloqueio e continuar apenas com fontes locais.
 
-Se o Figma não estiver acessível, declarar o bloqueio e continuar apenas com fontes locais.
+## Perfis e planos
+
+| Perfil                 | Área logada | Plano         | Enum técnico   | Prefixo de rota |
+| ---------------------- | ----------- | ------------- | -------------- | --------------- |
+| Paciente               | `/app`      | —             | —              | `/app`          |
+| Terapeuta Free         | `/basico`   | Básico / Free | `free`         | `/basico`       |
+| Terapeuta Premium      | `/pro`      | Premium       | `premium`      | `/pro`          |
+| Terapeuta Premium Plus | `/plus`     | Premium Plus  | `premium_plus` | `/plus`         |
+| Admin                  | `/admin`    | —             | —              | `/admin`        |
+
+Regras:
+
+- Em código, usar sempre os enums técnicos: `free`, `premium`, `premium_plus`.
+- `Pro` e `Plus` são identificadores técnicos de rota, não copy de interface.
+- Nomes comerciais (Básico, Premium, Premium Plus) são decisão de produto e UX.
+- `src/lib/routes.ts` é a fonte canônica de rotas. `src/lib/permissions.ts` é a fonte canônica de permissões e recursos por plano.
 
 ## 5. Implementação
 
@@ -114,9 +134,13 @@ Stack real identificada:
 - CSS Variables TES em `src/app/globals.css`.
 - shadcn/ui planejado via `components.json`.
 - `lucide-react`, `class-variance-authority`, `clsx` e `tailwind-merge`.
-
-Regras:
-
+- Supabase Postgres (banco transacional) + Supabase Auth + RLS + Edge Functions.
+- Sempre seguir as boas práticas de desenvolvimento de software, e arquitetura moderna.
+- Stripe: pagamentos de sessão (Separate Charges and Transfers) e assinaturas (Stripe Billing) via Stripe Connect Express.
+- Zoom: sessões online via API/SDK (Server-to-Server OAuth), link gerado apenas após pagamento confirmado.
+- Storybook: documentado, não instalado.
+- Observabilidade: não identificado nos arquivos analisados.
+  Regras:
 - Usar `src/lib/routes.ts` para rotas.
 - Usar `src/lib/permissions.ts` para permissões e recursos por plano.
 - Usar `docs/design-system/tokens.md` como fonte única de tokens.
@@ -127,35 +151,54 @@ Regras:
 - Não quebrar rotas canônicas.
 - Não criar abstrações sem necessidade real.
 - Manter alterações pequenas e rastreáveis.
-
-Estado real importante:
-
-- Storybook está documentado, mas não instalado.
-- Componentes React do Design System ainda não estão implementados.
-- Autenticação, banco de dados, pagamento, email, vídeo, IA, storage, observabilidade e deploy: `Não identificado nos arquivos analisados.`
+  Estado real importante:
+- Storybook documentado, não instalado.
+- Componentes React do Design System ainda não implementados.
+- `src/lib/routes.ts` e `src/lib/permissions.ts` existem como fontes canônicas de rotas e permissões.
+- `supabase/` parcialmente estruturado com migrations e Edge Function `match-therapies`.
+- Stripe e Zoom: previstos na arquitetura, status de implementação não confirmado nos arquivos analisados.
 
 ## 6. QA e definição de pronto
 
 Uma tarefa só pode ser considerada pronta quando:
 
 - respeita Figma e fontes de verdade aplicáveis;
-- respeita sitemap, rotas e permissões;
-- respeita `design-system.md` e `tokens.md`;
-- não cria inconsistências visuais ou padrões paralelos;
+- respeita `src/lib/routes.ts` e `src/lib/permissions.ts`;
+- usa tokens TES (`docs/design-system/tokens.md`);
+- segue linguagem acolhedora e responsável — sem prometer cura, diagnóstico ou resultado;
 - não expõe segredos;
-- passa nas validações disponíveis;
-- registra comandos executados;
-- registra limitações e riscos;
+- não salva dados individualizados do Match sem decisão LGPD registrada;
+- valida pagamento por webhook Stripe (não apenas por redirecionamento);
+- usa idempotência em operações Stripe;
+- usa `session_payments` como fonte única de pagamentos de sessão;
+- registra ledger para movimentações financeiras em `payment_ledger_entries`;
+- cria repasses a partir de `transfer_batches` e `transfer_batch_items`;
+- grava snapshot de preço e duração no momento da reserva;
+- gera link Zoom apenas após pagamento confirmado via webhook;
+- protege `zoom_start_url_encrypted` por RLS (somente terapeuta responsável e admin autorizado);
+- protege dados por RLS conforme perfil;
+- passa em `npm run typecheck`, `npm run lint` e `npm run build`;
+- documenta limitações e riscos;
 - lista arquivos alterados.
-
-Validações padrão:
-
+  Validações padrão:
 - Conferir comandos disponíveis no `README.md` e em `package.json`.
 - Rodar `npm run typecheck`, `npm run lint` e `npm run build` quando o ambiente permitir.
 - Para UI, validar responsividade e comparar com Figma ou `Referencias/{perfil}` quando aplicável.
 - Para docs, confirmar que não há referências quebradas nem duplicação desnecessária.
+  Se uma validação não for executada, explicar o motivo.
 
-Se uma validação não for executada, explicar o motivo.
+## Gate de confirmação
+
+Pausar e pedir decisão explícita antes de:
+
+- alterar ou criar rota em `src/lib/routes.ts`;
+- modificar schema de banco, migration ou policy RLS;
+- remover ou renomear componente, hook ou integração existente;
+- alterar arquitetura, providers ou layouts;
+- adicionar nova dependência ao `package.json`;
+- alterar comportamento de autenticação ou permissão;
+- criar tabela nova em Supabase sem migration explícita.
+  Para alterações documentais, de estilo ou de texto em componente isolado: executar e reportar no resultado.
 
 ## 7. Segurança
 
@@ -169,36 +212,7 @@ Nunca:
 - copiar chaves privadas para documentação;
 - registrar segredos em exemplos de código;
 - assumir valores de ambiente sem confirmação.
-
-Ao encontrar risco de segurança, registrar o risco sem expor o segredo.
-
-## 8. O que o Codex não deve fazer
-
-Nunca inventar:
-
-- stack;
-- rotas;
-- componentes;
-- scripts;
-- integrações;
-- regras de negócio;
-- estrutura do Figma;
-- tokens;
-- permissões;
-- autenticação;
-- banco de dados;
-- deploy.
-
-Nunca:
-
-- ignorar documentação central;
-- criar padrões visuais paralelos;
-- criar tokens sem justificativa;
-- modificar comportamento fora da solicitação;
-- ocultar conflitos entre Figma, docs e código;
-- afirmar que algo foi validado sem validação real.
-
-Quando não souber algo, registrar: `Não identificado nos arquivos analisados.`
+  Ao encontrar risco de segurança, registrar o risco sem expor o segredo.
 
 ## 9. Atualização contínua
 
@@ -219,28 +233,39 @@ Atualizar este arquivo quando mudarem:
 - banco de dados;
 - deploy;
 - processo de QA.
+  O Codex deve sugerir atualização do `AGENTS.md` quando detectar desatualização.
 
-O Codex deve sugerir atualização do `AGENTS.md` quando detectar desatualização.
+## 9.1 Skills locais por página
 
-## 10. Formato esperado de entrega
+Toda página implementada ou refatorada deve ter uma skill local correspondente em `skills/`, com `SKILL.md` e, quando aplicável, `agents/openai.yaml`.
 
-Toda entrega deve conter:
+Regras:
 
-- **Resumo:** o que foi feito.
-- **Arquivos alterados:** lista completa.
-- **Validação:** como foi validado.
-- **Comandos executados:** comandos relevantes.
-- **Limitações:** o que não foi possível verificar.
-- **Riscos:** impactos ou pendências.
-- **Próximos passos:** recomendações objetivas.
+- A skill deve registrar fontes obrigatórias, node(s) Figma, rotas, componentes, dados dinâmicos, fallback, checklist de QA, copy responsável e pendências conhecidas da página.
+- A skill deve ser atualizada junto com a página sempre que mudarem layout, fonte de dados, rota, componente crítico, regra de negócio ou documentação relacionada.
+- Exceção: páginas de perfil de terapeuta não usam uma única skill por plano. Devem existir skills por função contemplando simultaneamente Básico, Premium e Premium Plus, para evitar divergência entre os três planos.
 
-## 11. Recomendações futuras
+## 9.2 Banco, migrations e seeds
 
-Skills úteis para este projeto:
+Toda alteração de schema, view, function, policy, índice, enum ou projeção pública do Supabase deve ter migration versionada em `supabase/migrations/`.
 
-- `tes-token-sync`: sincronizar `globals.css` e `tailwind.config.ts` com `tokens.md`.
-- `tes-storybook-sync`: criar Storybook a partir de `FIGMA_STORYBOOK_SYNC_MAP.md`.
-- `tes-route-qa`: validar páginas contra sitemap, rotas e permissões.
-- `tes-visual-qa`: comparar UI com Figma e referências locais.
-- `tes-copy-guard`: revisar linguagem TES.
-- `tes-security-env-audit`: revisar variáveis de ambiente e exposição de segredos.
+Regras:
+
+- Seeds, mocks e dados de desenvolvimento devem ser idempotentes e versionados em `supabase/seed.sql` ou em arquivo de seed documentado.
+- Nunca criar, ajustar ou popular banco de forma ad hoc sem deixar arquivo rastreável no repositório.
+- Migrations devem expor apenas dados compatíveis com a superfície pública/autenticada necessária, sem campos internos ou sensíveis.
+- Quando Docker/Supabase local impedir validação, registrar exatamente quais comandos falharam e qual validação ficou pendente.
+
+## 10. Formato de entrega
+
+| Seção                     | Conteúdo esperado                                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------- |
+| **Resumo**                | O que foi feito e por quê                                                              |
+| **Arquivos alterados**    | Lista completa                                                                         |
+| **Validação**             | Como foi validado — Figma, lint, build ou leitura manual                               |
+| **Comandos executados**   | Lista; registrar falha quando ocorrer                                                  |
+| **Limitações/Pendências** | O que não foi possível verificar ou ficou pendente — nunca afirmar o que não aconteceu |
+| **Riscos**                | Impactos, conflitos de fonte, e outras coisas mais                                     |
+| **Próximos passos**       | Recomendações objetivas relacionadas à entrega                                         |
+
+Skills planejadas para este projeto estão documentadas em `docs/` e no backlog técnico do `project.md` (seção 19).

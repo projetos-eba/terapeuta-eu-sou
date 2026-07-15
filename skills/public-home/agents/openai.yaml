@@ -1,0 +1,6 @@
+interface:
+  display_name: "Public Home"
+  short_description: "Maintain the TES public home page with Figma, Supabase views, routes, fallback content, and QA."
+  default_prompt: "Use $public-home to implement, refactor, audit, or document the Terapeuta Eu Sou public home page `/`, preserving Figma node 13273:1844, TES tokens, canonical routes, public Supabase views, fallback content, and responsible copy."
+policy:
+  allow_implicit_invocation: true

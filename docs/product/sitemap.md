@@ -42,6 +42,8 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 - `/para-terapeutas/planos`: planos Básico, Pro e Plus.
 - `/entrar`: login.
 - `/cadastro`: cadastro.
+- `/terapeuta/login`: login separado para terapeuta.
+- `/terapeuta/cadastro`: cadastro inicial de terapeuta.
 - `/reset-senha`: recuperação de senha.
 - `/ajuda`: ajuda pública.
 - `/termos`: termos de uso.
@@ -52,7 +54,7 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 - Jornada guiada: `/` -> `/como-funciona` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`.
 - Busca direta: `/` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso`.
 - Terapias: `/` -> `/terapias` -> `/terapias/:slug` -> `/terapeutas`.
-- Terapeutas visitantes: `/` -> `/para-terapeutas` -> `/para-terapeutas/planos` -> `/cadastro`.
+- Terapeutas visitantes: `/` -> `/para-terapeutas` -> `/para-terapeutas/planos` -> `/terapeuta/cadastro?plan=free|premium|premium_plus` -> `/terapeuta/login` -> `/basico`, `/pro` ou `/plus`.
 
 ## Paciente
 

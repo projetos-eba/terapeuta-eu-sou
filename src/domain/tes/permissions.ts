@@ -1,4 +1,5 @@
 import { TherapistPlan } from "./enums";
+import { therapistPlanDefinitions, therapistPlanFeatureDefinitions } from "./plan-definitions";
 import { isTherapistPlanAtLeast } from "./plans";
 
 export type AuraAccessLevel = "limited" | "full";
@@ -17,27 +18,19 @@ export type TherapistCapability =
 export const therapistPlanCapabilities: Record<
   TherapistPlan,
   TherapistCapability[]
-> = {
-  [TherapistPlan.Free]: ["operation_essentials"],
-  [TherapistPlan.Premium]: [
-    "operation_essentials",
-    "advanced_metrics",
-    "aura_limited",
-    "agenda_insights",
-    "request_new_therapy",
-  ],
-  [TherapistPlan.PremiumPlus]: [
-    "operation_essentials",
-    "advanced_metrics",
-    "aura_limited",
-    "aura_full",
-    "full_crm",
-    "strategic_reviews",
-    "advanced_financials",
-    "agenda_insights",
-    "request_new_therapy",
-  ],
-};
+> = Object.fromEntries(
+  therapistPlanDefinitions.map((plan) => {
+    const capabilities = plan.features
+      .map((featureCode) =>
+        therapistPlanFeatureDefinitions.find(
+          (feature) => feature.code === featureCode,
+        )?.capability,
+      )
+      .filter((capability): capability is TherapistCapability => Boolean(capability));
+
+    return [plan.code, Array.from(new Set(capabilities))];
+  }),
+) as Record<TherapistPlan, TherapistCapability[]>;
 
 export function canUseTherapistCapability(
   plan: TherapistPlan,

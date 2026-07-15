@@ -4,6 +4,12 @@ Projeto web em Next.js 14, TypeScript, Tailwind CSS e shadcn/ui, com tokens TES 
 
 O backend planejado será Supabase: banco Postgres, autenticação, storage e Supabase Edge Functions para regras de backend. A base local do domínio transacional já começa em `supabase/`, mas o frontend ainda não usa SDK Supabase.
 
+A home pública (`/`) consulta views públicas Supabase via REST quando `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` estão configuradas. Sem essas variáveis, ou com valores placeholder, a página usa fallback local e continua renderizando sem expor segredos.
+
+A página pública `/para-terapeutas` usa o catálogo único de planos em `src/domain/tes/plan-definitions.ts`. Nesta etapa os `stripePriceId` permanecem `null`; o frontend envia somente o código do plano (`free`, `premium`, `premium_plus`) no cadastro, e Checkout/webhook Stripe ficam como próxima etapa de backend.
+
+O fluxo inicial de terapeuta usa rotas separadas em `/terapeuta/cadastro` e `/terapeuta/login`. O cadastro chama Supabase Auth/Admin via REST no servidor, sem `@supabase/supabase-js`, cria `profiles.role = therapist` e `therapist_profiles` em `draft`. Para cadastro real, `SUPABASE_SERVICE_ROLE_KEY` precisa existir apenas no ambiente server-side; sem ela, as telas renderizam e o submit retorna erro controlado de configuração ausente.
+
 ## Pré-requisitos
 
 - Node.js 20+
