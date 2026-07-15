@@ -977,6 +977,198 @@ set
   is_active = excluded.is_active,
   updated_at = now();
 
+insert into public.matching_themes (
+  id,
+  name,
+  slug,
+  description,
+  image_url,
+  sort_order,
+  is_active
+)
+values
+  ('71000000-0000-4000-8000-000000000001', 'Equilíbrio emocional', 'equilibrio-emocional', 'Para momentos em que você busca mais pausa, presença e estabilidade interna.', '/home/tablet-video-session.png', 1, true),
+  ('71000000-0000-4000-8000-000000000002', 'Autoestima e poder pessoal', 'autoestima-poder-pessoal', 'Para fortalecer confiança, amor-próprio e relação consigo.', '/home/therapist-ana.png', 2, true),
+  ('71000000-0000-4000-8000-000000000003', 'Relacionamentos', 'relacionamentos', 'Para olhar vínculos, comunicação e convivência com mais cuidado.', '/client-auth/client-auth-journey-room.png', 3, true),
+  ('71000000-0000-4000-8000-000000000004', 'Espiritualidade', 'espiritualidade', 'Para quem deseja conexão, sentido e escuta interior.', '/for-therapists/session-preview.png', 4, true),
+  ('71000000-0000-4000-8000-000000000005', 'Estresse e ansiedade', 'estresse-ansiedade', 'Para rotina intensa, preocupação e necessidade de reorganizar o ritmo.', '/home/tablet-video-session.png', 5, true),
+  ('71000000-0000-4000-8000-000000000006', 'Mudanças de vida', 'mudancas-de-vida', 'Para transições, recomeços e fases em movimento.', '/home/hero-section-realistic-fade.png', 6, true),
+  ('71000000-0000-4000-8000-000000000007', 'Propósito e direção', 'proposito-direcao', 'Para clarear prioridades, escolhas e próximos passos.', '/for-therapists/hero-therapist-space.png', 7, true),
+  ('71000000-0000-4000-8000-000000000008', 'Luto e despedidas', 'luto-despedidas', 'Para atravessar perdas, encerramentos e saudades com cuidado.', '/home/tablet-video-session.png', 8, true),
+  ('71000000-0000-4000-8000-000000000009', 'Corpo e energia', 'corpo-energia', 'Para perceber sinais do corpo, vitalidade e presença.', '/for-therapists/session-preview.png', 9, true),
+  ('71000000-0000-4000-8000-000000000010', 'Criatividade e expressão', 'criatividade-expressao', 'Para desbloquear expressão, voz própria e sensibilidade.', '/home/hero-section-realistic-fade.png', 10, true)
+on conflict (slug) do update
+set
+  name = excluded.name,
+  description = excluded.description,
+  image_url = excluded.image_url,
+  sort_order = excluded.sort_order,
+  is_active = excluded.is_active,
+  updated_at = now();
+
+insert into public.matching_interests (
+  id,
+  theme_id,
+  name,
+  slug,
+  sort_order,
+  is_active
+)
+values
+  ('72000000-0000-4000-8000-000000000001', '71000000-0000-4000-8000-000000000001', 'Acolher emoções', 'acolher-emocoes', 1, true),
+  ('72000000-0000-4000-8000-000000000002', '71000000-0000-4000-8000-000000000001', 'Equilíbrio emocional', 'equilibrio-emocional-interesse', 2, true),
+  ('72000000-0000-4000-8000-000000000003', '71000000-0000-4000-8000-000000000001', 'Leveza na rotina', 'leveza-na-rotina', 3, true),
+  ('72000000-0000-4000-8000-000000000004', '71000000-0000-4000-8000-000000000002', 'Amor-próprio', 'amor-proprio', 1, true),
+  ('72000000-0000-4000-8000-000000000005', '71000000-0000-4000-8000-000000000002', 'Autoconfiança', 'autoconfianca', 2, true),
+  ('72000000-0000-4000-8000-000000000006', '71000000-0000-4000-8000-000000000002', 'Limites pessoais', 'limites-pessoais', 3, true),
+  ('72000000-0000-4000-8000-000000000007', '71000000-0000-4000-8000-000000000003', 'Comunicação afetiva', 'comunicacao-afetiva', 1, true),
+  ('72000000-0000-4000-8000-000000000008', '71000000-0000-4000-8000-000000000003', 'Vínculos familiares', 'vinculos-familiares', 2, true),
+  ('72000000-0000-4000-8000-000000000009', '71000000-0000-4000-8000-000000000003', 'Relações amorosas', 'relacoes-amorosas', 3, true),
+  ('72000000-0000-4000-8000-000000000010', '71000000-0000-4000-8000-000000000004', 'Conexão espiritual', 'conexao-espiritual', 1, true),
+  ('72000000-0000-4000-8000-000000000011', '71000000-0000-4000-8000-000000000004', 'Intuição', 'intuicao', 2, true),
+  ('72000000-0000-4000-8000-000000000012', '71000000-0000-4000-8000-000000000004', 'Rituais de presença', 'rituais-de-presenca', 3, true),
+  ('72000000-0000-4000-8000-000000000013', '71000000-0000-4000-8000-000000000005', 'Ansiedade', 'ansiedade', 1, true),
+  ('72000000-0000-4000-8000-000000000014', '71000000-0000-4000-8000-000000000005', 'Sobrecarga mental', 'sobrecarga-mental', 2, true),
+  ('72000000-0000-4000-8000-000000000015', '71000000-0000-4000-8000-000000000005', 'Sono e descanso', 'sono-descanso', 3, true),
+  ('72000000-0000-4000-8000-000000000016', '71000000-0000-4000-8000-000000000006', 'Recomeços', 'recomecos-match', 1, true),
+  ('72000000-0000-4000-8000-000000000017', '71000000-0000-4000-8000-000000000006', 'Transições de vida', 'transicoes-de-vida', 2, true),
+  ('72000000-0000-4000-8000-000000000018', '71000000-0000-4000-8000-000000000006', 'Medo do futuro', 'medo-do-futuro', 3, true),
+  ('72000000-0000-4000-8000-000000000019', '71000000-0000-4000-8000-000000000007', 'Clareza interior', 'clareza-interior', 1, true),
+  ('72000000-0000-4000-8000-000000000020', '71000000-0000-4000-8000-000000000007', 'Escolhas profissionais', 'escolhas-profissionais', 2, true),
+  ('72000000-0000-4000-8000-000000000021', '71000000-0000-4000-8000-000000000007', 'Propósito', 'proposito', 3, true),
+  ('72000000-0000-4000-8000-000000000022', '71000000-0000-4000-8000-000000000008', 'Saudade', 'saudade', 1, true),
+  ('72000000-0000-4000-8000-000000000023', '71000000-0000-4000-8000-000000000008', 'Encerramento de ciclos', 'encerramento-de-ciclos', 2, true),
+  ('72000000-0000-4000-8000-000000000024', '71000000-0000-4000-8000-000000000008', 'Acolhimento do luto', 'acolhimento-do-luto', 3, true),
+  ('72000000-0000-4000-8000-000000000025', '71000000-0000-4000-8000-000000000009', 'Relaxamento corporal', 'relaxamento-corporal', 1, true),
+  ('72000000-0000-4000-8000-000000000026', '71000000-0000-4000-8000-000000000009', 'Energia vital', 'energia-vital', 2, true),
+  ('72000000-0000-4000-8000-000000000027', '71000000-0000-4000-8000-000000000009', 'Sensação de sobrecarga', 'sensacao-de-sobrecarga', 3, true),
+  ('72000000-0000-4000-8000-000000000028', '71000000-0000-4000-8000-000000000010', 'Expressar sentimentos', 'expressar-sentimentos', 1, true),
+  ('72000000-0000-4000-8000-000000000029', '71000000-0000-4000-8000-000000000010', 'Criar novos caminhos', 'criar-novos-caminhos', 2, true),
+  ('72000000-0000-4000-8000-000000000030', '71000000-0000-4000-8000-000000000010', 'Voz própria', 'voz-propria', 3, true)
+on conflict (slug) do update
+set
+  theme_id = excluded.theme_id,
+  name = excluded.name,
+  sort_order = excluded.sort_order,
+  is_active = excluded.is_active,
+  updated_at = now();
+
+update public.matching_versions
+set status = 'archived', updated_at = now()
+where status = 'published'
+  and id <> '73000000-0000-4000-8000-000000000001';
+
+insert into public.matching_versions (
+  id,
+  status,
+  version,
+  published_at
+)
+values (
+  '73000000-0000-4000-8000-000000000001',
+  'published',
+  1,
+  now()
+)
+on conflict (version) do update
+set
+  status = excluded.status,
+  published_at = excluded.published_at,
+  updated_at = now();
+
+insert into public.matching_therapy_settings (therapy_id, is_visible_in_matching)
+select id, true
+from public.therapies
+where slug in ('terapia-integrativa', 'terapia-floral', 'meditacao-guiada', 'reiki', 'aromaterapia')
+on conflict (therapy_id) do update
+set
+  is_visible_in_matching = excluded.is_visible_in_matching,
+  updated_at = now();
+
+delete from public.matching_weights
+where version_id = '73000000-0000-4000-8000-000000000001';
+
+insert into public.matching_weights (
+  version_id,
+  therapy_id,
+  theme_id,
+  interest_id,
+  weight,
+  reason,
+  is_active
+)
+select
+  '73000000-0000-4000-8000-000000000001'::uuid,
+  therapies.id,
+  matching_themes.id,
+  null::uuid,
+  weights.weight,
+  weights.reason,
+  true
+from (
+  values
+    ('terapia-integrativa', 'equilibrio-emocional', 5, 'Amplo acolhimento para organizar emoções.'),
+    ('terapia-integrativa', 'mudancas-de-vida', 5, 'Apoia transições e recomeços com escuta.'),
+    ('terapia-integrativa', 'proposito-direcao', 4, 'Ajuda a observar escolhas e próximos passos.'),
+    ('terapia-floral', 'equilibrio-emocional', 5, 'Pode apoiar equilíbrio emocional com linguagem complementar.'),
+    ('terapia-floral', 'autoestima-poder-pessoal', 4, 'Pode apoiar relação consigo e autocuidado.'),
+    ('terapia-floral', 'luto-despedidas', 4, 'Acolhe fases delicadas sem promessa de resultado.'),
+    ('meditacao-guiada', 'estresse-ansiedade', 5, 'Ajuda a criar pausa e presença.'),
+    ('meditacao-guiada', 'proposito-direcao', 4, 'Favorece clareza por meio de presença.'),
+    ('meditacao-guiada', 'corpo-energia', 4, 'Convida a perceber corpo e respiração.'),
+    ('reiki', 'corpo-energia', 5, 'Prática energética complementar.'),
+    ('reiki', 'espiritualidade', 5, 'Pode apoiar conexão e presença.'),
+    ('reiki', 'equilibrio-emocional', 4, 'Pode favorecer relaxamento e calma.'),
+    ('aromaterapia', 'estresse-ansiedade', 5, 'Pode apoiar pausas sensoriais e descanso.'),
+    ('aromaterapia', 'corpo-energia', 4, 'Trabalha presença sensorial e vitalidade.'),
+    ('aromaterapia', 'criatividade-expressao', 3, 'Pode apoiar rituais e expressão sensível.')
+) as weights(therapy_slug, theme_slug, weight, reason)
+join public.therapies on therapies.slug = weights.therapy_slug
+join public.matching_themes on matching_themes.slug = weights.theme_slug;
+
+insert into public.matching_weights (
+  version_id,
+  therapy_id,
+  theme_id,
+  interest_id,
+  weight,
+  reason,
+  is_active
+)
+select
+  '73000000-0000-4000-8000-000000000001'::uuid,
+  therapies.id,
+  null::uuid,
+  matching_interests.id,
+  weights.weight,
+  weights.reason,
+  true
+from (
+  values
+    ('terapia-integrativa', 'acolher-emocoes', 5, 'Acolhimento emocional amplo.'),
+    ('terapia-integrativa', 'transicoes-de-vida', 5, 'Apoia mudanças e reorganização.'),
+    ('terapia-integrativa', 'clareza-interior', 4, 'Ajuda a nomear escolhas.'),
+    ('terapia-integrativa', 'comunicacao-afetiva', 4, 'Pode apoiar conversas e vínculos.'),
+    ('terapia-floral', 'amor-proprio', 5, 'Apoio complementar para autocuidado.'),
+    ('terapia-floral', 'acolhimento-do-luto', 4, 'Acolhe fases sensíveis.'),
+    ('terapia-floral', 'equilibrio-emocional-interesse', 5, 'Foco em equilíbrio emocional.'),
+    ('terapia-floral', 'limites-pessoais', 4, 'Apoia percepção de limites.'),
+    ('meditacao-guiada', 'ansiedade', 5, 'Cria pausa diante da preocupação.'),
+    ('meditacao-guiada', 'sono-descanso', 5, 'Favorece descanso e presença.'),
+    ('meditacao-guiada', 'sobrecarga-mental', 5, 'Ajuda a desacelerar.'),
+    ('meditacao-guiada', 'relaxamento-corporal', 4, 'Convida o corpo à pausa.'),
+    ('reiki', 'energia-vital', 5, 'Relação direta com energia e presença.'),
+    ('reiki', 'conexao-espiritual', 5, 'Apoia conexão espiritual.'),
+    ('reiki', 'intuicao', 4, 'Pode apoiar escuta interior.'),
+    ('reiki', 'sensacao-de-sobrecarga', 4, 'Pode promover sensação de leveza.'),
+    ('aromaterapia', 'sono-descanso', 5, 'Rituais sensoriais para descanso.'),
+    ('aromaterapia', 'rituais-de-presenca', 4, 'Apoia práticas de presença.'),
+    ('aromaterapia', 'expressar-sentimentos', 3, 'Pode abrir espaço sensorial para expressão.'),
+    ('aromaterapia', 'relaxamento-corporal', 4, 'Apoia relaxamento por via sensorial.')
+) as weights(therapy_slug, interest_slug, weight, reason)
+join public.therapies on therapies.slug = weights.therapy_slug
+join public.matching_interests on matching_interests.slug = weights.interest_slug;
+
 insert into public.availability_exceptions (
   id,
   therapist_profile_id,

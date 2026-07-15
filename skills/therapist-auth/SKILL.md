@@ -75,6 +75,7 @@ Backend:
 
 - Layout simples e centralizado.
 - Usar `PublicLogo`, fundo lavanda claro, card central, coluna contextual e formulário acessível.
+- No mobile, o formulário deve aparecer antes do container explicativo/checklist.
 - Labels reais, mensagens de erro por campo, foco visível e CTAs com mínimo de 44px.
 - Explicar que perfil público, documentos e conta bancária são recomendados depois, sem bloquear o primeiro acesso.
 - Nunca prometer renda, aprovação automática, cura, diagnóstico ou resultado garantido.

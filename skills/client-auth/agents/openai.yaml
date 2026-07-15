@@ -1,0 +1,24 @@
+name: client-auth
+version: 2026-07-15
+description: Fluxo público de cadastro e login separados para clientes no Terapeuta Eu Sou.
+entrypoint: SKILL.md
+sources:
+  - AGENTS.md
+  - docs/product/sitemap.md
+  - docs/product/routes-map.md
+  - docs/product/page-inventory.md
+  - docs/design-system/design-system.md
+  - src/lib/routes.ts
+  - src/features/client-auth/
+routes:
+  - /cliente/cadastro
+  - /cliente/login
+api:
+  - /api/auth/client/signup
+  - /api/auth/client/login
+pending:
+  - email_confirmation
+  - password_recovery
+  - authenticated_app_guard
+  - lgpd_consent_audit
+  - rate_limit_captcha_antifraud

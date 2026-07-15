@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { ArrowRight, Check, Star } from "lucide-react";
+import { ArrowRight, Star } from "lucide-react";
 
 import { PublicFooter, PublicHeader, TESButton } from "@/components/tes";
 import { TherapistPlan, getPlanSignupHref } from "@/domain/tes";
@@ -55,16 +55,19 @@ function Hero() {
           </TESButton>
         </div>
 
-        <div className="mt-12 grid w-full max-w-[954px] gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-8">
+        <div className="mt-8 grid w-full max-w-[954px] gap-2 sm:mt-12 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 lg:gap-8">
           {trustItems.map((item) => {
             const Icon = item.icon;
 
             return (
               <div
                 key={item.label}
-                className="flex items-center justify-center gap-3 rounded-full bg-white/70 px-4 py-3 text-sm font-extrabold text-[#534c99] shadow-card lg:justify-start lg:bg-transparent lg:px-0 lg:py-0 lg:shadow-none"
+                className="flex min-h-10 items-center justify-center gap-2 rounded-full bg-white/70 px-3 py-2 text-xs font-extrabold text-[#534c99] shadow-card sm:min-h-14 sm:gap-3 sm:px-4 sm:py-3 sm:text-sm lg:justify-start lg:bg-transparent lg:px-0 lg:py-0 lg:shadow-none"
               >
-                <Icon className="size-7 text-brand-primary" strokeWidth={1.8} />
+                <Icon
+                  className="size-5 text-brand-primary sm:size-7"
+                  strokeWidth={1.8}
+                />
                 {item.label}
               </div>
             );
@@ -272,36 +275,6 @@ function Benefits() {
   );
 }
 
-function FinalCta() {
-  return (
-    <section className="px-5 py-16 sm:px-8 lg:px-12">
-      <div className="mx-auto flex max-w-[1180px] flex-col items-start justify-between gap-8 rounded-[28px] border border-brand-lavender bg-white p-8 shadow-float md:flex-row md:items-center">
-        <div>
-          <p className="text-sm font-extrabold uppercase tracking-[0.25em] text-brand-primary">
-            Proximo passo
-          </p>
-          <h2 className="mt-3 font-display text-4xl font-light italic text-brand-deep">
-            Comece pelo essencial e evolua no seu ritmo
-          </h2>
-          <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-            O cadastro envia apenas o codigo do plano. Preco, Price ID e
-            liberacao futura devem ser resolvidos no backend e confirmados por
-            webhook.
-          </p>
-        </div>
-        <TESButton
-          href={getPlanSignupHref(TherapistPlan.Free)}
-          variant="gradient"
-          className="min-h-[52px] shrink-0 px-8"
-        >
-          Criar conta de terapeuta
-          <Check className="size-4" />
-        </TESButton>
-      </div>
-    </section>
-  );
-}
-
 export function ForTherapistsPage() {
   return (
     <main className="min-h-screen bg-white text-tesText-primary">
@@ -309,7 +282,6 @@ export function ForTherapistsPage() {
       <Hero />
       <Benefits />
       <PlansPreviewSection />
-      <FinalCta />
       <PublicFooter />
     </main>
   );

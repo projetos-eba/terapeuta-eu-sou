@@ -1,0 +1,22 @@
+version: 1
+name: public-matching
+description: Public anonymous deterministic Match journey for TES.
+entrypoint: SKILL.md
+scope:
+  routes:
+    - /sua-jornada
+    - /sua-jornada/resultado
+  figma_nodes:
+    - "13273:2627"
+  source_paths:
+    - src/features/public-matching
+    - src/app/sua-jornada
+    - src/app/api/public/matching
+    - supabase/migrations
+    - supabase/seed.sql
+rules:
+  - Recommend therapies, never therapists.
+  - Keep the journey anonymous and do not persist individual selections.
+  - Use Tema and Interesse in UI copy.
+  - Keep weights and matching versions server-side.
+  - Maintain deterministic scoring without AI claims.

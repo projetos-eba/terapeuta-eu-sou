@@ -10,6 +10,10 @@ A página pública `/para-terapeutas` usa o catálogo único de planos em `src/d
 
 O fluxo inicial de terapeuta usa rotas separadas em `/terapeuta/cadastro` e `/terapeuta/login`. O cadastro chama Supabase Auth/Admin via REST no servidor, sem `@supabase/supabase-js`, cria `profiles.role = therapist` e `therapist_profiles` em `draft`. Para cadastro real, `SUPABASE_SERVICE_ROLE_KEY` precisa existir apenas no ambiente server-side; sem ela, as telas renderizam e o submit retorna erro controlado de configuração ausente.
 
+O fluxo inicial de cliente usa rotas separadas em `/cliente/cadastro` e `/cliente/login`. O cadastro também usa Supabase Auth/Admin via REST server-side, cria `profiles.role = patient` e `patient_profiles`; documentos, verificação profissional e dados bancários não fazem parte do cadastro de cliente.
+
+O Match público usa `/sua-jornada` e `/sua-jornada/resultado`. A configuração vem de `matching_themes`, `matching_interests` e da view `public_matching_config`; o cálculo roda em `/api/public/matching/calculate` com pesos versionados em `matching_weights`, usando apenas a versão publicada. O fluxo é anônimo, usa `sessionStorage` para escolhas temporárias e recomenda terapias, não terapeutas.
+
 ## Pré-requisitos
 
 - Node.js 20+

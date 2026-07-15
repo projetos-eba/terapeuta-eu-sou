@@ -12,6 +12,8 @@ export const routes = {
     therapyDetail: (slug: string) => `/terapias/${slug}`,
     forTherapists: '/para-terapeutas',
     therapistPlans: '/para-terapeutas/planos',
+    clientSignIn: '/cliente/login',
+    clientSignUp: '/cliente/cadastro',
     therapistSignIn: '/terapeuta/login',
     therapistSignUp: '/terapeuta/cadastro',
     signIn: '/entrar',

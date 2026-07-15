@@ -40,7 +40,7 @@ export function TherapistAuthShell({
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col items-center justify-center gap-8">
         <PublicLogo />
         <section className="grid w-full overflow-hidden rounded-[28px] border border-border bg-white shadow-float lg:grid-cols-[0.92fr_1.08fr]">
-          <aside className="flex flex-col justify-between gap-10 bg-brand-deep px-7 py-8 text-white sm:px-10 lg:px-12 lg:py-12">
+          <aside className="order-2 flex flex-col justify-between gap-10 bg-brand-deep px-7 py-8 text-white sm:px-10 lg:order-1 lg:px-12 lg:py-12">
             <div>
               <p className="text-xs font-extrabold uppercase tracking-[0.28em] text-brand-cyan">
                 {eyebrow}
@@ -77,7 +77,12 @@ export function TherapistAuthShell({
             </div>
           </aside>
 
-          <div className={cn("px-6 py-7 sm:px-10 sm:py-10", className)}>
+          <div
+            className={cn(
+              "order-1 px-6 py-7 sm:px-10 sm:py-10 lg:order-2",
+              className,
+            )}
+          >
             <div className="mb-7 inline-flex items-center gap-2 rounded-full bg-status-successBg px-4 py-2 text-xs font-extrabold text-status-success">
               <CheckCircle2 className="size-4" aria-hidden="true" />
               Informacoes de perfil publico nao bloqueiam este primeiro acesso

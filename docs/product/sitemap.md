@@ -42,6 +42,8 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 - `/para-terapeutas/planos`: planos Básico, Pro e Plus.
 - `/entrar`: login.
 - `/cadastro`: cadastro.
+- `/cliente/login`: login separado para cliente.
+- `/cliente/cadastro`: cadastro inicial de cliente.
 - `/terapeuta/login`: login separado para terapeuta.
 - `/terapeuta/cadastro`: cadastro inicial de terapeuta.
 - `/reset-senha`: recuperação de senha.
@@ -51,9 +53,10 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 
 ### Fluxos
 
-- Jornada guiada: `/` -> `/como-funciona` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`.
+- Jornada guiada: `/` -> `/como-funciona` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapias/:slug` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`. O Match é público, anônimo, determinístico, recomenda terapias e guarda escolhas apenas em `sessionStorage`.
 - Busca direta: `/` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso`.
 - Terapias: `/` -> `/terapias` -> `/terapias/:slug` -> `/terapeutas`.
+- Clientes visitantes: `/` -> `/cliente/cadastro` ou `/cliente/login` -> `/app`.
 - Terapeutas visitantes: `/` -> `/para-terapeutas` -> `/para-terapeutas/planos` -> `/terapeuta/cadastro?plan=free|premium|premium_plus` -> `/terapeuta/login` -> `/basico`, `/pro` ou `/plus`.
 
 ## Paciente

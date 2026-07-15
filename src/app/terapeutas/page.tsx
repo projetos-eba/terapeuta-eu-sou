@@ -158,12 +158,12 @@ function ResultsHeader({
           {filters.availability ? <input type="hidden" name="availability" value={filters.availability} /> : null}
           {filters.price ? <input type="hidden" name="price" value={filters.price} /> : null}
           {filters.rating ? <input type="hidden" name="rating" value={filters.rating} /> : null}
-          <label className="relative inline-flex h-[42px] w-[220px] items-center rounded-full border border-[#e2d1ec] bg-white text-[13px] font-bold text-[#5e5a8a] shadow-[0_6px_8px_rgba(38,20,51,0.04)]">
+          <label className="relative inline-flex h-[42px] w-full max-w-[310px] items-center rounded-full border border-[#e2d1ec] bg-white text-[13px] font-bold text-[#5e5a8a] shadow-[0_6px_8px_rgba(38,20,51,0.04)] sm:w-[270px]">
             <span className="sr-only">Ordenar terapeutas</span>
             <select
               name="sort"
               defaultValue={filters.sort}
-              className="h-full w-full appearance-none rounded-full bg-transparent px-[15px] pr-9 text-[13px] font-bold outline-none"
+              className="h-full w-full appearance-none truncate rounded-full bg-transparent px-[15px] pr-10 text-[13px] font-bold outline-none"
             >
               {sortOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -355,7 +355,7 @@ export default async function TherapistsPage({ searchParams }: TherapistsPagePro
           <h1 className="max-w-[794px] font-display text-[44px] font-light italic leading-[1.08] text-brand-deep md:text-[54px]">
             <span className="block">Encontre alguém</span>
             <span>para </span>
-            <em className="font-display font-semibold text-transparent [background:linear-gradient(90deg,#6c3d91_0%,#81bae0_100%)] bg-clip-text">
+            <em className="inline font-display font-semibold text-brand-primary md:bg-[linear-gradient(90deg,#6c3d91_0%,#81bae0_100%)] md:bg-clip-text md:text-transparent">
               caminhar com você.
             </em>
           </h1>

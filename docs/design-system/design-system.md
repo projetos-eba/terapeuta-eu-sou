@@ -171,6 +171,8 @@ Nota de implementação do perfil público do terapeuta (`/terapeutas/:slug`), a
 
 Nota de implementação da página pública Para Terapeutas (`/para-terapeutas`), atualizada em 2026-07-15: a página segue o Figma `Page / Público / Para Terapeutas` (`13457:848`) com hero central, itens de confiança, bento grid de benefícios, painel roxo de planos e comparativo responsivo. A tabela visual deve consumir o catálogo único `PlanDefinition`; preços pagos aparecem como “a partir de” e recursos não devem prometer IA real, renda, cura, diagnóstico ou resultado garantido.
 
+Nota de implementação do Match público (`/sua-jornada` e `/sua-jornada/resultado`), atualizada em 2026-07-15: a jornada segue o Figma `13273:2627` com seleção compacta de temas e interesses, CTA fixo após a primeira escolha e resultado em cards de terapias. A UI deve usar sempre os termos “Tema” e “Interesse”, evitar “subtema”, manter áreas clicáveis de ao menos 44px no mobile e não prometer diagnóstico, cura ou resultado.
+
 ### Paciente
 
 Usa sidebar, topbar, cards, listas, favoritos separados, suporte lateral e ilustrações suaves. A rota raiz é `/app`.
@@ -408,3 +410,11 @@ QA das 10 páginas públicas recriadas: largura `1055px`, 0 nomes genéricos, 0 
 As páginas `/terapeuta/login` e `/terapeuta/cadastro` usam um padrão de autenticação centralizado e simples, diferente das landings públicas: fundo lavanda suave, um card principal, `Brand/OfficialLogo` no topo, coluna de contexto escura e formulário com labels reais, mensagens por campo e CTA com altura mínima de 44px.
 
 O padrão deve deixar claro que perfil público, documentos pessoais e conta bancária de repasse são etapas recomendadas do onboarding, mas não bloqueiam a criação inicial da conta. A copy não deve prometer renda, aprovação automática, cura, diagnóstico ou resultado garantido.
+
+No mobile, o formulário de terapeuta aparece antes do painel explicativo. O painel com checklist vem abaixo para que a primeira visualização priorize a ação.
+
+## Padrão Auth Cliente
+
+As páginas `/cliente/login` e `/cliente/cadastro` reutilizam a linguagem visual do auth terapeuta, mas com onboarding mais simples: formulário primeiro, imagem acolhedora em painel lateral no desktop e abaixo do formulário no mobile.
+
+O padrão de cliente não menciona documentos, verificação profissional, conta bancária ou repasse. A copy deve orientar a pessoa a criar conta e continuar sua jornada sem prometer cura, diagnóstico ou resultado garantido.

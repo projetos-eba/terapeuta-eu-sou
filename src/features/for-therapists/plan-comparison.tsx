@@ -13,7 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { TESButton } from "@/components/tes";
 
-import { commercialNotes, planCategoryLabels } from "./content";
+import { planCategoryLabels } from "./content";
 
 const categoryOrder: PlanFeatureCategory[] = ["base", "premium", "premium_plus"];
 
@@ -54,11 +54,35 @@ function FeatureState({
   );
 }
 
-function PlanCard({ plan }: { plan: PlanDefinition }) {
-  const primaryFeatures = plan.features
-    .map((featureCode) => getPlanFeatureDefinition(featureCode))
+function getMobilePlanIntro(plan: PlanDefinition) {
+  if (plan.code === TherapistPlan.Premium) {
+    return "Tudo do plano Free, mais:";
+  }
+
+  if (plan.code === TherapistPlan.PremiumPlus) {
+    return "Tudo do plano Premium, mais:";
+  }
+
+  return "Beneficios do plano:";
+}
+
+function getMobilePrimaryFeatures(plan: PlanDefinition) {
+  const featureMinimumPlan =
+    plan.code === TherapistPlan.Free
+      ? TherapistPlan.Free
+      : plan.code === TherapistPlan.Premium
+        ? TherapistPlan.Premium
+        : TherapistPlan.PremiumPlus;
+
+  return therapistPlanFeatureDefinitions
+    .filter((feature) => feature.minimumPlan === featureMinimumPlan)
+    .map((feature) => getPlanFeatureDefinition(feature.code))
     .filter((feature): feature is NonNullable<typeof feature> => Boolean(feature))
     .slice(0, 5);
+}
+
+function PlanCard({ plan }: { plan: PlanDefinition }) {
+  const primaryFeatures = getMobilePrimaryFeatures(plan);
 
   return (
     <article
@@ -78,20 +102,10 @@ function PlanCard({ plan }: { plan: PlanDefinition }) {
       <p className="mt-2 min-h-[48px] text-sm font-semibold leading-6 text-tesText-secondary">
         {plan.subtitle}
       </p>
-      <p className="mt-5 font-display text-3xl font-semibold italic text-brand-deep">
-        {plan.priceLabel}
+      <p className="mt-5 text-sm font-extrabold text-brand-primary">
+        {getMobilePlanIntro(plan)}
       </p>
-      <p className="mt-2 text-xs font-bold leading-5 text-tesText-muted">
-        {plan.priceNote}
-      </p>
-      <TESButton
-        href={plan.signupHref}
-        variant={plan.highlight ? "gradient" : "secondary"}
-        className="mt-6 min-h-[46px] w-full"
-      >
-        {plan.ctaLabel}
-      </TESButton>
-      <ul className="mt-6 space-y-3">
+      <ul className="mt-4 space-y-3">
         {primaryFeatures.map((feature) => (
           <li
             key={feature.code}
@@ -141,6 +155,21 @@ function PlanCard({ plan }: { plan: PlanDefinition }) {
           })}
         </div>
       </details>
+      <div className="mt-6 border-t border-border pt-6">
+        <p className="font-display text-3xl font-semibold italic text-brand-deep">
+          {plan.priceLabel}
+        </p>
+        <p className="mt-2 text-xs font-bold leading-5 text-tesText-muted">
+          {plan.priceNote}
+        </p>
+        <TESButton
+          href={plan.signupHref}
+          variant={plan.highlight ? "gradient" : "secondary"}
+          className="mt-5 min-h-[46px] w-full"
+        >
+          {plan.ctaLabel}
+        </TESButton>
+      </div>
     </article>
   );
 }
@@ -271,12 +300,6 @@ export function PlansPreviewSection() {
               </tr>
             </tbody>
           </table>
-        </div>
-
-        <div className="mt-8 rounded-[18px] border border-white/20 bg-white/10 p-5 text-sm font-semibold leading-6 text-white/82">
-          {commercialNotes.map((note) => (
-            <p key={note}>{note}</p>
-          ))}
         </div>
       </div>
     </section>
