@@ -586,7 +586,7 @@ values
     50,
     12000,
     'BRL',
-    'published',
+    'active',
     true
   ),
   (
@@ -598,7 +598,7 @@ values
     50,
     12000,
     'BRL',
-    'published',
+    'active',
     true
   ),
   (
