@@ -272,9 +272,11 @@ Objetivos:
 
 ## Jornadas Principais
 
+Mapa operacional de integrações, fontes de dados e skills: `docs/product/integration-map.md`.
+
 ### Descoberta e Reserva
 
-`/` -> `/como-funciona` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`
+`/` -> `/como-funciona` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapias/:slug` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`
 
 ### Busca Direta
 
@@ -286,7 +288,7 @@ Objetivos:
 
 ### Terapeutas Visitantes
 
-`/` -> `/para-terapeutas` -> `/para-terapeutas/planos` -> `/cadastro`
+`/` -> `/para-terapeutas` -> `/para-terapeutas/planos` -> `/terapeuta/cadastro?plan=free|premium|premium_plus` -> `/terapeuta/login` -> `/basico`, `/pro` ou `/plus`
 
 ### Pós-reserva do Paciente
 

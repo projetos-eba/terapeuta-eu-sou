@@ -205,18 +205,22 @@ Rotas técnicas devem seguir `src/lib/routes.ts`. Figma pode conter nomes legado
 |---|---|---|---|
 | `/` | Sim | `routes.ts`, sitemap, Figma | 0 |
 | `/como-funciona` | Não | `routes.ts`, sitemap, Figma | 0 |
-| `/sua-jornada` | Não | `routes.ts`, sitemap, Figma | 1 |
-| `/sua-jornada/resultado` | Não | `routes.ts`, sitemap, Figma | 1 |
-| `/terapeutas` | Sim, mockado | `routes.ts`, sitemap, Figma | 1 |
-| `/terapeutas/:slug` | Não | `routes.ts`, sitemap, Figma | 1 |
+| `/sua-jornada` | Sim | `routes.ts`, sitemap, Figma `13273:2627` | 1 |
+| `/sua-jornada/resultado` | Sim | `routes.ts`, sitemap, Figma `13273:2627` | 1 |
+| `/terapeutas` | Sim, integrado a view pública | `routes.ts`, sitemap, Figma `13273:3587` | 1 |
+| `/terapeutas/:slug` | Sim | `routes.ts`, sitemap, Figma `13273:3393` | 1 |
 | `/reserva` | Não | `routes.ts`, sitemap, Figma | 2 |
 | `/reserva/sucesso` | Não | `routes.ts`, sitemap | 2 |
-| `/terapias` | Não | `routes.ts`, sitemap, Figma | 1 |
+| `/terapias` | Sim | `routes.ts`, sitemap, Figma `13273:1439` | 1 |
 | `/terapias/:slug` | Não | `routes.ts`, sitemap, Figma | 1 |
-| `/para-terapeutas` | Não | `routes.ts`, sitemap, Figma | 0 |
+| `/para-terapeutas` | Sim | `routes.ts`, sitemap, Figma `13457:848` | 0 |
 | `/para-terapeutas/planos` | Não | `routes.ts`, sitemap, Figma | 0 |
-| `/entrar` | Não | `routes.ts`, sitemap | 0/2 |
-| `/cadastro` | Não | `routes.ts`, sitemap | 0/2 |
+| `/cliente/login` | Sim | `routes.ts`, sitemap, Produto | 0/2 |
+| `/cliente/cadastro` | Sim | `routes.ts`, sitemap, Produto | 0/2 |
+| `/terapeuta/login` | Sim | `routes.ts`, sitemap, Produto | 0/2 |
+| `/terapeuta/cadastro` | Sim | `routes.ts`, sitemap, Produto | 0/2 |
+| `/entrar` | Não, legado | `routes.ts`, sitemap | 0/2 |
+| `/cadastro` | Não, legado | `routes.ts`, sitemap | 0/2 |
 | `/reset-senha` | Não | `routes.ts`, sitemap | 0/2 |
 | `/ajuda` | Não | `routes.ts`, sitemap | 0 |
 | `/termos` | Não | `routes.ts`, sitemap | 0 |
@@ -370,8 +374,13 @@ Tabelas existentes na migration real:
 - `therapist_verifications`;
 - `therapy_categories`;
 - `therapies`;
-- `therapy_themes`;
-- `therapy_theme_weights`;
+- `therapy_themes` (legado para compatibilidade histórica);
+- `therapy_theme_weights` (legado para compatibilidade histórica);
+- `matching_themes`;
+- `matching_interests`;
+- `matching_versions`;
+- `matching_weights`;
+- `matching_therapy_settings`;
 - `therapist_services`;
 - `availability_rules`;
 - `availability_exceptions`;
@@ -475,14 +484,16 @@ Resposta real:
 }
 ```
 
-Limitações reais:
+Status histórico da Edge Function legada `match-therapies`:
 
-- não limita explicitamente a 3 temas/subtemas;
+- não limita explicitamente a 3 temas/interesses no contrato legado;
 - não usa `matching_versions`;
 - não aplica threshold/fallback de 45%;
 - não retorna `versionId`;
 - não registra métricas agregadas;
-- aceita subtemas, embora o plano Fase 1 recomende operar só por temas.
+- aceita subtemas no contrato legado; a UI atual usa “Interesse”.
+
+Status atual do app público: `/api/public/matching/calculate` substitui esse contrato para a jornada pública e usa temas, interesses, pesos versionados, threshold e fallback.
 
 ### 10.2 Funções alvo
 
@@ -504,21 +515,23 @@ Limitações reais:
 
 ### 11.1 Decisão de escopo
 
-O Match v1 recomenda terapias, não terapeutas. Ele é determinístico, anônimo e baseado em regras/pesos.
+O Match v1 recomenda terapias, não terapeutas. Ele é determinístico, anônimo e baseado em temas, interesses e pesos versionados.
 
-Este plano adota duas camadas:
+Estado implementado:
 
 | Camada | Escopo |
 |---|---|
-| Fase 1 | Match por temas usando `therapy_themes` e `therapy_theme_weights`. |
-| Fase 6 ou fast follow | Versionamento, Admin completo, métricas agregadas e refinamento por interesses/subtemas. |
+| Público | `/sua-jornada` carrega `public_matching_config` com 10 temas e interesses ativos. |
+| Cálculo | `/api/public/matching/calculate` usa `matching_versions`, `matching_weights` e multiplicador `1.4` para interesses. |
+| Publicação | Somente a versão `matching_versions.status = published` entra no público. |
+| Elegibilidade | Uma terapia só entra no Match se `therapies.status = published` e `matching_therapy_settings.is_visible_in_matching = true`. |
 
 ### 11.2 Fluxo público
 
 ```txt
 /sua-jornada
--> usuário seleciona 1 a 3 temas
--> POST match-therapies
+-> usuário seleciona 1 a 3 temas e até 3 interesses por tema
+-> POST /api/public/matching/calculate
 -> /sua-jornada/resultado
 -> /terapias/:slug
 -> /terapeutas ou /terapeutas/:slug
@@ -527,13 +540,13 @@ Este plano adota duas camadas:
 
 ### 11.3 Ajustes obrigatórios na Fase 1
 
-- Definir se a função atual será adaptada para aceitar apenas `themeIds` ou se o frontend usará `selectedThemeIds`.
 - Limitar seleção a no máximo 3 temas no frontend e backend.
+- Validar interesses contra os temas selecionados.
 - Não expor pesos internos ao cliente.
 - Não persistir respostas individualizadas.
 - Exibir aviso de não diagnóstico.
-- Definir fallback de resultado vazio.
-- Criar testes mínimos para a função.
+- Manter fallback de baixa correspondência com até 3 melhores caminhos.
+- Criar testes formais do algoritmo no runner padrão do projeto.
 
 ### 11.4 Fallback recomendado
 
@@ -548,20 +561,22 @@ Não encontramos uma correspondência forte para essa combinação, mas estes ca
 
 ### 11.5 Dados do Match
 
-Dados atuais suficientes para Fase 1:
+Dados atuais do Match:
 
-- `therapies`;
-- `therapy_themes`;
-- `therapy_theme_weights`;
-- `supabase/seed.sql`;
-- `match-therapies`.
-
-Dados ainda ausentes para fase avançada:
-
+- `matching_themes`;
+- `matching_interests`;
 - `matching_versions`;
-- `matching_weight_versions`;
+- `matching_weights`;
+- `matching_therapy_settings`;
+- `public_matching_config`;
+- `public_matching_therapist_counts`;
+- `supabase/seed.sql`;
+- `/api/public/matching/config`;
+- `/api/public/matching/calculate`.
+
+Dados ainda pendentes para fase avançada/Admin:
+
 - `matching_aggregate_metrics`;
-- configuração de visibilidade específica de matching;
 - gestão Admin de pesos/publicação.
 
 ## 12. Catálogo público e terapeutas
@@ -577,13 +592,14 @@ Dependências:
 
 - `therapies`;
 - `therapy_categories`;
-- RLS pública para `status = active`;
+- `public_therapies_v`;
+- RLS pública para `status = published`;
 - componentes `TherapyCard`, `TherapyHero`, `ContentSections`;
 - associação com serviços e terapeutas aprovados.
 
 Pronto quando:
 
-- lista apenas terapias ativas;
+- lista apenas terapias publicadas;
 - detalhe não promete cura/diagnóstico;
 - mostra profissionais elegíveis associados;
 - estado vazio, loading e erro existem;

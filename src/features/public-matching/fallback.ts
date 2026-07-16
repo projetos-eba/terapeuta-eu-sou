@@ -151,7 +151,7 @@ function therapy(
     name,
     shortDescription,
     slug,
-    status: "active",
+    status: "published",
     therapistCount,
   };
 }

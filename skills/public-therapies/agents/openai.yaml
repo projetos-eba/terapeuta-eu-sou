@@ -1,0 +1,13 @@
+name: public-therapies
+description: Skill local para manter a página pública /terapias alinhada ao Figma, catálogo real, API pública e copy responsável.
+version: 1.0.0
+source:
+  figma_node: "13273:1439"
+  route: "/terapias"
+  api: "/api/public/therapies"
+  view: "public_therapies_v"
+checks:
+  - npm run typecheck
+  - npm run lint
+  - npm run build
+  - npx supabase db lint

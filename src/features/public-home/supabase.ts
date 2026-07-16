@@ -17,7 +17,7 @@ const PLACEHOLDER_SUPABASE_ANON_KEY = "replace-with-supabase-anon-key";
 
 type PublicHomeTherapyRow = {
   category_name: string | null;
-  href_slug: string;
+  href_slug?: string;
   is_featured: boolean | null;
   name: string;
   short_description: string;
@@ -158,8 +158,8 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
   try {
     const [therapyRows, therapistRows, testimonialRows] = await Promise.all([
       fetchPublicHomeRows<PublicHomeTherapyRow>(
-        "public_home_therapies",
-        "select=category_name,href_slug,is_featured,name,short_description,slug&order=is_featured.desc,name.asc&limit=8",
+        "public_therapies_v",
+        "select=category_name,slug,is_featured,name,short_description&order=is_popular.desc,popularity_score.desc,name.asc&limit=8",
       ),
       fetchPublicHomeRows<PublicHomeTherapistRow>(
         "public_home_therapists",

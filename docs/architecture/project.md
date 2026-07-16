@@ -419,13 +419,13 @@ Responsabilidades:
 
 O Match v1 recomenda terapias, nao terapeutas.
 
-Decisao de fase: a Fase 1 do Match opera apenas com temas. Interesses/subtemas, multiplicador de especificidade `1.4`, versionamento completo e metricas agregadas entram como evolucao de Fase 2, salvo decisao expressa de produto para antecipar esse escopo.
+Status operacional atualizado: a jornada pública já usa temas e interesses, multiplicador de especificidade `1.4`, pesos versionados e somente a versão publicada de `matching_versions`. Este documento mantém decisões de arquitetura do MVP, mas o estado canônico atual está em `docs/product/integration-map.md`.
 
 Ele deve:
 
 - ser publico;
 - ser anonimo;
-- coletar selecao de ate 3 temas;
+- coletar selecao de 1 a 3 temas e até 3 interesses por tema;
 - calcular compatibilidade entre necessidades e terapias;
 - retornar terapias/caminhos recomendados;
 - levar o usuario para pagina da terapia;
@@ -448,8 +448,9 @@ Ele nao deve:
 ```txt
 Usuario acessa /sua-jornada
 -> seleciona ate 3 temas
+-> seleciona interesses opcionais dos temas escolhidos
 -> clica em Ver caminhos
--> backend calcula compatibilidade
+-> backend calcula compatibilidade via /api/public/matching/calculate
 -> /sua-jornada/resultado exibe top terapias
 -> usuario acessa /terapias/:slug
 -> pagina mostra terapeutas associados
@@ -459,17 +460,17 @@ Usuario acessa /sua-jornada
 
 ### 8.3 Regras de selecao
 
-| Criterio                     | Regra Fase 1                   | Evolucao Fase 2                 |
+| Criterio                     | Regra atual                    | Observação                      |
 | ---------------------------- | ------------------------------ | ------------------------------- |
-| Minimo de temas              | 1                              | 1                               |
-| Maximo de temas              | 3                              | 3                               |
-| Minimo de interesses         | Nao se aplica                  | 0 ou 1, a definir               |
-| Maximo de interesses         | Nao se aplica                  | 3                               |
-| Botao de resultado           | liberado com pelo menos 1 tema | liberado com pelo menos 1 tema  |
-| Multiplicador de interesses  | Nao se aplica                  | `1.4`                           |
-| Tabelas especificas de match | nao exigidas                   | `matching_interests` e vinculos |
+| Minimo de temas              | 1                              | Validado no frontend e backend. |
+| Maximo de temas              | 3                              | Validado no frontend e backend. |
+| Minimo de interesses         | 0                              | Interesses são opcionais.       |
+| Maximo de interesses         | 3 por tema                     | Validado no backend.            |
+| Botao de resultado           | liberado com pelo menos 1 tema | Sem tema não calcula.           |
+| Multiplicador de interesses  | `1.4`                          | Interesse é mais específico que tema. |
+| Tabelas especificas de match | `matching_*`                   | Substituem o uso público de `therapy_themes`. |
 
-Decisao recomendada: Fase 1 lanca apenas com temas para usar o schema atual (`therapy_themes` e `therapy_theme_weights`) sem criar uma etapa de UI que o banco ainda nao sustenta. A camada de interesses deve ser adicionada como fast follow na Fase 2.
+Regra de linguagem: usar “Tema” e “Interesse” na UI; não usar “subtema”.
 
 ### 8.4 Matriz de compatibilidade
 
@@ -495,22 +496,13 @@ O admin deve configurar pesos por terapia. Essa abordagem escala melhor que conf
 
 ### 8.5 Formula recomendada
 
-Para a Fase 1, cada terapia elegivel usa apenas temas:
-
-```txt
-score_bruto =
-  soma dos pesos dos temas selecionados
-```
-
-Para a Fase 2, com interesses/subtemas:
-
 ```txt
 score_bruto =
   soma dos pesos dos temas selecionados
   + soma dos pesos dos interesses selecionados * 1.4
 ```
 
-O multiplicador `1.4` existe porque interesse/subtema e mais especifico que tema. Ele nao deve ser aplicado enquanto a Fase 1 operar apenas com temas.
+O multiplicador `1.4` existe porque interesse é mais especifico que tema.
 
 Normalizacao:
 
@@ -533,11 +525,12 @@ Na UI publica, exibir faixas, nao porcentagem exata:
 Uma terapia so pode aparecer no resultado se:
 
 - estiver ativa/publicada;
+- estar com `therapies.status = 'published'`;
 - possuir pagina publica;
-- estiver marcada como visivel no matching;
+- estar marcada como visivel em `matching_therapy_settings`;
 - possuir pesos ativos na versao publicada.
 
-No schema atual, `therapies.status = 'active'` representa a terapia ativa. O relatorio do Match usa `published`; decisao recomendada: manter enum atual `active` ou criar migracao futura com compatibilidade explicita. Nao misturar os dois termos sem mapeamento.
+`active` não é o estado editorial público do catálogo. Para o Match, a ativação é controlada por `matching_therapy_settings.is_visible_in_matching`, sempre condicionada à terapia publicada.
 
 ### 8.7 Quantidade de resultados e fallback
 
@@ -583,22 +576,23 @@ Admin acessa Matching
 -> publica nova versao
 ```
 
-Na Fase 2, a mesma tela deve permitir editar tambem pesos de interesses/subtemas.
+Admin atual/futuro deve permitir editar pesos de temas e interesses em uma versão de rascunho antes de publicar.
 
 ### 8.9 Dados recomendados para o Match
 
-O schema atual possui:
+O schema legado inicial possuia, apenas para compatibilidade histórica:
 
 - `therapies`;
 - `therapy_themes`;
 - `therapy_theme_weights`;
 - Edge Function `match-therapies`.
 
-O relatorio tecnico recomenda evoluir para:
+O estado atual evoluiu para:
 
 - `matching_themes`;
 - `matching_interests`;
-- `matching_theme_interests`;
+- `matching_versions`;
+- `matching_weights`;
 - `matching_therapy_settings`;
 - `matching_weights`;
 - `matching_versions`;
@@ -1328,8 +1322,8 @@ Ja existe proposta/migracao inicial para:
 - `therapist_verifications`;
 - `therapy_categories`;
 - `therapies`;
-- `therapy_themes`;
-- `therapy_theme_weights`;
+- `therapy_themes` (legado histórico);
+- `therapy_theme_weights` (legado histórico);
 - `therapist_services`;
 - `availability_rules`;
 - `availability_exceptions`;
@@ -1694,9 +1688,7 @@ Ferramenta de observabilidade definitiva: Nao identificado nos arquivos analisad
 
 ### 19.2 Fase 2 - Robustez operacional
 
-- Adicionar interesses/subtemas ao Match.
-- Versionamento do Match.
-- Admin de pesos e publicacao.
+- Consolidar Admin de pesos e publicacao do Match.
 - Metricas anonimas agregadas.
 - Billing de assinaturas.
 - Automatizacao do processamento de lotes de repasse.

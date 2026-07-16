@@ -14,13 +14,14 @@ Consultar antes de alterar:
 3. `docs/product/sitemap.md`
 4. `docs/design-system/design-system.md`
 5. `docs/product/routes-map.md`
-6. `src/lib/routes.ts`
-7. `src/features/public-matching/`
-8. `src/app/sua-jornada/`
-9. `src/app/api/public/matching/`
-10. `supabase/migrations/*public_matching*`
-11. `supabase/seed.sql`
-12. `public/journey/`
+6. `docs/product/integration-map.md`
+7. `src/lib/routes.ts`
+8. `src/features/public-matching/`
+9. `src/app/sua-jornada/`
+10. `src/app/api/public/matching/`
+11. `supabase/migrations/*public_matching*`
+12. `supabase/seed.sql`
+13. `public/journey/`
 
 ## Contrato
 
@@ -39,9 +40,10 @@ Consultar antes de alterar:
 - `matching_interests`: interesses globais unicos, cada um pertencendo a exatamente um tema.
 - `matching_versions`: versoes `draft`, `published` e `archived`.
 - `matching_weights`: pesos internos de 0 a 5, com exatamente um alvo entre `theme_id` e `interest_id`.
-- `matching_therapy_settings`: visibilidade da terapia no Match.
+- `matching_therapy_settings`: ativação da terapia no Match; só vale quando a terapia também está `published`.
 - `public_matching_config`: view publica segura para temas/interesses publicados.
 - `public_matching_therapist_counts`: contagem informativa de profissionais aprovados, publicos e com servico ativo; nao influencia ranking.
+- `public_therapies_v`: fonte editorial pública das terapias; o Match só recomenda terapias publicadas.
 
 Seeds/mocks devem ser idempotentes em `supabase/seed.sql`.
 

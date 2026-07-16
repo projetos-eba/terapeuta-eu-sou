@@ -2,7 +2,7 @@
 
 Este documento descreve a base recomendada para o domínio transacional do MVP do Terapeuta Eu Sou usando Supabase como backend futuro: Postgres, Auth, Storage e Edge Functions.
 
-Status: proposta técnica inicial. Ainda não há SDK Supabase, Stripe, Zoom ou IA real integrados ao código.
+Status: proposta técnica inicial e parcialmente superada pelas migrations posteriores. Para estado operacional atual de rotas, views e skills, consultar `docs/product/integration-map.md`, `docs/product/routes-map.md` e `docs/product/page-inventory.md`.
 
 ## Decisões Assumidas
 
@@ -20,10 +20,10 @@ A primeira base local vive em `supabase/`:
 
 - `config.toml`: configuração local da Supabase CLI.
 - `migrations/20260708090000_initial_mvp_domain.sql`: schema inicial do domínio.
-- `seed.sql`: catálogo mínimo de terapias, temas, subtemas e pesos.
-- `functions/match-therapies`: Edge Function determinística para recomendar terapias.
+- `seed.sql`: catálogo mínimo de terapias, temas, interesses e pesos.
+- `functions/match-therapies`: Edge Function legada; a jornada pública atual usa `/api/public/matching/config` e `/api/public/matching/calculate`.
 
-A função `match-therapies` consulta `therapy_theme_weights` com service role dentro do runtime da Edge Function. A tabela de pesos continua fechada por RLS para clientes públicos.
+O Match público atual consulta `public_matching_config` e calcula recomendações com `matching_versions`, `matching_weights` e `matching_therapy_settings`, sem expor pesos ao navegador.
 
 ## Schema Recomendado
 
@@ -118,22 +118,19 @@ Campos principais:
 
 - `category_id`.
 - `name`, `slug`, `short_description`, `description`.
-- `status`: `draft | active | inactive | archived`.
+- `status`: `draft | active | published | inactive | archived` no estado atual do projeto; `published` é o estado editorial público definitivo.
 - `is_featured`, `safety_note`.
 
-RLS sugerida:
-
-- Leitura pública apenas para terapias ativas.
+- Leitura pública apenas para terapias publicadas e visíveis publicamente.
 - Escrita somente admin.
 
-### 7. `therapy_themes`
+### 7. `matching_themes`
 
-Temas e subtemas usados pela jornada e pelo match determinístico.
+Temas usados pela jornada e pelo match determinístico.
 
 Campos principais:
 
 - `name`, `slug`, `description`.
-- `parent_theme_id` para subtemas.
 - `is_active`.
 
 RLS sugerida:
@@ -141,22 +138,33 @@ RLS sugerida:
 - Leitura pública apenas para temas ativos.
 - Escrita somente admin.
 
-### 8. `therapy_theme_weights`
+### 8. `matching_interests`
 
-Base do match determinístico por pesos.
+Interesses usados pela jornada. Cada interesse pertence a exatamente um tema.
 
 Campos principais:
 
+- `theme_id`.
+- `name`, `slug`, `sort_order`.
+- `is_active`.
+
+### 9. `matching_versions` e `matching_weights`
+
+Base do match determinístico por pesos versionados.
+
+Campos principais:
+
+- `version_id`.
 - `therapy_id`.
 - `theme_id`.
-- `subtheme_id`.
+- `interest_id`.
 - `weight`.
 - `reason`, `is_active`.
 
 RLS sugerida:
 
 - Fechada por padrão no MVP.
-- O cálculo pode rodar em Edge Function para não expor pesos editoriais.
+- O cálculo roda no backend/API para não expor pesos editoriais.
 
 ### 9. `therapist_services`
 

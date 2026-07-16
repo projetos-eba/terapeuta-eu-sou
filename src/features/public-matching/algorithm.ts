@@ -26,7 +26,7 @@ export function calculateMatchingResults(input: {
     1,
   );
   const activeTherapies = input.therapies.filter(
-    (therapy) => therapy.status === "active" && therapy.isVisibleInMatching,
+    (therapy) => therapy.status === "published" && therapy.isVisibleInMatching,
   );
 
   const scored = activeTherapies

@@ -173,6 +173,8 @@ Nota de implementação da página pública Para Terapeutas (`/para-terapeutas`)
 
 Nota de implementação do Match público (`/sua-jornada` e `/sua-jornada/resultado`), atualizada em 2026-07-15: a jornada segue o Figma `13273:2627` com seleção compacta de temas e interesses, CTA fixo após a primeira escolha e resultado em cards de terapias. A UI deve usar sempre os termos “Tema” e “Interesse”, evitar “subtema”, manter áreas clicáveis de ao menos 44px no mobile e não prometer diagnóstico, cura ou resultado.
 
+Nota de implementação do catálogo público de terapias (`/terapias`), atualizada em 2026-07-15: a página segue o Figma `13273:1439` com hero fotográfico, busca ampla, chips de ordenação, sidebar de categorias no desktop, accordion de filtros no mobile, grid de cards com imagem editorial e CTA de jornada. Cards públicos devem educar e conduzir ao detalhe da terapia, sem vender diretamente sessão nem prometer cura, diagnóstico ou resultado.
+
 ### Paciente
 
 Usa sidebar, topbar, cards, listas, favoritos separados, suporte lateral e ilustrações suaves. A rota raiz é `/app`.

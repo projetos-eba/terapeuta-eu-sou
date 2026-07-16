@@ -38,6 +38,7 @@ type MatchingTherapyRow = {
   short_description: string;
   slug: string;
   status: MatchingTherapy["status"];
+  therapist_count?: number | null;
 };
 
 type MatchingTherapyCountRow = {
@@ -167,7 +168,7 @@ export async function getMatchingCalculationData(versionId: string) {
     const [therapyRows, settingRows, countRows, weightRows] = await Promise.all([
       fetchRows<MatchingTherapyRow>(
         config,
-        "therapies?select=id,name,slug,short_description,description,status&status=eq.active",
+        "public_therapies_v?select=id,name,slug,short_description,description,status,therapist_count",
         config.serviceRoleKey,
       ),
       fetchRows<MatchingTherapySettingRow>(
@@ -256,7 +257,10 @@ function mergeTherapyRows(
     ...therapy,
     is_visible_in_matching:
       settingsByTherapyId.get(therapy.id)?.is_visible_in_matching ?? true,
-    therapist_count: countsByTherapyId.get(therapy.id)?.therapist_count ?? 0,
+    therapist_count:
+      countsByTherapyId.get(therapy.id)?.therapist_count ??
+      therapy.therapist_count ??
+      0,
   }));
 }
 

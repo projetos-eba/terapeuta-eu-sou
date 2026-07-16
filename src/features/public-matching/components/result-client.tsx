@@ -106,7 +106,9 @@ export function MatchingResultClient() {
                   {item.therapistCount === 1 ? "" : "s"} com serviço ativo
                 </div>
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                  <TESButton href={routes.public.therapyDetail(item.slug)}>
+                  <TESButton
+                    href={`${routes.public.therapyDetail(item.slug)}?source=match`}
+                  >
                     Conhecer terapia
                     <ArrowRight className="size-4" />
                   </TESButton>

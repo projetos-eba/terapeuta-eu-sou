@@ -43,7 +43,7 @@ values
     'terapia-integrativa',
     'Um caminho amplo para organizar sentimentos, escolhas e momentos de transição.',
     'A Terapia Integrativa reúne práticas de escuta e cuidado complementar para apoiar a pessoa a perceber o que faz sentido no momento atual.',
-    'active',
+    'published',
     true,
     'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.'
   ),
@@ -54,7 +54,7 @@ values
     'terapia-floral',
     'Uma possibilidade para quem busca apoio em equilíbrio emocional e autoconhecimento.',
     'A Terapia Floral pode ser apresentada como uma prática complementar, sempre sem promessa de cura ou resultado garantido.',
-    'active',
+    'published',
     false,
     'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.'
   ),
@@ -65,7 +65,7 @@ values
     'meditacao-guiada',
     'Uma prática para cultivar presença, pausa e percepção do próprio ritmo.',
     'A Meditação Guiada ajuda a criar um espaço de presença e observação, sem substituir cuidados profissionais quando necessários.',
-    'active',
+    'published',
     false,
     'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.'
   ),
@@ -586,7 +586,7 @@ values
     50,
     12000,
     'BRL',
-    'active',
+    'published',
     true
   ),
   (
@@ -598,7 +598,7 @@ values
     50,
     12000,
     'BRL',
-    'active',
+    'published',
     true
   ),
   (
@@ -975,6 +975,69 @@ set
   end_time = excluded.end_time,
   timezone = excluded.timezone,
   is_active = excluded.is_active,
+  updated_at = now();
+
+insert into public.therapy_categories (id, name, slug, description, sort_order, is_active)
+values
+  ('11111111-1111-4111-8111-111111111113', 'Emoções e bem-estar', 'emocional', 'Terapias voltadas a acolhimento emocional, presença e equilíbrio.', 1, true),
+  ('11111111-1111-4111-8111-111111111114', 'Relacionamentos', 'relacionamentos', 'Abordagens para vínculos, família, comunicação e convivência.', 2, true),
+  ('11111111-1111-4111-8111-111111111115', 'Autoconhecimento', 'autoconhecimento', 'Caminhos para ampliar percepção, sentido e relação consigo.', 3, true),
+  ('11111111-1111-4111-8111-111111111116', 'Espiritualidade', 'espiritualidade', 'Práticas de conexão interior, presença e espiritualidade responsável.', 4, true),
+  ('11111111-1111-4111-8111-111111111117', 'Energia e proteção', 'energia-protecao', 'Práticas energéticas complementares, sem promessa de cura.', 5, true),
+  ('11111111-1111-4111-8111-111111111118', 'Corpo e bem-estar', 'corpo-bem-estar', 'Práticas corporais, relaxamento e bem-estar.', 6, true),
+  ('11111111-1111-4111-8111-111111111119', 'Propósito e direção', 'proposito-direcao', 'Caminhos para clareza, escolhas e próximos passos.', 7, true),
+  ('11111111-1111-4111-8111-111111111120', 'Carreira e trabalho', 'carreira-trabalho', 'Práticas para fases profissionais e relação com trabalho.', 8, true),
+  ('11111111-1111-4111-8111-111111111121', 'Família e ancestralidade', 'familia-ancestralidade', 'Abordagens para histórias familiares e pertencimento.', 9, true),
+  ('11111111-1111-4111-8111-111111111122', 'Criatividade e expressão', 'criatividade-expressao', 'Caminhos para expressão, sensibilidade e criação.', 10, true),
+  ('11111111-1111-4111-8111-111111111123', 'Finanças e prosperidade', 'financas-prosperidade', 'Práticas para relação simbólica com prosperidade e escolhas.', 11, true),
+  ('11111111-1111-4111-8111-111111111124', 'Natureza e elementos', 'natureza-elementos', 'Práticas inspiradas em natureza, ciclos e elementos.', 12, true)
+on conflict (slug) do update
+set
+  name = excluded.name,
+  description = excluded.description,
+  sort_order = excluded.sort_order,
+  is_active = excluded.is_active,
+  updated_at = now();
+
+insert into public.therapies (
+  id,
+  category_id,
+  name,
+  slug,
+  short_description,
+  description,
+  status,
+  is_featured,
+  safety_note,
+  image_url,
+  published_at,
+  popularity_score,
+  search_aliases,
+  is_public_visible
+)
+values
+  ('22222222-2222-4222-8222-222222222225', '11111111-1111-4111-8111-111111111117', 'Reiki', 'reiki', 'Prática integrativa de presença e equilíbrio energético.', 'Reiki é apresentado no TES como prática integrativa complementar, sem promessa de cura, diagnóstico ou resultado garantido.', 'published', true, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/reiki.png', now() - interval '80 days', 96, array['energia', 'equilibrio energetico', 'espiritualidade'], true),
+  ('22222222-2222-4222-8222-222222222227', '11111111-1111-4111-8111-111111111118', 'Mindfulness', 'mindfulness', 'Prática de atenção plena para cultivar presença e pausa.', 'Mindfulness é apresentado como prática de atenção plena e autocuidado, sem substituir acompanhamento profissional quando necessário.', 'published', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/mindfulness.png', now() - interval '22 days', 82, array['atenção plena', 'presenca', 'meditacao'], true),
+  ('22222222-2222-4222-8222-222222222228', '11111111-1111-4111-8111-111111111115', 'Tarologia Terapêutica', 'tarologia-terapeutica', 'Leitura simbólica para reflexão, escolhas e autoconhecimento.', 'A Tarologia Terapêutica usa símbolos como convite de reflexão e não deve ser comunicada como previsão determinista.', 'published', false, 'Este conteúdo é informativo e não substitui diagnóstico, tratamento ou orientação profissional especializada.', '/therapies/tarologia-terapeutica.png', now() - interval '38 days', 76, array['tarot', 'oraculo', 'autoconhecimento'], true),
+  ('22222222-2222-4222-8222-222222222226', '11111111-1111-4111-8111-111111111113', 'Aromaterapia', 'aromaterapia', 'Uso cuidadoso de óleos essenciais em práticas de acolhimento e bem-estar.', 'Aromaterapia é apresentada no TES como prática complementar e deve ser comunicada sem promessa terapêutica garantida.', 'published', true, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/aromaterapia.png', now() - interval '62 days', 88, array['oleos essenciais', 'aromas', 'relaxamento'], true),
+  ('22222222-2222-4222-8222-222222222223', '11111111-1111-4111-8111-111111111118', 'Meditação Guiada', 'meditacao-guiada', 'Uma prática para cultivar presença, pausa e percepção do próprio ritmo.', 'A Meditação Guiada ajuda a criar um espaço de presença e observação, sem substituir cuidados profissionais quando necessários.', 'published', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/meditacao-guiada.png', now() - interval '95 days', 84, array['meditacao', 'presenca', 'respiracao'], true),
+  ('22222222-2222-4222-8222-222222222229', '11111111-1111-4111-8111-111111111116', 'Apometria', 'apometria', 'Prática espiritualista complementar para reflexão e cuidado energético.', 'Apometria é apresentada no TES com linguagem responsável, como prática complementar e sem promessa de cura.', 'published', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/apometria.png', now() - interval '12 days', 72, array['espiritualidade', 'energia', 'campo energetico'], true),
+  ('22222222-2222-4222-8222-222222222222', '11111111-1111-4111-8111-111111111113', 'Florais', 'terapia-floral', 'Uma possibilidade para quem busca apoio em equilíbrio emocional e autoconhecimento.', 'Florais podem ser apresentados como prática complementar, sempre sem promessa de cura ou resultado garantido.', 'published', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/florais.png', now() - interval '44 days', 79, array['terapia floral', 'florais de bach', 'emocional'], true),
+  ('22222222-2222-4222-8222-222222222224', '11111111-1111-4111-8111-111111111117', 'Cristaloterapia', 'cristaloterapia', 'Prática complementar com cristais, presença e intenção simbólica.', 'Cristaloterapia é apresentada como prática complementar e simbólica, sem promessa de cura, diagnóstico ou resultado garantido.', 'published', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/cristaloterapia.png', now() - interval '9 days', 70, array['cristais', 'energia', 'equilibrio'], true)
+on conflict (slug) do update
+set
+  category_id = excluded.category_id,
+  name = excluded.name,
+  short_description = excluded.short_description,
+  description = excluded.description,
+  status = excluded.status,
+  is_featured = excluded.is_featured,
+  safety_note = excluded.safety_note,
+  image_url = excluded.image_url,
+  published_at = excluded.published_at,
+  popularity_score = excluded.popularity_score,
+  search_aliases = excluded.search_aliases,
+  is_public_visible = excluded.is_public_visible,
   updated_at = now();
 
 insert into public.matching_themes (

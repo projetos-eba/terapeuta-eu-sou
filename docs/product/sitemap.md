@@ -9,6 +9,7 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 3. Figma `Design Telas` (`5999:10563`): layout e componentes.
 4. Pasta `Referencias`: direção visual por perfil.
 5. Inferência controlada: marcada como `inferido`.
+6. `docs/product/integration-map.md`: mapa operacional de rotas, páginas, views, APIs e skills.
 
 ## Regras
 
@@ -55,7 +56,7 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 
 - Jornada guiada: `/` -> `/como-funciona` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapias/:slug` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`. O Match é público, anônimo, determinístico, recomenda terapias e guarda escolhas apenas em `sessionStorage`.
 - Busca direta: `/` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso`.
-- Terapias: `/` -> `/terapias` -> `/terapias/:slug` -> `/terapeutas`.
+- Terapias: `/` -> `/terapias?q=&category=&sort=&page=` -> `/terapias/:slug` -> `/terapeutas`. A listagem usa `public_therapies_v`, mostra terapias com `status = published`, categoria ativa e mantém busca, categoria, ordenação e paginação na URL. O Match só considera terapias publicadas e ativadas em `matching_therapy_settings`.
 - Clientes visitantes: `/` -> `/cliente/cadastro` ou `/cliente/login` -> `/app`.
 - Terapeutas visitantes: `/` -> `/para-terapeutas` -> `/para-terapeutas/planos` -> `/terapeuta/cadastro?plan=free|premium|premium_plus` -> `/terapeuta/login` -> `/basico`, `/pro` ou `/plus`.
 
