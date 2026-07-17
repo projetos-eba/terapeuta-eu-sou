@@ -56,7 +56,7 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 
 - Jornada guiada: `/` -> `/como-funciona` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapias/:slug` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`. O Match é público, anônimo, determinístico, recomenda terapias e guarda escolhas apenas em `sessionStorage`.
 - Busca direta: `/` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso`.
-- Terapias: `/` -> `/terapias?q=&category=&sort=&page=` -> `/terapias/:slug` -> `/terapeutas`. A listagem usa `public_therapies_v`, mostra terapias com `status = published`, categoria ativa e mantém busca, categoria, ordenação e paginação na URL. O Match só considera terapias publicadas e ativadas em `matching_therapy_settings`.
+- Terapias: `/` -> `/terapias?q=&category=&sort=&page=` -> `/terapias/:slug` -> `/terapeutas?therapy=:slug&source=therapy` -> `/terapeutas/:slug?therapy=:slug&source=therapy`. A listagem usa `public_therapies_v`; o detalhe usa `public_therapy_details_v` e profissionais de `public_therapist_search`. Ambas mostram terapias com `status = published`, categoria ativa e mantêm filtros/origem na URL. O Match só considera terapias publicadas e ativadas em `matching_therapy_settings` e aponta para `/terapias/:slug?source=match`.
 - Clientes visitantes: `/` -> `/cliente/cadastro` ou `/cliente/login` -> `/app`.
 - Terapeutas visitantes: `/` -> `/para-terapeutas` -> `/para-terapeutas/planos` -> `/terapeuta/cadastro?plan=free|premium|premium_plus` -> `/terapeuta/login` -> `/basico`, `/pro` ou `/plus`.
 

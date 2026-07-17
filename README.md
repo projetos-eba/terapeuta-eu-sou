@@ -14,7 +14,7 @@ O fluxo inicial de cliente usa rotas separadas em `/cliente/cadastro` e `/client
 
 O Match público usa `/sua-jornada` e `/sua-jornada/resultado`. A configuração vem de `matching_themes`, `matching_interests` e da view `public_matching_config`; o cálculo roda em `/api/public/matching/calculate` com pesos versionados em `matching_weights`, usando apenas a versão publicada. O fluxo é anônimo, usa `sessionStorage` para escolhas temporárias e recomenda terapias, não terapeutas.
 
-O catálogo público de terapias usa `/terapias` e `/api/public/therapies`, consultando a view segura `public_therapies_v` por REST Supabase com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`. A view expõe apenas terapias com `status = published`, visíveis publicamente e vinculadas a categorias ativas, com contagem pública de terapeutas disponíveis. O Match usa `matching_therapy_settings.is_visible_in_matching` como ativação adicional; uma terapia só entra no Match se também estiver publicada.
+O catálogo público de terapias usa `/terapias` e `/api/public/therapies`, consultando a view segura `public_therapies_v` por REST Supabase com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`. A view expõe apenas terapias com `status = published`, visíveis publicamente e vinculadas a categorias ativas, com contagem pública de terapeutas disponíveis. O detalhe `/terapias/:slug` usa `public_therapy_details_v` para conteúdo editorial e `public_therapist_search` para profissionais relacionados. O Match usa `matching_therapy_settings.is_visible_in_matching` como ativação adicional; uma terapia só entra no Match se também estiver publicada.
 
 O mapa operacional de integração entre rotas, páginas, skills, views públicas e domínios fica em `docs/product/integration-map.md`. Consulte esse arquivo antes de criar nova página pública, função ou view compartilhada.
 
@@ -76,6 +76,7 @@ Variáveis públicas e segredos esperados ficam em `.env.example`.
 
 - `NEXT_PUBLIC_SUPABASE_URL`: URL pública do projeto Supabase.
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`: chave pública anon.
+- `NEXT_PUBLIC_SITE_URL`: URL pública do site usada por metadata/sitemap; se ausente em desenvolvimento, o sitemap usa `http://localhost:3000`.
 - `SUPABASE_SERVICE_ROLE_KEY`: chave de serviço, somente servidor e Edge Functions.
 - `SUPABASE_JWT_SECRET`: segredo JWT do projeto.
 

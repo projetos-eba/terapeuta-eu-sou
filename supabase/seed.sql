@@ -1040,6 +1040,97 @@ set
   is_public_visible = excluded.is_public_visible,
   updated_at = now();
 
+insert into public.therapy_public_content (
+  therapy_id,
+  hero_image_url,
+  subtitle,
+  introduction,
+  complementary_description,
+  safety_note,
+  seo_title,
+  seo_description
+)
+values
+  (
+    '22222222-2222-4222-8222-222222222225',
+    '/therapies/reiki-detail-hero-crop.png',
+    'Uma prática que convida ao equilíbrio, à presença e ao cuidado consigo mesmo.',
+    'Reiki é uma técnica complementar de imposição de mãos associada ao cuidado energético, à presença e à harmonização entre corpo, mente e emoções.',
+    'No TES, esta terapia é apresentada como um caminho de autocuidado e escuta sensível. Ela pode ser explorada no seu tempo, sempre respeitando sua história e suas necessidades.',
+    'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.',
+    'Reiki | Terapeuta Eu Sou',
+    'Conheça Reiki, entenda a abordagem e encontre profissionais publicados que oferecem sessões online pela plataforma.'
+  ),
+  (
+    '22222222-2222-4222-8222-222222222226',
+    '/therapies/aromaterapia.png',
+    'Uma prática sensorial para criar pausas, presença e rituais de autocuidado.',
+    'Aromaterapia usa aromas e óleos essenciais em contextos de bem-estar, presença e cuidado complementar.',
+    'No TES, a Aromaterapia é apresentada com orientação responsável, respeitando limites, preferências e segurança de cada pessoa.',
+    'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.',
+    'Aromaterapia | Terapeuta Eu Sou',
+    'Conheça Aromaterapia e siga para profissionais relacionados quando fizer sentido para você.'
+  )
+on conflict (therapy_id) do update
+set
+  hero_image_url = excluded.hero_image_url,
+  subtitle = excluded.subtitle,
+  introduction = excluded.introduction,
+  complementary_description = excluded.complementary_description,
+  safety_note = excluded.safety_note,
+  seo_title = excluded.seo_title,
+  seo_description = excluded.seo_description,
+  updated_at = now();
+
+insert into public.therapy_highlights (
+  id,
+  therapy_id,
+  title,
+  icon_key,
+  sort_order
+)
+values
+  ('76000000-0000-4000-8000-000000000001', '22222222-2222-4222-8222-222222222225', 'Equilíbrio energético', 'energy', 1),
+  ('76000000-0000-4000-8000-000000000002', '22222222-2222-4222-8222-222222222225', 'Redução do estresse', 'heart', 2),
+  ('76000000-0000-4000-8000-000000000003', '22222222-2222-4222-8222-222222222225', 'Bem-estar integral', 'sparkles', 3),
+  ('76000000-0000-4000-8000-000000000004', '22222222-2222-4222-8222-222222222226', 'Pausa sensorial', 'flower', 1),
+  ('76000000-0000-4000-8000-000000000005', '22222222-2222-4222-8222-222222222226', 'Rituais de presença', 'leaf', 2),
+  ('76000000-0000-4000-8000-000000000006', '22222222-2222-4222-8222-222222222226', 'Cuidado complementar', 'shield', 3)
+on conflict (id) do update
+set
+  therapy_id = excluded.therapy_id,
+  title = excluded.title,
+  icon_key = excluded.icon_key,
+  sort_order = excluded.sort_order,
+  updated_at = now();
+
+insert into public.therapy_benefits (
+  id,
+  therapy_id,
+  title,
+  description,
+  icon_key,
+  sort_order
+)
+values
+  ('77000000-0000-4000-8000-000000000001', '22222222-2222-4222-8222-222222222225', 'Mais calma e relaxamento', 'Pode apoiar uma pausa de presença em rotinas intensas.', 'lotus', 1),
+  ('77000000-0000-4000-8000-000000000002', '22222222-2222-4222-8222-222222222225', 'Apoio em ansiedade e estresse', 'Um convite complementar para desacelerar com cuidado.', 'heart', 2),
+  ('77000000-0000-4000-8000-000000000003', '22222222-2222-4222-8222-222222222225', 'Mais energia vital e disposição', 'Pode favorecer percepção corporal e presença.', 'sun', 3),
+  ('77000000-0000-4000-8000-000000000004', '22222222-2222-4222-8222-222222222225', 'Qualidade do descanso', 'Pode compor uma rotina de relaxamento antes do sono.', 'moon', 4),
+  ('77000000-0000-4000-8000-000000000005', '22222222-2222-4222-8222-222222222225', 'Equilíbrio emocional e mental', 'Apoia uma experiência de autocuidado sem substituir acompanhamento profissional.', 'balance', 5),
+  ('77000000-0000-4000-8000-000000000006', '22222222-2222-4222-8222-222222222225', 'Sensação de leveza e bem-estar', 'Um espaço para perceber o corpo e acolher o momento presente.', 'diamond', 6),
+  ('77000000-0000-4000-8000-000000000007', '22222222-2222-4222-8222-222222222226', 'Pausa e relaxamento', 'Pode apoiar rituais simples de presença.', 'leaf', 1),
+  ('77000000-0000-4000-8000-000000000008', '22222222-2222-4222-8222-222222222226', 'Atenção aos sentidos', 'Convida a observar aromas, corpo e ambiente com cuidado.', 'flower', 2),
+  ('77000000-0000-4000-8000-000000000009', '22222222-2222-4222-8222-222222222226', 'Autocuidado complementar', 'Deve ser usada com orientação responsável e sem promessa de resultado.', 'shield', 3)
+on conflict (id) do update
+set
+  therapy_id = excluded.therapy_id,
+  title = excluded.title,
+  description = excluded.description,
+  icon_key = excluded.icon_key,
+  sort_order = excluded.sort_order,
+  updated_at = now();
+
 insert into public.matching_themes (
   id,
   name,
