@@ -63,7 +63,7 @@
     --tes-color-brand-primary: #6c3d91;
     --tes-color-brand-primary-hover: #5b337a;
     --tes-color-brand-primary-pressed: #482861;
-    --tes-color-brand-deep: #261433;
+    --tes-color-brand-deep: #14105a;
     --tes-color-brand-lavender: #e2d1ec;
     --tes-color-brand-lavender-soft: #f1e8f6;
     --tes-color-brand-cyan: #81bae0;
@@ -76,7 +76,7 @@
     --tes-color-surface-mist: #f1effa;
     --tes-color-surface-elevated: #ffffff;
 
-    --tes-color-text-primary: #261433;
+    --tes-color-text-primary: #14105a;
     --tes-color-text-secondary: #5e5a8a;
     --tes-color-text-muted: #8c87b2;
     --tes-color-text-subtle: #a9a4c6;
@@ -112,19 +112,19 @@
     --tes-layout-topbar-height: 72px;
 
     --background: 0 0% 100%;
-    --foreground: 275 43.7% 13.9%;
+    --foreground: 243 69.8% 20.8%;
     --card: 0 0% 100%;
-    --card-foreground: 275 43.7% 13.9%;
+    --card-foreground: 243 69.8% 20.8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 275 43.7% 13.9%;
+    --popover-foreground: 243 69.8% 20.8%;
     --primary: 274 40.8% 40.4%;
     --primary-foreground: 0 0% 100%;
     --secondary: 279 43.8% 93.7%;
-    --secondary-foreground: 275 43.7% 13.9%;
+    --secondary-foreground: 243 69.8% 20.8%;
     --muted: 254 45% 95%;
     --muted-foreground: 245 21.1% 44.7%;
     --accent: 204 60.5% 69.2%;
-    --accent-foreground: 275 43.7% 13.9%;
+    --accent-foreground: 243 69.8% 20.8%;
     --destructive: 347 82.2% 64.7%;
     --destructive-foreground: 0 0% 100%;
     --border: 258 52.6% 92.5%;

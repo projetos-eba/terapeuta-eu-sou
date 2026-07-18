@@ -123,8 +123,10 @@ Semânticos principais:
 
 - `color.semantic.action.primary.default = #6C3D91`;
 - `color.semantic.profile.patient = #81BAE0`;
-- `color.semantic.text.primary = #261433`;
+- `color.semantic.text.primary = #14105A`;
 - `color.semantic.status.info = #5EA3D2`.
+
+Regra de implementação: títulos e textos primários devem usar o token `text-brand-deep`/`text-tesText-primary`, nunca hex hardcoded como `#261433` ou variações próximas. O valor canônico atual é `#14105A`.
 
 Gradiente canônico para CTA premium:
 

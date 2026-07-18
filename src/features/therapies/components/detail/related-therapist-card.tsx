@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { ArrowRight, CalendarClock, Check, Heart, Star, Users } from "lucide-react";
+import { ArrowRight, CalendarClock, Heart, Star, Users } from "lucide-react";
 
 import { TESButton } from "@/components/tes";
 import { routes } from "@/lib/routes";
@@ -27,106 +27,91 @@ export function RelatedTherapistCard({
   const favoriteHref = `${routes.public.clientSignIn}?returnUrl=${encodeURIComponent(profileHref)}`;
 
   return (
-    <article className="grid gap-5 rounded-[14px] border border-[#e5e0f5] bg-white p-5 lg:grid-cols-[440px_1fr_270px_150px] lg:items-center lg:gap-6">
-      <div className="flex gap-5">
-        <div className="relative size-[96px] shrink-0 overflow-hidden rounded-full bg-brand-lavenderSoft sm:size-[108px]">
-          {therapist.photoUrl ? (
-            <Image
-              src={therapist.photoUrl}
-              alt=""
-              fill
-              sizes="108px"
-              className="object-cover"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-3xl font-serif italic text-brand-primary">
-              {therapist.name.slice(0, 1)}
-            </div>
-          )}
-          <span
-            className="absolute bottom-2 right-2 size-3 rounded-full border-2 border-white bg-status-success"
-            aria-hidden="true"
-          />
-        </div>
-
-        <div className="min-w-0 pt-1">
-          <h3 className="text-2xl font-extrabold leading-tight text-[#3d14ad]">
-            {therapist.name}
-          </h3>
-          <p className="mt-2 text-sm font-extrabold text-[#0894ab]">
-            {therapist.headline}
-          </p>
-          <p className="mt-3 max-w-[340px] text-sm font-semibold leading-6 text-[#3b3d80]">
-            {therapist.serviceDescription}
-          </p>
-        </div>
-      </div>
-
-      <div className="border-t border-[#e5e0f5] pt-4 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0">
-        <p className="text-sm font-extrabold text-[#3d14ad]">
-          Temas de atuação
-        </p>
-        <ul className="mt-3 space-y-2">
-          {therapist.tags.length > 0 ? (
-            therapist.tags.map((tag) => (
-              <li
-                key={tag}
-                className="flex items-center gap-2 text-sm font-semibold text-[#3b3d80]"
-              >
-                <Check className="h-4 w-4 text-status-success" aria-hidden="true" />
-                {tag}
-              </li>
-            ))
-          ) : (
-            <li className="text-sm font-semibold text-[#6b669e]">
-              Perfil em atualização
-            </li>
-          )}
-        </ul>
-      </div>
-
-      <div className="border-t border-[#e5e0f5] pt-4 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0">
-        {therapist.averageRating ? (
-          <div className="flex items-center gap-1 text-[#ffa80d]">
-            {Array.from({ length: 5 }).map((_, index) => (
-              <Star
-                key={index}
-                className="h-5 w-5 fill-current"
-                aria-hidden="true"
+    <article className="flex h-full flex-col gap-4 border-border bg-white p-4 sm:p-5 lg:border-b lg:border-r">
+      <div className="grid gap-4 sm:grid-cols-[1fr_178px]">
+        <div className="flex gap-4">
+          <div className="relative size-[72px] shrink-0 overflow-hidden rounded-full bg-brand-lavenderSoft sm:size-[78px]">
+            {therapist.photoUrl ? (
+              <Image
+                src={therapist.photoUrl}
+                alt=""
+                fill
+                sizes="78px"
+                className="object-cover"
               />
-            ))}
+            ) : (
+              <div className="flex h-full items-center justify-center text-3xl font-serif italic text-brand-primary">
+                {therapist.name.slice(0, 1)}
+              </div>
+            )}
+            <span
+              className="absolute bottom-2 right-2 size-3 rounded-full border-2 border-white bg-status-success"
+              aria-hidden="true"
+            />
           </div>
-        ) : (
-          <span className="inline-flex rounded-full bg-[#e0f2ff] px-3 py-1 text-xs font-extrabold text-[#1478e0]">
-            Novo
-          </span>
-        )}
 
-        <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-[#3b3d80]">
-          <Star className="h-4 w-4 text-[#8033e0]" aria-hidden="true" />
+          <div className="min-w-0 pt-1">
+            <h3 className="text-xl font-extrabold leading-tight text-brand-primary">
+              {therapist.name}
+            </h3>
+            <p className="mt-1 text-xs font-extrabold text-status-info">
+              {therapist.headline}
+            </p>
+            <p className="mt-2 max-w-[340px] overflow-hidden text-sm font-semibold leading-6 text-tesText-secondary [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+              {therapist.serviceDescription}
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-md bg-surface-soft p-3">
+          <p className="text-xs font-extrabold text-brand-primary">
+            Temas de atuação
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {therapist.tags.length > 0 ? (
+              therapist.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold leading-tight text-tesText-secondary"
+                >
+                  {tag}
+                </span>
+              ))
+            ) : (
+              <span className="text-xs font-semibold text-tesText-muted">
+                Perfil em atualização
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-3 text-xs font-bold text-tesText-secondary">
+        <span className="flex items-center gap-1.5">
+          <Star className="h-4 w-4 fill-current text-status-warning" aria-hidden="true" />
           {therapist.averageRating
             ? `${therapist.averageRating.toFixed(1).replace(".", ",")} (${therapist.reviewCount} avaliações)`
             : "Perfil novo"}
-        </p>
-        <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-[#3b3d80]">
-          <Users className="h-4 w-4 text-[#8033e0]" aria-hidden="true" />
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Users className="h-4 w-4 text-brand-primary" aria-hidden="true" />
           {therapist.completedSessionCount > 0
             ? `${therapist.completedSessionCount} sessões realizadas`
             : "Sessões em breve"}
-        </p>
+        </span>
         {therapist.nextSlotAt ? (
-          <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-[#3b3d80]">
-            <CalendarClock className="h-4 w-4 text-[#8033e0]" aria-hidden="true" />
+          <span className="flex items-center gap-1.5">
+            <CalendarClock className="h-4 w-4 text-brand-primary" aria-hidden="true" />
             {formatNextSlot(therapist.nextSlotAt)}
-          </p>
+          </span>
         ) : null}
       </div>
 
-      <div className="flex items-center gap-3 lg:justify-end">
+      <div className="mt-auto flex items-center gap-3 border-t border-border pt-3">
         <TESButton
           href={profileHref}
           variant="secondary"
-          className="min-h-12 flex-1 rounded-[8px] border-[#b299e5] text-[#3d14ad] lg:flex-none"
+          className="min-h-11 flex-1 rounded-md border-brand-lavender text-brand-primary"
         >
           Ver perfil
           <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -134,9 +119,9 @@ export function RelatedTherapistCard({
         <Link
           href={favoriteHref as Route<string>}
           aria-label={`Entrar para favoritar ${therapist.name}`}
-          className="flex min-h-12 min-w-12 items-center justify-center rounded-full text-[#3d14ad] transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
         >
-          <Heart className="h-7 w-7" aria-hidden="true" />
+          <Heart className="h-6 w-6" aria-hidden="true" />
         </Link>
       </div>
     </article>

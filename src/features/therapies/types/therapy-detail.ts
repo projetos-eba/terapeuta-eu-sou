@@ -1,4 +1,6 @@
 export type PublicTherapyDetail = {
+  approachIconKey: string;
+  approachLabel: string;
   benefits: Array<{
     description?: string;
     iconKey: string;
@@ -11,6 +13,7 @@ export type PublicTherapyDetail = {
   complementaryDescription: string | null;
   description: string;
   heroImageUrl: string | null;
+  heroFocalPoint: "left" | "center" | "right";
   highlights: Array<{
     iconKey: string;
     title: string;
@@ -18,6 +21,10 @@ export type PublicTherapyDetail = {
   id: string;
   introduction: string;
   name: string;
+  faqs: Array<{
+    answer: string;
+    question: string;
+  }>;
   safetyNote: string | null;
   seoDescription: string | null;
   seoTitle: string | null;
@@ -25,6 +32,7 @@ export type PublicTherapyDetail = {
   slug: string;
   subtitle: string;
   therapistCount: number;
+  visualThemeKey: "energy" | "oracle" | "systemic";
 };
 
 export type RelatedTherapist = {
@@ -44,11 +52,15 @@ export type RelatedTherapist = {
 export type RelatedTherapistSort = "relevance" | "rating" | "next_slot";
 
 export type PublicTherapyDetailRow = {
+  approach_icon_key: string | null;
+  approach_label: string | null;
   benefits: unknown;
   category_name: string;
   category_slug: string;
   complementary_description: string | null;
   description: string | null;
+  faqs: unknown;
+  hero_focal_point: string | null;
   hero_image_url: string | null;
   highlights: unknown;
   id: string;
@@ -61,6 +73,7 @@ export type PublicTherapyDetailRow = {
   slug: string;
   subtitle: string | null;
   therapist_count: number | null;
+  visual_theme_key: string | null;
 };
 
 export type RelatedTherapistRow = {

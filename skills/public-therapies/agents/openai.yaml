@@ -1,6 +1,6 @@
 name: public-therapies
 description: Skill local para manter /terapias e /terapias/:slug alinhadas ao Figma, catálogo real, views públicas, SEO e copy responsável.
-version: 1.1.0
+version: 1.2.0
 source:
   figma_nodes:
     catalog: "13273:1439"
@@ -13,6 +13,12 @@ source:
     catalog: "public_therapies_v"
     detail: "public_therapy_details_v"
     related_therapists: "public_therapist_search"
+  phase_scope:
+    published:
+      - reiki
+      - taro
+      - constelacao-familiar
+    related_therapists_limit: 6
 checks:
   - npm run typecheck
   - npm run lint

@@ -6,7 +6,8 @@ import type {
 import { RelatedTherapists } from "./related-therapists";
 import { TherapyBenefits } from "./therapy-benefits";
 import { TherapyClosingCta } from "./therapy-closing-cta";
-import { TherapyHero } from "./therapy-hero";
+import { TherapyFaq } from "./therapy-faq";
+import { TherapyHero, TherapyHeroImage } from "./therapy-hero";
 import { TherapyOverview } from "./therapy-overview";
 
 type TherapyDetailPageProps = {
@@ -25,22 +26,35 @@ export function TherapyDetailPage({
   therapy,
 }: TherapyDetailPageProps) {
   return (
-    <>
-      <TherapyHero
-        relatedCount={relatedTherapists.length}
-        source={source}
-        therapy={therapy}
-      />
-      <TherapyOverview therapy={therapy} />
-      <TherapyBenefits therapy={therapy} />
-      <RelatedTherapists
-        errorMessage={relatedErrorMessage}
-        source={source}
-        sort={sort}
-        therapists={relatedTherapists}
-        therapy={therapy}
-      />
-      <TherapyClosingCta therapy={therapy} />
-    </>
+    <div className="bg-[#fbf8ff]">
+      <div className="mx-auto max-w-[1440px] px-5 pb-16 pt-8 sm:px-8 lg:px-12 lg:pt-12">
+        <section className="grid gap-6 lg:grid-cols-[0.42fr_0.58fr] lg:items-start">
+          <div className="space-y-6">
+            <TherapyHero therapy={therapy} />
+            <TherapyOverview therapy={therapy} />
+          </div>
+
+          <div className="space-y-6">
+            <TherapyHeroImage therapy={therapy} />
+            <TherapyBenefits therapy={therapy} />
+          </div>
+        </section>
+
+        <div className="mt-8">
+          <RelatedTherapists
+            errorMessage={relatedErrorMessage}
+            source={source}
+            sort={sort}
+            therapists={relatedTherapists}
+            therapy={therapy}
+          />
+        </div>
+
+        <section className="mt-8 grid gap-6 lg:grid-cols-[0.46fr_0.54fr]">
+          <TherapyClosingCta therapy={therapy} />
+          <TherapyFaq therapy={therapy} />
+        </section>
+      </div>
+    </div>
   );
 }

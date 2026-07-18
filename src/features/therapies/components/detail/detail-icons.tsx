@@ -1,6 +1,8 @@
 import {
   Activity,
   BadgeCheck,
+  BookOpen,
+  CircleDot,
   Diamond,
   Flower2,
   Heart,
@@ -9,6 +11,7 @@ import {
   Scale,
   ShieldCheck,
   Sparkles,
+  UsersRound,
   Sun,
   Waves,
 } from "lucide-react";
@@ -27,6 +30,9 @@ export function DetailIcon({ iconKey }: { iconKey: string }) {
   if (normalizedKey === "balance") return <Scale className={iconClassName} />;
   if (normalizedKey === "diamond") return <Diamond className={iconClassName} />;
   if (normalizedKey === "energy") return <Activity className={iconClassName} />;
+  if (normalizedKey === "oracle") return <BookOpen className={iconClassName} />;
+  if (normalizedKey === "systemic") return <UsersRound className={iconClassName} />;
+  if (normalizedKey === "pattern") return <CircleDot className={iconClassName} />;
   if (normalizedKey === "lotus") return <Flower2 className={iconClassName} />;
   if (normalizedKey === "sparkles") return <Sparkles className={iconClassName} />;
 

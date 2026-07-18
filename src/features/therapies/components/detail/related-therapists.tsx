@@ -3,6 +3,7 @@ import type { Route } from "next";
 import { ArrowRight, SearchX } from "lucide-react";
 
 import { TESButton } from "@/components/tes";
+import { cn } from "@/lib/utils";
 import { routes } from "@/lib/routes";
 import type {
   PublicTherapyDetail,
@@ -12,6 +13,7 @@ import type {
 import { DetailIcon } from "./detail-icons";
 import { buildTherapistsByTherapyHref } from "./detail-links";
 import { RelatedTherapistCard } from "./related-therapist-card";
+import { therapyVisualThemes } from "./therapy-visual-theme";
 
 type RelatedTherapistsProps = {
   errorMessage?: string;
@@ -34,28 +36,26 @@ export function RelatedTherapists({
   therapists,
   therapy,
 }: RelatedTherapistsProps) {
+  const visualTheme = therapyVisualThemes[therapy.visualThemeKey];
   const therapistsHref = buildTherapistsByTherapyHref({
     source,
     therapySlug: therapy.slug,
   });
 
   return (
-    <section
-      id="profissionais"
-      className="mx-auto max-w-[1288px] scroll-mt-8 px-5 pb-10 sm:px-8 lg:px-12"
-    >
-      <div className="rounded-[14px] border border-[#e5e0f5] bg-white p-5 shadow-[0_10px_24px_rgba(89,56,173,0.10)] sm:p-7">
+    <section id="profissionais" className="scroll-mt-8">
+      <div className="rounded-hero border border-border bg-surface-elevated p-5 shadow-card sm:p-7">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <div className="flex items-center gap-3">
-              <span className="text-[#8033e0]">
+              <span className={visualTheme.accent}>
                 <DetailIcon iconKey="energy" />
               </span>
-              <h2 className="text-[28px] font-extrabold leading-tight text-[#3d14ad] sm:text-[29px]">
+              <h2 className="text-[28px] font-extrabold leading-tight text-brand-deep sm:text-[29px]">
                 Profissionais que trabalham com {therapy.name}
               </h2>
             </div>
-            <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-[#6b669e]">
+            <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
               Terapeutas publicados com serviço online ativo relacionado a esta
               terapia.
             </p>
@@ -68,7 +68,7 @@ export function RelatedTherapists({
             <input type="hidden" name="source" value={source} />
             <label
               htmlFor="related-sort"
-              className="text-sm font-bold text-[#6b669e]"
+              className="text-sm font-bold text-tesText-secondary"
             >
               Ordenar por:
             </label>
@@ -76,7 +76,7 @@ export function RelatedTherapists({
               id="related-sort"
               name="sort"
               defaultValue={sort}
-              className="min-h-11 w-full rounded-[8px] border border-[#e5e0f5] bg-white px-4 text-sm font-bold text-[#3b3d80] outline-none focus:ring-4 focus:ring-ring/20 sm:w-[210px]"
+              className="min-h-11 w-full rounded-md border border-border bg-white px-4 text-sm font-bold text-tesText-primary outline-none focus:ring-4 focus:ring-ring/20 sm:w-[210px]"
             >
               {Object.entries(sortLabels).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -84,7 +84,7 @@ export function RelatedTherapists({
                 </option>
               ))}
             </select>
-            <button className="min-h-11 rounded-full bg-brand-primary px-5 text-sm font-extrabold text-white">
+            <button className="min-h-11 rounded-full bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover">
               Aplicar
             </button>
           </form>
@@ -97,7 +97,12 @@ export function RelatedTherapists({
         ) : null}
 
         {therapists.length > 0 ? (
-          <div className="mt-7 space-y-3">
+          <div
+            className={cn(
+              "mt-7 grid gap-0 overflow-hidden rounded-md border border-border bg-white",
+              therapists.length > 1 ? "lg:grid-cols-2" : "lg:max-w-[680px]",
+            )}
+          >
             {therapists.map((therapist) => (
               <RelatedTherapistCard
                 key={therapist.slug}
@@ -108,7 +113,7 @@ export function RelatedTherapists({
             ))}
           </div>
         ) : (
-          <div className="mt-7 flex flex-col items-center rounded-[22px] border border-[#e5e0f5] bg-white px-5 py-12 text-center">
+          <div className="mt-7 flex flex-col items-center rounded-panel border border-border bg-white px-5 py-12 text-center">
             <span className="flex size-20 items-center justify-center rounded-full bg-brand-lavenderSoft text-brand-primary">
               <SearchX className="h-9 w-9" aria-hidden="true" />
             </span>
@@ -141,7 +146,7 @@ export function RelatedTherapists({
         {therapists.length > 0 ? (
           <Link
             href={therapistsHref as Route<string>}
-            className="mx-auto mt-8 flex min-h-12 w-fit items-center gap-2 rounded-full px-5 text-lg font-extrabold text-[#3d14ad] transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
+            className="mx-auto mt-5 flex min-h-12 w-fit items-center gap-2 rounded-full px-5 text-base font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
           >
             Ver todos os terapeutas deste caminho
             <ArrowRight className="h-5 w-5" aria-hidden="true" />

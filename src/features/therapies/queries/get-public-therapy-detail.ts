@@ -18,7 +18,7 @@ function hasSupabaseConfig() {
   );
 }
 
-async function fetchPublicView<Row>(path: string): Promise<Row[]> {
+async function fetchPublicView<Row>(path: string, slug: string): Promise<Row[]> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -29,7 +29,7 @@ async function fetchPublicView<Row>(path: string): Promise<Row[]> {
       apikey: anonKey,
       Authorization: `Bearer ${anonKey}`,
     },
-    next: { revalidate: 900, tags: ["therapy-detail"] },
+    next: { revalidate: 900, tags: [`therapy-detail:${slug}`] },
   });
 
   if (!response.ok) {
@@ -58,6 +58,7 @@ export async function getPublicTherapyDetail(
         `&slug=eq.${slugFilter(slug)}`,
         "&limit=1",
       ].join(""),
+      slug,
     );
 
     const row = rows[0];
@@ -69,6 +70,8 @@ export async function getPublicTherapyDetail(
 
 function mapTherapyDetail(row: PublicTherapyDetailRow): PublicTherapyDetail {
   return {
+    approachIconKey: row.approach_icon_key ?? "sparkles",
+    approachLabel: row.approach_label ?? row.category_name,
     benefits: parseItems(row.benefits),
     category: {
       name: row.category_name,
@@ -76,6 +79,8 @@ function mapTherapyDetail(row: PublicTherapyDetailRow): PublicTherapyDetail {
     },
     complementaryDescription: row.complementary_description,
     description: row.description ?? "",
+    faqs: parseFaqs(row.faqs),
+    heroFocalPoint: parseHeroFocalPoint(row.hero_focal_point),
     heroImageUrl: row.hero_image_url,
     highlights: parseItems(row.highlights),
     id: row.id,
@@ -88,6 +93,7 @@ function mapTherapyDetail(row: PublicTherapyDetailRow): PublicTherapyDetail {
     slug: row.slug,
     subtitle: row.subtitle ?? row.short_description ?? "",
     therapistCount: row.therapist_count ?? 0,
+    visualThemeKey: parseVisualThemeKey(row.visual_theme_key),
   };
 }
 
@@ -107,4 +113,34 @@ function parseItems<T extends { iconKey: string; title: string }>(
         typeof item.iconKey === "string",
     )
     .map((item) => ({ ...item }));
+}
+
+function parseFaqs(value: unknown): PublicTherapyDetail["faqs"] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter(
+      (item): item is { answer: string; question: string } =>
+        Boolean(item) &&
+        typeof item === "object" &&
+        "question" in item &&
+        "answer" in item &&
+        typeof item.question === "string" &&
+        typeof item.answer === "string",
+    )
+    .map((item) => ({ ...item }));
+}
+
+function parseHeroFocalPoint(
+  value: string | null,
+): PublicTherapyDetail["heroFocalPoint"] {
+  if (value === "left" || value === "right") return value;
+  return "center";
+}
+
+function parseVisualThemeKey(
+  value: string | null,
+): PublicTherapyDetail["visualThemeKey"] {
+  if (value === "oracle" || value === "systemic") return value;
+  return "energy";
 }

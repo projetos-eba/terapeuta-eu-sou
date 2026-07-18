@@ -70,7 +70,7 @@ export async function getRelatedTherapists({
     );
     query.set("therapy_slug", `eq.${slug}`);
     query.set("order", getOrder(sort));
-    query.set("limit", "3");
+    query.set("limit", "6");
 
     const response = await fetch(
       `${url}/rest/v1/public_therapist_search?${query.toString()}`,
@@ -79,7 +79,7 @@ export async function getRelatedTherapists({
           apikey: anonKey,
           Authorization: `Bearer ${anonKey}`,
         },
-        next: { revalidate: 300, tags: ["related-therapists"] },
+        next: { revalidate: 300, tags: [`related-therapists:${slug}`] },
       },
     );
 

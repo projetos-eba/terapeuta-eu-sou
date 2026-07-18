@@ -2,7 +2,7 @@
 
 Documento operacional para manter páginas, funções, banco e skills usando as mesmas fontes de verdade.
 
-Atualizado em 2026-07-16.
+Atualizado em 2026-07-17.
 
 ## Regras Gerais
 
@@ -21,7 +21,7 @@ Atualizado em 2026-07-16.
 |---|---|---|---|---|
 | Rotas públicas | `src/lib/routes.ts` | — | Todas as skills de página | Não criar rota fora do helper canônico. |
 | Home pública | `public_home_*` e projeções públicas | `public_home_therapies`, `public_home_therapists`, `public_home_testimonials` | `skills/public-home` | Home pode ter fallback local, mas deve preferir views seguras. |
-| Terapias | `therapies`, `therapy_categories`, `therapy_public_content`, `therapy_highlights`, `therapy_benefits` | `public_therapies_v`, `public_therapy_details_v`, `/api/public/therapies` | `skills/public-therapies` | Catálogo e detalhe públicos exigem `therapies.status = published`; Match exige também `matching_therapy_settings.is_visible_in_matching`. |
+| Terapias | `therapies`, `therapy_categories`, `therapy_public_content`, `therapy_highlights`, `therapy_benefits`, `therapy_faqs` | `public_therapies_v`, `public_therapy_details_v`, `/api/public/therapies` | `skills/public-therapies` | Catálogo e detalhe públicos exigem `therapies.status = published`; Match exige também `matching_therapy_settings.is_visible_in_matching`. Na fase atual, somente Reiki, Tarô e Constelação Familiar ficam publicados e visíveis no Match. |
 | Match | `matching_themes`, `matching_interests`, `matching_versions`, `matching_weights`, `matching_therapy_settings` | `public_matching_config`, `public_matching_therapist_counts`, `/api/public/matching/*` | `skills/public-matching` | Match recomenda terapias, nunca terapeutas; terapia precisa estar `published` e ativa em `matching_therapy_settings`. |
 | Busca de terapeutas | `therapist_profiles`, `therapist_services`, `therapies`, avaliações publicadas | `public_therapist_search` | `skills/public-therapist-search` | Expor somente terapeutas aprovados, públicos, aceitando reservas e com serviço ativo. |
 | Perfil público do terapeuta | Perfil, serviços, conteúdo editorial, disponibilidade e reviews pagos/concluídos | `public_therapist_profiles_v`, `public_therapist_profile_services_v`, `public_therapist_profile_reviews_v`, `public_therapist_profile_content_v` | `skills/public-therapist-profile` | Horários são derivados em runtime e avaliações só contam sessão paga/concluída. |
@@ -49,3 +49,4 @@ Atualizado em 2026-07-16.
 - `/como-funciona`, `/reserva`, `/reserva/sucesso`, `/para-terapeutas/planos`, `/ajuda`, `/termos`, `/privacidade`, áreas logadas e admin ainda precisam ser implementadas ou auditadas quando entrarem no escopo.
 - `/admin/terapias` deve controlar separadamente publicação editorial (`published`) e ativação no Match (`matching_therapy_settings.is_visible_in_matching`).
 - `/admin/matching` deve publicar versões completas de pesos, nunca edição parcial ao vivo.
+- `/admin/terapias` deve editar `approach_label`, `approach_icon_key`, `visual_theme_key`, `hero_focal_point` e `therapy_faqs` sem gravar classes CSS/Tailwind no banco; o frontend mapeia `visual_theme_key` para tokens seguros.
