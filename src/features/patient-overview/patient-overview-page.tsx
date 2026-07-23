@@ -15,7 +15,7 @@ export function PatientOverviewPage({
   onMoodChange?: (mood: MoodKey) => Promise<void>;
 }) {
   return (
-    <div className="mx-auto w-full max-w-[1174px] pb-8 lg:grid lg:grid-cols-[minmax(0,830px)_minmax(290px,332px)] lg:gap-3">
+    <div className="mx-auto w-full max-w-[1174px] pb-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(290px,332px)] lg:gap-3">
       <div className="space-y-3">
         <PatientHeroCard patient={data.patient} />
         <PatientActivitySection activity={data.activitySummary} />

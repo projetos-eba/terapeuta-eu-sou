@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cache } from "react";
+
 import {
   moodKeys,
   type MoodKey,
@@ -104,7 +106,7 @@ export class PatientOverviewDataError extends Error {
   }
 }
 
-export async function getPatientOverview(
+export const getPatientOverview = cache(async function getPatientOverview(
   profileId: string,
 ): Promise<PatientOverview> {
   const config = getSupabaseServerConfig();
@@ -122,7 +124,7 @@ export async function getPatientOverview(
   } catch {
     throw new PatientOverviewDataError();
   }
-}
+});
 
 export async function savePatientMoodCheckin(input: {
   mood: MoodKey;
