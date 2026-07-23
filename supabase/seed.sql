@@ -1323,6 +1323,107 @@ from (
 join public.therapies on therapies.slug = weights.therapy_slug
 join public.matching_interests on matching_interests.slug = weights.interest_slug;
 
+-- Patient overview demo data. Stable IDs keep this block idempotent across db reset runs.
+insert into auth.users (
+  id, instance_id, aud, role, email, encrypted_password, email_confirmed_at,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+)
+values
+  ('90000000-0000-4000-8000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'carlos@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Carlos"}'::jsonb, now(), now()),
+  ('90000000-0000-4000-8000-000000000011', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'juliane.moore@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Juliane Moore"}'::jsonb, now(), now()),
+  ('90000000-0000-4000-8000-000000000012', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'marcus.silva@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Marcus Silva"}'::jsonb, now(), now()),
+  ('90000000-0000-4000-8000-000000000013', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'beatriz.lima@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Beatriz Lima"}'::jsonb, now(), now()),
+  ('90000000-0000-4000-8000-000000000014', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'andre.lima@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"André Lima"}'::jsonb, now(), now()),
+  ('90000000-0000-4000-8000-000000000015', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'sofia.mendes@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Sofia Mendes"}'::jsonb, now(), now()),
+  ('90000000-0000-4000-8000-000000000016', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'roberto.vaz@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Roberto Vaz"}'::jsonb, now(), now())
+on conflict (id) do update
+set email = excluded.email, raw_user_meta_data = excluded.raw_user_meta_data, updated_at = now();
+
+insert into public.profiles (id, role, display_name, email, avatar_url)
+values
+  ('90000000-0000-4000-8000-000000000001', 'patient', 'Carlos', 'carlos@example.test', null),
+  ('90000000-0000-4000-8000-000000000011', 'therapist', 'Juliane Moore', 'juliane.moore@example.test', '/therapists/juliana-costa.png'),
+  ('90000000-0000-4000-8000-000000000012', 'therapist', 'Marcus Silva', 'marcus.silva@example.test', '/therapists/rafael-santos.png'),
+  ('90000000-0000-4000-8000-000000000013', 'therapist', 'Beatriz Lima', 'beatriz.lima@example.test', '/therapists/celia-martins.png'),
+  ('90000000-0000-4000-8000-000000000014', 'therapist', 'André Lima', 'andre.lima@example.test', '/therapists/lucas-pereira.png'),
+  ('90000000-0000-4000-8000-000000000015', 'therapist', 'Sofia Mendes', 'sofia.mendes@example.test', '/therapists/ana-oliveira.png'),
+  ('90000000-0000-4000-8000-000000000016', 'therapist', 'Roberto Vaz', 'roberto.vaz@example.test', '/therapists/marcio-andrade.png')
+on conflict (id) do update
+set role = excluded.role, display_name = excluded.display_name, email = excluded.email, avatar_url = excluded.avatar_url, updated_at = now();
+
+insert into public.patient_profiles (id, user_id, display_name, timezone, marketing_consent, sensitive_data_consent_at)
+values ('91000000-0000-4000-8000-000000000001', '90000000-0000-4000-8000-000000000001', 'Carlos', 'America/Sao_Paulo', true, now())
+on conflict (id) do update
+set display_name = excluded.display_name, timezone = excluded.timezone, marketing_consent = excluded.marketing_consent, sensitive_data_consent_at = excluded.sensitive_data_consent_at, updated_at = now();
+
+insert into public.therapist_profiles (
+  id, user_id, plan, status, slug, public_name, legal_name, headline, photo_url,
+  city, state, languages, is_public, is_accepting_bookings, accepts_online_sessions
+)
+values
+  ('92000000-0000-4000-8000-000000000011', '90000000-0000-4000-8000-000000000011', 'premium', 'approved', 'juliane-moore', 'Juliane Moore', 'Juliane Moore', 'Terapeuta Holística', '/therapists/juliana-costa.png', 'São Paulo', 'SP', array['pt-BR'], true, true, true),
+  ('92000000-0000-4000-8000-000000000012', '90000000-0000-4000-8000-000000000012', 'premium', 'approved', 'marcus-silva', 'Marcus Silva', 'Marcus Silva', 'Terapeuta Holístico', '/therapists/rafael-santos.png', 'Rio de Janeiro', 'RJ', array['pt-BR'], true, true, true),
+  ('92000000-0000-4000-8000-000000000013', '90000000-0000-4000-8000-000000000013', 'premium', 'approved', 'beatriz-lima', 'Beatriz Lima', 'Beatriz Lima', 'Terapeuta Holística', '/therapists/celia-martins.png', 'Curitiba', 'PR', array['pt-BR'], true, true, true),
+  ('92000000-0000-4000-8000-000000000014', '90000000-0000-4000-8000-000000000014', 'premium', 'approved', 'andre-lima', 'André Lima', 'André Lima', 'Terapeuta Holístico', '/therapists/lucas-pereira.png', 'Florianópolis', 'SC', array['pt-BR'], true, true, true),
+  ('92000000-0000-4000-8000-000000000015', '90000000-0000-4000-8000-000000000015', 'premium', 'approved', 'sofia-mendes', 'Sofia Mendes', 'Sofia Mendes', 'Terapeuta Holística', '/therapists/ana-oliveira.png', 'Belo Horizonte', 'MG', array['pt-BR'], true, true, true),
+  ('92000000-0000-4000-8000-000000000016', '90000000-0000-4000-8000-000000000016', 'premium', 'approved', 'roberto-vaz', 'Roberto Vaz', 'Roberto Vaz', 'Terapeuta Holístico', '/therapists/marcio-andrade.png', 'Porto Alegre', 'RS', array['pt-BR'], true, true, true)
+on conflict (id) do update
+set public_name = excluded.public_name, headline = excluded.headline, photo_url = excluded.photo_url, is_public = excluded.is_public, is_accepting_bookings = excluded.is_accepting_bookings, updated_at = now();
+
+insert into public.therapist_services (id, therapist_profile_id, therapy_id, title, description, duration_minutes, price_cents, status)
+values
+  ('93000000-0000-4000-8000-000000000011', '92000000-0000-4000-8000-000000000011', '22222222-2222-4222-8222-222222222225', 'Terapia Holística', 'Sessão online de cuidado integrativo.', 60, 17000, 'active'),
+  ('93000000-0000-4000-8000-000000000012', '92000000-0000-4000-8000-000000000012', '22222222-2222-4222-8222-222222222221', 'Terapia Integrativa', 'Sessão online de escuta integrativa.', 60, 17000, 'active'),
+  ('93000000-0000-4000-8000-000000000013', '92000000-0000-4000-8000-000000000013', '22222222-2222-4222-8222-222222222225', 'Reiki', 'Prática complementar online.', 60, 17000, 'active')
+on conflict (id) do update
+set therapist_profile_id = excluded.therapist_profile_id, therapy_id = excluded.therapy_id, title = excluded.title, description = excluded.description, duration_minutes = excluded.duration_minutes, price_cents = excluded.price_cents, status = excluded.status, updated_at = now();
+
+insert into public.bookings (id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at, timezone, status, payment_status, meeting_provider, meeting_url, completed_at)
+values
+  ('94000000-0000-4000-8000-000000000011', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', '93000000-0000-4000-8000-000000000011', now() - interval '30 minutes', now() + interval '30 minutes', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/juliane-live', null),
+  ('94000000-0000-4000-8000-000000000012', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000012', '93000000-0000-4000-8000-000000000012', current_date + interval '1 day' + time '10:30', current_date + interval '1 day' + time '11:30', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/marcus', null),
+  ('94000000-0000-4000-8000-000000000013', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000013', '93000000-0000-4000-8000-000000000013', current_date + ((9 - extract(dow from current_date)::integer) % 7) + time '16:00', current_date + ((9 - extract(dow from current_date)::integer) % 7) + time '17:00', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/beatriz', null),
+  ('94000000-0000-4000-8000-000000000014', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', '93000000-0000-4000-8000-000000000011', now() - interval '2 days', now() - interval '2 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/juliane-last', now() - interval '2 days' + interval '60 minutes')
+on conflict (id) do update
+set starts_at = excluded.starts_at, ends_at = excluded.ends_at, status = excluded.status, payment_status = excluded.payment_status, meeting_url = excluded.meeting_url, completed_at = excluded.completed_at, updated_at = now();
+
+insert into public.favorite_therapists (id, patient_profile_id, therapist_profile_id)
+values
+  ('95000000-0000-4000-8000-000000000014', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000014'),
+  ('95000000-0000-4000-8000-000000000015', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000015'),
+  ('95000000-0000-4000-8000-000000000016', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000016')
+on conflict (id) do update
+set therapist_profile_id = excluded.therapist_profile_id;
+
+insert into public.conversations (id, patient_profile_id, therapist_profile_id, booking_id, last_message_at)
+values ('96000000-0000-4000-8000-000000000011', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', '94000000-0000-4000-8000-000000000011', now())
+on conflict (id) do update
+set last_message_at = excluded.last_message_at, updated_at = now();
+
+insert into public.messages (id, conversation_id, sender_profile_id, body, read_at)
+values
+  ('97000000-0000-4000-8000-000000000011', '96000000-0000-4000-8000-000000000011', '90000000-0000-4000-8000-000000000011', 'Sua sessão está pronta para começar.', null),
+  ('97000000-0000-4000-8000-000000000012', '96000000-0000-4000-8000-000000000011', '90000000-0000-4000-8000-000000000011', 'Estou disponível caso precise de algo antes do encontro.', null)
+on conflict (id) do update
+set body = excluded.body, read_at = excluded.read_at;
+
+insert into public.notifications (id, profile_id, kind, title, body, href, read_at)
+values ('98000000-0000-4000-8000-000000000011', '90000000-0000-4000-8000-000000000001', 'appointment', 'Sessão ao vivo', 'Sua sessão com Juliane Moore está disponível.', '/app/sessoes', null)
+on conflict (id) do update
+set title = excluded.title, body = excluded.body, href = excluded.href, read_at = excluded.read_at;
+
+insert into public.mood_checkins (id, patient_profile_id, mood, checked_on)
+values ('99000000-0000-4000-8000-000000000011', '91000000-0000-4000-8000-000000000001', 'calm', current_date)
+on conflict (patient_profile_id, checked_on) do update
+set mood = excluded.mood, updated_at = now();
+
+insert into public.support_tickets (id, requester_profile_id, booking_id, category, subject, description, status, priority, resolution_summary, reviewed_at)
+values
+  ('a0000000-0000-4000-8000-000000000011', '90000000-0000-4000-8000-000000000001', '94000000-0000-4000-8000-000000000014', 'payment', 'Reembolso de sessão', 'O valor foi estornado para o seu cartão Visa.', 'resolved', 'normal', 'O reembolso foi concluído.', current_date - interval '1 day'),
+  ('a0000000-0000-4000-8000-000000000012', '90000000-0000-4000-8000-000000000001', '94000000-0000-4000-8000-000000000011', 'technical', 'Problema com áudio', 'Nossa equipe técnica está verificando o log...', 'in_review', 'normal', null, current_date - interval '2 days')
+on conflict (id) do update
+set subject = excluded.subject, description = excluded.description, status = excluded.status, resolution_summary = excluded.resolution_summary, reviewed_at = excluded.reviewed_at, updated_at = now();
+
 insert into public.availability_exceptions (
   id,
   therapist_profile_id,
