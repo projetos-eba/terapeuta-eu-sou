@@ -111,6 +111,19 @@
     --tes-layout-sidebar-width: 220px;
     --tes-layout-topbar-height: 72px;
 
+    /* Authenticated product surfaces. */
+    --tes-color-background: #fcfafd;
+    --tes-color-surface: #ffffff;
+    --tes-color-border: #e8e2f6;
+    --tes-color-primary: #6c3d91;
+    --tes-color-primary-dark: #482861;
+    --tes-color-text-secondary-app: #7a72a7;
+    --tes-color-accent-cyan: #11b8d0;
+    --tes-shadow-auth-card: 0 8px 24px rgba(58, 36, 128, 0.06);
+    --tes-radius-auth-card: 18px;
+    --tes-layout-auth-sidebar-width: 242px;
+    --tes-layout-auth-topbar-height: 88px;
+
     --background: 0 0% 100%;
     --foreground: 243 69.8% 20.8%;
     --card: 0 0% 100%;
