@@ -1,4 +1,4 @@
-import { fallbackTherapistProfile } from "../fallback";
+import { getFallbackTherapistProfile } from "../fallback";
 import {
   mapAvailabilityRows,
   mapContentRow,
@@ -55,9 +55,7 @@ export async function getPublicTherapistProfile(
   slug: string,
 ): Promise<TherapistProfileData | null> {
   if (!hasSupabaseConfig()) {
-    return slug === fallbackTherapistProfile.profile.slug
-      ? fallbackTherapistProfile
-      : null;
+    return getFallbackTherapistProfile(slug);
   }
 
   try {
@@ -81,7 +79,7 @@ export async function getPublicTherapistProfile(
     ]);
 
     const profileRow = profiles[0];
-    if (!profileRow) return null;
+    if (!profileRow) return getFallbackTherapistProfile(slug);
 
     const content = mapContentRow(contents[0] ?? null);
     const services = serviceRows.map(mapServiceRow);
@@ -93,9 +91,7 @@ export async function getPublicTherapistProfile(
       source: "supabase",
     };
   } catch {
-    return slug === fallbackTherapistProfile.profile.slug
-      ? fallbackTherapistProfile
-      : null;
+    return getFallbackTherapistProfile(slug);
   }
 }
 

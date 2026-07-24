@@ -180,3 +180,122 @@ export const fallbackTherapistProfile: TherapistProfileData = {
   ],
   source: "fallback",
 };
+
+export const fallbackTherapistProfilesBySlug: Record<
+  string,
+  TherapistProfileData
+> = {
+  [fallbackTherapistProfile.profile.slug]: fallbackTherapistProfile,
+  "rafael-santos": {
+    availability: [
+      {
+        dateLabel: "Amanhã",
+        dayLabel: "Amanhã",
+        slots: [
+          {
+            dateLabel: "Amanhã",
+            dayLabel: "Amanhã",
+            endsAt: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(),
+            serviceId: "d1000000-0000-4000-8000-000000000002",
+            startsAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            timeLabel: "09:30",
+          },
+        ],
+      },
+    ],
+    profile: {
+      acceptsOnlineSessions: true,
+      badges: ["Perfil verificado"],
+      bio:
+        "Rafael acompanha pessoas em fases de mudança com escuta integrativa e combinados claros de sessão.",
+      cityState: "Rio de Janeiro, RJ",
+      content: {
+        essenceBody:
+          "Rafael acompanha pessoas em fases de mudança com escuta integrativa e combinados claros de sessão.",
+        experienceYears: 6,
+        guideItems: [
+          { icon: "compass", label: "Mudanças de vida" },
+          { icon: "sparkles", label: "Propósito" },
+          { icon: "leaf", label: "Equilíbrio emocional" },
+        ],
+        invitationBody:
+          "Conheça a abordagem de Rafael e veja como uma sessão online pode apoiar suas reflexões com calma e responsabilidade.",
+        reflections: [],
+        shortIntro:
+          "Sessões para mudanças de vida, propósito e reorganização de caminhos.",
+      },
+      headline:
+        "Sessões para mudanças de vida, propósito e reorganização de caminhos.",
+      heroImage: "/therapists/rafael-santos.png",
+      id: "c1000000-0000-4000-8000-000000000002",
+      isAcceptingBookings: true,
+      isVerified: true,
+      name: "Rafael Santos",
+      plan: "premium",
+      profileUrl: routes.public.therapistProfile("rafael-santos"),
+      rating: {
+        average: 4.8,
+        count: 74,
+        sessionsCompleted: 1,
+      },
+      services: [
+        {
+          availability: [
+            {
+              dateLabel: "Amanhã",
+              dayLabel: "Amanhã",
+              slots: [
+                {
+                  dateLabel: "Amanhã",
+                  dayLabel: "Amanhã",
+                  endsAt: new Date(
+                    Date.now() + 25 * 60 * 60 * 1000,
+                  ).toISOString(),
+                  serviceId: "d1000000-0000-4000-8000-000000000002",
+                  startsAt: new Date(
+                    Date.now() + 24 * 60 * 60 * 1000,
+                  ).toISOString(),
+                  timeLabel: "09:30",
+                },
+              ],
+            },
+          ],
+          bookingUrl: `${routes.public.reservation}?therapist=rafael-santos&service=d1000000-0000-4000-8000-000000000002`,
+          currency: "BRL",
+          description:
+            "Apoio para quem está vivendo mudanças importantes e deseja encontrar novos caminhos.",
+          durationMinutes: 50,
+          id: "d1000000-0000-4000-8000-000000000002",
+          priceCents: 12000,
+          priceLabel: "R$ 120",
+          title: "Sessão para mudanças de vida",
+          therapyName: "Terapia Integrativa",
+          therapySlug: "terapia-integrativa",
+        },
+      ],
+      slug: "rafael-santos",
+      tags: ["Mudanças de vida", "Propósito", "Equilíbrio emocional"],
+      video: {
+        provider: "external",
+        thumbnailUrl: "/home/tablet-video-session.png",
+        title: "Um convite para você",
+        url: "https://example.test/videos/rafael-santos",
+      },
+    },
+    reviews: [
+      {
+        authorLabel: "Paciente TES",
+        body: "Ajudou a organizar um momento muito difícil.",
+        createdLabel: "Experiência compartilhada",
+        id: "90000000-0000-4000-8000-000000000002",
+        patientContext: "Sessão concluída pela plataforma",
+        rating: 5,
+      },
+    ],
+    source: "fallback",
+  },
+};
+
+export function getFallbackTherapistProfile(slug: string) {
+  return fallbackTherapistProfilesBySlug[slug] ?? null;
+}
