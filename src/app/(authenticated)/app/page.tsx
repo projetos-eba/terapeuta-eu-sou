@@ -10,7 +10,10 @@ export default async function PatientHomePage() {
   const session = await requirePatientSession();
 
   try {
-    const overview = await getPatientOverview(session.profileId);
+    const overview = await getPatientOverview(
+      session.profileId,
+      session.accessToken,
+    );
     return (
       <PatientOverviewPage data={overview} onMoodChange={savePatientMood} />
     );

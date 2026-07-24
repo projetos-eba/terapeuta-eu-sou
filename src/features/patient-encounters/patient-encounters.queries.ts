@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 import {
   mapPatientEncountersPage,
@@ -19,8 +20,8 @@ import type {
 const DEMO_PATIENT_PROFILE_ID = "91000000-0000-4000-8000-000000000001";
 
 type SupabaseServerConfig = {
-  anonKey: string;
-  serviceRoleKey: string;
+  accessToken: string;
+  apiKey: string;
   url: string;
 };
 
@@ -53,10 +54,11 @@ export class PatientEncountersDataError extends Error {
 }
 
 export const getPatientEncountersPage = cache(
-  async function getPatientEncountersPage(
-    profileId: string,
-  ): Promise<PatientEncountersPageData> {
-    const config = getSupabaseServerConfig();
+    async function getPatientEncountersPage(
+      profileId: string,
+      accessToken: string | null = null,
+    ): Promise<PatientEncountersPageData> {
+    const config = getSupabaseServerConfig(accessToken);
 
     if (!config) {
       if (process.env.NODE_ENV === "development") {
@@ -177,14 +179,14 @@ async function getSupabasePatientEncountersPage(
   return { ...page, source: "supabase" };
 }
 
-function getSupabaseServerConfig(): SupabaseServerConfig | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+function getSupabaseServerConfig(
+  accessToken: string | null,
+): SupabaseServerConfig | null {
+  const config = getSupabasePublicConfig();
 
-  if (!url || !anonKey || !serviceRoleKey) return null;
+  if (!config || !accessToken) return null;
 
-  return { anonKey, serviceRoleKey, url: url.replace(/\/$/, "") };
+  return { accessToken, apiKey: config.apiKey, url: config.url };
 }
 
 async function getRowsByIds<T>(
@@ -208,8 +210,8 @@ async function supabaseRequest<T>(
   const response = await fetch(`${config.url}${path}`, {
     cache: "no-store",
     headers: {
-      apikey: config.anonKey,
-      Authorization: `Bearer ${config.serviceRoleKey}`,
+      apikey: config.apiKey,
+      Authorization: `Bearer ${config.accessToken}`,
       "Content-Type": "application/json",
     },
   });

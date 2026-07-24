@@ -213,6 +213,11 @@ Nunca:
 - copiar chaves privadas para documentação;
 - registrar segredos em exemplos de código;
 - assumir valores de ambiente sem confirmação.
+  Regras específicas para Supabase:
+- O app Next deve usar somente variáveis publicáveis com prefixo `NEXT_PUBLIC_`.
+- Para Supabase no app Next, usar `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- Nunca usar `SUPABASE_SECRET_KEYS`, `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `SERVICE_ROLE_KEY` ou `DATABASE_URL` no `.env.example`, `.env.local` ou `.env.production` do app Next.
+- Secrets Supabase devem ficar em Supabase Edge Functions ou secrets remotos equivalentes.
   Ao encontrar risco de segurança, registrar o risco sem expor o segredo.
 
 ## 9. Atualização contínua

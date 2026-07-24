@@ -32,7 +32,7 @@ Antes de alterar `/terapeutas`, consultar:
 ## Dados
 
 - Fonte dinâmica pública: view Supabase `public_therapist_search`.
-- Integração: REST fetch com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`; não adicionar `@supabase/supabase-js` sem decisão explícita.
+- Integração: REST fetch com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Não adicionar `@supabase/supabase-js` sem decisão explícita.
 - Fallback local obrigatório em `src/features/public-therapist-search/content.ts`.
 - Seeds/mocks: manter 5 terapeutas em `supabase/seed.sql`, com `ana-oliveira` como perfil principal mais rico.
 - Toda alteração em view/schema/policy exige migration versionada. Todo mock/seed deve ser idempotente.

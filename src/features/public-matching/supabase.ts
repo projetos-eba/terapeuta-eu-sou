@@ -1,6 +1,11 @@
 import "server-only";
 
 import {
+  getSupabasePublicConfig as getSharedSupabasePublicConfig,
+  invokeSupabaseFunction,
+} from "@/lib/supabase/edge-functions";
+
+import {
   fallbackMatchingConfig,
   fallbackMatchingTherapies,
   fallbackMatchingVersionId,
@@ -8,13 +13,9 @@ import {
 } from "./fallback";
 import type {
   MatchingConfig,
-  MatchingTherapy,
-  MatchingWeight,
+  MatchingCalculationResult,
+  MatchingSelection,
 } from "./types";
-
-const PLACEHOLDER_SUPABASE_URL = "https://your-project-ref.supabase.co";
-const PLACEHOLDER_SUPABASE_ANON_KEY = "replace-with-supabase-anon-key";
-const PLACEHOLDER_SERVICE_ROLE_KEY = "replace-with-supabase-service-role-key";
 
 type PublicMatchingConfigRow = {
   interest_id: string | null;
@@ -31,67 +32,17 @@ type PublicMatchingConfigRow = {
   version_id: string;
 };
 
-type MatchingTherapyRow = {
-  description: string | null;
-  id: string;
-  name: string;
-  short_description: string;
-  slug: string;
-  status: MatchingTherapy["status"];
-  therapist_count?: number | null;
-};
-
-type MatchingTherapyCountRow = {
-  therapist_count: number | null;
-  therapy_id: string;
-};
-
-type MatchingTherapySettingRow = {
-  is_visible_in_matching: boolean;
-  therapy_id: string;
-};
-
-type MatchingTherapyDataRow = MatchingTherapyRow & {
-  therapist_count: number | null;
-  is_visible_in_matching: boolean;
-};
-
-type MatchingWeightRow = {
-  interest_id: string | null;
-  is_active: boolean;
-  theme_id: string | null;
-  therapy_id: string;
-  weight: number | string;
-};
-
 type SupabaseConfig = {
-  anonKey: string;
-  serviceRoleKey?: string;
+  apiKey: string;
   url: string;
 };
 
 function getSupabaseConfig(): SupabaseConfig | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const config = getSharedSupabasePublicConfig();
 
-  if (
-    !url ||
-    !anonKey ||
-    url === PLACEHOLDER_SUPABASE_URL ||
-    anonKey === PLACEHOLDER_SUPABASE_ANON_KEY
-  ) {
-    return null;
-  }
+  if (!config) return null;
 
-  return {
-    anonKey,
-    serviceRoleKey:
-      serviceRoleKey && serviceRoleKey !== PLACEHOLDER_SERVICE_ROLE_KEY
-        ? serviceRoleKey
-        : undefined,
-    url: url.replace(/\/$/, ""),
-  };
+  return config;
 }
 
 export async function getPublicMatchingConfig(): Promise<MatchingConfig> {
@@ -105,7 +56,7 @@ export async function getPublicMatchingConfig(): Promise<MatchingConfig> {
     const rows = await fetchRows<PublicMatchingConfigRow>(
       config,
       "public_matching_config?select=version_id,version,theme_id,theme_name,theme_slug,theme_description,theme_image_url,theme_sort_order,interest_id,interest_name,interest_slug,interest_sort_order&order=theme_sort_order.asc,interest_sort_order.asc",
-      config.anonKey,
+      config.apiKey,
       300,
     );
 
@@ -153,58 +104,37 @@ export async function getPublicMatchingConfig(): Promise<MatchingConfig> {
 }
 
 export async function getMatchingCalculationData(versionId: string) {
+  return {
+    source: "fallback" as const,
+    therapies: fallbackMatchingTherapies,
+    versionId: versionId || fallbackMatchingVersionId,
+    weights: fallbackMatchingWeights,
+  };
+}
+
+export async function calculateMatchingWithFunction(
+  selection: MatchingSelection,
+  versionId: string,
+): Promise<MatchingCalculationResult | null> {
   const config = getSupabaseConfig();
 
-  if (!config?.serviceRoleKey) {
-    return {
-      source: "fallback" as const,
-      therapies: fallbackMatchingTherapies,
-      versionId: fallbackMatchingVersionId,
-      weights: fallbackMatchingWeights,
-    };
-  }
+  if (!config) return null;
 
   try {
-    const [therapyRows, settingRows, countRows, weightRows] = await Promise.all([
-      fetchRows<MatchingTherapyRow>(
-        config,
-        "public_therapies_v?select=id,name,slug,short_description,description,status,therapist_count",
-        config.serviceRoleKey,
-      ),
-      fetchRows<MatchingTherapySettingRow>(
-        config,
-        "matching_therapy_settings?select=therapy_id,is_visible_in_matching",
-        config.serviceRoleKey,
-      ),
-      fetchRows<MatchingTherapyCountRow>(
-        config,
-        "public_matching_therapist_counts?select=therapy_id,therapist_count",
-        config.serviceRoleKey,
-      ),
-      fetchRows<MatchingWeightRow>(
-        config,
-        `matching_weights?select=therapy_id,theme_id,interest_id,weight,is_active&version_id=eq.${encodeURIComponent(
+    return await invokeSupabaseFunction<MatchingCalculationResult>(
+      config,
+      "matching-calculate",
+      {
+        body: {
+          interestIds: selection.interestIds,
+          source: selection.source,
+          themeIds: selection.themeIds,
           versionId,
-        )}&is_active=eq.true`,
-        config.serviceRoleKey,
-      ),
-    ]);
-
-    return {
-      source: "supabase" as const,
-      therapies: mergeTherapyRows(therapyRows, settingRows, countRows).map(
-        mapTherapyRow,
-      ),
-      versionId,
-      weights: weightRows.map(mapWeightRow),
-    };
+        },
+      },
+    );
   } catch {
-    return {
-      source: "fallback" as const,
-      therapies: fallbackMatchingTherapies,
-      versionId: fallbackMatchingVersionId,
-      weights: fallbackMatchingWeights,
-    };
+    return null;
   }
 }
 
@@ -229,47 +159,3 @@ async function fetchRows<Row>(
   return (await response.json()) as Row[];
 }
 
-function mapTherapyRow(row: MatchingTherapyDataRow): MatchingTherapy {
-  return {
-    description: row.description ?? row.short_description,
-    id: row.id,
-    imageUrl: null,
-    isVisibleInMatching: row.is_visible_in_matching,
-    name: row.name,
-    shortDescription: row.short_description,
-    slug: row.slug,
-    status: row.status,
-    therapistCount: row.therapist_count ?? 0,
-  };
-}
-
-function mergeTherapyRows(
-  therapies: MatchingTherapyRow[],
-  settings: MatchingTherapySettingRow[],
-  counts: MatchingTherapyCountRow[],
-): MatchingTherapyDataRow[] {
-  const settingsByTherapyId = new Map(
-    settings.map((setting) => [setting.therapy_id, setting]),
-  );
-  const countsByTherapyId = new Map(counts.map((count) => [count.therapy_id, count]));
-
-  return therapies.map((therapy) => ({
-    ...therapy,
-    is_visible_in_matching:
-      settingsByTherapyId.get(therapy.id)?.is_visible_in_matching ?? true,
-    therapist_count:
-      countsByTherapyId.get(therapy.id)?.therapist_count ??
-      therapy.therapist_count ??
-      0,
-  }));
-}
-
-function mapWeightRow(row: MatchingWeightRow): MatchingWeight {
-  return {
-    interestId: row.interest_id,
-    isActive: row.is_active,
-    themeId: row.theme_id,
-    therapyId: row.therapy_id,
-    weight: Number(row.weight),
-  };
-}

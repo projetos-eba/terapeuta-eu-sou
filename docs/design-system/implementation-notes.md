@@ -242,6 +242,8 @@ Arquivos de setup:
 Categorias:
 
 - App: `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SITE_NAME`, `NEXT_PUBLIC_SUPPORT_EMAIL`.
+- Supabase publico: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- Supabase secrets: `SUPABASE_SECRET_KEYS`, `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET` e `SERVICE_ROLE_KEY` nao pertencem ao `.env` do app Next; devem ficar em Supabase Edge Functions ou secrets remotos equivalentes.
 - Banco: `DATABASE_URL`.
 - Auth: `AUTH_SECRET`, `AUTH_TRUST_HOST`.
 - Email: `EMAIL_FROM`, `RESEND_API_KEY`.

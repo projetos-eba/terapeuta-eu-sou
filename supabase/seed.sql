@@ -1348,6 +1348,87 @@ values
 on conflict (id) do update
 set email = excluded.email, raw_user_meta_data = excluded.raw_user_meta_data, updated_at = now();
 
+with seeded_auth_users(id, email) as (
+  values
+    ('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 'ana.oliveira@example.test'),
+    ('aaaaaaaa-0000-4000-8000-000000000002'::uuid, 'rafael.santos@example.test'),
+    ('aaaaaaaa-0000-4000-8000-000000000003'::uuid, 'celia.martins@example.test'),
+    ('aaaaaaaa-0000-4000-8000-000000000004'::uuid, 'juliana.costa@example.test'),
+    ('aaaaaaaa-0000-4000-8000-000000000005'::uuid, 'lucas.pereira@example.test'),
+    ('bbbbbbbb-0000-4000-8000-000000000001'::uuid, 'paciente.ana@example.test'),
+    ('bbbbbbbb-0000-4000-8000-000000000002'::uuid, 'paciente.rafael@example.test'),
+    ('bbbbbbbb-0000-4000-8000-000000000003'::uuid, 'paciente.celia@example.test'),
+    ('bbbbbbbb-0000-4000-8000-000000000004'::uuid, 'paciente.juliana@example.test'),
+    ('bbbbbbbb-0000-4000-8000-000000000005'::uuid, 'paciente.lucas@example.test'),
+    ('90000000-0000-4000-8000-000000000001'::uuid, 'carlos@example.test'),
+    ('90000000-0000-4000-8000-000000000011'::uuid, 'juliane.moore@example.test'),
+    ('90000000-0000-4000-8000-000000000012'::uuid, 'marcus.silva@example.test'),
+    ('90000000-0000-4000-8000-000000000013'::uuid, 'beatriz.lima@example.test'),
+    ('90000000-0000-4000-8000-000000000014'::uuid, 'andre.lima@example.test'),
+    ('90000000-0000-4000-8000-000000000015'::uuid, 'sofia.mendes@example.test'),
+    ('90000000-0000-4000-8000-000000000016'::uuid, 'roberto.vaz@example.test'),
+    ('90000000-0000-4000-8000-000000000017'::uuid, 'lucas.ferreira@example.test'),
+    ('90000000-0000-4000-8000-000000000018'::uuid, 'camila.rocha@example.test')
+)
+update auth.users
+set
+  confirmation_token = coalesce(confirmation_token, ''),
+  recovery_token = coalesce(recovery_token, ''),
+  email_change_token_new = coalesce(email_change_token_new, ''),
+  email_change = coalesce(email_change, ''),
+  email_change_token_current = coalesce(email_change_token_current, ''),
+  reauthentication_token = coalesce(reauthentication_token, ''),
+  phone_change_token = coalesce(phone_change_token, ''),
+  updated_at = now()
+from seeded_auth_users
+where auth.users.id = seeded_auth_users.id;
+
+with seeded_auth_users(id, email) as (
+  values
+    ('aaaaaaaa-0000-4000-8000-000000000001'::uuid, 'ana.oliveira@example.test'),
+    ('aaaaaaaa-0000-4000-8000-000000000002'::uuid, 'rafael.santos@example.test'),
+    ('aaaaaaaa-0000-4000-8000-000000000003'::uuid, 'celia.martins@example.test'),
+    ('aaaaaaaa-0000-4000-8000-000000000004'::uuid, 'juliana.costa@example.test'),
+    ('aaaaaaaa-0000-4000-8000-000000000005'::uuid, 'lucas.pereira@example.test'),
+    ('bbbbbbbb-0000-4000-8000-000000000001'::uuid, 'paciente.ana@example.test'),
+    ('bbbbbbbb-0000-4000-8000-000000000002'::uuid, 'paciente.rafael@example.test'),
+    ('bbbbbbbb-0000-4000-8000-000000000003'::uuid, 'paciente.celia@example.test'),
+    ('bbbbbbbb-0000-4000-8000-000000000004'::uuid, 'paciente.juliana@example.test'),
+    ('bbbbbbbb-0000-4000-8000-000000000005'::uuid, 'paciente.lucas@example.test'),
+    ('90000000-0000-4000-8000-000000000001'::uuid, 'carlos@example.test'),
+    ('90000000-0000-4000-8000-000000000011'::uuid, 'juliane.moore@example.test'),
+    ('90000000-0000-4000-8000-000000000012'::uuid, 'marcus.silva@example.test'),
+    ('90000000-0000-4000-8000-000000000013'::uuid, 'beatriz.lima@example.test'),
+    ('90000000-0000-4000-8000-000000000014'::uuid, 'andre.lima@example.test'),
+    ('90000000-0000-4000-8000-000000000015'::uuid, 'sofia.mendes@example.test'),
+    ('90000000-0000-4000-8000-000000000016'::uuid, 'roberto.vaz@example.test'),
+    ('90000000-0000-4000-8000-000000000017'::uuid, 'lucas.ferreira@example.test'),
+    ('90000000-0000-4000-8000-000000000018'::uuid, 'camila.rocha@example.test')
+)
+insert into auth.identities (
+  provider_id,
+  user_id,
+  identity_data,
+  provider,
+  last_sign_in_at,
+  created_at,
+  updated_at
+)
+select
+  seeded_auth_users.id::text,
+  seeded_auth_users.id,
+  jsonb_build_object('sub', seeded_auth_users.id::text, 'email', seeded_auth_users.email, 'email_verified', true),
+  'email',
+  now(),
+  now(),
+  now()
+from seeded_auth_users
+on conflict (provider_id, provider) do update
+set
+  user_id = excluded.user_id,
+  identity_data = excluded.identity_data,
+  updated_at = now();
+
 insert into public.profiles (id, role, display_name, email, avatar_url)
 values
   ('90000000-0000-4000-8000-000000000001', 'patient', 'Carlos', 'carlos@example.test', null),

@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 import {
   moodKeys,
@@ -26,8 +27,8 @@ const moodOptions: MoodOption[] = [
 ];
 
 type SupabaseServerConfig = {
-  anonKey: string;
-  serviceRoleKey: string;
+  accessToken: string;
+  apiKey: string;
   url: string;
 };
 
@@ -108,8 +109,9 @@ export class PatientOverviewDataError extends Error {
 
 export const getPatientOverview = cache(async function getPatientOverview(
   profileId: string,
+  accessToken: string | null = null,
 ): Promise<PatientOverview> {
-  const config = getSupabaseServerConfig();
+  const config = getSupabaseServerConfig(accessToken);
 
   if (!config) {
     if (process.env.NODE_ENV === "development") {
@@ -127,10 +129,11 @@ export const getPatientOverview = cache(async function getPatientOverview(
 });
 
 export async function savePatientMoodCheckin(input: {
+  accessToken: string | null;
   mood: MoodKey;
   patientProfileId: string;
 }): Promise<PatientMoodCheckin> {
-  const config = getSupabaseServerConfig();
+  const config = getSupabaseServerConfig(input.accessToken);
   const checkedOn = new Date().toISOString().slice(0, 10);
 
   if (!config) {
@@ -325,14 +328,14 @@ async function getSupabasePatientOverview(
   };
 }
 
-function getSupabaseServerConfig(): SupabaseServerConfig | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+function getSupabaseServerConfig(
+  accessToken: string | null,
+): SupabaseServerConfig | null {
+  const config = getSupabasePublicConfig();
 
-  if (!url || !anonKey || !serviceRoleKey) return null;
+  if (!config || !accessToken) return null;
 
-  return { anonKey, serviceRoleKey, url: url.replace(/\/$/, "") };
+  return { accessToken, apiKey: config.apiKey, url: config.url };
 }
 
 async function getRowsByIds<T>(
@@ -362,8 +365,8 @@ async function supabaseRequest<T>(
     body: options.body ? JSON.stringify(options.body) : undefined,
     cache: "no-store",
     headers: {
-      apikey: config.anonKey,
-      Authorization: `Bearer ${config.serviceRoleKey}`,
+      apikey: config.apiKey,
+      Authorization: `Bearer ${config.accessToken}`,
       "Content-Type": "application/json",
       ...(options.prefer ? { Prefer: options.prefer } : {}),
     },
