@@ -100,7 +100,7 @@ export async function POST(request: Request) {
           ok: false,
           message:
             error.status === 400 || error.status === 401
-              ? "E-mail ou senha invalidos."
+              ? "E-mail ou senha inválidos."
               : THERAPIST_AUTH_GENERIC_ERROR,
         },
         { status: error.status === 400 ? 401 : 400 },

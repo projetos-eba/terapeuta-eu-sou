@@ -21,11 +21,11 @@ export function validateClientSignup(
   const birthDate = input.birthDate.trim();
 
   if (name.length < 2) {
-    fieldErrors.name = "Informe como podemos chamar voce.";
+    fieldErrors.name = "Informe como podemos chamar você.";
   }
 
   if (!EMAIL_PATTERN.test(email)) {
-    fieldErrors.email = "Informe um e-mail valido.";
+    fieldErrors.email = "Informe um e-mail válido.";
   }
 
   if (phoneDigits.length < 10 || phoneDigits.length > 13) {
@@ -48,7 +48,7 @@ export function validateClientSignup(
 
   if (!input.termsAccepted) {
     fieldErrors.termsAccepted =
-      "Voce precisa aceitar os termos e a politica de privacidade.";
+      "Você precisa aceitar os termos e a política de privacidade.";
   }
 
   if (Object.keys(fieldErrors).length > 0) {
@@ -75,7 +75,7 @@ export function validateClientLogin(
   const email = input.email.trim().toLowerCase();
 
   if (!EMAIL_PATTERN.test(email)) {
-    fieldErrors.email = "Informe um e-mail valido.";
+    fieldErrors.email = "Informe um e-mail válido.";
   }
 
   if (!input.password) {

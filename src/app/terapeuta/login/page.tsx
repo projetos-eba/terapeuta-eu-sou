@@ -7,7 +7,7 @@ import {
 
 export const metadata: Metadata = {
   description:
-    "Login separado para terapeutas acessarem a area profissional do Terapeuta Eu Sou.",
+    "Login separado para terapeutas acessarem a área profissional do Terapeuta Eu Sou.",
   robots: {
     follow: false,
     index: false,
@@ -26,8 +26,7 @@ export default function TherapistLoginPage({
     <TherapistAuthShell
       eyebrow="Acesso profissional"
       title="Entre para cuidar da sua rotina."
-      description="Este login e separado do acesso de pacientes para manter perfis, permissoes e onboarding profissional bem definidos."
-      className="flex items-center"
+      description="Este login é separado do acesso de pacientes para manter perfis, permissões e passos profissionais bem definidos."
     >
       <div className="w-full">
         <TherapistLoginForm created={searchParams?.created === "1"} />

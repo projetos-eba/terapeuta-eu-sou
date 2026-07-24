@@ -57,7 +57,7 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
 
       window.location.assign(data.redirectTo);
     } catch {
-      setFormError("Nao foi possivel conectar agora. Tente novamente.");
+      setFormError("Não foi possível conectar agora. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -77,7 +77,7 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
           <strong className="text-brand-primary">
             {getTherapistPlanLabel(plan)}
           </strong>
-          . Voce completa perfil, documentos e dados de repasse depois.
+          . Você completa perfil, documentos e dados de repasse depois.
         </p>
       </div>
 
@@ -129,7 +129,7 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
           icon={<LockKeyhole className="size-4" aria-hidden="true" />}
           label="Senha"
           name="password"
-          placeholder="Minimo de 8 caracteres"
+          placeholder="Mínimo de 8 caracteres"
           type="password"
         />
         <Field
@@ -163,7 +163,7 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
               href={routes.public.privacy as Route}
               className="font-extrabold text-brand-primary hover:underline"
             >
-              Politica de Privacidade
+              Política de Privacidade
             </Link>
             .
           </span>
@@ -182,7 +182,7 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
       </TESButton>
 
       <p className="text-center text-sm font-bold text-tesText-secondary">
-        Ja tem uma conta?{" "}
+        Já tem uma conta?{" "}
         <Link
           href={routes.public.therapistSignIn}
           className="text-brand-primary hover:underline"

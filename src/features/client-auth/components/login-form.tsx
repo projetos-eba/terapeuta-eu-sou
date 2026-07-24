@@ -49,7 +49,7 @@ export function ClientLoginForm({ created }: { created: boolean }) {
 
       window.location.assign(data.redirectTo);
     } catch {
-      setFormError("Nao foi possivel conectar agora. Tente novamente.");
+      setFormError("Não foi possível conectar agora. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -65,7 +65,7 @@ export function ClientLoginForm({ created }: { created: boolean }) {
           Entre na sua conta
         </h1>
         <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
-          Continue sua jornada, acompanhe sessoes e encontre caminhos no seu
+          Continue sua jornada, acompanhe sessões e encontre caminhos no seu
           tempo.
         </p>
       </div>
@@ -112,7 +112,7 @@ export function ClientLoginForm({ created }: { created: boolean }) {
           Esqueci minha senha
         </Link>
         <span className="text-xs font-bold text-tesText-muted">
-          Recuperacao completa fica para a etapa de hardening.
+          A recuperação completa de senha será disponibilizada em breve.
         </span>
       </div>
 
@@ -127,7 +127,7 @@ export function ClientLoginForm({ created }: { created: boolean }) {
       </TESButton>
 
       <p className="text-center text-sm font-bold text-tesText-secondary">
-        Ainda nao tem conta?{" "}
+        Ainda não tem conta?{" "}
         <Link
           href={routes.public.clientSignUp}
           className="text-brand-primary hover:underline"

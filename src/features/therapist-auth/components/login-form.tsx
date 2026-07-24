@@ -49,7 +49,7 @@ export function TherapistLoginForm({ created }: { created: boolean }) {
 
       window.location.assign(data.redirectTo);
     } catch {
-      setFormError("Nao foi possivel conectar agora. Tente novamente.");
+      setFormError("Não foi possível conectar agora. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -62,7 +62,7 @@ export function TherapistLoginForm({ created }: { created: boolean }) {
           Acesso terapeuta
         </p>
         <h1 className="mt-3 font-display text-4xl font-light italic leading-tight text-brand-deep sm:text-5xl">
-          Entre na sua area profissional
+          Entre na sua área profissional
         </h1>
         <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
           Use este acesso somente para contas de terapeuta. Pacientes e admin
@@ -72,7 +72,7 @@ export function TherapistLoginForm({ created }: { created: boolean }) {
 
       {created ? (
         <p className="rounded-2xl bg-status-successBg px-4 py-3 text-sm font-bold text-status-success">
-          Conta criada. Entre para continuar seu onboarding.
+          Conta criada. Entre para continuar sua configuração inicial.
         </p>
       ) : null}
 
@@ -112,7 +112,7 @@ export function TherapistLoginForm({ created }: { created: boolean }) {
           Esqueci minha senha
         </Link>
         <span className="text-xs font-bold text-tesText-muted">
-          Recuperacao completa fica para a etapa de hardening.
+          A recuperação completa de senha será disponibilizada em breve.
         </span>
       </div>
 
@@ -127,7 +127,7 @@ export function TherapistLoginForm({ created }: { created: boolean }) {
       </TESButton>
 
       <p className="text-center text-sm font-bold text-tesText-secondary">
-        Ainda nao tem conta?{" "}
+        Ainda não tem conta?{" "}
         <Link
           href={routes.public.therapistSignUp}
           className="text-brand-primary hover:underline"
