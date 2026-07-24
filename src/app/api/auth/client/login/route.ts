@@ -7,6 +7,7 @@ import {
 } from "@/features/client-auth/errors";
 import {
   ClientAuthConfigError,
+  ClientAuthEmailUnconfirmedError,
   ClientAuthRoleError,
   ClientAuthSupabaseError,
   loginClientWithPassword,
@@ -82,6 +83,16 @@ export async function POST(request: Request) {
         {
           ok: false,
           message: CLIENT_AUTH_ROLE_ERROR,
+        },
+        { status: 403 },
+      );
+    }
+
+    if (error instanceof ClientAuthEmailUnconfirmedError) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "Confirme seu e-mail antes de entrar.",
         },
         { status: 403 },
       );

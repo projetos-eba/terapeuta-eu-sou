@@ -16,6 +16,7 @@ export const routes = {
     clientSignUp: '/cliente/cadastro',
     therapistSignIn: '/terapeuta/login',
     therapistSignUp: '/terapeuta/cadastro',
+    confirmEmail: '/confirmar-email',
     signIn: '/entrar',
     signUp: '/cadastro',
     resetPassword: '/reset-senha',

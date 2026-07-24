@@ -19,6 +19,7 @@ type SupabasePasswordGrant = {
   expires_in?: number;
   refresh_token: string;
   user: {
+    email_confirmed_at?: string | null;
     id: string;
   };
 };
@@ -39,11 +40,12 @@ export async function createClientAccount(value: ClientSignupValue) {
   }
 
   try {
-    return await invokeSupabaseFunction<{ userId: string }>(
-      config,
-      "client-auth-signup",
-      { body: value },
-    );
+    return await invokeSupabaseFunction<{
+      mode?: "automatically_confirmed" | "email_sent";
+      redirectTo?: string;
+      statusToken?: string;
+      userId: string;
+    }>(config, "client-auth-signup", { body: value });
   } catch (error) {
     if (error instanceof SupabaseFunctionError) {
       throw new ClientAuthSupabaseError(error.status);
@@ -63,20 +65,41 @@ export async function loginClientWithPassword(input: {
     throw new ClientAuthConfigError();
   }
 
-  const session = await supabaseJson<SupabasePasswordGrant>(
-    config,
-    "/auth/v1/token?grant_type=password",
-    {
-      apiKey: config.apiKey,
-      body: {
-        email: input.email,
-        password: input.password,
-      },
-      method: "POST",
-    },
-  );
+  let session: SupabasePasswordGrant;
 
-  const profile = await getProfile(config, session.user.id, session.access_token);
+  try {
+    session = await supabaseJson<SupabasePasswordGrant>(
+      config,
+      "/auth/v1/token?grant_type=password",
+      {
+        apiKey: config.apiKey,
+        body: {
+          email: input.email,
+          password: input.password,
+        },
+        method: "POST",
+      },
+    );
+  } catch (error) {
+    if (
+      error instanceof ClientAuthSupabaseError &&
+      /confirm/i.test(error.safeDetails ?? "")
+    ) {
+      throw new ClientAuthEmailUnconfirmedError();
+    }
+
+    throw error;
+  }
+
+  if (!session.user.email_confirmed_at) {
+    throw new ClientAuthEmailUnconfirmedError();
+  }
+
+  const profile = await getProfile(
+    config,
+    session.user.id,
+    session.access_token,
+  );
 
   if (profile.role !== "patient") {
     throw new ClientAuthRoleError();
@@ -138,7 +161,7 @@ async function supabaseJson<T = unknown>(
   });
 
   if (!response.ok) {
-    throw new ClientAuthSupabaseError(response.status);
+    throw new ClientAuthSupabaseError(response.status, await response.text());
   }
 
   if (response.status === 204) {
@@ -166,8 +189,17 @@ export class ClientAuthRoleError extends Error {
   }
 }
 
+export class ClientAuthEmailUnconfirmedError extends Error {
+  constructor() {
+    super("Client email is not confirmed.");
+  }
+}
+
 export class ClientAuthSupabaseError extends Error {
-  constructor(readonly status: number) {
+  constructor(
+    readonly status: number,
+    readonly safeDetails?: string,
+  ) {
     super("Supabase client auth request failed.");
   }
 }

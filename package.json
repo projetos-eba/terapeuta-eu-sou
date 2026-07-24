@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test:email:real": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-real-email-test.ps1",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

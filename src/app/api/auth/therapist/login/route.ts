@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   loginTherapistWithPassword,
   TherapistAuthConfigError,
+  TherapistAuthEmailUnconfirmedError,
   TherapistAuthRoleError,
   TherapistAuthSupabaseError,
 } from "@/features/therapist-auth/supabase-rest";
@@ -89,6 +90,16 @@ export async function POST(request: Request) {
         {
           ok: false,
           message: THERAPIST_AUTH_ROLE_ERROR,
+        },
+        { status: 403 },
+      );
+    }
+
+    if (error instanceof TherapistAuthEmailUnconfirmedError) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "Confirme seu e-mail antes de entrar.",
         },
         { status: 403 },
       );

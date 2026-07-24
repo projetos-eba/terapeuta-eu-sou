@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -99,6 +99,62 @@ export type Database = {
             columns: ["therapist_profile_id"]
             isOneToOne: false
             referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auth_action_tokens: {
+        Row: {
+          claim_expires_at: string | null
+          claim_id: string | null
+          claimed_at: string | null
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          purpose: Database["public"]["Enums"]["auth_action_purpose"]
+          recipient_email: string
+          recipient_role: Database["public"]["Enums"]["user_role"]
+          revoked_at: string | null
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          claim_expires_at?: string | null
+          claim_id?: string | null
+          claimed_at?: string | null
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          purpose: Database["public"]["Enums"]["auth_action_purpose"]
+          recipient_email: string
+          recipient_role: Database["public"]["Enums"]["user_role"]
+          revoked_at?: string | null
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          claim_expires_at?: string | null
+          claim_id?: string | null
+          claimed_at?: string | null
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          purpose?: Database["public"]["Enums"]["auth_action_purpose"]
+          recipient_email?: string
+          recipient_role?: Database["public"]["Enums"]["user_role"]
+          revoked_at?: string | null
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auth_action_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -712,6 +768,279 @@ export type Database = {
           },
         ]
       }
+      email_action_definitions: {
+        Row: {
+          action_key: string
+          active: boolean
+          category: string
+          created_at: string
+          description: string | null
+          label: string
+        }
+        Insert: {
+          action_key: string
+          active?: boolean
+          category: string
+          created_at?: string
+          description?: string | null
+          label: string
+        }
+        Update: {
+          action_key?: string
+          active?: boolean
+          category?: string
+          created_at?: string
+          description?: string | null
+          label?: string
+        }
+        Relationships: []
+      }
+      email_action_settings: {
+        Row: {
+          action_key: string
+          created_at: string
+          enabled: boolean
+          sender_profile_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          action_key: string
+          created_at?: string
+          enabled?: boolean
+          sender_profile_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action_key?: string
+          created_at?: string
+          enabled?: boolean
+          sender_profile_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_action_settings_action_key_fkey"
+            columns: ["action_key"]
+            isOneToOne: true
+            referencedRelation: "email_action_definitions"
+            referencedColumns: ["action_key"]
+          },
+          {
+            foreignKeyName: "email_action_settings_sender_profile_id_fkey"
+            columns: ["sender_profile_id"]
+            isOneToOne: false
+            referencedRelation: "email_sender_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_delivery_logs: {
+        Row: {
+          action_key: string
+          attempt_count: number
+          correlation_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          provider_error_code: string | null
+          provider_message_id: string | null
+          recipient_email: string
+          recipient_role: Database["public"]["Enums"]["user_role"] | null
+          recipient_user_id: string | null
+          related_entity_id: string | null
+          related_entity_type: string | null
+          sender_profile_id: string | null
+          sent_at: string | null
+          status: Database["public"]["Enums"]["email_delivery_status"]
+          subject: string | null
+        }
+        Insert: {
+          action_key: string
+          attempt_count?: number
+          correlation_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          provider_error_code?: string | null
+          provider_message_id?: string | null
+          recipient_email: string
+          recipient_role?: Database["public"]["Enums"]["user_role"] | null
+          recipient_user_id?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          sender_profile_id?: string | null
+          sent_at?: string | null
+          status: Database["public"]["Enums"]["email_delivery_status"]
+          subject?: string | null
+        }
+        Update: {
+          action_key?: string
+          attempt_count?: number
+          correlation_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          provider_error_code?: string | null
+          provider_message_id?: string | null
+          recipient_email?: string
+          recipient_role?: Database["public"]["Enums"]["user_role"] | null
+          recipient_user_id?: string | null
+          related_entity_id?: string | null
+          related_entity_type?: string | null
+          sender_profile_id?: string | null
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["email_delivery_status"]
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_delivery_logs_action_key_fkey"
+            columns: ["action_key"]
+            isOneToOne: false
+            referencedRelation: "email_action_definitions"
+            referencedColumns: ["action_key"]
+          },
+          {
+            foreignKeyName: "email_delivery_logs_recipient_user_id_fkey"
+            columns: ["recipient_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_delivery_logs_sender_profile_id_fkey"
+            columns: ["sender_profile_id"]
+            isOneToOne: false
+            referencedRelation: "email_sender_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_rate_limit_events: {
+        Row: {
+          action_key: string
+          created_at: string
+          id: string
+          identifier_hash: string
+          ip_hash: string | null
+          outcome: string
+        }
+        Insert: {
+          action_key: string
+          created_at?: string
+          id?: string
+          identifier_hash: string
+          ip_hash?: string | null
+          outcome?: string
+        }
+        Update: {
+          action_key?: string
+          created_at?: string
+          id?: string
+          identifier_hash?: string
+          ip_hash?: string | null
+          outcome?: string
+        }
+        Relationships: []
+      }
+      email_sender_profiles: {
+        Row: {
+          active: boolean
+          created_at: string
+          display_name: string
+          id: string
+          is_default: boolean
+          last_synced_at: string | null
+          last_test_at: string | null
+          last_test_message: string | null
+          last_test_status:
+            | Database["public"]["Enums"]["email_delivery_status"]
+            | null
+          mailbox_address: string
+          mailbox_resource_id: string
+          provider: Database["public"]["Enums"]["email_provider_key"]
+          reply_to_email: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          display_name: string
+          id?: string
+          is_default?: boolean
+          last_synced_at?: string | null
+          last_test_at?: string | null
+          last_test_message?: string | null
+          last_test_status?:
+            | Database["public"]["Enums"]["email_delivery_status"]
+            | null
+          mailbox_address: string
+          mailbox_resource_id: string
+          provider?: Database["public"]["Enums"]["email_provider_key"]
+          reply_to_email?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_default?: boolean
+          last_synced_at?: string | null
+          last_test_at?: string | null
+          last_test_message?: string | null
+          last_test_status?:
+            | Database["public"]["Enums"]["email_delivery_status"]
+            | null
+          mailbox_address?: string
+          mailbox_resource_id?: string
+          provider?: Database["public"]["Enums"]["email_provider_key"]
+          reply_to_email?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_verification_status_tokens: {
+        Row: {
+          confirmed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          recipient_role: Database["public"]["Enums"]["user_role"]
+          revoked_at: string | null
+          token_hash: string
+          user_id: string
+        }
+        Insert: {
+          confirmed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          recipient_role: Database["public"]["Enums"]["user_role"]
+          revoked_at?: string | null
+          token_hash: string
+          user_id: string
+        }
+        Update: {
+          confirmed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          recipient_role?: Database["public"]["Enums"]["user_role"]
+          revoked_at?: string | null
+          token_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_verification_status_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorite_therapists: {
         Row: {
           created_at: string
@@ -884,6 +1213,13 @@ export type Database = {
             foreignKeyName: "matching_therapy_settings_therapy_id_fkey"
             columns: ["therapy_id"]
             isOneToOne: true
+            referencedRelation: "public_matching_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matching_therapy_settings_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: true
             referencedRelation: "public_matching_therapist_counts"
             referencedColumns: ["therapy_id"]
           },
@@ -1026,6 +1362,13 @@ export type Database = {
             columns: ["therapy_id"]
             isOneToOne: false
             referencedRelation: "public_home_therapies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matching_weights_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_matching_therapies_v"
             referencedColumns: ["id"]
           },
           {
@@ -1467,6 +1810,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           email: string | null
+          email_confirmed_at: string | null
           id: string
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
@@ -1477,6 +1821,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          email_confirmed_at?: string | null
           id: string
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -1487,6 +1832,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          email_confirmed_at?: string | null
           id?: string
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -2310,6 +2656,13 @@ export type Database = {
             foreignKeyName: "therapist_services_therapy_id_fkey"
             columns: ["therapy_id"]
             isOneToOne: false
+            referencedRelation: "public_matching_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_services_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
             referencedRelation: "public_matching_therapist_counts"
             referencedColumns: ["therapy_id"]
           },
@@ -2464,6 +2817,13 @@ export type Database = {
             foreignKeyName: "therapy_benefits_therapy_id_fkey"
             columns: ["therapy_id"]
             isOneToOne: false
+            referencedRelation: "public_matching_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_benefits_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
             referencedRelation: "public_matching_therapist_counts"
             referencedColumns: ["therapy_id"]
           },
@@ -2570,6 +2930,13 @@ export type Database = {
             foreignKeyName: "therapy_faqs_therapy_id_fkey"
             columns: ["therapy_id"]
             isOneToOne: false
+            referencedRelation: "public_matching_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_faqs_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
             referencedRelation: "public_matching_therapist_counts"
             referencedColumns: ["therapy_id"]
           },
@@ -2637,6 +3004,13 @@ export type Database = {
             columns: ["therapy_id"]
             isOneToOne: false
             referencedRelation: "public_home_therapies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_highlights_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_matching_therapies_v"
             referencedColumns: ["id"]
           },
           {
@@ -2737,6 +3111,13 @@ export type Database = {
             foreignKeyName: "therapy_public_content_therapy_id_fkey"
             columns: ["therapy_id"]
             isOneToOne: true
+            referencedRelation: "public_matching_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_public_content_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: true
             referencedRelation: "public_matching_therapist_counts"
             referencedColumns: ["therapy_id"]
           },
@@ -2827,6 +3208,13 @@ export type Database = {
             columns: ["therapy_id"]
             isOneToOne: false
             referencedRelation: "public_home_therapies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_theme_weights_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_matching_therapies_v"
             referencedColumns: ["id"]
           },
           {
@@ -2983,6 +3371,19 @@ export type Database = {
           theme_sort_order: number | null
           version: number | null
           version_id: string | null
+        }
+        Relationships: []
+      }
+      public_matching_therapies_v: {
+        Row: {
+          description: string | null
+          id: string | null
+          is_visible_in_matching: boolean | null
+          name: string | null
+          short_description: string | null
+          slug: string | null
+          status: Database["public"]["Enums"]["therapy_status"] | null
+          therapist_count: number | null
         }
         Relationships: []
       }
@@ -3205,9 +3606,33 @@ export type Database = {
       }
     }
     Functions: {
+      claim_auth_action_token: {
+        Args: {
+          p_claim_id: string
+          p_claim_lease_seconds?: number
+          p_purpose: Database["public"]["Enums"]["auth_action_purpose"]
+          p_token_hash: string
+        }
+        Returns: {
+          expires_at: string
+          id: string
+          recipient_email: string
+          recipient_role: Database["public"]["Enums"]["user_role"]
+          user_id: string
+        }[]
+      }
+      consume_auth_action_token: {
+        Args: { p_claim_id: string; p_token_id: string }
+        Returns: boolean
+      }
+      release_auth_action_token_claim: {
+        Args: { p_claim_id: string; p_token_id: string }
+        Returns: boolean
+      }
       unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
+      auth_action_purpose: "email_verification" | "password_reset"
       booking_status:
         | "draft"
         | "pending_payment"
@@ -3218,6 +3643,8 @@ export type Database = {
         | "no_show_patient"
         | "no_show_therapist"
         | "refunded"
+      email_delivery_status: "success" | "error" | "skipped"
+      email_provider_key: "hostinger_mail_api"
       match_source: "journey" | "therapy_page" | "therapist_search"
       matching_version_status: "draft" | "published" | "archived"
       message_context:
@@ -3374,6 +3801,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      auth_action_purpose: ["email_verification", "password_reset"],
       booking_status: [
         "draft",
         "pending_payment",
@@ -3385,6 +3813,8 @@ export const Constants = {
         "no_show_therapist",
         "refunded",
       ],
+      email_delivery_status: ["success", "error", "skipped"],
+      email_provider_key: ["hostinger_mail_api"],
       match_source: ["journey", "therapy_page", "therapist_search"],
       matching_version_status: ["draft", "published", "archived"],
       message_context: [

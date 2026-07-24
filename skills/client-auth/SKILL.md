@@ -17,10 +17,17 @@ Use esta skill ao implementar, auditar ou refatorar o fluxo inicial de autentica
 
 - Cadastro canônico: `/cliente/cadastro`.
 - Login canônico: `/cliente/login`.
+- Confirmacao de e-mail: `/confirmar-email`.
+- Recuperacao de senha: `/reset-senha`.
 - Área pós-login: `/app`.
 - APIs:
   - `POST /api/auth/client/signup`.
   - `POST /api/auth/client/login`.
+  - `POST /api/auth/email/verify`.
+  - `POST /api/auth/email/status`.
+  - `POST /api/auth/email/resend`.
+  - `POST /api/auth/password/request-reset`.
+  - `POST /api/auth/password/reset`.
 
 ## Cadastro
 
@@ -39,7 +46,9 @@ Backend:
 - Usa Supabase Auth/Admin REST somente em Supabase Edge Function.
 - O app Next usa apenas `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 - A Edge Function deve preferir `SUPABASE_SECRET_KEYS`; o fallback a `SUPABASE_SERVICE_ROLE_KEY` fica restrito ao runtime local/legado das functions.
-- Cria `auth.users`, `profiles.role = patient` e `patient_profiles`.
+- Cria `auth.users` sem e-mail confirmado, `profiles.role = patient` e `patient_profiles`.
+- Fluxo normal (`CONFIRMED_AUTOMATICALLY_EMAIL` ausente/vazio/`false`): gera token hashado em `auth_action_tokens`, gera token opaco de polling em `email_verification_status_tokens`, envia `email_verification` pelo modulo `skills/email-delivery` e redireciona para `/confirmar-email?statusToken=*`.
+- Fluxo bypass (`CONFIRMED_AUTOMATICALLY_EMAIL=true`): nao gera token nem envia e-mail; confirma Auth via Admin API, revoga tokens antigos, audita como `skipped` e redireciona para `/cliente/login?verified=1&automatic=1`.
 - `patient_profiles.timezone` deve usar `America/Sao_Paulo`.
 - `marketing_consent` começa como `false`.
 - Em falha depois da criação do usuário Auth, tentar limpeza best-effort e retornar erro genérico.
@@ -49,6 +58,7 @@ Backend:
 - Usa password grant REST.
 - Verifica `profiles.role = patient`.
 - Define cookies HTTP-only internos `tes_patient_access_token` e `tes_patient_refresh_token`.
+- Nao define cookies quando o e-mail nao estiver confirmado.
 - Redireciona para `/app`.
 - Terapeuta/admin devem receber a mensagem segura: `Use o acesso correspondente ao seu perfil.`
 - Guards autenticados leem `profiles`/`patient_profiles` via token do usuário; além das policies RLS, as tabelas precisam de `grant select` para `authenticated`.
@@ -65,9 +75,7 @@ Backend:
 
 ## Pendências conhecidas
 
-- Confirmação de e-mail/SMTP.
-- Recuperação de senha real.
-- Rate limit, captcha e antifraude.
+- Captcha e antifraude.
 - Proteção real de `/app`.
 - Auditoria LGPD dos consentimentos.
 
@@ -77,7 +85,8 @@ Backend:
 - `npm run lint`.
 - `npm run build`.
 - Validar `/cliente/cadastro`.
-- Validar `/cliente/login?created=1`.
+- Validar `/confirmar-email?statusToken=*` apos cadastro normal.
+- Validar `/cliente/login?verified=1&automatic=1` apenas com bypass explicitamente ativo.
 - Validar formulário sem env Supabase: telas renderizam e submit retorna erro controlado.
 - Com Supabase local, validar criação de `auth.users`, `profiles` e `patient_profiles`.
 - Validar menor de 18 anos, senha divergente, e-mail duplicado e login de perfil não paciente.

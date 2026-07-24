@@ -18,6 +18,8 @@ Use esta skill ao implementar, auditar ou refatorar o fluxo inicial de autentica
 
 - Cadastro canônico: `/terapeuta/cadastro`.
 - Login canônico: `/terapeuta/login`.
+- Confirmacao de e-mail: `/confirmar-email`.
+- Recuperacao de senha: `/reset-senha`.
 - Alias público de perfil: `/terapeuta/:slug` continua redirecionando para `/terapeutas/:slug`; rotas estáticas de auth têm precedência no App Router.
 - Áreas pós-login:
   - `free` -> `/basico`.
@@ -56,10 +58,13 @@ Validações:
 Backend:
 
 - `POST /api/auth/therapist/signup`.
+- Tambem usa `POST /api/auth/email/verify`, `POST /api/auth/email/status`, `POST /api/auth/email/resend`, `POST /api/auth/password/request-reset` e `POST /api/auth/password/reset`.
 - Usa Supabase Auth/Admin REST somente em Supabase Edge Function.
 - O app Next usa apenas `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 - A Edge Function deve preferir `SUPABASE_SECRET_KEYS`; o fallback a `SUPABASE_SERVICE_ROLE_KEY` fica restrito ao runtime local/legado das functions.
-- Cria `auth.users`, `profiles.role = therapist` e `therapist_profiles.status = draft`.
+- Cria `auth.users` sem e-mail confirmado, `profiles.role = therapist` e `therapist_profiles.status = draft`.
+- Fluxo normal (`CONFIRMED_AUTOMATICALLY_EMAIL` ausente/vazio/`false`): gera token hashado em `auth_action_tokens`, gera token opaco de polling em `email_verification_status_tokens`, envia `email_verification` pelo modulo `skills/email-delivery` e redireciona para `/confirmar-email?statusToken=*`.
+- Fluxo bypass (`CONFIRMED_AUTOMATICALLY_EMAIL=true`): nao gera token nem envia e-mail; confirma Auth via Admin API, revoga tokens antigos, audita como `skipped` e redireciona para `/terapeuta/login?verified=1&automatic=1`.
 - Perfil inicial deve ficar `is_public = false` e `is_accepting_bookings = false`.
 - Em falha depois da criação do usuário Auth, tentar limpeza best-effort e retornar erro genérico.
 
@@ -69,6 +74,7 @@ Backend:
 - Usa password grant REST.
 - Verifica `profiles.role = therapist`.
 - Define cookies HTTP-only internos para sessão inicial.
+- Nao define cookies quando o e-mail nao estiver confirmado.
 - Redireciona por plano.
 - Paciente/admin devem receber a mensagem segura: `Use o acesso correspondente ao seu perfil.`
 
@@ -84,9 +90,7 @@ Backend:
 
 ## Pendências conhecidas
 
-- Confirmação de e-mail/SMTP.
-- Recuperação de senha real.
-- Rate limit, captcha e antifraude.
+- Captcha e antifraude.
 - Proteção real dos layouts `/basico`, `/pro` e `/plus`.
 - Upload e revisão de documentos.
 - Conta bancária para repasse.
@@ -101,7 +105,8 @@ Backend:
 - `npm run lint`.
 - `npm run build`.
 - Validar `/terapeuta/cadastro?plan=free`, `?plan=premium` e `?plan=premium_plus`.
-- Validar `/terapeuta/login?created=1`.
+- Validar `/confirmar-email?statusToken=*` apos cadastro normal.
+- Validar `/terapeuta/login?verified=1&automatic=1` apenas com bypass explicitamente ativo.
 - Validar formulário sem env Supabase: telas renderizam e submit retorna erro controlado.
 - Com Supabase local, validar criação de `auth.users`, `profiles` e `therapist_profiles`.
 - Validar menor de 18 anos, senha divergente, e-mail duplicado e login de perfil não terapeuta.

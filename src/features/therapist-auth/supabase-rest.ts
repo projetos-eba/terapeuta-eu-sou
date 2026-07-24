@@ -20,6 +20,7 @@ type SupabasePasswordGrant = {
   expires_in?: number;
   refresh_token: string;
   user: {
+    email_confirmed_at?: string | null;
     id: string;
   };
 };
@@ -44,11 +45,12 @@ export async function createTherapistAccount(value: TherapistSignupValue) {
   }
 
   try {
-    return await invokeSupabaseFunction<{ userId: string }>(
-      config,
-      "therapist-auth-signup",
-      { body: value },
-    );
+    return await invokeSupabaseFunction<{
+      mode?: "automatically_confirmed" | "email_sent";
+      redirectTo?: string;
+      statusToken?: string;
+      userId: string;
+    }>(config, "therapist-auth-signup", { body: value });
   } catch (error) {
     if (error instanceof SupabaseFunctionError) {
       throw new TherapistAuthSupabaseError(error.status);
@@ -68,18 +70,35 @@ export async function loginTherapistWithPassword(input: {
     throw new TherapistAuthConfigError();
   }
 
-  const session = await supabaseJson<SupabasePasswordGrant>(
-    config,
-    "/auth/v1/token?grant_type=password",
-    {
-      apiKey: config.apiKey,
-      body: {
-        email: input.email,
-        password: input.password,
+  let session: SupabasePasswordGrant;
+
+  try {
+    session = await supabaseJson<SupabasePasswordGrant>(
+      config,
+      "/auth/v1/token?grant_type=password",
+      {
+        apiKey: config.apiKey,
+        body: {
+          email: input.email,
+          password: input.password,
+        },
+        method: "POST",
       },
-      method: "POST",
-    },
-  );
+    );
+  } catch (error) {
+    if (
+      error instanceof TherapistAuthSupabaseError &&
+      /confirm/i.test(error.safeDetails ?? "")
+    ) {
+      throw new TherapistAuthEmailUnconfirmedError();
+    }
+
+    throw error;
+  }
+
+  if (!session.user.email_confirmed_at) {
+    throw new TherapistAuthEmailUnconfirmedError();
+  }
 
   const profile = await getProfile(
     config,
@@ -190,7 +209,10 @@ async function supabaseJson<T = unknown>(
   });
 
   if (!response.ok) {
-    throw new TherapistAuthSupabaseError(response.status);
+    throw new TherapistAuthSupabaseError(
+      response.status,
+      await response.text(),
+    );
   }
 
   if (response.status === 204) {
@@ -218,8 +240,17 @@ export class TherapistAuthRoleError extends Error {
   }
 }
 
+export class TherapistAuthEmailUnconfirmedError extends Error {
+  constructor() {
+    super("Therapist email is not confirmed.");
+  }
+}
+
 export class TherapistAuthSupabaseError extends Error {
-  constructor(readonly status: number) {
+  constructor(
+    readonly status: number,
+    readonly safeDetails?: string,
+  ) {
     super("Supabase therapist auth request failed.");
   }
 }
