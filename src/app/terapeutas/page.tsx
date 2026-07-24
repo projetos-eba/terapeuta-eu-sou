@@ -198,12 +198,7 @@ function Rating({ rating, ratingLabel }: { rating: number; ratingLabel: string }
 
 function TherapistResultCard({ therapist }: { therapist: TherapistSearchCard }) {
   const isVerified = therapist.highlightTone === "verified";
-  const specialty =
-    therapist.therapyName === "Terapia Integrativa"
-      ? "Terapeuta Integrativa"
-      : therapist.therapyName === "Terapia Floral"
-        ? "Terapeuta Floral"
-        : therapist.therapyName;
+  const specialty = therapist.therapyName;
 
   return (
     <TESCard className="relative h-auto min-h-[300px] overflow-hidden rounded-[18px] border border-[rgba(226,209,236,0.75)] bg-white p-0 shadow-[0_8px_11px_rgba(38,20,51,0.05)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_18px_rgba(38,20,51,0.08)] sm:h-[300px]">

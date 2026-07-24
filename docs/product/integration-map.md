@@ -20,9 +20,9 @@ Atualizado em 2026-07-17.
 | Domínio | Fonte de verdade | Views/APIs públicas | Skills relacionadas | Regra crítica |
 |---|---|---|---|---|
 | Rotas públicas | `src/lib/routes.ts` | — | Todas as skills de página | Não criar rota fora do helper canônico. |
-| Home pública | `public_home_*` e projeções públicas | `public_home_therapies`, `public_home_therapists`, `public_home_testimonials` | `skills/public-home` | Home pode ter fallback local, mas deve preferir views seguras. |
+| Home pública | `public_home_*` e projeções públicas de perfil/serviços | `public_home_therapies`, `public_home_therapists`, `public_home_testimonials`, `public_therapist_profile_content_v`, `public_therapist_profile_services_v` | `skills/public-home` | Home pode ter fallback local, mas deve preferir views seguras; o carrossel usa terapias publicadas dos serviços e chips reais de "Como posso te guiar". |
 | Terapias | `therapies`, `therapy_categories`, `therapy_public_content`, `therapy_highlights`, `therapy_benefits`, `therapy_faqs` | `public_therapies_v`, `public_therapy_details_v`, `/api/public/therapies` | `skills/public-therapies` | Catálogo e detalhe públicos exigem `therapies.status = published`; Match exige também `matching_therapy_settings.is_visible_in_matching`. Na fase atual, somente Reiki, Tarô e Constelação Familiar ficam publicados e visíveis no Match. |
-| Match | `matching_themes`, `matching_interests`, `matching_versions`, `matching_weights`, `matching_therapy_settings` | `public_matching_config`, `public_matching_therapist_counts`, `/api/public/matching/*` | `skills/public-matching` | Match recomenda terapias, nunca terapeutas; terapia precisa estar `published` e ativa em `matching_therapy_settings`. |
+| Match | `matching_themes`, `matching_interests`, `matching_versions`, `matching_weights`, `matching_therapy_settings` | `public_matching_config`, `public_matching_therapies_v`, `public_matching_therapist_counts`, `/api/public/matching/*` | `skills/public-matching` | Match recomenda terapias, nunca terapeutas; a API de cálculo só pode ler candidatos por `public_matching_therapies_v`, que cruza detalhe público publicado com ativação explícita no Match. |
 | Busca de terapeutas | `therapist_profiles`, `therapist_services`, `therapies`, avaliações publicadas | `public_therapist_search` | `skills/public-therapist-search` | Expor somente terapeutas aprovados, públicos, aceitando reservas e com serviço ativo. |
 | Perfil público do terapeuta | Perfil, serviços, conteúdo editorial, disponibilidade e reviews pagos/concluídos | `public_therapist_profiles_v`, `public_therapist_profile_services_v`, `public_therapist_profile_reviews_v`, `public_therapist_profile_content_v` | `skills/public-therapist-profile` | Horários são derivados em runtime e avaliações só contam sessão paga/concluída. |
 | Auth cliente | Supabase Auth REST, `profiles`, `patient_profiles` | `/api/auth/client/*` | `skills/client-auth` | Login/cadastro de cliente separados de terapeuta. |
@@ -35,7 +35,7 @@ Atualizado em 2026-07-17.
 |---|---|---|---|
 | `/` | Implementada | Views públicas da Home com fallback local | `skills/public-home` |
 | `/sua-jornada` | Implementada | `public_matching_config` com fallback | `skills/public-matching` |
-| `/sua-jornada/resultado` | Implementada | `/api/public/matching/calculate` | `skills/public-matching` |
+| `/sua-jornada/resultado` | Implementada | `/api/public/matching/calculate` usando `public_matching_therapies_v` | `skills/public-matching` |
 | `/terapeutas` | Implementada | `public_therapist_search` com fallback | `skills/public-therapist-search` |
 | `/terapeutas/:slug` | Implementada | Views públicas de perfil | `skills/public-therapist-profile` |
 | `/terapias` | Implementada | `public_therapies_v` e `/api/public/therapies` | `skills/public-therapies` |

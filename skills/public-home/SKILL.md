@@ -31,6 +31,7 @@ Read in this order, only as needed for the task:
 9. `src/app/page.tsx`
 10. `src/features/public-home/*`
 11. `supabase/migrations/*public_home_views*.sql`
+12. Public assets in `public/home/`, `public/therapies/`, and `public/therapists/`
 
 ## Route Contract
 
@@ -52,11 +53,19 @@ The home may read public content through REST Supabase using only public env var
 - `public_home_therapies`
 - `public_home_therapists`
 - `public_home_testimonials`
+- `public_therapist_profile_content_v` for published `Como posso te guiar` guide chips
+- `public_therapist_profile_services_v` for the public therapy/technique names shown under the therapist name
 
 Rules:
 
 - Never expose operational therapist fields, private patient data, payment data, intake data, Zoom links, or secrets.
 - Keep local fallback content in `src/features/public-home/content.ts` so `/` renders when Supabase is unconfigured or unavailable.
+- Therapy fallback content must stay aligned with the current public catalog phase: `reiki`, `taro` and `constelacao-familiar`. Do not link fallback cards to therapy slugs that are `draft`, not visible, or missing public detail content.
+- Featured therapist photos must use the stable local assets in `public/therapists/`, shared with `/terapeutas`, `/terapeutas/:slug`, therapy detail cards and patient session cards.
+- The featured therapists carousel should show five profiles on desktop when possible. If the public view returns fewer than five rows in development, complete the shelf with non-duplicated local fallback profiles so the layout does not collapse.
+- Featured therapist cards must not invent guide-theme chips. Show chips only from published `public_therapist_profile_content_v.guide_items`, with a minimum of 3 and maximum of 6 visible items. Therapists without published guide items should render without this chip row.
+- The small line under the therapist name should show public therapies/techniques from `public_therapist_profile_services_v`, with at most two names plus `e +N` when there are more.
+- Therapy preview cards should use editorial therapy photos, not generic icons. Use `image_url` from `public_therapies_v` when present and the stable local images for Reiki, Tarô and Constelação Familiar as fallback.
 - Do not add `@supabase/supabase-js` unless the user explicitly approves a dependency change.
 - If a public view changes, update docs and this skill in the same task.
 
@@ -66,14 +75,14 @@ The page should preserve these sections from Figma `13273:1844`:
 
 - Public header
 - Hero with human image
-- `O que é o TES?`
-- `Como funciona`
+- `O que é o TES?` with the Figma-style supporting purple shape behind the trust cards
+- `Como funciona` with large editorial step images
 - Therapy marquee
 - Motivations / online session section
 - Therapies preview
-- Featured therapists
+- Featured therapists as a horizontal carousel on all viewports, with desktop navigation arrows and compact Figma-style cards. Cards should avoid long descriptions and prioritize therapist photo, name, public therapies/techniques, published guide-theme chips, rating/reviews and profile CTA. Do not show availability badges or verification icons over photos unless the public Home data contract exposes the corresponding real state.
 - Testimonials
-- Journey CTA
+- Journey CTA using the local background asset `public/home/match-journey-banner.png`; keep the CTA below the text and do not add the old `Sessão online` hat
 - FAQ
 - Public footer
 

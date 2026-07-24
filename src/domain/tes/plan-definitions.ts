@@ -4,24 +4,28 @@ import { TherapistPlan } from "./enums";
 import type { TherapistCapability } from "./permissions";
 
 export type PlanFeatureCode =
-  | "public_profile"
-  | "secure_platform"
-  | "online_sessions"
-  | "integrated_payments"
-  | "essential_messages"
-  | "service_catalog"
-  | "advanced_metrics"
-  | "rule_based_suggestions"
-  | "agenda_insights"
-  | "request_new_therapy"
-  | "profile_reports"
-  | "full_crm"
-  | "strategic_reviews"
-  | "advanced_financials"
-  | "operational_summary"
-  | "complete_recommendations";
+  | "agenda_days_blocks"
+  | "profile_focus_cover_bio"
+  | "shareable_public_profile"
+  | "automatic_consultation_confirmation"
+  | "closed_portal_sessions"
+  | "username_url"
+  | "visual_identity_customization"
+  | "reviews_testimonials"
+  | "verification_badge"
+  | "automatic_reminders_partial"
+  | "search_visibility"
+  | "profile_metrics"
+  | "short_videos_presentation_video"
+  | "aura"
+  | "complete_financial_dashboard"
+  | "complete_message_automation"
+  | "journey_history_crm"
+  | "advanced_badge_system"
+  | "seasonal_campaigns"
+  | "tes_academy";
 
-export type PlanFeatureCategory = "base" | "premium" | "premium_plus";
+export type PlanFeatureCategory = "base" | "premium" | "premium_plus" | "academy";
 
 export type PlanFeatureDefinition = {
   category: PlanFeatureCategory;
@@ -53,131 +57,154 @@ export type PlanDefinition = {
 export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "base",
-    code: "public_profile",
-    description: "Perfil publico, apresentacao, textos e links para apoiar sua presenca.",
-    label: "Perfil publico profissional",
+    code: "agenda_days_blocks",
+    description: "Agenda, bloqueios e horarios essenciais para operar dentro da plataforma.",
+    label: "Agenda, bloqueio de dias e horarios",
     minimumPlan: TherapistPlan.Free,
     capability: "operation_essentials",
   },
   {
     category: "base",
-    code: "secure_platform",
-    description: "Ambiente com acesso autenticado, regras de privacidade e operacao segura.",
-    label: "Plataforma segura",
+    code: "profile_focus_cover_bio",
+    description: "Dados editoriais basicos para apresentar o perfil profissional.",
+    label: "Foto, capa, bio, especialidades",
     minimumPlan: TherapistPlan.Free,
     capability: "operation_essentials",
   },
   {
     category: "base",
-    code: "online_sessions",
-    description: "Organizacao de sessoes online dentro do fluxo da plataforma.",
-    label: "Atendimentos online",
+    code: "shareable_public_profile",
+    description: "Perfil publico com link para compartilhamento.",
+    label: "Perfil publico + link para compartilhar",
     minimumPlan: TherapistPlan.Free,
     capability: "operation_essentials",
   },
   {
     category: "base",
-    code: "integrated_payments",
-    description: "Preparado para pagamentos integrados sem misturar assinatura e sessoes.",
-    label: "Pagamentos integrados",
+    code: "automatic_consultation_confirmation",
+    description: "Confirmacao operacional automatica para consultas dentro do portal.",
+    label: "Confirmacao automatica de consulta",
     minimumPlan: TherapistPlan.Free,
     capability: "operation_essentials",
   },
   {
     category: "base",
-    code: "essential_messages",
-    description: "Mensagens essenciais para organizar a relacao de cuidado.",
-    label: "Mensagens essenciais",
-    minimumPlan: TherapistPlan.Free,
-    capability: "operation_essentials",
-  },
-  {
-    category: "base",
-    code: "service_catalog",
-    description: "Catalogo de servicos com limites por plano e curadoria da plataforma.",
-    label: "Servicos publicados",
+    code: "closed_portal_sessions",
+    description: "Atendimento organizado no ambiente fechado do portal.",
+    label: "Atendimento no ambiente fechado do portal",
     minimumPlan: TherapistPlan.Free,
     capability: "operation_essentials",
   },
   {
     category: "premium",
-    code: "advanced_metrics",
-    description: "Indicadores para acompanhar descoberta, perfil e rotina profissional.",
-    label: "Metricas avancadas",
+    code: "username_url",
+    description: "URL personalizada com o nome publico do terapeuta.",
+    label: "URL com o seu nome (/seunome)",
     minimumPlan: TherapistPlan.Premium,
-    capability: "advanced_metrics",
   },
   {
     category: "premium",
-    code: "rule_based_suggestions",
-    description: "Sugestoes baseadas em regras para melhorar operacao e presenca.",
-    label: "Sugestoes baseadas em regras",
+    code: "visual_identity_customization",
+    description: "Personalizacao visual da presenca publica.",
+    label: "Personalizacao visual (identidade propria)",
     minimumPlan: TherapistPlan.Premium,
-    capability: "aura_limited",
   },
   {
     category: "premium",
-    code: "agenda_insights",
-    description: "Sinais de agenda para apoiar horarios, procura e consistencia.",
-    label: "Insights de agenda",
+    code: "reviews_testimonials",
+    description: "Avaliacoes publicadas e depoimentos moderados.",
+    label: "Avaliacoes e depoimentos",
+    minimumPlan: TherapistPlan.Premium,
+  },
+  {
+    category: "premium",
+    code: "verification_badge",
+    description: "Selo de verificacao exibido conforme regras da plataforma.",
+    label: "Selo de verificacao",
+    minimumPlan: TherapistPlan.Premium,
+  },
+  {
+    category: "premium",
+    code: "automatic_reminders_partial",
+    description: "Lembretes operacionais automaticos em automacao parcial.",
+    label: "Lembretes automaticos (automacao parcial)",
     minimumPlan: TherapistPlan.Premium,
     capability: "agenda_insights",
   },
   {
     category: "premium",
-    code: "request_new_therapy",
-    description: "Solicitacao de nova terapia para avaliacao da curadoria/admin.",
-    label: "Solicitar nova terapia",
+    code: "search_visibility",
+    description: "Destaque de visibilidade dentro das regras de busca da plataforma.",
+    label: "Visibilidade na busca",
     minimumPlan: TherapistPlan.Premium,
-    capability: "request_new_therapy",
   },
   {
     category: "premium",
-    code: "profile_reports",
-    description: "Relatorios de perfil para entender caminhos de descoberta.",
-    label: "Relatorios de perfil",
+    code: "profile_metrics",
+    description: "Metricas do perfil, como visitas e cliques.",
+    label: "Metricas do perfil (visitas, cliques)",
     minimumPlan: TherapistPlan.Premium,
     capability: "advanced_metrics",
   },
   {
     category: "premium_plus",
-    code: "full_crm",
-    description: "Organizacao ampliada do relacionamento com pacientes na plataforma.",
-    label: "CRM completo",
+    code: "short_videos_presentation_video",
+    description: "Videos curtos e video de apresentacao do perfil.",
+    label: "Videos curtos / video de apresentacao",
     minimumPlan: TherapistPlan.PremiumPlus,
-    capability: "full_crm",
   },
   {
     category: "premium_plus",
-    code: "strategic_reviews",
-    description: "Leitura estruturada das avaliacoes publicadas e pontos de atencao.",
-    label: "Avaliacoes estrategicas",
+    code: "aura",
+    description: "Aura conforme recursos disponiveis no plano.",
     minimumPlan: TherapistPlan.PremiumPlus,
-    capability: "strategic_reviews",
+    label: "Aura",
+    capability: "aura_full",
   },
   {
     category: "premium_plus",
-    code: "advanced_financials",
-    description: "Visao financeira avancada sem alterar a comissao de sessoes por plano.",
-    label: "Financeiro avancado",
+    code: "complete_financial_dashboard",
+    description: "Dashboard financeiro completo sem alterar comissao por plano.",
+    label: "Dashboard financeiro completo",
     minimumPlan: TherapistPlan.PremiumPlus,
     capability: "advanced_financials",
   },
   {
     category: "premium_plus",
-    code: "operational_summary",
-    description: "Resumo operacional automatico a partir de dados da plataforma.",
-    label: "Resumo operacional automatico",
+    code: "complete_message_automation",
+    description: "Automacao completa de mensagens conforme regras da plataforma.",
+    label: "Automacao de mensagens completa",
     minimumPlan: TherapistPlan.PremiumPlus,
     capability: "aura_full",
   },
   {
     category: "premium_plus",
-    code: "complete_recommendations",
-    description: "Recomendacoes completas baseadas em regras e sinais operacionais.",
-    label: "Recomendacoes completas",
+    code: "journey_history_crm",
+    description: "Historico da Jornada em formato CRM operacional.",
+    label: "Historico da Jornada (CRM)",
     minimumPlan: TherapistPlan.PremiumPlus,
-    capability: "aura_full",
+    capability: "full_crm",
+  },
+  {
+    category: "premium_plus",
+    code: "advanced_badge_system",
+    description: "Sistema de selos avancado conforme curadoria da plataforma.",
+    label: "Sistema de selos avancado",
+    minimumPlan: TherapistPlan.PremiumPlus,
+  },
+  {
+    category: "premium_plus",
+    code: "seasonal_campaigns",
+    description: "Participacao futura em campanhas sazonais.",
+    label: "Participacao em campanhas sazonais (Em breve)",
+    minimumPlan: TherapistPlan.PremiumPlus,
+  },
+  {
+    category: "academy",
+    code: "tes_academy",
+    description: "Academia TES prevista para evolucao futura dos planos.",
+    label: "Academia TES (Em breve)",
+    minimumPlan: TherapistPlan.PremiumPlus,
   },
 ];
 
@@ -202,7 +229,7 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
     priceNote: "Comece sua jornada",
     signupHref: getPlanSignupHref(TherapistPlan.Free),
     stripePriceId: null,
-    subtitle: "Base para iniciar",
+    subtitle: "Comece sua jornada",
   },
   {
     code: TherapistPlan.Premium,
@@ -222,7 +249,7 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
     priceNote: "Preco e limites confirmados no cadastro",
     signupHref: getPlanSignupHref(TherapistPlan.Premium),
     stripePriceId: null,
-    subtitle: "Para crescer com clareza",
+    subtitle: "Fortaleça sua presença",
   },
   {
     code: TherapistPlan.PremiumPlus,
@@ -238,7 +265,7 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
     priceNote: "Recursos completos sujeitos a politica de uso",
     signupHref: getPlanSignupHref(TherapistPlan.PremiumPlus),
     stripePriceId: null,
-    subtitle: "Para operar com mais profundidade",
+    subtitle: "Gerencie sua prática",
   },
 ];
 

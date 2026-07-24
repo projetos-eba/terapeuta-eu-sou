@@ -278,6 +278,174 @@ export type Database = {
           },
         ]
       }
+      booking_events: {
+        Row: {
+          actor_profile_id: string | null
+          booking_id: string
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+        }
+        Insert: {
+          actor_profile_id?: string | null
+          booking_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+        }
+        Update: {
+          actor_profile_id?: string | null
+          booking_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_events_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_events_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_intake_responses: {
+        Row: {
+          booking_id: string
+          created_at: string
+          focus_area: string
+          id: string
+          patient_profile_id: string
+          shared_note: string
+          therapist_profile_id: string
+          therapy_goal: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          focus_area: string
+          id?: string
+          patient_profile_id: string
+          shared_note: string
+          therapist_profile_id: string
+          therapy_goal: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          focus_area?: string
+          id?: string
+          patient_profile_id?: string
+          shared_note?: string
+          therapist_profile_id?: string
+          therapy_goal?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_intake_responses_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_intake_responses_patient_profile_id_fkey"
+            columns: ["patient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "patient_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_intake_responses_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_intake_responses_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_intake_responses_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "booking_intake_responses_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_payment_receipts: {
+        Row: {
+          amount_cents: number
+          booking_id: string
+          created_at: string
+          currency: string
+          id: string
+          paid_at: string | null
+          provider: string
+          receipt_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          booking_id: string
+          created_at?: string
+          currency?: string
+          id?: string
+          paid_at?: string | null
+          provider?: string
+          receipt_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          booking_id?: string
+          created_at?: string
+          currency?: string
+          id?: string
+          paid_at?: string | null
+          provider?: string
+          receipt_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_payment_receipts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_session_summaries: {
         Row: {
           booking_id: string
@@ -1997,6 +2165,61 @@ export type Database = {
           },
           {
             foreignKeyName: "therapist_service_booking_settings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      therapist_service_cancellation_policies: {
+        Row: {
+          created_at: string
+          description: string | null
+          free_until_hours: number
+          id: string
+          late_cancel_fee_percent: number
+          no_show_fee_percent: number
+          service_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          free_until_hours?: number
+          id?: string
+          late_cancel_fee_percent?: number
+          no_show_fee_percent?: number
+          service_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          free_until_hours?: number
+          id?: string
+          late_cancel_fee_percent?: number
+          no_show_fee_percent?: number
+          service_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapist_service_cancellation_policies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: true
+            referencedRelation: "public_therapist_profile_services_v"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_cancellation_policies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: true
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_cancellation_policies_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: true
             referencedRelation: "therapist_services"

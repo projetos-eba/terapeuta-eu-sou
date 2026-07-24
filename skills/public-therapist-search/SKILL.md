@@ -35,6 +35,7 @@ Antes de alterar `/terapeutas`, consultar:
 - Integração: REST fetch com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`; não adicionar `@supabase/supabase-js` sem decisão explícita.
 - Fallback local obrigatório em `src/features/public-therapist-search/content.ts`.
 - Seeds/mocks: manter 5 terapeutas em `supabase/seed.sql`, com `ana-oliveira` como perfil principal mais rico.
+- Fotos públicas de terapeutas devem usar os assets versionados em `public/therapists/`, mantendo URLs rastreáveis nos seeds, fallbacks e views: `ana-oliveira.png`, `rafael-santos-avatar.png`, `celia-martins.png`, `juliana-costa.png`, `lucas-pereira-avatar.png`, `andre-lima.png` e `marcio-andrade.png`.
 - Toda alteração em view/schema/policy exige migration versionada. Todo mock/seed deve ser idempotente.
 
 ## Componentes Esperados
@@ -80,7 +81,7 @@ Não substituir esses padrões por cards editoriais grandes, hero alternativo, c
 - `npm run build`
 - `npx supabase db lint`
 - Se Docker/Supabase local permitir: `npx supabase db reset` e conferir a view `public_therapist_search`.
-- Validar URLs: `/terapeutas`, `/terapeutas?q=ana`, `/terapeutas?therapy=terapia-integrativa`, `/terapeutas?price=100-150`, `/terapeutas?rating=4-plus`, `/terapeutas?sort=price_asc`, `/terapeutas?page=2`.
+- Validar URLs: `/terapeutas`, `/terapeutas?q=ana`, `/terapeutas?therapy=reiki`, `/terapeutas?therapy=taro`, `/terapeutas?therapy=constelacao-familiar`, `/terapeutas?price=100-150`, `/terapeutas?rating=4-plus`, `/terapeutas?sort=price_asc`, `/terapeutas?page=2`.
 - Validar responsividade desktop/mobile contra o Figma `13273:3587`.
 - Confirmar que a view não expõe email, telefone, dados internos de paciente, dados sensíveis, `meeting_url` ou campos privados.
 

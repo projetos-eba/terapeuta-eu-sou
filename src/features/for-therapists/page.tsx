@@ -12,22 +12,24 @@ function Hero() {
   return (
     <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#fff_0%,#faf7ff_54%,#fff_100%)] px-5 pb-14 pt-12 sm:px-8 lg:px-12 lg:pb-20">
       <div className="pointer-events-none absolute left-[-96px] top-[430px] h-[240px] w-[360px] rounded-full border border-brand-lavender/50 opacity-40" />
-      <div className="pointer-events-none absolute right-0 top-4 -z-10 h-[650px] w-[760px] opacity-12">
+      <div className="pointer-events-none absolute inset-y-0 right-0 -z-10 h-[680px] w-full opacity-45 sm:opacity-55 lg:w-[930px]">
         <Image
-          src="/for-therapists/hero-therapist-space.png"
+          src="/for-therapists/hero-therapist-laptop.png"
           alt=""
           fill
           priority
-          sizes="760px"
-          className="object-cover"
+          sizes="(min-width: 1024px) 930px, 100vw"
+          className="object-cover object-center"
         />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,#ffffff_0%,rgba(255,255,255,0.92)_28%,rgba(255,255,255,0.58)_58%,rgba(255,255,255,0.2)_100%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-36 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,#ffffff_92%)]" />
       </div>
 
       <div className="mx-auto flex max-w-[1320px] flex-col items-center text-center">
         <p className="text-sm font-extrabold uppercase tracking-[0.48em] text-brand-primary">
           {forTherapistsHero.eyebrow}
         </p>
-        <h1 className="mt-8 max-w-4xl text-[42px] font-extrabold leading-[1.1] text-brand-deep sm:text-[54px]">
+        <h1 className="mt-8 max-w-4xl text-[42px] font-semibold leading-[1.1] text-brand-deep sm:text-[54px]">
           {forTherapistsHero.title}
           <span className="mt-2 block bg-[linear-gradient(90deg,#6C3D91_0%,#81BAE0_100%)] bg-clip-text font-display text-[50px] font-light italic leading-[1.08] text-transparent sm:text-[70px]">
             {forTherapistsHero.accent}
@@ -101,7 +103,7 @@ function ProfilePreview() {
         <span className="ml-2 text-sm font-extrabold text-brand-deep">5.0</span>
       </div>
       <div className="mt-4 flex flex-wrap justify-center gap-2">
-        {["Reiki", "Aromaterapia", "Tarot"].map((tag) => (
+        {["Reiki", "Tarô", "Constelação"].map((tag) => (
           <span
             key={tag}
             className="rounded-[8px] bg-brand-lavenderSoft px-3 py-2 text-[10px] font-extrabold text-brand-primary"
@@ -175,9 +177,9 @@ function BentoCard({
   return (
     <article
       className={cn(
-          "relative overflow-hidden rounded-[18px] border border-[rgba(226,218,244,0.8)] p-7 shadow-card",
+        "relative overflow-hidden rounded-[18px] border border-[rgba(226,218,244,0.8)] p-7 shadow-card sm:p-8",
         isRemote
-          ? "bg-[linear-gradient(135deg,#6C3D91_0%,#AE94C3_100%)] text-white xl:col-start-4 xl:row-span-3"
+          ? "bg-[linear-gradient(135deg,#6C3D91_0%,#AE94C3_100%)] text-white xl:col-start-4 xl:row-span-3 xl:p-10"
           : "bg-white/88 text-brand-deep",
         card.variant === "profile" ? "xl:col-start-1 xl:row-span-2" : "",
         card.variant === "calendar" ? "xl:col-start-2 xl:row-span-2" : "",
@@ -198,7 +200,7 @@ function BentoCard({
       <h3
         className={cn(
           "mt-5 font-display text-2xl font-semibold italic leading-tight",
-          isRemote ? "text-white" : "text-brand-deep",
+          isRemote ? "text-white xl:text-[38px]" : "text-brand-deep",
         )}
       >
         {card.title}
@@ -217,27 +219,30 @@ function BentoCard({
       {card.variant === "growth" ? <GrowthPreview /> : null}
       {card.variant === "community" ? (
         <div className="mt-8 flex items-center gap-3">
-          {["ana-oliveira", "rafael-santos", "celia-martins", "juliana-costa"].map(
-            (slug) => (
-              <div
-                key={slug}
-                className="relative size-12 overflow-hidden rounded-full border-4 border-white shadow-card"
-              >
-                <Image
-                  src={`/therapists/${slug}.png`}
-                  alt=""
-                  fill
-                  sizes="48px"
-                  className="object-cover"
-                />
-              </div>
-            ),
-          )}
+          {[
+            "/therapists/ana-oliveira.png",
+            "/therapists/rafael-santos-avatar.png",
+            "/therapists/celia-martins.png",
+            "/therapists/juliana-costa.png",
+          ].map((src) => (
+            <div
+              key={src}
+              className="relative size-12 overflow-hidden rounded-full border-4 border-white shadow-card"
+            >
+              <Image
+                src={src}
+                alt=""
+                fill
+                sizes="48px"
+                className="object-cover"
+              />
+            </div>
+          ))}
           <span className="text-lg font-extrabold text-brand-deep">+300</span>
         </div>
       ) : null}
       {isRemote ? (
-        <div className="relative mt-12 h-48 overflow-hidden rounded-[18px] border border-white/40 bg-white/10 xl:absolute xl:bottom-8 xl:left-[-18px] xl:right-[-18px] xl:h-[268px]">
+        <div className="relative mt-12 h-48 overflow-hidden rounded-[18px] border border-white/40 bg-white/10 xl:absolute xl:bottom-10 xl:left-10 xl:right-10 xl:h-[300px]">
           <Image
             src="/for-therapists/session-preview.png"
             alt="Atendimento online pela plataforma"
@@ -265,7 +270,7 @@ function Benefits() {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-[315px_300px_231px_354px] xl:grid-rows-[240px_242px_290px] xl:justify-center">
+        <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-[315px_300px_260px_354px] xl:grid-rows-[300px_282px_300px] xl:justify-center">
           {benefitCards.map((card) => (
             <BentoCard key={card.title} card={card} />
           ))}

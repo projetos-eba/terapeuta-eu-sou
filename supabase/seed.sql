@@ -43,8 +43,8 @@ values
     'terapia-integrativa',
     'Um caminho amplo para organizar sentimentos, escolhas e momentos de transição.',
     'A Terapia Integrativa reúne práticas de escuta e cuidado complementar para apoiar a pessoa a perceber o que faz sentido no momento atual.',
-    'published',
-    true,
+    'draft',
+    false,
     'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.'
   ),
   (
@@ -54,7 +54,7 @@ values
     'terapia-floral',
     'Uma possibilidade para quem busca apoio em equilíbrio emocional e autoconhecimento.',
     'A Terapia Floral pode ser apresentada como uma prática complementar, sempre sem promessa de cura ou resultado garantido.',
-    'published',
+    'draft',
     false,
     'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.'
   ),
@@ -65,7 +65,7 @@ values
     'meditacao-guiada',
     'Uma prática para cultivar presença, pausa e percepção do próprio ritmo.',
     'A Meditação Guiada ajuda a criar um espaço de presença e observação, sem substituir cuidados profissionais quando necessários.',
-    'published',
+    'draft',
     false,
     'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.'
   ),
@@ -392,10 +392,10 @@ set
 insert into public.profiles (id, role, display_name, email, avatar_url)
 values
   ('aaaaaaaa-0000-4000-8000-000000000001', 'therapist', 'Ana Oliveira', 'ana.oliveira@example.test', '/therapists/ana-oliveira.png'),
-  ('aaaaaaaa-0000-4000-8000-000000000002', 'therapist', 'Rafael Santos', 'rafael.santos@example.test', '/therapists/rafael-santos.png'),
+  ('aaaaaaaa-0000-4000-8000-000000000002', 'therapist', 'Rafael Santos', 'rafael.santos@example.test', '/therapists/rafael-santos-avatar.png'),
   ('aaaaaaaa-0000-4000-8000-000000000003', 'therapist', 'Celia Martins', 'celia.martins@example.test', '/therapists/celia-martins.png'),
   ('aaaaaaaa-0000-4000-8000-000000000004', 'therapist', 'Juliana Costa', 'juliana.costa@example.test', '/therapists/juliana-costa.png'),
-  ('aaaaaaaa-0000-4000-8000-000000000005', 'therapist', 'Lucas Pereira', 'lucas.pereira@example.test', '/therapists/lucas-pereira.png'),
+  ('aaaaaaaa-0000-4000-8000-000000000005', 'therapist', 'Lucas Pereira', 'lucas.pereira@example.test', '/therapists/lucas-pereira-avatar.png'),
   ('bbbbbbbb-0000-4000-8000-000000000001', 'patient', 'Paciente Ana', 'paciente.ana@example.test', null),
   ('bbbbbbbb-0000-4000-8000-000000000002', 'patient', 'Paciente Rafael', 'paciente.rafael@example.test', null),
   ('bbbbbbbb-0000-4000-8000-000000000003', 'patient', 'Paciente Celia', 'paciente.celia@example.test', null),
@@ -480,7 +480,7 @@ values
     'Rafael Santos',
     'Sessões para mudanças de vida, propósito e reorganização de caminhos.',
     'Rafael acompanha pessoas em fases de mudança com escuta integrativa e combinados claros de sessão.',
-    '/therapists/rafael-santos.png',
+    '/therapists/rafael-santos-avatar.png',
     'Rio de Janeiro',
     'RJ',
     array['pt-BR'],
@@ -537,7 +537,7 @@ values
     'Lucas Pereira',
     'Cuidado para autoconhecimento, escolhas e transições de vida.',
     'Lucas combina práticas de presença e conversa orientada para apoiar pausas, escolhas e ciclos novos.',
-    '/therapists/lucas-pereira.png',
+    '/therapists/lucas-pereira-avatar.png',
     'Florianópolis',
     'SC',
     array['pt-BR'],
@@ -1020,13 +1020,13 @@ insert into public.therapies (
 )
 values
   ('22222222-2222-4222-8222-222222222225', '11111111-1111-4111-8111-111111111117', 'Reiki', 'reiki', 'Prática integrativa de presença e equilíbrio energético.', 'Reiki é apresentado no TES como prática integrativa complementar, sem promessa de cura, diagnóstico ou resultado garantido.', 'published', true, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/reiki.png', now() - interval '80 days', 96, array['energia', 'equilibrio energético', 'espiritualidade'], true),
-  ('22222222-2222-4222-8222-222222222227', '11111111-1111-4111-8111-111111111118', 'Mindfulness', 'mindfulness', 'Prática de atenção plena para cultivar presença e pausa.', 'Mindfulness é apresentado como prática de atenção plena e autocuidado, sem substituir acompanhamento profissional quando necessário.', 'published', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/mindfulness.png', now() - interval '22 days', 82, array['atenção plena', 'presença', 'meditacao'], true),
-  ('22222222-2222-4222-8222-222222222228', '11111111-1111-4111-8111-111111111115', 'Tarologia Terapêutica', 'tarologia-terapeutica', 'Leitura simbólica para reflexão, escolhas e autoconhecimento.', 'A Tarologia Terapêutica usa símbolos como convite de reflexão e não deve ser comunicada como previsão determinista.', 'published', false, 'Este conteúdo é informativo e não substitui diagnóstico, tratamento ou orientação profissional especializada.', '/therapies/tarologia-terapeutica.png', now() - interval '38 days', 76, array['tarot', 'oraculo', 'autoconhecimento'], true),
-  ('22222222-2222-4222-8222-222222222226', '11111111-1111-4111-8111-111111111113', 'Aromaterapia', 'aromaterapia', 'Uso cuidadoso de óleos essenciais em práticas de acolhimento e bem-estar.', 'Aromaterapia é apresentada no TES como prática complementar e deve ser comunicada sem promessa terapêutica garantida.', 'published', true, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/aromaterapia.png', now() - interval '62 days', 88, array['oleos essenciais', 'aromas', 'relaxamento'], true),
-  ('22222222-2222-4222-8222-222222222223', '11111111-1111-4111-8111-111111111118', 'Meditação Guiada', 'meditacao-guiada', 'Uma prática para cultivar presença, pausa e percepção do próprio ritmo.', 'A Meditação Guiada ajuda a criar um espaço de presença e observação, sem substituir cuidados profissionais quando necessários.', 'published', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/meditacao-guiada.png', now() - interval '95 days', 84, array['meditacao', 'presença', 'respiracao'], true),
-  ('22222222-2222-4222-8222-222222222229', '11111111-1111-4111-8111-111111111116', 'Apometria', 'apometria', 'Prática espiritualista complementar para reflexão e cuidado energético.', 'Apometria é apresentada no TES com linguagem responsável, como prática complementar e sem promessa de cura.', 'published', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/apometria.png', now() - interval '12 days', 72, array['espiritualidade', 'energia', 'campo energético'], true),
-  ('22222222-2222-4222-8222-222222222222', '11111111-1111-4111-8111-111111111113', 'Florais', 'terapia-floral', 'Uma possibilidade para quem busca apoio em equilíbrio emocional e autoconhecimento.', 'Florais podem ser apresentados como prática complementar, sempre sem promessa de cura ou resultado garantido.', 'published', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/florais.png', now() - interval '44 days', 79, array['terapia floral', 'florais de bach', 'emocional'], true),
-  ('22222222-2222-4222-8222-222222222224', '11111111-1111-4111-8111-111111111117', 'Cristaloterapia', 'cristaloterapia', 'Prática complementar com cristais, presença e intenção simbólica.', 'Cristaloterapia é apresentada como prática complementar e simbólica, sem promessa de cura, diagnóstico ou resultado garantido.', 'published', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/cristaloterapia.png', now() - interval '9 days', 70, array['cristais', 'energia', 'equilibrio'], true)
+  ('22222222-2222-4222-8222-222222222227', '11111111-1111-4111-8111-111111111118', 'Mindfulness', 'mindfulness', 'Prática de atenção plena para cultivar presença e pausa.', 'Mindfulness é apresentado como prática de atenção plena e autocuidado, sem substituir acompanhamento profissional quando necessário.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/mindfulness.png', null, 82, array['atenção plena', 'presença', 'meditacao'], false),
+  ('22222222-2222-4222-8222-222222222228', '11111111-1111-4111-8111-111111111115', 'Tarô', 'taro', 'Leitura simbólica para reflexão, escolhas e autoconhecimento.', 'Tarô usa símbolos como convite de reflexão e não deve ser comunicado como previsão determinista.', 'published', false, 'Este conteúdo é informativo e não substitui diagnóstico, tratamento ou orientação profissional especializada.', '/therapies/taro-editorial.png', now() - interval '38 days', 76, array['taro', 'tarot', 'oraculo', 'autoconhecimento'], true),
+  ('22222222-2222-4222-8222-222222222226', '11111111-1111-4111-8111-111111111113', 'Aromaterapia', 'aromaterapia', 'Uso cuidadoso de óleos essenciais em práticas de acolhimento e bem-estar.', 'Aromaterapia é apresentada no TES como prática complementar e deve ser comunicada sem promessa terapêutica garantida.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/aromaterapia.png', null, 88, array['oleos essenciais', 'aromas', 'relaxamento'], false),
+  ('22222222-2222-4222-8222-222222222223', '11111111-1111-4111-8111-111111111118', 'Meditação Guiada', 'meditacao-guiada', 'Uma prática para cultivar presença, pausa e percepção do próprio ritmo.', 'A Meditação Guiada ajuda a criar um espaço de presença e observação, sem substituir cuidados profissionais quando necessários.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/meditacao-guiada.png', null, 84, array['meditacao', 'presença', 'respiracao'], false),
+  ('22222222-2222-4222-8222-222222222229', '11111111-1111-4111-8111-111111111116', 'Apometria', 'apometria', 'Prática espiritualista complementar para reflexão e cuidado energético.', 'Apometria é apresentada no TES com linguagem responsável, como prática complementar e sem promessa de cura.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/apometria.png', null, 72, array['espiritualidade', 'energia', 'campo energético'], false),
+  ('22222222-2222-4222-8222-222222222222', '11111111-1111-4111-8111-111111111113', 'Florais', 'terapia-floral', 'Uma possibilidade para quem busca apoio em equilíbrio emocional e autoconhecimento.', 'Florais podem ser apresentados como prática complementar, sempre sem promessa de cura ou resultado garantido.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/florais.png', null, 79, array['terapia floral', 'florais de bach', 'emocional'], false),
+  ('22222222-2222-4222-8222-222222222224', '11111111-1111-4111-8111-111111111117', 'Cristaloterapia', 'cristaloterapia', 'Prática complementar com cristais, presença e intenção simbólica.', 'Cristaloterapia é apresentada como prática complementar e simbólica, sem promessa de cura, diagnóstico ou resultado garantido.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/cristaloterapia.png', null, 70, array['cristais', 'energia', 'equilibrio'], false)
 on conflict (id) do update
 set
   slug = excluded.slug,
@@ -1240,7 +1240,7 @@ set
 insert into public.matching_therapy_settings (therapy_id, is_visible_in_matching)
 select id, true
 from public.therapies
-where slug in ('terapia-integrativa', 'terapia-floral', 'meditacao-guiada', 'reiki', 'aromaterapia')
+where slug in ('reiki')
 on conflict (therapy_id) do update
 set
   is_visible_in_matching = excluded.is_visible_in_matching,
@@ -1285,7 +1285,9 @@ from (
     ('aromaterapia', 'criatividade-expressao', 3, 'Pode apoiar rituais e expressão sensível.')
 ) as weights(therapy_slug, theme_slug, weight, reason)
 join public.therapies on therapies.slug = weights.therapy_slug
-join public.matching_themes on matching_themes.slug = weights.theme_slug;
+join public.matching_themes on matching_themes.slug = weights.theme_slug
+where therapies.status = 'published'
+  and therapies.is_public_visible = true;
 
 insert into public.matching_weights (
   version_id,
@@ -1328,7 +1330,9 @@ from (
     ('aromaterapia', 'relaxamento-corporal', 4, 'Apoia relaxamento por via sensorial.')
 ) as weights(therapy_slug, interest_slug, weight, reason)
 join public.therapies on therapies.slug = weights.therapy_slug
-join public.matching_interests on matching_interests.slug = weights.interest_slug;
+join public.matching_interests on matching_interests.slug = weights.interest_slug
+where therapies.status = 'published'
+  and therapies.is_public_visible = true;
 
 -- Patient overview demo data. Stable IDs keep this block idempotent across db reset runs.
 insert into auth.users (
@@ -1336,7 +1340,7 @@ insert into auth.users (
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at
 )
 values
-  ('90000000-0000-4000-8000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'carlos@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Carlos"}'::jsonb, now(), now()),
+  ('90000000-0000-4000-8000-000000000001', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'carlos.paciente@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Carlos"}'::jsonb, now(), now()),
   ('90000000-0000-4000-8000-000000000011', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'juliane.moore@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Juliane Moore"}'::jsonb, now(), now()),
   ('90000000-0000-4000-8000-000000000012', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'marcus.silva@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Marcus Silva"}'::jsonb, now(), now()),
   ('90000000-0000-4000-8000-000000000013', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'beatriz.lima@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Beatriz Lima"}'::jsonb, now(), now()),
@@ -1346,18 +1350,33 @@ values
   ('90000000-0000-4000-8000-000000000017', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'lucas.ferreira@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Lucas Ferreira"}'::jsonb, now(), now()),
   ('90000000-0000-4000-8000-000000000018', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'camila.rocha@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Camila Rocha"}'::jsonb, now(), now())
 on conflict (id) do update
-set email = excluded.email, raw_user_meta_data = excluded.raw_user_meta_data, updated_at = now();
+set
+  email = excluded.email,
+  encrypted_password = excluded.encrypted_password,
+  raw_user_meta_data = excluded.raw_user_meta_data,
+  updated_at = now();
+
+update auth.users
+set
+  confirmation_token = coalesce(confirmation_token, ''),
+  recovery_token = coalesce(recovery_token, ''),
+  email_change_token_new = coalesce(email_change_token_new, ''),
+  email_change = coalesce(email_change, ''),
+  phone_change_token = coalesce(phone_change_token, ''),
+  email_change_token_current = coalesce(email_change_token_current, ''),
+  reauthentication_token = coalesce(reauthentication_token, '')
+where email like '%@example.test';
 
 insert into public.profiles (id, role, display_name, email, avatar_url)
 values
-  ('90000000-0000-4000-8000-000000000001', 'patient', 'Carlos', 'carlos@example.test', null),
+  ('90000000-0000-4000-8000-000000000001', 'patient', 'Carlos', 'carlos.paciente@example.test', null),
   ('90000000-0000-4000-8000-000000000011', 'therapist', 'Juliane Moore', 'juliane.moore@example.test', '/therapists/juliana-costa.png'),
-  ('90000000-0000-4000-8000-000000000012', 'therapist', 'Marcus Silva', 'marcus.silva@example.test', '/therapists/rafael-santos.png'),
+  ('90000000-0000-4000-8000-000000000012', 'therapist', 'Marcus Silva', 'marcus.silva@example.test', '/therapists/rafael-santos-avatar.png'),
   ('90000000-0000-4000-8000-000000000013', 'therapist', 'Beatriz Lima', 'beatriz.lima@example.test', '/therapists/celia-martins.png'),
-  ('90000000-0000-4000-8000-000000000014', 'therapist', 'André Lima', 'andre.lima@example.test', '/therapists/lucas-pereira.png'),
+  ('90000000-0000-4000-8000-000000000014', 'therapist', 'André Lima', 'andre.lima@example.test', '/therapists/andre-lima.png'),
   ('90000000-0000-4000-8000-000000000015', 'therapist', 'Sofia Mendes', 'sofia.mendes@example.test', '/therapists/ana-oliveira.png'),
   ('90000000-0000-4000-8000-000000000016', 'therapist', 'Roberto Vaz', 'roberto.vaz@example.test', '/therapists/marcio-andrade.png'),
-  ('90000000-0000-4000-8000-000000000017', 'therapist', 'Lucas Ferreira', 'lucas.ferreira@example.test', '/therapists/rafael-santos.png'),
+  ('90000000-0000-4000-8000-000000000017', 'therapist', 'Lucas Ferreira', 'lucas.ferreira@example.test', '/therapists/rafael-santos-avatar.png'),
   ('90000000-0000-4000-8000-000000000018', 'therapist', 'Camila Rocha', 'camila.rocha@example.test', '/therapists/fernanda-rocha.png')
 on conflict (id) do update
 set role = excluded.role, display_name = excluded.display_name, email = excluded.email, avatar_url = excluded.avatar_url, updated_at = now();
@@ -1373,12 +1392,12 @@ insert into public.therapist_profiles (
 )
 values
   ('92000000-0000-4000-8000-000000000011', '90000000-0000-4000-8000-000000000011', 'premium', 'approved', 'juliane-moore', 'Juliane Moore', 'Juliane Moore', 'Terapeuta Holística', '/therapists/juliana-costa.png', 'São Paulo', 'SP', array['pt-BR'], true, true, true),
-  ('92000000-0000-4000-8000-000000000012', '90000000-0000-4000-8000-000000000012', 'premium', 'approved', 'marcus-silva', 'Marcus Silva', 'Marcus Silva', 'Terapeuta Holístico', '/therapists/rafael-santos.png', 'Rio de Janeiro', 'RJ', array['pt-BR'], true, true, true),
+  ('92000000-0000-4000-8000-000000000012', '90000000-0000-4000-8000-000000000012', 'premium', 'approved', 'marcus-silva', 'Marcus Silva', 'Marcus Silva', 'Terapeuta Holístico', '/therapists/rafael-santos-avatar.png', 'Rio de Janeiro', 'RJ', array['pt-BR'], true, true, true),
   ('92000000-0000-4000-8000-000000000013', '90000000-0000-4000-8000-000000000013', 'premium', 'approved', 'beatriz-lima', 'Beatriz Lima', 'Beatriz Lima', 'Terapeuta Holística', '/therapists/celia-martins.png', 'Curitiba', 'PR', array['pt-BR'], true, true, true),
-  ('92000000-0000-4000-8000-000000000014', '90000000-0000-4000-8000-000000000014', 'premium', 'approved', 'andre-lima', 'André Lima', 'André Lima', 'Terapeuta Holístico', '/therapists/lucas-pereira.png', 'Florianópolis', 'SC', array['pt-BR'], true, true, true),
+  ('92000000-0000-4000-8000-000000000014', '90000000-0000-4000-8000-000000000014', 'premium', 'approved', 'andre-lima', 'André Lima', 'André Lima', 'Terapeuta Holístico', '/therapists/andre-lima.png', 'Florianópolis', 'SC', array['pt-BR'], true, true, true),
   ('92000000-0000-4000-8000-000000000015', '90000000-0000-4000-8000-000000000015', 'premium', 'approved', 'sofia-mendes', 'Sofia Mendes', 'Sofia Mendes', 'Terapeuta Holística', '/therapists/ana-oliveira.png', 'Belo Horizonte', 'MG', array['pt-BR'], true, true, true),
   ('92000000-0000-4000-8000-000000000016', '90000000-0000-4000-8000-000000000016', 'premium', 'approved', 'roberto-vaz', 'Roberto Vaz', 'Roberto Vaz', 'Terapeuta Holístico', '/therapists/marcio-andrade.png', 'Porto Alegre', 'RS', array['pt-BR'], true, true, true),
-  ('92000000-0000-4000-8000-000000000017', '90000000-0000-4000-8000-000000000017', 'premium', 'approved', 'lucas-ferreira', 'Lucas Ferreira', 'Lucas Ferreira', 'Terapeuta Holístico', '/therapists/rafael-santos.png', 'Rio de Janeiro', 'RJ', array['pt-BR'], true, true, true),
+  ('92000000-0000-4000-8000-000000000017', '90000000-0000-4000-8000-000000000017', 'premium', 'approved', 'lucas-ferreira', 'Lucas Ferreira', 'Lucas Ferreira', 'Terapeuta Holístico', '/therapists/rafael-santos-avatar.png', 'Rio de Janeiro', 'RJ', array['pt-BR'], true, true, true),
   ('92000000-0000-4000-8000-000000000018', '90000000-0000-4000-8000-000000000018', 'premium', 'approved', 'camila-rocha', 'Camila Rocha', 'Camila Rocha', 'Terapeuta Holística', '/therapists/fernanda-rocha.png', 'São Paulo', 'SP', array['pt-BR'], true, true, true)
 on conflict (id) do update
 set public_name = excluded.public_name, headline = excluded.headline, photo_url = excluded.photo_url, is_public = excluded.is_public, is_accepting_bookings = excluded.is_accepting_bookings, updated_at = now();
@@ -1386,14 +1405,15 @@ set public_name = excluded.public_name, headline = excluded.headline, photo_url 
 insert into public.therapist_services (id, therapist_profile_id, therapy_id, title, description, duration_minutes, price_cents, status)
 values
   ('93000000-0000-4000-8000-000000000011', '92000000-0000-4000-8000-000000000011', '22222222-2222-4222-8222-222222222225', 'Terapia Holística', 'Sessão online de cuidado integrativo.', 60, 17000, 'active'),
-  ('93000000-0000-4000-8000-000000000012', '92000000-0000-4000-8000-000000000012', '22222222-2222-4222-8222-222222222221', 'Terapia Integrativa', 'Sessão online de escuta integrativa.', 60, 17000, 'active'),
+  ('93000000-0000-4000-8000-000000000012', '92000000-0000-4000-8000-000000000012', '22222222-2222-4222-8222-222222222228', 'Tarô', 'Leitura simbólica para reflexão e autoconhecimento.', 60, 17000, 'active'),
   ('93000000-0000-4000-8000-000000000013', '92000000-0000-4000-8000-000000000013', '22222222-2222-4222-8222-222222222225', 'Reiki', 'Prática complementar online.', 60, 17000, 'active'),
   ('93000000-0000-4000-8000-000000000014', '92000000-0000-4000-8000-000000000014', '22222222-2222-4222-8222-222222222225', 'Reiki', 'Prática complementar online com foco em presença e cuidado energético responsável.', 60, 12000, 'active'),
-  ('93000000-0000-4000-8000-000000000015', '92000000-0000-4000-8000-000000000015', '22222222-2222-4222-8222-222222222226', 'Aromaterapia', 'Sessão integrativa com linguagem responsável e orientada ao autocuidado.', 60, 14000, 'active'),
-  ('93000000-0000-4000-8000-000000000016', '92000000-0000-4000-8000-000000000016', '22222222-2222-4222-8222-222222222228', 'Tarologia Terapêutica', 'Leitura simbólica para reflexão e autoconhecimento.', 60, 12000, 'active'),
-  ('93000000-0000-4000-8000-000000000017', 'c1000000-0000-4000-8000-000000000004', '22222222-2222-4222-8222-222222222227', 'Mindfulness', 'Prática de atenção plena para cultivar presença e pausa.', 60, 13000, 'active'),
-  ('93000000-0000-4000-8000-000000000018', '92000000-0000-4000-8000-000000000017', '22222222-2222-4222-8222-222222222223', 'Meditação Guiada', 'Prática guiada para pausa, presença e percepção do próprio ritmo.', 60, 13000, 'active'),
-  ('93000000-0000-4000-8000-000000000019', '92000000-0000-4000-8000-000000000018', '22222222-2222-4222-8222-222222222226', 'Aromaterapia', 'Sessão integrativa com aromas, presença e conversa cuidadosa.', 60, 14000, 'active')
+  ('93000000-0000-4000-8000-000000000015', '92000000-0000-4000-8000-000000000015', '22222222-2222-4222-8222-222222222230', 'Constelação Familiar', 'Experiência simbólica online para observar vínculos e padrões com cuidado.', 60, 14000, 'active'),
+  ('93000000-0000-4000-8000-000000000016', '92000000-0000-4000-8000-000000000016', '22222222-2222-4222-8222-222222222228', 'Tarô', 'Leitura simbólica para reflexão e autoconhecimento.', 60, 12000, 'active'),
+  ('93000000-0000-4000-8000-000000000017', 'c1000000-0000-4000-8000-000000000004', '22222222-2222-4222-8222-222222222230', 'Constelação Familiar', 'Experiência simbólica para observar vínculos sem diagnóstico ou promessa de resolução.', 60, 13000, 'active'),
+  ('93000000-0000-4000-8000-000000000018', '92000000-0000-4000-8000-000000000017', '22222222-2222-4222-8222-222222222228', 'Tarô', 'Leitura simbólica para refletir sobre escolhas e caminhos possíveis.', 60, 13000, 'active'),
+  ('93000000-0000-4000-8000-000000000019', '92000000-0000-4000-8000-000000000018', '22222222-2222-4222-8222-222222222230', 'Constelação Familiar', 'Experiência simbólica online para observar vínculos e padrões com cuidado.', 60, 14000, 'active'),
+  ('93000000-0000-4000-8000-000000000020', '92000000-0000-4000-8000-000000000011', '22222222-2222-4222-8222-222222222225', 'Reiki', 'Promover equilíbrio, clareza e conexão interna através do Reiki.', 60, 17000, 'active')
 on conflict (id) do update
 set therapist_profile_id = excluded.therapist_profile_id, therapy_id = excluded.therapy_id, title = excluded.title, description = excluded.description, duration_minutes = excluded.duration_minutes, price_cents = excluded.price_cents, status = excluded.status, updated_at = now();
 
@@ -1418,9 +1438,101 @@ values
   ('94000000-0000-4000-8000-000000000038', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000017', '93000000-0000-4000-8000-000000000018', now() - interval '8 days', now() - interval '8 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/lucas-history-2', now() - interval '8 days' + interval '60 minutes'),
   ('94000000-0000-4000-8000-000000000039', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000018', '93000000-0000-4000-8000-000000000019', now() - interval '9 days', now() - interval '9 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/camila-history-2', now() - interval '9 days' + interval '60 minutes'),
   ('94000000-0000-4000-8000-000000000040', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000014', '93000000-0000-4000-8000-000000000014', now() - interval '10 days', now() - interval '10 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/andre-history-2', now() - interval '10 days' + interval '60 minutes'),
-  ('94000000-0000-4000-8000-000000000041', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000015', '93000000-0000-4000-8000-000000000015', now() - interval '11 days', now() - interval '11 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/sofia-history-2', now() - interval '11 days' + interval '60 minutes')
+  ('94000000-0000-4000-8000-000000000041', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000015', '93000000-0000-4000-8000-000000000015', now() - interval '11 days', now() - interval '11 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/sofia-history-2', now() - interval '11 days' + interval '60 minutes'),
+  ('96000000-0000-4000-8000-000000000001', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', '93000000-0000-4000-8000-000000000020', date_trunc('minute', now()) + interval '10 minutes', date_trunc('minute', now()) + interval '70 minutes', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://us02web.zoom.us/j/1234567890?pwd=terapiaeusou', null),
+  ('96000000-0000-4000-8000-000000000002', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', '93000000-0000-4000-8000-000000000020', '2024-05-08 14:00:00-03', '2024-05-08 15:00:00-03', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/juliane-may-1', '2024-05-08 15:00:00-03'),
+  ('96000000-0000-4000-8000-000000000003', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', '93000000-0000-4000-8000-000000000020', '2024-05-15 14:00:00-03', '2024-05-15 15:00:00-03', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/juliane-may-2', '2024-05-15 15:00:00-03'),
+  ('96000000-0000-4000-8000-000000000004', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', '93000000-0000-4000-8000-000000000020', '2024-05-22 14:00:00-03', '2024-05-22 15:00:00-03', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/juliane-may-3', '2024-05-22 15:00:00-03')
 on conflict (id) do update
 set starts_at = excluded.starts_at, ends_at = excluded.ends_at, status = excluded.status, payment_status = excluded.payment_status, meeting_url = excluded.meeting_url, completed_at = excluded.completed_at, updated_at = now();
+
+insert into public.booking_intake_responses (
+  id,
+  booking_id,
+  patient_profile_id,
+  therapist_profile_id,
+  focus_area,
+  shared_note,
+  therapy_goal,
+  visibility
+)
+values (
+  '96100000-0000-4000-8000-000000000001',
+  '96000000-0000-4000-8000-000000000001',
+  '91000000-0000-4000-8000-000000000001',
+  '92000000-0000-4000-8000-000000000011',
+  'Autoconhecimento',
+  'Gostaria de entender melhor um momento de mudança que estou vivendo e buscar mais clareza para tomar decisões importantes.',
+  'Promover equilíbrio, clareza e conexão interna através do Reiki.',
+  'patient_therapist'
+)
+on conflict (booking_id) do update
+set
+  focus_area = excluded.focus_area,
+  shared_note = excluded.shared_note,
+  therapy_goal = excluded.therapy_goal,
+  visibility = excluded.visibility,
+  updated_at = now();
+
+insert into public.booking_payment_receipts (
+  id,
+  booking_id,
+  amount_cents,
+  currency,
+  provider,
+  receipt_url,
+  paid_at
+)
+values (
+  '96200000-0000-4000-8000-000000000001',
+  '96000000-0000-4000-8000-000000000001',
+  17000,
+  'BRL',
+  'mock',
+  '/app/pagamentos/comprovantes/96000000-0000-4000-8000-000000000001',
+  now() - interval '1 day'
+)
+on conflict (booking_id) do update
+set
+  amount_cents = excluded.amount_cents,
+  currency = excluded.currency,
+  provider = excluded.provider,
+  receipt_url = excluded.receipt_url,
+  paid_at = excluded.paid_at,
+  updated_at = now();
+
+insert into public.therapist_service_cancellation_policies (
+  id,
+  service_id,
+  free_until_hours,
+  late_cancel_fee_percent,
+  no_show_fee_percent,
+  description
+)
+values (
+  '96300000-0000-4000-8000-000000000001',
+  '93000000-0000-4000-8000-000000000020',
+  24,
+  50,
+  100,
+  'Política demo para sessão de Reiki com Juliane Moore.'
+)
+on conflict (service_id) do update
+set
+  free_until_hours = excluded.free_until_hours,
+  late_cancel_fee_percent = excluded.late_cancel_fee_percent,
+  no_show_fee_percent = excluded.no_show_fee_percent,
+  description = excluded.description,
+  updated_at = now();
+
+insert into public.booking_events (id, booking_id, actor_profile_id, event_type, payload)
+values
+  ('96400000-0000-4000-8000-000000000001', '96000000-0000-4000-8000-000000000001', '90000000-0000-4000-8000-000000000001', 'booking_created', '{"source":"seed"}'::jsonb),
+  ('96400000-0000-4000-8000-000000000002', '96000000-0000-4000-8000-000000000001', '90000000-0000-4000-8000-000000000001', 'payment_confirmed', '{"provider":"mock"}'::jsonb)
+on conflict (id) do update
+set
+  event_type = excluded.event_type,
+  payload = excluded.payload;
 
 insert into public.booking_session_summaries (
   id,
@@ -1434,7 +1546,10 @@ insert into public.booking_session_summaries (
 values
   ('94100000-0000-4000-8000-000000000031', '94000000-0000-4000-8000-000000000031', 'c1000000-0000-4000-8000-000000000004', '91000000-0000-4000-8000-000000000001', 'Registro de presença', 'Resumo breve da sessão de mindfulness com combinados de continuidade para o paciente.', 'patient'),
   ('94100000-0000-4000-8000-000000000032', '94000000-0000-4000-8000-000000000032', '92000000-0000-4000-8000-000000000017', '91000000-0000-4000-8000-000000000001', 'Pausa guiada', 'Registro da prática de meditação guiada e próximos cuidados combinados.', 'patient'),
-  ('94100000-0000-4000-8000-000000000033', '94000000-0000-4000-8000-000000000033', '92000000-0000-4000-8000-000000000018', '91000000-0000-4000-8000-000000000001', 'Aromas e autocuidado', 'Resumo da sessão de aromaterapia com observações privadas para continuidade.', 'patient')
+  ('94100000-0000-4000-8000-000000000033', '94000000-0000-4000-8000-000000000033', '92000000-0000-4000-8000-000000000018', '91000000-0000-4000-8000-000000000001', 'Aromas e autocuidado', 'Resumo da sessão de aromaterapia com observações privadas para continuidade.', 'patient'),
+  ('96100000-0000-4000-8000-000000000002', '96000000-0000-4000-8000-000000000002', '92000000-0000-4000-8000-000000000011', '91000000-0000-4000-8000-000000000001', 'Autoconhecimento', 'Registro de Reiki voltado a clareza e percepção do momento de vida.', 'patient'),
+  ('96100000-0000-4000-8000-000000000003', '96000000-0000-4000-8000-000000000003', '92000000-0000-4000-8000-000000000011', '91000000-0000-4000-8000-000000000001', 'Autoconhecimento', 'Resumo de continuidade da jornada de autoconhecimento.', 'patient'),
+  ('96100000-0000-4000-8000-000000000004', '96000000-0000-4000-8000-000000000004', '92000000-0000-4000-8000-000000000011', '91000000-0000-4000-8000-000000000001', 'Autoconhecimento', 'Registro de fechamento do ciclo de maio com próximos cuidados.', 'patient')
 on conflict (booking_id) do update
 set
   therapist_profile_id = excluded.therapist_profile_id,
@@ -1442,6 +1557,30 @@ set
   title = excluded.title,
   summary = excluded.summary,
   visibility = excluded.visibility,
+  updated_at = now();
+
+insert into public.reviews (
+  id,
+  booking_id,
+  patient_profile_id,
+  therapist_profile_id,
+  rating,
+  comment,
+  status,
+  published_at
+)
+values
+  ('96500000-0000-4000-8000-000000000002', '96000000-0000-4000-8000-000000000002', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', 5, 'Sessão acolhedora e conduzida com presença.', 'published', '2024-05-08 16:00:00-03'),
+  ('96500000-0000-4000-8000-000000000003', '96000000-0000-4000-8000-000000000003', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', 5, 'Senti clareza para organizar minhas reflexões.', 'published', '2024-05-15 16:00:00-03'),
+  ('96500000-0000-4000-8000-000000000004', '96000000-0000-4000-8000-000000000004', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', 5, 'Foi um encontro cuidadoso para seguir minha jornada.', 'published', '2024-05-22 16:00:00-03')
+on conflict (booking_id) do update
+set
+  patient_profile_id = excluded.patient_profile_id,
+  therapist_profile_id = excluded.therapist_profile_id,
+  rating = excluded.rating,
+  comment = excluded.comment,
+  status = excluded.status,
+  published_at = excluded.published_at,
   updated_at = now();
 
 insert into public.favorite_therapists (id, patient_profile_id, therapist_profile_id)

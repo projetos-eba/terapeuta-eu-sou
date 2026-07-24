@@ -5,7 +5,7 @@ description: Use when implementing, refactoring, auditing, or documenting the pu
 
 # Public For Therapists
 
-## Fontes obrigatorias
+## Fontes obrigatórias
 
 Consultar antes de alterar:
 
@@ -31,9 +31,9 @@ Consultar antes de alterar:
 
 ## Planos e CTAs
 
-- Free: `/cadastro?role=therapist&plan=free`.
-- Premium: `/cadastro?role=therapist&plan=premium`.
-- Premium Plus: `/cadastro?role=therapist&plan=premium_plus`.
+- Free: `/terapeuta/cadastro?plan=free`.
+- Premium: `/terapeuta/cadastro?plan=premium`.
+- Premium Plus: `/terapeuta/cadastro?plan=premium_plus`.
 - Frontend envia somente o codigo do plano.
 - `stripePriceId` permanece `null` ate Billing ser implementado no backend.
 - Nao aceitar preco, valor ou Price ID vindo do navegador.
@@ -48,10 +48,15 @@ Consultar antes de alterar:
 
 ## UI e responsividade
 
-- Desktop: hero central, quatro itens de confianca em linha leve, bento grid na geometria do Figma, painel roxo de planos e tabela semantica com primeira coluna sticky; nao exibir cards de plano acima da tabela no desktop amplo.
+- Hero: usar o asset `public/for-therapists/hero-therapist-laptop.png` derivado do Figma node `13457:848`; o título "Você cuida de pessoas." deve usar Manrope semibold (`font-weight: 600`) e `text-brand-deep`.
+- Desktop: hero central, quatro itens de confianca em linha leve, bento grid na geometria do Figma, painel roxo de planos e tabela semantica com recursos em linhas simples; nao exibir cards de plano acima da tabela no desktop amplo.
+- A tabela desktop de planos não deve ter coluna editorial lateral. O primeiro cabeçalho da tabela fica visualmente vazio/somente acessível, os planos aparecem nas três colunas e o rodapé da tabela mostra valores e CTAs de cadastro por plano.
 - Tablet: cards dos planos acima da tabela; tabela com scroll horizontal controlado.
 - Mobile: cards empilhados com CTA e accordion nativo “Ver todos os recursos”.
 - CTAs devem ter pelo menos 44px de altura.
+- A matriz de planos deve exibir apenas o nome do recurso, sem descrições por linha. As descrições podem permanecer no catálogo para outros usos, mas não aparecem na tabela visual.
+- Categorias atuais da matriz: `Operação — base de todos`, `Identidade & presença — a partir do Premium`, `Gestão da prática — exclusivo Plus` e `Academia TES (Em breve)`.
+- Bento grid: evitar conteúdo cortado no desktop usando altura suficiente, padding interno generoso e imagem do card `Atenda de onde estiver` afastada das bordas.
 
 ## Pendencias conhecidas
 

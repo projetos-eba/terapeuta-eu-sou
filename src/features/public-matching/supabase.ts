@@ -34,26 +34,12 @@ type PublicMatchingConfigRow = {
 type MatchingTherapyRow = {
   description: string | null;
   id: string;
+  is_visible_in_matching: boolean;
   name: string;
   short_description: string;
   slug: string;
   status: MatchingTherapy["status"];
-  therapist_count?: number | null;
-};
-
-type MatchingTherapyCountRow = {
   therapist_count: number | null;
-  therapy_id: string;
-};
-
-type MatchingTherapySettingRow = {
-  is_visible_in_matching: boolean;
-  therapy_id: string;
-};
-
-type MatchingTherapyDataRow = MatchingTherapyRow & {
-  therapist_count: number | null;
-  is_visible_in_matching: boolean;
 };
 
 type MatchingWeightRow = {
@@ -165,20 +151,10 @@ export async function getMatchingCalculationData(versionId: string) {
   }
 
   try {
-    const [therapyRows, settingRows, countRows, weightRows] = await Promise.all([
+    const [therapyRows, weightRows] = await Promise.all([
       fetchRows<MatchingTherapyRow>(
         config,
-        "public_therapies_v?select=id,name,slug,short_description,description,status,therapist_count",
-        config.serviceRoleKey,
-      ),
-      fetchRows<MatchingTherapySettingRow>(
-        config,
-        "matching_therapy_settings?select=therapy_id,is_visible_in_matching",
-        config.serviceRoleKey,
-      ),
-      fetchRows<MatchingTherapyCountRow>(
-        config,
-        "public_matching_therapist_counts?select=therapy_id,therapist_count",
+        "public_matching_therapies_v?select=id,name,slug,short_description,description,status,therapist_count,is_visible_in_matching",
         config.serviceRoleKey,
       ),
       fetchRows<MatchingWeightRow>(
@@ -192,9 +168,7 @@ export async function getMatchingCalculationData(versionId: string) {
 
     return {
       source: "supabase" as const,
-      therapies: mergeTherapyRows(therapyRows, settingRows, countRows).map(
-        mapTherapyRow,
-      ),
+      therapies: therapyRows.map(mapTherapyRow),
       versionId,
       weights: weightRows.map(mapWeightRow),
     };
@@ -229,7 +203,7 @@ async function fetchRows<Row>(
   return (await response.json()) as Row[];
 }
 
-function mapTherapyRow(row: MatchingTherapyDataRow): MatchingTherapy {
+function mapTherapyRow(row: MatchingTherapyRow): MatchingTherapy {
   return {
     description: row.description ?? row.short_description,
     id: row.id,
@@ -241,27 +215,6 @@ function mapTherapyRow(row: MatchingTherapyDataRow): MatchingTherapy {
     status: row.status,
     therapistCount: row.therapist_count ?? 0,
   };
-}
-
-function mergeTherapyRows(
-  therapies: MatchingTherapyRow[],
-  settings: MatchingTherapySettingRow[],
-  counts: MatchingTherapyCountRow[],
-): MatchingTherapyDataRow[] {
-  const settingsByTherapyId = new Map(
-    settings.map((setting) => [setting.therapy_id, setting]),
-  );
-  const countsByTherapyId = new Map(counts.map((count) => [count.therapy_id, count]));
-
-  return therapies.map((therapy) => ({
-    ...therapy,
-    is_visible_in_matching:
-      settingsByTherapyId.get(therapy.id)?.is_visible_in_matching ?? true,
-    therapist_count:
-      countsByTherapyId.get(therapy.id)?.therapist_count ??
-      therapy.therapist_count ??
-      0,
-  }));
 }
 
 function mapWeightRow(row: MatchingWeightRow): MatchingWeight {

@@ -27,6 +27,7 @@ export const routes = {
     home: '/app',
     overview: '/app',
     encounters: '/app/encontros',
+    encounterDetail: (bookingId: string) => `/app/encontros/${bookingId}`,
     sessions: '/app/sessoes',
     upcomingSessions: '/app/sessoes/proximas',
     sessionHistory: '/app/sessoes/historico',

@@ -1,6 +1,7 @@
 export type PublicHomeTherapy = {
   categoryName: string;
   href: string;
+  imageUrl?: string | null;
   isFeatured: boolean;
   name: string;
   shortDescription: string;
@@ -8,6 +9,7 @@ export type PublicHomeTherapy = {
 };
 
 export type PublicHomeTherapist = {
+  guideItems?: string[];
   headline: string;
   href: string;
   name: string;
@@ -17,6 +19,7 @@ export type PublicHomeTherapist = {
   reviewCountLabel: string;
   serviceTitle: string;
   slug: string;
+  therapyNames?: string[];
 };
 
 export type PublicHomeTestimonial = {

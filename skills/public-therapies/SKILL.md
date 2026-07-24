@@ -41,9 +41,10 @@ View pública:
 
 - `public_therapies_v`
 - `public_therapy_details_v`
+- `public_matching_therapies_v` para candidatos elegíveis no Match
 - `public_therapist_search` para profissionais relacionados por `therapy_slug`
 
-As views devem expor somente terapias com `therapies.status = published`, visíveis publicamente e com categoria ativa. O Match usa `matching_therapy_settings.is_visible_in_matching` como ativação adicional; uma terapia só entra no Match se também estiver publicada. Elas podem retornar dados editoriais, categoria, contagem de terapeutas disponíveis, sinalizadores de popularidade e novidade. Não expor pesos do Match, dados internos de admin, terapeutas não aprovados, perfis privados ou serviços inativos.
+As views devem expor somente terapias com `therapies.status = published`, visíveis publicamente e com categoria ativa. O Match usa `public_matching_therapies_v` como projeção única de candidatos; uma terapia só entra no Match se também estiver publicada, com detalhe público elegível e ativa em `matching_therapy_settings`. Elas podem retornar dados editoriais, categoria, contagem de terapeutas disponíveis, sinalizadores de popularidade e novidade. Não expor pesos do Match, dados internos de admin, terapeutas não aprovados, perfis privados ou serviços inativos.
 
 Campos editoriais do detalhe:
 

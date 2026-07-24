@@ -3,6 +3,7 @@ import type {
   RelatedTherapistRow,
   RelatedTherapistSort,
 } from "../types/therapy-detail";
+import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 
 const PLACEHOLDER_SUPABASE_URL = "https://your-project-ref.supabase.co";
 const PLACEHOLDER_SUPABASE_ANON_KEY = "replace-with-supabase-anon-key";
@@ -123,7 +124,10 @@ function mapRelatedTherapist(row: RelatedTherapistRow): RelatedTherapist {
     isAcceptingBookings: true,
     name: row.public_name,
     nextSlotAt: row.next_slot_at,
-    photoUrl: row.photo_url,
+    photoUrl: getTherapistAvatarUrl(row.photo_url, {
+      name: row.public_name,
+      slug: row.slug,
+    }),
     reviewCount: row.review_count ?? 0,
     serviceDescription:
       row.service_description ??

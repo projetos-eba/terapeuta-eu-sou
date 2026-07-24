@@ -5,12 +5,11 @@ import {
   ArrowRight,
   CalendarDays,
   Heart,
-  Leaf,
   MessageCircleQuestion,
+  SearchCheck,
   ShieldCheck,
   Sparkles,
   Star,
-  Video,
 } from "lucide-react";
 
 import {
@@ -28,10 +27,10 @@ import {
   homeReasons,
   homeSteps,
 } from "@/features/public-home";
+import { FeaturedTherapistsCarousel } from "@/features/public-home/components/featured-therapists-carousel";
 import type {
   PublicHomeReason,
   PublicHomeTestimonial,
-  PublicHomeTherapist,
   PublicHomeTherapy,
 } from "@/features/public-home";
 import { routes } from "@/lib/routes";
@@ -45,6 +44,18 @@ const reasonToneClasses: Record<PublicHomeReason["tone"], string> = {
   pink: "border-[#F1A8CB] text-[#C73682]",
   purple: "border-brand-lavender text-brand-primary",
 };
+
+const introIcons = [Heart, Sparkles, ShieldCheck, SearchCheck];
+
+const therapyImages: Record<string, string> = {
+  "constelacao-familiar": "/therapies/constelacao-familiar-editorial.png",
+  reiki: "/therapies/reiki-editorial.png",
+  taro: "/therapies/taro-editorial.png",
+};
+
+function getTherapyImage(therapy: PublicHomeTherapy) {
+  return therapy.imageUrl || therapyImages[therapy.slug] || "/therapies/hero-therapies.png";
+}
 
 function SectionHeading({
   eyebrow,
@@ -78,44 +89,46 @@ function SectionHeading({
 
 function HeroSection() {
   return (
-    <section className="relative mx-auto grid max-w-[1680px] gap-10 px-5 pb-16 pt-4 sm:px-8 lg:min-h-[690px] lg:grid-cols-[minmax(0,0.82fr)_minmax(560px,1fr)] lg:px-12">
-      <div className="relative z-10 flex max-w-2xl flex-col justify-center py-10 lg:py-20">
-        <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
-          {homeHero.eyebrow}
-        </p>
-        <h1 className="mt-5 font-display text-5xl font-light italic leading-[1.05] text-[#17116f] md:text-7xl">
-          {homeHero.titleStart}
-          <span className="mt-2 block bg-[linear-gradient(90deg,#6C3D91_0%,#81BAE0_100%)] bg-clip-text font-semibold text-transparent">
-            {homeHero.titleAccent}
-          </span>
-        </h1>
-        <p className="mt-6 max-w-xl text-base font-semibold leading-8 text-tesText-secondary md:text-lg">
-          {homeHero.body}
-        </p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <TESButton href={homeHero.primaryCta.href} size="lg">
-            {homeHero.primaryCta.label}
-          </TESButton>
-          <TESButton
-            href={homeHero.secondaryCta.href}
-            size="lg"
-            variant="secondary"
-          >
-            {homeHero.secondaryCta.label}
-          </TESButton>
+    <section className="relative pb-16 pt-4 lg:min-h-[680px]">
+      <div className="relative z-10 mx-auto grid max-w-[1680px] gap-10 px-5 sm:px-8 lg:min-h-[680px] lg:grid-cols-[minmax(430px,0.42fr)_minmax(0,0.58fr)] lg:px-12">
+        <div className="flex max-w-2xl flex-col justify-center py-10 lg:py-20">
+          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
+            {homeHero.eyebrow}
+          </p>
+          <h1 className="mt-5 font-display text-5xl font-light italic leading-[1.05] text-brand-deep md:text-7xl">
+            {homeHero.titleStart}
+            <span className="mt-2 block bg-[linear-gradient(90deg,#6C3D91_0%,#81BAE0_100%)] bg-clip-text font-semibold text-transparent">
+              {homeHero.titleAccent}
+            </span>
+          </h1>
+          <p className="mt-6 max-w-xl text-base font-semibold leading-8 text-tesText-secondary md:text-lg">
+            {homeHero.body}
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <TESButton href={homeHero.primaryCta.href} size="lg">
+              {homeHero.primaryCta.label}
+            </TESButton>
+            <TESButton
+              href={homeHero.secondaryCta.href}
+              size="lg"
+              variant="secondary"
+            >
+              {homeHero.secondaryCta.label}
+            </TESButton>
+          </div>
         </div>
       </div>
 
-      <div className="relative min-h-[360px] overflow-hidden rounded-hero lg:absolute lg:inset-y-0 lg:right-0 lg:w-[70%] lg:rounded-none">
+      <div className="relative mx-5 min-h-[360px] overflow-hidden rounded-hero sm:mx-8 lg:absolute lg:inset-y-0 lg:left-[34vw] lg:right-0 lg:mx-0 lg:rounded-none">
         <Image
           src="/home/hero-section-realistic-fade.png"
           alt="Cena acolhedora de conversa terapeutica em ambiente calmo"
           fill
           priority
-          sizes="(min-width: 1024px) 70vw, 100vw"
+          sizes="(min-width: 1024px) 66vw, 100vw"
           className="object-cover object-center"
         />
-        <div className="absolute inset-y-0 left-0 hidden w-[42%] bg-gradient-to-r from-[#FCFAFF] via-[#FCFAFF]/90 to-[#FCFAFF]/0 lg:block" />
+        <div className="absolute inset-y-0 left-0 hidden w-[38%] bg-gradient-to-r from-[#FCFAFF] via-[#FCFAFF]/88 to-[#FCFAFF]/0 lg:block" />
         <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[#FCFAFF] to-[#FCFAFF]/0" />
       </div>
     </section>
@@ -124,29 +137,41 @@ function HeroSection() {
 
 function IntroSection() {
   return (
-    <section className="mx-auto grid max-w-[1680px] gap-8 px-5 py-14 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-12">
-      <div>
-        <SectionHeading
-          centered={false}
-          eyebrow="O que e o TES?"
-          title="Um espaco para quem busca novos caminhos"
-          body="Reunimos informacao, perfis publicos e uma jornada guiada para ajudar voce a encontrar praticas e profissionais com mais clareza."
-        />
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {homeIntroCards.map((card) => (
-          <TESCard key={card.title} className="p-5 text-center">
-            <span className="mx-auto grid size-14 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-              <Heart className="size-6" />
-            </span>
-            <h3 className="mt-4 text-base font-extrabold text-brand-deep">
-              {card.title}
-            </h3>
-            <p className="mt-2 text-xs font-semibold leading-5 text-tesText-muted">
-              {card.body}
-            </p>
-          </TESCard>
-        ))}
+    <section className="mx-auto max-w-[1680px] px-5 py-12 sm:px-8 lg:px-12 lg:py-16">
+      <div className="grid gap-9 lg:grid-cols-[420px_minmax(0,1fr)] lg:items-start">
+        <div className="relative z-10 lg:pt-4">
+          <SectionHeading
+            centered={false}
+            eyebrow="O que e o TES?"
+            title="Um espaco para quem busca novos caminhos"
+            body="Reunimos informacao, perfis publicos e uma jornada guiada para ajudar voce a encontrar praticas e profissionais com mais clareza."
+          />
+        </div>
+        <div className="relative min-h-[300px] lg:min-h-[282px]">
+          <div className="pointer-events-none absolute right-0 top-7 hidden h-[210px] w-[calc(100%-60px)] rounded-l-[38px] bg-brand-primary lg:block" />
+          <div className="relative z-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:pl-[122px] lg:pr-8">
+            {homeIntroCards.map((card, index) => {
+              const Icon = introIcons[index] ?? Heart;
+
+              return (
+                <TESCard
+                  key={card.title}
+                  className="min-h-[224px] rounded-[16px] border-[#E0D6F0] p-[18px] text-center shadow-soft lg:min-h-[240px]"
+                >
+                  <span className="mx-auto grid size-[71px] place-items-center rounded-full bg-[#EDE3F5] text-brand-primary">
+                    <Icon className="size-[37px]" strokeWidth={1.8} />
+                  </span>
+                  <h3 className="mt-4 text-sm font-extrabold leading-normal text-brand-deep">
+                    {card.title}
+                  </h3>
+                  <p className="mt-3 text-xs font-medium leading-4 text-tesText-muted">
+                    {card.body}
+                  </p>
+                </TESCard>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -164,12 +189,12 @@ function StepsSection() {
         {homeSteps.map((step, index) => (
           <li key={step.title} className="relative">
             <TESCard className="h-full overflow-hidden p-6">
-              <div className="relative h-32">
+              <div className="relative h-44 sm:h-48 xl:h-52">
                 <Image
                   src={step.image}
                   alt=""
                   fill
-                  sizes="260px"
+                  sizes="(min-width: 1280px) 330px, (min-width: 768px) 45vw, 100vw"
                   className="object-contain"
                 />
                 <span className="absolute left-0 top-0 grid size-12 place-items-center rounded-full bg-[#EEE6FF] text-lg font-extrabold text-brand-primary">
@@ -218,20 +243,22 @@ function TherapyMarquee({ therapies }: { therapies: PublicHomeTherapy[] }) {
 
 function ReasonsSection() {
   return (
-    <section className="mx-auto max-w-[1680px] px-5 py-20 sm:px-8 lg:px-12">
+    <section className="relative mx-auto max-w-[1680px] px-5 py-20 sm:px-8 lg:px-12">
       <SectionHeading
         title="Cada pessoa chega por um motivo diferente..."
-        body="Qual a sua motivacao hoje?"
+        body="Escolha o ponto de partida que conversa com o seu momento, sem pressa."
       />
 
-      <div className="mt-12 grid items-center gap-6 lg:grid-cols-[280px_minmax(0,1fr)_280px]">
+      <div className="pointer-events-none absolute left-1/2 top-[42%] hidden h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-brand-lavenderSoft/70 blur-3xl lg:block" />
+
+      <div className="relative mt-12 grid items-center gap-6 lg:grid-cols-[300px_minmax(0,1fr)_300px]">
         <div className="grid gap-6">
           {homeReasons.slice(0, 2).map((reason) => (
             <ReasonCard key={reason.title} reason={reason} />
           ))}
         </div>
 
-        <div className="relative mx-auto aspect-[770/515] w-full max-w-3xl">
+        <div className="relative order-first mx-auto aspect-[770/515] w-full max-w-4xl lg:order-none">
           <Image
             src="/home/tablet-video-session.png"
             alt="Sessao online em tablet"
@@ -258,7 +285,7 @@ function ReasonsSection() {
 function ReasonCard({ reason }: { reason: PublicHomeReason }) {
   return (
     <TESCard
-      className={`border-2 bg-white/80 p-6 text-center ${reasonToneClasses[reason.tone]}`}
+      className={`border-2 bg-white/90 p-6 text-center shadow-soft backdrop-blur ${reasonToneClasses[reason.tone]}`}
     >
       <span className="mx-auto grid size-12 place-items-center rounded-full bg-white shadow-card">
         <Sparkles className="size-5" />
@@ -269,82 +296,6 @@ function ReasonCard({ reason }: { reason: PublicHomeReason }) {
       <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
         {reason.body}
       </p>
-    </TESCard>
-  );
-}
-
-function FeaturedTherapists({
-  therapists,
-}: {
-  therapists: PublicHomeTherapist[];
-}) {
-  return (
-    <section className="mx-auto max-w-[1680px] px-5 py-16 sm:px-8 lg:px-12">
-      <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-        <SectionHeading
-          centered={false}
-          eyebrow="Terapeutas em destaque"
-          title="Profissionais verificados para voce conhecer com calma"
-        />
-        <TESButton href={routes.public.therapists} variant="secondary">
-          Ver todos os terapeutas
-          <ArrowRight className="size-4" />
-        </TESButton>
-      </div>
-
-      <div className="mt-9 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-        {therapists.map((therapist) => (
-          <TherapistPreview key={therapist.slug} therapist={therapist} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function TherapistPreview({ therapist }: { therapist: PublicHomeTherapist }) {
-  return (
-    <TESCard className="overflow-hidden p-3">
-      <div className="relative h-56 overflow-hidden rounded-[16px] bg-surface-soft">
-        <Image
-          src={therapist.photoUrl}
-          alt={`Retrato de ${therapist.name}`}
-          fill
-          loading="eager"
-          sizes="(min-width: 1280px) 25vw, (min-width: 640px) 50vw, 100vw"
-          className="object-cover"
-        />
-      </div>
-      <div className="p-3">
-        <div className="flex items-center justify-between gap-3">
-          <TESBadge tone="brand">
-            <ShieldCheck className="size-3" />
-            Perfil verificado
-          </TESBadge>
-          <span className="flex items-center gap-1 text-sm font-extrabold text-brand-deep">
-            {therapist.ratingLabel}
-            <Star className="size-4 fill-[#F4B84A] text-[#F4B84A]" />
-          </span>
-        </div>
-        <h3 className="mt-4 text-xl font-extrabold text-brand-deep">
-          {therapist.name}
-        </h3>
-        <p className="mt-1 text-sm font-extrabold text-brand-primary">
-          {therapist.headline}
-        </p>
-        <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-          {therapist.serviceTitle}
-        </p>
-        <div className="mt-4 flex items-center justify-between gap-3 text-xs font-bold text-tesText-muted">
-          <span>{therapist.reviewCountLabel}</span>
-          <span>{therapist.priceLabel}</span>
-        </div>
-        <Link
-          href={therapist.href as Route}
-          className="mt-5 flex h-11 items-center justify-center rounded-full bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover"
-        >
-          Ver perfil completo
-        </Link>
-      </div>
     </TESCard>
   );
 }
@@ -367,31 +318,40 @@ function TherapySection({ therapies }: { therapies: PublicHomeTherapy[] }) {
 
       <div className="mt-9 grid gap-5 md:grid-cols-3">
         {therapies.slice(0, 3).map((therapy) => (
-          <TESCard key={therapy.slug} className="p-6">
-            <div className="flex items-center justify-between gap-4">
-              <span className="grid size-12 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-                <Leaf className="size-6" />
-              </span>
+          <TESCard key={therapy.slug} className="overflow-hidden p-0">
+            <div className="relative h-40 bg-surface-soft">
+              <Image
+                src={getTherapyImage(therapy)}
+                alt={`Imagem editorial de ${therapy.name}`}
+                fill
+                sizes="(min-width: 768px) 30vw, 100vw"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-brand-deep/30 to-transparent" />
               {therapy.isFeatured ? (
-                <TESBadge tone="brand">Destaque TES</TESBadge>
+                <TESBadge tone="brand" className="absolute right-4 top-4">
+                  Destaque TES
+                </TESBadge>
               ) : null}
             </div>
-            <p className="mt-6 text-xs font-extrabold uppercase tracking-[0.14em] text-brand-primary">
-              {therapy.categoryName}
-            </p>
-            <h3 className="mt-2 font-display text-3xl font-light italic text-brand-deep">
-              {therapy.name}
-            </h3>
-            <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-              {therapy.shortDescription}
-            </p>
-            <Link
-              href={therapy.href as Route}
-              className="mt-6 inline-flex items-center gap-2 text-sm font-extrabold text-brand-primary"
-            >
-              Conhecer terapia
-              <ArrowRight className="size-4" />
-            </Link>
+            <div className="p-6">
+              <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-brand-primary">
+                {therapy.categoryName}
+              </p>
+              <h3 className="mt-2 font-display text-3xl font-light italic text-brand-deep">
+                {therapy.name}
+              </h3>
+              <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
+                {therapy.shortDescription}
+              </p>
+              <Link
+                href={therapy.href as Route}
+                className="mt-6 inline-flex items-center gap-2 text-sm font-extrabold text-brand-primary"
+              >
+                Conhecer terapia
+                <ArrowRight className="size-4" />
+              </Link>
+            </div>
           </TESCard>
         ))}
       </div>
@@ -474,29 +434,33 @@ function FaqSection() {
 function JourneyCta() {
   return (
     <section className="mx-auto max-w-[1680px] px-5 py-10 sm:px-8 lg:px-12">
-      <div className="grid gap-8 overflow-hidden rounded-hero border border-border bg-[linear-gradient(135deg,#6C3D91_0%,#5B337A_56%,#81BAE0_140%)] p-8 text-white shadow-soft md:grid-cols-[1fr_auto] md:items-center md:p-10">
-        <div>
-          <TESBadge tone="soft" className="bg-white/15 text-white">
-            <Video className="size-3" />
-            Sessao online
-          </TESBadge>
-          <h2 className="mt-4 font-display text-4xl font-light italic leading-tight md:text-5xl">
+      <div className="relative overflow-hidden rounded-hero border border-border bg-brand-primary p-8 text-white shadow-soft md:min-h-[310px] md:p-12">
+        <Image
+          src="/home/match-journey-banner.png"
+          alt=""
+          fill
+          sizes="(min-width: 1024px) 90vw, 100vw"
+          className="object-cover object-[62%_center]"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-primary via-brand-primary/82 to-brand-primary/10" />
+        <div className="relative max-w-2xl">
+          <h2 className="font-display text-4xl font-light italic leading-tight md:text-5xl">
             Comece pela sua jornada
           </h2>
-          <p className="mt-4 max-w-2xl text-base font-semibold leading-7 text-white/80">
-            Responda algumas perguntas e veja caminhos que podem fazer sentido
-            para o momento que voce esta vivendo.
+          <p className="mt-4 max-w-xl text-base font-semibold leading-7 text-white/85">
+            Responda algumas perguntas com calma e veja caminhos terapeuticos
+            que podem conversar com o seu momento.
           </p>
+          <TESButton
+            href={routes.public.journey}
+            size="lg"
+            variant="secondary"
+            className="mt-7 bg-white"
+          >
+            Comecar minha jornada
+            <CalendarDays className="size-4" />
+          </TESButton>
         </div>
-        <TESButton
-          href={routes.public.journey}
-          size="lg"
-          variant="secondary"
-          className="bg-white"
-        >
-          Comecar minha jornada
-          <CalendarDays className="size-4" />
-        </TESButton>
       </div>
     </section>
   );
@@ -514,7 +478,7 @@ export default async function HomePage() {
       <TherapyMarquee therapies={data.therapies} />
       <ReasonsSection />
       <TherapySection therapies={data.therapies} />
-      <FeaturedTherapists therapists={data.therapists} />
+      <FeaturedTherapistsCarousel therapists={data.therapists} />
       <TestimonialsSection testimonials={data.testimonials} />
       <JourneyCta />
       <FaqSection />

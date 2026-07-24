@@ -4,7 +4,7 @@ import { routes } from "@/lib/routes";
 
 export const encounterMoreActions = [
   {
-    href: (bookingId: string) => routes.patient.sessionDetail(bookingId),
+    href: (bookingId: string) => routes.patient.encounterDetail(bookingId),
     label: "Ver detalhes",
   },
   {

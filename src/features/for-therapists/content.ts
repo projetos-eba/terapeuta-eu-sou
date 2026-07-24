@@ -11,7 +11,7 @@ import {
 
 export const forTherapistsHero = {
   eyebrow: "PARA TERAPEUTAS",
-  title: "Voce cuida de pessoas.",
+  title: "Você cuida de pessoas.",
   accent: "Nos cuidamos do espaco onde esse encontro acontece",
   body:
     "O TES foi criado para ajudar terapeutas a organizar atendimentos, fortalecer sua presenca e construir uma jornada profissional com mais clareza e tranquilidade.",
@@ -90,9 +90,10 @@ export const benefitCards = [
 ];
 
 export const planCategoryLabels = {
-  base: "Base para todos",
-  premium: "Gestao e inteligencia - Premium",
-  premium_plus: "Operacao completa - Premium Plus",
+  base: "Operação — base de todos",
+  premium: "Identidade & presença — a partir do Premium",
+  premium_plus: "Gestão da prática — exclusivo Plus",
+  academy: "Academia TES (Em breve)",
 } as const;
 
 export const commercialNotes = [

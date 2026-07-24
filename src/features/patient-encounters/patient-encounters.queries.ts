@@ -247,7 +247,7 @@ function createDemoPatientEncountersPage(
       {
         headline: "Terapeuta Holístico",
         id: "92000000-0000-4000-8000-000000000014",
-        photo_url: "/therapists/lucas-pereira.png",
+        photo_url: "/therapists/andre-lima.png",
         public_name: "André Lima",
       },
     ],
@@ -292,8 +292,8 @@ function createDemoPatientEncountersPage(
       "93000000-0000-4000-8000-000000000015",
       {
         id: "93000000-0000-4000-8000-000000000015",
-        therapy_id: "22222222-2222-4222-8222-222222222226",
-        title: "Aromaterapia",
+        therapy_id: "22222222-2222-4222-8222-222222222228",
+        title: "Tarô",
       },
     ],
     [
@@ -301,15 +301,15 @@ function createDemoPatientEncountersPage(
       {
         id: "93000000-0000-4000-8000-000000000016",
         therapy_id: "22222222-2222-4222-8222-222222222228",
-        title: "Tarologia Terapêutica",
+        title: "Tarô",
       },
     ],
     [
       "93000000-0000-4000-8000-000000000017",
       {
         id: "93000000-0000-4000-8000-000000000017",
-        therapy_id: "22222222-2222-4222-8222-222222222227",
-        title: "Mindfulness",
+        therapy_id: "22222222-2222-4222-8222-222222222230",
+        title: "Constelação Familiar",
       },
     ],
   ]);
@@ -319,27 +319,19 @@ function createDemoPatientEncountersPage(
       { id: "22222222-2222-4222-8222-222222222225", name: "Reiki", slug: "reiki" },
     ],
     [
-      "22222222-2222-4222-8222-222222222226",
-      {
-        id: "22222222-2222-4222-8222-222222222226",
-        name: "Aromaterapia",
-        slug: "aromaterapia",
-      },
-    ],
-    [
       "22222222-2222-4222-8222-222222222228",
       {
         id: "22222222-2222-4222-8222-222222222228",
-        name: "Tarologia Terapêutica",
-        slug: "tarologia-terapeutica",
+        name: "Tarô",
+        slug: "taro",
       },
     ],
     [
-      "22222222-2222-4222-8222-222222222227",
+      "22222222-2222-4222-8222-222222222230",
       {
-        id: "22222222-2222-4222-8222-222222222227",
-        name: "Mindfulness",
-        slug: "mindfulness",
+        id: "22222222-2222-4222-8222-222222222230",
+        name: "Constelação Familiar",
+        slug: "constelacao-familiar",
       },
     ],
   ]);

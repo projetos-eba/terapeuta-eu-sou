@@ -28,6 +28,7 @@ Consultar antes de alterar:
 - Perfil principal de teste: `ana-oliveira`.
 - Slugs seedados como `rafael-santos` devem aparecer quando tiverem perfil aprovado, serviço ativo e terapia `published` com `is_public_visible = true`.
 - O fallback local de desenvolvimento cobre `ana-oliveira` e `rafael-santos` para evitar tela de não encontrado quando o Supabase local estiver indisponível.
+- Fotos públicas devem apontar para assets versionados em `public/therapists/`. Não usar URLs temporárias, imagens externas ou nomes novos sem atualizar seeds, fallbacks e documentação.
 - Não expor email, telefone, dados internos de paciente, `meeting_url`, dados de pagamento ou campos privados.
 
 ## Dados
@@ -42,7 +43,7 @@ Consultar antes de alterar:
 - Terapias e serviços são gerenciados pela plataforma/Admin, não pela copy livre do terapeuta.
 - Avaliações públicas devem estar vinculadas a booking `completed` e `paid`.
 - Disponibilidade deve ser derivada de regras semanais, exceções, bookings existentes, buffers, antecedência mínima e duração do serviço.
-- Cada serviço deve carregar sua própria grade de horários calculada; Reiki 50min e Aromaterapia 60min não podem compartilhar uma lista fixa de slots.
+- Cada serviço deve carregar sua própria grade de horários calculada; Reiki 50min, Tarô 60min e Constelação Familiar 60min não podem compartilhar uma lista fixa de slots.
 - O painel compacto de disponibilidade mostra somente os próximos 3 dias com horários disponíveis; dias corridos sem slot não devem aparecer como linhas vazias.
 - A agenda mensal usa o mesmo payload calculado por serviço e destaca apenas dias disponíveis, listando horários após a seleção do dia.
 - As views de perfil público devem usar o status atual do catálogo público: `therapies.status = 'published'` e `therapies.is_public_visible = true`.

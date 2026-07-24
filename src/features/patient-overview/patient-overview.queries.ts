@@ -2,6 +2,8 @@ import "server-only";
 
 import { cache } from "react";
 
+import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
+
 import {
   moodKeys,
   type MoodKey,
@@ -391,7 +393,9 @@ function toAppointment(
     id: booking.id,
     meetingUrl: booking.meeting_url,
     professional: {
-      avatarUrl: professional.photo_url,
+      avatarUrl: getTherapistAvatarUrl(professional.photo_url, {
+        name: professional.public_name,
+      }),
       id: professional.id,
       name: professional.public_name,
     },
@@ -406,7 +410,9 @@ function toFavoriteProfessional(
   professional: ProfessionalRow,
 ): PatientFavoriteProfessional {
   return {
-    avatarUrl: professional.photo_url,
+    avatarUrl: getTherapistAvatarUrl(professional.photo_url, {
+      name: professional.public_name,
+    }),
     id: professional.id,
     name: professional.public_name,
     specialty: professional.headline,
@@ -442,7 +448,9 @@ function toPendingReview(
   return {
     appointmentId: booking.id,
     professional: {
-      avatarUrl: professional.photo_url,
+      avatarUrl: getTherapistAvatarUrl(professional.photo_url, {
+        name: professional.public_name,
+      }),
       name: professional.public_name,
     },
     therapyLabel: therapy.name,
@@ -506,7 +514,7 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
     },
     favoriteProfessionals: [
       {
-        avatarUrl: "/therapists/lucas-pereira.png",
+        avatarUrl: "/therapists/andre-lima.png",
         id: "92000000-0000-4000-8000-000000000014",
         name: "André Lima",
         specialty: "Terapeuta Holístico",
@@ -584,14 +592,14 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
         id: "94000000-0000-4000-8000-000000000012",
         meetingUrl: null,
         professional: {
-          avatarUrl: "/therapists/rafael-santos.png",
+          avatarUrl: "/therapists/rafael-santos-avatar.png",
           id: "92000000-0000-4000-8000-000000000012",
           name: "Marcus Silva",
         },
-        serviceLabel: "Terapia Integrativa",
+        serviceLabel: "Leitura simbólica de Tarô",
         startsAt: tomorrowStart.toISOString(),
         status: "confirmed",
-        therapyLabel: "Terapia Integrativa",
+        therapyLabel: "Tarô",
       },
       {
         endsAt: nextTuesdayEnd.toISOString(),

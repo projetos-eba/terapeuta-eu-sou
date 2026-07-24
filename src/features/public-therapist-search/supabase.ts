@@ -1,4 +1,5 @@
 import { routes } from "@/lib/routes";
+import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 
 import { fallbackTherapists, THERAPIST_SEARCH_PAGE_SIZE } from "./content";
 import { getActiveFilterCount } from "./filters";
@@ -124,7 +125,11 @@ function mapTherapistRow(row: PublicTherapistSearchRow): TherapistSearchCard {
     highlight: row.highlight ?? "Perfil Verificado",
     highlightTone: row.highlight_tone ?? "verified",
     href: routes.public.therapistProfile(row.slug),
-    image: row.photo_url || "/therapists/ana-oliveira.png",
+    image:
+      getTherapistAvatarUrl(row.photo_url, {
+        name: row.public_name,
+        slug: row.slug,
+      }) || "/therapists/ana-oliveira.png",
     name: row.public_name,
     nextSlotAt: row.next_slot_at,
     nextSlotLabel: formatNextSlotLabel(row.next_slot_at),

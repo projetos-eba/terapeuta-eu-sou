@@ -10,6 +10,7 @@ import {
   formatRelativeBookingDay,
 } from "@/features/bookings/booking-formatters";
 import { routes } from "@/lib/routes";
+import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 
 import type {
   PatientEncounter,
@@ -167,7 +168,9 @@ function mapPatientEncounter(
     statusLabel: getStatusLabel(status),
     summaryId,
     therapist: {
-      avatarUrl: therapist.photo_url,
+      avatarUrl: getTherapistAvatarUrl(therapist.photo_url, {
+        name: therapist.public_name,
+      }),
       id: therapist.id,
       name: therapist.public_name,
     },
@@ -211,7 +214,7 @@ function getPrimaryAction(
   if (status === "completed") {
     if (summaryId) {
       return {
-        href: `${routes.patient.sessionDetail(booking.id)}?resumo=1`,
+        href: `${routes.patient.encounterDetail(booking.id)}?resumo=1`,
         kind: "link",
         label: "Ver resumo",
       };
@@ -233,7 +236,7 @@ function getPrimaryAction(
   }
 
   return {
-    href: routes.patient.sessionDetail(booking.id),
+    href: routes.patient.encounterDetail(booking.id),
     kind: "link",
     label: "Ver detalhes",
   };
@@ -252,11 +255,11 @@ function getStatusLabel(status: PatientEncounterStatus) {
 }
 
 function getApproachLabel(slug: string) {
-  if (slug === "reiki" || slug === "mindfulness") {
+  if (slug === "reiki") {
     return "Abordagem energética";
   }
 
-  if (slug === "aromaterapia") return "Abordagem integrativa";
+  if (slug === "constelacao-familiar") return "Abordagem sistêmica";
 
   return "Abordagem intuitiva";
 }
@@ -266,12 +269,9 @@ function deriveRecentJourneyTopics(
   input: MapPatientEncountersInput,
 ) {
   const topicByTherapySlug: Record<string, string> = {
-    aromaterapia: "Relacionamentos",
-    "meditacao-guiada": "Propósito",
-    mindfulness: "Autoconhecimento",
+    "constelacao-familiar": "Relacionamentos",
     reiki: "Autoconhecimento",
-    "tarologia-terapeutica": "Propósito",
-    "terapia-floral": "Relacionamentos",
+    taro: "Propósito",
   };
   const cutoff = Date.now() - 30 * 86_400_000;
   const topics = bookings

@@ -11,20 +11,25 @@ export const fallbackMatchingConfig: MatchingConfig = {
   version: 1,
   versionId: fallbackMatchingVersionId,
   themes: [
-    theme("000000000001", "Equilíbrio emocional", "equilibrio-emocional", 1, [
+    theme("000000000001", "Emoções e Bem-Estar", "emocoes-bem-estar", 1, [
       ["000000000001", "Acolher emoções", "acolher-emocoes"],
       ["000000000002", "Equilíbrio emocional", "equilibrio-emocional-interesse"],
       ["000000000003", "Leveza na rotina", "leveza-na-rotina"],
+      ["000000000013", "Ansiedade", "ansiedade"],
+      ["000000000102", "Estresse", "estresse"],
     ]),
-    theme("000000000002", "Autoestima e poder pessoal", "autoestima-poder-pessoal", 2, [
+    theme("000000000002", "Autoconhecimento e Transformação", "autoconhecimento-transformacao", 2, [
       ["000000000004", "Amor-próprio", "amor-proprio"],
       ["000000000005", "Autoconfiança", "autoconfianca"],
       ["000000000006", "Limites pessoais", "limites-pessoais"],
+      ["000000000103", "Entender a si mesmo", "entender-a-si-mesmo"],
+      ["000000000106", "Identificar padrões", "identificar-padroes"],
     ]),
     theme("000000000003", "Relacionamentos", "relacionamentos", 3, [
       ["000000000007", "Comunicação afetiva", "comunicacao-afetiva"],
       ["000000000008", "Vínculos familiares", "vinculos-familiares"],
-      ["000000000009", "Relações amorosas", "relacoes-amorosas"],
+      ["000000000104", "Relacionamentos amorosos", "relacionamentos-amorosos"],
+      ["000000000105", "Conflitos familiares", "conflitos-familiares"],
     ]),
     theme("000000000004", "Espiritualidade", "espiritualidade", 4, [
       ["000000000010", "Conexão espiritual", "conexao-espiritual"],
@@ -36,10 +41,11 @@ export const fallbackMatchingConfig: MatchingConfig = {
       ["000000000014", "Sobrecarga mental", "sobrecarga-mental"],
       ["000000000015", "Sono e descanso", "sono-descanso"],
     ]),
-    theme("000000000006", "Mudanças de vida", "mudancas-de-vida", 6, [
+    theme("000000000006", "Libertação e Renovação", "libertacao-renovacao", 6, [
       ["000000000016", "Recomeços", "recomecos-match"],
       ["000000000017", "Transições de vida", "transicoes-de-vida"],
       ["000000000018", "Medo do futuro", "medo-do-futuro"],
+      ["000000000107", "Encerrar ciclos", "encerrar-ciclos"],
     ]),
     theme("000000000007", "Propósito e direção", "proposito-direcao", 7, [
       ["000000000019", "Clareza interior", "clareza-interior"],
@@ -49,12 +55,13 @@ export const fallbackMatchingConfig: MatchingConfig = {
     theme("000000000008", "Luto e despedidas", "luto-despedidas", 8, [
       ["000000000022", "Saudade", "saudade"],
       ["000000000023", "Encerramento de ciclos", "encerramento-de-ciclos"],
-      ["000000000024", "Acolhimento do luto", "acolhimento-do-luto"],
+      ["000000000024", "Encerramentos delicados", "encerramentos-delicados"],
     ]),
-    theme("000000000009", "Corpo e energia", "corpo-energia", 9, [
+    theme("000000000009", "Energia e Equilíbrio Energético", "energia-equilibrio-energetico", 9, [
       ["000000000025", "Relaxamento corporal", "relaxamento-corporal"],
       ["000000000026", "Energia vital", "energia-vital"],
       ["000000000027", "Sensação de sobrecarga", "sensacao-de-sobrecarga"],
+      ["000000000101", "Desequilíbrio energético", "desequilibrio-energetico"],
     ]),
     theme("000000000010", "Criatividade e expressão", "criatividade-expressao", 10, [
       ["000000000028", "Expressar sentimentos", "expressar-sentimentos"],
@@ -65,49 +72,29 @@ export const fallbackMatchingConfig: MatchingConfig = {
 };
 
 export const fallbackMatchingTherapies: MatchingTherapy[] = [
-  therapy("222222222221", "Terapia Integrativa", "terapia-integrativa", "Um caminho amplo para organizar sentimentos, escolhas e momentos de transição.", 2),
-  therapy("222222222222", "Terapia Floral", "terapia-floral", "Uma possibilidade para quem busca apoio em equilíbrio emocional e autoconhecimento.", 2),
-  therapy("222222222223", "Meditação Guiada", "meditacao-guiada", "Uma prática para cultivar presença, pausa e percepção do próprio ritmo.", 1),
-  therapy("222222222225", "Reiki", "reiki", "Prática integrativa de presença e equilíbrio energético.", 1),
-  therapy("222222222226", "Aromaterapia", "aromaterapia", "Uso cuidadoso de óleos essenciais em práticas de acolhimento e bem-estar.", 1),
+  therapy("222222222225", "Reiki", "reiki", "Prática complementar de presença e cuidado energético.", 1),
+  therapy("222222222228", "Tarô", "taro", "Leitura simbólica para reflexão, escolhas e autoconhecimento.", 2),
+  therapy("222222222230", "Constelação Familiar", "constelacao-familiar", "Experiência simbólica para observar vínculos e padrões com cuidado.", 2),
 ];
 
 export const fallbackMatchingWeights: MatchingWeight[] = [
-  weight("222222222221", "000000000001", null, 5),
-  weight("222222222221", "000000000006", null, 5),
-  weight("222222222221", "000000000007", null, 4),
-  weight("222222222222", "000000000001", null, 5),
-  weight("222222222222", "000000000002", null, 4),
-  weight("222222222222", "000000000008", null, 4),
-  weight("222222222223", "000000000005", null, 5),
-  weight("222222222223", "000000000007", null, 4),
-  weight("222222222223", "000000000009", null, 4),
-  weight("222222222225", "000000000009", null, 5),
-  weight("222222222225", "000000000004", null, 5),
   weight("222222222225", "000000000001", null, 4),
-  weight("222222222226", "000000000005", null, 5),
-  weight("222222222226", "000000000009", null, 4),
-  weight("222222222226", "000000000010", null, 3),
-  weight("222222222221", null, "000000000001", 5),
-  weight("222222222221", null, "000000000017", 5),
-  weight("222222222221", null, "000000000019", 4),
-  weight("222222222221", null, "000000000007", 4),
-  weight("222222222222", null, "000000000004", 5),
-  weight("222222222222", null, "000000000024", 4),
-  weight("222222222222", null, "000000000002", 5),
-  weight("222222222222", null, "000000000006", 4),
-  weight("222222222223", null, "000000000013", 5),
-  weight("222222222223", null, "000000000015", 5),
-  weight("222222222223", null, "000000000014", 5),
-  weight("222222222223", null, "000000000025", 4),
-  weight("222222222225", null, "000000000026", 5),
-  weight("222222222225", null, "000000000010", 5),
-  weight("222222222225", null, "000000000011", 4),
-  weight("222222222225", null, "000000000027", 4),
-  weight("222222222226", null, "000000000015", 5),
-  weight("222222222226", null, "000000000012", 4),
-  weight("222222222226", null, "000000000028", 3),
-  weight("222222222226", null, "000000000025", 4),
+  weight("222222222225", "000000000009", null, 5),
+  weight("222222222225", null, "000000000013", 4),
+  weight("222222222225", null, "000000000101", 5),
+  weight("222222222225", null, "000000000102", 4),
+  weight("222222222228", "000000000002", null, 5),
+  weight("222222222228", "000000000003", null, 4),
+  weight("222222222228", "000000000001", null, 3),
+  weight("222222222228", null, "000000000103", 5),
+  weight("222222222228", null, "000000000104", 4),
+  weight("222222222228", null, "000000000013", 3),
+  weight("222222222230", "000000000003", null, 5),
+  weight("222222222230", "000000000002", null, 4),
+  weight("222222222230", "000000000006", null, 4),
+  weight("222222222230", null, "000000000105", 5),
+  weight("222222222230", null, "000000000106", 5),
+  weight("222222222230", null, "000000000107", 4),
 ];
 
 function theme(
