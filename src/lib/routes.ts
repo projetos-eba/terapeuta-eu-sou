@@ -25,7 +25,8 @@ export const routes = {
   },
   patient: {
     home: '/app',
-    overview: '/paciente/inicio',
+    overview: '/app',
+    encounters: '/app/encontros',
     sessions: '/app/sessoes',
     upcomingSessions: '/app/sessoes/proximas',
     sessionHistory: '/app/sessoes/historico',

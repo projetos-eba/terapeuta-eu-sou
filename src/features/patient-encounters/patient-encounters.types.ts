@@ -1,0 +1,60 @@
+import type { BookingPrimaryAction } from "@/features/bookings/booking.types";
+
+export type PatientEncountersPageData = {
+  favoriteTherapistsCount: number;
+  historyEncounters: PatientEncounter[];
+  metrics: PatientEncounterMetrics;
+  nextEncounter: PatientEncounter | null;
+  patient: PatientEncountersPatient;
+  recentJourneyTopics: string[];
+  source: "demo" | "supabase";
+  unreadMessagesCount: number;
+  unreadNotificationsCount: number;
+  upcomingEncounters: PatientEncounter[];
+};
+
+export type PatientEncountersPatient = {
+  avatarUrl: string | null;
+  id: string;
+  name: string;
+  patientProfileId: string;
+};
+
+export type PatientEncounterMetrics = {
+  activeCount: number;
+  completedCount: number;
+  favoriteTherapistsCount: number;
+};
+
+export type PatientEncounter = {
+  actionHint?: string;
+  approachLabel: string;
+  dateLabel: string;
+  endsAt: string;
+  id: string;
+  meetingUrl: string | null;
+  primaryAction: BookingPrimaryAction;
+  scheduleLabel: string;
+  serviceLabel: string;
+  startsAt: string;
+  status: PatientEncounterStatus;
+  statusLabel: string;
+  summaryId: string | null;
+  therapist: {
+    avatarUrl: string | null;
+    id: string;
+    name: string;
+  };
+  therapyLabel: string;
+};
+
+export type PatientEncounterStatus =
+  | "live"
+  | "confirmed"
+  | "pending_payment"
+  | "completed"
+  | "cancelled";
+
+export type PatientEncountersQueryResult =
+  | { data: PatientEncountersPageData; error: null }
+  | { data: null; error: "not_found" | "unavailable" };

@@ -26,7 +26,7 @@ export default async function AuthenticatedLayout({
       icon: "search",
       label: "Encontrar terapeutas",
     },
-    { href: routes.patient.sessions, icon: "calendar", label: "Encontros" },
+    { href: routes.patient.encounters, icon: "calendar", label: "Encontros" },
     {
       href: routes.patient.favoriteTherapists,
       icon: "heart",

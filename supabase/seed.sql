@@ -80,8 +80,9 @@ values
     false,
     'Terapia inativa no MVP.'
   )
-on conflict (slug) do update
+on conflict (id) do update
 set
+  slug = excluded.slug,
   category_id = excluded.category_id,
   name = excluded.name,
   short_description = excluded.short_description,
@@ -773,8 +774,9 @@ values
     true,
     'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.'
   )
-on conflict (slug) do update
+on conflict (id) do update
 set
+  slug = excluded.slug,
   category_id = excluded.category_id,
   name = excluded.name,
   short_description = excluded.short_description,
@@ -823,6 +825,7 @@ values
   )
 on conflict (id) do update
 set
+  therapist_profile_id = excluded.therapist_profile_id,
   therapy_id = excluded.therapy_id,
   title = excluded.title,
   description = excluded.description,
@@ -1024,8 +1027,9 @@ values
   ('22222222-2222-4222-8222-222222222229', '11111111-1111-4111-8111-111111111116', 'Apometria', 'apometria', 'Prática espiritualista complementar para reflexão e cuidado energético.', 'Apometria é apresentada no TES com linguagem responsável, como prática complementar e sem promessa de cura.', 'published', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/apometria.png', now() - interval '12 days', 72, array['espiritualidade', 'energia', 'campo energético'], true),
   ('22222222-2222-4222-8222-222222222222', '11111111-1111-4111-8111-111111111113', 'Florais', 'terapia-floral', 'Uma possibilidade para quem busca apoio em equilíbrio emocional e autoconhecimento.', 'Florais podem ser apresentados como prática complementar, sempre sem promessa de cura ou resultado garantido.', 'published', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/florais.png', now() - interval '44 days', 79, array['terapia floral', 'florais de bach', 'emocional'], true),
   ('22222222-2222-4222-8222-222222222224', '11111111-1111-4111-8111-111111111117', 'Cristaloterapia', 'cristaloterapia', 'Prática complementar com cristais, presença e intenção simbólica.', 'Cristaloterapia é apresentada como prática complementar e simbólica, sem promessa de cura, diagnóstico ou resultado garantido.', 'published', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/cristaloterapia.png', now() - interval '9 days', 70, array['cristais', 'energia', 'equilibrio'], true)
-on conflict (slug) do update
+on conflict (id) do update
 set
+  slug = excluded.slug,
   category_id = excluded.category_id,
   name = excluded.name,
   short_description = excluded.short_description,
@@ -1096,8 +1100,9 @@ values
   ('76000000-0000-4000-8000-000000000004', '22222222-2222-4222-8222-222222222226', 'Pausa sensorial', 'flower', 1),
   ('76000000-0000-4000-8000-000000000005', '22222222-2222-4222-8222-222222222226', 'Rituais de presença', 'leaf', 2),
   ('76000000-0000-4000-8000-000000000006', '22222222-2222-4222-8222-222222222226', 'Cuidado complementar', 'shield', 3)
-on conflict (id) do update
+on conflict (therapy_id, sort_order) do update
 set
+  id = excluded.id,
   therapy_id = excluded.therapy_id,
   title = excluded.title,
   icon_key = excluded.icon_key,
@@ -1122,8 +1127,9 @@ values
   ('77000000-0000-4000-8000-000000000007', '22222222-2222-4222-8222-222222222226', 'Pausa e relaxamento', 'Pode apoiar rituais simples de presença.', 'leaf', 1),
   ('77000000-0000-4000-8000-000000000008', '22222222-2222-4222-8222-222222222226', 'Atenção aos sentidos', 'Convida a observar aromas, corpo e ambiente com cuidado.', 'flower', 2),
   ('77000000-0000-4000-8000-000000000009', '22222222-2222-4222-8222-222222222226', 'Autocuidado complementar', 'Deve ser usada com orientação responsável e sem promessa de resultado.', 'shield', 3)
-on conflict (id) do update
+on conflict (therapy_id, sort_order) do update
 set
+  id = excluded.id,
   therapy_id = excluded.therapy_id,
   title = excluded.title,
   description = excluded.description,
@@ -1151,8 +1157,9 @@ values
   ('71000000-0000-4000-8000-000000000008', 'Luto e despedidas', 'luto-despedidas', 'Para atravessar perdas, encerramentos e saudades com cuidado.', '/home/tablet-video-session.png', 8, true),
   ('71000000-0000-4000-8000-000000000009', 'Corpo e energia', 'corpo-energia', 'Para perceber sinais do corpo, vitalidade e presença.', '/for-therapists/session-preview.png', 9, true),
   ('71000000-0000-4000-8000-000000000010', 'Criatividade e expressão', 'criatividade-expressao', 'Para desbloquear expressão, voz própria e sensibilidade.', '/home/hero-section-realistic-fade.png', 10, true)
-on conflict (slug) do update
+on conflict (id) do update
 set
+  slug = excluded.slug,
   name = excluded.name,
   description = excluded.description,
   image_url = excluded.image_url,
@@ -1335,7 +1342,9 @@ values
   ('90000000-0000-4000-8000-000000000013', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'beatriz.lima@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Beatriz Lima"}'::jsonb, now(), now()),
   ('90000000-0000-4000-8000-000000000014', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'andre.lima@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"André Lima"}'::jsonb, now(), now()),
   ('90000000-0000-4000-8000-000000000015', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'sofia.mendes@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Sofia Mendes"}'::jsonb, now(), now()),
-  ('90000000-0000-4000-8000-000000000016', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'roberto.vaz@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Roberto Vaz"}'::jsonb, now(), now())
+  ('90000000-0000-4000-8000-000000000016', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'roberto.vaz@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Roberto Vaz"}'::jsonb, now(), now()),
+  ('90000000-0000-4000-8000-000000000017', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'lucas.ferreira@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Lucas Ferreira"}'::jsonb, now(), now()),
+  ('90000000-0000-4000-8000-000000000018', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'camila.rocha@example.test', crypt('tes-mock-password', gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}'::jsonb, '{"name":"Camila Rocha"}'::jsonb, now(), now())
 on conflict (id) do update
 set email = excluded.email, raw_user_meta_data = excluded.raw_user_meta_data, updated_at = now();
 
@@ -1347,7 +1356,9 @@ values
   ('90000000-0000-4000-8000-000000000013', 'therapist', 'Beatriz Lima', 'beatriz.lima@example.test', '/therapists/celia-martins.png'),
   ('90000000-0000-4000-8000-000000000014', 'therapist', 'André Lima', 'andre.lima@example.test', '/therapists/lucas-pereira.png'),
   ('90000000-0000-4000-8000-000000000015', 'therapist', 'Sofia Mendes', 'sofia.mendes@example.test', '/therapists/ana-oliveira.png'),
-  ('90000000-0000-4000-8000-000000000016', 'therapist', 'Roberto Vaz', 'roberto.vaz@example.test', '/therapists/marcio-andrade.png')
+  ('90000000-0000-4000-8000-000000000016', 'therapist', 'Roberto Vaz', 'roberto.vaz@example.test', '/therapists/marcio-andrade.png'),
+  ('90000000-0000-4000-8000-000000000017', 'therapist', 'Lucas Ferreira', 'lucas.ferreira@example.test', '/therapists/rafael-santos.png'),
+  ('90000000-0000-4000-8000-000000000018', 'therapist', 'Camila Rocha', 'camila.rocha@example.test', '/therapists/fernanda-rocha.png')
 on conflict (id) do update
 set role = excluded.role, display_name = excluded.display_name, email = excluded.email, avatar_url = excluded.avatar_url, updated_at = now();
 
@@ -1366,7 +1377,9 @@ values
   ('92000000-0000-4000-8000-000000000013', '90000000-0000-4000-8000-000000000013', 'premium', 'approved', 'beatriz-lima', 'Beatriz Lima', 'Beatriz Lima', 'Terapeuta Holística', '/therapists/celia-martins.png', 'Curitiba', 'PR', array['pt-BR'], true, true, true),
   ('92000000-0000-4000-8000-000000000014', '90000000-0000-4000-8000-000000000014', 'premium', 'approved', 'andre-lima', 'André Lima', 'André Lima', 'Terapeuta Holístico', '/therapists/lucas-pereira.png', 'Florianópolis', 'SC', array['pt-BR'], true, true, true),
   ('92000000-0000-4000-8000-000000000015', '90000000-0000-4000-8000-000000000015', 'premium', 'approved', 'sofia-mendes', 'Sofia Mendes', 'Sofia Mendes', 'Terapeuta Holística', '/therapists/ana-oliveira.png', 'Belo Horizonte', 'MG', array['pt-BR'], true, true, true),
-  ('92000000-0000-4000-8000-000000000016', '90000000-0000-4000-8000-000000000016', 'premium', 'approved', 'roberto-vaz', 'Roberto Vaz', 'Roberto Vaz', 'Terapeuta Holístico', '/therapists/marcio-andrade.png', 'Porto Alegre', 'RS', array['pt-BR'], true, true, true)
+  ('92000000-0000-4000-8000-000000000016', '90000000-0000-4000-8000-000000000016', 'premium', 'approved', 'roberto-vaz', 'Roberto Vaz', 'Roberto Vaz', 'Terapeuta Holístico', '/therapists/marcio-andrade.png', 'Porto Alegre', 'RS', array['pt-BR'], true, true, true),
+  ('92000000-0000-4000-8000-000000000017', '90000000-0000-4000-8000-000000000017', 'premium', 'approved', 'lucas-ferreira', 'Lucas Ferreira', 'Lucas Ferreira', 'Terapeuta Holístico', '/therapists/rafael-santos.png', 'Rio de Janeiro', 'RJ', array['pt-BR'], true, true, true),
+  ('92000000-0000-4000-8000-000000000018', '90000000-0000-4000-8000-000000000018', 'premium', 'approved', 'camila-rocha', 'Camila Rocha', 'Camila Rocha', 'Terapeuta Holística', '/therapists/fernanda-rocha.png', 'São Paulo', 'SP', array['pt-BR'], true, true, true)
 on conflict (id) do update
 set public_name = excluded.public_name, headline = excluded.headline, photo_url = excluded.photo_url, is_public = excluded.is_public, is_accepting_bookings = excluded.is_accepting_bookings, updated_at = now();
 
@@ -1374,7 +1387,13 @@ insert into public.therapist_services (id, therapist_profile_id, therapy_id, tit
 values
   ('93000000-0000-4000-8000-000000000011', '92000000-0000-4000-8000-000000000011', '22222222-2222-4222-8222-222222222225', 'Terapia Holística', 'Sessão online de cuidado integrativo.', 60, 17000, 'active'),
   ('93000000-0000-4000-8000-000000000012', '92000000-0000-4000-8000-000000000012', '22222222-2222-4222-8222-222222222221', 'Terapia Integrativa', 'Sessão online de escuta integrativa.', 60, 17000, 'active'),
-  ('93000000-0000-4000-8000-000000000013', '92000000-0000-4000-8000-000000000013', '22222222-2222-4222-8222-222222222225', 'Reiki', 'Prática complementar online.', 60, 17000, 'active')
+  ('93000000-0000-4000-8000-000000000013', '92000000-0000-4000-8000-000000000013', '22222222-2222-4222-8222-222222222225', 'Reiki', 'Prática complementar online.', 60, 17000, 'active'),
+  ('93000000-0000-4000-8000-000000000014', '92000000-0000-4000-8000-000000000014', '22222222-2222-4222-8222-222222222225', 'Reiki', 'Prática complementar online com foco em presença e cuidado energético responsável.', 60, 12000, 'active'),
+  ('93000000-0000-4000-8000-000000000015', '92000000-0000-4000-8000-000000000015', '22222222-2222-4222-8222-222222222226', 'Aromaterapia', 'Sessão integrativa com linguagem responsável e orientada ao autocuidado.', 60, 14000, 'active'),
+  ('93000000-0000-4000-8000-000000000016', '92000000-0000-4000-8000-000000000016', '22222222-2222-4222-8222-222222222228', 'Tarologia Terapêutica', 'Leitura simbólica para reflexão e autoconhecimento.', 60, 12000, 'active'),
+  ('93000000-0000-4000-8000-000000000017', 'c1000000-0000-4000-8000-000000000004', '22222222-2222-4222-8222-222222222227', 'Mindfulness', 'Prática de atenção plena para cultivar presença e pausa.', 60, 13000, 'active'),
+  ('93000000-0000-4000-8000-000000000018', '92000000-0000-4000-8000-000000000017', '22222222-2222-4222-8222-222222222223', 'Meditação Guiada', 'Prática guiada para pausa, presença e percepção do próprio ritmo.', 60, 13000, 'active'),
+  ('93000000-0000-4000-8000-000000000019', '92000000-0000-4000-8000-000000000018', '22222222-2222-4222-8222-222222222226', 'Aromaterapia', 'Sessão integrativa com aromas, presença e conversa cuidadosa.', 60, 14000, 'active')
 on conflict (id) do update
 set therapist_profile_id = excluded.therapist_profile_id, therapy_id = excluded.therapy_id, title = excluded.title, description = excluded.description, duration_minutes = excluded.duration_minutes, price_cents = excluded.price_cents, status = excluded.status, updated_at = now();
 
@@ -1383,9 +1402,47 @@ values
   ('94000000-0000-4000-8000-000000000011', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', '93000000-0000-4000-8000-000000000011', now() - interval '30 minutes', now() + interval '30 minutes', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/juliane-live', null),
   ('94000000-0000-4000-8000-000000000012', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000012', '93000000-0000-4000-8000-000000000012', current_date + interval '1 day' + time '10:30', current_date + interval '1 day' + time '11:30', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/marcus', null),
   ('94000000-0000-4000-8000-000000000013', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000013', '93000000-0000-4000-8000-000000000013', current_date + ((9 - extract(dow from current_date)::integer) % 7) + time '16:00', current_date + ((9 - extract(dow from current_date)::integer) % 7) + time '17:00', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/beatriz', null),
-  ('94000000-0000-4000-8000-000000000014', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', '93000000-0000-4000-8000-000000000011', now() - interval '2 days', now() - interval '2 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/juliane-last', now() - interval '2 days' + interval '60 minutes')
+  ('94000000-0000-4000-8000-000000000014', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', '93000000-0000-4000-8000-000000000011', now() - interval '2 days', now() - interval '2 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/juliane-last', now() - interval '2 days' + interval '60 minutes'),
+  ('94000000-0000-4000-8000-000000000021', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000014', '93000000-0000-4000-8000-000000000014', now() - interval '5 minutes', now() + interval '55 minutes', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/andre-live', null),
+  ('94000000-0000-4000-8000-000000000022', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000015', '93000000-0000-4000-8000-000000000015', now() + interval '2 hours', now() + interval '3 hours', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/sofia', null),
+  ('94000000-0000-4000-8000-000000000023', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000016', '93000000-0000-4000-8000-000000000016', current_date + interval '1 day' + time '09:00', current_date + interval '1 day' + time '10:00', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/roberto', null),
+  ('94000000-0000-4000-8000-000000000024', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000014', '93000000-0000-4000-8000-000000000014', current_date + interval '3 days' + time '11:00', current_date + interval '3 days' + time '12:00', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/andre-followup', null),
+  ('94000000-0000-4000-8000-000000000025', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000015', '93000000-0000-4000-8000-000000000015', current_date + interval '5 days' + time '15:00', current_date + interval '5 days' + time '16:00', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/sofia-followup', null),
+  ('94000000-0000-4000-8000-000000000031', '91000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000004', '93000000-0000-4000-8000-000000000017', now() - interval '3 hours', now() - interval '2 hours', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/juliana-history', now() - interval '2 hours'),
+  ('94000000-0000-4000-8000-000000000032', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000017', '93000000-0000-4000-8000-000000000018', now() - interval '5 hours', now() - interval '4 hours', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/lucas-history', now() - interval '4 hours'),
+  ('94000000-0000-4000-8000-000000000033', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000018', '93000000-0000-4000-8000-000000000019', now() - interval '7 hours', now() - interval '6 hours', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/camila-history', now() - interval '6 hours'),
+  ('94000000-0000-4000-8000-000000000034', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000014', '93000000-0000-4000-8000-000000000014', now() - interval '4 days', now() - interval '4 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/andre-history-1', now() - interval '4 days' + interval '60 minutes'),
+  ('94000000-0000-4000-8000-000000000035', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000015', '93000000-0000-4000-8000-000000000015', now() - interval '5 days', now() - interval '5 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/sofia-history-1', now() - interval '5 days' + interval '60 minutes'),
+  ('94000000-0000-4000-8000-000000000036', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000016', '93000000-0000-4000-8000-000000000016', now() - interval '6 days', now() - interval '6 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/roberto-history-1', now() - interval '6 days' + interval '60 minutes'),
+  ('94000000-0000-4000-8000-000000000037', '91000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000004', '93000000-0000-4000-8000-000000000017', now() - interval '7 days', now() - interval '7 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/juliana-history-2', now() - interval '7 days' + interval '60 minutes'),
+  ('94000000-0000-4000-8000-000000000038', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000017', '93000000-0000-4000-8000-000000000018', now() - interval '8 days', now() - interval '8 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/lucas-history-2', now() - interval '8 days' + interval '60 minutes'),
+  ('94000000-0000-4000-8000-000000000039', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000018', '93000000-0000-4000-8000-000000000019', now() - interval '9 days', now() - interval '9 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/camila-history-2', now() - interval '9 days' + interval '60 minutes'),
+  ('94000000-0000-4000-8000-000000000040', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000014', '93000000-0000-4000-8000-000000000014', now() - interval '10 days', now() - interval '10 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/andre-history-2', now() - interval '10 days' + interval '60 minutes'),
+  ('94000000-0000-4000-8000-000000000041', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000015', '93000000-0000-4000-8000-000000000015', now() - interval '11 days', now() - interval '11 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/sofia-history-2', now() - interval '11 days' + interval '60 minutes')
 on conflict (id) do update
 set starts_at = excluded.starts_at, ends_at = excluded.ends_at, status = excluded.status, payment_status = excluded.payment_status, meeting_url = excluded.meeting_url, completed_at = excluded.completed_at, updated_at = now();
+
+insert into public.booking_session_summaries (
+  id,
+  booking_id,
+  therapist_profile_id,
+  patient_profile_id,
+  title,
+  summary,
+  visibility
+)
+values
+  ('94100000-0000-4000-8000-000000000031', '94000000-0000-4000-8000-000000000031', 'c1000000-0000-4000-8000-000000000004', '91000000-0000-4000-8000-000000000001', 'Registro de presença', 'Resumo breve da sessão de mindfulness com combinados de continuidade para o paciente.', 'patient'),
+  ('94100000-0000-4000-8000-000000000032', '94000000-0000-4000-8000-000000000032', '92000000-0000-4000-8000-000000000017', '91000000-0000-4000-8000-000000000001', 'Pausa guiada', 'Registro da prática de meditação guiada e próximos cuidados combinados.', 'patient'),
+  ('94100000-0000-4000-8000-000000000033', '94000000-0000-4000-8000-000000000033', '92000000-0000-4000-8000-000000000018', '91000000-0000-4000-8000-000000000001', 'Aromas e autocuidado', 'Resumo da sessão de aromaterapia com observações privadas para continuidade.', 'patient')
+on conflict (booking_id) do update
+set
+  therapist_profile_id = excluded.therapist_profile_id,
+  patient_profile_id = excluded.patient_profile_id,
+  title = excluded.title,
+  summary = excluded.summary,
+  visibility = excluded.visibility,
+  updated_at = now();
 
 insert into public.favorite_therapists (id, patient_profile_id, therapist_profile_id)
 values
@@ -1414,8 +1471,12 @@ set title = excluded.title, body = excluded.body, href = excluded.href, read_at 
 
 insert into public.mood_checkins (id, patient_profile_id, mood, checked_on)
 values ('99000000-0000-4000-8000-000000000011', '91000000-0000-4000-8000-000000000001', 'calm', current_date)
-on conflict (patient_profile_id, checked_on) do update
-set mood = excluded.mood, updated_at = now();
+on conflict (id) do update
+set
+  patient_profile_id = excluded.patient_profile_id,
+  mood = excluded.mood,
+  checked_on = excluded.checked_on,
+  updated_at = now();
 
 insert into public.support_tickets (id, requester_profile_id, booking_id, category, subject, description, status, priority, resolution_summary, reviewed_at)
 values
@@ -1603,8 +1664,9 @@ values
     array['constelacao familiar', 'sistemica', 'familia', 'vinculos', 'padroes'],
     true
   )
-on conflict (slug) do update
+on conflict (id) do update
 set
+  slug = excluded.slug,
   category_id = excluded.category_id,
   name = excluded.name,
   short_description = excluded.short_description,
