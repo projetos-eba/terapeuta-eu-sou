@@ -123,7 +123,7 @@ therapistSignupRuntime.serve(async (request) => {
               source: "therapist_auth",
             },
           },
-          plan: value.plan,
+          plan: "free",
           public_name: value.fullName,
           slug: buildUniqueSlug(value.fullName),
           status: "draft",
@@ -240,7 +240,9 @@ function buildUniqueSlug(name: string) {
   return `${base}-${suffix}`;
 }
 
-function isTherapistPlan(value: unknown): value is TherapistSignupValue["plan"] {
+function isTherapistPlan(
+  value: unknown,
+): value is TherapistSignupValue["plan"] {
   return value === "free" || value === "premium" || value === "premium_plus";
 }
 

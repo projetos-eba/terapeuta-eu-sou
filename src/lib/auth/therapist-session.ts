@@ -11,7 +11,7 @@ import {
   type TherapistCapability,
   type TherapistStatus as TherapistStatusValue,
 } from "@/domain/tes";
-import { getTherapistDashboardHref } from "@/features/therapist-auth/supabase-rest";
+import { getTherapistDashboardHref } from "@/features/therapist-auth/routing";
 import { routes } from "@/lib/routes";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 

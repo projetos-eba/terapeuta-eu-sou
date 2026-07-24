@@ -69,3 +69,9 @@ backend = "postgres"
 
 [functions.match-therapies]
 verify_jwt = false
+
+[functions.client-auth-signup]
+verify_jwt = false
+
+[functions.therapist-auth-signup]
+verify_jwt = false

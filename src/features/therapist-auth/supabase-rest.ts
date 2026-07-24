@@ -1,13 +1,13 @@
 import "server-only";
 
 import { TherapistPlan } from "@/domain/tes";
-import { routes } from "@/lib/routes";
 import {
   getSupabasePublicConfig,
   invokeSupabaseFunction,
   SupabaseFunctionError,
 } from "@/lib/supabase/edge-functions";
 
+import { getTherapistDashboardHref } from "./routing";
 import type { TherapistSignupValue } from "./types";
 
 type SupabaseServerConfig = {
@@ -30,6 +30,15 @@ type TherapistProfileRow = {
 
 type ProfileRow = {
   role: "admin" | "patient" | "therapist";
+};
+
+export type TherapistPasswordSession = {
+  accessToken: string;
+  expiresIn: number;
+  plan: TherapistPlan;
+  redirectTo: string;
+  refreshToken: string;
+  userId: string;
 };
 
 export function getSupabaseServerConfig(): SupabaseServerConfig | null {
@@ -61,7 +70,7 @@ export async function createTherapistAccount(value: TherapistSignupValue) {
 export async function loginTherapistWithPassword(input: {
   email: string;
   password: string;
-}) {
+}): Promise<TherapistPasswordSession> {
   const config = getSupabaseServerConfig();
 
   if (!config) {
@@ -105,18 +114,6 @@ export async function loginTherapistWithPassword(input: {
     refreshToken: session.refresh_token,
     userId: session.user.id,
   };
-}
-
-export function getTherapistDashboardHref(plan: TherapistPlan) {
-  if (plan === TherapistPlan.Premium) {
-    return routes.therapist.proHome;
-  }
-
-  if (plan === TherapistPlan.PremiumPlus) {
-    return routes.therapist.plusHome;
-  }
-
-  return routes.therapist.basicHome;
 }
 
 async function getProfile(

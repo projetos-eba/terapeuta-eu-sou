@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { routes } from "@/lib/routes";
 import {
   createTherapistAccount,
+  loginTherapistWithPassword,
   TherapistAuthConfigError,
   TherapistAuthSupabaseError,
 } from "@/features/therapist-auth/supabase-rest";
@@ -11,6 +11,13 @@ import {
   THERAPIST_AUTH_CONFIG_ERROR,
   THERAPIST_AUTH_GENERIC_ERROR,
 } from "@/features/therapist-auth/errors";
+import {
+  getTherapistCheckoutHref,
+  getTherapistLoginHref,
+  getTherapistPostSignupHref,
+  isPaidTherapistPlan,
+} from "@/features/therapist-auth/routing";
+import { setTherapistSessionCookies } from "@/features/therapist-auth/session-cookies";
 import { validateTherapistSignup } from "@/features/therapist-auth/validation";
 
 export async function POST(request: Request) {
@@ -44,10 +51,35 @@ export async function POST(request: Request) {
   try {
     await createTherapistAccount(validation.value);
 
-    return NextResponse.json({
-      ok: true,
-      redirectTo: `${routes.public.therapistSignIn}?created=1`,
-    });
+    const redirectTo = getTherapistPostSignupHref(validation.value.plan);
+
+    if (!isPaidTherapistPlan(validation.value.plan)) {
+      return NextResponse.json({
+        ok: true,
+        redirectTo,
+      });
+    }
+
+    try {
+      const session = await loginTherapistWithPassword({
+        email: validation.value.email,
+        password: validation.value.password,
+      });
+      const response = NextResponse.json({
+        ok: true,
+        redirectTo,
+      });
+
+      setTherapistSessionCookies(response, session);
+      return response;
+    } catch {
+      return NextResponse.json({
+        ok: true,
+        redirectTo: getTherapistLoginHref(
+          getTherapistCheckoutHref(validation.value.plan),
+        ),
+      });
+    }
   } catch (error) {
     if (error instanceof TherapistAuthConfigError) {
       return NextResponse.json(

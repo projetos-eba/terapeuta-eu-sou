@@ -6,9 +6,9 @@ O backend planejado será Supabase: banco Postgres, autenticação, storage e Su
 
 A home pública (`/`) consulta views públicas Supabase via REST quando `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` estão configuradas. Sem essas variáveis, ou com valores placeholder, a página usa fallback local e continua renderizando sem expor segredos.
 
-A página pública `/para-terapeutas` usa o catálogo único de planos em `src/domain/tes/plan-definitions.ts`. Nesta etapa os `stripePriceId` permanecem `null`; o frontend envia somente o código do plano (`free`, `premium`, `premium_plus`) no cadastro, e Checkout/webhook Stripe ficam como próxima etapa de backend.
+A página pública `/para-terapeutas` usa o catálogo único de planos em `src/domain/tes/plan-definitions.ts`. Nesta etapa os `stripePriceId` permanecem `null`; o frontend envia somente o código do plano (`free`, `premium`, `premium_plus`) no cadastro. Contas pagas seguem para `/terapeuta/checkout`, mas permanecem com plano ativo `free` até que o Checkout e o webhook Stripe sejam implementados nas Edge Functions.
 
-O fluxo inicial de terapeuta usa rotas separadas em `/terapeuta/cadastro` e `/terapeuta/login`. O cadastro chama uma Supabase Edge Function para as operações administrativas de Auth/Admin, sem expor service role no app Next.js. Sem a function configurada, as telas renderizam e o submit retorna erro controlado de configuração ausente.
+O fluxo inicial de terapeuta usa `/terapeuta/cadastro`, `/terapeuta/login` e `/terapeuta/checkout`. O cadastro chama uma Supabase Edge Function para as operações administrativas de Auth/Admin, sem expor service role no app Next.js. Free segue ao login; Premium e Premium Plus recebem sessão e seguem ao resumo de checkout. Sem a function configurada, as telas renderizam e o submit retorna erro controlado.
 
 O fluxo inicial de cliente usa rotas separadas em `/cliente/cadastro` e `/cliente/login`. O cadastro também usa Supabase Auth/Admin via REST server-side, cria `profiles.role = patient` e `patient_profiles`; documentos, verificação profissional e dados bancários não fazem parte do cadastro de cliente.
 

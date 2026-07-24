@@ -20,6 +20,7 @@ export default function TherapistLoginPage({
 }: {
   searchParams?: {
     created?: string;
+    next?: string;
   };
 }) {
   return (
@@ -29,7 +30,10 @@ export default function TherapistLoginPage({
       description="Este login é separado do acesso de pacientes para manter perfis, permissões e passos profissionais bem definidos."
     >
       <div className="w-full">
-        <TherapistLoginForm created={searchParams?.created === "1"} />
+        <TherapistLoginForm
+          continuation={searchParams?.next}
+          created={searchParams?.created === "1"}
+        />
       </div>
     </TherapistAuthShell>
   );

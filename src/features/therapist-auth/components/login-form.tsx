@@ -15,7 +15,13 @@ type LoginResponse =
   | { ok: true; redirectTo: string }
   | ({ ok: false } & TherapistAuthApiError);
 
-export function TherapistLoginForm({ created }: { created: boolean }) {
+export function TherapistLoginForm({
+  continuation,
+  created,
+}: {
+  continuation?: string;
+  created: boolean;
+}) {
   const [fieldErrors, setFieldErrors] = useState<TherapistAuthFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -31,6 +37,7 @@ export function TherapistLoginForm({ created }: { created: boolean }) {
     try {
       const response = await fetch("/api/auth/therapist/login", {
         body: JSON.stringify({
+          continuation,
           email: String(form.get("email") ?? ""),
           password: String(form.get("password") ?? ""),
         }),
