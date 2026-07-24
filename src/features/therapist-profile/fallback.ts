@@ -4,75 +4,125 @@ import type { AvailabilityDay, TherapistProfileData } from "./types";
 
 const reikiServiceId = "d1000000-0000-4000-8000-000000000001";
 const aromatherapyServiceId = "d1000000-0000-4000-8000-000000000006";
+const rafaelServiceId = "d1000000-0000-4000-8000-000000000002";
+
+function getFallbackDate(daysAhead: number, timeLabel: string) {
+  const [hours = "0", minutes = "0"] = timeLabel.split(":");
+  const date = new Date();
+  date.setDate(date.getDate() + daysAhead);
+  date.setHours(Number(hours), Number(minutes), 0, 0);
+  return date;
+}
+
+function formatFallbackDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatFallbackDateLabel(date: Date) {
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+  });
+}
+
+function formatFallbackDayLabel(daysAhead: number, date: Date) {
+  if (daysAhead === 0) return "Hoje";
+  if (daysAhead === 1) return "Amanhã";
+
+  return date
+    .toLocaleDateString("pt-BR", { weekday: "short" })
+    .replace(".", "");
+}
+
+function createFallbackAvailabilityDay({
+  daysAhead,
+  durationMinutes,
+  serviceId,
+  times,
+}: {
+  daysAhead: number;
+  durationMinutes: number;
+  serviceId: string;
+  times: string[];
+}): AvailabilityDay {
+  const dayDate = getFallbackDate(daysAhead, times[0] ?? "09:00");
+  const date = formatFallbackDateKey(dayDate);
+  const dateLabel = formatFallbackDateLabel(dayDate);
+  const dayLabel = formatFallbackDayLabel(daysAhead, dayDate);
+
+  return {
+    date,
+    dateLabel,
+    dayLabel,
+    slots: times.map((timeLabel) => {
+      const startsAt = getFallbackDate(daysAhead, timeLabel);
+      const endsAt = new Date(startsAt.getTime() + durationMinutes * 60_000);
+
+      return {
+        dateLabel,
+        dayLabel,
+        endsAt: endsAt.toISOString(),
+        serviceId,
+        startsAt: startsAt.toISOString(),
+        timeLabel,
+      };
+    }),
+  };
+}
 
 const reikiAvailability: AvailabilityDay[] = [
-  {
-    dateLabel: "Hoje",
-    dayLabel: "Hoje",
-    slots: [
-      {
-        dateLabel: "Hoje",
-        dayLabel: "Hoje",
-        endsAt: new Date(Date.now() + 50 * 60 * 1000).toISOString(),
-        serviceId: reikiServiceId,
-        startsAt: new Date().toISOString(),
-        timeLabel: "09:00",
-      },
-      {
-        dateLabel: "Hoje",
-        dayLabel: "Hoje",
-        endsAt: new Date(Date.now() + 110 * 60 * 1000).toISOString(),
-        serviceId: reikiServiceId,
-        startsAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-        timeLabel: "10:30",
-      },
-    ],
-  },
-  {
-    dateLabel: "Amanhã",
-    dayLabel: "Amanhã",
-    slots: [
-      {
-        dateLabel: "Amanhã",
-        dayLabel: "Amanhã",
-        endsAt: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(),
-        serviceId: reikiServiceId,
-        startsAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        timeLabel: "15:30",
-      },
-    ],
-  },
+  createFallbackAvailabilityDay({
+    daysAhead: 0,
+    durationMinutes: 50,
+    serviceId: reikiServiceId,
+    times: ["09:00", "10:30"],
+  }),
+  createFallbackAvailabilityDay({
+    daysAhead: 1,
+    durationMinutes: 50,
+    serviceId: reikiServiceId,
+    times: ["15:30"],
+  }),
+  createFallbackAvailabilityDay({
+    daysAhead: 4,
+    durationMinutes: 50,
+    serviceId: reikiServiceId,
+    times: ["09:40", "10:10", "10:40", "11:10"],
+  }),
 ];
 
 const aromatherapyAvailability: AvailabilityDay[] = [
-  {
-    dateLabel: "Hoje",
-    dayLabel: "Hoje",
-    slots: [
-      {
-        dateLabel: "Hoje",
-        dayLabel: "Hoje",
-        endsAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-        serviceId: aromatherapyServiceId,
-        startsAt: new Date().toISOString(),
-        timeLabel: "11:00",
-      },
-    ],
-  },
-  {
-    dateLabel: "sex",
-    dayLabel: "sex",
-    slots: [
-      {
-        dateLabel: "sex",
-        dayLabel: "sex",
-        endsAt: new Date(Date.now() + 74 * 60 * 60 * 1000).toISOString(),
-        serviceId: aromatherapyServiceId,
-        startsAt: new Date(Date.now() + 73 * 60 * 60 * 1000).toISOString(),
-        timeLabel: "14:00",
-      },
-    ],
-  },
+  createFallbackAvailabilityDay({
+    daysAhead: 0,
+    durationMinutes: 60,
+    serviceId: aromatherapyServiceId,
+    times: ["11:00"],
+  }),
+  createFallbackAvailabilityDay({
+    daysAhead: 3,
+    durationMinutes: 60,
+    serviceId: aromatherapyServiceId,
+    times: ["14:00"],
+  }),
+];
+
+const rafaelAvailability: AvailabilityDay[] = [
+  createFallbackAvailabilityDay({
+    daysAhead: 1,
+    durationMinutes: 50,
+    serviceId: rafaelServiceId,
+    times: ["09:30"],
+  }),
+  createFallbackAvailabilityDay({
+    daysAhead: 6,
+    durationMinutes: 50,
+    serviceId: rafaelServiceId,
+    times: ["16:00", "16:30"],
+  }),
 ];
 
 export const fallbackTherapistProfile: TherapistProfileData = {
@@ -187,22 +237,7 @@ export const fallbackTherapistProfilesBySlug: Record<
 > = {
   [fallbackTherapistProfile.profile.slug]: fallbackTherapistProfile,
   "rafael-santos": {
-    availability: [
-      {
-        dateLabel: "Amanhã",
-        dayLabel: "Amanhã",
-        slots: [
-          {
-            dateLabel: "Amanhã",
-            dayLabel: "Amanhã",
-            endsAt: new Date(Date.now() + 25 * 60 * 60 * 1000).toISOString(),
-            serviceId: "d1000000-0000-4000-8000-000000000002",
-            startsAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-            timeLabel: "09:30",
-          },
-        ],
-      },
-    ],
+    availability: rafaelAvailability,
     profile: {
       acceptsOnlineSessions: true,
       badges: ["Perfil verificado"],
@@ -240,26 +275,7 @@ export const fallbackTherapistProfilesBySlug: Record<
       },
       services: [
         {
-          availability: [
-            {
-              dateLabel: "Amanhã",
-              dayLabel: "Amanhã",
-              slots: [
-                {
-                  dateLabel: "Amanhã",
-                  dayLabel: "Amanhã",
-                  endsAt: new Date(
-                    Date.now() + 25 * 60 * 60 * 1000,
-                  ).toISOString(),
-                  serviceId: "d1000000-0000-4000-8000-000000000002",
-                  startsAt: new Date(
-                    Date.now() + 24 * 60 * 60 * 1000,
-                  ).toISOString(),
-                  timeLabel: "09:30",
-                },
-              ],
-            },
-          ],
+          availability: rafaelAvailability,
           bookingUrl: `${routes.public.reservation}?therapist=rafael-santos&service=d1000000-0000-4000-8000-000000000002`,
           currency: "BRL",
           description:
