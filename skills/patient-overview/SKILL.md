@@ -23,6 +23,7 @@ description: Implementar e manter a visão geral autenticada do paciente TES.
 ## Dados
 
 - Query única: `getPatientOverview(profileId)` em `patient-overview.queries.ts`.
+- A query server-side usa `SUPABASE_SERVICE_ROLE_KEY`; tabelas lidas pela visão geral precisam de grants para `service_role` além das policies RLS dos fluxos autenticados.
 - Dados de demonstração: `supabase/seed.sql` usando IDs estáveis.
 - Estrutura: `supabase/migrations/20260723110000_patient_authenticated_overview.sql`.
 - Equivalências existentes: `therapist_profiles`, `bookings`, `favorite_therapists`, `reviews` e `support_tickets`.

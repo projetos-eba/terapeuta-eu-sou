@@ -78,6 +78,7 @@ Backend:
 - No mobile, o formulário deve aparecer antes do container explicativo/checklist.
 - Labels reais, mensagens de erro por campo, foco visível e CTAs com mínimo de 44px.
 - Explicar que perfil público, documentos e conta bancária são recomendados depois, sem bloquear o primeiro acesso.
+- Não usar linguagem interna de desenvolvimento na UI, como “hardening” ou “onboarding”, quando houver alternativa clara para a pessoa usuária.
 - Nunca prometer renda, aprovação automática, cura, diagnóstico ou resultado garantido.
 
 ## Pendências conhecidas

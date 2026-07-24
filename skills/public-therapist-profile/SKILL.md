@@ -26,6 +26,8 @@ Consultar antes de alterar:
 - Rota singular `/terapeuta/:slug`: redirect para a plural.
 - Figma: `13273:3393`.
 - Perfil principal de teste: `ana-oliveira`.
+- Slugs seedados como `rafael-santos` devem aparecer quando tiverem perfil aprovado, serviço ativo e terapia `published` com `is_public_visible = true`.
+- O fallback local de desenvolvimento cobre `ana-oliveira` e `rafael-santos` para evitar tela de não encontrado quando o Supabase local estiver indisponível.
 - Não expor email, telefone, dados internos de paciente, `meeting_url`, dados de pagamento ou campos privados.
 
 ## Dados
@@ -41,6 +43,7 @@ Consultar antes de alterar:
 - Avaliações públicas devem estar vinculadas a booking `completed` e `paid`.
 - Disponibilidade deve ser derivada de regras semanais, exceções, bookings existentes, buffers, antecedência mínima e duração do serviço.
 - Cada serviço deve carregar sua própria grade de horários calculada; Reiki 50min e Aromaterapia 60min não podem compartilhar uma lista fixa de slots.
+- As views de perfil público devem usar o status atual do catálogo público: `therapies.status = 'published'` e `therapies.is_public_visible = true`.
 
 ## UI
 

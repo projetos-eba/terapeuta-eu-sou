@@ -17,6 +17,7 @@ dist/
 # generated
 tsconfig.tsbuildinfo
 *.tsbuildinfo
+.playwright-mcp/
 supabase/.branches/
 supabase/.temp/
 

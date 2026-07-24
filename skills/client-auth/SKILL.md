@@ -50,6 +50,7 @@ Backend:
 - Define cookies HTTP-only internos `tes_patient_access_token` e `tes_patient_refresh_token`.
 - Redireciona para `/app`.
 - Terapeuta/admin devem receber a mensagem segura: `Use o acesso correspondente ao seu perfil.`
+- Guards autenticados leem `profiles`/`patient_profiles` via token do usuário; além das policies RLS, as tabelas precisam de `grant select` para `authenticated`.
 
 ## UI e copy
 
@@ -58,6 +59,7 @@ Backend:
 - Desktop: formulário e imagem em composição lateral.
 - Mobile: formulário primeiro, imagem abaixo.
 - Não mencionar documentos, conta bancária, repasse ou verificação profissional.
+- Não usar linguagem interna de desenvolvimento na UI, como “hardening” ou “onboarding”, quando houver alternativa clara para a pessoa usuária.
 - Nunca prometer cura, diagnóstico ou resultado garantido.
 
 ## Pendências conhecidas
