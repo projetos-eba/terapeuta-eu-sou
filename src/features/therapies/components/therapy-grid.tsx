@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, SearchX } from "lucide-react";
+import { SearchX } from "lucide-react";
 
 import { TESButton, TESCard } from "@/components/tes";
 import { routes } from "@/lib/routes";
@@ -25,21 +25,21 @@ export function TherapyGrid({ params, result }: TherapyGridProps) {
 
   return (
     <div>
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         {result.items.map((therapy) => (
           <TherapyCard key={therapy.id} therapy={therapy} />
         ))}
       </div>
 
       {result.page < result.totalPages ? (
-        <div className="mt-12 flex justify-center">
+        <div className="relative mt-10 flex justify-center">
+          <div className="pointer-events-none absolute inset-x-0 bottom-full h-28 translate-y-8 bg-gradient-to-t from-[#FBF8FF] to-[#FBF8FF]/0" />
           <TESButton
             href={buildHref(params, { page: result.page + 1 })}
             variant="secondary"
-            className="min-h-14 min-w-[220px] border-brand-lavender text-brand-primary"
+            className="relative z-10 min-h-[52px] min-w-[230px] rounded-[10px] border-2 border-brand-primary/70 bg-white text-sm font-extrabold uppercase tracking-[0.02em] text-brand-primary"
           >
             Ver mais terapias
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
           </TESButton>
         </div>
       ) : null}

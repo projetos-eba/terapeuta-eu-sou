@@ -137,8 +137,9 @@ function HeroSection() {
 
 function IntroSection() {
   return (
-    <section className="mx-auto max-w-[1680px] px-5 py-12 sm:px-8 lg:px-12 lg:py-16">
-      <div className="grid gap-9 lg:grid-cols-[420px_minmax(0,1fr)] lg:items-start">
+    <section className="relative overflow-hidden py-12 lg:py-16">
+      <div className="pointer-events-none absolute right-0 top-[90px] hidden h-[286px] rounded-l-[38px] bg-brand-primary lg:left-[635px] lg:block 2xl:left-[735px]" />
+      <div className="relative mx-auto grid max-w-[1680px] gap-9 px-5 sm:px-8 lg:grid-cols-[420px_minmax(0,1fr)] lg:items-start lg:px-12">
         <div className="relative z-10 lg:pt-4">
           <SectionHeading
             centered={false}
@@ -147,24 +148,23 @@ function IntroSection() {
             body="Reunimos informacao, perfis publicos e uma jornada guiada para ajudar voce a encontrar praticas e profissionais com mais clareza."
           />
         </div>
-        <div className="relative min-h-[300px] lg:min-h-[282px]">
-          <div className="pointer-events-none absolute right-0 top-7 hidden h-[210px] w-[calc(100%-60px)] rounded-l-[38px] bg-brand-primary lg:block" />
-          <div className="relative z-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:pl-[122px] lg:pr-8">
+        <div className="relative min-h-[312px] lg:min-h-[292px]">
+          <div className="relative z-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:pl-[106px] lg:pr-4 xl:gap-5">
             {homeIntroCards.map((card, index) => {
               const Icon = introIcons[index] ?? Heart;
 
               return (
                 <TESCard
                   key={card.title}
-                  className="min-h-[224px] rounded-[16px] border-[#E0D6F0] p-[18px] text-center shadow-soft lg:min-h-[240px]"
+                  className="min-h-[236px] rounded-[16px] border-[#E0D6F0] p-5 text-center shadow-soft lg:min-h-[260px]"
                 >
-                  <span className="mx-auto grid size-[71px] place-items-center rounded-full bg-[#EDE3F5] text-brand-primary">
-                    <Icon className="size-[37px]" strokeWidth={1.8} />
+                  <span className="mx-auto grid size-[78px] place-items-center rounded-full bg-[#EDE3F5] text-brand-primary">
+                    <Icon className="size-[40px]" strokeWidth={1.8} />
                   </span>
-                  <h3 className="mt-4 text-sm font-extrabold leading-normal text-brand-deep">
+                  <h3 className="mt-5 text-[0.95rem] font-extrabold leading-normal text-brand-deep">
                     {card.title}
                   </h3>
-                  <p className="mt-3 text-xs font-medium leading-4 text-tesText-muted">
+                  <p className="mt-3 text-[0.8rem] font-medium leading-5 text-tesText-muted">
                     {card.body}
                   </p>
                 </TESCard>
