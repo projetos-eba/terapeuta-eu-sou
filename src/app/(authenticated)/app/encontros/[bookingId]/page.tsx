@@ -16,16 +16,14 @@ export default async function PatientEncounterDetailRoute({
 
   try {
     const data = await getPatientSessionDetailPage({
+      accessToken: session.accessToken,
       bookingId: params.bookingId,
       profileId: session.profileId,
     });
 
     return <PatientSessionDetailPage data={data} />;
   } catch (error) {
-    if (
-      error instanceof BookingDetailDataError &&
-      error.code === "not_found"
-    ) {
+    if (error instanceof BookingDetailDataError && error.code === "not_found") {
       notFound();
     }
 

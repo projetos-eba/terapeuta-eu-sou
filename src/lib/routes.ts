@@ -77,6 +77,7 @@ export const routes = {
     plusPatients: '/plus/pacientes',
     plusPatientJourney: (slug: string) => `/plus/pacientes/${slug}`,
     plusSessions: '/plus/sessoes',
+    plusSessionDetail: (bookingId: string) => `/plus/sessoes/${bookingId}`,
     plusMessages: '/plus/mensagens',
     plusServices: '/plus/servicos',
     plusOwnServices: '/plus/servicos/meus',

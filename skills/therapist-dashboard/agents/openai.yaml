@@ -1,0 +1,6 @@
+interface:
+  display_name: Dashboard do terapeuta
+  short_description: Mantém o shell e os dashboards compartilhados dos planos TES.
+  default_prompt: >-
+    Implemente ou revise o dashboard autenticado do terapeuta usando a skill,
+    preservando /basico, /pro e /plus e sem duplicar regras, shell ou consultas.

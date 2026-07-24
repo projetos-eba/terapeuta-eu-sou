@@ -1,8 +1,10 @@
 import "server-only";
 
+import { getSupabasePublicConfig } from "./public-config";
+
 export type SupabaseServerRestConfig = {
-  anonKey: string;
-  serviceRoleKey: string;
+  accessToken: string;
+  apiKey: string;
   url: string;
 };
 
@@ -12,14 +14,18 @@ export class SupabaseServerRestError extends Error {
   }
 }
 
-export function getSupabaseServerRestConfig(): SupabaseServerRestConfig | null {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+export function getSupabaseServerRestConfig(
+  accessToken: string | null,
+): SupabaseServerRestConfig | null {
+  const config = getSupabasePublicConfig();
 
-  if (!url || !anonKey || !serviceRoleKey) return null;
+  if (!config || !accessToken) return null;
 
-  return { anonKey, serviceRoleKey, url: url.replace(/\/$/, "") };
+  return {
+    accessToken,
+    apiKey: config.apiKey,
+    url: config.url,
+  };
 }
 
 export async function supabaseServerRestRequest<T>(
@@ -29,8 +35,8 @@ export async function supabaseServerRestRequest<T>(
   const response = await fetch(`${config.url}${path}`, {
     cache: "no-store",
     headers: {
-      apikey: config.anonKey,
-      Authorization: `Bearer ${config.serviceRoleKey}`,
+      apikey: config.apiKey,
+      Authorization: `Bearer ${config.accessToken}`,
       "Content-Type": "application/json",
     },
   });

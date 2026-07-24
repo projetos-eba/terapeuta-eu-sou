@@ -76,6 +76,7 @@ export type BookingDetailPageData = {
 };
 
 export type BookingDetailQueryInput = {
+  accessToken: string | null;
   bookingId: string;
   profileId: string;
 };
