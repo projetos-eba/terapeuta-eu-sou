@@ -4,17 +4,17 @@ Projeto web em Next.js 14, TypeScript, Tailwind CSS e shadcn/ui, com tokens TES 
 
 O backend planejado será Supabase: banco Postgres, autenticação, storage e Supabase Edge Functions para regras de backend. A base local do domínio transacional já começa em `supabase/`, mas o frontend ainda não usa SDK Supabase.
 
-A home pública (`/`) consulta views públicas Supabase via REST quando `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` estão configuradas. Sem essas variáveis, ou com valores placeholder, a página usa fallback local e continua renderizando sem expor segredos.
+A home pública (`/`) consulta views públicas Supabase via REST quando `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` estão configuradas. Sem essas variáveis, ou com valores placeholder, a página usa fallback local e continua renderizando sem expor segredos.
 
 A página pública `/para-terapeutas` usa o catálogo único de planos em `src/domain/tes/plan-definitions.ts`. Nesta etapa os `stripePriceId` permanecem `null`; o frontend envia somente o código do plano (`free`, `premium`, `premium_plus`) no cadastro, e Checkout/webhook Stripe ficam como próxima etapa de backend.
 
-O fluxo inicial de terapeuta usa rotas separadas em `/terapeuta/cadastro` e `/terapeuta/login`. O cadastro chama Supabase Auth/Admin via REST no servidor, sem `@supabase/supabase-js`, cria `profiles.role = therapist` e `therapist_profiles` em `draft`. Para cadastro real, `SUPABASE_SERVICE_ROLE_KEY` precisa existir apenas no ambiente server-side; sem ela, as telas renderizam e o submit retorna erro controlado de configuração ausente.
+O fluxo inicial de terapeuta usa rotas separadas em `/terapeuta/cadastro` e `/terapeuta/login`. O cadastro chama uma Supabase Edge Function para as operações administrativas de Auth/Admin, sem expor service role no app Next.js. Sem a function configurada, as telas renderizam e o submit retorna erro controlado de configuração ausente.
 
 O fluxo inicial de cliente usa rotas separadas em `/cliente/cadastro` e `/cliente/login`. O cadastro também usa Supabase Auth/Admin via REST server-side, cria `profiles.role = patient` e `patient_profiles`; documentos, verificação profissional e dados bancários não fazem parte do cadastro de cliente.
 
 O Match público usa `/sua-jornada` e `/sua-jornada/resultado`. A configuração vem de `matching_themes`, `matching_interests` e da view `public_matching_config`; o cálculo roda em `/api/public/matching/calculate` com pesos versionados em `matching_weights`, usando apenas a versão publicada. O fluxo é anônimo, usa `sessionStorage` para escolhas temporárias e recomenda terapias, não terapeutas.
 
-O catálogo público de terapias usa `/terapias` e `/api/public/therapies`, consultando a view segura `public_therapies_v` por REST Supabase com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`. A view expõe apenas terapias com `status = published`, visíveis publicamente e vinculadas a categorias ativas, com contagem pública de terapeutas disponíveis. O detalhe `/terapias/:slug` usa `public_therapy_details_v` para conteúdo editorial e `public_therapist_search` para profissionais relacionados. O Match usa `matching_therapy_settings.is_visible_in_matching` como ativação adicional; uma terapia só entra no Match se também estiver publicada.
+O catálogo público de terapias usa `/terapias` e `/api/public/therapies`, consultando a view segura `public_therapies_v` por REST Supabase com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. A view expõe apenas terapias com `status = published`, visíveis publicamente e vinculadas a categorias ativas, com contagem pública de terapeutas disponíveis. O detalhe `/terapias/:slug` usa `public_therapy_details_v` para conteúdo editorial e `public_therapist_search` para profissionais relacionados. O Match usa `matching_therapy_settings.is_visible_in_matching` como ativação adicional; uma terapia só entra no Match se também estiver publicada.
 
 O mapa operacional de integração entre rotas, páginas, skills, views públicas e domínios fica em `docs/product/integration-map.md`. Consulte esse arquivo antes de criar nova página pública, função ou view compartilhada.
 
@@ -72,13 +72,15 @@ A Edge Function `match-therapies` calcula recomendações por regras e pesos. El
 
 ## Supabase
 
-Variáveis públicas e segredos esperados ficam em `.env.example`.
+O `.env.example` da raiz documenta apenas variáveis publicáveis do app Next.js. No front-end, toda variável exposta deve usar prefixo `NEXT_PUBLIC_`.
 
 - `NEXT_PUBLIC_SUPABASE_URL`: URL pública do projeto Supabase.
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: chave pública anon.
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`: chave pública recomendada pela Supabase para runtime de browser/server do app Next.js.
 - `NEXT_PUBLIC_SITE_URL`: URL pública do site usada por metadata/sitemap; se ausente em desenvolvimento, o sitemap usa `http://localhost:3000`.
-- `SUPABASE_SERVICE_ROLE_KEY`: chave de serviço, somente servidor e Edge Functions.
-- `SUPABASE_JWT_SECRET`: segredo JWT do projeto.
+
+Não adicionar `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_SECRET_KEYS`, `SUPABASE_SECRET_KEY`, `SUPABASE_JWT_SECRET`, `SERVICE_ROLE_KEY`, `DATABASE_URL` ou qualquer secret não público no `.env.local`, `.env.production` ou `.env.example` da raiz. Secrets Supabase pertencem ao escopo das Edge Functions; os exemplos ficam em `supabase/functions/.env.example`. No Supabase local, a CLI injeta as variáveis do projeto automaticamente ao iniciar o ambiente e executar functions.
+
+Auditoria e regra operacional: `docs/security/supabase-env-audit.md`.
 
 Não commitar `.env`, `.env.local` ou segredos reais.
 

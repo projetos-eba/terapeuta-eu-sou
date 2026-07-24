@@ -1,3 +1,5 @@
+import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
+
 import type {
   RelatedTherapist,
   RelatedTherapistRow,
@@ -5,24 +7,13 @@ import type {
 } from "../types/therapy-detail";
 import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 
-const PLACEHOLDER_SUPABASE_URL = "https://your-project-ref.supabase.co";
-const PLACEHOLDER_SUPABASE_ANON_KEY = "replace-with-supabase-anon-key";
-
 export type RelatedTherapistsResult = {
   errorMessage?: string;
   items: RelatedTherapist[];
 };
 
 function hasSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  return Boolean(
-    url &&
-      anonKey &&
-      url !== PLACEHOLDER_SUPABASE_URL &&
-      anonKey !== PLACEHOLDER_SUPABASE_ANON_KEY,
-  );
+  return Boolean(getSupabasePublicConfig());
 }
 
 export function parseRelatedTherapistSort(
@@ -49,9 +40,8 @@ export async function getRelatedTherapists({
   }
 
   try {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!url || !anonKey) return { items: [] };
+    const config = getSupabasePublicConfig();
+    if (!config) return { items: [] };
 
     const query = new URLSearchParams();
     query.set(
@@ -74,11 +64,11 @@ export async function getRelatedTherapists({
     query.set("limit", "6");
 
     const response = await fetch(
-      `${url}/rest/v1/public_therapist_search?${query.toString()}`,
+      `${config.url}/rest/v1/public_therapist_search?${query.toString()}`,
       {
         headers: {
-          apikey: anonKey,
-          Authorization: `Bearer ${anonKey}`,
+          apikey: config.apiKey,
+          Authorization: `Bearer ${config.apiKey}`,
         },
         next: { revalidate: 300, tags: [`related-therapists:${slug}`] },
       },

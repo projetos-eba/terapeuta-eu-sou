@@ -16,9 +16,10 @@ export default async function AuthenticatedLayout({
   children: ReactNode;
 }) {
   const session = await requirePatientSession();
-  const overview = await getPatientOverview(session.profileId).catch(
-    () => null,
-  );
+  const overview = await getPatientOverview(
+    session.profileId,
+    session.accessToken,
+  ).catch(() => null);
   const navigation: ShellNavigationItem[] = [
     { href: routes.patient.home, icon: "home", label: "Início" },
     {

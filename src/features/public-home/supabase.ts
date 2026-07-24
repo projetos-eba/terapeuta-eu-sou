@@ -1,4 +1,5 @@
 import { routes } from "@/lib/routes";
+import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 
 import {
@@ -12,9 +13,6 @@ import type {
   PublicHomeTherapist,
   PublicHomeTherapy,
 } from "./types";
-
-const PLACEHOLDER_SUPABASE_URL = "https://your-project-ref.supabase.co";
-const PLACEHOLDER_SUPABASE_ANON_KEY = "replace-with-supabase-anon-key";
 
 type PublicHomeTherapyRow = {
   category_name: string | null;
@@ -55,32 +53,23 @@ type PublicHomeTestimonialRow = {
 };
 
 function hasSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  return Boolean(
-    url &&
-    anonKey &&
-    url !== PLACEHOLDER_SUPABASE_URL &&
-    anonKey !== PLACEHOLDER_SUPABASE_ANON_KEY,
-  );
+  return Boolean(getSupabasePublicConfig());
 }
 
 async function fetchPublicHomeRows<Row>(
   view: string,
   query: string,
 ): Promise<Row[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const config = getSupabasePublicConfig();
 
-  if (!url || !anonKey) {
+  if (!config) {
     return [];
   }
 
-  const response = await fetch(`${url}/rest/v1/${view}?${query}`, {
+  const response = await fetch(`${config.url}/rest/v1/${view}?${query}`, {
     headers: {
-      apikey: anonKey,
-      Authorization: `Bearer ${anonKey}`,
+      apikey: config.apiKey,
+      Authorization: `Bearer ${config.apiKey}`,
     },
     next: { revalidate: 900 },
   });

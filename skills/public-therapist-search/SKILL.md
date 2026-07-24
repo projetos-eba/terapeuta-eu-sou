@@ -32,7 +32,7 @@ Antes de alterar `/terapeutas`, consultar:
 ## Dados
 
 - Fonte dinâmica pública: view Supabase `public_therapist_search`.
-- Integração: REST fetch com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`; não adicionar `@supabase/supabase-js` sem decisão explícita.
+- Integração: REST fetch com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Não adicionar `@supabase/supabase-js` sem decisão explícita.
 - Fallback local obrigatório em `src/features/public-therapist-search/content.ts`.
 - Seeds/mocks: manter 5 terapeutas em `supabase/seed.sql`, com `ana-oliveira` como perfil principal mais rico.
 - Fotos públicas de terapeutas devem usar os assets versionados em `public/therapists/`, mantendo URLs rastreáveis nos seeds, fallbacks e views: `ana-oliveira.png`, `rafael-santos-avatar.png`, `celia-martins.png`, `juliana-costa.png`, `lucas-pereira-avatar.png`, `andre-lima.png` e `marcio-andrade.png`.

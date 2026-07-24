@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { routes } from "@/lib/routes";
+import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 const DEMO_PROFILE_ID = "90000000-0000-4000-8000-000000000001";
 
@@ -18,6 +19,7 @@ type PatientProfile = {
 };
 
 export type AuthenticatedPatientSession = {
+  accessToken: string | null;
   profileId: string;
 };
 
@@ -27,7 +29,7 @@ export async function requirePatientSession(): Promise<AuthenticatedPatientSessi
 
   if (!config) {
     if (process.env.NODE_ENV === "development") {
-      return { profileId: DEMO_PROFILE_ID };
+      return { accessToken: null, profileId: DEMO_PROFILE_ID };
     }
 
     redirect(routes.public.clientSignIn);
@@ -52,7 +54,7 @@ export async function requirePatientSession(): Promise<AuthenticatedPatientSessi
       redirect(routes.public.clientSignIn);
     }
 
-    return { profileId: profile.id };
+    return { accessToken, profileId: profile.id };
   } catch {
     redirect(routes.public.clientSignIn);
   }
@@ -63,12 +65,11 @@ export function getPatientAccessToken() {
 }
 
 export function getSupabaseAuthConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const config = getSupabasePublicConfig();
 
-  if (!url || !anonKey) return null;
+  if (!config) return null;
 
-  return { anonKey, url: url.replace(/\/$/, "") };
+  return config;
 }
 
 async function requestSupabase<T>(
@@ -79,7 +80,7 @@ async function requestSupabase<T>(
   const response = await fetch(`${config.url}${path}`, {
     cache: "no-store",
     headers: {
-      apikey: config.anonKey,
+      apikey: config.apiKey,
       Authorization: `Bearer ${accessToken}`,
     },
   });

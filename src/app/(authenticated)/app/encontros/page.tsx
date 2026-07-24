@@ -8,7 +8,10 @@ export default async function PatientEncountersRoute() {
   const session = await requirePatientSession();
 
   try {
-    const data = await getPatientEncountersPage(session.profileId);
+    const data = await getPatientEncountersPage(
+      session.profileId,
+      session.accessToken,
+    );
 
     return <PatientEncountersPage data={data} />;
   } catch {

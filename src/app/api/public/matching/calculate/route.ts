@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import {
   calculateMatchingResults,
+  calculateMatchingWithFunction,
   getMatchingCalculationData,
   getPublicMatchingConfig,
   validateMatchingSelection,
@@ -35,6 +36,15 @@ export async function POST(request: Request) {
       },
       { status: 422 },
     );
+  }
+
+  const functionResult = await calculateMatchingWithFunction(
+    selection,
+    config.versionId,
+  );
+
+  if (functionResult) {
+    return NextResponse.json(functionResult);
   }
 
   const calculationData = await getMatchingCalculationData(config.versionId);

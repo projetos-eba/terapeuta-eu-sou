@@ -56,8 +56,9 @@ Validações:
 Backend:
 
 - `POST /api/auth/therapist/signup`.
-- Usa Supabase Auth/Admin REST somente no servidor.
-- Requer `SUPABASE_SERVICE_ROLE_KEY`.
+- Usa Supabase Auth/Admin REST somente em Supabase Edge Function.
+- O app Next usa apenas `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- A Edge Function deve preferir `SUPABASE_SECRET_KEYS`; o fallback a `SUPABASE_SERVICE_ROLE_KEY` fica restrito ao runtime local/legado das functions.
 - Cria `auth.users`, `profiles.role = therapist` e `therapist_profiles.status = draft`.
 - Perfil inicial deve ficar `is_public = false` e `is_accepting_bookings = false`.
 - Em falha depois da criação do usuário Auth, tentar limpeza best-effort e retornar erro genérico.

@@ -23,7 +23,7 @@ export async function logoutPatient() {
     await fetch(`${config.url}/auth/v1/logout`, {
       cache: "no-store",
       headers: {
-        apikey: config.anonKey,
+        apikey: config.apiKey,
         Authorization: `Bearer ${accessToken}`,
       },
       method: "POST",
@@ -37,9 +37,13 @@ export async function logoutPatient() {
 
 export async function savePatientMood(mood: MoodKey) {
   const session = await requirePatientSession();
-  const overview = await getPatientOverview(session.profileId);
+  const overview = await getPatientOverview(
+    session.profileId,
+    session.accessToken,
+  );
 
   await savePatientMoodCheckin({
+    accessToken: session.accessToken,
     mood,
     patientProfileId: overview.patient.patientProfileId,
   });

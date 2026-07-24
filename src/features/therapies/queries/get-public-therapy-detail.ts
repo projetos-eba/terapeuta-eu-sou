@@ -1,33 +1,23 @@
+import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
+
 import type {
   PublicTherapyDetail,
   PublicTherapyDetailRow,
 } from "../types/therapy-detail";
 
-const PLACEHOLDER_SUPABASE_URL = "https://your-project-ref.supabase.co";
-const PLACEHOLDER_SUPABASE_ANON_KEY = "replace-with-supabase-anon-key";
-
 function hasSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  return Boolean(
-    url &&
-      anonKey &&
-      url !== PLACEHOLDER_SUPABASE_URL &&
-      anonKey !== PLACEHOLDER_SUPABASE_ANON_KEY,
-  );
+  return Boolean(getSupabasePublicConfig());
 }
 
 async function fetchPublicView<Row>(path: string, slug: string): Promise<Row[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const config = getSupabasePublicConfig();
 
-  if (!url || !anonKey) return [];
+  if (!config) return [];
 
-  const response = await fetch(`${url}/rest/v1/${path}`, {
+  const response = await fetch(`${config.url}/rest/v1/${path}`, {
     headers: {
-      apikey: anonKey,
-      Authorization: `Bearer ${anonKey}`,
+      apikey: config.apiKey,
+      Authorization: `Bearer ${config.apiKey}`,
     },
     next: { revalidate: 900, tags: [`therapy-detail:${slug}`] },
   });

@@ -1,3 +1,5 @@
+import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
+
 import { getFallbackTherapistProfile } from "../fallback";
 import {
   mapAvailabilityRows,
@@ -12,30 +14,18 @@ import {
 } from "../mappers/profile-mapper";
 import type { TherapistProfileData } from "../types";
 
-const PLACEHOLDER_SUPABASE_URL = "https://your-project-ref.supabase.co";
-const PLACEHOLDER_SUPABASE_ANON_KEY = "replace-with-supabase-anon-key";
-
 function hasSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  return Boolean(
-    url &&
-      anonKey &&
-      url !== PLACEHOLDER_SUPABASE_URL &&
-      anonKey !== PLACEHOLDER_SUPABASE_ANON_KEY,
-  );
+  return Boolean(getSupabasePublicConfig());
 }
 
 async function fetchView<T>(view: string, query: string) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anonKey) return [];
+  const config = getSupabasePublicConfig();
+  if (!config) return [];
 
-  const response = await fetch(`${url}/rest/v1/${view}?${query}`, {
+  const response = await fetch(`${config.url}/rest/v1/${view}?${query}`, {
     headers: {
-      Authorization: `Bearer ${anonKey}`,
-      apikey: anonKey,
+      Authorization: `Bearer ${config.apiKey}`,
+      apikey: config.apiKey,
     },
     next: { revalidate: 900, tags: ["therapist-profile"] },
   });

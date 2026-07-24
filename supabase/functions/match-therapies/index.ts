@@ -218,9 +218,23 @@ async function fetchRows<T>(
 
 function getServiceRoleKey() {
   return (
-    denoRuntime.env.get("SERVICE_ROLE_KEY") ??
+    getDefaultKey(denoRuntime.env.get("SUPABASE_SECRET_KEYS")) ??
+    denoRuntime.env.get("SUPABASE_SECRET_KEY") ??
     denoRuntime.env.get("SUPABASE_SERVICE_ROLE_KEY")
   );
+}
+
+function getDefaultKey(rawKeys: string | undefined) {
+  if (!rawKeys) return null;
+
+  try {
+    const keys = JSON.parse(rawKeys) as Record<string, unknown>;
+    const defaultKey = keys.default;
+
+    return typeof defaultKey === "string" && defaultKey ? defaultKey : null;
+  } catch {
+    return null;
+  }
 }
 
 function assertDenoRuntime(runtime: DenoRuntime | undefined): DenoRuntime {

@@ -36,8 +36,9 @@ Campos obrigatórios:
 
 Backend:
 
-- Usa Supabase Auth/Admin REST somente no servidor.
-- Requer `SUPABASE_SERVICE_ROLE_KEY`.
+- Usa Supabase Auth/Admin REST somente em Supabase Edge Function.
+- O app Next usa apenas `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- A Edge Function deve preferir `SUPABASE_SECRET_KEYS`; o fallback a `SUPABASE_SERVICE_ROLE_KEY` fica restrito ao runtime local/legado das functions.
 - Cria `auth.users`, `profiles.role = patient` e `patient_profiles`.
 - `patient_profiles.timezone` deve usar `America/Sao_Paulo`.
 - `marketing_consent` começa como `false`.

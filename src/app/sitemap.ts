@@ -1,9 +1,7 @@
 import type { MetadataRoute } from "next";
 
 import { routes } from "@/lib/routes";
-
-const PLACEHOLDER_SUPABASE_URL = "https://your-project-ref.supabase.co";
-const PLACEHOLDER_SUPABASE_ANON_KEY = "replace-with-supabase-anon-key";
+import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 type TherapySitemapRow = {
   slug: string;
@@ -50,25 +48,19 @@ function absoluteUrl(siteUrl: string, path: string) {
 }
 
 async function getPublishedTherapyRows() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const config = getSupabasePublicConfig();
 
-  if (
-    !url ||
-    !anonKey ||
-    url === PLACEHOLDER_SUPABASE_URL ||
-    anonKey === PLACEHOLDER_SUPABASE_ANON_KEY
-  ) {
+  if (!config) {
     return [];
   }
 
   try {
     const response = await fetch(
-      `${url}/rest/v1/public_therapies_v?select=slug,updated_at&order=updated_at.desc`,
+      `${config.url}/rest/v1/public_therapies_v?select=slug,updated_at&order=updated_at.desc`,
       {
         headers: {
-          apikey: anonKey,
-          Authorization: `Bearer ${anonKey}`,
+          apikey: config.apiKey,
+          Authorization: `Bearer ${config.apiKey}`,
         },
         next: { revalidate: 900 },
       },
