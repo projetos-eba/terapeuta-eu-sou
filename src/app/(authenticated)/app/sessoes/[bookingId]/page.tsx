@@ -2,10 +2,11 @@ import { redirect } from "next/navigation";
 
 import { routes } from "@/lib/routes";
 
-export default function LegacyPatientSessionDetailRoute({
+export default async function LegacyPatientSessionDetailRoute({
   params,
 }: {
-  params: { bookingId: string };
+  params: Promise<{ bookingId: string }>;
 }) {
-  redirect(routes.patient.encounterDetail(params.bookingId));
+  const { bookingId } = await params;
+  redirect(routes.patient.encounterDetail(bookingId));
 }

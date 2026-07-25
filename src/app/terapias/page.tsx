@@ -30,15 +30,15 @@ export const metadata: Metadata = {
 };
 
 type TherapiesPageProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function TherapiesPage({
   searchParams,
 }: TherapiesPageProps) {
-  const { params, result } = await getPublicTherapiesFromSearchParams(
-    searchParams,
-  );
+  const queryParams = await searchParams;
+  const { params, result } =
+    await getPublicTherapiesFromSearchParams(queryParams);
 
   return (
     <main className="min-h-screen bg-white text-brand-deep">

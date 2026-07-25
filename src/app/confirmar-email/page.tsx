@@ -14,15 +14,17 @@ export const metadata: Metadata = {
   title: "Confirmar e-mail | Terapeuta Eu Sou",
 };
 
-export default function ConfirmEmailPage({
+export default async function ConfirmEmailPage({
   searchParams,
 }: {
-  searchParams?: { statusToken?: string; token?: string };
+  searchParams?: Promise<{ statusToken?: string; token?: string }>;
 }) {
+  const params = await searchParams;
+
   return (
     <ConfirmEmailClient
-      statusToken={searchParams?.statusToken ?? ""}
-      token={searchParams?.token ?? ""}
+      statusToken={params?.statusToken ?? ""}
+      token={params?.token ?? ""}
     />
   );
 }

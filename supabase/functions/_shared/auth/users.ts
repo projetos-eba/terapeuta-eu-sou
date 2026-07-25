@@ -51,7 +51,7 @@ export async function getProfileById(
   return rows[0] ?? null;
 }
 
-export async function getAuthUser(client: SupabaseRestClient, userId: string) {
+export function getAuthUser(client: SupabaseRestClient, userId: string) {
   return client.get<AuthUserRow>(`/auth/v1/admin/users/${userId}`);
 }
 
@@ -72,7 +72,7 @@ export async function confirmAuthUserEmail(
   return user;
 }
 
-export async function updateAuthUserPassword(
+export function updateAuthUserPassword(
   client: SupabaseRestClient,
   userId: string,
   password: string,

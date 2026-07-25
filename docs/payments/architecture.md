@@ -170,6 +170,11 @@ npm run payments:catalog:verify
 npm run payments:webhooks:listen
 ```
 
+Runbooks complementares:
+
+- `docs/payments/stripe-secrets-setup.md`: obtencao e rotacao de secrets Stripe.
+- `docs/payments/internal-operations-token.md`: geracao, uso, teste e rotacao do token machine-to-machine.
+
 ## Webhooks tratados
 
 - `checkout.session.completed`
@@ -200,9 +205,17 @@ Nao usar `STRIPE_RESTRICTED_API_KEY` nem `STRIPE_ENVIRONMENT` neste projeto. O a
 
 O fallback de `STRIPE_WEBHOOK_SECRET` existe para desenvolvimento local. Em staging/producao, configurar `STRIPE_PLATFORM_WEBHOOK_SECRET` e `STRIPE_CONNECT_WEBHOOK_SECRET` separadamente; se o fallback for usado, a Edge Function registra alerta operacional sem imprimir o secret.
 
+## Documentos e escopo fiscal
+
+O TES, nesta versao, nao emite nota fiscal. Para cobranca e comprovacao de pagamento, sao utilizadas invoices e recibos gerados pela Stripe. Esses documentos nao devem ser apresentados como substitutos de nota fiscal.
+
+Assinaturas de terapeutas usam invoices do Stripe Billing, com `hosted_invoice_url`, PDF da invoice ou Billing Portal quando disponiveis. Pagamentos de sessoes usam recibos da Charge/PaymentIntent, incluindo `receipt_url` quando a Stripe gerar esse comprovante. Transfers Connect e payouts bancarios sao comprovantes operacionais distintos e tambem nao sao notas fiscais.
+
+Nao implementar, nesta etapa, integracao com prefeitura, emissor fiscal, NFS-e nacional ou emissao em nome dos terapeutas. A fronteira futura deve permanecer desacoplada do dominio financeiro.
+
 ## Pendencias comerciais
 
-- Tratamento fiscal e emissao de nota.
+- Validacao contabil/juridica antes de qualquer emissao fiscal futura.
 - Regras de excecao manual para casos de terapeuta responsavel por cancelamento ou remarcacao especial.
 
 ## Recuperacao operacional

@@ -14,23 +14,25 @@ import { routes } from "@/lib/routes";
 export const revalidate = 900;
 
 type TherapyDetailRouteProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
-  searchParams?: Record<string, string | string[] | undefined>;
+  }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export async function generateMetadata({
   params,
 }: TherapyDetailRouteProps): Promise<Metadata> {
-  if (!isValidSlug(params.slug)) {
+  const { slug } = await params;
+
+  if (!isValidSlug(slug)) {
     return {
       title: "Terapia não encontrada | Terapeuta Eu Sou",
       robots: { follow: false, index: false },
     };
   }
 
-  const therapy = await getPublicTherapyDetail(params.slug);
+  const therapy = await getPublicTherapyDetail(slug);
 
   if (!therapy) {
     return {
@@ -63,22 +65,24 @@ export default async function PublicTherapyDetailRoute({
   params,
   searchParams,
 }: TherapyDetailRouteProps) {
-  if (!isValidSlug(params.slug)) {
+  const [{ slug }, queryParams] = await Promise.all([params, searchParams]);
+
+  if (!isValidSlug(slug)) {
     notFound();
   }
 
-  const therapy = await getPublicTherapyDetail(params.slug);
+  const therapy = await getPublicTherapyDetail(slug);
 
   if (!therapy) {
     notFound();
   }
 
   const source = buildTherapySource(
-    Array.isArray(searchParams?.source)
-      ? searchParams?.source[0]
-      : searchParams?.source,
+    Array.isArray(queryParams?.source)
+      ? queryParams?.source[0]
+      : queryParams?.source,
   );
-  const sort = parseRelatedTherapistSort(searchParams?.sort);
+  const sort = parseRelatedTherapistSort(queryParams?.sort);
   const related = await getRelatedTherapists({
     slug: therapy.slug,
     sort,
