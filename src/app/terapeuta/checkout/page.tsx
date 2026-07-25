@@ -17,10 +17,14 @@ import {
 } from "@/features/therapist-auth";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 import { routes } from "@/lib/routes";
+import {
+  getSupabasePublicConfig,
+  invokeSupabaseFunction,
+} from "@/lib/supabase/edge-functions";
 
 export const metadata: Metadata = {
   description:
-    "Revisão do plano escolhido antes do pagamento da assinatura profissional TES.",
+    "Revisao do plano escolhido antes do pagamento da assinatura profissional TES.",
   robots: {
     follow: false,
     index: false,
@@ -32,6 +36,7 @@ export default async function TherapistCheckoutPage({
   searchParams,
 }: {
   searchParams?: {
+    checkout?: string;
     created?: string;
     plan?: string;
   };
@@ -53,7 +58,7 @@ export default async function TherapistCheckoutPage({
     <TherapistAuthShell
       className="lg:px-14"
       eyebrow="Assinatura TES"
-      title="Seu próximo passo, com segurança."
+      title="Seu proximo passo, com seguranca."
       description="Revise o plano escolhido antes de seguir para o pagamento."
     >
       <div className="w-full space-y-6">
@@ -65,13 +70,13 @@ export default async function TherapistCheckoutPage({
           </p>
           <h1 className="mt-3 font-display text-4xl font-light italic leading-tight text-brand-deep sm:text-5xl">
             {hasActivePaidPlan
-              ? "Seu plano já está ativo"
+              ? "Seu plano ja esta ativo"
               : "Finalize sua assinatura"}
           </h1>
           <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
             {hasActivePaidPlan
-              ? `Você está no plano ${getTherapistPlanDefinition(session.plan).name}.`
-              : `Sua conta está pronta. Falta confirmar o plano ${plan.name}.`}
+              ? `Voce esta no plano ${getTherapistPlanDefinition(session.plan).name}.`
+              : `Sua conta esta pronta. Falta confirmar o plano ${plan.name}.`}
           </p>
         </div>
 
@@ -120,14 +125,25 @@ export default async function TherapistCheckoutPage({
         </div>
 
         {hasActivePaidPlan ? (
-          <TESButton
-            href={getTherapistDashboardHref(session.plan)}
-            size="lg"
-            variant="gradient"
-            className="min-h-12 w-full rounded-2xl text-base"
-          >
-            Acessar minha área
-          </TESButton>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <TESButton
+              href={getTherapistDashboardHref(session.plan)}
+              size="lg"
+              variant="gradient"
+              className="min-h-12 w-full rounded-2xl text-base"
+            >
+              Acessar minha area
+            </TESButton>
+            <form action={openBillingPortalAction}>
+              <button
+                type="submit"
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-brand-primary/30 bg-white px-7 py-3 text-base font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
+              >
+                <CreditCard className="size-5" aria-hidden="true" />
+                Gerenciar assinatura
+              </button>
+            </form>
+          </div>
         ) : (
           <>
             <div
@@ -141,26 +157,30 @@ export default async function TherapistCheckoutPage({
                 />
                 <div>
                   <p className="text-sm font-extrabold text-brand-deep">
-                    Pagamento online em preparação
+                    {searchParams?.checkout === "success"
+                      ? "Pagamento em confirmacao"
+                      : "Pagamento online seguro"}
                   </p>
                   <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                    Enquanto o checkout não está disponível, sua conta Free já
-                    pode ser usada. O plano pago só será ativado após a
-                    confirmação do pagamento.
+                    {searchParams?.checkout === "success"
+                      ? "Recebemos seu retorno do Stripe. O plano pago sera liberado somente apos o webhook confirmar a assinatura."
+                      : "Voce seguira para o Stripe para concluir a assinatura. O plano pago sera ativado somente apos a confirmacao do webhook."}
                   </p>
                 </div>
               </div>
             </div>
 
-            <button
-              type="button"
-              disabled
-              aria-describedby="checkout-availability"
-              className="inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl bg-brand-primary px-7 py-3 text-base font-extrabold text-white opacity-60"
-            >
-              <CreditCard className="size-5" aria-hidden="true" />
-              Continuar para pagamento
-            </button>
+            <form action={startSubscriptionCheckoutAction}>
+              <input type="hidden" name="plan" value={requestedPlan} />
+              <button
+                type="submit"
+                aria-describedby="checkout-availability"
+                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-brand-primary px-7 py-3 text-base font-extrabold text-white transition hover:bg-brand-primary/90"
+              >
+                <CreditCard className="size-5" aria-hidden="true" />
+                Continuar para pagamento
+              </button>
+            </form>
 
             <TESButton
               href={routes.therapist.basicHome}
@@ -175,11 +195,84 @@ export default async function TherapistCheckoutPage({
 
         <p className="flex items-center justify-center gap-2 text-center text-xs font-bold text-tesText-muted">
           <ShieldCheck className="size-4" aria-hidden="true" />O pagamento da
-          assinatura será processado com segurança pelo Stripe.
+          assinatura sera processado com seguranca pelo Stripe.
         </p>
       </div>
     </TherapistAuthShell>
   );
+}
+
+async function startSubscriptionCheckoutAction(formData: FormData) {
+  "use server";
+
+  const requestedPlan = normalizeTherapistPlan(
+    String(formData.get("plan") ?? ""),
+  );
+
+  if (!isPaidTherapistPlan(requestedPlan)) {
+    redirect(routes.public.forTherapists);
+  }
+
+  const session = await requireTherapistSession({
+    loginContinuation: `${routes.public.therapistCheckout}?plan=${requestedPlan}`,
+  });
+  const config = getSupabasePublicConfig();
+
+  if (!config) {
+    redirect(
+      `${routes.public.therapistCheckout}?plan=${requestedPlan}&checkout=unavailable`,
+    );
+  }
+
+  try {
+    const response = await invokeSupabaseFunction<{
+      data?: { url?: string | null };
+      ok: boolean;
+    }>(config, "stripe-create-subscription-checkout", {
+      accessToken: session.accessToken,
+      body: { plan: requestedPlan },
+    });
+
+    if (response.ok && response.data?.url) {
+      redirect(response.data.url);
+    }
+  } catch {
+    redirect(
+      `${routes.public.therapistCheckout}?plan=${requestedPlan}&checkout=unavailable`,
+    );
+  }
+
+  redirect(
+    `${routes.public.therapistCheckout}?plan=${requestedPlan}&checkout=unavailable`,
+  );
+}
+
+async function openBillingPortalAction() {
+  "use server";
+
+  const session = await requireTherapistSession();
+  const config = getSupabasePublicConfig();
+
+  if (!config) {
+    redirect(getTherapistDashboardHref(session.plan));
+  }
+
+  try {
+    const response = await invokeSupabaseFunction<{
+      data?: { url?: string | null };
+      ok: boolean;
+    }>(config, "stripe-create-billing-portal", {
+      accessToken: session.accessToken,
+    });
+
+    if (response.ok && response.data?.url) {
+      redirect(response.data.url);
+    }
+  } catch {
+    redirect(getTherapistDashboardHref(session.plan));
+  }
+
+  redirect(getTherapistDashboardHref(session.plan));
 }
 
 function StatusItem({

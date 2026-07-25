@@ -247,7 +247,7 @@ Categorias:
 - Banco: `DATABASE_URL`.
 - Auth: `AUTH_SECRET`, `AUTH_TRUST_HOST`.
 - Email: `EMAIL_FROM`, `RESEND_API_KEY`.
-- Pagamento: `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`.
+- Pagamento: `STRIPE_SECRET_KEY` e webhook secrets pertencem somente Ã s Edge Functions. Quando houver integraÃ§Ã£o browser com Stripe.js, a chave publicÃ¡vel `pk_*` deve usar variÃ¡vel `NEXT_PUBLIC_*`, nunca `STRIPE_SECRET_KEY`.
 - Vídeo: `VIDEO_PROVIDER`, `VIDEO_PROVIDER_API_KEY`.
 - IA: `AI_PROVIDER`, `OPENAI_API_KEY`.
 - Storage: `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`.
