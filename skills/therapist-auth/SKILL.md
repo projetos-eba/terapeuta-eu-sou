@@ -32,6 +32,7 @@ Use esta skill ao implementar, auditar ou refatorar o fluxo inicial de autentica
 - Usar somente os enums tÃ©cnicos `free`, `premium` e `premium_plus`.
 - O catÃ¡logo em `src/domain/tes/plan-definitions.ts` Ã© a fonte para CTAs de plano.
 - O frontend envia apenas o cÃ³digo do plano; preÃ§o, Stripe Price ID e ativaÃ§Ã£o de assinatura nÃ£o vÃªm do navegador.
+- Price IDs de assinatura vÃªm de `billing_plan_prices`, sincronizado por `npm run payments:catalog:sync` com `STRIPE_SECRET_KEY`.
 - Toda conta nova nasce com plano ativo `free`.
 - `premium` e `premium_plus` ficam como plano solicitado atÃ© o webhook Stripe confirmar a assinatura.
 
@@ -98,8 +99,9 @@ Backend:
 - Aceita apenas `premium` ou `premium_plus`.
 - Mostra plano solicitado, plano ativo e estado do pagamento.
 - Nunca altera `therapist_profiles.plan` no frontend ou em Route Handler do Next.
-- Enquanto Stripe Billing nÃ£o estiver configurado, o CTA de pagamento fica indisponÃ­vel e o acesso Free permanece disponÃ­vel.
-- A ativaÃ§Ã£o futura deve ocorrer somente por webhook Stripe idempotente em Edge Function.
+- O CTA de pagamento chama `stripe-create-subscription-checkout`.
+- O acesso Free permanece disponivel enquanto o webhook nao confirma a assinatura.
+- A ativacao ocorre somente por `stripe-billing-webhook`, nunca por query string de retorno.
 
 ## UI e copy
 
@@ -118,9 +120,8 @@ Backend:
 - ProteÃ§Ã£o real dos layouts `/basico`, `/pro` e `/plus`.
 - Upload e revisÃ£o de documentos.
 - Conta bancÃ¡ria para repasse.
-- Stripe Billing para planos pagos.
-- Stripe Connect para repasses de sessÃµes.
-- Customer Portal.
+- Integracao visual completa de status de assinatura, Connect e repasses nas areas logadas.
+- Testes E2E Stripe CLI com eventos reais da conta configurada em `STRIPE_SECRET_KEY`.
 - Auditoria LGPD dos consentimentos.
 
 ## QA

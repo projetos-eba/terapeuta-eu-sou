@@ -12,6 +12,10 @@
     "test:auth:ui": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-auth-ui-test.ps1",
     "test:auth:flows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-auth-flow-tests.ps1",
     "test:email:real": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-real-email-test.ps1",
+    "payments:env": "node scripts/payments/validate-payment-env.mjs",
+    "payments:catalog:sync": "node scripts/payments/sync-stripe-billing-catalog.mjs",
+    "payments:catalog:verify": "node scripts/payments/verify-stripe-billing-catalog.mjs",
+    "payments:webhooks:listen": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/payments/stripe-listen-local.ps1",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -28,6 +32,7 @@
     "next": "^14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "stripe": "^22.3.0",
     "tailwind-merge": "^2.5.5"
   },
   "devDependencies": {

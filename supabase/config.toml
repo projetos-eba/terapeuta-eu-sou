@@ -105,3 +105,63 @@ verify_jwt = false
 
 [functions.sync-email-senders]
 verify_jwt = true
+
+[functions.stripe-sync-billing-catalog]
+verify_jwt = false
+
+[functions.stripe-create-subscription-checkout]
+verify_jwt = false
+
+[functions.stripe-change-therapist-subscription]
+verify_jwt = false
+
+[functions.stripe-cancel-therapist-subscription]
+verify_jwt = false
+
+[functions.stripe-create-billing-portal]
+verify_jwt = false
+
+[functions.stripe-billing-webhook]
+verify_jwt = false
+
+[functions.stripe-connect-create-account]
+verify_jwt = false
+
+[functions.stripe-connect-create-account-link]
+verify_jwt = false
+
+[functions.stripe-connect-create-login-link]
+verify_jwt = false
+
+[functions.stripe-connect-sync-account]
+verify_jwt = false
+
+[functions.stripe-connect-webhook]
+verify_jwt = false
+
+[functions.stripe-create-session-payment]
+verify_jwt = false
+
+[functions.request-session-cancellation]
+verify_jwt = false
+
+[functions.confirm-session-by-therapist]
+verify_jwt = false
+
+[functions.auto-confirm-sessions]
+verify_jwt = false
+
+[functions.evaluate-transfer-eligibility]
+verify_jwt = false
+
+[functions.create-weekly-payout-batch]
+verify_jwt = false
+
+[functions.process-payout-batch]
+verify_jwt = false
+
+[functions.retry-failed-payout-items]
+verify_jwt = false
+
+[functions.reconcile-stripe-transfers]
+verify_jwt = false

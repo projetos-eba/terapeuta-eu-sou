@@ -3,6 +3,9 @@
     "lib": ["deno.window", "dom", "dom.iterable", "es2022"],
     "strict": true
   },
+  "imports": {
+    "stripe": "npm:stripe@22.3.0"
+  },
   "fmt": {
     "lineWidth": 88,
     "semiColons": true,
