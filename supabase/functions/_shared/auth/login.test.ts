@@ -254,8 +254,8 @@ function mockClient(input: { getRows?: unknown[]; postRows?: unknown[] }) {
   const postRows = [...(input.postRows ?? [])];
 
   return {
-    get: async () => getRows.shift(),
-    post: async () => postRows.shift(),
+    get: () => getRows.shift(),
+    post: () => postRows.shift(),
   } as unknown as SupabaseRestClient;
 }
 

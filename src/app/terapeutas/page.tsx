@@ -1,9 +1,21 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { CalendarDays, ChevronDown, Filter, Heart, Search, Star } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronDown,
+  Filter,
+  Heart,
+  Search,
+  Star,
+} from "lucide-react";
 
-import { PublicFooter, PublicHeader, TESButton, TESCard } from "@/components/tes";
+import {
+  PublicFooter,
+  PublicHeader,
+  TESButton,
+  TESCard,
+} from "@/components/tes";
 import {
   availabilityOptions,
   getPublicTherapistSearchResult,
@@ -22,7 +34,7 @@ import { routes } from "@/lib/routes";
 export const revalidate = 900;
 
 type TherapistsPageProps = {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 function HeroIllustration() {
@@ -99,11 +111,36 @@ function SearchFilters({
         </div>
 
         <div className="mt-[37px] flex flex-wrap items-start gap-[14px]">
-          <SelectField label="Tipo de terapia" name="therapy" options={therapyOptions} value={filters.therapy} />
-          <SelectField label="Tema buscado" name="theme" options={themeOptions} value={filters.theme} />
-          <SelectField label="Disponibilidade" name="availability" options={availabilityOptions} value={filters.availability} />
-          <SelectField label="Preço" name="price" options={priceOptions} value={filters.price} />
-          <SelectField label="Avaliação" name="rating" options={ratingOptions} value={filters.rating} />
+          <SelectField
+            label="Tipo de terapia"
+            name="therapy"
+            options={therapyOptions}
+            value={filters.therapy}
+          />
+          <SelectField
+            label="Tema buscado"
+            name="theme"
+            options={themeOptions}
+            value={filters.theme}
+          />
+          <SelectField
+            label="Disponibilidade"
+            name="availability"
+            options={availabilityOptions}
+            value={filters.availability}
+          />
+          <SelectField
+            label="Preço"
+            name="price"
+            options={priceOptions}
+            value={filters.price}
+          />
+          <SelectField
+            label="Avaliação"
+            name="rating"
+            options={ratingOptions}
+            value={filters.rating}
+          />
           <input type="hidden" name="sort" value={filters.sort} />
           <Link
             href={routes.public.therapists as Route}
@@ -152,12 +189,28 @@ function ResultsHeader({
           Encontramos {totalCount} terapeuta{totalCount === 1 ? "" : "s"}
         </p>
         <form action={routes.public.therapists}>
-          {filters.q ? <input type="hidden" name="q" value={filters.q} /> : null}
-          {filters.therapy ? <input type="hidden" name="therapy" value={filters.therapy} /> : null}
-          {filters.theme ? <input type="hidden" name="theme" value={filters.theme} /> : null}
-          {filters.availability ? <input type="hidden" name="availability" value={filters.availability} /> : null}
-          {filters.price ? <input type="hidden" name="price" value={filters.price} /> : null}
-          {filters.rating ? <input type="hidden" name="rating" value={filters.rating} /> : null}
+          {filters.q ? (
+            <input type="hidden" name="q" value={filters.q} />
+          ) : null}
+          {filters.therapy ? (
+            <input type="hidden" name="therapy" value={filters.therapy} />
+          ) : null}
+          {filters.theme ? (
+            <input type="hidden" name="theme" value={filters.theme} />
+          ) : null}
+          {filters.availability ? (
+            <input
+              type="hidden"
+              name="availability"
+              value={filters.availability}
+            />
+          ) : null}
+          {filters.price ? (
+            <input type="hidden" name="price" value={filters.price} />
+          ) : null}
+          {filters.rating ? (
+            <input type="hidden" name="rating" value={filters.rating} />
+          ) : null}
           <label className="relative inline-flex h-[42px] w-full max-w-[310px] items-center rounded-full border border-[#e2d1ec] bg-white text-[13px] font-bold text-[#5e5a8a] shadow-[0_6px_8px_rgba(38,20,51,0.04)] sm:w-[270px]">
             <span className="sr-only">Ordenar terapeutas</span>
             <select
@@ -180,11 +233,20 @@ function ResultsHeader({
   );
 }
 
-function Rating({ rating, ratingLabel }: { rating: number; ratingLabel: string }) {
+function Rating({
+  rating,
+  ratingLabel,
+}: {
+  rating: number;
+  ratingLabel: string;
+}) {
   return (
     <div className="flex items-center justify-end gap-2 text-[14px] font-extrabold text-brand-deep">
       <span>{ratingLabel}</span>
-      <span className="flex gap-[1px] text-[#F4B84A]" aria-label={`${ratingLabel} de 5 estrelas`}>
+      <span
+        className="flex gap-[1px] text-[#F4B84A]"
+        aria-label={`${ratingLabel} de 5 estrelas`}
+      >
         {Array.from({ length: 5 }).map((_, index) => (
           <Star
             key={index}
@@ -196,7 +258,11 @@ function Rating({ rating, ratingLabel }: { rating: number; ratingLabel: string }
   );
 }
 
-function TherapistResultCard({ therapist }: { therapist: TherapistSearchCard }) {
+function TherapistResultCard({
+  therapist,
+}: {
+  therapist: TherapistSearchCard;
+}) {
   const isVerified = therapist.highlightTone === "verified";
   const specialty = therapist.therapyName;
 
@@ -213,7 +279,9 @@ function TherapistResultCard({ therapist }: { therapist: TherapistSearchCard }) 
       </div>
 
       <div className="absolute left-[23px] top-[237px]">
-        <p className="text-[11px] font-semibold leading-none text-[#8c87b2]">Próximo horário</p>
+        <p className="text-[11px] font-semibold leading-none text-[#8c87b2]">
+          Próximo horário
+        </p>
         <p className="mt-1 text-[18px] font-extrabold leading-normal text-brand-primary">
           {therapist.nextSlotLabel}
         </p>
@@ -240,7 +308,10 @@ function TherapistResultCard({ therapist }: { therapist: TherapistSearchCard }) 
         <h3 className="max-w-[196px] text-[24px] font-extrabold leading-normal tracking-normal text-brand-deep">
           {therapist.name}
         </h3>
-        <button aria-label={`Favoritar ${therapist.name}`} className="mt-0.5 text-brand-primary">
+        <button
+          aria-label={`Favoritar ${therapist.name}`}
+          className="mt-0.5 text-brand-primary"
+        >
           <Heart className="size-5" />
         </button>
       </div>
@@ -294,24 +365,40 @@ function EmptyState() {
   return (
     <TESCard className="p-10 text-center">
       <CalendarDays className="mx-auto size-10 text-brand-primary" />
-      <h3 className="mt-4 text-2xl font-extrabold text-brand-deep">Nenhum terapeuta encontrado</h3>
+      <h3 className="mt-4 text-2xl font-extrabold text-brand-deep">
+        Nenhum terapeuta encontrado
+      </h3>
       <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-6 text-tesText-secondary">
-        Tente limpar filtros ou buscar por outro tema. A escolha pode acontecer com calma, no seu tempo.
+        Tente limpar filtros ou buscar por outro tema. A escolha pode acontecer
+        com calma, no seu tempo.
       </p>
-      <TESButton href={routes.public.therapists} variant="secondary" className="mt-6">
+      <TESButton
+        href={routes.public.therapists}
+        variant="secondary"
+        className="mt-6"
+      >
         Limpar filtros
       </TESButton>
     </TESCard>
   );
 }
 
-function Pagination({ filters, totalPages }: { filters: TherapistSearchFilters; totalPages: number }) {
+function Pagination({
+  filters,
+  totalPages,
+}: {
+  filters: TherapistSearchFilters;
+  totalPages: number;
+}) {
   if (totalPages <= 1) return null;
 
   const pages = Array.from({ length: totalPages }, (_, index) => index + 1);
 
   return (
-    <nav className="mt-[29px] flex flex-wrap items-center justify-center gap-[18px]" aria-label="Paginação">
+    <nav
+      className="mt-[29px] flex flex-wrap items-center justify-center gap-[18px]"
+      aria-label="Paginação"
+    >
       {pages.map((page) => {
         const params = toSearchParams(filters, { page });
         const href = `${routes.public.therapists}${params ? `?${params}` : ""}`;
@@ -336,8 +423,11 @@ function Pagination({ filters, totalPages }: { filters: TherapistSearchFilters; 
   );
 }
 
-export default async function TherapistsPage({ searchParams }: TherapistsPageProps) {
-  const filters = parseTherapistSearchParams(searchParams);
+export default async function TherapistsPage({
+  searchParams,
+}: TherapistsPageProps) {
+  const params = await searchParams;
+  const filters = parseTherapistSearchParams(params);
   const result = await getPublicTherapistSearchResult(filters);
 
   return (
@@ -360,15 +450,26 @@ export default async function TherapistsPage({ searchParams }: TherapistsPagePro
         </div>
       </section>
 
-      <SearchFilters filters={result.filters} themeOptions={result.options.themes} therapyOptions={result.options.therapies} />
+      <SearchFilters
+        filters={result.filters}
+        themeOptions={result.options.themes}
+        therapyOptions={result.options.therapies}
+      />
 
       <section className="mx-auto max-w-[1440px] px-5 pb-[29px] pt-[41px] sm:px-8 lg:px-[68px]">
-        <ResultsHeader activeFilterCount={result.activeFilterCount} filters={result.filters} totalCount={result.totalCount} />
+        <ResultsHeader
+          activeFilterCount={result.activeFilterCount}
+          filters={result.filters}
+          totalCount={result.totalCount}
+        />
 
         {result.therapists.length ? (
           <div className="grid gap-x-[20px] gap-y-[20px] xl:grid-cols-2">
             {result.therapists.map((therapist) => (
-              <TherapistResultCard key={`${therapist.slug}-${therapist.serviceTitle}`} therapist={therapist} />
+              <TherapistResultCard
+                key={`${therapist.slug}-${therapist.serviceTitle}`}
+                therapist={therapist}
+              />
             ))}
           </div>
         ) : (
@@ -380,7 +481,9 @@ export default async function TherapistsPage({ searchParams }: TherapistsPagePro
 
       <section className="mx-auto max-w-[1440px] px-5 pb-[62px] sm:px-8 lg:px-[68px]">
         <div className="flex h-[178px] items-center justify-center rounded-[18px] border border-[rgba(226,209,236,0.4)] bg-[rgba(241,232,246,0.7)] shadow-[0_8px_10px_rgba(38,20,51,0.04)]">
-          <p className="text-center text-[26px] font-extrabold leading-8 text-brand-deep">Fazer banner novo</p>
+          <p className="text-center text-[26px] font-extrabold leading-8 text-brand-deep">
+            Fazer banner novo
+          </p>
         </div>
       </section>
 

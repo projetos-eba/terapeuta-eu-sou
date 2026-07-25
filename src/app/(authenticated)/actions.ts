@@ -16,7 +16,7 @@ import {
 } from "@/features/patient-overview";
 
 export async function logoutPatient() {
-  const accessToken = getPatientAccessToken();
+  const accessToken = await getPatientAccessToken();
   const config = getSupabaseAuthConfig();
 
   if (accessToken && config) {
@@ -30,8 +30,9 @@ export async function logoutPatient() {
     }).catch(() => undefined);
   }
 
-  cookies().delete("tes_patient_access_token");
-  cookies().delete("tes_patient_refresh_token");
+  const cookieStore = await cookies();
+  cookieStore.delete("tes_patient_access_token");
+  cookieStore.delete("tes_patient_refresh_token");
   redirect(routes.public.clientSignIn);
 }
 

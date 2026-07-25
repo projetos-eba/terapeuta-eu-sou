@@ -65,7 +65,7 @@ function fakeClient(responses: unknown[][]) {
   let index = 0;
 
   return {
-    async get<T>() {
+    get<T>() {
       const response = responses[index] ?? [];
       index += 1;
       return response as T;

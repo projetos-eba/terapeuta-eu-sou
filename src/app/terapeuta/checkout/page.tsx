@@ -35,13 +35,14 @@ export const metadata: Metadata = {
 export default async function TherapistCheckoutPage({
   searchParams,
 }: {
-  searchParams?: {
+  searchParams?: Promise<{
     checkout?: string;
     created?: string;
     plan?: string;
-  };
+  }>;
 }) {
-  const requestedPlan = normalizeTherapistPlan(searchParams?.plan);
+  const params = await searchParams;
+  const requestedPlan = normalizeTherapistPlan(params?.plan);
 
   if (!isPaidTherapistPlan(requestedPlan)) {
     redirect(routes.public.forTherapists);
@@ -64,9 +65,7 @@ export default async function TherapistCheckoutPage({
       <div className="w-full space-y-6">
         <div>
           <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
-            {searchParams?.created === "1"
-              ? "Conta criada"
-              : "Plano profissional"}
+            {params?.created === "1" ? "Conta criada" : "Plano profissional"}
           </p>
           <h1 className="mt-3 font-display text-4xl font-light italic leading-tight text-brand-deep sm:text-5xl">
             {hasActivePaidPlan
@@ -157,12 +156,12 @@ export default async function TherapistCheckoutPage({
                 />
                 <div>
                   <p className="text-sm font-extrabold text-brand-deep">
-                    {searchParams?.checkout === "success"
+                    {params?.checkout === "success"
                       ? "Pagamento em confirmacao"
                       : "Pagamento online seguro"}
                   </p>
                   <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                    {searchParams?.checkout === "success"
+                    {params?.checkout === "success"
                       ? "Recebemos seu retorno do Stripe. O plano pago sera liberado somente apos o webhook confirmar a assinatura."
                       : "Voce seguira para o Stripe para concluir a assinatura. O plano pago sera ativado somente apos a confirmacao do webhook."}
                   </p>

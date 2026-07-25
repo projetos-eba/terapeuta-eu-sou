@@ -16,6 +16,10 @@
     "payments:catalog:sync": "node scripts/payments/sync-stripe-billing-catalog.mjs",
     "payments:catalog:verify": "node scripts/payments/verify-stripe-billing-catalog.mjs",
     "payments:webhooks:listen": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/payments/stripe-listen-local.ps1",
+    "payments:e2e:seed": "node scripts/payments/e2e-data.mjs seed",
+    "payments:e2e:status": "node scripts/payments/e2e-data.mjs status",
+    "payments:e2e:cleanup": "node scripts/payments/e2e-data.mjs cleanup",
+    "test:e2e:payments:headed": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/payments/run-payments-e2e-headed.ps1",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -29,7 +33,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
-    "next": "^14.2.35",
+    "next": "^15.5.21",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "stripe": "^22.3.0",
@@ -46,13 +50,18 @@
     "@vitest/coverage-v8": "^4.1.10",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
-    "eslint-config-next": "^14.2.35",
+    "eslint-config-next": "^15.5.21",
     "jsdom": "^29.1.1",
-    "postcss": "^8.4.49",
+    "postcss": "^8.5.23",
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.9",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2",
     "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "brace-expansion": "5.0.8",
+    "postcss": "$postcss",
+    "sharp": "0.35.0"
   }
 }

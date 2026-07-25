@@ -15,16 +15,18 @@ export const metadata: Metadata = {
   title: "Login de terapeuta | Terapeuta Eu Sou",
 };
 
-export default function TherapistLoginPage({
+export default async function TherapistLoginPage({
   searchParams,
 }: {
-  searchParams?: {
+  searchParams?: Promise<{
     created?: string;
     next?: string;
     reset?: string;
     verified?: string;
-  };
+  }>;
 }) {
+  const params = await searchParams;
+
   return (
     <TherapistAuthShell
       eyebrow="Acesso profissional"
@@ -33,10 +35,10 @@ export default function TherapistLoginPage({
     >
       <div className="w-full">
         <TherapistLoginForm
-          continuation={searchParams?.next}
-          created={searchParams?.created === "1"}
-          reset={searchParams?.reset === "1"}
-          verified={searchParams?.verified === "1"}
+          continuation={params?.next}
+          created={params?.created === "1"}
+          reset={params?.reset === "1"}
+          verified={params?.verified === "1"}
         />
       </div>
     </TherapistAuthShell>

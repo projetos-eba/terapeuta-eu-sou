@@ -9,9 +9,9 @@ import {
 import { routes } from "@/lib/routes";
 
 type TherapistProfilePageProps = {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 };
 
 export const revalidate = 900;
@@ -19,7 +19,8 @@ export const revalidate = 900;
 export async function generateMetadata({
   params,
 }: TherapistProfilePageProps): Promise<Metadata> {
-  const data = await getPublicTherapistProfile(params.slug);
+  const { slug } = await params;
+  const data = await getPublicTherapistProfile(slug);
 
   if (!data) {
     return {
@@ -51,10 +52,11 @@ export async function generateMetadata({
 export default async function PublicTherapistProfilePage({
   params,
 }: TherapistProfilePageProps) {
-  const data = await getPublicTherapistProfile(params.slug);
+  const { slug } = await params;
+  const data = await getPublicTherapistProfile(slug);
 
   if (!data) {
-    const redirectSlug = await resolvePublicTherapistSlug(params.slug);
+    const redirectSlug = await resolvePublicTherapistSlug(slug);
     if (redirectSlug) {
       redirect(routes.public.therapistProfile(redirectSlug));
     }
@@ -88,10 +90,7 @@ export default async function PublicTherapistProfilePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <TherapistProfilePage
-        profile={data.profile}
-        reviews={data.reviews}
-      />
+      <TherapistProfilePage profile={data.profile} reviews={data.reviews} />
     </>
   );
 }

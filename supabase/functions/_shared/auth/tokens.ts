@@ -75,7 +75,7 @@ export async function claimAuthActionToken(
   return rows[0] ? { claim: rows[0], claimId } : null;
 }
 
-export async function consumeAuthActionToken(
+export function consumeAuthActionToken(
   client: SupabaseRestClient,
   tokenId: string,
   claimId: string,
@@ -86,7 +86,7 @@ export async function consumeAuthActionToken(
   });
 }
 
-export async function releaseAuthActionTokenClaim(
+export function releaseAuthActionTokenClaim(
   client: SupabaseRestClient,
   tokenId: string,
   claimId: string,

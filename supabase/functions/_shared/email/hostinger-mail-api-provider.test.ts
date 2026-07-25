@@ -12,12 +12,12 @@ Deno.test(
     const requestBodies: Record<string, unknown>[] = [];
     const provider = new HostingerMailApiProvider({
       apiKey: "secret-test-key",
-      fetcher: async (_input, init) => {
+      fetcher: (_input, init) => {
         authorization = new Headers(init?.headers).get("authorization") ?? "";
         requestBodies.push(
           JSON.parse(String(init?.body)) as Record<string, unknown>,
         );
-        return new Response(null, { status: 204 });
+        return Promise.resolve(new Response(null, { status: 204 }));
       },
     });
 
@@ -48,11 +48,13 @@ Deno.test("HostingerMailApiProvider retries transient responses", async () => {
   let calls = 0;
   const provider = new HostingerMailApiProvider({
     apiKey: "secret-test-key",
-    fetcher: async () => {
+    fetcher: () => {
       calls += 1;
-      return calls === 1
-        ? jsonResponse({ error: "slow" }, 429, { "retry-after": "0" })
-        : new Response(null, { status: 204 });
+      return Promise.resolve(
+        calls === 1
+          ? jsonResponse({ error: "slow" }, 429, { "retry-after": "0" })
+          : new Response(null, { status: 204 }),
+      );
     },
   });
 
@@ -78,17 +80,19 @@ Deno.test(
   async () => {
     const provider = new HostingerMailApiProvider({
       apiKey: "secret-test-key",
-      fetcher: async () =>
-        jsonResponse({
-          data: {
-            mailboxes: [
-              {
-                address: "contato@example.test",
-                resource_id: "mailbox-1",
-              },
-            ],
-          },
-        }),
+      fetcher: () =>
+        Promise.resolve(
+          jsonResponse({
+            data: {
+              mailboxes: [
+                {
+                  address: "contato@example.test",
+                  resource_id: "mailbox-1",
+                },
+              ],
+            },
+          }),
+        ),
     });
 
     const senders = await provider.listSenders();
@@ -105,9 +109,9 @@ Deno.test(
     let calls = 0;
     const provider = new HostingerMailApiProvider({
       apiKey: "secret-test-key",
-      fetcher: async () => {
+      fetcher: () => {
         calls += 1;
-        return jsonResponse({ error: "invalid" }, 422);
+        return Promise.resolve(jsonResponse({ error: "invalid" }, 422));
       },
     });
 
@@ -129,7 +133,8 @@ Deno.test(
   async () => {
     const provider = new HostingerMailApiProvider({
       apiKey: "secret-test-key",
-      fetcher: async () => new Response("unauthorized", { status: 401 }),
+      fetcher: () =>
+        Promise.resolve(new Response("unauthorized", { status: 401 })),
     });
 
     try {

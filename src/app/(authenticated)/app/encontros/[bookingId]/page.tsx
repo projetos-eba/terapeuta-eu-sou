@@ -10,14 +10,15 @@ import { requirePatientSession } from "@/lib/auth/patient-session";
 export default async function PatientEncounterDetailRoute({
   params,
 }: {
-  params: { bookingId: string };
+  params: Promise<{ bookingId: string }>;
 }) {
+  const { bookingId } = await params;
   const session = await requirePatientSession();
 
   try {
     const data = await getPatientSessionDetailPage({
       accessToken: session.accessToken,
-      bookingId: params.bookingId,
+      bookingId,
       profileId: session.profileId,
     });
 
