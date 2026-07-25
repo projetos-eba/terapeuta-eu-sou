@@ -16,15 +16,14 @@ Contrato de implementaÃ§Ã£o para rotas, permissÃµes, layouts, componentes,
   Premium Plus.
 - Plano e capability definem permissÃ£o, estado bloqueado e conteÃºdo; a URL nÃ£o
   concede autorizaÃ§Ã£o.
-- `/basico/*`, `/pro/*` e `/plus/*` descrevem o estado executÃ¡vel legado e
-  devem virar redirects equivalentes durante a Fase Agenda 1.
+- `/basico/*`, `/pro/*` e `/plus/*` sÃ£o redirects equivalentes implementados
+  na Fase Agenda 1.
 - `/terapeutas` e `/terapeutas/:slug` continuam sendo rotas pÃºblicas.
 - O alias pÃºblico singular `/terapeuta/:slug` deve redirecionar para
   `/terapeutas/:slug` para nÃ£o colidir com a Ã¡rea autenticada.
 
 As tabelas por plano abaixo permanecem como matriz de capability e inventÃ¡rio
-de compatibilidade atÃ© a migraÃ§Ã£o do cÃ³digo. Novas referÃªncias devem usar
-`/terapeuta/*`.
+dos destinos legados. Novas referÃªncias devem usar `/terapeuta/*`.
 
 ## PÃºblico
 
@@ -46,7 +45,7 @@ de compatibilidade atÃ© a migraÃ§Ã£o do cÃ³digo. Novas referÃªncias de
 | `/cadastro`               | Cadastro            | Jornada                                 | Paciente/Terapeuta    | Criar conta no momento adequado.                                                                | Auth em etapas                                                                                         | AuthStepper, Input, TermsCheckbox                                                                                                     | ValidaÃ§Ã£o, loading, erro                                                                                                                | Criar conta                                                                                             | Publico            |
 | `/cliente/login`          | Login cliente       | Produto/inferido                        | Cliente               | Separar autenticaÃ§Ã£o de cliente do terapeuta.                                                 | Auth centralizado com imagem                                                                           | ClientAuthShell, ClientLoginForm                                                                                                      | ConfiguraÃ§Ã£o Supabase ausente, erro de credencial, perfil incorreto                                                                     | Entrar, ir para `/app`                                                                                  | Publico            |
 | `/cliente/cadastro`       | Cadastro cliente    | Produto/inferido                        | Cliente visitante     | Criar conta inicial para seguir a jornada.                                                      | Auth centralizado com imagem                                                                           | ClientAuthShell, ClientSignupForm                                                                                                     | ValidaÃ§Ã£o de campos, menor de 18 anos, e-mail duplicado, configuraÃ§Ã£o ausente                                                         | Criar `auth.users`, `profiles` e `patient_profiles`                                                     | Publico            |
-| `/terapeuta/login`        | Login terapeuta     | Produto/inferido                        | Terapeuta             | Separar autenticaÃ§Ã£o profissional de pacientes.                                               | Auth centralizado                                                                                      | TherapistAuthShell, TherapistLoginForm                                                                                                | ConfiguraÃ§Ã£o Supabase ausente, erro de credencial, perfil incorreto                                                                     | Entrar, ir para `/basico`, `/pro` ou `/plus` conforme plano                                             | Publico            |
+| `/terapeuta/login`        | Login terapeuta     | Produto/inferido                        | Terapeuta             | Separar autenticaÃ§Ã£o profissional de pacientes.                                               | Auth centralizado                                                                                      | TherapistAuthShell, TherapistLoginForm                                                                                                | ConfiguraÃ§Ã£o Supabase ausente, erro de credencial, perfil incorreto                                                                     | Entrar e seguir para `/terapeuta`                                                                     | Publico            |
 | `/terapeuta/cadastro`     | Cadastro terapeuta  | Produto/inferido                        | Terapeuta visitante   | Criar conta inicial sem bloquear por perfil/documentos/repasse.                                 | Auth centralizado                                                                                      | TherapistAuthShell, TherapistSignupForm                                                                                               | ValidaÃ§Ã£o de campos, menor de 18 anos, e-mail duplicado, configuraÃ§Ã£o ausente                                                         | Criar `auth.users`, `profiles` e `therapist_profiles` em rascunho                                       | Publico            |
 | `/terapeuta/checkout`     | Checkout do plano   | Produto/inferido                        | Terapeuta autenticado | Revisar Premium ou Premium Plus antes do pagamento.                                             | Auth centralizado + resumo do plano                                                                    | TherapistAuthShell, PlanSummary, CheckoutStatus                                                                                       | Stripe ainda nao configurado, plano pago ja ativo, sessao expirada, plano invalido                                                        | Acessar Free enquanto aguarda; iniciar Stripe quando disponivel                                         | Publico            |
 | `/confirmar-email`        | Confirmar e-mail    | Produto/inferido                        | Visitante             | Confirmar e-mail por token de uso unico ou acompanhar status de confirmacao por polling seguro. | Auth                                                                                                   | ConfirmEmailClient                                                                                                                    | Aguardando e-mail, polling, sucesso, token invalido/expirado, reenvio seguro com cooldown                                                 | Confirmar e-mail, aguardar confirmacao, reenviar confirmacao, voltar ao login                           | Publico            |
@@ -158,7 +157,7 @@ de compatibilidade atÃ© a migraÃ§Ã£o do cÃ³digo. Novas referÃªncias de
 - Visitante acessa pÃºblico.
 - Paciente acessa `/app/**`.
 - Terapeuta acessa `/terapeuta/**` conforme papel, status, plano e capability.
-- `/basico/**`, `/pro/**` e `/plus/**` nÃ£o concedem acesso; durante a transiÃ§Ã£o,
-  apenas redirecionam para o equivalente canÃ´nico.
+- `/basico/**`, `/pro/**` e `/plus/**` nÃ£o concedem acesso; apenas
+  redirecionam para o equivalente canÃ´nico.
 - Admin acessa `/admin/**`.
 - Recurso fora do plano renderiza ausÃªncia, bloqueio contextual ou convite, conforme perfil.

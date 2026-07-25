@@ -9,7 +9,8 @@ Atualizacao operacional de 2026-07-25:
 
 - stack atual: Next.js 15.5.21 e React 18.3.1;
 - namespace autenticado aprovado: `/terapeuta/*`;
-- `/basico/*`, `/pro/*` e `/plus/*` sao aliases de transicao ate a Fase Agenda 1;
+- `/basico/*`, `/pro/*` e `/plus/*` sao redirects de compatibilidade
+  implementados na Fase Agenda 1;
 - `/terapeutas/*` permanece exclusivamente publico;
 - a fundacao Stripe esta implementada, mas depende do Gate Financeiro F0
   descrito em `docs/architecture/relatorio-25-07-2026.md` antes de producao.
@@ -1787,8 +1788,8 @@ Uma entrega do MVP so deve ser considerada pronta quando:
 - Retencao de dados sensiveis.
 - Politica de uso de dados agregados do Match.
 - Forma final da UI de pagamentos do paciente.
-- Como mapear `/basico/pagamento` para `/terapeuta/financeiro` durante a
-  compatibilidade, sem preservar uma segunda experiencia financeira.
+- O mapeamento `/basico/pagamento` -> `/terapeuta/financeiro` foi implementado
+  como redirect temporario, sem preservar uma segunda experiencia financeira.
 - Se o nome publico sera Aura IA, Assessor IA ou outro.
 
 Quando alguma decisao acima impactar implementacao, ela deve ser registrada antes de criar migracao, API ou comportamento de produto definitivo.

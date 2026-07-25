@@ -4,16 +4,16 @@ Documento operacional para manter pÃ¡ginas, funÃ§Ãµes, banco e skills usan
 
 Atualizado em 2026-07-25.
 
-## TransiÃ§Ã£o de rotas do terapeuta
+## Rotas do terapeuta
 
-- Destino canÃ´nico aprovado: `/terapeuta/*`.
-- Estado executÃ¡vel atual: `/basico/*`, `/pro/*` e `/plus/*`, mantidos apenas
-  como compatibilidade atÃ© a Fase Agenda 1.
+- Namespace canÃ´nico executÃ¡vel: `/terapeuta/*`.
+- Compatibilidade: `/basico/*`, `/pro/*` e `/plus/*` respondem com redirects
+  temporÃ¡rios definidos em `next.config.mjs`.
 - CatÃ¡logo e perfil pÃºblico: `/terapeutas` e `/terapeutas/:slug`.
 - Plano e capability sÃ£o resolvidos por `src/lib/permissions.ts` e pela
   polÃ­tica do shell; nunca pela URL.
-- Checkout, Billing Portal e Connect devem retornar para `/terapeuta/*` apÃ³s
-  a migraÃ§Ã£o, sem URLs de plano fixadas nas Edge Functions.
+- Checkout, Billing Portal e Connect retornam para `/terapeuta/*`, sem URLs de
+  plano fixadas nas Edge Functions.
 
 ## Regras Gerais
 

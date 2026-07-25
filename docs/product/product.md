@@ -290,9 +290,9 @@ Mapa operacional de integrações, fontes de dados e skills: `docs/product/integ
 
 `/` -> `/para-terapeutas` -> `/para-terapeutas/planos` -> `/terapeuta/cadastro?plan=free|premium|premium_plus` -> `/terapeuta/login` -> `/terapeuta`
 
-`/basico/*`, `/pro/*` e `/plus/*` permanecem aliases temporários durante a
-migração. O plano e as capabilities definem a experiência dentro do namespace
-único; `/terapeutas/*` continua reservado ao catálogo público.
+`/basico/*`, `/pro/*` e `/plus/*` permanecem redirects temporários. O plano e
+as capabilities definem a experiência dentro do namespace único;
+`/terapeutas/*` continua reservado ao catálogo público.
 
 ### Pós-reserva do Paciente
 

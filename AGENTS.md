@@ -121,14 +121,12 @@ Regras:
 - Em código, usar sempre os enums técnicos: `free`, `premium`, `premium_plus`.
 - `/terapeuta/*` singular é o namespace aprovado para a área autenticada.
 - `/terapeutas/*` plural permanece reservado ao catálogo e aos perfis públicos.
-- `/basico/*`, `/pro/*` e `/plus/*` continuam executáveis até a migração de rotas
-  da Fase Agenda 1; depois devem permanecer apenas como redirects compatíveis.
+- `/basico/*`, `/pro/*` e `/plus/*` são redirects compatíveis implementados na
+  Fase Agenda 1; não criar páginas novas nesses namespaces.
 - `Pro` e `Plus` são identificadores técnicos legados de rota, não copy de interface.
 - Nomes comerciais (Básico, Premium, Premium Plus) são decisão de produto e UX.
-- `src/lib/routes.ts` é a fonte canônica do estado executável de rotas.
-  Até a conclusão da Fase Agenda 1, `docs/product/sitemap.md` e
-  `docs/architecture/relatorio-25-07-2026.md` registram o destino arquitetural
-  aprovado em `/terapeuta/*`; a divergência deve permanecer explícita.
+- `src/lib/routes.ts` é a fonte canônica das rotas executáveis.
+- `next.config.mjs` contém exclusivamente os redirects dos namespaces legados.
 - `src/lib/permissions.ts` é a fonte canônica de permissões e recursos por plano.
 
 ## 5. Implementação

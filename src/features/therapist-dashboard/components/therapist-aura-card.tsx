@@ -34,7 +34,7 @@ export function TherapistAuraCard({
           </div>
           <Link
             className="text-xs font-bold text-brand-primary outline-none hover:text-brand-deep focus-visible:ring-4 focus-visible:ring-ring/20"
-            href={routes.therapist.plusAssessorIa as Route<string>}
+            href={routes.therapist.assessorIa as Route<string>}
           >
             Conversar com a Aura →
           </Link>

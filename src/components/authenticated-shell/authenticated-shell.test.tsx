@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/plus",
+  usePathname: () => "/terapeuta",
 }));
 
 import { AuthenticatedShell } from "./authenticated-shell";
@@ -11,8 +11,8 @@ describe("AuthenticatedShell mobile", () => {
   it("opens and closes the responsive drawer by keyboard-accessible controls", () => {
     render(
       <AuthenticatedShell
-        helpHref="/plus/suporte"
-        navigation={[{ href: "/plus", icon: "home", label: "Início" }]}
+        helpHref="/terapeuta/suporte"
+        navigation={[{ href: "/terapeuta", icon: "home", label: "Início" }]}
         user={{ name: "Ana", roleLabel: "Terapeuta" }}
         variant="therapist"
       >

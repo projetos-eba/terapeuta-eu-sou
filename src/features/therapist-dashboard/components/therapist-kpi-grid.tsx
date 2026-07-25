@@ -16,7 +16,7 @@ export function TherapistKpiGrid({
       className="grid gap-5 md:grid-cols-2 2xl:grid-cols-4"
     >
       <TherapistKpiCard
-        href={routes.therapist.plusAgenda}
+        href={routes.therapist.agenda}
         icon={CalendarCheck2}
         kpi={kpis.monthlySessions}
         label="Encontros este mês"
@@ -24,7 +24,7 @@ export function TherapistKpiGrid({
         value={formatNumber(kpis.monthlySessions.value)}
       />
       <TherapistKpiCard
-        href={routes.therapist.plusPatients}
+        href={routes.therapist.patients}
         icon={UsersRound}
         kpi={kpis.activePatients}
         label="Pessoas em acompanhamento"
@@ -32,7 +32,7 @@ export function TherapistKpiGrid({
         value={formatNumber(kpis.activePatients.value)}
       />
       <TherapistKpiCard
-        href={routes.therapist.plusFinance}
+        href={routes.therapist.finance}
         icon={WalletCards}
         kpi={kpis.monthlyNetRevenueCents}
         label="Receita líquida do mês"
@@ -40,7 +40,7 @@ export function TherapistKpiGrid({
         value={formatCurrency(kpis.monthlyNetRevenueCents.value)}
       />
       <TherapistKpiCard
-        href={routes.therapist.plusInsights}
+        href={routes.therapist.insights}
         icon={Eye}
         kpi={kpis.profileViews}
         label="Visitas ao perfil"

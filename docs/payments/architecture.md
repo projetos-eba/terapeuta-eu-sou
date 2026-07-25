@@ -14,8 +14,8 @@ O redirecionamento do Checkout nunca ativa plano nem confirma pagamento sozinho.
 ## Rotas de retorno
 
 - `/terapeuta/*` e o destino canonico de Checkout, Billing Portal e Connect.
-- `/basico/*`, `/pro/*` e `/plus/*` nao devem ser fixados em novas Edge
-  Functions; os usos atuais devem ser migrados na Fase Agenda 1.
+- `/basico/*`, `/pro/*` e `/plus/*` nao devem ser fixados em Edge Functions;
+  os retornos existentes foram migrados na Fase Agenda 1.
 - A URL de retorno melhora a continuidade da jornada, mas nunca concede plano,
   capability, pagamento ou autorizacao.
 - `/terapeutas/*` continua reservado ao catalogo publico.

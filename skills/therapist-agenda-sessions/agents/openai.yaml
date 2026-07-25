@@ -1,0 +1,6 @@
+interface:
+  display_name: Agenda e sessões do terapeuta
+  short_description: Mantém disponibilidade, bookings e sessões compartilhados.
+  default_prompt: >-
+    Implemente ou revise Agenda e Sessões no namespace /terapeuta usando os
+    contratos canônicos, RLS e a mesma fonte transacional para todos os perfis.

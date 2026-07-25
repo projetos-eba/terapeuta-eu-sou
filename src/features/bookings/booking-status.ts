@@ -1,18 +1,4 @@
-import type { BookingStatus } from "./booking.types";
-
-export function isBookingStatus(value: string): value is BookingStatus {
-  return [
-    "draft",
-    "pending_payment",
-    "confirmed",
-    "completed",
-    "cancelled_by_patient",
-    "cancelled_by_therapist",
-    "no_show_patient",
-    "no_show_therapist",
-    "refunded",
-  ].includes(value);
-}
+export { isBookingStatus } from "@/domain/tes";
 
 export function isActiveBookingStatus(status: string) {
   return status === "confirmed" || status === "pending_payment";

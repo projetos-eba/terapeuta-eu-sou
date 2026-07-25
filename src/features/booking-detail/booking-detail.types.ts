@@ -1,7 +1,4 @@
-import type {
-  BookingPaymentStatus,
-  BookingStatus,
-} from "@/features/bookings/booking.types";
+import type { BookingStatus, PaymentStatus } from "@/domain/tes";
 
 export type BookingDetailPerspective = "patient" | "therapist" | "admin";
 
@@ -15,7 +12,7 @@ export type BookingDetailPageData = {
     endsAt: string;
     id: string;
     minutesUntilStart: number | null;
-    paymentStatus: BookingPaymentStatus | string;
+    paymentStatus: PaymentStatus | string;
     startsAt: string;
     status: BookingDetailStatus;
     statusLabel: string;

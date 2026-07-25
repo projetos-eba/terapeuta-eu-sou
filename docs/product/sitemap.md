@@ -19,11 +19,12 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 - `/app` é a entrada canônica do paciente.
 - `/terapeuta` é a entrada canônica de todo terapeuta autenticado.
 - Plano e capability alteram acesso e conteúdo, não o namespace.
-- `/basico/*`, `/pro/*` e `/plus/*` são aliases executáveis temporários e serão
-  redirects para `/terapeuta/*` na Fase Agenda 1.
+- `/basico/*`, `/pro/*` e `/plus/*` são redirects temporários para
+  `/terapeuta/*`.
 - `/terapeutas/*` permanece reservado ao catálogo e ao perfil público.
 - `/para-terapeutas/planos` concentra a decisão pública de planos.
-- `/basico/sessoes` e `/basico/mensagens` existem por decisão de produto.
+- Sessões e mensagens do plano Free existem em `/terapeuta/sessoes` e
+  `/terapeuta/mensagens`.
 - Favoritos do paciente separam terapeutas e terapias.
 - Premium Plus concentra histórico operacional do paciente em
   `/terapeuta/pacientes/:slug-do-paciente`, protegido por capability.
@@ -93,8 +94,8 @@ podem estar habilitados, bloqueados ou ocultos conforme plano e capability.
 - `/terapeuta/configuracoes`: configurações.
 - `/terapeuta/suporte`: suporte conforme plano.
 
-As seções por plano abaixo registram capabilities e os aliases legados ainda
-presentes no código; elas não definem shells independentes.
+As seções por plano abaixo registram capabilities e destinos legados mantidos
+por redirect; elas não definem shells independentes.
 
 ## Paciente
 

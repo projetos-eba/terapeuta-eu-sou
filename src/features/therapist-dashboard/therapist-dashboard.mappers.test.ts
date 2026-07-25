@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { routes } from "@/lib/routes";
+
 import {
   calculateAttendanceRate,
   calculateRevenueCents,
@@ -83,6 +85,6 @@ describe("dashboard mapper", () => {
     ]);
 
     expect(result.aura?.observations).toEqual(["Sinal agregado"]);
-    expect(result.recommendedActions[0]?.href).toBe("/plus/perfil");
+    expect(result.recommendedActions[0]?.href).toBe(routes.therapist.profile);
   });
 });

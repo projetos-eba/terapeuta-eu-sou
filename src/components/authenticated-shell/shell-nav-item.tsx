@@ -54,9 +54,7 @@ export function ShellNavItem({
 }) {
   const pathname = usePathname();
   const Icon = icons[item.icon];
-  const isNamespaceRoot = ["/app", "/basico", "/pro", "/plus"].includes(
-    item.href,
-  );
+  const isNamespaceRoot = ["/app", "/terapeuta"].includes(item.href);
   const isActive =
     pathname === item.href ||
     (!isNamespaceRoot && pathname.startsWith(`${item.href}/`));

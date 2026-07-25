@@ -63,7 +63,8 @@ Não distribuir queries pelos componentes. A entrada única da página é
 - Sem recomendações: dashboard principal continua disponível.
 - Supabase indisponível: mensagem segura sem payload interno.
 - Sessão inválida: redirecionar para `/terapeuta/login`.
-- Plano divergente: redirecionar para o namespace canônico.
+- Capability indisponível: redirecionar para `/terapeuta` sem inferir
+  autorização pela URL.
 - Suspenso ou rejeitado: bloquear o dashboard.
 
 ## QA

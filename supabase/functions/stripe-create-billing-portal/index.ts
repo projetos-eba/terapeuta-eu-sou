@@ -52,7 +52,7 @@ runtime.serve(async (request) => {
 
     const portal = await stripe.billingPortal.sessions.create({
       customer: customers[0].stripe_customer_id,
-      return_url: `${config.siteUrl}/pro/plano`,
+      return_url: `${config.siteUrl}/terapeuta/plano`,
     });
 
     return success({ url: portal.url });

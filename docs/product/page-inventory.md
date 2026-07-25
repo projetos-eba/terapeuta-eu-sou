@@ -4,8 +4,8 @@ Lista funcional das pÃ¡ginas do produto. Cada item descreve persona, objetivo,
 
 > AtualizaÃ§Ã£o arquitetural de 2026-07-25: novas referÃªncias da Ã¡rea
 > autenticada usam `/terapeuta/*`. As linhas `/basico/*`, `/pro/*` e `/plus/*`
-> abaixo registram o estado executÃ¡vel e a compatibilidade temporÃ¡ria; na Fase
-> Agenda 1 elas passam a redirecionar para a rota equivalente. Plano e
+> abaixo registram o inventÃ¡rio legado e a compatibilidade temporÃ¡ria; desde a
+> Fase Agenda 1 elas redirecionam para a rota equivalente. Plano e
 > capability continuam definindo os estados habilitado, bloqueado ou oculto.
 > `/terapeutas/*` permanece pÃºblico.
 

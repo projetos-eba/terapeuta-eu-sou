@@ -14,10 +14,9 @@ O fluxo inicial de terapeuta usa `/terapeuta/cadastro`, `/terapeuta/login` e `/t
 
 A área autenticada do terapeuta tem `/terapeuta/*` como namespace canônico
 aprovado. O plural `/terapeutas/*` continua reservado à busca e ao perfil
-público. No estado executável atual, `/basico/*`, `/pro/*` e `/plus/*` ainda
-funcionam e serão convertidos em redirects compatíveis durante a Fase Agenda 1.
-Até essa migração, `src/lib/routes.ts` descreve o código em execução e
-`docs/product/sitemap.md` descreve o destino aprovado.
+público. `/basico/*`, `/pro/*` e `/plus/*` respondem apenas com redirects
+temporários para a rota equivalente. Plano e capability são validados pela
+sessão autenticada, nunca pelo prefixo da URL.
 
 O fluxo inicial de cliente usa rotas separadas em `/cliente/cadastro` e `/cliente/login`. O cadastro também usa Supabase Auth/Admin via REST server-side, cria `profiles.role = patient` e `patient_profiles`; documentos, verificação profissional e dados bancários não fazem parte do cadastro de cliente.
 

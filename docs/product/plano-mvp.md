@@ -322,7 +322,8 @@ variantes legadas. Na arquitetura aprovada em 2026-07-25, ele será alias de
 | `/plus/configuracoes` | Não | 5 |
 | `/plus/suporte` | Não | 5 |
 
-Regra: `routes.ts` gera `/plus/pacientes/${slug}`. Em documentação de produto, usar `/plus/pacientes/:slug-do-paciente` para clareza semântica.
+Registro histórico: a rota antiga era `/plus/pacientes/:slug-do-paciente`. A
+implementação atual usa `/terapeuta/pacientes/:patientId`.
 
 ### 6.6 Admin
 
@@ -346,13 +347,13 @@ Regra: `routes.ts` gera `/plus/pacientes/${slug}`. Em documentação de produto,
 
 ## 7. Perfis, planos e permissões
 
-| Perfil | Área logada | Plano | Enum técnico | Prefixo |
+| Perfil | Área logada | Plano | Enum técnico | Alias legado |
 |---|---|---|---|---|
-| Paciente | `/app` | — | — | `/app` |
-| Terapeuta Free | `/basico` | Básico / Free | `free` | `/basico` |
-| Terapeuta Premium | `/pro` | Premium | `premium` | `/pro` |
-| Terapeuta Premium Plus | `/plus` | Premium Plus | `premium_plus` | `/plus` |
-| Admin | `/admin` | — | — | `/admin` |
+| Paciente | `/app` | — | — | — |
+| Terapeuta Free | `/terapeuta` | Básico / Free | `free` | `/basico` |
+| Terapeuta Premium | `/terapeuta` | Premium | `premium` | `/pro` |
+| Terapeuta Premium Plus | `/terapeuta` | Premium Plus | `premium_plus` | `/plus` |
+| Admin | `/admin` | — | — | — |
 
 Capabilities técnicas atuais em `src/domain/tes/permissions.ts`:
 

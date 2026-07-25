@@ -1,8 +1,11 @@
 # Relatório de Arquitetura do Shell do Terapeuta
 
-Data da revisão: 2026-07-25  
-Status: revisado após a fundação Stripe e aguardando execução da Fase Agenda 1  
-Escopo: shell autenticado, Agenda, Sessões e contratos compartilhados  
+Data da revisão: 2026-07-25
+
+Status: Fase Agenda 1 implementada; Gate Financeiro F0 permanece pendente
+
+Escopo: shell autenticado, Agenda, Sessões e contratos compartilhados
+
 Projeto: Terapeuta Eu Sou
 
 ## 1. Resumo executivo
@@ -729,6 +732,17 @@ Unificar a área autenticada em `/terapeuta/*`, preservar os namespaces atuais
 como redirects de transição e criar uma linguagem técnica única para Agenda,
 booking e Sessões. A fase não altera schema financeiro nem inicia Zoom.
 
+Resultado em 2026-07-25:
+
+- namespace `/terapeuta/*` implementado;
+- redirects 307 dos aliases implementados com preservação de deep link e query;
+- autorização por namespace removida;
+- navegação, login e retornos Stripe migrados;
+- contratos, erros e DTOs compartilhados criados;
+- preview de disponibilidade validado e coberto por testes;
+- ADRs, vocabulário, matriz do schema e skill local criados;
+- nenhuma migration ou dependência adicionada.
+
 ### 15.2 Pré-condições
 
 - decisões arquiteturais deste relatório aprovadas;
@@ -743,7 +757,7 @@ booking e Sessões. A fase não altera schema financeiro nem inicia Zoom.
 
 ### 15.3 Pacote A1.1 - ADRs
 
-Criar ADRs para:
+ADRs criados para:
 
 1. rota canônica unificada, aliases legados e colisão com o alias público
    `/terapeuta/:slug`;
@@ -999,9 +1013,9 @@ identifica `/basico/*`, `/pro/*` e `/plus/*` como estado executável legado. A
 remoção da marcação de transição só ocorre após a estratégia estar refletida em
 `src/lib/routes.ts`, nos redirects e nos testes.
 
-### 15.12 Arquivos previstos
+### 15.12 Arquivos implementados
 
-Novos:
+Criados:
 
 - `docs/architecture/adr/ADR-001-therapist-canonical-routes.md`;
 - `docs/architecture/adr/ADR-002-booking-session-boundary.md`;
@@ -1014,28 +1028,28 @@ Novos:
 - `src/domain/tes/availability-contracts.ts`;
 - `src/domain/tes/domain-errors.ts`;
 - árvore compartilhada em `src/app/(therapist)/terapeuta/*`;
-- redirects finos para os namespaces legados;
+- redirects finos em `next.config.mjs` para os namespaces legados;
 - testes correspondentes;
 - skill local compartilhada de Agenda/Sessões.
 
-Alterações previstas:
+Alterados:
 
 - `src/domain/tes/index.ts`;
 - `src/lib/routes.ts`;
 - `src/lib/auth/therapist-session.ts`;
 - configuração de navegação do shell do terapeuta;
-- layouts e páginas hoje distribuídos entre `/basico`, `/pro` e `/plus`;
+- layouts e páginas antes distribuídos entre `/basico`, `/pro` e `/plus`,
+  removidos após a criação dos redirects;
 - `src/features/bookings/booking.types.ts`;
 - `src/features/bookings/booking-status.ts`;
 - `src/features/availability/services/availability-service.ts`;
 - `supabase/functions/stripe-connect-create-account-link/index.ts`;
 - `supabase/functions/stripe-create-billing-portal/index.ts`;
 - consumidores dos tipos duplicados;
-- documentos listados no pacote A1.9;
-- `src/lib/supabase/database.types.ts`, regenerado sem edição manual caso algum
-  contrato de banco seja alterado por trabalho paralelo.
+- documentos listados no pacote A1.9.
 
-Nenhuma migration está prevista na Fase A1.
+Nenhuma migration foi criada na Fase A1; os tipos gerados do banco não foram
+alterados.
 
 ### 15.13 Ordem de execução
 
@@ -1266,6 +1280,5 @@ A decisão arquitetural central permanece:
 > Agenda, booking, sessão, pagamento e repasse compartilham referências, mas
 > possuem responsabilidades e ciclos de vida próprios.
 
-A Fase Agenda 1 começa pela unificação compatível de rotas e pelos contratos
-porque o projeto já possui dados e telas em produção local suficientes para
-tornar uma migration precipitada mais arriscada do que útil.
+A Fase Agenda 1 foi concluída com a unificação compatível de rotas e contratos,
+sem criar migration precipitada sobre os dados e telas já existentes.
