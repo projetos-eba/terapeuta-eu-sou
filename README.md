@@ -6,7 +6,7 @@ O backend planejado será Supabase: banco Postgres, autenticação, storage e Su
 
 A home pública (`/`) consulta views públicas Supabase via REST quando `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` estão configuradas. Sem essas variáveis, ou com valores placeholder, a página usa fallback local e continua renderizando sem expor segredos.
 
-A página pública `/para-terapeutas` usa o catálogo único de planos em `src/domain/tes/plan-definitions.ts`. Nesta etapa os `stripePriceId` permanecem `null`; o frontend envia somente o código do plano (`free`, `premium`, `premium_plus`) no cadastro. Contas pagas seguem para `/terapeuta/checkout`, mas permanecem com plano ativo `free` até que o Checkout e o webhook Stripe sejam implementados nas Edge Functions.
+A página pública `/para-terapeutas` usa o catálogo único de planos em `src/domain/tes/plan-definitions.ts`. Os `stripePriceId` permanecem `null`; o frontend envia somente o código do plano (`free`, `premium`, `premium_plus`) no cadastro. Contas pagas seguem para `/terapeuta/checkout`, iniciam Stripe Checkout via Edge Function e permanecem com plano ativo `free` até confirmação por webhook Stripe.
 
 O fluxo inicial de terapeuta usa `/terapeuta/cadastro`, `/terapeuta/login` e `/terapeuta/checkout`. O cadastro chama uma Supabase Edge Function para as operações administrativas de Auth/Admin, sem expor service role no app Next.js. Free segue ao login; Premium e Premium Plus recebem sessão e seguem ao resumo de checkout. Sem a function configurada, as telas renderizam e o submit retorna erro controlado.
 
@@ -74,6 +74,19 @@ npx supabase gen types typescript --local --schema public > src/lib/supabase/dat
 
 A Edge Function `match-therapies` calcula recomendações por regras e pesos. Ela não usa OpenAI, IA generativa, Stripe ou Zoom.
 
+### Pagamentos, assinaturas e repasses
+
+A arquitetura de pagamentos fica documentada em `docs/payments/architecture.md`.
+O setup operacional dos secrets Stripe fica em `docs/payments/stripe-secrets-setup.md`.
+
+Functions principais:
+
+- Billing: `stripe-sync-billing-catalog`, `stripe-create-subscription-checkout`, `stripe-change-therapist-subscription`, `stripe-cancel-therapist-subscription`, `stripe-create-billing-portal`, `stripe-billing-webhook`.
+- Connect: `stripe-connect-create-account`, `stripe-connect-create-account-link`, `stripe-connect-create-login-link`, `stripe-connect-sync-account`, `stripe-connect-webhook`.
+- Sessoes e repasses: `stripe-create-session-payment`, `request-session-cancellation`, `confirm-session-by-therapist`, `auto-confirm-sessions`, `evaluate-transfer-eligibility`, `create-weekly-payout-batch`, `process-payout-batch`, `retry-failed-payout-items`, `reconcile-stripe-transfers`.
+
+Secrets Stripe pertencem somente a `supabase/functions/.env.local` ou secrets remotos equivalentes. O app Next.js continua usando apenas chave publicavel. A chave de API server-side canonica e `STRIPE_SECRET_KEY`; nao usar `STRIPE_RESTRICTED_API_KEY` nem `STRIPE_ENVIRONMENT`. Webhooks usam `STRIPE_PLATFORM_WEBHOOK_SECRET`/`STRIPE_CONNECT_WEBHOOK_SECRET` com fallback local para `STRIPE_WEBHOOK_SECRET`. Rotinas privadas usam `PAYMENTS_INTERNAL_OPERATIONS_TOKEN`.
+
 ### E-mails transacionais
 
 O modulo de e-mails transacionais roda somente em Supabase Edge Functions. O app Next.js chama APIs server-side locais, que invocam as functions; o navegador nunca chama a Hostinger e nunca recebe `EMAIL_SERVER_API_KEY`.
@@ -99,6 +112,14 @@ Secrets das Edge Functions:
 Contrato Hostinger confirmado em documentacao oficial/SDK da Hostinger: `GET https://api.mail.hostinger.com/api/v1/me` retorna as mailboxes gerenciaveis; o envio usa `POST https://api.mail.hostinger.com/api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, `Content-Type: application/json`, payload com `to: string[]`, `display_name`, `subject`, `text` e `html`, e sucesso `204` sem corpo.
 
 Teste real de entrega: `npm run test:email:real` carrega `.env.local` e secrets locais das Edge Functions, usa a service role local em memoria via Supabase CLI, sincroniza mailboxes Hostinger no banco local e so envia quando `ALLOW_REAL_EMAIL_TESTS=true`, `EMAIL_E2E_RECIPIENT`, API key e sender ativo/default estiverem configurados.
+
+Scripts de pagamento:
+
+- `npm run payments:env`: audita variaveis de pagamentos por operacao sem imprimir secrets.
+- `npm run payments:env -- catalog`: valida o minimo para sincronizar catalogo.
+- `npm run payments:catalog:sync`: sincroniza Stripe Billing pelo `STRIPE_SECRET_KEY` e grava Product/Price IDs no Supabase.
+- `npm run payments:catalog:verify`: compara catalogo local com Stripe real.
+- `npm run payments:webhooks:listen`: inicia forwarding local dos eventos Stripe da plataforma para `stripe-billing-webhook`.
 
 `EMAIL_RATE_LIMIT_SALT` deve ser unico por ambiente, secreto e gerado com pelo menos 32 bytes aleatorios. Exemplo PowerShell para gerar um valor novo:
 

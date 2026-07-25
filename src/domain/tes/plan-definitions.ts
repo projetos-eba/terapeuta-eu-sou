@@ -25,7 +25,11 @@ export type PlanFeatureCode =
   | "seasonal_campaigns"
   | "tes_academy";
 
-export type PlanFeatureCategory = "base" | "premium" | "premium_plus" | "academy";
+export type PlanFeatureCategory =
+  | "base"
+  | "premium"
+  | "premium_plus"
+  | "academy";
 
 export type PlanFeatureDefinition = {
   category: PlanFeatureCategory;
@@ -42,6 +46,7 @@ export type PlanDefinition = {
   description: string;
   features: PlanFeatureCode[];
   highlight?: boolean;
+  monthlyPriceCents: number;
   limits: {
     messages?: number;
     services?: number;
@@ -58,7 +63,8 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "base",
     code: "agenda_days_blocks",
-    description: "Agenda, bloqueios e horarios essenciais para operar dentro da plataforma.",
+    description:
+      "Agenda, bloqueios e horarios essenciais para operar dentro da plataforma.",
     label: "Agenda, bloqueio de dias e horarios",
     minimumPlan: TherapistPlan.Free,
     capability: "operation_essentials",
@@ -66,7 +72,8 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "base",
     code: "profile_focus_cover_bio",
-    description: "Dados editoriais basicos para apresentar o perfil profissional.",
+    description:
+      "Dados editoriais basicos para apresentar o perfil profissional.",
     label: "Foto, capa, bio, especialidades",
     minimumPlan: TherapistPlan.Free,
     capability: "operation_essentials",
@@ -82,7 +89,8 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "base",
     code: "automatic_consultation_confirmation",
-    description: "Confirmacao operacional automatica para consultas dentro do portal.",
+    description:
+      "Confirmacao operacional automatica para consultas dentro do portal.",
     label: "Confirmacao automatica de consulta",
     minimumPlan: TherapistPlan.Free,
     capability: "operation_essentials",
@@ -134,7 +142,8 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "premium",
     code: "search_visibility",
-    description: "Destaque de visibilidade dentro das regras de busca da plataforma.",
+    description:
+      "Destaque de visibilidade dentro das regras de busca da plataforma.",
     label: "Visibilidade na busca",
     minimumPlan: TherapistPlan.Premium,
   },
@@ -164,7 +173,8 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "premium_plus",
     code: "complete_financial_dashboard",
-    description: "Dashboard financeiro completo sem alterar comissao por plano.",
+    description:
+      "Dashboard financeiro completo sem alterar comissao por plano.",
     label: "Dashboard financeiro completo",
     minimumPlan: TherapistPlan.PremiumPlus,
     capability: "advanced_financials",
@@ -172,7 +182,8 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "premium_plus",
     code: "complete_message_automation",
-    description: "Automacao completa de mensagens conforme regras da plataforma.",
+    description:
+      "Automacao completa de mensagens conforme regras da plataforma.",
     label: "Automacao de mensagens completa",
     minimumPlan: TherapistPlan.PremiumPlus,
     capability: "aura_full",
@@ -216,7 +227,8 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
   {
     code: TherapistPlan.Free,
     ctaLabel: "Comecar gratuitamente",
-    description: "Operacao essencial para publicar sua presenca e organizar o inicio.",
+    description:
+      "Operacao essencial para publicar sua presenca e organizar o inicio.",
     features: therapistPlanFeatureDefinitions
       .filter((feature) => feature.minimumPlan === TherapistPlan.Free)
       .map((feature) => feature.code),
@@ -224,6 +236,7 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
       messages: 20,
       services: 1,
     },
+    monthlyPriceCents: 0,
     name: "Free",
     priceLabel: "R$ 0",
     priceNote: "Comece sua jornada",
@@ -244,9 +257,10 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
       messages: 100,
       services: 6,
     },
+    monthlyPriceCents: 6000,
     name: "Premium",
-    priceLabel: "A partir de R$ 59/mes",
-    priceNote: "Preco e limites confirmados no cadastro",
+    priceLabel: "R$ 60/mes",
+    priceNote: "Cobranca mensal recorrente",
     signupHref: getPlanSignupHref(TherapistPlan.Premium),
     stripePriceId: null,
     subtitle: "Fortaleça sua presença",
@@ -260,9 +274,10 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
     limits: {
       services: undefined,
     },
+    monthlyPriceCents: 12000,
     name: "Premium Plus",
-    priceLabel: "A partir de R$ 149/mes",
-    priceNote: "Recursos completos sujeitos a politica de uso",
+    priceLabel: "R$ 120/mes",
+    priceNote: "Cobranca mensal recorrente",
     signupHref: getPlanSignupHref(TherapistPlan.PremiumPlus),
     stripePriceId: null,
     subtitle: "Gerencie sua prática",
@@ -277,7 +292,9 @@ export function getTherapistPlanDefinition(plan: TherapistPlan) {
 }
 
 export function getPlanFeatureDefinition(code: PlanFeatureCode) {
-  return therapistPlanFeatureDefinitions.find((feature) => feature.code === code);
+  return therapistPlanFeatureDefinitions.find(
+    (feature) => feature.code === code,
+  );
 }
 
 export function planIncludesFeature(
