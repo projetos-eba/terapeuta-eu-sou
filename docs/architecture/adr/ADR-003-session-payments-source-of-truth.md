@@ -27,5 +27,6 @@ O projeto contém representações legadas em `payments`,
 ## Consequências
 
 - Agenda e Sessões consomem resumo financeiro, sem escrever estados Stripe.
-- Backfill e retirada das projeções legadas pertencem ao Gate F0.
+- O Gate F0 implementou backfill e transformou as tabelas legadas em projeções
+  sincronizadas da fonte canônica.
 - A Fase Agenda 1 não cria migration financeira.

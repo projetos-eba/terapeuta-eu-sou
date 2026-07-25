@@ -12,8 +12,9 @@ Atualizacao operacional de 2026-07-25:
 - `/basico/*`, `/pro/*` e `/plus/*` sao redirects de compatibilidade
   implementados na Fase Agenda 1;
 - `/terapeutas/*` permanece exclusivamente publico;
-- a fundacao Stripe esta implementada, mas depende do Gate Financeiro F0
-  descrito em `docs/architecture/relatorio-25-07-2026.md` antes de producao.
+- o Gate Financeiro F0 foi implementado e validado; o proximo marco
+  transacional e A2, descrito em
+  `docs/architecture/relatorio-25-07-2026.md`.
 
 ## 1. Objetivo
 
@@ -210,13 +211,13 @@ Admin:
 
 Existe uma diferenca deliberada entre nomenclatura comercial/UX e identificadores tecnicos.
 
-| Camada                | Plano 1            | Plano 2                 | Plano 3                          |
-| --------------------- | ------------------ | ----------------------- | -------------------------------- |
-| Nome comercial atual  | Basico / Free      | Premium                 | Premium Plus                     |
-| Alias legado          | `/basico/**`       | `/pro/**`               | `/plus/**`                       |
-| Enum tecnico atual    | `free`             | `premium`               | `premium_plus`                   |
-| Rotas canonicas       | `/terapeuta/**`    | `/terapeuta/**`         | `/terapeuta/**`                  |
-| Papel                 | Operacao essencial | Operacao + inteligencia | Operacao + inteligencia + gestao |
+| Camada               | Plano 1            | Plano 2                 | Plano 3                          |
+| -------------------- | ------------------ | ----------------------- | -------------------------------- |
+| Nome comercial atual | Basico / Free      | Premium                 | Premium Plus                     |
+| Alias legado         | `/basico/**`       | `/pro/**`               | `/plus/**`                       |
+| Enum tecnico atual   | `free`             | `premium`               | `premium_plus`                   |
+| Rotas canonicas      | `/terapeuta/**`    | `/terapeuta/**`         | `/terapeuta/**`                  |
+| Papel                | Operacao essencial | Operacao + inteligencia | Operacao + inteligencia + gestao |
 
 Regra: o codigo deve usar `free`, `premium`, `premium_plus`. A interface deve
 tratar Premium e Premium Plus como nomes comerciais. Plano e capability
@@ -477,14 +478,14 @@ Usuario acessa /sua-jornada
 
 ### 8.3 Regras de selecao
 
-| Criterio                     | Regra atual                    | Observação                      |
-| ---------------------------- | ------------------------------ | ------------------------------- |
-| Minimo de temas              | 1                              | Validado no frontend e backend. |
-| Maximo de temas              | 3                              | Validado no frontend e backend. |
-| Minimo de interesses         | 0                              | Interesses são opcionais.       |
-| Maximo de interesses         | 3 por tema                     | Validado no backend.            |
-| Botao de resultado           | liberado com pelo menos 1 tema | Sem tema não calcula.           |
-| Multiplicador de interesses  | `1.4`                          | Interesse é mais específico que tema. |
+| Criterio                     | Regra atual                    | Observação                                    |
+| ---------------------------- | ------------------------------ | --------------------------------------------- |
+| Minimo de temas              | 1                              | Validado no frontend e backend.               |
+| Maximo de temas              | 3                              | Validado no frontend e backend.               |
+| Minimo de interesses         | 0                              | Interesses são opcionais.                     |
+| Maximo de interesses         | 3 por tema                     | Validado no backend.                          |
+| Botao de resultado           | liberado com pelo menos 1 tema | Sem tema não calcula.                         |
+| Multiplicador de interesses  | `1.4`                          | Interesse é mais específico que tema.         |
 | Tabelas especificas de match | `matching_*`                   | Substituem o uso público de `therapy_themes`. |
 
 Regra de linguagem: usar “Tema” e “Interesse” na UI; não usar “subtema”.
@@ -1150,6 +1151,8 @@ Planos pagos usam Stripe Billing.
 Eventos principais:
 
 - `checkout.session.completed`;
+- `checkout.session.async_payment_succeeded`;
+- `checkout.session.async_payment_failed`;
 - `customer.subscription.created`;
 - `customer.subscription.updated`;
 - `customer.subscription.deleted`;
@@ -1238,12 +1241,19 @@ O ledger deve separar:
 Eventos recomendados:
 
 - `checkout.session.completed`;
+- `checkout.session.async_payment_succeeded`;
+- `checkout.session.async_payment_failed`;
+- `payment_intent.processing`;
 - `payment_intent.succeeded`;
 - `payment_intent.payment_failed`;
 - `charge.refunded`;
+- `refund.created`;
+- `refund.updated`;
+- `refund.failed`;
 - `charge.dispute.created`;
-- `account.updated`;
-- `transfer.created`;
+- `account.updated` e eventos thin `v2.core.account*`;
+- `transfer.updated`;
+- `transfer.reversed`;
 - `balance_transaction.updated`;
 - `invoice.paid`;
 - `invoice.payment_failed`;
@@ -1464,7 +1474,7 @@ Para alinhar completamente com os PDFs, ainda faltam ou precisam evoluir:
 - criar conta Express;
 - criar account link;
 - consultar status;
-- tratar `account.updated`.
+- tratar `account.updated` e eventos thin `v2.core.account*`.
 
 `SessionPaymentService`:
 

@@ -35,7 +35,9 @@ runtime.serve(async (request) => {
       config.serviceRoleKey,
     );
     const stripe = createStripeClient(config.stripeApiKey);
-    const { profile: therapist } = await requireTherapist(client, request);
+    const { profile: therapist } = await requireTherapist(client, request, {
+      allowBlockedStatus: true,
+    });
     const customers = await client.get<StripeCustomerRow[]>(
       `/rest/v1/stripe_customers?select=stripe_customer_id&therapist_profile_id=eq.${encodeURIComponent(
         therapist.id,

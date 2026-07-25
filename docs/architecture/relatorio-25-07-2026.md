@@ -2,7 +2,7 @@
 
 Data da revisão: 2026-07-25
 
-Status: Fase Agenda 1 implementada; Gate Financeiro F0 permanece pendente
+Status: Fase Agenda 1 e Gate Financeiro F0 implementados; A2 é o próximo marco
 
 Escopo: shell autenticado, Agenda, Sessões e contratos compartilhados
 
@@ -328,19 +328,19 @@ Uma entidade separada passa a fazer sentido quando houver:
 
 ### 6.3 Integrações
 
-| Integração                 | Estado verificado                                                 |
-| -------------------------- | ----------------------------------------------------------------- |
-| Supabase Auth              | Implementado                                                      |
-| Supabase RLS               | Parcialmente implementado                                         |
-| Dashboard RPC              | Implementado                                                      |
-| Match determinístico       | Implementado                                                      |
-| Stripe Checkout de sessão  | Implementado; confirmação assíncrona precisa de hardening         |
-| Stripe Billing funcional   | Implementado em test mode; não homologado para produção           |
-| Stripe Connect             | Accounts v2 implementado; webhook v2 incompleto                   |
-| Webhooks Stripe            | Assinados e idempotentes na base; concorrência e ordem pendentes  |
-| Zoom                       | Não identificado nos arquivos analisados.                         |
-| Ledger e repasses          | Estrutura e funções implementadas; conciliação/reversão pendentes |
-| Observabilidade definitiva | Não identificado nos arquivos analisados.                         |
+| Integração                 | Estado verificado                                              |
+| -------------------------- | -------------------------------------------------------------- |
+| Supabase Auth              | Implementado                                                   |
+| Supabase RLS               | Parcialmente implementado                                      |
+| Dashboard RPC              | Implementado                                                   |
+| Match determinístico       | Implementado                                                   |
+| Stripe Checkout de sessão  | Implementado com confirmação síncrona e assíncrona             |
+| Stripe Billing funcional   | Implementado em test mode; E2E Stripe ainda não homologado     |
+| Stripe Connect             | Accounts v2 com eventos snapshot e thin implementado           |
+| Webhooks Stripe            | Assinados, reservados atomicamente, idempotentes e ordenados   |
+| Zoom                       | Não identificado nos arquivos analisados.                      |
+| Ledger e repasses          | Ledger, Charge de origem, conciliação e reversão implementados |
+| Observabilidade definitiva | Não identificado nos arquivos analisados.                      |
 
 ## 7. Fontes de verdade e estados
 
@@ -579,16 +579,16 @@ Regras:
 
 ### 11.1 Estado atual
 
-`session_payments` já foi criado como fonte financeira canônica. Durante a
-transição, ainda existem representações legadas:
+`session_payments` é a fonte financeira canônica. Permanecem representações
+legadas somente como projeções de compatibilidade:
 
 - `payments`;
 - `bookings.payment_status`;
 - `booking_payment_receipts`.
 
-O webhook atual sincroniza parcialmente `payments` e `bookings.payment_status`,
-mas ainda não atualiza `booking_payment_receipts` nem realiza backfill completo
-dos registros anteriores à migration financeira.
+O Gate F0 adicionou backfill idempotente, projeção transacional para
+`payments`, `bookings.payment_status` e `booking_payment_receipts`, além de
+revogar escrita direta de `service_role` em `payments`.
 
 Também já existem:
 
@@ -602,28 +602,30 @@ Também já existem:
 - transfers e reversões modeladas;
 - registro idempotente de eventos Stripe.
 
-### 11.2 Estratégia de consolidação
+### 11.2 Resultado do Gate F0
 
-1. manter `session_payments` como única fonte transacional;
-2. migrar dados equivalentes de `payments`;
-3. impedir novas escritas independentes nas representações legadas;
-4. manter compatibilidade temporária por view, trigger ou projeção explícita;
-5. derivar recibos da fonte canônica;
-6. manter `bookings.payment_status` somente como projeção sincronizada;
-7. validar `payment_status` antes de confirmar Checkout;
-8. tratar pagamentos assíncronos;
-9. tornar a reserva de webhook atômica e resistente a concorrência;
-10. proteger assinaturas contra eventos fora de ordem;
-11. resolver plano pelo Price ID efetivo, não apenas por metadata;
-12. tratar eventos Accounts v2 e capability status;
-13. vincular transfers à cobrança com `source_transaction` ou documentar a
-    política operacional de saldo da plataforma;
-14. registrar lançamentos compensatórios para refunds, disputas e reversões;
-15. criar read models financeiros seguros para paciente, terapeuta e admin;
-16. validar permissões financeiras por papel, status e ownership.
+1. `session_payments` mantido como única fonte transacional;
+2. dados equivalentes de `payments` importados com política legada explícita;
+3. projeções sincronizadas por trigger e escrita direta de `service_role`
+   revogada em `payments`;
+4. Checkout só confirma sessão quando `payment_status = paid`;
+5. pagamentos assíncronos e `payment_intent.processing` tratados;
+6. reserva de webhook atômica, com lease, retry e proteção concorrente;
+7. pagamentos e assinaturas protegidos contra eventos fora de ordem;
+8. plano resolvido pelo Price ID efetivo;
+9. eventos snapshot e thin de Accounts v2 tratados;
+10. terapeuta `suspended` ou `rejected` bloqueado nas operações financeiras,
+    preservando somente Billing Portal e cancelamento;
+11. repasse exige terapeuta aprovado, Connect pronto, Charge reconciliada e
+    usa `source_transaction`;
+12. refunds, disputas ganhas e reversões geram ledger compensatório;
+13. reconciliação recupera Charge, Balance Transaction, taxa e valor líquido;
+14. RLS de ownership e funções SQL privadas cobertas por pgTAP.
 
-Esse trabalho compõe o Gate Financeiro F0. Ele pode evoluir em paralelo à Fase
-Agenda 1, mas bloqueia qualquer ativação financeira em produção.
+Trade-off: o webhook ainda processa o evento dentro da Edge Function após
+reservá-lo no inbox SQL. Uma fila assíncrona dedicada continua recomendada antes
+de volume alto, mas não é necessária para iniciar A2 nem altera os invariantes
+financeiros agora garantidos.
 
 ## 12. Compatibilidade entre os shells
 
@@ -707,22 +709,22 @@ Não expor automaticamente:
 Para não conflitar com as fases globais de `project.md`, este módulo usa o
 prefixo `A`.
 
-| Marco | Objetivo                              |
-| ----- | ------------------------------------- |
-| A0    | Auditoria e decisões                  |
-| F0    | Hardening financeiro para produção    |
-| A1    | Rotas e contratos compartilhados      |
-| A2    | Banco, RLS e funções transacionais    |
-| A3    | Horários                              |
-| A4    | Bloqueios                             |
-| A5    | Motor autoritativo de slots           |
-| A6    | Hold e criação de booking             |
-| A7    | Calendário do terapeuta               |
-| A8    | Compatibilidade integral com paciente |
-| A9    | Sala online e presença                |
-| A10   | Reagendamento e cancelamento          |
-| A11   | Pós-sessão, financeiro e repasse      |
-| A12   | Insights                              |
+| Marco | Objetivo                                       |
+| ----- | ---------------------------------------------- |
+| A0    | Auditoria e decisões                           |
+| F0    | Hardening financeiro para produção (concluído) |
+| A1    | Rotas e contratos compartilhados (concluído)   |
+| A2    | Banco, RLS e funções transacionais             |
+| A3    | Horários                                       |
+| A4    | Bloqueios                                      |
+| A5    | Motor autoritativo de slots                    |
+| A6    | Hold e criação de booking                      |
+| A7    | Calendário do terapeuta                        |
+| A8    | Compatibilidade integral com paciente          |
+| A9    | Sala online e presença                         |
+| A10   | Reagendamento e cancelamento                   |
+| A11   | Pós-sessão, financeiro e repasse               |
+| A12   | Insights                                       |
 
 ## 15. Fase Agenda 1 - Rotas e contratos compartilhados
 
@@ -753,7 +755,7 @@ Resultado em 2026-07-25:
 - worktree conhecido;
 - Supabase local disponível para validação;
 - nenhuma dependência nova sem aprovação;
-- blockers do Gate F0 registrados, ainda que tratados em trilha paralela.
+- Gate F0 concluído e validado antes do início de A2.
 
 ### 15.3 Pacote A1.1 - ADRs
 
@@ -1113,8 +1115,8 @@ alterados.
 - reunião protegida;
 - evolução de reagendamento;
 - RLS e testes SQL;
-- migrations financeiras complementares somente quando o Gate F0 comprovar
-  necessidade; estruturas equivalentes existentes devem ser reutilizadas.
+- reutilização dos invariantes financeiros concluídos no Gate F0, sem criar
+  estruturas paralelas para cobrança, ledger ou repasse.
 
 ### A3 - Horários
 

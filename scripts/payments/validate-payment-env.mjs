@@ -101,11 +101,18 @@ function platformWebhookCheck() {
 }
 
 function connectWebhookCheck() {
-  return check("STRIPE_CONNECT_WEBHOOK_SECRET or STRIPE_WEBHOOK_SECRET", () =>
-    Boolean(
-      process.env.STRIPE_CONNECT_WEBHOOK_SECRET ??
-      process.env.STRIPE_WEBHOOK_SECRET,
-    ),
+  return check(
+    "STRIPE_CONNECT_WEBHOOK_SECRET and STRIPE_CONNECT_V2_WEBHOOK_SECRET (or fallback)",
+    () =>
+      Boolean(
+        process.env.STRIPE_CONNECT_WEBHOOK_SECRET ??
+        process.env.STRIPE_WEBHOOK_SECRET,
+      ) &&
+      Boolean(
+        process.env.STRIPE_CONNECT_V2_WEBHOOK_SECRET ??
+        process.env.STRIPE_CONNECT_WEBHOOK_SECRET ??
+        process.env.STRIPE_WEBHOOK_SECRET,
+      ),
   );
 }
 

@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -333,6 +333,197 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      billing_invoices: {
+        Row: {
+          amount_due_cents: number
+          amount_paid_cents: number
+          created_at: string
+          currency: string
+          due_at: string | null
+          hosted_invoice_url: string | null
+          id: string
+          invoice_pdf: string | null
+          metadata: Json
+          paid_at: string | null
+          status: string
+          stripe_customer_id: string | null
+          stripe_invoice_id: string
+          stripe_subscription_id: string | null
+          therapist_profile_id: string | null
+          therapist_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_due_cents?: number
+          amount_paid_cents?: number
+          created_at?: string
+          currency?: string
+          due_at?: string | null
+          hosted_invoice_url?: string | null
+          id?: string
+          invoice_pdf?: string | null
+          metadata?: Json
+          paid_at?: string | null
+          status: string
+          stripe_customer_id?: string | null
+          stripe_invoice_id: string
+          stripe_subscription_id?: string | null
+          therapist_profile_id?: string | null
+          therapist_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_due_cents?: number
+          amount_paid_cents?: number
+          created_at?: string
+          currency?: string
+          due_at?: string | null
+          hosted_invoice_url?: string | null
+          id?: string
+          invoice_pdf?: string | null
+          metadata?: Json
+          paid_at?: string | null
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_invoice_id?: string
+          stripe_subscription_id?: string | null
+          therapist_profile_id?: string | null
+          therapist_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_invoices_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_invoices_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_invoices_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "billing_invoices_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_invoices_therapist_subscription_id_fkey"
+            columns: ["therapist_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_plan_prices: {
+        Row: {
+          created_at: string
+          currency: string
+          environment: string
+          id: string
+          interval: Database["public"]["Enums"]["billing_interval"] | null
+          is_active: boolean
+          metadata: Json
+          plan_id: string
+          stripe_livemode: boolean
+          stripe_lookup_key: string | null
+          stripe_price_id: string | null
+          stripe_product_id: string | null
+          unit_amount_cents: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          environment?: string
+          id?: string
+          interval?: Database["public"]["Enums"]["billing_interval"] | null
+          is_active?: boolean
+          metadata?: Json
+          plan_id: string
+          stripe_livemode?: boolean
+          stripe_lookup_key?: string | null
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          unit_amount_cents: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          environment?: string
+          id?: string
+          interval?: Database["public"]["Enums"]["billing_interval"] | null
+          is_active?: boolean
+          metadata?: Json
+          plan_id?: string
+          stripe_livemode?: boolean
+          stripe_lookup_key?: string | null
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          unit_amount_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_plan_prices_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "billing_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_plans: {
+        Row: {
+          code: Database["public"]["Enums"]["therapist_plan"]
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_paid: boolean
+          metadata: Json
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          code: Database["public"]["Enums"]["therapist_plan"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_paid?: boolean
+          metadata?: Json
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          code?: Database["public"]["Enums"]["therapist_plan"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_paid?: boolean
+          metadata?: Json
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       booking_events: {
         Row: {
@@ -1162,6 +1353,230 @@ export type Database = {
           },
         ]
       }
+      financial_ledger_entries: {
+        Row: {
+          amount_cents: number
+          booking_id: string | null
+          currency: string
+          direction: Database["public"]["Enums"]["financial_ledger_direction"]
+          entry_type: Database["public"]["Enums"]["financial_ledger_entry_type"]
+          id: string
+          metadata: Json
+          occurred_at: string
+          patient_profile_id: string | null
+          payout_batch_id: string | null
+          profile_id: string | null
+          recorded_at: string
+          session_payment_id: string | null
+          source_external_id: string | null
+          source_id: string | null
+          source_table: string | null
+          stripe_event_id: string | null
+          stripe_transfer_id: string | null
+          therapist_profile_id: string | null
+        }
+        Insert: {
+          amount_cents: number
+          booking_id?: string | null
+          currency?: string
+          direction: Database["public"]["Enums"]["financial_ledger_direction"]
+          entry_type: Database["public"]["Enums"]["financial_ledger_entry_type"]
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          patient_profile_id?: string | null
+          payout_batch_id?: string | null
+          profile_id?: string | null
+          recorded_at?: string
+          session_payment_id?: string | null
+          source_external_id?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          stripe_event_id?: string | null
+          stripe_transfer_id?: string | null
+          therapist_profile_id?: string | null
+        }
+        Update: {
+          amount_cents?: number
+          booking_id?: string | null
+          currency?: string
+          direction?: Database["public"]["Enums"]["financial_ledger_direction"]
+          entry_type?: Database["public"]["Enums"]["financial_ledger_entry_type"]
+          id?: string
+          metadata?: Json
+          occurred_at?: string
+          patient_profile_id?: string | null
+          payout_batch_id?: string | null
+          profile_id?: string | null
+          recorded_at?: string
+          session_payment_id?: string | null
+          source_external_id?: string | null
+          source_id?: string | null
+          source_table?: string | null
+          stripe_event_id?: string | null
+          stripe_transfer_id?: string | null
+          therapist_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_ledger_entries_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_patient_profile_id_fkey"
+            columns: ["patient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "patient_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_payout_batch_id_fkey"
+            columns: ["payout_batch_id"]
+            isOneToOne: false
+            referencedRelation: "payout_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_session_payment_id_fkey"
+            columns: ["session_payment_id"]
+            isOneToOne: false
+            referencedRelation: "session_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_stripe_transfer_id_fkey"
+            columns: ["stripe_transfer_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_transfers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_policy_versions: {
+        Row: {
+          auto_confirmation_days: number
+          cancellation_policy_key: string
+          created_at: string
+          currency: string
+          downgrade_behavior: string
+          effective_from: string
+          effective_until: string | null
+          free_cancellation_hours: number
+          id: string
+          is_active: boolean
+          late_cancellation_retention_bps: number
+          manual_review_response_days: number
+          metadata: Json
+          no_show_retention_bps: number
+          payout_batch_rule: string
+          platform_commission_bps: number
+          proration_policy_key: string
+          refund_policy_key: string
+          refund_processing_business_days: number
+          subscription_cancellation_behavior: string
+          timezone: string
+          transfer_safety_period_days: number
+          upgrade_proration_behavior: string
+          version: string
+          weekly_batch_time: string
+          weekly_batch_weekday: number
+        }
+        Insert: {
+          auto_confirmation_days?: number
+          cancellation_policy_key?: string
+          created_at?: string
+          currency?: string
+          downgrade_behavior?: string
+          effective_from?: string
+          effective_until?: string | null
+          free_cancellation_hours?: number
+          id?: string
+          is_active?: boolean
+          late_cancellation_retention_bps?: number
+          manual_review_response_days?: number
+          metadata?: Json
+          no_show_retention_bps?: number
+          payout_batch_rule?: string
+          platform_commission_bps?: number
+          proration_policy_key?: string
+          refund_policy_key?: string
+          refund_processing_business_days?: number
+          subscription_cancellation_behavior?: string
+          timezone?: string
+          transfer_safety_period_days?: number
+          upgrade_proration_behavior?: string
+          version: string
+          weekly_batch_time?: string
+          weekly_batch_weekday?: number
+        }
+        Update: {
+          auto_confirmation_days?: number
+          cancellation_policy_key?: string
+          created_at?: string
+          currency?: string
+          downgrade_behavior?: string
+          effective_from?: string
+          effective_until?: string | null
+          free_cancellation_hours?: number
+          id?: string
+          is_active?: boolean
+          late_cancellation_retention_bps?: number
+          manual_review_response_days?: number
+          metadata?: Json
+          no_show_retention_bps?: number
+          payout_batch_rule?: string
+          platform_commission_bps?: number
+          proration_policy_key?: string
+          refund_policy_key?: string
+          refund_processing_business_days?: number
+          subscription_cancellation_behavior?: string
+          timezone?: string
+          transfer_safety_period_days?: number
+          upgrade_proration_behavior?: string
+          version?: string
+          weekly_batch_time?: string
+          weekly_batch_weekday?: number
+        }
+        Relationships: []
+      }
       matching_interests: {
         Row: {
           created_at: string
@@ -1790,6 +2205,261 @@ export type Database = {
           },
         ]
       }
+      payout_batch_items: {
+        Row: {
+          amount_cents: number
+          booking_id: string
+          created_at: string
+          currency: string
+          failure_code: string | null
+          failure_message: string | null
+          id: string
+          metadata: Json
+          payout_batch_id: string
+          payout_batch_therapist_id: string | null
+          session_payment_id: string
+          status: Database["public"]["Enums"]["payout_batch_item_status"]
+          therapist_profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          booking_id: string
+          created_at?: string
+          currency?: string
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          metadata?: Json
+          payout_batch_id: string
+          payout_batch_therapist_id?: string | null
+          session_payment_id: string
+          status?: Database["public"]["Enums"]["payout_batch_item_status"]
+          therapist_profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          booking_id?: string
+          created_at?: string
+          currency?: string
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          metadata?: Json
+          payout_batch_id?: string
+          payout_batch_therapist_id?: string | null
+          session_payment_id?: string
+          status?: Database["public"]["Enums"]["payout_batch_item_status"]
+          therapist_profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_batch_items_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_batch_items_payout_batch_id_fkey"
+            columns: ["payout_batch_id"]
+            isOneToOne: false
+            referencedRelation: "payout_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_batch_items_payout_batch_therapist_id_fkey"
+            columns: ["payout_batch_therapist_id"]
+            isOneToOne: false
+            referencedRelation: "payout_batch_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_batch_items_session_payment_id_fkey"
+            columns: ["session_payment_id"]
+            isOneToOne: false
+            referencedRelation: "session_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_batch_items_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_batch_items_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_batch_items_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "payout_batch_items_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payout_batch_therapists: {
+        Row: {
+          connect_account_id: string | null
+          created_at: string
+          id: string
+          item_count: number
+          metadata: Json
+          payout_batch_id: string
+          status: Database["public"]["Enums"]["payout_batch_item_status"]
+          therapist_profile_id: string
+          total_amount_cents: number
+          updated_at: string
+        }
+        Insert: {
+          connect_account_id?: string | null
+          created_at?: string
+          id?: string
+          item_count?: number
+          metadata?: Json
+          payout_batch_id: string
+          status?: Database["public"]["Enums"]["payout_batch_item_status"]
+          therapist_profile_id: string
+          total_amount_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          connect_account_id?: string | null
+          created_at?: string
+          id?: string
+          item_count?: number
+          metadata?: Json
+          payout_batch_id?: string
+          status?: Database["public"]["Enums"]["payout_batch_item_status"]
+          therapist_profile_id?: string
+          total_amount_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_batch_therapists_connect_account_id_fkey"
+            columns: ["connect_account_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_connect_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_batch_therapists_payout_batch_id_fkey"
+            columns: ["payout_batch_id"]
+            isOneToOne: false
+            referencedRelation: "payout_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_batch_therapists_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_batch_therapists_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_batch_therapists_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "payout_batch_therapists_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payout_batches: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          currency: string
+          cutoff_at: string
+          gross_amount_cents: number
+          id: string
+          item_count: number
+          metadata: Json
+          platform_gross_commission_cents: number
+          processed_at: string | null
+          reference_period_end: string
+          reference_period_start: string
+          status: Database["public"]["Enums"]["payout_batch_status"]
+          therapist_amount_cents: number
+          therapist_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          cutoff_at: string
+          gross_amount_cents?: number
+          id?: string
+          item_count?: number
+          metadata?: Json
+          platform_gross_commission_cents?: number
+          processed_at?: string | null
+          reference_period_end: string
+          reference_period_start: string
+          status?: Database["public"]["Enums"]["payout_batch_status"]
+          therapist_amount_cents?: number
+          therapist_count?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          cutoff_at?: string
+          gross_amount_cents?: number
+          id?: string
+          item_count?: number
+          metadata?: Json
+          platform_gross_commission_cents?: number
+          processed_at?: string | null
+          reference_period_end?: string
+          reference_period_start?: string
+          status?: Database["public"]["Enums"]["payout_batch_status"]
+          therapist_amount_cents?: number
+          therapist_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payout_batches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pre_checkout_intakes: {
         Row: {
           booking_id: string | null
@@ -2072,6 +2742,871 @@ export type Database = {
           },
         ]
       }
+      session_cancellation_decisions: {
+        Row: {
+          booking_id: string
+          created_at: string
+          decision: string
+          id: string
+          metadata: Json
+          platform_retained_cents: number
+          policy_version_id: string | null
+          processed_at: string | null
+          reason: string
+          refund_amount_cents: number
+          requested_by_profile_id: string | null
+          requires_manual_review: boolean
+          retained_amount_cents: number
+          review_due_at: string | null
+          session_payment_id: string | null
+          therapist_retained_cents: number
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          decision: string
+          id?: string
+          metadata?: Json
+          platform_retained_cents?: number
+          policy_version_id?: string | null
+          processed_at?: string | null
+          reason: string
+          refund_amount_cents?: number
+          requested_by_profile_id?: string | null
+          requires_manual_review?: boolean
+          retained_amount_cents?: number
+          review_due_at?: string | null
+          session_payment_id?: string | null
+          therapist_retained_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          decision?: string
+          id?: string
+          metadata?: Json
+          platform_retained_cents?: number
+          policy_version_id?: string | null
+          processed_at?: string | null
+          reason?: string
+          refund_amount_cents?: number
+          requested_by_profile_id?: string | null
+          requires_manual_review?: boolean
+          retained_amount_cents?: number
+          review_due_at?: string | null
+          session_payment_id?: string | null
+          therapist_retained_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_cancellation_decisions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_cancellation_decisions_policy_version_id_fkey"
+            columns: ["policy_version_id"]
+            isOneToOne: false
+            referencedRelation: "financial_policy_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_cancellation_decisions_requested_by_profile_id_fkey"
+            columns: ["requested_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_cancellation_decisions_session_payment_id_fkey"
+            columns: ["session_payment_id"]
+            isOneToOne: false
+            referencedRelation: "session_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_disputes: {
+        Row: {
+          amount_cents: number
+          closed_at: string | null
+          created_at: string
+          currency: string
+          evidence_due_by: string | null
+          id: string
+          metadata: Json
+          opened_at: string
+          session_payment_id: string
+          status: string
+          stripe_charge_id: string | null
+          stripe_dispute_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          closed_at?: string | null
+          created_at?: string
+          currency?: string
+          evidence_due_by?: string | null
+          id?: string
+          metadata?: Json
+          opened_at?: string
+          session_payment_id: string
+          status: string
+          stripe_charge_id?: string | null
+          stripe_dispute_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          closed_at?: string | null
+          created_at?: string
+          currency?: string
+          evidence_due_by?: string | null
+          id?: string
+          metadata?: Json
+          opened_at?: string
+          session_payment_id?: string
+          status?: string
+          stripe_charge_id?: string | null
+          stripe_dispute_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_disputes_session_payment_id_fkey"
+            columns: ["session_payment_id"]
+            isOneToOne: false
+            referencedRelation: "session_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_payment_attempts: {
+        Row: {
+          created_at: string
+          id: string
+          idempotency_key: string
+          request_metadata: Json
+          response_metadata: Json
+          session_payment_id: string
+          status: string
+          stripe_checkout_session_id: string | null
+          stripe_payment_intent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          request_metadata?: Json
+          response_metadata?: Json
+          session_payment_id: string
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          request_metadata?: Json
+          response_metadata?: Json
+          session_payment_id?: string
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_payment_attempts_session_payment_id_fkey"
+            columns: ["session_payment_id"]
+            isOneToOne: false
+            referencedRelation: "session_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_payments: {
+        Row: {
+          admin_blocked_at: string | null
+          booking_id: string
+          canceled_at: string | null
+          created_at: string
+          currency: string
+          disputed_at: string | null
+          eligible_at: string | null
+          failed_at: string | null
+          financial_status: Database["public"]["Enums"]["session_financial_status"]
+          gross_amount_cents: number
+          id: string
+          internal_contested_at: string | null
+          metadata: Json
+          paid_at: string | null
+          patient_profile_id: string
+          platform_commission_bps: number
+          platform_gross_commission_cents: number
+          policy_version_id: string
+          refund_pending: boolean
+          service_confirmation_source:
+            | Database["public"]["Enums"]["session_confirmation_source"]
+            | null
+          service_confirmed_at: string | null
+          service_id: string
+          service_status: Database["public"]["Enums"]["session_service_status"]
+          stripe_balance_transaction_id: string | null
+          stripe_charge_id: string | null
+          stripe_checkout_session_id: string | null
+          stripe_customer_id: string | null
+          stripe_event_created_at: string | null
+          stripe_event_id: string | null
+          stripe_fee_amount_cents: number | null
+          stripe_net_amount_cents: number | null
+          stripe_payment_intent_id: string | null
+          therapist_amount_cents: number
+          therapist_profile_id: string
+          transfer_blocked_reason: string | null
+          transfer_status: Database["public"]["Enums"]["session_transfer_status"]
+          updated_at: string
+        }
+        Insert: {
+          admin_blocked_at?: string | null
+          booking_id: string
+          canceled_at?: string | null
+          created_at?: string
+          currency?: string
+          disputed_at?: string | null
+          eligible_at?: string | null
+          failed_at?: string | null
+          financial_status?: Database["public"]["Enums"]["session_financial_status"]
+          gross_amount_cents: number
+          id?: string
+          internal_contested_at?: string | null
+          metadata?: Json
+          paid_at?: string | null
+          patient_profile_id: string
+          platform_commission_bps: number
+          platform_gross_commission_cents: number
+          policy_version_id: string
+          refund_pending?: boolean
+          service_confirmation_source?:
+            | Database["public"]["Enums"]["session_confirmation_source"]
+            | null
+          service_confirmed_at?: string | null
+          service_id: string
+          service_status?: Database["public"]["Enums"]["session_service_status"]
+          stripe_balance_transaction_id?: string | null
+          stripe_charge_id?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_event_created_at?: string | null
+          stripe_event_id?: string | null
+          stripe_fee_amount_cents?: number | null
+          stripe_net_amount_cents?: number | null
+          stripe_payment_intent_id?: string | null
+          therapist_amount_cents: number
+          therapist_profile_id: string
+          transfer_blocked_reason?: string | null
+          transfer_status?: Database["public"]["Enums"]["session_transfer_status"]
+          updated_at?: string
+        }
+        Update: {
+          admin_blocked_at?: string | null
+          booking_id?: string
+          canceled_at?: string | null
+          created_at?: string
+          currency?: string
+          disputed_at?: string | null
+          eligible_at?: string | null
+          failed_at?: string | null
+          financial_status?: Database["public"]["Enums"]["session_financial_status"]
+          gross_amount_cents?: number
+          id?: string
+          internal_contested_at?: string | null
+          metadata?: Json
+          paid_at?: string | null
+          patient_profile_id?: string
+          platform_commission_bps?: number
+          platform_gross_commission_cents?: number
+          policy_version_id?: string
+          refund_pending?: boolean
+          service_confirmation_source?:
+            | Database["public"]["Enums"]["session_confirmation_source"]
+            | null
+          service_confirmed_at?: string | null
+          service_id?: string
+          service_status?: Database["public"]["Enums"]["session_service_status"]
+          stripe_balance_transaction_id?: string | null
+          stripe_charge_id?: string | null
+          stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_event_created_at?: string | null
+          stripe_event_id?: string | null
+          stripe_fee_amount_cents?: number | null
+          stripe_net_amount_cents?: number | null
+          stripe_payment_intent_id?: string | null
+          therapist_amount_cents?: number
+          therapist_profile_id?: string
+          transfer_blocked_reason?: string | null
+          transfer_status?: Database["public"]["Enums"]["session_transfer_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_payments_patient_profile_id_fkey"
+            columns: ["patient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "patient_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_payments_policy_version_id_fkey"
+            columns: ["policy_version_id"]
+            isOneToOne: false
+            referencedRelation: "financial_policy_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profile_services_v"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_payments_stripe_customer_id_fkey"
+            columns: ["stripe_customer_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "session_payments_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_refunds: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          id: string
+          metadata: Json
+          processed_at: string | null
+          reason: string | null
+          requested_by: string | null
+          session_payment_id: string
+          status: string
+          stripe_refund_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json
+          processed_at?: string | null
+          reason?: string | null
+          requested_by?: string | null
+          session_payment_id: string
+          status?: string
+          stripe_refund_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json
+          processed_at?: string | null
+          reason?: string | null
+          requested_by?: string | null
+          session_payment_id?: string
+          status?: string
+          stripe_refund_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_refunds_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_refunds_session_payment_id_fkey"
+            columns: ["session_payment_id"]
+            isOneToOne: false
+            referencedRelation: "session_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_service_confirmations: {
+        Row: {
+          booking_id: string
+          confirmed_at: string
+          confirmed_by_profile_id: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          policy_version_id: string | null
+          previous_service_status:
+            | Database["public"]["Enums"]["session_service_status"]
+            | null
+          review_id: string | null
+          session_payment_id: string | null
+          source: Database["public"]["Enums"]["session_confirmation_source"]
+        }
+        Insert: {
+          booking_id: string
+          confirmed_at?: string
+          confirmed_by_profile_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          policy_version_id?: string | null
+          previous_service_status?:
+            | Database["public"]["Enums"]["session_service_status"]
+            | null
+          review_id?: string | null
+          session_payment_id?: string | null
+          source: Database["public"]["Enums"]["session_confirmation_source"]
+        }
+        Update: {
+          booking_id?: string
+          confirmed_at?: string
+          confirmed_by_profile_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          policy_version_id?: string | null
+          previous_service_status?:
+            | Database["public"]["Enums"]["session_service_status"]
+            | null
+          review_id?: string | null
+          session_payment_id?: string | null
+          source?: Database["public"]["Enums"]["session_confirmation_source"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_service_confirmations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_service_confirmations_confirmed_by_profile_id_fkey"
+            columns: ["confirmed_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_service_confirmations_policy_version_id_fkey"
+            columns: ["policy_version_id"]
+            isOneToOne: false
+            referencedRelation: "financial_policy_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_service_confirmations_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_testimonials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_service_confirmations_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profile_reviews_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_service_confirmations_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_service_confirmations_session_payment_id_fkey"
+            columns: ["session_payment_id"]
+            isOneToOne: false
+            referencedRelation: "session_payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_customers: {
+        Row: {
+          created_at: string
+          email: string | null
+          environment: string
+          id: string
+          livemode: boolean
+          metadata: Json
+          patient_profile_id: string | null
+          profile_id: string
+          role: Database["public"]["Enums"]["user_role"]
+          stripe_customer_id: string
+          therapist_profile_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          environment?: string
+          id?: string
+          livemode?: boolean
+          metadata?: Json
+          patient_profile_id?: string | null
+          profile_id: string
+          role: Database["public"]["Enums"]["user_role"]
+          stripe_customer_id: string
+          therapist_profile_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          environment?: string
+          id?: string
+          livemode?: boolean
+          metadata?: Json
+          patient_profile_id?: string | null
+          profile_id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          stripe_customer_id?: string
+          therapist_profile_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_customers_patient_profile_id_fkey"
+            columns: ["patient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "patient_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_customers_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_customers_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_customers_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_customers_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "stripe_customers_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_transfer_reversals: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          id: string
+          metadata: Json
+          reason: string | null
+          status: string
+          stripe_transfer_id: string
+          stripe_transfer_reversal_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          status?: string
+          stripe_transfer_id: string
+          stripe_transfer_reversal_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+          status?: string
+          stripe_transfer_id?: string
+          stripe_transfer_reversal_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_transfer_reversals_stripe_transfer_id_fkey"
+            columns: ["stripe_transfer_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_transfers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_transfers: {
+        Row: {
+          amount_cents: number
+          connect_account_id: string
+          created_at: string
+          currency: string
+          failure_code: string | null
+          failure_message: string | null
+          id: string
+          idempotency_key: string
+          metadata: Json
+          payout_batch_item_id: string
+          session_payment_id: string
+          status: string
+          stripe_source_charge_id: string | null
+          stripe_transfer_id: string | null
+          therapist_profile_id: string
+          transferred_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          connect_account_id: string
+          created_at?: string
+          currency?: string
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          idempotency_key: string
+          metadata?: Json
+          payout_batch_item_id: string
+          session_payment_id: string
+          status?: string
+          stripe_source_charge_id?: string | null
+          stripe_transfer_id?: string | null
+          therapist_profile_id: string
+          transferred_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          connect_account_id?: string
+          created_at?: string
+          currency?: string
+          failure_code?: string | null
+          failure_message?: string | null
+          id?: string
+          idempotency_key?: string
+          metadata?: Json
+          payout_batch_item_id?: string
+          session_payment_id?: string
+          status?: string
+          stripe_source_charge_id?: string | null
+          stripe_transfer_id?: string | null
+          therapist_profile_id?: string
+          transferred_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stripe_transfers_connect_account_id_fkey"
+            columns: ["connect_account_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_connect_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_transfers_payout_batch_item_id_fkey"
+            columns: ["payout_batch_item_id"]
+            isOneToOne: true
+            referencedRelation: "payout_batch_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_transfers_session_payment_id_fkey"
+            columns: ["session_payment_id"]
+            isOneToOne: false
+            referencedRelation: "session_payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_transfers_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_transfers_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stripe_transfers_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "stripe_transfers_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stripe_webhook_events: {
+        Row: {
+          account_id: string | null
+          api_version: string | null
+          attempts: number
+          error_code: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          livemode: boolean
+          object_id: string | null
+          payload_sanitized: Json | null
+          payload_sha256: string | null
+          processed_at: string | null
+          processing_started_at: string | null
+          processing_status: Database["public"]["Enums"]["stripe_webhook_processing_status"]
+          received_at: string
+          source: string
+          stripe_event_created_at: string | null
+          stripe_event_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_id?: string | null
+          api_version?: string | null
+          attempts?: number
+          error_code?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          livemode?: boolean
+          object_id?: string | null
+          payload_sanitized?: Json | null
+          payload_sha256?: string | null
+          processed_at?: string | null
+          processing_started_at?: string | null
+          processing_status?: Database["public"]["Enums"]["stripe_webhook_processing_status"]
+          received_at?: string
+          source?: string
+          stripe_event_created_at?: string | null
+          stripe_event_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string | null
+          api_version?: string | null
+          attempts?: number
+          error_code?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          livemode?: boolean
+          object_id?: string | null
+          payload_sanitized?: Json | null
+          payload_sha256?: string | null
+          processed_at?: string | null
+          processing_started_at?: string | null
+          processing_status?: Database["public"]["Enums"]["stripe_webhook_processing_status"]
+          received_at?: string
+          source?: string
+          stripe_event_created_at?: string | null
+          stripe_event_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       structured_messages: {
         Row: {
           body: string
@@ -2299,6 +3834,139 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "therapy_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      therapist_connect_account_snapshots: {
+        Row: {
+          connect_account_id: string
+          created_at: string
+          id: string
+          snapshot: Json
+          stripe_event_id: string | null
+        }
+        Insert: {
+          connect_account_id: string
+          created_at?: string
+          id?: string
+          snapshot: Json
+          stripe_event_id?: string | null
+        }
+        Update: {
+          connect_account_id?: string
+          created_at?: string
+          id?: string
+          snapshot?: Json
+          stripe_event_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapist_connect_account_snapshots_connect_account_id_fkey"
+            columns: ["connect_account_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_connect_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      therapist_connect_accounts: {
+        Row: {
+          account_api_version: string
+          charges_enabled: boolean
+          created_at: string
+          dashboard_type: string
+          details_submitted: boolean
+          disabled_reason: string | null
+          fees_collector: string
+          id: string
+          last_synced_at: string | null
+          losses_collector: string
+          metadata: Json
+          onboarding_status: Database["public"]["Enums"]["connect_onboarding_status"]
+          operational_status: string
+          payouts_enabled: boolean
+          pending_requirements: Json
+          stripe_account_id: string
+          stripe_event_created_at: string | null
+          stripe_event_id: string | null
+          stripe_transfers_status: string
+          therapist_profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_api_version?: string
+          charges_enabled?: boolean
+          created_at?: string
+          dashboard_type?: string
+          details_submitted?: boolean
+          disabled_reason?: string | null
+          fees_collector?: string
+          id?: string
+          last_synced_at?: string | null
+          losses_collector?: string
+          metadata?: Json
+          onboarding_status?: Database["public"]["Enums"]["connect_onboarding_status"]
+          operational_status?: string
+          payouts_enabled?: boolean
+          pending_requirements?: Json
+          stripe_account_id: string
+          stripe_event_created_at?: string | null
+          stripe_event_id?: string | null
+          stripe_transfers_status?: string
+          therapist_profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_api_version?: string
+          charges_enabled?: boolean
+          created_at?: string
+          dashboard_type?: string
+          details_submitted?: boolean
+          disabled_reason?: string | null
+          fees_collector?: string
+          id?: string
+          last_synced_at?: string | null
+          losses_collector?: string
+          metadata?: Json
+          onboarding_status?: Database["public"]["Enums"]["connect_onboarding_status"]
+          operational_status?: string
+          payouts_enabled?: boolean
+          pending_requirements?: Json
+          stripe_account_id?: string
+          stripe_event_created_at?: string | null
+          stripe_event_id?: string | null
+          stripe_transfers_status?: string
+          therapist_profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapist_connect_accounts_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: true
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_connect_accounts_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: true
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_connect_accounts_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: true
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "therapist_connect_accounts_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2983,6 +4651,200 @@ export type Database = {
             columns: ["therapy_id"]
             isOneToOne: false
             referencedRelation: "therapies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      therapist_subscription_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          next_plan: Database["public"]["Enums"]["therapist_plan"] | null
+          next_status: string | null
+          previous_plan: Database["public"]["Enums"]["therapist_plan"] | null
+          previous_status: string | null
+          stripe_event_id: string | null
+          therapist_profile_id: string | null
+          therapist_subscription_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          next_plan?: Database["public"]["Enums"]["therapist_plan"] | null
+          next_status?: string | null
+          previous_plan?: Database["public"]["Enums"]["therapist_plan"] | null
+          previous_status?: string | null
+          stripe_event_id?: string | null
+          therapist_profile_id?: string | null
+          therapist_subscription_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          next_plan?: Database["public"]["Enums"]["therapist_plan"] | null
+          next_status?: string | null
+          previous_plan?: Database["public"]["Enums"]["therapist_plan"] | null
+          previous_status?: string | null
+          stripe_event_id?: string | null
+          therapist_profile_id?: string | null
+          therapist_subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapist_subscription_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_subscription_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_subscription_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "therapist_subscription_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_subscription_events_therapist_subscription_id_fkey"
+            columns: ["therapist_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      therapist_subscriptions: {
+        Row: {
+          billing_plan_id: string | null
+          billing_plan_price_id: string | null
+          cancel_at_period_end: boolean
+          canceled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          ended_at: string | null
+          id: string
+          metadata: Json
+          plan_code: Database["public"]["Enums"]["therapist_plan"]
+          status: Database["public"]["Enums"]["billing_subscription_status"]
+          stripe_checkout_session_id: string | null
+          stripe_customer_id: string | null
+          stripe_event_created_at: string | null
+          stripe_latest_invoice_id: string | null
+          stripe_subscription_id: string | null
+          therapist_profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          billing_plan_id?: string | null
+          billing_plan_price_id?: string | null
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          ended_at?: string | null
+          id?: string
+          metadata?: Json
+          plan_code: Database["public"]["Enums"]["therapist_plan"]
+          status: Database["public"]["Enums"]["billing_subscription_status"]
+          stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_event_created_at?: string | null
+          stripe_latest_invoice_id?: string | null
+          stripe_subscription_id?: string | null
+          therapist_profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          billing_plan_id?: string | null
+          billing_plan_price_id?: string | null
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          ended_at?: string | null
+          id?: string
+          metadata?: Json
+          plan_code?: Database["public"]["Enums"]["therapist_plan"]
+          status?: Database["public"]["Enums"]["billing_subscription_status"]
+          stripe_checkout_session_id?: string | null
+          stripe_customer_id?: string | null
+          stripe_event_created_at?: string | null
+          stripe_latest_invoice_id?: string | null
+          stripe_subscription_id?: string | null
+          therapist_profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapist_subscriptions_billing_plan_id_fkey"
+            columns: ["billing_plan_id"]
+            isOneToOne: false
+            referencedRelation: "billing_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_subscriptions_billing_plan_price_id_fkey"
+            columns: ["billing_plan_price_id"]
+            isOneToOne: false
+            referencedRelation: "billing_plan_prices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_subscriptions_stripe_customer_id_fkey"
+            columns: ["stripe_customer_id"]
+            isOneToOne: false
+            referencedRelation: "stripe_customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_subscriptions_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_subscriptions_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_subscriptions_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "therapist_subscriptions_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3897,6 +5759,68 @@ export type Database = {
       }
     }
     Functions: {
+      apply_session_payment_state_v1: {
+        Args: {
+          p_financial_status: Database["public"]["Enums"]["session_financial_status"]
+          p_session_payment_id: string
+          p_stripe_charge_id?: string
+          p_stripe_checkout_session_id?: string
+          p_stripe_event_created_at: string
+          p_stripe_event_id: string
+          p_stripe_payment_intent_id?: string
+        }
+        Returns: Json
+      }
+      apply_therapist_subscription_event_v1: {
+        Args: {
+          p_billing_plan_id?: string
+          p_billing_plan_price_id?: string
+          p_cancel_at_period_end?: boolean
+          p_canceled_at?: string
+          p_current_period_end?: string
+          p_current_period_start?: string
+          p_ended_at?: string
+          p_metadata?: Json
+          p_plan_code: Database["public"]["Enums"]["therapist_plan"]
+          p_status: Database["public"]["Enums"]["billing_subscription_status"]
+          p_stripe_checkout_session_id?: string
+          p_stripe_customer_id?: string
+          p_stripe_event_created_at: string
+          p_stripe_event_id: string
+          p_stripe_latest_invoice_id?: string
+          p_stripe_subscription_id: string
+          p_therapist_profile_id: string
+        }
+        Returns: Json
+      }
+      auto_confirm_sessions: { Args: { p_now?: string }; Returns: number }
+      calculate_session_cancellation_policy: {
+        Args: { p_booking_id: string; p_now?: string; p_reason?: string }
+        Returns: {
+          booking_id: string
+          decision: string
+          platform_retained_cents: number
+          policy_version_id: string
+          refund_amount_cents: number
+          requires_manual_review: boolean
+          retained_amount_cents: number
+          review_due_at: string
+          session_payment_id: string
+          therapist_retained_cents: number
+        }[]
+      }
+      calculate_session_payment_snapshot: {
+        Args: {
+          p_gross_amount_cents: number
+          p_platform_commission_bps?: number
+        }
+        Returns: {
+          gross_amount_cents: number
+          platform_commission_bps: number
+          platform_gross_commission_cents: number
+          therapist_amount_cents: number
+        }[]
+      }
       claim_auth_action_token: {
         Args: {
           p_claim_id: string
@@ -3912,9 +5836,28 @@ export type Database = {
           user_id: string
         }[]
       }
+      confirm_session_service: {
+        Args: {
+          p_booking_id: string
+          p_confirmed_by_profile_id?: string
+          p_metadata?: Json
+          p_review_id?: string
+          p_source: Database["public"]["Enums"]["session_confirmation_source"]
+        }
+        Returns: string
+      }
       consume_auth_action_token: {
         Args: { p_claim_id: string; p_token_id: string }
         Returns: boolean
+      }
+      create_weekly_payout_batch: {
+        Args: {
+          p_created_by?: string
+          p_cutoff_at?: string
+          p_reference_period_end: string
+          p_reference_period_start: string
+        }
+        Returns: string
       }
       dashboard_kpi_json: {
         Args: { current_value: number; previous_value: number }
@@ -3933,14 +5876,45 @@ export type Database = {
         Args: { candidate_id: string }
         Returns: boolean
       }
+      refresh_session_transfer_eligibility: {
+        Args: { p_now?: string; p_session_payment_id: string }
+        Returns: Database["public"]["Enums"]["session_transfer_status"]
+      }
       release_auth_action_token_claim: {
         Args: { p_claim_id: string; p_token_id: string }
         Returns: boolean
+      }
+      reserve_stripe_webhook_event_v1: {
+        Args: {
+          p_account_id: string
+          p_api_version: string
+          p_event_created_at: string
+          p_event_type: string
+          p_livemode: boolean
+          p_object_id: string
+          p_payload_sha256: string
+          p_source: string
+          p_stripe_event_id: string
+        }
+        Returns: {
+          acquired: boolean
+          processing_status: Database["public"]["Enums"]["stripe_webhook_processing_status"]
+        }[]
       }
       unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
       auth_action_purpose: "email_verification" | "password_reset"
+      billing_interval: "month" | "year"
+      billing_subscription_status:
+        | "incomplete"
+        | "incomplete_expired"
+        | "trialing"
+        | "active"
+        | "past_due"
+        | "canceled"
+        | "unpaid"
+        | "paused"
       booking_status:
         | "draft"
         | "pending_payment"
@@ -3951,8 +5925,30 @@ export type Database = {
         | "no_show_patient"
         | "no_show_therapist"
         | "refunded"
+      connect_onboarding_status:
+        | "not_started"
+        | "account_created"
+        | "onboarding_started"
+        | "requirements_due"
+        | "ready"
+        | "restricted"
+        | "disabled"
       email_delivery_status: "success" | "error" | "skipped"
       email_provider_key: "hostinger_mail_api"
+      financial_ledger_direction: "debit" | "credit"
+      financial_ledger_entry_type:
+        | "session_gross_payment"
+        | "therapist_payable"
+        | "platform_gross_commission"
+        | "stripe_fee"
+        | "refund"
+        | "adjustment"
+        | "transfer"
+        | "transfer_reversal"
+        | "dispute"
+        | "loss"
+        | "recovery"
+        | "subscription_revenue"
       match_source: "journey" | "therapy_page" | "therapist_search"
       matching_version_status: "draft" | "published" | "archived"
       message_context:
@@ -3968,8 +5964,62 @@ export type Database = {
         | "refunded"
         | "partially_refunded"
         | "cancelled"
+      payout_batch_item_status:
+        | "reserved"
+        | "transfer_pending"
+        | "transferred"
+        | "failed"
+        | "blocked"
+        | "removed"
+      payout_batch_status:
+        | "draft"
+        | "open"
+        | "processing"
+        | "partially_failed"
+        | "completed"
+        | "canceled"
       review_status: "pending" | "published" | "hidden" | "reported" | "removed"
       service_status: "draft" | "active" | "paused" | "archived"
+      session_confirmation_source:
+        | "patient_review"
+        | "therapist_manual"
+        | "automatic"
+        | "admin"
+      session_financial_status:
+        | "pending"
+        | "processing"
+        | "paid"
+        | "failed"
+        | "canceled"
+        | "partially_refunded"
+        | "refunded"
+        | "disputed"
+      session_service_status:
+        | "scheduled"
+        | "occurred_pending_confirmation"
+        | "confirmed_by_patient_review"
+        | "confirmed_by_therapist"
+        | "auto_confirmed"
+        | "contested"
+        | "canceled"
+        | "not_performed"
+      session_transfer_status:
+        | "not_eligible"
+        | "waiting_confirmation"
+        | "waiting_safety_period"
+        | "eligible"
+        | "batched"
+        | "transfer_pending"
+        | "transferred"
+        | "blocked"
+        | "reversed"
+        | "failed"
+      stripe_webhook_processing_status:
+        | "received"
+        | "processing"
+        | "processed"
+        | "failed"
+        | "ignored"
       therapist_plan: "free" | "premium" | "premium_plus"
       therapist_status:
         | "draft"
@@ -4110,6 +6160,17 @@ export const Constants = {
   public: {
     Enums: {
       auth_action_purpose: ["email_verification", "password_reset"],
+      billing_interval: ["month", "year"],
+      billing_subscription_status: [
+        "incomplete",
+        "incomplete_expired",
+        "trialing",
+        "active",
+        "past_due",
+        "canceled",
+        "unpaid",
+        "paused",
+      ],
       booking_status: [
         "draft",
         "pending_payment",
@@ -4121,8 +6182,32 @@ export const Constants = {
         "no_show_therapist",
         "refunded",
       ],
+      connect_onboarding_status: [
+        "not_started",
+        "account_created",
+        "onboarding_started",
+        "requirements_due",
+        "ready",
+        "restricted",
+        "disabled",
+      ],
       email_delivery_status: ["success", "error", "skipped"],
       email_provider_key: ["hostinger_mail_api"],
+      financial_ledger_direction: ["debit", "credit"],
+      financial_ledger_entry_type: [
+        "session_gross_payment",
+        "therapist_payable",
+        "platform_gross_commission",
+        "stripe_fee",
+        "refund",
+        "adjustment",
+        "transfer",
+        "transfer_reversal",
+        "dispute",
+        "loss",
+        "recovery",
+        "subscription_revenue",
+      ],
       match_source: ["journey", "therapy_page", "therapist_search"],
       matching_version_status: ["draft", "published", "archived"],
       message_context: [
@@ -4140,8 +6225,69 @@ export const Constants = {
         "partially_refunded",
         "cancelled",
       ],
+      payout_batch_item_status: [
+        "reserved",
+        "transfer_pending",
+        "transferred",
+        "failed",
+        "blocked",
+        "removed",
+      ],
+      payout_batch_status: [
+        "draft",
+        "open",
+        "processing",
+        "partially_failed",
+        "completed",
+        "canceled",
+      ],
       review_status: ["pending", "published", "hidden", "reported", "removed"],
       service_status: ["draft", "active", "paused", "archived"],
+      session_confirmation_source: [
+        "patient_review",
+        "therapist_manual",
+        "automatic",
+        "admin",
+      ],
+      session_financial_status: [
+        "pending",
+        "processing",
+        "paid",
+        "failed",
+        "canceled",
+        "partially_refunded",
+        "refunded",
+        "disputed",
+      ],
+      session_service_status: [
+        "scheduled",
+        "occurred_pending_confirmation",
+        "confirmed_by_patient_review",
+        "confirmed_by_therapist",
+        "auto_confirmed",
+        "contested",
+        "canceled",
+        "not_performed",
+      ],
+      session_transfer_status: [
+        "not_eligible",
+        "waiting_confirmation",
+        "waiting_safety_period",
+        "eligible",
+        "batched",
+        "transfer_pending",
+        "transferred",
+        "blocked",
+        "reversed",
+        "failed",
+      ],
+      stripe_webhook_processing_status: [
+        "received",
+        "processing",
+        "processed",
+        "failed",
+        "ignored",
+      ],
       therapist_plan: ["free", "premium", "premium_plus"],
       therapist_status: [
         "draft",

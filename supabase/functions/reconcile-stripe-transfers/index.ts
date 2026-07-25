@@ -35,12 +35,74 @@ runtime.serve(async (request) => {
       config.serviceRoleKey,
     );
     const stripe = createStripeClient(config.stripeApiKey);
+    const paymentRows = await client.get<
+      Array<{
+        id: string;
+        stripe_payment_intent_id: string;
+        transfer_blocked_reason: string | null;
+      }>
+    >(
+      "/rest/v1/session_payments?select=id,stripe_payment_intent_id,transfer_blocked_reason&financial_status=eq.paid&stripe_payment_intent_id=not.is.null&stripe_charge_id=is.null&limit=50",
+    );
+    const paymentsReconciled = [];
+
+    for (const payment of paymentRows) {
+      const paymentIntent = await stripe.paymentIntents.retrieve(
+        payment.stripe_payment_intent_id,
+        { expand: ["latest_charge.balance_transaction"] },
+      );
+      const latestCharge = asRecord(paymentIntent.latest_charge);
+      const chargeId =
+        typeof paymentIntent.latest_charge === "string"
+          ? paymentIntent.latest_charge
+          : stringOrNull(latestCharge.id);
+
+      if (paymentIntent.status !== "succeeded" || !chargeId) {
+        paymentsReconciled.push({
+          paymentId: payment.id,
+          reconciled: false,
+          status: paymentIntent.status,
+        });
+        continue;
+      }
+
+      const balanceTransaction = asRecord(latestCharge.balance_transaction);
+      await client.patch(
+        `/rest/v1/session_payments?id=eq.${encodeURIComponent(payment.id)}`,
+        {
+          stripe_balance_transaction_id: stringOrNull(balanceTransaction.id),
+          stripe_charge_id: chargeId,
+          stripe_fee_amount_cents: numberOrNull(balanceTransaction.fee),
+          stripe_net_amount_cents: numberOrNull(balanceTransaction.net),
+          transfer_blocked_reason:
+            payment.transfer_blocked_reason ===
+            "source_charge_reconciliation_required"
+              ? null
+              : payment.transfer_blocked_reason,
+          transfer_status:
+            payment.transfer_blocked_reason ===
+            "source_charge_reconciliation_required"
+              ? "waiting_confirmation"
+              : undefined,
+        },
+        "return=minimal",
+      );
+      await client.rpc("refresh_session_transfer_eligibility", {
+        p_session_payment_id: payment.id,
+      });
+      paymentsReconciled.push({
+        chargeId,
+        paymentId: payment.id,
+        reconciled: true,
+      });
+    }
+
     const rows = await client.get<
       Array<{ id: string; stripe_transfer_id: string }>
     >(
       "/rest/v1/stripe_transfers?select=id,stripe_transfer_id&stripe_transfer_id=not.is.null&status=in.(pending,failed)&limit=50",
     );
-    const reconciled = [];
+    const transfersReconciled = [];
 
     for (const row of rows) {
       const transfer = await stripe.transfers.retrieve(row.stripe_transfer_id);
@@ -55,13 +117,27 @@ runtime.serve(async (request) => {
         },
         "return=minimal",
       );
-      reconciled.push({ status, transferId: row.stripe_transfer_id });
+      transfersReconciled.push({ status, transferId: row.stripe_transfer_id });
     }
 
-    return success({ reconciled });
+    return success({ paymentsReconciled, transfersReconciled });
   } catch (error) {
     return failure(error, requestId);
   }
 });
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function stringOrNull(value: unknown) {
+  return typeof value === "string" ? value : null;
+}
+
+function numberOrNull(value: unknown) {
+  return typeof value === "number" ? value : null;
+}
 
 export {};

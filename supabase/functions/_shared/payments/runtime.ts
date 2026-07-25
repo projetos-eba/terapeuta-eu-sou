@@ -71,11 +71,18 @@ export function getPaymentsConfig(runtime: EdgeRuntime) {
 
 export function getWebhookSecret(
   runtime: EdgeRuntime,
-  name: "STRIPE_PLATFORM_WEBHOOK_SECRET" | "STRIPE_CONNECT_WEBHOOK_SECRET",
+  name:
+    | "STRIPE_PLATFORM_WEBHOOK_SECRET"
+    | "STRIPE_CONNECT_WEBHOOK_SECRET"
+    | "STRIPE_CONNECT_V2_WEBHOOK_SECRET",
 ) {
   const explicit = runtime.env.get(name);
+  const connectFallback =
+    name === "STRIPE_CONNECT_V2_WEBHOOK_SECRET"
+      ? runtime.env.get("STRIPE_CONNECT_WEBHOOK_SECRET")
+      : null;
   const fallback = runtime.env.get("STRIPE_WEBHOOK_SECRET");
-  const value = explicit ?? fallback;
+  const value = explicit ?? connectFallback ?? fallback;
 
   if (!value) {
     throw new DomainError(
@@ -85,7 +92,7 @@ export function getWebhookSecret(
     );
   }
 
-  if (!explicit && fallback) {
+  if (!explicit && value) {
     console.warn(
       JSON.stringify({
         code: "PAYMENTS_WEBHOOK_SECRET_FALLBACK",
