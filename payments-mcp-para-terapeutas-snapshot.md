@@ -1,0 +1,24 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - link "Terapeuta Eu Sou" [ref=e4] [cursor=pointer]:
+        - /url: /
+      - navigation [ref=e6]
+      - generic [ref=e12]
+    - generic [ref=e20]:
+      - paragraph [ref=e21]: PARA TERAPEUTAS
+      - heading "Você cuida de pessoas. Nos cuidamos do espaco onde esse encontro acontece" [level=1] [ref=e22]
+      - paragraph [ref=e24]: O TES foi criado para ajudar terapeutas a organizar atendimentos, fortalecer sua presenca e construir uma jornada profissional com mais clareza e tranquilidade.
+      - generic [ref=e25]
+      - generic [ref=e30]
+    - generic [ref=e48]:
+      - generic [ref=e49]
+      - generic [ref=e52]
+    - generic [ref=e177]:
+      - generic [ref=e178]
+      - table "Comparativo de recursos dos planos para terapeutas" [ref=e183]
+    - generic [ref=e505]:
+      - generic [ref=e506]
+      - generic [ref=e511]
+  - button "Open Next.js Dev Tools" [ref=e554] [cursor=pointer]
+  - alert [ref=e558]

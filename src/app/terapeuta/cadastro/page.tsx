@@ -16,14 +16,15 @@ export const metadata: Metadata = {
   title: "Cadastro de terapeuta | Terapeuta Eu Sou",
 };
 
-export default function TherapistSignupPage({
+export default async function TherapistSignupPage({
   searchParams,
 }: {
-  searchParams?: {
+  searchParams?: Promise<{
     plan?: string;
-  };
+  }>;
 }) {
-  const plan = normalizeTherapistPlan(searchParams?.plan);
+  const params = await searchParams;
+  const plan = normalizeTherapistPlan(params?.plan);
 
   return (
     <TherapistAuthShell

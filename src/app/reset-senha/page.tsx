@@ -14,10 +14,12 @@ export const metadata: Metadata = {
   title: "Recuperar senha | Terapeuta Eu Sou",
 };
 
-export default function ResetPasswordPage({
+export default async function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams?: { token?: string };
+  searchParams?: Promise<{ token?: string }>;
 }) {
-  return <ResetPasswordClient token={searchParams?.token ?? ""} />;
+  const params = await searchParams;
+
+  return <ResetPasswordClient token={params?.token ?? ""} />;
 }

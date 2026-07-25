@@ -60,7 +60,8 @@ export type AuthenticatedTherapistSession = {
 export async function requireTherapistSession(
   options: RequireTherapistSessionOptions = {},
 ): Promise<AuthenticatedTherapistSession> {
-  const accessToken = cookies().get("tes_therapist_access_token")?.value;
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get("tes_therapist_access_token")?.value;
   const config = getSupabasePublicConfig();
 
   if (!accessToken || !config) {

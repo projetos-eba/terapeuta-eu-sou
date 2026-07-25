@@ -1,0 +1,4 @@
+interface:
+  display_name: "Payments Billing"
+  short_description: "TES Stripe payments and billing ops"
+  default_prompt: "Use $payments-billing to audit or change TES Stripe Billing, Connect, session payments, webhooks, ledger, refunds, transfers, or payment E2E tests."

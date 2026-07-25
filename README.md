@@ -78,6 +78,7 @@ A Edge Function `match-therapies` calcula recomendações por regras e pesos. El
 
 A arquitetura de pagamentos fica documentada em `docs/payments/architecture.md`.
 O setup operacional dos secrets Stripe fica em `docs/payments/stripe-secrets-setup.md`.
+O uso e rotacao do token interno ficam em `docs/payments/internal-operations-token.md`.
 
 Functions principais:
 

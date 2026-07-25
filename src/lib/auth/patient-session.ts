@@ -24,7 +24,8 @@ export type AuthenticatedPatientSession = {
 };
 
 export async function requirePatientSession(): Promise<AuthenticatedPatientSession> {
-  const accessToken = cookies().get("tes_patient_access_token")?.value;
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get("tes_patient_access_token")?.value;
   const config = getSupabaseAuthConfig();
 
   if (!config) {
@@ -60,8 +61,9 @@ export async function requirePatientSession(): Promise<AuthenticatedPatientSessi
   }
 }
 
-export function getPatientAccessToken() {
-  return cookies().get("tes_patient_access_token")?.value ?? null;
+export async function getPatientAccessToken() {
+  const cookieStore = await cookies();
+  return cookieStore.get("tes_patient_access_token")?.value ?? null;
 }
 
 export function getSupabaseAuthConfig() {

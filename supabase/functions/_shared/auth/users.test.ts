@@ -65,7 +65,7 @@ Deno.test("redirectAfterEmailConfirmation ignores invalid therapist requested pl
 
 function mockClient(rows: unknown[]) {
   return {
-    get: async () => rows,
+    get: () => rows,
   } as unknown as SupabaseRestClient;
 }
 
