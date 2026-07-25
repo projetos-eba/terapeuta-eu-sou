@@ -502,6 +502,70 @@ export type Database = {
           },
         ]
       }
+      booking_reschedule_requests: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          proposed_ends_at: string
+          proposed_starts_at: string
+          reason: string | null
+          requested_by_profile_id: string
+          resolved_at: string | null
+          resolved_by_profile_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          proposed_ends_at: string
+          proposed_starts_at: string
+          reason?: string | null
+          requested_by_profile_id: string
+          resolved_at?: string | null
+          resolved_by_profile_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          proposed_ends_at?: string
+          proposed_starts_at?: string
+          reason?: string | null
+          requested_by_profile_id?: string
+          resolved_at?: string | null
+          resolved_by_profile_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_reschedule_requests_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_reschedule_requests_requested_by_profile_id_fkey"
+            columns: ["requested_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_reschedule_requests_resolved_by_profile_id_fkey"
+            columns: ["resolved_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       booking_session_summaries: {
         Row: {
           booking_id: string
@@ -1840,6 +1904,89 @@ export type Database = {
         }
         Relationships: []
       }
+      review_replies: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          published_at: string | null
+          review_id: string
+          status: string
+          therapist_profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          published_at?: string | null
+          review_id: string
+          status?: string
+          therapist_profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          published_at?: string | null
+          review_id?: string
+          status?: string
+          therapist_profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_replies_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: true
+            referencedRelation: "public_home_testimonials"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_replies_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: true
+            referencedRelation: "public_therapist_profile_reviews_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_replies_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: true
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_replies_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_replies_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_replies_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "review_replies_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           booking_id: string
@@ -2156,6 +2303,85 @@ export type Database = {
           },
         ]
       }
+      therapist_patient_relationships: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          patient_profile_id: string
+          source_booking_id: string | null
+          started_at: string
+          status: string
+          therapist_profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          patient_profile_id: string
+          source_booking_id?: string | null
+          started_at?: string
+          status?: string
+          therapist_profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          patient_profile_id?: string
+          source_booking_id?: string | null
+          started_at?: string
+          status?: string
+          therapist_profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapist_patient_relationships_patient_profile_id_fkey"
+            columns: ["patient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "patient_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_patient_relationships_source_booking_id_fkey"
+            columns: ["source_booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_patient_relationships_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_patient_relationships_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_patient_relationships_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "therapist_patient_relationships_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       therapist_profile_content_versions: {
         Row: {
           created_at: string
@@ -2229,6 +2455,71 @@ export type Database = {
           },
           {
             foreignKeyName: "therapist_profile_content_versions_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      therapist_profile_daily_analytics: {
+        Row: {
+          contact_clicks: number
+          created_at: string
+          favorites_added: number
+          metric_date: string
+          profile_clicks: number
+          profile_views: number
+          search_impressions: number
+          therapist_profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          contact_clicks?: number
+          created_at?: string
+          favorites_added?: number
+          metric_date: string
+          profile_clicks?: number
+          profile_views?: number
+          search_impressions?: number
+          therapist_profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          contact_clicks?: number
+          created_at?: string
+          favorites_added?: number
+          metric_date?: string
+          profile_clicks?: number
+          profile_views?: number
+          search_impressions?: number
+          therapist_profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapist_profile_daily_analytics_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_profile_daily_analytics_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_profile_daily_analytics_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "therapist_profile_daily_analytics_therapist_profile_id_fkey"
             columns: ["therapist_profile_id"]
             isOneToOne: false
             referencedRelation: "therapist_profiles"
@@ -3623,6 +3914,23 @@ export type Database = {
       }
       consume_auth_action_token: {
         Args: { p_claim_id: string; p_token_id: string }
+        Returns: boolean
+      }
+      dashboard_kpi_json: {
+        Args: { current_value: number; previous_value: number }
+        Returns: Json
+      }
+      get_therapist_dashboard_v1: { Args: never; Returns: Json }
+      is_current_patient_profile: {
+        Args: { candidate_id: string }
+        Returns: boolean
+      }
+      is_current_therapist_profile: {
+        Args: { candidate_id: string }
+        Returns: boolean
+      }
+      is_related_patient_to_current_therapist: {
+        Args: { candidate_id: string }
         Returns: boolean
       }
       release_auth_action_token_claim: {

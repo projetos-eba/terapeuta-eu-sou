@@ -7,6 +7,7 @@ import { getRuntime, getServiceRoleKey } from "../_shared/auth/runtime.ts";
 import { handleOptions, jsonResponse } from "../_shared/auth/cors.ts";
 import { parseJson, SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
 import {
+  confirmAuthUserEmail,
   redirectForRole,
   updateAuthUserPassword,
 } from "../_shared/auth/users.ts";
@@ -62,6 +63,7 @@ runtime.serve(async (request) => {
   }
 
   try {
+    await confirmAuthUserEmail(client, claimed.claim.user_id);
     await updateAuthUserPassword(client, claimed.claim.user_id, password);
     const consumed = await consumeAuthActionToken(
       client,

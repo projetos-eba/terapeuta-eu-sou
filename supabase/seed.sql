@@ -411,6 +411,71 @@ values
     '{"name":"Paciente Lucas"}'::jsonb,
     now(),
     now()
+  ),
+  (
+    'bbbbbbbb-0000-4000-8000-000000000006',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'paciente.marina@example.test',
+    crypt('tes-mock-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"name":"Marina Alves"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'bbbbbbbb-0000-4000-8000-000000000007',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'paciente.amanda@example.test',
+    crypt('tes-mock-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"name":"Amanda Ribeiro"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'bbbbbbbb-0000-4000-8000-000000000008',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'paciente.carlos@example.test',
+    crypt('tes-mock-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"name":"Carlos Mendes"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'bbbbbbbb-0000-4000-8000-000000000009',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'paciente.juliana.s@example.test',
+    crypt('tes-mock-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"name":"Juliana Souza"}'::jsonb,
+    now(),
+    now()
+  ),
+  (
+    'bbbbbbbb-0000-4000-8000-000000000010',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'paciente.luiza@example.test',
+    crypt('tes-mock-password', gen_salt('bf')),
+    now(),
+    '{"provider":"email","providers":["email"]}'::jsonb,
+    '{"name":"Luiza Martins"}'::jsonb,
+    now(),
+    now()
   )
 on conflict (id) do update
 set
@@ -429,7 +494,12 @@ values
   ('bbbbbbbb-0000-4000-8000-000000000002', 'patient', 'Paciente Rafael', 'paciente.rafael@example.test', null),
   ('bbbbbbbb-0000-4000-8000-000000000003', 'patient', 'Paciente Celia', 'paciente.celia@example.test', null),
   ('bbbbbbbb-0000-4000-8000-000000000004', 'patient', 'Paciente Juliana', 'paciente.juliana@example.test', null),
-  ('bbbbbbbb-0000-4000-8000-000000000005', 'patient', 'Paciente Lucas', 'paciente.lucas@example.test', null)
+  ('bbbbbbbb-0000-4000-8000-000000000005', 'patient', 'Paciente Lucas', 'paciente.lucas@example.test', null),
+  ('bbbbbbbb-0000-4000-8000-000000000006', 'patient', 'Marina Alves', 'paciente.marina@example.test', null),
+  ('bbbbbbbb-0000-4000-8000-000000000007', 'patient', 'Amanda Ribeiro', 'paciente.amanda@example.test', null),
+  ('bbbbbbbb-0000-4000-8000-000000000008', 'patient', 'Carlos Mendes', 'paciente.carlos@example.test', null),
+  ('bbbbbbbb-0000-4000-8000-000000000009', 'patient', 'Juliana Souza', 'paciente.juliana.s@example.test', null),
+  ('bbbbbbbb-0000-4000-8000-000000000010', 'patient', 'Luiza Martins', 'paciente.luiza@example.test', null)
 on conflict (id) do update
 set
   role = excluded.role,
@@ -451,7 +521,12 @@ values
   ('b1000000-0000-4000-8000-000000000002', 'bbbbbbbb-0000-4000-8000-000000000002', 'Paciente Rafael', 'America/Sao_Paulo', true, now()),
   ('b1000000-0000-4000-8000-000000000003', 'bbbbbbbb-0000-4000-8000-000000000003', 'Paciente Celia', 'America/Sao_Paulo', true, now()),
   ('b1000000-0000-4000-8000-000000000004', 'bbbbbbbb-0000-4000-8000-000000000004', 'Paciente Juliana', 'America/Sao_Paulo', true, now()),
-  ('b1000000-0000-4000-8000-000000000005', 'bbbbbbbb-0000-4000-8000-000000000005', 'Paciente Lucas', 'America/Sao_Paulo', true, now())
+  ('b1000000-0000-4000-8000-000000000005', 'bbbbbbbb-0000-4000-8000-000000000005', 'Paciente Lucas', 'America/Sao_Paulo', true, now()),
+  ('b1000000-0000-4000-8000-000000000006', 'bbbbbbbb-0000-4000-8000-000000000006', 'Marina Alves', 'America/Sao_Paulo', true, now()),
+  ('b1000000-0000-4000-8000-000000000007', 'bbbbbbbb-0000-4000-8000-000000000007', 'Amanda Ribeiro', 'America/Sao_Paulo', true, now()),
+  ('b1000000-0000-4000-8000-000000000008', 'bbbbbbbb-0000-4000-8000-000000000008', 'Carlos Mendes', 'America/Sao_Paulo', true, now()),
+  ('b1000000-0000-4000-8000-000000000009', 'bbbbbbbb-0000-4000-8000-000000000009', 'Juliana Souza', 'America/Sao_Paulo', true, now()),
+  ('b1000000-0000-4000-8000-000000000010', 'bbbbbbbb-0000-4000-8000-000000000010', 'Luiza Martins', 'America/Sao_Paulo', true, now())
 on conflict (id) do update
 set
   display_name = excluded.display_name,
@@ -1496,6 +1571,40 @@ values ('91000000-0000-4000-8000-000000000001', '90000000-0000-4000-8000-0000000
 on conflict (id) do update
 set display_name = excluded.display_name, timezone = excluded.timezone, marketing_consent = excluded.marketing_consent, sensitive_data_consent_at = excluded.sensitive_data_consent_at, updated_at = now();
 
+insert into public.therapies (
+  id,
+  category_id,
+  name,
+  slug,
+  short_description,
+  description,
+  status,
+  is_featured,
+  safety_note
+)
+values (
+  '22222222-2222-4222-8222-222222222230',
+  '11111111-1111-4111-8111-111111111114',
+  'Constelação Familiar',
+  'constelacao-familiar',
+  'Prática vivencial e simbólica voltada a observação de vínculos e dinâmicas familiares.',
+  'Constelação Familiar é apresentada como experiência simbólica e reflexiva, sem diagnóstico, reconstrução de memórias ou promessa de resolução.',
+  'published',
+  false,
+  'Esta é uma experiência simbólica e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.'
+)
+on conflict (id) do update
+set
+  category_id = excluded.category_id,
+  name = excluded.name,
+  slug = excluded.slug,
+  short_description = excluded.short_description,
+  description = excluded.description,
+  status = excluded.status,
+  is_featured = excluded.is_featured,
+  safety_note = excluded.safety_note,
+  updated_at = now();
+
 insert into public.therapist_profiles (
   id, user_id, plan, status, slug, public_name, legal_name, headline, photo_url,
   city, state, languages, is_public, is_accepting_bookings, accepts_online_sessions
@@ -2271,3 +2380,458 @@ from (
 ) as weights(therapy_slug, interest_slug, weight, reason)
 join public.therapies on therapies.slug = weights.therapy_slug
 join public.matching_interests on matching_interests.slug = weights.interest_slug;
+
+-- Premium Plus therapist dashboard demo data for Ana Oliveira.
+insert into public.bookings (
+  id,
+  patient_profile_id,
+  therapist_profile_id,
+  service_id,
+  starts_at,
+  ends_at,
+  timezone,
+  status,
+  payment_status,
+  meeting_provider,
+  meeting_url,
+  cancellation_reason,
+  cancelled_at,
+  completed_at
+)
+values
+  (
+    'f2000000-0000-4000-8000-000000000001',
+    'b1000000-0000-4000-8000-000000000001',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    ((date_trunc('day', now() at time zone 'America/Sao_Paulo') + interval '9 hours') at time zone 'America/Sao_Paulo'),
+    ((date_trunc('day', now() at time zone 'America/Sao_Paulo') + interval '9 hours 50 minutes') at time zone 'America/Sao_Paulo'),
+    'America/Sao_Paulo',
+    'confirmed',
+    'paid',
+    'zoom',
+    'https://example.test/meeting/ana-today-1',
+    null,
+    null,
+    null
+  ),
+  (
+    'f2000000-0000-4000-8000-000000000002',
+    'b1000000-0000-4000-8000-000000000002',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000006',
+    ((date_trunc('day', now() at time zone 'America/Sao_Paulo') + interval '14 hours') at time zone 'America/Sao_Paulo'),
+    ((date_trunc('day', now() at time zone 'America/Sao_Paulo') + interval '15 hours') at time zone 'America/Sao_Paulo'),
+    'America/Sao_Paulo',
+    'confirmed',
+    'paid',
+    'zoom',
+    'https://example.test/meeting/ana-today-2',
+    null,
+    null,
+    null
+  ),
+  (
+    'f2000000-0000-4000-8000-000000000003',
+    'b1000000-0000-4000-8000-000000000003',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    ((date_trunc('day', now() at time zone 'America/Sao_Paulo') + interval '18 hours') at time zone 'America/Sao_Paulo'),
+    ((date_trunc('day', now() at time zone 'America/Sao_Paulo') + interval '18 hours 50 minutes') at time zone 'America/Sao_Paulo'),
+    'America/Sao_Paulo',
+    'completed',
+    'paid',
+    'zoom',
+    'https://example.test/meeting/ana-today-3',
+    null,
+    null,
+    ((date_trunc('day', now() at time zone 'America/Sao_Paulo') + interval '18 hours 50 minutes') at time zone 'America/Sao_Paulo')
+  ),
+  (
+    'f2000000-0000-4000-8000-000000000004',
+    'b1000000-0000-4000-8000-000000000004',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000006',
+    now() + interval '1 day',
+    now() + interval '1 day 60 minutes',
+    'America/Sao_Paulo',
+    'confirmed',
+    'paid',
+    'zoom',
+    'https://example.test/meeting/ana-future-1',
+    null,
+    null,
+    null
+  ),
+  (
+    'f2000000-0000-4000-8000-000000000005',
+    'b1000000-0000-4000-8000-000000000005',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    now() + interval '2 days',
+    now() + interval '2 days 50 minutes',
+    'America/Sao_Paulo',
+    'pending_payment',
+    'pending',
+    null,
+    null,
+    null,
+    null,
+    null
+  ),
+  (
+    'f2000000-0000-4000-8000-000000000006',
+    'b1000000-0000-4000-8000-000000000006',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000006',
+    now() - interval '3 days',
+    now() - interval '3 days' + interval '60 minutes',
+    'America/Sao_Paulo',
+    'cancelled_by_patient',
+    'refunded',
+    null,
+    null,
+    'Imprevisto informado pela pessoa atendida.',
+    now() - interval '4 days',
+    null
+  ),
+  (
+    'f2000000-0000-4000-8000-000000000007',
+    'b1000000-0000-4000-8000-000000000007',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    now() - interval '2 days',
+    now() - interval '2 days' + interval '50 minutes',
+    'America/Sao_Paulo',
+    'no_show_patient',
+    'paid',
+    'zoom',
+    'https://example.test/meeting/ana-no-show',
+    null,
+    null,
+    null
+  ),
+  (
+    'f2000000-0000-4000-8000-000000000008',
+    'b1000000-0000-4000-8000-000000000008',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000006',
+    now() - interval '4 days',
+    now() - interval '4 days' + interval '60 minutes',
+    'America/Sao_Paulo',
+    'completed',
+    'paid',
+    'zoom',
+    'https://example.test/meeting/ana-history-8',
+    null,
+    null,
+    now() - interval '4 days' + interval '60 minutes'
+  ),
+  (
+    'f2000000-0000-4000-8000-000000000009',
+    'b1000000-0000-4000-8000-000000000009',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    now() - interval '7 days',
+    now() - interval '7 days' + interval '50 minutes',
+    'America/Sao_Paulo',
+    'completed',
+    'paid',
+    'zoom',
+    'https://example.test/meeting/ana-history-9',
+    null,
+    null,
+    now() - interval '7 days' + interval '50 minutes'
+  ),
+  (
+    'f2000000-0000-4000-8000-000000000010',
+    'b1000000-0000-4000-8000-000000000010',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000006',
+    date_trunc('month', now()) - interval '10 days',
+    date_trunc('month', now()) - interval '10 days' + interval '60 minutes',
+    'America/Sao_Paulo',
+    'completed',
+    'paid',
+    'zoom',
+    'https://example.test/meeting/ana-previous-month',
+    null,
+    null,
+    date_trunc('month', now()) - interval '10 days' + interval '60 minutes'
+  ),
+  (
+    'f2000000-0000-4000-8000-000000000011',
+    'b1000000-0000-4000-8000-000000000006',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    date_trunc('month', now()) + interval '2 days',
+    date_trunc('month', now()) + interval '2 days 50 minutes',
+    'America/Sao_Paulo',
+    'completed',
+    'paid',
+    'zoom',
+    'https://example.test/meeting/ana-current-month',
+    null,
+    null,
+    date_trunc('month', now()) + interval '2 days 50 minutes'
+  )
+on conflict (id) do update
+set
+  patient_profile_id = excluded.patient_profile_id,
+  therapist_profile_id = excluded.therapist_profile_id,
+  service_id = excluded.service_id,
+  starts_at = excluded.starts_at,
+  ends_at = excluded.ends_at,
+  timezone = excluded.timezone,
+  status = excluded.status,
+  payment_status = excluded.payment_status,
+  meeting_provider = excluded.meeting_provider,
+  meeting_url = excluded.meeting_url,
+  cancellation_reason = excluded.cancellation_reason,
+  cancelled_at = excluded.cancelled_at,
+  completed_at = excluded.completed_at,
+  updated_at = now();
+
+insert into public.therapist_patient_relationships (
+  id,
+  therapist_profile_id,
+  patient_profile_id,
+  status,
+  source_booking_id,
+  started_at
+)
+values
+  ('e3000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000001', 'b1000000-0000-4000-8000-000000000001', 'active', 'f2000000-0000-4000-8000-000000000001', now()),
+  ('e3000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000001', 'b1000000-0000-4000-8000-000000000002', 'active', 'f2000000-0000-4000-8000-000000000002', now()),
+  ('e3000000-0000-4000-8000-000000000003', 'c1000000-0000-4000-8000-000000000001', 'b1000000-0000-4000-8000-000000000003', 'active', 'f2000000-0000-4000-8000-000000000003', now() - interval '12 days'),
+  ('e3000000-0000-4000-8000-000000000004', 'c1000000-0000-4000-8000-000000000001', 'b1000000-0000-4000-8000-000000000004', 'active', 'f2000000-0000-4000-8000-000000000004', now() - interval '18 days'),
+  ('e3000000-0000-4000-8000-000000000005', 'c1000000-0000-4000-8000-000000000001', 'b1000000-0000-4000-8000-000000000005', 'active', 'f2000000-0000-4000-8000-000000000005', now() - interval '24 days'),
+  ('e3000000-0000-4000-8000-000000000006', 'c1000000-0000-4000-8000-000000000001', 'b1000000-0000-4000-8000-000000000006', 'active', 'f2000000-0000-4000-8000-000000000011', now() - interval '31 days'),
+  ('e3000000-0000-4000-8000-000000000007', 'c1000000-0000-4000-8000-000000000001', 'b1000000-0000-4000-8000-000000000007', 'active', 'f2000000-0000-4000-8000-000000000007', now() - interval '35 days'),
+  ('e3000000-0000-4000-8000-000000000008', 'c1000000-0000-4000-8000-000000000001', 'b1000000-0000-4000-8000-000000000008', 'active', 'f2000000-0000-4000-8000-000000000008', now() - interval '41 days'),
+  ('e3000000-0000-4000-8000-000000000009', 'c1000000-0000-4000-8000-000000000001', 'b1000000-0000-4000-8000-000000000009', 'active', 'f2000000-0000-4000-8000-000000000009', now() - interval '47 days'),
+  ('e3000000-0000-4000-8000-000000000010', 'c1000000-0000-4000-8000-000000000001', 'b1000000-0000-4000-8000-000000000010', 'paused', 'f2000000-0000-4000-8000-000000000010', now() - interval '55 days')
+on conflict (therapist_profile_id, patient_profile_id) do update
+set
+  status = excluded.status,
+  source_booking_id = excluded.source_booking_id,
+  started_at = excluded.started_at,
+  updated_at = now();
+
+insert into public.payments (
+  id,
+  booking_id,
+  patient_profile_id,
+  therapist_profile_id,
+  provider,
+  stripe_checkout_session_id,
+  stripe_payment_intent_id,
+  amount_cents,
+  platform_fee_cents,
+  therapist_amount_cents,
+  currency,
+  status,
+  paid_at,
+  refunded_at
+)
+values
+  ('e2000000-0000-4000-8000-000000000001', 'f2000000-0000-4000-8000-000000000001', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000001', 'stripe', 'cs_test_ana_001', 'pi_test_ana_001', 17000, 2550, 14450, 'BRL', 'paid', now(), null),
+  ('e2000000-0000-4000-8000-000000000002', 'f2000000-0000-4000-8000-000000000002', 'b1000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000001', 'stripe', 'cs_test_ana_002', 'pi_test_ana_002', 24000, 3600, 20400, 'BRL', 'paid', now(), null),
+  ('e2000000-0000-4000-8000-000000000003', 'f2000000-0000-4000-8000-000000000003', 'b1000000-0000-4000-8000-000000000003', 'c1000000-0000-4000-8000-000000000001', 'stripe', 'cs_test_ana_003', 'pi_test_ana_003', 17000, 2550, 14450, 'BRL', 'paid', now(), null),
+  ('e2000000-0000-4000-8000-000000000004', 'f2000000-0000-4000-8000-000000000004', 'b1000000-0000-4000-8000-000000000004', 'c1000000-0000-4000-8000-000000000001', 'stripe', 'cs_test_ana_004', 'pi_test_ana_004', 24000, 3600, 20400, 'BRL', 'paid', now(), null),
+  ('e2000000-0000-4000-8000-000000000005', 'f2000000-0000-4000-8000-000000000005', 'b1000000-0000-4000-8000-000000000005', 'c1000000-0000-4000-8000-000000000001', 'stripe', 'cs_test_ana_005', null, 17000, 2550, 14450, 'BRL', 'pending', null, null),
+  ('e2000000-0000-4000-8000-000000000006', 'f2000000-0000-4000-8000-000000000006', 'b1000000-0000-4000-8000-000000000006', 'c1000000-0000-4000-8000-000000000001', 'stripe', 'cs_test_ana_006', 'pi_test_ana_006', 24000, 3600, 20400, 'BRL', 'refunded', now() - interval '5 days', now() - interval '4 days'),
+  ('e2000000-0000-4000-8000-000000000007', 'f2000000-0000-4000-8000-000000000007', 'b1000000-0000-4000-8000-000000000007', 'c1000000-0000-4000-8000-000000000001', 'stripe', 'cs_test_ana_007', 'pi_test_ana_007', 17000, 2550, 14450, 'BRL', 'paid', now() - interval '3 days', null),
+  ('e2000000-0000-4000-8000-000000000008', 'f2000000-0000-4000-8000-000000000008', 'b1000000-0000-4000-8000-000000000008', 'c1000000-0000-4000-8000-000000000001', 'stripe', 'cs_test_ana_008', 'pi_test_ana_008', 24000, 3600, 20400, 'BRL', 'paid', now() - interval '4 days', null),
+  ('e2000000-0000-4000-8000-000000000009', 'f2000000-0000-4000-8000-000000000009', 'b1000000-0000-4000-8000-000000000009', 'c1000000-0000-4000-8000-000000000001', 'stripe', 'cs_test_ana_009', 'pi_test_ana_009', 17000, 2550, 14450, 'BRL', 'paid', now() - interval '7 days', null),
+  ('e2000000-0000-4000-8000-000000000010', 'f2000000-0000-4000-8000-000000000010', 'b1000000-0000-4000-8000-000000000010', 'c1000000-0000-4000-8000-000000000001', 'stripe', 'cs_test_ana_010', 'pi_test_ana_010', 24000, 3600, 20400, 'BRL', 'paid', date_trunc('month', now()) - interval '10 days', null),
+  ('e2000000-0000-4000-8000-000000000011', 'f2000000-0000-4000-8000-000000000011', 'b1000000-0000-4000-8000-000000000006', 'c1000000-0000-4000-8000-000000000001', 'stripe', 'cs_test_ana_011', 'pi_test_ana_011', 17000, 2550, 14450, 'BRL', 'paid', date_trunc('month', now()) + interval '2 days', null)
+on conflict (booking_id) do update
+set
+  patient_profile_id = excluded.patient_profile_id,
+  therapist_profile_id = excluded.therapist_profile_id,
+  amount_cents = excluded.amount_cents,
+  platform_fee_cents = excluded.platform_fee_cents,
+  therapist_amount_cents = excluded.therapist_amount_cents,
+  status = excluded.status,
+  paid_at = excluded.paid_at,
+  refunded_at = excluded.refunded_at,
+  updated_at = now();
+
+insert into public.booking_reschedule_requests (
+  id,
+  booking_id,
+  requested_by_profile_id,
+  proposed_starts_at,
+  proposed_ends_at,
+  reason,
+  status
+)
+values (
+  'e7000000-0000-4000-8000-000000000001',
+  'f2000000-0000-4000-8000-000000000004',
+  'bbbbbbbb-0000-4000-8000-000000000004',
+  now() + interval '3 days',
+  now() + interval '3 days 60 minutes',
+  'Preciso ajustar o horário desta semana.',
+  'pending'
+)
+on conflict (id) do update
+set
+  proposed_starts_at = excluded.proposed_starts_at,
+  proposed_ends_at = excluded.proposed_ends_at,
+  reason = excluded.reason,
+  status = excluded.status,
+  updated_at = now();
+
+insert into public.reviews (
+  id,
+  booking_id,
+  patient_profile_id,
+  therapist_profile_id,
+  rating,
+  comment,
+  status,
+  published_at
+)
+values
+  ('e8000000-0000-4000-8000-000000000001', 'f2000000-0000-4000-8000-000000000003', 'b1000000-0000-4000-8000-000000000003', 'c1000000-0000-4000-8000-000000000001', 5, 'A sessão foi conduzida com presença e cuidado.', 'published', now()),
+  ('e8000000-0000-4000-8000-000000000002', 'f2000000-0000-4000-8000-000000000008', 'b1000000-0000-4000-8000-000000000008', 'c1000000-0000-4000-8000-000000000001', 5, 'Encontrei um espaço acolhedor para organizar minhas escolhas.', 'published', now() - interval '4 days'),
+  ('e8000000-0000-4000-8000-000000000003', 'f2000000-0000-4000-8000-000000000009', 'b1000000-0000-4000-8000-000000000009', 'c1000000-0000-4000-8000-000000000001', 4, 'Conversa atenta e respeitosa com o meu momento.', 'published', now() - interval '7 days'),
+  ('e8000000-0000-4000-8000-000000000004', 'f2000000-0000-4000-8000-000000000011', 'b1000000-0000-4000-8000-000000000006', 'c1000000-0000-4000-8000-000000000001', 5, 'A condução foi clara e acolhedora.', 'published', date_trunc('month', now()) + interval '3 days')
+on conflict (booking_id) do update
+set
+  rating = excluded.rating,
+  comment = excluded.comment,
+  status = excluded.status,
+  published_at = excluded.published_at,
+  updated_at = now();
+
+insert into public.review_replies (
+  id,
+  review_id,
+  therapist_profile_id,
+  body,
+  status,
+  published_at
+)
+values (
+  'e9000000-0000-4000-8000-000000000001',
+  'e8000000-0000-4000-8000-000000000003',
+  'c1000000-0000-4000-8000-000000000001',
+  'Obrigada por compartilhar sua experiência com tanto cuidado.',
+  'published',
+  now() - interval '6 days'
+)
+on conflict (review_id) do update
+set
+  body = excluded.body,
+  status = excluded.status,
+  published_at = excluded.published_at,
+  updated_at = now();
+
+insert into public.therapist_profile_daily_analytics (
+  therapist_profile_id,
+  metric_date,
+  profile_views,
+  search_impressions,
+  profile_clicks,
+  favorites_added,
+  contact_clicks
+)
+select
+  'c1000000-0000-4000-8000-000000000001',
+  day_value::date,
+  14 + extract(day from day_value)::integer % 8,
+  31 + extract(day from day_value)::integer % 15,
+  7 + extract(day from day_value)::integer % 6,
+  extract(day from day_value)::integer % 3,
+  2 + extract(day from day_value)::integer % 4
+from generate_series(current_date - 59, current_date, interval '1 day') day_value
+on conflict (therapist_profile_id, metric_date) do update
+set
+  profile_views = excluded.profile_views,
+  search_impressions = excluded.search_impressions,
+  profile_clicks = excluded.profile_clicks,
+  favorites_added = excluded.favorites_added,
+  contact_clicks = excluded.contact_clicks,
+  updated_at = now();
+
+insert into public.aura_recommendations (
+  id,
+  therapist_profile_id,
+  source_rule_key,
+  title,
+  body,
+  plan_required,
+  context,
+  priority,
+  expires_at,
+  is_active
+)
+values
+  ('ea000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000001', 'weekly_service_interest', 'Interesse em Reiki', 'Seu serviço de Reiki recebeu mais visitas agregadas nesta semana.', 'premium_plus', '{"kind":"observation"}'::jsonb, 30, now() + interval '14 days', true),
+  ('ea000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000001', 'profile_views_growth', 'Visitas ao perfil', 'As visitas agregadas ao seu perfil cresceram em relação ao período anterior.', 'premium_plus', '{"kind":"observation"}'::jsonb, 25, now() + interval '14 days', true),
+  ('ea000000-0000-4000-8000-000000000003', 'c1000000-0000-4000-8000-000000000001', 'open_schedule', 'Horários disponíveis', 'Considere abrir horários adicionais nos dias com maior procura agregada.', 'premium_plus', '{"kind":"suggestion"}'::jsonb, 20, now() + interval '14 days', true),
+  ('ea000000-0000-4000-8000-000000000004', 'c1000000-0000-4000-8000-000000000001', 'reply_reviews', 'Responda às avaliações', 'Há avaliações publicadas aguardando uma resposta sua.', 'premium_plus', '{"kind":"action","action_href":"/plus/avaliacoes"}'::jsonb, 40, now() + interval '14 days', true),
+  ('ea000000-0000-4000-8000-000000000005', 'c1000000-0000-4000-8000-000000000001', 'profile_video', 'Atualize seu perfil', 'Revise os conteúdos do perfil para manter sua apresentação atualizada.', 'premium_plus', '{"kind":"action","action_href":"/plus/perfil"}'::jsonb, 15, now() + interval '14 days', true)
+on conflict (id) do update
+set
+  title = excluded.title,
+  body = excluded.body,
+  plan_required = excluded.plan_required,
+  context = excluded.context,
+  priority = excluded.priority,
+  expires_at = excluded.expires_at,
+  is_active = excluded.is_active,
+  updated_at = now();
+
+insert into public.conversations (
+  id,
+  patient_profile_id,
+  therapist_profile_id,
+  booking_id,
+  last_message_at
+)
+values
+  ('eb000000-0000-4000-8000-000000000001', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000001', 'f2000000-0000-4000-8000-000000000001', now()),
+  ('eb000000-0000-4000-8000-000000000002', 'b1000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000001', 'f2000000-0000-4000-8000-000000000002', now() - interval '1 hour')
+on conflict (patient_profile_id, therapist_profile_id) do update
+set
+  booking_id = excluded.booking_id,
+  last_message_at = excluded.last_message_at,
+  updated_at = now();
+
+insert into public.messages (
+  id,
+  conversation_id,
+  sender_profile_id,
+  body,
+  read_at
+)
+values
+  ('ec000000-0000-4000-8000-000000000001', 'eb000000-0000-4000-8000-000000000001', 'bbbbbbbb-0000-4000-8000-000000000001', 'Obrigada pelas orientações para o encontro.', null),
+  ('ec000000-0000-4000-8000-000000000002', 'eb000000-0000-4000-8000-000000000002', 'bbbbbbbb-0000-4000-8000-000000000002', 'Podemos confirmar o horário de hoje?', null)
+on conflict (id) do update
+set
+  body = excluded.body,
+  read_at = excluded.read_at;
+
+insert into public.notifications (
+  id,
+  profile_id,
+  kind,
+  title,
+  body,
+  href,
+  read_at
+)
+values
+  ('ed000000-0000-4000-8000-000000000001', 'aaaaaaaa-0000-4000-8000-000000000001', 'review', 'Nova avaliação publicada', 'Uma pessoa compartilhou uma avaliação sobre seu atendimento.', '/plus/avaliacoes', null),
+  ('ed000000-0000-4000-8000-000000000002', 'aaaaaaaa-0000-4000-8000-000000000001', 'reschedule', 'Pedido de reagendamento', 'Há um novo pedido de mudança de horário.', '/plus/agenda', null)
+on conflict (id) do update
+set
+  title = excluded.title,
+  body = excluded.body,
+  href = excluded.href,
+  read_at = excluded.read_at;

@@ -16,15 +16,21 @@ export type AuthUserRow = {
   email_confirmed_at?: string | null;
 };
 
+type TherapistProfileSignupRow = {
+  metadata?: unknown;
+};
+
 export async function findProfileByEmail(
   client: SupabaseRestClient,
   email: string,
 ) {
   const normalized = normalizeEmail(email);
   const rows = await client.get<ProfileRow[]>(
-    `/rest/v1/profiles?select=id,display_name,email,email_confirmed_at,role&email=eq.${encodeURIComponent(
-      normalized,
-    )}&limit=1`,
+    `/rest/v1/profiles?select=id,display_name,email,email_confirmed_at,role&email=eq.${
+      encodeURIComponent(
+        normalized,
+      )
+    }&limit=1`,
   );
 
   return rows[0] ?? null;
@@ -35,9 +41,11 @@ export async function getProfileById(
   userId: string,
 ) {
   const rows = await client.get<ProfileRow[]>(
-    `/rest/v1/profiles?select=id,display_name,email,email_confirmed_at,role&id=eq.${encodeURIComponent(
-      userId,
-    )}&limit=1`,
+    `/rest/v1/profiles?select=id,display_name,email,email_confirmed_at,role&id=eq.${
+      encodeURIComponent(
+        userId,
+      )
+    }&limit=1`,
   );
 
   return rows[0] ?? null;
@@ -80,4 +88,60 @@ export function redirectForRole(role: UserRole, suffix: string) {
   }
 
   return `/cliente/login${suffix}`;
+}
+
+export async function redirectAfterEmailConfirmation(
+  client: SupabaseRestClient,
+  role: UserRole,
+  userId: string,
+  suffix: string,
+) {
+  const baseRedirect = redirectForRole(role, suffix);
+
+  if (role !== "therapist") {
+    return baseRedirect;
+  }
+
+  const requestedPlan = await getTherapistRequestedPaidPlan(client, userId);
+
+  if (!requestedPlan) {
+    return baseRedirect;
+  }
+
+  const separator = baseRedirect.includes("?") ? "&" : "?";
+  const continuation = `/terapeuta/checkout?plan=${requestedPlan}`;
+
+  return `${baseRedirect}${separator}next=${encodeURIComponent(continuation)}`;
+}
+
+async function getTherapistRequestedPaidPlan(
+  client: SupabaseRestClient,
+  userId: string,
+) {
+  const rows = await client.get<TherapistProfileSignupRow[]>(
+    `/rest/v1/therapist_profiles?select=metadata&user_id=eq.${
+      encodeURIComponent(
+        userId,
+      )
+    }&limit=1`,
+  );
+  const requestedPlan = getRequestedPlanFromMetadata(rows[0]?.metadata);
+
+  return requestedPlan === "premium" || requestedPlan === "premium_plus"
+    ? requestedPlan
+    : null;
+}
+
+function getRequestedPlanFromMetadata(metadata: unknown) {
+  if (!isRecord(metadata) || !isRecord(metadata.signup)) {
+    return null;
+  }
+
+  return typeof metadata.signup.requestedPlan === "string"
+    ? metadata.signup.requestedPlan
+    : null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
 }

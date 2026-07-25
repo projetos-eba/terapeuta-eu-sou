@@ -12,9 +12,9 @@ import {
   THERAPIST_AUTH_GENERIC_ERROR,
   THERAPIST_AUTH_ROLE_ERROR,
 } from "@/features/therapist-auth/errors";
+import { getTherapistLoginRedirect } from "@/features/therapist-auth/routing";
+import { setTherapistSessionCookies } from "@/features/therapist-auth/session-cookies";
 import { validateTherapistLogin } from "@/features/therapist-auth/validation";
-
-const SECURE_COOKIE = process.env.NODE_ENV === "production";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -48,30 +48,10 @@ export async function POST(request: Request) {
     const session = await loginTherapistWithPassword(validation.value);
     const response = NextResponse.json({
       ok: true,
-      redirectTo: session.redirectTo,
+      redirectTo: getTherapistLoginRedirect(session.plan, toContinuation(body)),
     });
 
-    response.cookies.set("tes_therapist_access_token", session.accessToken, {
-      httpOnly: true,
-      maxAge: session.expiresIn,
-      path: "/",
-      sameSite: "lax",
-      secure: SECURE_COOKIE,
-    });
-    response.cookies.set("tes_therapist_refresh_token", session.refreshToken, {
-      httpOnly: true,
-      maxAge: 60 * 60 * 24 * 30,
-      path: "/",
-      sameSite: "lax",
-      secure: SECURE_COOKIE,
-    });
-    response.cookies.set("tes_therapist_plan", session.plan, {
-      httpOnly: true,
-      maxAge: 60 * 60 * 24 * 30,
-      path: "/",
-      sameSite: "lax",
-      secure: SECURE_COOKIE,
-    });
+    setTherapistSessionCookies(response, session);
 
     return response;
   } catch (error) {
@@ -135,6 +115,11 @@ function toLoginInput(value: unknown) {
     email: asString(record.email),
     password: asString(record.password),
   };
+}
+
+function toContinuation(value: unknown) {
+  const record = isRecord(value) ? value : {};
+  return asString(record.continuation);
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -5,10 +5,7 @@ import {
   getServiceRoleKey,
 } from "../_shared/auth/runtime.ts";
 import { handleOptions, jsonResponse } from "../_shared/auth/cors.ts";
-import {
-  parseJson,
-  SupabaseRestClient,
-} from "../_shared/auth/supabase-rest.ts";
+import { parseJson, SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
 import {
   findEmailVerificationStatusToken,
   markEmailVerificationStatusConfirmed,
@@ -16,7 +13,7 @@ import {
 import {
   getAuthUser,
   getProfileById,
-  redirectForRole,
+  redirectAfterEmailConfirmation,
 } from "../_shared/auth/users.ts";
 import { isValidActionToken } from "../_shared/email/validation.ts";
 
@@ -45,8 +42,9 @@ runtime.serve(async (request) => {
   }
 
   const body = await parseJson<StatusBody>(request);
-  const statusToken =
-    typeof body?.statusToken === "string" ? body.statusToken.trim() : "";
+  const statusToken = typeof body?.statusToken === "string"
+    ? body.statusToken.trim()
+    : "";
 
   if (!isValidActionToken(statusToken)) {
     return jsonResponse(
@@ -113,7 +111,12 @@ runtime.serve(async (request) => {
 
     return jsonResponse({
       confirmed: true,
-      destination: redirectForRole(status.recipient_role, "?verified=1"),
+      destination: await redirectAfterEmailConfirmation(
+        client,
+        status.recipient_role,
+        status.user_id,
+        "?verified=1",
+      ),
       ok: true,
     });
   } catch {

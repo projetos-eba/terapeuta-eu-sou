@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
-import { routes } from "@/lib/routes";
 import {
   createTherapistAccount,
+  loginTherapistWithPassword,
   TherapistAuthConfigError,
   TherapistAuthSupabaseError,
 } from "@/features/therapist-auth/supabase-rest";
@@ -11,7 +11,15 @@ import {
   THERAPIST_AUTH_CONFIG_ERROR,
   THERAPIST_AUTH_GENERIC_ERROR,
 } from "@/features/therapist-auth/errors";
+import {
+  getTherapistCheckoutHref,
+  getTherapistLoginHref,
+  getTherapistPostSignupHref,
+  isPaidTherapistPlan,
+} from "@/features/therapist-auth/routing";
+import { setTherapistSessionCookies } from "@/features/therapist-auth/session-cookies";
 import { validateTherapistSignup } from "@/features/therapist-auth/validation";
+import { routes } from "@/lib/routes";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -44,16 +52,50 @@ export async function POST(request: Request) {
   try {
     const signup = await createTherapistAccount(validation.value);
 
-    return NextResponse.json({
-      ok: true,
-      redirectTo:
-        signup.mode === "automatically_confirmed"
-          ? (signup.redirectTo ??
-            `${routes.public.therapistSignIn}?verified=1&automatic=1`)
-          : `${routes.public.confirmEmail}?statusToken=${encodeURIComponent(
-              signup.statusToken ?? "",
-            )}`,
-    });
+    if (signup.mode !== "automatically_confirmed") {
+      const statusQuery = signup.statusToken
+        ? `?statusToken=${encodeURIComponent(signup.statusToken)}`
+        : "";
+
+      return NextResponse.json({
+        ok: true,
+        redirectTo: `${routes.public.confirmEmail}${statusQuery}`,
+      });
+    }
+
+    const redirectTo = isPaidTherapistPlan(validation.value.plan)
+      ? getTherapistPostSignupHref(validation.value.plan)
+      : (signup.redirectTo ??
+        getTherapistPostSignupHref(validation.value.plan));
+
+    if (!isPaidTherapistPlan(validation.value.plan)) {
+      return NextResponse.json({
+        ok: true,
+        redirectTo,
+      });
+    }
+
+    try {
+      const session = await loginTherapistWithPassword({
+        email: validation.value.email,
+        password: validation.value.password,
+      });
+      const response = NextResponse.json({
+        ok: true,
+        redirectTo,
+      });
+
+      setTherapistSessionCookies(response, session);
+      return response;
+    } catch {
+      return NextResponse.json({
+        ok: true,
+        redirectTo: getTherapistLoginHref(
+          getTherapistCheckoutHref(validation.value.plan),
+          { created: true },
+        ),
+      });
+    }
   } catch (error) {
     if (error instanceof TherapistAuthConfigError) {
       return NextResponse.json(

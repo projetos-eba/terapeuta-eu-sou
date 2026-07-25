@@ -34,10 +34,11 @@ export class BookingDetailDataError extends Error {
 
 export const getPatientSessionDetailPage = cache(
   async function getPatientSessionDetailPage({
+    accessToken,
     bookingId,
     profileId,
   }: BookingDetailQueryInput): Promise<BookingDetailPageData> {
-    const config = getSupabaseServerRestConfig();
+    const config = getSupabaseServerRestConfig(accessToken);
 
     if (!config) {
       if (process.env.NODE_ENV === "development") {
@@ -65,7 +66,9 @@ export const getPatientSessionDetailPage = cache(
         throw new BookingDetailDataError("not_found");
       }
 
-      const bookings = await supabaseServerRestRequest<BookingDetailBookingRow[]>(
+      const bookings = await supabaseServerRestRequest<
+        BookingDetailBookingRow[]
+      >(
         config,
         `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,timezone,status,payment_status,meeting_provider,meeting_url,completed_at&id=eq.${encodeURIComponent(bookingId)}&patient_profile_id=eq.${patientProfile.id}&limit=1`,
       );
@@ -75,8 +78,8 @@ export const getPatientSessionDetailPage = cache(
         throw new BookingDetailDataError("not_found");
       }
 
-      const [therapists, services, intakeRows, receiptRows] =
-        await Promise.all([
+      const [therapists, services, intakeRows, receiptRows] = await Promise.all(
+        [
           supabaseServerRestRequest<BookingDetailTherapistRow[]>(
             config,
             `/rest/v1/therapist_profiles?select=id,slug,public_name,headline,photo_url,is_accepting_bookings&id=eq.${booking.therapist_profile_id}&limit=1`,
@@ -93,7 +96,8 @@ export const getPatientSessionDetailPage = cache(
             config,
             `/rest/v1/booking_payment_receipts?select=amount_cents,currency,receipt_url,paid_at&booking_id=eq.${booking.id}&limit=1`,
           ),
-        ]);
+        ],
+      );
       const therapist = therapists[0];
       const service = services[0];
 

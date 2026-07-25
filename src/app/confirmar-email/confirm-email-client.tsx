@@ -47,12 +47,16 @@ export function ConfirmEmailClient({
     statusToken ? RESEND_COOLDOWN_SECONDS : 0,
   );
   const redirectedRef = useRef(false);
+  const verifyStartedTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
 
     async function verify() {
       if (statusToken) return;
+      if (verifyStartedTokenRef.current === token) return;
+      verifyStartedTokenRef.current = token;
 
       if (!token) {
         setMode("error");
@@ -61,12 +65,7 @@ export function ConfirmEmailClient({
       }
 
       try {
-        const response = await fetch("/api/auth/email/verify", {
-          body: JSON.stringify({ token }),
-          headers: { "Content-Type": "application/json" },
-          method: "POST",
-        });
-        const data = (await response.json()) as VerifyResponse;
+        const data = await verifyEmailWithRetry(token, controller.signal);
 
         if (!active) return;
 
@@ -99,6 +98,10 @@ export function ConfirmEmailClient({
 
     return () => {
       active = false;
+      controller.abort();
+      if (verifyStartedTokenRef.current === token && !redirectedRef.current) {
+        verifyStartedTokenRef.current = null;
+      }
     };
   }, [statusToken, token]);
 
@@ -354,6 +357,55 @@ export function ConfirmEmailClient({
 function backoffMs(failureCount: number) {
   const delay = BASE_POLLING_INTERVAL_MS * Math.max(1, failureCount);
   return Math.min(delay, MAX_POLLING_INTERVAL_MS);
+}
+
+async function verifyEmailWithRetry(token: string, signal: AbortSignal) {
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await fetch("/api/auth/email/verify", {
+        body: JSON.stringify({ token }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        signal,
+      });
+      const data = (await response.json()) as VerifyResponse;
+
+      if (response.status < 500 || attempt === 3) {
+        return data;
+      }
+    } catch (error) {
+      lastError = error;
+
+      if (attempt === 3) {
+        throw error;
+      }
+    }
+
+    await sleep(700 * attempt, signal);
+  }
+
+  throw lastError ?? new Error("EMAIL_VERIFY_FAILED");
+}
+
+function sleep(ms: number, signal: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+
+    const timeout = window.setTimeout(resolve, ms);
+    signal.addEventListener(
+      "abort",
+      () => {
+        window.clearTimeout(timeout);
+        reject(new DOMException("Aborted", "AbortError"));
+      },
+      { once: true },
+    );
+  });
 }
 
 function safeInternalDestination(

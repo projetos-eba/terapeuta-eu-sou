@@ -7,7 +7,10 @@ import {
 import { getRuntime, getServiceRoleKey } from "../_shared/auth/runtime.ts";
 import { handleOptions, jsonResponse } from "../_shared/auth/cors.ts";
 import { parseJson, SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
-import { confirmAuthUserEmail, redirectForRole } from "../_shared/auth/users.ts";
+import {
+  confirmAuthUserEmail,
+  redirectAfterEmailConfirmation,
+} from "../_shared/auth/users.ts";
 import { isValidActionToken } from "../_shared/email/validation.ts";
 
 type VerifyEmailBody = {
@@ -28,7 +31,10 @@ runtime.serve(async (request) => {
   const serviceRoleKey = getServiceRoleKey(runtime);
 
   if (!supabaseUrl || !serviceRoleKey) {
-    return jsonResponse({ ok: false, message: "Nao foi possivel confirmar o e-mail." }, 503);
+    return jsonResponse(
+      { ok: false, message: "Nao foi possivel confirmar o e-mail." },
+      503,
+    );
   }
 
   const body = await parseJson<VerifyEmailBody>(request);
@@ -68,7 +74,12 @@ runtime.serve(async (request) => {
 
     return jsonResponse({
       ok: true,
-      redirectTo: redirectForRole(claimed.claim.recipient_role, "?verified=1"),
+      redirectTo: await redirectAfterEmailConfirmation(
+        client,
+        claimed.claim.recipient_role,
+        claimed.claim.user_id,
+        "?verified=1",
+      ),
     });
   } catch {
     await releaseAuthActionTokenClaim(client, claimed.claim.id, claimed.claimId);

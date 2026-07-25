@@ -76,7 +76,16 @@ verify_jwt = false
 [functions.client-auth-signup]
 verify_jwt = false
 
+[functions.client-auth-login]
+verify_jwt = false
+
+[functions.admin-auth-login]
+verify_jwt = false
+
 [functions.therapist-auth-signup]
+verify_jwt = false
+
+[functions.therapist-auth-login]
 verify_jwt = false
 
 [functions.verify-email]

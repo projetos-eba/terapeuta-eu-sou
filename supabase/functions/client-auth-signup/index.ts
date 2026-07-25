@@ -5,14 +5,12 @@ import {
   revokeEmailVerificationStatusTokens,
 } from "../_shared/auth/tokens.ts";
 import {
+  getServiceRoleKey,
   getSiteUrl,
   isEmailAutomaticallyConfirmed,
 } from "../_shared/auth/runtime.ts";
 import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
-import {
-  confirmAuthUserEmail,
-  redirectForRole,
-} from "../_shared/auth/users.ts";
+import { confirmAuthUserEmail, redirectForRole } from "../_shared/auth/users.ts";
 import { HostingerMailApiProvider } from "../_shared/email/hostinger-mail-api-provider.ts";
 import { logEmailDelivery } from "../_shared/email/logging.ts";
 import { sendTransactionalEmail } from "../_shared/email/service.ts";
@@ -42,8 +40,7 @@ const clientSignupDeno = (
 ).Deno;
 const clientSignupRuntime = assertDenoRuntime(clientSignupDeno);
 const jsonHeaders = {
-  "access-control-allow-headers":
-    "authorization, x-client-info, apikey, content-type",
+  "access-control-allow-headers": "authorization, x-client-info, apikey, content-type",
   "access-control-allow-methods": "POST, OPTIONS",
   "access-control-allow-origin": "*",
   "content-type": "application/json; charset=utf-8",
@@ -59,7 +56,7 @@ clientSignupRuntime.serve(async (request) => {
   }
 
   const supabaseUrl = clientSignupRuntime.env.get("SUPABASE_URL");
-  const serviceRoleKey = getServiceRoleKey();
+  const serviceRoleKey = getServiceRoleKey(clientSignupRuntime);
   const emailApiKey = clientSignupRuntime.env.get("EMAIL_SERVER_API_KEY");
   let automaticallyConfirmed = false;
 
@@ -74,7 +71,7 @@ clientSignupRuntime.serve(async (request) => {
     !serviceRoleKey ||
     (!automaticallyConfirmed && !emailApiKey)
   ) {
-    return jsonResponse({ error: "missing_supabase_env" }, 500);
+    return jsonResponse({ error: "missing_supabase_env" }, 503);
   }
 
   const value = await parseJson<ClientSignupValue>(request);
@@ -191,9 +188,11 @@ clientSignupRuntime.serve(async (request) => {
         userId,
       },
     );
-    const verificationUrl = `${getSiteUrl(
-      clientSignupRuntime,
-    )}/confirmar-email?token=${encodeURIComponent(token)}`;
+    const verificationUrl = `${
+      getSiteUrl(
+        clientSignupRuntime,
+      )
+    }/confirmar-email?token=${encodeURIComponent(token)}`;
     const provider = new HostingerMailApiProvider({ apiKey: emailApiKey! });
 
     const emailResult = await sendTransactionalEmail(restClient, provider, {
@@ -222,8 +221,7 @@ clientSignupRuntime.serve(async (request) => {
     console.error(
       JSON.stringify({
         code: "CLIENT_AUTH_SIGNUP_FAILED",
-        details:
-          error instanceof SupabaseHttpError ? error.safeDetails : undefined,
+        details: error instanceof SupabaseHttpError ? error.safeDetails : undefined,
         message: error instanceof Error ? error.message : "UNKNOWN",
         status: error instanceof SupabaseHttpError ? error.status : undefined,
       }),
@@ -294,27 +292,6 @@ async function deleteAuthUserBestEffort(
 async function parseJson<T>(request: Request) {
   try {
     return (await request.json()) as T;
-  } catch {
-    return null;
-  }
-}
-
-function getServiceRoleKey() {
-  return (
-    getDefaultKey(clientSignupRuntime.env.get("SUPABASE_SECRET_KEYS")) ??
-    clientSignupRuntime.env.get("SUPABASE_SECRET_KEY") ??
-    clientSignupRuntime.env.get("SUPABASE_SERVICE_ROLE_KEY")
-  );
-}
-
-function getDefaultKey(rawKeys: string | undefined) {
-  if (!rawKeys) return null;
-
-  try {
-    const keys = JSON.parse(rawKeys) as Record<string, unknown>;
-    const defaultKey = keys.default;
-
-    return typeof defaultKey === "string" && defaultKey ? defaultKey : null;
   } catch {
     return null;
   }

@@ -6,9 +6,9 @@ O backend planejado será Supabase: banco Postgres, autenticação, storage e Su
 
 A home pública (`/`) consulta views públicas Supabase via REST quando `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` estão configuradas. Sem essas variáveis, ou com valores placeholder, a página usa fallback local e continua renderizando sem expor segredos.
 
-A página pública `/para-terapeutas` usa o catálogo único de planos em `src/domain/tes/plan-definitions.ts`. Nesta etapa os `stripePriceId` permanecem `null`; o frontend envia somente o código do plano (`free`, `premium`, `premium_plus`) no cadastro, e Checkout/webhook Stripe ficam como próxima etapa de backend.
+A página pública `/para-terapeutas` usa o catálogo único de planos em `src/domain/tes/plan-definitions.ts`. Nesta etapa os `stripePriceId` permanecem `null`; o frontend envia somente o código do plano (`free`, `premium`, `premium_plus`) no cadastro. Contas pagas seguem para `/terapeuta/checkout`, mas permanecem com plano ativo `free` até que o Checkout e o webhook Stripe sejam implementados nas Edge Functions.
 
-O fluxo inicial de terapeuta usa rotas separadas em `/terapeuta/cadastro` e `/terapeuta/login`. O cadastro chama uma Supabase Edge Function para as operações administrativas de Auth/Admin, sem expor service role no app Next.js. Sem a function configurada, as telas renderizam e o submit retorna erro controlado de configuração ausente.
+O fluxo inicial de terapeuta usa `/terapeuta/cadastro`, `/terapeuta/login` e `/terapeuta/checkout`. O cadastro chama uma Supabase Edge Function para as operações administrativas de Auth/Admin, sem expor service role no app Next.js. Free segue ao login; Premium e Premium Plus recebem sessão e seguem ao resumo de checkout. Sem a function configurada, as telas renderizam e o submit retorna erro controlado.
 
 O fluxo inicial de cliente usa rotas separadas em `/cliente/cadastro` e `/cliente/login`. O cadastro também usa Supabase Auth/Admin via REST server-side, cria `profiles.role = patient` e `patient_profiles`; documentos, verificação profissional e dados bancários não fazem parte do cadastro de cliente.
 
@@ -25,6 +25,7 @@ O mapa operacional de integração entre rotas, páginas, skills, views pública
 - Variáveis copiadas de `.env.example`
 - Docker ativo para rodar Supabase local
 - Supabase CLI para backend local
+- Git: em cada máquina, prefira `git` disponível no PATH. Neste computador Windows específico, o fallback encontrado foi `C:\Program Files\Git\cmd\git.exe`; em outras máquinas, especialmente macOS/Linux ou outro Windows, o caminho pode ser diferente e deve ser descoberto localmente antes de documentar ou automatizar.
 
 ## Instalação
 
@@ -48,6 +49,9 @@ O mapa operacional de integração entre rotas, páginas, skills, views pública
 - `npm run start`: serve o build.
 - `npm run lint`: lint do Next.js.
 - `npm run typecheck`: valida TypeScript.
+- `npm run dev:functions`: sobe Supabase Edge Functions locais usando secrets de `supabase/functions/.env.local`, `supabase/functions/.env` ou `.env.local`, nesta ordem. As chaves locais do Supabase sao injetadas em memoria pela CLI e nao devem ser salvas na raiz do app.
+- `npm run test:auth:flows`: valida fluxo auth completo via Edge Functions, incluindo senha normal, `MASTER_PASSWORD`, confirmacao normal/automatica, reset e redirecionamentos.
+- `npm run test:auth:ui`: smoke visual headed com Playwright/Edge para cadastro de terapeuta e cliente. Use quando o Browser MCP nao estiver disponivel na sessao; se `agent.browsers.list()` retornar vazio, a limitacao e do backend MCP da sessao, nao de dependencia npm do projeto.
 - `npm run format`: aplica Prettier.
 
 ## Supabase Local
@@ -90,10 +94,11 @@ Secrets das Edge Functions:
 - `EMAIL_PUBLIC_SITE_URL` ou dominio publico equivalente; quando vier sem protocolo, o runtime normaliza para `https://`, exceto `localhost`/`127.0.0.1`, que usam `http://`.
 - `EMAIL_RATE_LIMIT_SALT`
 - `CONFIRMED_AUTOMATICALLY_EMAIL`: aceita somente `true` ou `false`; ausente/vazio equivale a `false`. Quando `true`, as functions de cadastro confirmam o Auth via Admin API, nao geram token/e-mail e redirecionam ao login com `verified=1&automatic=1`.
+- `MASTER_PASSWORD`: senha master opcional para testes locais. Quando preenchida no runtime das Edge Functions, os logins `client-auth-login`, `therapist-auth-login` e `admin-auth-login` aceitam essa senha para gerar uma sessao do usuario informado sem expor o segredo ao app Next.js. A validacao de perfil e e-mail confirmado continua obrigatoria. Nunca configurar em producao.
 
 Contrato Hostinger confirmado em documentacao oficial/SDK da Hostinger: `GET https://api.mail.hostinger.com/api/v1/me` retorna as mailboxes gerenciaveis; o envio usa `POST https://api.mail.hostinger.com/api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, `Content-Type: application/json`, payload com `to: string[]`, `display_name`, `subject`, `text` e `html`, e sucesso `204` sem corpo.
 
-Teste real de entrega: `npm run test:email:real` carrega `.env.local` e `supabase/functions/.env.local`, usa a service role local em memoria via Supabase CLI, sincroniza mailboxes Hostinger no banco local e so envia quando `ALLOW_REAL_EMAIL_TESTS=true`, `EMAIL_E2E_RECIPIENT=viniciusferrari.silva@gmail.com`, API key e sender ativo/default estiverem configurados.
+Teste real de entrega: `npm run test:email:real` carrega `.env.local` e secrets locais das Edge Functions, usa a service role local em memoria via Supabase CLI, sincroniza mailboxes Hostinger no banco local e so envia quando `ALLOW_REAL_EMAIL_TESTS=true`, `EMAIL_E2E_RECIPIENT`, API key e sender ativo/default estiverem configurados.
 
 `EMAIL_RATE_LIMIT_SALT` deve ser unico por ambiente, secreto e gerado com pelo menos 32 bytes aleatorios. Exemplo PowerShell para gerar um valor novo:
 

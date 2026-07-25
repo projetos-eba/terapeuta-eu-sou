@@ -10,38 +10,64 @@ import { ShellSidebar } from "./shell-sidebar";
 import { ShellTopbar } from "./shell-topbar";
 
 export type ShellNavigationItem = {
+  accessState?: "enabled" | "hidden" | "locked";
   badge?: number;
   href: string;
-  icon: "calendar" | "heart" | "home" | "message" | "search" | "user";
+  icon:
+    | "brain"
+    | "calendar"
+    | "chart"
+    | "credit-card"
+    | "heart"
+    | "help"
+    | "home"
+    | "message"
+    | "route"
+    | "search"
+    | "settings"
+    | "sparkles"
+    | "star"
+    | "user"
+    | "user-pen"
+    | "wallet";
   label: string;
+  planLabel?: "Premium" | "Premium Plus";
+  upgradeHref?: string;
 };
 
 export type ShellUser = {
   avatarUrl?: string | null;
   name: string;
+  planLabel?: string;
   roleLabel: string;
 };
 
 type AuthenticatedShellProps = {
   children: ReactNode;
+  helpCardVariant?: "default" | "priority" | "therapist";
   helpHref: string;
   helpLabel?: string;
   logoutAction?: () => void | Promise<void>;
   logoutHref?: string;
   navigation: ShellNavigationItem[];
   notificationCount?: number;
+  planLabel?: string;
   user: ShellUser;
+  variant?: "admin" | "patient" | "therapist";
 };
 
 export function AuthenticatedShell({
   children,
+  helpCardVariant = "default",
   helpHref,
   helpLabel,
   logoutAction,
   logoutHref,
   navigation,
   notificationCount = 0,
+  planLabel,
   user,
+  variant = "patient",
 }: AuthenticatedShellProps) {
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
 
@@ -55,6 +81,7 @@ export function AuthenticatedShell({
         )}
       >
         <ShellSidebar
+          helpCardVariant={helpCardVariant}
           helpHref={helpHref}
           helpLabel={helpLabel}
           logoutAction={logoutAction}
@@ -76,10 +103,19 @@ export function AuthenticatedShell({
       <div className="lg:pl-[var(--tes-layout-auth-sidebar-width)]">
         <ShellTopbar
           notificationCount={notificationCount}
+          planLabel={planLabel}
           user={user}
+          variant={variant}
           onOpenNavigation={() => setIsNavigationOpen(true)}
         />
-        <main className="min-h-[calc(100vh-var(--tes-layout-auth-topbar-height))] px-4 py-5 sm:px-6 lg:px-4 lg:py-0">
+        <main
+          className={cn(
+            "px-4 py-5 sm:px-6",
+            variant === "therapist"
+              ? "min-h-[calc(100vh-96px)] lg:px-7 lg:py-6"
+              : "min-h-[calc(100vh-var(--tes-layout-auth-topbar-height))] lg:px-4 lg:py-0",
+          )}
+        >
           {children}
         </main>
       </div>

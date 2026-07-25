@@ -29,7 +29,7 @@ export default function TherapistSignupPage({
     <TherapistAuthShell
       eyebrow="Para terapeutas"
       title="Seu espaço profissional começa aqui."
-      description="Crie sua conta para acessar a área do terapeuta. Perfil público, documentos e dados bancários entram depois, nos próximos passos."
+      description="Cadastre-se para acessar sua área profissional no TES."
     >
       <TherapistSignupForm plan={plan} />
     </TherapistAuthShell>

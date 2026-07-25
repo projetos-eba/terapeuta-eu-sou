@@ -20,6 +20,7 @@ export default function TherapistLoginPage({
 }: {
   searchParams?: {
     created?: string;
+    next?: string;
     reset?: string;
     verified?: string;
   };
@@ -32,6 +33,7 @@ export default function TherapistLoginPage({
     >
       <div className="w-full">
         <TherapistLoginForm
+          continuation={searchParams?.next}
           created={searchParams?.created === "1"}
           reset={searchParams?.reset === "1"}
           verified={searchParams?.verified === "1"}

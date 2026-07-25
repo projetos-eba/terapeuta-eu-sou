@@ -16,10 +16,12 @@ type LoginResponse =
   | ({ ok: false } & TherapistAuthApiError);
 
 export function TherapistLoginForm({
+  continuation,
   created,
   reset,
   verified,
 }: {
+  continuation?: string;
   created: boolean;
   reset?: boolean;
   verified?: boolean;
@@ -44,6 +46,7 @@ export function TherapistLoginForm({
     try {
       const response = await fetch("/api/auth/therapist/login", {
         body: JSON.stringify({
+          continuation,
           email,
           password: String(form.get("password") ?? ""),
         }),

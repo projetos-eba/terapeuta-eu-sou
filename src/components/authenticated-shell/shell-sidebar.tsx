@@ -6,6 +6,7 @@ import type { ShellNavigationItem } from "./authenticated-shell";
 import { ShellNavItem } from "./shell-nav-item";
 
 type ShellSidebarProps = {
+  helpCardVariant?: "default" | "priority" | "therapist";
   helpHref: string;
   helpLabel?: string;
   logoutAction?: () => void | Promise<void>;
@@ -15,6 +16,7 @@ type ShellSidebarProps = {
 };
 
 export function ShellSidebar({
+  helpCardVariant,
   helpHref,
   helpLabel,
   logoutAction,
@@ -23,11 +25,10 @@ export function ShellSidebar({
   onNavigate,
 }: ShellSidebarProps) {
   return (
-    <div className="flex h-full flex-col px-[13px] pb-4 pt-3">
+    <div className="flex h-full flex-col overflow-y-auto px-[13px] pb-4 pt-3">
       <div className="flex h-[74px] items-center px-3">
         <Image
           alt="Terapeuta Eu Sou"
-          className="h-auto w-[174px]"
           height={70}
           priority
           src="/logo-oficial-terapeuta-eu-sou.png"
@@ -35,10 +36,12 @@ export function ShellSidebar({
         />
       </div>
 
-      <nav aria-label="Seções do ambiente" className="mt-3 space-y-[13px]">
-        {navigation.map((item) => (
-          <ShellNavItem item={item} key={item.href} onNavigate={onNavigate} />
-        ))}
+      <nav aria-label="Seções do ambiente" className="mt-3 space-y-1">
+        {navigation
+          .filter((item) => item.accessState !== "hidden")
+          .map((item) => (
+            <ShellNavItem item={item} key={item.href} onNavigate={onNavigate} />
+          ))}
       </nav>
 
       <div className="mt-8">
@@ -64,7 +67,11 @@ export function ShellSidebar({
       </div>
 
       <div className="mt-auto pt-8">
-        <ShellHelpCard href={helpHref} label={helpLabel} />
+        <ShellHelpCard
+          href={helpHref}
+          label={helpLabel}
+          variant={helpCardVariant}
+        />
       </div>
     </div>
   );

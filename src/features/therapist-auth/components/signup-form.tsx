@@ -73,11 +73,11 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
           Crie sua conta de terapeuta
         </h2>
         <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
-          Plano pretendido:{" "}
+          Plano selecionado:{" "}
           <strong className="text-brand-primary">
             {getTherapistPlanLabel(plan)}
           </strong>
-          . Você completa perfil, documentos e dados de repasse depois.
+          .
         </p>
       </div>
 
