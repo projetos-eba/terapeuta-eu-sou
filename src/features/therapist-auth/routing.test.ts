@@ -6,6 +6,7 @@ import { routes } from "@/lib/routes";
 import {
   getSafeTherapistContinuation,
   getTherapistCheckoutHref,
+  getTherapistLoginHref,
   getTherapistLoginRedirect,
   getTherapistPostSignupHref,
   isPaidTherapistPlan,
@@ -40,6 +41,17 @@ describe("therapist auth routing", () => {
         `${routes.public.therapistCheckout}?plan=free`,
       ),
     ).toBeNull();
+  });
+
+  it("keeps checkout continuation on login without adding signup status by default", () => {
+    const checkout = getTherapistCheckoutHref(TherapistPlan.Premium);
+
+    expect(getTherapistLoginHref(checkout)).toBe(
+      `${routes.public.therapistSignIn}?next=%2Fterapeuta%2Fcheckout%3Fplan%3Dpremium`,
+    );
+    expect(getTherapistLoginHref(checkout, { created: true })).toBe(
+      `${routes.public.therapistSignIn}?created=1&next=%2Fterapeuta%2Fcheckout%3Fplan%3Dpremium`,
+    );
   });
 
   it("falls back to the active plan dashboard after login", () => {

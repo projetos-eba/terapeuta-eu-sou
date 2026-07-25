@@ -56,7 +56,7 @@ export function UpcomingSessionsCard({
       )}
       <Link
         className="mt-5 flex min-h-11 items-center justify-center text-xs font-bold text-brand-deep outline-none hover:text-brand-primary focus-visible:ring-4 focus-visible:ring-ring/20"
-        href={routes.therapist.plusAgenda}
+        href={routes.therapist.plusAgenda as Route<string>}
       >
         Ver agenda completa →
       </Link>

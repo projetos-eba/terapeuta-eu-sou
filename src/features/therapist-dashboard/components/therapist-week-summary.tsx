@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 
 import { routes } from "@/lib/routes";
 
@@ -22,7 +23,7 @@ export function TherapistWeekSummary({
         </div>
         <Link
           className="text-sm font-bold text-brand-deep outline-none hover:text-brand-primary focus-visible:ring-4 focus-visible:ring-ring/20"
-          href={routes.therapist.plusInsights}
+          href={routes.therapist.plusInsights as Route<string>}
         >
           Ver mais →
         </Link>

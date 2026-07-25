@@ -21,6 +21,8 @@ export default function TherapistLoginPage({
   searchParams?: {
     created?: string;
     next?: string;
+    reset?: string;
+    verified?: string;
   };
 }) {
   return (
@@ -33,6 +35,8 @@ export default function TherapistLoginPage({
         <TherapistLoginForm
           continuation={searchParams?.next}
           created={searchParams?.created === "1"}
+          reset={searchParams?.reset === "1"}
+          verified={searchParams?.verified === "1"}
         />
       </div>
     </TherapistAuthShell>

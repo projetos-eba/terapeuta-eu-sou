@@ -18,13 +18,20 @@ type LoginResponse =
 export function TherapistLoginForm({
   continuation,
   created,
+  reset,
+  verified,
 }: {
   continuation?: string;
   created: boolean;
+  reset?: boolean;
+  verified?: boolean;
 }) {
   const [fieldErrors, setFieldErrors] = useState<TherapistAuthFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [lastEmail, setLastEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,12 +40,14 @@ export function TherapistLoginForm({
     setIsSubmitting(true);
 
     const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") ?? "");
+    setLastEmail(email);
 
     try {
       const response = await fetch("/api/auth/therapist/login", {
         body: JSON.stringify({
           continuation,
-          email: String(form.get("email") ?? ""),
+          email,
           password: String(form.get("password") ?? ""),
         }),
         headers: {
@@ -62,6 +71,27 @@ export function TherapistLoginForm({
     }
   }
 
+  async function handleResend() {
+    setIsResending(true);
+    setResendMessage(null);
+
+    try {
+      const response = await fetch("/api/auth/email/resend", {
+        body: JSON.stringify({ email: lastEmail }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const data = (await response.json()) as { message?: string };
+      setResendMessage(data.message ?? "Verifique seu e-mail em instantes.");
+    } catch {
+      setResendMessage("Nao foi possivel reenviar agora. Tente novamente.");
+    } finally {
+      setIsResending(false);
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-5">
       <div>
@@ -79,17 +109,48 @@ export function TherapistLoginForm({
 
       {created ? (
         <p className="rounded-2xl bg-status-successBg px-4 py-3 text-sm font-bold text-status-success">
-          Conta criada. Entre para continuar sua configuração inicial.
+          Conta criada. Enviamos um link para confirmar seu e-mail.
+        </p>
+      ) : null}
+
+      {verified ? (
+        <p className="rounded-2xl bg-status-successBg px-4 py-3 text-sm font-bold text-status-success">
+          E-mail confirmado. Entre para continuar sua configuracao inicial.
+        </p>
+      ) : null}
+
+      {reset ? (
+        <p className="rounded-2xl bg-status-successBg px-4 py-3 text-sm font-bold text-status-success">
+          Senha atualizada. Entre com sua nova senha.
         </p>
       ) : null}
 
       {formError ? (
-        <p
-          role="alert"
-          className="rounded-2xl bg-status-dangerBg px-4 py-3 text-sm font-bold text-status-danger"
-        >
-          {formError}
-        </p>
+        <div className="space-y-3">
+          <p
+            role="alert"
+            className="rounded-2xl bg-status-dangerBg px-4 py-3 text-sm font-bold text-status-danger"
+          >
+            {formError}
+          </p>
+          {formError === "Confirme seu e-mail antes de entrar." ? (
+            <TESButton
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={isResending || !lastEmail}
+              onClick={handleResend}
+              className="min-h-11 rounded-2xl"
+            >
+              Reenviar confirmacao
+            </TESButton>
+          ) : null}
+          {resendMessage ? (
+            <p className="text-xs font-bold text-tesText-secondary">
+              {resendMessage}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       <Field
@@ -118,9 +179,6 @@ export function TherapistLoginForm({
         >
           Esqueci minha senha
         </Link>
-        <span className="text-xs font-bold text-tesText-muted">
-          A recuperação completa de senha será disponibilizada em breve.
-        </span>
       </div>
 
       <TESButton

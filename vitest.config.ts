@@ -20,6 +20,7 @@ export default defineConfig({
       reporter: ["text", "html"],
     },
     environment: "jsdom",
+    exclude: ["node_modules/**", ".next/**", "supabase/functions/**", "tests/e2e/**"],
     setupFiles: ["./src/test/setup.ts"],
   },
 });

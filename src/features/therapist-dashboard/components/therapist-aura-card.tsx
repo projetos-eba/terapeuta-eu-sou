@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { Route } from "next";
 import { CircleCheckBig, Crown, Star } from "lucide-react";
 
 import { routes } from "@/lib/routes";
@@ -33,7 +34,7 @@ export function TherapistAuraCard({
           </div>
           <Link
             className="text-xs font-bold text-brand-primary outline-none hover:text-brand-deep focus-visible:ring-4 focus-visible:ring-ring/20"
-            href={routes.therapist.plusAssessorIa}
+            href={routes.therapist.plusAssessorIa as Route<string>}
           >
             Conversar com a Aura →
           </Link>

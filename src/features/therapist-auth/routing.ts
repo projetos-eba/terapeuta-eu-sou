@@ -25,13 +25,26 @@ export function getTherapistPostSignupHref(plan: TherapistPlan) {
   return `${getTherapistCheckoutHref(plan)}&created=1`;
 }
 
-export function getTherapistLoginHref(continuation?: string | null) {
+export function getTherapistLoginHref(
+  continuation?: string | null,
+  options: { created?: boolean } = {},
+) {
   const safeContinuation = getSafeTherapistContinuation(continuation);
-  const baseHref = `${routes.public.therapistSignIn}?created=1`;
+  const params = new URLSearchParams();
 
-  return safeContinuation
-    ? `${baseHref}&next=${encodeURIComponent(safeContinuation)}`
-    : baseHref;
+  if (options.created) {
+    params.set("created", "1");
+  }
+
+  if (safeContinuation) {
+    params.set("next", safeContinuation);
+  }
+
+  const query = params.toString();
+
+  return query
+    ? `${routes.public.therapistSignIn}?${query}`
+    : routes.public.therapistSignIn;
 }
 
 export function getTherapistLoginRedirect(

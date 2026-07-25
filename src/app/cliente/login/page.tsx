@@ -17,12 +17,18 @@ export default function ClientLoginPage({
 }: {
   searchParams?: {
     created?: string;
+    reset?: string;
+    verified?: string;
   };
 }) {
   return (
     <ClientAuthShell className="flex items-center">
       <div className="w-full">
-        <ClientLoginForm created={searchParams?.created === "1"} />
+        <ClientLoginForm
+          created={searchParams?.created === "1"}
+          reset={searchParams?.reset === "1"}
+          verified={searchParams?.verified === "1"}
+        />
       </div>
     </ClientAuthShell>
   );

@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  TherapistPlan,
-  TherapistStatus,
-} from "@/domain/tes";
+import { TherapistPlan, TherapistStatus } from "@/domain/tes";
 
 const mocks = vi.hoisted(() => ({
   accessToken: "valid-token" as string | undefined,
@@ -17,8 +14,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("server-only", () => ({}));
 vi.mock("next/headers", () => ({
   cookies: () => ({
-    get: () =>
-      mocks.accessToken ? { value: mocks.accessToken } : undefined,
+    get: () => (mocks.accessToken ? { value: mocks.accessToken } : undefined),
   }),
 }));
 vi.mock("next/navigation", () => ({ redirect: mocks.redirect }));
@@ -83,8 +79,18 @@ describe("requireTherapistSession", () => {
 
   it("redirects when the access token is absent", async () => {
     mocks.accessToken = undefined;
-    await expect(requireTherapistSession()).rejects.toThrow(
-      "/terapeuta/login",
+    await expect(requireTherapistSession()).rejects.toThrow("/terapeuta/login");
+  });
+
+  it("preserves a safe checkout continuation when login is required", async () => {
+    mocks.accessToken = undefined;
+
+    await expect(
+      requireTherapistSession({
+        loginContinuation: "/terapeuta/checkout?plan=premium",
+      }),
+    ).rejects.toThrow(
+      "/terapeuta/login?next=%2Fterapeuta%2Fcheckout%3Fplan%3Dpremium",
     );
   });
 });

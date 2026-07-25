@@ -42,7 +42,10 @@ export default async function TherapistCheckoutPage({
     redirect(routes.public.forTherapists);
   }
 
-  const session = await requireTherapistSession();
+  const checkoutContinuation = `${routes.public.therapistCheckout}?plan=${requestedPlan}`;
+  const session = await requireTherapistSession({
+    loginContinuation: checkoutContinuation,
+  });
   const plan = getTherapistPlanDefinition(requestedPlan);
   const hasActivePaidPlan = session.plan !== TherapistPlan.Free;
 

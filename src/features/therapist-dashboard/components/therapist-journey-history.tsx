@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { CalendarCheck2, Star, UsersRound } from "lucide-react";
 
 import { routes } from "@/lib/routes";
@@ -58,7 +59,7 @@ export function TherapistJourneyHistory({
       </div>
       <Link
         className="mt-auto pt-8 text-center text-xs font-bold text-brand-deep outline-none hover:text-brand-primary focus-visible:ring-4 focus-visible:ring-ring/20"
-        href={routes.therapist.plusPatients}
+        href={routes.therapist.plusPatients as Route<string>}
       >
         Ver trajetória completa →
       </Link>

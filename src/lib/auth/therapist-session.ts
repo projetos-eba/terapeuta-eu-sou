@@ -11,7 +11,10 @@ import {
   type TherapistCapability,
   type TherapistStatus as TherapistStatusValue,
 } from "@/domain/tes";
-import { getTherapistDashboardHref } from "@/features/therapist-auth/routing";
+import {
+  getTherapistDashboardHref,
+  getTherapistLoginHref,
+} from "@/features/therapist-auth/routing";
 import { routes } from "@/lib/routes";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
@@ -19,6 +22,7 @@ type TherapistNamespace = "basico" | "plus" | "pro";
 
 type RequireTherapistSessionOptions = {
   capability?: TherapistCapability;
+  loginContinuation?: string;
   minimumPlan?: TherapistPlan;
   namespace?: TherapistNamespace;
 };
@@ -59,7 +63,9 @@ export async function requireTherapistSession(
   const accessToken = cookies().get("tes_therapist_access_token")?.value;
   const config = getSupabasePublicConfig();
 
-  if (!accessToken || !config) redirect(routes.public.therapistSignIn);
+  if (!accessToken || !config) {
+    redirect(getTherapistLoginHref(options.loginContinuation));
+  }
 
   try {
     const user = await requestSupabase<SupabaseAuthUser>(
@@ -105,7 +111,7 @@ export async function requireTherapistSession(
     };
   } catch (error) {
     if (isNextRedirect(error)) throw error;
-    redirect(routes.public.therapistSignIn);
+    redirect(getTherapistLoginHref(options.loginContinuation));
   }
 }
 

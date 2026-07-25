@@ -1,3 +1,21 @@
+import {
+  createAuthActionToken,
+  createEmailVerificationStatusToken,
+  revokeAuthActionTokens,
+  revokeEmailVerificationStatusTokens,
+} from "../_shared/auth/tokens.ts";
+import {
+  getServiceRoleKey,
+  getSiteUrl,
+  isEmailAutomaticallyConfirmed,
+} from "../_shared/auth/runtime.ts";
+import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
+import { confirmAuthUserEmail, redirectForRole } from "../_shared/auth/users.ts";
+import { HostingerMailApiProvider } from "../_shared/email/hostinger-mail-api-provider.ts";
+import { logEmailDelivery } from "../_shared/email/logging.ts";
+import { sendTransactionalEmail } from "../_shared/email/service.ts";
+import { normalizeEmail } from "../_shared/email/validation.ts";
+
 type TherapistSignupDenoRuntime = {
   env: {
     get(name: string): string | undefined;
@@ -23,8 +41,7 @@ const therapistSignupDeno = (
 ).Deno;
 const therapistSignupRuntime = assertDenoRuntime(therapistSignupDeno);
 const jsonHeaders = {
-  "access-control-allow-headers":
-    "authorization, x-client-info, apikey, content-type",
+  "access-control-allow-headers": "authorization, x-client-info, apikey, content-type",
   "access-control-allow-methods": "POST, OPTIONS",
   "access-control-allow-origin": "*",
   "content-type": "application/json; charset=utf-8",
@@ -40,10 +57,24 @@ therapistSignupRuntime.serve(async (request) => {
   }
 
   const supabaseUrl = therapistSignupRuntime.env.get("SUPABASE_URL");
-  const serviceRoleKey = getServiceRoleKey();
+  const serviceRoleKey = getServiceRoleKey(therapistSignupRuntime);
+  const emailApiKey = therapistSignupRuntime.env.get("EMAIL_SERVER_API_KEY");
+  let automaticallyConfirmed = false;
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    return jsonResponse({ error: "missing_supabase_env" }, 500);
+  try {
+    automaticallyConfirmed = isEmailAutomaticallyConfirmed(
+      therapistSignupRuntime,
+    );
+  } catch {
+    return jsonResponse({ error: "invalid_email_confirmation_config" }, 500);
+  }
+
+  if (
+    !supabaseUrl ||
+    !serviceRoleKey ||
+    (!automaticallyConfirmed && !emailApiKey)
+  ) {
+    return jsonResponse({ error: "missing_supabase_env" }, 503);
   }
 
   const value = await parseJson<TherapistSignupValue>(request);
@@ -61,14 +92,15 @@ therapistSignupRuntime.serve(async (request) => {
   let userId: string | null = null;
 
   try {
+    const email = normalizeEmail(value.email);
     const authUser = await supabaseJson<SupabaseAuthUser>(
       supabaseUrl,
       serviceRoleKey,
       "/auth/v1/admin/users",
       {
         body: {
-          email: value.email,
-          email_confirm: true,
+          email,
+          email_confirm: false,
           password: value.password,
           phone_confirm: false,
           user_metadata: {
@@ -86,7 +118,7 @@ therapistSignupRuntime.serve(async (request) => {
     await supabaseJson(supabaseUrl, serviceRoleKey, "/rest/v1/profiles", {
       body: {
         display_name: value.fullName,
-        email: value.email,
+        email,
         id: userId,
         phone: value.phoneDigits,
         role: "therapist",
@@ -134,8 +166,83 @@ therapistSignupRuntime.serve(async (request) => {
       },
     );
 
-    return jsonResponse({ userId });
+    const restClient = new SupabaseRestClient(supabaseUrl, serviceRoleKey);
+
+    if (automaticallyConfirmed) {
+      await revokeAuthActionTokens(restClient, userId, "email_verification");
+      await revokeEmailVerificationStatusTokens(restClient, userId);
+      await confirmAuthUserEmail(restClient, userId);
+      await logEmailDelivery(restClient, {
+        actionKey: "email_verification",
+        correlationId: crypto.randomUUID(),
+        errorMessage: "automatically_confirmed",
+        recipientEmail: email,
+        recipientRole: "therapist",
+        recipientUserId: userId,
+        status: "skipped",
+      });
+
+      return jsonResponse({
+        mode: "automatically_confirmed",
+        redirectTo: redirectForRole("therapist", "?verified=1&automatic=1"),
+        userId,
+      });
+    }
+
+    const { token } = await createAuthActionToken(restClient, {
+      expiresInSeconds: 24 * 60 * 60,
+      purpose: "email_verification",
+      recipientEmail: email,
+      recipientRole: "therapist",
+      userId,
+    });
+    const { token: statusToken } = await createEmailVerificationStatusToken(
+      restClient,
+      {
+        expiresInSeconds: 24 * 60 * 60,
+        recipientRole: "therapist",
+        userId,
+      },
+    );
+    const verificationUrl = `${
+      getSiteUrl(
+        therapistSignupRuntime,
+      )
+    }/confirmar-email?token=${encodeURIComponent(token)}`;
+    const provider = new HostingerMailApiProvider({ apiKey: emailApiKey! });
+
+    const emailResult = await sendTransactionalEmail(restClient, provider, {
+      actionKey: "email_verification",
+      correlationId: crypto.randomUUID(),
+      recipient: { email, name: value.fullName },
+      recipientRole: "therapist",
+      recipientUserId: userId,
+      templateData: {
+        name: value.fullName,
+        role: "therapist",
+        url: verificationUrl,
+      },
+    });
+
+    if (emailResult.status !== "success") {
+      throw new Error("email_verification_failed");
+    }
+
+    return jsonResponse({
+      mode: "email_sent",
+      statusToken,
+      userId,
+    });
   } catch (error) {
+    console.error(
+      JSON.stringify({
+        code: "THERAPIST_AUTH_SIGNUP_FAILED",
+        details: error instanceof SupabaseHttpError ? error.safeDetails : undefined,
+        message: error instanceof Error ? error.message : "UNKNOWN",
+        status: error instanceof SupabaseHttpError ? error.status : undefined,
+      }),
+    );
+
     if (userId) {
       await deleteAuthUserBestEffort(supabaseUrl, serviceRoleKey, userId);
     }
@@ -168,15 +275,16 @@ async function supabaseJson<T = unknown>(
     method: options.method,
   });
 
+  const text = await response.text();
+
   if (!response.ok) {
-    throw new SupabaseHttpError(response.status);
+    throw new SupabaseHttpError(response.status, sanitizeErrorText(text));
   }
 
   if (response.status === 204) {
     return undefined as T;
   }
 
-  const text = await response.text();
   return text ? (JSON.parse(text) as T) : (undefined as T);
 }
 
@@ -205,36 +313,14 @@ async function parseJson<T>(request: Request) {
   }
 }
 
-function getServiceRoleKey() {
-  return (
-    getDefaultKey(therapistSignupRuntime.env.get("SUPABASE_SECRET_KEYS")) ??
-    therapistSignupRuntime.env.get("SUPABASE_SECRET_KEY") ??
-    therapistSignupRuntime.env.get("SUPABASE_SERVICE_ROLE_KEY")
-  );
-}
-
-function getDefaultKey(rawKeys: string | undefined) {
-  if (!rawKeys) return null;
-
-  try {
-    const keys = JSON.parse(rawKeys) as Record<string, unknown>;
-    const defaultKey = keys.default;
-
-    return typeof defaultKey === "string" && defaultKey ? defaultKey : null;
-  } catch {
-    return null;
-  }
-}
-
 function buildUniqueSlug(name: string) {
-  const base =
-    name
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 64) || "terapeuta";
+  const base = name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64) || "terapeuta";
   const suffix = crypto.randomUUID().slice(0, 8);
 
   return `${base}-${suffix}`;
@@ -264,9 +350,16 @@ function jsonResponse(body: unknown, status = 200) {
 }
 
 class SupabaseHttpError extends Error {
-  constructor(readonly status: number) {
+  constructor(
+    readonly status: number,
+    readonly safeDetails?: string,
+  ) {
     super("Supabase request failed.");
   }
+}
+
+function sanitizeErrorText(value: string) {
+  return value.replace(/[\r\n]+/g, " ").slice(0, 500);
 }
 
 export {};

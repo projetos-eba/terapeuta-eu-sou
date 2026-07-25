@@ -19,6 +19,7 @@ import {
 } from "@/features/therapist-auth/routing";
 import { setTherapistSessionCookies } from "@/features/therapist-auth/session-cookies";
 import { validateTherapistSignup } from "@/features/therapist-auth/validation";
+import { routes } from "@/lib/routes";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -49,9 +50,23 @@ export async function POST(request: Request) {
   }
 
   try {
-    await createTherapistAccount(validation.value);
+    const signup = await createTherapistAccount(validation.value);
 
-    const redirectTo = getTherapistPostSignupHref(validation.value.plan);
+    if (signup.mode !== "automatically_confirmed") {
+      const statusQuery = signup.statusToken
+        ? `?statusToken=${encodeURIComponent(signup.statusToken)}`
+        : "";
+
+      return NextResponse.json({
+        ok: true,
+        redirectTo: `${routes.public.confirmEmail}${statusQuery}`,
+      });
+    }
+
+    const redirectTo = isPaidTherapistPlan(validation.value.plan)
+      ? getTherapistPostSignupHref(validation.value.plan)
+      : (signup.redirectTo ??
+        getTherapistPostSignupHref(validation.value.plan));
 
     if (!isPaidTherapistPlan(validation.value.plan)) {
       return NextResponse.json({
@@ -77,6 +92,7 @@ export async function POST(request: Request) {
         ok: true,
         redirectTo: getTherapistLoginHref(
           getTherapistCheckoutHref(validation.value.plan),
+          { created: true },
         ),
       });
     }

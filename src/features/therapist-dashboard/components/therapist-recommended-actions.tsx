@@ -43,7 +43,7 @@ export function TherapistRecommendedActions({
       )}
       <Link
         className="mt-auto pt-8 text-center text-xs font-bold text-brand-deep outline-none hover:text-brand-primary focus-visible:ring-4 focus-visible:ring-ring/20"
-        href={routes.therapist.plusAssessorIa}
+        href={routes.therapist.plusAssessorIa as Route<string>}
       >
         Ver todas as recomendações →
       </Link>

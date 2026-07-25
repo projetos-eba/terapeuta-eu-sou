@@ -25,6 +25,7 @@ O mapa operacional de integração entre rotas, páginas, skills, views pública
 - Variáveis copiadas de `.env.example`
 - Docker ativo para rodar Supabase local
 - Supabase CLI para backend local
+- Git: em cada máquina, prefira `git` disponível no PATH. Neste computador Windows específico, o fallback encontrado foi `C:\Program Files\Git\cmd\git.exe`; em outras máquinas, especialmente macOS/Linux ou outro Windows, o caminho pode ser diferente e deve ser descoberto localmente antes de documentar ou automatizar.
 
 ## Instalação
 
@@ -48,6 +49,9 @@ O mapa operacional de integração entre rotas, páginas, skills, views pública
 - `npm run start`: serve o build.
 - `npm run lint`: lint do Next.js.
 - `npm run typecheck`: valida TypeScript.
+- `npm run dev:functions`: sobe Supabase Edge Functions locais usando secrets de `supabase/functions/.env.local`, `supabase/functions/.env` ou `.env.local`, nesta ordem. As chaves locais do Supabase sao injetadas em memoria pela CLI e nao devem ser salvas na raiz do app.
+- `npm run test:auth:flows`: valida fluxo auth completo via Edge Functions, incluindo senha normal, `MASTER_PASSWORD`, confirmacao normal/automatica, reset e redirecionamentos.
+- `npm run test:auth:ui`: smoke visual headed com Playwright/Edge para cadastro de terapeuta e cliente. Use quando o Browser MCP nao estiver disponivel na sessao; se `agent.browsers.list()` retornar vazio, a limitacao e do backend MCP da sessao, nao de dependencia npm do projeto.
 - `npm run format`: aplica Prettier.
 
 ## Supabase Local
@@ -69,6 +73,40 @@ npx supabase gen types typescript --local --schema public > src/lib/supabase/dat
 ```
 
 A Edge Function `match-therapies` calcula recomendações por regras e pesos. Ela não usa OpenAI, IA generativa, Stripe ou Zoom.
+
+### E-mails transacionais
+
+O modulo de e-mails transacionais roda somente em Supabase Edge Functions. O app Next.js chama APIs server-side locais, que invocam as functions; o navegador nunca chama a Hostinger e nunca recebe `EMAIL_SERVER_API_KEY`.
+
+Functions iniciais:
+
+- `client-auth-signup` e `therapist-auth-signup`: criam usuarios sem e-mail confirmado, geram token hashado de confirmacao e token opaco de polling, e enviam `email_verification`.
+- `verify-email`: confirma o e-mail com token de uso unico.
+- `check-email-verification-status`: consulta status por token opaco de polling, sem e-mail no payload e sem PII na resposta.
+- `resend-email-verification`: reenvia confirmacao com resposta publica generica e cooldown de 60s.
+- `request-password-reset`: solicita reset com resposta publica generica.
+- `reset-password-with-token`: valida token e troca senha via Auth Admin.
+- `sync-email-senders`: sincroniza caixas da Hostinger para administradores.
+
+Secrets das Edge Functions:
+
+- `EMAIL_SERVER_API_KEY`
+- `EMAIL_PUBLIC_SITE_URL` ou dominio publico equivalente; quando vier sem protocolo, o runtime normaliza para `https://`, exceto `localhost`/`127.0.0.1`, que usam `http://`.
+- `EMAIL_RATE_LIMIT_SALT`
+- `CONFIRMED_AUTOMATICALLY_EMAIL`: aceita somente `true` ou `false`; ausente/vazio equivale a `false`. Quando `true`, as functions de cadastro confirmam o Auth via Admin API, nao geram token/e-mail e redirecionam ao login com `verified=1&automatic=1`.
+- `MASTER_PASSWORD`: senha master opcional para testes locais. Quando preenchida no runtime das Edge Functions, os logins `client-auth-login`, `therapist-auth-login` e `admin-auth-login` aceitam essa senha para gerar uma sessao do usuario informado sem expor o segredo ao app Next.js. A validacao de perfil e e-mail confirmado continua obrigatoria. Nunca configurar em producao.
+
+Contrato Hostinger confirmado em documentacao oficial/SDK da Hostinger: `GET https://api.mail.hostinger.com/api/v1/me` retorna as mailboxes gerenciaveis; o envio usa `POST https://api.mail.hostinger.com/api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, `Content-Type: application/json`, payload com `to: string[]`, `display_name`, `subject`, `text` e `html`, e sucesso `204` sem corpo.
+
+Teste real de entrega: `npm run test:email:real` carrega `.env.local` e secrets locais das Edge Functions, usa a service role local em memoria via Supabase CLI, sincroniza mailboxes Hostinger no banco local e so envia quando `ALLOW_REAL_EMAIL_TESTS=true`, `EMAIL_E2E_RECIPIENT`, API key e sender ativo/default estiverem configurados.
+
+`EMAIL_RATE_LIMIT_SALT` deve ser unico por ambiente, secreto e gerado com pelo menos 32 bytes aleatorios. Exemplo PowerShell para gerar um valor novo:
+
+```powershell
+$bytes = [byte[]]::new(32)
+[System.Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
+[Convert]::ToBase64String($bytes)
+```
 
 ## Supabase
 

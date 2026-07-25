@@ -24,6 +24,35 @@ set
   is_active = excluded.is_active,
   updated_at = now();
 
+insert into public.email_action_definitions (
+  action_key,
+  category,
+  label,
+  description,
+  active
+)
+values
+  (
+    'email_verification',
+    'auth',
+    'Confirmacao de e-mail',
+    'Mensagem transacional enviada para confirmar o e-mail de pacientes e terapeutas.',
+    true
+  ),
+  (
+    'password_reset',
+    'auth',
+    'Recuperacao de senha',
+    'Mensagem transacional enviada para redefinicao segura de senha.',
+    true
+  )
+on conflict (action_key) do update
+set
+  category = excluded.category,
+  label = excluded.label,
+  description = excluded.description,
+  active = excluded.active;
+
 insert into public.therapies (
   id,
   category_id,
@@ -1591,6 +1620,40 @@ values
   ('92000000-0000-4000-8000-000000000018', '90000000-0000-4000-8000-000000000018', 'premium', 'approved', 'camila-rocha', 'Camila Rocha', 'Camila Rocha', 'Terapeuta Holística', '/therapists/fernanda-rocha.png', 'São Paulo', 'SP', array['pt-BR'], true, true, true)
 on conflict (id) do update
 set public_name = excluded.public_name, headline = excluded.headline, photo_url = excluded.photo_url, is_public = excluded.is_public, is_accepting_bookings = excluded.is_accepting_bookings, updated_at = now();
+
+insert into public.therapies (
+  id,
+  category_id,
+  name,
+  slug,
+  short_description,
+  description,
+  status,
+  is_featured,
+  safety_note
+)
+values (
+  '22222222-2222-4222-8222-222222222230',
+  '11111111-1111-4111-8111-111111111114',
+  'Constelação Familiar',
+  'constelacao-familiar',
+  'Experiência simbólica para observar vínculos, padrões e movimentos relacionais.',
+  'Constelação Familiar é apresentada no TES como experiência simbólica e reflexiva, sem promessa de cura, diagnóstico ou resolução garantida.',
+  'published',
+  false,
+  'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.'
+)
+on conflict (id) do update
+set
+  category_id = excluded.category_id,
+  name = excluded.name,
+  slug = excluded.slug,
+  short_description = excluded.short_description,
+  description = excluded.description,
+  status = excluded.status,
+  is_featured = excluded.is_featured,
+  safety_note = excluded.safety_note,
+  updated_at = now();
 
 insert into public.therapist_services (id, therapist_profile_id, therapy_id, title, description, duration_minutes, price_cents, status)
 values

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 
 import { routes } from "@/lib/routes";
 
@@ -50,7 +51,7 @@ export function TherapistRecentReviews({
       )}
       <Link
         className="mt-auto pt-6 text-center text-xs font-bold text-brand-deep outline-none hover:text-brand-primary focus-visible:ring-4 focus-visible:ring-ring/20"
-        href={routes.therapist.plusReviews}
+        href={routes.therapist.plusReviews as Route<string>}
       >
         Ver todas as avaliações →
       </Link>
