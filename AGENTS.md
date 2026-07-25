@@ -1,4 +1,4 @@
-versão: 2026-07-12
+versão: 2026-07-25
 fonte: project.md — MVP Transacional TES consolidado
 próxima revisão: ao alterar stack, perfis, planos ou integrações
 
@@ -108,26 +108,32 @@ Arquivo principal:
 
 ## Perfis e planos
 
-| Perfil                 | Área logada | Plano         | Enum técnico   | Prefixo de rota |
-| ---------------------- | ----------- | ------------- | -------------- | --------------- |
-| Paciente               | `/app`      | —             | —              | `/app`          |
-| Terapeuta Free         | `/basico`   | Básico / Free | `free`         | `/basico`       |
-| Terapeuta Premium      | `/pro`      | Premium       | `premium`      | `/pro`          |
-| Terapeuta Premium Plus | `/plus`     | Premium Plus  | `premium_plus` | `/plus`         |
-| Admin                  | `/admin`    | —             | —              | `/admin`        |
+| Perfil                 | Área canônica | Plano         | Enum técnico   | Alias temporário atual |
+| ---------------------- | -------------- | ------------- | -------------- | ---------------------- |
+| Paciente               | `/app`         | —             | —              | —                      |
+| Terapeuta Free         | `/terapeuta/*` | Básico / Free | `free`         | `/basico/*`            |
+| Terapeuta Premium      | `/terapeuta/*` | Premium       | `premium`      | `/pro/*`               |
+| Terapeuta Premium Plus | `/terapeuta/*` | Premium Plus  | `premium_plus` | `/plus/*`              |
+| Admin                  | `/admin`       | —             | —              | —                      |
 
 Regras:
 
 - Em código, usar sempre os enums técnicos: `free`, `premium`, `premium_plus`.
-- `Pro` e `Plus` são identificadores técnicos de rota, não copy de interface.
+- `/terapeuta/*` singular é o namespace aprovado para a área autenticada.
+- `/terapeutas/*` plural permanece reservado ao catálogo e aos perfis públicos.
+- `/basico/*`, `/pro/*` e `/plus/*` são redirects compatíveis implementados na
+  Fase Agenda 1; não criar páginas novas nesses namespaces.
+- `Pro` e `Plus` são identificadores técnicos legados de rota, não copy de interface.
 - Nomes comerciais (Básico, Premium, Premium Plus) são decisão de produto e UX.
-- `src/lib/routes.ts` é a fonte canônica de rotas. `src/lib/permissions.ts` é a fonte canônica de permissões e recursos por plano.
+- `src/lib/routes.ts` é a fonte canônica das rotas executáveis.
+- `next.config.mjs` contém exclusivamente os redirects dos namespaces legados.
+- `src/lib/permissions.ts` é a fonte canônica de permissões e recursos por plano.
 
 ## 5. Implementação
 
 Stack real identificada:
 
-- Next.js 14 com App Router.
+- Next.js 15 com App Router.
 - React 18.
 - TypeScript strict.
 - Tailwind CSS.
@@ -160,7 +166,12 @@ Stack real identificada:
 - `supabase/` parcialmente estruturado com migrations e Edge Function `match-therapies`.
 - Hostinger Mail API: contrato confirmado em 2026-07-24. `GET https://api.mail.hostinger.com/api/v1/me` lista mailboxes; envio usa `POST https://api.mail.hostinger.com/api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, payload `to: string[]`, `display_name`, `subject`, `text`, `html`, e sucesso `204` sem corpo.
 - `CONFIRMED_AUTOMATICALLY_EMAIL` e secrets de e-mail pertencem somente a Supabase Edge Functions. Ausente/vazio equivale a `false`; aceita apenas `true` ou `false`; valor inválido deve falhar fechado e nunca ativar bypass. Quando `true`, cadastro confirma Auth via Admin API, não envia e-mail, não cria token e redireciona para login com `verified=1&automatic=1`.
-- Stripe e Zoom: previstos na arquitetura, status de implementação não confirmado nos arquivos analisados.
+- Stripe Billing, Checkout de sessões, Connect Accounts v2, ledger e lotes de
+  repasse possuem fundação implementada. O hardening de webhooks, eventos fora
+  de ordem, capability events v2, refunds e transfers continua obrigatório antes
+  de produção.
+- Zoom: previsto na arquitetura, status de implementação não confirmado nos
+  arquivos analisados.
 
 ## 6. QA e definição de pronto
 
@@ -175,8 +186,9 @@ Uma tarefa só pode ser considerada pronta quando:
 - valida pagamento por webhook Stripe (não apenas por redirecionamento);
 - usa idempotência em operações Stripe;
 - usa `session_payments` como fonte única de pagamentos de sessão;
-- registra ledger para movimentações financeiras em `payment_ledger_entries`;
-- cria repasses a partir de `transfer_batches` e `transfer_batch_items`;
+- registra ledger para movimentações financeiras em `financial_ledger_entries`;
+- cria repasses a partir de `payout_batches`, `payout_batch_therapists` e
+  `payout_batch_items`;
 - grava snapshot de preço e duração no momento da reserva;
 - gera link Zoom apenas após pagamento confirmado via webhook;
 - protege `zoom_start_url_encrypted` por RLS (somente terapeuta responsável e admin autorizado);

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { TherapistPlan } from "@/domain/tes";
 import { getTherapistDashboardPage } from "@/features/therapist-dashboard";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
@@ -9,15 +10,13 @@ import { getTherapistShellConfig } from "./therapist-shell-config";
 export async function TherapistAreaLayout({
   children,
   logoutAction,
-  namespace,
 }: {
   children: ReactNode;
   logoutAction: () => Promise<void>;
-  namespace: "basico" | "plus" | "pro";
 }) {
-  const session = await requireTherapistSession({ namespace });
+  const session = await requireTherapistSession();
   const dashboard =
-    namespace === "plus"
+    session.plan === TherapistPlan.PremiumPlus
       ? await getDashboardCountsSafely(session.accessToken, session.profileId)
       : null;
   const config = getTherapistShellConfig({

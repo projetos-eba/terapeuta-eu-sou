@@ -59,7 +59,7 @@ export function TherapistJourneyHistory({
       </div>
       <Link
         className="mt-auto pt-8 text-center text-xs font-bold text-brand-deep outline-none hover:text-brand-primary focus-visible:ring-4 focus-visible:ring-ring/20"
-        href={routes.therapist.plusPatients as Route<string>}
+        href={routes.therapist.patients as Route<string>}
       >
         Ver trajetória completa →
       </Link>

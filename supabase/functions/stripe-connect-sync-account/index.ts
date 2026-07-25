@@ -7,8 +7,7 @@ import {
   success,
 } from "../_shared/payments/http.ts";
 import {
-  getPendingRequirements,
-  getTransfersStatus,
+  deriveConnectAccountState,
   retrieveAccountV2,
 } from "../_shared/payments/connect.ts";
 import {
@@ -55,24 +54,17 @@ runtime.serve(async (request) => {
       config.stripeApiKey,
       rows[0].stripe_account_id,
     );
-    const transfersStatus = getTransfersStatus(account);
-    const pending = getPendingRequirements(account);
-    const onboardingStatus =
-      transfersStatus === "active"
-        ? "ready"
-        : pending.currentlyDue.length > 0
-          ? "requirements_due"
-          : "restricted";
+    const state = deriveConnectAccountState(account);
 
     await client.patch(
       `/rest/v1/therapist_connect_accounts?id=eq.${encodeURIComponent(rows[0].id)}`,
       {
+        disabled_reason: state.disabledReason,
         last_synced_at: new Date().toISOString(),
-        onboarding_status: onboardingStatus,
-        operational_status:
-          transfersStatus === "active" ? "ready" : "restricted",
-        pending_requirements: pending,
-        stripe_transfers_status: transfersStatus,
+        onboarding_status: state.onboardingStatus,
+        operational_status: state.operationalStatus,
+        pending_requirements: state.pendingRequirements,
+        stripe_transfers_status: state.transfersStatus,
       },
       "return=minimal",
     );
@@ -86,9 +78,9 @@ runtime.serve(async (request) => {
     );
 
     return success({
-      onboardingStatus,
-      pendingRequirements: pending,
-      stripeTransfersStatus: transfersStatus,
+      onboardingStatus: state.onboardingStatus,
+      pendingRequirements: state.pendingRequirements,
+      stripeTransfersStatus: state.transfersStatus,
     });
   } catch (error) {
     return failure(error, requestId);

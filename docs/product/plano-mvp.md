@@ -1,8 +1,16 @@
 # Plano MVP — Terapeuta Eu Sou
 
-Atualizado em: 2026-07-13  
-Status: plano executivo revisado, pronto para orientar implementação faseada.  
+Atualizado em: 2026-07-25
+
+Status: baseline histórico de execução, parcialmente superado pelo estado atual.
+
 Escopo: MVP transacional com descoberta, Match determinístico, reserva, pagamento Stripe, sessão online, área do paciente, áreas de terapeuta por plano e Admin.
+
+> Para decisões atuais de Stripe, rotas e Fase Agenda 1, prevalecem
+> `docs/architecture/relatorio-25-07-2026.md`,
+> `docs/payments/architecture.md` e `docs/product/integration-map.md`. Tabelas
+> de “não identificado” e árvores `/basico`, `/pro` e `/plus` abaixo registram
+> a auditoria de 2026-07-13, não o estado operacional de 2026-07-25.
 
 ## 1. Parecer executivo
 
@@ -46,13 +54,13 @@ Fontes locais lidas e usadas:
 
 Figma acessado via MCP metadata em 2026-07-13:
 
-| Página / node | Status |
-|---|---|
-| `↳ Jornadas dos Usuários`, node `12272:2` | Acessado. Confirma fluxos Público, Paciente, Terapeuta e Admin. |
-| `↳ Design Telas`, node `5999:10563` | Acessado. Confirma telas por perfil e divergências visuais legadas. |
-| `↳ Sitemap`, node `12259:2` | Acessado. Confirma estrutura visual de navegação. |
-| `↳ Design System`, node `12304:2` | Acessado. Confirma foundations, tokens e componentes planejados. |
-| `ícones`, node `12450:506` | Acessado. Confirma biblioteca lucide/ícones no Figma. |
+| Página / node                             | Status                                                              |
+| ----------------------------------------- | ------------------------------------------------------------------- |
+| `↳ Jornadas dos Usuários`, node `12272:2` | Acessado. Confirma fluxos Público, Paciente, Terapeuta e Admin.     |
+| `↳ Design Telas`, node `5999:10563`       | Acessado. Confirma telas por perfil e divergências visuais legadas. |
+| `↳ Sitemap`, node `12259:2`               | Acessado. Confirma estrutura visual de navegação.                   |
+| `↳ Design System`, node `12304:2`         | Acessado. Confirma foundations, tokens e componentes planejados.    |
+| `ícones`, node `12450:506`                | Acessado. Confirma biblioteca lucide/ícones no Figma.               |
 
 Regra de conflito aplicada: quando Figma, docs e código divergem, este plano usa `AGENTS.md`, `src/lib/routes.ts`, `src/lib/permissions.ts`, `docs/product/sitemap.md` e `docs/product/routes-map.md` como fontes canônicas operacionais.
 
@@ -107,22 +115,22 @@ Para Admin, o MVP sustenta:
 
 ### 5.1 Stack confirmada
 
-| Item | Status |
-|---|---|
-| Next.js 14 App Router | Confirmado em `package.json`. |
-| React 18 | Confirmado em `package.json`. |
-| TypeScript | Confirmado em `package.json`. |
-| Tailwind CSS | Confirmado em `package.json`. |
-| `lucide-react` | Confirmado em `package.json`. |
-| `class-variance-authority`, `clsx`, `tailwind-merge` | Confirmado em `package.json`. |
-| shadcn/ui | Planejado via `components.json`; implementação completa: Não identificado nos arquivos analisados. |
-| Supabase local | Estrutura confirmada em `supabase/`. |
-| Supabase SDK frontend | Não identificado nos arquivos analisados. |
-| Stripe SDK | Não identificado nos arquivos analisados. |
-| Zoom SDK/API client | Não identificado nos arquivos analisados. |
-| Storybook | Documentado, não instalado. |
-| Observabilidade | Não identificado nos arquivos analisados. |
-| Test runner | Não identificado nos arquivos analisados. |
+| Item                                                 | Status                                                                                             |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Next.js 15 App Router                                | Confirmado em `package.json`.                                                                      |
+| React 18                                             | Confirmado em `package.json`.                                                                      |
+| TypeScript                                           | Confirmado em `package.json`.                                                                      |
+| Tailwind CSS                                         | Confirmado em `package.json`.                                                                      |
+| `lucide-react`                                       | Confirmado em `package.json`.                                                                      |
+| `class-variance-authority`, `clsx`, `tailwind-merge` | Confirmado em `package.json`.                                                                      |
+| shadcn/ui                                            | Planejado via `components.json`; implementação completa: Não identificado nos arquivos analisados. |
+| Supabase local                                       | Estrutura confirmada em `supabase/`.                                                               |
+| Supabase SDK frontend                                | Não identificado nos arquivos analisados.                                                          |
+| Stripe SDK                                           | Confirmado em `package.json`; fundação Billing e Connect implementada.                             |
+| Zoom SDK/API client                                  | Não identificado nos arquivos analisados.                                                          |
+| Storybook                                            | Documentado, não instalado.                                                                        |
+| Observabilidade                                      | Não identificado nos arquivos analisados.                                                          |
+| Test runner                                          | Vitest e Playwright confirmados em `package.json`.                                                 |
 
 Scripts confirmados:
 
@@ -138,27 +146,27 @@ Não há script `test` em `package.json`.
 
 ### 5.2 Páginas reais em `src/app`
 
-| Rota | Arquivo real | Status |
-|---|---|---|
-| `/` | `src/app/page.tsx` | Existe; shell/landing inicial. |
+| Rota          | Arquivo real                  | Status                                |
+| ------------- | ----------------------------- | ------------------------------------- |
+| `/`           | `src/app/page.tsx`            | Existe; shell/landing inicial.        |
 | `/terapeutas` | `src/app/terapeutas/page.tsx` | Existe; usa dados mockados/hardcoded. |
 
 Todas as demais rotas canônicas ainda não possuem `page.tsx` real identificado.
 
 ### 5.3 Componentes reais em `src/components`
 
-| Arquivo | Uso atual |
-|---|---|
-| `src/components/tes/public-header.tsx` | Header público. |
-| `src/components/tes/public-footer.tsx` | Footer público. |
-| `src/components/tes/therapist-card.tsx` | Card de terapeuta. |
-| `src/components/tes/filter-button.tsx` | Botão/filtro visual. |
-| `src/components/tes/journey-banner.tsx` | Banner de jornada. |
-| `src/components/tes/tes-button.tsx` | Botão base. |
-| `src/components/tes/tes-card.tsx` | Card base. |
-| `src/components/tes/tes-input.tsx` | Input base. |
-| `src/components/tes/tes-badge.tsx` | Badge base. |
-| `src/components/tes/index.ts` | Barrel export. |
+| Arquivo                                 | Uso atual            |
+| --------------------------------------- | -------------------- |
+| `src/components/tes/public-header.tsx`  | Header público.      |
+| `src/components/tes/public-footer.tsx`  | Footer público.      |
+| `src/components/tes/therapist-card.tsx` | Card de terapeuta.   |
+| `src/components/tes/filter-button.tsx`  | Botão/filtro visual. |
+| `src/components/tes/journey-banner.tsx` | Banner de jornada.   |
+| `src/components/tes/tes-button.tsx`     | Botão base.          |
+| `src/components/tes/tes-card.tsx`       | Card base.           |
+| `src/components/tes/tes-input.tsx`      | Input base.          |
+| `src/components/tes/tes-badge.tsx`      | Badge base.          |
+| `src/components/tes/index.ts`           | Barrel export.       |
 
 Componentes planejados em `routes-map.md`, mas não identificados como React real nos arquivos analisados:
 
@@ -201,160 +209,165 @@ Rotas técnicas devem seguir `src/lib/routes.ts`. Figma pode conter nomes legado
 
 ### 6.1 Público
 
-| Rota | Page real | Origem | Fase |
-|---|---|---|---|
-| `/` | Sim | `routes.ts`, sitemap, Figma | 0 |
-| `/como-funciona` | Não | `routes.ts`, sitemap, Figma | 0 |
-| `/sua-jornada` | Sim | `routes.ts`, sitemap, Figma `13273:2627` | 1 |
-| `/sua-jornada/resultado` | Sim | `routes.ts`, sitemap, Figma `13273:2627` | 1 |
-| `/terapeutas` | Sim, integrado a view pública | `routes.ts`, sitemap, Figma `13273:3587` | 1 |
-| `/terapeutas/:slug` | Sim | `routes.ts`, sitemap, Figma `13273:3393` | 1 |
-| `/reserva` | Não | `routes.ts`, sitemap, Figma | 2 |
-| `/reserva/sucesso` | Não | `routes.ts`, sitemap | 2 |
-| `/terapias` | Sim | `routes.ts`, sitemap, Figma `13273:1439` | 1 |
-| `/terapias/:slug` | Não | `routes.ts`, sitemap, Figma | 1 |
-| `/para-terapeutas` | Sim | `routes.ts`, sitemap, Figma `13457:848` | 0 |
-| `/para-terapeutas/planos` | Não | `routes.ts`, sitemap, Figma | 0 |
-| `/cliente/login` | Sim | `routes.ts`, sitemap, Produto | 0/2 |
-| `/cliente/cadastro` | Sim | `routes.ts`, sitemap, Produto | 0/2 |
-| `/terapeuta/login` | Sim | `routes.ts`, sitemap, Produto | 0/2 |
-| `/terapeuta/cadastro` | Sim | `routes.ts`, sitemap, Produto | 0/2 |
-| `/entrar` | Não, legado | `routes.ts`, sitemap | 0/2 |
-| `/cadastro` | Não, legado | `routes.ts`, sitemap | 0/2 |
-| `/reset-senha` | Não | `routes.ts`, sitemap | 0/2 |
-| `/ajuda` | Não | `routes.ts`, sitemap | 0 |
-| `/termos` | Não | `routes.ts`, sitemap | 0 |
-| `/privacidade` | Não | `routes.ts`, sitemap | 0 |
+| Rota                      | Page real                     | Origem                                   | Fase |
+| ------------------------- | ----------------------------- | ---------------------------------------- | ---- |
+| `/`                       | Sim                           | `routes.ts`, sitemap, Figma              | 0    |
+| `/como-funciona`          | Não                           | `routes.ts`, sitemap, Figma              | 0    |
+| `/sua-jornada`            | Sim                           | `routes.ts`, sitemap, Figma `13273:2627` | 1    |
+| `/sua-jornada/resultado`  | Sim                           | `routes.ts`, sitemap, Figma `13273:2627` | 1    |
+| `/terapeutas`             | Sim, integrado a view pública | `routes.ts`, sitemap, Figma `13273:3587` | 1    |
+| `/terapeutas/:slug`       | Sim                           | `routes.ts`, sitemap, Figma `13273:3393` | 1    |
+| `/reserva`                | Não                           | `routes.ts`, sitemap, Figma              | 2    |
+| `/reserva/sucesso`        | Não                           | `routes.ts`, sitemap                     | 2    |
+| `/terapias`               | Sim                           | `routes.ts`, sitemap, Figma `13273:1439` | 1    |
+| `/terapias/:slug`         | Não                           | `routes.ts`, sitemap, Figma              | 1    |
+| `/para-terapeutas`        | Sim                           | `routes.ts`, sitemap, Figma `13457:848`  | 0    |
+| `/para-terapeutas/planos` | Não                           | `routes.ts`, sitemap, Figma              | 0    |
+| `/cliente/login`          | Sim                           | `routes.ts`, sitemap, Produto            | 0/2  |
+| `/cliente/cadastro`       | Sim                           | `routes.ts`, sitemap, Produto            | 0/2  |
+| `/terapeuta/login`        | Sim                           | `routes.ts`, sitemap, Produto            | 0/2  |
+| `/terapeuta/cadastro`     | Sim                           | `routes.ts`, sitemap, Produto            | 0/2  |
+| `/entrar`                 | Não, legado                   | `routes.ts`, sitemap                     | 0/2  |
+| `/cadastro`               | Não, legado                   | `routes.ts`, sitemap                     | 0/2  |
+| `/reset-senha`            | Não                           | `routes.ts`, sitemap                     | 0/2  |
+| `/ajuda`                  | Não                           | `routes.ts`, sitemap                     | 0    |
+| `/termos`                 | Não                           | `routes.ts`, sitemap                     | 0    |
+| `/privacidade`            | Não                           | `routes.ts`, sitemap                     | 0    |
 
 ### 6.2 Paciente
 
-| Rota | Page real | Fase |
-|---|---|---|
-| `/app` | Não | 3 |
-| `/app/sessoes` | Não | 3 |
-| `/app/sessoes/proximas` | Não | 3 |
-| `/app/sessoes/historico` | Não | 3 |
-| `/app/sessoes/:slug` | Não | 3 |
-| `/app/mensagens` | Não | 3 |
-| `/app/favoritos` | Não | 3 |
-| `/app/favoritos/terapeutas` | Não | 3 |
-| `/app/favoritos/terapias` | Não | 3 |
-| `/app/pagamentos` | Não | 3 |
-| `/app/pagamentos/faturas` | Não | 3 |
-| `/app/pagamentos/metodos` | Não | 3 |
-| `/app/configuracoes` | Não | 3 |
-| `/app/configuracoes/perfil` | Não | 3 |
-| `/app/configuracoes/notificacoes` | Não | 3 |
-| `/app/configuracoes/privacidade` | Não | 3 |
-| `/app/configuracoes/seguranca` | Não | 3 |
-| `/app/ajuda` | Não | 3 |
+| Rota                              | Page real | Fase |
+| --------------------------------- | --------- | ---- |
+| `/app`                            | Não       | 3    |
+| `/app/sessoes`                    | Não       | 3    |
+| `/app/sessoes/proximas`           | Não       | 3    |
+| `/app/sessoes/historico`          | Não       | 3    |
+| `/app/sessoes/:slug`              | Não       | 3    |
+| `/app/mensagens`                  | Não       | 3    |
+| `/app/favoritos`                  | Não       | 3    |
+| `/app/favoritos/terapeutas`       | Não       | 3    |
+| `/app/favoritos/terapias`         | Não       | 3    |
+| `/app/pagamentos`                 | Não       | 3    |
+| `/app/pagamentos/faturas`         | Não       | 3    |
+| `/app/pagamentos/metodos`         | Não       | 3    |
+| `/app/configuracoes`              | Não       | 3    |
+| `/app/configuracoes/perfil`       | Não       | 3    |
+| `/app/configuracoes/notificacoes` | Não       | 3    |
+| `/app/configuracoes/privacidade`  | Não       | 3    |
+| `/app/configuracoes/seguranca`    | Não       | 3    |
+| `/app/ajuda`                      | Não       | 3    |
 
 Regra: manter `/app/sessoes/:slug`. Não usar `/app/sessoes/:id` sem alteração formal em `src/lib/routes.ts`.
 
 ### 6.3 Terapeuta Básico
 
-| Rota | Page real | Fase |
-|---|---|---|
-| `/basico` | Não | 4 |
-| `/basico/agenda` | Não | 4 |
-| `/basico/pacientes` | Não | 4 |
-| `/basico/sessoes` | Não | 4 |
-| `/basico/mensagens` | Não | 4 |
-| `/basico/servicos` | Não | 4 |
-| `/basico/servicos/meus` | Não | 4 |
-| `/basico/pagamento` | Não | 4 |
-| `/basico/perfil` | Não | 4 |
-| `/basico/upgrade` | Não | 4 |
-| `/basico/configuracoes` | Não | 4 |
-| `/basico/suporte` | Não | 4 |
+| Rota                    | Page real | Fase |
+| ----------------------- | --------- | ---- |
+| `/basico`               | Não       | 4    |
+| `/basico/agenda`        | Não       | 4    |
+| `/basico/pacientes`     | Não       | 4    |
+| `/basico/sessoes`       | Não       | 4    |
+| `/basico/mensagens`     | Não       | 4    |
+| `/basico/servicos`      | Não       | 4    |
+| `/basico/servicos/meus` | Não       | 4    |
+| `/basico/pagamento`     | Não       | 4    |
+| `/basico/perfil`        | Não       | 4    |
+| `/basico/upgrade`       | Não       | 4    |
+| `/basico/configuracoes` | Não       | 4    |
+| `/basico/suporte`       | Não       | 4    |
 
-Divergência resolvida operacionalmente: rota canônica é `/basico/pagamento`. Figma contém frame legado `/basico/pagamentos`. O pedido inicial citava `/basico/financeiro`. Qualquer mudança exige gate de confirmação.
+Decisão histórica de 2026-07-13: `/basico/pagamento` era o path escolhido entre
+as variantes legadas. Na arquitetura aprovada em 2026-07-25, ele será alias de
+`/terapeuta/financeiro`.
 
 ### 6.4 Terapeuta Premium / Pro
 
-| Rota | Page real | Fase |
-|---|---|---|
-| `/pro` | Não | 5 |
-| `/pro/agenda` | Não | 5 |
-| `/pro/pacientes` | Não | 5 |
-| `/pro/sessoes` | Não | 5 |
-| `/pro/mensagens` | Não | 5 |
-| `/pro/servicos` | Não | 5 |
-| `/pro/financeiro` | Não | 5 |
-| `/pro/metricas` | Não | 5 |
-| `/pro/avaliacoes` | Não | 5 |
-| `/pro/plano` | Não | 5 |
-| `/pro/perfil` | Não | 5 |
-| `/pro/configuracoes` | Não | 5 |
-| `/pro/suporte` | Não | 5 |
+| Rota                 | Page real | Fase |
+| -------------------- | --------- | ---- |
+| `/pro`               | Não       | 5    |
+| `/pro/agenda`        | Não       | 5    |
+| `/pro/pacientes`     | Não       | 5    |
+| `/pro/sessoes`       | Não       | 5    |
+| `/pro/mensagens`     | Não       | 5    |
+| `/pro/servicos`      | Não       | 5    |
+| `/pro/financeiro`    | Não       | 5    |
+| `/pro/metricas`      | Não       | 5    |
+| `/pro/avaliacoes`    | Não       | 5    |
+| `/pro/plano`         | Não       | 5    |
+| `/pro/perfil`        | Não       | 5    |
+| `/pro/configuracoes` | Não       | 5    |
+| `/pro/suporte`       | Não       | 5    |
 
-Divergência resolvida operacionalmente: rota canônica é `/pro/plano`. Figma contém frame legado `/pro/upgrade`.
+Decisão histórica de 2026-07-13: `/pro/plano` era o path escolhido entre as
+variantes legadas. Na arquitetura aprovada em 2026-07-25, ele será alias de
+`/terapeuta/plano`.
 
 ### 6.5 Terapeuta Premium Plus / Plus
 
-| Rota | Page real | Fase |
-|---|---|---|
-| `/plus` | Não | 5 |
-| `/plus/agenda` | Não | 5 |
-| `/plus/pacientes` | Não | 5 |
-| `/plus/pacientes/:slug-do-paciente` | Não | 5 |
-| `/plus/sessoes` | Não | 5 |
-| `/plus/mensagens` | Não | 5 |
-| `/plus/servicos` | Não | 5 |
-| `/plus/servicos/meus` | Não | 5 |
-| `/plus/financeiro` | Não | 5 |
-| `/plus/avaliacoes` | Não | 5 |
-| `/plus/insights` | Não | 5 |
-| `/plus/assessor-ia` | Não | 5 |
-| `/plus/perfil` | Não | 5 |
-| `/plus/configuracoes` | Não | 5 |
-| `/plus/suporte` | Não | 5 |
+| Rota                                | Page real | Fase |
+| ----------------------------------- | --------- | ---- |
+| `/plus`                             | Não       | 5    |
+| `/plus/agenda`                      | Não       | 5    |
+| `/plus/pacientes`                   | Não       | 5    |
+| `/plus/pacientes/:slug-do-paciente` | Não       | 5    |
+| `/plus/sessoes`                     | Não       | 5    |
+| `/plus/mensagens`                   | Não       | 5    |
+| `/plus/servicos`                    | Não       | 5    |
+| `/plus/servicos/meus`               | Não       | 5    |
+| `/plus/financeiro`                  | Não       | 5    |
+| `/plus/avaliacoes`                  | Não       | 5    |
+| `/plus/insights`                    | Não       | 5    |
+| `/plus/assessor-ia`                 | Não       | 5    |
+| `/plus/perfil`                      | Não       | 5    |
+| `/plus/configuracoes`               | Não       | 5    |
+| `/plus/suporte`                     | Não       | 5    |
 
-Regra: `routes.ts` gera `/plus/pacientes/${slug}`. Em documentação de produto, usar `/plus/pacientes/:slug-do-paciente` para clareza semântica.
+Registro histórico: a rota antiga era `/plus/pacientes/:slug-do-paciente`. A
+implementação atual usa `/terapeuta/pacientes/:patientId`.
 
 ### 6.6 Admin
 
-| Rota | Page real | Fase |
-|---|---|---|
-| `/admin` | Não | 6 |
-| `/admin/profissionais` | Não | 6 |
-| `/admin/profissionais/verificacoes` | Não | 6 |
-| `/admin/pacientes` | Não | 6 |
-| `/admin/sessoes` | Não | 6 |
-| `/admin/pagamentos` | Não | 6 |
-| `/admin/avaliacoes` | Não | 6 |
-| `/admin/assinaturas` | Não | 6 |
-| `/admin/terapias` | Não | 6 |
-| `/admin/matching` | Não | 6 |
-| `/admin/integracoes` | Não | 6 |
-| `/admin/seguranca` | Não | 6 |
-| `/admin/relatorios` | Não | 6 |
-| `/admin/configuracoes` | Não | 6 |
-| `/admin/suporte` | Não | 6 |
+| Rota                                | Page real | Fase |
+| ----------------------------------- | --------- | ---- |
+| `/admin`                            | Não       | 6    |
+| `/admin/profissionais`              | Não       | 6    |
+| `/admin/profissionais/verificacoes` | Não       | 6    |
+| `/admin/pacientes`                  | Não       | 6    |
+| `/admin/sessoes`                    | Não       | 6    |
+| `/admin/pagamentos`                 | Não       | 6    |
+| `/admin/avaliacoes`                 | Não       | 6    |
+| `/admin/assinaturas`                | Não       | 6    |
+| `/admin/terapias`                   | Não       | 6    |
+| `/admin/matching`                   | Não       | 6    |
+| `/admin/integracoes`                | Não       | 6    |
+| `/admin/seguranca`                  | Não       | 6    |
+| `/admin/relatorios`                 | Não       | 6    |
+| `/admin/configuracoes`              | Não       | 6    |
+| `/admin/suporte`                    | Não       | 6    |
 
 ## 7. Perfis, planos e permissões
 
-| Perfil | Área logada | Plano | Enum técnico | Prefixo |
-|---|---|---|---|---|
-| Paciente | `/app` | — | — | `/app` |
-| Terapeuta Free | `/basico` | Básico / Free | `free` | `/basico` |
-| Terapeuta Premium | `/pro` | Premium | `premium` | `/pro` |
-| Terapeuta Premium Plus | `/plus` | Premium Plus | `premium_plus` | `/plus` |
-| Admin | `/admin` | — | — | `/admin` |
+| Perfil                 | Área logada  | Plano         | Enum técnico   | Alias legado |
+| ---------------------- | ------------ | ------------- | -------------- | ------------ |
+| Paciente               | `/app`       | —             | —              | —            |
+| Terapeuta Free         | `/terapeuta` | Básico / Free | `free`         | `/basico`    |
+| Terapeuta Premium      | `/terapeuta` | Premium       | `premium`      | `/pro`       |
+| Terapeuta Premium Plus | `/terapeuta` | Premium Plus  | `premium_plus` | `/plus`      |
+| Admin                  | `/admin`     | —             | —              | —            |
 
 Capabilities técnicas atuais em `src/domain/tes/permissions.ts`:
 
-| Capability | Free | Premium | Premium Plus |
-|---|---:|---:|---:|
-| `operation_essentials` | Sim | Sim | Sim |
-| `advanced_metrics` | Não | Sim | Sim |
-| `aura_limited` | Não | Sim | Sim |
-| `aura_full` | Não | Não | Sim |
-| `full_crm` | Não | Não | Sim |
-| `strategic_reviews` | Não | Não | Sim |
-| `advanced_financials` | Não | Não | Sim |
-| `agenda_insights` | Não | Sim | Sim |
-| `request_new_therapy` | Não | Sim | Sim |
+| Capability             | Free | Premium | Premium Plus |
+| ---------------------- | ---: | ------: | -----------: |
+| `operation_essentials` |  Sim |     Sim |          Sim |
+| `advanced_metrics`     |  Não |     Sim |          Sim |
+| `aura_limited`         |  Não |     Sim |          Sim |
+| `aura_full`            |  Não |     Não |          Sim |
+| `full_crm`             |  Não |     Não |          Sim |
+| `strategic_reviews`    |  Não |     Não |          Sim |
+| `advanced_financials`  |  Não |     Não |          Sim |
+| `agenda_insights`      |  Não |     Sim |          Sim |
+| `request_new_therapy`  |  Não |     Sim |          Sim |
 
 Divergência registrada: `sitemap.md` e `routes-map.md` tratam `/pro/financeiro` como financeiro completo/intermediário avançado, mas o código atual libera `advanced_financials` apenas para Premium Plus. Este plano adota a regra técnica atual:
 
@@ -407,16 +420,18 @@ Enums existentes:
 - `message_context`;
 - `review_status`.
 
-Tabelas alvo necessárias ao MVP transacional completo e com status: Não identificado nos arquivos analisados.
+Esta lista registrava alvos ainda não identificados em 2026-07-13. O estado
+atual está em `docs/payments/architecture.md`; `session_payments`,
+`financial_ledger_entries`, `payout_batches` e `payout_batch_items` já existem.
 
 - `session_payments`;
-- `payment_ledger_entries`;
-- `stripe_events`;
-- `stripe_connected_accounts`;
-- `subscriptions`;
-- `transfer_batches`;
-- `transfer_batch_items`;
-- `transfer_batch_item_sessions`;
+- `financial_ledger_entries`;
+- `stripe_webhook_events`;
+- `therapist_connect_accounts`;
+- `therapist_subscriptions`;
+- `payout_batches`;
+- `payout_batch_therapists`;
+- `payout_batch_items`;
 - `favorite_therapies`;
 - `matching_versions`;
 - `matching_weight_versions`;
@@ -467,20 +482,20 @@ Resposta real:
 
 ```ts
 {
-  source: string
+  source: string;
   results: Array<{
-    score: number
-    compatibilityPercent: number
-    explanation: string
-    matchedThemeIds: string[]
-    matchedSubthemeIds: string[]
+    score: number;
+    compatibilityPercent: number;
+    explanation: string;
+    matchedThemeIds: string[];
+    matchedSubthemeIds: string[];
     therapy: {
-      id: string
-      name: string
-      slug: string
-      shortDescription: string
-    }
-  }>
+      id: string;
+      name: string;
+      slug: string;
+      shortDescription: string;
+    };
+  }>;
 }
 ```
 
@@ -497,19 +512,18 @@ Status atual do app público: `/api/public/matching/calculate` substitui esse co
 
 ### 10.2 Funções alvo
 
-| Função | Fase | Status atual | Pode iniciar fase sem ela? |
-|---|---:|---|---|
-| `match-therapies` | 1 | Existe; precisa alinhar contrato | Sim para catálogo; não para resultado final. |
-| `record-matching-metrics` | 1/6 | Não identificado nos arquivos analisados. | Sim, se métricas forem postergadas. |
-| `create-checkout-session` | 2 | Não identificado nos arquivos analisados. | Não. |
-| `stripe-webhook` | 2 | Não identificado nos arquivos analisados. | Não. |
-| `create-zoom-meeting` | 2 | Não identificado nos arquivos analisados. | Não para sessão online real. |
-| `stripe-connect-onboarding` | 4 | Não identificado nos arquivos analisados. | Não para financeiro terapeuta real. |
-| `stripe-connect-status` | 4 | Não identificado nos arquivos analisados. | Não para financeiro terapeuta real. |
-| `create-subscription-checkout` | 5 | Não identificado nos arquivos analisados. | Sim para shell; não para Billing real. |
-| `stripe-billing-webhook` | 5 | Não identificado nos arquivos analisados. | Não para planos pagos reais. |
-| `process-transfer-batch` | 6 | Não identificado nos arquivos analisados. | Não para repasse real. |
-| `publish-matching-version` | 6 | Não identificado nos arquivos analisados. | Sim se Match v1 usar tabela simples; não se exigir versão publicada. |
+| Função                                         | Fase | Status atual                                                                | Pode iniciar fase sem ela?                                           |
+| ---------------------------------------------- | ---: | --------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `match-therapies`                              |    1 | Existe; precisa alinhar contrato                                            | Sim para catálogo; não para resultado final.                         |
+| `record-matching-metrics`                      |  1/6 | Não identificado nos arquivos analisados.                                   | Sim, se métricas forem postergadas.                                  |
+| `stripe-create-session-payment`                |    2 | Implementada sobre `session_payments`, com projeções transacionais.         | Sim; go-live exige E2E no Stripe test mode.                          |
+| `stripe-billing-webhook`                       |  2/5 | Implementada com reserva atômica, eventos assíncronos e ordenação temporal. | Sim; go-live exige E2E com eventos assinados.                        |
+| `create-zoom-meeting`                          |    2 | Não identificado nos arquivos analisados.                                   | Não para sessão online real.                                         |
+| `stripe-connect-create-account` e account link |    4 | Implementadas sobre Accounts v2, incluindo eventos thin `v2.core.account*`. | Sim; go-live exige E2E Connect em test mode.                         |
+| `stripe-connect-sync-account`                  |    4 | Implementada com leitura de requirements e capability de transferência.     | Sim; go-live exige E2E Connect em test mode.                         |
+| `stripe-create-subscription-checkout`          |    5 | Implementada com catálogo server-side e reconciliação por webhook.          | Sim; go-live exige E2E Billing em test mode.                         |
+| `process-payout-batch`                         |    6 | Implementada com claim atômico, Charge de origem e reconciliação.           | Sim; go-live exige E2E de repasse em test mode.                      |
+| `publish-matching-version`                     |    6 | Não identificado nos arquivos analisados.                                   | Sim se Match v1 usar tabela simples; não se exigir versão publicada. |
 
 ## 11. Sistema de Match
 
@@ -519,11 +533,11 @@ O Match v1 recomenda terapias, não terapeutas. Ele é determinístico, anônimo
 
 Estado implementado:
 
-| Camada | Escopo |
-|---|---|
-| Público | `/sua-jornada` carrega `public_matching_config` com 10 temas e interesses ativos. |
-| Cálculo | `/api/public/matching/calculate` usa `matching_versions`, `matching_weights` e multiplicador `1.4` para interesses. |
-| Publicação | Somente a versão `matching_versions.status = published` entra no público. |
+| Camada        | Escopo                                                                                                                       |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Público       | `/sua-jornada` carrega `public_matching_config` com 10 temas e interesses ativos.                                            |
+| Cálculo       | `/api/public/matching/calculate` usa `matching_versions`, `matching_weights` e multiplicador `1.4` para interesses.          |
+| Publicação    | Somente a versão `matching_versions.status = published` entra no público.                                                    |
 | Elegibilidade | Uma terapia só entra no Match se `therapies.status = published` e `matching_therapy_settings.is_visible_in_matching = true`. |
 
 ### 11.2 Fluxo público
@@ -662,16 +676,15 @@ Descoberta
 
 ### 13.3 Lacunas atuais
 
-No schema atual, `bookings` existe. Lacunas com status: Não identificado nos arquivos analisados.
+Atualização de 2026-07-25: `session_payments`, ledger,
+`stripe_webhook_events`, Checkout e webhooks Stripe possuem fundação
+implementada. O Gate F0 de hardening financeiro foi concluído. Permanecem como
+lacunas:
 
-- não há `session_payments`;
-- não há ledger;
-- não há `stripe_events`;
-- não há snapshot financeiro completo em `bookings`;
-- não há campos Zoom separados para `join_url` e `start_url_encrypted`;
-- não há Edge Function de checkout;
-- não há webhook Stripe;
-- não há função Zoom.
+- snapshot financeiro completo e integração transacional do booking;
+- campos Zoom separados para `join_url` e `start_url_encrypted`;
+- função Zoom;
+- homologação ponta a ponta de cobrança, cancelamento, disputa e repasse.
 
 ### 13.4 Máquina de estados alvo
 
@@ -720,7 +733,7 @@ Modelo alvo:
 - Separate Charges and Transfers.
 - Stripe Billing para assinaturas.
 - Ledger interno obrigatório.
-- Repasses via `transfer_batches` e `transfer_batch_items`.
+- Repasses via `payout_batches` e `payout_batch_items`.
 
 ### 14.2 Fonte de verdade
 
@@ -738,33 +751,39 @@ Regra de transição:
 Obrigatórias para Fase 2:
 
 - `session_payments`;
-- `payment_ledger_entries`;
-- `stripe_events`.
+- `financial_ledger_entries`;
+- `stripe_webhook_events`.
 
 Obrigatórias para Fase 4:
 
-- `stripe_connected_accounts`.
+- `therapist_connect_accounts`.
 
 Obrigatórias para Fase 5:
 
-- `subscriptions`.
+- `therapist_subscriptions`.
 
 Obrigatórias para Fase 6:
 
-- `transfer_batches`;
-- `transfer_batch_items`;
-- `transfer_batch_item_sessions`.
+- `payout_batches`;
+- `payout_batch_therapists`;
+- `payout_batch_items`;
 
 ### 14.4 Webhooks Stripe
 
 Eventos mínimos:
 
 - `checkout.session.completed`;
+- `checkout.session.async_payment_succeeded`;
+- `checkout.session.async_payment_failed`;
+- `payment_intent.processing`;
 - `payment_intent.succeeded`;
 - `payment_intent.payment_failed`;
 - `charge.refunded`;
+- `refund.created`;
+- `refund.updated`;
+- `refund.failed`;
 - `charge.dispute.created`;
-- `account.updated`;
+- `account.updated` e eventos thin `v2.core.account*`;
 - `invoice.paid`;
 - `invoice.payment_failed`;
 - `customer.subscription.updated`;
@@ -772,7 +791,7 @@ Eventos mínimos:
 
 Regras:
 
-- persistir eventos em `stripe_events`;
+- persistir eventos em `stripe_webhook_events`;
 - deduplicar antes de efeito colateral;
 - usar idempotência em operações Stripe;
 - não confiar em ordem perfeita de webhooks;
@@ -794,8 +813,8 @@ Ciclo recomendado:
 
 ```txt
 Admin lista elegíveis
--> cria transfer_batch
--> cria transfer_batch_items
+-> cria payout_batch
+-> cria payout_batch_items
 -> processa transfers
 -> registra ledger
 -> trata falhas e retries
@@ -1033,8 +1052,8 @@ Entregas:
 - Supabase Auth necessário ao checkout;
 - pré-checkout;
 - `session_payments`;
-- `payment_ledger_entries`;
-- `stripe_events`;
+- `financial_ledger_entries`;
+- `stripe_webhook_events`;
 - `create-checkout-session`;
 - `stripe-webhook`;
 - snapshot de preço/duração;
@@ -1046,9 +1065,9 @@ Dependências:
 
 - Fase 1 concluída;
 - decisions de booking, expiração, política mínima de cancelamento e preço mínimo;
-- Stripe SDK/config;
+- Gate Financeiro F0 concluído sobre a fundação Stripe existente;
 - Zoom credentials/config;
-- migrations financeiras.
+- migrations financeiras complementares somente quando necessárias.
 
 Critério de pronto:
 
@@ -1127,7 +1146,8 @@ Critério de pronto:
 - terapeuta vê apenas sua operação;
 - serviços só usam terapias aprovadas;
 - financeiro usa `session_payments` e ledger;
-- rota canônica é `/basico/pagamento`.
+- rota canônica alvo é `/terapeuta/financeiro`, com `/basico/pagamento` como
+  alias de transição.
 
 Status: bloqueada pela Fase 2 e Connect.
 
@@ -1209,23 +1229,23 @@ Status: bloqueada.
 
 ## 20. Decisões e gates
 
-| # | Decisão | Classe | Fase | Status neste plano |
-|---:|---|---|---:|---|
-| 1 | Rota financeira Básico | C | 0/4 | Resolvida: `/basico/pagamento`. |
-| 2 | `/pro/upgrade` ou `/pro/plano` | C | 0/5 | Resolvida: `/pro/plano`. |
-| 3 | Nome público Aura/IA | A | 5 | Pendente; usar linguagem determinística até decisão. |
-| 4 | Contrato do Match | A | 1 | Pendente; alinhar function real e frontend. |
-| 5 | Versionamento dos pesos | B/A | 1/6 | Postergável se Fase 1 usar tabela simples; bloqueia Admin de pesos. |
-| 6 | Métricas anônimas | B | 1/6 | Postergável para Fase 6. |
-| 7 | Máquina de estados booking | A | 2 | Pendente antes de migration. |
-| 8 | Expiração de booking pendente | A | 2 | Pendente antes de checkout. |
-| 9 | Transição `payments` -> `session_payments` | A | 2 | Obrigatória. |
-| 10 | Criptografia do start URL Zoom | A | 2 | Pendente antes de Zoom. |
-| 11 | Financeiro disponível ao Básico | C | 4 | Resolvido como operacional simples. |
-| 12 | Modelo de disponibilidade | A | 2/4 | Pendente para reserva real. |
-| 13 | Matriz definitiva de capabilities | A | 5 | Parcialmente resolvida pelo código; precisa decisão se produto quiser alterar Premium. |
-| 14 | Inadimplência | B/A | 5 | Postergável para shell; bloqueia Billing real. |
-| 15 | Elegibilidade de repasse | A | 6 | Pendente antes de transferências. |
+|   # | Decisão                                    | Classe | Fase | Status neste plano                                                                     |
+| --: | ------------------------------------------ | ------ | ---: | -------------------------------------------------------------------------------------- |
+|   1 | Rota financeira Básico                     | C      |  0/4 | Resolvida: `/basico/pagamento`.                                                        |
+|   2 | `/pro/upgrade` ou `/pro/plano`             | C      |  0/5 | Resolvida: `/pro/plano`.                                                               |
+|   3 | Nome público Aura/IA                       | A      |    5 | Pendente; usar linguagem determinística até decisão.                                   |
+|   4 | Contrato do Match                          | A      |    1 | Pendente; alinhar function real e frontend.                                            |
+|   5 | Versionamento dos pesos                    | B/A    |  1/6 | Postergável se Fase 1 usar tabela simples; bloqueia Admin de pesos.                    |
+|   6 | Métricas anônimas                          | B      |  1/6 | Postergável para Fase 6.                                                               |
+|   7 | Máquina de estados booking                 | A      |    2 | Pendente antes de migration.                                                           |
+|   8 | Expiração de booking pendente              | A      |    2 | Pendente antes de checkout.                                                            |
+|   9 | Transição `payments` -> `session_payments` | A      |    2 | Obrigatória.                                                                           |
+|  10 | Criptografia do start URL Zoom             | A      |    2 | Pendente antes de Zoom.                                                                |
+|  11 | Financeiro disponível ao Básico            | C      |    4 | Resolvido como operacional simples.                                                    |
+|  12 | Modelo de disponibilidade                  | A      |  2/4 | Pendente para reserva real.                                                            |
+|  13 | Matriz definitiva de capabilities          | A      |    5 | Parcialmente resolvida pelo código; precisa decisão se produto quiser alterar Premium. |
+|  14 | Inadimplência                              | B/A    |    5 | Postergável para shell; bloqueia Billing real.                                         |
+|  15 | Elegibilidade de repasse                   | A      |    6 | Pendente antes de transferências.                                                      |
 
 Legenda:
 
@@ -1235,18 +1255,18 @@ Legenda:
 
 ## 21. Riscos
 
-| Risco | Severidade | Mitigação |
-|---|---|---|
-| `payments` e `session_payments` virarem fontes paralelas | Alta | Criar `session_payments` e proibir código novo usando `payments` como fonte final. |
-| Checkout sem webhook/idempotência | Alta | `stripe_events`, dedupe e webhook como fonte única. |
-| Reserva dupla de horário | Alta | Validar e bloquear no banco/Edge Function. |
-| Zoom start URL exposto | Alta | Campo criptografado e RLS estrito. |
-| RLS pública insuficiente para terapeutas/serviços | Alta | Criar views/policies antes de páginas públicas reais. |
-| Figma e rotas locais divergentes | Média | Manter `routes.ts` como canônico e registrar aliases/legados. |
-| Linguagem de IA enganosa | Média | Copy deve explicar recomendações determinísticas. |
-| Pro financeiro conflita com permissions | Média | Decisão de produto antes da Fase 5. |
-| Falta de testes | Média | Adicionar testes mínimos em Fase 1 para Match e em Fase 2 para webhooks. |
-| Falta de SDKs Supabase/Stripe/Zoom | Média | Adicionar dependências somente após gate da fase correspondente. |
+| Risco                                                    | Severidade | Mitigação                                                                          |
+| -------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------- |
+| `payments` e `session_payments` virarem fontes paralelas | Alta       | Criar `session_payments` e proibir código novo usando `payments` como fonte final. |
+| Checkout sem webhook/idempotência                        | Alta       | `stripe_webhook_events`, dedupe e webhook como fonte única.                        |
+| Reserva dupla de horário                                 | Alta       | Validar e bloquear no banco/Edge Function.                                         |
+| Zoom start URL exposto                                   | Alta       | Campo criptografado e RLS estrito.                                                 |
+| RLS pública insuficiente para terapeutas/serviços        | Alta       | Criar views/policies antes de páginas públicas reais.                              |
+| Figma e rotas locais divergentes                         | Média      | Manter `routes.ts` como canônico e registrar aliases/legados.                      |
+| Linguagem de IA enganosa                                 | Média      | Copy deve explicar recomendações determinísticas.                                  |
+| Pro financeiro conflita com permissions                  | Média      | Decisão de produto antes da Fase 5.                                                |
+| Falta de testes                                          | Média      | Adicionar testes mínimos em Fase 1 para Match e em Fase 2 para webhooks.           |
+| Falta de SDKs Supabase/Stripe/Zoom                       | Média      | Adicionar dependências somente após gate da fase correspondente.                   |
 
 ## 22. QA e definição de pronto do MVP
 
@@ -1262,8 +1282,8 @@ Uma entrega só pode ser marcada pronta quando:
 - valida pagamento por webhook Stripe;
 - usa idempotência em Stripe;
 - usa `session_payments` como fonte única de pagamentos de sessão;
-- registra ledger em `payment_ledger_entries`;
-- cria repasses a partir de `transfer_batches` e `transfer_batch_items`;
+- registra ledger em `financial_ledger_entries`;
+- cria repasses a partir de `payout_batches` e `payout_batch_items`;
 - grava snapshot de preço e duração no momento da reserva;
 - gera link Zoom apenas após pagamento confirmado;
 - protege `zoom_start_url_encrypted` por RLS;
@@ -1284,10 +1304,10 @@ Testes automatizados ainda não estão configurados. Critério adicional recomen
 5. Alinhar contrato de `match-therapies`.
 6. Implementar catálogo e Match real.
 7. Criar testes mínimos do Match.
-8. Desenhar migration financeira da Fase 2 com `session_payments`, ledger e `stripe_events`.
-9. Implementar checkout + webhook + idempotência.
+8. Gate F0 concluído: preservar os invariantes financeiros nos próximos marcos.
+9. Implementar A2 para banco, RLS e funções transacionais de Agenda.
 10. Implementar Zoom pós-webhook.
-11. Só então liberar área do paciente, terapeuta e Admin.
+11. Só então liberar os fluxos transacionais completos nos três shells.
 
 ## 24. Fora de escopo do MVP
 

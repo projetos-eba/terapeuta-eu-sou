@@ -61,8 +61,8 @@ Consultar antes de alterar:
 ## Pendencias conhecidas
 
 - `/para-terapeutas/planos` consumindo o mesmo catalogo.
-- Migrations futuras `subscriptions` e `stripe_events`.
-- Checkout Stripe, webhook idempotente, Customer Portal e liberacao server-side de plano.
+- Hardening de `therapist_subscriptions`, `stripe_webhook_events`, Checkout,
+  Customer Portal e liberacao server-side de plano conforme o Gate F0.
 - Decisoes comerciais: preco final, trial, prorata, tolerancia por falha de pagamento, upgrade imediato, downgrade/cancelamento no fim do ciclo.
 - Assets do Figma foram substituidos por fallbacks locais em `public/for-therapists/` quando download direto nao estiver disponivel.
 

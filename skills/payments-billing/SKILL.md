@@ -27,6 +27,10 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 - Use Stripe idempotency keys for creating checkout sessions, refunds, schedules, and transfers.
 - Webhooks must read raw body and verify Stripe signature.
 - Webhook events must be idempotent and must not reopen `processed` events.
+- Webhook reservation must be atomic; failed/stale leases may be retried.
+- Checkout completion only confirms a session when `payment_status` is paid.
+- Subscription plan comes from the effective Stripe Price mapping.
+- Separate transfers require the session Charge as `source_transaction`.
 - Ledger is append-only; use compensating entries.
 - Refunds, disputes, internal contests, and admin blocks prevent payout.
 - TES does not collect bank, KYC, identity, or tax details for connected accounts; Stripe-hosted onboarding does.
@@ -50,6 +54,7 @@ Edge Functions:
 - `STRIPE_WEBHOOK_SECRET`: local Stripe CLI fallback.
 - `STRIPE_PLATFORM_WEBHOOK_SECRET`: platform endpoint signing secret.
 - `STRIPE_CONNECT_WEBHOOK_SECRET`: connected-account endpoint signing secret.
+- `STRIPE_CONNECT_V2_WEBHOOK_SECRET`: Accounts v2 thin destination signing secret.
 - `PAYMENTS_INTERNAL_OPERATIONS_TOKEN`: machine-to-machine token. Use only with `x-tes-internal-operations-token`. See `docs/payments/internal-operations-token.md`.
 
 Never expose, log, screenshot, or write real secret values.
@@ -82,6 +87,8 @@ Never expose, log, screenshot, or write real secret values.
 - Hardcoded Price IDs in React.
 - Floats for money.
 - Plan activation by redirect query string.
+- Return URLs hardcoded to `/basico/*`, `/pro/*`, or `/plus/*`; use canonical
+  `/terapeuta/*` destinations.
 - Automatic transfer on payment.
 - Logs of secrets, client secrets, raw Stripe payloads, card data, documents, or bank data.
 - Custom TES forms for Connect bank/KYC data.

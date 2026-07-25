@@ -23,7 +23,7 @@ export function TherapistWeekSummary({
         </div>
         <Link
           className="text-sm font-bold text-brand-deep outline-none hover:text-brand-primary focus-visible:ring-4 focus-visible:ring-ring/20"
-          href={routes.therapist.plusInsights as Route<string>}
+          href={routes.therapist.insights as Route<string>}
         >
           Ver mais →
         </Link>

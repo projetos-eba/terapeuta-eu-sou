@@ -6,7 +6,12 @@ Fonte primária de navegação: Figma `↳ Jornadas dos Usuários`, node `12272:
 
 ## Stack
 
-Usa-se Next.js 14 com App Router porque o produto tem áreas com rotas claras, layouts por perfil e renderização híbrida. Usa-se TypeScript para contratos de rota, permissão e componentes. Usa-se Tailwind com CSS Variables para manter tokens centralizados. Usa-se shadcn/ui como base estrutural, sempre encapsulada por wrappers TES.
+Usa-se Next.js 15 com App Router porque o produto tem áreas com rotas claras, layouts por perfil e renderização híbrida. Usa-se TypeScript para contratos de rota, permissão e componentes. Usa-se Tailwind com CSS Variables para manter tokens centralizados. Usa-se shadcn/ui como base estrutural, sempre encapsulada por wrappers TES.
+
+A área autenticada do terapeuta converge para `/terapeuta/*`; Free, Premium e
+Premium Plus compartilham shell e rotas, com acesso resolvido por capability.
+`/basico/*`, `/pro/*` e `/plus/*` são aliases temporários, enquanto
+`/terapeutas/*` continua sendo o catálogo público.
 
 ## Estrutura
 
@@ -227,7 +232,7 @@ Exemplo:
 Arquivos de setup:
 
 - `package.json`: scripts, dependências e devDependencies.
-- `next.config.mjs`: Next.js 14, React Strict Mode e typed routes.
+- `next.config.mjs`: Next.js 15, React Strict Mode e typed routes.
 - `tsconfig.json`: strict mode e aliases.
 - `tailwind.config.ts`: tokens TES e shadcn/ui.
 - `postcss.config.mjs`: Tailwind e Autoprefixer.

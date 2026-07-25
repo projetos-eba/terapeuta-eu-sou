@@ -23,7 +23,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:deno": "deno test --config supabase/functions/deno.json --allow-env --allow-net supabase/functions/_shared/auth supabase/functions/_shared/email",
+    "test:deno": "deno test --config supabase/functions/deno.json --allow-env --allow-net supabase/functions/_shared/auth supabase/functions/_shared/email supabase/functions/_shared/payments",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

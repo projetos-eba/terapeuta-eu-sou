@@ -21,7 +21,7 @@ export function UpcomingSessionsCard({
               <Link
                 className="grid min-h-12 grid-cols-[52px_32px_minmax(0,1fr)] items-center gap-2 rounded-sm px-1 outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20"
                 href={
-                  routes.therapist.plusSessionDetail(
+                  routes.therapist.sessionDetail(
                     session.bookingId,
                   ) as Route<string>
                 }
@@ -56,7 +56,7 @@ export function UpcomingSessionsCard({
       )}
       <Link
         className="mt-5 flex min-h-11 items-center justify-center text-xs font-bold text-brand-deep outline-none hover:text-brand-primary focus-visible:ring-4 focus-visible:ring-ring/20"
-        href={routes.therapist.plusAgenda as Route<string>}
+        href={routes.therapist.agenda as Route<string>}
       >
         Ver agenda completa →
       </Link>

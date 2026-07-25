@@ -182,7 +182,7 @@ export default async function TherapistCheckoutPage({
             </form>
 
             <TESButton
-              href={routes.therapist.basicHome}
+              href={routes.therapist.home}
               size="lg"
               variant="secondary"
               className="min-h-12 w-full rounded-2xl text-base"

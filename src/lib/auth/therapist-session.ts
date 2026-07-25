@@ -18,13 +18,10 @@ import {
 import { routes } from "@/lib/routes";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
-type TherapistNamespace = "basico" | "plus" | "pro";
-
-type RequireTherapistSessionOptions = {
+export type RequireTherapistSessionOptions = {
   capability?: TherapistCapability;
   loginContinuation?: string;
   minimumPlan?: TherapistPlan;
-  namespace?: TherapistNamespace;
 };
 
 type SupabaseAuthUser = {
@@ -116,12 +113,6 @@ export async function requireTherapistSession(
   }
 }
 
-export function getTherapistNamespace(plan: TherapistPlan): TherapistNamespace {
-  if (plan === TherapistPlan.PremiumPlus) return "plus";
-  if (plan === TherapistPlan.Premium) return "pro";
-  return "basico";
-}
-
 export function isBlockedTherapistStatus(status: TherapistStatusValue) {
   return (
     status === TherapistStatus.Suspended || status === TherapistStatus.Rejected
@@ -132,10 +123,6 @@ export function shouldRedirectTherapistPlan(
   plan: TherapistPlan,
   options: RequireTherapistSessionOptions,
 ) {
-  if (options.namespace && getTherapistNamespace(plan) !== options.namespace) {
-    return true;
-  }
-
   if (
     options.minimumPlan &&
     !isTherapistPlanAtLeast(plan, options.minimumPlan)

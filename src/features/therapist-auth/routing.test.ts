@@ -60,7 +60,7 @@ describe("therapist auth routing", () => {
         TherapistPlan.Free,
         "https://example.com/steal-session",
       ),
-    ).toBe(routes.therapist.basicHome);
+    ).toBe(routes.therapist.home);
     expect(
       getTherapistLoginRedirect(
         TherapistPlan.Free,

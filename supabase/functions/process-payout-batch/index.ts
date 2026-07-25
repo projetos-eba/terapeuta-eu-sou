@@ -26,6 +26,13 @@ type BatchItemRow = {
   therapist_profile_id: string;
 };
 
+type SessionPaymentRow = {
+  financial_status: string;
+  refund_pending: boolean;
+  stripe_charge_id: string | null;
+  transfer_status: string;
+};
+
 const runtime = getPaymentsRuntime("process-payout-batch");
 
 runtime.serve(async (request) => {
@@ -64,20 +71,49 @@ runtime.serve(async (request) => {
 
     for (const item of items) {
       const connectRows = await client.get<
-        Array<{ id: string; stripe_account_id: string }>
+        Array<{
+          id: string;
+          operational_status: string;
+          stripe_account_id: string;
+          therapist_profiles: { status: string } | null;
+        }>
       >(
-        `/rest/v1/therapist_connect_accounts?select=id,stripe_account_id&therapist_profile_id=eq.${encodeURIComponent(
+        `/rest/v1/therapist_connect_accounts?select=id,stripe_account_id,operational_status,therapist_profiles!inner(status)&therapist_profile_id=eq.${encodeURIComponent(
           item.therapist_profile_id,
-        )}&stripe_transfers_status=eq.active&limit=1`,
+        )}&stripe_transfers_status=eq.active&operational_status=eq.ready&therapist_profiles.status=eq.approved&limit=1`,
       );
       const destination = connectRows[0]?.stripe_account_id;
 
       if (!destination) {
-        await markItemFailed(
+        await markItemBlocked(
           client,
           item.id,
-          "connect_missing",
-          "Conta Connect nao encontrada.",
+          item.session_payment_id,
+          "therapist_or_connect_blocked",
+          "Perfil ou conta Connect indisponivel para repasse.",
+        );
+        results.push({ itemId: item.id, ok: false });
+        continue;
+      }
+
+      const [payment] = await client.get<SessionPaymentRow[]>(
+        `/rest/v1/session_payments?select=stripe_charge_id,financial_status,transfer_status,refund_pending&id=eq.${encodeURIComponent(
+          item.session_payment_id,
+        )}&limit=1`,
+      );
+
+      if (
+        !payment?.stripe_charge_id ||
+        payment.financial_status !== "paid" ||
+        payment.refund_pending ||
+        !["batched", "transfer_pending"].includes(payment.transfer_status)
+      ) {
+        await markItemBlocked(
+          client,
+          item.id,
+          item.session_payment_id,
+          "source_payment_not_transferable",
+          "Pagamento de origem indisponivel para repasse.",
         );
         results.push({ itemId: item.id, ok: false });
         continue;
@@ -91,11 +127,21 @@ runtime.serve(async (request) => {
       ]);
 
       try {
-        await client.patch(
-          `/rest/v1/payout_batch_items?id=eq.${encodeURIComponent(item.id)}`,
+        const claimed = await client.patch<Array<{ id: string }>>(
+          `/rest/v1/payout_batch_items?select=id&id=eq.${encodeURIComponent(item.id)}&status=eq.reserved`,
           { status: "transfer_pending" },
-          "return=minimal",
+          "return=representation",
         );
+
+        if (!claimed[0]) {
+          results.push({
+            itemId: item.id,
+            ok: true,
+            skipped: "already_claimed",
+          });
+          continue;
+        }
+
         const transfer = await stripe.transfers.create(
           {
             amount: item.amount_cents,
@@ -109,6 +155,7 @@ runtime.serve(async (request) => {
               tes_session_payment_id: item.session_payment_id,
               tes_therapist_id: item.therapist_profile_id,
             },
+            source_transaction: payment.stripe_charge_id,
             transfer_group: `tes_booking_${item.booking_id}`,
           },
           { idempotencyKey },
@@ -124,6 +171,7 @@ runtime.serve(async (request) => {
             payout_batch_item_id: item.id,
             session_payment_id: item.session_payment_id,
             status: "transferred",
+            stripe_source_charge_id: payment.stripe_charge_id,
             stripe_transfer_id: transfer.id,
             therapist_profile_id: item.therapist_profile_id,
             transferred_at: new Date().toISOString(),
@@ -196,6 +244,32 @@ async function markItemFailed(
       failure_code: code,
       failure_message: message.slice(0, 500),
       status: "failed",
+    },
+    "return=minimal",
+  );
+}
+
+async function markItemBlocked(
+  client: SupabaseRestClient,
+  itemId: string,
+  sessionPaymentId: string,
+  code: string,
+  message: string,
+) {
+  await client.patch(
+    `/rest/v1/payout_batch_items?id=eq.${encodeURIComponent(itemId)}`,
+    {
+      failure_code: code,
+      failure_message: message.slice(0, 500),
+      status: "blocked",
+    },
+    "return=minimal",
+  );
+  await client.patch(
+    `/rest/v1/session_payments?id=eq.${encodeURIComponent(sessionPaymentId)}`,
+    {
+      transfer_blocked_reason: code,
+      transfer_status: "blocked",
     },
     "return=minimal",
   );

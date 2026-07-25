@@ -1,4 +1,5 @@
 import { TherapistPlan } from "@/domain/tes";
+import { getCanonicalTherapistPath } from "@/features/therapist-shell/therapist-route-policy";
 import { routes } from "@/lib/routes";
 
 import { TherapistDashboardError } from "./therapist-dashboard.errors";
@@ -65,7 +66,9 @@ export function mapTherapistDashboardResponse(
       const row = record(item);
       return {
         count: optionalNumber(row.count),
-        href: string(row.href, routes.therapist.plusHome),
+        href: getCanonicalTherapistPath(
+          string(row.href, routes.therapist.home),
+        ),
         id: string(row.id, `attention-${index}`),
         label: string(row.label, "Item de atenção"),
         tone: row.tone === "warning" ? "warning" : "info",
@@ -152,7 +155,9 @@ export function mapTherapistRecommendations(rows: AuraRecommendationRow[]) {
     } else if (kind === "action") {
       actions.push({
         body: row.body,
-        href: string(context.action_href, routes.therapist.plusProfile),
+        href: getCanonicalTherapistPath(
+          string(context.action_href, routes.therapist.profile),
+        ),
         id: row.id,
         title: row.title,
       });

@@ -8,9 +8,8 @@ import {
 } from "../_shared/payments/http.ts";
 import {
   createRecipientAccountV2,
+  deriveConnectAccountState,
   getAccountId,
-  getPendingRequirements,
-  getTransfersStatus,
 } from "../_shared/payments/connect.ts";
 import {
   getPaymentsConfig,
@@ -67,9 +66,7 @@ runtime.serve(async (request) => {
       therapistName: therapist.public_name,
     });
     const stripeAccountId = getAccountId(account);
-    const pending = getPendingRequirements(account);
-    const transfersStatus = getTransfersStatus(account);
-    const status = transfersStatus === "active" ? "ready" : "account_created";
+    const state = deriveConnectAccountState(account);
     const inserted = await client.post<ConnectAccountRow[]>(
       "/rest/v1/therapist_connect_accounts?select=id,stripe_account_id,onboarding_status,stripe_transfers_status",
       {
@@ -77,12 +74,15 @@ runtime.serve(async (request) => {
         fees_collector: "application",
         last_synced_at: new Date().toISOString(),
         losses_collector: "application",
-        onboarding_status: status,
-        operational_status:
-          transfersStatus === "active" ? "ready" : "restricted",
-        pending_requirements: pending,
+        disabled_reason: state.disabledReason,
+        onboarding_status:
+          state.onboardingStatus === "restricted"
+            ? "account_created"
+            : state.onboardingStatus,
+        operational_status: state.operationalStatus,
+        pending_requirements: state.pendingRequirements,
         stripe_account_id: stripeAccountId,
-        stripe_transfers_status: transfersStatus,
+        stripe_transfers_status: state.transfersStatus,
         therapist_profile_id: therapist.id,
       },
       "return=representation",

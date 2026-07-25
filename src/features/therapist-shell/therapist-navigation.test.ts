@@ -13,19 +13,19 @@ describe("buildTherapistNavigation", () => {
     });
 
     expect(navigation.map((item) => item.href)).toEqual([
-      routes.therapist.plusHome,
-      routes.therapist.plusAgenda,
-      routes.therapist.plusPatients,
-      routes.therapist.plusSessions,
-      routes.therapist.plusMessages,
-      routes.therapist.plusServices,
-      routes.therapist.plusProfile,
-      routes.therapist.plusReviews,
-      routes.therapist.plusInsights,
-      routes.therapist.plusAssessorIa,
-      routes.therapist.plusFinance,
-      routes.therapist.plusSettings,
-      routes.therapist.plusSupport,
+      routes.therapist.home,
+      routes.therapist.agenda,
+      routes.therapist.patients,
+      routes.therapist.sessions,
+      routes.therapist.messages,
+      routes.therapist.services,
+      routes.therapist.profile,
+      routes.therapist.reviews,
+      routes.therapist.insights,
+      routes.therapist.assessorIa,
+      routes.therapist.finance,
+      routes.therapist.settings,
+      routes.therapist.support,
     ]);
     expect(navigation.every((item) => item.accessState === "enabled")).toBe(
       true,
@@ -47,7 +47,7 @@ describe("buildTherapistNavigation", () => {
     expect(
       navigation.find((item) => item.label === "Histórico da Jornada")
         ?.upgradeHref,
-    ).toBe(routes.therapist.proPlan);
+    ).toBe(routes.therapist.plan);
     expect(
       navigation.find((item) => item.label === "Avaliações")?.accessState,
     ).toBe("enabled");
@@ -66,5 +66,8 @@ describe("buildTherapistNavigation", () => {
       navigation.find((item) => item.label === "Métricas & Relatórios")
         ?.accessState,
     ).toBe("locked");
+    expect(navigation.every((item) => item.href.startsWith("/terapeuta"))).toBe(
+      true,
+    );
   });
 });

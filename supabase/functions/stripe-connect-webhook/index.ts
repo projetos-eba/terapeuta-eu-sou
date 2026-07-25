@@ -1,25 +1,25 @@
 import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
-import { failure, success } from "../_shared/payments/http.ts";
 import {
-  getPendingRequirements,
-  getTransfersStatus,
+  deriveConnectAccountState,
+  getAccountId,
 } from "../_shared/payments/connect.ts";
+import { failure, success } from "../_shared/payments/http.ts";
 import {
   getPaymentsConfig,
   getPaymentsRuntime,
   getWebhookSecret,
 } from "../_shared/payments/runtime.ts";
-import { createStripeClient } from "../_shared/payments/stripe-client.ts";
-
-type WebhookEventRow = {
-  id: string;
-  processing_status:
-    | "failed"
-    | "ignored"
-    | "processed"
-    | "processing"
-    | "received";
-};
+import {
+  createStripeClient,
+  TES_STRIPE_API_VERSION,
+} from "../_shared/payments/stripe-client.ts";
+import {
+  eventCreatedAt,
+  markWebhook,
+  objectId,
+  reserveWebhookEvent,
+  sha256Hex,
+} from "../_shared/payments/webhook-events.ts";
 
 const runtime = getPaymentsRuntime("stripe-connect-webhook");
 
@@ -40,62 +40,105 @@ runtime.serve(async (request) => {
     const rawBody = await request.text();
     const signature = request.headers.get("stripe-signature");
 
-    if (!signature)
+    if (!signature) {
       return new Response("Missing Stripe signature", { status: 400 });
-
-    const event = await stripe.webhooks.constructEventAsync(
-      rawBody,
-      signature,
-      getWebhookSecret(runtime, "STRIPE_CONNECT_WEBHOOK_SECRET"),
-    );
-    const webhookRow = await reserveWebhookEvent(client, {
-      accountId: event.account ?? null,
-      apiVersion: event.api_version ?? null,
-      eventId: event.id,
-      eventType: event.type,
-      livemode: event.livemode,
-      payloadSha256: await sha256Hex(rawBody),
-    });
-
-    if (webhookRow.processing_status === "processed") {
-      return success({ duplicate: true });
     }
 
-    await markWebhook(client, event.id, "processing");
+    const envelope = parseEnvelope(rawBody);
+    const isThinEvent = envelope.object === "v2.core.event";
+    const parsed = isThinEvent
+      ? await stripe.parseEventNotificationAsync(
+          rawBody,
+          signature,
+          getWebhookSecret(runtime, "STRIPE_CONNECT_V2_WEBHOOK_SECRET"),
+        )
+      : await stripe.webhooks.constructEventAsync(
+          rawBody,
+          signature,
+          getWebhookSecret(runtime, "STRIPE_CONNECT_WEBHOOK_SECRET"),
+        );
+    const event = parsed as unknown as Record<string, unknown>;
+    const eventId = String(event.id);
+    const eventType = String(event.type);
+    const eventTime = eventCreatedAt(
+      event.created as number | string | undefined,
+    );
+    const snapshotObject = isThinEvent
+      ? null
+      : asRecord(asRecord(event.data).object);
+    const relatedObject = asRecord(event.related_object);
+    const accountId = isThinEvent
+      ? stringOrNull(relatedObject.id)
+      : (stringOrNull(event.account) ?? objectId(snapshotObject));
+    const reservation = await reserveWebhookEvent(client, {
+      accountId,
+      apiVersion: isThinEvent
+        ? TES_STRIPE_API_VERSION
+        : stringOrNull(event.api_version),
+      eventCreatedAt: eventTime,
+      eventId,
+      eventType,
+      livemode: event.livemode === true,
+      objectId: accountId,
+      payloadSha256: await sha256Hex(rawBody),
+      source: "connect",
+    });
+
+    if (!reservation?.acquired) {
+      return success({
+        duplicate: true,
+        status: reservation?.processing_status ?? "processing",
+      });
+    }
 
     try {
-      if (event.type === "account.updated") {
-        await handleAccountUpdated(
-          client,
-          event.id,
-          event.data.object as unknown as Record<string, unknown>,
-        );
-        await markWebhook(client, event.id, "processed");
-      } else {
-        await markWebhook(client, event.id, "ignored");
+      const handled = isAccountEvent(eventType);
+      if (handled) {
+        if (eventType === "v2.core.account.closed" && accountId) {
+          await disableClosedAccount(client, accountId, eventId, eventTime);
+        } else {
+          const account = isThinEvent
+            ? asRecord(
+                await (
+                  parsed as unknown as {
+                    fetchRelatedObject: () => Promise<unknown>;
+                  }
+                ).fetchRelatedObject(),
+              )
+            : snapshotObject;
+
+          if (account) {
+            await syncConnectAccount(client, account, eventId, eventTime);
+          }
+        }
       }
+
+      await markWebhook(client, eventId, handled ? "processed" : "ignored");
+      return success({
+        payloadStyle: isThinEvent ? "thin" : "snapshot",
+        received: true,
+      });
     } catch (error) {
       await markWebhook(
         client,
-        event.id,
+        eventId,
         "failed",
         error instanceof Error ? error.message : "UNKNOWN",
       );
       throw error;
     }
-
-    return success({ received: true });
   } catch (error) {
     return failure(error, requestId);
   }
 });
 
-async function handleAccountUpdated(
+async function syncConnectAccount(
   client: SupabaseRestClient,
-  eventId: string,
   account: Record<string, unknown>,
+  eventId: string,
+  eventTime: string,
 ) {
-  const stripeAccountId = String(account.id);
+  const stripeAccountId = getAccountId(account);
   const rows = await client.get<Array<{ id: string }>>(
     `/rest/v1/therapist_connect_accounts?select=id&stripe_account_id=eq.${encodeURIComponent(
       stripeAccountId,
@@ -104,19 +147,18 @@ async function handleAccountUpdated(
 
   if (!rows[0]) return;
 
-  const transfersStatus = getTransfersStatus(account);
-  const pending = getPendingRequirements(account);
-
+  const state = deriveConnectAccountState(account);
   await client.patch(
     `/rest/v1/therapist_connect_accounts?id=eq.${encodeURIComponent(rows[0].id)}`,
     {
+      disabled_reason: state.disabledReason,
       last_synced_at: new Date().toISOString(),
-      onboarding_status:
-        transfersStatus === "active" ? "ready" : "requirements_due",
-      operational_status:
-        transfersStatus === "active" ? "ready" : "restricted",
-      pending_requirements: pending,
-      stripe_transfers_status: transfersStatus,
+      onboarding_status: state.onboardingStatus,
+      operational_status: state.operationalStatus,
+      pending_requirements: state.pendingRequirements,
+      stripe_event_created_at: eventTime,
+      stripe_event_id: eventId,
+      stripe_transfers_status: state.transfersStatus,
     },
     "return=minimal",
   );
@@ -131,77 +173,51 @@ async function handleAccountUpdated(
   );
 }
 
-async function reserveWebhookEvent(
+async function disableClosedAccount(
   client: SupabaseRestClient,
-  input: {
-    accountId: string | null;
-    apiVersion: string | null;
-    eventId: string;
-    eventType: string;
-    livemode: boolean;
-    payloadSha256: string;
-  },
-) {
-  const existing = await client.get<WebhookEventRow[]>(
-    `/rest/v1/stripe_webhook_events?select=id,processing_status&stripe_event_id=eq.${encodeURIComponent(
-      input.eventId,
-    )}&limit=1`,
-  );
-
-  if (existing[0]) return existing[0];
-
-  const rows = await client.post<WebhookEventRow[]>(
-    "/rest/v1/stripe_webhook_events?select=id,processing_status",
-    {
-      account_id: input.accountId,
-      api_version: input.apiVersion,
-      attempts: 1,
-      event_type: input.eventType,
-      livemode: input.livemode,
-      payload_sha256: input.payloadSha256,
-      processing_status: "received",
-      source: "connect",
-      stripe_event_id: input.eventId,
-      updated_at: new Date().toISOString(),
-    },
-    "return=representation",
-  );
-
-  return rows[0];
-}
-
-async function markWebhook(
-  client: SupabaseRestClient,
+  stripeAccountId: string,
   eventId: string,
-  status: "failed" | "ignored" | "processed" | "processing",
-  errorMessage?: string,
+  eventTime: string,
 ) {
   await client.patch(
-    `/rest/v1/stripe_webhook_events?stripe_event_id=eq.${encodeURIComponent(eventId)}`,
+    `/rest/v1/therapist_connect_accounts?stripe_account_id=eq.${encodeURIComponent(
+      stripeAccountId,
+    )}`,
     {
-      error_message: errorMessage?.slice(0, 500) ?? null,
-      processed_at:
-        status === "processed" || status === "ignored"
-          ? new Date().toISOString()
-          : null,
-      processing_started_at:
-        status === "processing" ? new Date().toISOString() : undefined,
-      processing_status: status,
-      updated_at: new Date().toISOString(),
+      disabled_reason: "account_closed",
+      last_synced_at: new Date().toISOString(),
+      onboarding_status: "disabled",
+      operational_status: "disabled",
+      stripe_event_created_at: eventTime,
+      stripe_event_id: eventId,
+      stripe_transfers_status: "inactive",
     },
     "return=minimal",
   );
 }
 
-async function sha256Hex(value: string) {
-  const hash = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(value),
+function isAccountEvent(eventType: string) {
+  return (
+    eventType === "account.updated" || eventType.startsWith("v2.core.account")
   );
+}
 
-  return Array.from(new Uint8Array(hash))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+function parseEnvelope(rawBody: string) {
+  try {
+    return asRecord(JSON.parse(rawBody));
+  } catch {
+    return {};
+  }
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function stringOrNull(value: unknown) {
+  return typeof value === "string" && value.length > 0 ? value : null;
 }
 
 export {};

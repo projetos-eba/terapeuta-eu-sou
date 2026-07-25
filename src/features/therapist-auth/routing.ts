@@ -5,14 +5,12 @@ export function isPaidTherapistPlan(plan: TherapistPlan) {
   return plan === TherapistPlan.Premium || plan === TherapistPlan.PremiumPlus;
 }
 
-export function getTherapistDashboardHref(plan: TherapistPlan) {
-  if (plan === TherapistPlan.Premium) return routes.therapist.proHome;
-  if (plan === TherapistPlan.PremiumPlus) return routes.therapist.plusHome;
-  return routes.therapist.basicHome;
+export function getTherapistDashboardHref(_plan: TherapistPlan) {
+  return routes.therapist.home;
 }
 
 export function getTherapistCheckoutHref(plan: TherapistPlan) {
-  if (!isPaidTherapistPlan(plan)) return routes.therapist.basicHome;
+  if (!isPaidTherapistPlan(plan)) return routes.therapist.home;
 
   return `${routes.public.therapistCheckout}?plan=${plan}`;
 }
