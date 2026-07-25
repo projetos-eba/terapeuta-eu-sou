@@ -16,12 +16,7 @@ export function getTherapistShellConfig({
   unreadMessagesCount: number;
 }): TherapistShellConfig {
   const definition = getTherapistPlanDefinition(plan);
-  const helpHref =
-    plan === TherapistPlan.PremiumPlus
-      ? routes.therapist.plusSupport
-      : plan === TherapistPlan.Premium
-        ? routes.therapist.proSupport
-        : routes.therapist.basicSupport;
+  const helpHref = routes.therapist.support;
 
   return {
     helpCardVariant:

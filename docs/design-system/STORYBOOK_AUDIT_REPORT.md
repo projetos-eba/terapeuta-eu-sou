@@ -26,7 +26,9 @@ Resultado:
 
 ## Estado do Código
 
-O projeto está em Next.js 14 com Tailwind.
+Este relatório é um snapshot histórico da auditoria de Storybook. Na data da
+revisão documental de 2026-07-25, o projeto está em Next.js 15 com Tailwind;
+as observações de componentes permanecem históricas até nova auditoria visual.
 
 Dependências relevantes já existentes:
 

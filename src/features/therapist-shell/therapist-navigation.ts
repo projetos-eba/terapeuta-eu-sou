@@ -12,7 +12,7 @@ import type { TherapistShellNavigation } from "./therapist-shell.types";
 type NavigationDefinition = {
   capability?: TherapistCapability;
   feature?: PlanFeatureCode;
-  getHref: (plan: TherapistPlan) => string | null;
+  href: string;
   icon: TherapistShellNavigation[number]["icon"];
   label: string;
   planLabel?: "Premium" | "Premium Plus";
@@ -20,84 +20,84 @@ type NavigationDefinition = {
 
 const definitions: NavigationDefinition[] = [
   {
-    getHref: homeHref,
+    href: routes.therapist.home,
     icon: "home",
     label: "Início",
   },
   {
     capability: "operation_essentials",
-    getHref: agendaHref,
+    href: routes.therapist.agenda,
     icon: "calendar",
     label: "Agenda",
   },
   {
     capability: "full_crm",
-    getHref: patientsHref,
+    href: routes.therapist.patients,
     icon: "route",
     label: "Histórico da Jornada",
     planLabel: "Premium Plus",
   },
   {
     capability: "operation_essentials",
-    getHref: sessionsHref,
+    href: routes.therapist.sessions,
     icon: "heart",
     label: "Sessões",
   },
   {
     capability: "operation_essentials",
-    getHref: messagesHref,
+    href: routes.therapist.messages,
     icon: "message",
     label: "Mensagens",
   },
   {
     capability: "operation_essentials",
-    getHref: servicesHref,
+    href: routes.therapist.services,
     icon: "sparkles",
     label: "Suas terapias",
   },
   {
     capability: "operation_essentials",
-    getHref: profileHref,
+    href: routes.therapist.profile,
     icon: "user-pen",
     label: "Meu perfil",
   },
   {
     feature: "reviews_testimonials",
-    getHref: reviewsHref,
+    href: routes.therapist.reviews,
     icon: "star",
     label: "Avaliações",
     planLabel: "Premium",
   },
   {
     capability: "advanced_metrics",
-    getHref: insightsHref,
+    href: routes.therapist.insights,
     icon: "chart",
     label: "Métricas & Relatórios",
     planLabel: "Premium",
   },
   {
     capability: "aura_full",
-    getHref: auraHref,
+    href: routes.therapist.assessorIa,
     icon: "brain",
     label: "Aura IA",
     planLabel: "Premium Plus",
   },
   {
     capability: "advanced_financials",
-    getHref: financeHref,
+    href: routes.therapist.finance,
     icon: "wallet",
     label: "Financeiro",
     planLabel: "Premium Plus",
   },
   {
     capability: "operation_essentials",
-    getHref: settingsHref,
+    href: routes.therapist.settings,
     icon: "settings",
     label: "Configurações",
   },
   {
     capability: "operation_essentials",
-    getHref: supportHref,
+    href: routes.therapist.support,
     icon: "help",
     label: "Ajuda",
   },
@@ -110,13 +110,9 @@ export function buildTherapistNavigation({
   plan: TherapistPlan;
   unreadMessagesCount: number;
 }): TherapistShellNavigation {
-  const upgradeHref =
-    plan === TherapistPlan.Free
-      ? routes.therapist.basicUpgrade
-      : routes.therapist.proPlan;
+  const upgradeHref = routes.therapist.plan;
 
   return definitions.map((definition) => {
-    const href = definition.getHref(plan) ?? upgradeHref;
     const hasAccess = definition.capability
       ? canUseTherapistCapability(plan, definition.capability)
       : definition.feature
@@ -126,7 +122,7 @@ export function buildTherapistNavigation({
     return {
       accessState: hasAccess ? "enabled" : "locked",
       badge: definition.label === "Mensagens" ? unreadMessagesCount : undefined,
-      href,
+      href: definition.href,
       icon: definition.icon,
       label: definition.label,
       planLabel:
@@ -134,82 +130,4 @@ export function buildTherapistNavigation({
       upgradeHref: hasAccess ? undefined : upgradeHref,
     };
   });
-}
-
-function homeHref(plan: TherapistPlan) {
-  if (plan === TherapistPlan.PremiumPlus) return routes.therapist.plusHome;
-  if (plan === TherapistPlan.Premium) return routes.therapist.proHome;
-  return routes.therapist.basicHome;
-}
-
-function agendaHref(plan: TherapistPlan) {
-  if (plan === TherapistPlan.PremiumPlus) return routes.therapist.plusAgenda;
-  if (plan === TherapistPlan.Premium) return routes.therapist.proAgenda;
-  return routes.therapist.basicAgenda;
-}
-
-function patientsHref(plan: TherapistPlan) {
-  if (plan === TherapistPlan.PremiumPlus) return routes.therapist.plusPatients;
-  if (plan === TherapistPlan.Premium) return routes.therapist.proPatients;
-  return routes.therapist.basicPatients;
-}
-
-function sessionsHref(plan: TherapistPlan) {
-  if (plan === TherapistPlan.PremiumPlus) return routes.therapist.plusSessions;
-  if (plan === TherapistPlan.Premium) return routes.therapist.proSessions;
-  return routes.therapist.basicSessions;
-}
-
-function messagesHref(plan: TherapistPlan) {
-  if (plan === TherapistPlan.PremiumPlus) return routes.therapist.plusMessages;
-  if (plan === TherapistPlan.Premium) return routes.therapist.proMessages;
-  return routes.therapist.basicMessages;
-}
-
-function servicesHref(plan: TherapistPlan) {
-  if (plan === TherapistPlan.PremiumPlus) return routes.therapist.plusServices;
-  if (plan === TherapistPlan.Premium) return routes.therapist.proServices;
-  return routes.therapist.basicServices;
-}
-
-function profileHref(plan: TherapistPlan) {
-  if (plan === TherapistPlan.PremiumPlus) return routes.therapist.plusProfile;
-  if (plan === TherapistPlan.Premium) return routes.therapist.proProfile;
-  return routes.therapist.basicProfile;
-}
-
-function reviewsHref(plan: TherapistPlan) {
-  if (plan === TherapistPlan.PremiumPlus) return routes.therapist.plusReviews;
-  if (plan === TherapistPlan.Premium) return routes.therapist.proReviews;
-  return null;
-}
-
-function insightsHref(plan: TherapistPlan) {
-  if (plan === TherapistPlan.PremiumPlus) return routes.therapist.plusInsights;
-  if (plan === TherapistPlan.Premium) return routes.therapist.proMetrics;
-  return null;
-}
-
-function auraHref(plan: TherapistPlan) {
-  return plan === TherapistPlan.PremiumPlus
-    ? routes.therapist.plusAssessorIa
-    : null;
-}
-
-function financeHref(plan: TherapistPlan) {
-  if (plan === TherapistPlan.PremiumPlus) return routes.therapist.plusFinance;
-  if (plan === TherapistPlan.Premium) return routes.therapist.proFinance;
-  return routes.therapist.basicPayment;
-}
-
-function settingsHref(plan: TherapistPlan) {
-  if (plan === TherapistPlan.PremiumPlus) return routes.therapist.plusSettings;
-  if (plan === TherapistPlan.Premium) return routes.therapist.proSettings;
-  return routes.therapist.basicSettings;
-}
-
-function supportHref(plan: TherapistPlan) {
-  if (plan === TherapistPlan.PremiumPlus) return routes.therapist.plusSupport;
-  if (plan === TherapistPlan.Premium) return routes.therapist.proSupport;
-  return routes.therapist.basicSupport;
 }

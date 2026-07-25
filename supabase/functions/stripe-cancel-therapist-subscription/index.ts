@@ -41,6 +41,7 @@ runtime.serve(async (request) => {
     const { profile: therapist, user } = await requireTherapist(
       client,
       request,
+      { allowBlockedStatus: true },
     );
     const [localSubscription] = await client.get<SubscriptionRow[]>(
       `/rest/v1/therapist_subscriptions?select=id,plan_code,stripe_subscription_id&therapist_profile_id=eq.${encodeURIComponent(

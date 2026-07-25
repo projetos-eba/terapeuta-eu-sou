@@ -68,12 +68,9 @@ export type TherapistProfileReview = {
   rating: number;
 };
 
-export type AvailabilitySlot = {
+export type AvailabilitySlot = DomainAvailableSlot & {
   dateLabel: string;
   dayLabel: string;
-  endsAt: string;
-  serviceId: string;
-  startsAt: string;
   timeLabel: string;
 };
 
@@ -90,3 +87,4 @@ export type TherapistProfileData = {
   reviews: TherapistProfileReview[];
   source: "supabase" | "fallback";
 };
+import type { AvailableSlot as DomainAvailableSlot } from "@/domain/tes";

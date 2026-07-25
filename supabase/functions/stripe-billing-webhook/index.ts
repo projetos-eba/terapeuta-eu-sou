@@ -6,16 +6,15 @@ import {
   getWebhookSecret,
 } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
+import {
+  eventCreatedAt,
+  markWebhook,
+  objectId,
+  reserveWebhookEvent,
+  sha256Hex,
+} from "../_shared/payments/webhook-events.ts";
 
-type WebhookEventRow = {
-  id: string;
-  processing_status:
-    | "failed"
-    | "ignored"
-    | "processed"
-    | "processing"
-    | "received";
-};
+type FinancialStatus = "canceled" | "failed" | "paid" | "processing";
 
 const runtime = getPaymentsRuntime("stripe-billing-webhook");
 
@@ -35,10 +34,6 @@ runtime.serve(async (request) => {
     );
     const signature = request.headers.get("stripe-signature");
     const rawBody = await request.text();
-    const webhookSecret = getWebhookSecret(
-      runtime,
-      "STRIPE_PLATFORM_WEBHOOK_SECRET",
-    );
 
     if (!signature) {
       return new Response("Missing Stripe signature", { status: 400 });
@@ -47,28 +42,40 @@ runtime.serve(async (request) => {
     const event = await stripe.webhooks.constructEventAsync(
       rawBody,
       signature,
-      webhookSecret,
+      getWebhookSecret(runtime, "STRIPE_PLATFORM_WEBHOOK_SECRET"),
     );
-    const webhookRow = await reserveWebhookEvent(client, {
+    const eventTime = eventCreatedAt(event.created);
+    const dataObject = event.data.object as unknown as Record<string, unknown>;
+    const reservation = await reserveWebhookEvent(client, {
       accountId: event.account ?? null,
       apiVersion: event.api_version ?? null,
+      eventCreatedAt: eventTime,
       eventId: event.id,
       eventType: event.type,
       livemode: event.livemode,
+      objectId: objectId(dataObject),
       payloadSha256: await sha256Hex(rawBody),
       source: event.account ? "connect" : "platform",
     });
 
-    if (webhookRow.processing_status === "processed") {
-      return success({ duplicate: true });
+    if (!reservation?.acquired) {
+      return success({
+        duplicate: true,
+        status: reservation?.processing_status ?? "processing",
+      });
     }
 
-    await markWebhook(client, event.id, "processing");
-
     try {
-      await handleEvent(client, stripe, event);
-      await markWebhook(client, event.id, "processed");
-      return success({ received: true });
+      const status = await handleEvent(
+        client,
+        stripe,
+        event.type,
+        dataObject,
+        event.id,
+        eventTime,
+      );
+      await markWebhook(client, event.id, status);
+      return success({ received: true, status });
     } catch (error) {
       await markWebhook(
         client,
@@ -86,77 +93,126 @@ runtime.serve(async (request) => {
 async function handleEvent(
   client: SupabaseRestClient,
   stripe: ReturnType<typeof createStripeClient>,
-  event: Awaited<
-    ReturnType<
-      ReturnType<typeof createStripeClient>["webhooks"]["constructEventAsync"]
-    >
-  >,
-) {
-  switch (event.type) {
+  eventType: string,
+  dataObject: Record<string, unknown>,
+  eventId: string,
+  eventTime: string,
+): Promise<"ignored" | "processed"> {
+  switch (eventType) {
     case "checkout.session.completed":
-      await handleCheckoutCompleted(
+    case "checkout.session.async_payment_succeeded":
+    case "checkout.session.async_payment_failed":
+    case "checkout.session.expired":
+      await handleCheckoutEvent(
         client,
         stripe,
-        event.data.object as unknown as Record<string, unknown>,
+        dataObject,
+        eventType,
+        eventId,
+        eventTime,
       );
-      break;
+      return "processed";
     case "customer.subscription.created":
     case "customer.subscription.updated":
-    case "customer.subscription.deleted":
+    case "customer.subscription.deleted": {
+      const subscriptionId = String(dataObject.id ?? "");
+      if (!subscriptionId) return "ignored";
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       await syncSubscription(
         client,
-        event.data.object as unknown as Record<string, unknown>,
+        subscription as unknown as Record<string, unknown>,
+        eventId,
+        eventTime,
       );
-      break;
+      return "processed";
+    }
     case "invoice.paid":
     case "invoice.payment_failed":
-    case "invoice.payment_action_required":
+    case "invoice.payment_action_required": {
+      const invoiceId = String(dataObject.id ?? "");
+      if (!invoiceId) return "ignored";
+      const invoice = await stripe.invoices.retrieve(invoiceId);
       await syncInvoice(
         client,
-        event.data.object as unknown as Record<string, unknown>,
-        event.type,
+        invoice as unknown as Record<string, unknown>,
+        eventType,
       );
-      break;
+      return "processed";
+    }
+    case "payment_intent.processing":
+      await applyPaymentIntentState(
+        client,
+        dataObject,
+        "processing",
+        eventId,
+        eventTime,
+      );
+      return "processed";
     case "payment_intent.succeeded":
-      await markSessionPaymentPaid(
+      await applyPaymentIntentState(
         client,
-        event.data.object as unknown as Record<string, unknown>,
+        dataObject,
+        "paid",
+        eventId,
+        eventTime,
       );
-      break;
+      return "processed";
     case "payment_intent.payment_failed":
+      await applyPaymentIntentState(
+        client,
+        dataObject,
+        "failed",
+        eventId,
+        eventTime,
+      );
+      return "processed";
     case "payment_intent.canceled":
-      await markSessionPaymentFailed(
+      await applyPaymentIntentState(
         client,
-        event.data.object as unknown as Record<string, unknown>,
-        event.type,
+        dataObject,
+        "canceled",
+        eventId,
+        eventTime,
       );
-      break;
+      return "processed";
     case "charge.refunded":
-      await handleChargeRefunded(
+      await handleChargeRefunded(client, dataObject);
+      return "processed";
+    case "refund.created":
+    case "refund.updated":
+    case "refund.failed":
+      await handleRefundEvent(
         client,
-        event.data.object as unknown as Record<string, unknown>,
+        dataObject,
+        eventType,
+        eventId,
+        eventTime,
       );
-      break;
+      return "processed";
     case "charge.dispute.created":
     case "charge.dispute.updated":
     case "charge.dispute.closed":
-      await handleDispute(
-        client,
-        event.data.object as unknown as Record<string, unknown>,
-        event.type,
-      );
-      break;
+      await handleDispute(client, dataObject, eventType, eventId, eventTime);
+      return "processed";
+    case "transfer.updated":
+    case "transfer.reversed":
+      await handleTransferEvent(client, dataObject, eventTime);
+      return "processed";
     default:
-      await markWebhook(client, event.id, "ignored");
+      return "ignored";
   }
 }
 
-async function handleCheckoutCompleted(
+async function handleCheckoutEvent(
   client: SupabaseRestClient,
   stripe: ReturnType<typeof createStripeClient>,
   session: Record<string, unknown>,
+  eventType: string,
+  eventId: string,
+  eventTime: string,
 ) {
   if (
+    eventType === "checkout.session.completed" &&
     session.mode === "subscription" &&
     typeof session.subscription === "string"
   ) {
@@ -166,38 +222,142 @@ async function handleCheckoutCompleted(
     await syncSubscription(
       client,
       subscription as unknown as Record<string, unknown>,
+      eventId,
+      eventTime,
       String(session.id),
     );
     return;
   }
 
   const metadata = asRecord(session.metadata);
+  if (metadata.payment_type !== "therapy_session") return;
 
-  if (metadata.payment_type === "therapy_session") {
-    await markSessionPaymentPaid(client, {
-      id: session.payment_intent,
-      metadata,
+  const sessionPaymentId = stringOrNull(metadata.tes_session_payment_id);
+  if (!sessionPaymentId) return;
+
+  if (
+    eventType === "checkout.session.async_payment_failed" ||
+    eventType === "checkout.session.expired"
+  ) {
+    await applySessionPaymentState(client, {
+      checkoutSessionId: stringOrNull(session.id),
+      eventId,
+      eventTime,
+      paymentIntentId: stringOrNull(session.payment_intent),
+      sessionPaymentId,
+      status: eventType === "checkout.session.expired" ? "canceled" : "failed",
     });
+    return;
   }
+
+  if (session.payment_status !== "paid") {
+    await applySessionPaymentState(client, {
+      checkoutSessionId: stringOrNull(session.id),
+      eventId,
+      eventTime,
+      paymentIntentId: stringOrNull(session.payment_intent),
+      sessionPaymentId,
+      status: "processing",
+    });
+    return;
+  }
+
+  const paymentIntentId = stringOrNull(session.payment_intent);
+  const paymentIntent = paymentIntentId
+    ? ((await stripe.paymentIntents.retrieve(
+        paymentIntentId,
+      )) as unknown as Record<string, unknown>)
+    : null;
+
+  await applySessionPaymentState(client, {
+    chargeId: stringOrNull(paymentIntent?.latest_charge),
+    checkoutSessionId: stringOrNull(session.id),
+    eventId,
+    eventTime,
+    paymentIntentId,
+    sessionPaymentId,
+    status: "paid",
+  });
+}
+
+async function applyPaymentIntentState(
+  client: SupabaseRestClient,
+  paymentIntent: Record<string, unknown>,
+  status: FinancialStatus,
+  eventId: string,
+  eventTime: string,
+) {
+  const metadata = asRecord(paymentIntent.metadata);
+  const sessionPaymentId = stringOrNull(metadata.tes_session_payment_id);
+
+  if (!sessionPaymentId) return;
+
+  await applySessionPaymentState(client, {
+    chargeId: stringOrNull(paymentIntent.latest_charge),
+    eventId,
+    eventTime,
+    paymentIntentId: stringOrNull(paymentIntent.id),
+    sessionPaymentId,
+    status,
+  });
+}
+
+async function applySessionPaymentState(
+  client: SupabaseRestClient,
+  input: {
+    chargeId?: string | null;
+    checkoutSessionId?: string | null;
+    eventId: string;
+    eventTime: string;
+    paymentIntentId?: string | null;
+    sessionPaymentId: string;
+    status: FinancialStatus;
+  },
+) {
+  await client.rpc("apply_session_payment_state_v1", {
+    p_financial_status: input.status,
+    p_session_payment_id: input.sessionPaymentId,
+    p_stripe_charge_id: input.chargeId ?? null,
+    p_stripe_checkout_session_id: input.checkoutSessionId ?? null,
+    p_stripe_event_created_at: input.eventTime,
+    p_stripe_event_id: input.eventId,
+    p_stripe_payment_intent_id: input.paymentIntentId ?? null,
+  });
 }
 
 async function syncSubscription(
   client: SupabaseRestClient,
   subscription: Record<string, unknown>,
+  eventId: string,
+  eventTime: string,
   checkoutSessionId?: string,
 ) {
   const metadata = asRecord(subscription.metadata);
-  const therapistId =
-    typeof metadata.tes_therapist_id === "string"
-      ? metadata.tes_therapist_id
-      : null;
-  const planCode = normalizePlan(metadata.plan_code);
+  const therapistId = stringOrNull(metadata.tes_therapist_id);
+  const priceId = getSubscriptionPriceId(subscription);
 
-  if (!therapistId || !planCode) return;
+  if (!therapistId || !priceId) {
+    throw new Error("STRIPE_SUBSCRIPTION_IDENTITY_OR_PRICE_MISSING");
+  }
 
-  const status = normalizeSubscriptionStatus(subscription.status);
-  const customerId =
-    typeof subscription.customer === "string" ? subscription.customer : null;
+  const [price] = await client.get<
+    Array<{
+      billing_plans: { code: "premium" | "premium_plus" } | null;
+      id: string;
+      plan_id: string;
+    }>
+  >(
+    `/rest/v1/billing_plan_prices?select=id,plan_id,billing_plans!inner(code)&stripe_price_id=eq.${encodeURIComponent(
+      priceId,
+    )}&is_active=eq.true&limit=1`,
+  );
+  const planCode = normalizePlan(price?.billing_plans?.code);
+
+  if (!price || !planCode) {
+    throw new Error("STRIPE_SUBSCRIPTION_PRICE_NOT_MAPPED");
+  }
+
+  const customerId = stringOrNull(subscription.customer);
   const localCustomer = customerId
     ? await client.get<Array<{ id: string }>>(
         `/rest/v1/stripe_customers?select=id&stripe_customer_id=eq.${encodeURIComponent(
@@ -205,46 +365,26 @@ async function syncSubscription(
         )}&limit=1`,
       )
     : [];
-  const [plan] = await client.get<Array<{ id: string }>>(
-    `/rest/v1/billing_plans?select=id&code=eq.${planCode}&limit=1`,
-  );
-  const [price] = await client.get<Array<{ id: string }>>(
-    `/rest/v1/billing_plan_prices?select=id&billing_plans.code=eq.${planCode}&billing_plans!inner(code)&is_active=eq.true&limit=1`,
-  );
 
-  await client.post(
-    "/rest/v1/therapist_subscriptions?on_conflict=stripe_subscription_id",
-    {
-      billing_plan_id: plan?.id ?? null,
-      billing_plan_price_id: price?.id ?? null,
-      cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
-      canceled_at: unixToIso(subscription.canceled_at),
-      current_period_end: unixToIso(subscription.current_period_end),
-      current_period_start: unixToIso(subscription.current_period_start),
-      ended_at: unixToIso(subscription.ended_at),
-      metadata,
-      plan_code: planCode,
-      status,
-      stripe_checkout_session_id: checkoutSessionId ?? null,
-      stripe_customer_id: localCustomer[0]?.id ?? null,
-      stripe_latest_invoice_id: stringOrNull(subscription.latest_invoice),
-      stripe_subscription_id: String(subscription.id),
-      therapist_profile_id: therapistId,
-      updated_at: new Date().toISOString(),
-    },
-    "resolution=merge-duplicates,return=minimal",
-  );
-
-  const activePlan =
-    status === "active" || status === "trialing" || status === "past_due"
-      ? planCode
-      : "free";
-
-  await client.patch(
-    `/rest/v1/therapist_profiles?id=eq.${encodeURIComponent(therapistId)}`,
-    { plan: activePlan },
-    "return=minimal",
-  );
+  await client.rpc("apply_therapist_subscription_event_v1", {
+    p_billing_plan_id: price.plan_id,
+    p_billing_plan_price_id: price.id,
+    p_cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
+    p_canceled_at: unixToIso(subscription.canceled_at),
+    p_current_period_end: unixToIso(subscription.current_period_end),
+    p_current_period_start: unixToIso(subscription.current_period_start),
+    p_ended_at: unixToIso(subscription.ended_at),
+    p_metadata: metadata,
+    p_plan_code: planCode,
+    p_status: normalizeSubscriptionStatus(subscription.status),
+    p_stripe_checkout_session_id: checkoutSessionId ?? null,
+    p_stripe_customer_id: localCustomer[0]?.id ?? null,
+    p_stripe_event_created_at: eventTime,
+    p_stripe_event_id: eventId,
+    p_stripe_latest_invoice_id: stringOrNull(subscription.latest_invoice),
+    p_stripe_subscription_id: String(subscription.id),
+    p_therapist_profile_id: therapistId,
+  });
 }
 
 async function syncInvoice(
@@ -272,7 +412,7 @@ async function syncInvoice(
       hosted_invoice_url: stringOrNull(invoice.hosted_invoice_url),
       invoice_pdf: stringOrNull(invoice.invoice_pdf),
       metadata: { eventType },
-      paid_at: eventType === "invoice.paid" ? new Date().toISOString() : null,
+      paid_at: unixToIso(asRecord(invoice.status_transitions).paid_at),
       status: String(invoice.status ?? "unknown"),
       stripe_customer_id: customerId,
       stripe_invoice_id: String(invoice.id),
@@ -285,103 +425,11 @@ async function syncInvoice(
   );
 }
 
-async function markSessionPaymentPaid(
-  client: SupabaseRestClient,
-  paymentIntent: Record<string, unknown>,
-) {
-  const metadata = asRecord(paymentIntent.metadata);
-  const sessionPaymentId =
-    typeof metadata.tes_session_payment_id === "string"
-      ? metadata.tes_session_payment_id
-      : null;
-  const bookingId =
-    typeof metadata.tes_session_id === "string"
-      ? metadata.tes_session_id
-      : null;
-  const query = sessionPaymentId
-    ? `id=eq.${encodeURIComponent(sessionPaymentId)}`
-    : `booking_id=eq.${encodeURIComponent(bookingId ?? "")}`;
-  const rows = await client.get<
-    Array<{
-      booking_id: string;
-      gross_amount_cents: number;
-      id: string;
-      patient_profile_id: string;
-      platform_gross_commission_cents: number;
-      therapist_amount_cents: number;
-      therapist_profile_id: string;
-    }>
-  >(`/rest/v1/session_payments?select=*&${query}&limit=1`);
-  const payment = rows[0];
-
-  if (!payment) return;
-
-  await client.patch(
-    `/rest/v1/session_payments?id=eq.${encodeURIComponent(payment.id)}`,
-    {
-      financial_status: "paid",
-      paid_at: new Date().toISOString(),
-      stripe_charge_id: stringOrNull(paymentIntent.latest_charge),
-      stripe_payment_intent_id: String(paymentIntent.id),
-      updated_at: new Date().toISOString(),
-    },
-    "return=minimal",
-  );
-  await client.patch(
-    `/rest/v1/bookings?id=eq.${encodeURIComponent(payment.booking_id)}`,
-    { payment_status: "paid", status: "confirmed" },
-    "return=minimal",
-  );
-  await client.patch(
-    `/rest/v1/payments?booking_id=eq.${encodeURIComponent(payment.booking_id)}`,
-    { paid_at: new Date().toISOString(), status: "paid" },
-    "return=minimal",
-  );
-  await insertLedgerForPaidSession(client, payment);
-  await client.rpc("refresh_session_transfer_eligibility", {
-    p_session_payment_id: payment.id,
-  });
-}
-
-async function markSessionPaymentFailed(
-  client: SupabaseRestClient,
-  paymentIntent: Record<string, unknown>,
-  eventType: string,
-) {
-  const metadata = asRecord(paymentIntent.metadata);
-  const sessionPaymentId =
-    typeof metadata.tes_session_payment_id === "string"
-      ? metadata.tes_session_payment_id
-      : null;
-
-  if (!sessionPaymentId) return;
-
-  await client.patch(
-    `/rest/v1/session_payments?id=eq.${encodeURIComponent(sessionPaymentId)}`,
-    {
-      canceled_at:
-        eventType === "payment_intent.canceled"
-          ? new Date().toISOString()
-          : null,
-      failed_at:
-        eventType !== "payment_intent.canceled"
-          ? new Date().toISOString()
-          : null,
-      financial_status:
-        eventType === "payment_intent.canceled" ? "canceled" : "failed",
-      stripe_payment_intent_id: String(paymentIntent.id),
-      updated_at: new Date().toISOString(),
-    },
-    "return=minimal",
-  );
-}
-
 async function handleChargeRefunded(
   client: SupabaseRestClient,
   charge: Record<string, unknown>,
 ) {
   const paymentIntentId = stringOrNull(charge.payment_intent);
-
   if (!paymentIntentId) return;
 
   const rows = await client.get<Array<{ id: string }>>(
@@ -389,7 +437,6 @@ async function handleChargeRefunded(
       paymentIntentId,
     )}&limit=1`,
   );
-
   if (!rows[0]) return;
 
   await client.patch(
@@ -400,11 +447,97 @@ async function handleChargeRefunded(
           ? "refunded"
           : "partially_refunded",
       refund_pending: false,
-      transfer_status: "blocked",
       transfer_blocked_reason: "refund",
+      transfer_status: "blocked",
       updated_at: new Date().toISOString(),
     },
     "return=minimal",
+  );
+}
+
+async function handleRefundEvent(
+  client: SupabaseRestClient,
+  refund: Record<string, unknown>,
+  eventType: string,
+  eventId: string,
+  eventTime: string,
+) {
+  const refundId = stringOrNull(refund.id);
+  const paymentIntentId = stringOrNull(refund.payment_intent);
+  const chargeId = stringOrNull(refund.charge);
+
+  if (!refundId || (!paymentIntentId && !chargeId)) return;
+
+  const filter = paymentIntentId
+    ? `stripe_payment_intent_id=eq.${encodeURIComponent(paymentIntentId)}`
+    : `stripe_charge_id=eq.${encodeURIComponent(chargeId ?? "")}`;
+  const [payment] = await client.get<
+    Array<{ gross_amount_cents: number; id: string }>
+  >(`/rest/v1/session_payments?select=id,gross_amount_cents&${filter}&limit=1`);
+
+  if (!payment) return;
+
+  const amountCents = numberOrZero(refund.amount);
+  const refundStatus =
+    eventType === "refund.failed"
+      ? "failed"
+      : String(refund.status ?? "pending");
+
+  await client.post(
+    "/rest/v1/session_refunds?on_conflict=stripe_refund_id",
+    {
+      amount_cents: amountCents,
+      currency: String(refund.currency ?? "brl").toUpperCase(),
+      metadata: { eventType },
+      processed_at: refundStatus === "succeeded" ? eventTime : null,
+      reason: stringOrNull(refund.reason),
+      session_payment_id: payment.id,
+      status: refundStatus,
+      stripe_refund_id: refundId,
+      updated_at: new Date().toISOString(),
+    },
+    "resolution=merge-duplicates,return=minimal",
+  );
+
+  if (refundStatus !== "succeeded") return;
+
+  const successfulRefunds = await client.get<Array<{ amount_cents: number }>>(
+    `/rest/v1/session_refunds?select=amount_cents&session_payment_id=eq.${encodeURIComponent(
+      payment.id,
+    )}&status=eq.succeeded`,
+  );
+  const totalRefundedCents = successfulRefunds.reduce(
+    (total, row) => total + row.amount_cents,
+    0,
+  );
+
+  await client.patch(
+    `/rest/v1/session_payments?id=eq.${encodeURIComponent(payment.id)}`,
+    {
+      financial_status:
+        totalRefundedCents >= payment.gross_amount_cents
+          ? "refunded"
+          : "partially_refunded",
+      refund_pending: false,
+      transfer_blocked_reason: "refund",
+      transfer_status: "blocked",
+      updated_at: new Date().toISOString(),
+    },
+    "return=minimal",
+  );
+  await client.post(
+    "/rest/v1/financial_ledger_entries?on_conflict=entry_type,source_table,source_external_id,direction",
+    {
+      amount_cents: amountCents,
+      direction: "debit",
+      entry_type: "refund",
+      occurred_at: eventTime,
+      session_payment_id: payment.id,
+      source_external_id: refundId,
+      source_table: "stripe_refunds",
+      stripe_event_id: eventId,
+    },
+    "resolution=ignore-duplicates,return=minimal",
   );
 }
 
@@ -412,24 +545,25 @@ async function handleDispute(
   client: SupabaseRestClient,
   dispute: Record<string, unknown>,
   eventType: string,
+  eventId: string,
+  eventTime: string,
 ) {
   const chargeId = stringOrNull(dispute.charge);
-
   if (!chargeId) return;
 
-  const rows = await client.get<Array<{ id: string }>>(
-    `/rest/v1/session_payments?select=id&stripe_charge_id=eq.${encodeURIComponent(chargeId)}&limit=1`,
+  const rows = await client.get<
+    Array<{ id: string; financial_status: string }>
+  >(
+    `/rest/v1/session_payments?select=id,financial_status&stripe_charge_id=eq.${encodeURIComponent(chargeId)}&limit=1`,
   );
   const payment = rows[0];
-
   if (!payment) return;
 
   await client.post(
     "/rest/v1/session_disputes?on_conflict=stripe_dispute_id",
     {
       amount_cents: numberOrZero(dispute.amount),
-      closed_at:
-        eventType === "charge.dispute.closed" ? new Date().toISOString() : null,
+      closed_at: eventType === "charge.dispute.closed" ? eventTime : null,
       currency: String(dispute.currency ?? "brl").toUpperCase(),
       evidence_due_by: unixToIso(asRecord(dispute.evidence_details).due_by),
       metadata: { eventType },
@@ -441,148 +575,133 @@ async function handleDispute(
     },
     "resolution=merge-duplicates,return=minimal",
   );
-  await client.patch(
-    `/rest/v1/session_payments?id=eq.${encodeURIComponent(payment.id)}`,
-    {
-      disputed_at: new Date().toISOString(),
-      financial_status: "disputed",
-      transfer_status: "blocked",
-      transfer_blocked_reason: "disputed",
-      updated_at: new Date().toISOString(),
-    },
-    "return=minimal",
-  );
-}
+  const disputeId = String(dispute.id);
+  const disputeStatus = String(dispute.status ?? "unknown");
+  const disputeAmount = numberOrZero(dispute.amount);
 
-async function insertLedgerForPaidSession(
-  client: SupabaseRestClient,
-  payment: {
-    booking_id: string;
-    gross_amount_cents: number;
-    id: string;
-    patient_profile_id: string;
-    platform_gross_commission_cents: number;
-    therapist_amount_cents: number;
-    therapist_profile_id: string;
-  },
-) {
-  const entries = [
-    {
-      amount_cents: payment.gross_amount_cents,
-      booking_id: payment.booking_id,
-      direction: "credit",
-      entry_type: "session_gross_payment",
-      patient_profile_id: payment.patient_profile_id,
-      session_payment_id: payment.id,
-      source_id: payment.id,
-      source_table: "session_payments",
-      therapist_profile_id: payment.therapist_profile_id,
-    },
-    {
-      amount_cents: payment.therapist_amount_cents,
-      booking_id: payment.booking_id,
-      direction: "credit",
-      entry_type: "therapist_payable",
-      patient_profile_id: payment.patient_profile_id,
-      session_payment_id: payment.id,
-      source_id: payment.id,
-      source_table: "session_payments",
-      therapist_profile_id: payment.therapist_profile_id,
-    },
-    {
-      amount_cents: payment.platform_gross_commission_cents,
-      booking_id: payment.booking_id,
-      direction: "credit",
-      entry_type: "platform_gross_commission",
-      patient_profile_id: payment.patient_profile_id,
-      session_payment_id: payment.id,
-      source_id: payment.id,
-      source_table: "session_payments",
-      therapist_profile_id: payment.therapist_profile_id,
-    },
-  ].filter((entry) => entry.amount_cents > 0);
-
-  for (const entry of entries) {
+  if (eventType === "charge.dispute.created") {
     await client.post(
-      "/rest/v1/financial_ledger_entries?on_conflict=entry_type,source_table,source_id,direction",
-      entry,
+      "/rest/v1/financial_ledger_entries?on_conflict=entry_type,source_table,source_external_id,direction",
+      {
+        amount_cents: disputeAmount,
+        direction: "debit",
+        entry_type: "dispute",
+        occurred_at: eventTime,
+        session_payment_id: payment.id,
+        source_external_id: disputeId,
+        source_table: "stripe_disputes",
+        stripe_event_id: eventId,
+      },
       "resolution=ignore-duplicates,return=minimal",
     );
   }
-}
 
-async function reserveWebhookEvent(
-  client: SupabaseRestClient,
-  input: {
-    accountId: string | null;
-    apiVersion: string | null;
-    eventId: string;
-    eventType: string;
-    livemode: boolean;
-    payloadSha256: string;
-    source: string;
-  },
-) {
-  const existing = await client.get<WebhookEventRow[]>(
-    `/rest/v1/stripe_webhook_events?select=id,processing_status&stripe_event_id=eq.${encodeURIComponent(
-      input.eventId,
-    )}&limit=1`,
-  );
+  if (eventType === "charge.dispute.closed" && disputeStatus === "won") {
+    await client.patch(
+      `/rest/v1/session_payments?id=eq.${encodeURIComponent(payment.id)}`,
+      {
+        disputed_at: null,
+        financial_status:
+          payment.financial_status === "partially_refunded"
+            ? "partially_refunded"
+            : "paid",
+        transfer_blocked_reason: null,
+        updated_at: new Date().toISOString(),
+      },
+      "return=minimal",
+    );
+    await client.post(
+      "/rest/v1/financial_ledger_entries?on_conflict=entry_type,source_table,source_external_id,direction",
+      {
+        amount_cents: disputeAmount,
+        direction: "credit",
+        entry_type: "recovery",
+        occurred_at: eventTime,
+        session_payment_id: payment.id,
+        source_external_id: disputeId,
+        source_table: "stripe_disputes",
+        stripe_event_id: eventId,
+      },
+      "resolution=ignore-duplicates,return=minimal",
+    );
+    await client.rpc("refresh_session_transfer_eligibility", {
+      p_session_payment_id: payment.id,
+    });
+    return;
+  }
 
-  if (existing[0]) return existing[0];
-
-  const rows = await client.post<WebhookEventRow[]>(
-    "/rest/v1/stripe_webhook_events?select=id,processing_status",
-    {
-      account_id: input.accountId,
-      api_version: input.apiVersion,
-      attempts: 1,
-      event_type: input.eventType,
-      livemode: input.livemode,
-      payload_sha256: input.payloadSha256,
-      processing_status: "received",
-      source: input.source,
-      stripe_event_id: input.eventId,
-      updated_at: new Date().toISOString(),
-    },
-    "return=representation",
-  );
-
-  return rows[0];
-}
-
-async function markWebhook(
-  client: SupabaseRestClient,
-  eventId: string,
-  status: "failed" | "ignored" | "processed" | "processing",
-  errorMessage?: string,
-) {
   await client.patch(
-    `/rest/v1/stripe_webhook_events?stripe_event_id=eq.${encodeURIComponent(eventId)}`,
+    `/rest/v1/session_payments?id=eq.${encodeURIComponent(payment.id)}`,
     {
-      error_message: errorMessage?.slice(0, 500) ?? null,
-      processed_at:
-        status === "processed" || status === "ignored"
-          ? new Date().toISOString()
-          : null,
-      processing_started_at:
-        status === "processing" ? new Date().toISOString() : undefined,
-      processing_status: status,
+      disputed_at: eventTime,
+      financial_status: "disputed",
+      transfer_blocked_reason: "disputed",
+      transfer_status: "blocked",
       updated_at: new Date().toISOString(),
     },
     "return=minimal",
   );
 }
 
-async function sha256Hex(value: string) {
-  const hash = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(value),
+async function handleTransferEvent(
+  client: SupabaseRestClient,
+  transfer: Record<string, unknown>,
+  eventTime: string,
+) {
+  const transferId = stringOrNull(transfer.id);
+  if (!transferId) return;
+
+  const [localTransfer] = await client.get<
+    Array<{ id: string; session_payment_id: string }>
+  >(
+    `/rest/v1/stripe_transfers?select=id,session_payment_id&stripe_transfer_id=eq.${encodeURIComponent(
+      transferId,
+    )}&limit=1`,
   );
 
-  return Array.from(new Uint8Array(hash))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+  if (!localTransfer) return;
+
+  if (transfer.reversed !== true) {
+    await client.patch(
+      `/rest/v1/stripe_transfers?id=eq.${encodeURIComponent(localTransfer.id)}`,
+      { status: "transferred", transferred_at: eventTime },
+      "return=minimal",
+    );
+    return;
+  }
+
+  const reversedAmount = numberOrZero(
+    transfer.amount_reversed ?? transfer.amount,
+  );
+  await client.patch(
+    `/rest/v1/stripe_transfers?id=eq.${encodeURIComponent(localTransfer.id)}`,
+    { status: "reversed" },
+    "return=minimal",
+  );
+  await client.patch(
+    `/rest/v1/session_payments?id=eq.${encodeURIComponent(
+      localTransfer.session_payment_id,
+    )}`,
+    {
+      transfer_blocked_reason: "transfer_reversed",
+      transfer_status: "reversed",
+    },
+    "return=minimal",
+  );
+  await client.post(
+    "/rest/v1/financial_ledger_entries?on_conflict=entry_type,source_table,source_external_id,direction",
+    {
+      amount_cents: reversedAmount,
+      direction: "credit",
+      entry_type: "transfer_reversal",
+      occurred_at: eventTime,
+      session_payment_id: localTransfer.session_payment_id,
+      source_external_id: transferId,
+      source_table: "stripe_transfers",
+      stripe_transfer_id: localTransfer.id,
+    },
+    "resolution=ignore-duplicates,return=minimal",
+  );
 }
 
 function asRecord(value: unknown): Record<string, unknown> {
@@ -593,6 +712,15 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function normalizePlan(value: unknown) {
   return value === "premium" || value === "premium_plus" ? value : null;
+}
+
+function getSubscriptionPriceId(subscription: Record<string, unknown>) {
+  const items = asRecord(subscription.items);
+  const data = Array.isArray(items.data) ? items.data : [];
+  const firstItem = asRecord(data[0]);
+  const price = asRecord(firstItem.price);
+
+  return stringOrNull(price.id);
 }
 
 function normalizeSubscriptionStatus(value: unknown) {
@@ -618,7 +746,7 @@ function unixToIso(value: unknown) {
 }
 
 function stringOrNull(value: unknown) {
-  return typeof value === "string" ? value : null;
+  return typeof value === "string" && value.length > 0 ? value : null;
 }
 
 function numberOrZero(value: unknown) {

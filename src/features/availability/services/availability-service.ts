@@ -2,6 +2,7 @@ import type {
   AvailabilityDay,
   AvailabilitySlot,
 } from "@/features/therapist-profile/types";
+import { DomainErrorCode, TesDomainError } from "@/domain/tes";
 
 export type AvailabilityRuleInput = {
   dayOfWeek: number;
@@ -45,11 +46,7 @@ export type AvailabilityServiceInput = {
   settings?: BookingSettingsInput;
 };
 
-const blockedStatuses = new Set([
-  "confirmed",
-  "pending_payment",
-  "completed",
-]);
+const blockedStatuses = new Set(["confirmed", "pending_payment", "completed"]);
 
 const defaultBookingSettings = {
   bufferAfterMinutes: 10,
@@ -77,6 +74,15 @@ function parseClock(date: Date, time: string) {
   const next = new Date(date);
   next.setHours(Number(hours), Number(minutes), 0, 0);
   return next;
+}
+
+function isValidClock(value: string) {
+  const match = /^(\d{2}):(\d{2})(?::\d{2})?$/.exec(value);
+  if (!match) return false;
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  return hours >= 0 && hours <= 23 && minutes >= 0 && minutes <= 59;
 }
 
 function overlaps(
@@ -175,7 +181,15 @@ function buildSlotsForWindow({
     const startsAt = new Date(
       cursor.getTime() + settings.bufferBeforeMinutes * 60_000,
     );
-    const endsAt = new Date(startsAt.getTime() + serviceDurationMinutes * 60_000);
+    const endsAt = new Date(
+      startsAt.getTime() + serviceDurationMinutes * 60_000,
+    );
+    const occupiedStartsAt = new Date(
+      startsAt.getTime() - settings.bufferBeforeMinutes * 60_000,
+    );
+    const occupiedEndsAt = new Date(
+      endsAt.getTime() + settings.bufferAfterMinutes * 60_000,
+    );
 
     if (startsAt < earliestStart) continue;
 
@@ -184,8 +198,8 @@ function buildSlotsForWindow({
       if (!matchesService(exception.serviceId, selectedServiceId)) return false;
 
       return overlaps(
-        startsAt,
-        endsAt,
+        occupiedStartsAt,
+        occupiedEndsAt,
         new Date(exception.startsAt),
         new Date(exception.endsAt),
       );
@@ -194,12 +208,11 @@ function buildSlotsForWindow({
     if (blockedByException) continue;
 
     const blockedByBooking = bookings.some((booking) => {
-      if (booking.serviceId !== selectedServiceId) return false;
       if (!blockedStatuses.has(booking.status)) return false;
 
       return overlaps(
-        startsAt,
-        endsAt,
+        occupiedStartsAt,
+        occupiedEndsAt,
         new Date(booking.startsAt),
         new Date(booking.endsAt),
       );
@@ -234,6 +247,13 @@ export function buildAvailabilityDays({
     ...settings,
     serviceId: selectedServiceId,
   };
+  validateAvailabilityInput({
+    bookings,
+    exceptions,
+    rules,
+    serviceDurationMinutes,
+    settings: resolvedSettings,
+  });
   const horizonDays = Math.max(1, resolvedSettings.maxDaysAhead);
   const earliestStart = new Date(
     now.getTime() + resolvedSettings.minNoticeMinutes * 60_000,
@@ -294,7 +314,8 @@ export function buildAvailabilityDays({
         )
         .sort(
           (left, right) =>
-            new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime(),
+            new Date(left.startsAt).getTime() -
+            new Date(right.startsAt).getTime(),
         ),
     );
 
@@ -309,4 +330,100 @@ export function buildAvailabilityDays({
   }
 
   return days;
+}
+
+function validateAvailabilityInput({
+  bookings,
+  exceptions,
+  rules,
+  serviceDurationMinutes,
+  settings,
+}: {
+  bookings: BookingConflictInput[];
+  exceptions: AvailabilityExceptionInput[];
+  rules: AvailabilityRuleInput[];
+  serviceDurationMinutes: number;
+  settings: BookingSettingsInput;
+}) {
+  const hasInvalidSettings =
+    !Number.isFinite(serviceDurationMinutes) ||
+    serviceDurationMinutes <= 0 ||
+    !Number.isFinite(settings.intervalMinutes) ||
+    settings.intervalMinutes <= 0 ||
+    !Number.isFinite(settings.maxDaysAhead) ||
+    settings.maxDaysAhead < 1 ||
+    !Number.isFinite(settings.minNoticeMinutes) ||
+    settings.minNoticeMinutes < 0 ||
+    !Number.isFinite(settings.bufferBeforeMinutes) ||
+    settings.bufferBeforeMinutes < 0 ||
+    !Number.isFinite(settings.bufferAfterMinutes) ||
+    settings.bufferAfterMinutes < 0;
+
+  const hasInvalidRule = rules.some((rule) => {
+    if (
+      rule.dayOfWeek < 0 ||
+      rule.dayOfWeek > 6 ||
+      !isValidClock(rule.startTime) ||
+      !isValidClock(rule.endTime)
+    ) {
+      return true;
+    }
+
+    const anchor = new Date(2026, 0, 4);
+    return (
+      parseClock(anchor, rule.startTime) >= parseClock(anchor, rule.endTime)
+    );
+  });
+  const hasInvalidException = exceptions.some(
+    (exception) =>
+      !Number.isFinite(new Date(exception.startsAt).getTime()) ||
+      !Number.isFinite(new Date(exception.endsAt).getTime()) ||
+      new Date(exception.startsAt) >= new Date(exception.endsAt),
+  );
+  const hasInvalidBooking = bookings.some(
+    (booking) =>
+      !Number.isFinite(new Date(booking.startsAt).getTime()) ||
+      !Number.isFinite(new Date(booking.endsAt).getTime()) ||
+      new Date(booking.startsAt) >= new Date(booking.endsAt),
+  );
+
+  if (
+    hasInvalidSettings ||
+    hasInvalidRule ||
+    hasInvalidException ||
+    hasInvalidBooking
+  ) {
+    throw new TesDomainError(
+      DomainErrorCode.InvalidAvailabilityRange,
+      "Availability preview received an invalid range or numeric setting.",
+    );
+  }
+
+  const relevantRules = rules.filter(
+    (rule) =>
+      rule.isActive && matchesService(rule.serviceId, settings.serviceId),
+  );
+  const hasOverlappingRule = relevantRules.some((rule, index) => {
+    const anchor = new Date(2026, 0, 4);
+    const start = parseClock(anchor, rule.startTime);
+    const end = parseClock(anchor, rule.endTime);
+
+    return relevantRules.slice(index + 1).some((candidate) => {
+      if (candidate.dayOfWeek !== rule.dayOfWeek) return false;
+
+      return overlaps(
+        start,
+        end,
+        parseClock(anchor, candidate.startTime),
+        parseClock(anchor, candidate.endTime),
+      );
+    });
+  });
+
+  if (hasOverlappingRule) {
+    throw new TesDomainError(
+      DomainErrorCode.OverlappingAvailabilityRule,
+      "Availability preview received overlapping active rules.",
+    );
+  }
 }

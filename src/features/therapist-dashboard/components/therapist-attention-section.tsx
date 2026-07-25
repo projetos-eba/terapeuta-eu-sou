@@ -19,7 +19,7 @@ export function TherapistAttentionSection({
         </h2>
         <Link
           className="text-xs font-bold text-brand-deep outline-none hover:text-brand-primary focus-visible:ring-4 focus-visible:ring-ring/20"
-          href={routes.therapist.plusSessions as Route<string>}
+          href={routes.therapist.sessions as Route<string>}
         >
           Ver todos os itens →
         </Link>

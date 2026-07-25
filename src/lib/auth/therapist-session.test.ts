@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TherapistPlan, TherapistStatus } from "@/domain/tes";
+import { routes } from "@/lib/routes";
 
 const mocks = vi.hoisted(() => ({
   accessToken: "valid-token" as string | undefined,
@@ -26,7 +27,6 @@ vi.mock("@/lib/supabase/public-config", () => ({
 }));
 
 import {
-  getTherapistNamespace,
   isBlockedTherapistStatus,
   requireTherapistSession,
   shouldRedirectTherapistPlan,
@@ -36,40 +36,11 @@ describe("requireTherapistSession", () => {
   beforeEach(() => {
     mocks.accessToken = "valid-token";
     mocks.redirect.mockClear();
-    vi.stubGlobal(
-      "fetch",
-      vi
-        .fn()
-        .mockResolvedValueOnce(jsonResponse({ id: "user-1" }))
-        .mockResolvedValueOnce(
-          jsonResponse([
-            {
-              avatar_url: "/ana.png",
-              display_name: "Ana Oliveira",
-              id: "user-1",
-              role: "therapist",
-            },
-          ]),
-        )
-        .mockResolvedValueOnce(
-          jsonResponse([
-            {
-              id: "therapist-1",
-              photo_url: "/ana.png",
-              plan: TherapistPlan.PremiumPlus,
-              public_name: "Ana Oliveira",
-              status: TherapistStatus.Approved,
-              user_id: "user-1",
-            },
-          ]),
-        ),
-    );
+    mockSupabaseSession();
   });
 
   it("returns the authenticated therapist from the access token", async () => {
-    await expect(
-      requireTherapistSession({ namespace: "plus" }),
-    ).resolves.toMatchObject({
+    await expect(requireTherapistSession()).resolves.toMatchObject({
       name: "Ana Oliveira",
       plan: TherapistPlan.PremiumPlus,
       profileId: "therapist-1",
@@ -93,21 +64,49 @@ describe("requireTherapistSession", () => {
       "/terapeuta/login?next=%2Fterapeuta%2Fcheckout%3Fplan%3Dpremium",
     );
   });
+
+  it("enforces capability without deriving access from a namespace", async () => {
+    mockSupabaseSession({ plan: TherapistPlan.Premium });
+
+    await expect(
+      requireTherapistSession({ capability: "aura_full" }),
+    ).rejects.toThrow(routes.therapist.home);
+  });
+
+  it("rejects a non-therapist profile", async () => {
+    mockSupabaseSession({ role: "patient" });
+
+    await expect(requireTherapistSession()).rejects.toThrow(
+      routes.public.therapistSignIn,
+    );
+  });
 });
 
 describe("therapist session policy", () => {
-  it("maps every plan to its canonical namespace", () => {
-    expect(getTherapistNamespace(TherapistPlan.Free)).toBe("basico");
-    expect(getTherapistNamespace(TherapistPlan.Premium)).toBe("pro");
-    expect(getTherapistNamespace(TherapistPlan.PremiumPlus)).toBe("plus");
+  it("keeps every plan in the same namespace", () => {
+    expect(shouldRedirectTherapistPlan(TherapistPlan.Free, {})).toBe(false);
+    expect(shouldRedirectTherapistPlan(TherapistPlan.Premium, {})).toBe(false);
+    expect(shouldRedirectTherapistPlan(TherapistPlan.PremiumPlus, {})).toBe(
+      false,
+    );
   });
 
-  it("redirects Premium away from the Plus namespace", () => {
+  it("enforces minimum plan and capability gates", () => {
     expect(
-      shouldRedirectTherapistPlan(TherapistPlan.Premium, {
-        namespace: "plus",
+      shouldRedirectTherapistPlan(TherapistPlan.Free, {
+        minimumPlan: TherapistPlan.Premium,
       }),
     ).toBe(true);
+    expect(
+      shouldRedirectTherapistPlan(TherapistPlan.Premium, {
+        capability: "aura_full",
+      }),
+    ).toBe(true);
+    expect(
+      shouldRedirectTherapistPlan(TherapistPlan.PremiumPlus, {
+        capability: "aura_full",
+      }),
+    ).toBe(false);
   });
 
   it("blocks suspended and rejected statuses", () => {
@@ -116,6 +115,45 @@ describe("therapist session policy", () => {
     expect(isBlockedTherapistStatus(TherapistStatus.Approved)).toBe(false);
   });
 });
+
+function mockSupabaseSession({
+  plan = TherapistPlan.PremiumPlus,
+  role = "therapist",
+  status = TherapistStatus.Approved,
+}: {
+  plan?: TherapistPlan;
+  role?: "admin" | "patient" | "therapist";
+  status?: TherapistStatus;
+} = {}) {
+  vi.stubGlobal(
+    "fetch",
+    vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ id: "user-1" }))
+      .mockResolvedValueOnce(
+        jsonResponse([
+          {
+            avatar_url: "/ana.png",
+            display_name: "Ana Oliveira",
+            id: "user-1",
+            role,
+          },
+        ]),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse([
+          {
+            id: "therapist-1",
+            photo_url: "/ana.png",
+            plan,
+            public_name: "Ana Oliveira",
+            status,
+            user_id: "user-1",
+          },
+        ]),
+      ),
+  );
+}
 
 function jsonResponse(value: unknown) {
   return {

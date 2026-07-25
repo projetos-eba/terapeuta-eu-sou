@@ -133,6 +133,9 @@ export async function requireUser(
 export async function requireTherapist(
   client: SupabaseRestClient,
   request: Request,
+  options: {
+    allowBlockedStatus?: boolean;
+  } = {},
 ) {
   const user = await requireUser(client, request);
 
@@ -145,10 +148,17 @@ export async function requireTherapist(
       id: string;
       plan: "free" | "premium" | "premium_plus";
       public_name: string;
+      status:
+        | "approved"
+        | "draft"
+        | "rejected"
+        | "submitted"
+        | "suspended"
+        | "under_review";
       user_id: string;
     }>
   >(
-    `/rest/v1/therapist_profiles?select=id,user_id,plan,public_name&user_id=eq.${encodeURIComponent(
+    `/rest/v1/therapist_profiles?select=id,user_id,plan,public_name,status&user_id=eq.${encodeURIComponent(
       user.id,
     )}&limit=1`,
   );
@@ -158,6 +168,17 @@ export async function requireTherapist(
       "therapist_profile_not_found",
       403,
       "Perfil de terapeuta nao encontrado.",
+    );
+  }
+
+  if (
+    !options.allowBlockedStatus &&
+    (rows[0].status === "suspended" || rows[0].status === "rejected")
+  ) {
+    throw new DomainError(
+      "therapist_financial_access_blocked",
+      403,
+      "As operacoes financeiras deste perfil estao bloqueadas.",
     );
   }
 

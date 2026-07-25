@@ -25,6 +25,10 @@ type BookingRow = {
   service_id: string;
   status: string;
   therapist_profile_id: string;
+  therapist_profiles: {
+    is_accepting_bookings: boolean;
+    status: string;
+  } | null;
   therapist_services: {
     currency: string;
     duration_minutes: number;
@@ -70,6 +74,17 @@ runtime.serve(async (request) => {
         "booking_not_payable",
         409,
         "Esta reserva nao pode ser paga agora.",
+      );
+    }
+
+    if (
+      booking.therapist_profiles?.status !== "approved" ||
+      !booking.therapist_profiles.is_accepting_bookings
+    ) {
+      throw new DomainError(
+        "therapist_unavailable",
+        409,
+        "Este terapeuta nao esta disponivel para novas reservas.",
       );
     }
 
@@ -179,12 +194,6 @@ runtime.serve(async (request) => {
       },
       "resolution=merge-duplicates,return=minimal",
     );
-    await client.patch(
-      `/rest/v1/bookings?id=eq.${encodeURIComponent(booking.id)}`,
-      { payment_status: "pending", status: "pending_payment" },
-      "return=minimal",
-    );
-
     return success({
       checkoutSessionId: checkout.id,
       sessionPaymentId: sessionPayment.id,
@@ -205,7 +214,7 @@ function requireUuid(value: unknown, code: string) {
 
 async function getBooking(client: SupabaseRestClient, bookingId: string) {
   const rows = await client.get<BookingRow[]>(
-    `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,status,therapist_services(price_cents,currency,duration_minutes,title)&id=eq.${encodeURIComponent(bookingId)}&limit=1`,
+    `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,status,therapist_profiles(status,is_accepting_bookings),therapist_services(price_cents,currency,duration_minutes,title)&id=eq.${encodeURIComponent(bookingId)}&limit=1`,
   );
 
   if (!rows[0]) {
@@ -315,20 +324,6 @@ async function getOrCreateSessionPayment(
       therapist_profile_id: input.booking.therapist_profile_id,
     },
     "return=representation",
-  );
-
-  await client.post(
-    "/rest/v1/payments?on_conflict=booking_id",
-    {
-      amount_cents: input.snapshot.grossAmountCents,
-      booking_id: input.booking.id,
-      patient_profile_id: input.booking.patient_profile_id,
-      platform_fee_cents: input.snapshot.platformGrossCommissionCents,
-      status: "pending",
-      therapist_amount_cents: input.snapshot.therapistAmountCents,
-      therapist_profile_id: input.booking.therapist_profile_id,
-    },
-    "resolution=merge-duplicates,return=minimal",
   );
 
   return inserted[0];

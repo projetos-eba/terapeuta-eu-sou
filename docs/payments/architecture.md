@@ -9,7 +9,16 @@ O TES separa dois fluxos Stripe:
 - Stripe Billing: assinatura mensal dos terapeutas nos planos `premium` e `premium_plus`.
 - Stripe Connect: cobranca de sessoes na conta da plataforma, com separate charges and transfers e repasse posterior ao terapeuta.
 
-O redirecionamento do Checkout nunca ativa plano nem confirma pagamento sozinho. O estado local muda por webhooks assinados e idempotentes.
+O redirecionamento do Checkout nunca ativa plano nem confirma pagamento sozinho. O estado local muda por webhooks assinados, reservados atomicamente e idempotentes.
+
+## Rotas de retorno
+
+- `/terapeuta/*` e o destino canonico de Checkout, Billing Portal e Connect.
+- `/basico/*`, `/pro/*` e `/plus/*` nao devem ser fixados em Edge Functions;
+  os retornos existentes foram migrados na Fase Agenda 1.
+- A URL de retorno melhora a continuidade da jornada, mas nunca concede plano,
+  capability, pagamento ou autorizacao.
+- `/terapeutas/*` continua reservado ao catalogo publico.
 
 ## Configuracao Connect
 
@@ -55,6 +64,16 @@ As regras ficam em `financial_policy_versions`. A versao inicial e `tes-payments
 - `stripe_transfers` e `stripe_transfer_reversals`: repasses e compensacoes.
 - `financial_ledger_entries`: ledger auditavel.
 - `stripe_webhook_events`: recebimento idempotente de webhooks.
+
+Desde o Gate F0:
+
+- `session_payments` atualiza `payments`, `bookings.payment_status` e
+  `booking_payment_receipts` por projeção transacional;
+- `service_role` não escreve diretamente em `payments`;
+- registros legados são importados de forma idempotente e ficam bloqueados para
+  repasse até a reconciliação recuperar o Charge de origem;
+- o plano da assinatura é resolvido pelo `stripe_price_id` efetivo, nunca apenas
+  pela metadata enviada ao Checkout.
 
 ## Estados
 
@@ -106,6 +125,7 @@ sequenceDiagram
   TES->>DB: service_status = confirmed_by_therapist
   TES->>DB: calcula eligible_at + 7 dias
   TES->>S: cria Transfer no processamento do lote
+  Note over TES,S: Transfer usa source_transaction = Charge da sessão
 ```
 
 ## Edge Functions
@@ -178,20 +198,30 @@ Runbooks complementares:
 ## Webhooks tratados
 
 - `checkout.session.completed`
+- `checkout.session.async_payment_succeeded`
+- `checkout.session.async_payment_failed`
+- `checkout.session.expired`
 - `customer.subscription.created`
 - `customer.subscription.updated`
 - `customer.subscription.deleted`
 - `invoice.paid`
 - `invoice.payment_failed`
 - `invoice.payment_action_required`
+- `payment_intent.processing`
 - `payment_intent.succeeded`
 - `payment_intent.payment_failed`
 - `payment_intent.canceled`
 - `charge.refunded`
+- `refund.created`
+- `refund.updated`
+- `refund.failed`
 - `charge.dispute.created`
 - `charge.dispute.updated`
 - `charge.dispute.closed`
-- `account.updated` no webhook Connect
+- `transfer.updated`
+- `transfer.reversed`
+- `account.updated` snapshot no webhook Connect de compatibilidade
+- eventos thin `v2.core.account*`, incluindo requirements e capability status
 
 ## Secrets Stripe
 
@@ -199,11 +229,16 @@ Runbooks complementares:
 - `STRIPE_WEBHOOK_SECRET`: fallback local para os webhooks de plataforma e Connect.
 - `STRIPE_PLATFORM_WEBHOOK_SECRET`: segredo especifico do endpoint de Billing/sessoes, preferido em staging/producao.
 - `STRIPE_CONNECT_WEBHOOK_SECRET`: segredo especifico do endpoint Connect, preferido em staging/producao.
+- `STRIPE_CONNECT_V2_WEBHOOK_SECRET`: segredo do destino thin de Accounts v2.
 - `PAYMENTS_INTERNAL_OPERATIONS_TOKEN`: token apenas machine-to-machine para rotinas privadas de cron/ops. O catalogo pode ser sincronizado pelo script local sem esse token.
 
 Nao usar `STRIPE_RESTRICTED_API_KEY` nem `STRIPE_ENVIRONMENT` neste projeto. O app Next.js nao deve receber secret Stripe.
 
-O fallback de `STRIPE_WEBHOOK_SECRET` existe para desenvolvimento local. Em staging/producao, configurar `STRIPE_PLATFORM_WEBHOOK_SECRET` e `STRIPE_CONNECT_WEBHOOK_SECRET` separadamente; se o fallback for usado, a Edge Function registra alerta operacional sem imprimir o secret.
+O fallback de `STRIPE_WEBHOOK_SECRET` existe para desenvolvimento local. Em
+staging/producao, configurar `STRIPE_PLATFORM_WEBHOOK_SECRET`,
+`STRIPE_CONNECT_WEBHOOK_SECRET` e `STRIPE_CONNECT_V2_WEBHOOK_SECRET`
+separadamente; se um fallback for usado, a Edge Function registra alerta
+operacional sem imprimir o secret.
 
 ## Documentos e escopo fiscal
 
@@ -224,3 +259,6 @@ Nao implementar, nesta etapa, integracao com prefeitura, emissor fiscal, NFS-e n
 - Pagamentos sem taxa Stripe conciliada devem ser encontrados por `stripe_fee_amount_cents is null`.
 - Sessoes bloqueadas aparecem por `transfer_status = blocked` e `transfer_blocked_reason`.
 - Transfers com falha aparecem por `stripe_transfers.status = failed` e `payout_batch_items.status = failed`.
+- Pagamentos importados sem Charge ficam com
+  `transfer_blocked_reason = source_charge_reconciliation_required` e são
+  resolvidos por `reconcile-stripe-transfers`.

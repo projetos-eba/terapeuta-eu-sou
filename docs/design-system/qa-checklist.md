@@ -75,7 +75,8 @@ Lista de validação visual, funcional, técnica e de linguagem para telas TES.
 - [ ] Rotas canônicas usam slugs sem espaço e sem acento.
 - [ ] Aliases visuais redirecionam para rota canônica quando existirem.
 - [ ] `/app` é a entrada do paciente.
-- [ ] `/pro` é a entrada do Pro.
+- [ ] `/terapeuta` é a entrada autenticada de todos os planos.
+- [ ] `/basico/*`, `/pro/*` e `/plus/*` redirecionam para rotas equivalentes.
 - [ ] `/para-terapeutas/planos` é a página pública de planos.
 - [ ] Guardas de autenticação impedem acesso indevido.
 - [ ] Guardas de plano impedem recursos fora do plano.
@@ -124,7 +125,8 @@ Lista de validação visual, funcional, técnica e de linguagem para telas TES.
 ## Terapeutas
 
 - [ ] Básico mostra progresso de perfil e plano.
-- [ ] Básico tem `/basico/sessoes` e `/basico/mensagens`.
+- [ ] Free acessa `/terapeuta/sessoes` e `/terapeuta/mensagens` conforme a
+  política de capability.
 - [ ] Básico mostra limites sem punição.
 - [ ] Pro tem financeiro, avaliações e métricas intermediárias.
 - [ ] Pro pode evoluir para Plus por contexto.

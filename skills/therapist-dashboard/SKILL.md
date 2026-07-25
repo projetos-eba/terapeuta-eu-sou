@@ -27,10 +27,9 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
 
 ## Rotas
 
-- Básico: `/basico`.
-- Premium: `/pro`.
-- Premium Plus: `/plus`.
-- Os namespaces são preservados e usam o mesmo shell interno.
+- Canônica para todos os planos: `/terapeuta`.
+- Compatibilidade temporária: `/basico`, `/pro` e `/plus`.
+- A variação de dashboard é definida por plano e capability, não pelo path.
 
 ## Componentes e dados
 
@@ -64,7 +63,8 @@ Não distribuir queries pelos componentes. A entrada única da página é
 - Sem recomendações: dashboard principal continua disponível.
 - Supabase indisponível: mensagem segura sem payload interno.
 - Sessão inválida: redirecionar para `/terapeuta/login`.
-- Plano divergente: redirecionar para o namespace canônico.
+- Capability indisponível: redirecionar para `/terapeuta` sem inferir
+  autorização pela URL.
 - Suspenso ou rejeitado: bloquear o dashboard.
 
 ## QA
@@ -83,8 +83,8 @@ Não distribuir queries pelos componentes. A entrada única da página é
 
 ## Pendências conhecidas
 
-- `/plus` é a experiência profunda desta etapa.
+- Premium Plus é a experiência profunda desta etapa dentro de `/terapeuta`.
 - Demais rotas usam estado “Em construção” até seus respectivos frames e
   contratos funcionais serem implementados.
-- `/pro` e `/basico` usam wrappers compartilhados e serão aprofundados sem
+- Premium e Free usam wrappers compartilhados e serão aprofundados sem
   duplicar o dashboard.

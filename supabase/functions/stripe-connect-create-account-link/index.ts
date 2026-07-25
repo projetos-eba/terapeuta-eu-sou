@@ -48,8 +48,8 @@ runtime.serve(async (request) => {
 
     const link = await stripe.accountLinks.create({
       account: rows[0].stripe_account_id,
-      refresh_url: `${config.siteUrl}/basico/pagamento?connect=refresh`,
-      return_url: `${config.siteUrl}/basico/pagamento?connect=return`,
+      refresh_url: `${config.siteUrl}/terapeuta/financeiro?connect=refresh`,
+      return_url: `${config.siteUrl}/terapeuta/financeiro?connect=return`,
       type: "account_onboarding",
     });
 

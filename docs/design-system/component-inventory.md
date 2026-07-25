@@ -195,8 +195,8 @@ Observação: componentes listados nas tabelas abaixo que não aparecem na lista
 | `MetricCard` | P0 | Mostrar indicador. | Dashboards. | default, trend, status, premium. | up, down, neutral, noData. | `label`, `value`, `trend`, `description`, `icon`. | Pro/Plus/Admin. |
 | `InsightCard` | P1 | Explicar dado. | Pro, Plus, Admin. | recommendation, observation, opportunity. | unread, applied. | `title`, `description`, `action`, `tone`. | Pro/Plus/Admin. |
 | `AIRecommendationCard` | P1 | Sugerir melhoria assistida. | Plus. | profile, service, agenda. | applied, dismissed, loading. | `recommendation`, `reason`, `action`. | Plus. |
-| `AIAssessorPanel` | P1 | Organizar sugestões de IA. | `/plus/assessor-ia`. | profile, services, presence, replies. | loading, generated, applied, unavailable. | `context`, `suggestions`, `reviewRequired`. | Plus. |
-| `PlusPatientJourney` | P1 | Mostrar histórico operacional. | `/plus/pacientes/:slug-do-paciente`. | timeline, patientSummary, allowedActions. | empty, restricted, loading. | `patient`, `events`, `allowedActions`, `privacyLevel`. | Plus. |
+| `AIAssessorPanel` | P1 | Organizar sugestões de IA. | `/terapeuta/assessor-ia`. | profile, services, presence, replies. | loading, generated, applied, unavailable. | `context`, `suggestions`, `reviewRequired`. | Premium Plus. |
+| `PlusPatientJourney` | P1 | Mostrar histórico operacional. | `/terapeuta/pacientes/:slug-do-paciente`. | timeline, patientSummary, allowedActions. | empty, restricted, loading. | `patient`, `events`, `allowedActions`, `privacyLevel`. | Premium Plus. |
 | `Heatmap` | P1 | Mostrar procura por horário/tema. | Pro, Plus, Admin. | simple, advanced. | noData. | `xAxis`, `yAxis`, `values`, `legend`. | Pro/Plus/Admin. |
 | `WordCloud` | P2 | Mostrar palavras percebidas. | Plus avaliações. | sentiment, profile. | noData. | `words`, `tone`. | Plus. |
 | `AdminModerationQueue` | P1 | Priorizar revisão. | Admin. | professionals, reviews, reports. | empty, critical. | `items`, `filters`, `actions`. | Admin. |
