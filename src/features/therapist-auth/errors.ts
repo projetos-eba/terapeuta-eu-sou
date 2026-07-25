@@ -6,21 +6,21 @@ export type TherapistAuthApiError = {
 };
 
 export const THERAPIST_AUTH_CONFIG_ERROR =
-  "Cadastro de terapeutas temporariamente indisponivel. Tente novamente em instantes.";
+  "Cadastro de terapeutas temporariamente indisponível. Tente novamente em instantes.";
 
 export const THERAPIST_AUTH_GENERIC_ERROR =
-  "Nao foi possivel concluir a solicitacao agora. Revise os dados e tente novamente.";
+  "Não foi possível conectar agora. Tente novamente em instantes.";
 
 export const THERAPIST_AUTH_ROLE_ERROR =
   "Use o acesso correspondente ao seu perfil.";
 
 export function getSafeSignupError(status?: number) {
   if (status === 422) {
-    return "Nao foi possivel criar esta conta. Verifique os dados informados.";
+    return "Não foi possível criar esta conta. Verifique os dados informados.";
   }
 
   if (status === 409) {
-    return "Nao foi possivel criar esta conta. Verifique se o e-mail ja esta em uso.";
+    return "Não foi possível criar esta conta. Verifique se o e-mail já está em uso.";
   }
 
   return THERAPIST_AUTH_GENERIC_ERROR;

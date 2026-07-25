@@ -8,6 +8,7 @@ import { CalendarDays } from "lucide-react";
 import { routes } from "@/lib/routes";
 
 import type { TherapistProfileService } from "../types";
+import { AvailabilityCalendarModal } from "./availability-calendar-modal";
 
 type AvailabilitySelectorProps = {
   services: TherapistProfileService[];
@@ -15,11 +16,13 @@ type AvailabilitySelectorProps = {
 
 export function AvailabilitySelector({ services }: AvailabilitySelectorProps) {
   const [selectedServiceId, setSelectedServiceId] = useState(services[0]?.id ?? "");
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const selectedService = useMemo(
     () => services.find((service) => service.id === selectedServiceId) ?? services[0],
     [selectedServiceId, services],
   );
   const days = selectedService?.availability ?? [];
+  const compactDays = days.slice(0, 3);
 
   return (
     <section className="rounded-[22px] bg-brand-primary p-8 text-white">
@@ -60,10 +63,10 @@ export function AvailabilitySelector({ services }: AvailabilitySelectorProps) {
       </div>
 
       <div className="mt-7 space-y-4">
-        {days.length ? (
-          days.slice(0, 7).map((day) => (
+        {compactDays.length ? (
+          compactDays.map((day) => (
             <div
-              key={`${selectedService?.id}-${day.dayLabel}-${day.dateLabel}`}
+              key={`${selectedService?.id}-${day.date}`}
               className="grid grid-cols-[72px_1fr] gap-5"
             >
               <div className="text-sm font-medium leading-5">
@@ -71,25 +74,19 @@ export function AvailabilitySelector({ services }: AvailabilitySelectorProps) {
                 <p>{day.dateLabel}</p>
               </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                {day.slots.length ? (
-                  day.slots.map((slot) => (
-                    <Link
-                      key={`${slot.serviceId}-${slot.startsAt}`}
-                      href={
-                        `${routes.public.reservation}?service=${slot.serviceId}&slot=${encodeURIComponent(
-                          slot.startsAt,
-                        )}` as Route
-                      }
-                      className="rounded-[9px] bg-[#7c55a0] px-4 py-3 text-center text-sm font-medium"
-                    >
-                      {slot.timeLabel}
-                    </Link>
-                  ))
-                ) : (
-                  <span className="rounded-[9px] bg-[#7c55a0] px-4 py-3 text-center text-sm font-medium text-white/70">
-                    Sem horários
-                  </span>
-                )}
+                {day.slots.slice(0, 5).map((slot) => (
+                  <Link
+                    key={`${slot.serviceId}-${slot.startsAt}`}
+                    href={
+                      `${routes.public.reservation}?service=${slot.serviceId}&slot=${encodeURIComponent(
+                        slot.startsAt,
+                      )}` as Route
+                    }
+                    className="rounded-[9px] bg-[#7c55a0] px-4 py-3 text-center text-sm font-medium"
+                  >
+                    {slot.timeLabel}
+                  </Link>
+                ))}
               </div>
             </div>
           ))
@@ -100,12 +97,22 @@ export function AvailabilitySelector({ services }: AvailabilitySelectorProps) {
         )}
       </div>
 
-      <Link
-        href={routes.public.reservation as Route}
-        className="mx-auto mt-8 block w-fit text-base font-medium"
+      <button
+        className="mx-auto mt-8 block w-fit text-base font-medium outline-none transition hover:text-white/80 focus-visible:ring-4 focus-visible:ring-white/20"
+        disabled={!selectedService || days.length === 0}
+        onClick={() => setIsCalendarOpen(true)}
+        type="button"
       >
         Ver agenda completa e mais horários →
-      </Link>
+      </button>
+
+      {isCalendarOpen && selectedService ? (
+        <AvailabilityCalendarModal
+          days={days}
+          onClose={() => setIsCalendarOpen(false)}
+          service={selectedService}
+        />
+      ) : null}
     </section>
   );
 }

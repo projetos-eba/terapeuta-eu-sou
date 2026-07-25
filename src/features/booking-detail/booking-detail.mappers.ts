@@ -1,0 +1,274 @@
+import {
+  canExposeMeetingUrl,
+  getBookingDetailStatus,
+  getBookingDetailStatusLabel,
+} from "./booking-detail-status";
+import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
+import {
+  formatJourneyStartedAt,
+  formatSessionDate,
+  formatSessionDuration,
+  formatSessionTimeRange,
+  getMinutesUntilStart,
+} from "./booking-detail-formatters";
+import type {
+  BookingDetailPageData,
+  BookingDetailPerspective,
+} from "./booking-detail.types";
+
+export type BookingDetailBookingRow = {
+  completed_at: string | null;
+  ends_at: string;
+  id: string;
+  meeting_provider: string | null;
+  meeting_url: string | null;
+  patient_profile_id: string;
+  payment_status: string;
+  service_id: string;
+  starts_at: string;
+  status: string;
+  therapist_profile_id: string;
+  timezone: string;
+};
+
+export type BookingDetailProfileRow = {
+  avatar_url: string | null;
+  display_name: string | null;
+  id: string;
+};
+
+export type BookingDetailPatientProfileRow = {
+  avatar_url: string | null;
+  display_name: string | null;
+  id: string;
+};
+
+export type BookingDetailTherapistRow = {
+  headline: string | null;
+  id: string;
+  is_accepting_bookings: boolean;
+  photo_url: string | null;
+  public_name: string;
+  slug: string;
+};
+
+export type BookingDetailServiceRow = {
+  currency: string;
+  description: string | null;
+  duration_minutes: number;
+  id: string;
+  price_cents: number;
+  therapy_id: string;
+  title: string;
+};
+
+export type BookingDetailTherapyRow = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+export type BookingDetailReviewRow = {
+  rating: number;
+};
+
+export type BookingDetailIntakeRow = {
+  focus_area: string;
+  shared_note: string;
+  therapy_goal: string;
+  visibility: "patient_therapist" | "private_patient" | "support" | string;
+};
+
+export type BookingDetailReceiptRow = {
+  amount_cents: number;
+  currency: string;
+  paid_at: string | null;
+  receipt_url: string | null;
+};
+
+export type BookingDetailCancellationPolicyRow = {
+  free_until_hours: number;
+  late_cancel_fee_percent: number;
+  no_show_fee_percent: number;
+};
+
+export type BookingDetailSessionSummaryRow = {
+  booking_id: string;
+  created_at: string;
+  summary: string | null;
+  title: string | null;
+};
+
+export type MapBookingDetailInput = {
+  booking: BookingDetailBookingRow;
+  completedBookings: BookingDetailBookingRow[];
+  intake: BookingDetailIntakeRow | null;
+  patient: BookingDetailProfileRow;
+  patientProfile: BookingDetailPatientProfileRow;
+  perspective: BookingDetailPerspective;
+  policy: BookingDetailCancellationPolicyRow | null;
+  receipt: BookingDetailReceiptRow | null;
+  reviews: BookingDetailReviewRow[];
+  service: BookingDetailServiceRow;
+  summaries: BookingDetailSessionSummaryRow[];
+  therapist: BookingDetailTherapistRow;
+  therapy: BookingDetailTherapyRow;
+};
+
+export function mapBookingDetail(
+  input: MapBookingDetailInput,
+): BookingDetailPageData {
+  const exposedMeetingUrl = canExposeMeetingUrl({
+    meetingUrl: input.booking.meeting_url,
+    paymentStatus: input.booking.payment_status,
+    status: input.booking.status,
+  })
+    ? input.booking.meeting_url
+    : null;
+  const status = getBookingDetailStatus({
+    endsAt: input.booking.ends_at,
+    meetingUrl: exposedMeetingUrl,
+    startsAt: input.booking.starts_at,
+    status: input.booking.status,
+  });
+  const canJoin = status === "live" && Boolean(exposedMeetingUrl);
+  const ratingAverage =
+    input.reviews.length > 0
+      ? roundRating(
+          input.reviews.reduce((sum, review) => sum + review.rating, 0) /
+            input.reviews.length,
+        )
+      : null;
+  const completedBookingsWithSummaries = input.completedBookings.filter(
+    (booking) =>
+      input.summaries.some((summary) => summary.booking_id === booking.id),
+  );
+  const journeyBookings =
+    completedBookingsWithSummaries.length > 0
+      ? completedBookingsWithSummaries
+      : input.completedBookings;
+  const firstJourneyBooking = journeyBookings
+    .slice()
+    .sort(
+      (left, right) =>
+        new Date(left.starts_at).getTime() - new Date(right.starts_at).getTime(),
+    )[0];
+
+  return {
+    booking: {
+      canJoin,
+      dateLabel: formatSessionDate(input.booking.starts_at),
+      durationLabel: formatSessionDuration(
+        input.booking.starts_at,
+        input.booking.ends_at,
+      ),
+      endsAt: input.booking.ends_at,
+      id: input.booking.id,
+      minutesUntilStart: getMinutesUntilStart(input.booking.starts_at),
+      paymentStatus: input.booking.payment_status,
+      startsAt: input.booking.starts_at,
+      status,
+      statusLabel: getBookingDetailStatusLabel(status),
+      timeRangeLabel: formatSessionTimeRange(
+        input.booking.starts_at,
+        input.booking.ends_at,
+      ),
+      timezone: input.booking.timezone,
+    },
+    cancellationPolicy: {
+      freeUntilHours: input.policy?.free_until_hours ?? 24,
+      lateCancelFeePercent: input.policy?.late_cancel_fee_percent ?? 50,
+      noShowFeePercent: input.policy?.no_show_fee_percent ?? 100,
+    },
+    intake: {
+      focusArea: input.intake?.focus_area ?? "Seu momento atual",
+      sharedNote:
+        input.intake?.shared_note ??
+        "Você poderá complementar suas informações antes do encontro, se desejar.",
+      therapyGoal:
+        input.intake?.therapy_goal ??
+        input.service.description ??
+        "Acompanhar sua jornada com presença e cuidado.",
+      visibility: isIntakeVisibility(input.intake?.visibility)
+        ? input.intake.visibility
+        : "patient_therapist",
+    },
+    journey: {
+      completedEncountersCount: journeyBookings.length,
+      lastExploredTopic: input.intake?.focus_area ?? input.therapy.name,
+      startedAtLabel: formatJourneyStartedAt(
+        firstJourneyBooking?.starts_at ?? null,
+      ),
+      therapistName: input.therapist.public_name,
+    },
+    onlineSession: {
+      joinRecommendation:
+        "Recomendamos entrar de 5 a 10 minutos antes do horário agendado.",
+      meetingUrl: exposedMeetingUrl,
+      provider: getMeetingProvider(input.booking.meeting_provider),
+      securityNote:
+        input.booking.payment_status === "paid"
+          ? "Este link é único e seguro. Não compartilhe com outras pessoas."
+          : "O link será liberado quando o pagamento estiver confirmado.",
+    },
+    patient: {
+      avatarUrl: input.patientProfile.avatar_url ?? input.patient.avatar_url,
+      id: input.patient.id,
+      name:
+        input.patientProfile.display_name ??
+        input.patient.display_name ??
+        "Paciente",
+    },
+    receipt: {
+      amountCents: input.receipt?.amount_cents ?? null,
+      currency: input.receipt?.currency ?? input.service.currency ?? "BRL",
+      paidAt: input.receipt?.paid_at ?? null,
+      receiptUrl: input.receipt?.receipt_url ?? null,
+    },
+    service: {
+      id: input.service.id,
+      objective:
+        input.intake?.therapy_goal ??
+        input.service.description ??
+        "Acompanhar sua jornada com presença e cuidado.",
+      therapyName: input.therapy.name,
+      therapySlug: input.therapy.slug,
+      title: input.service.title,
+    },
+    therapist: {
+      avatarUrl: getTherapistAvatarUrl(input.therapist.photo_url, {
+        name: input.therapist.public_name,
+        slug: input.therapist.slug,
+      }),
+      id: input.therapist.id,
+      isOnline: input.therapist.is_accepting_bookings,
+      name: input.therapist.public_name,
+      profileHref: `/terapeutas/${input.therapist.slug}`,
+      ratingAverage,
+      reviewsCount: input.reviews.length,
+      roleLabel: input.therapist.headline ?? "Terapeuta",
+    },
+  };
+}
+
+function getMeetingProvider(
+  provider: string | null,
+): BookingDetailPageData["onlineSession"]["provider"] {
+  if (provider === "zoom" || provider === "google_meet") return provider;
+
+  return "external";
+}
+
+function isIntakeVisibility(
+  value: string | null | undefined,
+): value is BookingDetailPageData["intake"]["visibility"] {
+  return (
+    value === "patient_therapist" ||
+    value === "private_patient" ||
+    value === "support"
+  );
+}
+
+function roundRating(value: number) {
+  return Math.round(value * 10) / 10;
+}

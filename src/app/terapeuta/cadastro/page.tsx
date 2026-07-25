@@ -8,7 +8,7 @@ import {
 
 export const metadata: Metadata = {
   description:
-    "Cadastro inicial para terapeutas criarem conta no Terapeuta Eu Sou e iniciarem o onboarding profissional.",
+    "Cadastro inicial para terapeutas criarem conta no Terapeuta Eu Sou e iniciarem os próximos passos profissionais.",
   robots: {
     follow: false,
     index: false,
@@ -28,8 +28,8 @@ export default function TherapistSignupPage({
   return (
     <TherapistAuthShell
       eyebrow="Para terapeutas"
-      title="Seu espaco profissional comeca aqui."
-      description="Crie sua conta para acessar a area do terapeuta. Perfil publico, documentos e dados bancarios entram depois, no seu onboarding."
+      title="Seu espaço profissional começa aqui."
+      description="Cadastre-se para acessar sua área profissional no TES."
     >
       <TherapistSignupForm plan={plan} />
     </TherapistAuthShell>

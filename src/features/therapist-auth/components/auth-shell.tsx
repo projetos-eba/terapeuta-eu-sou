@@ -1,24 +1,25 @@
 import type { ReactNode } from "react";
-import { CheckCircle2, FileCheck2, Landmark, UserRoundCheck } from "lucide-react";
+import { CreditCard, FileCheck2, UserRoundCheck } from "lucide-react";
 
 import { PublicLogo } from "@/components/tes";
 import { cn } from "@/lib/utils";
 
 const checklist = [
   {
-    description: "Voce informa somente os dados iniciais de acesso.",
+    description: "Um acesso separado para sua rotina como terapeuta.",
     icon: UserRoundCheck,
-    title: "Conta criada",
+    title: "Conta profissional",
   },
   {
-    description: "Seu perfil nasce privado para voce completar com calma.",
+    description: "Você decide quando seu perfil estará pronto para publicação.",
     icon: FileCheck2,
-    title: "Perfil em rascunho",
+    title: "Perfil privado",
   },
   {
-    description: "Documentos, verificacao e repasse entram no onboarding.",
-    icon: Landmark,
-    title: "Proximas etapas",
+    description:
+      "Recursos pagos só são liberados após a confirmação do Stripe.",
+    icon: CreditCard,
+    title: "Plano seguro",
   },
 ];
 
@@ -36,13 +37,13 @@ export function TherapistAuthShell({
   title: string;
 }) {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#F4ECFA_0%,#FFFFFF_42%,#F8F5FF_100%)] px-5 py-8 text-brand-deep sm:px-8">
+    <main className="min-h-screen bg-surface-soft px-5 py-8 text-brand-deep sm:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col items-center justify-center gap-8">
         <PublicLogo />
-        <section className="grid w-full overflow-hidden rounded-[28px] border border-border bg-white shadow-float lg:grid-cols-[0.92fr_1.08fr]">
-          <aside className="order-2 flex flex-col justify-between gap-10 bg-brand-deep px-7 py-8 text-white sm:px-10 lg:order-1 lg:px-12 lg:py-12">
+        <section className="grid w-full overflow-hidden rounded-hero border border-border bg-surface-default shadow-float lg:grid-cols-[0.92fr_1.08fr]">
+          <aside className="order-2 flex flex-col justify-between gap-10 bg-brand-primary px-7 py-8 text-white sm:px-10 lg:order-1 lg:min-h-[760px] lg:px-12 lg:py-12">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.28em] text-brand-cyan">
+              <p className="text-xs font-extrabold uppercase tracking-[0.28em] text-white/75">
                 {eyebrow}
               </p>
               <h1 className="mt-6 font-display text-5xl font-light italic leading-[0.98] sm:text-6xl">
@@ -60,9 +61,9 @@ export function TherapistAuthShell({
                 return (
                   <div
                     key={item.title}
-                    className="flex gap-4 rounded-2xl border border-white/12 bg-white/8 p-4"
+                    className="flex gap-4 rounded-2xl border border-white/25 bg-white/10 p-4"
                   >
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/12 text-brand-cyan">
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
                       <Icon className="size-5" aria-hidden="true" />
                     </span>
                     <div>
@@ -79,14 +80,10 @@ export function TherapistAuthShell({
 
           <div
             className={cn(
-              "order-1 px-6 py-7 sm:px-10 sm:py-10 lg:order-2",
+              "order-1 flex flex-col justify-center px-6 py-7 sm:px-10 sm:py-10 lg:order-2 lg:px-20",
               className,
             )}
           >
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full bg-status-successBg px-4 py-2 text-xs font-extrabold text-status-success">
-              <CheckCircle2 className="size-4" aria-hidden="true" />
-              Informacoes de perfil publico nao bloqueiam este primeiro acesso
-            </div>
             {children}
           </div>
         </section>

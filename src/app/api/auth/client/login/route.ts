@@ -7,6 +7,7 @@ import {
 } from "@/features/client-auth/errors";
 import {
   ClientAuthConfigError,
+  ClientAuthEmailUnconfirmedError,
   ClientAuthRoleError,
   ClientAuthSupabaseError,
   loginClientWithPassword,
@@ -87,13 +88,23 @@ export async function POST(request: Request) {
       );
     }
 
+    if (error instanceof ClientAuthEmailUnconfirmedError) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "Confirme seu e-mail antes de entrar.",
+        },
+        { status: 403 },
+      );
+    }
+
     if (error instanceof ClientAuthSupabaseError) {
       return NextResponse.json(
         {
           ok: false,
           message:
             error.status === 400 || error.status === 401
-              ? "E-mail ou senha invalidos."
+              ? "E-mail ou senha inválidos."
               : CLIENT_AUTH_GENERIC_ERROR,
         },
         { status: error.status === 400 ? 401 : 400 },

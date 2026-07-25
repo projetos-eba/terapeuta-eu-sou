@@ -42,10 +42,12 @@ Consultar antes de alterar:
 - `matching_weights`: pesos internos de 0 a 5, com exatamente um alvo entre `theme_id` e `interest_id`.
 - `matching_therapy_settings`: ativação da terapia no Match; só vale quando a terapia também está `published`.
 - `public_matching_config`: view publica segura para temas/interesses publicados.
+- `public_matching_therapies_v`: fonte única dos candidatos recomendáveis pelo Match; cruza detalhe público publicado com `matching_therapy_settings.is_visible_in_matching = true`.
 - `public_matching_therapist_counts`: contagem informativa de profissionais aprovados, publicos e com servico ativo; nao influencia ranking.
-- `public_therapies_v`: fonte editorial pública das terapias; o Match só recomenda terapias publicadas.
+- `public_therapies_v` e `public_therapy_details_v`: fonte editorial pública das terapias; o Match só recomenda terapias publicadas e com detalhe público elegível.
 
 Seeds/mocks devem ser idempotentes em `supabase/seed.sql`.
+Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` e `constelacao-familiar`; `terapia-integrativa`, `terapia-floral`, `meditacao-guiada` e outras técnicas legadas devem permanecer `draft` ou fora de `matching_therapy_settings`.
 
 ## Algoritmo
 
@@ -95,6 +97,8 @@ Seeds/mocks devem ser idempotentes em `supabase/seed.sql`.
   - ate 3 interesses por tema.
   - interesse precisa pertencer a tema selecionado.
   - resultado aponta para `/terapias/:slug`.
+  - resultado retorna apenas terapias existentes em `public_matching_therapies_v`.
+  - fallback sem Supabase retorna apenas Reiki, Tarô e Constelação Familiar.
   - nenhum peso interno aparece no navegador.
 
 ## Pendencias conhecidas

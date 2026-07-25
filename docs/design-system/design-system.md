@@ -123,8 +123,10 @@ Semânticos principais:
 
 - `color.semantic.action.primary.default = #6C3D91`;
 - `color.semantic.profile.patient = #81BAE0`;
-- `color.semantic.text.primary = #261433`;
+- `color.semantic.text.primary = #14105A`;
 - `color.semantic.status.info = #5EA3D2`.
+
+Regra de implementação: títulos e textos primários devem usar o token `text-brand-deep`/`text-tesText-primary`, nunca hex hardcoded como `#261433` ou variações próximas. O valor canônico atual é `#14105A`.
 
 Gradiente canônico para CTA premium:
 
@@ -169,11 +171,13 @@ Nota de implementação da busca pública de terapeutas (`/terapeutas`), atualiz
 
 Nota de implementação do perfil público do terapeuta (`/terapeutas/:slug`), atualizada em 2026-07-14: a página segue o Figma `Page / Público / Perfil Juliana Almeida` (`13273:3393`) com adaptação de dados para Ana Oliveira. O padrão visual usa hero editorial com foto orgânica, badges de confiança, títulos IvyPresto, cards brancos com borda lavanda, serviços compactos, painel roxo de disponibilidade com seleção de serviço e avaliações em cards. Métricas devem usar apenas dados verificáveis da plataforma, como sessões pagas e concluídas.
 
-Nota de implementação da página pública Para Terapeutas (`/para-terapeutas`), atualizada em 2026-07-15: a página segue o Figma `Page / Público / Para Terapeutas` (`13457:848`) com hero central, itens de confiança, bento grid de benefícios, painel roxo de planos e comparativo responsivo. A tabela visual deve consumir o catálogo único `PlanDefinition`; preços pagos aparecem como “a partir de” e recursos não devem prometer IA real, renda, cura, diagnóstico ou resultado garantido.
+Nota de implementação de avatares de terapeutas, atualizada em 2026-07-24: fotos públicas de terapeutas devem usar assets locais versionados em `public/therapists/` e manter URLs rastreáveis entre seeds, fallbacks, busca pública, perfil público, cards de terapia e área do cliente. Quando houver troca visual que precise furar cache, usar novo nome versionado e atualizar todas as fontes dinâmicas e skills correspondentes. Não usar URLs temporárias ou imagens externas.
+
+Nota de implementação da página pública Para Terapeutas (`/para-terapeutas`), atualizada em 2026-07-24: a página segue o Figma `Page / Público / Para Terapeutas` (`13457:848`) com hero central, imagem sutil de fundo em `public/for-therapists/hero-therapist-laptop.png`, itens de confiança, bento grid de benefícios, painel roxo de planos e comparativo responsivo. O título "Você cuida de pessoas." usa Manrope semibold e `text-brand-deep`. A tabela visual deve consumir o catálogo único `PlanDefinition`, exibir apenas o nome dos recursos nas linhas, não usar coluna editorial lateral e preservar preços/CTAs de cadastro no rodapé; recursos não devem prometer IA real, renda, cura, diagnóstico ou resultado garantido.
 
 Nota de implementação do Match público (`/sua-jornada` e `/sua-jornada/resultado`), atualizada em 2026-07-15: a jornada segue o Figma `13273:2627` com seleção compacta de temas e interesses, CTA fixo após a primeira escolha e resultado em cards de terapias. A UI deve usar sempre os termos “Tema” e “Interesse”, evitar “subtema”, manter áreas clicáveis de ao menos 44px no mobile e não prometer diagnóstico, cura ou resultado.
 
-Nota de implementação do catálogo público de terapias (`/terapias`), atualizada em 2026-07-15: a página segue o Figma `13273:1439` com hero fotográfico, busca ampla, chips de ordenação, sidebar de categorias no desktop, accordion de filtros no mobile, grid de cards com imagem editorial e CTA de jornada. Cards públicos devem educar e conduzir ao detalhe da terapia, sem vender diretamente sessão nem prometer cura, diagnóstico ou resultado.
+Nota de implementação do catálogo público de terapias (`/terapias`), atualizada em 2026-07-24: a página segue o Figma `13273:1439` com hero fotográfico, busca ampla, chips de ordenação, sidebar de categorias no desktop, accordion de filtros no mobile e grid de cards compactos com imagem editorial. Descrições dos cards devem ser limitadas visualmente a três linhas, preservando a leitura do grid. Cards públicos devem educar e conduzir ao detalhe da terapia, sem vender diretamente sessão nem prometer cura, diagnóstico ou resultado.
 
 ### Paciente
 

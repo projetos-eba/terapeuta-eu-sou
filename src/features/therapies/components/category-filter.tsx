@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { ChevronDown, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, Command, SlidersHorizontal } from "lucide-react";
 
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
@@ -59,14 +59,11 @@ function CategoryPanel({
   totalCount,
 }: CategoryFilterProps) {
   return (
-    <div className="rounded-[28px] border border-brand-lavender/80 bg-white p-5 shadow-[0_18px_48px_rgba(38,20,51,0.08)]">
-      <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-brand-primary">
+    <div className="rounded-[14px] border border-brand-lavender/80 bg-white p-5 shadow-[0_12px_28px_rgba(46,26,71,0.07)]">
+      <h2 className="text-xl font-extrabold leading-7 text-brand-deep">
         Categorias
-      </p>
-      <h2 className="mt-2 text-2xl font-extrabold text-brand-deep">
-        Encontre por intenção
       </h2>
-      <nav className="mt-5 grid gap-2" aria-label="Categorias de terapias">
+      <nav className="mt-4 grid gap-1.5" aria-label="Categorias de terapias">
         <CategoryLink
           active={!activeCategory}
           count={totalCount}
@@ -99,17 +96,18 @@ function CategoryLink({ active, count, href, label }: CategoryLinkProps) {
     <Link
       href={href as Route<string>}
       className={cn(
-        "flex min-h-12 items-center justify-between rounded-2xl px-4 text-sm font-extrabold transition focus:outline-none focus:ring-4 focus:ring-ring/20",
+        "flex min-h-[46px] items-center gap-3 rounded-[8px] px-3 text-[0.82rem] font-extrabold transition focus:outline-none focus:ring-4 focus:ring-ring/20",
         active
-          ? "bg-brand-primary text-white shadow-card"
-          : "bg-brand-lavenderSoft/60 text-text-secondary hover:bg-brand-lavenderSoft hover:text-brand-primary",
+          ? "bg-brand-lavenderSoft text-brand-primary"
+          : "bg-white text-tesText-secondary hover:bg-brand-lavenderSoft/70 hover:text-brand-primary",
       )}
     >
-      <span>{label}</span>
+      <Command className="h-3.5 w-3.5 shrink-0 text-brand-primary" />
+      <span className="min-w-0 flex-1 truncate">{label}</span>
       <span
         className={cn(
-          "rounded-full px-2.5 py-1 text-xs",
-          active ? "bg-white/18 text-white" : "bg-white text-brand-primary",
+          "grid h-7 min-w-7 place-items-center rounded-full px-2 text-[0.7rem]",
+          active ? "bg-white text-brand-primary" : "bg-brand-lavenderSoft text-brand-primary",
         )}
       >
         {count}

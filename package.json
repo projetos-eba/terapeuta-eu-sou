@@ -8,6 +8,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "dev:functions": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-functions.ps1",
+    "test:auth:ui": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-auth-ui-test.ps1",
+    "test:auth:flows": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-auth-flow-tests.ps1",
+    "test:email:real": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-real-email-test.ps1",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:deno": "deno test --config supabase/functions/deno.json --allow-env --allow-net supabase/functions/_shared/auth supabase/functions/_shared/email",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
@@ -17,22 +25,29 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
-    "next": "^14.2.15",
+    "next": "^14.2.35",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "tailwind-merge": "^2.5.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.0",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^20.17.10",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^6.0.4",
+    "@vitest/coverage-v8": "^4.1.10",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
-    "eslint-config-next": "^14.2.15",
+    "eslint-config-next": "^14.2.35",
+    "jsdom": "^29.1.1",
     "postcss": "^8.4.49",
     "prettier": "^3.4.2",
     "prettier-plugin-tailwindcss": "^0.6.9",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^4.1.10"
   }
 }

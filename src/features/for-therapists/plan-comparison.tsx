@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { Check, Minus } from "lucide-react";
+import { Check, Gem, Minus, Star, UserRound } from "lucide-react";
 
 import {
   TherapistPlan,
@@ -9,47 +9,121 @@ import {
   therapistPlanFeatureDefinitions,
   type PlanDefinition,
   type PlanFeatureCategory,
+  type PlanFeatureCode,
 } from "@/domain/tes";
 import { cn } from "@/lib/utils";
 import { TESButton } from "@/components/tes";
 
 import { planCategoryLabels } from "./content";
 
-const categoryOrder: PlanFeatureCategory[] = ["base", "premium", "premium_plus"];
+const categoryOrder: PlanFeatureCategory[] = [
+  "base",
+  "premium",
+  "premium_plus",
+  "academy",
+];
 
-function getLimitLabel(plan: PlanDefinition) {
-  if (plan.code === TherapistPlan.PremiumPlus) {
-    return "Recursos completos sujeitos a politica de uso";
+type FeatureCellState =
+  | { type: "included" }
+  | { type: "excluded" }
+  | { type: "badge"; label: string }
+  | { type: "text"; label: string };
+
+function getFeatureCellState(
+  plan: TherapistPlan,
+  featureCode: PlanFeatureCode,
+): FeatureCellState {
+  if (featureCode === "search_visibility") {
+    if (plan === TherapistPlan.Premium) {
+      return { type: "text", label: "destaque" };
+    }
+
+    if (plan === TherapistPlan.PremiumPlus) {
+      return { type: "text", label: "máxima" };
+    }
+
+    return { type: "excluded" };
   }
 
-  const services = plan.limits.services
-    ? `${plan.limits.services} servico${plan.limits.services > 1 ? "s" : ""}`
-    : "Servicos conforme politica";
-  const messages = plan.limits.messages
-    ? `${plan.limits.messages} mensagens/mes`
-    : "Mensagens conforme politica";
+  if (featureCode === "seasonal_campaigns") {
+    return plan === TherapistPlan.PremiumPlus
+      ? { type: "badge", label: "EM BREVE" }
+      : { type: "excluded" };
+  }
 
-  return `${services} · ${messages}`;
+  if (featureCode === "tes_academy") {
+    if (plan === TherapistPlan.Premium) {
+      return { type: "text", label: "Opcional (Em breve)" };
+    }
+
+    if (plan === TherapistPlan.PremiumPlus) {
+      return { type: "text", label: "Incluso (Em breve)" };
+    }
+
+    return { type: "excluded" };
+  }
+
+  return planIncludesFeature(plan, featureCode)
+    ? { type: "included" }
+    : { type: "excluded" };
 }
 
 function FeatureState({
-  included,
+  state,
   label,
 }: {
-  included: boolean;
+  state: FeatureCellState;
   label: string;
 }) {
+  if (state.type === "text") {
+    return (
+      <span className="text-[11px] font-extrabold leading-4 text-brand-primary">
+        {state.label}
+      </span>
+    );
+  }
+
+  if (state.type === "badge") {
+    return (
+      <span className="mx-auto inline-flex min-h-6 items-center rounded-full bg-brand-lavenderSoft px-3 text-[10px] font-extrabold uppercase text-brand-primary">
+        {state.label}
+      </span>
+    );
+  }
+
+  const included = state.type === "included";
+
   return (
     <span
       aria-label={included ? `${label}: incluido` : `${label}: nao incluido`}
       className={cn(
-        "mx-auto grid size-7 place-items-center rounded-full",
-        included
-          ? "bg-status-successBg text-status-success"
-          : "bg-brand-lavenderSoft text-tesText-muted",
+        "mx-auto grid size-5 place-items-center",
+        included ? "text-status-success" : "text-tesText-muted",
       )}
     >
       {included ? <Check className="size-4" /> : <Minus className="size-4" />}
+    </span>
+  );
+}
+
+function PlanHeaderIcon({ plan }: { plan: TherapistPlan }) {
+  const Icon =
+    plan === TherapistPlan.PremiumPlus
+      ? Gem
+      : plan === TherapistPlan.Premium
+        ? Star
+        : UserRound;
+
+  return (
+    <span
+      className={cn(
+        "grid size-10 shrink-0 place-items-center rounded-[12px]",
+        plan === TherapistPlan.PremiumPlus
+          ? "bg-brand-primary text-white"
+          : "bg-brand-lavenderSoft text-brand-primary",
+      )}
+    >
+      <Icon className="size-5" />
     </span>
   );
 }
@@ -134,13 +208,18 @@ function PlanCard({ plan }: { plan: PlanDefinition }) {
                 <ul className="mt-3 space-y-2">
                   {categoryFeatures.map((feature) => {
                     const included = planIncludesFeature(plan.code, feature.code);
+                    const cellState = getFeatureCellState(plan.code, feature.code);
+                    const hasFeature =
+                      included ||
+                      cellState.type === "text" ||
+                      cellState.type === "badge";
 
                     return (
                       <li
                         key={feature.code}
                         className="flex items-start gap-2 text-xs font-semibold leading-5 text-tesText-secondary"
                       >
-                        {included ? (
+                        {hasFeature ? (
                           <Check className="mt-0.5 size-4 shrink-0 text-status-success" />
                         ) : (
                           <Minus className="mt-0.5 size-4 shrink-0 text-tesText-muted" />
@@ -197,109 +276,108 @@ export function PlansPreviewSection() {
           ))}
         </div>
 
-        <div className="mt-10 hidden overflow-x-auto rounded-[18px] border border-white/30 bg-white text-brand-deep shadow-float md:block">
-          <table className="min-w-[980px] table-fixed border-collapse">
-            <caption className="sr-only">
-              Comparativo de recursos dos planos para terapeutas
-            </caption>
-            <thead>
-              <tr>
-                <th className="sticky left-0 z-10 w-[34%] bg-white px-6 py-6 text-left text-sm font-extrabold text-tesText-muted">
-                  Recursos
-                </th>
-                {therapistPlanDefinitions.map((plan) => (
-                  <th
-                    key={plan.code}
-                    className="border-l border-[#ded5f2] px-6 py-6 text-center"
-                  >
-                    <span className="block text-lg font-extrabold text-brand-deep">
-                      {plan.name}
+        <div className="mt-10 hidden overflow-hidden rounded-[18px] border border-border bg-white text-brand-deep shadow-float xl:block">
+          <div className="overflow-x-auto">
+            <table className="min-w-[950px] table-fixed border-collapse">
+              <caption className="sr-only">
+                Comparativo de recursos dos planos para terapeutas
+              </caption>
+              <thead>
+                <tr>
+                  <th className="w-[38%] bg-white px-5 py-4 text-left">
+                    <span className="sr-only">Recursos</span>
+                  </th>
+                  {therapistPlanDefinitions.map((plan) => (
+                    <th
+                      key={plan.code}
+                      className="border-l border-border bg-white px-5 py-4 text-left"
+                    >
+                      <span className="flex items-center gap-3">
+                        <PlanHeaderIcon plan={plan.code} />
+                        <span>
+                          <span className="block font-display text-lg font-semibold italic leading-5 text-brand-deep">
+                            {plan.name}
+                          </span>
+                          <span className="mt-0.5 block text-[11px] font-extrabold leading-4 text-tesText-secondary">
+                            {plan.subtitle}
+                          </span>
+                        </span>
+                      </span>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {categoryOrder.map((category) => (
+                  <Fragment key={category}>
+                    <tr>
+                      <th
+                        colSpan={4}
+                        className="border-t border-border bg-white px-5 pb-2 pt-4 text-left text-[11px] font-extrabold uppercase leading-4 tracking-[0.02em] text-brand-primary"
+                      >
+                        {planCategoryLabels[category]}
+                      </th>
+                    </tr>
+                    {therapistPlanFeatureDefinitions
+                      .filter((feature) => feature.category === category)
+                      .map((feature) => (
+                        <tr key={feature.code} className="border-t border-border/80">
+                          <th className="bg-white px-5 py-2.5 text-left align-middle">
+                            <span className="block text-xs font-extrabold leading-4 text-brand-deep">
+                              {feature.label}
+                            </span>
+                          </th>
+                          {therapistPlanDefinitions.map((plan) => (
+                            <td
+                              key={`${plan.code}-${feature.code}`}
+                              className="border-l border-border px-5 py-2.5 text-center align-middle"
+                            >
+                              <FeatureState
+                                state={getFeatureCellState(plan.code, feature.code)}
+                                label={`${plan.name} ${feature.label}`}
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                  </Fragment>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-border bg-white">
+                  <th className="px-5 py-6 text-left align-top">
+                    <span className="block text-xs font-extrabold uppercase tracking-[0.14em] text-brand-primary">
+                      Assinatura
                     </span>
-                    <span className="mt-1 block text-xs font-bold text-tesText-muted">
-                      {plan.subtitle}
+                    <span className="mt-2 block max-w-xs text-xs font-bold leading-5 text-tesText-secondary">
+                      O cadastro envia apenas o código do plano. Preço e liberação
+                      futura são confirmados pelo backend.
                     </span>
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {categoryOrder.map((category) => (
-                <Fragment key={category}>
-                  <tr>
-                    <th
-                      colSpan={4}
-                      className="sticky left-0 bg-brand-lavenderSoft px-6 py-4 text-left text-xs font-extrabold uppercase tracking-[0.2em] text-brand-primary"
+                  {therapistPlanDefinitions.map((plan) => (
+                    <td
+                      key={`${plan.code}-signup`}
+                      className="border-l border-border px-5 py-6 text-center align-top"
                     >
-                      {planCategoryLabels[category]}
-                    </th>
-                  </tr>
-                  {therapistPlanFeatureDefinitions
-                    .filter((feature) => feature.category === category)
-                    .map((feature) => (
-                      <tr key={feature.code} className="border-t border-[#ede7f6]">
-                        <th className="sticky left-0 z-10 bg-white px-6 py-4 text-left align-top">
-                          <span className="block text-sm font-extrabold text-brand-deep">
-                            {feature.label}
-                          </span>
-                          <span className="mt-1 block text-xs font-semibold leading-5 text-tesText-muted">
-                            {feature.description}
-                          </span>
-                        </th>
-                        {therapistPlanDefinitions.map((plan) => (
-                          <td
-                            key={`${plan.code}-${feature.code}`}
-                            className="border-l border-[#ede7f6] px-6 py-4 text-center align-middle"
-                          >
-                            <FeatureState
-                              included={planIncludesFeature(plan.code, feature.code)}
-                              label={`${plan.name} ${feature.label}`}
-                            />
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                </Fragment>
-              ))}
-              <tr className="border-t border-[#ded5f2]">
-                <th className="sticky left-0 z-10 bg-white px-6 py-5 text-left text-sm font-extrabold text-brand-deep">
-                  Limites de uso
-                </th>
-                {therapistPlanDefinitions.map((plan) => (
-                  <td
-                    key={`${plan.code}-limits`}
-                    className="border-l border-[#ede7f6] px-6 py-5 text-center text-xs font-bold leading-5 text-tesText-secondary"
-                  >
-                    {getLimitLabel(plan)}
-                  </td>
-                ))}
-              </tr>
-              <tr className="border-t border-[#ded5f2]">
-                <th className="sticky left-0 z-10 bg-white px-6 py-6 text-left text-sm font-extrabold text-brand-deep">
-                  Investimento
-                </th>
-                {therapistPlanDefinitions.map((plan) => (
-                  <td
-                    key={`${plan.code}-price`}
-                    className="border-l border-[#ede7f6] px-6 py-6 text-center"
-                  >
-                    <p className="font-display text-3xl font-semibold italic text-brand-deep">
-                      {plan.priceLabel}
-                    </p>
-                    <p className="mt-2 text-xs font-bold leading-5 text-tesText-muted">
-                      {plan.priceNote}
-                    </p>
-                    <TESButton
-                      href={plan.signupHref}
-                      variant={plan.highlight ? "gradient" : "secondary"}
-                      className="mt-4 min-h-[44px] w-full"
-                    >
-                      {plan.ctaLabel}
-                    </TESButton>
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
+                      <p className="font-display text-3xl font-semibold italic text-brand-deep">
+                        {plan.priceLabel}
+                      </p>
+                      <p className="mx-auto mt-2 min-h-10 max-w-[180px] text-[11px] font-bold leading-5 text-tesText-muted">
+                        {plan.priceNote}
+                      </p>
+                      <TESButton
+                        href={plan.signupHref}
+                        variant={plan.highlight ? "gradient" : "secondary"}
+                        className="mt-4 min-h-[44px] w-full"
+                      >
+                        {plan.ctaLabel}
+                      </TESButton>
+                    </td>
+                  ))}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
       </div>
     </section>

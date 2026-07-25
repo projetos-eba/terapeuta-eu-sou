@@ -1,4 +1,6 @@
 import { routes } from "@/lib/routes";
+import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
+import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 
 import { fallbackTherapists, THERAPIST_SEARCH_PAGE_SIZE } from "./content";
 import { getActiveFilterCount } from "./filters";
@@ -16,9 +18,6 @@ import type {
   TherapistSearchOption,
   TherapistSearchResult,
 } from "./types";
-
-const PLACEHOLDER_SUPABASE_URL = "https://your-project-ref.supabase.co";
-const PLACEHOLDER_SUPABASE_ANON_KEY = "replace-with-supabase-anon-key";
 
 type PublicTherapistSearchRow = {
   average_rating: number | null;
@@ -47,29 +46,20 @@ type PublicTherapistSearchRow = {
 };
 
 function hasSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  return Boolean(
-    url &&
-      anonKey &&
-      url !== PLACEHOLDER_SUPABASE_URL &&
-      anonKey !== PLACEHOLDER_SUPABASE_ANON_KEY,
-  );
+  return Boolean(getSupabasePublicConfig());
 }
 
 async function fetchTherapistRows() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const config = getSupabasePublicConfig();
 
-  if (!url || !anonKey) return [];
+  if (!config) return [];
 
   const response = await fetch(
-    `${url}/rest/v1/public_therapist_search?select=*&order=public_name.asc`,
+    `${config.url}/rest/v1/public_therapist_search?select=*&order=public_name.asc`,
     {
       headers: {
-        apikey: anonKey,
-        Authorization: `Bearer ${anonKey}`,
+        apikey: config.apiKey,
+        Authorization: `Bearer ${config.apiKey}`,
       },
       next: { revalidate: 900 },
     },
@@ -124,7 +114,11 @@ function mapTherapistRow(row: PublicTherapistSearchRow): TherapistSearchCard {
     highlight: row.highlight ?? "Perfil Verificado",
     highlightTone: row.highlight_tone ?? "verified",
     href: routes.public.therapistProfile(row.slug),
-    image: row.photo_url || "/therapists/ana-oliveira.png",
+    image:
+      getTherapistAvatarUrl(row.photo_url, {
+        name: row.public_name,
+        slug: row.slug,
+      }) || "/therapists/ana-oliveira.png",
     name: row.public_name,
     nextSlotAt: row.next_slot_at,
     nextSlotLabel: formatNextSlotLabel(row.next_slot_at),

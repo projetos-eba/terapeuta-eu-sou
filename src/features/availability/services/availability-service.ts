@@ -1,4 +1,7 @@
-import type { AvailabilityDay, AvailabilitySlot } from "@/features/therapist-profile/types";
+import type {
+  AvailabilityDay,
+  AvailabilitySlot,
+} from "@/features/therapist-profile/types";
 
 export type AvailabilityRuleInput = {
   dayOfWeek: number;
@@ -48,6 +51,27 @@ const blockedStatuses = new Set([
   "completed",
 ]);
 
+const defaultBookingSettings = {
+  bufferAfterMinutes: 10,
+  bufferBeforeMinutes: 10,
+  intervalMinutes: 30,
+  maxDaysAhead: 30,
+  minNoticeMinutes: 120,
+};
+
+type AvailabilityWindow = {
+  end: Date;
+  start: Date;
+};
+
+function formatDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 function parseClock(date: Date, time: string) {
   const [hours = "0", minutes = "0"] = time.split(":");
   const next = new Date(date);
@@ -93,6 +117,109 @@ function formatTimeLabel(date: Date) {
   });
 }
 
+function matchesService(serviceId: string | null, selectedServiceId: string) {
+  return !serviceId || serviceId === selectedServiceId;
+}
+
+function getDayBounds(now: Date, dayOffset: number) {
+  const start = new Date(now);
+  start.setDate(now.getDate() + dayOffset);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setDate(start.getDate() + 1);
+
+  return { end, start };
+}
+
+function uniqueSlots(slots: AvailabilitySlot[]) {
+  const seen = new Set<string>();
+
+  return slots.filter((slot) => {
+    if (seen.has(slot.startsAt)) return false;
+    seen.add(slot.startsAt);
+    return true;
+  });
+}
+
+function buildSlotsForWindow({
+  bookings,
+  date,
+  durationWithBuffers,
+  earliestStart,
+  exceptions,
+  now,
+  selectedServiceId,
+  serviceDurationMinutes,
+  settings,
+  window,
+}: {
+  bookings: BookingConflictInput[];
+  date: Date;
+  durationWithBuffers: number;
+  earliestStart: Date;
+  exceptions: AvailabilityExceptionInput[];
+  now: Date;
+  selectedServiceId: string;
+  serviceDurationMinutes: number;
+  settings: BookingSettingsInput;
+  window: AvailabilityWindow;
+}) {
+  const slots: AvailabilitySlot[] = [];
+
+  for (
+    let cursor = new Date(window.start);
+    cursor.getTime() + durationWithBuffers * 60_000 <= window.end.getTime();
+    cursor = new Date(cursor.getTime() + settings.intervalMinutes * 60_000)
+  ) {
+    const startsAt = new Date(
+      cursor.getTime() + settings.bufferBeforeMinutes * 60_000,
+    );
+    const endsAt = new Date(startsAt.getTime() + serviceDurationMinutes * 60_000);
+
+    if (startsAt < earliestStart) continue;
+
+    const blockedByException = exceptions.some((exception) => {
+      if (exception.isAvailable) return false;
+      if (!matchesService(exception.serviceId, selectedServiceId)) return false;
+
+      return overlaps(
+        startsAt,
+        endsAt,
+        new Date(exception.startsAt),
+        new Date(exception.endsAt),
+      );
+    });
+
+    if (blockedByException) continue;
+
+    const blockedByBooking = bookings.some((booking) => {
+      if (booking.serviceId !== selectedServiceId) return false;
+      if (!blockedStatuses.has(booking.status)) return false;
+
+      return overlaps(
+        startsAt,
+        endsAt,
+        new Date(booking.startsAt),
+        new Date(booking.endsAt),
+      );
+    });
+
+    if (blockedByBooking) continue;
+
+    slots.push({
+      dateLabel: formatDateLabel(date),
+      dayLabel: formatDayLabel(date, now),
+      endsAt: endsAt.toISOString(),
+      serviceId: selectedServiceId,
+      startsAt: startsAt.toISOString(),
+      timeLabel: formatTimeLabel(startsAt),
+    });
+  }
+
+  return slots;
+}
+
 export function buildAvailabilityDays({
   bookings,
   exceptions,
@@ -102,15 +229,12 @@ export function buildAvailabilityDays({
   serviceDurationMinutes,
   settings,
 }: AvailabilityServiceInput): AvailabilityDay[] {
-  const resolvedSettings = settings ?? {
-    bufferAfterMinutes: 10,
-    bufferBeforeMinutes: 10,
-    intervalMinutes: 30,
-    maxDaysAhead: 7,
-    minNoticeMinutes: 120,
+  const resolvedSettings: BookingSettingsInput = {
+    ...defaultBookingSettings,
+    ...settings,
     serviceId: selectedServiceId,
   };
-  const visibleDays = 7;
+  const horizonDays = Math.max(1, resolvedSettings.maxDaysAhead);
   const earliestStart = new Date(
     now.getTime() + resolvedSettings.minNoticeMinutes * 60_000,
   );
@@ -120,82 +244,67 @@ export function buildAvailabilityDays({
     resolvedSettings.bufferAfterMinutes;
   const days: AvailabilityDay[] = [];
 
-  for (let dayOffset = 0; dayOffset < visibleDays; dayOffset += 1) {
-    const date = new Date(now);
-    date.setDate(now.getDate() + dayOffset);
-    date.setHours(0, 0, 0, 0);
+  for (let dayOffset = 0; dayOffset < horizonDays; dayOffset += 1) {
+    const { end: nextDay, start: date } = getDayBounds(now, dayOffset);
 
     const matchingRules = rules.filter(
       (rule) =>
         rule.isActive &&
         rule.dayOfWeek === date.getDay() &&
-        (!rule.serviceId || rule.serviceId === selectedServiceId),
+        matchesService(rule.serviceId, selectedServiceId),
     );
-    const slots: AvailabilitySlot[] = [];
+    const ruleWindows = matchingRules.map((rule) => ({
+      end: parseClock(date, rule.endTime),
+      start: parseClock(date, rule.startTime),
+    }));
+    const exceptionWindows = exceptions
+      .filter(
+        (exception) =>
+          exception.isAvailable &&
+          matchesService(exception.serviceId, selectedServiceId),
+      )
+      .flatMap((exception) => {
+        const start = new Date(exception.startsAt);
+        const end = new Date(exception.endsAt);
 
-    matchingRules.forEach((rule) => {
-      const windowStart = parseClock(date, rule.startTime);
-      const windowEnd = parseClock(date, rule.endTime);
+        if (!overlaps(date, nextDay, start, end)) return [];
 
-      for (
-        let cursor = new Date(windowStart);
-        cursor.getTime() + durationWithBuffers * 60_000 <= windowEnd.getTime();
-        cursor = new Date(
-          cursor.getTime() + resolvedSettings.intervalMinutes * 60_000,
+        return [
+          {
+            end: end < nextDay ? end : nextDay,
+            start: start > date ? start : date,
+          },
+        ];
+      });
+    const slots = uniqueSlots(
+      [...ruleWindows, ...exceptionWindows]
+        .flatMap((window) =>
+          buildSlotsForWindow({
+            bookings,
+            date,
+            durationWithBuffers,
+            earliestStart,
+            exceptions,
+            now,
+            selectedServiceId,
+            serviceDurationMinutes,
+            settings: resolvedSettings,
+            window,
+          }),
         )
-      ) {
-        const startsAt = new Date(
-          cursor.getTime() + resolvedSettings.bufferBeforeMinutes * 60_000,
-        );
-        const endsAt = new Date(startsAt.getTime() + serviceDurationMinutes * 60_000);
+        .sort(
+          (left, right) =>
+            new Date(left.startsAt).getTime() - new Date(right.startsAt).getTime(),
+        ),
+    );
 
-        if (startsAt < earliestStart) continue;
-
-        const blockedByException = exceptions.some((exception) => {
-          if (exception.isAvailable) return false;
-          if (exception.serviceId && exception.serviceId !== selectedServiceId) {
-            return false;
-          }
-
-          return overlaps(
-            startsAt,
-            endsAt,
-            new Date(exception.startsAt),
-            new Date(exception.endsAt),
-          );
-        });
-
-        if (blockedByException) continue;
-
-        const blockedByBooking = bookings.some((booking) => {
-          if (booking.serviceId !== selectedServiceId) return false;
-          if (!blockedStatuses.has(booking.status)) return false;
-
-          return overlaps(
-            startsAt,
-            endsAt,
-            new Date(booking.startsAt),
-            new Date(booking.endsAt),
-          );
-        });
-
-        if (blockedByBooking) continue;
-
-        slots.push({
-          dateLabel: formatDateLabel(date),
-          dayLabel: formatDayLabel(date, now),
-          endsAt: endsAt.toISOString(),
-          serviceId: selectedServiceId,
-          startsAt: startsAt.toISOString(),
-          timeLabel: formatTimeLabel(startsAt),
-        });
-      }
-    });
+    if (slots.length === 0) continue;
 
     days.push({
+      date: formatDateKey(date),
       dateLabel: formatDateLabel(date),
       dayLabel: formatDayLabel(date, now),
-      slots: slots.slice(0, 5),
+      slots,
     });
   }
 

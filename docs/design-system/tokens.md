@@ -80,7 +80,7 @@ Observação de auditoria: o Figma ainda mantém collections legadas de arranque
 | `color.brand.primary` | `#6C3D91` | atualizado no Figma | CTA, navegação ativa, foco. |
 | `color.brand.primaryHover` | `#5B337A` | atualizado no Figma | Hover de CTA. |
 | `color.brand.primaryPressed` | `#482861` | atualizado no Figma | Pressed/active. |
-| `color.brand.deep` | `#261433` | atualizado no Figma | Títulos e links fortes. |
+| `color.brand.deep` | `#14105A` | atualizado no Figma | Títulos e links fortes. |
 | `color.brand.lavender` | `#E2D1EC` | atualizado no Figma | Seleção, ilustração e gráficos. |
 | `color.brand.lavenderSoft` | `#F1E8F6` | atualizado no Figma | Fundo suave e nav ativa. |
 | `color.brand.cyan` | `#81BAE0` | atualizado no Figma | Acento humano e dados leves. |
@@ -91,7 +91,7 @@ Observação de auditoria: o Figma ainda mantém collections legadas de arranque
 
 | Token | 50 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| `color.primitive.purple` | `#FAF7FC` | `#F1E8F6` | `#E2D1EC` | `#C9ADDD` | `#9D72BB` | `#6C3D91` | `#5B337A` | `#482861` | `#361E49` | `#261433` |
+| `color.primitive.purple` | `#FAF7FC` | `#F1E8F6` | `#E2D1EC` | `#C9ADDD` | `#9D72BB` | `#6C3D91` | `#5B337A` | `#482861` | `#361E49` | `#14105A` |
 | `color.primitive.cyan` | `#F6FBFE` | `#EAF5FC` | `#D7ECF8` | `#BFE0F1` | `#A0CCE9` | `#81BAE0` | `#5EA3D2` | `#3F84B4` | `#2E6388` | `#1F425B` |
 
 Exemplo:
@@ -125,7 +125,7 @@ Exemplo:
 
 | Token | Valor | Status | Uso |
 |---|---:|---|---|
-| `color.text.primary` | `#261433` | atualizado no Figma | Títulos e texto principal. |
+| `color.text.primary` | `#14105A` | atualizado no Figma | Títulos e texto principal. |
 | `color.text.secondary` | `#5E5A8A` | inferido | Parágrafos e descrições. |
 | `color.text.muted` | `#8C87B2` | inferido | Metadados. |
 | `color.text.subtle` | `#A9A4C6` | inferido | Placeholder. |
@@ -328,7 +328,7 @@ Exemplo:
   --tes-color-brand-primary: #6C3D91;
   --tes-color-brand-primary-hover: #5B337A;
   --tes-color-brand-primary-pressed: #482861;
-  --tes-color-brand-deep: #261433;
+  --tes-color-brand-deep: #14105A;
   --tes-color-brand-lavender: #E2D1EC;
   --tes-color-brand-lavender-soft: #F1E8F6;
   --tes-color-brand-cyan: #81BAE0;
@@ -336,7 +336,7 @@ Exemplo:
   --tes-color-surface-page: #FFFFFF;
   --tes-color-surface-default: #FFFFFF;
   --tes-color-border-subtle: #E8E2F6;
-  --tes-color-text-primary: #261433;
+  --tes-color-text-primary: #14105A;
   --tes-color-text-secondary: #5E5A8A;
   --tes-radius-card: 18px;
   --tes-shadow-card: 0 8px 24px rgba(38, 20, 51, 0.06);

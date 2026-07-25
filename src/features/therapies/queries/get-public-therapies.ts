@@ -1,3 +1,5 @@
+import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
+
 import {
   normalizeSearch,
   parseTherapySearchParams,
@@ -10,19 +12,8 @@ import type {
   TherapySearchParams,
 } from "../types";
 
-const PLACEHOLDER_SUPABASE_URL = "https://your-project-ref.supabase.co";
-const PLACEHOLDER_SUPABASE_ANON_KEY = "replace-with-supabase-anon-key";
-
 function hasSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  return Boolean(
-    url &&
-      anonKey &&
-      url !== PLACEHOLDER_SUPABASE_URL &&
-      anonKey !== PLACEHOLDER_SUPABASE_ANON_KEY,
-  );
+  return Boolean(getSupabasePublicConfig());
 }
 
 function emptyResult(
@@ -46,18 +37,17 @@ async function fetchRows<Row>(
   path: string,
   init?: RequestInit,
 ): Promise<{ count: number | null; rows: Row[] }> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const config = getSupabasePublicConfig();
 
-  if (!url || !anonKey) {
+  if (!config) {
     return { count: null, rows: [] };
   }
 
-  const response = await fetch(`${url}/rest/v1/${path}`, {
+  const response = await fetch(`${config.url}/rest/v1/${path}`, {
     ...init,
     headers: {
-      apikey: anonKey,
-      Authorization: `Bearer ${anonKey}`,
+      apikey: config.apiKey,
+      Authorization: `Bearer ${config.apiKey}`,
       Prefer: "count=exact",
       ...(init?.headers ?? {}),
     },

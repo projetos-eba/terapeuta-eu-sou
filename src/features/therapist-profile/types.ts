@@ -78,6 +78,7 @@ export type AvailabilitySlot = {
 };
 
 export type AvailabilityDay = {
+  date: string;
   dateLabel: string;
   dayLabel: string;
   slots: AvailabilitySlot[];

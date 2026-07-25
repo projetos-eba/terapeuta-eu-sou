@@ -42,11 +42,17 @@ export async function POST(request: Request) {
   }
 
   try {
-    await createClientAccount(validation.value);
+    const signup = await createClientAccount(validation.value);
 
     return NextResponse.json({
       ok: true,
-      redirectTo: `${routes.public.clientSignIn}?created=1`,
+      redirectTo:
+        signup.mode === "automatically_confirmed"
+          ? (signup.redirectTo ??
+            `${routes.public.clientSignIn}?verified=1&automatic=1`)
+          : `${routes.public.confirmEmail}?statusToken=${encodeURIComponent(
+              signup.statusToken ?? "",
+            )}`,
     });
   } catch (error) {
     if (error instanceof ClientAuthConfigError) {

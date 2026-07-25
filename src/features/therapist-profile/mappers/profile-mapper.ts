@@ -1,5 +1,6 @@
 import { buildAvailabilityDays } from "@/features/availability/services/availability-service";
 import { buildPublicReservationUrl } from "@/features/booking/services/public-booking";
+import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 
 import type {
   AvailabilityDay,
@@ -121,7 +122,7 @@ function buildServiceAvailability(service: ServiceRow): AvailabilityDay[] {
       bufferAfterMinutes: service.buffer_after_minutes ?? 10,
       bufferBeforeMinutes: service.buffer_before_minutes ?? 10,
       intervalMinutes: service.interval_minutes ?? 30,
-      maxDaysAhead: service.max_days_ahead ?? 7,
+      maxDaysAhead: service.max_days_ahead ?? 30,
       minNoticeMinutes: service.min_notice_minutes ?? 120,
       serviceId: service.service_id,
     },
@@ -194,7 +195,11 @@ export function mapProfileRow(
     cityState: [row.city, row.state].filter(Boolean).join(", "),
     content,
     headline: row.published_headline ?? row.short_intro ?? content.shortIntro,
-    heroImage: row.photo_url ?? "/therapists/ana-oliveira.png",
+    heroImage:
+      getTherapistAvatarUrl(row.photo_url, {
+        name: row.public_name,
+        slug: row.slug,
+      }) ?? "/therapists/ana-oliveira.png",
     id: row.id,
     isAcceptingBookings: row.is_accepting_bookings,
     isVerified: Boolean(row.is_verified),

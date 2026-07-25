@@ -15,10 +15,23 @@ type LoginResponse =
   | { ok: true; redirectTo: string }
   | ({ ok: false } & TherapistAuthApiError);
 
-export function TherapistLoginForm({ created }: { created: boolean }) {
+export function TherapistLoginForm({
+  continuation,
+  created,
+  reset,
+  verified,
+}: {
+  continuation?: string;
+  created: boolean;
+  reset?: boolean;
+  verified?: boolean;
+}) {
   const [fieldErrors, setFieldErrors] = useState<TherapistAuthFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [lastEmail, setLastEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,11 +40,14 @@ export function TherapistLoginForm({ created }: { created: boolean }) {
     setIsSubmitting(true);
 
     const form = new FormData(event.currentTarget);
+    const email = String(form.get("email") ?? "");
+    setLastEmail(email);
 
     try {
       const response = await fetch("/api/auth/therapist/login", {
         body: JSON.stringify({
-          email: String(form.get("email") ?? ""),
+          continuation,
+          email,
           password: String(form.get("password") ?? ""),
         }),
         headers: {
@@ -49,9 +65,30 @@ export function TherapistLoginForm({ created }: { created: boolean }) {
 
       window.location.assign(data.redirectTo);
     } catch {
-      setFormError("Nao foi possivel conectar agora. Tente novamente.");
+      setFormError("Não foi possível conectar agora. Tente novamente.");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleResend() {
+    setIsResending(true);
+    setResendMessage(null);
+
+    try {
+      const response = await fetch("/api/auth/email/resend", {
+        body: JSON.stringify({ email: lastEmail }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      });
+      const data = (await response.json()) as { message?: string };
+      setResendMessage(data.message ?? "Verifique seu e-mail em instantes.");
+    } catch {
+      setResendMessage("Nao foi possivel reenviar agora. Tente novamente.");
+    } finally {
+      setIsResending(false);
     }
   }
 
@@ -62,7 +99,7 @@ export function TherapistLoginForm({ created }: { created: boolean }) {
           Acesso terapeuta
         </p>
         <h1 className="mt-3 font-display text-4xl font-light italic leading-tight text-brand-deep sm:text-5xl">
-          Entre na sua area profissional
+          Entre na sua área profissional
         </h1>
         <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
           Use este acesso somente para contas de terapeuta. Pacientes e admin
@@ -72,17 +109,48 @@ export function TherapistLoginForm({ created }: { created: boolean }) {
 
       {created ? (
         <p className="rounded-2xl bg-status-successBg px-4 py-3 text-sm font-bold text-status-success">
-          Conta criada. Entre para continuar seu onboarding.
+          Conta criada. Enviamos um link para confirmar seu e-mail.
+        </p>
+      ) : null}
+
+      {verified ? (
+        <p className="rounded-2xl bg-status-successBg px-4 py-3 text-sm font-bold text-status-success">
+          E-mail confirmado. Entre para continuar sua configuracao inicial.
+        </p>
+      ) : null}
+
+      {reset ? (
+        <p className="rounded-2xl bg-status-successBg px-4 py-3 text-sm font-bold text-status-success">
+          Senha atualizada. Entre com sua nova senha.
         </p>
       ) : null}
 
       {formError ? (
-        <p
-          role="alert"
-          className="rounded-2xl bg-status-dangerBg px-4 py-3 text-sm font-bold text-status-danger"
-        >
-          {formError}
-        </p>
+        <div className="space-y-3">
+          <p
+            role="alert"
+            className="rounded-2xl bg-status-dangerBg px-4 py-3 text-sm font-bold text-status-danger"
+          >
+            {formError}
+          </p>
+          {formError === "Confirme seu e-mail antes de entrar." ? (
+            <TESButton
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={isResending || !lastEmail}
+              onClick={handleResend}
+              className="min-h-11 rounded-2xl"
+            >
+              Reenviar confirmacao
+            </TESButton>
+          ) : null}
+          {resendMessage ? (
+            <p className="text-xs font-bold text-tesText-secondary">
+              {resendMessage}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       <Field
@@ -111,9 +179,6 @@ export function TherapistLoginForm({ created }: { created: boolean }) {
         >
           Esqueci minha senha
         </Link>
-        <span className="text-xs font-bold text-tesText-muted">
-          Recuperacao completa fica para a etapa de hardening.
-        </span>
       </div>
 
       <TESButton
@@ -127,7 +192,7 @@ export function TherapistLoginForm({ created }: { created: boolean }) {
       </TESButton>
 
       <p className="text-center text-sm font-bold text-tesText-secondary">
-        Ainda nao tem conta?{" "}
+        Ainda não tem conta?{" "}
         <Link
           href={routes.public.therapistSignUp}
           className="text-brand-primary hover:underline"

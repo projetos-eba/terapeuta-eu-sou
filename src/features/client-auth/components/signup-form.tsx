@@ -54,7 +54,7 @@ export function ClientSignupForm() {
 
       window.location.assign(data.redirectTo);
     } catch {
-      setFormError("Nao foi possivel conectar agora. Tente novamente.");
+      setFormError("Não foi possível conectar agora. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -70,7 +70,7 @@ export function ClientSignupForm() {
           Crie sua conta
         </h1>
         <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
-          E rapido. Depois, voce escolhe por onde comecar.
+          É rápido. Depois, você escolhe por onde começar.
         </p>
       </div>
 
@@ -90,7 +90,7 @@ export function ClientSignupForm() {
           icon={<UserRound className="size-4" aria-hidden="true" />}
           label="Nome"
           name="name"
-          placeholder="Como podemos chamar voce?"
+          placeholder="Como podemos chamar você?"
         />
         <Field
           autoComplete="email"
@@ -122,7 +122,7 @@ export function ClientSignupForm() {
           icon={<LockKeyhole className="size-4" aria-hidden="true" />}
           label="Senha"
           name="password"
-          placeholder="Minimo de 8 caracteres"
+          placeholder="Mínimo de 8 caracteres"
           type="password"
         />
         <Field
@@ -156,7 +156,7 @@ export function ClientSignupForm() {
               href={routes.public.privacy as Route}
               className="font-extrabold text-brand-primary hover:underline"
             >
-              Politica de Privacidade
+              Política de Privacidade
             </Link>
             .
           </span>
@@ -175,7 +175,7 @@ export function ClientSignupForm() {
       </TESButton>
 
       <p className="text-center text-sm font-bold text-tesText-secondary">
-        Ja tem uma conta?{" "}
+        Já tem uma conta?{" "}
         <Link
           href={routes.public.clientSignIn}
           className="text-brand-primary hover:underline"

@@ -135,6 +135,7 @@ Stack real identificada:
 - shadcn/ui planejado via `components.json`.
 - `lucide-react`, `class-variance-authority`, `clsx` e `tailwind-merge`.
 - Supabase Postgres (banco transacional) + Supabase Auth + RLS + Edge Functions.
+- E-mails transacionais server-side via Hostinger Mail API, com provider isolado em `supabase/functions/_shared/email/`, tokens de auth/status em hash, polling seguro em `email_verification_status_tokens` e auditoria em `email_delivery_logs`.
 - Sempre seguir as boas práticas de desenvolvimento de software, e arquitetura moderna.
 - Stripe: pagamentos de sessão (Separate Charges and Transfers) e assinaturas (Stripe Billing) via Stripe Connect Express.
 - Zoom: sessões online via API/SDK (Server-to-Server OAuth), link gerado apenas após pagamento confirmado.
@@ -144,6 +145,7 @@ Stack real identificada:
 - Usar `src/lib/routes.ts` para rotas.
 - Usar `src/lib/permissions.ts` para permissões e recursos por plano.
 - Usar `docs/design-system/tokens.md` como fonte única de tokens.
+- Títulos e textos primários devem usar `text-brand-deep`/`text-tesText-primary` com valor canônico `#14105A`; não usar hex hardcoded como `#261433` ou variações próximas.
 - Não alterar tokens globais sem avaliar impacto visual.
 - Procurar componente existente antes de criar outro.
 - Não duplicar componentes equivalentes.
@@ -156,6 +158,8 @@ Stack real identificada:
 - Componentes React do Design System ainda não implementados.
 - `src/lib/routes.ts` e `src/lib/permissions.ts` existem como fontes canônicas de rotas e permissões.
 - `supabase/` parcialmente estruturado com migrations e Edge Function `match-therapies`.
+- Hostinger Mail API: contrato confirmado em 2026-07-24. `GET https://api.mail.hostinger.com/api/v1/me` lista mailboxes; envio usa `POST https://api.mail.hostinger.com/api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, payload `to: string[]`, `display_name`, `subject`, `text`, `html`, e sucesso `204` sem corpo.
+- `CONFIRMED_AUTOMATICALLY_EMAIL` e secrets de e-mail pertencem somente a Supabase Edge Functions. Ausente/vazio equivale a `false`; aceita apenas `true` ou `false`; valor inválido deve falhar fechado e nunca ativar bypass. Quando `true`, cadastro confirma Auth via Admin API, não envia e-mail, não cria token e redireciona para login com `verified=1&automatic=1`.
 - Stripe e Zoom: previstos na arquitetura, status de implementação não confirmado nos arquivos analisados.
 
 ## 6. QA e definição de pronto
@@ -212,6 +216,11 @@ Nunca:
 - copiar chaves privadas para documentação;
 - registrar segredos em exemplos de código;
 - assumir valores de ambiente sem confirmação.
+  Regras específicas para Supabase:
+- O app Next deve usar somente variáveis publicáveis com prefixo `NEXT_PUBLIC_`.
+- Para Supabase no app Next, usar `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+- Nunca usar `SUPABASE_SECRET_KEYS`, `SUPABASE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_JWT_SECRET`, `SERVICE_ROLE_KEY` ou `DATABASE_URL` no `.env.example`, `.env.local` ou `.env.production` do app Next.
+- Secrets Supabase devem ficar em Supabase Edge Functions ou secrets remotos equivalentes.
   Ao encontrar risco de segurança, registrar o risco sem expor o segredo.
 
 ## 9. Atualização contínua
