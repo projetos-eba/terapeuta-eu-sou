@@ -17,11 +17,16 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 - Labels visuais podem usar acentos.
 - A profundidade não é forçada. N4 só existe para detalhe ou subárea real. N5 fica reservado.
 - `/app` é a entrada canônica do paciente.
-- `/pro` é a entrada canônica do terapeuta Pro.
+- `/terapeuta` é a entrada canônica de todo terapeuta autenticado.
+- Plano e capability alteram acesso e conteúdo, não o namespace.
+- `/basico/*`, `/pro/*` e `/plus/*` são aliases executáveis temporários e serão
+  redirects para `/terapeuta/*` na Fase Agenda 1.
+- `/terapeutas/*` permanece reservado ao catálogo e ao perfil público.
 - `/para-terapeutas/planos` concentra a decisão pública de planos.
 - `/basico/sessoes` e `/basico/mensagens` existem por decisão de produto.
 - Favoritos do paciente separam terapeutas e terapias.
-- Plus concentra histórico operacional do paciente em `/plus/pacientes/:slug-do-paciente`.
+- Premium Plus concentra histórico operacional do paciente em
+  `/terapeuta/pacientes/:slug-do-paciente`, protegido por capability.
 
 ## Público
 
@@ -59,8 +64,37 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 - Busca direta: `/` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso`.
 - Terapias: `/` -> `/terapias?q=&category=&sort=&page=` -> `/terapias/:slug` -> `/terapeutas?therapy=:slug&source=therapy` -> `/terapeutas/:slug?therapy=:slug&source=therapy`. A listagem usa `public_therapies_v`; o detalhe usa `public_therapy_details_v` e profissionais de `public_therapist_search`. Ambas mostram terapias com `status = published`, categoria ativa e mantêm filtros/origem na URL. O Match só considera terapias publicadas e ativadas em `matching_therapy_settings` e aponta para `/terapias/:slug?source=match`.
 - Clientes visitantes: `/` -> `/cliente/cadastro` ou `/cliente/login` -> `/app`.
-- Terapeuta Free: `/` -> `/para-terapeutas` -> `/terapeuta/cadastro?plan=free` -> `/terapeuta/login` -> `/basico`.
+- Terapeuta Free: `/` -> `/para-terapeutas` -> `/terapeuta/cadastro?plan=free` -> `/terapeuta/login` -> `/terapeuta`.
 - Terapeuta de plano pago: `/` -> `/para-terapeutas` -> `/terapeuta/cadastro?plan=premium|premium_plus` -> `/terapeuta/checkout?plan=*`. A conta nasce com plano ativo `free`; Premium ou Premium Plus só é liberado após confirmação do Stripe por webhook.
+
+## Terapeuta autenticado
+
+Todas as experiências compartilham o mesmo shell e as mesmas rotas. Itens
+podem estar habilitados, bloqueados ou ocultos conforme plano e capability.
+
+### Rotas canônicas
+
+- `/terapeuta`: dashboard adequado ao plano.
+- `/terapeuta/agenda`: agenda.
+- `/terapeuta/pacientes`: pacientes.
+- `/terapeuta/pacientes/:slug-do-paciente`: histórico operacional protegido.
+- `/terapeuta/sessoes`: sessões.
+- `/terapeuta/sessoes/:bookingId`: detalhe da sessão.
+- `/terapeuta/mensagens`: mensagens.
+- `/terapeuta/servicos`: serviços.
+- `/terapeuta/servicos/meus`: meus serviços.
+- `/terapeuta/financeiro`: financeiro conforme capability.
+- `/terapeuta/avaliacoes`: avaliações conforme capability.
+- `/terapeuta/metricas`: métricas intermediárias.
+- `/terapeuta/insights`: insights avançados.
+- `/terapeuta/assessor-ia`: Assessor IA.
+- `/terapeuta/perfil`: perfil público.
+- `/terapeuta/plano`: plano, assinatura e upgrade.
+- `/terapeuta/configuracoes`: configurações.
+- `/terapeuta/suporte`: suporte conforme plano.
+
+As seções por plano abaixo registram capabilities e os aliases legados ainda
+presentes no código; elas não definem shells independentes.
 
 ## Paciente
 
@@ -94,7 +128,7 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 - Pagamentos: `/app/pagamentos` -> `/app/pagamentos/faturas` ou `/app/pagamentos/metodos`.
 - Preferências: `/app/configuracoes` -> perfil, notificações, privacidade ou segurança.
 
-## Terapeuta Básico
+## Terapeuta Básico - aliases de transição
 
 Operação essencial com limites claros e convites contextuais para evolução.
 
@@ -119,7 +153,7 @@ Operação essencial com limites claros e convites contextuais para evolução.
 - Não acessa financeiro completo, avaliações, métricas intermediárias, IA, insights avançados ou suporte prioritário.
 - Limites usam microcopy acolhedora, sem tom punitivo.
 
-## Terapeuta Pro
+## Terapeuta Pro - aliases de transição
 
 Operação profissional com financeiro, avaliações e métricas intermediárias.
 
@@ -146,7 +180,7 @@ Operação profissional com financeiro, avaliações e métricas intermediárias
 - Pode ver convites contextuais para Plus.
 - Não acessa Assessor IA, insights avançados nem histórico operacional Plus.
 
-## Terapeuta Plus
+## Terapeuta Plus - aliases de transição
 
 Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 

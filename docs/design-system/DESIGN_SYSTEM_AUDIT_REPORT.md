@@ -4,6 +4,11 @@ Projeto: Terapeuta Eu Sou
 Data: 2026-06-14  
 Status: auditoria inicial concluída sem alterações grandes no Figma ou no Storybook.
 
+> Snapshot histórico de 2026-06-14. O estado operacional de stack e rotas foi
+> revisado em 2026-07-25: Next.js 15 e namespace autenticado alvo
+> `/terapeuta/*`. As referências `/basico/*`, `/pro/*` e `/plus/*` abaixo
+> registram o material auditado naquela data.
+
 ## 1. Escopo da auditoria
 
 Esta auditoria foi feita antes de criar tokens, variables, componentes ou uma nova página no Figma, seguindo a regra de ouro do projeto: auditar antes de criar.
@@ -273,7 +278,8 @@ O Storybook existe como intenção de arquitetura, mas ainda não como implement
 
 ### Stack confirmada
 
-- Next.js 14.
+- Next.js 15 no estado atual; a auditoria original foi produzida sobre a versão
+  anterior do projeto.
 - React 18.
 - TypeScript.
 - Tailwind CSS.
@@ -652,7 +658,9 @@ Criar apenas quando houver necessidade real de handoff:
   - `/plus/serviços`
   - `/plus/avaliações`
   - `sua-jornada/resultado` sem barra inicial.
-- Figma tem `/pro/inicio`; documentação define `/pro` como entrada canônica.
+- Na auditoria original, o Figma tinha `/pro/inicio` e a documentação tratava
+  `/pro` como entrada. A política aprovada em 2026-07-25 substitui ambos por
+  `/terapeuta`.
 - Alguns textos visuais usam termos que devem ser revisados com cuidado, por exemplo `Benchmark`, para não parecer comparação ansiosa ou competitiva.
 
 ### Código

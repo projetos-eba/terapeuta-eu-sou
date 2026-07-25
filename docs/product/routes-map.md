@@ -10,6 +10,22 @@ Contrato de implementaÃ§Ã£o para rotas, permissÃµes, layouts, componentes,
 - `Referencias`: imagens locais por perfil.
 - `inferido`: necessÃ¡rio para fechar a arquitetura.
 
+## PolÃ­tica canÃ´nica do terapeuta autenticado
+
+- `/terapeuta/*` Ã© o namespace canÃ´nico compartilhado por Free, Premium e
+  Premium Plus.
+- Plano e capability definem permissÃ£o, estado bloqueado e conteÃºdo; a URL nÃ£o
+  concede autorizaÃ§Ã£o.
+- `/basico/*`, `/pro/*` e `/plus/*` descrevem o estado executÃ¡vel legado e
+  devem virar redirects equivalentes durante a Fase Agenda 1.
+- `/terapeutas` e `/terapeutas/:slug` continuam sendo rotas pÃºblicas.
+- O alias pÃºblico singular `/terapeuta/:slug` deve redirecionar para
+  `/terapeutas/:slug` para nÃ£o colidir com a Ã¡rea autenticada.
+
+As tabelas por plano abaixo permanecem como matriz de capability e inventÃ¡rio
+de compatibilidade atÃ© a migraÃ§Ã£o do cÃ³digo. Novas referÃªncias devem usar
+`/terapeuta/*`.
+
 ## PÃºblico
 
 | Rota                      | PÃ¡gina             | Origem                                  | PermissÃ£o            | Objetivo                                                                                        | Layout                                                                                                 | Componentes                                                                                                                           | Estados                                                                                                                                   | AÃ§Ãµes                                                                                                 | ReferÃªncia visual |
@@ -141,8 +157,8 @@ Contrato de implementaÃ§Ã£o para rotas, permissÃµes, layouts, componentes,
 
 - Visitante acessa pÃºblico.
 - Paciente acessa `/app/**`.
-- BÃ¡sico acessa `/basico/**`.
-- Pro acessa `/pro/**`.
-- Plus acessa `/plus/**`.
+- Terapeuta acessa `/terapeuta/**` conforme papel, status, plano e capability.
+- `/basico/**`, `/pro/**` e `/plus/**` nÃ£o concedem acesso; durante a transiÃ§Ã£o,
+  apenas redirecionam para o equivalente canÃ´nico.
 - Admin acessa `/admin/**`.
 - Recurso fora do plano renderiza ausÃªncia, bloqueio contextual ou convite, conforme perfil.

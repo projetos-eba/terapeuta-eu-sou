@@ -82,6 +82,8 @@ Never expose, log, screenshot, or write real secret values.
 - Hardcoded Price IDs in React.
 - Floats for money.
 - Plan activation by redirect query string.
+- Return URLs hardcoded to `/basico/*`, `/pro/*`, or `/plus/*`; use canonical
+  `/terapeuta/*` destinations.
 - Automatic transfer on payment.
 - Logs of secrets, client secrets, raw Stripe payloads, card data, documents, or bank data.
 - Custom TES forms for Connect bank/KYC data.

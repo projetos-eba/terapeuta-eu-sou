@@ -1,14 +1,23 @@
 # Terapeuta Eu Sou
 
-Projeto web em Next.js 14, TypeScript, Tailwind CSS e shadcn/ui, com tokens TES em CSS Variables.
+Projeto web em Next.js 15, React 18, TypeScript, Tailwind CSS e shadcn/ui, com tokens TES em CSS Variables.
 
-O backend planejado será Supabase: banco Postgres, autenticação, storage e Supabase Edge Functions para regras de backend. A base local do domínio transacional já começa em `supabase/`, mas o frontend ainda não usa SDK Supabase.
+O backend usa Supabase Postgres, Auth, RLS e Edge Functions. O app Next.js
+consome superfícies REST/RPC autenticadas e publicáveis sem service role; não
+há dependência do SDK `@supabase/supabase-js` no frontend atual.
 
 A home pública (`/`) consulta views públicas Supabase via REST quando `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` estão configuradas. Sem essas variáveis, ou com valores placeholder, a página usa fallback local e continua renderizando sem expor segredos.
 
 A página pública `/para-terapeutas` usa o catálogo único de planos em `src/domain/tes/plan-definitions.ts`. Os `stripePriceId` permanecem `null`; o frontend envia somente o código do plano (`free`, `premium`, `premium_plus`) no cadastro. Contas pagas seguem para `/terapeuta/checkout`, iniciam Stripe Checkout via Edge Function e permanecem com plano ativo `free` até confirmação por webhook Stripe.
 
 O fluxo inicial de terapeuta usa `/terapeuta/cadastro`, `/terapeuta/login` e `/terapeuta/checkout`. O cadastro chama uma Supabase Edge Function para as operações administrativas de Auth/Admin, sem expor service role no app Next.js. Free segue ao login; Premium e Premium Plus recebem sessão e seguem ao resumo de checkout. Sem a function configurada, as telas renderizam e o submit retorna erro controlado.
+
+A área autenticada do terapeuta tem `/terapeuta/*` como namespace canônico
+aprovado. O plural `/terapeutas/*` continua reservado à busca e ao perfil
+público. No estado executável atual, `/basico/*`, `/pro/*` e `/plus/*` ainda
+funcionam e serão convertidos em redirects compatíveis durante a Fase Agenda 1.
+Até essa migração, `src/lib/routes.ts` descreve o código em execução e
+`docs/product/sitemap.md` descreve o destino aprovado.
 
 O fluxo inicial de cliente usa rotas separadas em `/cliente/cadastro` e `/cliente/login`. O cadastro também usa Supabase Auth/Admin via REST server-side, cria `profiles.role = patient` e `patient_profiles`; documentos, verificação profissional e dados bancários não fazem parte do cadastro de cliente.
 
@@ -80,7 +89,8 @@ A arquitetura de pagamentos fica documentada em `docs/payments/architecture.md`.
 O setup operacional dos secrets Stripe fica em `docs/payments/stripe-secrets-setup.md`.
 O uso e rotacao do token interno ficam em `docs/payments/internal-operations-token.md`.
 
-Functions principais:
+Functions principais, atualmente em hardening antes de uso financeiro em
+produção:
 
 - Billing: `stripe-sync-billing-catalog`, `stripe-create-subscription-checkout`, `stripe-change-therapist-subscription`, `stripe-cancel-therapist-subscription`, `stripe-create-billing-portal`, `stripe-billing-webhook`.
 - Connect: `stripe-connect-create-account`, `stripe-connect-create-account-link`, `stripe-connect-create-login-link`, `stripe-connect-sync-account`, `stripe-connect-webhook`.

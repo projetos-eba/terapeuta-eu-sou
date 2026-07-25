@@ -1,9 +1,18 @@
 # MVP Transacional TES - Base Tecnica Consolidada
 
 Data: 2026-07-11
-Atualizado em: 2026-07-12
+Atualizado em: 2026-07-25
 
 Status: documento consolidado para orientar arquitetura, produto e implementacao do MVP.
+
+Atualizacao operacional de 2026-07-25:
+
+- stack atual: Next.js 15.5.21 e React 18.3.1;
+- namespace autenticado aprovado: `/terapeuta/*`;
+- `/basico/*`, `/pro/*` e `/plus/*` sao aliases de transicao ate a Fase Agenda 1;
+- `/terapeutas/*` permanece exclusivamente publico;
+- a fundacao Stripe esta implementada, mas depende do Gate Financeiro F0
+  descrito em `docs/architecture/relatorio-25-07-2026.md` antes de producao.
 
 ## 1. Objetivo
 
@@ -133,7 +142,7 @@ Preferir:
 
 ### 5.1 Stack real identificada
 
-- Next.js 14 com App Router.
+- Next.js 15 com App Router.
 - React 18.
 - TypeScript strict.
 - Tailwind CSS.
@@ -141,7 +150,7 @@ Preferir:
 - shadcn/ui planejado via `components.json`.
 - `lucide-react`, `class-variance-authority`, `clsx` e `tailwind-merge`.
 - Supabase planejado e parcialmente estruturado em `supabase/`.
-- Stripe previsto para pagamentos e assinaturas.
+- Stripe Billing e Connect implementados como fundacao, com hardening pendente.
 - Zoom previsto para sessoes online via API/SDK.
 
 ### 5.2 Backend recomendado
@@ -203,12 +212,18 @@ Existe uma diferenca deliberada entre nomenclatura comercial/UX e identificadore
 | Camada                | Plano 1            | Plano 2                 | Plano 3                          |
 | --------------------- | ------------------ | ----------------------- | -------------------------------- |
 | Nome comercial atual  | Basico / Free      | Premium                 | Premium Plus                     |
-| Identificador de rota | Basico             | Pro                     | Plus                             |
+| Alias legado          | `/basico/**`       | `/pro/**`               | `/plus/**`                       |
 | Enum tecnico atual    | `free`             | `premium`               | `premium_plus`                   |
-| Rotas                 | `/basico/**`       | `/pro/**`               | `/plus/**`                       |
+| Rotas canonicas       | `/terapeuta/**`    | `/terapeuta/**`         | `/terapeuta/**`                  |
 | Papel                 | Operacao essencial | Operacao + inteligencia | Operacao + inteligencia + gestao |
 
-Regra: o codigo deve usar `free`, `premium`, `premium_plus`. A interface deve tratar Premium e Premium Plus como nomes comerciais. `Pro` e `Plus` sao identificadores tecnicos de rota e organizacao interna; nao devem ser usados automaticamente como copy de interface sem decisao de produto.
+Regra: o codigo deve usar `free`, `premium`, `premium_plus`. A interface deve
+tratar Premium e Premium Plus como nomes comerciais. Plano e capability
+controlam acesso dentro de `/terapeuta/*`; a URL nao concede autorizacao.
+`/basico/*`, `/pro/*` e `/plus/*` sao somente aliases temporarios.
+
+As listas por plano nas secoes seguintes registram o inventario legado e as
+capabilities esperadas. Novas rotas devem usar o namespace compartilhado.
 
 ## 7. Mapa funcional por perfil
 
@@ -240,7 +255,8 @@ Fluxos principais:
 - Jornada guiada: `/` -> `/como-funciona` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`.
 - Busca direta: `/` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso`.
 - Terapias: `/` -> `/terapias` -> `/terapias/:slug` -> `/terapeutas`.
-- Terapeutas visitantes: `/` -> `/para-terapeutas` -> `/para-terapeutas/planos` -> `/cadastro`.
+- Terapeutas visitantes: `/` -> `/para-terapeutas` -> `/para-terapeutas/planos`
+  -> `/terapeuta/cadastro` -> `/terapeuta/login` -> `/terapeuta`.
 
 ### 7.2 Paciente
 
@@ -1107,9 +1123,9 @@ Fluxo:
 ```txt
 Admin acessa pagamentos/repasses
 -> sistema lista sessoes elegiveis
--> gera transfer_batch
+-> gera payout_batch
 -> agrupa por terapeuta
--> cria transfer_batch_items
+-> cria payout_batch_items
 -> processa transfers no Stripe
 -> registra ledger
 -> trata falhas e retries
@@ -1158,14 +1174,17 @@ Regra de transicao:
 
 Tabelas financeiras obrigatorias no alvo:
 
-- `stripe_connected_accounts`;
-- `subscriptions`;
+- `therapist_connect_accounts`;
+- `therapist_subscriptions`;
 - `session_payments`;
-- `payment_ledger_entries`;
-- `transfer_batches`;
-- `transfer_batch_items`;
-- `transfer_batch_item_sessions`;
-- `stripe_events`.
+- `financial_ledger_entries`;
+- `payout_batches`;
+- `payout_batch_items`;
+- `stripe_webhook_events`.
+
+`payout_batch_items.session_payment_id` liga diretamente cada item de repasse
+ao pagamento de sessão; não existe tabela intermediária
+`transfer_batch_item_sessions`.
 
 Campos importantes em `session_payments`:
 
@@ -1232,7 +1251,7 @@ Eventos recomendados:
 
 Regras:
 
-- armazenar cada evento em `stripe_events`;
+- armazenar cada evento em `stripe_webhook_events`;
 - deduplicar por `stripe_event_id`;
 - usar idempotencia em operacoes POST;
 - nao confiar em ordem perfeita dos webhooks;
@@ -1680,9 +1699,9 @@ Ferramenta de observabilidade definitiva: Nao identificado nos arquivos analisad
 - Criar `favorite_therapies` espelhando `favorite_therapists`.
 - Criar `session_payments` como unica fonte de verdade para pagamentos de sessoes.
 - Migrar ou substituir `payments`, evitando duas fontes paralelas.
-- Criar `payment_ledger_entries` desde o dia 1.
-- Criar `stripe_connected_accounts` para conta de recebimento do terapeuta.
-- Criar `transfer_batches` e `transfer_batch_items`.
+- Usar `financial_ledger_entries` como ledger append-only.
+- Usar `therapist_connect_accounts` para a conta Connect do terapeuta.
+- Usar `payout_batches` e `payout_batch_items`.
 - Implementar repasse manual via Admin no inicio, usando as tabelas definitivas.
 - Exibir financeiro basico do terapeuta com valor bruto, comissao, liquido, status e historico de repasses.
 
@@ -1744,7 +1763,7 @@ Uma entrega do MVP so deve ser considerada pronta quando:
 - usar idempotencia em Stripe;
 - usar `session_payments` como fonte unica de pagamento de sessoes;
 - registrar ledger para movimentacoes financeiras;
-- criar repasses a partir de `transfer_batches` e `transfer_batch_items`;
+- criar repasses a partir de `payout_batches` e `payout_batch_items`;
 - gravar snapshot de preco e duracao no momento da reserva;
 - gerar link Zoom apenas apos pagamento confirmado;
 - proteger `start_url` da Zoom por regra de acesso;
@@ -1768,7 +1787,8 @@ Uma entrega do MVP so deve ser considerada pronta quando:
 - Retencao de dados sensiveis.
 - Politica de uso de dados agregados do Match.
 - Forma final da UI de pagamentos do paciente.
-- Se `/basico/pagamento` sera mantida como alias legado ou migrada completamente para `/basico/financeiro`.
+- Como mapear `/basico/pagamento` para `/terapeuta/financeiro` durante a
+  compatibilidade, sem preservar uma segunda experiencia financeira.
 - Se o nome publico sera Aura IA, Assessor IA ou outro.
 
 Quando alguma decisao acima impactar implementacao, ela deve ser registrada antes de criar migracao, API ou comportamento de produto definitivo.

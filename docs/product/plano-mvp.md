@@ -1,8 +1,16 @@
 # Plano MVP — Terapeuta Eu Sou
 
-Atualizado em: 2026-07-13  
-Status: plano executivo revisado, pronto para orientar implementação faseada.  
+Atualizado em: 2026-07-25
+
+Status: baseline histórico de execução, parcialmente superado pelo estado atual.
+
 Escopo: MVP transacional com descoberta, Match determinístico, reserva, pagamento Stripe, sessão online, área do paciente, áreas de terapeuta por plano e Admin.
+
+> Para decisões atuais de Stripe, rotas e Fase Agenda 1, prevalecem
+> `docs/architecture/relatorio-25-07-2026.md`,
+> `docs/payments/architecture.md` e `docs/product/integration-map.md`. Tabelas
+> de “não identificado” e árvores `/basico`, `/pro` e `/plus` abaixo registram
+> a auditoria de 2026-07-13, não o estado operacional de 2026-07-25.
 
 ## 1. Parecer executivo
 
@@ -109,7 +117,7 @@ Para Admin, o MVP sustenta:
 
 | Item | Status |
 |---|---|
-| Next.js 14 App Router | Confirmado em `package.json`. |
+| Next.js 15 App Router | Confirmado em `package.json`. |
 | React 18 | Confirmado em `package.json`. |
 | TypeScript | Confirmado em `package.json`. |
 | Tailwind CSS | Confirmado em `package.json`. |
@@ -118,11 +126,11 @@ Para Admin, o MVP sustenta:
 | shadcn/ui | Planejado via `components.json`; implementação completa: Não identificado nos arquivos analisados. |
 | Supabase local | Estrutura confirmada em `supabase/`. |
 | Supabase SDK frontend | Não identificado nos arquivos analisados. |
-| Stripe SDK | Não identificado nos arquivos analisados. |
+| Stripe SDK | Confirmado em `package.json`; fundação Billing e Connect implementada. |
 | Zoom SDK/API client | Não identificado nos arquivos analisados. |
 | Storybook | Documentado, não instalado. |
 | Observabilidade | Não identificado nos arquivos analisados. |
-| Test runner | Não identificado nos arquivos analisados. |
+| Test runner | Vitest e Playwright confirmados em `package.json`. |
 
 Scripts confirmados:
 
@@ -268,7 +276,9 @@ Regra: manter `/app/sessoes/:slug`. Não usar `/app/sessoes/:id` sem alteração
 | `/basico/configuracoes` | Não | 4 |
 | `/basico/suporte` | Não | 4 |
 
-Divergência resolvida operacionalmente: rota canônica é `/basico/pagamento`. Figma contém frame legado `/basico/pagamentos`. O pedido inicial citava `/basico/financeiro`. Qualquer mudança exige gate de confirmação.
+Decisão histórica de 2026-07-13: `/basico/pagamento` era o path escolhido entre
+as variantes legadas. Na arquitetura aprovada em 2026-07-25, ele será alias de
+`/terapeuta/financeiro`.
 
 ### 6.4 Terapeuta Premium / Pro
 
@@ -288,7 +298,9 @@ Divergência resolvida operacionalmente: rota canônica é `/basico/pagamento`. 
 | `/pro/configuracoes` | Não | 5 |
 | `/pro/suporte` | Não | 5 |
 
-Divergência resolvida operacionalmente: rota canônica é `/pro/plano`. Figma contém frame legado `/pro/upgrade`.
+Decisão histórica de 2026-07-13: `/pro/plano` era o path escolhido entre as
+variantes legadas. Na arquitetura aprovada em 2026-07-25, ele será alias de
+`/terapeuta/plano`.
 
 ### 6.5 Terapeuta Premium Plus / Plus
 
@@ -407,16 +419,18 @@ Enums existentes:
 - `message_context`;
 - `review_status`.
 
-Tabelas alvo necessárias ao MVP transacional completo e com status: Não identificado nos arquivos analisados.
+Esta lista registrava alvos ainda não identificados em 2026-07-13. O estado
+atual está em `docs/payments/architecture.md`; `session_payments`,
+`financial_ledger_entries`, `payout_batches` e `payout_batch_items` já existem.
 
 - `session_payments`;
-- `payment_ledger_entries`;
-- `stripe_events`;
-- `stripe_connected_accounts`;
-- `subscriptions`;
-- `transfer_batches`;
-- `transfer_batch_items`;
-- `transfer_batch_item_sessions`;
+- `financial_ledger_entries`;
+- `stripe_webhook_events`;
+- `therapist_connect_accounts`;
+- `therapist_subscriptions`;
+- `payout_batches`;
+- `payout_batch_therapists`;
+- `payout_batch_items`;
 - `favorite_therapies`;
 - `matching_versions`;
 - `matching_weight_versions`;
@@ -501,14 +515,13 @@ Status atual do app público: `/api/public/matching/calculate` substitui esse co
 |---|---:|---|---|
 | `match-therapies` | 1 | Existe; precisa alinhar contrato | Sim para catálogo; não para resultado final. |
 | `record-matching-metrics` | 1/6 | Não identificado nos arquivos analisados. | Sim, se métricas forem postergadas. |
-| `create-checkout-session` | 2 | Não identificado nos arquivos analisados. | Não. |
-| `stripe-webhook` | 2 | Não identificado nos arquivos analisados. | Não. |
+| `stripe-create-session-payment` | 2 | Implementada como fundação; exige hardening F0. | Não para produção antes do F0. |
+| `stripe-billing-webhook` | 2/5 | Implementada; eventos assíncronos e ordenação exigem hardening F0. | Não para produção antes do F0. |
 | `create-zoom-meeting` | 2 | Não identificado nos arquivos analisados. | Não para sessão online real. |
-| `stripe-connect-onboarding` | 4 | Não identificado nos arquivos analisados. | Não para financeiro terapeuta real. |
-| `stripe-connect-status` | 4 | Não identificado nos arquivos analisados. | Não para financeiro terapeuta real. |
-| `create-subscription-checkout` | 5 | Não identificado nos arquivos analisados. | Sim para shell; não para Billing real. |
-| `stripe-billing-webhook` | 5 | Não identificado nos arquivos analisados. | Não para planos pagos reais. |
-| `process-transfer-batch` | 6 | Não identificado nos arquivos analisados. | Não para repasse real. |
+| `stripe-connect-create-account` e account link | 4 | Implementadas sobre Accounts v2; webhook v2 incompleto. | Não para produção antes do F0. |
+| `stripe-connect-sync-account` | 4 | Implementada como fundação. | Não para produção antes do F0. |
+| `stripe-create-subscription-checkout` | 5 | Implementada com catálogo server-side. | Sim para shell; não para Billing real antes do F0. |
+| `process-payout-batch` | 6 | Implementada como fundação; transferência e reconciliação exigem hardening. | Não para repasse real antes do F0. |
 | `publish-matching-version` | 6 | Não identificado nos arquivos analisados. | Sim se Match v1 usar tabela simples; não se exigir versão publicada. |
 
 ## 11. Sistema de Match
@@ -662,16 +675,15 @@ Descoberta
 
 ### 13.3 Lacunas atuais
 
-No schema atual, `bookings` existe. Lacunas com status: Não identificado nos arquivos analisados.
+Atualização de 2026-07-25: `session_payments`, ledger,
+`stripe_webhook_events`, Checkout e webhooks Stripe possuem fundação
+implementada. Permanecem como lacunas:
 
-- não há `session_payments`;
-- não há ledger;
-- não há `stripe_events`;
-- não há snapshot financeiro completo em `bookings`;
-- não há campos Zoom separados para `join_url` e `start_url_encrypted`;
-- não há Edge Function de checkout;
-- não há webhook Stripe;
-- não há função Zoom.
+- hardening financeiro descrito no Gate F0;
+- snapshot financeiro completo e integração transacional do booking;
+- campos Zoom separados para `join_url` e `start_url_encrypted`;
+- função Zoom;
+- homologação ponta a ponta de cobrança, cancelamento, disputa e repasse.
 
 ### 13.4 Máquina de estados alvo
 
@@ -720,7 +732,7 @@ Modelo alvo:
 - Separate Charges and Transfers.
 - Stripe Billing para assinaturas.
 - Ledger interno obrigatório.
-- Repasses via `transfer_batches` e `transfer_batch_items`.
+- Repasses via `payout_batches` e `payout_batch_items`.
 
 ### 14.2 Fonte de verdade
 
@@ -738,22 +750,22 @@ Regra de transição:
 Obrigatórias para Fase 2:
 
 - `session_payments`;
-- `payment_ledger_entries`;
-- `stripe_events`.
+- `financial_ledger_entries`;
+- `stripe_webhook_events`.
 
 Obrigatórias para Fase 4:
 
-- `stripe_connected_accounts`.
+- `therapist_connect_accounts`.
 
 Obrigatórias para Fase 5:
 
-- `subscriptions`.
+- `therapist_subscriptions`.
 
 Obrigatórias para Fase 6:
 
-- `transfer_batches`;
-- `transfer_batch_items`;
-- `transfer_batch_item_sessions`.
+- `payout_batches`;
+- `payout_batch_therapists`;
+- `payout_batch_items`;
 
 ### 14.4 Webhooks Stripe
 
@@ -772,7 +784,7 @@ Eventos mínimos:
 
 Regras:
 
-- persistir eventos em `stripe_events`;
+- persistir eventos em `stripe_webhook_events`;
 - deduplicar antes de efeito colateral;
 - usar idempotência em operações Stripe;
 - não confiar em ordem perfeita de webhooks;
@@ -794,8 +806,8 @@ Ciclo recomendado:
 
 ```txt
 Admin lista elegíveis
--> cria transfer_batch
--> cria transfer_batch_items
+-> cria payout_batch
+-> cria payout_batch_items
 -> processa transfers
 -> registra ledger
 -> trata falhas e retries
@@ -1033,8 +1045,8 @@ Entregas:
 - Supabase Auth necessário ao checkout;
 - pré-checkout;
 - `session_payments`;
-- `payment_ledger_entries`;
-- `stripe_events`;
+- `financial_ledger_entries`;
+- `stripe_webhook_events`;
 - `create-checkout-session`;
 - `stripe-webhook`;
 - snapshot de preço/duração;
@@ -1046,9 +1058,9 @@ Dependências:
 
 - Fase 1 concluída;
 - decisions de booking, expiração, política mínima de cancelamento e preço mínimo;
-- Stripe SDK/config;
+- Gate Financeiro F0 concluído sobre a fundação Stripe existente;
 - Zoom credentials/config;
-- migrations financeiras.
+- migrations financeiras complementares somente quando necessárias.
 
 Critério de pronto:
 
@@ -1127,7 +1139,8 @@ Critério de pronto:
 - terapeuta vê apenas sua operação;
 - serviços só usam terapias aprovadas;
 - financeiro usa `session_payments` e ledger;
-- rota canônica é `/basico/pagamento`.
+- rota canônica alvo é `/terapeuta/financeiro`, com `/basico/pagamento` como
+  alias de transição.
 
 Status: bloqueada pela Fase 2 e Connect.
 
@@ -1238,7 +1251,7 @@ Legenda:
 | Risco | Severidade | Mitigação |
 |---|---|---|
 | `payments` e `session_payments` virarem fontes paralelas | Alta | Criar `session_payments` e proibir código novo usando `payments` como fonte final. |
-| Checkout sem webhook/idempotência | Alta | `stripe_events`, dedupe e webhook como fonte única. |
+| Checkout sem webhook/idempotência | Alta | `stripe_webhook_events`, dedupe e webhook como fonte única. |
 | Reserva dupla de horário | Alta | Validar e bloquear no banco/Edge Function. |
 | Zoom start URL exposto | Alta | Campo criptografado e RLS estrito. |
 | RLS pública insuficiente para terapeutas/serviços | Alta | Criar views/policies antes de páginas públicas reais. |
@@ -1262,8 +1275,8 @@ Uma entrega só pode ser marcada pronta quando:
 - valida pagamento por webhook Stripe;
 - usa idempotência em Stripe;
 - usa `session_payments` como fonte única de pagamentos de sessão;
-- registra ledger em `payment_ledger_entries`;
-- cria repasses a partir de `transfer_batches` e `transfer_batch_items`;
+- registra ledger em `financial_ledger_entries`;
+- cria repasses a partir de `payout_batches` e `payout_batch_items`;
 - grava snapshot de preço e duração no momento da reserva;
 - gera link Zoom apenas após pagamento confirmado;
 - protege `zoom_start_url_encrypted` por RLS;
@@ -1284,7 +1297,8 @@ Testes automatizados ainda não estão configurados. Critério adicional recomen
 5. Alinhar contrato de `match-therapies`.
 6. Implementar catálogo e Match real.
 7. Criar testes mínimos do Match.
-8. Desenhar migration financeira da Fase 2 com `session_payments`, ledger e `stripe_events`.
+8. Submeter a fundação financeira existente ao Gate F0 e criar migrations
+   complementares somente quando os testes demonstrarem necessidade.
 9. Implementar checkout + webhook + idempotência.
 10. Implementar Zoom pós-webhook.
 11. Só então liberar área do paciente, terapeuta e Admin.

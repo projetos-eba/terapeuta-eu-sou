@@ -2,6 +2,10 @@
 
 Data: 2026-06-14
 
+> Snapshot histórico do handoff visual. A política aprovada em 2026-07-25 usa
+> `/terapeuta/*` para a área autenticada e preserva `/terapeutas/*` para o
+> catálogo público; nomes Básico, Pro e Plus abaixo descrevem variantes visuais.
+
 ## Figma
 
 Arquivo: `Projeto Terapeuta Eu Sou Atualizado`

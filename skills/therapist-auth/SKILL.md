@@ -22,10 +22,10 @@ Use esta skill ao implementar, auditar ou refatorar o fluxo inicial de autentica
 - Recuperacao de senha: `/reset-senha`.
 - Checkout canÃ´nico: `/terapeuta/checkout?plan=premium|premium_plus`.
 - Alias pÃºblico de perfil: `/terapeuta/:slug` continua redirecionando para `/terapeutas/:slug`; rotas estÃ¡ticas de auth tÃªm precedÃªncia no App Router.
-- Ãreas pÃ³s-login:
-  - `free` -> `/basico`.
-  - `premium` -> `/pro`.
-  - `premium_plus` -> `/plus`.
+- Ãrea pÃ³s-login: todo terapeuta ativo segue para `/terapeuta`.
+- Plano e capability resolvem a experiÃªncia depois da autenticaÃ§Ã£o.
+- `/basico`, `/pro` e `/plus` sÃ£o aliases temporÃ¡rios, nunca fonte de
+  autorizaÃ§Ã£o.
 
 ## Regras de plano
 
@@ -117,7 +117,8 @@ Backend:
 ## PendÃªncias conhecidas
 
 - Captcha e antifraude.
-- ProteÃ§Ã£o real dos layouts `/basico`, `/pro` e `/plus`.
+- ProteÃ§Ã£o real do layout `/terapeuta/*`, com redirects de compatibilidade
+  para `/basico/*`, `/pro/*` e `/plus/*`.
 - Upload e revisÃ£o de documentos.
 - Conta bancÃ¡ria para repasse.
 - Integracao visual completa de status de assinatura, Connect e repasses nas areas logadas.

@@ -2,7 +2,18 @@
 
 Documento operacional para manter pÃ¡ginas, funÃ§Ãµes, banco e skills usando as mesmas fontes de verdade.
 
-Atualizado em 2026-07-17.
+Atualizado em 2026-07-25.
+
+## TransiÃ§Ã£o de rotas do terapeuta
+
+- Destino canÃ´nico aprovado: `/terapeuta/*`.
+- Estado executÃ¡vel atual: `/basico/*`, `/pro/*` e `/plus/*`, mantidos apenas
+  como compatibilidade atÃ© a Fase Agenda 1.
+- CatÃ¡logo e perfil pÃºblico: `/terapeutas` e `/terapeutas/:slug`.
+- Plano e capability sÃ£o resolvidos por `src/lib/permissions.ts` e pela
+  polÃ­tica do shell; nunca pela URL.
+- Checkout, Billing Portal e Connect devem retornar para `/terapeuta/*` apÃ³s
+  a migraÃ§Ã£o, sem URLs de plano fixadas nas Edge Functions.
 
 ## Regras Gerais
 
@@ -29,7 +40,7 @@ Atualizado em 2026-07-17.
 | Auth terapeuta               | Supabase Auth REST, `profiles`, `therapist_profiles`                                                                                                                                                                    | `/api/auth/therapist/*`, `/terapeuta/checkout`                                                                                                             | `skills/therapist-auth`           | Cadastro normal exige confirmacao de e-mail antes do login; bypass explicito confirma automaticamente; pedidos Premium/Plus seguem ao checkout com continuacao interna validada, mas o plano ativo permanece `free` ate webhook Stripe.                     |
 | E-mails transacionais        | `email_action_definitions`, `email_sender_profiles`, `email_action_settings`, `email_delivery_logs`, `auth_action_tokens`, `email_verification_status_tokens`, `email_rate_limit_events`, `profiles.email_confirmed_at` | `/api/auth/email/*`, `/api/auth/password/*`, Supabase Functions de e-mail                                                                                  | `skills/email-delivery`           | Envio server-side via Hostinger Mail API, tokens somente hashados, polling por token opaco sem PII, espelho transacional de confirmacao no perfil, bypass apenas com `CONFIRMED_AUTOMATICALLY_EMAIL=true`, respostas publicas genericas para reset/reenvio. |
 | Para terapeutas/planos       | `src/domain/tes/plan-definitions.ts`, `billing_plans`, `billing_plan_prices`                                                                                                                                            | â€”                                                                                                                                                        | `skills/public-for-therapists`    | Frontend envia sÃ³ `plan`; preÃ§o e Stripe Price ID sÃ£o resolvidos no backend pelo catÃ¡logo Stripe sincronizado.                                                                                                                                          |
-| Pagamentos e repasses        | `docs/payments/architecture.md`, `financial_policy_versions`, `session_payments`, `therapist_subscriptions`, `therapist_connect_accounts`, `financial_ledger_entries`                                                   | Supabase Edge Functions Stripe Billing, Connect, sessoes e lotes                                                                                           | `skills/therapist-auth`           | Stripe Checkout inicia cobranca; webhooks assinados/idempotentes confirmam pagamento e plano; separate charges and transfers libera repasse somente apos realizacao, prazo de seguranca e lote.                                                             |
+| Pagamentos e repasses        | `docs/payments/architecture.md`, `financial_policy_versions`, `session_payments`, `therapist_subscriptions`, `therapist_connect_accounts`, `financial_ledger_entries`                                                   | Supabase Edge Functions Stripe Billing, Connect, sessoes e lotes                                                                                           | `skills/payments-billing`         | Stripe Checkout inicia cobranca; webhooks assinados/idempotentes confirmam pagamento e plano; separate charges and transfers libera repasse somente apos realizacao, prazo de seguranca e lote. Fundacao implementada; Gate F0 pendente antes de producao. |
 
 ## Estado Das PÃ¡ginas PÃºblicas Implementadas
 
