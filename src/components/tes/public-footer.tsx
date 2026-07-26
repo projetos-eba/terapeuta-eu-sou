@@ -36,6 +36,7 @@ const groups: Array<{
     title: "Suporte",
     items: [
       { label: "Central de ajuda", href: routes.public.help as Route },
+      { label: "Ajuda com Zoom", href: routes.public.zoomHelp as Route },
       { label: "Contato" },
       { label: "Políticas", href: routes.public.privacy as Route },
     ],

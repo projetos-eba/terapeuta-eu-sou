@@ -22,6 +22,7 @@ export const routes = {
     signUp: "/cadastro",
     resetPassword: "/reset-senha",
     help: "/ajuda",
+    zoomHelp: "/ajuda/zoom",
     terms: "/termos",
     privacy: "/privacidade",
   },

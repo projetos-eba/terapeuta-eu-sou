@@ -5,6 +5,7 @@ import {
   getPaymentsRuntime,
   getWebhookSecret,
 } from "../_shared/payments/runtime.ts";
+import { createZoomIdempotencyKey } from "../_shared/zoom/idempotency.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 import {
   eventCreatedAt,
@@ -322,6 +323,46 @@ async function applySessionPaymentState(
     p_stripe_event_created_at: input.eventTime,
     p_stripe_event_id: input.eventId,
     p_stripe_payment_intent_id: input.paymentIntentId ?? null,
+  });
+
+  if (input.status !== "paid") return;
+
+  const zoomEnvironment = getConfiguredZoomEnvironment();
+  const hostUserId = runtime.env.get("ZOOM_DEFAULT_HOST_USER_ID")?.trim();
+
+  if (!zoomEnvironment || !hostUserId) {
+    console.warn(
+      JSON.stringify({
+        code: "ZOOM_JOB_NOT_ENQUEUED",
+        message: "Zoom environment is not configured for session payment.",
+        sessionPaymentId: input.sessionPaymentId,
+      }),
+    );
+    return;
+  }
+
+  const [payment] = await client.get<Array<{ booking_id: string }>>(
+    `/rest/v1/session_payments?select=booking_id&id=eq.${encodeURIComponent(input.sessionPaymentId)}&limit=1`,
+  );
+
+  if (!payment?.booking_id) return;
+
+  await client.rpc("enqueue_zoom_meeting_job_v1", {
+    p_booking_id: payment.booking_id,
+    p_environment: zoomEnvironment,
+    p_idempotency_key: createZoomIdempotencyKey([
+      "tes",
+      zoomEnvironment,
+      "zoom_meeting",
+      "create",
+      payment.booking_id,
+    ]),
+    p_operation: "create",
+    p_payload: {
+      hostUserId,
+      source: "stripe-billing-webhook",
+      stripeEventId: input.eventId,
+    },
   });
 }
 
@@ -751,6 +792,14 @@ function stringOrNull(value: unknown) {
 
 function numberOrZero(value: unknown) {
   return typeof value === "number" ? value : 0;
+}
+
+function getConfiguredZoomEnvironment() {
+  const value = runtime.env.get("ZOOM_ENVIRONMENT")?.trim().toLowerCase();
+
+  if (value === "development" || value === "production") return value;
+
+  return null;
 }
 
 export {};
