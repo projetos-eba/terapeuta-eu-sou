@@ -127,8 +127,11 @@ Scripts:
   consulta a API Video SDK somente quando `ALLOW_REAL_ZOOM=true`.
 - `npm run zoom:video-sdk:test:real`: recusa execucao sem
   `ALLOW_REAL_ZOOM=true`, webhook validado e Supabase local/staging autorizado;
-  cria usuarios, booking, pagamento paid e `video_session` em runtime e limpa as
+  exige tambem `--confirm-zoom-marketplace --confirm-single-real-session`, cria
+  usuarios, booking, pagamento paid e `video_session` em runtime e limpa as
   fixtures no `finally`.
+- `npm run zoom:video-sdk:emergency-end`: encerra a sessao real capturada no
+  estado temporario pela REST API oficial e nao imprime o ID completo.
 
 Documentacao detalhada: `docs/zoom/`.
 

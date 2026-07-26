@@ -33,12 +33,8 @@ type Body = {
 const runtime = getPaymentsRuntime("zoom-video-session-access");
 const ACCESS_TOKEN_RATE_LIMIT = {
   maxIssued: 4,
-  windowMs: 60_000,
+  windowSeconds: 60,
 } as const;
-const accessIssueBuckets = new Map<
-  string,
-  { count: number; resetAt: number }
->();
 
 runtime.serve(async (request) => {
   const optionsResponse = handleOptions(request);
@@ -118,8 +114,10 @@ runtime.serve(async (request) => {
     }
 
     const roleType = actor.role === "therapist" ? 1 : 0;
-    enforceAccessIssueRateLimit({
+    await enforceAccessIssueRateLimit({
       bookingId,
+      client,
+      environment: config.environment,
       profileId: actor.profile.id,
       role: actor.role,
     });
@@ -249,32 +247,33 @@ function requireUuid(value: unknown) {
   return value;
 }
 
-function enforceAccessIssueRateLimit(input: {
+async function enforceAccessIssueRateLimit(input: {
   bookingId: string;
+  client: SupabaseRestClient;
+  environment: string;
   profileId: string;
   role: "patient" | "therapist";
 }) {
-  const key = `${input.role}:${input.bookingId}:${input.profileId}`;
-  const now = Date.now();
-  const bucket = accessIssueBuckets.get(key);
+  const reservation = await input.client.rpc<{
+    allowed?: boolean;
+    issuedCount?: number;
+    resetAt?: string;
+  }>("reserve_zoom_video_access_issue_v1", {
+    p_actor_role: input.role,
+    p_booking_id: input.bookingId,
+    p_environment: input.environment,
+    p_max_issued: ACCESS_TOKEN_RATE_LIMIT.maxIssued,
+    p_profile_id: input.profileId,
+    p_window_seconds: ACCESS_TOKEN_RATE_LIMIT.windowSeconds,
+  });
 
-  if (!bucket || bucket.resetAt <= now) {
-    accessIssueBuckets.set(key, {
-      count: 1,
-      resetAt: now + ACCESS_TOKEN_RATE_LIMIT.windowMs,
-    });
-    return;
-  }
-
-  if (bucket.count >= ACCESS_TOKEN_RATE_LIMIT.maxIssued) {
+  if (!reservation?.allowed) {
     throw new DomainError(
       "video_access_rate_limited",
       429,
       "Muitas tentativas de entrada. Aguarde alguns instantes.",
     );
   }
-
-  bucket.count += 1;
 }
 
 function toSafeVideoAccessError(error: unknown) {

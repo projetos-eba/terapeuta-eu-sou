@@ -66,8 +66,16 @@ export async function zoomApi(path, options = {}) {
   }
 }
 
-export async function listActiveSessions() {
-  const response = await zoomApi("/videosdk/sessions");
+export async function listActiveSessions({ sessionName } = {}) {
+  const params = new URLSearchParams({
+    from: zoomDate(new Date(Date.now() - 24 * 60 * 60 * 1000)),
+    page_size: "300",
+    to: zoomDate(new Date()),
+    type: "live",
+  });
+  if (sessionName) params.set("session_name", sessionName);
+
+  const response = await zoomApi(`/videosdk/sessions?${params.toString()}`);
   if (!response.ok) return response;
 
   const sessions = Array.isArray(response.body?.sessions)
@@ -76,10 +84,11 @@ export async function listActiveSessions() {
 
   return {
     ...response,
-    activeSessions: sessions.filter((session) =>
-      ["in_session", "started", "active"].includes(
-        String(session.status ?? "").toLowerCase(),
-      ),
+    activeSessions: sessions.filter(
+      (session) =>
+        !["ended", "canceled", "cancelled", "failed"].includes(
+          String(session.status ?? "").toLowerCase(),
+        ),
     ),
   };
 }
@@ -185,4 +194,8 @@ function parseJsonOrText(text) {
   } catch {
     return { message: text.slice(0, 500) };
   }
+}
+
+function zoomDate(date) {
+  return date.toISOString().slice(0, 10);
 }

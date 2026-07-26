@@ -54,4 +54,4 @@ console.log(
   ),
 );
 
-if (activeSessions.length > 0) process.exit(1);
+if (activeSessions.length > 0) process.exitCode = 1;

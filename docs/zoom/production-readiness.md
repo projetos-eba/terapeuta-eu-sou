@@ -16,6 +16,9 @@ Antes de producao:
 - homologar fluxo real em ambiente de teste com limite de consumo;
 - executar `docs/zoom/real-homologation-runbook.md` e voltar
   `ALLOW_REAL_ZOOM=false` depois do teste;
+- manter o rate limit distribuido de emissao de JWT ativo e validado por pgTAP;
+- confirmar que o comando real exige confirmacao manual momentanea do endpoint
+  Zoom validado/ativo e dos quatro eventos antes de abrir sessao;
 - confirmar que apps antigos e webhooks antigos nao estao implantados antes de
   remover qualquer configuracao remota.
 
