@@ -31,6 +31,14 @@ type Body = {
 };
 
 const runtime = getPaymentsRuntime("zoom-video-session-access");
+const ACCESS_TOKEN_RATE_LIMIT = {
+  maxIssued: 4,
+  windowMs: 60_000,
+} as const;
+const accessIssueBuckets = new Map<
+  string,
+  { count: number; resetAt: number }
+>();
 
 runtime.serve(async (request) => {
   const optionsResponse = handleOptions(request);
@@ -110,6 +118,11 @@ runtime.serve(async (request) => {
     }
 
     const roleType = actor.role === "therapist" ? 1 : 0;
+    enforceAccessIssueRateLimit({
+      bookingId,
+      profileId: actor.profile.id,
+      role: actor.role,
+    });
     const userKey = await createVideoUserKey({
       bookingId,
       profileId: actor.profile.id,
@@ -234,6 +247,34 @@ function requireUuid(value: unknown) {
   }
 
   return value;
+}
+
+function enforceAccessIssueRateLimit(input: {
+  bookingId: string;
+  profileId: string;
+  role: "patient" | "therapist";
+}) {
+  const key = `${input.role}:${input.bookingId}:${input.profileId}`;
+  const now = Date.now();
+  const bucket = accessIssueBuckets.get(key);
+
+  if (!bucket || bucket.resetAt <= now) {
+    accessIssueBuckets.set(key, {
+      count: 1,
+      resetAt: now + ACCESS_TOKEN_RATE_LIMIT.windowMs,
+    });
+    return;
+  }
+
+  if (bucket.count >= ACCESS_TOKEN_RATE_LIMIT.maxIssued) {
+    throw new DomainError(
+      "video_access_rate_limited",
+      429,
+      "Muitas tentativas de entrada. Aguarde alguns instantes.",
+    );
+  }
+
+  bucket.count += 1;
 }
 
 function toSafeVideoAccessError(error: unknown) {

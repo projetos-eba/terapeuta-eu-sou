@@ -35,14 +35,18 @@ export class ZoomVideoSdkApiClient {
   }
 
   endSession(sessionId: string) {
-    return this.request(`/videosdk/sessions/${encodeURIComponent(sessionId)}`, {
-      method: "DELETE",
-    });
+    return this.request(
+      `/videosdk/sessions/${encodeURIComponent(sessionId)}/status`,
+      {
+        body: { action: "end" },
+        method: "PUT",
+      },
+    );
   }
 
   private async request(
     path: string,
-    options: { method?: "DELETE" | "GET" } = {},
+    options: { body?: Record<string, unknown>; method?: "GET" | "PUT" } = {},
     attempt = 0,
   ): Promise<unknown> {
     if (!this.options.config.allowRealZoom && !this.options.fetchImpl) {
@@ -59,14 +63,18 @@ export class ZoomVideoSdkApiClient {
     try {
       const token = await createVideoSdkApiJwt(this.options.config);
       const response = await this.fetchImpl(`https://api.zoom.us/v2${path}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        body: options.body ? JSON.stringify(options.body) : undefined,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+        },
         method: options.method ?? "GET",
         signal: controller.signal,
       });
 
       if (response.status === 204) return null;
       const text = await response.text();
-      const body = text ? JSON.parse(text) : null;
+      const body = parseJsonOrNull(text);
 
       if ((response.status === 429 || response.status >= 500) && attempt < 2) {
         const retryAfter = Number(response.headers.get("retry-after"));
@@ -99,4 +107,14 @@ function getBackoffMs(attempt: number, retryAfter: number) {
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseJsonOrNull(text: string) {
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text.slice(0, 500) };
+  }
 }

@@ -18,6 +18,7 @@ dist/
 tsconfig.tsbuildinfo
 *.tsbuildinfo
 .codex/
+.tmp/
 .playwright-mcp/
 playwright-report/
 test-results/

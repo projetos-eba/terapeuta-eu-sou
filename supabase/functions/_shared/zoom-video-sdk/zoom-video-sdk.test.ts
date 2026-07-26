@@ -4,9 +4,16 @@ import {
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 
 import { parseStrictBoolean } from "./config.ts";
+import { evaluateVideoSessionAccess } from "./access-policy.ts";
+import { ZoomVideoSdkApiClient } from "./api-client.ts";
 import { createVideoSdkApiJwt } from "./api-jwt.ts";
-import { createVideoSdkJwt } from "./sdk-jwt.ts";
+import {
+  createVideoSdkJwt,
+  normalizeSessionName,
+  normalizeUserKey,
+} from "./sdk-jwt.ts";
 import { hmacSha256Hex } from "./crypto.ts";
+import { createVideoUserKey } from "./session-identity.ts";
 import {
   createZoomVideoChallengeResponse,
   verifyZoomVideoWebhookSignature,
@@ -20,6 +27,7 @@ Deno.test(
     assertEquals(parseStrictBoolean("false"), false);
     assertEquals(parseStrictBoolean("true"), true);
     assertEquals(parseStrictBoolean("yes"), false);
+    assertEquals(parseStrictBoolean("TRUE"), false);
   },
 );
 
@@ -72,6 +80,25 @@ Deno.test(
   },
 );
 
+Deno.test("normalizes session and user identities without PII", async () => {
+  assertEquals(normalizeSessionName(" TESVS-SESSION "), "tesvs-session");
+  await assertRejects(async () => {
+    normalizeSessionName("sessao-ç");
+  });
+  await assertRejects(async () => {
+    normalizeUserKey("uuid with space");
+  });
+
+  const userKey = await createVideoUserKey({
+    bookingId: "f2000000-0000-4000-8000-000000000001",
+    profileId: "b1000000-0000-4000-8000-000000000001",
+    role: "patient",
+  });
+
+  assertEquals(userKey.startsWith("tes-v1-p-"), true);
+  assertEquals(userKey.length <= 36, true);
+});
+
 Deno.test(
   "createVideoSdkApiJwt uses API credentials, not SDK credentials",
   async () => {
@@ -83,6 +110,86 @@ Deno.test(
 
     assertEquals(claims.iss, "api-key");
     assertEquals(claims.exp - claims.iat, 3600);
+  },
+);
+
+Deno.test(
+  "ZoomVideoSdkApiClient ends sessions with official status endpoint",
+  async () => {
+    const requests: Array<{
+      body: string | null;
+      method: string;
+      url: string;
+    }> = [];
+    const client = new ZoomVideoSdkApiClient({
+      config: {
+        allowRealZoom: true,
+        apiKey: "api-key",
+        apiSecret: "api-secret",
+        environment: "development",
+        sdkKey: "sdk-key",
+        sdkSecret: "sdk-secret",
+        webhookSecretToken: "webhook-secret",
+      },
+      fetchImpl: async (url, init) => {
+        requests.push({
+          body: typeof init?.body === "string" ? init.body : null,
+          method: init?.method ?? "GET",
+          url: String(url),
+        });
+        return new Response("{}", { status: 200 });
+      },
+    });
+
+    await client.endSession("session-123");
+
+    assertEquals(requests[0].method, "PUT");
+    assertEquals(
+      requests[0].url,
+      "https://api.zoom.us/v2/videosdk/sessions/session-123/status",
+    );
+    assertEquals(requests[0].body, JSON.stringify({ action: "end" }));
+  },
+);
+
+Deno.test(
+  "access policy blocks closed, unpaid, suspended, and stale sessions",
+  () => {
+    const base = {
+      actorRole: "patient" as const,
+      bookingStatus: "confirmed",
+      endsAt: "2026-07-26T13:30:00.000Z",
+      financialStatus: "paid",
+      now: new Date("2026-07-26T13:00:00.000Z"),
+      startsAt: "2026-07-26T12:30:00.000Z",
+      videoSessionReady: true,
+      videoSessionStatus: "ready",
+    };
+
+    assertEquals(evaluateVideoSessionAccess(base).allowed, true);
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        financialStatus: "refunded",
+      }).reason,
+      "PAYMENT_NOT_CONFIRMED",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        actorRole: "therapist",
+        therapistStatus: "suspended",
+      }).reason,
+      "THERAPIST_SUSPENDED",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        videoSessionReady: false,
+        videoSessionStatus: null,
+      }).reason,
+      "VIDEO_SESSION_NOT_READY",
+    );
   },
 );
 
