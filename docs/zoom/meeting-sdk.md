@@ -16,4 +16,6 @@ ZAK:
 - solicitado perto do horário;
 - apenas para o terapeuta responsável;
 - não persistido;
+- obtido via `GET /v2/users/{userId}/token?type=zak`, usando o `id` retornado por `GET /v2/users/{ZOOM_DEFAULT_HOST_USER_ID}`;
+- exige access token S2S com `user:read:zak:admin` e host licenciado `type === 2`;
 - se indisponível por autorização do General App ou scopes, o fluxo de host fica bloqueado por configuração externa.

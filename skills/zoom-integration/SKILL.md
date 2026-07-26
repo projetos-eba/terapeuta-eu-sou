@@ -56,13 +56,15 @@ npx supabase functions serve zoom-jobs-process --env-file supabase/functions/.en
 ## Operação
 
 - Cron remoto deve partir de `supabase/schedules/zoom-jobs-cron.sql` e usar Vault para o token interno.
+- `zoom_jobs_process_internal_token` no Vault remoto deve ter o mesmo valor de `PAYMENTS_INTERNAL_OPERATIONS_TOKEN` na Edge Function remota.
+- `zoom-jobs-process` processa lote limitado de até 5 jobs por chamada, usando reserva atômica por RPC e limite de tempo.
 - Ngrok local deve usar `npm run zoom:webhook:tunnel`, que apenas expõe `/functions/v1/zoom-webhook` e não altera Marketplace.
 - Passcode Zoom deve permanecer com no máximo 10 caracteres.
 - Eventos desconhecidos de webhook devem ser `ignored`, não erro operacional.
 
 ## Pendências Conhecidas
 
-- Confirmar scopes exatos no Marketplace.
+- Confirmar `user:read:zak:admin` no access token real e no Marketplace.
 - Confirmar autorização do General App para ZAK/host.
 - Configurar webhook remoto no Zoom Marketplace.
 - Aplicar cron remoto no Supabase.
