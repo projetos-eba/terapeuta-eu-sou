@@ -1,11 +1,10 @@
 import type { ReactNode } from "react";
 
 import { AuthenticatedShell } from "@/components/authenticated-shell";
-import { TherapistPlan } from "@/domain/tes";
-import { getTherapistDashboardPage } from "@/features/therapist-dashboard";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
 import { getTherapistShellConfig } from "./therapist-shell-config";
+import { getTherapistShellCounters } from "./therapist-shell-counters";
 
 export async function TherapistAreaLayout({
   children,
@@ -15,13 +14,13 @@ export async function TherapistAreaLayout({
   logoutAction: () => Promise<void>;
 }) {
   const session = await requireTherapistSession();
-  const dashboard =
-    session.plan === TherapistPlan.PremiumPlus
-      ? await getDashboardCountsSafely(session.accessToken, session.profileId)
-      : null;
+  const counters = await getTherapistShellCounters({
+    accessToken: session.accessToken,
+    profileId: session.profileId,
+  });
   const config = getTherapistShellConfig({
     plan: session.plan,
-    unreadMessagesCount: dashboard?.unreadMessagesCount ?? 0,
+    unreadMessagesCount: counters.unreadMessages,
   });
   const firstName = session.name.trim().split(/\s+/)[0] || "Terapeuta";
 
@@ -31,7 +30,7 @@ export async function TherapistAreaLayout({
       helpHref={config.helpHref}
       logoutAction={logoutAction}
       navigation={config.navigation}
-      notificationCount={dashboard?.unreadNotificationsCount ?? 0}
+      notificationCount={counters.unreadNotifications}
       planLabel={config.planLabel}
       user={{
         avatarUrl: session.avatarUrl,
@@ -44,18 +43,4 @@ export async function TherapistAreaLayout({
       {children}
     </AuthenticatedShell>
   );
-}
-
-async function getDashboardCountsSafely(
-  accessToken: string,
-  profileId: string,
-) {
-  try {
-    return await getTherapistDashboardPage({ accessToken, profileId });
-  } catch {
-    console.warn(
-      "[therapist-shell] Dashboard counters are temporarily unavailable.",
-    );
-    return null;
-  }
 }

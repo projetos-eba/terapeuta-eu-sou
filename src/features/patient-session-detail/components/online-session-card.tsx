@@ -88,13 +88,9 @@ export function OnlineSessionCard({
 
       {data.onlineSession.provider === "zoom" ? (
         <ZoomMeetingAdapter
+          access={null}
+          actorRole="patient"
           bookingId={data.booking.id}
-          canJoin={data.booking.canJoin}
-          disabledLabel={
-            data.booking.paymentStatus === "paid"
-              ? "Disponível 15 min antes"
-              : "Aguardando pagamento"
-          }
         />
       ) : data.booking.canJoin && data.onlineSession.meetingUrl ? (
         <Link

@@ -29,4 +29,7 @@ O projeto contém representações legadas em `payments`,
 - Agenda e Sessões consomem resumo financeiro, sem escrever estados Stripe.
 - O Gate F0 implementou backfill e transformou as tabelas legadas em projeções
   sincronizadas da fonte canônica.
-- A Fase Agenda 1 não cria migration financeira.
+- `therapist_session_read_model_v1` e as RPCs de Agenda/Sessões leem
+  `session_payments` diretamente.
+- Divergência em `bookings.payment_status` não autoriza Zoom nem altera o
+  estado financeiro apresentado.

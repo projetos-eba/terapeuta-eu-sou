@@ -6,6 +6,7 @@ import {
   parseJsonBody,
   requirePatient,
   requireTherapist,
+  requireUser,
   success,
 } from "../_shared/payments/http.ts";
 import { getPaymentsRuntime } from "../_shared/payments/runtime.ts";
@@ -14,6 +15,12 @@ import {
   getAuthorizedZoomBooking,
   sanitizeZoomDisplayName,
 } from "../_shared/zoom/booking-authorization.ts";
+import {
+  evaluateZoomAccess,
+  getZoomAccessMessage,
+  type ZoomAccessState,
+} from "../_shared/zoom/access-policy.ts";
+import { jsonResponse } from "../_shared/auth/cors.ts";
 import { getZoomConfig } from "../_shared/zoom/config.ts";
 import { hmacSha256Hex } from "../_shared/zoom/crypto.ts";
 import {
@@ -23,9 +30,12 @@ import {
 import { getZoomMeeting } from "../_shared/zoom/meetings.ts";
 import { requireUuid } from "../_shared/zoom/schemas.ts";
 import { getZoomZak } from "../_shared/zoom/zak.ts";
+import { logZoomOperation } from "../_shared/zoom/observability.ts";
+import { ZoomError } from "../_shared/zoom/errors.ts";
 
 type Body = {
   bookingId?: string;
+  intent?: "join" | "preview";
 };
 
 type ZoomMeetingRow = {
@@ -46,6 +56,9 @@ runtime.serve(async (request) => {
   if (optionsResponse) return optionsResponse;
 
   const requestId = crypto.randomUUID();
+  const startedAt = Date.now();
+  let bookingId: string | undefined;
+  let actorRole: "patient" | "therapist" | undefined;
 
   try {
     if (request.method !== "POST") {
@@ -53,7 +66,11 @@ runtime.serve(async (request) => {
     }
 
     const body = await parseJsonBody<Body>(request);
-    const bookingId = requireUuid(body.bookingId);
+    bookingId = requireUuid(body.bookingId);
+    const intent = body.intent ?? "join";
+    if (intent !== "join" && intent !== "preview") {
+      throw new DomainError("invalid_zoom_access_intent", 422, "Ação inválida.");
+    }
     const config = getZoomConfig(runtime);
     const supabaseUrl = runtime.env.get("SUPABASE_URL");
     const serviceRoleKey = getServiceRoleKey(runtime);
@@ -68,34 +85,50 @@ runtime.serve(async (request) => {
 
     const client = new SupabaseRestClient(supabaseUrl, serviceRoleKey);
     const actor = await resolveActor(client, request);
+    actorRole = actor.role;
     const booking = await getAuthorizedZoomBooking({
       bookingId,
       client,
       profileId: actor.profile.id,
       role: actor.role,
     });
-    assertJoinWindow(booking.starts_at, booking.ends_at);
 
     const [localMeeting] = await client.get<ZoomMeetingRow[]>(
       `/rest/v1/zoom_meetings?select=id,booking_id,zoom_meeting_id,zoom_host_user_id,scheduled_starts_at,scheduled_ends_at,duration_minutes,status&booking_id=eq.${encodeURIComponent(bookingId)}&limit=1`,
     );
+    const access = evaluateZoomAccess({
+      actorOwnsBooking: true,
+      actorRole: actor.role,
+      bookingStatus: booking.status,
+      endsAt: booking.ends_at,
+      financialStatus: booking.financial_status,
+      meetingReady: Boolean(
+        localMeeting?.zoom_meeting_id &&
+          ["provisioned", "scheduled", "in_progress"].includes(
+            localMeeting.status,
+          ),
+      ),
+      meetingStatus: localMeeting?.status ?? null,
+      startsAt: booking.starts_at,
+      therapistStatus:
+        actor.role === "therapist" ? actor.profile.status : undefined,
+    });
 
-    if (!localMeeting || !localMeeting.zoom_meeting_id) {
-      throw new DomainError(
-        "zoom_room_preparing",
-        409,
-        "A sala ainda esta em preparacao. Tente novamente em instantes.",
-      );
+    if (intent === "preview") {
+      return success({ access });
     }
 
-    if (["canceled", "ended", "failed"].includes(localMeeting.status)) {
-      throw new DomainError(
-        "zoom_room_unavailable",
-        409,
-        "Esta sala nao esta disponivel.",
-      );
+    if (!access.allowed) {
+      return zoomAccessFailure(access, requestId);
     }
 
+    if (!localMeeting?.zoom_meeting_id) {
+      throw new DomainError(
+        "MEETING_NOT_READY",
+        409,
+        "A sala ainda está em preparação.",
+      );
+    }
     const providerMeeting = await getZoomMeeting(
       config,
       localMeeting.zoom_meeting_id,
@@ -126,7 +159,7 @@ runtime.serve(async (request) => {
       );
     }
 
-    return success({
+    const meeting = {
       customerKey,
       meetingNumber: String(providerMeeting.id),
       passWord: providerMeeting.password ?? "",
@@ -135,54 +168,80 @@ runtime.serve(async (request) => {
       signature,
       userName: actor.displayName,
       zak: zak ?? undefined,
+    };
+
+    logZoomOperation("info", {
+      actorRole: actor.role,
+      bookingId,
+      code: "ZOOM_ACCESS_GRANTED",
+      durationMs: Date.now() - startedAt,
+      operation: "zoom_meeting_access",
+      requestId,
+    });
+
+    return success({
+      access,
+      meeting,
+      ...meeting,
     });
   } catch (error) {
-    return failure(error, requestId);
+    logZoomOperation("error", {
+      actorRole: actorRole ?? "unknown",
+      bookingId,
+      code:
+        error instanceof DomainError
+          ? error.code
+          : error instanceof ZoomError
+            ? error.code
+            : "ZOOM_ACCESS_UNKNOWN",
+      durationMs: Date.now() - startedAt,
+      operation: "zoom_meeting_access",
+      requestId,
+      status:
+        error instanceof DomainError || error instanceof ZoomError
+          ? error.status
+          : 500,
+    });
+    return failure(toSafeZoomAccessError(error), requestId);
   }
 });
 
 async function resolveActor(client: SupabaseRestClient, request: Request) {
-  try {
-    const { profile } = await requireTherapist(client, request, {
-      allowBlockedStatus: true,
-    });
+  const user = await requireUser(client, request);
 
-    return {
-      displayName: sanitizeZoomDisplayName(profile.public_name),
-      profile,
-      role: "therapist" as const,
-    };
-  } catch {
+  if (user.role === "therapist") {
+    try {
+      const { profile } = await requireTherapist(client, request);
+      return {
+        displayName: sanitizeZoomDisplayName(profile.public_name),
+        profile,
+        role: "therapist" as const,
+      };
+    } catch (error) {
+      if (
+        error instanceof DomainError &&
+        error.code === "therapist_financial_access_blocked"
+      ) {
+        throw new DomainError(
+          "THERAPIST_SUSPENDED",
+          403,
+          "O acesso às salas está bloqueado para este perfil.",
+        );
+      }
+      throw error;
+    }
+  }
+
+  if (user.role === "patient") {
     const { profile } = await requirePatient(client, request);
-
     return {
       displayName: sanitizeZoomDisplayName(profile.display_name),
       profile,
       role: "patient" as const,
     };
   }
-}
 
-function assertJoinWindow(startsAt: string, endsAt: string) {
-  const now = Date.now();
-  const start = new Date(startsAt).getTime();
-  const end = new Date(endsAt).getTime();
-
-  if (now < start - 15 * 60_000) {
-    throw new DomainError(
-      "zoom_room_not_open",
-      409,
-      "A sala fica disponivel alguns minutos antes do horario.",
-    );
-  }
-
-  if (now > end + 30 * 60_000) {
-    throw new DomainError(
-      "zoom_room_closed",
-      409,
-      "Esta sessao ja foi encerrada.",
-    );
-  }
+  throw new DomainError("role_mismatch", 403, "Use uma conta participante.");
 }
 
 async function createCustomerKey(
@@ -192,6 +251,41 @@ async function createCustomerKey(
   role: string,
 ) {
   return `tes_${(await hmacSha256Hex(secret, `${bookingId}:${profileId}:${role}`)).slice(0, 32)}`;
+}
+
+function zoomAccessFailure(access: ZoomAccessState, requestId: string) {
+  const reason = access.reason ?? "UNKNOWN";
+  return jsonResponse(
+    {
+      data: { access },
+      error: {
+        code: reason,
+        message: getZoomAccessMessage(reason),
+        requestId,
+      },
+      ok: false,
+    },
+    reason === "THERAPIST_NOT_ALLOWED" || reason === "THERAPIST_SUSPENDED"
+      ? 403
+      : 409,
+  );
+}
+
+function toSafeZoomAccessError(error: unknown) {
+  if (error instanceof DomainError) return error;
+  if (error instanceof ZoomError) {
+    return new DomainError(
+      error.code,
+      error.status,
+      "Não foi possível abrir a sala agora.",
+    );
+  }
+
+  return new DomainError(
+    "internal_error",
+    500,
+    "Não foi possível abrir a sala agora.",
+  );
 }
 
 export {};

@@ -16,6 +16,8 @@ export async function POST(request: Request) {
   }
 
   const bookingId = isRecord(body) ? body.bookingId : null;
+  const actorRole = isRecord(body) ? body.actorRole : null;
+  const intent = isRecord(body) ? body.intent : null;
 
   if (typeof bookingId !== "string" || !/^[0-9a-f-]{36}$/i.test(bookingId)) {
     return NextResponse.json(
@@ -23,12 +25,26 @@ export async function POST(request: Request) {
       { headers: noStoreHeaders, status: 422 },
     );
   }
+  if (actorRole !== "patient" && actorRole !== "therapist") {
+    return NextResponse.json(
+      { ok: false, message: "Informe o tipo de acesso da sessão." },
+      { headers: noStoreHeaders, status: 422 },
+    );
+  }
+  if (intent !== null && intent !== "join" && intent !== "preview") {
+    return NextResponse.json(
+      { ok: false, message: "Ação de acesso inválida." },
+      { headers: noStoreHeaders, status: 422 },
+    );
+  }
 
   const config = getSupabasePublicConfig();
   const cookieStore = await cookies();
-  const accessToken =
-    cookieStore.get("tes_therapist_access_token")?.value ??
-    cookieStore.get("tes_patient_access_token")?.value;
+  const accessToken = cookieStore.get(
+    actorRole === "therapist"
+      ? "tes_therapist_access_token"
+      : "tes_patient_access_token",
+  )?.value;
 
   if (!config || !accessToken) {
     return NextResponse.json(
@@ -40,7 +56,7 @@ export async function POST(request: Request) {
   const response = await fetch(
     `${config.url}/functions/v1/zoom-meeting-access`,
     {
-      body: JSON.stringify({ bookingId }),
+      body: JSON.stringify({ bookingId, intent: intent ?? "join" }),
       cache: "no-store",
       headers: {
         Authorization: `Bearer ${accessToken}`,

@@ -2,7 +2,8 @@
 
 Data da revisão: 2026-07-26
 
-Status: A1, F0, fundação Zoom Z0 e A2 implementados; A3 é o próximo marco
+Status: A1, F0, fundação Zoom Z0, A2 e A3.0/A3.1 implementados; A3.2 é o
+próximo marco
 
 Escopo: shell autenticado, Agenda, Sessões, financeiro e sala online
 
@@ -1265,14 +1266,44 @@ Limite intencional:
 
 ### A3 - Horários
 
-- leitura e edição;
-- múltiplas faixas;
-- cópia;
-- timezone;
-- buffers;
-- preview;
-- validação;
-- estados vazios e erros.
+Fundação A3.0/A3.1 concluída em 2026-07-26:
+
+- ADR-006 define as autoridades de timezone, duração, cadência e buffers;
+- `therapist_schedule_settings` centraliza timezone e versão otimista;
+- `therapist_schedule_events` registra auditoria sanitizada e idempotência;
+- `get_therapist_schedule_v1()` entrega o read model derivado de `auth.uid()`;
+- `save_therapist_schedule_v1()` substitui regras atomicamente sob advisory
+  lock, versão esperada e request ID;
+- Edge Function autentica o terapeuta antes de chamar a RPC restrita;
+- contratos TypeScript validam payloads na leitura e no comando;
+- duração continua em `therapist_services`; `interval_minutes` é exposto como
+  `slotStepMinutes`;
+- timezone em `therapist_profiles.metadata` permanece somente como projeção
+  temporária.
+
+A3.2 concluído em 2026-07-26:
+
+- interface responsiva da aba Horários baseada no Figma `13366:7977`;
+- leitura e edição por escopo geral ou por terapia;
+- múltiplas faixas, ativação por dia e cópia explícita entre dias;
+- duração somente leitura, intervalo de oferta, antecedência, timezone e
+  buffers separados;
+- resumo semanal, procura recente e exceções derivados dos read models reais;
+- loading, indisponibilidade sanitizada, conflito otimista e confirmação de
+  gravação;
+- ausência intencional do reagendamento automático até existir domínio e
+  comando correspondentes;
+- Calendário provisório preservado e Bloqueios identificado como A4.
+
+A3.3 concluído em 2026-07-26:
+
+- testes Vitest do view model, parsers e formulário;
+- cobertura Deno do payload e do mapeamento de erros da Edge Function;
+- pgTAP de grants, RLS, advisory lock, versão, idempotência, auditoria,
+  sobreposição, timezone, propriedade de serviço e terapeuta suspenso;
+- Playwright com salvamento reversível, isolamento e responsividade;
+- reset integral, lint do schema e suíte de regressão;
+- matriz final em `docs/architecture/agenda-a3-closure.md`.
 
 ### A4 - Bloqueios
 
@@ -1463,8 +1494,17 @@ O Gate F0 consolidou os invariantes financeiros e a fundação Z0 antecipou part
 de A9 sem alterar a ordem transacional: Stripe confirma, a outbox provisiona e
 o backend autoriza a entrada.
 
-A2 concluiu as primitivas que tornam a reserva concorrente e auditável. A3 é o
-próximo marco para edição de horários e preview; A5 continuará responsável pela
-composição autoritativa de slots e A6 pela orquestração de checkout. Em
-paralelo, os bloqueios de produção listados em A9 devem ser fechados antes de
-liberar sessões Zoom reais aos usuários.
+A2 concluiu as primitivas que tornam a reserva concorrente e auditável.
+A3.0/A3.1 concluíram as decisões e a fundação transacional de Horários; A3.2
+entregou a interface funcional e responsiva. A3.3 consolidará testes
+transacionais, RLS e documentação. A5 continua responsável pela composição
+autoritativa de slots e A6 pela orquestração de checkout. Em paralelo, os
+bloqueios de produção listados em A9 devem ser fechados antes de liberar
+sessões Zoom reais aos usuários.
+
+Atualização de 2026-07-26: a preparação arquitetural anterior às telas finais
+foi implementada com `therapist_session_read_model_v1`, RPCs versionadas de
+Agenda/Sessões/detalhe, cursor e filtros, mapper de estado composto, pagamento
+canônico, gate Zoom revalidado no backend e contadores leves do shell. O estado,
+testes e débitos preservados estão em
+`docs/architecture/agenda-sessions-preparation.md`.

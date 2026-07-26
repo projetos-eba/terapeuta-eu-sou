@@ -26,6 +26,65 @@ export const AttendanceStatus = {
 export type AttendanceStatus =
   (typeof AttendanceStatus)[keyof typeof AttendanceStatus];
 
+export const AttendanceSource = {
+  BookingCompatibility: "booking_compatibility",
+  Unavailable: "unavailable",
+} as const;
+
+export type AttendanceSource =
+  (typeof AttendanceSource)[keyof typeof AttendanceSource];
+
+export const SessionFinancialStatus = {
+  Canceled: "canceled",
+  Disputed: "disputed",
+  Failed: "failed",
+  Paid: "paid",
+  PartiallyRefunded: "partially_refunded",
+  Pending: "pending",
+  Processing: "processing",
+  Refunded: "refunded",
+} as const;
+
+export type SessionFinancialStatus =
+  (typeof SessionFinancialStatus)[keyof typeof SessionFinancialStatus];
+
+export const ZoomMeetingStatus = {
+  CancelPending: "cancel_pending",
+  Canceled: "canceled",
+  Ended: "ended",
+  Failed: "failed",
+  InProgress: "in_progress",
+  PendingProvisioning: "pending_provisioning",
+  Provisioned: "provisioned",
+  Scheduled: "scheduled",
+  Updating: "updating",
+} as const;
+
+export type ZoomMeetingStatus =
+  (typeof ZoomMeetingStatus)[keyof typeof ZoomMeetingStatus];
+
+export const ZoomAccessReason = {
+  BookingCancelled: "BOOKING_CANCELLED",
+  MeetingNotReady: "MEETING_NOT_READY",
+  PaymentNotConfirmed: "PAYMENT_NOT_CONFIRMED",
+  TherapistNotAllowed: "THERAPIST_NOT_ALLOWED",
+  TherapistSuspended: "THERAPIST_SUSPENDED",
+  TooEarly: "TOO_EARLY",
+  TooLate: "TOO_LATE",
+  Unknown: "UNKNOWN",
+} as const;
+
+export type ZoomAccessReason =
+  (typeof ZoomAccessReason)[keyof typeof ZoomAccessReason];
+
+export type ZoomAccessState = {
+  allowed: boolean;
+  availableFrom: ISODateTimeString | null;
+  availableUntil: ISODateTimeString | null;
+  meetingStatus: ZoomMeetingStatus | "not_provisioned";
+  reason: ZoomAccessReason | null;
+};
+
 export const RescheduleStatus = {
   Accepted: "accepted",
   Applied: "applied",
