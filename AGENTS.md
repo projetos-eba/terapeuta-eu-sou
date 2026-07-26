@@ -190,10 +190,16 @@ Stack real identificada:
   homologação externa sem expor secrets. O harness real usa
   `.tmp/zoom-real-homologation.json` para metadados temporários sem secrets e
   cria booking, usuários e pagamento paid em runtime; não exigir UUID, e-mail ou
-  senha de fixture em variável de ambiente.
+  senha de fixture em variável de ambiente. O acesso é host-first: paciente só
+  recebe JWT após webhook confiável de `session.user_joined` do terapeuta.
+  `ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES` é obrigatório no runtime real; o
+  limite duro fica em `video_sessions.hard_ends_at`. Encerramentos por timeout,
+  ausência do terapeuta e reconciliação usam `video_session_control_jobs` e a
+  Edge Function `zoom-video-session-maintenance`.
   O comando real exige confirmação manual momentânea por flags antes de abrir
-  uma única sessão curta, usa contexts Playwright separados para terapeuta e
-  paciente, e a emissão de JWT passa por rate limit distribuído no Supabase.
+  uma única sessão curta, usa Playwright visível com contexts separados para
+  terapeuta e paciente, e a emissão de JWT passa por rate limit distribuído no
+  Supabase.
 
 ## 6. QA e definição de pronto
 

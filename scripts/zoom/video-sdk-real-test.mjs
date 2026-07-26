@@ -33,6 +33,7 @@ const startedAt = new Date();
 const requestId = crypto.randomUUID();
 const runId = `zoom-${Date.now()}-${crypto.randomBytes(5).toString("hex")}`;
 const baseUrl = resolveBaseUrl();
+const slowMo = resolveSlowMo();
 let openedSessionId = null;
 let browser = null;
 let therapistContext = null;
@@ -140,13 +141,15 @@ function block(manualFailures) {
 function assertManualMarketplaceGate() {
   const confirmed =
     process.argv.includes("--confirm-zoom-marketplace") &&
-    process.argv.includes("--confirm-single-real-session");
+    process.argv.includes("--confirm-single-real-session") &&
+    process.argv.includes("--headed") &&
+    slowMo > 0;
   if (confirmed) return [];
   return [
     {
       expected:
-        "confirmacao manual momentanea dos eventos Zoom e do limite de uma sessao",
-      item: "--confirm-zoom-marketplace --confirm-single-real-session",
+        "confirmacao manual momentanea, Playwright visivel e slow motion",
+      item: "--confirm-zoom-marketplace --confirm-single-real-session --headed --slow-mo=<ms>",
       where: "Zoom Build Platform antes de abrir sessao real",
     },
   ];
@@ -233,7 +236,8 @@ async function runRealFlow(signal) {
         "--use-fake-device-for-media-stream",
         "--use-fake-ui-for-media-stream",
       ],
-      headless: true,
+      headless: false,
+      slowMo,
     }),
   );
   therapistContext = await phase("therapist_context_create", () =>
@@ -258,6 +262,16 @@ async function runRealFlow(signal) {
     loginPatient(patientPage, fixture.credentials.patient),
   );
 
+  await phase("patient_first_blocked", async () => {
+    await patientPage.goto(`${baseUrl}/app/encontros/${fixture.ids.bookingId}`);
+    await expect(
+      patientPage.getByText("Aguardando o terapeuta iniciar a sessao."),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(
+      patientPage.getByRole("button", { name: "Entrar na sessao" }),
+    ).toHaveCount(0);
+  });
+
   await phase("therapist_join", async () => {
     await therapistPage.goto(
       `${baseUrl}/terapeuta/sessoes/${fixture.ids.bookingId}`,
@@ -272,9 +286,15 @@ async function runRealFlow(signal) {
   await phase("provider_session_capture", () =>
     captureActiveSessionForFixture(signal),
   );
+  await phase("therapist_presence_webhook", () =>
+    waitForTherapistPresence(signal),
+  );
 
   await phase("patient_join", async () => {
-    await patientPage.goto(`${baseUrl}/app/encontros/${fixture.ids.bookingId}`);
+    await patientPage.getByRole("button", { name: "Atualizar sala" }).click();
+    await expect(
+      patientPage.getByRole("button", { name: "Entrar na sessao" }),
+    ).toBeVisible({ timeout: 45_000 });
     await patientPage.getByRole("button", { name: "Entrar na sessao" }).click();
     await expect(patientPage.getByText(/Voce entrou na sessao/)).toBeVisible({
       timeout: 45_000,
@@ -405,6 +425,32 @@ async function waitForSessionEndedEvidence(signal) {
   });
 }
 
+async function waitForTherapistPresence(signal) {
+  await poll({
+    signal,
+    intervalMs: 2000,
+    timeoutMs: 45_000,
+    task: async () => {
+      const [videoSession] = await admin.select(
+        "video_sessions",
+        `select=status,provider_session_id,therapist_first_joined_at,therapist_present,hard_ends_at&booking_id=eq.${fixture.ids.bookingId}&limit=1`,
+      );
+
+      if (
+        videoSession?.status === "active" &&
+        videoSession.provider_session_id &&
+        videoSession.therapist_first_joined_at &&
+        videoSession.therapist_present === true &&
+        videoSession.hard_ends_at
+      ) {
+        return true;
+      }
+
+      return null;
+    },
+  });
+}
+
 async function assertContextsIsolated() {
   const patientCookies = await patientContext.cookies();
   const inheritedAuthCookie = patientCookies.find((cookie) =>
@@ -421,15 +467,27 @@ function createWatchdog(abortController) {
       const error = new Error("watchdog_timeout");
       abortController.abort(error);
       void cleanupOnce("watchdog", "timeout").finally(() => reject(error));
-    }, 60_000);
+    }, 180_000);
   });
+}
+
+function resolveSlowMo() {
+  const inline = process.argv.find((item) => item.startsWith("--slow-mo="));
+  const raw = inline
+    ? inline.split("=").slice(1).join("=")
+    : process.argv[process.argv.indexOf("--slow-mo") + 1];
+  const parsed = Number(raw);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : 0;
 }
 
 async function loginTherapist(page, credentials) {
   await page.goto(`${baseUrl}/terapeuta/login`);
   await page.getByLabel("E-mail").fill(credentials.email);
   await page.getByLabel("Senha").fill(credentials.password);
-  await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
+  await submitLoginForm(page, {
+    buttonName: "Entrar como terapeuta",
+    endpoint: "/api/auth/therapist/login",
+  });
   await expect(page).toHaveURL(/\/terapeuta(?:\?.*)?$/, { timeout: 30_000 });
 }
 
@@ -437,8 +495,51 @@ async function loginPatient(page, credentials) {
   await page.goto(`${baseUrl}/cliente/login`);
   await page.getByLabel("E-mail").fill(credentials.email);
   await page.getByLabel("Senha").fill(credentials.password);
-  await page.getByRole("button", { name: "Entrar" }).click();
+  await submitLoginForm(page, {
+    buttonName: "Entrar",
+    endpoint: "/api/auth/client/login",
+  });
   await expect(page).toHaveURL(/\/app(?:\?.*)?$/, { timeout: 30_000 });
+}
+
+async function submitLoginForm(page, { buttonName, endpoint }) {
+  const button = page.getByRole("button", { name: buttonName });
+  await expect(button).toBeVisible({ timeout: 15_000 });
+  await expect(button).toBeEnabled({ timeout: 15_000 });
+  const result = await page.evaluate(async (loginEndpoint) => {
+    const form = document.querySelector("form");
+    if (!form) return { ok: false, status: 0, message: "missing_form" };
+
+    const formData = new FormData(form);
+    const response = await fetch(loginEndpoint, {
+      body: JSON.stringify({
+        email: String(formData.get("email") ?? ""),
+        password: String(formData.get("password") ?? ""),
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+    const data = await response
+      .json()
+      .catch(() => ({ ok: false, message: "invalid_json" }));
+
+    if (data.ok && typeof data.redirectTo === "string") {
+      window.location.assign(data.redirectTo);
+      return { ok: true, status: response.status };
+    }
+
+    return {
+      ok: false,
+      status: response.status,
+      message: typeof data.message === "string" ? data.message : "login_failed",
+    };
+  }, endpoint);
+
+  if (!result.ok) {
+    throw new Error(`login_failed_status_${result.status}_${result.message}`);
+  }
 }
 
 async function cleanupOnce(reason, detail) {

@@ -267,6 +267,7 @@ export function mapBookingDetail(
 function getMeetingProvider(
   provider: string | null,
 ): BookingDetailPageData["onlineSession"]["provider"] {
+  if (provider === "zoom_video_sdk") return "zoom";
   if (provider === "zoom" || provider === "google_meet") return provider;
 
   return "external";

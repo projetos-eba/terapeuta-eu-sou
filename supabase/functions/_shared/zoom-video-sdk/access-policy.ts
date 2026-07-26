@@ -8,7 +8,9 @@ export type VideoAccessReason =
   | "VIDEO_SESSION_NOT_READY"
   | "PAYMENT_NOT_CONFIRMED"
   | "THERAPIST_NOT_ALLOWED"
+  | "THERAPIST_NOT_IN_SESSION"
   | "THERAPIST_SUSPENDED"
+  | "HARD_TIMEOUT"
   | "TOO_EARLY"
   | "TOO_LATE"
   | "UNKNOWN";
@@ -17,8 +19,10 @@ export type VideoAccessState = {
   allowed: boolean;
   availableFrom: string;
   availableUntil: string;
+  hardEndsAt: string | null;
   videoSessionStatus: string;
   reason: VideoAccessReason | null;
+  serverNow: string;
 };
 
 export function evaluateVideoSessionAccess(input: {
@@ -26,9 +30,11 @@ export function evaluateVideoSessionAccess(input: {
   bookingStatus: string;
   endsAt: string;
   financialStatus: string | null;
+  hardEndsAt?: string | null;
   now?: Date;
   startsAt: string;
   therapistStatus?: string;
+  therapistPresent?: boolean;
   videoSessionReady: boolean;
   videoSessionStatus: string | null;
 }): VideoAccessState {
@@ -42,6 +48,7 @@ export function evaluateVideoSessionAccess(input: {
   const availableUntil = new Date(
     endsAt.getTime() + VIDEO_SESSION_ACCESS_WINDOW.afterEndsMinutes * 60_000,
   );
+  const hardEndsAt = input.hardEndsAt ? new Date(input.hardEndsAt) : null;
   let reason: VideoAccessReason | null = null;
 
   if (
@@ -69,6 +76,8 @@ export function evaluateVideoSessionAccess(input: {
     reason = "TOO_EARLY";
   } else if (now >= availableUntil) {
     reason = "TOO_LATE";
+  } else if (hardEndsAt && now >= hardEndsAt) {
+    reason = "HARD_TIMEOUT";
   } else if (
     input.videoSessionStatus === "ended" ||
     input.videoSessionStatus === "canceled"
@@ -78,14 +87,18 @@ export function evaluateVideoSessionAccess(input: {
     reason = "UNKNOWN";
   } else if (!input.videoSessionReady) {
     reason = "VIDEO_SESSION_NOT_READY";
+  } else if (input.actorRole === "patient" && !input.therapistPresent) {
+    reason = "THERAPIST_NOT_IN_SESSION";
   }
 
   return {
     allowed: reason === null,
     availableFrom: availableFrom.toISOString(),
     availableUntil: availableUntil.toISOString(),
+    hardEndsAt: input.hardEndsAt ?? null,
     videoSessionStatus: input.videoSessionStatus ?? "not_available",
     reason,
+    serverNow: now.toISOString(),
   };
 }
 
@@ -95,7 +108,9 @@ export function getVideoAccessMessage(reason: VideoAccessReason) {
     VIDEO_SESSION_NOT_READY: "A sala ainda esta em preparacao.",
     PAYMENT_NOT_CONFIRMED: "Aguardamos a confirmacao do pagamento.",
     THERAPIST_NOT_ALLOWED: "O acesso a esta sessao nao esta autorizado.",
+    THERAPIST_NOT_IN_SESSION: "Aguardando o terapeuta iniciar a sessao.",
     THERAPIST_SUSPENDED: "O acesso a sala esta bloqueado para este perfil.",
+    HARD_TIMEOUT: "O limite seguro desta sessao foi atingido.",
     TOO_EARLY: "A entrada fica disponivel perto do horario.",
     TOO_LATE: "A janela de acesso desta sessao foi encerrada.",
     UNKNOWN: "Nao foi possivel liberar o acesso agora.",
