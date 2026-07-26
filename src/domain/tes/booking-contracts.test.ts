@@ -5,6 +5,7 @@ import {
   canTransitionBookingStatus,
   DomainErrorCode,
   isBookingStatus,
+  RescheduleStatus,
   TesDomainError,
 } from "@/domain/tes";
 
@@ -27,6 +28,11 @@ describe("booking contracts", () => {
         BookingStatus.Confirmed,
       ),
     ).toBe(false);
+  });
+
+  it("keeps reschedule terminal states outside BookingStatus", () => {
+    expect(RescheduleStatus.Applied).toBe("applied");
+    expect(RescheduleStatus.Expired).toBe("expired");
   });
 
   it("keeps internal and safe error messages separate", () => {

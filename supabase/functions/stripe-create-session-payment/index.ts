@@ -20,20 +20,18 @@ type Body = {
 };
 
 type BookingRow = {
+  currency_snapshot: string;
   id: string;
   patient_profile_id: string;
+  service_duration_minutes_snapshot: number;
   service_id: string;
+  service_price_cents_snapshot: number;
+  service_title_snapshot: string;
   status: string;
   therapist_profile_id: string;
   therapist_profiles: {
     is_accepting_bookings: boolean;
     status: string;
-  } | null;
-  therapist_services: {
-    currency: string;
-    duration_minutes: number;
-    price_cents: number;
-    title: string;
   } | null;
 };
 
@@ -88,10 +86,7 @@ runtime.serve(async (request) => {
       );
     }
 
-    if (
-      !booking.therapist_services ||
-      booking.therapist_services.price_cents <= 0
-    ) {
+    if (booking.service_price_cents_snapshot <= 0) {
       throw new DomainError(
         "service_price_missing",
         409,
@@ -101,7 +96,7 @@ runtime.serve(async (request) => {
 
     const policy = await getActivePolicy(client);
     const snapshot = calculateCommissionSnapshot({
-      grossAmountCents: booking.therapist_services.price_cents,
+      grossAmountCents: booking.service_price_cents_snapshot,
       platformCommissionBps: policy.platform_commission_bps,
     });
     const customer = await getOrCreatePatientCustomer({
@@ -133,14 +128,14 @@ runtime.serve(async (request) => {
         line_items: [
           {
             price_data: {
-              currency: "brl",
+              currency: booking.currency_snapshot.toLowerCase(),
               product_data: {
                 metadata: {
                   stripe_mode: config.stripeMode,
                   system: "tes",
                   tes_service_id: booking.service_id,
                 },
-                name: booking.therapist_services.title,
+                name: booking.service_title_snapshot,
               },
               unit_amount: snapshot.grossAmountCents,
             },
@@ -214,7 +209,7 @@ function requireUuid(value: unknown, code: string) {
 
 async function getBooking(client: SupabaseRestClient, bookingId: string) {
   const rows = await client.get<BookingRow[]>(
-    `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,status,therapist_profiles(status,is_accepting_bookings),therapist_services(price_cents,currency,duration_minutes,title)&id=eq.${encodeURIComponent(bookingId)}&limit=1`,
+    `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,status,service_title_snapshot,service_duration_minutes_snapshot,service_price_cents_snapshot,currency_snapshot,therapist_profiles(status,is_accepting_bookings)&id=eq.${encodeURIComponent(bookingId)}&limit=1`,
   );
 
   if (!rows[0]) {

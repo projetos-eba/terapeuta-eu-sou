@@ -127,7 +127,7 @@ Para Admin, o MVP sustenta:
 | Supabase local                                       | Estrutura confirmada em `supabase/`.                                                               |
 | Supabase SDK frontend                                | Não identificado nos arquivos analisados.                                                          |
 | Stripe SDK                                           | Confirmado em `package.json`; fundação Billing e Connect implementada.                             |
-| Zoom SDK/API client                                  | Não identificado nos arquivos analisados.                                                          |
+| Zoom SDK/API client                                  | `@zoom/meetingsdk` e cliente REST/S2S implementados.                                               |
 | Storybook                                            | Documentado, não instalado.                                                                        |
 | Observabilidade                                      | Não identificado nos arquivos analisados.                                                          |
 | Test runner                                          | Vitest e Playwright confirmados em `package.json`.                                                 |
@@ -518,7 +518,7 @@ Status atual do app público: `/api/public/matching/calculate` substitui esse co
 | `record-matching-metrics`                      |  1/6 | Não identificado nos arquivos analisados.                                   | Sim, se métricas forem postergadas.                                  |
 | `stripe-create-session-payment`                |    2 | Implementada sobre `session_payments`, com projeções transacionais.         | Sim; go-live exige E2E no Stripe test mode.                          |
 | `stripe-billing-webhook`                       |  2/5 | Implementada com reserva atômica, eventos assíncronos e ordenação temporal. | Sim; go-live exige E2E com eventos assinados.                        |
-| `create-zoom-meeting`                          |    2 | Não identificado nos arquivos analisados.                                   | Não para sessão online real.                                         |
+| `zoom-jobs-process` e `zoom-meeting-access`    |    2 | Implementadas com outbox pós-pagamento e Meeting SDK.                       | Sim; go-live exige gates externos e testes RLS.                      |
 | `stripe-connect-create-account` e account link |    4 | Implementadas sobre Accounts v2, incluindo eventos thin `v2.core.account*`. | Sim; go-live exige E2E Connect em test mode.                         |
 | `stripe-connect-sync-account`                  |    4 | Implementada com leitura de requirements e capability de transferência.     | Sim; go-live exige E2E Connect em test mode.                         |
 | `stripe-create-subscription-checkout`          |    5 | Implementada com catálogo server-side e reconciliação por webhook.          | Sim; go-live exige E2E Billing em test mode.                         |
@@ -682,8 +682,8 @@ implementada. O Gate F0 de hardening financeiro foi concluído. Permanecem como
 lacunas:
 
 - snapshot financeiro completo e integração transacional do booking;
-- campos Zoom separados para `join_url` e `start_url_encrypted`;
-- função Zoom;
+- holds, conflito autoritativo e transições de booking;
+- bloqueios de produção Zoom: ZAK, hosts, cron, webhook remoto e pgTAP RLS;
 - homologação ponta a ponta de cobrança, cancelamento, disputa e repasse.
 
 ### 13.4 Máquina de estados alvo
@@ -822,25 +822,36 @@ Admin lista elegíveis
 
 ## 15. Zoom
 
-Ferramenta alvo: Zoom via API/SDK, Server-to-Server OAuth.
+Estado atual: fundação implementada com Server-to-Server OAuth, Meeting SDK,
+outbox pós-pagamento e webhooks assinados.
 
-Regras:
+Fontes:
 
-- gerar reunião apenas depois de pagamento confirmado por webhook;
-- armazenar `join_url` separado de `start_url`;
-- proteger `zoom_start_url_encrypted` por RLS;
-- paciente nunca recebe start URL;
-- terapeuta responsável e admin autorizado podem acessar start URL;
-- logs não podem conter URLs sensíveis.
+- `zoom_meetings`;
+- `zoom_meeting_jobs`;
+- `zoom_webhook_events`;
+- `zoom_meeting_participations`;
+- `patient_zoom_meeting_summary_v`;
+- `therapist_zoom_meeting_summary_v`.
 
-Campos alvo recomendados:
+Regras implementadas:
 
-- `zoom_meeting_id`;
-- `zoom_join_url`;
-- `zoom_start_url_encrypted`;
-- `meeting_provider`.
+- reunião enfileirada somente após `session_payments.financial_status = paid`;
+- JWT Meeting SDK gerado no backend;
+- paciente nunca recebe ZAK ou dados de host;
+- ZAK do terapeuta é solicitado sob demanda e não persistido;
+- `start_url` não é persistida nem gravada em `bookings.meeting_url`;
+- logs e tópicos não contêm conteúdo clínico;
+- jobs e webhooks possuem idempotência e retry.
 
-Estado atual: schema possui `meeting_provider` e `meeting_url`, mas não possui os campos Zoom alvo separados.
+Antes de produção:
+
+- bloquear terapeuta suspenso/rejeitado;
+- validar pagamento canônico também no endpoint de acesso;
+- definir alocação/capacidade de hosts;
+- homologar ZAK e scopes;
+- configurar cron e webhook remoto;
+- criar pgTAP de RLS e deduplicação semântica de participação.
 
 ## 16. Área do paciente
 
@@ -1066,7 +1077,7 @@ Dependências:
 - Fase 1 concluída;
 - decisions de booking, expiração, política mínima de cancelamento e preço mínimo;
 - Gate Financeiro F0 concluído sobre a fundação Stripe existente;
-- Zoom credentials/config;
+- configuração Zoom no ambiente alvo e gates de produção da integração;
 - migrations financeiras complementares somente quando necessárias.
 
 Critério de pronto:
@@ -1078,7 +1089,8 @@ Critério de pronto:
 - Zoom só é criado após pagamento confirmado;
 - `npm run typecheck`, `npm run lint`, `npm run build` passam.
 
-Status: bloqueada.
+Status: parcialmente implementada. F0 e fundação Zoom concluídos; reserva
+autoritativa, holds, snapshots completos e homologações externas permanecem.
 
 ### Fase 3 — Área do paciente
 
@@ -1240,7 +1252,7 @@ Status: bloqueada.
 |   7 | Máquina de estados booking                 | A      |    2 | Pendente antes de migration.                                                           |
 |   8 | Expiração de booking pendente              | A      |    2 | Pendente antes de checkout.                                                            |
 |   9 | Transição `payments` -> `session_payments` | A      |    2 | Obrigatória.                                                                           |
-|  10 | Criptografia do start URL Zoom             | A      |    2 | Pendente antes de Zoom.                                                                |
+|  10 | Credencial de host Zoom                    | A      |    2 | Resolvida sem persistir `start_url`/ZAK; homologação externa pendente.                 |
 |  11 | Financeiro disponível ao Básico            | C      |    4 | Resolvido como operacional simples.                                                    |
 |  12 | Modelo de disponibilidade                  | A      |  2/4 | Pendente para reserva real.                                                            |
 |  13 | Matriz definitiva de capabilities          | A      |    5 | Parcialmente resolvida pelo código; precisa decisão se produto quiser alterar Premium. |
@@ -1260,13 +1272,15 @@ Legenda:
 | `payments` e `session_payments` virarem fontes paralelas | Alta       | Criar `session_payments` e proibir código novo usando `payments` como fonte final. |
 | Checkout sem webhook/idempotência                        | Alta       | `stripe_webhook_events`, dedupe e webhook como fonte única.                        |
 | Reserva dupla de horário                                 | Alta       | Validar e bloquear no banco/Edge Function.                                         |
-| Zoom start URL exposto                                   | Alta       | Campo criptografado e RLS estrito.                                                 |
+| Credencial de host Zoom exposta                          | Alta       | Não persistir `start_url`/ZAK; payload efêmero apenas ao terapeuta autorizado.     |
+| Host Zoom único para agenda concorrente                  | Alta       | Definir pool/alocação de hosts licenciados antes do go-live.                       |
+| Terapeuta bloqueado recebendo acesso Zoom                | Alta       | Remover `allowBlockedStatus` e cobrir o gate com testes.                           |
 | RLS pública insuficiente para terapeutas/serviços        | Alta       | Criar views/policies antes de páginas públicas reais.                              |
 | Figma e rotas locais divergentes                         | Média      | Manter `routes.ts` como canônico e registrar aliases/legados.                      |
 | Linguagem de IA enganosa                                 | Média      | Copy deve explicar recomendações determinísticas.                                  |
 | Pro financeiro conflita com permissions                  | Média      | Decisão de produto antes da Fase 5.                                                |
 | Falta de testes                                          | Média      | Adicionar testes mínimos em Fase 1 para Match e em Fase 2 para webhooks.           |
-| Falta de SDKs Supabase/Stripe/Zoom                       | Média      | Adicionar dependências somente após gate da fase correspondente.                   |
+| Homologação externa Stripe/Zoom ausente                  | Alta       | Executar E2E em test mode/Marketplace antes de produção.                           |
 
 ## 22. QA e definição de pronto do MVP
 
@@ -1286,14 +1300,17 @@ Uma entrega só pode ser marcada pronta quando:
 - cria repasses a partir de `payout_batches` e `payout_batch_items`;
 - grava snapshot de preço e duração no momento da reserva;
 - gera link Zoom apenas após pagamento confirmado;
-- protege `zoom_start_url_encrypted` por RLS;
+- não persiste `start_url` ou ZAK; qualquer persistência futura exige
+  criptografia versionada e leitura indireta autorizada;
 - protege dados por RLS conforme perfil;
 - passa em `npm run typecheck`;
 - passa em `npm run lint`;
 - passa em `npm run build`;
 - documenta limitações e riscos.
 
-Testes automatizados ainda não estão configurados. Critério adicional recomendado: criar script `test` antes de considerar Fase 1 concluída com algoritmo validado.
+Vitest, Playwright e testes SQL estão configurados. Zoom ainda exige pgTAP de
+RLS e E2E autenticado cobrindo paciente, terapeuta responsável, terapeuta
+externo e terapeuta bloqueado.
 
 ## 23. Próxima sequência executável
 
@@ -1305,9 +1322,12 @@ Testes automatizados ainda não estão configurados. Critério adicional recomen
 6. Implementar catálogo e Match real.
 7. Criar testes mínimos do Match.
 8. Gate F0 concluído: preservar os invariantes financeiros nos próximos marcos.
-9. Implementar A2 para banco, RLS e funções transacionais de Agenda.
-10. Implementar Zoom pós-webhook.
-11. Só então liberar os fluxos transacionais completos nos três shells.
+9. A2 concluída: preservar snapshots, holds, conflitos, transições e RLS nos
+   próximos marcos.
+10. Implementar A3 para edição de horários e preview de disponibilidade.
+11. Implementar A5/A6 para slots autoritativos e orquestração de checkout.
+12. Fechar os gates de produção da fundação Zoom já implementada.
+13. Só então liberar os fluxos transacionais completos nos três shells.
 
 ## 24. Fora de escopo do MVP
 
@@ -1326,4 +1346,8 @@ Testes automatizados ainda não estão configurados. Critério adicional recomen
 
 ## 25. Conclusão
 
-O caminho seguro é construir primeiro a fundação visual e pública, alinhar Match e RLS, e só depois avançar para pagamento, ledger, Stripe, Zoom e áreas logadas. A regra principal é manter uma única fonte de verdade para rotas, permissões, pagamentos e dados sensíveis.
+O caminho seguro parte da A2 já concluída, preserva o F0 e segue por A3, A5 e
+A6 antes de liberar o checkout transacional completo. Zoom permanece como
+fundação implementada com go-live condicionado a segurança, capacidade e
+homologação externa. A regra principal continua sendo uma única fonte de
+verdade para rotas, permissões, pagamentos e dados sensíveis.

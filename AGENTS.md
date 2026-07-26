@@ -1,4 +1,4 @@
-versão: 2026-07-25
+versão: 2026-07-26
 fonte: project.md — MVP Transacional TES consolidado
 próxima revisão: ao alterar stack, perfis, planos ou integrações
 
@@ -108,7 +108,7 @@ Arquivo principal:
 
 ## Perfis e planos
 
-| Perfil                 | Área canônica | Plano         | Enum técnico   | Alias temporário atual |
+| Perfil                 | Área canônica  | Plano         | Enum técnico   | Alias temporário atual |
 | ---------------------- | -------------- | ------------- | -------------- | ---------------------- |
 | Paciente               | `/app`         | —             | —              | —                      |
 | Terapeuta Free         | `/terapeuta/*` | Básico / Free | `free`         | `/basico/*`            |
@@ -163,14 +163,29 @@ Stack real identificada:
 - Storybook documentado, não instalado.
 - Componentes React do Design System ainda não implementados.
 - `src/lib/routes.ts` e `src/lib/permissions.ts` existem como fontes canônicas de rotas e permissões.
-- `supabase/` parcialmente estruturado com migrations e Edge Function `match-therapies`.
+- `supabase/` possui migrations, seeds idempotentes, testes pgTAP e Edge
+  Functions para autenticação, e-mail, Match, Stripe e Zoom.
 - Hostinger Mail API: contrato confirmado em 2026-07-24. `GET https://api.mail.hostinger.com/api/v1/me` lista mailboxes; envio usa `POST https://api.mail.hostinger.com/api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, payload `to: string[]`, `display_name`, `subject`, `text`, `html`, e sucesso `204` sem corpo.
 - `CONFIRMED_AUTOMATICALLY_EMAIL` e secrets de e-mail pertencem somente a Supabase Edge Functions. Ausente/vazio equivale a `false`; aceita apenas `true` ou `false`; valor inválido deve falhar fechado e nunca ativar bypass. Quando `true`, cadastro confirma Auth via Admin API, não envia e-mail, não cria token e redireciona para login com `verified=1&automatic=1`.
 - Stripe Billing, Checkout de sessões, Connect Accounts v2, ledger e lotes de
-  repasse possuem fundação implementada. O hardening de webhooks, eventos fora
-  de ordem, capability events v2, refunds e transfers continua obrigatório antes
-  de produção.
-- Zoom: fundação e hardening implementados com `zoom_meetings`, `zoom_meeting_jobs`, `zoom_webhook_events`, `zoom_meeting_participations`, Edge Functions `zoom-meeting-access`, `zoom-jobs-process`, `zoom-webhook`, rota `/api/zoom/meeting-access`, páginas `/ajuda/zoom`, `/ajuda`, `/termos` e `/privacidade`, docs em `docs/zoom/` e skill `skills/zoom-integration`. Teste real de criação/update/delete passa; smoke local de webhook e fluxo real de fila passam. ZAK retornou falha sanitizada no ambiente real e ainda exige confirmação de escopo/autorização no Zoom Marketplace antes de produção.
+  repasse concluíram o Gate F0 de hardening. A homologação E2E externa no Stripe
+  test mode continua obrigatória antes de produção.
+- Agenda A2 implementada com snapshots imutáveis em `bookings`,
+  `booking_holds` com TTL e idempotência, intervalo ocupado indexável,
+  exclusão GiST por terapeuta, locks transacionais, transições auditadas e
+  reagendamento versionado. RPCs de escrita são `service_role` only e devem ser
+  orquestrados por Edge Functions autenticadas; o slot engine completo pertence
+  a A5 e o checkout integrado a A6.
+- Zoom: fundação e hardening implementados com `zoom_meetings`,
+  `zoom_meeting_jobs`, `zoom_webhook_events`,
+  `zoom_meeting_participations`, Edge Functions `zoom-meeting-access`,
+  `zoom-jobs-process`, `zoom-webhook`, rota `/api/zoom/meeting-access`, páginas
+  `/ajuda/zoom`, `/ajuda`, `/termos` e `/privacidade`, docs em `docs/zoom/` e
+  skill `skills/zoom-integration`. A entrega mergeada registra teste real de
+  criação/update/delete, smoke de webhook e fluxo de fila. Antes de produção,
+  revalidar no ambiente alvo e fechar ZAK, topologia de hosts, bloqueio de
+  terapeuta suspenso/rejeitado, pagamento canônico no gate de acesso, cron,
+  webhook remoto e pgTAP de RLS.
 
 ## 6. QA e definição de pronto
 
@@ -190,7 +205,9 @@ Uma tarefa só pode ser considerada pronta quando:
   `payout_batch_items`;
 - grava snapshot de preço e duração no momento da reserva;
 - gera link Zoom apenas após pagamento confirmado via webhook;
-- protege `zoom_start_url_encrypted` por RLS (somente terapeuta responsável e admin autorizado);
+- não persiste `start_url` ou ZAK no fluxo Zoom atual; se a persistência futura
+  for necessária, exige criptografia versionada e nenhuma leitura autenticada
+  direta;
 - protege dados por RLS conforme perfil;
 - passa em `npm run typecheck`, `npm run lint` e `npm run build`;
 - documenta limitações e riscos;

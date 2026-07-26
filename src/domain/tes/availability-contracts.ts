@@ -1,4 +1,5 @@
 import type { ISODateTimeString, UUID } from "./types";
+import type { BookingServiceSnapshot } from "./booking-contracts";
 
 export const ScheduleBlockType = {
   AvailableOverride: "available_override",
@@ -28,10 +29,13 @@ export type BookingHold = {
   bookingId?: UUID;
   expiresAt: ISODateTimeString;
   id: UUID;
+  idempotencyKey: string;
   patientProfileId: UUID;
+  snapshot: BookingServiceSnapshot;
   slot: AvailableSlot;
   status: BookingHoldStatus;
   therapistProfileId: UUID;
+  version: number;
 };
 
 export const AVAILABILITY_PREVIEW_TIMEZONE_LIMITATION =

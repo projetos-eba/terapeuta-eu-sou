@@ -4,10 +4,19 @@ Checklist antes de produção:
 
 - Confirmar scopes reais no app S2S.
 - Confirmar autorização do General App para Meeting SDK e eventual ZAK.
+- Confirmar que `@zoom/meetingsdk` atende à versão mínima exigida pela Zoom.
 - Publicar/configurar webhook no Marketplace com URL remota.
 - Executar `supabase db reset`, `supabase db lint` e regenerar `database.types.ts`.
 - Executar `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build`.
 - Validar RLS com usuários de paciente, terapeuta responsável, terapeuta externo e usuário sem sessão.
+- Validar que terapeuta suspenso/rejeitado não recebe acesso nem ZAK.
+- Validar `session_payments.financial_status = paid` no gate de acesso.
+- Definir alocação de hosts licenciados e concorrência; não promover
+  `ZOOM_DEFAULT_HOST_USER_ID` único como topologia final.
+- Validar comportamento quando cookies de paciente e terapeuta coexistirem.
+- Criar pgTAP para grants, views, policies e RPCs Zoom.
+- Definir deduplicação e atribuição de papel das participações antes de usar
+  presença em qualquer decisão financeira.
 - Validar replay/duplicidade de webhook.
 - Validar que `bookings.meeting_url` não recebe `start_url`.
 - Definir política legal de retenção dos eventos operacionais.

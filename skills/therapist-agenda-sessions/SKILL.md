@@ -41,8 +41,24 @@ Não criar enums equivalentes dentro de features.
 - O preview TypeScript não confirma reserva.
 - Booking do terapeuta bloqueia todos os serviços no mesmo intervalo.
 - Aplicar buffers e validar intervalos.
-- O slot engine autoritativo futuro pertence ao Postgres/RPC.
-- Holds futuros exigem TTL, idempotência e migration.
+- O Postgres protege holds e bookings; a composição autoritativa de slots
+  continua pertencendo ao futuro endpoint A5.
+- `booking_holds` usa TTL, idempotência, snapshots e advisory lock por
+  terapeuta.
+- `occupied_during` e constraints GiST impedem conflito entre serviços.
+
+## Comandos transacionais A2
+
+- `reserve_booking_hold_v1`: cria hold somente via backend confiável.
+- `consume_booking_hold_v1`: converte hold em um booking `draft`.
+- `transition_booking_status_v1`: aplica transição operacional e auditoria.
+- `request_booking_reschedule_v1`: cria proposta versionada.
+- `resolve_booking_reschedule_v1`: aplica resolução e sincroniza o outbox Zoom.
+- `session_payments` continua sendo a única fonte financeira.
+- O checkout de sessão deve usar o snapshot do booking, nunca o preço atual do
+  serviço.
+- RPCs de escrita são `service_role` only e devem ser chamados por Edge
+  Functions que autenticam e autorizam o usuário.
 
 ## Privacidade e segurança
 
@@ -60,4 +76,6 @@ Não criar enums equivalentes dentro de features.
 - Testar transições permitidas e proibidas.
 - Testar paciente e terapeuta com o mesmo horário e serviço.
 - Testar RLS entre terapeutas.
+- Rodar `npx supabase db reset`, `npx supabase db lint --schema public` e
+  `npx supabase test db`.
 - Rodar typecheck, lint, Vitest e build.
