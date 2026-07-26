@@ -43,3 +43,19 @@ O browser nunca recebe Client Secret, Account ID, token S2S, webhook secret, `st
 Topic enviado ao Zoom usa referência opaca curta. Não enviar terapia, queixa, diagnóstico, objetivo clínico ou nome completo do cliente.
 
 Passcodes gerados localmente respeitam limite de 10 caracteres observado na configuração real da conta Zoom usada em desenvolvimento.
+
+## Limites atuais
+
+- `ZOOM_DEFAULT_HOST_USER_ID` define um host único de desenvolvimento. Produção
+  precisa de alocação de hosts licenciados e controle de concorrência.
+- O endpoint de acesso ainda deve bloquear terapeuta `suspended`/`rejected` e
+  confirmar o estado canônico em `session_payments`, sem depender somente de
+  `bookings.payment_status`.
+- A rota Next deve desambiguar a sessão quando cookies de paciente e terapeuta
+  coexistirem.
+- Participações ainda chegam com papel `unknown`; não devem confirmar presença
+  financeira ou clínica antes de atribuição e deduplicação semântica.
+- As policies existem, mas a cobertura pgTAP específica de RLS Zoom ainda deve
+  ser criada.
+- Cron, webhook remoto, ZAK, licença e configuração do Marketplace permanecem
+  gates externos de produção.

@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -532,7 +532,11 @@ export type Database = {
           created_at: string
           event_type: string
           id: string
+          next_status: Database["public"]["Enums"]["booking_status"] | null
           payload: Json
+          previous_status: Database["public"]["Enums"]["booking_status"] | null
+          request_id: string | null
+          source: string
         }
         Insert: {
           actor_profile_id?: string | null
@@ -540,7 +544,11 @@ export type Database = {
           created_at?: string
           event_type: string
           id?: string
+          next_status?: Database["public"]["Enums"]["booking_status"] | null
           payload?: Json
+          previous_status?: Database["public"]["Enums"]["booking_status"] | null
+          request_id?: string | null
+          source?: string
         }
         Update: {
           actor_profile_id?: string | null
@@ -548,7 +556,11 @@ export type Database = {
           created_at?: string
           event_type?: string
           id?: string
+          next_status?: Database["public"]["Enums"]["booking_status"] | null
           payload?: Json
+          previous_status?: Database["public"]["Enums"]["booking_status"] | null
+          request_id?: string | null
+          source?: string
         }
         Relationships: [
           {
@@ -563,6 +575,154 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      booking_holds: {
+        Row: {
+          buffer_after_minutes_snapshot: number
+          buffer_before_minutes_snapshot: number
+          cancelled_at: string | null
+          consume_idempotency_key: string | null
+          consumed_at: string | null
+          consumed_booking_id: string | null
+          created_at: string
+          currency_snapshot: string
+          ends_at: string
+          expires_at: string
+          id: string
+          idempotency_key: string
+          occupied_during: unknown
+          patient_profile_id: string
+          service_duration_minutes_snapshot: number
+          service_id: string
+          service_price_cents_snapshot: number
+          service_title_snapshot: string
+          snapshot_captured_at: string
+          starts_at: string
+          status: Database["public"]["Enums"]["booking_hold_status"]
+          therapist_profile_id: string
+          timezone: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          buffer_after_minutes_snapshot: number
+          buffer_before_minutes_snapshot: number
+          cancelled_at?: string | null
+          consume_idempotency_key?: string | null
+          consumed_at?: string | null
+          consumed_booking_id?: string | null
+          created_at?: string
+          currency_snapshot: string
+          ends_at: string
+          expires_at: string
+          id?: string
+          idempotency_key: string
+          occupied_during: unknown
+          patient_profile_id: string
+          service_duration_minutes_snapshot: number
+          service_id: string
+          service_price_cents_snapshot: number
+          service_title_snapshot: string
+          snapshot_captured_at?: string
+          starts_at: string
+          status?: Database["public"]["Enums"]["booking_hold_status"]
+          therapist_profile_id: string
+          timezone: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          buffer_after_minutes_snapshot?: number
+          buffer_before_minutes_snapshot?: number
+          cancelled_at?: string | null
+          consume_idempotency_key?: string | null
+          consumed_at?: string | null
+          consumed_booking_id?: string | null
+          created_at?: string
+          currency_snapshot?: string
+          ends_at?: string
+          expires_at?: string
+          id?: string
+          idempotency_key?: string
+          occupied_during?: unknown
+          patient_profile_id?: string
+          service_duration_minutes_snapshot?: number
+          service_id?: string
+          service_price_cents_snapshot?: number
+          service_title_snapshot?: string
+          snapshot_captured_at?: string
+          starts_at?: string
+          status?: Database["public"]["Enums"]["booking_hold_status"]
+          therapist_profile_id?: string
+          timezone?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_holds_consumed_booking_id_fkey"
+            columns: ["consumed_booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_holds_patient_profile_id_fkey"
+            columns: ["patient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "patient_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_holds_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profile_services_v"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "booking_holds_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "booking_holds_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_holds_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_holds_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_holds_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "booking_holds_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -695,39 +855,66 @@ export type Database = {
       }
       booking_reschedule_requests: {
         Row: {
+          applied_at: string | null
           booking_id: string
+          booking_version_at_request: number
           created_at: string
+          expires_at: string
           id: string
+          original_ends_at: string
+          original_starts_at: string
+          original_timezone: string
           proposed_ends_at: string
           proposed_starts_at: string
+          proposed_timezone: string
           reason: string | null
+          request_id: string | null
           requested_by_profile_id: string
+          resolution_request_id: string | null
           resolved_at: string | null
           resolved_by_profile_id: string | null
           status: string
           updated_at: string
         }
         Insert: {
+          applied_at?: string | null
           booking_id: string
+          booking_version_at_request: number
           created_at?: string
+          expires_at: string
           id?: string
+          original_ends_at: string
+          original_starts_at: string
+          original_timezone: string
           proposed_ends_at: string
           proposed_starts_at: string
+          proposed_timezone: string
           reason?: string | null
+          request_id?: string | null
           requested_by_profile_id: string
+          resolution_request_id?: string | null
           resolved_at?: string | null
           resolved_by_profile_id?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
+          applied_at?: string | null
           booking_id?: string
+          booking_version_at_request?: number
           created_at?: string
+          expires_at?: string
           id?: string
+          original_ends_at?: string
+          original_starts_at?: string
+          original_timezone?: string
           proposed_ends_at?: string
           proposed_starts_at?: string
+          proposed_timezone?: string
           reason?: string | null
+          request_id?: string | null
           requested_by_profile_id?: string
+          resolution_request_id?: string | null
           resolved_at?: string | null
           resolved_by_profile_id?: string | null
           status?: string
@@ -838,58 +1025,88 @@ export type Database = {
       }
       bookings: {
         Row: {
+          buffer_after_minutes_snapshot: number
+          buffer_before_minutes_snapshot: number
           cancellation_reason: string | null
           cancelled_at: string | null
           completed_at: string | null
           created_at: string
+          currency_snapshot: string
           ends_at: string
           id: string
+          last_transition_at: string | null
           meeting_provider: string | null
           meeting_url: string | null
+          occupied_during: unknown
           patient_profile_id: string
           payment_status: Database["public"]["Enums"]["payment_status"]
+          service_duration_minutes_snapshot: number
           service_id: string
+          service_price_cents_snapshot: number
+          service_title_snapshot: string
+          snapshot_captured_at: string
           starts_at: string
           status: Database["public"]["Enums"]["booking_status"]
           therapist_profile_id: string
           timezone: string
           updated_at: string
+          version: number
         }
         Insert: {
+          buffer_after_minutes_snapshot: number
+          buffer_before_minutes_snapshot: number
           cancellation_reason?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
           created_at?: string
+          currency_snapshot: string
           ends_at: string
           id?: string
+          last_transition_at?: string | null
           meeting_provider?: string | null
           meeting_url?: string | null
+          occupied_during: unknown
           patient_profile_id: string
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          service_duration_minutes_snapshot: number
           service_id: string
+          service_price_cents_snapshot: number
+          service_title_snapshot: string
+          snapshot_captured_at: string
           starts_at: string
           status?: Database["public"]["Enums"]["booking_status"]
           therapist_profile_id: string
           timezone?: string
           updated_at?: string
+          version?: number
         }
         Update: {
+          buffer_after_minutes_snapshot?: number
+          buffer_before_minutes_snapshot?: number
           cancellation_reason?: string | null
           cancelled_at?: string | null
           completed_at?: string | null
           created_at?: string
+          currency_snapshot?: string
           ends_at?: string
           id?: string
+          last_transition_at?: string | null
           meeting_provider?: string | null
           meeting_url?: string | null
+          occupied_during?: unknown
           patient_profile_id?: string
           payment_status?: Database["public"]["Enums"]["payment_status"]
+          service_duration_minutes_snapshot?: number
           service_id?: string
+          service_price_cents_snapshot?: number
+          service_title_snapshot?: string
+          snapshot_captured_at?: string
           starts_at?: string
           status?: Database["public"]["Enums"]["booking_status"]
           therapist_profile_id?: string
           timezone?: string
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -6239,6 +6456,42 @@ export type Database = {
           therapist_amount_cents: number
         }[]
       }
+      cancel_booking_hold_v1: {
+        Args: { p_hold_id: string; p_request_id: string }
+        Returns: {
+          buffer_after_minutes_snapshot: number
+          buffer_before_minutes_snapshot: number
+          cancelled_at: string | null
+          consume_idempotency_key: string | null
+          consumed_at: string | null
+          consumed_booking_id: string | null
+          created_at: string
+          currency_snapshot: string
+          ends_at: string
+          expires_at: string
+          id: string
+          idempotency_key: string
+          occupied_during: unknown
+          patient_profile_id: string
+          service_duration_minutes_snapshot: number
+          service_id: string
+          service_price_cents_snapshot: number
+          service_title_snapshot: string
+          snapshot_captured_at: string
+          starts_at: string
+          status: Database["public"]["Enums"]["booking_hold_status"]
+          therapist_profile_id: string
+          timezone: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "booking_holds"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       claim_auth_action_token: {
         Args: {
           p_claim_id: string
@@ -6278,6 +6531,43 @@ export type Database = {
         Args: { p_claim_id: string; p_token_id: string }
         Returns: boolean
       }
+      consume_booking_hold_v1: {
+        Args: { p_hold_id: string; p_idempotency_key: string }
+        Returns: {
+          buffer_after_minutes_snapshot: number
+          buffer_before_minutes_snapshot: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          currency_snapshot: string
+          ends_at: string
+          id: string
+          last_transition_at: string | null
+          meeting_provider: string | null
+          meeting_url: string | null
+          occupied_during: unknown
+          patient_profile_id: string
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          service_duration_minutes_snapshot: number
+          service_id: string
+          service_price_cents_snapshot: number
+          service_title_snapshot: string
+          snapshot_captured_at: string
+          starts_at: string
+          status: Database["public"]["Enums"]["booking_status"]
+          therapist_profile_id: string
+          timezone: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_weekly_payout_batch: {
         Args: {
           p_created_by?: string
@@ -6291,6 +6581,14 @@ export type Database = {
         Args: { current_value: number; previous_value: number }
         Returns: Json
       }
+      enqueue_booking_zoom_sync_v1: {
+        Args: {
+          p_booking_id: string
+          p_operation: Database["public"]["Enums"]["zoom_job_operation"]
+          p_request_id: string
+        }
+        Returns: string
+      }
       enqueue_zoom_meeting_job_v1: {
         Args: {
           p_booking_id: string
@@ -6301,7 +6599,26 @@ export type Database = {
         }
         Returns: string
       }
+      expire_booking_holds_v1: {
+        Args: { p_now?: string; p_therapist_profile_id?: string }
+        Returns: number
+      }
+      expire_booking_reschedule_requests_v1: {
+        Args: { p_now?: string }
+        Returns: number
+      }
       get_therapist_dashboard_v1: { Args: never; Returns: Json }
+      is_booking_participant_profile_v1: {
+        Args: { p_booking_id: string; p_profile_id: string }
+        Returns: boolean
+      }
+      is_booking_status_transition_allowed_v1: {
+        Args: {
+          p_current: Database["public"]["Enums"]["booking_status"]
+          p_next: Database["public"]["Enums"]["booking_status"]
+        }
+        Returns: boolean
+      }
       is_current_patient_profile: {
         Args: { candidate_id: string }
         Returns: boolean
@@ -6314,6 +6631,7 @@ export type Database = {
         Args: { candidate_id: string }
         Returns: boolean
       }
+      is_valid_timezone_v1: { Args: { p_timezone: string }; Returns: boolean }
       refresh_session_transfer_eligibility: {
         Args: { p_now?: string; p_session_payment_id: string }
         Returns: Database["public"]["Enums"]["session_transfer_status"]
@@ -6321,6 +6639,91 @@ export type Database = {
       release_auth_action_token_claim: {
         Args: { p_claim_id: string; p_token_id: string }
         Returns: boolean
+      }
+      request_booking_reschedule_v1: {
+        Args: {
+          p_booking_id: string
+          p_expected_booking_version?: number
+          p_expires_in_seconds?: number
+          p_proposed_ends_at: string
+          p_proposed_starts_at: string
+          p_proposed_timezone: string
+          p_reason: string
+          p_request_id: string
+          p_requested_by_profile_id: string
+        }
+        Returns: {
+          applied_at: string | null
+          booking_id: string
+          booking_version_at_request: number
+          created_at: string
+          expires_at: string
+          id: string
+          original_ends_at: string
+          original_starts_at: string
+          original_timezone: string
+          proposed_ends_at: string
+          proposed_starts_at: string
+          proposed_timezone: string
+          reason: string | null
+          request_id: string | null
+          requested_by_profile_id: string
+          resolution_request_id: string | null
+          resolved_at: string | null
+          resolved_by_profile_id: string | null
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "booking_reschedule_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      reserve_booking_hold_v1: {
+        Args: {
+          p_ends_at: string
+          p_idempotency_key: string
+          p_patient_profile_id: string
+          p_service_id: string
+          p_starts_at: string
+          p_timezone: string
+          p_ttl_seconds?: number
+        }
+        Returns: {
+          buffer_after_minutes_snapshot: number
+          buffer_before_minutes_snapshot: number
+          cancelled_at: string | null
+          consume_idempotency_key: string | null
+          consumed_at: string | null
+          consumed_booking_id: string | null
+          created_at: string
+          currency_snapshot: string
+          ends_at: string
+          expires_at: string
+          id: string
+          idempotency_key: string
+          occupied_during: unknown
+          patient_profile_id: string
+          service_duration_minutes_snapshot: number
+          service_id: string
+          service_price_cents_snapshot: number
+          service_title_snapshot: string
+          snapshot_captured_at: string
+          starts_at: string
+          status: Database["public"]["Enums"]["booking_hold_status"]
+          therapist_profile_id: string
+          timezone: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "booking_holds"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       reserve_stripe_webhook_event_v1: {
         Args: {
@@ -6368,6 +6771,61 @@ export type Database = {
           processing_status: Database["public"]["Enums"]["zoom_webhook_processing_status"]
         }[]
       }
+      resolve_booking_reschedule_v1: {
+        Args: {
+          p_expected_booking_version?: number
+          p_request_id: string
+          p_reschedule_request_id: string
+          p_resolution: string
+          p_resolved_by_profile_id: string
+        }
+        Returns: Json
+      }
+      transition_booking_status_v1: {
+        Args: {
+          p_actor_profile_id: string
+          p_booking_id: string
+          p_expected_version?: number
+          p_reason: string
+          p_request_id: string
+          p_source?: string
+          p_target_status: Database["public"]["Enums"]["booking_status"]
+        }
+        Returns: {
+          buffer_after_minutes_snapshot: number
+          buffer_before_minutes_snapshot: number
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          created_at: string
+          currency_snapshot: string
+          ends_at: string
+          id: string
+          last_transition_at: string | null
+          meeting_provider: string | null
+          meeting_url: string | null
+          occupied_during: unknown
+          patient_profile_id: string
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          service_duration_minutes_snapshot: number
+          service_id: string
+          service_price_cents_snapshot: number
+          service_title_snapshot: string
+          snapshot_captured_at: string
+          starts_at: string
+          status: Database["public"]["Enums"]["booking_status"]
+          therapist_profile_id: string
+          timezone: string
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "bookings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
@@ -6382,6 +6840,7 @@ export type Database = {
         | "canceled"
         | "unpaid"
         | "paused"
+      booking_hold_status: "active" | "cancelled" | "consumed" | "expired"
       booking_status:
         | "draft"
         | "pending_payment"
@@ -6662,6 +7121,7 @@ export const Constants = {
         "unpaid",
         "paused",
       ],
+      booking_hold_status: ["active", "cancelled", "consumed", "expired"],
       booking_status: [
         "draft",
         "pending_payment",
