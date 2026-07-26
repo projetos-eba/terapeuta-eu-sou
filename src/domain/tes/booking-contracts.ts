@@ -48,24 +48,20 @@ export const SessionFinancialStatus = {
 export type SessionFinancialStatus =
   (typeof SessionFinancialStatus)[keyof typeof SessionFinancialStatus];
 
-export const ZoomMeetingStatus = {
-  CancelPending: "cancel_pending",
+export const ZoomVideoSessionStatus = {
   Canceled: "canceled",
   Ended: "ended",
   Failed: "failed",
-  InProgress: "in_progress",
-  PendingProvisioning: "pending_provisioning",
-  Provisioned: "provisioned",
-  Scheduled: "scheduled",
-  Updating: "updating",
+  Active: "active",
+  Ready: "ready",
 } as const;
 
-export type ZoomMeetingStatus =
-  (typeof ZoomMeetingStatus)[keyof typeof ZoomMeetingStatus];
+export type ZoomVideoSessionStatus =
+  (typeof ZoomVideoSessionStatus)[keyof typeof ZoomVideoSessionStatus];
 
 export const ZoomAccessReason = {
   BookingCancelled: "BOOKING_CANCELLED",
-  MeetingNotReady: "MEETING_NOT_READY",
+  VideoSessionNotReady: "VIDEO_SESSION_NOT_READY",
   PaymentNotConfirmed: "PAYMENT_NOT_CONFIRMED",
   TherapistNotAllowed: "THERAPIST_NOT_ALLOWED",
   TherapistSuspended: "THERAPIST_SUSPENDED",
@@ -81,7 +77,7 @@ export type ZoomAccessState = {
   allowed: boolean;
   availableFrom: ISODateTimeString | null;
   availableUntil: ISODateTimeString | null;
-  meetingStatus: ZoomMeetingStatus | "not_provisioned";
+  videoSessionStatus: ZoomVideoSessionStatus | "not_available";
   reason: ZoomAccessReason | null;
 };
 

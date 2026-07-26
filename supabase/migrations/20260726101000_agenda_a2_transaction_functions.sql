@@ -432,9 +432,9 @@ begin
 end;
 $$;
 
-create or replace function public.enqueue_booking_zoom_sync_v1(
+create or replace function public.sync_booking_video_session_from_agenda_v1(
   p_booking_id uuid,
-  p_operation public.zoom_job_operation,
+  p_operation text,
   p_request_id text
 )
 returns uuid
@@ -443,50 +443,20 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_environment text;
-  v_host_user_id text;
-  v_job_id uuid;
-  v_meeting_status public.zoom_meeting_status;
+  v_session_id uuid;
 begin
   if p_operation not in ('update', 'cancel') then
-    raise exception 'INVALID_ZOOM_SYNC_OPERATION' using errcode = '22023';
+    raise exception 'INVALID_VIDEO_SESSION_SYNC_OPERATION' using errcode = '22023';
   end if;
 
-  select environment, zoom_host_user_id, status
-    into v_environment, v_host_user_id, v_meeting_status
-  from public.zoom_meetings
-  where booking_id = p_booking_id;
-
-  if not found or v_meeting_status = 'canceled' then
-    return null;
-  end if;
-
-  if p_operation = 'update' and not exists (
-    select 1
-    from public.session_payments
-    where booking_id = p_booking_id
-      and financial_status = 'paid'
-  ) then
-    return null;
-  end if;
-
-  select public.enqueue_zoom_meeting_job_v1(
+  select public.sync_booking_video_session_v1(
     p_booking_id,
     p_operation,
-    v_environment,
-    left(
-      'agenda:' || trim(p_request_id) || ':zoom:' || p_operation::text,
-      240
-    ),
-    pg_catalog.jsonb_build_object(
-      'hostUserId', v_host_user_id,
-      'requestId', trim(p_request_id),
-      'source', 'agenda_a2'
-    )
+    left('agenda:' || trim(p_request_id), 200)
   )
-  into v_job_id;
+  into v_session_id;
 
-  return v_job_id;
+  return v_session_id;
 end;
 $$;
 
@@ -628,7 +598,7 @@ begin
     'cancelled_by_patient',
     'cancelled_by_therapist'
   ) then
-    perform public.enqueue_booking_zoom_sync_v1(
+    perform public.sync_booking_video_session_from_agenda_v1(
       v_booking.id,
       'cancel',
       p_request_id
@@ -1042,7 +1012,7 @@ begin
     where id = v_request.id
     returning * into v_request;
 
-    perform public.enqueue_booking_zoom_sync_v1(
+    perform public.sync_booking_video_session_from_agenda_v1(
       v_booking.id,
       'update',
       p_request_id
@@ -1114,9 +1084,9 @@ revoke all on function public.reserve_booking_hold_v1(
 ) from public;
 revoke all on function public.cancel_booking_hold_v1(uuid, text) from public;
 revoke all on function public.consume_booking_hold_v1(uuid, text) from public;
-revoke all on function public.enqueue_booking_zoom_sync_v1(
+revoke all on function public.sync_booking_video_session_from_agenda_v1(
   uuid,
-  public.zoom_job_operation,
+  text,
   text
 ) from public;
 revoke all on function public.transition_booking_status_v1(
@@ -1222,7 +1192,7 @@ comment on function public.transition_booking_status_v1(
   integer,
   text
 ) is
-  'Applies authorized operational booking transitions with optimistic concurrency, audit context, and Zoom cancellation outbox integration.';
+  'Applies authorized operational booking transitions with optimistic concurrency, audit context, and local Video SDK session cancellation.';
 
 comment on function public.resolve_booking_reschedule_v1(
   uuid,
@@ -1231,4 +1201,4 @@ comment on function public.resolve_booking_reschedule_v1(
   text,
   integer
 ) is
-  'Resolves one reschedule request and atomically updates the booking and Zoom outbox when accepted.';
+  'Resolves one reschedule request and atomically updates the booking and local Video SDK session when accepted.';

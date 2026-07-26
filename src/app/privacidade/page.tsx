@@ -15,9 +15,9 @@ export default function PrivacyPage() {
           Videoconferência
         </h2>
         <p className="mt-3">
-          Para operar sessões online, enviamos ao Zoom apenas dados mínimos e
-          operacionais, como identificador da reunião, nome exibido limitado e
-          eventos técnicos de entrada e saída.
+          Para operar sessões online, usamos Zoom Video SDK e enviamos ao Zoom
+          apenas dados mínimos e operacionais, como identificadores opacos da
+          sessão, nome exibido limitado e eventos técnicos de entrada e saída.
         </p>
         <p className="mt-3">
           Câmera e microfone são processados pelo Zoom durante a chamada. O TES
@@ -28,7 +28,7 @@ export default function PrivacyPage() {
           Webhooks e presença operacional
         </h2>
         <p className="mt-3">
-          Webhooks podem registrar status da sala e evidências operacionais de
+          Webhooks podem registrar status da sessão e evidências operacionais de
           presença, sem inferir identidade por nome e sem armazenar conteúdo da
           sessão.
         </p>

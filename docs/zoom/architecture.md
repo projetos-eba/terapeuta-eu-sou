@@ -1,62 +1,44 @@
-# Arquitetura Zoom
+# Arquitetura Zoom Video SDK
 
-## Visão
+O TES usa Zoom Video SDK como provedor operacional de audio e video dentro do
+site. Pagamento, elegibilidade financeira, repasse e confirmacao de servico
+continuam sob Stripe, `session_payments`, ledger e regras internas.
 
-O Zoom é provedor operacional de videoconferência. Pagamento continua sob Stripe e `session_payments`; Zoom nunca confirma pagamento, repasse ou realização financeira.
+## Fluxo
 
-Fluxo:
-
-1. Stripe confirma pagamento por webhook.
-2. `stripe-billing-webhook` aplica estado financeiro em `apply_session_payment_state_v1`.
-3. Quando o estado é `paid`, enfileira `zoom_meeting_jobs` por `enqueue_zoom_meeting_job_v1`.
-4. `zoom-jobs-process` cria ou atualiza a reunião via Server-to-Server OAuth.
-5. Paciente/terapeuta pedem acesso por `/api/zoom/meeting-access`.
-6. A rota exige `actorRole`, seleciona o cookie correspondente e encaminha a
-   intenção `preview` ou `join`.
-7. `zoom-meeting-access` valida ownership, status do terapeuta,
-   `session_payments`, booking, janela e provisionamento antes de gerar o JWT.
-8. `zoom-webhook` valida assinatura, registra evento normalizado e atualiza estado operacional.
+1. Stripe confirma `session_payments.financial_status = paid`.
+2. O backend cria ou atualiza uma `video_sessions` local para a booking.
+3. Nenhuma chamada ao Zoom e feita nessa etapa.
+4. Paciente ou terapeuta solicita acesso por `/api/zoom/video-session-access`.
+5. A Edge Function `zoom-video-session-access` autentica, valida ownership,
+   pagamento, status, janela e perfil.
+6. O backend calcula `role_type`: paciente `0`, terapeuta responsavel `1`.
+7. O backend gera JWT curto do Video SDK e devolve somente `sdkKey`,
+   `sessionName`, `token`, `userName`, `roleType` e passcode nulo.
+8. O browser inicializa `@zoom/videosdk` e entra na sessao.
+9. A sessao Zoom comeca quando o primeiro usuario autorizado entra.
+10. Webhooks `session.*` atualizam inicio, fim e participacoes operacionais.
 
 ## Banco
 
-- `zoom_meetings`: fonte canônica local da reunião Zoom.
-- `zoom_meeting_jobs`: outbox de create/update/cancel/reconcile.
-- `zoom_webhook_events`: idempotência e auditoria sanitizada de webhooks.
-- `zoom_meeting_participations`: evidências operacionais de presença sem conteúdo clínico.
-- `patient_zoom_meeting_summary_v` e `therapist_zoom_meeting_summary_v`: resumos sem secrets.
+- `video_sessions`: uma sessao logica local por booking.
+- `video_session_participations`: eventos minimos de entrada e saida.
+- `zoom_video_webhook_events`: idempotencia e auditoria sanitizada.
+- `patient_video_session_summary_v` e `therapist_video_session_summary_v`:
+  resumos seguros sem token, segredo, URL ou conteudo clinico.
 
-`bookings.meeting_url` permanece legado e não deve receber `start_url`.
+`session_name` e `user_key` sao opacos. Eles nao carregam nome, e-mail,
+diagnostico, terapia ou identificador interno legivel.
 
-## Jobs e idempotência
+## Concorrencia
 
-`reserve_zoom_meeting_job_v1` reserva atomicamente um job por vez, respeita `max_attempts` e recupera locks `processing` antigos. `zoom-jobs-process` chama essa reserva em lote limitado, com máximo inicial de 5 jobs por requisição e limite de tempo da execução. A atomicidade continua na RPC com `for update skip locked`, evitando que dois workers processem o mesmo job. `complete_zoom_meeting_job_v1` encerra jobs com `completed_at` em sucesso, falha final ou `dead_letter`.
+Video SDK cria sessoes sob demanda no primeiro `join`; nao ha sala remota
+pre-criada, host Zoom cadastrado no banco, pool de hosts nem worker de
+criacao local da sessao. Isso permite multiplas sessoes simultaneas independentes para
+diferentes terapeutas e pacientes.
 
-Antes de criar ou atualizar uma sala, `zoom-jobs-process` revalida o booking e confirma `session_payments.financial_status = paid`. Cancelamento remoto trata `404` do Zoom como sucesso idempotente. Reconcile nunca recria sala duplicada quando a reunião remota esperada desapareceu; marca a sala local como `failed` para investigação.
+## Custos
 
-O worker registra logs sanitizados com `requestId`, `workerId`, quantidade reservada/processada, sucessos, retries, dead letters, duração e idade do job mais antigo disponível.
-
-## Webhooks
-
-`zoom-webhook` limita corpo bruto, valida assinatura/timestamp antes de persistir, responde `endpoint.url_validation` e ignora eventos não suportados de forma explícita. Eventos suportados atualizam apenas estado operacional de reunião e participação.
-
-Eventos `meeting.started` recebidos depois de `meeting.ended`, `canceled` ou `failed` não regridem o estado local.
-
-## Segurança
-
-O browser nunca recebe Client Secret, Account ID, token S2S, webhook secret, `start_url` ou ZAK de paciente. O terapeuta recebe ZAK apenas no momento de iniciar a sala e somente após autorização de backend.
-
-Topic enviado ao Zoom usa referência opaca curta. Não enviar terapia, queixa, diagnóstico, objetivo clínico ou nome completo do cliente.
-
-Passcodes gerados localmente respeitam limite de 10 caracteres observado na configuração real da conta Zoom usada em desenvolvimento.
-
-## Limites atuais
-
-- `ZOOM_DEFAULT_HOST_USER_ID` define um host único de desenvolvimento. Produção
-  precisa de alocação de hosts licenciados e controle de concorrência.
-- Participações ainda chegam com papel `unknown`; não devem confirmar presença
-  financeira ou clínica antes de atribuição e deduplicação semântica.
-- O read model e o acesso possuem cobertura pgTAP/Deno para ownership,
-  pagamento, cancelamento, provisionamento e terapeuta suspenso. A cobertura
-  direta de todas as tabelas Zoom pode ser ampliada.
-- Cron, webhook remoto, ZAK, licença e configuração do Marketplace permanecem
-  gates externos de produção.
+O consumo segue a metrica operacional do Zoom Video SDK, como
+participant-minutes. `ALLOW_REAL_ZOOM=false` bloqueia testes externos para nao
+consumir creditos.

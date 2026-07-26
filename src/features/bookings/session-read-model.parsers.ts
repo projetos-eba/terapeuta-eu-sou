@@ -6,7 +6,7 @@ import {
   RescheduleStatus,
   SessionFinancialStatus,
   ZoomAccessReason,
-  ZoomMeetingStatus,
+  ZoomVideoSessionStatus,
   type ZoomAccessState,
 } from "@/domain/tes";
 
@@ -138,9 +138,7 @@ export function parseTherapistShellCounters(
   return {
     impactedBookings: requiredNumber(row.impactedBookings),
     pendingPayments: requiredNumber(row.pendingPayments),
-    pendingRescheduleRequests: requiredNumber(
-      row.pendingRescheduleRequests,
-    ),
+    pendingRescheduleRequests: requiredNumber(row.pendingRescheduleRequests),
     pendingReviewReplies: requiredNumber(row.pendingReviewReplies),
     therapistProfileId: requiredString(row.therapistProfileId),
     unreadMessages: requiredNumber(row.unreadMessages),
@@ -161,17 +159,15 @@ export function parseSessionReadModelItem(
     bookingStatus: bookingStatus(row.bookingStatus),
     bookingVersion: requiredNumber(row.bookingVersion),
     cancellationDecision: nullableString(row.cancellationDecision),
-    cancellationRequiresReview: nullableBoolean(
-      row.cancellationRequiresReview,
-    ),
+    cancellationRequiresReview: nullableBoolean(row.cancellationRequiresReview),
     currency: requiredString(row.currency),
     durationMinutes: requiredNumber(row.durationMinutes),
     endsAt: requiredString(row.endsAt),
     financialStatus: nullableFinancialStatus(row.financialStatus),
     fulfillmentStatus: nullableFulfillmentStatus(row.fulfillmentStatus),
     grossAmountCents: nullableNumber(row.grossAmountCents),
-    meetingProvider: nullableString(row.meetingProvider),
-    meetingStatus: nullableZoomMeetingStatus(row.meetingStatus),
+    videoSessionProvider: nullableString(row.videoSessionProvider),
+    videoSessionStatus: nullableZoomVideoSessionStatus(row.videoSessionStatus),
     modality: modality(row.modality),
     patientAvatarUrl: nullableString(row.patientAvatarUrl),
     patientName: requiredString(row.patientName),
@@ -195,11 +191,11 @@ export function parseSessionReadModelItem(
 function zoomAccess(value: unknown): ZoomAccessState {
   const row = requiredRecord(value);
   const reason = nullableZoomAccessReason(row.reason);
-  const meetingStatusValue = requiredString(row.meetingStatus);
+  const videoSessionStatusValue = requiredString(row.videoSessionStatus);
 
   if (
-    meetingStatusValue !== "not_provisioned" &&
-    !isZoomMeetingStatus(meetingStatusValue)
+    videoSessionStatusValue !== "not_available" &&
+    !isZoomVideoSessionStatus(videoSessionStatusValue)
   ) {
     throw new SessionReadModelContractError();
   }
@@ -208,7 +204,7 @@ function zoomAccess(value: unknown): ZoomAccessState {
     allowed: requiredBoolean(row.allowed),
     availableFrom: requiredString(row.availableFrom),
     availableUntil: requiredString(row.availableUntil),
-    meetingStatus: meetingStatusValue,
+    videoSessionStatus: videoSessionStatusValue,
     reason,
   };
 }
@@ -302,9 +298,7 @@ function nullableFinancialStatus(
   return value;
 }
 
-function nullableFulfillmentStatus(
-  value: unknown,
-): FulfillmentStatus | null {
+function nullableFulfillmentStatus(value: unknown): FulfillmentStatus | null {
   if (value === null || value === undefined) return null;
   if (typeof value !== "string" || !isFulfillmentStatus(value)) {
     throw new SessionReadModelContractError();
@@ -346,19 +340,17 @@ function nullableModality(value: unknown): SessionModality | null {
   return modality(value);
 }
 
-function nullableZoomMeetingStatus(
+function nullableZoomVideoSessionStatus(
   value: unknown,
-): ZoomMeetingStatus | null {
+): ZoomVideoSessionStatus | null {
   if (value === null || value === undefined) return null;
-  if (typeof value !== "string" || !isZoomMeetingStatus(value)) {
+  if (typeof value !== "string" || !isZoomVideoSessionStatus(value)) {
     throw new SessionReadModelContractError();
   }
   return value;
 }
 
-function nullableZoomAccessReason(
-  value: unknown,
-): ZoomAccessReason | null {
+function nullableZoomAccessReason(value: unknown): ZoomAccessReason | null {
   if (value === null || value === undefined) return null;
   if (typeof value !== "string" || !isZoomAccessReason(value)) {
     throw new SessionReadModelContractError();
@@ -400,8 +392,10 @@ function isRescheduleStatus(value: string): value is RescheduleStatus {
   );
 }
 
-function isZoomMeetingStatus(value: string): value is ZoomMeetingStatus {
-  return Object.values(ZoomMeetingStatus).some(
+function isZoomVideoSessionStatus(
+  value: string,
+): value is ZoomVideoSessionStatus {
+  return Object.values(ZoomVideoSessionStatus).some(
     (candidate) => candidate === value,
   );
 }

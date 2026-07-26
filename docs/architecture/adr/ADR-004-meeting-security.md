@@ -12,16 +12,16 @@ não podem ser expostas ao paciente nem armazenadas em DTOs comuns.
 ## Decisão
 
 - Reunião só pode ser criada após pagamento confirmado por webhook.
-- `zoom_meetings` é a fonte operacional local; `bookings.meeting_url` é legado.
-- O navegador não recebe `start_url`, token S2S, Account ID ou Client Secret.
-- O paciente recebe somente payload Meeting SDK de participante.
-- O terapeuta responsável recebe payload de host e ZAK efêmero sob demanda.
-- ZAK e `start_url` não são persistidos. Se uma necessidade futura exigir
+- `video_sessions` é a fonte operacional local; `bookings.meeting_url` é legado.
+- O navegador não recebe segredo do Video SDK, credencial de API, Account ID ou Client Secret.
+- O paciente recebe somente payload Video SDK de participante.
+- O terapeuta responsável recebe payload de host e Video SDK token efêmero sob demanda.
+- Video SDK token e `video_session_secret_url_removed` não são persistidos. Se uma necessidade futura exigir
   persistência, o campo deve ser criptografado, versionado e inacessível por
   leitura autenticada direta.
 - Abertura da sala respeita janela temporal e status do booking.
 - A decisão autorizada retorna `allowed`, `reason`, `availableFrom`,
-  `availableUntil` e `meetingStatus`.
+  `availableUntil` e `videoSessionStatus`.
 - A rota Next exige `actorRole` e usa o cookie correspondente quando sessões
   de paciente e terapeuta coexistem.
 - Pagamento é lido de `session_payments`; o campo legado do booking não
@@ -41,6 +41,6 @@ não podem ser expostas ao paciente nem armazenadas em DTOs comuns.
 ## Consequências
 
 Zoom é integrado por backend autorizado. Logs e erros nunca devem incluir
-tokens ou URLs sensíveis. Antes do go-live ainda é obrigatório homologar ZAK,
+tokens ou URLs sensíveis. Antes do go-live ainda é obrigatório homologar Video SDK token,
 definir alocação/capacidade de hosts, configurar cron e webhook remotos,
 estabelecer retenção e executar testes reais no ambiente alvo.

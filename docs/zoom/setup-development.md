@@ -1,26 +1,25 @@
-# Setup de Desenvolvimento Zoom
+# Setup de Desenvolvimento Zoom Video SDK
 
-Secrets pertencem somente a `supabase/functions/.env.local`, `supabase/functions/.env` ou secrets remotos das Edge Functions.
+Secrets ficam somente em `supabase/functions/.env` ou secrets remotos das Edge
+Functions.
 
-Variáveis:
+Variaveis:
 
-- `ZOOM_ACCOUNT_ID`
-- `ZOOM_S2S_CLIENT_ID`
-- `ZOOM_S2S_CLIENT_SECRET`
-- `ZOOM_MEETING_SDK_CLIENT_ID`
-- `ZOOM_MEETING_SDK_CLIENT_SECRET`
-- `ZOOM_DEFAULT_HOST_USER_ID`
+- `ZOOM_VIDEO_SDK_KEY`
+- `ZOOM_VIDEO_SDK_SECRET`
+- `ZOOM_VIDEO_SDK_API_KEY`
+- `ZOOM_VIDEO_SDK_API_SECRET`
 - `ZOOM_WEBHOOK_SECRET_TOKEN`
 - `ZOOM_ENVIRONMENT=development|production`
+- `ALLOW_REAL_ZOOM=true|false`
 
-Comandos:
+Comandos locais:
 
 ```bash
-npm run zoom:env
-npm run zoom:test:connection
-npm run zoom:test:real
-npm run zoom:test:webhook
-npm run zoom:jobs:process
+npm run zoom:video-sdk:env
+npm run zoom:video-sdk:test
+npm run zoom:video-sdk:api:mock
 ```
 
-Testes reais exigem `ALLOW_REAL_ZOOM_TESTS=true`. O relatório não imprime tokens, ZAK, secrets, passcode, `join_url` ou `start_url`.
+`ALLOW_REAL_ZOOM` aceita estritamente `true` ou `false`. Ausente, vazio ou
+invalido falha fechado como `false`.

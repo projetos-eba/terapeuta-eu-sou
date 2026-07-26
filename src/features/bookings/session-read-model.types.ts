@@ -6,7 +6,7 @@ import type {
   RescheduleStatus,
   SessionFinancialStatus,
   ZoomAccessState,
-  ZoomMeetingStatus,
+  ZoomVideoSessionStatus,
 } from "@/domain/tes";
 
 export type SessionModality = "in_person" | "online";
@@ -25,8 +25,8 @@ export type SessionReadModelItem = {
   financialStatus: SessionFinancialStatus | null;
   fulfillmentStatus: FulfillmentStatus | null;
   grossAmountCents: number | null;
-  meetingProvider: string | null;
-  meetingStatus: ZoomMeetingStatus | null;
+  videoSessionProvider: string | null;
+  videoSessionStatus: ZoomVideoSessionStatus | null;
   modality: SessionModality;
   patientAvatarUrl: string | null;
   patientName: string;

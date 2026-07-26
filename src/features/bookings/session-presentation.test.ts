@@ -8,7 +8,7 @@ import {
   RescheduleStatus,
   SessionFinancialStatus,
   ZoomAccessReason,
-  ZoomMeetingStatus,
+  ZoomVideoSessionStatus,
 } from "@/domain/tes";
 
 import type { SessionReadModelItem } from "./session-read-model.types";
@@ -30,14 +30,14 @@ describe("mapSessionPresentation", () => {
     expect(result.actions.canAccessZoom).toBe(false);
   });
 
-  it("makes Zoom the primary action only when backend access is allowed", () => {
+  it("makes video session the primary action only when backend access is allowed", () => {
     const result = mapSessionPresentation(
       sessionFixture({
         zoomAccess: {
           allowed: true,
           availableFrom: "2026-07-26T12:45:00.000Z",
           availableUntil: "2026-07-26T14:30:00.000Z",
-          meetingStatus: ZoomMeetingStatus.Provisioned,
+          videoSessionStatus: ZoomVideoSessionStatus.Ready,
           reason: null,
         },
       }),
@@ -66,7 +66,7 @@ describe("mapSessionPresentation", () => {
     expect(result.actions.canReschedule).toBe(false);
   });
 
-  it("does not allow a cancelled booking to access Zoom", () => {
+  it("does not allow a cancelled booking to access the video session", () => {
     const result = mapSessionPresentation(
       sessionFixture({
         bookingStatus: BookingStatus.CancelledByPatient,
@@ -74,7 +74,7 @@ describe("mapSessionPresentation", () => {
           allowed: false,
           availableFrom: "2026-07-26T12:45:00.000Z",
           availableUntil: "2026-07-26T14:30:00.000Z",
-          meetingStatus: ZoomMeetingStatus.Canceled,
+          videoSessionStatus: ZoomVideoSessionStatus.Canceled,
           reason: ZoomAccessReason.BookingCancelled,
         },
       }),
@@ -86,16 +86,16 @@ describe("mapSessionPresentation", () => {
     expect(result.actions.canCancel).toBe(false);
   });
 
-  it("identifies a paid session whose room is still being provisioned", () => {
+  it("identifies a paid session whose video session is still being prepared", () => {
     const result = mapSessionPresentation(
       sessionFixture({
-        meetingStatus: ZoomMeetingStatus.PendingProvisioning,
+        videoSessionStatus: null,
         zoomAccess: {
           allowed: false,
           availableFrom: "2026-07-26T12:45:00.000Z",
           availableUntil: "2026-07-26T14:30:00.000Z",
-          meetingStatus: ZoomMeetingStatus.PendingProvisioning,
-          reason: ZoomAccessReason.MeetingNotReady,
+          videoSessionStatus: "not_available",
+          reason: ZoomAccessReason.VideoSessionNotReady,
         },
       }),
       now,
@@ -138,8 +138,8 @@ function sessionFixture(
     financialStatus: SessionFinancialStatus.Paid,
     fulfillmentStatus: FulfillmentStatus.Scheduled,
     grossAmountCents: 15000,
-    meetingProvider: "zoom",
-    meetingStatus: ZoomMeetingStatus.Provisioned,
+    videoSessionProvider: "zoom_video_sdk",
+    videoSessionStatus: ZoomVideoSessionStatus.Ready,
     modality: "online",
     patientAvatarUrl: null,
     patientName: "Paciente",
@@ -160,7 +160,7 @@ function sessionFixture(
       allowed: false,
       availableFrom: "2026-07-26T12:45:00.000Z",
       availableUntil: "2026-07-26T14:30:00.000Z",
-      meetingStatus: ZoomMeetingStatus.Provisioned,
+      videoSessionStatus: ZoomVideoSessionStatus.Ready,
       reason: ZoomAccessReason.TooEarly,
     },
     ...overrides,

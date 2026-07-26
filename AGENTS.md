@@ -144,7 +144,7 @@ Stack real identificada:
 - E-mails transacionais server-side via Hostinger Mail API, com provider isolado em `supabase/functions/_shared/email/`, tokens de auth/status em hash, polling seguro em `email_verification_status_tokens` e auditoria em `email_delivery_logs`.
 - Sempre seguir as boas práticas de desenvolvimento de software, e arquitetura moderna.
 - Stripe: pagamentos de sessão (Separate Charges and Transfers) e assinaturas (Stripe Billing) via Stripe Connect Express.
-- Zoom: sessões online via API/SDK (Server-to-Server OAuth), provisionadas por `zoom_meeting_jobs` apenas após pagamento confirmado pelo Stripe. Meeting SDK JWT é gerado no backend; ZAK é solicitado sob demanda para o terapeuta responsável e não é persistido.
+- Zoom: sessões online via Zoom Video SDK, com sessão lógica local em `video_sessions` criada apenas após pagamento confirmado pelo Stripe. JWT do Video SDK é gerado no backend sob demanda; não há provisionamento remoto prévio.
 - Storybook: documentado, não instalado.
 - Observabilidade: logs estruturados e sanitizados para read models do
   terapeuta e operações Zoom; ampliar correlação distribuída continua
@@ -178,17 +178,15 @@ Stack real identificada:
   reagendamento versionado. RPCs de escrita são `service_role` only e devem ser
   orquestrados por Edge Functions autenticadas; o slot engine completo pertence
   a A5 e o checkout integrado a A6.
-- Zoom: fundação e hardening implementados com `zoom_meetings`,
-  `zoom_meeting_jobs`, `zoom_webhook_events`,
-  `zoom_meeting_participations`, Edge Functions `zoom-meeting-access`,
-  `zoom-jobs-process`, `zoom-webhook`, rota `/api/zoom/meeting-access`, páginas
-  `/ajuda/zoom`, `/ajuda`, `/termos` e `/privacidade`, docs em `docs/zoom/` e
-  skill `skills/zoom-integration`. A entrega mergeada registra teste real de
-  criação/update/delete, smoke de webhook e fluxo de fila. Antes de produção,
-  revalidar no ambiente alvo e fechar ZAK, topologia de hosts, cron, webhook
-  remoto, retenção e cobertura RLS direta de todas as tabelas Zoom. Bloqueio de
-  terapeuta suspenso/rejeitado, pagamento canônico e desambiguação de cookies
-  já estão implementados no gate de acesso.
+- Zoom: arquitetura Video SDK implementada com `video_sessions`,
+  `video_session_participations`, `zoom_video_webhook_events`, Edge Function
+  `zoom-video-session-access`, webhook `zoom-webhook`, rota
+  `/api/zoom/video-session-access`, páginas `/ajuda/zoom`, `/ajuda`, `/termos`
+  e `/privacidade`, docs em `docs/zoom/` e skill `skills/zoom-integration`.
+  Pagamento canônico segue em `session_payments`; Zoom não confirma pagamento,
+  repasse ou realização clínica. Antes de produção, revalidar no ambiente alvo,
+  configurar webhooks Video SDK reais, revisar retenção e completar homologação
+  externa sem expor secrets.
 
 ## 6. QA e definição de pronto
 
@@ -207,10 +205,9 @@ Uma tarefa só pode ser considerada pronta quando:
 - cria repasses a partir de `payout_batches`, `payout_batch_therapists` e
   `payout_batch_items`;
 - grava snapshot de preço e duração no momento da reserva;
-- gera link Zoom apenas após pagamento confirmado via webhook;
-- não persiste `start_url` ou ZAK no fluxo Zoom atual; se a persistência futura
-  for necessária, exige criptografia versionada e nenhuma leitura autenticada
-  direta;
+- cria sessão lógica de vídeo apenas após pagamento confirmado via webhook;
+- não persiste JWT, senha de sessão, URL secreta, áudio, vídeo, chat ou
+  transcrição no fluxo Zoom Video SDK atual;
 - protege dados por RLS conforme perfil;
 - passa em `npm run typecheck`, `npm run lint` e `npm run build`;
 - documenta limitações e riscos;

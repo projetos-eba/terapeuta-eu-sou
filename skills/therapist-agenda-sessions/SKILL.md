@@ -80,7 +80,7 @@ Não criar enums equivalentes dentro de features.
 - `consume_booking_hold_v1`: converte hold em um booking `draft`.
 - `transition_booking_status_v1`: aplica transição operacional e auditoria.
 - `request_booking_reschedule_v1`: cria proposta versionada.
-- `resolve_booking_reschedule_v1`: aplica resolução e sincroniza o outbox Zoom.
+- `resolve_booking_reschedule_v1`: aplica resolução e sincroniza a sessão local de vídeo.
 - `session_payments` continua sendo a única fonte financeira.
 - O checkout de sessão deve usar o snapshot do booking, nunca o preço atual do
   serviço.
@@ -92,11 +92,11 @@ Não criar enums equivalentes dentro de features.
 - Não expor notas privadas, Match, dados médicos ou URL de host.
 - Paciente e terapeuta leem o mesmo booking por DTOs permitidos.
 - Pagamento é confirmado apenas por webhook.
-- Zoom só é criado depois do pagamento confirmado.
-- Zoom deve ser provisionado por `zoom_meeting_jobs`; clique do frontend nunca cria reunião.
-- Terapeuta recebe `role=1` e ZAK somente por backend, quando responsável pela booking.
+- Sessão local de vídeo só é criada depois do pagamento confirmado.
+- Clique do frontend nunca cria sessão real nem define papel; ele solicita acesso ao backend.
+- Terapeuta recebe `role_type=1` somente por backend, quando responsável pela booking.
 - Toda consulta autenticada usa RLS.
-- Acesso Zoom definitivo usa `zoom-meeting-access`; a previsão do read model
+- Acesso Zoom definitivo usa `zoom-video-session-access`; a previsão do read model
   nunca substitui a autorização no clique.
 
 ## QA
