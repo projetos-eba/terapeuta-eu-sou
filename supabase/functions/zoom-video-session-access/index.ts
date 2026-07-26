@@ -26,6 +26,7 @@ import {
 } from "../_shared/zoom-video-sdk/session-identity.ts";
 
 type Body = {
+  actorRole?: "patient" | "therapist";
   bookingId?: string;
   intent?: "join" | "preview";
 };
@@ -52,6 +53,18 @@ runtime.serve(async (request) => {
 
     const body = await parseJsonBody<Body>(request);
     bookingId = requireUuid(body.bookingId);
+    const requestedActorRole = body.actorRole;
+    if (
+      requestedActorRole !== undefined &&
+      requestedActorRole !== "patient" &&
+      requestedActorRole !== "therapist"
+    ) {
+      throw new DomainError(
+        "invalid_video_actor_role",
+        422,
+        "Perfil de acesso invalido.",
+      );
+    }
     const intent = body.intent ?? "join";
     if (intent !== "join" && intent !== "preview") {
       throw new DomainError(
@@ -76,6 +89,13 @@ runtime.serve(async (request) => {
     const client = new SupabaseRestClient(supabaseUrl, serviceRoleKey);
     const actor = await resolveActor(client, request);
     actorRole = actor.role;
+    if (requestedActorRole && requestedActorRole !== actor.role) {
+      throw new DomainError(
+        "role_mismatch",
+        403,
+        "Use a conta correta para acessar esta sessao.",
+      );
+    }
     const booking = await getAuthorizedVideoBooking({
       bookingId,
       client,
@@ -88,8 +108,10 @@ runtime.serve(async (request) => {
       bookingStatus: booking.bookingStatus,
       endsAt: booking.endsAt,
       financialStatus: booking.financialStatus,
+      hardEndsAt: booking.videoSession?.hardEndsAt ?? null,
       startsAt: booking.startsAt,
       therapistStatus: booking.therapistStatus,
+      therapistPresent: booking.videoSession?.therapistPresent ?? false,
       videoSessionReady: Boolean(
         booking.videoSession &&
         ["ready", "active"].includes(booking.videoSession.status),
@@ -137,7 +159,7 @@ runtime.serve(async (request) => {
     if (actor.role === "therapist") {
       await client.patch(
         `/rest/v1/video_sessions?id=eq.${encodeURIComponent(booking.videoSession.id)}`,
-        { therapist_access_issued_at: new Date().toISOString() },
+        { therapist_token_issued_at: new Date().toISOString() },
         "return=minimal",
       );
     }

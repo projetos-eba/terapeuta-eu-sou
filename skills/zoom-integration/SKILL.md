@@ -22,8 +22,12 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
 - `video_sessions` e a fonte local da sessao por booking.
 - `video_session_participations` registra eventos operacionais minimos.
 - `zoom_video_webhook_events` guarda idempotencia e payload sanitizado.
+- `video_session_control_jobs` guarda jobs duraveis de encerramento/reconcile.
 - Stripe confirma pagamento; Zoom nunca confirma pagamento, repasse ou servico.
 - Nao ha criacao remota previa de sala. A sessao nasce no primeiro `join`.
+- Paciente so recebe JWT apos webhook confiavel de `session.user_joined` do
+  terapeuta; token emitido para terapeuta nao e presenca.
+- `ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES` e obrigatorio no runtime real.
 
 ## Seguranca
 
@@ -43,7 +47,7 @@ define papel, token, session name ou user key.
 - `npm run zoom:video-sdk:webhook:real-verify`
 - `npm run zoom:video-sdk:api:mock`
 - `npm run zoom:video-sdk:real-preflight`
-- `npm run zoom:video-sdk:test:real -- --confirm-zoom-marketplace --confirm-single-real-session`
+- `npm run zoom:video-sdk:test:real -- --confirm-zoom-marketplace --confirm-single-real-session --headed --slow-mo=250`
 - `npm run zoom:video-sdk:emergency-end`
 
 Com `ALLOW_REAL_ZOOM=false`, nao fazer chamada externa nem entrar em sessao real.
@@ -60,7 +64,10 @@ Com `ALLOW_REAL_ZOOM=false`, nao fazer chamada externa nem entrar em sessao real
 - A emissao de JWT deve passar pelo rate limit distribuido
   `reserve_zoom_video_access_issue_v1`; nao usar bucket apenas em memoria.
 - O teste real exige confirmacao manual momentanea do Marketplace Zoom por flags
-  e usa contexts Playwright separados para terapeuta e paciente.
+  e usa contexts Playwright separados para terapeuta e paciente; a execucao real
+  deve ser visivel (`--headed`) e com `--slow-mo`.
+- Manter o cron de `zoom-video-session-maintenance` configurado via Vault/pg_net
+  conforme `supabase/schedules/zoom-video-session-maintenance.sql`.
 - Manter gravacao automatica, transcricao, controle remoto e recursos nao usados
   desativados nesta fase.
 - Antes de remover configuracoes antigas no Zoom, confirmar que nenhuma funcao,

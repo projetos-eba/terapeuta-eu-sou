@@ -7,31 +7,6 @@
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       aura_recommendations: {
@@ -5954,6 +5929,102 @@ export type Database = {
           },
         ]
       }
+      video_session_control_jobs: {
+        Row: {
+          attempts: number
+          booking_id: string
+          completed_at: string | null
+          created_at: string
+          environment: string
+          id: string
+          idempotency_key: string
+          last_error_code: string | null
+          last_error_message: string | null
+          locked_until_at: string | null
+          max_attempts: number
+          metadata: Json
+          next_run_at: string
+          operation: Database["public"]["Enums"]["video_session_control_operation"]
+          status: Database["public"]["Enums"]["video_session_control_job_status"]
+          updated_at: string
+          video_session_id: string
+        }
+        Insert: {
+          attempts?: number
+          booking_id: string
+          completed_at?: string | null
+          created_at?: string
+          environment: string
+          id?: string
+          idempotency_key: string
+          last_error_code?: string | null
+          last_error_message?: string | null
+          locked_until_at?: string | null
+          max_attempts?: number
+          metadata?: Json
+          next_run_at?: string
+          operation: Database["public"]["Enums"]["video_session_control_operation"]
+          status?: Database["public"]["Enums"]["video_session_control_job_status"]
+          updated_at?: string
+          video_session_id: string
+        }
+        Update: {
+          attempts?: number
+          booking_id?: string
+          completed_at?: string | null
+          created_at?: string
+          environment?: string
+          id?: string
+          idempotency_key?: string
+          last_error_code?: string | null
+          last_error_message?: string | null
+          locked_until_at?: string | null
+          max_attempts?: number
+          metadata?: Json
+          next_run_at?: string
+          operation?: Database["public"]["Enums"]["video_session_control_operation"]
+          status?: Database["public"]["Enums"]["video_session_control_job_status"]
+          updated_at?: string
+          video_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_session_control_jobs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_session_control_jobs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+          {
+            foreignKeyName: "video_session_control_jobs_video_session_id_fkey"
+            columns: ["video_session_id"]
+            isOneToOne: false
+            referencedRelation: "patient_video_session_summary_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_session_control_jobs_video_session_id_fkey"
+            columns: ["video_session_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_video_session_summary_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_session_control_jobs_video_session_id_fkey"
+            columns: ["video_session_id"]
+            isOneToOne: false
+            referencedRelation: "video_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_session_participations: {
         Row: {
           booking_id: string
@@ -6048,11 +6119,16 @@ export type Database = {
           booking_id: string
           created_at: string
           environment: string
+          hard_ends_at: string | null
           id: string
           last_error_code: string | null
           last_error_message: string | null
+          last_maintenance_at: string | null
+          last_participant_left_at: string | null
+          last_provider_event_at: string | null
           last_synced_at: string | null
           metadata: Json
+          participant_count: number
           provider: string
           provider_session_id: string | null
           scheduled_ends_at: string
@@ -6060,7 +6136,14 @@ export type Database = {
           session_key: string | null
           session_name: string
           status: Database["public"]["Enums"]["video_session_status"]
-          therapist_access_issued_at: string | null
+          termination_confirmed_at: string | null
+          termination_reason: string | null
+          termination_requested_at: string | null
+          therapist_first_joined_at: string | null
+          therapist_last_joined_at: string | null
+          therapist_last_left_at: string | null
+          therapist_present: boolean
+          therapist_token_issued_at: string | null
           updated_at: string
           version: number
         }
@@ -6070,11 +6153,16 @@ export type Database = {
           booking_id: string
           created_at?: string
           environment: string
+          hard_ends_at?: string | null
           id?: string
           last_error_code?: string | null
           last_error_message?: string | null
+          last_maintenance_at?: string | null
+          last_participant_left_at?: string | null
+          last_provider_event_at?: string | null
           last_synced_at?: string | null
           metadata?: Json
+          participant_count?: number
           provider?: string
           provider_session_id?: string | null
           scheduled_ends_at: string
@@ -6082,7 +6170,14 @@ export type Database = {
           session_key?: string | null
           session_name: string
           status?: Database["public"]["Enums"]["video_session_status"]
-          therapist_access_issued_at?: string | null
+          termination_confirmed_at?: string | null
+          termination_reason?: string | null
+          termination_requested_at?: string | null
+          therapist_first_joined_at?: string | null
+          therapist_last_joined_at?: string | null
+          therapist_last_left_at?: string | null
+          therapist_present?: boolean
+          therapist_token_issued_at?: string | null
           updated_at?: string
           version?: number
         }
@@ -6092,11 +6187,16 @@ export type Database = {
           booking_id?: string
           created_at?: string
           environment?: string
+          hard_ends_at?: string | null
           id?: string
           last_error_code?: string | null
           last_error_message?: string | null
+          last_maintenance_at?: string | null
+          last_participant_left_at?: string | null
+          last_provider_event_at?: string | null
           last_synced_at?: string | null
           metadata?: Json
+          participant_count?: number
           provider?: string
           provider_session_id?: string | null
           scheduled_ends_at?: string
@@ -6104,7 +6204,14 @@ export type Database = {
           session_key?: string | null
           session_name?: string
           status?: Database["public"]["Enums"]["video_session_status"]
-          therapist_access_issued_at?: string | null
+          termination_confirmed_at?: string | null
+          termination_reason?: string | null
+          termination_requested_at?: string | null
+          therapist_first_joined_at?: string | null
+          therapist_last_joined_at?: string | null
+          therapist_last_left_at?: string | null
+          therapist_present?: boolean
+          therapist_token_issued_at?: string | null
           updated_at?: string
           version?: number
         }
@@ -6120,6 +6227,60 @@ export type Database = {
             foreignKeyName: "video_sessions_booking_id_fkey"
             columns: ["booking_id"]
             isOneToOne: true
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+        ]
+      }
+      zoom_video_access_issue_limits: {
+        Row: {
+          actor_role: string
+          blocked_count: number
+          booking_id: string
+          environment: string
+          id: string
+          issued_count: number
+          last_issued_at: string | null
+          profile_id: string
+          updated_at: string
+          window_started_at: string
+        }
+        Insert: {
+          actor_role: string
+          blocked_count?: number
+          booking_id: string
+          environment: string
+          id?: string
+          issued_count?: number
+          last_issued_at?: string | null
+          profile_id: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Update: {
+          actor_role?: string
+          blocked_count?: number
+          booking_id?: string
+          environment?: string
+          id?: string
+          issued_count?: number
+          last_issued_at?: string | null
+          profile_id?: string
+          updated_at?: string
+          window_started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zoom_video_access_issue_limits_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zoom_video_access_issue_limits_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
             referencedRelation: "therapist_session_read_model_v1"
             referencedColumns: ["bookingId"]
           },
@@ -6202,12 +6363,15 @@ export type Database = {
           actual_started_at: string | null
           booking_id: string | null
           environment: string | null
+          hard_ends_at: string | null
           id: string | null
           last_synced_at: string | null
           provider: string | null
           scheduled_ends_at: string | null
           scheduled_starts_at: string | null
           status: Database["public"]["Enums"]["video_session_status"] | null
+          therapist_first_joined_at: string | null
+          therapist_present: boolean | null
         }
         Relationships: [
           {
@@ -6642,13 +6806,18 @@ export type Database = {
           actual_started_at: string | null
           booking_id: string | null
           environment: string | null
+          hard_ends_at: string | null
           id: string | null
           last_synced_at: string | null
           provider: string | null
           scheduled_ends_at: string | null
           scheduled_starts_at: string | null
           status: Database["public"]["Enums"]["video_session_status"] | null
-          therapist_access_issued_at: string | null
+          therapist_first_joined_at: string | null
+          therapist_last_joined_at: string | null
+          therapist_last_left_at: string | null
+          therapist_present: boolean | null
+          therapist_token_issued_at: string | null
         }
         Relationships: [
           {
@@ -6705,9 +6874,11 @@ export type Database = {
       }
       apply_zoom_video_session_event_v1: {
         Args: {
+          p_after_ends_minutes?: number
           p_duration_seconds?: number
           p_event_at: string
           p_event_type: string
+          p_max_duration_minutes?: number
           p_provider_session_id: string
           p_provider_user_id?: string
           p_provider_user_key?: string
@@ -6819,6 +6990,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      complete_video_session_control_job_v1: {
+        Args: {
+          p_error_code?: string
+          p_error_message?: string
+          p_job_id: string
+          p_retry_after_seconds?: number
+          p_success: boolean
+        }
+        Returns: undefined
+      }
       confirm_session_service: {
         Args: {
           p_booking_id: string
@@ -6891,6 +7072,24 @@ export type Database = {
         Args: { current_value: number; previous_value: number }
         Returns: Json
       }
+      enqueue_due_video_session_control_jobs_v1: {
+        Args: {
+          p_environment: string
+          p_limit?: number
+          p_therapist_absence_grace_seconds?: number
+        }
+        Returns: number
+      }
+      enqueue_video_session_control_job_v1: {
+        Args: {
+          p_idempotency_key: string
+          p_metadata?: Json
+          p_next_run_at?: string
+          p_operation: Database["public"]["Enums"]["video_session_control_operation"]
+          p_video_session_id: string
+        }
+        Returns: string
+      }
       ensure_video_session_for_paid_booking_v1: {
         Args: { p_booking_id: string; p_environment: string; p_source?: string }
         Returns: string
@@ -6953,6 +7152,14 @@ export type Database = {
         Returns: boolean
       }
       is_valid_timezone_v1: { Args: { p_timezone: string }; Returns: boolean }
+      mark_video_session_termination_confirmed_v1: {
+        Args: { p_reason?: string; p_video_session_id: string }
+        Returns: undefined
+      }
+      mark_video_session_termination_requested_v1: {
+        Args: { p_reason: string; p_video_session_id: string }
+        Returns: undefined
+      }
       refresh_session_transfer_eligibility: {
         Args: { p_now?: string; p_session_payment_id: string }
         Returns: Database["public"]["Enums"]["session_transfer_status"]
@@ -7062,6 +7269,33 @@ export type Database = {
           acquired: boolean
           processing_status: Database["public"]["Enums"]["stripe_webhook_processing_status"]
         }[]
+      }
+      reserve_video_session_control_jobs_v1: {
+        Args: {
+          p_environment: string
+          p_limit?: number
+          p_lock_seconds?: number
+        }
+        Returns: {
+          attempts: number
+          booking_id: string
+          id: string
+          max_attempts: number
+          operation: Database["public"]["Enums"]["video_session_control_operation"]
+          provider_session_id: string
+          video_session_id: string
+        }[]
+      }
+      reserve_zoom_video_access_issue_v1: {
+        Args: {
+          p_actor_role: string
+          p_booking_id: string
+          p_environment: string
+          p_max_issued?: number
+          p_profile_id: string
+          p_window_seconds?: number
+        }
+        Returns: Json
       }
       reserve_zoom_video_webhook_event_v1: {
         Args: {
@@ -7296,6 +7530,17 @@ export type Database = {
       therapy_status: "draft" | "active" | "published" | "inactive" | "archived"
       therapy_visual_theme_key: "energy" | "oracle" | "systemic"
       user_role: "patient" | "therapist" | "admin"
+      video_session_control_job_status:
+        | "queued"
+        | "processing"
+        | "retry"
+        | "done"
+        | "dead_letter"
+      video_session_control_operation:
+        | "end_hard_timeout"
+        | "end_therapist_absent"
+        | "reconcile_orphan"
+        | "confirm_end"
       video_session_participant_role: "patient" | "therapist" | "unknown"
       video_session_status: "ready" | "active" | "ended" | "canceled" | "failed"
       zoom_video_webhook_processing_status:
@@ -7429,9 +7674,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       auth_action_purpose: ["email_verification", "password_reset"],
@@ -7577,6 +7819,19 @@ export const Constants = {
       therapy_status: ["draft", "active", "published", "inactive", "archived"],
       therapy_visual_theme_key: ["energy", "oracle", "systemic"],
       user_role: ["patient", "therapist", "admin"],
+      video_session_control_job_status: [
+        "queued",
+        "processing",
+        "retry",
+        "done",
+        "dead_letter",
+      ],
+      video_session_control_operation: [
+        "end_hard_timeout",
+        "end_therapist_absent",
+        "reconcile_orphan",
+        "confirm_end",
+      ],
       video_session_participant_role: ["patient", "therapist", "unknown"],
       video_session_status: ["ready", "active", "ended", "canceled", "failed"],
       zoom_video_webhook_processing_status: [

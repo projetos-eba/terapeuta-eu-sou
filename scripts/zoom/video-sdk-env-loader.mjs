@@ -28,6 +28,7 @@ export function zoomVideoSdkEnvStatus() {
       "ZOOM_VIDEO_SDK_API_KEY",
       "ZOOM_VIDEO_SDK_API_SECRET",
       "ZOOM_WEBHOOK_SECRET_TOKEN",
+      "ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES",
       "ZOOM_ENVIRONMENT",
       "ALLOW_REAL_ZOOM",
     ].map((name) => [name, envState(name)]),
@@ -43,6 +44,8 @@ export function zoomVideoSdkEnvStatus() {
         variables.ZOOM_VIDEO_SDK_KEY === "configurado" &&
         variables.ZOOM_VIDEO_SDK_SECRET === "configurado",
       webhook: variables.ZOOM_WEBHOOK_SECRET_TOKEN === "configurado",
+      maxDuration:
+        variables.ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES === "configurado",
     },
     variables,
   };
@@ -75,6 +78,11 @@ function envState(name) {
   }
   if (name === "ZOOM_ENVIRONMENT") {
     return ["development", "production"].includes(value) ? value : "invalido";
+  }
+  if (name === "ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES") {
+    return /^[1-9][0-9]*$/.test(value) && Number(value) <= 240
+      ? "configurado"
+      : "invalido";
   }
 
   return "configurado";

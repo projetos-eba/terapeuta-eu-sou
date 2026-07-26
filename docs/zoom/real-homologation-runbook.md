@@ -9,6 +9,8 @@ explicita.
 - Supabase local rodando e Edge Functions locais servidas.
 - `supabase/functions/.env` com `ALLOW_REAL_ZOOM=true`.
 - `ZOOM_ENVIRONMENT=development`.
+- `ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES` configurado como inteiro positivo
+  entre 1 e 240. Em fluxo real/producao nao ha fallback.
 - SDK Key/Secret, API Key/Secret e webhook secret do app Video SDK correto.
 - `NGROK_AUTHTOKEN` configurado localmente.
 - Permissao para criar fixtures temporarias locais/staging com service role.
@@ -19,8 +21,9 @@ explicita.
 
 O Zoom Video SDK pode contabilizar uso quando participantes entram na sessao.
 Use uma unica sessao curta, com camera desligada e microfone silenciado. A meta e
-10 a 20 segundos, com limite operacional de 30 segundos e watchdog de 60
-segundos.
+10 a 20 segundos. O limite duro vem de
+`ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES`; o harness visual tem watchdog local
+de 180 segundos.
 
 ## Comandos Locais
 
@@ -41,6 +44,7 @@ npx supabase db reset
 npx supabase db lint
 npx supabase test db
 npx supabase gen types typescript --local --schema public
+npm run format:check
 ```
 
 ## Ngrok
@@ -98,8 +102,9 @@ npm run zoom:video-sdk:real-preflight
 ```
 
 O comando deve confirmar `ALLOW_REAL_ZOOM=true`, ambiente `development`,
-credenciais presentes e nenhuma sessao ativa. Se houver HTTP 401/403, pare e
-revise as credenciais do app Video SDK.
+credenciais presentes, `ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES` valido e
+nenhuma sessao ativa. Se houver HTTP 401/403, pare e revise as credenciais do
+app Video SDK.
 
 ## Gate Manual Obrigatorio
 
@@ -136,7 +141,7 @@ remove as fixtures em bloco `finally`, respeitando FKs.
 ## Execucao
 
 ```bash
-npm run zoom:video-sdk:test:real -- --confirm-zoom-marketplace --confirm-single-real-session --base-url http://127.0.0.1:3000
+npm run zoom:video-sdk:test:real -- --confirm-zoom-marketplace --confirm-single-real-session --headed --slow-mo=250 --base-url http://127.0.0.1:3000
 ```
 
 `--base-url` e opcional. Sem argumento, o script usa `NEXT_PUBLIC_SITE_URL` ou
@@ -144,17 +149,42 @@ npm run zoom:video-sdk:test:real -- --confirm-zoom-marketplace --confirm-single-
 
 O fluxo autorizado para a sessao real e:
 
-1. Terapeuta entra primeiro com `role_type=1`.
-2. Paciente entra em seguida com `role_type=0`.
-3. Cada participante roda em `BrowserContext` isolado.
-4. Camera permanece desligada e audio silenciado.
-5. Capturar o `provider_session_id` ativo sem imprimir o valor completo.
-6. Confirmar join dos dois.
-7. Terapeuta encerra imediatamente para todos com `client.leave(true)`.
-8. Confirmar via API que nao ha sessao ativa.
-9. Confirmar no banco eventos processados `session.started`, `session.ended`,
-   `session.user_joined` e `session.user_left`, participacoes com saida para
-   terapeuta/paciente e `video_sessions.status = ended`.
+1. Paciente abre a pagina primeiro e fica bloqueado na sala de espera.
+2. Nenhum JWT de paciente e emitido enquanto o webhook nao confirmar o host.
+3. Terapeuta entra com `role_type=1`.
+4. Webhook `session.user_joined` do terapeuta grava presenca confiavel.
+5. Paciente atualiza a sala, recebe `role_type=0` e entra.
+6. Cada participante roda em `BrowserContext` isolado.
+7. Camera permanece desligada e audio silenciado.
+8. Capturar o `provider_session_id` ativo sem imprimir o valor completo.
+9. Confirmar join dos dois.
+10. Terapeuta encerra imediatamente para todos com `client.leave(true)`.
+11. Confirmar via API que nao ha sessao ativa.
+12. Confirmar no banco eventos processados `session.started`, `session.ended`,
+    `session.user_joined` e `session.user_left`, participacoes com saida para
+    terapeuta/paciente e `video_sessions.status = ended`.
+
+O harness recusa execucao sem `--headed` e `--slow-mo=<ms>` positivo.
+
+## Duracao, Presenca e Maintenance
+
+O fim efetivo e calculado no servidor como:
+
+```text
+min(inicio efetivo + ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES,
+    fim agendado + tolerancia existente)
+```
+
+`video_sessions.hard_ends_at` e preenchido a partir do primeiro evento confiavel
+do provedor. `therapist_token_issued_at` e apenas auditoria de JWT emitido; a
+liberacao do paciente depende de `therapist_first_joined_at`,
+`therapist_present=true` e `provider_session_id`.
+
+A Edge Function `zoom-video-session-maintenance` enfileira e processa jobs
+duraveis em `video_session_control_jobs`: `end_hard_timeout`,
+`end_therapist_absent`, `reconcile_orphan` e `confirm_end`. O cron versionado em
+`supabase/schedules/zoom-video-session-maintenance.sql` usa pg_cron, pg_net e
+Vault, sem segredo hardcoded.
 
 ## Watchdog
 
@@ -166,7 +196,9 @@ PUT /videosdk/sessions/{sessionId}/status
 ```
 
 Nao use `DELETE /videosdk/sessions/{sessionId}` para encerrar sessao iniciada.
-O harness tem watchdog de 60 segundos e executa cleanup single-flight. Se o
+IDs reais de sessao podem conter `/`; scripts e workers devem codificar o
+`sessionId` duas vezes antes de coloca-lo no path do endpoint de status.
+O harness tem watchdog de 180 segundos e executa cleanup single-flight. Se o
 processo interromper depois de capturar a sessao, rode:
 
 ```bash

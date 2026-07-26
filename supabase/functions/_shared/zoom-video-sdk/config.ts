@@ -1,5 +1,9 @@
 import type { EdgeRuntime } from "../auth/runtime.ts";
 import { ZoomVideoSdkError } from "./errors.ts";
+import {
+  parseZoomVideoMaxDurationMinutes,
+  type ZoomVideoLifecycleConfig,
+} from "./session-lifecycle.ts";
 
 export type ZoomVideoSdkEnvironment = "development" | "production";
 
@@ -8,6 +12,7 @@ export type ZoomVideoSdkConfig = {
   apiKey: string;
   apiSecret: string;
   environment: ZoomVideoSdkEnvironment;
+  lifecycle: ZoomVideoLifecycleConfig;
   sdkKey: string;
   sdkSecret: string;
   webhookSecretToken: string;
@@ -21,6 +26,12 @@ export function getZoomVideoSdkConfig(
     apiKey: requireEnv(runtime, "ZOOM_VIDEO_SDK_API_KEY"),
     apiSecret: requireEnv(runtime, "ZOOM_VIDEO_SDK_API_SECRET"),
     environment: getZoomEnvironment(runtime.env.get("ZOOM_ENVIRONMENT")),
+    lifecycle: {
+      maxDurationMinutes: parseZoomVideoMaxDurationMinutes(
+        runtime.env.get("ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES"),
+      ),
+      therapistReconnectGraceSeconds: 120,
+    },
     sdkKey: requireEnv(runtime, "ZOOM_VIDEO_SDK_KEY"),
     sdkSecret: requireEnv(runtime, "ZOOM_VIDEO_SDK_SECRET"),
     webhookSecretToken: requireEnv(runtime, "ZOOM_WEBHOOK_SECRET_TOKEN"),
