@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertCircle, Loader2, Video } from "lucide-react";
 
+import type { ZoomAccessState } from "@/domain/tes";
+import { getZoomAccessLabel } from "@/features/bookings";
+
 type ZoomMeetingPayload = {
   customerKey: string;
   meetingNumber: string;
@@ -15,8 +18,19 @@ type ZoomMeetingPayload = {
 };
 
 type ApiResponse =
-  | { ok: true; data: ZoomMeetingPayload }
-  | { ok: false; error?: { message?: string }; message?: string };
+  | {
+      data: {
+        access: ZoomAccessState;
+        meeting?: ZoomMeetingPayload;
+      } & Partial<ZoomMeetingPayload>;
+      ok: true;
+    }
+  | {
+      data?: { access?: ZoomAccessState };
+      error?: { message?: string };
+      message?: string;
+      ok: false;
+    };
 
 type ZoomMtgLike = {
   init(options: {
@@ -41,13 +55,13 @@ type ZoomMtgLike = {
 };
 
 export function ZoomMeetingAdapter({
+  access,
+  actorRole,
   bookingId,
-  canJoin,
-  disabledLabel,
 }: {
+  access: ZoomAccessState | null;
+  actorRole: "patient" | "therapist";
   bookingId: string;
-  canJoin: boolean;
-  disabledLabel: string;
 }) {
   const [state, setState] = useState<
     "idle" | "loading" | "joining" | "joined" | "error"
@@ -70,7 +84,7 @@ export function ZoomMeetingAdapter({
 
     try {
       const response = await fetch("/api/zoom/meeting-access", {
-        body: JSON.stringify({ bookingId }),
+        body: JSON.stringify({ actorRole, bookingId, intent: "join" }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
@@ -82,6 +96,7 @@ export function ZoomMeetingAdapter({
             "Nao conseguimos abrir a sala agora.",
         );
       }
+      const meeting = payload.data.meeting ?? parseLegacyMeeting(payload.data);
 
       setState("joining");
       setMessage("Carregando Zoom...");
@@ -102,23 +117,23 @@ export function ZoomMeetingAdapter({
         patchJsMedia: true,
         success: () => {
           ZoomMtg.join({
-            customerKey: payload.data.customerKey,
+            customerKey: meeting.customerKey,
             error: (error) => {
               if (!mounted.current) return;
               setState("error");
               setMessage(formatZoomError(error));
             },
-            meetingNumber: payload.data.meetingNumber,
-            passWord: payload.data.passWord,
-            sdkKey: payload.data.sdkKey,
-            signature: payload.data.signature,
+            meetingNumber: meeting.meetingNumber,
+            passWord: meeting.passWord,
+            sdkKey: meeting.sdkKey,
+            signature: meeting.signature,
             success: () => {
               if (!mounted.current) return;
               setState("joined");
               setMessage("Voce entrou na sala.");
             },
-            userName: payload.data.userName,
-            zak: payload.data.zak,
+            userName: meeting.userName,
+            zak: meeting.zak,
           });
         },
       });
@@ -135,7 +150,7 @@ export function ZoomMeetingAdapter({
     }
   }
 
-  if (!canJoin) {
+  if (access && !access.allowed) {
     return (
       <button
         className="mt-6 inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-brand-lavenderSoft px-6 text-sm font-extrabold text-tesText-secondary"
@@ -143,7 +158,7 @@ export function ZoomMeetingAdapter({
         type="button"
       >
         <Video aria-hidden="true" size={20} />
-        {disabledLabel}
+        {getZoomAccessLabel(access)}
       </button>
     );
   }
@@ -179,6 +194,32 @@ export function ZoomMeetingAdapter({
       ) : null}
     </div>
   );
+}
+
+function parseLegacyMeeting(
+  value: Partial<ZoomMeetingPayload>,
+): ZoomMeetingPayload {
+  if (
+    typeof value.customerKey !== "string" ||
+    typeof value.meetingNumber !== "string" ||
+    (value.role !== 0 && value.role !== 1) ||
+    typeof value.sdkKey !== "string" ||
+    typeof value.signature !== "string" ||
+    typeof value.userName !== "string"
+  ) {
+    throw new Error("Não conseguimos validar a sala agora.");
+  }
+
+  return {
+    customerKey: value.customerKey,
+    meetingNumber: value.meetingNumber,
+    passWord: value.passWord,
+    role: value.role,
+    sdkKey: value.sdkKey,
+    signature: value.signature,
+    userName: value.userName,
+    zak: value.zak,
+  };
 }
 
 function formatZoomError(error: unknown) {

@@ -17,6 +17,7 @@ import {
   type BookingDetailReceiptRow,
   type BookingDetailReviewRow,
   type BookingDetailServiceRow,
+  type BookingDetailSessionPaymentRow,
   type BookingDetailSessionSummaryRow,
   type BookingDetailTherapistRow,
   type BookingDetailTherapyRow,
@@ -70,7 +71,7 @@ export const getPatientSessionDetailPage = cache(
         BookingDetailBookingRow[]
       >(
         config,
-        `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,timezone,status,payment_status,meeting_provider,meeting_url,completed_at&id=eq.${encodeURIComponent(bookingId)}&patient_profile_id=eq.${patientProfile.id}&limit=1`,
+        `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,timezone,status,meeting_provider,meeting_url,completed_at&id=eq.${encodeURIComponent(bookingId)}&patient_profile_id=eq.${patientProfile.id}&limit=1`,
       );
       const booking = bookings[0];
 
@@ -78,8 +79,8 @@ export const getPatientSessionDetailPage = cache(
         throw new BookingDetailDataError("not_found");
       }
 
-      const [therapists, services, intakeRows, receiptRows] = await Promise.all(
-        [
+      const [therapists, services, intakeRows, receiptRows, paymentRows] =
+        await Promise.all([
           supabaseServerRestRequest<BookingDetailTherapistRow[]>(
             config,
             `/rest/v1/therapist_profiles?select=id,slug,public_name,headline,photo_url,is_accepting_bookings&id=eq.${booking.therapist_profile_id}&limit=1`,
@@ -96,8 +97,11 @@ export const getPatientSessionDetailPage = cache(
             config,
             `/rest/v1/booking_payment_receipts?select=amount_cents,currency,receipt_url,paid_at&booking_id=eq.${booking.id}&limit=1`,
           ),
-        ],
-      );
+          supabaseServerRestRequest<BookingDetailSessionPaymentRow[]>(
+            config,
+            `/rest/v1/session_payments?select=financial_status&booking_id=eq.${booking.id}&limit=1`,
+          ),
+        ]);
       const therapist = therapists[0];
       const service = services[0];
 
@@ -121,7 +125,7 @@ export const getPatientSessionDetailPage = cache(
           ),
           supabaseServerRestRequest<BookingDetailBookingRow[]>(
             config,
-            `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,timezone,status,payment_status,meeting_provider,meeting_url,completed_at&patient_profile_id=eq.${patientProfile.id}&therapist_profile_id=eq.${therapist.id}&status=eq.completed&order=starts_at.asc`,
+            `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,timezone,status,meeting_provider,meeting_url,completed_at&patient_profile_id=eq.${patientProfile.id}&therapist_profile_id=eq.${therapist.id}&status=eq.completed&order=starts_at.asc`,
           ),
         ]);
       const therapy = therapies[0];
@@ -150,6 +154,7 @@ export const getPatientSessionDetailPage = cache(
         receipt: receiptRows[0] ?? null,
         reviews,
         service,
+        sessionPayment: paymentRows[0] ?? null,
         summaries,
         therapist,
         therapy,
@@ -177,7 +182,6 @@ function createDemoBookingDetail(
       meeting_provider: "zoom",
       meeting_url: "https://us02web.zoom.us/j/1234567890?pwd=terapiaeusou",
       patient_profile_id: "91000000-0000-4000-8000-000000000001",
-      payment_status: "paid",
       service_id: "93000000-0000-4000-8000-000000000020",
       starts_at: startsAt.toISOString(),
       status: "confirmed",
@@ -191,7 +195,6 @@ function createDemoBookingDetail(
       meeting_provider: "zoom",
       meeting_url: null,
       patient_profile_id: "91000000-0000-4000-8000-000000000001",
-      payment_status: "paid",
       service_id: "93000000-0000-4000-8000-000000000020",
       starts_at: new Date(2024, 4, 10 + index, 14).toISOString(),
       status: "completed",
@@ -237,6 +240,9 @@ function createDemoBookingDetail(
       price_cents: 17000,
       therapy_id: "22222222-2222-4222-8222-222222222225",
       title: "Reiki",
+    },
+    sessionPayment: {
+      financial_status: "paid",
     },
     summaries: Array.from({ length: 3 }, (_, index) => ({
       booking_id: `96000000-0000-4000-8000-00000000000${2 + index}`,

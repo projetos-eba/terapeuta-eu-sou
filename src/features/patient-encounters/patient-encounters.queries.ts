@@ -108,7 +108,7 @@ async function getSupabasePatientEncountersPage(
     await Promise.all([
       supabaseRequest<BookingRecord[]>(
         config,
-        `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,status,payment_status,meeting_url,cancellation_reason,cancelled_at,completed_at&patient_profile_id=eq.${patientProfile.id}&order=starts_at.asc`,
+        `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,status,meeting_url,cancellation_reason,cancelled_at,completed_at&patient_profile_id=eq.${patientProfile.id}&order=starts_at.asc`,
       ),
       supabaseRequest<FavoriteRow[]>(
         config,
@@ -394,7 +394,6 @@ function createBooking(
     ends_at: endsAt.toISOString(),
     id,
     meeting_url: meetingUrl,
-    payment_status: "paid",
     service_id: serviceId,
     starts_at: startsAt.toISOString(),
     status,

@@ -11,8 +11,11 @@ Fluxo:
 3. Quando o estado é `paid`, enfileira `zoom_meeting_jobs` por `enqueue_zoom_meeting_job_v1`.
 4. `zoom-jobs-process` cria ou atualiza a reunião via Server-to-Server OAuth.
 5. Paciente/terapeuta pedem acesso por `/api/zoom/meeting-access`.
-6. `zoom-meeting-access` valida perfil, booking, pagamento, janela de entrada e gera JWT do Meeting SDK.
-7. `zoom-webhook` valida assinatura, registra evento normalizado e atualiza estado operacional.
+6. A rota exige `actorRole`, seleciona o cookie correspondente e encaminha a
+   intenção `preview` ou `join`.
+7. `zoom-meeting-access` valida ownership, status do terapeuta,
+   `session_payments`, booking, janela e provisionamento antes de gerar o JWT.
+8. `zoom-webhook` valida assinatura, registra evento normalizado e atualiza estado operacional.
 
 ## Banco
 
@@ -50,14 +53,10 @@ Passcodes gerados localmente respeitam limite de 10 caracteres observado na conf
 
 - `ZOOM_DEFAULT_HOST_USER_ID` define um host único de desenvolvimento. Produção
   precisa de alocação de hosts licenciados e controle de concorrência.
-- O endpoint de acesso ainda deve bloquear terapeuta `suspended`/`rejected` e
-  confirmar o estado canônico em `session_payments`, sem depender somente de
-  `bookings.payment_status`.
-- A rota Next deve desambiguar a sessão quando cookies de paciente e terapeuta
-  coexistirem.
 - Participações ainda chegam com papel `unknown`; não devem confirmar presença
   financeira ou clínica antes de atribuição e deduplicação semântica.
-- As policies existem, mas a cobertura pgTAP específica de RLS Zoom ainda deve
-  ser criada.
+- O read model e o acesso possuem cobertura pgTAP/Deno para ownership,
+  pagamento, cancelamento, provisionamento e terapeuta suspenso. A cobertura
+  direta de todas as tabelas Zoom pode ser ampliada.
 - Cron, webhook remoto, ZAK, licença e configuração do Marketplace permanecem
   gates externos de produção.

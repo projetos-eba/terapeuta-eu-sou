@@ -60,14 +60,18 @@ export function PatientAppointmentCard({
         >
           {isLive ? "Ao vivo agora" : "Confirmada"}
         </span>
-        {isLive && appointment.meetingUrl ? (
+        {isLive ? (
           <>
-            <a
+            <Link
               className="inline-flex min-h-8 w-full items-center justify-center rounded-sm bg-brand-primary px-4 text-xs font-medium text-white outline-none transition hover:bg-brand-primaryHover focus-visible:ring-4 focus-visible:ring-ring/20 sm:w-[145px]"
-              href={appointment.meetingUrl}
+              href={
+                routes.patient.encounterDetail(
+                  appointment.id,
+                ) as Route<string>
+              }
             >
-              Entrar na sessão
-            </a>
+              Abrir sessão
+            </Link>
             <Link
               className="inline-flex min-h-8 w-full items-center justify-center rounded-sm border border-[var(--tes-color-border)] bg-white px-4 text-xs font-medium text-brand-primary outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20 sm:w-[145px]"
               href={routes.patient.messages as Route<string>}

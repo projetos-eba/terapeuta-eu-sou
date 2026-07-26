@@ -7,6 +7,11 @@ npm run test:deno -- --filter zoom
 vitest run src/features/zoom
 ```
 
+Esses testes cobrem pagamento canônico, booking cancelado, sala não
+provisionada, janela `[startsAt - 15 min, endsAt + 30 min)`, ownership e
+terapeuta suspenso. `supabase/tests/004_agenda_sessions_read_models.sql` cobre
+as mesmas invariantes no read model/RLS.
+
 Integração local:
 
 ```bash

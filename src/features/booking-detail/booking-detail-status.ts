@@ -41,7 +41,7 @@ export function getBookingDetailStatusLabel(status: BookingDetailStatus) {
 
 export function canExposeMeetingUrl(input: {
   meetingUrl: string | null;
-  paymentStatus: string;
+  paymentStatus: string | null;
   status: string;
 }) {
   if (!input.meetingUrl || input.paymentStatus !== "paid") return false;

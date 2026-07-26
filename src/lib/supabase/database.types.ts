@@ -67,6 +67,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "aura_recommendations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+          {
             foreignKeyName: "aura_recommendations_patient_profile_id_fkey"
             columns: ["patient_profile_id"]
             isOneToOne: false
@@ -577,6 +584,13 @@ export type Database = {
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "booking_events_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
         ]
       }
       booking_holds: {
@@ -668,6 +682,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_holds_consumed_booking_id_fkey"
+            columns: ["consumed_booking_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
           },
           {
             foreignKeyName: "booking_holds_patient_profile_id_fkey"
@@ -773,6 +794,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "booking_intake_responses_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+          {
             foreignKeyName: "booking_intake_responses_patient_profile_id_fkey"
             columns: ["patient_profile_id"]
             isOneToOne: false
@@ -850,6 +878,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_payment_receipts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
           },
         ]
       }
@@ -929,6 +964,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "booking_reschedule_requests_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+          {
             foreignKeyName: "booking_reschedule_requests_requested_by_profile_id_fkey"
             columns: ["requested_by_profile_id"]
             isOneToOne: false
@@ -985,6 +1027,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_session_summaries_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
           },
           {
             foreignKeyName: "booking_session_summaries_patient_profile_id_fkey"
@@ -1202,6 +1251,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
           },
           {
             foreignKeyName: "conversations_patient_profile_id_fkey"
@@ -1641,6 +1697,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_ledger_entries_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
           },
           {
             foreignKeyName: "financial_ledger_entries_patient_profile_id_fkey"
@@ -2386,6 +2449,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+          {
             foreignKeyName: "payments_patient_profile_id_fkey"
             columns: ["patient_profile_id"]
             isOneToOne: false
@@ -2478,6 +2548,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payout_batch_items_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
           },
           {
             foreignKeyName: "payout_batch_items_payout_batch_id_fkey"
@@ -2726,6 +2803,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pre_checkout_intakes_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+          {
             foreignKeyName: "pre_checkout_intakes_patient_profile_id_fkey"
             columns: ["patient_profile_id"]
             isOneToOne: false
@@ -2923,6 +3007,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+          {
             foreignKeyName: "reviews_patient_profile_id_fkey"
             columns: ["patient_profile_id"]
             isOneToOne: false
@@ -3024,6 +3115,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_cancellation_decisions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
           },
           {
             foreignKeyName: "session_cancellation_decisions_policy_version_id_fkey"
@@ -3284,6 +3382,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "session_payments_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+          {
             foreignKeyName: "session_payments_patient_profile_id_fkey"
             columns: ["patient_profile_id"]
             isOneToOne: false
@@ -3468,6 +3573,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_service_confirmations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
           },
           {
             foreignKeyName: "session_service_confirmations_confirmed_by_profile_id_fkey"
@@ -3870,6 +3982,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "structured_messages_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+          {
             foreignKeyName: "structured_messages_patient_profile_id_fkey"
             columns: ["patient_profile_id"]
             isOneToOne: false
@@ -3970,6 +4089,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
           },
           {
             foreignKeyName: "support_tickets_requester_profile_id_fkey"
@@ -4236,6 +4362,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_patient_relationships_source_booking_id_fkey"
+            columns: ["source_booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
           },
           {
             foreignKeyName: "therapist_patient_relationships_therapist_profile_id_fkey"
@@ -4632,6 +4765,137 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      therapist_schedule_events: {
+        Row: {
+          actor_user_id: string
+          created_at: string
+          event_type: string
+          id: string
+          previous_version: number
+          request_id: string
+          resulting_version: number
+          rule_count: number
+          service_settings_count: number
+          therapist_profile_id: string
+          timezone: string
+        }
+        Insert: {
+          actor_user_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          previous_version: number
+          request_id: string
+          resulting_version: number
+          rule_count: number
+          service_settings_count: number
+          therapist_profile_id: string
+          timezone: string
+        }
+        Update: {
+          actor_user_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          previous_version?: number
+          request_id?: string
+          resulting_version?: number
+          rule_count?: number
+          service_settings_count?: number
+          therapist_profile_id?: string
+          timezone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapist_schedule_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_schedule_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_schedule_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_schedule_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "therapist_schedule_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      therapist_schedule_settings: {
+        Row: {
+          created_at: string
+          therapist_profile_id: string
+          timezone: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          therapist_profile_id: string
+          timezone?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          therapist_profile_id?: string
+          timezone?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapist_schedule_settings_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: true
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_schedule_settings_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: true
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_schedule_settings_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: true
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "therapist_schedule_settings_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -5732,6 +5996,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "zoom_meeting_jobs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+          {
             foreignKeyName: "zoom_meeting_jobs_zoom_meeting_id_fkey"
             columns: ["zoom_meeting_id"]
             isOneToOne: false
@@ -5816,6 +6087,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zoom_meeting_participations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
           },
           {
             foreignKeyName: "zoom_meeting_participations_meeting_id_fkey"
@@ -5942,6 +6220,13 @@ export type Database = {
             referencedRelation: "bookings"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "zoom_meetings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
         ]
       }
       zoom_webhook_events: {
@@ -6032,6 +6317,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zoom_meetings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
           },
         ]
       }
@@ -6342,6 +6634,109 @@ export type Database = {
         }
         Relationships: []
       }
+      therapist_session_read_model_v1: {
+        Row: {
+          _meetingReady: boolean | null
+          _therapistProfileId: string | null
+          attendanceSource: string | null
+          attendanceStatus: string | null
+          bookingId: string | null
+          bookingStatus: Database["public"]["Enums"]["booking_status"] | null
+          bookingVersion: number | null
+          cancellationDecision: string | null
+          cancellationRequiresReview: boolean | null
+          currency: string | null
+          durationMinutes: number | null
+          endsAt: string | null
+          financialStatus:
+            | Database["public"]["Enums"]["session_financial_status"]
+            | null
+          fulfillmentStatus:
+            | Database["public"]["Enums"]["session_service_status"]
+            | null
+          grossAmountCents: number | null
+          meetingProvider: string | null
+          meetingStatus:
+            | Database["public"]["Enums"]["zoom_meeting_status"]
+            | null
+          modality: string | null
+          patientAvatarUrl: string | null
+          patientName: string | null
+          patientProfileId: string | null
+          priceCents: number | null
+          proposedEndsAt: string | null
+          proposedStartsAt: string | null
+          proposedTimezone: string | null
+          refundPending: boolean | null
+          rescheduleStatus: string | null
+          serviceId: string | null
+          serviceTitle: string | null
+          startsAt: string | null
+          therapistAmountCents: number | null
+          timezone: string | null
+          transferStatus:
+            | Database["public"]["Enums"]["session_transfer_status"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_patient_profile_id_fkey"
+            columns: ["patientProfileId"]
+            isOneToOne: false
+            referencedRelation: "patient_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_service_id_fkey"
+            columns: ["serviceId"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profile_services_v"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "bookings_service_id_fkey"
+            columns: ["serviceId"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "bookings_service_id_fkey"
+            columns: ["serviceId"]
+            isOneToOne: false
+            referencedRelation: "therapist_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_therapist_profile_id_fkey"
+            columns: ["_therapistProfileId"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_therapist_profile_id_fkey"
+            columns: ["_therapistProfileId"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_therapist_profile_id_fkey"
+            columns: ["_therapistProfileId"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "bookings_therapist_profile_id_fkey"
+            columns: ["_therapistProfileId"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       therapist_zoom_meeting_summary_v: {
         Row: {
           actual_ended_at: string | null
@@ -6366,6 +6761,13 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "bookings"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zoom_meetings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
           },
         ]
       }
@@ -6429,6 +6831,18 @@ export type Database = {
         Returns: undefined
       }
       auto_confirm_sessions: { Args: { p_now?: string }; Returns: number }
+      build_zoom_access_state_v1: {
+        Args: {
+          p_booking_status: Database["public"]["Enums"]["booking_status"]
+          p_ends_at: string
+          p_financial_status: Database["public"]["Enums"]["session_financial_status"]
+          p_meeting_ready: boolean
+          p_meeting_status: Database["public"]["Enums"]["zoom_meeting_status"]
+          p_now?: string
+          p_starts_at: string
+        }
+        Returns: Json
+      }
       calculate_session_cancellation_policy: {
         Args: { p_booking_id: string; p_now?: string; p_reason?: string }
         Returns: {
@@ -6607,7 +7021,32 @@ export type Database = {
         Args: { p_now?: string }
         Returns: number
       }
+      get_therapist_agenda_v1: {
+        Args: { p_range_end?: string; p_range_start?: string }
+        Returns: Json
+      }
       get_therapist_dashboard_v1: { Args: never; Returns: Json }
+      get_therapist_schedule_v1: { Args: never; Returns: Json }
+      get_therapist_session_detail_v1: {
+        Args: { p_booking_id: string }
+        Returns: Json
+      }
+      get_therapist_sessions_v1: {
+        Args: {
+          p_booking_status?: Database["public"]["Enums"]["booking_status"]
+          p_cursor_booking_id?: string
+          p_cursor_starts_at?: string
+          p_financial_status?: Database["public"]["Enums"]["session_financial_status"]
+          p_limit?: number
+          p_modality?: string
+          p_patient_profile_id?: string
+          p_period_end?: string
+          p_period_start?: string
+          p_service_id?: string
+        }
+        Returns: Json
+      }
+      get_therapist_shell_counters_v1: { Args: never; Returns: Json }
       is_booking_participant_profile_v1: {
         Args: { p_booking_id: string; p_profile_id: string }
         Returns: boolean
@@ -6778,6 +7217,17 @@ export type Database = {
           p_reschedule_request_id: string
           p_resolution: string
           p_resolved_by_profile_id: string
+        }
+        Returns: Json
+      }
+      save_therapist_schedule_v1: {
+        Args: {
+          p_actor_user_id: string
+          p_expected_version: number
+          p_request_id: string
+          p_rules: Json
+          p_service_settings: Json
+          p_timezone: string
         }
         Returns: Json
       }

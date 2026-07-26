@@ -1,24 +1,16 @@
 import { notFound } from "next/navigation";
 import { ShieldCheck, Video } from "lucide-react";
 
+import {
+  formatSessionDateTime,
+  formatSessionMoney,
+  getZoomAccessLabel,
+  mapSessionPresentation,
+} from "@/features/bookings";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
+import { getTherapistSessionDetail } from "@/features/therapist-sessions";
 import { ZoomMeetingAdapter } from "@/features/zoom/zoom-meeting-adapter";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
-import {
-  getSupabaseServerRestConfig,
-  supabaseServerRestRequest,
-} from "@/lib/supabase/server-rest";
-
-type BookingRow = {
-  ends_at: string;
-  id: string;
-  payment_status: string;
-  starts_at: string;
-  status: string;
-  timezone: string;
-  patient_profiles: { display_name: string | null } | null;
-  therapist_services: { title: string } | null;
-};
 
 export default async function TherapistSessionDetailPage({
   params,
@@ -29,64 +21,84 @@ export default async function TherapistSessionDetailPage({
   const session = await requireTherapistSession(
     therapistRoutePolicies.sessions,
   );
-  const config = getSupabaseServerRestConfig(session.accessToken);
-  const [booking] = config
-    ? await supabaseServerRestRequest<BookingRow[]>(
-        config,
-        `/rest/v1/bookings?select=id,starts_at,ends_at,timezone,status,payment_status,patient_profiles(display_name),therapist_services(title)&id=eq.${encodeURIComponent(bookingId)}&therapist_profile_id=eq.${encodeURIComponent(session.profileId)}&limit=1`,
-      ).catch(() => [])
-    : [];
+  const result = await getTherapistSessionDetail({
+    accessToken: session.accessToken,
+    bookingId,
+    profileId: session.profileId,
+  });
 
-  if (!booking) notFound();
+  if (result.status === "empty") notFound();
 
-  const canJoin =
-    booking.payment_status === "paid" &&
-    !["cancelled_by_patient", "cancelled_by_therapist", "refunded"].includes(
-      booking.status,
-    ) &&
-    isWithinJoinWindow(booking.starts_at, booking.ends_at);
+  if (result.status === "error") {
+    return (
+      <section
+        className="rounded-card border border-status-error/30 bg-white p-8 text-center shadow-card"
+        role="alert"
+      >
+        <h1 className="font-display text-4xl font-light italic text-brand-deep">
+          Não foi possível abrir esta sessão
+        </h1>
+        <p className="mt-4 text-sm font-semibold leading-6 text-tesText-secondary">
+          {result.error.message}
+        </p>
+        <p className="mt-2 text-xs font-semibold text-tesText-muted">
+          Referência: {result.error.correlationId.slice(0, 8)}
+        </p>
+      </section>
+    );
+  }
+
+  const booking = result.data;
+  const presentation = mapSessionPresentation(booking);
 
   return (
     <main className="grid gap-6 pb-10 text-tesText-primary xl:grid-cols-[minmax(0,760px)_320px]">
       <section className="rounded-card border border-brand-lavender bg-white p-6 shadow-card">
         <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-brand-primary">
-          Sala Zoom
+          Operação da sessão
         </p>
         <h1 className="mt-2 font-display text-4xl font-light italic text-brand-deep">
-          {booking.therapist_services?.title ?? "Detalhe da sessão"}
+          {booking.serviceTitle}
         </h1>
         <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-          A sala é criada depois do pagamento confirmado. O acesso de anfitrião
-          é liberado somente para o terapeuta responsável.
+          {presentation.description}
         </p>
 
-        <div className="mt-6 grid gap-3 rounded-2xl bg-surface-soft p-5 text-sm font-semibold text-tesText-secondary sm:grid-cols-2">
-          <span>
-            <strong className="block text-brand-deep">Paciente</strong>
-            {booking.patient_profiles?.display_name ?? "Cliente TES"}
-          </span>
-          <span>
-            <strong className="block text-brand-deep">Horário</strong>
-            {formatDateTime(booking.starts_at)}
-          </span>
-          <span>
-            <strong className="block text-brand-deep">Pagamento</strong>
-            {booking.payment_status === "paid" ? "Confirmado" : "Pendente"}
-          </span>
-          <span>
-            <strong className="block text-brand-deep">Status</strong>
-            {booking.status}
-          </span>
-        </div>
+        <dl className="mt-6 grid gap-4 rounded-lg bg-surface-soft p-5 text-sm font-semibold text-tesText-secondary sm:grid-cols-2">
+          <div>
+            <dt className="font-extrabold text-brand-deep">Paciente</dt>
+            <dd>{booking.patientName}</dd>
+          </div>
+          <div>
+            <dt className="font-extrabold text-brand-deep">Horário</dt>
+            <dd>
+              {formatSessionDateTime(booking.startsAt, booking.timezone)}
+            </dd>
+          </div>
+          <div>
+            <dt className="font-extrabold text-brand-deep">Pagamento</dt>
+            <dd>{formatFinancialStatus(booking.financialStatus)}</dd>
+          </div>
+          <div>
+            <dt className="font-extrabold text-brand-deep">
+              Estado operacional
+            </dt>
+            <dd>{presentation.label}</dd>
+          </div>
+          <div>
+            <dt className="font-extrabold text-brand-deep">Valor reservado</dt>
+            <dd>{formatSessionMoney(booking.priceCents, booking.currency)}</dd>
+          </div>
+          <div>
+            <dt className="font-extrabold text-brand-deep">Sala online</dt>
+            <dd>{getZoomAccessLabel(booking.zoomAccess)}</dd>
+          </div>
+        </dl>
 
         <ZoomMeetingAdapter
-          bookingId={booking.id}
-          canJoin={canJoin}
-          disabledLabel={
-            booking.payment_status === "paid"
-              ? "Disponível 15 min antes"
-              : "Aguardando pagamento"
-          }
+          access={booking.zoomAccess}
+          actorRole="therapist"
+          bookingId={booking.bookingId}
         />
       </section>
 
@@ -98,30 +110,30 @@ export default async function TherapistSessionDetailPage({
           Segurança da sala
         </h2>
         <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-          O Zoom recebe apenas os dados operacionais necessários para a
-          videochamada. Gravação automática fica desativada por padrão.
+          A autorização final é refeita no backend ao entrar. Credenciais de
+          anfitrião são efêmeras e não ficam salvas nesta página.
         </p>
         <p className="mt-4 flex gap-2 text-xs font-semibold leading-5 text-tesText-secondary">
           <Video aria-hidden="true" className="mt-0.5" size={16} />
-          Se o acesso de anfitrião não abrir, verifique a autorização do app no
-          Zoom Marketplace.
+          Pagamento, horário, responsável e provisionamento da sala são
+          verificados separadamente.
         </p>
       </aside>
     </main>
   );
 }
 
-function isWithinJoinWindow(startsAt: string, endsAt: string) {
-  const now = Date.now();
-  const start = new Date(startsAt).getTime();
-  const end = new Date(endsAt).getTime();
+function formatFinancialStatus(value: string | null) {
+  const labels: Record<string, string> = {
+    canceled: "Cancelado",
+    disputed: "Em contestação",
+    failed: "Falhou",
+    paid: "Confirmado",
+    partially_refunded: "Reembolso parcial",
+    pending: "Pendente",
+    processing: "Processando",
+    refunded: "Reembolsado",
+  };
 
-  return now >= start - 15 * 60_000 && now <= end + 30 * 60_000;
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(new Date(value));
+  return value ? (labels[value] ?? "Em análise") : "Não iniciado";
 }

@@ -4,8 +4,10 @@ export const DomainErrorCode = {
   BookingCannotBeRescheduled: "BOOKING_CANNOT_BE_RESCHEDULED",
   BookingConflict: "BOOKING_CONFLICT",
   InvalidAvailabilityRange: "INVALID_AVAILABILITY_RANGE",
+  InvalidScheduleTimezone: "INVALID_SCHEDULE_TIMEZONE",
   InvalidStateTransition: "INVALID_STATE_TRANSITION",
   OverlappingAvailabilityRule: "OVERLAPPING_AVAILABILITY_RULE",
+  ScheduleVersionConflict: "SCHEDULE_VERSION_CONFLICT",
   SessionAccessNotOpen: "SESSION_ACCESS_NOT_OPEN",
   SlotHeldByAnotherUser: "SLOT_HELD_BY_ANOTHER_USER",
   SlotNotAvailable: "SLOT_NOT_AVAILABLE",
@@ -64,6 +66,12 @@ export const domainErrorDefinitions: Record<
     safeMessage: "Revise os horários informados antes de continuar.",
     suggestedHttpStatus: 422,
   },
+  [DomainErrorCode.InvalidScheduleTimezone]: {
+    category: "validation",
+    retryable: false,
+    safeMessage: "Selecione um fuso horário válido.",
+    suggestedHttpStatus: 422,
+  },
   [DomainErrorCode.InvalidStateTransition]: {
     category: "validation",
     retryable: false,
@@ -74,6 +82,13 @@ export const domainErrorDefinitions: Record<
     category: "availability",
     retryable: false,
     safeMessage: "Existem faixas de disponibilidade sobrepostas.",
+    suggestedHttpStatus: 409,
+  },
+  [DomainErrorCode.ScheduleVersionConflict]: {
+    category: "conflict",
+    retryable: true,
+    safeMessage:
+      "Os horários foram alterados em outra sessão. Atualize a página antes de salvar novamente.",
     suggestedHttpStatus: 409,
   },
   [DomainErrorCode.SessionAccessNotOpen]: {

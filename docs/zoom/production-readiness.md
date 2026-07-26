@@ -9,13 +9,15 @@ Checklist antes de produção:
 - Publicar/configurar webhook no Marketplace com URL remota.
 - Executar `supabase db reset`, `supabase db lint` e regenerar `database.types.ts`.
 - Executar `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build`.
-- Validar RLS com usuários de paciente, terapeuta responsável, terapeuta externo e usuário sem sessão.
-- Validar que terapeuta suspenso/rejeitado não recebe acesso nem ZAK.
-- Validar `session_payments.financial_status = paid` no gate de acesso.
+- Reexecutar no ambiente alvo os testes de RLS com paciente, terapeuta
+  responsável, terapeuta externo e usuário sem sessão.
+- Reexecutar o teste de bloqueio de terapeuta suspenso/rejeitado.
+- Reexecutar o gate canônico de `session_payments.financial_status = paid`.
 - Definir alocação de hosts licenciados e concorrência; não promover
   `ZOOM_DEFAULT_HOST_USER_ID` único como topologia final.
-- Validar comportamento quando cookies de paciente e terapeuta coexistirem.
-- Criar pgTAP para grants, views, policies e RPCs Zoom.
+- Revalidar a desambiguação por `actorRole` quando cookies coexistirem.
+- Ampliar pgTAP direto para todas as tabelas Zoom; os read models já cobrem
+  ownership, pagamento, cancelamento e suspensão.
 - Definir deduplicação e atribuição de papel das participações antes de usar
   presença em qualquer decisão financeira.
 - Validar replay/duplicidade de webhook.
@@ -40,6 +42,10 @@ Implementado:
 - reconcile sem recriação duplicada;
 - webhook com limite de corpo, assinatura obrigatória, eventos desconhecidos `ignored` e proteção contra regressão de status;
 - smoke local de webhook e fluxo real de fila com criação/update/cancelamento remoto.
+- contrato `ZoomAccessState` e preview seguro no read model;
+- pagamento canônico e bloqueio de terapeuta suspenso/rejeitado no acesso;
+- desambiguação de cookies pelo papel declarado;
+- logs de acesso com allowlist e erros sanitizados.
 
 Ainda externo ao repositório:
 

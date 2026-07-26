@@ -17,6 +17,7 @@ import {
 } from "./job-worker.ts";
 import { createMeetingSdkJwt } from "./meeting-sdk-jwt.ts";
 import { generateMeetingPasscode } from "./meetings.ts";
+import { evaluateZoomAccess, ZoomAccessReason } from "./access-policy.ts";
 import {
   createZoomChallengeResponse,
   createZoomWebhookEventKey,
@@ -276,6 +277,95 @@ Deno.test(
     assertEquals(client.meetingStatus, "canceled");
   },
 );
+
+Deno.test(
+  "zoom access uses canonical payment and an inclusive start window",
+  () => {
+    const startsAt = "2026-07-26T13:00:00.000Z";
+    const result = evaluateZoomAccess({
+      actorOwnsBooking: true,
+      actorRole: "therapist",
+      bookingStatus: "confirmed",
+      endsAt: "2026-07-26T14:00:00.000Z",
+      financialStatus: "paid",
+      meetingReady: true,
+      meetingStatus: "provisioned",
+      nowMs: new Date("2026-07-26T12:45:00.000Z").getTime(),
+      startsAt,
+      therapistStatus: "approved",
+    });
+
+    assertEquals(result.allowed, true);
+    assertEquals(result.reason, null);
+  },
+);
+
+Deno.test("zoom access blocks unpaid and cancelled bookings", () => {
+  const base = zoomAccessFixture();
+  const unpaid = evaluateZoomAccess({
+    ...base,
+    financialStatus: "pending",
+  });
+  const cancelled = evaluateZoomAccess({
+    ...base,
+    bookingStatus: "cancelled_by_patient",
+  });
+
+  assertEquals(unpaid.reason, ZoomAccessReason.PaymentNotConfirmed);
+  assertEquals(cancelled.reason, ZoomAccessReason.BookingCancelled);
+});
+
+Deno.test("zoom access blocks early, late and unprovisioned rooms", () => {
+  const base = zoomAccessFixture();
+  const tooEarly = evaluateZoomAccess({
+    ...base,
+    nowMs: new Date("2026-07-26T12:44:59.999Z").getTime(),
+  });
+  const tooLate = evaluateZoomAccess({
+    ...base,
+    nowMs: new Date("2026-07-26T14:30:00.000Z").getTime(),
+  });
+  const meetingNotReady = evaluateZoomAccess({
+    ...base,
+    meetingReady: false,
+    meetingStatus: "pending_provisioning",
+  });
+
+  assertEquals(tooEarly.reason, ZoomAccessReason.TooEarly);
+  assertEquals(tooLate.reason, ZoomAccessReason.TooLate);
+  assertEquals(meetingNotReady.reason, ZoomAccessReason.MeetingNotReady);
+});
+
+Deno.test("zoom access blocks other actors and suspended therapists", () => {
+  const base = zoomAccessFixture();
+  const otherActor = evaluateZoomAccess({
+    ...base,
+    actorOwnsBooking: false,
+  });
+  const suspended = evaluateZoomAccess({
+    ...base,
+    therapistStatus: "suspended",
+  });
+
+  assertEquals(otherActor.reason, ZoomAccessReason.TherapistNotAllowed);
+  assertEquals(otherActor.availableFrom, null);
+  assertEquals(suspended.reason, ZoomAccessReason.TherapistSuspended);
+});
+
+function zoomAccessFixture() {
+  return {
+    actorOwnsBooking: true,
+    actorRole: "therapist" as const,
+    bookingStatus: "confirmed",
+    endsAt: "2026-07-26T14:00:00.000Z",
+    financialStatus: "paid",
+    meetingReady: true,
+    meetingStatus: "provisioned",
+    nowMs: new Date("2026-07-26T13:00:00.000Z").getTime(),
+    startsAt: "2026-07-26T13:00:00.000Z",
+    therapistStatus: "approved",
+  };
+}
 
 function fakeConfig(): ZoomConfig {
   return {
