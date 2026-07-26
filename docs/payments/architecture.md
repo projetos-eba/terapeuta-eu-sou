@@ -75,6 +75,15 @@ Desde o Gate F0:
 - o plano da assinatura é resolvido pelo `stripe_price_id` efetivo, nunca apenas
   pela metadata enviada ao Checkout.
 
+Agenda e Sessões:
+
+- `therapist_session_read_model_v1` lê estado financeiro e realização
+  diretamente de `session_payments`;
+- divergência em `bookings.payment_status` não autoriza acesso Zoom;
+- filtros financeiros de Sessões usam `session_financial_status`;
+- o frontend não escreve estado financeiro nem confirma pagamento por
+  redirect.
+
 ## Estados
 
 Pagamento da sessao:

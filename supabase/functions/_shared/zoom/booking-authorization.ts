@@ -1,19 +1,18 @@
 import { SupabaseRestClient } from "../auth/supabase-rest.ts";
 import { DomainError } from "../payments/http.ts";
 
-export type ZoomAuthorizedBooking = {
-  booking: {
-    ends_at: string;
-    id: string;
-    patient_profile_id: string;
-    payment_status: string;
-    starts_at: string;
-    status: string;
-    therapist_profile_id: string;
-    timezone: string;
-  };
-  displayName: string;
-  role: "patient" | "therapist";
+type ZoomBookingRow = {
+  ends_at: string;
+  id: string;
+  patient_profile_id: string;
+  starts_at: string;
+  status: string;
+  therapist_profile_id: string;
+  timezone: string;
+};
+
+export type ZoomAuthorizedBooking = ZoomBookingRow & {
+  financial_status: string | null;
 };
 
 export async function getAuthorizedZoomBooking(input: {
@@ -22,50 +21,39 @@ export async function getAuthorizedZoomBooking(input: {
   profileId: string;
   role: "patient" | "therapist";
 }) {
-  const rows = await input.client.get<Array<ZoomAuthorizedBooking["booking"]>>(
-    `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,starts_at,ends_at,timezone,status,payment_status&id=eq.${encodeURIComponent(input.bookingId)}&limit=1`,
+  const rows = await input.client.get<ZoomBookingRow[]>(
+    `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,starts_at,ends_at,timezone,status&id=eq.${encodeURIComponent(input.bookingId)}&limit=1`,
   );
-  const booking = rows[0];
+  const bookingRow = rows[0];
 
-  if (!booking) {
+  if (!bookingRow) {
     throw new DomainError("booking_not_found", 404, "Sessao nao encontrada.");
   }
 
   if (
     input.role === "patient" &&
-    booking.patient_profile_id !== input.profileId
+    bookingRow.patient_profile_id !== input.profileId
   ) {
     throw new DomainError("booking_forbidden", 403, "Sessao indisponivel.");
   }
 
   if (
     input.role === "therapist" &&
-    booking.therapist_profile_id !== input.profileId
+    bookingRow.therapist_profile_id !== input.profileId
   ) {
     throw new DomainError("booking_forbidden", 403, "Sessao indisponivel.");
   }
 
-  if (booking.payment_status !== "paid") {
-    throw new DomainError(
-      "booking_unpaid",
-      409,
-      "A sala sera liberada quando o pagamento estiver confirmado.",
-    );
-  }
+  const [payment] = await input.client.get<
+    Array<{ financial_status: string }>
+  >(
+    `/rest/v1/session_payments?select=financial_status&booking_id=eq.${encodeURIComponent(input.bookingId)}&limit=1`,
+  );
 
-  if (
-    ["cancelled_by_patient", "cancelled_by_therapist", "refunded"].includes(
-      booking.status,
-    )
-  ) {
-    throw new DomainError(
-      "booking_closed",
-      409,
-      "Esta sessao nao esta disponivel para acesso.",
-    );
-  }
-
-  return booking;
+  return {
+    ...bookingRow,
+    financial_status: payment?.financial_status ?? null,
+  };
 }
 
 export function sanitizeZoomDisplayName(value: string | null | undefined) {

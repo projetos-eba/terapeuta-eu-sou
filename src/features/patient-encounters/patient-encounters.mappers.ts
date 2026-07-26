@@ -26,7 +26,6 @@ export type BookingRecord = {
   ends_at: string;
   id: string;
   meeting_url: string | null;
-  payment_status: string;
   service_id: string;
   starts_at: string;
   status: string;
@@ -205,9 +204,9 @@ function getPrimaryAction(
 ): PatientEncounter["primaryAction"] {
   if (status === "live" && booking.meeting_url) {
     return {
-      href: booking.meeting_url,
+      href: routes.patient.encounterDetail(booking.id),
       kind: "link",
-      label: "Entrar na sessão",
+      label: "Abrir sessão",
     };
   }
 

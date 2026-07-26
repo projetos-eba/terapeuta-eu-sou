@@ -11,8 +11,11 @@ Fluxo:
 3. Quando o estado é `paid`, enfileira `zoom_meeting_jobs` por `enqueue_zoom_meeting_job_v1`.
 4. `zoom-jobs-process` cria ou atualiza a reunião via Server-to-Server OAuth.
 5. Paciente/terapeuta pedem acesso por `/api/zoom/meeting-access`.
-6. `zoom-meeting-access` valida perfil, booking, pagamento, janela de entrada e gera JWT do Meeting SDK.
-7. `zoom-webhook` valida assinatura, registra evento normalizado e atualiza estado operacional.
+6. A rota exige `actorRole`, seleciona o cookie correspondente e encaminha a
+   intenção `preview` ou `join`.
+7. `zoom-meeting-access` valida ownership, status do terapeuta,
+   `session_payments`, booking, janela e provisionamento antes de gerar o JWT.
+8. `zoom-webhook` valida assinatura, registra evento normalizado e atualiza estado operacional.
 
 ## Banco
 
@@ -26,9 +29,11 @@ Fluxo:
 
 ## Jobs e idempotência
 
-`reserve_zoom_meeting_job_v1` reserva um job por vez, respeita `max_attempts` e recupera locks `processing` antigos. `complete_zoom_meeting_job_v1` encerra jobs com `completed_at` em sucesso, falha final ou `dead_letter`.
+`reserve_zoom_meeting_job_v1` reserva atomicamente um job por vez, respeita `max_attempts` e recupera locks `processing` antigos. `zoom-jobs-process` chama essa reserva em lote limitado, com máximo inicial de 5 jobs por requisição e limite de tempo da execução. A atomicidade continua na RPC com `for update skip locked`, evitando que dois workers processem o mesmo job. `complete_zoom_meeting_job_v1` encerra jobs com `completed_at` em sucesso, falha final ou `dead_letter`.
 
 Antes de criar ou atualizar uma sala, `zoom-jobs-process` revalida o booking e confirma `session_payments.financial_status = paid`. Cancelamento remoto trata `404` do Zoom como sucesso idempotente. Reconcile nunca recria sala duplicada quando a reunião remota esperada desapareceu; marca a sala local como `failed` para investigação.
+
+O worker registra logs sanitizados com `requestId`, `workerId`, quantidade reservada/processada, sucessos, retries, dead letters, duração e idade do job mais antigo disponível.
 
 ## Webhooks
 
@@ -48,14 +53,10 @@ Passcodes gerados localmente respeitam limite de 10 caracteres observado na conf
 
 - `ZOOM_DEFAULT_HOST_USER_ID` define um host único de desenvolvimento. Produção
   precisa de alocação de hosts licenciados e controle de concorrência.
-- O endpoint de acesso ainda deve bloquear terapeuta `suspended`/`rejected` e
-  confirmar o estado canônico em `session_payments`, sem depender somente de
-  `bookings.payment_status`.
-- A rota Next deve desambiguar a sessão quando cookies de paciente e terapeuta
-  coexistirem.
 - Participações ainda chegam com papel `unknown`; não devem confirmar presença
   financeira ou clínica antes de atribuição e deduplicação semântica.
-- As policies existem, mas a cobertura pgTAP específica de RLS Zoom ainda deve
-  ser criada.
+- O read model e o acesso possuem cobertura pgTAP/Deno para ownership,
+  pagamento, cancelamento, provisionamento e terapeuta suspenso. A cobertura
+  direta de todas as tabelas Zoom pode ser ampliada.
 - Cron, webhook remoto, ZAK, licença e configuração do Marketplace permanecem
   gates externos de produção.

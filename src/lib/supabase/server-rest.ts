@@ -31,14 +31,20 @@ export function getSupabaseServerRestConfig(
 export async function supabaseServerRestRequest<T>(
   config: SupabaseServerRestConfig,
   path: string,
+  options: {
+    body?: unknown;
+    method?: "GET" | "POST";
+  } = {},
 ): Promise<T> {
   const response = await fetch(`${config.url}${path}`, {
+    body: options.body === undefined ? undefined : JSON.stringify(options.body),
     cache: "no-store",
     headers: {
       apikey: config.apiKey,
       Authorization: `Bearer ${config.accessToken}`,
       "Content-Type": "application/json",
     },
+    method: options.method ?? "GET",
   });
 
   if (!response.ok) {
@@ -46,6 +52,18 @@ export async function supabaseServerRestRequest<T>(
   }
 
   return (await response.json()) as T;
+}
+
+export function supabaseServerRestRpc<T>(
+  config: SupabaseServerRestConfig,
+  name: string,
+  body: Record<string, unknown> = {},
+) {
+  return supabaseServerRestRequest<T>(
+    config,
+    `/rest/v1/rpc/${encodeURIComponent(name)}`,
+    { body, method: "POST" },
+  );
 }
 
 export async function getRowsByIds<T>(

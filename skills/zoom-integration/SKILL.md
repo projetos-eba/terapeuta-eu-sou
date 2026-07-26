@@ -24,6 +24,10 @@ description: Implementar e manter integração Zoom no TES com S2S OAuth, Meetin
 - Stripe confirma pagamento; Zoom só provisiona sala depois de `session_payments.financial_status = paid`.
 - Outbox canônico: `zoom_meeting_jobs`.
 - Fonte local da sala: `zoom_meetings`.
+- Contrato de acesso: `ZoomAccessState` com `allowed`, `reason`,
+  `availableFrom`, `availableUntil` e `meetingStatus`.
+- A rota Next exige `actorRole` e escolhe o cookie desse papel.
+- Preview pode orientar a UI; `join` sempre revalida no backend.
 
 ## Segurança
 
@@ -52,13 +56,15 @@ npx supabase functions serve zoom-jobs-process --env-file supabase/functions/.en
 ## Operação
 
 - Cron remoto deve partir de `supabase/schedules/zoom-jobs-cron.sql` e usar Vault para o token interno.
+- `zoom_jobs_process_internal_token` no Vault remoto deve ter o mesmo valor de `PAYMENTS_INTERNAL_OPERATIONS_TOKEN` na Edge Function remota.
+- `zoom-jobs-process` processa lote limitado de até 5 jobs por chamada, usando reserva atômica por RPC e limite de tempo.
 - Ngrok local deve usar `npm run zoom:webhook:tunnel`, que apenas expõe `/functions/v1/zoom-webhook` e não altera Marketplace.
 - Passcode Zoom deve permanecer com no máximo 10 caracteres.
 - Eventos desconhecidos de webhook devem ser `ignored`, não erro operacional.
 
 ## Pendências Conhecidas
 
-- Confirmar scopes exatos no Marketplace.
+- Confirmar `user:read:zak:admin` no access token real e no Marketplace.
 - Confirmar autorização do General App para ZAK/host.
 - Configurar webhook remoto no Zoom Marketplace.
 - Aplicar cron remoto no Supabase.

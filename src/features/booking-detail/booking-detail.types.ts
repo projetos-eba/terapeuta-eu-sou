@@ -1,4 +1,7 @@
-import type { BookingStatus, PaymentStatus } from "@/domain/tes";
+import type {
+  BookingStatus,
+  SessionFinancialStatus,
+} from "@/domain/tes";
 
 export type BookingDetailPerspective = "patient" | "therapist" | "admin";
 
@@ -12,7 +15,7 @@ export type BookingDetailPageData = {
     endsAt: string;
     id: string;
     minutesUntilStart: number | null;
-    paymentStatus: PaymentStatus | string;
+    paymentStatus: SessionFinancialStatus | null;
     startsAt: string;
     status: BookingDetailStatus;
     statusLabel: string;

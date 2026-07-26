@@ -1,4 +1,8 @@
 import {
+  SessionFinancialStatus,
+  type SessionFinancialStatus as SessionFinancialStatusValue,
+} from "@/domain/tes";
+import {
   canExposeMeetingUrl,
   getBookingDetailStatus,
   getBookingDetailStatusLabel,
@@ -23,7 +27,6 @@ export type BookingDetailBookingRow = {
   meeting_provider: string | null;
   meeting_url: string | null;
   patient_profile_id: string;
-  payment_status: string;
   service_id: string;
   starts_at: string;
   status: string;
@@ -86,6 +89,10 @@ export type BookingDetailReceiptRow = {
   receipt_url: string | null;
 };
 
+export type BookingDetailSessionPaymentRow = {
+  financial_status: SessionFinancialStatusValue;
+};
+
 export type BookingDetailCancellationPolicyRow = {
   free_until_hours: number;
   late_cancel_fee_percent: number;
@@ -110,6 +117,7 @@ export type MapBookingDetailInput = {
   receipt: BookingDetailReceiptRow | null;
   reviews: BookingDetailReviewRow[];
   service: BookingDetailServiceRow;
+  sessionPayment: BookingDetailSessionPaymentRow | null;
   summaries: BookingDetailSessionSummaryRow[];
   therapist: BookingDetailTherapistRow;
   therapy: BookingDetailTherapyRow;
@@ -120,7 +128,7 @@ export function mapBookingDetail(
 ): BookingDetailPageData {
   const exposedMeetingUrl = canExposeMeetingUrl({
     meetingUrl: input.booking.meeting_url,
-    paymentStatus: input.booking.payment_status,
+    paymentStatus: input.sessionPayment?.financial_status ?? null,
     status: input.booking.status,
   })
     ? input.booking.meeting_url
@@ -134,7 +142,7 @@ export function mapBookingDetail(
   const provider = getMeetingProvider(input.booking.meeting_provider);
   const canJoin =
     status === "live" &&
-    input.booking.payment_status === "paid" &&
+    input.sessionPayment?.financial_status === SessionFinancialStatus.Paid &&
     (provider === "zoom" || Boolean(exposedMeetingUrl));
   const ratingAverage =
     input.reviews.length > 0
@@ -170,7 +178,7 @@ export function mapBookingDetail(
       endsAt: input.booking.ends_at,
       id: input.booking.id,
       minutesUntilStart: getMinutesUntilStart(input.booking.starts_at),
-      paymentStatus: input.booking.payment_status,
+      paymentStatus: input.sessionPayment?.financial_status ?? null,
       startsAt: input.booking.starts_at,
       status,
       statusLabel: getBookingDetailStatusLabel(status),
@@ -212,7 +220,7 @@ export function mapBookingDetail(
       meetingUrl: exposedMeetingUrl,
       provider,
       securityNote:
-        input.booking.payment_status === "paid"
+        input.sessionPayment?.financial_status === SessionFinancialStatus.Paid
           ? "A sala é liberada por acesso autenticado. Não compartilhe seus dados de entrada."
           : "O link será liberado quando o pagamento estiver confirmado.",
     },

@@ -14,7 +14,8 @@ e dificulta reconciliação.
 
 - Booking representa a reserva operacional de horário.
 - `BookingStatus` continua sendo o enum canônico da reserva.
-- Pagamento usa `PaymentStatus` ou o estado financeiro de `session_payments`.
+- Pagamento de sessão usa `session_payments.financial_status`; `PaymentStatus`
+  permanece somente em contratos legados de compatibilidade.
 - Realização usa `FulfillmentStatus`.
 - Presença usa `AttendanceStatus`.
 - Reagendamento e cancelamento usam contratos próprios.
@@ -28,6 +29,8 @@ e dificulta reconciliação.
 ## Consequências
 
 - UI pode derivar um rótulo composto sem alterar o estado transacional.
+- Agenda e Sessões usam `SessionPresentation`, derivado de reserva, pagamento,
+  realização, presença, reagendamento, cancelamento, Zoom e janela temporal.
 - Paciente e terapeuta veem o mesmo booking, horário e serviço.
 - Novos estados exigem alteração no contrato canônico e avaliação do schema.
 

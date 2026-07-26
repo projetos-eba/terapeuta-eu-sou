@@ -20,6 +20,13 @@ não podem ser expostas ao paciente nem armazenadas em DTOs comuns.
   persistência, o campo deve ser criptografado, versionado e inacessível por
   leitura autenticada direta.
 - Abertura da sala respeita janela temporal e status do booking.
+- A decisão autorizada retorna `allowed`, `reason`, `availableFrom`,
+  `availableUntil` e `meetingStatus`.
+- A rota Next exige `actorRole` e usa o cookie correspondente quando sessões
+  de paciente e terapeuta coexistem.
+- Pagamento é lido de `session_payments`; o campo legado do booking não
+  participa da autorização.
+- Terapeuta suspenso ou rejeitado não recebe payload de host.
 - Reagendamento ou cancelamento invalida dados antigos da reunião.
 - `SharedBookingSummary` não contém URL de host.
 - Jobs e webhooks usam inbox/outbox idempotentes e RPCs privadas.
@@ -34,6 +41,6 @@ não podem ser expostas ao paciente nem armazenadas em DTOs comuns.
 ## Consequências
 
 Zoom é integrado por backend autorizado. Logs e erros nunca devem incluir
-tokens ou URLs sensíveis. Antes do go-live ainda é obrigatório fechar ZAK,
-alocação/capacidade de hosts, bloqueio de terapeuta suspenso, cron, webhook
-remoto, retenção e testes RLS específicos.
+tokens ou URLs sensíveis. Antes do go-live ainda é obrigatório homologar ZAK,
+definir alocação/capacidade de hosts, configurar cron e webhook remotos,
+estabelecer retenção e executar testes reais no ambiente alvo.

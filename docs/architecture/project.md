@@ -21,6 +21,10 @@ Atualizacao operacional de 2026-07-25:
 - A2 adicionou snapshots imutaveis em `bookings`, `booking_holds` com TTL,
   exclusao de conflitos por terapeuta, transicoes auditadas, reagendamento
   versionado e integracao com o outbox Zoom, sem duplicar `session_payments`.
+- A preparacao de leitura de Agenda e Sessoes adicionou RPCs versionadas,
+  cursor, filtros, estado composto, pagamento canonico, preview Zoom seguro e
+  contadores leves do shell. Ver
+  `docs/architecture/agenda-sessions-preparation.md`.
 
 ## 1. Objetivo
 

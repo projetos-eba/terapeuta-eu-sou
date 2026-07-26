@@ -7,6 +7,11 @@ npm run test:deno -- --filter zoom
 vitest run src/features/zoom
 ```
 
+Esses testes cobrem pagamento canônico, booking cancelado, sala não
+provisionada, janela `[startsAt - 15 min, endsAt + 30 min)`, ownership e
+terapeuta suspenso. `supabase/tests/004_agenda_sessions_read_models.sql` cobre
+as mesmas invariantes no read model/RLS.
+
 Integração local:
 
 ```bash
@@ -25,7 +30,7 @@ Teste real:
 ALLOW_REAL_ZOOM_TESTS=true npm run zoom:test:real
 ```
 
-O teste real faz OAuth, consulta host, cria reunião de teste, consulta, atualiza, tenta ZAK, gera JWTs Meeting SDK de paciente e terapeuta, exclui e confirma `404` após cleanup. O script nunca imprime access token, Client Secret, SDK Secret, ZAK, join URL completa ou `start_url`.
+O teste real faz OAuth, valida `user:read:zak:admin` no access token sem imprimir o token, consulta o host por `ZOOM_DEFAULT_HOST_USER_ID`, usa o `id` retornado pela API para criar reunião e solicitar ZAK, consulta, atualiza, tenta `GET /users/me/zak` como diagnóstico, gera JWTs Meeting SDK de paciente e terapeuta, exclui e confirma `404` após cleanup. O script nunca imprime access token, Client Secret, SDK Secret, ZAK, passcode, join URL completa ou `start_url`.
 
 ## Smoke local de webhook
 
@@ -56,7 +61,7 @@ Ao final, confere efeitos no banco local e limpa os registros sintéticos.
 ALLOW_REAL_ZOOM_TESTS=true npm run zoom:edge:real
 ```
 
-Esse fluxo exige Supabase local ativo, secrets Zoom reais em `supabase/functions/.env` e `PAYMENTS_INTERNAL_OPERATIONS_TOKEN`. Ele bloqueia booking sem pagamento, enfileira criação para um booking pago de seed, chama `zoom-jobs-process` com concorrência, valida idempotência, atualiza, cancela e limpa a reunião remota.
+Esse fluxo exige Supabase local ativo, secrets Zoom reais em `supabase/functions/.env` e `PAYMENTS_INTERNAL_OPERATIONS_TOKEN`. Ele bloqueia booking sem pagamento, enfileira criação para um booking pago de seed, chama `zoom-jobs-process` com concorrência, valida idempotência, atualiza, cancela e limpa a reunião remota. O worker processa até 5 jobs por chamada, com reserva atômica via RPC.
 
 Se o gateway local responder `404` para `zoom-jobs-process`, sirva as funções localmente em outro terminal antes do teste:
 

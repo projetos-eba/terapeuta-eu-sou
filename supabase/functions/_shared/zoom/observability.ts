@@ -3,9 +3,17 @@ export function logZoomOperation(
   fields: Record<string, unknown>,
 ) {
   const safe = {
-    ...fields,
+    actorRole: fields.actorRole,
+    attempt: fields.attempt,
+    bookingId: fields.bookingId,
     code: fields.code ?? "ZOOM_OPERATION",
+    durationMs: fields.durationMs,
+    jobId: fields.jobId,
+    operation: fields.operation,
     provider: "zoom",
+    requestId: fields.requestId,
+    result: fields.result,
+    status: fields.status,
   };
   const line = JSON.stringify(safe);
 

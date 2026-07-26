@@ -2,7 +2,7 @@
 
 Atualizado em 2026-07-26.
 
-Status: Fase Agenda 2 implementada e validada.
+Status: A2, preparação dos read models e fundação A3.0/A3.1 implementadas.
 
 | Estrutura atual                         | Responsabilidade                                    | Consumidores                                       | RLS       | Decisão                                                |
 | --------------------------------------- | --------------------------------------------------- | -------------------------------------------------- | --------- | ------------------------------------------------------ |
@@ -10,6 +10,8 @@ Status: Fase Agenda 2 implementada e validada.
 | `availability_rules`                    | Faixas semanais                                     | perfil e futuro slot engine                        | existente | adaptar somente quando o motor autoritativo for criado |
 | `availability_exceptions`               | Overrides e indisponibilidade                       | perfil e futuro slot engine                        | existente | reutilizar                                             |
 | `therapist_service_booking_settings`    | buffers, antecedência e horizonte                   | preview e futuro slot engine                       | existente | reutilizar                                             |
+| `therapist_schedule_settings`           | timezone canônico e versão otimista da agenda       | Horários e futuro slot engine                      | existente | fonte canônica A3                                      |
+| `therapist_schedule_events`             | auditoria sanitizada de alterações de horários      | operação e suporte                                 | existente | somente eventos, sem conteúdo clínico                  |
 | `bookings`                              | reserva operacional e snapshots do serviço          | paciente, terapeuta, admin                         | existente | reutilizar; snapshots e conflito A2 implementados      |
 | `booking_events`                        | histórico operacional com ator, origem e request ID | serviços de domínio                                | existente | reutilizar; auditoria A2 implementada                  |
 | `booking_reschedule_requests`           | propostas versionadas de reagendamento              | dashboard e sessões                                | existente | reutilizar; expiração e resolução A2 implementadas     |
@@ -27,6 +29,13 @@ Status: Fase Agenda 2 implementada e validada.
 | `reviews` / `review_replies`            | avaliação e resposta                                | público e terapeuta                                | existente | reutilizar                                             |
 | `notifications`                         | avisos operacionais                                 | shells autenticados                                | existente | reutilizar                                             |
 | `booking_holds`                         | concorrência temporária de slot                     | Edge Functions e participantes em leitura          | existente | fonte canônica de hold A2                              |
+| `therapist_session_read_model_v1`       | composição privada de Agenda e Sessões              | terapeuta                                          | invoker   | fonte de leitura versionada                            |
+| `get_therapist_sessions_v1`             | lista filtrável e paginada por cursor               | `/terapeuta/sessoes`                               | invoker   | identidade derivada de `auth.uid()`                    |
+| `get_therapist_session_detail_v1`       | detalhe privado e estado Zoom previsto              | detalhe da sessão                                  | invoker   | não retorna credenciais de host                        |
+| `get_therapist_agenda_v1`               | reservas, holds e disponibilidade por intervalo     | `/terapeuta/agenda`                                | invoker   | intervalo semiaberto `[start, end)`                    |
+| `get_therapist_shell_counters_v1`       | contadores pequenos independentes de plano          | shell                                              | invoker   | substitui carga do dashboard no layout                 |
+| `get_therapist_schedule_v1`             | regras e configurações versionadas                  | `/terapeuta/agenda?aba=horarios`                   | invoker   | identidade derivada de `auth.uid()`                    |
+| `save_therapist_schedule_v1`            | substituição atômica e idempotente dos horários     | Edge Function de Horários                          | restrita  | somente `service_role`; ator validado na Edge          |
 
 ## Riscos de compatibilidade
 
@@ -34,8 +43,13 @@ Status: Fase Agenda 2 implementada e validada.
   sincroniza a fonte canônica `session_payments`.
 - O preview TypeScript não é timezone-safe nem compõe slots de forma
   autoritativa; A5 permanece necessária.
+- `therapist_profiles.metadata.timezone` é somente projeção de compatibilidade;
+  a autoridade A3 é `therapist_schedule_settings.timezone`.
 - Holds e bookings estão protegidos no Postgres, mas só devem ser orquestrados
   por Edge Functions autenticadas.
+- Presença ainda não tem autoridade própria; os read models distinguem
+  `booking_compatibility` de `unavailable`.
+- Modalidade é derivada do serviço atual até existir snapshot no booking.
 - Zoom possui persistência e outbox, mas o go-live depende dos gates
   operacionais em `docs/zoom/production-readiness.md`.
 - Remover aliases sem telemetria pode quebrar bookmarks.

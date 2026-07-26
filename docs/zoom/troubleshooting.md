@@ -33,9 +33,9 @@ Possíveis causas:
 - scope de ZAK ausente;
 - General App ainda não autorizado/instalado para o host;
 - usuário host não pertence à conta;
-- licença/configuração Zoom insuficiente.
+- licença/configuração Zoom insuficiente (`type === 2` é licenciado).
 
-Quando o teste real retornar erro sanitizado em `get-zak`, a criação, update e exclusão de reunião ainda podem estar corretas. Trate ZAK como pendência separada de Marketplace/autorização.
+Quando o teste real retornar erro sanitizado em `get-zak`, confira `identify-zak-failure`. A criação, update e exclusão de reunião ainda podem estar corretas. Trate ZAK como pendência separada de Marketplace/autorização e não implemente fallback que envie ZAK ao paciente, persista ZAK ou use `start_url`.
 
 ## Webhook falha
 
