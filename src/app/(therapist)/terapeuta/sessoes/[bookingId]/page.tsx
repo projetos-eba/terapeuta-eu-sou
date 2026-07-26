@@ -9,7 +9,7 @@ import {
 } from "@/features/bookings";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import { getTherapistSessionDetail } from "@/features/therapist-sessions";
-import { ZoomMeetingAdapter } from "@/features/zoom/zoom-meeting-adapter";
+import { ZoomVideoSessionAdapter } from "@/features/zoom/zoom-video-session-adapter";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
 export default async function TherapistSessionDetailPage({
@@ -71,9 +71,7 @@ export default async function TherapistSessionDetailPage({
           </div>
           <div>
             <dt className="font-extrabold text-brand-deep">Horário</dt>
-            <dd>
-              {formatSessionDateTime(booking.startsAt, booking.timezone)}
-            </dd>
+            <dd>{formatSessionDateTime(booking.startsAt, booking.timezone)}</dd>
           </div>
           <div>
             <dt className="font-extrabold text-brand-deep">Pagamento</dt>
@@ -95,7 +93,7 @@ export default async function TherapistSessionDetailPage({
           </div>
         </dl>
 
-        <ZoomMeetingAdapter
+        <ZoomVideoSessionAdapter
           access={booking.zoomAccess}
           actorRole="therapist"
           bookingId={booking.bookingId}
@@ -110,13 +108,13 @@ export default async function TherapistSessionDetailPage({
           Segurança da sala
         </h2>
         <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-          A autorização final é refeita no backend ao entrar. Credenciais de
-          anfitrião são efêmeras e não ficam salvas nesta página.
+          A autorização final é refeita no backend ao entrar. O token da sala é
+          efêmero e não fica salvo nesta página.
         </p>
         <p className="mt-4 flex gap-2 text-xs font-semibold leading-5 text-tesText-secondary">
           <Video aria-hidden="true" className="mt-0.5" size={16} />
-          Pagamento, horário, responsável e provisionamento da sala são
-          verificados separadamente.
+          Pagamento, horário, responsável e janela de acesso são verificados
+          separadamente.
         </p>
       </aside>
     </main>

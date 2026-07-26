@@ -127,7 +127,7 @@ Para Admin, o MVP sustenta:
 | Supabase local                                       | Estrutura confirmada em `supabase/`.                                                               |
 | Supabase SDK frontend                                | Não identificado nos arquivos analisados.                                                          |
 | Stripe SDK                                           | Confirmado em `package.json`; fundação Billing e Connect implementada.                             |
-| Zoom SDK/API client                                  | `@zoom/meetingsdk` e cliente REST/S2S implementados.                                               |
+| Zoom SDK/API client                                  | `@zoom/videosdk`, JWT efêmero backend e cliente REST Video SDK implementados.                      |
 | Storybook                                            | Documentado, não instalado.                                                                        |
 | Observabilidade                                      | Não identificado nos arquivos analisados.                                                          |
 | Test runner                                          | Vitest e Playwright confirmados em `package.json`.                                                 |
@@ -512,18 +512,18 @@ Status atual do app público: `/api/public/matching/calculate` substitui esse co
 
 ### 10.2 Funções alvo
 
-| Função                                         | Fase | Status atual                                                                | Pode iniciar fase sem ela?                                           |
-| ---------------------------------------------- | ---: | --------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `match-therapies`                              |    1 | Existe; precisa alinhar contrato                                            | Sim para catálogo; não para resultado final.                         |
-| `record-matching-metrics`                      |  1/6 | Não identificado nos arquivos analisados.                                   | Sim, se métricas forem postergadas.                                  |
-| `stripe-create-session-payment`                |    2 | Implementada sobre `session_payments`, com projeções transacionais.         | Sim; go-live exige E2E no Stripe test mode.                          |
-| `stripe-billing-webhook`                       |  2/5 | Implementada com reserva atômica, eventos assíncronos e ordenação temporal. | Sim; go-live exige E2E com eventos assinados.                        |
-| `zoom-jobs-process` e `zoom-meeting-access`    |    2 | Implementadas com outbox pós-pagamento e Meeting SDK.                       | Sim; go-live exige gates externos e testes RLS.                      |
-| `stripe-connect-create-account` e account link |    4 | Implementadas sobre Accounts v2, incluindo eventos thin `v2.core.account*`. | Sim; go-live exige E2E Connect em test mode.                         |
-| `stripe-connect-sync-account`                  |    4 | Implementada com leitura de requirements e capability de transferência.     | Sim; go-live exige E2E Connect em test mode.                         |
-| `stripe-create-subscription-checkout`          |    5 | Implementada com catálogo server-side e reconciliação por webhook.          | Sim; go-live exige E2E Billing em test mode.                         |
-| `process-payout-batch`                         |    6 | Implementada com claim atômico, Charge de origem e reconciliação.           | Sim; go-live exige E2E de repasse em test mode.                      |
-| `publish-matching-version`                     |    6 | Não identificado nos arquivos analisados.                                   | Sim se Match v1 usar tabela simples; não se exigir versão publicada. |
+| Função                                                    | Fase | Status atual                                                                | Pode iniciar fase sem ela?                                           |
+| --------------------------------------------------------- | ---: | --------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `match-therapies`                                         |    1 | Existe; precisa alinhar contrato                                            | Sim para catálogo; não para resultado final.                         |
+| `record-matching-metrics`                                 |  1/6 | Não identificado nos arquivos analisados.                                   | Sim, se métricas forem postergadas.                                  |
+| `stripe-create-session-payment`                           |    2 | Implementada sobre `session_payments`, com projeções transacionais.         | Sim; go-live exige E2E no Stripe test mode.                          |
+| `stripe-billing-webhook`                                  |  2/5 | Implementada com reserva atômica, eventos assíncronos e ordenação temporal. | Sim; go-live exige E2E com eventos assinados.                        |
+| `zoom-video-session-access` e `zoom-video-session-access` |    2 | Implementadas com outbox pós-pagamento e Video SDK.                         | Sim; go-live exige gates externos e testes RLS.                      |
+| `stripe-connect-create-account` e account link            |    4 | Implementadas sobre Accounts v2, incluindo eventos thin `v2.core.account*`. | Sim; go-live exige E2E Connect em test mode.                         |
+| `stripe-connect-sync-account`                             |    4 | Implementada com leitura de requirements e capability de transferência.     | Sim; go-live exige E2E Connect em test mode.                         |
+| `stripe-create-subscription-checkout`                     |    5 | Implementada com catálogo server-side e reconciliação por webhook.          | Sim; go-live exige E2E Billing em test mode.                         |
+| `process-payout-batch`                                    |    6 | Implementada com claim atômico, Charge de origem e reconciliação.           | Sim; go-live exige E2E de repasse em test mode.                      |
+| `publish-matching-version`                                |    6 | Não identificado nos arquivos analisados.                                   | Sim se Match v1 usar tabela simples; não se exigir versão publicada. |
 
 ## 11. Sistema de Match
 
@@ -683,7 +683,7 @@ lacunas:
 
 - snapshot financeiro completo e integração transacional do booking;
 - holds, conflito autoritativo e transições de booking;
-- bloqueios de produção Zoom: ZAK, hosts, cron, webhook remoto e pgTAP RLS;
+- bloqueios de produção Zoom: Video SDK token, hosts, cron, webhook remoto e pgTAP RLS;
 - homologação ponta a ponta de cobrança, cancelamento, disputa e repasse.
 
 ### 13.4 Máquina de estados alvo
@@ -822,34 +822,34 @@ Admin lista elegíveis
 
 ## 15. Zoom
 
-Estado atual: fundação implementada com Server-to-Server OAuth, Meeting SDK,
+Estado atual: fundação implementada com Video SDK API credentials, Video SDK,
 outbox pós-pagamento e webhooks assinados.
 
 Fontes:
 
-- `zoom_meetings`;
-- `zoom_meeting_jobs`;
-- `zoom_webhook_events`;
-- `zoom_meeting_participations`;
-- `patient_zoom_meeting_summary_v`;
-- `therapist_zoom_meeting_summary_v`.
+- `video_sessions`;
+- RPCs locais de estado da sessão por booking;
+- `zoom_video_webhook_events`;
+- `video_session_participations`;
+- `patient_video_session_summary_v`;
+- `therapist_video_session_summary_v`.
 
 Regras implementadas:
 
-- reunião enfileirada somente após `session_payments.financial_status = paid`;
-- JWT Meeting SDK gerado no backend;
-- paciente nunca recebe ZAK ou dados de host;
-- ZAK do terapeuta é solicitado sob demanda e não persistido;
-- `start_url` não é persistida nem gravada em `bookings.meeting_url`;
+- sessão local criada somente após `session_payments.financial_status = paid`;
+- JWT Video SDK gerado no backend;
+- paciente recebe somente JWT efêmero de participante com `role_type = 0`;
+- terapeuta recebe somente JWT efêmero de responsável com `role_type = 1`;
+- segredo do Video SDK, URL sensível ou credencial de API não são persistidos;
 - logs e tópicos não contêm conteúdo clínico;
-- jobs e webhooks possuem idempotência e retry.
+- webhooks possuem idempotência e deduplicação.
 
 Antes de produção:
 
 - bloquear terapeuta suspenso/rejeitado;
 - validar pagamento canônico também no endpoint de acesso;
 - definir alocação/capacidade de hosts;
-- homologar ZAK e scopes;
+- homologar Video SDK token e scopes;
 - configurar cron e webhook remoto;
 - criar pgTAP de RLS e deduplicação semântica de participação.
 
@@ -1241,23 +1241,23 @@ Status: bloqueada.
 
 ## 20. Decisões e gates
 
-|   # | Decisão                                    | Classe | Fase | Status neste plano                                                                     |
-| --: | ------------------------------------------ | ------ | ---: | -------------------------------------------------------------------------------------- |
-|   1 | Rota financeira Básico                     | C      |  0/4 | Resolvida: `/basico/pagamento`.                                                        |
-|   2 | `/pro/upgrade` ou `/pro/plano`             | C      |  0/5 | Resolvida: `/pro/plano`.                                                               |
-|   3 | Nome público Aura/IA                       | A      |    5 | Pendente; usar linguagem determinística até decisão.                                   |
-|   4 | Contrato do Match                          | A      |    1 | Pendente; alinhar function real e frontend.                                            |
-|   5 | Versionamento dos pesos                    | B/A    |  1/6 | Postergável se Fase 1 usar tabela simples; bloqueia Admin de pesos.                    |
-|   6 | Métricas anônimas                          | B      |  1/6 | Postergável para Fase 6.                                                               |
-|   7 | Máquina de estados booking                 | A      |    2 | Pendente antes de migration.                                                           |
-|   8 | Expiração de booking pendente              | A      |    2 | Pendente antes de checkout.                                                            |
-|   9 | Transição `payments` -> `session_payments` | A      |    2 | Obrigatória.                                                                           |
-|  10 | Credencial de host Zoom                    | A      |    2 | Resolvida sem persistir `start_url`/ZAK; homologação externa pendente.                 |
-|  11 | Financeiro disponível ao Básico            | C      |    4 | Resolvido como operacional simples.                                                    |
-|  12 | Modelo de disponibilidade                  | A      |  2/4 | Pendente para reserva real.                                                            |
-|  13 | Matriz definitiva de capabilities          | A      |    5 | Parcialmente resolvida pelo código; precisa decisão se produto quiser alterar Premium. |
-|  14 | Inadimplência                              | B/A    |    5 | Postergável para shell; bloqueia Billing real.                                         |
-|  15 | Elegibilidade de repasse                   | A      |    6 | Pendente antes de transferências.                                                      |
+|   # | Decisão                                    | Classe | Fase | Status neste plano                                                                                        |
+| --: | ------------------------------------------ | ------ | ---: | --------------------------------------------------------------------------------------------------------- |
+|   1 | Rota financeira Básico                     | C      |  0/4 | Resolvida: `/basico/pagamento`.                                                                           |
+|   2 | `/pro/upgrade` ou `/pro/plano`             | C      |  0/5 | Resolvida: `/pro/plano`.                                                                                  |
+|   3 | Nome público Aura/IA                       | A      |    5 | Pendente; usar linguagem determinística até decisão.                                                      |
+|   4 | Contrato do Match                          | A      |    1 | Pendente; alinhar function real e frontend.                                                               |
+|   5 | Versionamento dos pesos                    | B/A    |  1/6 | Postergável se Fase 1 usar tabela simples; bloqueia Admin de pesos.                                       |
+|   6 | Métricas anônimas                          | B      |  1/6 | Postergável para Fase 6.                                                                                  |
+|   7 | Máquina de estados booking                 | A      |    2 | Pendente antes de migration.                                                                              |
+|   8 | Expiração de booking pendente              | A      |    2 | Pendente antes de checkout.                                                                               |
+|   9 | Transição `payments` -> `session_payments` | A      |    2 | Obrigatória.                                                                                              |
+|  10 | Credencial de host Zoom                    | A      |    2 | Resolvida sem persistir `video_session_secret_url_removed`/Video SDK token; homologação externa pendente. |
+|  11 | Financeiro disponível ao Básico            | C      |    4 | Resolvido como operacional simples.                                                                       |
+|  12 | Modelo de disponibilidade                  | A      |  2/4 | Pendente para reserva real.                                                                               |
+|  13 | Matriz definitiva de capabilities          | A      |    5 | Parcialmente resolvida pelo código; precisa decisão se produto quiser alterar Premium.                    |
+|  14 | Inadimplência                              | B/A    |    5 | Postergável para shell; bloqueia Billing real.                                                            |
+|  15 | Elegibilidade de repasse                   | A      |    6 | Pendente antes de transferências.                                                                         |
 
 Legenda:
 
@@ -1267,20 +1267,20 @@ Legenda:
 
 ## 21. Riscos
 
-| Risco                                                    | Severidade | Mitigação                                                                          |
-| -------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------- |
-| `payments` e `session_payments` virarem fontes paralelas | Alta       | Criar `session_payments` e proibir código novo usando `payments` como fonte final. |
-| Checkout sem webhook/idempotência                        | Alta       | `stripe_webhook_events`, dedupe e webhook como fonte única.                        |
-| Reserva dupla de horário                                 | Alta       | Validar e bloquear no banco/Edge Function.                                         |
-| Credencial de host Zoom exposta                          | Alta       | Não persistir `start_url`/ZAK; payload efêmero apenas ao terapeuta autorizado.     |
-| Host Zoom único para agenda concorrente                  | Alta       | Definir pool/alocação de hosts licenciados antes do go-live.                       |
-| Terapeuta bloqueado recebendo acesso Zoom                | Alta       | Remover `allowBlockedStatus` e cobrir o gate com testes.                           |
-| RLS pública insuficiente para terapeutas/serviços        | Alta       | Criar views/policies antes de páginas públicas reais.                              |
-| Figma e rotas locais divergentes                         | Média      | Manter `routes.ts` como canônico e registrar aliases/legados.                      |
-| Linguagem de IA enganosa                                 | Média      | Copy deve explicar recomendações determinísticas.                                  |
-| Pro financeiro conflita com permissions                  | Média      | Decisão de produto antes da Fase 5.                                                |
-| Falta de testes                                          | Média      | Adicionar testes mínimos em Fase 1 para Match e em Fase 2 para webhooks.           |
-| Homologação externa Stripe/Zoom ausente                  | Alta       | Executar E2E em test mode/Marketplace antes de produção.                           |
+| Risco                                                    | Severidade | Mitigação                                                                                                         |
+| -------------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------- |
+| `payments` e `session_payments` virarem fontes paralelas | Alta       | Criar `session_payments` e proibir código novo usando `payments` como fonte final.                                |
+| Checkout sem webhook/idempotência                        | Alta       | `stripe_webhook_events`, dedupe e webhook como fonte única.                                                       |
+| Reserva dupla de horário                                 | Alta       | Validar e bloquear no banco/Edge Function.                                                                        |
+| Credencial de host Zoom exposta                          | Alta       | Não persistir `video_session_secret_url_removed`/Video SDK token; payload efêmero apenas ao terapeuta autorizado. |
+| Host Zoom único para agenda concorrente                  | Alta       | Definir pool/alocação de hosts licenciados antes do go-live.                                                      |
+| Terapeuta bloqueado recebendo acesso Zoom                | Alta       | Remover `allowBlockedStatus` e cobrir o gate com testes.                                                          |
+| RLS pública insuficiente para terapeutas/serviços        | Alta       | Criar views/policies antes de páginas públicas reais.                                                             |
+| Figma e rotas locais divergentes                         | Média      | Manter `routes.ts` como canônico e registrar aliases/legados.                                                     |
+| Linguagem de IA enganosa                                 | Média      | Copy deve explicar recomendações determinísticas.                                                                 |
+| Pro financeiro conflita com permissions                  | Média      | Decisão de produto antes da Fase 5.                                                                               |
+| Falta de testes                                          | Média      | Adicionar testes mínimos em Fase 1 para Match e em Fase 2 para webhooks.                                          |
+| Homologação externa Stripe/Zoom ausente                  | Alta       | Executar E2E em test mode/Marketplace antes de produção.                                                          |
 
 ## 22. QA e definição de pronto do MVP
 
@@ -1300,7 +1300,7 @@ Uma entrega só pode ser marcada pronta quando:
 - cria repasses a partir de `payout_batches` e `payout_batch_items`;
 - grava snapshot de preço e duração no momento da reserva;
 - gera link Zoom apenas após pagamento confirmado;
-- não persiste `start_url` ou ZAK; qualquer persistência futura exige
+- não persiste `video_session_secret_url_removed` ou Video SDK token; qualquer persistência futura exige
   criptografia versionada e leitura indireta autorizada;
 - protege dados por RLS conforme perfil;
 - passa em `npm run typecheck`;

@@ -11,8 +11,8 @@ description: Manter a página pública de ajuda com Zoom.
 
 ## Regras
 
-- Explicar câmera, microfone, sala de espera, conexão, entrada e saída.
-- Dizer que Zoom é provedor operacional de videoconferência.
+- Explicar câmera, microfone, conexão, entrada e saída dentro do site.
+- Dizer que Zoom Video SDK é provedor operacional de videoconferência.
 - Informar gravação automática desativada por padrão.
-- Não revelar meeting IDs, scopes, credenciais ou detalhes internos.
+- Não revelar session name, user key, credenciais ou detalhes internos.
 - Referenciar `skills/zoom-integration/SKILL.md`.

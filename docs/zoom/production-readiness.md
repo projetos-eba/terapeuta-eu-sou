@@ -1,55 +1,21 @@
-# Produção
+# Prontidao de Producao Zoom Video SDK
 
-Checklist antes de produção:
+Antes de producao:
 
-- Confirmar scopes reais no app S2S.
-- Confirmar que o access token S2S contém `user:read:zak:admin`.
-- Confirmar autorização do General App para Meeting SDK e eventual ZAK.
-- Confirmar que `@zoom/meetingsdk` atende à versão mínima exigida pela Zoom.
-- Publicar/configurar webhook no Marketplace com URL remota.
-- Executar `supabase db reset`, `supabase db lint` e regenerar `database.types.ts`.
-- Executar `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build`.
-- Reexecutar no ambiente alvo os testes de RLS com paciente, terapeuta
-  responsável, terapeuta externo e usuário sem sessão.
-- Reexecutar o teste de bloqueio de terapeuta suspenso/rejeitado.
-- Reexecutar o gate canônico de `session_payments.financial_status = paid`.
-- Definir alocação de hosts licenciados e concorrência; não promover
-  `ZOOM_DEFAULT_HOST_USER_ID` único como topologia final.
-- Revalidar a desambiguação por `actorRole` quando cookies coexistirem.
-- Ampliar pgTAP direto para todas as tabelas Zoom; os read models já cobrem
-  ownership, pagamento, cancelamento e suspensão.
-- Definir deduplicação e atribuição de papel das participações antes de usar
-  presença em qualquer decisão financeira.
-- Validar replay/duplicidade de webhook.
-- Validar que `bookings.meeting_url` não recebe `start_url`.
-- Definir política legal de retenção dos eventos operacionais.
-- Aplicar um agendamento remoto para `zoom-jobs-process` usando `supabase/schedules/zoom-jobs-cron.sql` como template, com token interno guardado em Vault.
-- Garantir que o secret `zoom_jobs_process_internal_token` no Vault remoto seja igual ao secret remoto `PAYMENTS_INTERNAL_OPERATIONS_TOKEN` usado pela Edge Function.
-- Rodar `npm run zoom:edge:real` com Supabase local e credenciais reais antes de promover alteração de integração.
-- Rodar `npm run zoom:webhook:smoke` localmente e validar a URL pública com ngrok antes de salvar o endpoint no Zoom Marketplace.
+- confirmar conta Zoom Build Platform ou Universal Credit;
+- confirmar SDK Key/Secret e API Key/Secret no app correto;
+- configurar Event Subscriptions para `session.started`, `session.ended`,
+  `session.user_joined` e `session.user_left`;
+- validar a URL publica da Edge Function;
+- confirmar Secret Token do webhook;
+- manter gravacao em nuvem, transcricao, controle remoto, envio de arquivos,
+  streaming, RTMS e recursos nao usados desativados;
+- revisar regioes/data centers apropriados;
+- avaliar conexao peer-to-peer em chamadas de duas pessoas conforme politica de
+  privacidade e documentacao oficial;
+- homologar fluxo real em ambiente de teste com limite de consumo;
+- confirmar que apps antigos e webhooks antigos nao estao implantados antes de
+  remover qualquer configuracao remota.
 
-Não declarar pronto para produção se ZAK, licença Zoom, revisão do General App, página legal ou teste real estiverem pendentes.
-
-## Status da fase de hardening
-
-Implementado:
-
-- reserva de jobs com recuperação de locks antigos;
-- processamento em lote limitado a 5 jobs por chamada, mantendo reserva atômica e limite de tempo;
-- conclusão com `completed_at` e `dead_letter`;
-- revalidação de pagamento no processador;
-- cancelamento idempotente quando o Zoom já removeu a reunião;
-- reconcile sem recriação duplicada;
-- webhook com limite de corpo, assinatura obrigatória, eventos desconhecidos `ignored` e proteção contra regressão de status;
-- smoke local de webhook e fluxo real de fila com criação/update/cancelamento remoto.
-- contrato `ZoomAccessState` e preview seguro no read model;
-- pagamento canônico e bloqueio de terapeuta suspenso/rejeitado no acesso;
-- desambiguação de cookies pelo papel declarado;
-- logs de acesso com allowlist e erros sanitizados.
-
-Ainda externo ao repositório:
-
-- confirmar/autorizar ZAK no Zoom Marketplace e validar `user:read:zak:admin` no access token real;
-- configurar webhook remoto no Marketplace;
-- aplicar cron remoto no Supabase;
-- definir retenção legal operacional.
+Nao declarar producao pronta sem teste externo controlado, revisao legal das
+paginas publicas e validacao dos webhooks reais.

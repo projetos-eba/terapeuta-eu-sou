@@ -22,7 +22,7 @@ implementação atual já oferece:
 - fundações de disponibilidade, bookings, sessões, reagendamentos e RLS;
 - contratos e projeções já usados pelo paciente;
 - Gate Financeiro F0 concluído;
-- fundação Zoom pós-pagamento com outbox, Meeting SDK e webhooks.
+- fundação Zoom pós-pagamento com outbox, Video SDK e webhooks.
 - fundação transacional A2 com snapshots, holds, exclusão de conflitos,
   transições auditadas e reagendamento versionado.
 
@@ -36,7 +36,7 @@ As principais decisões desta revisão são:
 3. autorizar recursos por sessão, capability e RLS, nunca pelo pathname;
 4. manter um booking para uma sessão no MVP;
 5. ratificar `session_payments` como fonte financeira canônica já implementada;
-6. manter `zoom_meetings` como fonte operacional da sala e
+6. manter `video_sessions` como fonte operacional da sala e
    `bookings.meeting_url` apenas como legado;
 7. reutilizar e adaptar tabelas existentes antes de criar novas;
 8. tratar o motor TypeScript de slots como preview; holds, bookings e conflitos
@@ -47,7 +47,7 @@ As principais decisões desta revisão são:
     visual integral do calendário;
 11. preservar os invariantes concluídos no Gate Financeiro F0;
 12. tratar a fundação Zoom como implementada, mas bloquear go-live até concluir
-    ZAK, topologia de hosts, cron, webhook remoto e testes RLS específicos.
+    Video SDK token, topologia de hosts, cron, webhook remoto e testes RLS específicos.
 
 ## 2. Fontes analisadas
 
@@ -86,13 +86,13 @@ As principais decisões desta revisão são:
 - `docs/architecture/adr/ADR-004-meeting-security.md`;
 - `skills/zoom-integration/*`;
 - `src/features/zoom/*`;
-- `src/app/api/zoom/meeting-access/route.ts`;
+- `src/app/api/zoom/video-session-access/route.ts`;
 - `supabase/functions/_shared/zoom/*`;
-- Edge Functions `zoom-meeting-access`, `zoom-jobs-process` e `zoom-webhook`;
+- Edge Functions `zoom-video-session-access`, `zoom-video-session-access` e `zoom-webhook`;
 - migrations `20260725170000_zoom_integration_foundation.sql` e
   `20260725183000_zoom_integration_hardening.sql`;
 - scripts em `scripts/zoom/*` e template
-  `supabase/schedules/zoom-jobs-cron.sql`.
+  `supabase/schedules/video-session-reconciliation.sql`.
 
 ### 2.2 Figma
 
@@ -126,16 +126,16 @@ de produção.
 
 Consultado em 2026-07-26:
 
-- [Server-to-Server OAuth](https://developers.zoom.us/docs/internal-apps/create/):
+- [Video SDK API credentials](https://developers.zoom.us/docs/internal-apps/create/):
   app ativado, credenciais server-side e scopes mínimos;
-- [OAuth `account_credentials`](https://developers.zoom.us/docs/integrations/oauth/):
-  token de uma hora, sem refresh token;
+- [Video SDK REST API](https://developers.zoom.us/docs/api/rest/reference/video-sdk/methods/):
+  consultas operacionais server-side quando `ALLOW_REAL_ZOOM=true`;
 - [validação e assinatura de webhooks](https://developers.zoom.us/changelog/platform/webhook-url-validation/):
   challenge periódico, secret token e `x-zm-signature`;
-- [autorização do Meeting SDK](https://developers.zoom.us/docs/meeting-sdk/auth/):
-  JWT gerado no backend e ZAK associado ao host;
-- [Meeting SDK Web](https://developers.zoom.us/docs/meeting-sdk/web/client-view/meetings-webinars/):
-  `role = 1` e ZAK para iniciar; `role = 0` para participante.
+- [autorização do Video SDK](https://developers.zoom.us/docs/video-sdk/auth/):
+  JWT gerado no backend com `role_type = 1` para terapeuta e `role_type = 0` para paciente;
+- [Video SDK Web](https://developers.zoom.us/docs/video-sdk/web/sessions/):
+  sessão inicia quando o primeiro participante entra, sem criação remota prévia.
 
 Essas fontes confirmam a direção técnica implementada, mas não substituem a
 homologação do app TES no Zoom Marketplace.
@@ -163,7 +163,7 @@ homologação do app TES no Zoom Marketplace.
 - Stripe concluiu o Gate F0, mas ainda exige homologação externa ponta a ponta
   antes de produção.
 - Zoom possui fundação e hardening local implementados; produção ainda depende
-  de configuração do Marketplace, ZAK, licença/capacidade de hosts, cron remoto
+  de configuração do Marketplace, Video SDK token, licença/capacidade de hosts, cron remoto
   e webhook remoto.
 - O relatório anterior propunha tabelas equivalentes às existentes.
 - `ServiceStatus` já representa publicação do serviço e não pode representar a
@@ -177,7 +177,7 @@ homologação do app TES no Zoom Marketplace.
 - Pagamentos assíncronos, eventos fora de ordem, refunds, reversões e transfers
   vinculadas à Charge já foram endurecidos no F0.
 - `bookings.meeting_url` continua legado; a implementação Zoom não grava
-  `start_url`, ZAK ou passcode nele.
+  `video_session_secret_url_removed`, Video SDK token ou passcode nele.
 - O acesso Zoom ainda aceita terapeuta bloqueado por
   `allowBlockedStatus: true`; isso deve ser corrigido antes do go-live.
 - A autorização de entrada consulta `bookings.payment_status`, que é projeção.
@@ -372,10 +372,10 @@ Uma entidade separada passa a fazer sentido quando houver:
 | `stripe_webhook_events`                   | Reserva atômica, lease, retry e idempotência     |
 | `booking_holds`                           | Implementado na A2 antes do checkout             |
 | bloqueios recorrentes                     | Adaptar schema após ADR                          |
-| `zoom_meetings`                           | Fonte operacional canônica da sala Zoom          |
-| `zoom_meeting_jobs`                       | Outbox idempotente com retry e dead letter       |
-| `zoom_webhook_events`                     | Inbox idempotente e auditoria sanitizada         |
-| `zoom_meeting_participations`             | Evidência operacional; papel ainda não atribuído |
+| `video_sessions`                          | Fonte operacional canônica da sala Zoom          |
+| `video_sessions`                          | Outbox idempotente com retry e dead letter       |
+| `zoom_video_webhook_events`               | Inbox idempotente e auditoria sanitizada         |
+| `video_session_participations`            | Evidência operacional; papel ainda não atribuído |
 | `session_occurrences`                     | Não criar no MVP atual                           |
 | outbox                                    | Implementada para Zoom; reutilizar o padrão      |
 
@@ -402,21 +402,21 @@ Executado em 2026-07-26:
 - `npx supabase db reset`: passou com as duas migrations Zoom;
 - `npx supabase db lint --schema public`: passou sem erro;
 - `npx supabase test db`: 26 testes existentes passaram;
-- teste Vitest de `ZoomMeetingAdapter`: 3 testes passaram;
+- teste Vitest de `ZoomVideoSessionAdapter`: cobertura do fluxo Video SDK;
 - `npm run typecheck`: passou;
 - `npm run lint`: passou sem warnings de código;
 - `npm run test`: 12 arquivos e 50 testes passaram;
 - `npm run build`: passou com 55 rotas;
 - grants por coluna confirmam que authenticated não lê host ID, UUID,
-  passcode, `start_url` ou metadata sensível;
+  passcode, `video_session_secret_url_removed` ou metadata sensível;
 - RPCs Zoom confirmadas sem `EXECUTE` para `anon` e `authenticated`.
 
 Não reexecutado nesta revisão:
 
 - Deno Zoom, porque o binário `deno` não está instalado no host;
 - testes reais contra Zoom/Marketplace, que exigem secrets e
-  `ALLOW_REAL_ZOOM_TESTS=true`;
-- smoke remoto de webhook, ZAK e cron de produção.
+  `ALLOW_REAL_ZOOM=true`;
+- smoke remoto de webhook, Video SDK token e cron de produção.
 
 A entrega mergeada registra sucesso no teste real de criação/update/delete,
 smoke local de webhook e fluxo real de fila. Esses resultados são evidência da
@@ -646,35 +646,35 @@ ações específicas por papel.
 O campo `bookings.meeting_url` permanece legado e não é a fonte da sala. A
 fundação atual usa:
 
-- `zoom_meetings` para estado operacional da reunião;
-- `zoom_meeting_jobs` como outbox de create, update, cancel e reconcile;
-- `zoom_webhook_events` como inbox idempotente e trilha sanitizada;
-- `zoom_meeting_participations` para eventos operacionais de presença;
-- views `patient_zoom_meeting_summary_v` e
-  `therapist_zoom_meeting_summary_v` com `security_invoker`;
-- `zoom-meeting-access` para autorizar booking, pagamento, janela e papel;
-- Meeting SDK JWT gerado no backend;
-- ZAK solicitado somente para o terapeuta e nunca persistido;
-- `zoom-jobs-process` protegido por token interno;
+- `video_sessions` para estado operacional local da sessão;
+- RPCs locais idempotentes para criar, atualizar ou cancelar estado por booking;
+- `zoom_video_webhook_events` como inbox idempotente e trilha sanitizada;
+- `video_session_participations` para eventos operacionais de presença;
+- views `patient_video_session_summary_v` e
+  `therapist_video_session_summary_v` com `security_invoker`;
+- `zoom-video-session-access` para autorizar booking, pagamento, janela e papel;
+- Video SDK JWT gerado no backend;
+- role resolvido no backend; paciente recebe somente `role_type = 0`;
+- `zoom-video-session-access` exige sessão autenticada e nunca aceita role do cliente;
 - `zoom-webhook` com limite de corpo, challenge-response,
   `x-zm-signature`, proteção temporal e deduplicação;
 - enfileiramento após `session_payments.financial_status = paid`.
 
-`start_url_encrypted` e `passcode_encrypted` existem como reserva de schema, mas
+`video_session_secret_url_removed_encrypted` e `passcode_encrypted` existem como reserva de schema, mas
 não são preenchidos pelo fluxo atual. A implementação prefere recuperar os
-dados mínimos do provedor sob demanda e não persistir `start_url` ou ZAK.
+dados mínimos do provedor sob demanda e não persistir `video_session_secret_url_removed` ou Video SDK token.
 
 ### 10.2 Controles confirmados
 
 - migrations aplicam em `supabase db reset`;
 - RPCs Zoom são executáveis apenas por `service_role`;
-- authenticated lê somente colunas seguras de `zoom_meetings`, sob RLS;
+- authenticated lê somente colunas seguras de `video_sessions`, sob RLS;
 - jobs e eventos de webhook não têm leitura direta autenticada;
 - tópico remoto usa referência opaca e não inclui conteúdo clínico;
 - create/update revalidam pagamento canônico no processador;
 - cancelamento remoto trata `404` como sucesso idempotente;
 - locks de job expirados podem ser recuperados;
-- evento `meeting.started` não regride reunião encerrada ou cancelada.
+- evento `session.started` não regride reunião encerrada ou cancelada.
 
 ### 10.3 Bloqueios antes de produção
 
@@ -683,10 +683,10 @@ dados mínimos do provedor sob demanda e não persistir `start_url` ou ZAK.
 2. validar `session_payments.financial_status` também no endpoint de acesso, sem
    depender apenas da projeção `bookings.payment_status`;
 3. definir uma topologia de hosts licenciados por terapeuta ou um alocador com
-   controle de concorrência; `ZOOM_DEFAULT_HOST_USER_ID` único é apenas base de
+   controle de concorrência; `ZOOM_VIDEO_SDK_KEY` único é apenas base de
    desenvolvimento;
 4. resolver a precedência ambígua entre cookies de paciente e terapeuta;
-5. confirmar scopes e ZAK no Zoom Marketplace;
+5. confirmar scopes e Video SDK token no Zoom Marketplace;
 6. configurar cron remoto e webhook público validado;
 7. adicionar pgTAP de RLS para paciente, terapeuta responsável, terapeuta
    externo, suspenso e usuário anônimo;
@@ -1356,7 +1356,7 @@ A3.3 concluído em 2026-07-26:
 Fundação já entregue em Z0:
 
 - criação/update/cancel/reconcile por outbox;
-- Meeting SDK para paciente e terapeuta;
+- Video SDK para paciente e terapeuta;
 - janela de acesso;
 - webhooks e auditoria sanitizada;
 - páginas de ajuda e adapter de interface.
@@ -1367,7 +1367,7 @@ Escopo restante de A9:
 - validar pagamento canônico no gate de acesso;
 - eliminar ambiguidade entre cookies de papéis diferentes;
 - definir alocação e capacidade de hosts;
-- homologar ZAK e Meeting SDK no Marketplace;
+- homologar Video SDK token e Video SDK no Marketplace;
 - configurar cron e webhook remotos;
 - atribuir papel e deduplicar participações;
 - cobrir RLS e acesso com pgTAP e E2E;
@@ -1453,9 +1453,9 @@ Escopo restante de A9:
 - terapeuta externo, suspenso ou rejeitado não recebe payload de host;
 - acesso confirma `session_payments.financial_status = paid`;
 - cookies simultâneos não trocam o papel efetivo;
-- ZAK nunca é retornado ao paciente nem persistido;
+- Video SDK token nunca é retornado ao paciente nem persistido;
 - RPCs Zoom não são executáveis por `anon` ou `authenticated`;
-- RLS não expõe host ID, UUID, passcode, `start_url` ou payload de webhook;
+- RLS não expõe host ID, UUID, passcode, `video_session_secret_url_removed` ou payload de webhook;
 - jobs concorrentes reservam uma única unidade;
 - lock expirado é recuperado e retry chega a dead letter;
 - webhook duplicado e replay temporal não duplicam efeito de negócio;

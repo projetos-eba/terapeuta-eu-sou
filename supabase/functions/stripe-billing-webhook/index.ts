@@ -5,7 +5,6 @@ import {
   getPaymentsRuntime,
   getWebhookSecret,
 } from "../_shared/payments/runtime.ts";
-import { createZoomIdempotencyKey } from "../_shared/zoom/idempotency.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 import {
   eventCreatedAt,
@@ -328,13 +327,13 @@ async function applySessionPaymentState(
   if (input.status !== "paid") return;
 
   const zoomEnvironment = getConfiguredZoomEnvironment();
-  const hostUserId = runtime.env.get("ZOOM_DEFAULT_HOST_USER_ID")?.trim();
 
-  if (!zoomEnvironment || !hostUserId) {
+  if (!zoomEnvironment) {
     console.warn(
       JSON.stringify({
-        code: "ZOOM_JOB_NOT_ENQUEUED",
-        message: "Zoom environment is not configured for session payment.",
+        code: "VIDEO_SESSION_NOT_CREATED",
+        message:
+          "Zoom Video SDK environment is not configured for session payment.",
         sessionPaymentId: input.sessionPaymentId,
       }),
     );
@@ -347,22 +346,10 @@ async function applySessionPaymentState(
 
   if (!payment?.booking_id) return;
 
-  await client.rpc("enqueue_zoom_meeting_job_v1", {
+  await client.rpc("ensure_video_session_for_paid_booking_v1", {
     p_booking_id: payment.booking_id,
     p_environment: zoomEnvironment,
-    p_idempotency_key: createZoomIdempotencyKey([
-      "tes",
-      zoomEnvironment,
-      "zoom_meeting",
-      "create",
-      payment.booking_id,
-    ]),
-    p_operation: "create",
-    p_payload: {
-      hostUserId,
-      source: "stripe-billing-webhook",
-      stripeEventId: input.eventId,
-    },
+    p_source: "stripe-billing-webhook",
   });
 }
 

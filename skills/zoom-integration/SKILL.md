@@ -1,9 +1,9 @@
 ---
 name: zoom-integration
-description: Implementar e manter integração Zoom no TES com S2S OAuth, Meeting SDK, jobs, webhooks, RLS e minimização LGPD.
+description: Implementar e manter integracao Zoom Video SDK no TES com JWT backend, sessoes locais, webhooks, RLS e minimizacao LGPD.
 ---
 
-# Integração Zoom
+# Integracao Zoom Video SDK
 
 ## Fontes
 
@@ -11,61 +11,50 @@ description: Implementar e manter integração Zoom no TES com S2S OAuth, Meetin
 2. `docs/zoom/*.md`.
 3. `docs/product/integration-map.md`.
 4. `src/lib/routes.ts`.
-5. `supabase/migrations/*zoom*`.
-6. `supabase/functions/_shared/zoom/`.
+5. `supabase/migrations/*video_sdk*`.
+6. `supabase/functions/_shared/zoom-video-sdk/`.
 
 ## Arquitetura
 
-- REST API: Zoom Server-to-Server OAuth.
-- Browser: Meeting SDK Web via `@zoom/meetingsdk`.
-- JWT Meeting SDK sempre no backend.
-- `role=0` paciente, `role=1` terapeuta responsável.
-- ZAK só para terapeuta, sob demanda e nunca persistido.
-- Stripe confirma pagamento; Zoom só provisiona sala depois de `session_payments.financial_status = paid`.
-- Outbox canônico: `zoom_meeting_jobs`.
-- Fonte local da sala: `zoom_meetings`.
-- Contrato de acesso: `ZoomAccessState` com `allowed`, `reason`,
-  `availableFrom`, `availableUntil` e `meetingStatus`.
-- A rota Next exige `actorRole` e escolhe o cookie desse papel.
-- Preview pode orientar a UI; `join` sempre revalida no backend.
+- Browser: `@zoom/videosdk`.
+- Backend: `zoom-video-session-access` gera JWT curto do Video SDK.
+- `role_type=0` para paciente e `role_type=1` para terapeuta responsavel.
+- `video_sessions` e a fonte local da sessao por booking.
+- `video_session_participations` registra eventos operacionais minimos.
+- `zoom_video_webhook_events` guarda idempotencia e payload sanitizado.
+- Stripe confirma pagamento; Zoom nunca confirma pagamento, repasse ou servico.
+- Nao ha criacao remota previa de sala. A sessao nasce no primeiro `join`.
 
-## Segurança
+## Seguranca
 
-Nunca expor Client Secret, Account ID, access token, ZAK de paciente, webhook secret, `start_url`, `join_url` completa ou payload bruto.
+Nunca expor SDK Secret, API Key, API Secret, webhook secret, JWT gerado,
+payload bruto, audio, video, chat, transcricao ou dado clinico.
 
-Não enviar dados clínicos ao Zoom. Topic deve usar referência opaca.
+`session_name` e `user_key` devem ser opacos e limitados. O browser nunca
+define papel, token, session name ou user key.
 
 ## Testes
 
-- `npm run zoom:env`
-- `npm run test:deno -- --filter zoom`
-- `vitest run src/features/zoom`
-- `npm run zoom:test:webhook`
-- `npm run zoom:webhook:smoke`
-- `npm run zoom:edge:real`
-- `npm run zoom:cron:preflight`
-- `npm run zoom:webhook:real-preflight`
-- `ALLOW_REAL_ZOOM_TESTS=true npm run zoom:test:real`
+- `npm run zoom:video-sdk:env`
+- `npm run zoom:video-sdk:test`
+- `npm run zoom:video-sdk:webhook:smoke`
+- `npm run zoom:video-sdk:api:mock`
+- `npm run zoom:video-sdk:real-preflight`
+- `npm run zoom:video-sdk:test:real`
 
-Para `zoom:edge:real`, se o gateway local responder `404` para `zoom-jobs-process`, iniciar antes:
+Com `ALLOW_REAL_ZOOM=false`, nao fazer chamada externa nem entrar em sessao real.
 
-```bash
-npx supabase functions serve zoom-jobs-process --env-file supabase/functions/.env --no-verify-jwt
-```
+## Operacao
 
-## Operação
+- Configurar manualmente os eventos `session.started`, `session.ended`,
+  `session.user_joined` e `session.user_left`.
+- Manter gravacao automatica, transcricao, controle remoto e recursos nao usados
+  desativados nesta fase.
+- Antes de remover configuracoes antigas no Zoom, confirmar que nenhuma funcao,
+  webhook ou secret antigo continua implantado.
 
-- Cron remoto deve partir de `supabase/schedules/zoom-jobs-cron.sql` e usar Vault para o token interno.
-- `zoom_jobs_process_internal_token` no Vault remoto deve ter o mesmo valor de `PAYMENTS_INTERNAL_OPERATIONS_TOKEN` na Edge Function remota.
-- `zoom-jobs-process` processa lote limitado de até 5 jobs por chamada, usando reserva atômica por RPC e limite de tempo.
-- Ngrok local deve usar `npm run zoom:webhook:tunnel`, que apenas expõe `/functions/v1/zoom-webhook` e não altera Marketplace.
-- Passcode Zoom deve permanecer com no máximo 10 caracteres.
-- Eventos desconhecidos de webhook devem ser `ignored`, não erro operacional.
+## Pendencias Conhecidas
 
-## Pendências Conhecidas
-
-- Confirmar `user:read:zak:admin` no access token real e no Marketplace.
-- Confirmar autorização do General App para ZAK/host.
-- Configurar webhook remoto no Zoom Marketplace.
-- Aplicar cron remoto no Supabase.
-- Definir retenção legal dos eventos operacionais.
+- Homologar webhook publico no ambiente alvo.
+- Fechar politica de retencao legal de eventos operacionais.
+- Rodar teste real controlado somente com `ALLOW_REAL_ZOOM=true`.

@@ -32,11 +32,10 @@ select ok(
       public.get_therapist_sessions_v1() -> 'items'
     ) as item
     where item ? '_therapistProfileId'
-      or item ? '_meetingReady'
-      or item ? 'zoomStartUrlEncrypted'
-      or item ? 'zak'
+      or item ? '_videoSessionReady'
+      or item ? 'videoSessionSecret'
   ),
-  'session summaries exclude internal ownership and Zoom host credentials'
+  'session summaries exclude internal ownership and Video SDK secrets'
 );
 
 select isnt(
@@ -60,7 +59,7 @@ select is(
     'f2000000-0000-4000-8000-000000000005'
   ) #>> '{zoomAccess,reason}',
   'PAYMENT_NOT_CONFIRMED',
-  'canonical pending payment blocks Zoom even when the legacy field says paid'
+  'canonical pending payment blocks video access even when the legacy field says paid'
 );
 
 select is(
@@ -68,21 +67,21 @@ select is(
     'f2000000-0000-4000-8000-000000000006'
   ) #>> '{zoomAccess,reason}',
   'BOOKING_CANCELLED',
-  'a cancelled booking has no Zoom access'
+  'a cancelled booking has no video access'
 );
 
 select is(
-  public.build_zoom_access_state_v1(
+  public.build_video_session_access_state_v1(
     'confirmed',
     'paid',
     '2026-07-26T13:00:00Z',
     '2026-07-26T14:00:00Z',
-    'pending_provisioning',
+    null,
     false,
     '2026-07-26T13:00:00Z'
   ) ->> 'reason',
-  'MEETING_NOT_READY',
-  'an unprovisioned room is represented explicitly'
+  'VIDEO_SESSION_NOT_READY',
+  'a missing video session is represented explicitly'
 );
 
 select ok(

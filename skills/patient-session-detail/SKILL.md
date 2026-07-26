@@ -31,7 +31,7 @@ Use this skill when implementing or refactoring the authenticated client/patient
 
 - Validate ownership through `patient_profiles.user_id = profileId` and `bookings.patient_profile_id`.
 - Return `notFound()` for unknown bookings or bookings outside the logged-in patient.
-- For Zoom, do not expose `meeting_url`; use `/api/zoom/meeting-access` to request a backend-signed Meeting SDK payload.
+- For Zoom, do not expose `meeting_url`; use `/api/zoom/video-session-access` to request a backend-signed Video SDK payload.
 - Do not expose `meeting_url` for non-Zoom providers unless payment is paid and booking status is allowed.
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` to client components.
 - Demo data belongs in `supabase/seed.sql`, not migrations.
@@ -53,8 +53,8 @@ Use these support tables when needed:
 - Use TES Tailwind tokens: `brand`, `surface`, `tesText`, `status`, `shadow-card`, `rounded-card`, `font-display`, `font-sans`.
 - Therapist avatars shown in patient session cards/details must come from the same stable `public/therapists/*.png` assets used by public therapist pages and seed data.
 - Use real buttons and links.
-- Copy meeting link must be a client component with visible or aria-live feedback.
-- Zoom join must be a client component that dynamic-imports `@zoom/meetingsdk` and never trusts a browser-provided role.
+- Video session entry must be a client component with visible or aria-live feedback.
+- Zoom join must be a client component that dynamic-imports `@zoom/videosdk` and never trusts a browser-provided role.
 - Use local assets or token-based placeholders only; do not commit temporary Figma asset URLs.
 
 ## QA
