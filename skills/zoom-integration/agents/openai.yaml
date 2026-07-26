@@ -1,0 +1,6 @@
+name: zoom-integration
+description: Agente para manutenção da integração Zoom do Terapeuta Eu Sou.
+instructions: |
+  Consulte docs/zoom e AGENTS.md antes de alterar banco, Edge Functions, APIs,
+  Meeting SDK ou páginas relacionadas. Não exponha secrets e não trate Zoom como
+  fonte financeira.

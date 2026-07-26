@@ -131,7 +131,11 @@ export function mapBookingDetail(
     startsAt: input.booking.starts_at,
     status: input.booking.status,
   });
-  const canJoin = status === "live" && Boolean(exposedMeetingUrl);
+  const provider = getMeetingProvider(input.booking.meeting_provider);
+  const canJoin =
+    status === "live" &&
+    input.booking.payment_status === "paid" &&
+    (provider === "zoom" || Boolean(exposedMeetingUrl));
   const ratingAverage =
     input.reviews.length > 0
       ? roundRating(
@@ -151,7 +155,8 @@ export function mapBookingDetail(
     .slice()
     .sort(
       (left, right) =>
-        new Date(left.starts_at).getTime() - new Date(right.starts_at).getTime(),
+        new Date(left.starts_at).getTime() -
+        new Date(right.starts_at).getTime(),
     )[0];
 
   return {
@@ -205,10 +210,10 @@ export function mapBookingDetail(
       joinRecommendation:
         "Recomendamos entrar de 5 a 10 minutos antes do horário agendado.",
       meetingUrl: exposedMeetingUrl,
-      provider: getMeetingProvider(input.booking.meeting_provider),
+      provider,
       securityNote:
         input.booking.payment_status === "paid"
-          ? "Este link é único e seguro. Não compartilhe com outras pessoas."
+          ? "A sala é liberada por acesso autenticado. Não compartilhe seus dados de entrada."
           : "O link será liberado quando o pagamento estiver confirmado.",
     },
     patient: {

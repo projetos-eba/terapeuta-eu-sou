@@ -56,6 +56,7 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 - `/terapeuta/checkout`: revisão do plano pago após o cadastro.
 - `/reset-senha`: recuperação de senha.
 - `/ajuda`: ajuda pública.
+- `/ajuda/zoom`: guia público para sessões online pelo Zoom.
 - `/termos`: termos de uso.
 - `/privacidade`: política de privacidade.
 

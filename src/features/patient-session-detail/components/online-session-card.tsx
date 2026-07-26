@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { Route } from "next";
 import { Info, ShieldCheck, Video } from "lucide-react";
 
+import { ZoomMeetingAdapter } from "@/features/zoom/zoom-meeting-adapter";
+
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
 import { CopyMeetingLinkButton } from "./copy-meeting-link-button";
 
@@ -36,40 +38,44 @@ export function OnlineSessionCard({
         Sua sessão online
       </h2>
       <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-        Use o link abaixo para entrar na sua sessão de videochamada com
-        segurança.
+        A entrada acontece por uma sala autenticada, liberada perto do horário
+        da sessão.
       </p>
 
-      <div className="mt-6">
-        <label
-          className="text-sm font-extrabold text-brand-deep"
-          htmlFor="meeting-url"
-        >
-          Link da videochamada {providerLabel}
-        </label>
-        <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_140px]">
-          <input
-            className="min-h-12 min-w-0 rounded-lg border border-brand-lavender bg-surface-soft px-4 text-sm font-semibold text-tesText-secondary"
-            id="meeting-url"
-            readOnly
-            value={
-              data.onlineSession.meetingUrl ??
-              "Link disponível após confirmação do pagamento"
-            }
-          />
-          {data.onlineSession.meetingUrl ? (
-            <CopyMeetingLinkButton meetingUrl={data.onlineSession.meetingUrl} />
-          ) : (
-            <button
-              className="inline-flex min-h-12 cursor-not-allowed items-center justify-center rounded-lg border border-brand-lavender bg-white px-5 text-sm font-extrabold text-tesText-muted"
-              disabled
-              type="button"
-            >
-              Copiar link
-            </button>
-          )}
+      {data.onlineSession.provider !== "zoom" ? (
+        <div className="mt-6">
+          <label
+            className="text-sm font-extrabold text-brand-deep"
+            htmlFor="meeting-url"
+          >
+            Link da videochamada {providerLabel}
+          </label>
+          <div className="mt-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_140px]">
+            <input
+              className="min-h-12 min-w-0 rounded-lg border border-brand-lavender bg-surface-soft px-4 text-sm font-semibold text-tesText-secondary"
+              id="meeting-url"
+              readOnly
+              value={
+                data.onlineSession.meetingUrl ??
+                "Link disponível após confirmação do pagamento"
+              }
+            />
+            {data.onlineSession.meetingUrl ? (
+              <CopyMeetingLinkButton
+                meetingUrl={data.onlineSession.meetingUrl}
+              />
+            ) : (
+              <button
+                className="inline-flex min-h-12 cursor-not-allowed items-center justify-center rounded-lg border border-brand-lavender bg-white px-5 text-sm font-extrabold text-tesText-muted"
+                disabled
+                type="button"
+              >
+                Copiar link
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <p className="mt-4 flex gap-2 text-sm font-semibold leading-6 text-tesText-secondary">
         <ShieldCheck
@@ -80,7 +86,17 @@ export function OnlineSessionCard({
         {data.onlineSession.securityNote}
       </p>
 
-      {data.booking.canJoin && data.onlineSession.meetingUrl ? (
+      {data.onlineSession.provider === "zoom" ? (
+        <ZoomMeetingAdapter
+          bookingId={data.booking.id}
+          canJoin={data.booking.canJoin}
+          disabledLabel={
+            data.booking.paymentStatus === "paid"
+              ? "Disponível 15 min antes"
+              : "Aguardando pagamento"
+          }
+        />
+      ) : data.booking.canJoin && data.onlineSession.meetingUrl ? (
         <Link
           className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand-primary px-6 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           href={data.onlineSession.meetingUrl as Route<string>}
