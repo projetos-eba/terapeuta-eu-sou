@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { Info, ShieldCheck, Video } from "lucide-react";
 
-import { ZoomMeetingAdapter } from "@/features/zoom/zoom-meeting-adapter";
+import { ZoomVideoSessionAdapter } from "@/features/zoom/zoom-video-session-adapter";
 
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
 import { CopyMeetingLinkButton } from "./copy-meeting-link-button";
@@ -87,7 +87,7 @@ export function OnlineSessionCard({
       </p>
 
       {data.onlineSession.provider === "zoom" ? (
-        <ZoomMeetingAdapter
+        <ZoomVideoSessionAdapter
           access={null}
           actorRole="patient"
           bookingId={data.booking.id}

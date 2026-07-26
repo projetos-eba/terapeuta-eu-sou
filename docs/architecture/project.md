@@ -16,7 +16,7 @@ Atualizacao operacional de 2026-07-25:
   implementados e validados; A3 e o proximo marco do modulo, descrito em
   `docs/architecture/relatorio-25-07-2026.md`;
 - a fundacao Zoom Z0 foi implementada antes de A2, com outbox pós-pagamento,
-  Meeting SDK e webhooks; o go-live ainda depende dos gates operacionais
+  Video SDK e webhooks; o go-live ainda depende dos gates operacionais
   registrados em `docs/zoom/production-readiness.md`.
 - A2 adicionou snapshots imutaveis em `bookings`, `booking_holds` com TTL,
   exclusao de conflitos por terapeuta, transicoes auditadas, reagendamento
@@ -164,7 +164,7 @@ Preferir:
 - Supabase planejado e parcialmente estruturado em `supabase/`.
 - Stripe Billing e Connect implementados com Gate F0 concluido; homologacao E2E
   externa permanece pendente.
-- Zoom implementado como fundacao via Server-to-Server OAuth, Meeting SDK,
+- Zoom implementado como fundacao via Video SDK API credentials, Video SDK,
   inbox/outbox e webhook; homologacao de producao permanece pendente.
 
 ### 5.2 Backend recomendado
@@ -776,10 +776,10 @@ Regras de seguranca:
 
 O modelo de dados atual suporta:
 
-- `zoom_meetings`;
-- `zoom_meeting_jobs`;
-- `zoom_webhook_events`;
-- `zoom_meeting_participations`;
+- `video_sessions`;
+- `video_sessions`;
+- `zoom_video_webhook_events`;
+- `video_session_participations`;
 - views seguras por papel;
 - `meeting_provider` e `meeting_url` apenas como compatibilidade legada.
 
@@ -787,13 +787,13 @@ Ferramenta definida para o MVP: Zoom via API/SDK.
 
 Estado implementado:
 
-- usar Server-to-Server OAuth da Zoom;
+- usar Video SDK API credentials da Zoom;
 - enfileirar a reuniao apenas depois de pagamento confirmado pelo webhook
   Stripe;
 - manter `meeting_provider = 'zoom'`;
-- gerar payload Meeting SDK no backend conforme booking, papel e janela;
-- solicitar ZAK somente para o terapeuta responsavel e nao persisti-lo;
-- nao persistir `start_url` no fluxo atual;
+- gerar payload Video SDK no backend conforme booking, papel e janela;
+- solicitar Video SDK token somente para o terapeuta responsavel e nao persisti-lo;
+- nao persistir `video_session_secret_url_removed` no fluxo atual;
 - manter `bookings.meeting_url` fora da fonte canonica;
 - registrar somente eventos operacionais, sem conteudo clinico.
 
@@ -802,7 +802,7 @@ Pendencias de producao:
 - bloquear terapeuta suspenso/rejeitado;
 - validar o pagamento canonico tambem no gate de acesso;
 - definir topologia de hosts licenciados e concorrencia;
-- homologar ZAK, cron, webhook remoto e scopes do Marketplace;
+- homologar Video SDK token, cron, webhook remoto e scopes do Marketplace;
 - criar pgTAP especifico para RLS Zoom.
 
 ## 10. Area logada do paciente
@@ -1623,8 +1623,8 @@ Diretrizes:
 - admin acessa por policies especificas;
 - pesos de match ficam fechados para anon/authenticated;
 - pagamentos e ledger devem ser fechados por padrao;
-- `start_url` e ZAK nao devem ser persistidos no fluxo Zoom atual;
-- dados seguros da sala usam views por papel e o payload Meeting SDK usa
+- `video_session_secret_url_removed` e Video SDK token nao devem ser persistidos no fluxo Zoom atual;
+- dados seguros da sala usam views por papel e o payload Video SDK usa
   autorizacao backend por booking;
 - qualquer persistencia futura de credencial de host exige criptografia
   versionada e nenhuma leitura autenticada direta;
@@ -1799,7 +1799,7 @@ Uma entrega do MVP so deve ser considerada pronta quando:
 - criar repasses a partir de `payout_batches` e `payout_batch_items`;
 - gravar snapshot de preco e duracao no momento da reserva;
 - gerar link Zoom apenas apos pagamento confirmado;
-- proteger `start_url` da Zoom por regra de acesso;
+- proteger `video_session_secret_url_removed` da Zoom por regra de acesso;
 - proteger dados por RLS;
 - passar em `npm run typecheck`;
 - passar em `npm run lint`;

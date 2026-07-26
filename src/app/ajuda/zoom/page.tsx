@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { PublicInfoLayout } from "@/features/public-support/public-info-layout";
 
 export const metadata: Metadata = {
-  description: "Guia público para entrada em sessões online pelo Zoom.",
+  description:
+    "Guia público para entrada em sessões online pelo Zoom Video SDK.",
   title: "Ajuda com Zoom | Terapeuta Eu Sou",
 };
 
@@ -13,8 +14,8 @@ const sections = [
     title: "Antes de entrar",
   },
   {
-    body: "A sessão usa sala de espera. Aguarde a entrada ser liberada pelo terapeuta responsável.",
-    title: "Sala de espera",
+    body: "A sessão acontece dentro do site. Se a outra pessoa ainda não entrou, aguarde na tela da sessão ou saia e retorne dentro da janela autorizada.",
+    title: "Ao entrar",
   },
   {
     body: "Se o áudio ou vídeo não abrir, confira as permissões do navegador e se outro aplicativo já está usando câmera ou microfone.",
@@ -29,7 +30,7 @@ const sections = [
     title: "Gravação",
   },
   {
-    body: "A sala é liberada perto do horário e depende da confirmação de pagamento. Se a mensagem persistir, acesse o suporte pela área logada.",
+    body: "A entrada é liberada perto do horário e depende da confirmação de pagamento. Se a mensagem persistir, acesse o suporte pela área logada.",
     title: "Sala indisponível",
   },
 ];

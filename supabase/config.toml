@@ -169,10 +169,7 @@ verify_jwt = false
 [functions.zoom-webhook]
 verify_jwt = false
 
-[functions.zoom-meeting-access]
-verify_jwt = false
-
-[functions.zoom-jobs-process]
+[functions.zoom-video-session-access]
 verify_jwt = false
 
 [functions.therapist-schedule-update]

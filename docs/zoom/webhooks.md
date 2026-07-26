@@ -1,47 +1,34 @@
-# Webhooks Zoom
+# Webhooks Zoom Video SDK
 
-Endpoint genérico:
+Endpoint:
 
 ```text
 https://<PROJECT_REF>.supabase.co/functions/v1/zoom-webhook
 ```
 
-Eventos operacionais recomendados:
+Eventos habilitados nesta fase:
 
-- `meeting.started`
-- `meeting.ended`
-- `meeting.participant_joined`
-- `meeting.participant_left`
-- `meeting.participant_waiting`
-- `meeting.participant_admitted`
+- `session.started`
+- `session.ended`
+- `session.user_joined`
+- `session.user_left`
 
-As variantes `*.v2` equivalentes também são aceitas quando o Zoom as enviar.
+Tambem e necessario responder `endpoint.url_validation`.
 
-Validação:
+Requisitos:
 
-- `x-zm-signature` com HMAC SHA-256;
-- `x-zm-request-timestamp` com janela anti-replay;
-- challenge-response `endpoint.url_validation` com `plainToken` e `encryptedToken`.
+- validar corpo bruto antes de persistir;
+- limitar tamanho do corpo;
+- validar `x-zm-signature` e `x-zm-request-timestamp`;
+- responder challenge com `plainToken` e `encryptedToken`;
+- rejeitar replay;
+- gravar hash SHA-256 do payload e campos sanitizados minimos;
+- processar duplicata como sucesso;
+- tratar evento desconhecido como `ignored`;
+- nunca alterar pagamento, repasse ou elegibilidade financeira.
 
-Falhas esperadas:
-
-- corpo maior que o limite local: `413`;
-- JSON inválido: `400`;
-- assinatura/timestamp ausente, inválido, futuro ou expirado: `400`;
-- evento não suportado: evento persistido como `ignored` e resposta `200`.
-
-Persistência:
-
-- hash SHA-256 do corpo bruto;
-- campos normalizados;
-- payload sanitizado mínimo;
-- sem corpo bruto indefinido, conteúdo clínico, áudio, vídeo, chat ou transcrição.
-
-Para desenvolvimento com ngrok, use:
+Smoke local:
 
 ```bash
-npm run zoom:webhook:real-preflight
-npm run zoom:webhook:tunnel
+npm run zoom:video-sdk:webhook:smoke
 ```
-
-Copie a URL pública exibida pelo script para o Zoom Marketplace manualmente. O repositório não altera configuração remota do Zoom.

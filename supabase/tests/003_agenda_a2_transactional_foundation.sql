@@ -421,15 +421,13 @@ select throws_ok(
 );
 
 select isnt(
-  public.enqueue_zoom_meeting_job_v1(
+  public.ensure_video_session_for_paid_booking_v1(
     'f2000000-0000-4000-8000-000000000001',
-    'create',
     'development',
-    'a2-zoom-create-before-reschedule',
-    '{"hostUserId":"a2-test-host"}'::jsonb
+    'a2-video-session-before-reschedule'
   ),
   null,
-  'the paid booking receives a Zoom outbox row for the test'
+  'the paid booking receives a local Video SDK session for the test'
 );
 
 select is(
@@ -513,14 +511,16 @@ select is(
 select is(
   (
     select count(*)::integer
-    from public.zoom_meeting_jobs
-    where booking_id = 'f2000000-0000-4000-8000-000000000001'
-      and operation = 'update'
-      and idempotency_key like
-        'agenda:a2-reschedule-resolution-0001:zoom:update'
+    from public.video_sessions
+    join public.bookings
+      on bookings.id = video_sessions.booking_id
+    where video_sessions.booking_id = 'f2000000-0000-4000-8000-000000000001'
+      and video_sessions.status in ('ready', 'active')
+      and scheduled_starts_at = bookings.starts_at
+      and scheduled_ends_at = bookings.ends_at
   ),
   1,
-  'an applied reschedule enqueues one idempotent Zoom update'
+  'an applied reschedule updates the local video session'
 );
 
 set local role authenticated;

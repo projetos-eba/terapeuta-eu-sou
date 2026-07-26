@@ -16,8 +16,8 @@ export default function TermsPage() {
         </h2>
         <p className="mt-3">
           As sessões online dependem de provedor externo de videoconferência.
-          Nesta fase, o Zoom é usado para operar a sala de vídeo depois da
-          confirmação de pagamento.
+          Nesta fase, o Zoom Video SDK é usado para operar áudio e vídeo dentro
+          do site depois da confirmação de pagamento.
         </p>
         <h2 className="mt-6 text-xl font-extrabold text-brand-deep">
           Informações legais pendentes

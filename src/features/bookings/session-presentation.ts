@@ -169,7 +169,7 @@ export function mapSessionPresentation(
     );
   }
 
-  if (session.meetingStatus === "in_progress") {
+  if (session.videoSessionStatus === "active") {
     return presentation(
       "in_progress",
       "Em andamento",
@@ -192,13 +192,13 @@ export function mapSessionPresentation(
   }
 
   if (
-    session.zoomAccess.reason === ZoomAccessReason.MeetingNotReady &&
+    session.zoomAccess.reason === ZoomAccessReason.VideoSessionNotReady &&
     currentTime >= startsAt - 15 * 60_000
   ) {
     return presentation(
       "room_preparing",
       "Sala em preparação",
-      "O encontro está confirmado, mas a sala ainda está sendo provisionada.",
+      "O encontro esta confirmado, mas a sala ainda esta sendo preparada.",
       "high",
       "warning",
       actions,
@@ -231,7 +231,7 @@ export function getZoomAccessLabel(access: SessionReadModelItem["zoomAccess"]) {
 
   const labels = {
     [ZoomAccessReason.BookingCancelled]: "Sessão cancelada",
-    [ZoomAccessReason.MeetingNotReady]: "Sala em preparação",
+    [ZoomAccessReason.VideoSessionNotReady]: "Sala em preparacao",
     [ZoomAccessReason.PaymentNotConfirmed]: "Aguardando pagamento",
     [ZoomAccessReason.TherapistNotAllowed]: "Acesso não autorizado",
     [ZoomAccessReason.TherapistSuspended]: "Acesso suspenso",

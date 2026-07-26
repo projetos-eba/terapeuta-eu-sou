@@ -62,12 +62,12 @@ select
   reschedule.proposed_timezone as "proposedTimezone",
   cancellation.decision as "cancellationDecision",
   cancellation.requires_manual_review as "cancellationRequiresReview",
-  zoom.status as "meetingStatus",
-  zoom.provider as "meetingProvider",
+  video_session.status as "videoSessionStatus",
+  video_session.provider as "videoSessionProvider",
   (
-    zoom.zoom_meeting_id is not null
-    and zoom.status in ('provisioned', 'scheduled', 'in_progress')
-  ) as "_meetingReady"
+    video_session.id is not null
+    and video_session.status in ('ready', 'active')
+  ) as "_videoSessionReady"
 from public.bookings as booking
 join public.patient_profiles as patient
   on patient.id = booking.patient_profile_id
@@ -97,8 +97,8 @@ left join lateral (
   order by decision.created_at desc
   limit 1
 ) as cancellation on true
-left join public.zoom_meetings as zoom
-  on zoom.booking_id = booking.id
+left join public.video_sessions as video_session
+  on video_session.booking_id = booking.id
 where public.is_current_therapist_profile(booking.therapist_profile_id);
 
 grant select on public.therapist_session_read_model_v1 to authenticated;
@@ -106,13 +106,13 @@ grant select on public.therapist_session_read_model_v1 to authenticated;
 comment on view public.therapist_session_read_model_v1 is
   'Versioned, security-invoker therapist session projection. Payment and fulfillment come from session_payments; attendance remains explicitly unavailable except for legacy no-show projections.';
 
-create or replace function public.build_zoom_access_state_v1(
+create or replace function public.build_video_session_access_state_v1(
   p_booking_status public.booking_status,
   p_financial_status public.session_financial_status,
   p_starts_at timestamptz,
   p_ends_at timestamptz,
-  p_meeting_status public.zoom_meeting_status,
-  p_meeting_ready boolean,
+  p_video_session_status public.video_session_status,
+  p_video_session_ready boolean,
   p_now timestamptz default now()
 )
 returns jsonb
@@ -140,12 +140,12 @@ begin
     v_reason := 'TOO_EARLY';
   elsif p_now >= v_available_until then
     v_reason := 'TOO_LATE';
-  elsif p_meeting_status in ('ended', 'canceled') then
+  elsif p_video_session_status in ('ended', 'canceled') then
     v_reason := 'TOO_LATE';
-  elsif p_meeting_status = 'failed' then
+  elsif p_video_session_status = 'failed' then
     v_reason := 'UNKNOWN';
-  elsif not coalesce(p_meeting_ready, false) then
-    v_reason := 'MEETING_NOT_READY';
+  elsif not coalesce(p_video_session_ready, false) then
+    v_reason := 'VIDEO_SESSION_NOT_READY';
   else
     v_allowed := true;
     v_reason := null;
@@ -156,26 +156,26 @@ begin
     'reason', v_reason,
     'availableFrom', v_available_from,
     'availableUntil', v_available_until,
-    'meetingStatus', coalesce(p_meeting_status::text, 'not_provisioned')
+    'videoSessionStatus', coalesce(p_video_session_status::text, 'not_available')
   );
 end;
 $$;
 
-revoke all on function public.build_zoom_access_state_v1(
+revoke all on function public.build_video_session_access_state_v1(
   public.booking_status,
   public.session_financial_status,
   timestamptz,
   timestamptz,
-  public.zoom_meeting_status,
+  public.video_session_status,
   boolean,
   timestamptz
 ) from public;
-grant execute on function public.build_zoom_access_state_v1(
+grant execute on function public.build_video_session_access_state_v1(
   public.booking_status,
   public.session_financial_status,
   timestamptz,
   timestamptz,
-  public.zoom_meeting_status,
+  public.video_session_status,
   boolean,
   timestamptz
 ) to authenticated;
@@ -303,16 +303,16 @@ begin
       (
         to_jsonb(page)
         - '_therapistProfileId'
-        - '_meetingReady'
+        - '_videoSessionReady'
       ) || jsonb_build_object(
         'zoomAccess',
-        public.build_zoom_access_state_v1(
+        public.build_video_session_access_state_v1(
           page."bookingStatus",
           page."financialStatus",
           page."startsAt",
           page."endsAt",
-          page."meetingStatus",
-          page."_meetingReady",
+          page."videoSessionStatus",
+          page."_videoSessionReady",
           now()
         )
       ) as item
@@ -404,18 +404,18 @@ begin
   return (
     to_jsonb(v_session)
     - '_therapistProfileId'
-    - '_meetingReady'
+    - '_videoSessionReady'
   ) || jsonb_build_object(
     'version', 1,
     'therapistProfileId', v_therapist.id,
     'zoomAccess',
-    public.build_zoom_access_state_v1(
+    public.build_video_session_access_state_v1(
       v_session."bookingStatus",
       v_session."financialStatus",
       v_session."startsAt",
       v_session."endsAt",
-      v_session."meetingStatus",
-      v_session."_meetingReady",
+      v_session."videoSessionStatus",
+      v_session."_videoSessionReady",
       now()
     )
   );
@@ -514,16 +514,16 @@ begin
           (
             to_jsonb(session_row)
             - '_therapistProfileId'
-            - '_meetingReady'
+            - '_videoSessionReady'
           ) || jsonb_build_object(
             'zoomAccess',
-            public.build_zoom_access_state_v1(
+            public.build_video_session_access_state_v1(
               session_row."bookingStatus",
               session_row."financialStatus",
               session_row."startsAt",
               session_row."endsAt",
-              session_row."meetingStatus",
-              session_row."_meetingReady",
+              session_row."videoSessionStatus",
+              session_row."_videoSessionReady",
               now()
             )
           )

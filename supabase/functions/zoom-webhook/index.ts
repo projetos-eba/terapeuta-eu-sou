@@ -1,34 +1,34 @@
+import { getServiceRoleKey } from "../_shared/auth/runtime.ts";
 import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
 import { DomainError, failure, success } from "../_shared/payments/http.ts";
 import { getPaymentsRuntime } from "../_shared/payments/runtime.ts";
-import { getServiceRoleKey } from "../_shared/auth/runtime.ts";
-import { getZoomConfig } from "../_shared/zoom/config.ts";
-import { sanitizeProviderMessage, ZoomError } from "../_shared/zoom/errors.ts";
+import { getZoomVideoSdkConfig } from "../_shared/zoom-video-sdk/config.ts";
 import {
-  createZoomChallengeResponse,
-  createZoomWebhookEventKey,
-  getZoomWebhookObject,
-  normalizeZoomEventTime,
-  verifyZoomWebhookSignature,
-  type ZoomWebhookBody,
-} from "../_shared/zoom/webhook.ts";
-import { sha256Hex } from "../_shared/zoom/crypto.ts";
+  sanitizeProviderMessage,
+  ZoomVideoSdkError,
+} from "../_shared/zoom-video-sdk/errors.ts";
+import { sha256Hex } from "../_shared/zoom-video-sdk/crypto.ts";
+import {
+  createZoomVideoChallengeResponse,
+  createZoomVideoWebhookEventKey,
+  extractVideoParticipant,
+  extractVideoSessionId,
+  extractVideoSessionName,
+  getZoomVideoWebhookObject,
+  normalizeZoomVideoEventTime,
+  numberOrNull,
+  stringOrNull,
+  verifyZoomVideoWebhookSignature,
+  type ZoomVideoWebhookBody,
+} from "../_shared/zoom-video-sdk/webhook.ts";
 
 const runtime = getPaymentsRuntime("zoom-webhook");
 const MAX_WEBHOOK_BODY_BYTES = 128 * 1024;
-const SUPPORTED_OPERATIONAL_EVENTS = new Set([
-  "meeting.started",
-  "meeting.started.v2",
-  "meeting.ended",
-  "meeting.ended.v2",
-  "meeting.participant_joined",
-  "meeting.participant_joined.v2",
-  "meeting.participant_left",
-  "meeting.participant_left.v2",
-  "meeting.participant_admitted",
-  "meeting.participant_admitted.v2",
-  "meeting.participant_waiting",
-  "meeting.participant_waiting.v2",
+const SUPPORTED_EVENTS = new Set([
+  "session.started",
+  "session.ended",
+  "session.user_joined",
+  "session.user_left",
 ]);
 
 runtime.serve(async (request) => {
@@ -39,7 +39,7 @@ runtime.serve(async (request) => {
       return new Response("Method not allowed", { status: 405 });
     }
 
-    const config = getZoomConfig(runtime);
+    const config = getZoomVideoSdkConfig(runtime);
     const rawBody = await request.text();
     if (new TextEncoder().encode(rawBody).byteLength > MAX_WEBHOOK_BODY_BYTES) {
       throw new DomainError(
@@ -49,7 +49,7 @@ runtime.serve(async (request) => {
       );
     }
 
-    await verifyZoomWebhookSignature({
+    await verifyZoomVideoWebhookSignature({
       body: rawBody,
       secretToken: config.webhookSecretToken,
       signature: request.headers.get("x-zm-signature"),
@@ -65,7 +65,7 @@ runtime.serve(async (request) => {
       }
 
       return success(
-        await createZoomChallengeResponse(
+        await createZoomVideoChallengeResponse(
           plainToken,
           config.webhookSecretToken,
         ),
@@ -80,41 +80,46 @@ runtime.serve(async (request) => {
     }
 
     const client = new SupabaseRestClient(supabaseUrl, serviceRoleKey);
-    const object = getZoomWebhookObject(body);
+    const object = getZoomVideoWebhookObject(body);
+    const participant = extractVideoParticipant(object);
     const eventType = body.event ?? "unknown";
     const eventTs = typeof body.event_ts === "number" ? body.event_ts : null;
-    const meetingId = stringOrNull(object.id);
-    const meetingUuid = stringOrNull(object.uuid);
-    const participant =
-      object.participant && typeof object.participant === "object"
-        ? (object.participant as Record<string, unknown>)
-        : {};
-    const participantId =
+    const sessionName = extractVideoSessionName(object);
+    const providerSessionId = extractVideoSessionId(object);
+    const providerUserId =
       stringOrNull(participant.id) ?? stringOrNull(participant.user_id);
-    const eventKey = await createZoomWebhookEventKey({
+    const providerUserKey =
+      stringOrNull(participant.user_key) ??
+      stringOrNull(participant.userKey) ??
+      stringOrNull(participant.customer_key);
+    const eventKey = await createZoomVideoWebhookEventKey({
       body: rawBody,
       eventTs,
       eventType,
-      meetingId,
-      meetingUuid,
-      participantId,
+      providerSessionId,
+      providerUserId,
+      providerUserKey,
       requestId: request.headers.get("x-zm-request-id"),
+      sessionName,
     });
     const reservation = await client.rpc<
       Array<{ acquired: boolean; processing_status: string }>
-    >("reserve_zoom_webhook_event_v1", {
+    >("reserve_zoom_video_webhook_event_v1", {
+      p_account_identifier: stringOrNull(body.payload?.account_id),
       p_event_key: eventKey,
-      p_event_ts: normalizeZoomEventTime(body.event_ts),
+      p_event_ts: normalizeZoomVideoEventTime(body.event_ts),
       p_event_type: eventType,
       p_payload_sanitized: {
         event: eventType,
         hasParticipant: Object.keys(participant).length > 0,
+        hasSessionName: Boolean(sessionName),
       },
       p_payload_sha256: await sha256Hex(rawBody),
+      p_provider_session_id: providerSessionId,
+      p_provider_user_id: providerUserId,
+      p_provider_user_key: providerUserKey,
       p_request_id: request.headers.get("x-zm-request-id"),
-      p_zoom_account_identifier: body.payload?.account_id ?? null,
-      p_zoom_meeting_id: meetingId,
-      p_zoom_meeting_uuid: meetingUuid,
+      p_session_name_hash: sessionName ? await sha256Hex(sessionName) : null,
     });
 
     if (!reservation[0]?.acquired) {
@@ -125,8 +130,8 @@ runtime.serve(async (request) => {
     }
 
     try {
-      if (!SUPPORTED_OPERATIONAL_EVENTS.has(eventType)) {
-        await client.rpc("apply_zoom_webhook_transition_v1", {
+      if (!SUPPORTED_EVENTS.has(eventType) || !sessionName) {
+        await client.rpc("apply_zoom_video_webhook_transition_v1", {
           p_error_code: null,
           p_error_message: null,
           p_event_key: eventKey,
@@ -136,19 +141,18 @@ runtime.serve(async (request) => {
         return success({ ignored: true, received: true });
       }
 
-      await client.rpc("apply_zoom_meeting_event_v1", {
-        p_duration_seconds: numberOrNull(participant.duration),
-        p_event_at: normalizeZoomEventTime(body.event_ts),
+      await client.rpc("apply_zoom_video_session_event_v1", {
+        p_duration_seconds:
+          numberOrNull(participant.duration) ??
+          numberOrNull(participant.duration_seconds),
+        p_event_at: normalizeZoomVideoEventTime(body.event_ts),
         p_event_type: eventType,
-        p_participant_correlation_key:
-          stringOrNull(participant.customer_key) ?? participantId,
-        p_provider_user_id: stringOrNull(participant.user_id),
-        p_zoom_meeting_id: meetingId,
-        p_zoom_meeting_uuid: meetingUuid,
-        p_zoom_participant_id: participantId,
-        p_zoom_participant_uuid: stringOrNull(participant.participant_uuid),
+        p_provider_session_id: providerSessionId,
+        p_provider_user_id: providerUserId,
+        p_provider_user_key: providerUserKey,
+        p_session_name: sessionName,
       });
-      await client.rpc("apply_zoom_webhook_transition_v1", {
+      await client.rpc("apply_zoom_video_webhook_transition_v1", {
         p_error_code: null,
         p_error_message: null,
         p_event_key: eventKey,
@@ -157,8 +161,8 @@ runtime.serve(async (request) => {
 
       return success({ received: true });
     } catch (error) {
-      await client.rpc("apply_zoom_webhook_transition_v1", {
-        p_error_code: "zoom_webhook_processing_failed",
+      await client.rpc("apply_zoom_video_webhook_transition_v1", {
+        p_error_code: "zoom_video_webhook_processing_failed",
         p_error_message: sanitizeProviderMessage(error),
         p_event_key: eventKey,
         p_status: "failed",
@@ -166,7 +170,7 @@ runtime.serve(async (request) => {
       throw error;
     }
   } catch (error) {
-    if (error instanceof ZoomError) {
+    if (error instanceof ZoomVideoSdkError) {
       return failure(
         new DomainError(error.code, error.status, error.message),
         requestId,
@@ -177,20 +181,9 @@ runtime.serve(async (request) => {
   }
 });
 
-function stringOrNull(value: unknown) {
-  if (typeof value === "string" && value.trim()) return value;
-  if (typeof value === "number") return String(value);
-
-  return null;
-}
-
-function numberOrNull(value: unknown) {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
 function parseWebhookBody(rawBody: string) {
   try {
-    return JSON.parse(rawBody) as ZoomWebhookBody;
+    return JSON.parse(rawBody) as ZoomVideoWebhookBody;
   } catch {
     throw new DomainError(
       "zoom_webhook_invalid_json",

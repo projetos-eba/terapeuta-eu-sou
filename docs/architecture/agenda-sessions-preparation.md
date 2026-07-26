@@ -49,7 +49,7 @@ dados.
 - o mapper puro de apresentação determina rótulo, descrição, prioridade, tom e
   ações disponíveis sem alterar estados transacionais;
 - acesso Zoom expõe `allowed`, `reason`, `availableFrom`, `availableUntil` e
-  `meetingStatus`; a Edge Function repete a autorização no clique;
+  `videoSessionStatus`; a Edge Function repete a autorização no clique;
 - a rota Next exige `actorRole` e seleciona o cookie correspondente;
 - contadores do shell usam uma RPC pequena em todos os planos autorizados;
 - logs de servidor e Zoom usam campos permitidos e mensagens sanitizadas.
@@ -65,8 +65,8 @@ dados.
 | Repasse                      | `session_payments.transfer_status` e estruturas F0 |
 | Reagendamento                | `booking_reschedule_requests`                      |
 | Cancelamento financeiro      | `session_cancellation_decisions`                   |
-| Sala local e outbox          | `zoom_meetings`, `zoom_meeting_jobs`               |
-| Entrada na sala              | `zoom-meeting-access`                              |
+| Sala local e outbox          | `video_sessions`, `video_sessions`                 |
+| Entrada na sala              | `zoom-video-session-access`                        |
 | Presença                     | ainda não há autoridade independente               |
 
 `bookings.payment_status`, `payments` e `booking_payment_receipts` continuam
@@ -76,7 +76,7 @@ como projeções de compatibilidade. Nenhuma decisão crítica nova depende dele
 
 - `src/`: removido das consultas e decisões de Agenda, Sessões e detalhe do
   paciente.
-- `supabase/functions/zoom-jobs-process`: removido da leitura; o job usa
+- `supabase/functions/zoom-video-session-access`: removido da leitura; o job usa
   `session_payments`.
 - `supabase/functions/stripe-billing-webhook`: a ocorrência restante é
   `Checkout.Session.payment_status` da API Stripe, não
@@ -98,17 +98,17 @@ Auth cookie do papel
        -> bookings/snapshots
        -> session_payments
        -> reschedule/cancellation
-       -> zoom_meetings
+       -> video_sessions
   -> parser de contrato
   -> mapper de apresentação
   -> Server Component
 
 Clique em "Entrar"
-  -> /api/zoom/meeting-access { actorRole, bookingId, intent }
+  -> /api/zoom/video-session-access { actorRole, bookingId, intent }
   -> Edge Function autorizada
   -> ownership + status do terapeuta
-  -> session_payments + booking + janela + zoom_meetings
-  -> JWT Meeting SDK e ZAK efêmero apenas quando permitido
+  -> session_payments + booking + janela + video_sessions
+  -> JWT Video SDK e Video SDK token efêmero apenas quando permitido
 ```
 
 Os comandos de hold, criação, transição e reagendamento continuam nas
@@ -174,7 +174,7 @@ Erros de leitura são mapeados para códigos seguros:
 - `unavailable`.
 
 Logs incluem somente operação, correlation ID, booking ID quando seguro, papel,
-código, duração e status externo sanitizado. Tokens, secrets, ZAK, `start_url`,
+código, duração e status externo sanitizado. Tokens, secrets, Video SDK token, `video_session_secret_url_removed`,
 payload Stripe/Zoom e conteúdo clínico não são registrados.
 
 O shell mantém continuidade com contadores zero quando a RPC de contadores
@@ -189,8 +189,8 @@ lista de domínio vazia.
 - terapeuta suspenso/rejeitado é bloqueado;
 - a view é `security_invoker` e depende de RLS das tabelas;
 - a nova policy permite ler apenas as próprias `availability_exceptions`;
-- o detalhe não retorna `_therapistProfileId`, `_meetingReady`, host ID,
-  passcode, ZAK ou URL de host;
+- o detalhe não retorna `_therapistProfileId`, `_videoSessionReady`,
+  credencial de API, passcode, JWT Video SDK ou URL sensível;
 - credenciais Zoom são geradas sob demanda e não persistidas;
 - o Next usa apenas token autenticado e chave publicável;
 - dados financeiros permanecem somente leitura no frontend.
@@ -210,7 +210,7 @@ lista de domínio vazia.
 - Vitest: mapper composto, ação principal, pagamento canônico, cancelamento,
   sala em preparação, filtros, cursor, timezone, erro versus vazio e adaptador
   Zoom.
-- Deno: pagamento, cancelamento, janela, provisionamento, ownership e perfil
+- Deno: pagamento, cancelamento, janela, estado local da sessao, ownership e perfil
   suspenso no acesso Zoom.
 - pgTAP: identidade por `auth.uid()`, dados próprios, bloqueio entre
   terapeutas, paciente bloqueado, suspenso bloqueado, pagamento canônico,
@@ -269,10 +269,10 @@ Rotas e shell:
 
 Zoom e paciente:
 
-- `/api/zoom/meeting-access`;
-- `src/features/zoom/zoom-meeting-adapter*`;
-- `supabase/functions/_shared/zoom/{access-policy,booking-authorization,observability,zoom.test}.ts`;
-- `supabase/functions/{zoom-meeting-access,zoom-jobs-process}/index.ts`;
+- `/api/zoom/video-session-access`;
+- `src/features/zoom/zoom-video-session-adapter*`;
+- `supabase/functions/_shared/zoom-video-sdk/{access-policy,booking-authorization,zoom-video-sdk.test}.ts`;
+- `supabase/functions/{zoom-video-session-access,zoom-webhook}/index.ts`;
 - detalhe, encontros e overview autenticados do paciente em
   `src/features/{booking-detail,patient-encounters,patient-overview,patient-session-detail}`.
 
@@ -300,7 +300,7 @@ Testes e documentação:
 
 ## Pendências para produção
 
-- homologar ZAK e General App no Zoom Marketplace;
+- homologar Video SDK token e General App no Zoom Marketplace;
 - definir pool/capacidade de hosts licenciados;
 - configurar cron e webhook remotos;
 - definir retenção legal de eventos Zoom;
