@@ -11,10 +11,15 @@ export type AuthorizedVideoBooking = {
   therapistStatus: string;
   timezone: string;
   videoSession: {
+    hardEndsAt: string | null;
     id: string;
+    providerSessionId: string | null;
     sessionKey: string | null;
     sessionName: string;
     status: string;
+    therapistFirstJoinedAt: string | null;
+    therapistLastLeftAt: string | null;
+    therapistPresent: boolean;
   } | null;
 };
 
@@ -62,13 +67,18 @@ export async function getAuthorizedVideoBooking(input: {
   );
   let [videoSession] = await input.client.get<
     Array<{
+      hard_ends_at: string | null;
       id: string;
+      provider_session_id: string | null;
       session_key: string | null;
       session_name: string;
       status: string;
+      therapist_first_joined_at: string | null;
+      therapist_last_left_at: string | null;
+      therapist_present: boolean;
     }>
   >(
-    `/rest/v1/video_sessions?select=id,session_name,session_key,status&booking_id=eq.${encodeURIComponent(input.bookingId)}&limit=1`,
+    `/rest/v1/video_sessions?select=id,session_name,session_key,status,provider_session_id,hard_ends_at,therapist_first_joined_at,therapist_last_left_at,therapist_present&booking_id=eq.${encodeURIComponent(input.bookingId)}&limit=1`,
   );
 
   if (!videoSession && payment?.financial_status === "paid") {
@@ -79,13 +89,18 @@ export async function getAuthorizedVideoBooking(input: {
     });
     [videoSession] = await input.client.get<
       Array<{
+        hard_ends_at: string | null;
         id: string;
+        provider_session_id: string | null;
         session_key: string | null;
         session_name: string;
         status: string;
+        therapist_first_joined_at: string | null;
+        therapist_last_left_at: string | null;
+        therapist_present: boolean;
       }>
     >(
-      `/rest/v1/video_sessions?select=id,session_name,session_key,status&booking_id=eq.${encodeURIComponent(input.bookingId)}&limit=1`,
+      `/rest/v1/video_sessions?select=id,session_name,session_key,status,provider_session_id,hard_ends_at,therapist_first_joined_at,therapist_last_left_at,therapist_present&booking_id=eq.${encodeURIComponent(input.bookingId)}&limit=1`,
     );
   }
 
@@ -100,10 +115,15 @@ export async function getAuthorizedVideoBooking(input: {
     timezone: booking.timezone,
     videoSession: videoSession
       ? {
+          hardEndsAt: videoSession.hard_ends_at,
           id: videoSession.id,
+          providerSessionId: videoSession.provider_session_id,
           sessionKey: videoSession.session_key,
           sessionName: videoSession.session_name,
           status: videoSession.status,
+          therapistFirstJoinedAt: videoSession.therapist_first_joined_at,
+          therapistLastLeftAt: videoSession.therapist_last_left_at,
+          therapistPresent: videoSession.therapist_present,
         }
       : null,
   } satisfies AuthorizedVideoBooking;

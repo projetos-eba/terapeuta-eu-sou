@@ -94,10 +94,17 @@ export async function listActiveSessions({ sessionName } = {}) {
 }
 
 export async function endSessionByApi(sessionId) {
-  return zoomApi(`/videosdk/sessions/${encodeURIComponent(sessionId)}/status`, {
-    body: { action: "end" },
-    method: "PUT",
-  });
+  return zoomApi(
+    `/videosdk/sessions/${encodeZoomSessionId(sessionId)}/status`,
+    {
+      body: { action: "end" },
+      method: "PUT",
+    },
+  );
+}
+
+export function encodeZoomSessionId(sessionId) {
+  return encodeURIComponent(encodeURIComponent(sessionId));
 }
 
 export function assertStaticRealZoomGates({ requireNgrok = false } = {}) {
@@ -108,6 +115,7 @@ export function assertStaticRealZoomGates({ requireNgrok = false } = {}) {
     "ZOOM_VIDEO_SDK_API_KEY",
     "ZOOM_VIDEO_SDK_API_SECRET",
     "ZOOM_WEBHOOK_SECRET_TOKEN",
+    "ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES",
   ];
 
   if (process.env.ALLOW_REAL_ZOOM !== "true") {
@@ -134,6 +142,19 @@ export function assertStaticRealZoomGates({ requireNgrok = false } = {}) {
         where: "supabase/functions/.env",
       });
     }
+  }
+
+  const maxDuration = process.env.ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES;
+  if (
+    !maxDuration ||
+    !/^[1-9][0-9]*$/.test(maxDuration) ||
+    Number(maxDuration) > 240
+  ) {
+    failures.push({
+      expected: "inteiro positivo entre 1 e 240 minutos",
+      item: "ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES",
+      where: "supabase/functions/.env",
+    });
   }
 
   if (requireNgrok && !process.env.NGROK_AUTHTOKEN?.trim()) {

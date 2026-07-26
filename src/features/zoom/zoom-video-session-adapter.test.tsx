@@ -204,6 +204,91 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(await screen.findByText(/preparacao/i)).toBeInTheDocument();
   });
 
+  it("keeps patient waiting without issuing a join token until therapist is present", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        data: { access: allowedAccess },
+        ok: true,
+      }),
+      ok: true,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={{
+          ...allowedAccess,
+          allowed: false,
+          reason: ZoomAccessReason.TherapistNotInSession,
+        }}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    expect(
+      screen.getByText(/aguardando o terapeuta iniciar/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /entrar/i })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /atualizar sala/i }));
+
+    expect(
+      await screen.findByRole("button", { name: /entrar/i }),
+    ).toBeEnabled();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/zoom/video-session-access",
+      expect.objectContaining({
+        body: JSON.stringify({
+          actorRole: "patient",
+          bookingId: "96000000-0000-4000-8000-000000000001",
+          intent: "preview",
+        }),
+      }),
+    );
+    expect(document.body.textContent).not.toMatch(/jwt-token|secret|token/i);
+  });
+
+  it("previews patient access before showing join when server data is absent", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        data: {
+          access: {
+            ...allowedAccess,
+            allowed: false,
+            reason: ZoomAccessReason.TherapistNotInSession,
+          },
+        },
+        ok: true,
+      }),
+      ok: true,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={null}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: /verificando/i })).toBeDisabled();
+    expect(
+      await screen.findByText(/aguardando o terapeuta iniciar/i),
+    ).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/zoom/video-session-access",
+      expect.objectContaining({
+        body: JSON.stringify({
+          actorRole: "patient",
+          bookingId: "96000000-0000-4000-8000-000000000001",
+          intent: "preview",
+        }),
+      }),
+    );
+  });
+
   it("reports cleanup failures instead of hiding them", async () => {
     vi.stubGlobal("fetch", accessResponse(0));
     mockClient.leave.mockRejectedValueOnce(new Error("leave failed"));

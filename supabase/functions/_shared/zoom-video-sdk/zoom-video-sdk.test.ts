@@ -18,6 +18,10 @@ import {
   createZoomVideoChallengeResponse,
   verifyZoomVideoWebhookSignature,
 } from "./webhook.ts";
+import {
+  computeVideoSessionHardEndsAt,
+  parseZoomVideoMaxDurationMinutes,
+} from "./session-lifecycle.ts";
 
 Deno.test(
   "parseStrictBoolean fails closed for absent, empty, and invalid values",
@@ -123,6 +127,10 @@ Deno.test(
         apiKey: "api-key",
         apiSecret: "api-secret",
         environment: "development",
+        lifecycle: {
+          maxDurationMinutes: 45,
+          therapistReconnectGraceSeconds: 120,
+        },
         sdkKey: "sdk-key",
         sdkSecret: "sdk-secret",
         webhookSecretToken: "webhook-secret",
@@ -162,6 +170,10 @@ Deno.test(
         apiKey: "api-key",
         apiSecret: "api-secret",
         environment: "development",
+        lifecycle: {
+          maxDurationMinutes: 45,
+          therapistReconnectGraceSeconds: 120,
+        },
         sdkKey: "sdk-key",
         sdkSecret: "sdk-secret",
         webhookSecretToken: "webhook-secret",
@@ -176,12 +188,12 @@ Deno.test(
       },
     });
 
-    await client.endSession("session-123");
+    await client.endSession("session/123");
 
     assertEquals(requests[0].method, "PUT");
     assertEquals(
       requests[0].url,
-      "https://api.zoom.us/v2/videosdk/sessions/session-123/status",
+      "https://api.zoom.us/v2/videosdk/sessions/session%252F123/status",
     );
     assertEquals(requests[0].body, JSON.stringify({ action: "end" }));
   },
@@ -197,11 +209,27 @@ Deno.test(
       financialStatus: "paid",
       now: new Date("2026-07-26T13:00:00.000Z"),
       startsAt: "2026-07-26T12:30:00.000Z",
+      therapistPresent: true,
       videoSessionReady: true,
       videoSessionStatus: "ready",
     };
 
     assertEquals(evaluateVideoSessionAccess(base).allowed, true);
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        therapistPresent: false,
+      }).reason,
+      "THERAPIST_NOT_IN_SESSION",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        hardEndsAt: "2026-07-26T12:59:00.000Z",
+        therapistPresent: true,
+      }).reason,
+      "HARD_TIMEOUT",
+    );
     assertEquals(
       evaluateVideoSessionAccess({
         ...base,
@@ -224,6 +252,49 @@ Deno.test(
         videoSessionStatus: null,
       }).reason,
       "VIDEO_SESSION_NOT_READY",
+    );
+  },
+);
+
+Deno.test("max duration policy rejects missing and unsafe values", () => {
+  assertEquals(parseZoomVideoMaxDurationMinutes("1"), 1);
+  assertEquals(parseZoomVideoMaxDurationMinutes("240"), 240);
+
+  for (const value of [undefined, "", "0", "-1", "1.5", "241", "abc"]) {
+    try {
+      parseZoomVideoMaxDurationMinutes(value);
+      throw new Error("expected rejection");
+    } catch (error) {
+      assertEquals(
+        error instanceof Error && error.message !== "expected rejection",
+        true,
+      );
+    }
+  }
+});
+
+Deno.test(
+  "hard end uses min of effective start max duration and scheduled tolerance",
+  () => {
+    assertEquals(
+      computeVideoSessionHardEndsAt({
+        actualStartedAt: "2026-07-26T12:45:00.000Z",
+        afterEndsMinutes: 30,
+        maxDurationMinutes: 60,
+        scheduledEndsAt: "2026-07-26T13:30:00.000Z",
+        scheduledStartsAt: "2026-07-26T13:00:00.000Z",
+      }).toISOString(),
+      "2026-07-26T14:00:00.000Z",
+    );
+    assertEquals(
+      computeVideoSessionHardEndsAt({
+        actualStartedAt: "2026-07-26T13:10:00.000Z",
+        afterEndsMinutes: 30,
+        maxDurationMinutes: 20,
+        scheduledEndsAt: "2026-07-26T13:30:00.000Z",
+        scheduledStartsAt: "2026-07-26T13:00:00.000Z",
+      }).toISOString(),
+      "2026-07-26T13:30:00.000Z",
     );
   },
 );

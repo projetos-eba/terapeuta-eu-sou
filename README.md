@@ -105,9 +105,11 @@ ao Zoom nessa etapa.
 Functions:
 
 - `zoom-video-session-access`: valida usuario, booking, pagamento, status,
-  janela de acesso e gera JWT curto do Video SDK.
+  janela de acesso, host-first e gera JWT curto do Video SDK.
 - `zoom-webhook`: valida assinatura/challenge e processa eventos operacionais
   `session.*`.
+- `zoom-video-session-maintenance`: processa jobs duraveis de encerramento por
+  hard timeout, ausencia do terapeuta e reconciliacao operacional.
 
 Scripts:
 
@@ -124,12 +126,14 @@ Scripts:
   temporario.
 - `npm run zoom:video-sdk:api:mock`: exercita contrato mockado da API.
 - `npm run zoom:video-sdk:real-preflight`: valida ambiente development e
-  consulta a API Video SDK somente quando `ALLOW_REAL_ZOOM=true`.
+  `ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES`, e consulta a API Video SDK somente
+  quando `ALLOW_REAL_ZOOM=true`.
 - `npm run zoom:video-sdk:test:real`: recusa execucao sem
   `ALLOW_REAL_ZOOM=true`, webhook validado e Supabase local/staging autorizado;
-  exige tambem `--confirm-zoom-marketplace --confirm-single-real-session`, cria
-  usuarios, booking, pagamento paid e `video_session` em runtime e limpa as
-  fixtures no `finally`.
+  exige tambem
+  `--confirm-zoom-marketplace --confirm-single-real-session --headed --slow-mo=<ms>`,
+  cria usuarios, booking, pagamento paid e `video_session` em runtime e limpa
+  as fixtures no `finally`.
 - `npm run zoom:video-sdk:emergency-end`: encerra a sessao real capturada no
   estado temporario pela REST API oficial e nao imprime o ID completo.
 

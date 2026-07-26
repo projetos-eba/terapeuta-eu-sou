@@ -22,10 +22,30 @@ test.describe("Zoom Video SDK session gate", () => {
 
     await page.route("**/api/zoom/video-session-access", async (route) => {
       const request = route.request();
-      accessRequests.push(request.postDataJSON());
+      const body = request.postDataJSON();
+      accessRequests.push(body);
+
+      if (body.intent === "preview") {
+        await route.fulfill({
+          body: JSON.stringify({
+            data: {
+              access: {
+                allowed: true,
+                availableFrom: "2026-07-26T12:45:00.000Z",
+                availableUntil: "2026-07-26T14:00:00.000Z",
+                reason: null,
+                videoSessionStatus: "ready",
+              },
+            },
+            ok: true,
+          }),
+          contentType: "application/json",
+          status: 200,
+        });
+        return;
+      }
+
       await route.fulfill({
-        contentType: "application/json",
-        status: 423,
         body: JSON.stringify({
           error: {
             code: "video_session_not_ready",
@@ -33,6 +53,8 @@ test.describe("Zoom Video SDK session gate", () => {
           },
           ok: false,
         }),
+        contentType: "application/json",
+        status: 409,
       });
     });
 
@@ -44,8 +66,14 @@ test.describe("Zoom Video SDK session gate", () => {
     await expect(
       page.getByText("A sala ainda esta em preparacao."),
     ).toBeVisible();
-    await expect.poll(() => accessRequests.length).toBe(1);
+    await expect.poll(() => accessRequests.length).toBeGreaterThanOrEqual(2);
     expect(accessRequests[0]).toMatchObject({
+      actorRole: "patient",
+      bookingId,
+      intent: "preview",
+    });
+    expect(accessRequests.at(-1)).toMatchObject({
+      actorRole: "patient",
       bookingId,
       intent: "join",
     });

@@ -64,7 +64,9 @@ export const ZoomAccessReason = {
   VideoSessionNotReady: "VIDEO_SESSION_NOT_READY",
   PaymentNotConfirmed: "PAYMENT_NOT_CONFIRMED",
   TherapistNotAllowed: "THERAPIST_NOT_ALLOWED",
+  TherapistNotInSession: "THERAPIST_NOT_IN_SESSION",
   TherapistSuspended: "THERAPIST_SUSPENDED",
+  HardTimeout: "HARD_TIMEOUT",
   TooEarly: "TOO_EARLY",
   TooLate: "TOO_LATE",
   Unknown: "UNKNOWN",
@@ -77,6 +79,8 @@ export type ZoomAccessState = {
   allowed: boolean;
   availableFrom: ISODateTimeString | null;
   availableUntil: ISODateTimeString | null;
+  hardEndsAt?: ISODateTimeString | null;
+  serverNow?: ISODateTimeString | null;
   videoSessionStatus: ZoomVideoSessionStatus | "not_available";
   reason: ZoomAccessReason | null;
 };

@@ -26,24 +26,24 @@ export class ZoomVideoSdkApiClient {
   }
 
   getSession(sessionId: string) {
-    return this.request(`/videosdk/sessions/${encodeURIComponent(sessionId)}`);
+    return this.request(`/videosdk/sessions/${encodeZoomSessionId(sessionId)}`);
   }
 
   getSessionUsers(sessionId: string) {
     return this.request(
-      `/videosdk/sessions/${encodeURIComponent(sessionId)}/users`,
+      `/videosdk/sessions/${encodeZoomSessionId(sessionId)}/users`,
     );
   }
 
   getSessionUserQos(sessionId: string, userId: string) {
     return this.request(
-      `/videosdk/sessions/${encodeURIComponent(sessionId)}/users/${encodeURIComponent(userId)}/qos`,
+      `/videosdk/sessions/${encodeZoomSessionId(sessionId)}/users/${encodeURIComponent(userId)}/qos`,
     );
   }
 
   endSession(sessionId: string) {
     return this.request(
-      `/videosdk/sessions/${encodeURIComponent(sessionId)}/status`,
+      `/videosdk/sessions/${encodeZoomSessionId(sessionId)}/status`,
       {
         body: { action: "end" },
         method: "PUT",
@@ -114,6 +114,10 @@ function getBackoffMs(attempt: number, retryAfter: number) {
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function encodeZoomSessionId(sessionId: string) {
+  return encodeURIComponent(encodeURIComponent(sessionId));
 }
 
 function parseJsonOrNull(text: string) {

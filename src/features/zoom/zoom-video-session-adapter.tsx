@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   Loader2,
@@ -11,7 +11,7 @@ import {
   VideoOff,
 } from "lucide-react";
 
-import type { ZoomAccessState } from "@/domain/tes";
+import { ZoomAccessReason, type ZoomAccessState } from "@/domain/tes";
 import { getZoomAccessLabel } from "@/features/bookings";
 
 type VideoSessionPayload = {
@@ -24,9 +24,13 @@ type VideoSessionPayload = {
   userName: string;
 };
 
+type PreviewPayload = {
+  access: ZoomAccessState;
+};
+
 type ApiResponse =
   | {
-      data: VideoSessionPayload;
+      data: PreviewPayload | VideoSessionPayload;
       ok: true;
     }
   | {
@@ -123,7 +127,10 @@ export function ZoomVideoSessionAdapter({
   bookingId: string;
 }) {
   const [state, setState] = useState<SessionState>("idle");
+  const [currentAccess, setCurrentAccess] = useState(access);
   const [message, setMessage] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [audioMuted, setAudioMuted] = useState(true);
   const [videoOn, setVideoOn] = useState(false);
   const [remoteParticipantCount, setRemoteParticipantCount] = useState(0);
@@ -134,6 +141,7 @@ export function ZoomVideoSessionAdapter({
   const zoomModuleRef = useRef<ZoomVideoModule["default"] | null>(null);
   const mounted = useRef(true);
   const inFlight = useRef(false);
+  const previewInFlight = useRef(false);
   const leavingRef = useRef(false);
   const localVideoRef = useRef<HTMLCanvasElement | null>(null);
   const remoteVideoRef = useRef<HTMLDivElement | null>(null);
@@ -154,6 +162,10 @@ export function ZoomVideoSessionAdapter({
   cleanupRef.current = cleanup;
 
   useEffect(() => {
+    setCurrentAccess(access);
+  }, [access]);
+
+  useEffect(() => {
     const handlePageHide = () => {
       void cleanupRef.current?.({ destroyClient: true, endSession: false });
     };
@@ -167,6 +179,93 @@ export function ZoomVideoSessionAdapter({
     };
   }, []);
 
+  const waitingForTherapist =
+    actorRole === "patient" &&
+    currentAccess?.reason === ZoomAccessReason.TherapistNotInSession;
+
+  useEffect(() => {
+    if (!currentAccess?.hardEndsAt) return undefined;
+
+    const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [currentAccess?.hardEndsAt]);
+
+  const refreshPreviewAccess = useCallback(async () => {
+    if (previewInFlight.current) return currentAccess;
+    previewInFlight.current = true;
+    setPreviewLoading(true);
+
+    try {
+      const response = await fetch("/api/zoom/video-session-access", {
+        body: JSON.stringify({ actorRole, bookingId, intent: "preview" }),
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const payload = (await response.json()) as ApiResponse;
+      const refreshedAccess = payload.data?.access;
+
+      if (refreshedAccess) {
+        setCurrentAccess(refreshedAccess);
+        if (refreshedAccess.allowed) {
+          setMessage("O terapeuta iniciou a sessao. Voce ja pode entrar.");
+        }
+        return refreshedAccess;
+      }
+    } catch {
+      setMessage("Nao conseguimos atualizar a sala de espera agora.");
+    } finally {
+      previewInFlight.current = false;
+      setPreviewLoading(false);
+    }
+
+    return currentAccess;
+  }, [actorRole, bookingId, currentAccess]);
+
+  useEffect(() => {
+    if (actorRole !== "patient" || currentAccess || state !== "idle") return;
+    void refreshPreviewAccess();
+  }, [actorRole, currentAccess, refreshPreviewAccess, state]);
+
+  useEffect(() => {
+    if (!waitingForTherapist || state !== "idle") return undefined;
+
+    let cancelled = false;
+    let delayMs = 5000;
+    let timer: number | null = null;
+
+    const schedule = (ms: number) => {
+      if (cancelled) return;
+      timer = window.setTimeout(async () => {
+        if (document.visibilityState === "hidden") {
+          schedule(Math.min(delayMs, 15000));
+          return;
+        }
+
+        const refreshed = await refreshPreviewAccess();
+        if (cancelled || refreshed?.allowed) return;
+
+        delayMs = Math.min(Math.round(delayMs * 1.5), 15000);
+        schedule(delayMs);
+      }, ms);
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void refreshPreviewAccess();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    schedule(delayMs);
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [refreshPreviewAccess, state, waitingForTherapist]);
+
   async function joinSession() {
     if (inFlight.current || clientRef.current) return;
     inFlight.current = true;
@@ -176,7 +275,7 @@ export function ZoomVideoSessionAdapter({
 
     try {
       const response = await fetch("/api/zoom/video-session-access", {
-        body: JSON.stringify({ bookingId, intent: "join" }),
+        body: JSON.stringify({ actorRole, bookingId, intent: "join" }),
         cache: "no-store",
         headers: { "Content-Type": "application/json" },
         method: "POST",
@@ -191,6 +290,9 @@ export function ZoomVideoSessionAdapter({
       }
 
       const videoPayload = payload.data;
+      if (!isVideoSessionPayload(videoPayload)) {
+        throw new Error("Nao conseguimos abrir a sala agora.");
+      }
       setRoleType(videoPayload.roleType);
       setState("joining");
       setMessage("Carregando video...");
@@ -558,7 +660,78 @@ export function ZoomVideoSessionAdapter({
     setRemoteParticipantCount(remoteUserElementsRef.current.size);
   }
 
-  if (access && !access.allowed) {
+  if (waitingForTherapist) {
+    return (
+      <section className="mt-6" aria-label="Sala de espera">
+        <div className="grid gap-3 rounded-lg border border-brand-lavender bg-surface-soft p-4">
+          <p
+            aria-live="polite"
+            className="text-sm font-extrabold text-brand-deep"
+          >
+            Aguardando o terapeuta iniciar a sessao.
+          </p>
+          <p className="text-xs font-semibold leading-5 text-tesText-secondary">
+            Assim que a presenca for confirmada pelo Zoom, a entrada sera
+            liberada automaticamente.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
+              disabled={previewLoading}
+              onClick={() => void refreshPreviewAccess()}
+              type="button"
+            >
+              {previewLoading ? (
+                <Loader2
+                  aria-hidden="true"
+                  className="animate-spin"
+                  size={18}
+                />
+              ) : (
+                <Video aria-hidden="true" size={18} />
+              )}
+              Atualizar sala
+            </button>
+            <span className="text-xs font-semibold text-tesText-secondary">
+              {formatHardEndCountdown(currentAccess, nowMs)}
+            </span>
+          </div>
+        </div>
+        {message ? (
+          <p
+            aria-live="polite"
+            className="mt-3 flex gap-2 text-xs font-semibold leading-5 text-tesText-secondary"
+          >
+            <AlertCircle
+              aria-hidden="true"
+              className="mt-0.5 shrink-0 text-brand-primary"
+              size={16}
+            />
+            {message}
+          </p>
+        ) : null}
+      </section>
+    );
+  }
+
+  if (actorRole === "patient" && !currentAccess) {
+    return (
+      <section className="mt-6" aria-label="Sala de video">
+        <div className="grid gap-3 rounded-lg border border-brand-lavender bg-surface-soft p-4">
+          <button
+            className="inline-flex min-h-12 w-full cursor-wait items-center justify-center gap-2 rounded-lg bg-brand-lavenderSoft px-6 text-sm font-extrabold text-tesText-secondary"
+            disabled
+            type="button"
+          >
+            <Loader2 aria-hidden="true" className="animate-spin" size={20} />
+            Verificando sala
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  if (currentAccess && !currentAccess.allowed) {
     return (
       <button
         className="mt-6 inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-brand-lavenderSoft px-6 text-sm font-extrabold text-tesText-secondary"
@@ -566,7 +739,7 @@ export function ZoomVideoSessionAdapter({
         type="button"
       >
         <Video aria-hidden="true" size={20} />
-        {getZoomAccessLabel(access)}
+        {getZoomAccessLabel(currentAccess)}
       </button>
     );
   }
@@ -670,6 +843,14 @@ export function ZoomVideoSessionAdapter({
             </>
           )}
         </div>
+        {currentAccess?.hardEndsAt ? (
+          <p
+            aria-live="polite"
+            className="text-xs font-semibold text-tesText-secondary"
+          >
+            {formatHardEndCountdown(currentAccess, nowMs)}
+          </p>
+        ) : null}
       </div>
 
       {message ? (
@@ -696,6 +877,17 @@ export function ZoomVideoSessionAdapter({
         </p>
       ) : null}
     </section>
+  );
+}
+
+function isVideoSessionPayload(
+  payload: PreviewPayload | VideoSessionPayload,
+): payload is VideoSessionPayload {
+  return (
+    typeof (payload as VideoSessionPayload).sdkKey === "string" &&
+    typeof (payload as VideoSessionPayload).token === "string" &&
+    ((payload as VideoSessionPayload).roleType === 0 ||
+      (payload as VideoSessionPayload).roleType === 1)
   );
 }
 
@@ -764,6 +956,27 @@ function formatZoomError(error: unknown) {
   if (error instanceof Error && error.message) return error.message;
 
   return "Nao conseguimos carregar o video. Verifique camera, microfone e conexao.";
+}
+
+function formatHardEndCountdown(
+  access: ZoomAccessState | null,
+  clientNowMs: number,
+) {
+  if (!access?.hardEndsAt) return "";
+
+  const hardEndsAtMs = Date.parse(access.hardEndsAt);
+  if (!Number.isFinite(hardEndsAtMs)) return "";
+
+  const serverNowMs = access.serverNow ? Date.parse(access.serverNow) : NaN;
+  const serverSkewMs = Number.isFinite(serverNowMs)
+    ? serverNowMs - Date.now()
+    : 0;
+  const remainingMs = hardEndsAtMs - (clientNowMs + serverSkewMs);
+  if (remainingMs <= 0) return "Tempo seguro encerrado.";
+
+  const minutes = Math.floor(remainingMs / 60_000);
+  const seconds = Math.floor((remainingMs % 60_000) / 1000);
+  return `Tempo restante: ${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function sanitizeErrorReason(error: unknown) {
