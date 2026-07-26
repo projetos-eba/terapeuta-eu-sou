@@ -144,7 +144,7 @@ Stack real identificada:
 - E-mails transacionais server-side via Hostinger Mail API, com provider isolado em `supabase/functions/_shared/email/`, tokens de auth/status em hash, polling seguro em `email_verification_status_tokens` e auditoria em `email_delivery_logs`.
 - Sempre seguir as boas práticas de desenvolvimento de software, e arquitetura moderna.
 - Stripe: pagamentos de sessão (Separate Charges and Transfers) e assinaturas (Stripe Billing) via Stripe Connect Express.
-- Zoom: sessões online via API/SDK (Server-to-Server OAuth), link gerado apenas após pagamento confirmado.
+- Zoom: sessões online via API/SDK (Server-to-Server OAuth), provisionadas por `zoom_meeting_jobs` apenas após pagamento confirmado pelo Stripe. Meeting SDK JWT é gerado no backend; ZAK é solicitado sob demanda para o terapeuta responsável e não é persistido.
 - Storybook: documentado, não instalado.
 - Observabilidade: não identificado nos arquivos analisados.
   Regras:
@@ -170,8 +170,7 @@ Stack real identificada:
   repasse possuem fundação implementada. O hardening de webhooks, eventos fora
   de ordem, capability events v2, refunds e transfers continua obrigatório antes
   de produção.
-- Zoom: previsto na arquitetura, status de implementação não confirmado nos
-  arquivos analisados.
+- Zoom: fundação e hardening implementados com `zoom_meetings`, `zoom_meeting_jobs`, `zoom_webhook_events`, `zoom_meeting_participations`, Edge Functions `zoom-meeting-access`, `zoom-jobs-process`, `zoom-webhook`, rota `/api/zoom/meeting-access`, páginas `/ajuda/zoom`, `/ajuda`, `/termos` e `/privacidade`, docs em `docs/zoom/` e skill `skills/zoom-integration`. Teste real de criação/update/delete passa; smoke local de webhook e fluxo real de fila passam. ZAK retornou falha sanitizada no ambiente real e ainda exige confirmação de escopo/autorização no Zoom Marketplace antes de produção.
 
 ## 6. QA e definição de pronto
 

@@ -50,6 +50,8 @@ Não criar enums equivalentes dentro de features.
 - Paciente e terapeuta leem o mesmo booking por DTOs permitidos.
 - Pagamento é confirmado apenas por webhook.
 - Zoom só é criado depois do pagamento confirmado.
+- Zoom deve ser provisionado por `zoom_meeting_jobs`; clique do frontend nunca cria reunião.
+- Terapeuta recebe `role=1` e ZAK somente por backend, quando responsável pela booking.
 - Toda consulta autenticada usa RLS.
 
 ## QA

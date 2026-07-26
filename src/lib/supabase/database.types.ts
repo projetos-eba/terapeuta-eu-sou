@@ -1,4 +1,4 @@
-export type Json =
+﻿export type Json =
   | string
   | number
   | boolean
@@ -5448,8 +5448,376 @@ export type Database = {
           },
         ]
       }
+      zoom_meeting_jobs: {
+        Row: {
+          attempts: number
+          available_at: string
+          booking_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          idempotency_key: string
+          last_error_code: string | null
+          last_error_message: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          operation: Database["public"]["Enums"]["zoom_job_operation"]
+          payload: Json
+          status: Database["public"]["Enums"]["zoom_job_status"]
+          updated_at: string
+          zoom_meeting_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          available_at?: string
+          booking_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key: string
+          last_error_code?: string | null
+          last_error_message?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          operation: Database["public"]["Enums"]["zoom_job_operation"]
+          payload?: Json
+          status?: Database["public"]["Enums"]["zoom_job_status"]
+          updated_at?: string
+          zoom_meeting_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          available_at?: string
+          booking_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          idempotency_key?: string
+          last_error_code?: string | null
+          last_error_message?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          max_attempts?: number
+          operation?: Database["public"]["Enums"]["zoom_job_operation"]
+          payload?: Json
+          status?: Database["public"]["Enums"]["zoom_job_status"]
+          updated_at?: string
+          zoom_meeting_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zoom_meeting_jobs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zoom_meeting_jobs_zoom_meeting_id_fkey"
+            columns: ["zoom_meeting_id"]
+            isOneToOne: false
+            referencedRelation: "patient_zoom_meeting_summary_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zoom_meeting_jobs_zoom_meeting_id_fkey"
+            columns: ["zoom_meeting_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_zoom_meeting_summary_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zoom_meeting_jobs_zoom_meeting_id_fkey"
+            columns: ["zoom_meeting_id"]
+            isOneToOne: false
+            referencedRelation: "zoom_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zoom_meeting_participations: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          duration_seconds: number | null
+          event_type: string
+          id: string
+          joined_at: string | null
+          left_at: string | null
+          meeting_id: string | null
+          metadata: Json
+          participant_correlation_key: string
+          participant_role: string | null
+          provider_user_id: string | null
+          updated_at: string
+          waiting_room_at: string | null
+          zoom_participant_id: string | null
+          zoom_participant_uuid: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          event_type: string
+          id?: string
+          joined_at?: string | null
+          left_at?: string | null
+          meeting_id?: string | null
+          metadata?: Json
+          participant_correlation_key: string
+          participant_role?: string | null
+          provider_user_id?: string | null
+          updated_at?: string
+          waiting_room_at?: string | null
+          zoom_participant_id?: string | null
+          zoom_participant_uuid?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          duration_seconds?: number | null
+          event_type?: string
+          id?: string
+          joined_at?: string | null
+          left_at?: string | null
+          meeting_id?: string | null
+          metadata?: Json
+          participant_correlation_key?: string
+          participant_role?: string | null
+          provider_user_id?: string | null
+          updated_at?: string
+          waiting_room_at?: string | null
+          zoom_participant_id?: string | null
+          zoom_participant_uuid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zoom_meeting_participations_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zoom_meeting_participations_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "patient_zoom_meeting_summary_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zoom_meeting_participations_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_zoom_meeting_summary_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "zoom_meeting_participations_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "zoom_meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zoom_meetings: {
+        Row: {
+          actual_ended_at: string | null
+          actual_started_at: string | null
+          booking_id: string
+          created_at: string
+          duration_minutes: number
+          environment: string
+          id: string
+          last_error_code: string | null
+          last_error_message: string | null
+          last_synced_at: string | null
+          metadata: Json
+          passcode_encrypted: string | null
+          passcode_key_version: string | null
+          provider: string
+          provider_created_at: string | null
+          provider_updated_at: string | null
+          scheduled_ends_at: string
+          scheduled_starts_at: string
+          start_url_encrypted: string | null
+          start_url_key_version: string | null
+          status: Database["public"]["Enums"]["zoom_meeting_status"]
+          timezone: string
+          topic: string
+          updated_at: string
+          version: number
+          zoom_account_identifier: string | null
+          zoom_host_user_id: string
+          zoom_meeting_id: string | null
+          zoom_meeting_uuid: string | null
+        }
+        Insert: {
+          actual_ended_at?: string | null
+          actual_started_at?: string | null
+          booking_id: string
+          created_at?: string
+          duration_minutes: number
+          environment: string
+          id?: string
+          last_error_code?: string | null
+          last_error_message?: string | null
+          last_synced_at?: string | null
+          metadata?: Json
+          passcode_encrypted?: string | null
+          passcode_key_version?: string | null
+          provider?: string
+          provider_created_at?: string | null
+          provider_updated_at?: string | null
+          scheduled_ends_at: string
+          scheduled_starts_at: string
+          start_url_encrypted?: string | null
+          start_url_key_version?: string | null
+          status?: Database["public"]["Enums"]["zoom_meeting_status"]
+          timezone?: string
+          topic: string
+          updated_at?: string
+          version?: number
+          zoom_account_identifier?: string | null
+          zoom_host_user_id: string
+          zoom_meeting_id?: string | null
+          zoom_meeting_uuid?: string | null
+        }
+        Update: {
+          actual_ended_at?: string | null
+          actual_started_at?: string | null
+          booking_id?: string
+          created_at?: string
+          duration_minutes?: number
+          environment?: string
+          id?: string
+          last_error_code?: string | null
+          last_error_message?: string | null
+          last_synced_at?: string | null
+          metadata?: Json
+          passcode_encrypted?: string | null
+          passcode_key_version?: string | null
+          provider?: string
+          provider_created_at?: string | null
+          provider_updated_at?: string | null
+          scheduled_ends_at?: string
+          scheduled_starts_at?: string
+          start_url_encrypted?: string | null
+          start_url_key_version?: string | null
+          status?: Database["public"]["Enums"]["zoom_meeting_status"]
+          timezone?: string
+          topic?: string
+          updated_at?: string
+          version?: number
+          zoom_account_identifier?: string | null
+          zoom_host_user_id?: string
+          zoom_meeting_id?: string | null
+          zoom_meeting_uuid?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zoom_meetings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      zoom_webhook_events: {
+        Row: {
+          attempts: number
+          created_at: string
+          error_code: string | null
+          error_message: string | null
+          event_key: string
+          event_ts: string | null
+          event_type: string
+          id: string
+          payload_sanitized: Json
+          payload_sha256: string
+          processed_at: string | null
+          processing_started_at: string | null
+          processing_status: Database["public"]["Enums"]["zoom_webhook_processing_status"]
+          request_id: string | null
+          updated_at: string
+          zoom_account_identifier: string | null
+          zoom_meeting_id: string | null
+          zoom_meeting_uuid: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          event_key: string
+          event_ts?: string | null
+          event_type: string
+          id?: string
+          payload_sanitized?: Json
+          payload_sha256: string
+          processed_at?: string | null
+          processing_started_at?: string | null
+          processing_status?: Database["public"]["Enums"]["zoom_webhook_processing_status"]
+          request_id?: string | null
+          updated_at?: string
+          zoom_account_identifier?: string | null
+          zoom_meeting_id?: string | null
+          zoom_meeting_uuid?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          error_code?: string | null
+          error_message?: string | null
+          event_key?: string
+          event_ts?: string | null
+          event_type?: string
+          id?: string
+          payload_sanitized?: Json
+          payload_sha256?: string
+          processed_at?: string | null
+          processing_started_at?: string | null
+          processing_status?: Database["public"]["Enums"]["zoom_webhook_processing_status"]
+          request_id?: string | null
+          updated_at?: string
+          zoom_account_identifier?: string | null
+          zoom_meeting_id?: string | null
+          zoom_meeting_uuid?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
+      patient_zoom_meeting_summary_v: {
+        Row: {
+          actual_ended_at: string | null
+          actual_started_at: string | null
+          booking_id: string | null
+          duration_minutes: number | null
+          environment: string | null
+          id: string | null
+          last_synced_at: string | null
+          provider: string | null
+          scheduled_ends_at: string | null
+          scheduled_starts_at: string | null
+          status: Database["public"]["Enums"]["zoom_meeting_status"] | null
+          timezone: string | null
+          topic: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zoom_meetings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_home_testimonials: {
         Row: {
           author_name: string | null
@@ -5757,6 +6125,33 @@ export type Database = {
         }
         Relationships: []
       }
+      therapist_zoom_meeting_summary_v: {
+        Row: {
+          actual_ended_at: string | null
+          actual_started_at: string | null
+          booking_id: string | null
+          duration_minutes: number | null
+          environment: string | null
+          id: string | null
+          last_synced_at: string | null
+          provider: string | null
+          scheduled_ends_at: string | null
+          scheduled_starts_at: string | null
+          status: Database["public"]["Enums"]["zoom_meeting_status"] | null
+          timezone: string | null
+          topic: string | null
+          zoom_meeting_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zoom_meetings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       apply_session_payment_state_v1: {
@@ -5792,6 +6187,29 @@ export type Database = {
           p_therapist_profile_id: string
         }
         Returns: Json
+      }
+      apply_zoom_meeting_event_v1: {
+        Args: {
+          p_duration_seconds?: number
+          p_event_at: string
+          p_event_type: string
+          p_participant_correlation_key?: string
+          p_provider_user_id?: string
+          p_zoom_meeting_id: string
+          p_zoom_meeting_uuid: string
+          p_zoom_participant_id?: string
+          p_zoom_participant_uuid?: string
+        }
+        Returns: undefined
+      }
+      apply_zoom_webhook_transition_v1: {
+        Args: {
+          p_error_code?: string
+          p_error_message?: string
+          p_event_key: string
+          p_status: Database["public"]["Enums"]["zoom_webhook_processing_status"]
+        }
+        Returns: undefined
       }
       auto_confirm_sessions: { Args: { p_now?: string }; Returns: number }
       calculate_session_cancellation_policy: {
@@ -5836,6 +6254,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      complete_zoom_meeting_job_v1: {
+        Args: {
+          p_error_code?: string
+          p_error_message?: string
+          p_job_id: string
+          p_retry_after_seconds?: number
+          p_status: Database["public"]["Enums"]["zoom_job_status"]
+        }
+        Returns: undefined
+      }
       confirm_session_service: {
         Args: {
           p_booking_id: string
@@ -5862,6 +6290,16 @@ export type Database = {
       dashboard_kpi_json: {
         Args: { current_value: number; previous_value: number }
         Returns: Json
+      }
+      enqueue_zoom_meeting_job_v1: {
+        Args: {
+          p_booking_id: string
+          p_environment: string
+          p_idempotency_key: string
+          p_operation: Database["public"]["Enums"]["zoom_job_operation"]
+          p_payload?: Json
+        }
+        Returns: string
       }
       get_therapist_dashboard_v1: { Args: never; Returns: Json }
       is_current_patient_profile: {
@@ -5899,6 +6337,35 @@ export type Database = {
         Returns: {
           acquired: boolean
           processing_status: Database["public"]["Enums"]["stripe_webhook_processing_status"]
+        }[]
+      }
+      reserve_zoom_meeting_job_v1: {
+        Args: { p_now?: string; p_worker_id: string }
+        Returns: {
+          attempts: number
+          booking_id: string
+          id: string
+          max_attempts: number
+          operation: Database["public"]["Enums"]["zoom_job_operation"]
+          payload: Json
+          zoom_meeting_id: string
+        }[]
+      }
+      reserve_zoom_webhook_event_v1: {
+        Args: {
+          p_event_key: string
+          p_event_ts: string
+          p_event_type: string
+          p_payload_sanitized?: Json
+          p_payload_sha256: string
+          p_request_id: string
+          p_zoom_account_identifier: string
+          p_zoom_meeting_id: string
+          p_zoom_meeting_uuid: string
+        }
+        Returns: {
+          acquired: boolean
+          processing_status: Database["public"]["Enums"]["zoom_webhook_processing_status"]
         }[]
       }
       unaccent: { Args: { "": string }; Returns: string }
@@ -6032,6 +6499,30 @@ export type Database = {
       therapy_status: "draft" | "active" | "published" | "inactive" | "archived"
       therapy_visual_theme_key: "energy" | "oracle" | "systemic"
       user_role: "patient" | "therapist" | "admin"
+      zoom_job_operation: "create" | "update" | "cancel" | "reconcile"
+      zoom_job_status:
+        | "pending"
+        | "processing"
+        | "succeeded"
+        | "retry_scheduled"
+        | "failed"
+        | "dead_letter"
+      zoom_meeting_status:
+        | "pending_provisioning"
+        | "provisioned"
+        | "updating"
+        | "scheduled"
+        | "in_progress"
+        | "ended"
+        | "cancel_pending"
+        | "canceled"
+        | "failed"
+      zoom_webhook_processing_status:
+        | "received"
+        | "processing"
+        | "processed"
+        | "ignored"
+        | "failed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -6301,6 +6792,33 @@ export const Constants = {
       therapy_status: ["draft", "active", "published", "inactive", "archived"],
       therapy_visual_theme_key: ["energy", "oracle", "systemic"],
       user_role: ["patient", "therapist", "admin"],
+      zoom_job_operation: ["create", "update", "cancel", "reconcile"],
+      zoom_job_status: [
+        "pending",
+        "processing",
+        "succeeded",
+        "retry_scheduled",
+        "failed",
+        "dead_letter",
+      ],
+      zoom_meeting_status: [
+        "pending_provisioning",
+        "provisioned",
+        "updating",
+        "scheduled",
+        "in_progress",
+        "ended",
+        "cancel_pending",
+        "canceled",
+        "failed",
+      ],
+      zoom_webhook_processing_status: [
+        "received",
+        "processing",
+        "processed",
+        "ignored",
+        "failed",
+      ],
     },
   },
 } as const

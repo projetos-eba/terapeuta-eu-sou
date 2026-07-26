@@ -95,6 +95,34 @@ produção:
 - Connect: `stripe-connect-create-account`, `stripe-connect-create-account-link`, `stripe-connect-create-login-link`, `stripe-connect-sync-account`, `stripe-connect-webhook`.
 - Sessoes e repasses: `stripe-create-session-payment`, `request-session-cancellation`, `confirm-session-by-therapist`, `auto-confirm-sessions`, `evaluate-transfer-eligibility`, `create-weekly-payout-batch`, `process-payout-batch`, `retry-failed-payout-items`, `reconcile-stripe-transfers`.
 
+### Zoom
+
+A integração Zoom usa Server-to-Server OAuth para criar/administrar reuniões e
+Meeting SDK Web para entrada no navegador. Pagamento continua sendo confirmado
+exclusivamente pelo Stripe; o webhook Stripe apenas enfileira `zoom_meeting_jobs`
+depois de `session_payments.financial_status = paid`.
+
+Functions:
+
+- `zoom-meeting-access`: gera payload autenticado do Meeting SDK por booking.
+- `zoom-jobs-process`: processa outbox `zoom_meeting_jobs`.
+- `zoom-webhook`: valida assinatura/challenge e registra eventos operacionais.
+
+Scripts:
+
+- `npm run zoom:env`: audita variáveis sem imprimir valores.
+- `npm run zoom:test:connection`: executa teste real somente com `ALLOW_REAL_ZOOM_TESTS=true`.
+- `npm run zoom:test:real`: cria/consulta/atualiza/exclui reunião de teste e tenta ZAK.
+- `npm run zoom:test:webhook` / `npm run zoom:webhook:smoke`: envia payloads locais assinados e valida efeitos no banco.
+- `npm run zoom:edge:real`: testa fila local + Edge Function com criação/update/cancelamento reais no Zoom.
+- `npm run zoom:cron:preflight`: valida o template versionado de cron.
+- `npm run zoom:webhook:real-preflight`: prepara validação real de webhook sem alterar o Marketplace.
+- `npm run zoom:webhook:tunnel`: abre túnel ngrok para o endpoint local do webhook.
+- `npm run zoom:jobs:process`: processa um job local.
+- `npm run test:zoom`: roda testes Zoom Deno e Vitest.
+
+Documentação detalhada: `docs/zoom/`.
+
 Secrets Stripe pertencem somente a `supabase/functions/.env.local` ou secrets remotos equivalentes. O app Next.js continua usando apenas chave publicavel. A chave de API server-side canonica e `STRIPE_SECRET_KEY`; nao usar `STRIPE_RESTRICTED_API_KEY` nem `STRIPE_ENVIRONMENT`. Webhooks usam `STRIPE_PLATFORM_WEBHOOK_SECRET`/`STRIPE_CONNECT_WEBHOOK_SECRET` com fallback local para `STRIPE_WEBHOOK_SECRET`. Rotinas privadas usam `PAYMENTS_INTERNAL_OPERATIONS_TOKEN`.
 
 ### E-mails transacionais

@@ -165,3 +165,12 @@ verify_jwt = false
 
 [functions.reconcile-stripe-transfers]
 verify_jwt = false
+
+[functions.zoom-webhook]
+verify_jwt = false
+
+[functions.zoom-meeting-access]
+verify_jwt = false
+
+[functions.zoom-jobs-process]
+verify_jwt = false

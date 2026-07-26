@@ -8,6 +8,7 @@ import {
   success,
 } from "../_shared/payments/http.ts";
 import { createIdempotencyKey } from "../_shared/payments/idempotency.ts";
+import { createZoomIdempotencyKey } from "../_shared/zoom/idempotency.ts";
 import {
   getPaymentsConfig,
   getPaymentsRuntime,
@@ -126,6 +127,7 @@ runtime.serve(async (request) => {
     if (decision.requires_manual_review || decision.refund_amount_cents <= 0) {
       await blockTransferForReview(client, payment.id);
       await markBookingCanceled(client, bookingId, user.role, reason);
+      await enqueueZoomCancellation(client, bookingId);
 
       return success({
         decision: decision.decision,
@@ -199,6 +201,7 @@ runtime.serve(async (request) => {
       "return=minimal",
     );
     await markBookingCanceled(client, bookingId, user.role, reason);
+    await enqueueZoomCancellation(client, bookingId);
 
     return success({
       decision: decision.decision,
@@ -309,6 +312,47 @@ function requireUuid(value: unknown, code: string) {
   }
 
   return value;
+}
+
+async function enqueueZoomCancellation(
+  client: SupabaseRestClient,
+  bookingId: string,
+) {
+  const zoomEnvironment = getConfiguredZoomEnvironment();
+
+  if (!zoomEnvironment) return;
+
+  try {
+    await client.rpc("enqueue_zoom_meeting_job_v1", {
+      p_booking_id: bookingId,
+      p_environment: zoomEnvironment,
+      p_idempotency_key: createZoomIdempotencyKey([
+        "tes",
+        zoomEnvironment,
+        "zoom_meeting",
+        "cancel",
+        bookingId,
+      ]),
+      p_operation: "cancel",
+      p_payload: { source: "request-session-cancellation" },
+    });
+  } catch (error) {
+    console.warn(
+      JSON.stringify({
+        code: "ZOOM_CANCEL_JOB_NOT_ENQUEUED",
+        message: error instanceof Error ? error.message : "UNKNOWN",
+        bookingId,
+      }),
+    );
+  }
+}
+
+function getConfiguredZoomEnvironment() {
+  const value = runtime.env.get("ZOOM_ENVIRONMENT")?.trim().toLowerCase();
+
+  if (value === "development" || value === "production") return value;
+
+  return null;
 }
 
 export {};

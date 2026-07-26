@@ -1,0 +1,37 @@
+# Produção
+
+Checklist antes de produção:
+
+- Confirmar scopes reais no app S2S.
+- Confirmar autorização do General App para Meeting SDK e eventual ZAK.
+- Publicar/configurar webhook no Marketplace com URL remota.
+- Executar `supabase db reset`, `supabase db lint` e regenerar `database.types.ts`.
+- Executar `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build`.
+- Validar RLS com usuários de paciente, terapeuta responsável, terapeuta externo e usuário sem sessão.
+- Validar replay/duplicidade de webhook.
+- Validar que `bookings.meeting_url` não recebe `start_url`.
+- Definir política legal de retenção dos eventos operacionais.
+- Aplicar um agendamento remoto para `zoom-jobs-process` usando `supabase/schedules/zoom-jobs-cron.sql` como template, com token interno guardado em Vault.
+- Rodar `npm run zoom:edge:real` com Supabase local e credenciais reais antes de promover alteração de integração.
+- Rodar `npm run zoom:webhook:smoke` localmente e validar a URL pública com ngrok antes de salvar o endpoint no Zoom Marketplace.
+
+Não declarar pronto para produção se ZAK, licença Zoom, revisão do General App, página legal ou teste real estiverem pendentes.
+
+## Status da fase de hardening
+
+Implementado:
+
+- reserva de jobs com recuperação de locks antigos;
+- conclusão com `completed_at` e `dead_letter`;
+- revalidação de pagamento no processador;
+- cancelamento idempotente quando o Zoom já removeu a reunião;
+- reconcile sem recriação duplicada;
+- webhook com limite de corpo, assinatura obrigatória, eventos desconhecidos `ignored` e proteção contra regressão de status;
+- smoke local de webhook e fluxo real de fila com criação/update/cancelamento remoto.
+
+Ainda externo ao repositório:
+
+- confirmar/autorizar ZAK no Zoom Marketplace;
+- configurar webhook remoto no Marketplace;
+- aplicar cron remoto no Supabase;
+- definir retenção legal operacional.
