@@ -121,6 +121,13 @@ export function createSupabaseAdmin(runtime) {
       });
       return body;
     },
+    async patch(table, query, patch) {
+      return request(`${restUrl}/${table}?${query}`, {
+        body: JSON.stringify(patch),
+        headers: { Prefer: "return=representation" },
+        method: "PATCH",
+      });
+    },
     async rpc(name, payload) {
       return request(`${restUrl}/rpc/${name}`, {
         body: JSON.stringify(payload),

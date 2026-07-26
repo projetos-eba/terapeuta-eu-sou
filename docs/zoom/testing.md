@@ -30,13 +30,25 @@ npm run zoom:video-sdk:webhook:real-verify -- https://<subdominio-ngrok>/functio
 npm run zoom:video-sdk:api:mock
 npm run zoom:video-sdk:real-preflight
 npm run zoom:video-sdk:test:real
+npm run zoom:video-sdk:emergency-end
 ```
 
 `zoom:video-sdk:test:real` recusa execucao quando qualquer gate real estiver
 incompleto: webhook nao validado ou expirado em
 `.tmp/zoom-real-homologation.json`, URL ngrok divergente, sessao ativa
 preexistente, Supabase nao local/staging autorizado ou ambiente diferente de
-`development`. O script cria booking, usuarios, pagamento paid e `video_session`
-em runtime; nao exige UUID, e-mail ou senha via ambiente.
+`development`. Ele tambem exige as flags momentaneas
+`--confirm-zoom-marketplace --confirm-single-real-session`, depois da validacao
+manual no Zoom Build Platform. O script cria booking, usuarios, pagamento paid e
+`video_session` em runtime; nao exige UUID, e-mail ou senha via ambiente.
+
+A emissao de JWT do Video SDK e protegida por rate limit distribuido no
+Postgres, via `reserve_zoom_video_access_issue_v1`, para evitar bypass por
+multiplas instancias de Edge Function.
+
+Se o harness falhar antes de capturar `provider_session_id`, ele tenta descobrir
+uma sessao ativa unica no cleanup. A rotina operacional
+`zoom:video-sdk:emergency-end -- --active-singleton` existe somente para esse
+caso e recusa ambiguidades.
 
 Runbook completo: `docs/zoom/real-homologation-runbook.md`.

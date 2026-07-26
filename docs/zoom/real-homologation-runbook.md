@@ -101,6 +101,20 @@ O comando deve confirmar `ALLOW_REAL_ZOOM=true`, ambiente `development`,
 credenciais presentes e nenhuma sessao ativa. Se houver HTTP 401/403, pare e
 revise as credenciais do app Video SDK.
 
+## Gate Manual Obrigatorio
+
+Antes de abrir a sessao real, confirme visualmente na Zoom Build Platform:
+
+- endpoint URL igual a URL ngrok atual;
+- endpoint validado/ativo;
+- eventos `session.started`, `session.ended`, `session.user_joined` e
+  `session.user_left` selecionados;
+- nenhuma sessao Video SDK ativa no preflight;
+- autorizacao para consumir no maximo uma sessao curta.
+
+Essa confirmacao nao e persistida em `.env` nem no arquivo temporario. Ela deve
+ser passada no comando do teste real por flags momentaneas.
+
 ## Fixtures
 
 Nao configure booking, e-mail ou senha manualmente. O script real cria em
@@ -122,7 +136,7 @@ remove as fixtures em bloco `finally`, respeitando FKs.
 ## Execucao
 
 ```bash
-npm run zoom:video-sdk:test:real -- --base-url http://127.0.0.1:3000
+npm run zoom:video-sdk:test:real -- --confirm-zoom-marketplace --confirm-single-real-session --base-url http://127.0.0.1:3000
 ```
 
 `--base-url` e opcional. Sem argumento, o script usa `NEXT_PUBLIC_SITE_URL` ou
@@ -132,11 +146,15 @@ O fluxo autorizado para a sessao real e:
 
 1. Terapeuta entra primeiro com `role_type=1`.
 2. Paciente entra em seguida com `role_type=0`.
-3. Camera permanece desligada e audio silenciado.
-4. Confirmar join dos dois, presenca e evento `user-added`.
-5. Terapeuta encerra imediatamente para todos com `client.leave(true)`.
-6. Confirmar `connection-change/Closed`, webhooks `session.user_left` e
-   `session.ended`, e estado local `ended`.
+3. Cada participante roda em `BrowserContext` isolado.
+4. Camera permanece desligada e audio silenciado.
+5. Capturar o `provider_session_id` ativo sem imprimir o valor completo.
+6. Confirmar join dos dois.
+7. Terapeuta encerra imediatamente para todos com `client.leave(true)`.
+8. Confirmar via API que nao ha sessao ativa.
+9. Confirmar no banco eventos processados `session.started`, `session.ended`,
+   `session.user_joined` e `session.user_left`, participacoes com saida para
+   terapeuta/paciente e `video_sessions.status = ended`.
 
 ## Watchdog
 
@@ -148,6 +166,25 @@ PUT /videosdk/sessions/{sessionId}/status
 ```
 
 Nao use `DELETE /videosdk/sessions/{sessionId}` para encerrar sessao iniciada.
+O harness tem watchdog de 60 segundos e executa cleanup single-flight. Se o
+processo interromper depois de capturar a sessao, rode:
+
+```bash
+npm run zoom:video-sdk:emergency-end
+```
+
+O comando le somente o `provider_session_id` temporario em
+`.tmp/zoom-real-homologation.json`, encerra pela API oficial e limpa esse
+metadado. Ele nao imprime o ID completo.
+
+Se uma versao antiga do harness nao capturou o ID, mas o preflight mostra
+exatamente uma sessao ativa, use a variante segura:
+
+```bash
+npm run zoom:video-sdk:emergency-end -- --active-singleton
+```
+
+Essa variante recusa execucao quando houver zero ou mais de uma sessao ativa.
 
 ## Diagnostico de Sessao Orfa
 
@@ -183,3 +220,5 @@ ALLOW_REAL_ZOOM=false
 - Sessao encerrada com evidencia.
 - Nenhuma sessao orfa identificada.
 - Nenhum secret, JWT, session name completo ou user key completo foi logado.
+- Rate limit de emissao de token validado pela RPC distribuida
+  `reserve_zoom_video_access_issue_v1`.

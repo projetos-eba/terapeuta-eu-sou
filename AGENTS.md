@@ -191,6 +191,9 @@ Stack real identificada:
   `.tmp/zoom-real-homologation.json` para metadados temporários sem secrets e
   cria booking, usuários e pagamento paid em runtime; não exigir UUID, e-mail ou
   senha de fixture em variável de ambiente.
+  O comando real exige confirmação manual momentânea por flags antes de abrir
+  uma única sessão curta, usa contexts Playwright separados para terapeuta e
+  paciente, e a emissão de JWT passa por rate limit distribuído no Supabase.
 
 ## 6. QA e definição de pronto
 

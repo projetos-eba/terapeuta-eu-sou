@@ -141,6 +141,13 @@ export async function createZoomRealFixtures({ admin, environment, runId }) {
         p_source: `zoom-real:${runId}`,
       },
     );
+    const [videoSession] = await admin.select(
+      "video_sessions",
+      `select=id,session_key,session_name,status&booking_id=eq.${ids.bookingId}&limit=1`,
+    );
+    if (!videoSession?.session_name) {
+      throw new Error("video_session_fixture_not_found");
+    }
 
     return {
       credentials: {
@@ -149,6 +156,12 @@ export async function createZoomRealFixtures({ admin, environment, runId }) {
       },
       ids,
       sanitized: sanitizeIds(ids),
+      videoSession: {
+        id: videoSession.id,
+        sessionKey: videoSession.session_key,
+        sessionName: videoSession.session_name,
+        status: videoSession.status,
+      },
     };
   } catch (error) {
     await cleanupZoomRealFixtures({ admin, ids, runId });
