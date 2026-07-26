@@ -25,6 +25,64 @@ export type AvailableSlot = {
   startsAt: ISODateTimeString;
 };
 
+export type TherapistScheduleRule = {
+  dayOfWeek: number;
+  endTime: string;
+  id: UUID;
+  isActive: boolean;
+  serviceId: UUID | null;
+  startTime: string;
+};
+
+export type TherapistServiceScheduleSettings = {
+  bookingHorizonDays: number;
+  bufferAfterMinutes: number;
+  bufferBeforeMinutes: number;
+  minimumNoticeMinutes: number;
+  slotStepMinutes: number;
+};
+
+export type TherapistScheduleService = {
+  durationMinutes: number;
+  id: UUID;
+  settings: TherapistServiceScheduleSettings;
+  status: "active" | "archived" | "draft" | "paused";
+  title: string;
+  weeklyAvailableMinutes: number;
+};
+
+export type TherapistScheduleReadModel = {
+  contractVersion: 1;
+  rules: TherapistScheduleRule[];
+  scheduleVersion: number;
+  services: TherapistScheduleService[];
+  summary: {
+    configuredDays: number;
+    weeklyAvailableMinutes: number;
+  };
+  therapistProfileId: UUID;
+  timezone: string;
+  updatedAt: ISODateTimeString;
+};
+
+export type SaveTherapistScheduleInput = {
+  expectedVersion: number;
+  requestId: UUID;
+  rules: Array<Omit<TherapistScheduleRule, "id"> & { id: UUID | null }>;
+  serviceSettings: Array<
+    TherapistServiceScheduleSettings & {
+      serviceId: UUID;
+    }
+  >;
+  timezone: string;
+};
+
+export type SaveTherapistScheduleResult = {
+  idempotentReplay: boolean;
+  scheduleVersion: number;
+  timezone: string;
+};
+
 export type BookingHold = {
   bookingId?: UUID;
   expiresAt: ISODateTimeString;

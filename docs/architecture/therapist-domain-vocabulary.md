@@ -7,7 +7,7 @@ Atualizado em 2026-07-26.
 | Plano               | Nível comercial `free`, `premium` ou `premium_plus`.                       | `src/domain/tes/enums.ts`             |
 | Capability          | Permissão funcional derivada do catálogo de planos.                        | `src/domain/tes/permissions.ts`       |
 | Booking             | Reserva operacional de serviço e horário.                                  | `BookingStatus`                       |
-| Pagamento           | Ciclo financeiro da cobrança da pessoa paciente.                           | `PaymentStatus` / `session_payments`  |
+| Pagamento           | Ciclo financeiro da cobrança da pessoa paciente.                           | `session_payments.financial_status`   |
 | Realização          | Evidência de execução do serviço reservado.                                | `FulfillmentStatus`                   |
 | Presença            | Comparecimento de paciente e terapeuta.                                    | `AttendanceStatus`                    |
 | Reagendamento       | Proposta e resolução de nova faixa de horário.                             | `RescheduleStatus`                    |
@@ -18,7 +18,9 @@ Atualizado em 2026-07-26.
 | Intervalo ocupado   | Faixa da sessão acrescida dos buffers capturados.                          | `occupied_during`                     |
 | Request ID          | Chave idempotente que correlaciona comando e auditoria.                    | RPCs A2 / `booking_events`            |
 | Bloqueio            | Exceção de agenda indisponível ou override disponível.                     | `ScheduleBlockType`                   |
-| Sessão              | Experiência de realização associada a um booking.                          | DTO compartilhado                     |
+| Sessão              | Experiência operacional composta, associada a um booking.                  | read model + DTO compartilhado        |
+| Estado visual       | Rótulo e ações derivados sem alterar estados transacionais.                | `SessionPresentation`                 |
+| Acesso Zoom         | Decisão efêmera de entrada, revalidada no backend.                         | `ZoomAccessState` / Edge Function     |
 | Alias legado        | `/basico/*`, `/pro/*` ou `/plus/*`.                                        | redirects                             |
 | Área autenticada    | Namespace único `/terapeuta/*`.                                            | `src/lib/routes.ts`                   |
 

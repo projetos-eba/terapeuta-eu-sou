@@ -43,7 +43,6 @@ type LocalZoomMeeting = {
 
 type BookingState = {
   id: string;
-  payment_status: string;
   status: string;
 };
 
@@ -250,7 +249,7 @@ async function patchMeeting(
 
 async function getBookingState(client: SupabaseRestClient, bookingId: string) {
   const [booking] = await client.get<BookingState[]>(
-    `/rest/v1/bookings?select=id,status,payment_status&id=eq.${encodeURIComponent(bookingId)}&limit=1`,
+    `/rest/v1/bookings?select=id,status&id=eq.${encodeURIComponent(bookingId)}&limit=1`,
   );
 
   return booking ?? null;

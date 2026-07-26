@@ -5,7 +5,8 @@ Data: 2026-07-25
 Status: aceito.
 
 Implementação: invariantes transacionais parciais concluídos na A2 em
-2026-07-26; composição autoritativa de slots permanece para A5.
+2026-07-26; configuração versionada concluída em A3.0/A3.1 conforme ADR-006;
+composição autoritativa de slots permanece para A5.
 
 ## Contexto
 

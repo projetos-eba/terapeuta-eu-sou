@@ -146,7 +146,9 @@ Stack real identificada:
 - Stripe: pagamentos de sessão (Separate Charges and Transfers) e assinaturas (Stripe Billing) via Stripe Connect Express.
 - Zoom: sessões online via API/SDK (Server-to-Server OAuth), provisionadas por `zoom_meeting_jobs` apenas após pagamento confirmado pelo Stripe. Meeting SDK JWT é gerado no backend; ZAK é solicitado sob demanda para o terapeuta responsável e não é persistido.
 - Storybook: documentado, não instalado.
-- Observabilidade: não identificado nos arquivos analisados.
+- Observabilidade: logs estruturados e sanitizados para read models do
+  terapeuta e operações Zoom; ampliar correlação distribuída continua
+  pendente.
   Regras:
 - Usar `src/lib/routes.ts` para rotas.
 - Usar `src/lib/permissions.ts` para permissões e recursos por plano.
@@ -183,9 +185,10 @@ Stack real identificada:
   `/ajuda/zoom`, `/ajuda`, `/termos` e `/privacidade`, docs em `docs/zoom/` e
   skill `skills/zoom-integration`. A entrega mergeada registra teste real de
   criação/update/delete, smoke de webhook e fluxo de fila. Antes de produção,
-  revalidar no ambiente alvo e fechar ZAK, topologia de hosts, bloqueio de
-  terapeuta suspenso/rejeitado, pagamento canônico no gate de acesso, cron,
-  webhook remoto e pgTAP de RLS.
+  revalidar no ambiente alvo e fechar ZAK, topologia de hosts, cron, webhook
+  remoto, retenção e cobertura RLS direta de todas as tabelas Zoom. Bloqueio de
+  terapeuta suspenso/rejeitado, pagamento canônico e desambiguação de cookies
+  já estão implementados no gate de acesso.
 
 ## 6. QA e definição de pronto
 

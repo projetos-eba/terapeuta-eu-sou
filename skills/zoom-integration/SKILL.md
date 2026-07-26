@@ -24,6 +24,10 @@ description: Implementar e manter integração Zoom no TES com S2S OAuth, Meetin
 - Stripe confirma pagamento; Zoom só provisiona sala depois de `session_payments.financial_status = paid`.
 - Outbox canônico: `zoom_meeting_jobs`.
 - Fonte local da sala: `zoom_meetings`.
+- Contrato de acesso: `ZoomAccessState` com `allowed`, `reason`,
+  `availableFrom`, `availableUntil` e `meetingStatus`.
+- A rota Next exige `actorRole` e escolhe o cookie desse papel.
+- Preview pode orientar a UI; `join` sempre revalida no backend.
 
 ## Segurança
 

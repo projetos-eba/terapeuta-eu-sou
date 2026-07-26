@@ -1,7 +1,17 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { ZoomAccessReason } from "@/domain/tes";
+
 import { ZoomMeetingAdapter } from "./zoom-meeting-adapter";
+
+const allowedAccess = {
+  allowed: true,
+  availableFrom: "2026-07-26T12:45:00.000Z",
+  availableUntil: "2026-07-26T14:00:00.000Z",
+  meetingStatus: "provisioned" as const,
+  reason: null,
+};
 
 describe("ZoomMeetingAdapter", () => {
   afterEach(() => {
@@ -12,9 +22,15 @@ describe("ZoomMeetingAdapter", () => {
   it("keeps the button disabled outside the join window", () => {
     render(
       <ZoomMeetingAdapter
+        access={{
+          allowed: false,
+          availableFrom: "2026-07-26T12:45:00.000Z",
+          availableUntil: "2026-07-26T14:00:00.000Z",
+          meetingStatus: "provisioned",
+          reason: ZoomAccessReason.TooEarly,
+        }}
+        actorRole="therapist"
         bookingId="96000000-0000-4000-8000-000000000001"
-        canJoin={false}
-        disabledLabel="Disponível 15 min antes"
       />,
     );
 
@@ -37,9 +53,9 @@ describe("ZoomMeetingAdapter", () => {
 
     render(
       <ZoomMeetingAdapter
+        access={allowedAccess}
+        actorRole="therapist"
         bookingId="96000000-0000-4000-8000-000000000001"
-        canJoin
-        disabledLabel="Disponível 15 min antes"
       />,
     );
 
@@ -61,9 +77,9 @@ describe("ZoomMeetingAdapter", () => {
 
     render(
       <ZoomMeetingAdapter
+        access={allowedAccess}
+        actorRole="therapist"
         bookingId="96000000-0000-4000-8000-000000000001"
-        canJoin
-        disabledLabel="Disponivel 15 min antes"
       />,
     );
 
