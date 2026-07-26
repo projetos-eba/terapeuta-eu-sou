@@ -26,9 +26,11 @@ Fluxo:
 
 ## Jobs e idempotência
 
-`reserve_zoom_meeting_job_v1` reserva um job por vez, respeita `max_attempts` e recupera locks `processing` antigos. `complete_zoom_meeting_job_v1` encerra jobs com `completed_at` em sucesso, falha final ou `dead_letter`.
+`reserve_zoom_meeting_job_v1` reserva atomicamente um job por vez, respeita `max_attempts` e recupera locks `processing` antigos. `zoom-jobs-process` chama essa reserva em lote limitado, com máximo inicial de 5 jobs por requisição e limite de tempo da execução. A atomicidade continua na RPC com `for update skip locked`, evitando que dois workers processem o mesmo job. `complete_zoom_meeting_job_v1` encerra jobs com `completed_at` em sucesso, falha final ou `dead_letter`.
 
 Antes de criar ou atualizar uma sala, `zoom-jobs-process` revalida o booking e confirma `session_payments.financial_status = paid`. Cancelamento remoto trata `404` do Zoom como sucesso idempotente. Reconcile nunca recria sala duplicada quando a reunião remota esperada desapareceu; marca a sala local como `failed` para investigação.
+
+O worker registra logs sanitizados com `requestId`, `workerId`, quantidade reservada/processada, sucessos, retries, dead letters, duração e idade do job mais antigo disponível.
 
 ## Webhooks
 

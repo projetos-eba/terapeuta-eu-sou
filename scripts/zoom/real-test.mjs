@@ -7,6 +7,19 @@ const report = [];
 const correlationId = crypto.randomUUID().slice(0, 8);
 let accessToken = null;
 let meetingId = null;
+let resolvedHostUserId = null;
+
+class ZoomApiError extends Error {
+  constructor(operation, httpStatus, body) {
+    const zoomErrorCode = body?.code ?? null;
+    const zoomErrorMessage = sanitizeError(body?.message ?? "Zoom API error");
+    super(`zoom_http_${httpStatus}`);
+    this.operation = operation;
+    this.httpStatus = httpStatus;
+    this.zoomErrorCode = zoomErrorCode;
+    this.zoomErrorMessage = zoomErrorMessage;
+  }
+}
 
 if (process.env.ALLOW_REAL_ZOOM_TESTS !== "true") {
   console.log(
@@ -24,44 +37,54 @@ if (process.env.ALLOW_REAL_ZOOM_TESTS !== "true") {
 }
 
 try {
-  accessToken = (await measure("oauth", requestToken)).body.access_token;
+  const oauth = await measure("oauth", requestToken);
+  accessToken = oauth.body.access_token;
+  report.push({
+    operation: "validate-oauth-scope",
+    requiredScope: "user:read:zak:admin",
+    status: hasScope(oauth.body.scope, "user:read:zak:admin")
+      ? "sucesso"
+      : "falha",
+  });
 
   const user = await measure("get-user", () =>
     zoomFetch(
       `/users/${encodeURIComponent(process.env.ZOOM_DEFAULT_HOST_USER_ID)}`,
     ),
   );
+  resolvedHostUserId = user.body?.id
+    ? String(user.body.id)
+    : process.env.ZOOM_DEFAULT_HOST_USER_ID;
   report.push({
     active: user.body?.status === "active",
-    licensed: typeof user.body?.type === "number" ? user.body.type > 1 : null,
+    hostIdentifierResolved: Boolean(user.body?.id),
+    licensed: typeof user.body?.type === "number" ? user.body.type === 2 : null,
     operation: "validate-host",
     status: user.body?.id ? "sucesso" : "falha",
+    type: typeof user.body?.type === "number" ? user.body.type : null,
   });
 
   const created = await measure("create-meeting", () =>
-    zoomFetch(
-      `/users/${encodeURIComponent(process.env.ZOOM_DEFAULT_HOST_USER_ID)}/meetings`,
-      {
-        body: JSON.stringify({
-          duration: 20,
-          password: randomPasscode(),
-          settings: {
-            approval_type: 2,
-            audio: "both",
-            auto_recording: "none",
-            join_before_host: false,
-            mute_upon_entry: true,
-            participant_video: true,
-            waiting_room: true,
-          },
-          start_time: new Date(Date.now() + 60 * 60_000).toISOString(),
-          timezone: "America/Sao_Paulo",
-          topic: `[TES DEV TEST] ${correlationId}`,
-          type: 2,
-        }),
-        method: "POST",
-      },
-    ),
+    zoomFetch(`/users/${encodeURIComponent(resolvedHostUserId)}/meetings`, {
+      body: JSON.stringify({
+        duration: 20,
+        password: randomPasscode(),
+        settings: {
+          approval_type: 2,
+          audio: "both",
+          auto_recording: "none",
+          join_before_host: false,
+          mute_upon_entry: true,
+          participant_video: true,
+          waiting_room: true,
+        },
+        start_time: new Date(Date.now() + 60 * 60_000).toISOString(),
+        timezone: "America/Sao_Paulo",
+        topic: `[TES DEV TEST] ${correlationId}`,
+        type: 2,
+      }),
+      method: "POST",
+    }),
   );
   meetingId = String(created.body?.id ?? "");
 
@@ -93,11 +116,45 @@ try {
         : "falha",
   });
 
-  await measure("get-zak", () =>
-    zoomFetch(
-      `/users/${encodeURIComponent(process.env.ZOOM_DEFAULT_HOST_USER_ID)}/token?type=zak`,
-    ),
-  ).catch(() => null);
+  const zakResult = await measure(
+    "get-zak",
+    async () => {
+      const result = await zoomFetch(
+        `/users/${encodeURIComponent(resolvedHostUserId)}/token?type=zak`,
+      );
+
+      return {
+        body: { tokenPresent: Boolean(result.body?.token) },
+        httpStatus: result.httpStatus,
+      };
+    },
+    { continueOnFailure: true },
+  );
+  report.push({
+    classification: classifyZakResult({
+      error: zakResult?.error,
+      host: user.body,
+      scopePresent: hasScope(oauth.body.scope, "user:read:zak:admin"),
+      tokenPresent: zakResult?.body?.tokenPresent,
+    }),
+    operation: "identify-zak-failure",
+    status: zakResult?.body?.tokenPresent ? "sucesso" : "falha",
+  });
+
+  await measure(
+    "get-me-zak-diagnostic",
+    async () => {
+      const result = await zoomFetch("/users/me/zak");
+
+      return {
+        body: {
+          tokenPresent: Boolean(result.body?.token ?? result.body?.zak),
+        },
+        httpStatus: result.httpStatus,
+      };
+    },
+    { continueOnFailure: true },
+  );
 
   await measure("meeting-sdk-jwt-role-0", () =>
     createAndValidateMeetingSdkJwt({ meetingNumber: meetingId, role: 0 }),
@@ -132,15 +189,16 @@ async function requestToken() {
     },
     method: "POST",
   });
-  const body = await response.json().catch(() => ({}));
+  const body = await parseZoomBody(response);
   if (!response.ok || !body.access_token) {
-    throw new Error(`oauth_http_${response.status}`);
+    throw new ZoomApiError("oauth", response.status, body);
   }
 
   return {
     body: {
       access_token: body.access_token,
       expires_in: body.expires_in,
+      scope: body.scope,
       token_type: body.token_type,
     },
     httpStatus: response.status,
@@ -156,14 +214,13 @@ async function zoomFetch(path, options = {}) {
       ...(options.headers ?? {}),
     },
   });
-  const body =
-    response.status === 204 ? null : await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(`zoom_http_${response.status}`);
+  const body = response.status === 204 ? null : await parseZoomBody(response);
+  if (!response.ok) throw new ZoomApiError(path, response.status, body);
 
   return { body, httpStatus: response.status };
 }
 
-async function measure(operation, action) {
+async function measure(operation, action, options = {}) {
   const started = Date.now();
   try {
     const result = await action();
@@ -175,12 +232,15 @@ async function measure(operation, action) {
     });
     return result;
   } catch (error) {
+    const details = safeErrorDetails(error);
     report.push({
       durationMs: Date.now() - started,
-      error: sanitizeError(error),
+      ...details,
       operation,
       status: "falha",
     });
+    if (options.continueOnFailure) return { error: details };
+
     throw error;
   }
 }
@@ -194,7 +254,7 @@ async function cleanupMeeting(id) {
       try {
         await zoomFetch(`/meetings/${id}`);
       } catch (error) {
-        if (sanitizeError(error).includes("zoom_http_404")) {
+        if (error instanceof ZoomApiError && error.httpStatus === 404) {
           return { httpStatus: 404 };
         }
         throw error;
@@ -253,4 +313,73 @@ function base64Url(value) {
 
 function randomPasscode() {
   return crypto.randomBytes(8).toString("base64url").slice(0, 10);
+}
+
+async function parseZoomBody(response) {
+  const text = await response.text();
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+}
+
+function hasScope(scopeText, requiredScope) {
+  return String(scopeText ?? "")
+    .split(/\s+/)
+    .includes(requiredScope);
+}
+
+function safeErrorDetails(error) {
+  if (error instanceof ZoomApiError) {
+    return {
+      classification: classifyZoomApiError(error),
+      error: sanitizeError(error),
+      httpStatus: error.httpStatus,
+      zoomErrorCode: error.zoomErrorCode,
+      zoomErrorMessage: sanitizeError(error.zoomErrorMessage),
+    };
+  }
+
+  return {
+    classification: "unknown",
+    error: sanitizeError(error),
+    httpStatus: null,
+    zoomErrorCode: null,
+    zoomErrorMessage: sanitizeError(error),
+  };
+}
+
+function classifyZakResult({ error, host, scopePresent, tokenPresent }) {
+  if (tokenPresent) return "zak_obtained";
+  if (!scopePresent) return "missing_scope_user_read_zak_admin";
+  if (error?.classification === "scope") return "scope";
+  if (!host?.id) return "host_identifier_invalid_or_outside_account";
+  if (host.status && host.status !== "active") return "host_not_active";
+  if (typeof host.type === "number" && host.type !== 2) {
+    return "host_not_licensed_type_2";
+  }
+  if (error?.httpStatus === 401 || error?.httpStatus === 403) {
+    return "general_app_authorization_or_marketplace_restriction";
+  }
+  if (error?.httpStatus === 404)
+    return "host_identifier_invalid_or_outside_account";
+
+  return "zoom_marketplace_or_account_restriction_unconfirmed";
+}
+
+function classifyZoomApiError(error) {
+  const message =
+    `${error.zoomErrorCode ?? ""} ${error.zoomErrorMessage ?? ""}`.toLowerCase();
+  if (message.includes("scope")) return "scope";
+  if (error.httpStatus === 401 || error.httpStatus === 403) {
+    return "authorization_or_marketplace";
+  }
+  if (error.httpStatus === 404) return "identifier_or_missing_resource";
+  if (error.httpStatus === 429) return "rate_limit";
+  if (error.httpStatus >= 500) return "provider_transient";
+
+  return "provider_error";
 }
