@@ -114,6 +114,41 @@ Deno.test(
 );
 
 Deno.test(
+  "ZoomVideoSdkApiClient lists live sessions with a bounded date window",
+  async () => {
+    const requests: Array<{ method: string; url: string }> = [];
+    const client = new ZoomVideoSdkApiClient({
+      config: {
+        allowRealZoom: true,
+        apiKey: "api-key",
+        apiSecret: "api-secret",
+        environment: "development",
+        sdkKey: "sdk-key",
+        sdkSecret: "sdk-secret",
+        webhookSecretToken: "webhook-secret",
+      },
+      fetchImpl: async (url, init) => {
+        requests.push({
+          method: init?.method ?? "GET",
+          url: String(url),
+        });
+        return new Response("{}", { status: 200 });
+      },
+    });
+
+    await client.listSessions({ sessionName: "tesvs-session" });
+
+    const url = new URL(requests[0].url);
+    assertEquals(url.pathname, "/v2/videosdk/sessions");
+    assertEquals(url.searchParams.get("type"), "live");
+    assertEquals(url.searchParams.get("page_size"), "300");
+    assertEquals(url.searchParams.get("session_name"), "tesvs-session");
+    assertEquals(Boolean(url.searchParams.get("from")), true);
+    assertEquals(Boolean(url.searchParams.get("to")), true);
+  },
+);
+
+Deno.test(
   "ZoomVideoSdkApiClient ends sessions with official status endpoint",
   async () => {
     const requests: Array<{

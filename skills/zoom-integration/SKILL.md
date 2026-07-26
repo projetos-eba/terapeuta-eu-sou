@@ -43,7 +43,8 @@ define papel, token, session name ou user key.
 - `npm run zoom:video-sdk:webhook:real-verify`
 - `npm run zoom:video-sdk:api:mock`
 - `npm run zoom:video-sdk:real-preflight`
-- `npm run zoom:video-sdk:test:real`
+- `npm run zoom:video-sdk:test:real -- --confirm-zoom-marketplace --confirm-single-real-session`
+- `npm run zoom:video-sdk:emergency-end`
 
 Com `ALLOW_REAL_ZOOM=false`, nao fazer chamada externa nem entrar em sessao real.
 
@@ -56,6 +57,10 @@ Com `ALLOW_REAL_ZOOM=false`, nao fazer chamada externa nem entrar em sessao real
   real; o harness cria fixtures temporarias e limpa no `finally`.
 - `zoom:video-sdk:webhook:tunnel` e `zoom:video-sdk:webhook:real-verify` usam
   `.tmp/zoom-real-homologation.json` para metadados temporarios sem secrets.
+- A emissao de JWT deve passar pelo rate limit distribuido
+  `reserve_zoom_video_access_issue_v1`; nao usar bucket apenas em memoria.
+- O teste real exige confirmacao manual momentanea do Marketplace Zoom por flags
+  e usa contexts Playwright separados para terapeuta e paciente.
 - Manter gravacao automatica, transcricao, controle remoto e recursos nao usados
   desativados nesta fase.
 - Antes de remover configuracoes antigas no Zoom, confirmar que nenhuma funcao,

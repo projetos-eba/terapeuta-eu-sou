@@ -17,7 +17,9 @@ import {
 } from "./video-sdk-real-fixtures.mjs";
 import {
   assertVerifiedWebhookState,
+  clearProviderSessionState,
   getCurrentWebhookUrl,
+  recordProviderSessionState,
 } from "./video-sdk-real-state.mjs";
 import {
   assertSupabaseTarget,
@@ -33,24 +35,28 @@ const runId = `zoom-${Date.now()}-${crypto.randomBytes(5).toString("hex")}`;
 const baseUrl = resolveBaseUrl();
 let openedSessionId = null;
 let browser = null;
+let therapistContext = null;
+let patientContext = null;
 let fixture = null;
 let admin = null;
 const cleanupAttempts = [];
+let cleanupPromise = null;
+let currentPhase = "bootstrap";
 
 for (const signal of ["SIGINT", "SIGTERM"]) {
   process.on(signal, async () => {
-    await emergencyCleanup("signal", signal);
+    await cleanupOnce("signal", signal);
     process.exit(1);
   });
 }
 
 process.on("uncaughtException", async (error) => {
-  await emergencyCleanup("uncaughtException", error.message);
+  await cleanupOnce("uncaughtException", error.message);
   process.exit(1);
 });
 
 process.on("unhandledRejection", async (error) => {
-  await emergencyCleanup(
+  await cleanupOnce(
     "unhandledRejection",
     error instanceof Error ? error.message : "UNKNOWN",
   );
@@ -62,6 +68,7 @@ admin = createSupabaseAdmin(supabaseRuntime);
 const webhookState = await assertVerifiedWebhookState();
 const failures = [
   ...assertStaticRealZoomGates(),
+  ...assertManualMarketplaceGate(),
   ...assertSupabaseTarget(supabaseRuntime),
   ...webhookState.failures,
 ];
@@ -71,52 +78,12 @@ if (failures.length > 0) block(failures);
 await assertPublicWebhookActive();
 await assertNoActiveSessions("antes do teste real");
 
-const watchdog = setTimeout(() => {
-  void emergencyCleanup("watchdog", "timeout");
-}, 60_000);
+const abortController = new AbortController();
+let watchdog = null;
 
 try {
-  fixture = await createZoomRealFixtures({
-    admin,
-    environment: process.env.ZOOM_ENVIRONMENT,
-    runId,
-  });
-
-  browser = await chromium.launch({
-    args: [
-      "--use-fake-device-for-media-stream",
-      "--use-fake-ui-for-media-stream",
-    ],
-    headless: process.env.ZOOM_REAL_TEST_HEADLESS !== "false",
-  });
-
-  const therapistPage = await browser.newPage();
-  const patientPage = await browser.newPage();
-  await loginTherapist(therapistPage, fixture.credentials.therapist);
-  await loginPatient(patientPage, fixture.credentials.patient);
-
-  await therapistPage.goto(
-    `${baseUrl}/terapeuta/sessoes/${fixture.ids.bookingId}`,
-  );
-  await therapistPage.getByRole("button", { name: "Entrar na sessao" }).click();
-  await expect(
-    therapistPage.getByText("Voce entrou como responsavel pela sessao."),
-  ).toBeVisible({ timeout: 45_000 });
-  await captureSingleActiveSession();
-
-  await patientPage.goto(`${baseUrl}/app/encontros/${fixture.ids.bookingId}`);
-  await patientPage.getByRole("button", { name: "Entrar na sessao" }).click();
-  await expect(patientPage.getByText(/Voce entrou na sessao/)).toBeVisible({
-    timeout: 45_000,
-  });
-
-  therapistPage.once("dialog", (dialog) => dialog.accept());
-  await therapistPage.getByRole("button", { name: "Encerrar sessao" }).click();
-  await expect(
-    therapistPage.getByText("A sessao foi encerrada para todos."),
-  ).toBeVisible({ timeout: 45_000 });
-
-  await assertNoActiveSessions("apos encerramento");
+  const watchdogPromise = createWatchdog(abortController);
+  await Promise.race([runRealFlow(abortController.signal), watchdogPromise]);
 
   console.log(
     JSON.stringify(
@@ -133,31 +100,15 @@ try {
     ),
   );
 } catch (error) {
-  await emergencyCleanup(
+  console.error(JSON.stringify(sanitizeFailure(error), null, 2));
+  await cleanupOnce(
     "test_failure",
     error instanceof Error ? error.message : error,
   );
   throw error;
 } finally {
-  clearTimeout(watchdog);
-  if (browser) {
-    await browser.close().catch(() => undefined);
-    browser = null;
-  }
-  if (fixture && admin) {
-    try {
-      await cleanupZoomRealFixtures({
-        admin,
-        ids: fixture.ids,
-        runId,
-      });
-    } catch (error) {
-      console.error(
-        JSON.stringify(error.details ?? sanitizeError(error), null, 2),
-      );
-      process.exit(1);
-    }
-  }
+  if (watchdog) clearTimeout(watchdog);
+  await cleanupOnce("finally", "normal");
 }
 
 function resolveBaseUrl() {
@@ -184,6 +135,21 @@ function normalizeBaseUrl(value) {
 function block(manualFailures) {
   printGateFailure(manualFailures, "npm run zoom:video-sdk:test:real");
   process.exit(1);
+}
+
+function assertManualMarketplaceGate() {
+  const confirmed =
+    process.argv.includes("--confirm-zoom-marketplace") &&
+    process.argv.includes("--confirm-single-real-session");
+  if (confirmed) return [];
+  return [
+    {
+      expected:
+        "confirmacao manual momentanea dos eventos Zoom e do limite de uma sessao",
+      item: "--confirm-zoom-marketplace --confirm-single-real-session",
+      where: "Zoom Build Platform antes de abrir sessao real",
+    },
+  ];
 }
 
 async function assertPublicWebhookActive() {
@@ -247,19 +213,216 @@ async function assertNoActiveSessions(where) {
         2,
       ),
     );
-    process.exit(1);
+    throw new Error("active_sessions_blocked");
   }
 }
 
-async function captureSingleActiveSession() {
-  const sessions = await listActiveSessions();
-  const activeSessions = sessions.activeSessions ?? [];
-  if (sessions.ok && activeSessions.length === 1) {
-    openedSessionId = String(
-      activeSessions[0].id ?? activeSessions[0].session_id ?? "",
+async function runRealFlow(signal) {
+  throwIfAborted(signal);
+  fixture = await phase("fixtures_create", () =>
+    createZoomRealFixtures({
+      admin,
+      environment: process.env.ZOOM_ENVIRONMENT,
+      runId,
+    }),
+  );
+
+  browser = await phase("browser_launch", () =>
+    chromium.launch({
+      args: [
+        "--use-fake-device-for-media-stream",
+        "--use-fake-ui-for-media-stream",
+      ],
+      headless: true,
+    }),
+  );
+  therapistContext = await phase("therapist_context_create", () =>
+    browser.newContext({
+      permissions: ["microphone"],
+    }),
+  );
+  patientContext = await phase("patient_context_create", () =>
+    browser.newContext({
+      permissions: ["microphone"],
+    }),
+  );
+
+  const therapistPage = await therapistContext.newPage();
+  const patientPage = await patientContext.newPage();
+  await phase("therapist_login", () =>
+    loginTherapist(therapistPage, fixture.credentials.therapist),
+  );
+  await phase("context_isolation_check", () => assertContextsIsolated());
+  throwIfAborted(signal);
+  await phase("patient_login", () =>
+    loginPatient(patientPage, fixture.credentials.patient),
+  );
+
+  await phase("therapist_join", async () => {
+    await therapistPage.goto(
+      `${baseUrl}/terapeuta/sessoes/${fixture.ids.bookingId}`,
     );
-    if (fixture?.ids) fixture.ids.providerSessionId = openedSessionId;
+    await therapistPage
+      .getByRole("button", { name: "Entrar na sessao" })
+      .click();
+    await expect(
+      therapistPage.getByText("Voce entrou como responsavel pela sessao."),
+    ).toBeVisible({ timeout: 45_000 });
+  });
+  await phase("provider_session_capture", () =>
+    captureActiveSessionForFixture(signal),
+  );
+
+  await phase("patient_join", async () => {
+    await patientPage.goto(`${baseUrl}/app/encontros/${fixture.ids.bookingId}`);
+    await patientPage.getByRole("button", { name: "Entrar na sessao" }).click();
+    await expect(patientPage.getByText(/Voce entrou na sessao/)).toBeVisible({
+      timeout: 45_000,
+    });
+  });
+  throwIfAborted(signal);
+
+  await phase("host_end_session", async () => {
+    therapistPage.once("dialog", (dialog) => dialog.accept());
+    await therapistPage
+      .getByRole("button", { name: "Encerrar sessao" })
+      .click();
+    await expect(
+      therapistPage.getByText("A sessao foi encerrada para todos."),
+    ).toBeVisible({ timeout: 45_000 });
+  });
+
+  await phase("webhook_end_evidence", () =>
+    waitForSessionEndedEvidence(signal),
+  );
+  await phase("post_end_active_session_check", () =>
+    assertNoActiveSessions("apos encerramento"),
+  );
+  await phase("clear_provider_session_state", async () => {
+    await clearProviderSessionState({ requestId }).catch(() => undefined);
+    openedSessionId = null;
+  });
+}
+
+async function captureActiveSessionForFixture(signal) {
+  const session = await poll({
+    signal,
+    intervalMs: 2000,
+    timeoutMs: 20_000,
+    task: async () => {
+      const sessions = await listActiveSessions({
+        sessionName: fixture.videoSession?.sessionName,
+      });
+      if (!sessions.ok) {
+        throw new Error(`zoom_active_sessions_http_${sessions.status}`);
+      }
+      const activeSessions = sessions.activeSessions ?? [];
+      const matching = activeSessions.filter((active) =>
+        matchesFixtureSession(active),
+      );
+      if (matching.length === 1) return matching[0];
+      if (activeSessions.length === 1) return activeSessions[0];
+      return null;
+    },
+  });
+
+  openedSessionId = String(session.id ?? session.session_id ?? "");
+  if (!openedSessionId) {
+    throw new Error("zoom_provider_session_id_not_found");
   }
+
+  fixture.ids.providerSessionId = openedSessionId;
+  await recordProviderSessionState({
+    capturedAt: new Date().toISOString(),
+    providerSessionId: openedSessionId,
+    requestId,
+    runIdHash: maskIdentifier(runId),
+  });
+  await admin.patch("video_sessions", `id=eq.${fixture.ids.videoSessionId}`, {
+    last_synced_at: new Date().toISOString(),
+    provider_session_id: openedSessionId,
+  });
+}
+
+function matchesFixtureSession(session) {
+  const sessionKey = String(session.session_key ?? session.sessionKey ?? "");
+  const sessionName = String(session.session_name ?? session.sessionName ?? "");
+  const sessionId = String(session.id ?? session.session_id ?? "");
+  return (
+    (fixture.videoSession?.sessionKey &&
+      sessionKey === fixture.videoSession.sessionKey) ||
+    (fixture.videoSession?.sessionName &&
+      sessionName === fixture.videoSession.sessionName) ||
+    (openedSessionId && sessionId === openedSessionId)
+  );
+}
+
+async function waitForSessionEndedEvidence(signal) {
+  await poll({
+    signal,
+    intervalMs: 2000,
+    timeoutMs: 45_000,
+    task: async () => {
+      const [videoSession] = await admin.select(
+        "video_sessions",
+        `select=status,actual_started_at,actual_ended_at,provider_session_id&booking_id=eq.${fixture.ids.bookingId}&limit=1`,
+      );
+      const events = await admin.select(
+        "zoom_video_webhook_events",
+        `select=event_type,processing_status&provider_session_id=eq.${encodeURIComponent(openedSessionId)}&processing_status=eq.processed`,
+      );
+      const participations = await admin.select(
+        "video_session_participations",
+        `select=participant_role,event_type,left_at&booking_id=eq.${fixture.ids.bookingId}`,
+      );
+      const eventTypes = new Set(events.map((event) => event.event_type));
+      const rolesLeft = new Set(
+        participations
+          .filter(
+            (participation) =>
+              participation.event_type === "session.user_left" &&
+              participation.left_at,
+          )
+          .map((participation) => participation.participant_role),
+      );
+
+      if (
+        videoSession?.status === "ended" &&
+        videoSession.actual_started_at &&
+        videoSession.actual_ended_at &&
+        eventTypes.has("session.started") &&
+        eventTypes.has("session.ended") &&
+        eventTypes.has("session.user_joined") &&
+        eventTypes.has("session.user_left") &&
+        rolesLeft.has("therapist") &&
+        rolesLeft.has("patient")
+      ) {
+        return true;
+      }
+
+      return null;
+    },
+  });
+}
+
+async function assertContextsIsolated() {
+  const patientCookies = await patientContext.cookies();
+  const inheritedAuthCookie = patientCookies.find((cookie) =>
+    /sb-|supabase|auth/i.test(cookie.name),
+  );
+  if (inheritedAuthCookie) {
+    throw new Error("patient_context_inherited_auth_cookie");
+  }
+}
+
+function createWatchdog(abortController) {
+  return new Promise((_, reject) => {
+    watchdog = setTimeout(() => {
+      const error = new Error("watchdog_timeout");
+      abortController.abort(error);
+      void cleanupOnce("watchdog", "timeout").finally(() => reject(error));
+    }, 60_000);
+  });
 }
 
 async function loginTherapist(page, credentials) {
@@ -278,15 +441,51 @@ async function loginPatient(page, credentials) {
   await expect(page).toHaveURL(/\/app(?:\?.*)?$/, { timeout: 30_000 });
 }
 
-async function emergencyCleanup(reason, detail) {
+async function cleanupOnce(reason, detail) {
+  cleanupPromise ??= doCleanup(reason, detail);
+  return cleanupPromise;
+}
+
+async function doCleanup(reason, detail) {
+  if (patientContext) {
+    await patientContext.close().catch(() => undefined);
+    patientContext = null;
+  }
+  if (therapistContext) {
+    await therapistContext.close().catch(() => undefined);
+    therapistContext = null;
+  }
   if (browser) {
     await browser.close().catch(() => undefined);
     browser = null;
   }
 
+  if (!openedSessionId && fixture?.videoSession?.sessionName) {
+    openedSessionId = await discoverOpenSessionId().catch(() => null);
+    if (openedSessionId && fixture?.ids) {
+      fixture.ids.providerSessionId = openedSessionId;
+      await clearProviderSessionState({ requestId }).catch(() => undefined);
+    }
+  }
+
   if (openedSessionId) {
     cleanupAttempts.push({ at: new Date().toISOString(), reason });
     const response = await endSessionByApi(openedSessionId);
+    await poll({
+      intervalMs: 2000,
+      timeoutMs: 20_000,
+      task: async () => {
+        const sessions = await listActiveSessions({
+          sessionName: fixture.videoSession?.sessionName,
+        });
+        if (!sessions.ok) return true;
+        const stillOpen = (sessions.activeSessions ?? []).some((session) =>
+          matchesFixtureSession(session),
+        );
+        return stillOpen ? null : true;
+      },
+    }).catch(() => undefined);
+    await clearProviderSessionState({ requestId }).catch(() => undefined);
     console.error(
       JSON.stringify(
         {
@@ -301,6 +500,67 @@ async function emergencyCleanup(reason, detail) {
         2,
       ),
     );
+    openedSessionId = null;
+  }
+
+  if (fixture && admin) {
+    try {
+      await cleanupZoomRealFixtures({
+        admin,
+        ids: fixture.ids,
+        runId,
+      });
+      fixture = null;
+    } catch (error) {
+      console.error(
+        JSON.stringify(error.details ?? sanitizeError(error), null, 2),
+      );
+      process.exit(1);
+    }
+  }
+}
+
+async function discoverOpenSessionId() {
+  const bySessionName = await listActiveSessions({
+    sessionName: fixture.videoSession?.sessionName,
+  });
+  if (!bySessionName.ok) return null;
+  const namedActive = bySessionName.activeSessions ?? [];
+  if (namedActive.length === 1) {
+    return String(namedActive[0].id ?? namedActive[0].session_id ?? "") || null;
+  }
+
+  const allActive = await listActiveSessions();
+  if (!allActive.ok) return null;
+  const active = allActive.activeSessions ?? [];
+  if (active.length === 1) {
+    return String(active[0].id ?? active[0].session_id ?? "") || null;
+  }
+
+  return null;
+}
+
+async function poll({ intervalMs, signal, task, timeoutMs }) {
+  const deadline = Date.now() + timeoutMs;
+  let lastError = null;
+  while (Date.now() < deadline) {
+    throwIfAborted(signal);
+    try {
+      const value = await task();
+      if (value) return value;
+    } catch (error) {
+      lastError = error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+  throw lastError ?? new Error("poll_timeout");
+}
+
+function throwIfAborted(signal) {
+  if (signal?.aborted) {
+    throw signal.reason instanceof Error
+      ? signal.reason
+      : new Error("operation_aborted");
   }
 }
 
@@ -308,5 +568,29 @@ function sanitizeError(error) {
   return {
     message: String(error?.message ?? error).slice(0, 240),
     name: error?.name ?? "Error",
+  };
+}
+
+async function phase(name, callback) {
+  currentPhase = name;
+  console.error(
+    JSON.stringify({
+      code: "ZOOM_REAL_PHASE",
+      phase: name,
+      requestId,
+      runId: maskIdentifier(runId),
+    }),
+  );
+  return callback();
+}
+
+function sanitizeFailure(error) {
+  return {
+    code: "ZOOM_REAL_TEST_FAILED",
+    error: sanitizeError(error),
+    phase: currentPhase,
+    requestId,
+    runId: maskIdentifier(runId),
+    sanitizedIds: fixture?.sanitized ?? null,
   };
 }

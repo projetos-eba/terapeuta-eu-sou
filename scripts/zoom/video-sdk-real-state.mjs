@@ -66,6 +66,33 @@ export async function recordWebhookVerification({ publicWebhookUrl }) {
   });
 }
 
+export async function recordProviderSessionState({
+  capturedAt,
+  providerSessionId,
+  requestId,
+  runIdHash,
+}) {
+  return writeRealState({
+    activeRun: {
+      capturedAt,
+      providerSessionId,
+      requestId,
+      runIdHash,
+    },
+  });
+}
+
+export async function clearProviderSessionState({ requestId } = {}) {
+  return writeRealState({
+    activeRun: requestId
+      ? {
+          clearedAt: new Date().toISOString(),
+          requestId,
+        }
+      : null,
+  });
+}
+
 export async function getCurrentWebhookUrl({ explicitUrl } = {}) {
   const state = await readRealState();
   return (

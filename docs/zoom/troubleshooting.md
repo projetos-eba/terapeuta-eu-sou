@@ -1,0 +1,59 @@
+# Troubleshooting Zoom Video SDK
+
+## O teste real foi bloqueado antes de abrir a sessao
+
+Isso e esperado quando qualquer gate estiver incompleto. Corrija apenas o item
+listado e rode de novo. O comando nao cria fixtures nem abre browser sem:
+
+- `ALLOW_REAL_ZOOM=true`;
+- `ZOOM_ENVIRONMENT=development`;
+- Supabase local ou staging autorizado;
+- URL ngrok ativa;
+- webhook verificado e nao expirado para a URL atual;
+- nenhuma sessao ativa;
+- flags `--confirm-zoom-marketplace --confirm-single-real-session`.
+
+## O webhook expirou
+
+Rode novamente:
+
+```bash
+npm run zoom:video-sdk:webhook:real-verify
+```
+
+A confirmacao dura pouco e fica vinculada a URL ngrok atual. Nova URL exige nova
+validacao manual no Zoom e novo `real-verify`.
+
+## Existe sessao ativa antes do teste
+
+Nao rode o teste real. Primeiro identifique e encerre a sessao pelo host ou pela
+rotina operacional:
+
+```bash
+npm run zoom:video-sdk:emergency-end
+npm run zoom:video-sdk:real-preflight
+```
+
+Se o estado temporario nao tiver `provider_session_id`, mas o preflight mostrar
+exatamente uma sessao ativa, use:
+
+```bash
+npm run zoom:video-sdk:emergency-end -- --active-singleton
+```
+
+Se houver mais de uma sessao ativa, encerre manualmente no Zoom Build
+Platform/API usando o procedimento oficial e repita o preflight.
+
+## Cleanup nao foi comprovado
+
+Pare novos testes. O script imprime IDs sanitizados e um procedimento manual.
+Remova somente os registros temporarios marcados pelo `runId`, respeitando esta
+ordem: participacoes, webhooks, video session, ledger, pagamentos, booking,
+disponibilidade, servico, assinatura, perfis e Auth users. Depois rode as
+consultas de prova indicadas no erro antes de tentar novamente.
+
+## Rate limit de acesso bloqueou a entrada
+
+O limite e intencional e distribuido no banco. Ele impede emissao repetida de
+JWTs por booking/perfil/papel dentro de uma janela curta. Aguarde a janela
+expirar ou investigue chamadas duplicadas no cliente antes de repetir.

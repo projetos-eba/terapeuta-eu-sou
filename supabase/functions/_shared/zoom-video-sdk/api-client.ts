@@ -14,8 +14,15 @@ export class ZoomVideoSdkApiClient {
     this.fetchImpl = options.fetchImpl ?? fetch;
   }
 
-  listSessions() {
-    return this.request("/videosdk/sessions");
+  listSessions(input: { sessionName?: string } = {}) {
+    const params = new URLSearchParams({
+      from: zoomDate(new Date(Date.now() - 24 * 60 * 60 * 1000)),
+      page_size: "300",
+      to: zoomDate(new Date()),
+      type: "live",
+    });
+    if (input.sessionName) params.set("session_name", input.sessionName);
+    return this.request(`/videosdk/sessions?${params.toString()}`);
   }
 
   getSession(sessionId: string) {
@@ -117,4 +124,8 @@ function parseJsonOrNull(text: string) {
   } catch {
     return { message: text.slice(0, 500) };
   }
+}
+
+function zoomDate(date: Date) {
+  return date.toISOString().slice(0, 10);
 }
