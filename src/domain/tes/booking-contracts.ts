@@ -1,6 +1,6 @@
 import type { BookingStatus, PaymentStatus } from "./enums";
 import { BookingStatus as BookingStatusValue } from "./enums";
-import type { ISODateTimeString, UUID } from "./types";
+import type { CurrencyCode, ISODateTimeString, UUID } from "./types";
 
 export const FulfillmentStatus = {
   AutoConfirmed: "auto_confirmed",
@@ -28,7 +28,9 @@ export type AttendanceStatus =
 
 export const RescheduleStatus = {
   Accepted: "accepted",
+  Applied: "applied",
   Cancelled: "cancelled",
+  Expired: "expired",
   Pending: "pending",
   Rejected: "rejected",
 } as const;
@@ -59,6 +61,27 @@ export type ServiceSummary = {
   title: string;
 };
 
+export type BookingServiceSnapshot = {
+  bufferAfterMinutes: number;
+  bufferBeforeMinutes: number;
+  capturedAt: ISODateTimeString;
+  currency: CurrencyCode;
+  durationMinutes: number;
+  priceCents: number;
+  serviceId: UUID;
+  title: string;
+};
+
+export type BookingTransitionRequest = {
+  actorProfileId: UUID | null;
+  bookingId: UUID;
+  expectedVersion?: number;
+  reason?: string;
+  requestId: string;
+  source: "admin" | "agenda_a2" | "system";
+  targetStatus: BookingStatus;
+};
+
 export type SharedBookingSummary = {
   bookingId: UUID;
   bookingStatus: BookingStatus;
@@ -71,6 +94,7 @@ export type SharedBookingSummary = {
   startsAt: ISODateTimeString;
   therapist: PersonSummary;
   timezone: string;
+  version?: number;
 };
 
 export type PatientBookingSummary = SharedBookingSummary & {

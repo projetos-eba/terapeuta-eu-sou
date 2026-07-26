@@ -4,6 +4,9 @@ Data: 2026-07-25
 
 Status: aceito.
 
+Implementação: invariantes transacionais parciais concluídos na A2 em
+2026-07-26; composição autoritativa de slots permanece para A5.
+
 ## Contexto
 
 O serviço TypeScript atual gera preview para o perfil público, mas não oferece
@@ -16,8 +19,10 @@ garantia transacional e interpreta os dias no timezone do runtime.
 - Buffers fazem parte do intervalo ocupado.
 - Faixas inválidas ou sobrepostas falham com erro de domínio.
 - Exceções disponíveis e indisponíveis permanecem explícitas.
-- A confirmação futura usa um slot engine transacional em Postgres/RPC.
-- Holds terão TTL e idempotência antes da confirmação.
+- Holds e bookings usam Postgres/RPC, TTL, idempotência, advisory lock e
+  exclusão GiST por terapeuta.
+- O motor A5 ainda deve compor regras, exceções, timezone, antecedência e
+  horizonte antes de chamar as primitivas A2.
 
 ## Alternativas
 
@@ -28,4 +33,6 @@ garantia transacional e interpreta os dias no timezone do runtime.
 ## Consequências
 
 O preview pode divergir do resultado autoritativo em fronteiras de timezone. A
-UI deve tratar `SLOT_NOT_AVAILABLE` e permitir nova escolha.
+UI deve tratar `SLOT_NOT_AVAILABLE`, `SLOT_HELD_BY_ANOTHER_USER` e
+`BOOKING_CONFLICT`, permitindo nova escolha. Mesmo antes de A5, A2 impede que
+essa divergência produza duas reservas ativas para o mesmo terapeuta.

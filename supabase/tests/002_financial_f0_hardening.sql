@@ -108,8 +108,8 @@ insert into public.bookings (
   'b1000000-0000-4000-8000-000000000005',
   'c1000000-0000-4000-8000-000000000001',
   'd1000000-0000-4000-8000-000000000001',
-  now() + interval '2 days',
-  now() + interval '2 days 50 minutes',
+  date_trunc('day', now()) + interval '19 days 13 hours',
+  date_trunc('day', now()) + interval '19 days 13 hours 50 minutes',
   'America/Sao_Paulo',
   'draft',
   'not_started'

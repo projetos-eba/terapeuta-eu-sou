@@ -1,7 +1,7 @@
 # MVP Transacional TES - Base Tecnica Consolidada
 
 Data: 2026-07-11
-Atualizado em: 2026-07-25
+Atualizado em: 2026-07-26
 
 Status: documento consolidado para orientar arquitetura, produto e implementacao do MVP.
 
@@ -12,9 +12,15 @@ Atualizacao operacional de 2026-07-25:
 - `/basico/*`, `/pro/*` e `/plus/*` sao redirects de compatibilidade
   implementados na Fase Agenda 1;
 - `/terapeutas/*` permanece exclusivamente publico;
-- o Gate Financeiro F0 foi implementado e validado; o proximo marco
-  transacional e A2, descrito em
-  `docs/architecture/relatorio-25-07-2026.md`.
+- o Gate Financeiro F0 e a fundacao transacional de Agenda A2 foram
+  implementados e validados; A3 e o proximo marco do modulo, descrito em
+  `docs/architecture/relatorio-25-07-2026.md`;
+- a fundacao Zoom Z0 foi implementada antes de A2, com outbox pós-pagamento,
+  Meeting SDK e webhooks; o go-live ainda depende dos gates operacionais
+  registrados em `docs/zoom/production-readiness.md`.
+- A2 adicionou snapshots imutaveis em `bookings`, `booking_holds` com TTL,
+  exclusao de conflitos por terapeuta, transicoes auditadas, reagendamento
+  versionado e integracao com o outbox Zoom, sem duplicar `session_payments`.
 
 ## 1. Objetivo
 
@@ -152,8 +158,10 @@ Preferir:
 - shadcn/ui planejado via `components.json`.
 - `lucide-react`, `class-variance-authority`, `clsx` e `tailwind-merge`.
 - Supabase planejado e parcialmente estruturado em `supabase/`.
-- Stripe Billing e Connect implementados como fundacao, com hardening pendente.
-- Zoom previsto para sessoes online via API/SDK.
+- Stripe Billing e Connect implementados com Gate F0 concluido; homologacao E2E
+  externa permanece pendente.
+- Zoom implementado como fundacao via Server-to-Server OAuth, Meeting SDK,
+  inbox/outbox e webhook; homologacao de producao permanece pendente.
 
 ### 5.2 Backend recomendado
 
@@ -764,28 +772,34 @@ Regras de seguranca:
 
 O modelo de dados atual suporta:
 
-- `meeting_provider`;
-- `meeting_url`.
+- `zoom_meetings`;
+- `zoom_meeting_jobs`;
+- `zoom_webhook_events`;
+- `zoom_meeting_participations`;
+- views seguras por papel;
+- `meeting_provider` e `meeting_url` apenas como compatibilidade legada.
 
 Ferramenta definida para o MVP: Zoom via API/SDK.
 
-Recomendacao:
+Estado implementado:
 
 - usar Server-to-Server OAuth da Zoom;
-- gerar a reuniao apenas depois de pagamento confirmado pelo webhook Stripe;
+- enfileirar a reuniao apenas depois de pagamento confirmado pelo webhook
+  Stripe;
 - manter `meeting_provider = 'zoom'`;
-- separar `join_url` do paciente e `start_url` do terapeuta;
-- armazenar `start_url` de forma protegida, preferencialmente criptografada;
-- expor `start_url` apenas ao terapeuta responsavel;
-- expor `join_url` apenas ao paciente da reserva, terapeuta responsavel e admin autorizado;
-- permitir suporte admin para casos de link invalido.
+- gerar payload Meeting SDK no backend conforme booking, papel e janela;
+- solicitar ZAK somente para o terapeuta responsavel e nao persisti-lo;
+- nao persistir `start_url` no fluxo atual;
+- manter `bookings.meeting_url` fora da fonte canonica;
+- registrar somente eventos operacionais, sem conteudo clinico.
 
-Campos recomendados em `bookings` ou tabela relacionada:
+Pendencias de producao:
 
-- `zoom_meeting_id`;
-- `zoom_join_url`;
-- `zoom_start_url_encrypted`;
-- `meeting_provider`.
+- bloquear terapeuta suspenso/rejeitado;
+- validar o pagamento canonico tambem no gate de acesso;
+- definir topologia de hosts licenciados e concorrencia;
+- homologar ZAK, cron, webhook remoto e scopes do Marketplace;
+- criar pgTAP especifico para RLS Zoom.
 
 ## 10. Area logada do paciente
 
@@ -1605,8 +1619,11 @@ Diretrizes:
 - admin acessa por policies especificas;
 - pesos de match ficam fechados para anon/authenticated;
 - pagamentos e ledger devem ser fechados por padrao;
-- `zoom_start_url_encrypted` deve ser exposto apenas ao terapeuta responsavel e a admin autorizado;
-- `zoom_join_url` deve ser exposto apenas ao paciente da reserva, terapeuta responsavel e admin autorizado;
+- `start_url` e ZAK nao devem ser persistidos no fluxo Zoom atual;
+- dados seguros da sala usam views por papel e o payload Meeting SDK usa
+  autorizacao backend por booking;
+- qualquer persistencia futura de credencial de host exige criptografia
+  versionada e nenhuma leitura autenticada direta;
 - webhooks usam service role somente no servidor.
 
 ## 17. Estados e maquinas de estado
@@ -1703,8 +1720,9 @@ Ferramenta de observabilidade definitiva: Nao identificado nos arquivos analisad
 - Implementar Stripe Checkout de sessao.
 - Implementar webhook Stripe minimo.
 - Confirmar sessao apos pagamento.
-- Criar reuniao Zoom via API/SDK apos confirmacao do pagamento.
-- Proteger `zoom_start_url_encrypted` e expor `zoom_join_url` conforme RLS.
+- Preservar a fundacao Zoom ja implementada apos confirmacao do pagamento.
+- Fechar os gates de producao Zoom descritos em
+  `docs/zoom/production-readiness.md`.
 - Exibir sessao em `/app`.
 - Implementar servicos de terapeuta vinculados ao catalogo.
 - Criar `favorite_therapies` espelhando `favorite_therapists`.

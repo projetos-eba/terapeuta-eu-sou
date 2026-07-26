@@ -1,10 +1,10 @@
-# Relatório de Arquitetura do Shell do Terapeuta
+# Relatório de Arquitetura do Shell, Agenda e Sessões
 
-Data da revisão: 2026-07-25
+Data da revisão: 2026-07-26
 
-Status: Fase Agenda 1 e Gate Financeiro F0 implementados; A2 é o próximo marco
+Status: A1, F0, fundação Zoom Z0 e A2 implementados; A3 é o próximo marco
 
-Escopo: shell autenticado, Agenda, Sessões e contratos compartilhados
+Escopo: shell autenticado, Agenda, Sessões, financeiro e sala online
 
 Projeto: Terapeuta Eu Sou
 
@@ -19,7 +19,11 @@ implementação atual já oferece:
 - dashboard Premium Plus integrado ao Supabase;
 - scaffolds sem 404 para as áreas ainda não implementadas;
 - fundações de disponibilidade, bookings, sessões, reagendamentos e RLS;
-- contratos e projeções já usados pelo paciente.
+- contratos e projeções já usados pelo paciente;
+- Gate Financeiro F0 concluído;
+- fundação Zoom pós-pagamento com outbox, Meeting SDK e webhooks.
+- fundação transacional A2 com snapshots, holds, exclusão de conflitos,
+  transições auditadas e reagendamento versionado.
 
 Agenda e Sessões devem evoluir sobre essas estruturas. Não devem formar um
 segundo domínio transacional nem duplicar dados para paciente e terapeuta.
@@ -31,14 +35,18 @@ As principais decisões desta revisão são:
 3. autorizar recursos por sessão, capability e RLS, nunca pelo pathname;
 4. manter um booking para uma sessão no MVP;
 5. ratificar `session_payments` como fonte financeira canônica já implementada;
-6. retirar credenciais de reunião da leitura direta de `bookings`;
+6. manter `zoom_meetings` como fonte operacional da sala e
+   `bookings.meeting_url` apenas como legado;
 7. reutilizar e adaptar tabelas existentes antes de criar novas;
-8. tratar o motor TypeScript de slots como preview, não como autoridade
-   transacional;
+8. tratar o motor TypeScript de slots como preview; holds, bookings e conflitos
+   já são protegidos no Postgres, enquanto a composição completa de slots
+   permanece para A5;
 9. estabilizar contratos e decisões antes de novas migrations;
 10. implementar Agenda por incrementos funcionais, sem começar pela reprodução
     visual integral do calendário;
-11. concluir um gate de hardening financeiro antes de pagamentos em produção.
+11. preservar os invariantes concluídos no Gate Financeiro F0;
+12. tratar a fundação Zoom como implementada, mas bloquear go-live até concluir
+    ZAK, topologia de hosts, cron, webhook remoto e testes RLS específicos.
 
 ## 2. Fontes analisadas
 
@@ -72,7 +80,18 @@ As principais decisões desta revisão são:
 - `supabase/functions/_shared/payments/*`;
 - Edge Functions Stripe Billing, Connect, sessões e repasses;
 - migration `20260725100000_payments_billing_connect_foundation.sql`;
-- migrations, testes SQL e seed do Supabase.
+- migrations, testes SQL e seed do Supabase;
+- `docs/zoom/*.md`;
+- `docs/architecture/adr/ADR-004-meeting-security.md`;
+- `skills/zoom-integration/*`;
+- `src/features/zoom/*`;
+- `src/app/api/zoom/meeting-access/route.ts`;
+- `supabase/functions/_shared/zoom/*`;
+- Edge Functions `zoom-meeting-access`, `zoom-jobs-process` e `zoom-webhook`;
+- migrations `20260725170000_zoom_integration_foundation.sql` e
+  `20260725183000_zoom_integration_hardening.sql`;
+- scripts em `scripts/zoom/*` e template
+  `supabase/schedules/zoom-jobs-cron.sql`.
 
 ### 2.2 Figma
 
@@ -102,6 +121,24 @@ Nome, avatar, plano e contadores exibidos no produto devem sempre vir da sessão
 e dos dados reais. O nome Carlos no Figma é conteúdo de referência, não contrato
 de produção.
 
+### 2.3 Zoom oficial
+
+Consultado em 2026-07-26:
+
+- [Server-to-Server OAuth](https://developers.zoom.us/docs/internal-apps/create/):
+  app ativado, credenciais server-side e scopes mínimos;
+- [OAuth `account_credentials`](https://developers.zoom.us/docs/integrations/oauth/):
+  token de uma hora, sem refresh token;
+- [validação e assinatura de webhooks](https://developers.zoom.us/changelog/platform/webhook-url-validation/):
+  challenge periódico, secret token e `x-zm-signature`;
+- [autorização do Meeting SDK](https://developers.zoom.us/docs/meeting-sdk/auth/):
+  JWT gerado no backend e ZAK associado ao host;
+- [Meeting SDK Web](https://developers.zoom.us/docs/meeting-sdk/web/client-view/meetings-webinars/):
+  `role = 1` e ZAK para iniciar; `role = 0` para participante.
+
+Essas fontes confirmam a direção técnica implementada, mas não substituem a
+homologação do app TES no Zoom Marketplace.
+
 ## 3. Parecer arquitetural
 
 ### 3.1 O que está bem direcionado
@@ -122,22 +159,34 @@ de produção.
 ### 3.2 O que precisava ser corrigido
 
 - O plano não deve continuar como parte da rota canônica.
-- Stripe possui fundação implementada, mas ainda exige hardening e homologação
-  ponta a ponta antes de produção; Zoom continua não implementado.
+- Stripe concluiu o Gate F0, mas ainda exige homologação externa ponta a ponta
+  antes de produção.
+- Zoom possui fundação e hardening local implementados; produção ainda depende
+  de configuração do Marketplace, ZAK, licença/capacidade de hosts, cron remoto
+  e webhook remoto.
 - O relatório anterior propunha tabelas equivalentes às existentes.
 - `ServiceStatus` já representa publicação do serviço e não pode representar a
   execução da sessão.
 - Reagendamento, disputa e pagamento não devem virar estados de booking.
 - `pendingSessionConfirmations` não existe no domínio atual.
 - `session_occurrences` não possui justificativa suficiente no MVP.
-- `session_payments` foi criado como fonte canônica, mas `payments`,
-  `bookings.payment_status` e `booking_payment_receipts` ainda precisam de
-  estratégia explícita de backfill e projeção compatível.
-- Accounts v2 foi adotado, mas o webhook Connect ainda precisa tratar eventos v2.
-- Pagamentos demorados, eventos fora de ordem, refunds, reversões e transferências
-  vinculadas à cobrança de origem ainda precisam de hardening.
-- O campo atual `bookings.meeting_url` não oferece separação segura entre host e
-  participante.
+- `session_payments` já possui backfill e projeções transacionais para
+  `payments`, `bookings.payment_status` e `booking_payment_receipts`.
+- Accounts v2 já trata eventos snapshot e thin.
+- Pagamentos assíncronos, eventos fora de ordem, refunds, reversões e transfers
+  vinculadas à Charge já foram endurecidos no F0.
+- `bookings.meeting_url` continua legado; a implementação Zoom não grava
+  `start_url`, ZAK ou passcode nele.
+- O acesso Zoom ainda aceita terapeuta bloqueado por
+  `allowBlockedStatus: true`; isso deve ser corrigido antes do go-live.
+- A autorização de entrada consulta `bookings.payment_status`, que é projeção.
+  O gate de acesso deve confirmar também `session_payments.financial_status`.
+- A rota Next prioriza o cookie do terapeuta quando cookies de paciente e
+  terapeuta coexistem; a sessão pretendida precisa ser desambiguada.
+- O host padrão único não é uma topologia de produção suficiente para agenda
+  concorrente de vários terapeutas.
+- Participações ainda usam `participant_role = unknown` e não possuem pgTAP
+  específico; não podem sustentar presença financeira ou clínica.
 - As fases locais do módulo não devem usar a mesma nomenclatura das fases
   globais de `project.md`.
 
@@ -299,32 +348,35 @@ Uma entidade separada passa a fazer sentido quando houver:
 
 ### 6.2 Domínio e banco
 
-| Estrutura                                 | Decisão                                                 |
-| ----------------------------------------- | ------------------------------------------------------- |
-| `therapist_services`                      | Reutilizar                                              |
-| `availability_rules`                      | Reutilizar e fortalecer                                 |
-| `availability_exceptions`                 | Reutilizar para exceções simples                        |
-| `therapist_service_booking_settings`      | Reutilizar                                              |
-| `bookings`                                | Reutilizar e adaptar                                    |
-| `booking_events`                          | Reutilizar como fundação de auditoria                   |
-| `booking_reschedule_requests`             | Reutilizar e evoluir                                    |
-| `booking_session_summaries`               | Reutilizar                                              |
-| `therapist_service_cancellation_policies` | Reutilizar                                              |
-| `payments`                                | Manter apenas como projeção legada temporária           |
-| `bookings.payment_status`                 | Tratar como projeção temporária                         |
-| `booking_payment_receipts`                | Tratar como projeção de recibo                          |
-| `session_payments`                        | Implementado; fonte financeira canônica                 |
-| `financial_policy_versions`               | Implementado; versiona regras financeiras               |
-| `financial_ledger_entries`                | Implementado; hardening de compensações pendente        |
-| `therapist_subscriptions`                 | Implementado; proteção contra ordem de eventos pendente |
-| `therapist_connect_accounts`              | Implementado com Accounts v2; eventos v2 pendentes      |
-| `payout_batches` e itens                  | Implementados; processamento ainda não homologado       |
-| `stripe_webhook_events`                   | Implementado; reserva concorrente e replay pendentes    |
-| `booking_holds`                           | Criar antes do checkout de sessão                       |
-| bloqueios recorrentes                     | Adaptar schema após ADR                                 |
-| reunião segura                            | Criar estrutura protegida antes do Zoom                 |
-| `session_occurrences`                     | Não criar no MVP atual                                  |
-| outbox                                    | Avaliar junto às integrações transacionais              |
+| Estrutura                                 | Decisão                                          |
+| ----------------------------------------- | ------------------------------------------------ |
+| `therapist_services`                      | Reutilizar                                       |
+| `availability_rules`                      | Reutilizar e fortalecer                          |
+| `availability_exceptions`                 | Reutilizar para exceções simples                 |
+| `therapist_service_booking_settings`      | Reutilizar                                       |
+| `bookings`                                | Adaptado na A2 com snapshot, versão e conflito   |
+| `booking_events`                          | Auditoria A2 com ator, origem e request ID       |
+| `booking_reschedule_requests`             | Evoluído na A2 com expiração e aplicação         |
+| `booking_session_summaries`               | Reutilizar                                       |
+| `therapist_service_cancellation_policies` | Reutilizar                                       |
+| `payments`                                | Manter apenas como projeção legada temporária    |
+| `bookings.payment_status`                 | Tratar como projeção temporária                  |
+| `booking_payment_receipts`                | Tratar como projeção de recibo                   |
+| `session_payments`                        | Implementado; fonte financeira canônica          |
+| `financial_policy_versions`               | Implementado; versiona regras financeiras        |
+| `financial_ledger_entries`                | Implementado com lançamentos compensatórios      |
+| `therapist_subscriptions`                 | Implementado com proteção temporal               |
+| `therapist_connect_accounts`              | Accounts v2 com eventos snapshot e thin          |
+| `payout_batches` e itens                  | Implementados; E2E Stripe ainda não homologado   |
+| `stripe_webhook_events`                   | Reserva atômica, lease, retry e idempotência     |
+| `booking_holds`                           | Implementado na A2 antes do checkout             |
+| bloqueios recorrentes                     | Adaptar schema após ADR                          |
+| `zoom_meetings`                           | Fonte operacional canônica da sala Zoom          |
+| `zoom_meeting_jobs`                       | Outbox idempotente com retry e dead letter       |
+| `zoom_webhook_events`                     | Inbox idempotente e auditoria sanitizada         |
+| `zoom_meeting_participations`             | Evidência operacional; papel ainda não atribuído |
+| `session_occurrences`                     | Não criar no MVP atual                           |
+| outbox                                    | Implementada para Zoom; reutilizar o padrão      |
 
 ### 6.3 Integrações
 
@@ -338,9 +390,43 @@ Uma entidade separada passa a fazer sentido quando houver:
 | Stripe Billing funcional   | Implementado em test mode; E2E Stripe ainda não homologado     |
 | Stripe Connect             | Accounts v2 com eventos snapshot e thin implementado           |
 | Webhooks Stripe            | Assinados, reservados atomicamente, idempotentes e ordenados   |
-| Zoom                       | Não identificado nos arquivos analisados.                      |
+| Zoom                       | Fundação local implementada; homologação externa pendente      |
 | Ledger e repasses          | Ledger, Charge de origem, conciliação e reversão implementados |
 | Observabilidade definitiva | Não identificado nos arquivos analisados.                      |
+
+### 6.4 Evidência desta revisão
+
+Executado em 2026-07-26:
+
+- `npx supabase db reset`: passou com as duas migrations Zoom;
+- `npx supabase db lint --schema public`: passou sem erro;
+- `npx supabase test db`: 26 testes existentes passaram;
+- teste Vitest de `ZoomMeetingAdapter`: 3 testes passaram;
+- `npm run typecheck`: passou;
+- `npm run lint`: passou sem warnings de código;
+- `npm run test`: 12 arquivos e 50 testes passaram;
+- `npm run build`: passou com 55 rotas;
+- grants por coluna confirmam que authenticated não lê host ID, UUID,
+  passcode, `start_url` ou metadata sensível;
+- RPCs Zoom confirmadas sem `EXECUTE` para `anon` e `authenticated`.
+
+Não reexecutado nesta revisão:
+
+- Deno Zoom, porque o binário `deno` não está instalado no host;
+- testes reais contra Zoom/Marketplace, que exigem secrets e
+  `ALLOW_REAL_ZOOM_TESTS=true`;
+- smoke remoto de webhook, ZAK e cron de produção.
+
+A entrega mergeada registra sucesso no teste real de criação/update/delete,
+smoke local de webhook e fluxo real de fila. Esses resultados são evidência da
+entrega anterior e devem ser revalidados no ambiente alvo antes do go-live.
+
+Lacuna de cobertura: não existe arquivo pgTAP Zoom em `supabase/tests/`. As
+policies e grants foram inspecionados, mas ainda não têm regressão automatizada.
+
+Nota de ferramenta: `npx supabase db lint` sem filtro também inspeciona a
+extensão pgTAP e reportou diagnósticos internos dela. O lint restrito ao schema
+de aplicação, `--schema public`, passou sem erro.
 
 ## 7. Fontes de verdade e estados
 
@@ -554,26 +640,59 @@ ações específicas por papel.
 
 ## 10. Segurança da sessão online
 
-O campo genérico `bookings.meeting_url` não é o modelo final.
+### 10.1 Estado implementado
 
-O alvo deve separar:
+O campo `bookings.meeting_url` permanece legado e não é a fonte da sala. A
+fundação atual usa:
 
-- identificador do provedor;
-- credencial de host criptografada;
-- link do participante;
-- janela de acesso;
-- status da reunião;
-- timestamps de criação e invalidação;
-- auditoria de acesso.
+- `zoom_meetings` para estado operacional da reunião;
+- `zoom_meeting_jobs` como outbox de create, update, cancel e reconcile;
+- `zoom_webhook_events` como inbox idempotente e trilha sanitizada;
+- `zoom_meeting_participations` para eventos operacionais de presença;
+- views `patient_zoom_meeting_summary_v` e
+  `therapist_zoom_meeting_summary_v` com `security_invoker`;
+- `zoom-meeting-access` para autorizar booking, pagamento, janela e papel;
+- Meeting SDK JWT gerado no backend;
+- ZAK solicitado somente para o terapeuta e nunca persistido;
+- `zoom-jobs-process` protegido por token interno;
+- `zoom-webhook` com limite de corpo, challenge-response,
+  `x-zm-signature`, proteção temporal e deduplicação;
+- enfileiramento após `session_payments.financial_status = paid`.
 
-Regras:
+`start_url_encrypted` e `passcode_encrypted` existem como reserva de schema, mas
+não são preenchidos pelo fluxo atual. A implementação prefere recuperar os
+dados mínimos do provedor sob demanda e não persistir `start_url` ou ZAK.
 
-- host data somente para terapeuta responsável e admin autorizado;
-- join data somente para os participantes do booking;
-- criação somente após webhook de pagamento válido;
-- cancelamento ou reembolso deve invalidar o acesso quando aplicável;
-- o frontend nunca decide sozinho se a URL pode ser exposta;
-- a projeção PostgREST/RPC não deve retornar campos sensíveis.
+### 10.2 Controles confirmados
+
+- migrations aplicam em `supabase db reset`;
+- RPCs Zoom são executáveis apenas por `service_role`;
+- authenticated lê somente colunas seguras de `zoom_meetings`, sob RLS;
+- jobs e eventos de webhook não têm leitura direta autenticada;
+- tópico remoto usa referência opaca e não inclui conteúdo clínico;
+- create/update revalidam pagamento canônico no processador;
+- cancelamento remoto trata `404` como sucesso idempotente;
+- locks de job expirados podem ser recuperados;
+- evento `meeting.started` não regride reunião encerrada ou cancelada.
+
+### 10.3 Bloqueios antes de produção
+
+1. remover `allowBlockedStatus: true` do acesso do terapeuta ou criar exceção
+   explícita e auditada;
+2. validar `session_payments.financial_status` também no endpoint de acesso, sem
+   depender apenas da projeção `bookings.payment_status`;
+3. definir uma topologia de hosts licenciados por terapeuta ou um alocador com
+   controle de concorrência; `ZOOM_DEFAULT_HOST_USER_ID` único é apenas base de
+   desenvolvimento;
+4. resolver a precedência ambígua entre cookies de paciente e terapeuta;
+5. confirmar scopes e ZAK no Zoom Marketplace;
+6. configurar cron remoto e webhook público validado;
+7. adicionar pgTAP de RLS para paciente, terapeuta responsável, terapeuta
+   externo, suspenso e usuário anônimo;
+8. definir deduplicação semântica e atribuição de papel nas participações antes
+   de usá-las como evidência de comparecimento;
+9. decidir retenção LGPD dos eventos operacionais;
+10. homologar licença, concorrência, rate limits e falhas reais do provedor.
 
 ## 11. Financeiro
 
@@ -709,22 +828,23 @@ Não expor automaticamente:
 Para não conflitar com as fases globais de `project.md`, este módulo usa o
 prefixo `A`.
 
-| Marco | Objetivo                                       |
-| ----- | ---------------------------------------------- |
-| A0    | Auditoria e decisões                           |
-| F0    | Hardening financeiro para produção (concluído) |
-| A1    | Rotas e contratos compartilhados (concluído)   |
-| A2    | Banco, RLS e funções transacionais             |
-| A3    | Horários                                       |
-| A4    | Bloqueios                                      |
-| A5    | Motor autoritativo de slots                    |
-| A6    | Hold e criação de booking                      |
-| A7    | Calendário do terapeuta                        |
-| A8    | Compatibilidade integral com paciente          |
-| A9    | Sala online e presença                         |
-| A10   | Reagendamento e cancelamento                   |
-| A11   | Pós-sessão, financeiro e repasse               |
-| A12   | Insights                                       |
+| Marco | Objetivo                                        |
+| ----- | ----------------------------------------------- |
+| A0    | Auditoria e decisões                            |
+| F0    | Hardening financeiro para produção (concluído)  |
+| A1    | Rotas e contratos compartilhados (concluído)    |
+| Z0    | Fundação técnica Zoom (concluída fora de ordem) |
+| A2    | Banco, RLS e funções transacionais (concluído)  |
+| A3    | Horários                                        |
+| A4    | Bloqueios                                       |
+| A5    | Motor autoritativo de slots                     |
+| A6    | Orquestração de hold, booking e checkout        |
+| A7    | Calendário do terapeuta                         |
+| A8    | Compatibilidade integral com paciente           |
+| A9    | Produto Zoom e presença (parcialmente entregue) |
+| A10   | Reagendamento e cancelamento                    |
+| A11   | Pós-sessão, financeiro e repasse                |
+| A12   | Insights                                        |
 
 ## 15. Fase Agenda 1 - Rotas e contratos compartilhados
 
@@ -1095,11 +1215,14 @@ alterados.
 
 ### 15.15 Fora do escopo
 
+Esta lista registra o escopo histórico de A1. Zoom foi implementado depois, no
+marco independente Z0.
+
 - implementação visual da Agenda;
 - migrations de disponibilidade;
 - holds;
 - hardening de cobrança, assinatura, Connect, ledger e repasses do Gate F0;
-- Zoom;
+- Zoom durante A1;
 - remoção imediata dos aliases legados; eles permanecem como redirects;
 - IA generativa;
 - prontuário clínico.
@@ -1108,15 +1231,37 @@ alterados.
 
 ### A2 - Banco e RLS
 
-- snapshots de booking;
-- holds;
-- constraints de conflito;
-- funções de transição;
-- reunião protegida;
-- evolução de reagendamento;
-- RLS e testes SQL;
-- reutilização dos invariantes financeiros concluídos no Gate F0, sem criar
-  estruturas paralelas para cobrança, ledger ou repasse.
+Resultado em 2026-07-26:
+
+- snapshots imutáveis de título, duração, preço, moeda e buffers em `bookings`;
+- `occupied_during` persistido para indexação GiST sem depender de expressões
+  não imutáveis de `timestamptz`;
+- `booking_holds` com TTL, idempotência, estados terminais e conversão atômica
+  para booking `draft`;
+- exclusão de sobreposição por terapeuta, independente do serviço;
+- advisory lock por terapeuta para serializar conflitos entre as tabelas de
+  holds e bookings;
+- versionamento otimista e catálogo SQL de transições compatível com
+  `src/domain/tes`;
+- eventos de booking com ator, origem, request ID, estado anterior e novo;
+- reagendamento com snapshot original, expiração, uma solicitação pendente por
+  booking, resolução pela contraparte e estado final `applied`;
+- job idempotente `update` ou `cancel` no outbox Zoom quando a sala já existe;
+- checkout Stripe de sessão alterado para cobrar o snapshot do booking, sem
+  consultar preço ou título mutável do serviço;
+- RLS de leitura para os participantes e RPCs de escrita restritos a
+  `service_role`, destinados a Edge Functions autenticadas;
+- duas migrations, tipos Supabase regenerados e 41 testes pgTAP específicos;
+- seed corrigido para não manter dois encontros ativos sobrepostos da mesma
+  terapeuta.
+
+Limite intencional:
+
+- A2 entrega as primitivas transacionais, não endpoints públicos de Agenda;
+- o preview TypeScript ainda não é o motor de slots autoritativo;
+- A5 implementará a composição completa de disponibilidade e A6 fará a
+  orquestração autenticada entre hold, booking, `session_payments` e Stripe;
+- nenhuma tabela financeira, ledger ou estrutura Zoom paralela foi criada.
 
 ### A3 - Horários
 
@@ -1177,12 +1322,26 @@ alterados.
 
 ### A9 - Sala online
 
-- criação;
-- host e participant data;
-- janela;
-- presença;
-- invalidação;
-- auditoria.
+Fundação já entregue em Z0:
+
+- criação/update/cancel/reconcile por outbox;
+- Meeting SDK para paciente e terapeuta;
+- janela de acesso;
+- webhooks e auditoria sanitizada;
+- páginas de ajuda e adapter de interface.
+
+Escopo restante de A9:
+
+- bloquear terapeuta suspenso/rejeitado;
+- validar pagamento canônico no gate de acesso;
+- eliminar ambiguidade entre cookies de papéis diferentes;
+- definir alocação e capacidade de hosts;
+- homologar ZAK e Meeting SDK no Marketplace;
+- configurar cron e webhook remotos;
+- atribuir papel e deduplicar participações;
+- cobrir RLS e acesso com pgTAP e E2E;
+- integrar presença ao produto sem convertê-la automaticamente em prova
+  financeira ou clínica.
 
 ### A10 - Reagendamento e cancelamento
 
@@ -1257,6 +1416,23 @@ alterados.
 - refund, dispute, reversão e reconciliação;
 - isolamento RLS e idempotência do seed financeiro.
 
+### Zoom
+
+- paciente não acessa booking de outro paciente;
+- terapeuta externo, suspenso ou rejeitado não recebe payload de host;
+- acesso confirma `session_payments.financial_status = paid`;
+- cookies simultâneos não trocam o papel efetivo;
+- ZAK nunca é retornado ao paciente nem persistido;
+- RPCs Zoom não são executáveis por `anon` ou `authenticated`;
+- RLS não expõe host ID, UUID, passcode, `start_url` ou payload de webhook;
+- jobs concorrentes reservam uma única unidade;
+- lock expirado é recuperado e retry chega a dead letter;
+- webhook duplicado e replay temporal não duplicam efeito de negócio;
+- evento fora de ordem não regride reunião encerrada;
+- cancelamento/reembolso invalida acesso e enfileira cancelamento;
+- múltiplas sessões simultâneas respeitam a capacidade real de hosts;
+- cron, webhook remoto, rate limit e indisponibilidade do Zoom são observáveis.
+
 ### UX
 
 - desktop, tablet e mobile;
@@ -1282,5 +1458,13 @@ A decisão arquitetural central permanece:
 > Agenda, booking, sessão, pagamento e repasse compartilham referências, mas
 > possuem responsabilidades e ciclos de vida próprios.
 
-A Fase Agenda 1 foi concluída com a unificação compatível de rotas e contratos,
-sem criar migration precipitada sobre os dados e telas já existentes.
+A Fase Agenda 1 foi concluída com a unificação compatível de rotas e contratos.
+O Gate F0 consolidou os invariantes financeiros e a fundação Z0 antecipou parte
+de A9 sem alterar a ordem transacional: Stripe confirma, a outbox provisiona e
+o backend autoriza a entrada.
+
+A2 concluiu as primitivas que tornam a reserva concorrente e auditável. A3 é o
+próximo marco para edição de horários e preview; A5 continuará responsável pela
+composição autoritativa de slots e A6 pela orquestração de checkout. Em
+paralelo, os bloqueios de produção listados em A9 devem ser fechados antes de
+liberar sessões Zoom reais aos usuários.
