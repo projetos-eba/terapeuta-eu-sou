@@ -32,3 +32,27 @@ Smoke local:
 ```bash
 npm run zoom:video-sdk:webhook:smoke
 ```
+
+Tunel real local:
+
+```bash
+npm run zoom:video-sdk:webhook:tunnel
+```
+
+Configurar manualmente no Zoom:
+
+```text
+https://<subdominio-ngrok>/functions/v1/zoom-webhook
+```
+
+O script nao altera o Zoom Marketplace e deve ficar ativo ate o fim da
+homologacao. Ele grava a URL atual em `.tmp/zoom-real-homologation.json`, sem
+secrets. URLs ngrok mudam; uma nova URL exige nova validacao manual.
+
+Depois de validar manualmente no Zoom, registre a confirmacao temporaria:
+
+```bash
+npm run zoom:video-sdk:webhook:real-verify
+```
+
+A confirmacao expira em janela curta e fica vinculada a URL atual.

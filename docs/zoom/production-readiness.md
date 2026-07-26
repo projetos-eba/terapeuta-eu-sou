@@ -14,6 +14,8 @@ Antes de producao:
 - avaliar conexao peer-to-peer em chamadas de duas pessoas conforme politica de
   privacidade e documentacao oficial;
 - homologar fluxo real em ambiente de teste com limite de consumo;
+- executar `docs/zoom/real-homologation-runbook.md` e voltar
+  `ALLOW_REAL_ZOOM=false` depois do teste;
 - confirmar que apps antigos e webhooks antigos nao estao implantados antes de
   remover qualquer configuracao remota.
 

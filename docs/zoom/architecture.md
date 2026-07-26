@@ -28,7 +28,8 @@ continuam sob Stripe, `session_payments`, ledger e regras internas.
   resumos seguros sem token, segredo, URL ou conteudo clinico.
 
 `session_name` e `user_key` sao opacos. Eles nao carregam nome, e-mail,
-diagnostico, terapia ou identificador interno legivel.
+diagnostico, terapia ou identificador interno legivel. O browser nunca define
+`role_type`, `session_name`, `user_key` ou JWT.
 
 ## Concorrencia
 
@@ -42,3 +43,6 @@ diferentes terapeutas e pacientes.
 O consumo segue a metrica operacional do Zoom Video SDK, como
 participant-minutes. `ALLOW_REAL_ZOOM=false` bloqueia testes externos para nao
 consumir creditos.
+
+Encerramento de emergencia usa a REST API oficial
+`PUT /videosdk/sessions/{sessionId}/status` com `{ "action": "end" }`.
