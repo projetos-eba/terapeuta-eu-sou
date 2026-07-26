@@ -185,8 +185,12 @@ Stack real identificada:
   e `/privacidade`, docs em `docs/zoom/` e skill `skills/zoom-integration`.
   Pagamento canônico segue em `session_payments`; Zoom não confirma pagamento,
   repasse ou realização clínica. Antes de produção, revalidar no ambiente alvo,
-  configurar webhooks Video SDK reais, revisar retenção e completar homologação
-  externa sem expor secrets.
+  configurar webhooks Video SDK reais via ngrok ou endpoint de homologação,
+  seguir `docs/zoom/real-homologation-runbook.md`, revisar retenção e completar
+  homologação externa sem expor secrets. O harness real usa
+  `.tmp/zoom-real-homologation.json` para metadados temporários sem secrets e
+  cria booking, usuários e pagamento paid em runtime; não exigir UUID, e-mail ou
+  senha de fixture em variável de ambiente.
 
 ## 6. QA e definição de pronto
 

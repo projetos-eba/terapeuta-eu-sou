@@ -114,11 +114,21 @@ Scripts:
 - `npm run zoom:video-sdk:env`: audita variaveis sem imprimir valores.
 - `npm run zoom:video-sdk:test`: roda testes Deno e Vitest da integracao.
 - `npm run zoom:video-sdk:webhook:smoke`: envia payloads locais assinados.
+- `npm run zoom:video-sdk:webhook:tunnel`: abre tunel ngrok local para validar
+  webhook real, sem alterar o Zoom Marketplace, e grava metadados nao secretos
+  em `.tmp/zoom-real-homologation.json`.
+- `npm run zoom:video-sdk:webhook:real-preflight`: valida gates locais do
+  webhook real.
+- `npm run zoom:video-sdk:webhook:real-verify -- https://<subdominio-ngrok>/functions/v1/zoom-webhook`:
+  verifica a URL publica temporaria e registra confirmacao curta no estado
+  temporario.
 - `npm run zoom:video-sdk:api:mock`: exercita contrato mockado da API.
-- `npm run zoom:video-sdk:real-preflight`: preflight sem chamada real quando
-  `ALLOW_REAL_ZOOM=false`.
+- `npm run zoom:video-sdk:real-preflight`: valida ambiente development e
+  consulta a API Video SDK somente quando `ALLOW_REAL_ZOOM=true`.
 - `npm run zoom:video-sdk:test:real`: recusa execucao sem
-  `ALLOW_REAL_ZOOM=true`.
+  `ALLOW_REAL_ZOOM=true`, webhook validado e Supabase local/staging autorizado;
+  cria usuarios, booking, pagamento paid e `video_session` em runtime e limpa as
+  fixtures no `finally`.
 
 Documentacao detalhada: `docs/zoom/`.
 

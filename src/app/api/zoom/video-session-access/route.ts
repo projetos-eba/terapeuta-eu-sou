@@ -6,6 +6,13 @@ import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 export async function POST(request: Request) {
   let body: unknown;
 
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json(
+      { ok: false, message: "Origem da requisicao invalida." },
+      { headers: noStoreHeaders, status: 403 },
+    );
+  }
+
   try {
     body = await request.json();
   } catch {
@@ -75,4 +82,18 @@ async function getAvailableAccessToken() {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function isSameOriginRequest(request: Request) {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+
+  const host = request.headers.get("host");
+  if (!host) return false;
+
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
 }
