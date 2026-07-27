@@ -1,12 +1,14 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { AlertCircle, CalendarClock, Clock3, Construction } from "lucide-react";
+import { AlertCircle, CalendarClock, Clock3 } from "lucide-react";
 
 import {
   formatSessionDateTime,
   mapSessionPresentation,
 } from "@/features/bookings";
 import { getTherapistAgendaPage } from "@/features/therapist-agenda";
+import { getTherapistBlocks } from "@/features/therapist-blocks";
+import { TherapistBlocksPanel } from "@/features/therapist-blocks/components/therapist-blocks-panel";
 import { getTherapistSchedule } from "@/features/therapist-schedule";
 import { TherapistScheduleHours } from "@/features/therapist-schedule/components/therapist-schedule-hours";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
@@ -18,7 +20,13 @@ type AgendaTab = "bloqueios" | "calendario" | "horarios";
 export default async function TherapistAgendaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ aba?: string }>;
+  searchParams: Promise<{
+    aba?: string;
+    busca?: string;
+    motivo?: string;
+    periodo?: string;
+    status?: string;
+  }>;
 }) {
   const params = await searchParams;
   const tab = parseAgendaTab(params.aba);
@@ -29,20 +37,20 @@ export default async function TherapistAgendaPage({
   rangeStart.setUTCDate(rangeStart.getUTCDate() - 30);
   rangeEnd.setUTCDate(rangeEnd.getUTCDate() + 61);
 
-  const [agendaResult, scheduleResult] = await Promise.all([
-    getTherapistAgendaPage({
-      accessToken: session.accessToken,
-      profileId: session.profileId,
-      rangeEnd: rangeEnd.toISOString(),
-      rangeStart: rangeStart.toISOString(),
-    }),
-    getTherapistSchedule({
-      accessToken: session.accessToken,
-      profileId: session.profileId,
-    }),
-  ]);
-
   if (tab === "horarios") {
+    const [agendaResult, scheduleResult] = await Promise.all([
+      getTherapistAgendaPage({
+        accessToken: session.accessToken,
+        profileId: session.profileId,
+        rangeEnd: rangeEnd.toISOString(),
+        rangeStart: rangeStart.toISOString(),
+      }),
+      getTherapistSchedule({
+        accessToken: session.accessToken,
+        profileId: session.profileId,
+      }),
+    ]);
+
     if (scheduleResult.status === "error") {
       return (
         <AgendaFrame activeTab="horarios">
@@ -79,25 +87,60 @@ export default async function TherapistAgendaPage({
   }
 
   if (tab === "bloqueios") {
+    const blockRangeEnd = new Date(referenceNow);
+    blockRangeEnd.setUTCDate(
+      blockRangeEnd.getUTCDate() + parseBlockPeriod(params.periodo),
+    );
+    const [blocksResult, scheduleResult] = await Promise.all([
+      getTherapistBlocks({
+        accessToken: session.accessToken,
+        filters: {
+          rangeEnd: blockRangeEnd.toISOString(),
+          rangeStart: referenceNow.toISOString(),
+          reasonCode: normalizeReasonFilter(params.motivo),
+          search: normalizeSearch(params.busca),
+          status: normalizeStatusFilter(params.status),
+        },
+        profileId: session.profileId,
+      }),
+      getTherapistSchedule({
+        accessToken: session.accessToken,
+        profileId: session.profileId,
+      }),
+    ]);
+
+    if (blocksResult.status === "error") {
+      return (
+        <BlocksErrorState
+          correlationId={blocksResult.error.correlationId}
+          message={blocksResult.error.message}
+        />
+      );
+    }
+
+    if (scheduleResult.status === "error") {
+      return (
+        <BlocksErrorState
+          correlationId={scheduleResult.error.correlationId}
+          message={scheduleResult.error.message}
+        />
+      );
+    }
+
     return (
-      <AgendaFrame activeTab="bloqueios">
-        <section className="mt-6 rounded-[14px] border border-brand-lavender bg-white p-8 text-center shadow-card">
-          <Construction
-            aria-hidden="true"
-            className="mx-auto text-brand-primary"
-            size={28}
-          />
-          <h2 className="mt-4 font-display text-3xl font-light text-brand-deep">
-            Bloqueios em construção
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-6 text-tesText-secondary">
-            A visualização já faz parte da Agenda, mas criação, edição e
-            recorrência de bloqueios serão entregues no marco A4.
-          </p>
-        </section>
-      </AgendaFrame>
+      <TherapistBlocksPanel
+        initialData={blocksResult.data}
+        services={scheduleResult.data.services}
+      />
     );
   }
+
+  const agendaResult = await getTherapistAgendaPage({
+    accessToken: session.accessToken,
+    profileId: session.profileId,
+    rangeEnd: rangeEnd.toISOString(),
+    rangeStart: rangeStart.toISOString(),
+  });
 
   return (
     <AgendaFrame activeTab="calendario">
@@ -188,6 +231,38 @@ export default async function TherapistAgendaPage({
   );
 }
 
+function BlocksErrorState({
+  correlationId,
+  message,
+}: {
+  correlationId: string;
+  message: string;
+}) {
+  return (
+    <AgendaFrame activeTab="bloqueios">
+      <section
+        className="mt-6 rounded-lg border border-status-danger/30 bg-white p-8 text-center shadow-card"
+        role="alert"
+      >
+        <AlertCircle
+          aria-hidden="true"
+          className="mx-auto text-status-danger"
+          size={28}
+        />
+        <h2 className="mt-4 font-display text-3xl font-light text-brand-deep">
+          Bloqueios temporariamente indisponíveis
+        </h2>
+        <p className="mt-3 text-sm font-semibold text-tesText-secondary">
+          {message}
+        </p>
+        <p className="mt-2 text-xs font-semibold text-tesText-muted">
+          Referência: {correlationId.slice(0, 8)}
+        </p>
+      </section>
+    </AgendaFrame>
+  );
+}
+
 function AgendaFrame({
   activeTab,
   children,
@@ -261,4 +336,34 @@ function AgendaMetric({ label, value }: { label: string; value: number }) {
 function parseAgendaTab(value: string | undefined): AgendaTab {
   if (value === "calendario" || value === "bloqueios") return value;
   return "horarios";
+}
+
+function parseBlockPeriod(value: string | undefined) {
+  if (value === "60") return 60;
+  if (value === "90") return 90;
+  return 30;
+}
+
+function normalizeStatusFilter(
+  value: string | undefined,
+): "active" | "all" | "cancelled" {
+  if (value === "all" || value === "cancelled") return value;
+  return "active";
+}
+
+function normalizeReasonFilter(value: string | undefined) {
+  const allowed = new Set([
+    "administrative",
+    "health",
+    "other",
+    "personal",
+    "training",
+    "vacation",
+  ]);
+  return value && allowed.has(value) ? value : undefined;
+}
+
+function normalizeSearch(value: string | undefined) {
+  const normalized = value?.trim();
+  return normalized ? normalized.slice(0, 80) : undefined;
 }

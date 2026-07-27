@@ -105,6 +105,77 @@ test.describe("therapist Agenda and Sessions foundation", () => {
       path: testInfo.outputPath("agenda-horarios-mobile.png"),
     });
   });
+
+  test("creates and removes a real availability block responsively", async ({
+    page,
+  }, testInfo) => {
+    await page.goto("/terapeuta/agenda?aba=bloqueios");
+
+    await expect(
+      page.getByRole("heading", {
+        level: 2,
+        name: "Bloqueios e indisponibilidades",
+      }),
+    ).toBeVisible();
+    await expect(page.getByText("Sessões para revisar")).toBeVisible();
+    await expect(page.getByText(/Paciente Juliana/)).toBeVisible();
+
+    const targetDate = new Date();
+    targetDate.setUTCDate(targetDate.getUTCDate() + 25);
+    const dateKey = targetDate.toISOString().slice(0, 10);
+    const note = `Bloqueio E2E ${Date.now()}`;
+
+    await page.getByRole("button", { name: "Novo bloqueio" }).click();
+    await expect(
+      page.getByRole("dialog", { name: "Novo bloqueio" }),
+    ).toBeVisible();
+    await expect(page.getByTestId("tes-dialog-overlay")).toHaveCSS(
+      "background-color",
+      "rgba(20, 16, 90, 0.56)",
+    );
+    await expect(page.locator("body")).toHaveCSS("overflow", "hidden");
+    await page.screenshot({
+      fullPage: true,
+      path: testInfo.outputPath("agenda-bloqueios-modal-overlay-desktop.png"),
+    });
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await page.getByRole("button", { name: "Novo bloqueio" }).click();
+    await page.getByLabel("Data inicial").fill(dateKey);
+    await page.getByLabel("Motivo do bloqueio").selectOption("administrative");
+    await page.getByLabel("Observação opcional").fill(note);
+    await page.getByRole("button", { name: "Criar bloqueio" }).click();
+
+    await expect(page.getByText("Bloqueio salvo com sucesso.")).toBeVisible();
+    const blockCard = page.locator("article").filter({ hasText: note });
+    await expect(blockCard).toBeVisible();
+    await expect(
+      blockCard.getByText("Dia inteiro", { exact: true }),
+    ).toBeVisible();
+
+    await page.screenshot({
+      fullPage: true,
+      path: testInfo.outputPath("agenda-bloqueios-desktop.png"),
+    });
+    await page.setViewportSize({ height: 1180, width: 820 });
+    await page.waitForTimeout(300);
+    await page.screenshot({
+      fullPage: true,
+      path: testInfo.outputPath("agenda-bloqueios-tablet.png"),
+    });
+    await page.setViewportSize({ height: 844, width: 390 });
+    await page.waitForTimeout(300);
+    await page.screenshot({
+      fullPage: true,
+      path: testInfo.outputPath("agenda-bloqueios-mobile.png"),
+    });
+
+    await blockCard.getByRole("button", { name: /Remover bloqueio/ }).click();
+    await page
+      .getByRole("button", { exact: true, name: "Remover bloqueio" })
+      .click();
+    await expect(blockCard).toHaveCount(0);
+  });
 });
 
 test.describe("therapist shell mobile", () => {

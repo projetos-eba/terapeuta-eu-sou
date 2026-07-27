@@ -15,10 +15,10 @@ import {
   Save,
   Sparkles,
   Trash2,
-  X,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
+import { TESDialog } from "@/components/tes";
 import type {
   SaveTherapistScheduleInput,
   TherapistScheduleReadModel,
@@ -79,7 +79,6 @@ export function TherapistScheduleHours({
   const [addDay, setAddDay] = useState(1);
   const [copySourceDay, setCopySourceDay] = useState(1);
   const [copyTargetDays, setCopyTargetDays] = useState<number[]>([]);
-  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (initialSchedule.scheduleVersion <= scheduleVersion) return;
@@ -90,11 +89,6 @@ export function TherapistScheduleHours({
     setScheduleVersion(initialSchedule.scheduleVersion);
     setIsDirty(false);
   }, [initialSchedule, scheduleVersion]);
-
-  useEffect(() => {
-    if (!dialog) return;
-    dialogRef.current?.focus();
-  }, [dialog]);
 
   const currentService = useMemo(
     () => services.find((service) => service.id === scope) ?? null,
@@ -599,143 +593,114 @@ export function TherapistScheduleHours({
       </form>
 
       {dialog ? (
-        <div
-          aria-labelledby="schedule-dialog-title"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-brand-deep/45 p-4"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setDialog(null);
-          }}
-          role="dialog"
+        <TESDialog
+          className="max-w-md"
+          description={
+            dialog === "add"
+              ? "Escolha o dia que receberá a nova faixa."
+              : "As faixas dos dias escolhidos serão substituídas."
+          }
+          onClose={() => setDialog(null)}
+          title={
+            dialog === "add" ? "Adicionar faixa de horário" : "Copiar horários"
+          }
         >
-          <div
-            className="w-full max-w-md rounded-[14px] bg-white p-6 shadow-xl outline-none"
-            ref={dialogRef}
-            tabIndex={-1}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2
-                  className="text-lg font-extrabold text-brand-deep"
-                  id="schedule-dialog-title"
-                >
-                  {dialog === "add"
-                    ? "Adicionar faixa de horário"
-                    : "Copiar horários"}
-                </h2>
-                <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
-                  {dialog === "add"
-                    ? "Escolha o dia que receberá a nova faixa."
-                    : "As faixas dos dias escolhidos serão substituídas."}
-                </p>
-              </div>
+          {dialog === "add" ? (
+            <div>
+              <label
+                className="text-sm font-extrabold text-brand-deep"
+                htmlFor="add-range-day"
+              >
+                Dia da semana
+              </label>
+              <select
+                className="mt-2 min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+                id="add-range-day"
+                onChange={(event) => setAddDay(Number(event.target.value))}
+                value={addDay}
+              >
+                {scheduleWeekDays.map((day) => (
+                  <option key={day.dayOfWeek} value={day.dayOfWeek}>
+                    {day.label}
+                  </option>
+                ))}
+              </select>
               <button
-                aria-label="Fechar"
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-tesText-muted hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
-                onClick={() => setDialog(null)}
+                className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white hover:bg-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                onClick={() => {
+                  addRange(addDay);
+                  setDialog(null);
+                }}
                 type="button"
               >
-                <X aria-hidden="true" size={20} />
+                <Plus aria-hidden="true" size={17} />
+                Adicionar faixa
               </button>
             </div>
-
-            {dialog === "add" ? (
-              <div className="mt-5">
-                <label
-                  className="text-sm font-extrabold text-brand-deep"
-                  htmlFor="add-range-day"
-                >
-                  Dia da semana
-                </label>
-                <select
-                  className="mt-2 min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-                  id="add-range-day"
-                  onChange={(event) => setAddDay(Number(event.target.value))}
-                  value={addDay}
-                >
-                  {scheduleWeekDays.map((day) => (
-                    <option key={day.dayOfWeek} value={day.dayOfWeek}>
-                      {day.label}
-                    </option>
+          ) : (
+            <div>
+              <label
+                className="text-sm font-extrabold text-brand-deep"
+                htmlFor="copy-source-day"
+              >
+                Copiar de
+              </label>
+              <select
+                className="mt-2 min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+                id="copy-source-day"
+                onChange={(event) => {
+                  setCopySourceDay(Number(event.target.value));
+                  setCopyTargetDays([]);
+                }}
+                value={copySourceDay}
+              >
+                {scheduleWeekDays.map((day) => (
+                  <option key={day.dayOfWeek} value={day.dayOfWeek}>
+                    {day.label}
+                  </option>
+                ))}
+              </select>
+              <fieldset className="mt-5 grid grid-cols-2 gap-2">
+                <legend className="mb-2 text-sm font-extrabold text-brand-deep">
+                  Aplicar em
+                </legend>
+                {scheduleWeekDays
+                  .filter((day) => day.dayOfWeek !== copySourceDay)
+                  .map((day) => (
+                    <label
+                      className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-brand-lavender px-3 text-sm font-bold text-brand-deep has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand-primary"
+                      key={day.dayOfWeek}
+                    >
+                      <input
+                        checked={copyTargetDays.includes(day.dayOfWeek)}
+                        className="h-4 w-4 accent-brand-primary"
+                        onChange={(event) =>
+                          setCopyTargetDays((current) =>
+                            event.target.checked
+                              ? [...current, day.dayOfWeek]
+                              : current.filter(
+                                  (value) => value !== day.dayOfWeek,
+                                ),
+                          )
+                        }
+                        type="checkbox"
+                      />
+                      {day.shortLabel}
+                    </label>
                   ))}
-                </select>
-                <button
-                  className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white hover:bg-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                  onClick={() => {
-                    addRange(addDay);
-                    setDialog(null);
-                  }}
-                  type="button"
-                >
-                  <Plus aria-hidden="true" size={17} />
-                  Adicionar faixa
-                </button>
-              </div>
-            ) : (
-              <div className="mt-5">
-                <label
-                  className="text-sm font-extrabold text-brand-deep"
-                  htmlFor="copy-source-day"
-                >
-                  Copiar de
-                </label>
-                <select
-                  className="mt-2 min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-                  id="copy-source-day"
-                  onChange={(event) => {
-                    setCopySourceDay(Number(event.target.value));
-                    setCopyTargetDays([]);
-                  }}
-                  value={copySourceDay}
-                >
-                  {scheduleWeekDays.map((day) => (
-                    <option key={day.dayOfWeek} value={day.dayOfWeek}>
-                      {day.label}
-                    </option>
-                  ))}
-                </select>
-                <fieldset className="mt-5 grid grid-cols-2 gap-2">
-                  <legend className="mb-2 text-sm font-extrabold text-brand-deep">
-                    Aplicar em
-                  </legend>
-                  {scheduleWeekDays
-                    .filter((day) => day.dayOfWeek !== copySourceDay)
-                    .map((day) => (
-                      <label
-                        className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-brand-lavender px-3 text-sm font-bold text-brand-deep has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand-primary"
-                        key={day.dayOfWeek}
-                      >
-                        <input
-                          checked={copyTargetDays.includes(day.dayOfWeek)}
-                          className="h-4 w-4 accent-brand-primary"
-                          onChange={(event) =>
-                            setCopyTargetDays((current) =>
-                              event.target.checked
-                                ? [...current, day.dayOfWeek]
-                                : current.filter(
-                                    (value) => value !== day.dayOfWeek,
-                                  ),
-                            )
-                          }
-                          type="checkbox"
-                        />
-                        {day.shortLabel}
-                      </label>
-                    ))}
-                </fieldset>
-                <button
-                  className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white hover:bg-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-not-allowed disabled:opacity-55"
-                  disabled={copyTargetDays.length === 0}
-                  onClick={copySchedule}
-                  type="button"
-                >
-                  <Copy aria-hidden="true" size={17} />
-                  Copiar horários
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+              </fieldset>
+              <button
+                className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white hover:bg-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-not-allowed disabled:opacity-55"
+                disabled={copyTargetDays.length === 0}
+                onClick={copySchedule}
+                type="button"
+              >
+                <Copy aria-hidden="true" size={17} />
+                Copiar horários
+              </button>
+            </div>
+          )}
+        </TESDialog>
       ) : null}
     </main>
   );

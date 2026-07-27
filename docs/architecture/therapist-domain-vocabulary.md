@@ -1,28 +1,30 @@
 # Vocabulário do domínio do terapeuta
 
-Atualizado em 2026-07-26.
+Atualizado em 2026-07-27.
 
-| Termo               | Definição                                                                  | Fonte canônica                        |
-| ------------------- | -------------------------------------------------------------------------- | ------------------------------------- |
-| Plano               | Nível comercial `free`, `premium` ou `premium_plus`.                       | `src/domain/tes/enums.ts`             |
-| Capability          | Permissão funcional derivada do catálogo de planos.                        | `src/domain/tes/permissions.ts`       |
-| Booking             | Reserva operacional de serviço e horário.                                  | `BookingStatus`                       |
-| Pagamento           | Ciclo financeiro da cobrança da pessoa paciente.                           | `session_payments.financial_status`   |
-| Realização          | Evidência de execução do serviço reservado.                                | `FulfillmentStatus`                   |
-| Presença            | Comparecimento de paciente e terapeuta.                                    | `AttendanceStatus`                    |
-| Reagendamento       | Proposta e resolução de nova faixa de horário.                             | `RescheduleStatus`                    |
-| Cancelamento        | Resultado da política financeira existente, separado do pagamento.         | `CancellationStatus`                  |
-| Slot disponível     | Intervalo candidato, ainda não reservado.                                  | `AvailableSlot`                       |
-| Hold                | Reserva temporária de slot com expiração.                                  | `BookingHoldStatus`                   |
-| Snapshot do booking | Título, duração, preço, moeda e buffers preservados no momento da reserva. | `bookings` / `BookingServiceSnapshot` |
-| Intervalo ocupado   | Faixa da sessão acrescida dos buffers capturados.                          | `occupied_during`                     |
-| Request ID          | Chave idempotente que correlaciona comando e auditoria.                    | RPCs A2 / `booking_events`            |
-| Bloqueio            | Exceção de agenda indisponível ou override disponível.                     | `ScheduleBlockType`                   |
-| Sessão              | Experiência operacional composta, associada a um booking.                  | read model + DTO compartilhado        |
-| Estado visual       | Rótulo e ações derivados sem alterar estados transacionais.                | `SessionPresentation`                 |
-| Acesso Zoom         | Decisão efêmera de entrada, revalidada no backend.                         | `ZoomAccessState` / Edge Function     |
-| Alias legado        | `/basico/*`, `/pro/*` ou `/plus/*`.                                        | redirects                             |
-| Área autenticada    | Namespace único `/terapeuta/*`.                                            | `src/lib/routes.ts`                   |
+| Termo               | Definição                                                                  | Fonte canônica                           |
+| ------------------- | -------------------------------------------------------------------------- | ---------------------------------------- |
+| Plano               | Nível comercial `free`, `premium` ou `premium_plus`.                       | `src/domain/tes/enums.ts`                |
+| Capability          | Permissão funcional derivada do catálogo de planos.                        | `src/domain/tes/permissions.ts`          |
+| Booking             | Reserva operacional de serviço e horário.                                  | `BookingStatus`                          |
+| Pagamento           | Ciclo financeiro da cobrança da pessoa paciente.                           | `session_payments.financial_status`      |
+| Realização          | Evidência de execução do serviço reservado.                                | `FulfillmentStatus`                      |
+| Presença            | Comparecimento de paciente e terapeuta.                                    | `AttendanceStatus`                       |
+| Reagendamento       | Proposta e resolução de nova faixa de horário.                             | `RescheduleStatus`                       |
+| Cancelamento        | Resultado da política financeira existente, separado do pagamento.         | `CancellationStatus`                     |
+| Slot disponível     | Intervalo candidato, ainda não reservado.                                  | `AvailableSlot`                          |
+| Hold                | Reserva temporária de slot com expiração.                                  | `BookingHoldStatus`                      |
+| Snapshot do booking | Título, duração, preço, moeda e buffers preservados no momento da reserva. | `bookings` / `BookingServiceSnapshot`    |
+| Intervalo ocupado   | Faixa da sessão acrescida dos buffers capturados.                          | `occupied_during`                        |
+| Request ID          | Chave idempotente que correlaciona comando e auditoria.                    | RPCs A2 / `booking_events`               |
+| Bloqueio            | Intervalo indisponível materializado; não é cancelamento de booking.       | `availability_exceptions`                |
+| Série de bloqueio   | Intenção recorrente que produz ocorrências UTC por data local.             | `availability_exception_series`          |
+| Impacto de bloqueio | Relação revisável entre bloqueio e booking existente, sem mutar a reserva. | `availability_exception_booking_impacts` |
+| Sessão              | Experiência operacional composta, associada a um booking.                  | read model + DTO compartilhado           |
+| Estado visual       | Rótulo e ações derivados sem alterar estados transacionais.                | `SessionPresentation`                    |
+| Acesso Zoom         | Decisão efêmera de entrada, revalidada no backend.                         | `ZoomAccessState` / Edge Function        |
+| Alias legado        | `/basico/*`, `/pro/*` ou `/plus/*`.                                        | redirects                                |
+| Área autenticada    | Namespace único `/terapeuta/*`.                                            | `src/lib/routes.ts`                      |
 
 ## Regras
 

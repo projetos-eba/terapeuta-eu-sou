@@ -1307,12 +1307,18 @@ A3.3 concluído em 2026-07-26:
 
 ### A4 - Bloqueios
 
-- bloqueio simples;
-- recorrência;
-- impacto;
-- resolução;
-- auditoria;
-- notificações.
+Concluído em 2026-07-27:
+
+- bloqueio simples de dia inteiro ou faixa parcial;
+- recorrência diária e semanal materializada em UTC;
+- impacto explícito sem alterar bookings;
+- resolução `keep_booking` e link para o fluxo próprio da sessão;
+- remoção lógica de ocorrência ou série;
+- auditoria, idempotência, versão e notificação interna;
+- read model/RLS e interface responsiva;
+- evidências em `docs/architecture/agenda-a4-closure.md`;
+- comparação direta com o frame Figma `13366:8393` permanece pendente porque
+  o MCP não estava disponível na sessão de implementação.
 
 ### A5 - Slots
 
@@ -1495,9 +1501,9 @@ de A9 sem alterar a ordem transacional: Stripe confirma, a outbox provisiona e
 o backend autoriza a entrada.
 
 A2 concluiu as primitivas que tornam a reserva concorrente e auditável.
-A3.0/A3.1 concluíram as decisões e a fundação transacional de Horários; A3.2
-entregou a interface funcional e responsiva. A3.3 consolidará testes
-transacionais, RLS e documentação. A5 continua responsável pela composição
+A3.0-A3.3 concluíram Horários, incluindo interface, testes transacionais, RLS
+e documentação. A4 concluiu bloqueios, recorrência materializada, impacto,
+resolução explícita e auditoria. A5 continua responsável pela composição
 autoritativa de slots e A6 pela orquestração de checkout. Em paralelo, os
 bloqueios de produção listados em A9 devem ser fechados antes de liberar
 sessões Zoom reais aos usuários.

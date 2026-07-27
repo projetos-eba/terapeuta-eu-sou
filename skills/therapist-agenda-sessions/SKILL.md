@@ -18,6 +18,8 @@ description: Implementar e manter Agenda, disponibilidade, bookings e Sessões d
 9. `docs/architecture/therapist-schema-evolution-matrix.md`.
 10. `src/lib/routes.ts` e `src/domain/tes`.
 11. `docs/architecture/agenda-sessions-preparation.md`.
+12. `docs/architecture/adr/ADR-006-therapist-schedule-configuration.md`.
+13. `docs/architecture/adr/ADR-007-therapist-availability-blocks.md`.
 
 ## Rotas
 
@@ -63,8 +65,18 @@ Não criar enums equivalentes dentro de features.
   enquanto `bufferBeforeMinutes` e `bufferAfterMinutes` representam preparo.
 - Não exibir toggle de reagendamento automático antes do domínio e dos
   comandos correspondentes.
-- A aba Bloqueios permanece informativa até A4; não criar mutação local ou
-  mock permanente.
+- A aba Bloqueios usa o frame Figma `13366:8393`, o read model
+  `get_therapist_blocks_v1` e a Edge `therapist-blocks-update`.
+- Bloqueios usa lista compacta, right rail contextual, visão mensal e regras
+  reais. Não substituir essa composição por uma grade genérica de KPIs.
+- Pop-ups de Horários e Bloqueios usam `TESDialog`; não criar overlay local
+  dentro da feature.
+- `availability_exceptions` é a autoridade dos intervalos materializados;
+  `availability_exception_series` representa recorrência e não substitui as
+  ocorrências.
+- Criar bloqueio nunca altera booking. Impactos são registrados em
+  `availability_exception_booking_impacts` e exigem resolução explícita.
+- Cancelamento/reagendamento de booking continuam nos comandos próprios.
 - O preview TypeScript não confirma reserva.
 - Booking do terapeuta bloqueia todos os serviços no mesmo intervalo.
 - Aplicar buffers e validar intervalos.
@@ -103,12 +115,17 @@ Não criar enums equivalentes dentro de features.
 
 - Validar Horários em desktop, tablet e mobile; controles devem ter área de
   toque de pelo menos 44px, foco visível e rótulos acessíveis.
+- Validar que todo diálogo cobre sidebar e topbar, bloqueia scroll, fecha por
+  `Escape`, confina e devolve foco.
 - Testar seleção de terapia, herança de faixas gerais, ativação por dia,
   cópia entre dias, conflito de versão e falha real distinta de vazio.
 - O script `npm run test:deno` deve incluir
-  `supabase/functions/therapist-schedule-update`.
+  `supabase/functions/therapist-schedule-update` e
+  `supabase/functions/therapist-blocks-update`.
 - O pgTAP A3 deve cobrir grants, RLS, advisory lock, stale version, replay,
   auditoria, sobreposição, timezone e propriedade do serviço.
+- O pgTAP A4 deve cobrir séries, ocorrências UTC, impactos, booking preservado,
+  versão compartilhada, replay, remoção lógica, RLS e terapeuta suspenso.
 - Testar conflito entre serviços, buffers, exceções e período vazio.
 - Testar transições permitidas e proibidas.
 - Testar paciente e terapeuta com o mesmo horário e serviço.
