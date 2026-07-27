@@ -6,8 +6,10 @@ import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 import {
   mapPatientEncountersPage,
   type BookingRecord,
+  type RescheduleRecord,
   type ReviewRecord,
   type ServiceRecord,
+  type SessionPaymentRecord,
   type SessionSummaryRecord,
   type TherapistRecord,
   type TherapyRecord,
@@ -54,10 +56,10 @@ export class PatientEncountersDataError extends Error {
 }
 
 export const getPatientEncountersPage = cache(
-    async function getPatientEncountersPage(
-      profileId: string,
-      accessToken: string | null = null,
-    ): Promise<PatientEncountersPageData> {
+  async function getPatientEncountersPage(
+    profileId: string,
+    accessToken: string | null = null,
+  ): Promise<PatientEncountersPageData> {
     const config = getSupabaseServerConfig(accessToken);
 
     if (!config) {
@@ -124,37 +126,60 @@ async function getSupabasePatientEncountersPage(
       ),
     ]);
   const conversationIds = conversations.map((conversation) => conversation.id);
-  const therapistIds = unique(bookings.map((booking) => booking.therapist_profile_id));
+  const therapistIds = unique(
+    bookings.map((booking) => booking.therapist_profile_id),
+  );
   const serviceIds = unique(bookings.map((booking) => booking.service_id));
-  const [therapists, services, reviews, summaries, unreadMessages] =
-    await Promise.all([
-      getRowsByIds<TherapistRecord>(
-        config,
-        "therapist_profiles",
-        "id,public_name,headline,photo_url",
-        therapistIds,
-      ),
-      getRowsByIds<ServiceRecord>(
-        config,
-        "therapist_services",
-        "id,title,therapy_id",
-        serviceIds,
-      ),
-      supabaseRequest<ReviewRecord[]>(
-        config,
-        `/rest/v1/reviews?select=booking_id&patient_profile_id=eq.${patientProfile.id}`,
-      ),
-      supabaseRequest<SessionSummaryRecord[]>(
-        config,
-        `/rest/v1/booking_session_summaries?select=id,booking_id&patient_profile_id=eq.${patientProfile.id}`,
-      ),
-      conversationIds.length > 0
-        ? supabaseRequest<{ id: string }[]>(
-            config,
-            `/rest/v1/messages?select=id&conversation_id=in.(${conversationIds.join(",")})&sender_profile_id=neq.${encodeURIComponent(profileId)}&read_at=is.null`,
-          )
-        : Promise.resolve([]),
-    ]);
+  const bookingIds = bookings.map((booking) => booking.id);
+  const [
+    therapists,
+    services,
+    reviews,
+    summaries,
+    sessionPayments,
+    reschedules,
+    unreadMessages,
+  ] = await Promise.all([
+    getRowsByIds<TherapistRecord>(
+      config,
+      "therapist_profiles",
+      "id,public_name,headline,photo_url",
+      therapistIds,
+    ),
+    getRowsByIds<ServiceRecord>(
+      config,
+      "therapist_services",
+      "id,title,therapy_id",
+      serviceIds,
+    ),
+    supabaseRequest<ReviewRecord[]>(
+      config,
+      `/rest/v1/reviews?select=booking_id&patient_profile_id=eq.${patientProfile.id}`,
+    ),
+    supabaseRequest<SessionSummaryRecord[]>(
+      config,
+      `/rest/v1/booking_session_summaries?select=id,booking_id&patient_profile_id=eq.${patientProfile.id}`,
+    ),
+    getRowsByIds<SessionPaymentRecord>(
+      config,
+      "session_payments",
+      "booking_id,financial_status",
+      bookingIds,
+      "booking_id",
+    ),
+    bookingIds.length > 0
+      ? supabaseRequest<RescheduleRecord[]>(
+          config,
+          `/rest/v1/booking_reschedule_requests?select=booking_id,status&booking_id=in.(${bookingIds.join(",")})&status=eq.pending`,
+        )
+      : Promise.resolve([]),
+    conversationIds.length > 0
+      ? supabaseRequest<{ id: string }[]>(
+          config,
+          `/rest/v1/messages?select=id&conversation_id=in.(${conversationIds.join(",")})&sender_profile_id=neq.${encodeURIComponent(profileId)}&read_at=is.null`,
+        )
+      : Promise.resolve([]),
+  ]);
   const therapyIds = unique(services.map((service) => service.therapy_id));
   const therapies = await getRowsByIds<TherapyRecord>(
     config,
@@ -169,8 +194,16 @@ async function getSupabasePatientEncountersPage(
     patient,
     reviews,
     serviceById: new Map(services.map((service) => [service.id, service])),
+    rescheduleByBookingId: new Map(
+      reschedules.map((reschedule) => [reschedule.booking_id, reschedule]),
+    ),
+    sessionPaymentByBookingId: new Map(
+      sessionPayments.map((payment) => [payment.booking_id, payment]),
+    ),
     summaries,
-    therapistById: new Map(therapists.map((therapist) => [therapist.id, therapist])),
+    therapistById: new Map(
+      therapists.map((therapist) => [therapist.id, therapist]),
+    ),
     therapyById: new Map(therapies.map((therapy) => [therapy.id, therapy])),
     unreadMessagesCount: unreadMessages.length,
     unreadNotificationsCount: notifications.length,
@@ -194,12 +227,13 @@ async function getRowsByIds<T>(
   table: string,
   select: string,
   ids: string[],
+  idColumn = "id",
 ): Promise<T[]> {
   if (ids.length === 0) return [];
 
   return supabaseRequest<T[]>(
     config,
-    `/rest/v1/${table}?select=${select}&id=in.(${ids.join(",")})`,
+    `/rest/v1/${table}?select=${select}&${idColumn}=in.(${ids.join(",")})`,
   );
 }
 
@@ -365,7 +399,9 @@ function createDemoPatientEncountersPage(
     favoriteTherapistsCount: 3,
     patient,
     reviews: [],
+    rescheduleByBookingId: new Map(),
     serviceById: services,
+    sessionPaymentByBookingId: new Map(),
     summaries: bookings
       .filter((booking) => booking.status === "completed")
       .slice(0, 3)

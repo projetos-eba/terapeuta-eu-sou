@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   getSupabaseServerRestConfig,
+  supabaseServerRestRequest,
   supabaseServerRestRpc,
 } from "@/lib/supabase/server-rest";
 
@@ -44,4 +45,30 @@ export async function queryTherapistSessionDetail(
     "get_therapist_session_detail_v1",
     { p_booking_id: bookingId },
   );
+}
+
+export type TherapistPendingRescheduleRow = {
+  expires_at: string | null;
+  id: string;
+  proposed_ends_at: string;
+  proposed_starts_at: string;
+  proposed_timezone: string;
+  reason: string | null;
+  requested_by_profile_id: string;
+  status: "pending";
+};
+
+export async function queryTherapistPendingReschedule(
+  accessToken: string,
+  bookingId: string,
+) {
+  const config = getSupabaseServerRestConfig(accessToken);
+  if (!config) throw new Error("SUPABASE_CONFIG_UNAVAILABLE");
+
+  const rows = await supabaseServerRestRequest<TherapistPendingRescheduleRow[]>(
+    config,
+    `/rest/v1/booking_reschedule_requests?select=id,requested_by_profile_id,proposed_starts_at,proposed_ends_at,proposed_timezone,reason,status,expires_at&booking_id=eq.${encodeURIComponent(bookingId)}&status=eq.pending&order=created_at.desc&limit=1`,
+  );
+
+  return rows[0] ?? null;
 }

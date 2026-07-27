@@ -33,7 +33,9 @@ export type PatientEncounter = {
   endsAt: string;
   id: string;
   meetingUrl: string | null;
+  paymentStatus: string | null;
   primaryAction: BookingPrimaryAction;
+  rescheduleStatus: string | null;
   scheduleLabel: string;
   serviceLabel: string;
   startsAt: string;
@@ -52,6 +54,7 @@ export type PatientEncounterStatus =
   | "live"
   | "confirmed"
   | "pending_payment"
+  | "reschedule_requested"
   | "completed"
   | "cancelled";
 

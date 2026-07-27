@@ -17,9 +17,21 @@ import {
 import { SupabaseServerRestError } from "@/lib/supabase/server-rest";
 
 import {
+  queryTherapistPendingReschedule,
   queryTherapistSessionDetail,
   queryTherapistSessions,
 } from "./therapist-sessions.queries";
+
+export type TherapistSessionPendingReschedule = {
+  expiresAt: string | null;
+  id: string;
+  proposedEndsAt: string;
+  proposedStartsAt: string;
+  proposedTimezone: string;
+  reason: string | null;
+  requestedByCurrentUser: boolean;
+  status: "pending";
+};
 
 export async function getTherapistSessionsPage(input: {
   accessToken: string;
@@ -56,6 +68,34 @@ export async function getTherapistSessionDetail(input: {
       queryTherapistSessionDetail(input.accessToken, input.bookingId),
     treatNullAsEmpty: true,
   });
+}
+
+export async function getTherapistSessionPendingReschedule(input: {
+  accessToken: string;
+  bookingId: string;
+  userId: string;
+}): Promise<TherapistSessionPendingReschedule | null> {
+  try {
+    const row = await queryTherapistPendingReschedule(
+      input.accessToken,
+      input.bookingId,
+    );
+
+    if (!row) return null;
+
+    return {
+      expiresAt: row.expires_at,
+      id: row.id,
+      proposedEndsAt: row.proposed_ends_at,
+      proposedStartsAt: row.proposed_starts_at,
+      proposedTimezone: row.proposed_timezone,
+      reason: row.reason,
+      requestedByCurrentUser: row.requested_by_profile_id === input.userId,
+      status: row.status,
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function runReadOperation<T>(input: {
