@@ -83,6 +83,116 @@ export type SaveTherapistScheduleResult = {
   timezone: string;
 };
 
+export const TherapistBlockReason = {
+  Administrative: "administrative",
+  Health: "health",
+  Other: "other",
+  Personal: "personal",
+  Training: "training",
+  Vacation: "vacation",
+} as const;
+
+export type TherapistBlockReason =
+  (typeof TherapistBlockReason)[keyof typeof TherapistBlockReason];
+
+export const TherapistBlockRecurrence = {
+  Daily: "daily",
+  None: "none",
+  Weekly: "weekly",
+} as const;
+
+export type TherapistBlockRecurrence =
+  (typeof TherapistBlockRecurrence)[keyof typeof TherapistBlockRecurrence];
+
+export type TherapistBlockImpact = {
+  bookingId: UUID;
+  impactId: UUID;
+  patientName: string;
+  resolution: "keep_booking" | null;
+  serviceTitle: string;
+  startsAt: ISODateTimeString;
+  status: "dismissed" | "pending" | "resolved";
+};
+
+export type TherapistBlock = {
+  allDay: boolean;
+  createdAt: ISODateTimeString;
+  endsAt: ISODateTimeString;
+  id: UUID;
+  impactedBookings: TherapistBlockImpact[];
+  reason: string | null;
+  reasonCode: TherapistBlockReason;
+  recurrenceEndsOn: string | null;
+  recurrenceFrequency: TherapistBlockRecurrence;
+  seriesId: UUID | null;
+  serviceId: UUID | null;
+  serviceTitle: string | null;
+  startsAt: ISODateTimeString;
+  status: "active" | "cancelled";
+  timezone: string;
+  version: number;
+};
+
+export type TherapistBlocksReadModel = {
+  blocks: TherapistBlock[];
+  contractVersion: 1;
+  nextCursor: {
+    id: UUID;
+    startsAt: ISODateTimeString;
+  } | null;
+  scheduleVersion: number;
+  summary: {
+    activeBlocks: number;
+    pendingImpacts: number;
+    recurringSeries: number;
+  };
+  therapistProfileId: UUID;
+  timezone: string;
+};
+
+export type CreateTherapistBlockInput = {
+  action: "create";
+  allDay: boolean;
+  endTime: string | null;
+  reason: string | null;
+  reasonCode: TherapistBlockReason;
+  recurrenceEndsOn: string;
+  recurrenceFrequency: TherapistBlockRecurrence;
+  requestId: UUID;
+  serviceId: UUID | null;
+  startTime: string | null;
+  startsOn: string;
+  timezone: string;
+};
+
+export type CancelTherapistBlockInput = {
+  action: "cancel";
+  blockId: UUID;
+  expectedScheduleVersion: number;
+  requestId: UUID;
+  scope: "occurrence" | "series";
+};
+
+export type ResolveTherapistBlockImpactInput = {
+  action: "resolve_impact";
+  impactId: UUID;
+  requestId: UUID;
+  resolution: "keep_booking";
+};
+
+export type TherapistBlockActionInput =
+  | CancelTherapistBlockInput
+  | CreateTherapistBlockInput
+  | ResolveTherapistBlockImpactInput;
+
+export type TherapistBlockCommandResult = {
+  idempotentReplay: boolean;
+  impactedBookingCount?: number;
+  occurrenceCount?: number;
+  scheduleVersion?: number;
+  seriesId?: UUID;
+};
+
 export type BookingHold = {
   bookingId?: UUID;
   expiresAt: ISODateTimeString;

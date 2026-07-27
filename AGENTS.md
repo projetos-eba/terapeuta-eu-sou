@@ -153,6 +153,9 @@ Stack real identificada:
 - Usar `src/lib/routes.ts` para rotas.
 - Usar `src/lib/permissions.ts` para permissões e recursos por plano.
 - Usar `docs/design-system/tokens.md` como fonte única de tokens.
+- Todo conteúdo modal deve usar `TESDialog`, com portal sobre o shell, overlay,
+  bloqueio de scroll, foco confinado, retorno de foco e fechamento por
+  `Escape`; não criar `role="dialog"` diretamente em features.
 - Títulos e textos primários devem usar `text-brand-deep`/`text-tesText-primary` com valor canônico `#14105A`; não usar hex hardcoded como `#261433` ou variações próximas.
 - Não alterar tokens globais sem avaliar impacto visual.
 - Procurar componente existente antes de criar outro.

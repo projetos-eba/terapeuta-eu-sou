@@ -249,6 +249,22 @@ Usa alta densidade com sidebar, KPIs, tabelas, filtros, filas de moderação, gr
 - `Accordion`
 - `Toast`
 
+### Regra de modais
+
+Todo modal de produto deve usar o primitive compartilhado `TESDialog`.
+
+- renderizar em portal diretamente no `document.body`;
+- cobrir viewport, sidebar e topbar com o overlay semântico
+  `--tes-color-overlay`;
+- bloquear o scroll da página enquanto estiver aberto;
+- mover o foco para o modal, manter o foco dentro dele e devolver o foco ao
+  elemento de origem ao fechar;
+- fechar por `Escape`, botão visível e clique direto no backdrop;
+- não fechar ao interagir com o conteúdo;
+- usar `role="dialog"`, `aria-modal`, título e descrição associados;
+- no mobile, respeitar `100dvh`, área de toque mínima e scroll interno;
+- não criar overlays locais com `z-index` ou cores ad hoc.
+
 ### Dados
 
 - `DataTable`

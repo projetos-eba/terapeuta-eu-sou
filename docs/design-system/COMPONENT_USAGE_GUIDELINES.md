@@ -25,6 +25,17 @@ Evitar:
 - Promessa de cura.
 - Promessa de ganho financeiro.
 
+## Modal e diálogo
+
+- Usar `TESDialog` para qualquer conteúdo modal.
+- O modal deve ser renderizado em portal e cobrir o shell completo.
+- Overlay, bloqueio de scroll, foco confinado, retorno de foco e fechamento por
+  `Escape` são obrigatórios.
+- O backdrop fecha somente quando ele próprio é acionado.
+- A ação principal deve ficar visível sem competir com o botão de fechar.
+- Em telas pequenas, o conteúdo usa scroll interno e nunca ultrapassa `100dvh`.
+- Não implementar `role="dialog"` diretamente dentro de features.
+
 ## Base
 
 Nomenclatura atual no Figma:
@@ -676,30 +687,39 @@ Regras obrigatórias:
 ## Component: Nome do componente
 
 ### Purpose
+
 Para que serve.
 
 ### When to use
+
 Quando usar.
 
 ### When not to use
+
 Quando evitar.
 
 ### Anatomy
+
 Partes internas do componente.
 
 ### Variants
+
 Variants disponíveis.
 
 ### Properties
+
 Properties reutilizáveis.
 
 ### Accessibility
+
 Regras de acessibilidade.
 
 ### Content guidelines
+
 Orientações de texto.
 
 ### AI metadata
+
 - Component name:
 - Category:
 - Intent:
@@ -714,27 +734,35 @@ Orientações de texto.
 ## Component: Product/TherapistResultCard
 
 ### Purpose
+
 Apresentar um terapeuta dentro de resultados de busca ou listas públicas com informação suficiente para escolha inicial.
 
 ### When to use
+
 Use em `/terapeutas`, favoritos, recomendações de jornada e listagens onde o usuário compara profissionais.
 
 ### When not to use
+
 Evite em grids promocionais simples ou em destaques de home; nesses casos, use `Product/TherapistCard`.
 
 ### Anatomy
+
 Avatar, conteúdo principal, badges de cuidado, avaliação, próximo horário, preço e ações.
 
 ### Variants
+
 `default`, `compact`, `loading` e `unavailable` são previstas para Storybook/código.
 
 ### Accessibility
+
 O card não deve depender apenas de cor para status. Ações precisam de foco visível e alvo mínimo confortável.
 
 ### Content guidelines
+
 Use linguagem clara e acolhedora. Não prometa resultado terapêutico. Prefira “próximo horário” e “ver perfil” em vez de linguagem comercial agressiva.
 
 ### AI metadata
+
 - Component name: `Product/TherapistResultCard`
 - Category: Product
 - Intent: Therapist search result
@@ -748,27 +776,35 @@ Use linguagem clara e acolhedora. Não prometa resultado terapêutico. Prefira �
 ## Component: Product/TherapyVisualCard
 
 ### Purpose
+
 Apresentar uma terapia em grids visuais com imagem ou ilustração, descrição curta e caminho para saber mais.
 
 ### When to use
+
 Use em `/terapias`, favoritos de terapias, recomendações da jornada e blocos relacionados onde a terapia precisa ser comparada visualmente.
 
 ### When not to use
+
 Evite em listas densas ou tabelas. Para cards textuais compactos, use `Product/TherapyCard`.
 
 ### Anatomy
+
 Container, `Visual`, `Icon Slot`, `Content`, `Title`, `Description` e `Action`.
 
 ### Variants
+
 Previstas para Storybook/código: `default`, `recommended`, `saved`, `loading` e `unavailable`.
 
 ### Accessibility
+
 O card precisa ter nome da terapia legível, ação com foco visível e alvo confortável. A imagem não deve ser a única forma de compreender o tema.
 
 ### Content guidelines
+
 Use descrições curtas, acolhedoras e sem promessa de cura. Prefira “Saiba mais” para páginas públicas.
 
 ### AI metadata
+
 - Component name: `Product/TherapyVisualCard`
 - Category: Product
 - Intent: Visual therapy catalog card
@@ -782,15 +818,19 @@ Use descrições curtas, acolhedoras e sem promessa de cura. Prefira “Saiba ma
 ## Component: Brand/OfficialLogo
 
 ### Purpose
+
 Representar o logotipo oficial do Terapeuta Eu Sou a partir do PNG fornecido.
 
 ### When to use
+
 Use em headers, footers, documentos visuais e telas públicas onde a marca precisa aparecer.
 
 ### When not to use
+
 Não redesenhe o logo localmente nem substitua por texto quando houver espaço para o lockup oficial.
 
 ### AI metadata
+
 - Component name: `Brand/OfficialLogo`
 - Figma node: `12548:140`
 - Refined size: `220x118`
@@ -801,12 +841,15 @@ Não redesenhe o logo localmente nem substitua por texto quando houver espaço p
 ## Component: Organisms/Public Footer
 
 ### Purpose
+
 Padronizar o rodapé das páginas públicas com logo oficial, links institucionais e apoio de navegação.
 
 ### When to use
+
 Use no final de páginas públicas recriadas e futuras páginas públicas.
 
 ### AI metadata
+
 - Component name: `Organisms/Public Footer`
 - Figma node: `12548:142`
 - Refined size: `1055x236`
@@ -815,6 +858,7 @@ Use no final de páginas públicas recriadas e futuras páginas públicas.
 - Avoid: footer local duplicado, links cortados, colunas com overflow
 
 ### Usage notes
+
 - Use como footer padrão em páginas públicas de `1055px`.
 - Não redimensione para menos de `236px` de altura; se a página tiver mais links, aumente a altura do frame da página.
 - Preserve o logo oficial como instância de `Brand/OfficialLogo`.
@@ -822,12 +866,15 @@ Use no final de páginas públicas recriadas e futuras páginas públicas.
 ## Component: Molecules/FAQAccordion
 
 ### Purpose
+
 Representar perguntas frequentes em linhas expansíveis.
 
 ### When to use
+
 Use em `/como-funciona`, detalhes de terapia, perfil de terapeuta e páginas de ajuda.
 
 ### AI metadata
+
 - Component name: `Molecules/FAQAccordion`
 - Figma node: `12548:162`
 - Refined size: `620x64`
@@ -836,6 +883,7 @@ Use em `/como-funciona`, detalhes de terapia, perfil de terapeuta e páginas de 
 - Avoid: perguntas sem foco visível ou linhas com texto cortado
 
 ### Usage notes
+
 - Use a linha colapsada como base.
 - Estados `expanded` e `focus` estão documentados em `Design System / Public Reusable Consolidation`.
 - Para resposta longa, expanda a altura do wrapper do item em vez de reduzir fonte.
@@ -843,9 +891,11 @@ Use em `/como-funciona`, detalhes de terapia, perfil de terapeuta e páginas de 
 ## Component: Product/JourneyStepCard
 
 ### Purpose
+
 Mostrar uma etapa da jornada em sequência curta, como o fluxo de 4 passos de `/como-funciona`.
 
 ### AI metadata
+
 - Component name: `Product/JourneyStepCard`
 - Figma node: `12548:165`
 - Refined size: `210x332`
@@ -854,6 +904,7 @@ Mostrar uma etapa da jornada em sequência curta, como o fluxo de 4 passos de `/
 - Avoid: promessas terapêuticas ou etapas comerciais agressivas
 
 ### Usage notes
+
 - Use em sequências de 3 a 4 passos.
 - Preserve número da etapa, slot de ícone, título e descrição com auto-height.
 - Se a descrição não couber, aumente o grid ou a seção; não comprima a tipografia.
@@ -861,9 +912,11 @@ Mostrar uma etapa da jornada em sequência curta, como o fluxo de 4 passos de `/
 ## Component: Product/JourneyDetailCard
 
 ### Purpose
+
 Apoiar páginas educacionais com cards compactos de detalhe e ação.
 
 ### AI metadata
+
 - Component name: `Product/JourneyDetailCard`
 - Figma node: `12548:170`
 - Refined size: `330x170`
@@ -872,18 +925,22 @@ Apoiar páginas educacionais com cards compactos de detalhe e ação.
 - Avoid: card dentro de card e descrições longas
 
 ### Usage notes
+
 - Use em grids educacionais e blocos de suporte.
 - O card comporta título, descrição curta e ação. Para descrições maiores, prefira uma seção expandida.
 
 ## Component: Product/JourneyResultCard/Wide
 
 ### Purpose
+
 Apresentar recomendações de caminho terapêutico em layout horizontal amplo.
 
 ### When to use
+
 Use em `/sua-jornada/resultado` quando houver terapia, sintonia, descrição, contagem de terapeutas e CTA.
 
 ### AI metadata
+
 - Component name: `Product/JourneyResultCard/Wide`
 - Figma node: `12548:175`
 - Refined size: `923x220`
@@ -892,6 +949,7 @@ Use em `/sua-jornada/resultado` quando houver terapia, sintonia, descrição, co
 - Avoid: comprimir CTA, cortar tags ou prometer cura
 
 ### Usage notes
+
 - Use em `/sua-jornada/resultado` e páginas com recomendações horizontais de terapia.
 - Preserve badge, título, descrição, tags, contagem de terapeutas e CTAs.
 - O tamanho `923x220` é a base validada para páginas públicas de `1055px`.
