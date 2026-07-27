@@ -179,8 +179,8 @@ Stack real identificada:
   `booking_holds` com TTL e idempotência, intervalo ocupado indexável,
   exclusão GiST por terapeuta, locks transacionais, transições auditadas e
   reagendamento versionado. RPCs de escrita são `service_role` only e devem ser
-  orquestrados por Edge Functions autenticadas; o slot engine completo pertence
-  a A5 e o checkout integrado a A6.
+  orquestrados por Edge Functions autenticadas. A5 concluiu o slot engine
+  autoritativo e o calendário privado; o checkout integrado pertence a A6.
 - Zoom: arquitetura Video SDK implementada com `video_sessions`,
   `video_session_participations`, `zoom_video_webhook_events`, Edge Function
   `zoom-video-session-access`, webhook `zoom-webhook`, rota

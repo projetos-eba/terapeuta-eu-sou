@@ -1,7 +1,7 @@
 # MVP Transacional TES - Base Tecnica Consolidada
 
 Data: 2026-07-11
-Atualizado em: 2026-07-26
+Atualizado em: 2026-07-27
 
 Status: documento consolidado para orientar arquitetura, produto e implementacao do MVP.
 
@@ -12,9 +12,9 @@ Atualizacao operacional de 2026-07-25:
 - `/basico/*`, `/pro/*` e `/plus/*` sao redirects de compatibilidade
   implementados na Fase Agenda 1;
 - `/terapeutas/*` permanece exclusivamente publico;
-- o Gate Financeiro F0 e a fundacao transacional de Agenda A2 foram
-  implementados e validados; A3 e o proximo marco do modulo, descrito em
-  `docs/architecture/relatorio-25-07-2026.md`;
+- o Gate Financeiro F0 e os marcos de Agenda A2, A3, A4 e A5 foram
+  implementados e validados; A6 e o proximo marco transacional do modulo,
+  descrito em `docs/architecture/relatorio-25-07-2026.md`;
 - a fundacao Zoom Z0 foi implementada antes de A2, com outbox pós-pagamento,
   Video SDK e webhooks; o go-live ainda depende dos gates operacionais
   registrados em `docs/zoom/production-readiness.md`.
@@ -25,6 +25,9 @@ Atualizacao operacional de 2026-07-25:
   cursor, filtros, estado composto, pagamento canonico, preview Zoom seguro e
   contadores leves do shell. Ver
   `docs/architecture/agenda-sessions-preparation.md`.
+- A5 adicionou slots autoritativos, validacao de holds contra a agenda,
+  calendario privado dia/semana/mes e cores semanticas por terapia. Ver
+  `docs/architecture/agenda-a5-closure.md`.
 
 ## 1. Objetivo
 

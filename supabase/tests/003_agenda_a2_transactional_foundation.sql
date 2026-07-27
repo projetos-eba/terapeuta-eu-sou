@@ -2,6 +2,46 @@ begin;
 
 select plan(43);
 
+create temporary table a2_available_slots (
+  service_id uuid primary key,
+  starts_at timestamptz not null,
+  ends_at timestamptz not null
+) on commit drop;
+
+insert into a2_available_slots (service_id, starts_at, ends_at)
+select
+  service.id,
+  slot.starts_at,
+  slot.ends_at
+from (
+  values
+    ('d1000000-0000-4000-8000-000000000001'::uuid),
+    ('d1000000-0000-4000-8000-000000000002'::uuid),
+    ('d1000000-0000-4000-8000-000000000006'::uuid)
+) as service(id)
+join public.therapist_services as therapist_service
+  on therapist_service.id = service.id
+cross join lateral (
+  select candidate.starts_at, candidate.ends_at
+  from public.list_service_schedule_candidates_v1(
+    service.id,
+    now(),
+    now() + interval '30 days',
+    now(),
+    100
+  ) as candidate
+  where not exists (
+    select 1
+    from public.bookings as booking
+    where booking.therapist_profile_id =
+      therapist_service.therapist_profile_id
+      and booking.status in ('draft', 'pending_payment', 'confirmed')
+      and booking.occupied_during && candidate.occupied_during
+  )
+  order by candidate.starts_at
+  limit 1
+) as slot;
+
 select is(
   (
     select count(*)::integer
@@ -68,8 +108,8 @@ select is(
     public.reserve_booking_hold_v1(
       'b1000000-0000-4000-8000-000000000005',
       'd1000000-0000-4000-8000-000000000001',
-      date_trunc('day', now()) + interval '20 days 15 hours',
-      date_trunc('day', now()) + interval '20 days 15 hours 50 minutes',
+      (select starts_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
+      (select ends_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
       'America/Sao_Paulo',
       'a2-hold-idempotency-0001',
       600
@@ -108,8 +148,8 @@ select is(
     public.reserve_booking_hold_v1(
       'b1000000-0000-4000-8000-000000000005',
       'd1000000-0000-4000-8000-000000000001',
-      date_trunc('day', now()) + interval '20 days 15 hours',
-      date_trunc('day', now()) + interval '20 days 15 hours 50 minutes',
+      (select starts_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
+      (select ends_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
       'America/Sao_Paulo',
       'a2-hold-idempotency-0001',
       600
@@ -138,8 +178,8 @@ select throws_ok(
     select public.reserve_booking_hold_v1(
       'b1000000-0000-4000-8000-000000000006',
       'd1000000-0000-4000-8000-000000000001',
-      date_trunc('day', now()) + interval '20 days 15 hours 20 minutes',
-      date_trunc('day', now()) + interval '20 days 16 hours 10 minutes',
+      (select starts_at + interval '20 minutes' from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
+      (select ends_at + interval '20 minutes' from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
       'America/Sao_Paulo',
       'a2-hold-conflict-same-service',
       600
@@ -155,8 +195,8 @@ select throws_ok(
     select public.reserve_booking_hold_v1(
       'b1000000-0000-4000-8000-000000000006',
       'd1000000-0000-4000-8000-000000000006',
-      date_trunc('day', now()) + interval '20 days 15 hours 20 minutes',
-      date_trunc('day', now()) + interval '20 days 16 hours 20 minutes',
+      (select starts_at + interval '20 minutes' from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
+      (select starts_at + interval '80 minutes' from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
       'America/Sao_Paulo',
       'a2-hold-conflict-other-service',
       600
@@ -172,15 +212,15 @@ select is(
     public.reserve_booking_hold_v1(
       'b1000000-0000-4000-8000-000000000006',
       'd1000000-0000-4000-8000-000000000002',
-      date_trunc('day', now()) + interval '20 days 15 hours 20 minutes',
-      date_trunc('day', now()) + interval '20 days 16 hours 20 minutes',
+      (select starts_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000002'),
+      (select ends_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000002'),
       'America/Sao_Paulo',
       'a2-hold-other-therapist-0001',
       600
     )
   ).status::text,
   'active',
-  'different therapists can hold overlapping wall-clock intervals'
+  'different therapists can hold independently valid intervals'
 );
 
 select is(
@@ -222,8 +262,8 @@ select is(
     public.reserve_booking_hold_v1(
       'b1000000-0000-4000-8000-000000000005',
       'd1000000-0000-4000-8000-000000000006',
-      date_trunc('day', now()) + interval '20 days 15 hours',
-      date_trunc('day', now()) + interval '20 days 16 hours',
+      (select starts_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000006'),
+      (select ends_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000006'),
       'America/Sao_Paulo',
       'a2-hold-consume-0001',
       600
@@ -311,8 +351,8 @@ select throws_ok(
     select public.reserve_booking_hold_v1(
       'b1000000-0000-4000-8000-000000000006',
       'd1000000-0000-4000-8000-000000000001',
-      date_trunc('day', now()) + interval '20 days 15 hours 20 minutes',
-      date_trunc('day', now()) + interval '20 days 16 hours 10 minutes',
+      (select starts_at + interval '20 minutes' from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
+      (select ends_at + interval '20 minutes' from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
       'America/Sao_Paulo',
       'a2-booking-conflict-other-service',
       600

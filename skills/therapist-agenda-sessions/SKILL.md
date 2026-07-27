@@ -42,6 +42,7 @@ Não criar enums equivalentes dentro de features.
 ## Leitura
 
 - Agenda usa `get_therapist_agenda_v1`.
+- Calendário usa `get_therapist_calendar_v1` para as visões dia, semana e mês.
 - Sessões usa `get_therapist_sessions_v1` e cursor `(startsAt, bookingId)`.
 - Detalhe usa `get_therapist_session_detail_v1`.
 - Shell usa `get_therapist_shell_counters_v1`, nunca o dashboard completo.
@@ -59,6 +60,8 @@ Não criar enums equivalentes dentro de features.
   `therapist-schedule-update` para escrita autenticada.
 - O fechamento A3 e sua matriz de evidências estão em
   `docs/architecture/agenda-a3-closure.md`.
+- O Calendário usa o frame Figma `13366:5342` e persiste estado navegável em
+  `aba=calendario`, `visao=day|week|month` e `data=YYYY-MM-DD`.
 - A UI edita faixas em escopo geral ou por terapia e preserva regras dos
   outros escopos no comando atômico.
 - Duração pertence ao serviço; `slotStepMinutes` significa intervalo de oferta,
@@ -77,11 +80,15 @@ Não criar enums equivalentes dentro de features.
 - Criar bloqueio nunca altera booking. Impactos são registrados em
   `availability_exception_booking_impacts` e exigem resolução explícita.
 - Cancelamento/reagendamento de booking continuam nos comandos próprios.
-- O preview TypeScript não confirma reserva.
+- O preview TypeScript não confirma reserva nem deve alimentar novos fluxos.
+- A5 usa `get_service_available_slots_v1` como endpoint público autoritativo e
+  repete a validação no trigger de `booking_holds`.
+- `therapies.calendar_color_key` é a chave canônica de cor. Nunca persistir
+  classe Tailwind ou valor visual arbitrário no banco.
 - Booking do terapeuta bloqueia todos os serviços no mesmo intervalo.
 - Aplicar buffers e validar intervalos.
-- O Postgres protege holds e bookings; a composição autoritativa de slots
-  continua pertencendo ao futuro endpoint A5.
+- O Postgres protege holds e bookings e compõe slots autoritativos com regras,
+  exceções, timezone, duração, cadência, buffers, antecedência e horizonte.
 - `booking_holds` usa TTL, idempotência, snapshots e advisory lock por
   terapeuta.
 - `occupied_during` e constraints GiST impedem conflito entre serviços.
@@ -126,6 +133,8 @@ Não criar enums equivalentes dentro de features.
   auditoria, sobreposição, timezone e propriedade do serviço.
 - O pgTAP A4 deve cobrir séries, ocorrências UTC, impactos, booking preservado,
   versão compartilhada, replay, remoção lógica, RLS e terapeuta suspenso.
+- O pgTAP A5 deve cobrir privacidade pública, slots, bloqueios, bookings, holds,
+  RLS, identidade, terapeuta suspenso e calendário versionado.
 - Testar conflito entre serviços, buffers, exceções e período vazio.
 - Testar transições permitidas e proibidas.
 - Testar paciente e terapeuta com o mesmo horário e serviço.

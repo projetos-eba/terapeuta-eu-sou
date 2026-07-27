@@ -166,41 +166,421 @@ export type Database = {
           },
         ]
       }
-      availability_exceptions: {
+      availability_exception_booking_impacts: {
         Row: {
+          booking_id: string
           created_at: string
-          ends_at: string
+          exception_id: string
           id: string
-          is_available: boolean
-          reason: string | null
-          service_id: string | null
-          starts_at: string
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by_user_id: string | null
+          status: string
           therapist_profile_id: string
           updated_at: string
         }
         Insert: {
+          booking_id: string
           created_at?: string
-          ends_at: string
+          exception_id: string
           id?: string
-          is_available?: boolean
-          reason?: string | null
-          service_id?: string | null
-          starts_at: string
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          status?: string
           therapist_profile_id: string
           updated_at?: string
         }
         Update: {
+          booking_id?: string
           created_at?: string
-          ends_at?: string
+          exception_id?: string
           id?: string
-          is_available?: boolean
-          reason?: string | null
-          service_id?: string | null
-          starts_at?: string
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by_user_id?: string | null
+          status?: string
           therapist_profile_id?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "availability_exception_booking_impact_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_booking_impact_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_booking_impact_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "availability_exception_booking_impact_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_booking_impacts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_booking_impacts_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+          {
+            foreignKeyName: "availability_exception_booking_impacts_exception_id_fkey"
+            columns: ["exception_id"]
+            isOneToOne: false
+            referencedRelation: "availability_exceptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_booking_impacts_resolved_by_user_id_fkey"
+            columns: ["resolved_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      availability_exception_events: {
+        Row: {
+          actor_user_id: string
+          booking_id: string | null
+          created_at: string
+          event_type: string
+          exception_id: string | null
+          id: string
+          request_id: string
+          result: Json
+          series_id: string | null
+          therapist_profile_id: string
+        }
+        Insert: {
+          actor_user_id: string
+          booking_id?: string | null
+          created_at?: string
+          event_type: string
+          exception_id?: string | null
+          id?: string
+          request_id: string
+          result?: Json
+          series_id?: string | null
+          therapist_profile_id: string
+        }
+        Update: {
+          actor_user_id?: string
+          booking_id?: string | null
+          created_at?: string
+          event_type?: string
+          exception_id?: string | null
+          id?: string
+          request_id?: string
+          result?: Json
+          series_id?: string | null
+          therapist_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_exception_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_events_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_events_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_session_read_model_v1"
+            referencedColumns: ["bookingId"]
+          },
+          {
+            foreignKeyName: "availability_exception_events_exception_id_fkey"
+            columns: ["exception_id"]
+            isOneToOne: false
+            referencedRelation: "availability_exceptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_events_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "availability_exception_series"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "availability_exception_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      availability_exception_series: {
+        Row: {
+          all_day: boolean
+          cancelled_at: string | null
+          cancelled_by_user_id: string | null
+          created_at: string
+          created_by_user_id: string
+          end_time: string | null
+          id: string
+          reason: string | null
+          reason_code: string
+          recurrence_ends_on: string
+          recurrence_frequency: string
+          service_id: string | null
+          start_time: string | null
+          starts_on: string
+          status: string
+          therapist_profile_id: string
+          timezone: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          all_day?: boolean
+          cancelled_at?: string | null
+          cancelled_by_user_id?: string | null
+          created_at?: string
+          created_by_user_id: string
+          end_time?: string | null
+          id?: string
+          reason?: string | null
+          reason_code: string
+          recurrence_ends_on: string
+          recurrence_frequency?: string
+          service_id?: string | null
+          start_time?: string | null
+          starts_on: string
+          status?: string
+          therapist_profile_id: string
+          timezone: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          all_day?: boolean
+          cancelled_at?: string | null
+          cancelled_by_user_id?: string | null
+          created_at?: string
+          created_by_user_id?: string
+          end_time?: string | null
+          id?: string
+          reason?: string | null
+          reason_code?: string
+          recurrence_ends_on?: string
+          recurrence_frequency?: string
+          service_id?: string | null
+          start_time?: string | null
+          starts_on?: string
+          status?: string
+          therapist_profile_id?: string
+          timezone?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_exception_series_cancelled_by_user_id_fkey"
+            columns: ["cancelled_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_series_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_series_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profile_services_v"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "availability_exception_series_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "availability_exception_series_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_series_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_series_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exception_series_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "availability_exception_series_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      availability_exceptions: {
+        Row: {
+          all_day: boolean
+          cancelled_at: string | null
+          cancelled_by_user_id: string | null
+          created_at: string
+          created_by_user_id: string | null
+          ends_at: string
+          id: string
+          is_available: boolean
+          occurrence_date: string | null
+          reason: string | null
+          reason_code: string
+          series_id: string | null
+          service_id: string | null
+          starts_at: string
+          status: string
+          therapist_profile_id: string
+          timezone: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          all_day?: boolean
+          cancelled_at?: string | null
+          cancelled_by_user_id?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          ends_at: string
+          id?: string
+          is_available?: boolean
+          occurrence_date?: string | null
+          reason?: string | null
+          reason_code?: string
+          series_id?: string | null
+          service_id?: string | null
+          starts_at: string
+          status?: string
+          therapist_profile_id: string
+          timezone?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          all_day?: boolean
+          cancelled_at?: string | null
+          cancelled_by_user_id?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          ends_at?: string
+          id?: string
+          is_available?: boolean
+          occurrence_date?: string | null
+          reason?: string | null
+          reason_code?: string
+          series_id?: string | null
+          service_id?: string | null
+          starts_at?: string
+          status?: string
+          therapist_profile_id?: string
+          timezone?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_exceptions_cancelled_by_user_id_fkey"
+            columns: ["cancelled_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exceptions_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_exceptions_series_id_fkey"
+            columns: ["series_id"]
+            isOneToOne: false
+            referencedRelation: "availability_exception_series"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "availability_exceptions_service_id_fkey"
             columns: ["service_id"]
@@ -4108,6 +4488,7 @@ export type Database = {
       }
       therapies: {
         Row: {
+          calendar_color_key: string
           category_id: string
           created_at: string
           description: string | null
@@ -4127,6 +4508,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          calendar_color_key?: string
           category_id: string
           created_at?: string
           description?: string | null
@@ -4146,6 +4528,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          calendar_color_key?: string
           category_id?: string
           created_at?: string
           description?: string | null
@@ -6971,6 +7354,16 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      cancel_therapist_block_v1: {
+        Args: {
+          p_actor_user_id: string
+          p_block_id: string
+          p_expected_schedule_version: number
+          p_request_id: string
+          p_scope: string
+        }
+        Returns: Json
+      }
       cancel_video_session_for_booking_v1: {
         Args: { p_booking_id: string; p_source?: string }
         Returns: string
@@ -7051,6 +7444,23 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_therapist_block_v1: {
+        Args: {
+          p_actor_user_id: string
+          p_all_day: boolean
+          p_end_time: string
+          p_reason: string
+          p_reason_code: string
+          p_recurrence_ends_on: string
+          p_recurrence_frequency: string
+          p_request_id: string
+          p_service_id: string
+          p_start_time: string
+          p_starts_on: string
+          p_timezone: string
+        }
+        Returns: Json
+      }
       create_weekly_payout_batch: {
         Args: {
           p_created_by?: string
@@ -7102,8 +7512,34 @@ export type Database = {
         Args: { p_now?: string }
         Returns: number
       }
+      get_service_available_slots_v1: {
+        Args: {
+          p_limit?: number
+          p_range_end?: string
+          p_range_start?: string
+          p_service_id: string
+        }
+        Returns: Json
+      }
       get_therapist_agenda_v1: {
         Args: { p_range_end?: string; p_range_start?: string }
+        Returns: Json
+      }
+      get_therapist_blocks_v1: {
+        Args: {
+          p_cursor_id?: string
+          p_cursor_starts_at?: string
+          p_limit?: number
+          p_range_end?: string
+          p_range_start?: string
+          p_reason_code?: string
+          p_search?: string
+          p_status?: string
+        }
+        Returns: Json
+      }
+      get_therapist_calendar_v1: {
+        Args: { p_anchor_date?: string; p_view?: string }
         Returns: Json
       }
       get_therapist_dashboard_v1: { Args: never; Returns: Json }
@@ -7151,7 +7587,31 @@ export type Database = {
         Args: { candidate_id: string }
         Returns: boolean
       }
+      is_service_schedule_slot_v1: {
+        Args: {
+          p_ends_at: string
+          p_reference_at?: string
+          p_service_id: string
+          p_starts_at: string
+        }
+        Returns: boolean
+      }
       is_valid_timezone_v1: { Args: { p_timezone: string }; Returns: boolean }
+      list_service_schedule_candidates_v1: {
+        Args: {
+          p_limit?: number
+          p_range_end: string
+          p_range_start: string
+          p_reference_at?: string
+          p_service_id: string
+        }
+        Returns: {
+          ends_at: string
+          occupied_during: unknown
+          starts_at: string
+          timezone: string
+        }[]
+      }
       mark_video_session_termination_confirmed_v1: {
         Args: { p_reason?: string; p_video_session_id: string }
         Returns: undefined
@@ -7323,6 +7783,15 @@ export type Database = {
           p_reschedule_request_id: string
           p_resolution: string
           p_resolved_by_profile_id: string
+        }
+        Returns: Json
+      }
+      resolve_therapist_block_impact_v1: {
+        Args: {
+          p_actor_user_id: string
+          p_impact_id: string
+          p_request_id: string
+          p_resolution: string
         }
         Returns: Json
       }

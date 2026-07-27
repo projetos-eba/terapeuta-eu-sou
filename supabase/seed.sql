@@ -3004,3 +3004,14 @@ set
   body = excluded.body,
   href = excluded.href,
   read_at = excluded.read_at;
+
+-- Stable therapy palette shared by Agenda and the future therapy editor.
+update public.therapies
+set calendar_color_key = case
+  when slug in ('reiki', 'thetahealing') then 'purple'
+  when slug in ('aromaterapia', 'fitoterapia') then 'green'
+  when slug in ('mesa-radionica', 'constelacao-familiar') then 'orange'
+  when slug in ('mindfulness', 'meditacao') then 'blue'
+  when slug in ('taro', 'tarologia') then 'pink'
+  else 'neutral'
+end;
