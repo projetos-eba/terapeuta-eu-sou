@@ -6,6 +6,13 @@ import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 export async function POST(request: Request) {
   let body: unknown;
 
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json(
+      { ok: false, message: "Origem da requisicao invalida." },
+      { headers: noStoreHeaders, status: 403 },
+    );
+  }
+
   try {
     body = await request.json();
   } catch {
@@ -17,6 +24,7 @@ export async function POST(request: Request) {
 
   const bookingId = isRecord(body) ? body.bookingId : null;
   const intent = isRecord(body) ? body.intent : null;
+  const actorRole = isRecord(body) ? body.actorRole : null;
 
   if (typeof bookingId !== "string" || !/^[0-9a-f-]{36}$/i.test(bookingId)) {
     return NextResponse.json(
@@ -30,9 +38,19 @@ export async function POST(request: Request) {
       { headers: noStoreHeaders, status: 422 },
     );
   }
+  if (
+    actorRole !== null &&
+    actorRole !== "patient" &&
+    actorRole !== "therapist"
+  ) {
+    return NextResponse.json(
+      { ok: false, message: "Perfil de acesso invalido." },
+      { headers: noStoreHeaders, status: 422 },
+    );
+  }
 
   const config = getSupabasePublicConfig();
-  const accessToken = await getAvailableAccessToken();
+  const accessToken = await getAvailableAccessToken(actorRole);
 
   if (!config || !accessToken) {
     return NextResponse.json(
@@ -44,7 +62,7 @@ export async function POST(request: Request) {
   const response = await fetch(
     `${config.url}/functions/v1/zoom-video-session-access`,
     {
-      body: JSON.stringify({ bookingId, intent: intent ?? "join" }),
+      body: JSON.stringify({ actorRole, bookingId, intent: intent ?? "join" }),
       cache: "no-store",
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -63,8 +81,18 @@ export async function POST(request: Request) {
 
 const noStoreHeaders = { "Cache-Control": "no-store" };
 
-async function getAvailableAccessToken() {
+async function getAvailableAccessToken(
+  actorRole: "patient" | "therapist" | null,
+) {
   const cookieStore = await cookies();
+
+  if (actorRole === "therapist") {
+    return cookieStore.get("tes_therapist_access_token")?.value ?? null;
+  }
+
+  if (actorRole === "patient") {
+    return cookieStore.get("tes_patient_access_token")?.value ?? null;
+  }
 
   return (
     cookieStore.get("tes_therapist_access_token")?.value ??
@@ -75,4 +103,18 @@ async function getAvailableAccessToken() {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function isSameOriginRequest(request: Request) {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+
+  const host = request.headers.get("host");
+  if (!host) return false;
+
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
 }

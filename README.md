@@ -105,20 +105,37 @@ ao Zoom nessa etapa.
 Functions:
 
 - `zoom-video-session-access`: valida usuario, booking, pagamento, status,
-  janela de acesso e gera JWT curto do Video SDK.
+  janela de acesso, host-first e gera JWT curto do Video SDK.
 - `zoom-webhook`: valida assinatura/challenge e processa eventos operacionais
   `session.*`.
+- `zoom-video-session-maintenance`: processa jobs duraveis de encerramento por
+  hard timeout, ausencia do terapeuta e reconciliacao operacional.
 
 Scripts:
 
 - `npm run zoom:video-sdk:env`: audita variaveis sem imprimir valores.
 - `npm run zoom:video-sdk:test`: roda testes Deno e Vitest da integracao.
 - `npm run zoom:video-sdk:webhook:smoke`: envia payloads locais assinados.
+- `npm run zoom:video-sdk:webhook:tunnel`: abre tunel ngrok local para validar
+  webhook real, sem alterar o Zoom Marketplace, e grava metadados nao secretos
+  em `.tmp/zoom-real-homologation.json`.
+- `npm run zoom:video-sdk:webhook:real-preflight`: valida gates locais do
+  webhook real.
+- `npm run zoom:video-sdk:webhook:real-verify -- https://<subdominio-ngrok>/functions/v1/zoom-webhook`:
+  verifica a URL publica temporaria e registra confirmacao curta no estado
+  temporario.
 - `npm run zoom:video-sdk:api:mock`: exercita contrato mockado da API.
-- `npm run zoom:video-sdk:real-preflight`: preflight sem chamada real quando
-  `ALLOW_REAL_ZOOM=false`.
+- `npm run zoom:video-sdk:real-preflight`: valida ambiente development e
+  `ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES`, e consulta a API Video SDK somente
+  quando `ALLOW_REAL_ZOOM=true`.
 - `npm run zoom:video-sdk:test:real`: recusa execucao sem
-  `ALLOW_REAL_ZOOM=true`.
+  `ALLOW_REAL_ZOOM=true`, webhook validado e Supabase local/staging autorizado;
+  exige tambem
+  `--confirm-zoom-marketplace --confirm-single-real-session --headed --slow-mo=<ms>`,
+  cria usuarios, booking, pagamento paid e `video_session` em runtime e limpa
+  as fixtures no `finally`.
+- `npm run zoom:video-sdk:emergency-end`: encerra a sessao real capturada no
+  estado temporario pela REST API oficial e nao imprime o ID completo.
 
 Documentacao detalhada: `docs/zoom/`.
 

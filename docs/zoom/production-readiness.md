@@ -14,6 +14,18 @@ Antes de producao:
 - avaliar conexao peer-to-peer em chamadas de duas pessoas conforme politica de
   privacidade e documentacao oficial;
 - homologar fluxo real em ambiente de teste com limite de consumo;
+- configurar `ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES` como inteiro positivo e
+  revisar o valor operacional aprovado pelo produto;
+- executar `docs/zoom/real-homologation-runbook.md` e voltar
+  `ALLOW_REAL_ZOOM=false` depois do teste;
+- manter o rate limit distribuido de emissao de JWT ativo e validado por pgTAP;
+- manter host-first ativo: paciente so recebe JWT apos `session.user_joined`
+  confiavel do terapeuta;
+- ativar o cron de `zoom-video-session-maintenance` via Vault/pg_net sem segredo
+  versionado;
+- confirmar que o comando real exige confirmacao manual momentanea do endpoint
+  Zoom validado/ativo, dos quatro eventos e Playwright visivel antes de abrir
+  sessao;
 - confirmar que apps antigos e webhooks antigos nao estao implantados antes de
   remover qualquer configuracao remota.
 

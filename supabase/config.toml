@@ -172,6 +172,9 @@ verify_jwt = false
 [functions.zoom-video-session-access]
 verify_jwt = false
 
+[functions.zoom-video-session-maintenance]
+verify_jwt = false
+
 [functions.therapist-schedule-update]
 verify_jwt = false
 

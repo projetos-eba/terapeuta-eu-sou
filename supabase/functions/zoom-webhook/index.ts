@@ -145,8 +145,10 @@ runtime.serve(async (request) => {
         p_duration_seconds:
           numberOrNull(participant.duration) ??
           numberOrNull(participant.duration_seconds),
+        p_after_ends_minutes: 30,
         p_event_at: normalizeZoomVideoEventTime(body.event_ts),
         p_event_type: eventType,
+        p_max_duration_minutes: config.lifecycle.maxDurationMinutes,
         p_provider_session_id: providerSessionId,
         p_provider_user_id: providerUserId,
         p_provider_user_key: providerUserKey,

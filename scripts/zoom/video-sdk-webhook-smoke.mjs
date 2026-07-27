@@ -65,6 +65,9 @@ for (const event of events) {
 }
 
 console.log(JSON.stringify({ results }, null, 2));
+if (results.some((result) => !result.ok)) {
+  process.exitCode = 1;
+}
 
 function sessionEvent(event, extraObject = {}) {
   return {

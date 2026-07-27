@@ -188,8 +188,21 @@ Stack real identificada:
   e `/privacidade`, docs em `docs/zoom/` e skill `skills/zoom-integration`.
   Pagamento canônico segue em `session_payments`; Zoom não confirma pagamento,
   repasse ou realização clínica. Antes de produção, revalidar no ambiente alvo,
-  configurar webhooks Video SDK reais, revisar retenção e completar homologação
-  externa sem expor secrets.
+  configurar webhooks Video SDK reais via ngrok ou endpoint de homologação,
+  seguir `docs/zoom/real-homologation-runbook.md`, revisar retenção e completar
+  homologação externa sem expor secrets. O harness real usa
+  `.tmp/zoom-real-homologation.json` para metadados temporários sem secrets e
+  cria booking, usuários e pagamento paid em runtime; não exigir UUID, e-mail ou
+  senha de fixture em variável de ambiente. O acesso é host-first: paciente só
+  recebe JWT após webhook confiável de `session.user_joined` do terapeuta.
+  `ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES` é obrigatório no runtime real; o
+  limite duro fica em `video_sessions.hard_ends_at`. Encerramentos por timeout,
+  ausência do terapeuta e reconciliação usam `video_session_control_jobs` e a
+  Edge Function `zoom-video-session-maintenance`.
+  O comando real exige confirmação manual momentânea por flags antes de abrir
+  uma única sessão curta, usa Playwright visível com contexts separados para
+  terapeuta e paciente, e a emissão de JWT passa por rate limit distribuído no
+  Supabase.
 
 ## 6. QA e definição de pronto
 
