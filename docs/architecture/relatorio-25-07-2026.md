@@ -1259,9 +1259,10 @@ Resultado em 2026-07-26:
 Limite intencional:
 
 - A2 entrega as primitivas transacionais, não endpoints públicos de Agenda;
-- o preview TypeScript ainda não é o motor de slots autoritativo;
-- A5 implementará a composição completa de disponibilidade e A6 fará a
-  orquestração autenticada entre hold, booking, `session_payments` e Stripe;
+- o preview TypeScript permanece legado e não é o motor de slots autoritativo;
+- A5 concluiu a composição de disponibilidade em 2026-07-27; A6 fará a
+  orquestração autenticada entre slot, hold, booking, `session_payments` e
+  Stripe;
 - nenhuma tabela financeira, ledger ou estrutura Zoom paralela foi criada.
 
 ### A3 - Horários
@@ -1322,13 +1323,25 @@ Concluído em 2026-07-27:
 
 ### A5 - Slots
 
-- endpoint autoritativo;
-- timezone;
-- buffers;
-- exceções;
-- bookings;
-- holds;
-- concorrência.
+Concluído em 2026-07-27:
+
+- `get_service_available_slots_v1` como endpoint público autoritativo, seguro e
+  versionado por serviço;
+- composição timezone-safe de regras semanais, exceções, duração, cadência,
+  buffers, antecedência e horizonte;
+- subtração de bookings e holds ativos sem exposição de participantes;
+- validação autoritativa repetida na criação de `booking_holds`;
+- preservação dos códigos específicos de conflito A2 e da idempotência;
+- `therapies.calendar_color_key` como chave semântica compartilhada com futuras
+  telas de terapia;
+- `get_therapist_calendar_v1` derivado de `auth.uid()`, com pagamento canônico,
+  bloqueios, holds, atenção e demanda agregada;
+- interface funcional baseada no Figma `13366:5342`, com visões dia, semana e
+  mês, detalhe via `TESDialog`, responsividade e ligação entre as abas;
+- evidências em `docs/architecture/agenda-a5-closure.md`.
+
+Limite: A5 não inicia checkout. A orquestração autenticada entre slot, hold,
+booking e Stripe continua em A6.
 
 ### A6 - Hold e booking
 
@@ -1340,13 +1353,19 @@ Concluído em 2026-07-27:
 
 ### A7 - Calendário
 
-- dia;
-- semana;
-- mês;
-- lista mobile;
-- filtros;
-- detalhe;
-- acessibilidade.
+Parcialmente antecipado em A5:
+
+- dia, semana e mês;
+- detalhe conectado à sessão;
+- controles na URL;
+- composição responsiva e acessível por teclado.
+
+Permanecem em A7:
+
+- lista cronológica mobile dedicada;
+- filtros avançados;
+- refinamento com leitores de tela;
+- testes de carga e densidade extrema.
 
 ### A8 - Paciente
 

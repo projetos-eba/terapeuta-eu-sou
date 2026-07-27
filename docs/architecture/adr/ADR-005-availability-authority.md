@@ -4,9 +4,9 @@ Data: 2026-07-25
 
 Status: aceito.
 
-Implementação: invariantes transacionais parciais concluídos na A2 em
-2026-07-26; configuração versionada concluída em A3.0/A3.1 conforme ADR-006;
-composição autoritativa de slots permanece para A5.
+Implementação: invariantes transacionais concluídos na A2 em 2026-07-26;
+configuração versionada concluída em A3.0/A3.1 conforme ADR-006; composição
+autoritativa de slots concluída em A5 em 2026-07-27.
 
 ## Contexto
 
@@ -22,8 +22,12 @@ garantia transacional e interpreta os dias no timezone do runtime.
 - Exceções disponíveis e indisponíveis permanecem explícitas.
 - Holds e bookings usam Postgres/RPC, TTL, idempotência, advisory lock e
   exclusão GiST por terapeuta.
-- O motor A5 ainda deve compor regras, exceções, timezone, antecedência e
-  horizonte antes de chamar as primitivas A2.
+- O motor A5 compõe regras, exceções, timezone, duração, cadência, buffers,
+  antecedência e horizonte antes de expor um slot.
+- O endpoint público subtrai bookings e holds sem revelar participantes ou a
+  causa da indisponibilidade.
+- A criação do hold repete a validação autoritativa no Postgres; o resultado
+  público não substitui a proteção transacional A2.
 
 ## Alternativas
 
@@ -33,7 +37,8 @@ garantia transacional e interpreta os dias no timezone do runtime.
 
 ## Consequências
 
-O preview pode divergir do resultado autoritativo em fronteiras de timezone. A
-UI deve tratar `SLOT_NOT_AVAILABLE`, `SLOT_HELD_BY_ANOTHER_USER` e
-`BOOKING_CONFLICT`, permitindo nova escolha. Mesmo antes de A5, A2 impede que
-essa divergência produza duas reservas ativas para o mesmo terapeuta.
+Consumidores de reserva devem migrar do preview TypeScript para
+`get_service_available_slots_v1`. A UI deve tratar `SLOT_NOT_AVAILABLE`,
+`SLOT_HELD_BY_ANOTHER_USER` e `BOOKING_CONFLICT`, permitindo nova escolha. A2
+continua sendo a barreira final contra duas reservas ativas para o mesmo
+terapeuta.
