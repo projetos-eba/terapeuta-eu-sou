@@ -10,9 +10,9 @@ test.describe("therapist Agenda and Sessions foundation", () => {
     await loginAsAna(page);
   });
 
-  test("loads canonical routes and an owned session detail", async ({
+  test("uses the real calendar and opens an owned session detail", async ({
     page,
-  }) => {
+  }, testInfo) => {
     await expect(page).toHaveURL(/\/terapeuta$/);
     await expect(page.getByText("TES Premium Plus").first()).toBeVisible();
 
@@ -20,20 +20,56 @@ test.describe("therapist Agenda and Sessions foundation", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Minha agenda" }),
     ).toBeVisible();
-    await expect(page.getByText("Reservas no período")).toBeVisible();
-
-    await page.goto("/terapeuta/sessoes");
+    await expect(page.getByText("Quem você acolhe hoje")).toBeVisible();
+    await expect(page.getByText("Insights para sua agenda")).toBeVisible();
     await expect(
-      page.getByRole("heading", { level: 1, name: "Sessões" }),
-    ).toBeVisible();
+      page.getByRole("link", { exact: true, name: "Semana" }),
+    ).toHaveAttribute("aria-current", "page");
 
-    const detailLink = page.locator('a[href^="/terapeuta/sessoes/"]').first();
-    await expect(detailLink).toBeVisible();
-    await detailLink.click();
+    const calendarBooking = page.locator('button[aria-label*=" com "]').first();
+    await expect(calendarBooking).toBeVisible();
+    await calendarBooking.click();
+    const bookingDialog = page.getByRole("dialog");
+    await expect(bookingDialog).toBeVisible();
+    const sessionLink = bookingDialog.getByRole("link", {
+      name: "Abrir sessão",
+    });
+    await expect(sessionLink).toHaveAttribute(
+      "href",
+      /\/terapeuta\/sessoes\/[0-9a-f-]+$/,
+    );
+    await sessionLink.click();
 
     await expect(page).toHaveURL(/\/terapeuta\/sessoes\/[0-9a-f-]+$/);
     await expect(page.getByText("Pagamento", { exact: true })).toBeVisible();
     await expect(page.getByText("Segurança da sala")).toBeVisible();
+
+    await page.goto("/terapeuta/agenda?aba=calendario");
+    await page.getByRole("link", { exact: true, name: "Mês" }).click();
+    await expect(page).toHaveURL(/visao=month/);
+    await page.getByRole("link", { exact: true, name: "Dia" }).click();
+    await expect(page).toHaveURL(/visao=day/);
+    await page.getByRole("link", { name: "Adicionar horários" }).click();
+    await expect(page).toHaveURL(/aba=horarios/);
+    await page.getByRole("link", { exact: true, name: "Calendário" }).click();
+    await expect(page).toHaveURL(/aba=calendario/);
+
+    await page.screenshot({
+      fullPage: true,
+      path: testInfo.outputPath("agenda-calendario-desktop.png"),
+    });
+    await page.setViewportSize({ height: 1180, width: 820 });
+    await page.waitForTimeout(300);
+    await page.screenshot({
+      fullPage: true,
+      path: testInfo.outputPath("agenda-calendario-tablet.png"),
+    });
+    await page.setViewportSize({ height: 844, width: 390 });
+    await page.waitForTimeout(300);
+    await page.screenshot({
+      fullPage: true,
+      path: testInfo.outputPath("agenda-calendario-mobile.png"),
+    });
   });
 
   test("does not expose another therapist booking", async ({ page }) => {

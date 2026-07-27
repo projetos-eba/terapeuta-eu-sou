@@ -1,12 +1,13 @@
 import Link from "next/link";
 import type { Route } from "next";
-import { AlertCircle, CalendarClock, Clock3 } from "lucide-react";
+import { AlertCircle, CalendarDays } from "lucide-react";
 
 import {
-  formatSessionDateTime,
-  mapSessionPresentation,
-} from "@/features/bookings";
-import { getTherapistAgendaPage } from "@/features/therapist-agenda";
+  getTherapistAgendaPage,
+  getTherapistCalendar,
+  type TherapistCalendarView,
+} from "@/features/therapist-agenda";
+import { TherapistCalendar } from "@/features/therapist-agenda/components/therapist-calendar";
 import { getTherapistBlocks } from "@/features/therapist-blocks";
 import { TherapistBlocksPanel } from "@/features/therapist-blocks/components/therapist-blocks-panel";
 import { getTherapistSchedule } from "@/features/therapist-schedule";
@@ -26,6 +27,8 @@ export default async function TherapistAgendaPage({
     motivo?: string;
     periodo?: string;
     status?: string;
+    data?: string;
+    visao?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -135,16 +138,16 @@ export default async function TherapistAgendaPage({
     );
   }
 
-  const agendaResult = await getTherapistAgendaPage({
+  const calendarResult = await getTherapistCalendar({
     accessToken: session.accessToken,
+    anchorDate: normalizeCalendarDate(params.data),
     profileId: session.profileId,
-    rangeEnd: rangeEnd.toISOString(),
-    rangeStart: rangeStart.toISOString(),
+    view: parseCalendarView(params.visao),
   });
 
-  return (
-    <AgendaFrame activeTab="calendario">
-      {agendaResult.status === "error" ? (
+  if (calendarResult.status === "error") {
+    return (
+      <AgendaFrame activeTab="calendario">
         <section
           className="mt-6 rounded-[14px] border border-status-danger/30 bg-white p-8 text-center shadow-card"
           role="alert"
@@ -153,82 +156,44 @@ export default async function TherapistAgendaPage({
             Agenda temporariamente indisponível
           </h2>
           <p className="mt-3 text-sm font-semibold text-tesText-secondary">
-            {agendaResult.error.message}
+            {calendarResult.error.message}
           </p>
           <p className="mt-2 text-xs font-semibold text-tesText-muted">
-            Referência: {agendaResult.error.correlationId.slice(0, 8)}
+            Referência: {calendarResult.error.correlationId.slice(0, 8)}
           </p>
         </section>
-      ) : agendaResult.status === "empty" ? (
-        <section className="mt-6 rounded-[14px] border border-brand-lavender bg-white p-8 text-center shadow-card">
-          <CalendarClock
+      </AgendaFrame>
+    );
+  }
+
+  if (calendarResult.status === "empty") {
+    return (
+      <AgendaFrame activeTab="calendario">
+        <section className="mt-6 rounded-[14px] border border-brand-lavender/60 bg-white p-8 text-center shadow-card">
+          <CalendarDays
             aria-hidden="true"
             className="mx-auto text-brand-primary"
             size={28}
           />
           <h2 className="mt-4 font-display text-3xl font-light text-brand-deep">
-            Agenda sem registros
+            Sua agenda está pronta para começar
           </h2>
-          <p className="mt-3 text-sm font-semibold text-tesText-secondary">
-            Ainda não há reservas, holds ou disponibilidade configurada neste
-            período.
+          <p className="mx-auto mt-3 max-w-lg text-sm font-semibold leading-6 text-tesText-secondary">
+            Defina seus horários de atendimento para que novos encontros possam
+            ser agendados.
           </p>
-        </section>
-      ) : (
-        <>
-          <section
-            aria-label="Resumo da agenda"
-            className="mt-6 grid gap-4 sm:grid-cols-3"
+          <Link
+            className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+            href={`${routes.therapist.agenda}?aba=horarios` as Route}
           >
-            <AgendaMetric
-              label="Reservas no período"
-              value={agendaResult.data.summary.bookings}
-            />
-            <AgendaMetric
-              label="Holds ativos"
-              value={agendaResult.data.summary.activeHolds}
-            />
-            <AgendaMetric
-              label="Reagendamentos pendentes"
-              value={agendaResult.data.summary.pendingReschedules}
-            />
-          </section>
+            Configurar horários
+          </Link>
+        </section>
+      </AgendaFrame>
+    );
+  }
 
-          <section aria-label="Reservas da agenda" className="mt-6 grid gap-4">
-            {agendaResult.data.bookings.map((booking) => {
-              const presentation = mapSessionPresentation(booking);
-              return (
-                <Link
-                  className="grid gap-3 rounded-[14px] border border-brand-lavender bg-white p-5 shadow-card transition hover:border-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-                  href={
-                    routes.therapist.sessionDetail(booking.bookingId) as Route
-                  }
-                  key={booking.bookingId}
-                >
-                  <span>
-                    <span className="block text-lg font-extrabold text-brand-deep">
-                      {booking.serviceTitle}
-                    </span>
-                    <span className="mt-1 block text-sm font-semibold text-tesText-secondary">
-                      {booking.patientName} ·{" "}
-                      {formatSessionDateTime(
-                        booking.startsAt,
-                        booking.timezone,
-                      )}
-                    </span>
-                  </span>
-                  <span className="inline-flex min-h-10 items-center gap-2 text-sm font-extrabold text-brand-primary">
-                    <Clock3 aria-hidden="true" size={17} />
-                    {presentation.label}
-                  </span>
-                </Link>
-              );
-            })}
-          </section>
-        </>
-      )}
-    </AgendaFrame>
-  );
+  return <TherapistCalendar data={calendarResult.data} />;
 }
 
 function BlocksErrorState({
@@ -322,20 +287,9 @@ function AgendaFrame({
   );
 }
 
-function AgendaMetric({ label, value }: { label: string; value: number }) {
-  return (
-    <article className="rounded-[14px] border border-brand-lavender bg-white p-5 shadow-card">
-      <p className="text-3xl font-extrabold text-brand-deep">{value}</p>
-      <h2 className="mt-1 text-sm font-semibold text-tesText-secondary">
-        {label}
-      </h2>
-    </article>
-  );
-}
-
 function parseAgendaTab(value: string | undefined): AgendaTab {
-  if (value === "calendario" || value === "bloqueios") return value;
-  return "horarios";
+  if (value === "horarios" || value === "bloqueios") return value;
+  return "calendario";
 }
 
 function parseBlockPeriod(value: string | undefined) {
@@ -366,4 +320,13 @@ function normalizeReasonFilter(value: string | undefined) {
 function normalizeSearch(value: string | undefined) {
   const normalized = value?.trim();
   return normalized ? normalized.slice(0, 80) : undefined;
+}
+
+function parseCalendarView(value: string | undefined): TherapistCalendarView {
+  if (value === "day" || value === "month") return value;
+  return "week";
+}
+
+function normalizeCalendarDate(value: string | undefined) {
+  return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : undefined;
 }

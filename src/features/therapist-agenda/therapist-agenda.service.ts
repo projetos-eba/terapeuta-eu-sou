@@ -13,7 +13,15 @@ import {
 } from "@/lib/observability/server-operation-log";
 import { SupabaseServerRestError } from "@/lib/supabase/server-rest";
 
-import { queryTherapistAgenda } from "./therapist-agenda.queries";
+import {
+  queryTherapistAgenda,
+  queryTherapistCalendar,
+} from "./therapist-agenda.queries";
+import { parseTherapistCalendarReadModel } from "./therapist-calendar.parsers";
+import type {
+  TherapistCalendarReadModel,
+  TherapistCalendarView,
+} from "./therapist-calendar.types";
 
 export async function getTherapistAgendaPage(input: {
   accessToken: string;
@@ -81,3 +89,47 @@ function getErrorCode(error: unknown): ReadModelErrorCode {
 }
 
 class AgendaAccessError extends Error {}
+
+export async function getTherapistCalendar(input: {
+  accessToken: string;
+  anchorDate?: string;
+  profileId: string;
+  view: TherapistCalendarView;
+}): Promise<ReadModelResult<TherapistCalendarReadModel>> {
+  const correlationId = createCorrelationId();
+  const startedAt = performance.now();
+
+  try {
+    const response = await queryTherapistCalendar(input);
+    const data = parseTherapistCalendarReadModel(response);
+    if (data.therapistProfileId !== input.profileId) {
+      throw new AgendaAccessError();
+    }
+
+    return { data, status: "success" };
+  } catch (error) {
+    const code = getErrorCode(error);
+    logServerOperationFailure({
+      actorRole: "therapist",
+      correlationId,
+      durationMs: performance.now() - startedAt,
+      errorCode: code,
+      externalStatus:
+        error instanceof SupabaseServerRestError ? error.status : undefined,
+      operation: "get_therapist_calendar_v1",
+    });
+
+    return {
+      data: null,
+      error: {
+        code,
+        correlationId,
+        message:
+          code === "invalid_filter"
+            ? "Revise a data ou visualização informada."
+            : "Não foi possível carregar o calendário agora.",
+      },
+      status: "error",
+    };
+  }
+}
