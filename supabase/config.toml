@@ -142,6 +142,12 @@ verify_jwt = false
 [functions.stripe-create-session-payment]
 verify_jwt = false
 
+[functions.session-booking-checkout]
+verify_jwt = false
+
+[functions.session-reschedule]
+verify_jwt = false
+
 [functions.request-session-cancellation]
 verify_jwt = false
 

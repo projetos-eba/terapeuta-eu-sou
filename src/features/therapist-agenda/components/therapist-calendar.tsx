@@ -13,7 +13,10 @@ import {
   Construction,
   CreditCard,
   Plus,
+  Search,
+  SlidersHorizontal,
   Sparkles,
+  X,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -38,6 +41,14 @@ const hourBlocks = [8, 10, 12, 14, 16, 18, 20];
 const timelineStartHour = 8;
 const timelineEndHour = 22;
 const hourHeight = 66;
+
+type CalendarStatusFilter = "all" | "paid" | "pending_payment" | "reschedule";
+
+type CalendarFiltersState = {
+  query: string;
+  serviceId: string;
+  status: CalendarStatusFilter;
+};
 
 const colorStyles: Record<
   TherapyCalendarColorKey,
@@ -89,12 +100,32 @@ export function TherapistCalendar({
   const router = useRouter();
   const [selectedBooking, setSelectedBooking] =
     useState<TherapistCalendarBooking | null>(null);
+  const [filters, setFilters] = useState<CalendarFiltersState>({
+    query: "",
+    serviceId: "all",
+    status: "all",
+  });
   const days = useMemo(
     () => dateKeysBetween(data.range.localStart, data.range.localEndExclusive),
     [data.range.localEndExclusive, data.range.localStart],
   );
   const todayKey = dateKeyForInstant(new Date().toISOString(), data.timezone);
-  const todayBookings = data.bookings.filter(
+  const filteredBookings = useMemo(
+    () =>
+      data.bookings.filter((booking) =>
+        matchesBookingFilters(booking, filters),
+      ),
+    [data.bookings, filters],
+  );
+  const filteredHolds = useMemo(
+    () => data.holds.filter((hold) => matchesHoldFilters(hold, filters)),
+    [data.holds, filters],
+  );
+  const filteredBlocks = useMemo(
+    () => data.blocks.filter((block) => matchesBlockFilters(block, filters)),
+    [data.blocks, filters],
+  );
+  const todayBookings = filteredBookings.filter(
     (booking) =>
       dateKeyForInstant(booking.startsAt, data.timezone) === todayKey,
   );
@@ -198,6 +229,14 @@ export function TherapistCalendar({
         </Link>
       </section>
 
+      <CalendarFilters
+        filters={filters}
+        onChange={setFilters}
+        resultCount={filteredBookings.length}
+        services={data.services}
+        totalCount={data.bookings.length}
+      />
+
       <div className="mt-4 flex items-center justify-between gap-4 px-1">
         <h2 className="text-sm font-extrabold capitalize text-brand-deep sm:text-base">
           {periodLabel}
@@ -207,25 +246,35 @@ export function TherapistCalendar({
 
       <div className="mt-3 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="min-w-0">
-          {data.view === "month" ? (
-            <MonthCalendar
-              bookings={data.bookings}
-              days={days}
-              onSelect={setSelectedBooking}
-              timezone={data.timezone}
-              todayKey={todayKey}
-            />
-          ) : (
-            <TimelineCalendar
-              blocks={data.blocks}
-              bookings={data.bookings}
-              days={days}
-              holds={data.holds}
-              onSelect={setSelectedBooking}
-              timezone={data.timezone}
-              todayKey={todayKey}
-            />
-          )}
+          <MobileChronologicalList
+            blocks={filteredBlocks}
+            bookings={filteredBookings}
+            holds={filteredHolds}
+            onSelect={setSelectedBooking}
+            timezone={data.timezone}
+          />
+
+          <div className="hidden md:block">
+            {data.view === "month" ? (
+              <MonthCalendar
+                bookings={filteredBookings}
+                days={days}
+                onSelect={setSelectedBooking}
+                timezone={data.timezone}
+                todayKey={todayKey}
+              />
+            ) : (
+              <TimelineCalendar
+                blocks={filteredBlocks}
+                bookings={filteredBookings}
+                days={days}
+                holds={filteredHolds}
+                onSelect={setSelectedBooking}
+                timezone={data.timezone}
+                todayKey={todayKey}
+              />
+            )}
+          </div>
 
           <CalendarLegend services={data.services} />
           <TesScheduleTip demand={data.demand} />
@@ -280,6 +329,110 @@ function AgendaTabs() {
         </Link>
       ))}
     </nav>
+  );
+}
+
+function CalendarFilters({
+  filters,
+  onChange,
+  resultCount,
+  services,
+  totalCount,
+}: {
+  filters: CalendarFiltersState;
+  onChange: (filters: CalendarFiltersState) => void;
+  resultCount: number;
+  services: TherapistCalendarReadModel["services"];
+  totalCount: number;
+}) {
+  const hasFilters =
+    filters.query.trim() !== "" ||
+    filters.serviceId !== "all" ||
+    filters.status !== "all";
+
+  return (
+    <section
+      aria-label="Filtros do calendário"
+      className="mt-4 rounded-[14px] border border-brand-lavender/50 bg-white p-4 shadow-card"
+    >
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+        <label className="min-w-0 flex-1">
+          <span className="mb-1 flex items-center gap-2 text-[10px] font-extrabold uppercase text-tesText-muted">
+            <Search aria-hidden="true" size={14} />
+            Buscar
+          </span>
+          <input
+            className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-muted focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+            onChange={(event) =>
+              onChange({ ...filters, query: event.target.value })
+            }
+            placeholder="Paciente, terapia ou serviço"
+            type="search"
+            value={filters.query}
+          />
+        </label>
+
+        <label className="min-w-0 lg:w-[220px]">
+          <span className="mb-1 block text-[10px] font-extrabold uppercase text-tesText-muted">
+            Terapia
+          </span>
+          <select
+            className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+            onChange={(event) =>
+              onChange({ ...filters, serviceId: event.target.value })
+            }
+            value={filters.serviceId}
+          >
+            <option value="all">Todas</option>
+            {services.map((service) => (
+              <option key={service.id} value={service.id}>
+                {service.title}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="min-w-0 lg:w-[230px]">
+          <span className="mb-1 flex items-center gap-2 text-[10px] font-extrabold uppercase text-tesText-muted">
+            <SlidersHorizontal aria-hidden="true" size={14} />
+            Estado
+          </span>
+          <select
+            className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+            onChange={(event) =>
+              onChange({
+                ...filters,
+                status: event.target.value as CalendarStatusFilter,
+              })
+            }
+            value={filters.status}
+          >
+            <option value="all">Todos</option>
+            <option value="paid">Pagas</option>
+            <option value="pending_payment">Aguardando pagamento</option>
+            <option value="reschedule">Com reagendamento</option>
+          </select>
+        </label>
+
+        <button
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender px-4 text-xs font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft disabled:cursor-not-allowed disabled:opacity-45"
+          disabled={!hasFilters}
+          onClick={() =>
+            onChange({ query: "", serviceId: "all", status: "all" })
+          }
+          type="button"
+        >
+          <X aria-hidden="true" size={15} />
+          Limpar
+        </button>
+      </div>
+      <p
+        aria-live="polite"
+        className="mt-3 text-[11px] font-bold text-tesText-secondary"
+      >
+        {resultCount} de {totalCount} encontro(s) nesta visualização.
+      </p>
+    </section>
   );
 }
 
@@ -585,6 +738,132 @@ function MonthCalendar({
           </div>
         </div>
       </div>
+    </section>
+  );
+}
+
+function MobileChronologicalList({
+  blocks,
+  bookings,
+  holds,
+  onSelect,
+  timezone,
+}: {
+  blocks: TherapistCalendarBlock[];
+  bookings: TherapistCalendarBooking[];
+  holds: TherapistCalendarHold[];
+  onSelect: (booking: TherapistCalendarBooking) => void;
+  timezone: string;
+}) {
+  const items = buildMobileCalendarItems({ blocks, bookings, holds, timezone });
+
+  return (
+    <section
+      aria-label="Lista cronológica da agenda"
+      className="rounded-[14px] border border-brand-lavender/70 bg-white shadow-card md:hidden"
+    >
+      <div className="border-b border-brand-lavender/60 px-4 py-3">
+        <h2 className="text-sm font-extrabold text-brand-deep">
+          Agenda em ordem do dia
+        </h2>
+        <p className="mt-1 text-[11px] font-bold text-tesText-secondary">
+          {items.length} item(ns) no período filtrado.
+        </p>
+      </div>
+      {items.length ? (
+        <div className="divide-y divide-brand-lavender/60">
+          {items.map((item) => {
+            if (item.kind === "booking") {
+              const style = colorStyles[item.booking.colorKey];
+              const presentation = mapSessionPresentation(item.booking);
+              return (
+                <button
+                  aria-label={`Encontro de ${item.booking.serviceTitle}: ${item.booking.patientName}, ${item.timeRange}`}
+                  className="grid min-h-[86px] w-full grid-cols-[52px_minmax(0,1fr)] items-center gap-3 px-4 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+                  key={item.id}
+                  onClick={() => onSelect(item.booking)}
+                  type="button"
+                >
+                  <span
+                    className={`grid size-11 place-items-center rounded-xl text-[11px] font-extrabold text-white ${style.badge}`}
+                  >
+                    {item.time}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[10px] font-extrabold uppercase text-tesText-muted">
+                      {item.dateLabel} · {presentation.label}
+                    </span>
+                    <span className="mt-1 block truncate text-sm font-extrabold text-brand-deep">
+                      {item.booking.patientName}
+                    </span>
+                    <span
+                      className={`block truncate text-xs font-bold ${style.text}`}
+                    >
+                      {item.booking.serviceTitle}
+                    </span>
+                  </span>
+                </button>
+              );
+            }
+
+            if (item.kind === "hold") {
+              const style = colorStyles[item.hold.colorKey];
+              return (
+                <div
+                  aria-label={`Reserva temporária de ${item.hold.serviceTitle}, ${item.timeRange}`}
+                  className="grid min-h-[78px] grid-cols-[52px_minmax(0,1fr)] items-center gap-3 px-4 py-3"
+                  key={item.id}
+                >
+                  <span
+                    className={`grid size-11 place-items-center rounded-xl border border-dashed text-[11px] font-extrabold ${style.border} ${style.surface} ${style.text}`}
+                  >
+                    {item.time}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[10px] font-extrabold uppercase text-tesText-muted">
+                      {item.dateLabel} · Em reserva
+                    </span>
+                    <span className="mt-1 block truncate text-sm font-extrabold text-brand-deep">
+                      {item.hold.serviceTitle}
+                    </span>
+                    <span className="block text-xs font-bold text-tesText-secondary">
+                      Expira em breve se não houver pagamento.
+                    </span>
+                  </span>
+                </div>
+              );
+            }
+
+            return (
+              <Link
+                aria-label={`Bloqueio: ${item.block.reason ?? "Período indisponível"}, ${item.timeRange}`}
+                className="grid min-h-[78px] grid-cols-[52px_minmax(0,1fr)] items-center gap-3 px-4 py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+                href={`${routes.therapist.agenda}?aba=bloqueios` as Route}
+                key={item.id}
+              >
+                <span className="grid size-11 place-items-center rounded-xl border border-dashed border-tesText-muted bg-surface-mist text-[11px] font-extrabold text-tesText-secondary">
+                  {item.block.allDay ? "Dia" : item.time}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[10px] font-extrabold uppercase text-tesText-muted">
+                    {item.dateLabel} · Bloqueio
+                  </span>
+                  <span className="mt-1 block truncate text-sm font-extrabold text-brand-deep">
+                    {item.block.reason ?? "Período indisponível"}
+                  </span>
+                  <span className="block text-xs font-bold text-tesText-secondary">
+                    Revisar bloqueio
+                  </span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="p-5 text-sm font-semibold leading-6 text-tesText-secondary">
+          Nenhum item encontrado com os filtros atuais.
+        </p>
+      )}
     </section>
   );
 }
@@ -906,6 +1185,129 @@ function BookingDialog({
   );
 }
 
+function matchesBookingFilters(
+  booking: TherapistCalendarBooking,
+  filters: CalendarFiltersState,
+) {
+  if (filters.serviceId !== "all" && booking.serviceId !== filters.serviceId) {
+    return false;
+  }
+  if (
+    !matchesTextFilter(filters.query, [
+      booking.patientName,
+      booking.serviceTitle,
+      booking.therapyName,
+    ])
+  ) {
+    return false;
+  }
+  if (filters.status === "paid") {
+    return String(booking.financialStatus) === "paid";
+  }
+  if (filters.status === "pending_payment") {
+    return (
+      String(booking.financialStatus) === "pending" ||
+      String(booking.financialStatus) === "processing" ||
+      String(booking.bookingStatus) === "pending_payment"
+    );
+  }
+  if (filters.status === "reschedule") {
+    return booking.rescheduleStatus !== null;
+  }
+  return true;
+}
+
+function matchesHoldFilters(
+  hold: TherapistCalendarHold,
+  filters: CalendarFiltersState,
+) {
+  if (filters.status !== "all" && filters.status !== "pending_payment") {
+    return false;
+  }
+  if (filters.serviceId !== "all" && hold.serviceId !== filters.serviceId) {
+    return false;
+  }
+  return matchesTextFilter(filters.query, [hold.serviceTitle]);
+}
+
+function matchesBlockFilters(
+  block: TherapistCalendarBlock,
+  filters: CalendarFiltersState,
+) {
+  if (filters.status !== "all") return false;
+  if (
+    filters.serviceId !== "all" &&
+    block.serviceId !== null &&
+    block.serviceId !== filters.serviceId
+  ) {
+    return false;
+  }
+  return matchesTextFilter(filters.query, [
+    block.reason ?? "Período indisponível",
+  ]);
+}
+
+function matchesTextFilter(query: string, values: string[]) {
+  const normalized = normalizeSearch(query);
+  if (!normalized) return true;
+  return values.some((value) => normalizeSearch(value).includes(normalized));
+}
+
+function normalizeSearch(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function buildMobileCalendarItems({
+  blocks,
+  bookings,
+  holds,
+  timezone,
+}: {
+  blocks: TherapistCalendarBlock[];
+  bookings: TherapistCalendarBooking[];
+  holds: TherapistCalendarHold[];
+  timezone: string;
+}) {
+  return [
+    ...bookings.map((booking) => ({
+      booking,
+      dateLabel: formatCompactDate(booking.startsAt, timezone),
+      id: `booking-${booking.bookingId}`,
+      kind: "booking" as const,
+      sortAt: booking.startsAt,
+      time: formatTime(booking.startsAt, timezone),
+      timeRange: formatTimeRange(booking.startsAt, booking.endsAt, timezone),
+    })),
+    ...holds.map((hold) => ({
+      dateLabel: formatCompactDate(hold.startsAt, timezone),
+      hold,
+      id: `hold-${hold.id}`,
+      kind: "hold" as const,
+      sortAt: hold.startsAt,
+      time: formatTime(hold.startsAt, timezone),
+      timeRange: formatTimeRange(hold.startsAt, hold.endsAt, timezone),
+    })),
+    ...blocks.map((block) => ({
+      block,
+      dateLabel: formatCompactDate(block.startsAt, timezone),
+      id: `block-${block.id}`,
+      kind: "block" as const,
+      sortAt: block.startsAt,
+      time: formatTime(block.startsAt, timezone),
+      timeRange: block.allDay
+        ? "dia inteiro"
+        : formatTimeRange(block.startsAt, block.endsAt, timezone),
+    })),
+  ].sort(
+    (left, right) =>
+      new Date(left.sortAt).getTime() - new Date(right.sortAt).getTime(),
+  );
+}
+
 function calendarHref(view: TherapistCalendarView, date: string): Route {
   return `${routes.therapist.agenda}?aba=calendario&visao=${view}&data=${date}` as Route;
 }
@@ -995,6 +1397,15 @@ function formatCompactDateTime(value: string, timezone: string) {
     minute: "2-digit",
     month: "short",
     timeZone: timezone,
+  }).format(new Date(value));
+}
+
+function formatCompactDate(value: string, timezone: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    timeZone: timezone,
+    weekday: "short",
   }).format(new Date(value));
 }
 

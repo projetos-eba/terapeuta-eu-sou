@@ -32,6 +32,7 @@ export type BookingDetailBookingRow = {
   status: string;
   therapist_profile_id: string;
   timezone: string;
+  version: number;
 };
 
 export type BookingDetailProfileRow = {
@@ -106,6 +107,17 @@ export type BookingDetailSessionSummaryRow = {
   title: string | null;
 };
 
+export type BookingDetailRescheduleRow = {
+  expires_at: string | null;
+  id: string;
+  proposed_ends_at: string;
+  proposed_starts_at: string;
+  proposed_timezone: string;
+  reason: string | null;
+  requested_by_profile_id: string;
+  status: string;
+};
+
 export type MapBookingDetailInput = {
   booking: BookingDetailBookingRow;
   completedBookings: BookingDetailBookingRow[];
@@ -115,6 +127,7 @@ export type MapBookingDetailInput = {
   perspective: BookingDetailPerspective;
   policy: BookingDetailCancellationPolicyRow | null;
   receipt: BookingDetailReceiptRow | null;
+  reschedule: BookingDetailRescheduleRow | null;
   reviews: BookingDetailReviewRow[];
   service: BookingDetailServiceRow;
   sessionPayment: BookingDetailSessionPaymentRow | null;
@@ -178,6 +191,7 @@ export function mapBookingDetail(
       endsAt: input.booking.ends_at,
       id: input.booking.id,
       minutesUntilStart: getMinutesUntilStart(input.booking.starts_at),
+      operationalVersion: input.booking.version,
       paymentStatus: input.sessionPayment?.financial_status ?? null,
       startsAt: input.booking.starts_at,
       status,
@@ -238,6 +252,7 @@ export function mapBookingDetail(
       paidAt: input.receipt?.paid_at ?? null,
       receiptUrl: input.receipt?.receipt_url ?? null,
     },
+    reschedule: mapReschedule(input.reschedule, input.patient.id),
     service: {
       id: input.service.id,
       objective:
@@ -262,6 +277,37 @@ export function mapBookingDetail(
       roleLabel: input.therapist.headline ?? "Terapeuta",
     },
   };
+}
+
+function mapReschedule(
+  row: BookingDetailRescheduleRow | null,
+  currentProfileId: string,
+): BookingDetailPageData["reschedule"] {
+  if (!row || !isRescheduleStatus(row.status)) return null;
+
+  return {
+    expiresAt: row.expires_at,
+    id: row.id,
+    proposedEndsAt: row.proposed_ends_at,
+    proposedStartsAt: row.proposed_starts_at,
+    proposedTimezone: row.proposed_timezone,
+    reason: row.reason,
+    requestedByCurrentUser: row.requested_by_profile_id === currentProfileId,
+    status: row.status,
+  };
+}
+
+function isRescheduleStatus(
+  value: string,
+): value is NonNullable<BookingDetailPageData["reschedule"]>["status"] {
+  return (
+    value === "accepted" ||
+    value === "applied" ||
+    value === "cancelled" ||
+    value === "expired" ||
+    value === "pending" ||
+    value === "rejected"
+  );
 }
 
 function getMeetingProvider(

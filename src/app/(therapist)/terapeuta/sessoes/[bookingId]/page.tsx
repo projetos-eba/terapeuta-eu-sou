@@ -7,8 +7,12 @@ import {
   getZoomAccessLabel,
   mapSessionPresentation,
 } from "@/features/bookings";
+import { SessionOperationActions } from "@/features/session-actions/session-operation-actions";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
-import { getTherapistSessionDetail } from "@/features/therapist-sessions";
+import {
+  getTherapistSessionDetail,
+  getTherapistSessionPendingReschedule,
+} from "@/features/therapist-sessions";
 import { ZoomVideoSessionAdapter } from "@/features/zoom/zoom-video-session-adapter";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
@@ -50,6 +54,11 @@ export default async function TherapistSessionDetailPage({
 
   const booking = result.data;
   const presentation = mapSessionPresentation(booking);
+  const pendingReschedule = await getTherapistSessionPendingReschedule({
+    accessToken: session.accessToken,
+    bookingId,
+    userId: session.userId,
+  });
 
   return (
     <main className="grid gap-6 pb-10 text-tesText-primary xl:grid-cols-[minmax(0,760px)_320px]">
@@ -98,6 +107,17 @@ export default async function TherapistSessionDetailPage({
           actorRole="therapist"
           bookingId={booking.bookingId}
         />
+
+        <div className="mt-6">
+          <SessionOperationActions
+            actorRole="therapist"
+            bookingId={booking.bookingId}
+            bookingVersion={booking.bookingVersion}
+            canCancel={presentation.actions.canCancel}
+            canRequestReschedule={presentation.actions.canReschedule}
+            reschedule={pendingReschedule}
+          />
+        </div>
       </section>
 
       <aside className="rounded-card border border-brand-lavender bg-white p-6 shadow-card xl:sticky xl:top-28">

@@ -136,10 +136,10 @@ responsividade.
 
 ## Pendencias
 
-- A6 deve orquestrar slot, hold, booking e checkout Stripe em Edge Function
-  autenticada.
-- A7 deve concluir filtros, lista mobile dedicada e refinamento de
-  acessibilidade com leitores de tela.
+- A6/A7 foram implementados em 2026-07-27. Ver
+  `docs/architecture/agenda-a6-a7-closure.md`.
+- A rota publica `/reserva` ainda precisa consumir `session-booking-checkout`
+  quando entrar no escopo de implementação.
 - A disponibilidade publica atual ainda precisa migrar consumidores legados do
   preview TypeScript para `get_service_available_slots_v1`.
 - Homologacao de DST em timezones adicionais e carga com grandes agendas deve

@@ -15,6 +15,7 @@ import {
   type BookingDetailPatientProfileRow,
   type BookingDetailProfileRow,
   type BookingDetailReceiptRow,
+  type BookingDetailRescheduleRow,
   type BookingDetailReviewRow,
   type BookingDetailServiceRow,
   type BookingDetailSessionPaymentRow,
@@ -70,8 +71,8 @@ export const getPatientSessionDetailPage = cache(
       const bookings = await supabaseServerRestRequest<
         BookingDetailBookingRow[]
       >(
-        config,
-        `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,timezone,status,meeting_provider,meeting_url,completed_at&id=eq.${encodeURIComponent(bookingId)}&patient_profile_id=eq.${patientProfile.id}&limit=1`,
+          config,
+          `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,timezone,status,meeting_provider,meeting_url,completed_at,version&id=eq.${encodeURIComponent(bookingId)}&patient_profile_id=eq.${patientProfile.id}&limit=1`,
       );
       const booking = bookings[0];
 
@@ -79,7 +80,14 @@ export const getPatientSessionDetailPage = cache(
         throw new BookingDetailDataError("not_found");
       }
 
-      const [therapists, services, intakeRows, receiptRows, paymentRows] =
+      const [
+        therapists,
+        services,
+        intakeRows,
+        receiptRows,
+        paymentRows,
+        rescheduleRows,
+      ] =
         await Promise.all([
           supabaseServerRestRequest<BookingDetailTherapistRow[]>(
             config,
@@ -100,6 +108,10 @@ export const getPatientSessionDetailPage = cache(
           supabaseServerRestRequest<BookingDetailSessionPaymentRow[]>(
             config,
             `/rest/v1/session_payments?select=financial_status&booking_id=eq.${booking.id}&limit=1`,
+          ),
+          supabaseServerRestRequest<BookingDetailRescheduleRow[]>(
+            config,
+            `/rest/v1/booking_reschedule_requests?select=id,requested_by_profile_id,proposed_starts_at,proposed_ends_at,proposed_timezone,reason,status,expires_at&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
           ),
         ]);
       const therapist = therapists[0];
@@ -125,7 +137,7 @@ export const getPatientSessionDetailPage = cache(
           ),
           supabaseServerRestRequest<BookingDetailBookingRow[]>(
             config,
-            `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,timezone,status,meeting_provider,meeting_url,completed_at&patient_profile_id=eq.${patientProfile.id}&therapist_profile_id=eq.${therapist.id}&status=eq.completed&order=starts_at.asc`,
+            `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,timezone,status,meeting_provider,meeting_url,completed_at,version&patient_profile_id=eq.${patientProfile.id}&therapist_profile_id=eq.${therapist.id}&status=eq.completed&order=starts_at.asc`,
           ),
         ]);
       const therapy = therapies[0];
@@ -152,6 +164,7 @@ export const getPatientSessionDetailPage = cache(
         perspective: "patient",
         policy: policyRows[0] ?? null,
         receipt: receiptRows[0] ?? null,
+        reschedule: rescheduleRows[0] ?? null,
         reviews,
         service,
         sessionPayment: paymentRows[0] ?? null,
@@ -187,6 +200,7 @@ function createDemoBookingDetail(
       status: "confirmed",
       therapist_profile_id: "92000000-0000-4000-8000-000000000011",
       timezone: "America/Sao_Paulo",
+      version: 1,
     },
     completedBookings: Array.from({ length: 3 }, (_, index) => ({
       completed_at: new Date(2024, 4, 10 + index).toISOString(),
@@ -200,6 +214,7 @@ function createDemoBookingDetail(
       status: "completed",
       therapist_profile_id: "92000000-0000-4000-8000-000000000011",
       timezone: "America/Sao_Paulo",
+      version: 1,
     })),
     intake: {
       focus_area: "Autoconhecimento",
@@ -231,6 +246,7 @@ function createDemoBookingDetail(
       paid_at: new Date(Date.now() - 86_400_000).toISOString(),
       receipt_url: `/app/pagamentos/comprovantes/${bookingId}`,
     },
+    reschedule: null,
     reviews: [{ rating: 5 }, { rating: 5 }, { rating: 5 }],
     service: {
       currency: "BRL",

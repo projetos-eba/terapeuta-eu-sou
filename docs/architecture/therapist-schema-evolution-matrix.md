@@ -43,6 +43,7 @@ Status: A2, read models, A3, A4 e A5 implementados.
 | comandos `therapist_block_*_v1`          | criação, remoção e resolução idempotentes           | Edge Function de Bloqueios                         | restrita  | somente `service_role`; booking não é alterado          |
 | `therapies.calendar_color_key`           | chave semântica de cor no calendário                | Agenda e futuras telas de terapia                  | existente | frontend mapeia a chave; banco não persiste CSS         |
 | `get_service_available_slots_v1`         | slots públicos autoritativos por serviço            | reserva pública e A6                               | público   | não revela participantes nem causa da indisponibilidade |
+| `session-booking-checkout`               | orquestração A6 slot -> hold -> booking -> Checkout | reserva pública autenticada                        | Edge      | não confirma pagamento nem calcula finanças             |
 | `get_therapist_calendar_v1`              | calendário privado dia, semana e mês                | `/terapeuta/agenda?aba=calendario`                 | invoker   | identidade derivada de `auth.uid()`                     |
 | `validate_booking_hold_schedule_v1`      | valida o hold contra a agenda configurada           | trigger de `booking_holds`                         | interna   | não executável diretamente pelo browser                 |
 

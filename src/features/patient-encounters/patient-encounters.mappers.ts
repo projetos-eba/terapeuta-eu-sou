@@ -32,6 +32,16 @@ export type BookingRecord = {
   therapist_profile_id: string;
 };
 
+export type SessionPaymentRecord = {
+  booking_id: string;
+  financial_status: string;
+};
+
+export type RescheduleRecord = {
+  booking_id: string;
+  status: string;
+};
+
 export type TherapistRecord = {
   headline: string | null;
   id: string;
@@ -66,7 +76,9 @@ type MapPatientEncountersInput = {
   patient: PatientEncountersPatient;
   reviews: ReviewRecord[];
   serviceById: Map<string, ServiceRecord>;
+  sessionPaymentByBookingId: Map<string, SessionPaymentRecord>;
   summaries: SessionSummaryRecord[];
+  rescheduleByBookingId: Map<string, RescheduleRecord>;
   therapistById: Map<string, TherapistRecord>;
   therapyById: Map<string, TherapyRecord>;
   unreadMessagesCount: number;
@@ -142,7 +154,9 @@ function mapPatientEncounter(
 
   if (!therapist || !service || !therapy) return null;
 
-  const status = getEncounterStatus(booking);
+  const payment = input.sessionPaymentByBookingId.get(booking.id) ?? null;
+  const reschedule = input.rescheduleByBookingId.get(booking.id) ?? null;
+  const status = getEncounterStatus(booking, payment, reschedule);
   const summaryId = summaryBookingIds.has(booking.id) ? booking.id : null;
   const hasReview = reviewedBookingIds.has(booking.id);
 
@@ -156,7 +170,9 @@ function mapPatientEncounter(
     endsAt: booking.ends_at,
     id: booking.id,
     meetingUrl: booking.meeting_url,
+    paymentStatus: payment?.financial_status ?? null,
     primaryAction: getPrimaryAction(booking, status, summaryId, hasReview),
+    rescheduleStatus: reschedule?.status ?? null,
     scheduleLabel:
       status === "completed"
         ? formatBookingSchedule(booking.starts_at)
@@ -177,10 +193,23 @@ function mapPatientEncounter(
   };
 }
 
-function getEncounterStatus(booking: BookingRecord): PatientEncounterStatus {
+function getEncounterStatus(
+  booking: BookingRecord,
+  payment: SessionPaymentRecord | null,
+  reschedule: RescheduleRecord | null,
+): PatientEncounterStatus {
   if (isCompletedBookingStatus(booking.status)) return "completed";
   if (isCancelledBookingStatus(booking.status)) return "cancelled";
-  if (booking.status === "pending_payment") return "pending_payment";
+  if (
+    booking.status === "pending_payment" ||
+    payment?.financial_status === "pending" ||
+    payment?.financial_status === "processing" ||
+    payment?.financial_status === "failed"
+  ) {
+    return "pending_payment";
+  }
+
+  if (reschedule?.status === "pending") return "reschedule_requested";
 
   if (
     canJoinBooking({
@@ -248,6 +277,7 @@ function getStatusLabel(status: PatientEncounterStatus) {
     confirmed: "Confirmada",
     live: "Ao vivo agora",
     pending_payment: "Pagamento pendente",
+    reschedule_requested: "Reagendamento solicitado",
   };
 
   return labels[status];
