@@ -174,3 +174,6 @@ verify_jwt = false
 
 [functions.therapist-schedule-update]
 verify_jwt = false
+
+[functions.therapist-blocks-update]
+verify_jwt = false

@@ -2592,6 +2592,175 @@ set
   completed_at = excluded.completed_at,
   updated_at = now();
 
+-- A4 therapist block demo data. Existing bookings remain unchanged.
+insert into public.availability_exception_series (
+  id,
+  therapist_profile_id,
+  service_id,
+  timezone,
+  starts_on,
+  start_time,
+  end_time,
+  all_day,
+  recurrence_frequency,
+  recurrence_ends_on,
+  reason_code,
+  reason,
+  status,
+  created_by_user_id
+)
+values
+  (
+    'a4000000-0000-4000-8000-000000000001',
+    'c1000000-0000-4000-8000-000000000001',
+    null,
+    'America/Sao_Paulo',
+    current_date + 1,
+    null,
+    null,
+    true,
+    'none',
+    current_date + 1,
+    'personal',
+    'Compromisso pessoal',
+    'active',
+    'aaaaaaaa-0000-4000-8000-000000000001'
+  ),
+  (
+    'a4000000-0000-4000-8000-000000000002',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    'America/Sao_Paulo',
+    current_date + 3,
+    time '12:00',
+    time '14:00',
+    false,
+    'weekly',
+    current_date + 17,
+    'training',
+    'Formação profissional',
+    'active',
+    'aaaaaaaa-0000-4000-8000-000000000001'
+  )
+on conflict (id) do update
+set
+  starts_on = excluded.starts_on,
+  recurrence_ends_on = excluded.recurrence_ends_on,
+  reason = excluded.reason,
+  status = excluded.status,
+  updated_at = now();
+
+insert into public.availability_exceptions (
+  id,
+  therapist_profile_id,
+  service_id,
+  starts_at,
+  ends_at,
+  is_available,
+  reason,
+  series_id,
+  occurrence_date,
+  timezone,
+  all_day,
+  reason_code,
+  status,
+  created_by_user_id
+)
+values
+  (
+    'a4100000-0000-4000-8000-000000000001',
+    'c1000000-0000-4000-8000-000000000001',
+    null,
+    (current_date + 1)::timestamp at time zone 'America/Sao_Paulo',
+    (current_date + 2)::timestamp at time zone 'America/Sao_Paulo',
+    false,
+    'Compromisso pessoal',
+    'a4000000-0000-4000-8000-000000000001',
+    current_date + 1,
+    'America/Sao_Paulo',
+    true,
+    'personal',
+    'active',
+    'aaaaaaaa-0000-4000-8000-000000000001'
+  ),
+  (
+    'a4100000-0000-4000-8000-000000000002',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    ((current_date + 3) + time '12:00') at time zone 'America/Sao_Paulo',
+    ((current_date + 3) + time '14:00') at time zone 'America/Sao_Paulo',
+    false,
+    'Formação profissional',
+    'a4000000-0000-4000-8000-000000000002',
+    current_date + 3,
+    'America/Sao_Paulo',
+    false,
+    'training',
+    'active',
+    'aaaaaaaa-0000-4000-8000-000000000001'
+  ),
+  (
+    'a4100000-0000-4000-8000-000000000003',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    ((current_date + 10) + time '12:00') at time zone 'America/Sao_Paulo',
+    ((current_date + 10) + time '14:00') at time zone 'America/Sao_Paulo',
+    false,
+    'Formação profissional',
+    'a4000000-0000-4000-8000-000000000002',
+    current_date + 10,
+    'America/Sao_Paulo',
+    false,
+    'training',
+    'active',
+    'aaaaaaaa-0000-4000-8000-000000000001'
+  ),
+  (
+    'a4100000-0000-4000-8000-000000000004',
+    'c1000000-0000-4000-8000-000000000001',
+    'd1000000-0000-4000-8000-000000000001',
+    ((current_date + 17) + time '12:00') at time zone 'America/Sao_Paulo',
+    ((current_date + 17) + time '14:00') at time zone 'America/Sao_Paulo',
+    false,
+    'Formação profissional',
+    'a4000000-0000-4000-8000-000000000002',
+    current_date + 17,
+    'America/Sao_Paulo',
+    false,
+    'training',
+    'active',
+    'aaaaaaaa-0000-4000-8000-000000000001'
+  )
+on conflict (id) do update
+set
+  starts_at = excluded.starts_at,
+  ends_at = excluded.ends_at,
+  reason = excluded.reason,
+  status = excluded.status,
+  updated_at = now();
+
+insert into public.availability_exception_booking_impacts (
+  id,
+  exception_id,
+  booking_id,
+  therapist_profile_id,
+  status
+)
+values (
+  'a4200000-0000-4000-8000-000000000001',
+  'a4100000-0000-4000-8000-000000000001',
+  'f2000000-0000-4000-8000-000000000004',
+  'c1000000-0000-4000-8000-000000000001',
+  'pending'
+)
+on conflict (exception_id, booking_id) do update
+set
+  status = excluded.status,
+  resolution = null,
+  resolved_by_user_id = null,
+  resolved_at = null,
+  updated_at = now();
+
 insert into public.therapist_patient_relationships (
   id,
   therapist_profile_id,
