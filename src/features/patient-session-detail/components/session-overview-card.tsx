@@ -1,11 +1,5 @@
 import Image from "next/image";
-import {
-  CalendarDays,
-  CheckCircle2,
-  Clock,
-  Leaf,
-  Star,
-} from "lucide-react";
+import { CalendarDays, CheckCircle2, Clock, Leaf, Star } from "lucide-react";
 
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
 
@@ -55,7 +49,7 @@ export function SessionOverviewCard({
           <p className="mt-7 flex items-center gap-2 text-sm font-extrabold text-brand-deep">
             <Star
               aria-hidden="true"
-              className="fill-[#F5B84A] text-[#F5B84A]"
+              className="fill-status-warning text-status-warning"
               size={17}
             />
             {ratingLabel}

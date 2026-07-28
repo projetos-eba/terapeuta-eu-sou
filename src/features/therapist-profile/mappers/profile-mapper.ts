@@ -35,24 +35,55 @@ export type ProfileRow = {
   video_url: string | null;
 };
 
+const supportedVideoProviders = new Set([
+  "external",
+  "upload",
+  "vimeo",
+  "youtube",
+]);
+
+function isSafeVideoUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function normalizeVideo(input: {
+  provider: ProfileRow["video_provider"];
+  thumbnailUrl: string | null;
+  title: string | null;
+  url: string | null;
+}): PublicTherapistProfile["video"] {
+  if (!input.url || !isSafeVideoUrl(input.url)) return null;
+  if (input.provider && !supportedVideoProviders.has(input.provider)) {
+    return null;
+  }
+
+  return {
+    provider: input.provider ?? "external",
+    thumbnailUrl: input.thumbnailUrl ?? "/home/tablet-video-session.png",
+    title: input.title ?? "Um convite para você",
+    url: input.url,
+  };
+}
+
 export type ContentRow = {
   essence_body: string | null;
   experience_years: number | null;
-  guide_items:
-    | Array<{
-        icon: string;
-        label: string;
-      }>
-    | null;
+  guide_items: Array<{
+    icon: string;
+    label: string;
+  }> | null;
   invitation_body: string | null;
-  reflections:
-    | Array<{
-        href: string;
-        imageUrl: string;
-        minutesToRead: number;
-        title: string;
-      }>
-    | null;
+  reflections: Array<{
+    href: string;
+    imageUrl: string;
+    minutesToRead: number;
+    title: string;
+  }> | null;
   short_intro: string | null;
   therapist_profile_id: string;
 };
@@ -154,7 +185,8 @@ export function mapServiceRow(row: ServiceRow): TherapistProfileService {
       therapistSlug: row.therapist_slug,
     }),
     currency: row.currency,
-    description: row.description ?? "Sessão online com cuidado e escuta responsável.",
+    description:
+      row.description ?? "Sessão online com cuidado e escuta responsável.",
     durationMinutes: row.duration_minutes,
     id: row.service_id,
     priceCents: row.price_cents,
@@ -165,7 +197,9 @@ export function mapServiceRow(row: ServiceRow): TherapistProfileService {
   };
 }
 
-export function mapAvailabilityRows(serviceRows: ServiceRow[]): AvailabilityDay[] {
+export function mapAvailabilityRows(
+  serviceRows: ServiceRow[],
+): AvailabilityDay[] {
   const service = serviceRows[0];
   if (!service) return [];
 
@@ -214,13 +248,11 @@ export function mapProfileRow(
     services,
     slug: row.slug,
     tags: row.tags ?? [],
-    video: row.video_url
-      ? {
-          provider: row.video_provider ?? "external",
-          thumbnailUrl: row.video_thumbnail_url ?? "/home/tablet-video-session.png",
-          title: row.video_title ?? "Um convite para você",
-          url: row.video_url,
-        }
-      : null,
+    video: normalizeVideo({
+      provider: row.video_provider,
+      thumbnailUrl: row.video_thumbnail_url,
+      title: row.video_title,
+      url: row.video_url,
+    }),
   };
 }

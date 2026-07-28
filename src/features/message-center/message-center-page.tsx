@@ -1,6 +1,11 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
-import { BellDot, Headphones, MessageSquareDot, ShieldCheck } from "lucide-react";
+import {
+  BellDot,
+  Headphones,
+  MessageSquareDot,
+  ShieldCheck,
+} from "lucide-react";
 
 import { MessageCenterActions } from "./components/message-center-actions";
 import type {
@@ -288,7 +293,7 @@ function CategoryBadge({
   const tones: Record<MessageCenterCategory, string> = {
     acompanhamento: "bg-status-infoBg text-status-info",
     atendimento: "bg-brand-lavenderSoft text-brand-primary",
-    atualizacao: "bg-[#FCE8F7] text-[#C452A8]",
+    atualizacao: "bg-status-dangerBg text-status-danger",
     confirmacao: "bg-status-successBg text-status-success",
     duvida: "bg-brand-lavenderSoft text-brand-primary",
     feedback: "bg-status-successBg text-status-success",

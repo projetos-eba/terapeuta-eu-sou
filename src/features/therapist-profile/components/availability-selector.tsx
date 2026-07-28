@@ -15,10 +15,14 @@ type AvailabilitySelectorProps = {
 };
 
 export function AvailabilitySelector({ services }: AvailabilitySelectorProps) {
-  const [selectedServiceId, setSelectedServiceId] = useState(services[0]?.id ?? "");
+  const [selectedServiceId, setSelectedServiceId] = useState(
+    services[0]?.id ?? "",
+  );
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const selectedService = useMemo(
-    () => services.find((service) => service.id === selectedServiceId) ?? services[0],
+    () =>
+      services.find((service) => service.id === selectedServiceId) ??
+      services[0],
     [selectedServiceId, services],
   );
   const days = selectedService?.availability ?? [];
@@ -34,9 +38,9 @@ export function AvailabilitySelector({ services }: AvailabilitySelectorProps) {
               Próximos horários disponíveis
             </h2>
             {selectedService ? (
-              <p className="mt-1 text-xs font-medium text-white/75">
-                {selectedService.title} · {selectedService.durationMinutes} min ·{" "}
-                {selectedService.priceLabel}
+              <p className="mt-1 text-sm font-medium leading-6 text-white/80">
+                {selectedService.title} · {selectedService.durationMinutes} min
+                · {selectedService.priceLabel}
               </p>
             ) : null}
           </div>
@@ -51,8 +55,8 @@ export function AvailabilitySelector({ services }: AvailabilitySelectorProps) {
                 onClick={() => setSelectedServiceId(service.id)}
                 className={
                   service.id === selectedService?.id
-                    ? "rounded-full bg-white px-4 py-2 text-xs font-bold text-brand-primary"
-                    : "rounded-full border border-white/30 px-4 py-2 text-xs font-bold text-white"
+                    ? "min-h-11 rounded-full bg-white px-4 py-2 text-sm font-bold text-brand-primary"
+                    : "min-h-11 rounded-full border border-white/30 px-4 py-2 text-sm font-bold text-white"
                 }
               >
                 {service.title}
@@ -82,7 +86,7 @@ export function AvailabilitySelector({ services }: AvailabilitySelectorProps) {
                         slot.startsAt,
                       )}` as Route
                     }
-                    className="rounded-[9px] bg-[#7c55a0] px-4 py-3 text-center text-sm font-medium"
+                    className="rounded-[9px] bg-brand-primaryPressed px-4 py-3 text-center text-sm font-medium"
                   >
                     {slot.timeLabel}
                   </Link>
@@ -91,7 +95,7 @@ export function AvailabilitySelector({ services }: AvailabilitySelectorProps) {
             </div>
           ))
         ) : (
-          <div className="rounded-[14px] bg-[#7c55a0] px-5 py-4 text-sm font-medium">
+          <div className="rounded-[14px] bg-brand-primaryPressed px-5 py-4 text-sm font-medium">
             Agenda temporariamente indisponível para este serviço.
           </div>
         )}
