@@ -37,7 +37,7 @@ export function PatientActivitySection({
       description: activity.lastActivityLabel
         ? `Última atividade: ${activity.lastActivityLabel}`
         : "Nenhuma atividade recente",
-      href: routes.patient.sessionHistory,
+      href: routes.patient.encounterHistory,
       kind: "history" as const,
       label: "Histórico",
       linkLabel: "Ver histórico",
@@ -58,7 +58,7 @@ export function PatientActivitySection({
         </h2>
         <Link
           className="text-xs font-medium text-brand-primary outline-none hover:underline focus-visible:ring-4 focus-visible:ring-ring/20"
-          href={routes.patient.sessionHistory as Route<string>}
+          href={routes.patient.encounterHistory as Route<string>}
         >
           Ver tudo <span aria-hidden="true">→</span>
         </Link>

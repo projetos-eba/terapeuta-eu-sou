@@ -43,8 +43,9 @@ Antes de alterar arquivos, ler somente o necessário para a tarefa, nesta ordem:
 3. `docs/product/sitemap.md`.
 4. `docs/design-system/design-system.md`.
 5. `docs/product/routes-map.md`.
-6. `README.md`.
-7. Arquivos diretamente afetados pela tarefa.
+6. `docs/product/glossary.md`.
+7. `README.md`.
+8. Arquivos diretamente afetados pela tarefa.
    Consultar documentos adicionais somente quando necessário e solicitado:
 
 - `docs/design-system/tokens.md`: tokens, design tokens.
@@ -108,13 +109,13 @@ Arquivo principal:
 
 ## Perfis e planos
 
-| Perfil                 | Área canônica  | Plano         | Enum técnico   | Alias temporário atual |
-| ---------------------- | -------------- | ------------- | -------------- | ---------------------- |
-| Paciente               | `/app`         | —             | —              | —                      |
-| Terapeuta Free         | `/terapeuta/*` | Básico / Free | `free`         | `/basico/*`            |
-| Terapeuta Premium      | `/terapeuta/*` | Premium       | `premium`      | `/pro/*`               |
-| Terapeuta Premium Plus | `/terapeuta/*` | Premium Plus  | `premium_plus` | `/plus/*`              |
-| Admin                  | `/admin`       | —             | —              | —                      |
+| Perfil                 | Área canônica  | Plano        | Enum técnico   | Alias temporário atual |
+| ---------------------- | -------------- | ------------ | -------------- | ---------------------- |
+| Paciente               | `/app`         | —            | —              | —                      |
+| Terapeuta Free         | `/terapeuta/*` | Free         | `free`         | `/basico/*`            |
+| Terapeuta Premium      | `/terapeuta/*` | Premium      | `premium`      | `/pro/*`               |
+| Terapeuta Premium Plus | `/terapeuta/*` | Premium Plus | `premium_plus` | `/plus/*`              |
+| Admin                  | `/admin`       | —            | —              | —                      |
 
 Regras:
 
@@ -123,11 +124,74 @@ Regras:
 - `/terapeutas/*` plural permanece reservado ao catálogo e aos perfis públicos.
 - `/basico/*`, `/pro/*` e `/plus/*` são redirects compatíveis implementados na
   Fase Agenda 1; não criar páginas novas nesses namespaces.
-- `Pro` e `Plus` são identificadores técnicos legados de rota, não copy de interface.
-- Nomes comerciais (Básico, Premium, Premium Plus) são decisão de produto e UX.
+- `Básico`, `Pro` e `Plus` isolado são nomenclaturas comerciais legadas e não
+  devem aparecer como nova copy de produto. `Pro` e `Plus` podem aparecer
+  somente como identificadores técnicos legados de rota ou contexto histórico
+  documentado.
+- Nomes comerciais canônicos: Free, Premium e Premium Plus.
 - `src/lib/routes.ts` é a fonte canônica das rotas executáveis.
 - `next.config.mjs` contém exclusivamente os redirects dos namespaces legados.
 - `src/lib/permissions.ts` é a fonte canônica de permissões e recursos por plano.
+
+## Nomenclatura canônica
+
+| Contexto                   | Termo canônico                       |
+| -------------------------- | ------------------------------------ |
+| Paciente — interface       | Encontro                             |
+| Terapeuta — operação       | Sessão                               |
+| Administração              | Sessão                               |
+| Código e banco             | `session` ou `booking`               |
+| Financeiro e jurídico      | Sessão contratada, quando necessário |
+| Zoom para o paciente       | Entrar no encontro                   |
+| Zoom técnico               | Video session                        |
+| Planos comerciais          | Free, Premium e Premium Plus         |
+| Área de serviços no shell  | Suas terapias                        |
+| Domínio técnico de ofertas | `service` / `therapist_services`     |
+
+Regras:
+
+- Não fazer substituição global de `sessão` por `encontro`: pagamentos, Zoom,
+  banco, admin e operação profissional preservam significado técnico.
+- A rota canônica do paciente é `/app/encontros`. Rotas antigas sob
+  `/app/sessoes` são somente compatibilidade; não criar novas páginas de
+  paciente nesse namespace.
+- A rota técnica da área “Suas terapias” permanece `/terapeuta/servicos`.
+- “Terapia” é modalidade canônica gerenciada pela plataforma; “Serviço” é a
+  entidade técnica que representa a oferta individual do terapeuta.
+
+## Gate de impacto documental
+
+Toda alteração de regra de negócio, rota, nomenclatura, estado, plano,
+capability, fonte de dados, integração, componente compartilhado, fallback,
+contrato de API, schema ou processo de QA deve incluir avaliação explícita de
+impacto documental na entrega.
+
+A entrega deve informar uma destas opções:
+
+- `Documentação atualizada`;
+- `Documentação revisada, sem alteração necessária`;
+- `Documentação pendente`, acompanhada de motivo e risco.
+
+Nenhuma tarefa pode ser considerada pronta sem essa declaração.
+
+## Regra de fallback
+
+- Fallback não pode esconder falha de produção.
+- Dados demonstrativos precisam de ativação explícita server-side.
+- Zero resultados não ativa fallback.
+- 404 não ativa fallback.
+- Erro de infraestrutura não pode virar sucesso aparente.
+- Toda ativação de fallback deve ser visível no diagnóstico da entrega.
+- Nenhuma entrega pode omitir que dados demonstrativos foram usados.
+
+## Regra mínima de UI
+
+- Cores funcionais devem usar tokens TES.
+- Texto funcional deve ter no mínimo 14px.
+- 11px é o menor tamanho permitido e somente para metadados secundários.
+- Botões de ícone precisam de nome acessível.
+- Interfaces operacionais priorizam tarefa, estado, risco, prazo e valor antes
+  de decoração.
 
 ## 5. Implementação
 

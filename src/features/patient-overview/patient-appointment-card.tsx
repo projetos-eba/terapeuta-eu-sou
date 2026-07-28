@@ -65,12 +65,10 @@ export function PatientAppointmentCard({
             <Link
               className="inline-flex min-h-8 w-full items-center justify-center rounded-sm bg-brand-primary px-4 text-xs font-medium text-white outline-none transition hover:bg-brand-primaryHover focus-visible:ring-4 focus-visible:ring-ring/20 sm:w-[145px]"
               href={
-                routes.patient.encounterDetail(
-                  appointment.id,
-                ) as Route<string>
+                routes.patient.encounterDetail(appointment.id) as Route<string>
               }
             >
-              Abrir sessão
+              Entrar no encontro
             </Link>
             <Link
               className="inline-flex min-h-8 w-full items-center justify-center rounded-sm border border-[var(--tes-color-border)] bg-white px-4 text-xs font-medium text-brand-primary outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20 sm:w-[145px]"
@@ -82,14 +80,14 @@ export function PatientAppointmentCard({
         ) : (
           <Link
             className="inline-flex min-h-9 w-full items-center justify-center rounded-sm border border-[var(--tes-color-border)] bg-white px-4 text-xs font-medium text-[var(--tes-color-primary-dark)] outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20 sm:w-[145px]"
-            href={routes.patient.sessions as Route<string>}
+            href={routes.patient.encounters as Route<string>}
           >
             Ver detalhes
           </Link>
         )}
       </div>
       <button
-        aria-label={`Mais opções para a sessão com ${appointment.professional.name}`}
+        aria-label={`Mais opções para o encontro com ${appointment.professional.name}`}
         className="inline-flex size-8 items-center justify-center self-start rounded-sm text-brand-primary outline-none hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20 sm:self-center"
         type="button"
       >

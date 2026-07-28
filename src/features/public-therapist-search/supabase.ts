@@ -1,4 +1,9 @@
 import { routes } from "@/lib/routes";
+import {
+  isPublicDemoDataEnabled,
+  publicDataDegraded,
+  type PublicDataDegradedReason,
+} from "@/lib/public-data-result";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 
@@ -259,8 +264,13 @@ function sortTherapists(
 function paginate(
   therapists: TherapistSearchCard[],
   filters: TherapistSearchFilters,
+  status: TherapistSearchResult["status"],
   source: TherapistSearchResult["source"],
   allTherapists: TherapistSearchCard[],
+  degraded?: {
+    correlationId: string;
+    reason: PublicDataDegradedReason;
+  },
 ): TherapistSearchResult {
   const totalCount = therapists.length;
   const totalPages = Math.max(
@@ -278,7 +288,10 @@ function paginate(
     hasPreviousPage: currentPage > 1,
     options: getOptions(allTherapists),
     pageSize: THERAPIST_SEARCH_PAGE_SIZE,
+    correlationId: degraded?.correlationId,
+    degradedReason: degraded?.reason,
     source,
+    status,
     therapists: therapists.slice(start, start + THERAPIST_SEARCH_PAGE_SIZE),
     totalCount,
     totalPages,
@@ -288,33 +301,69 @@ function paginate(
 function buildResult(
   therapists: TherapistSearchCard[],
   filters: TherapistSearchFilters,
+  status: TherapistSearchResult["status"],
   source: TherapistSearchResult["source"],
+  degraded?: {
+    correlationId: string;
+    reason: PublicDataDegradedReason;
+  },
 ) {
   const filtered = sortTherapists(
     therapists.filter((therapist) => matchesFilters(therapist, filters)),
     filters,
   );
 
-  return paginate(filtered, filters, source, therapists);
+  const resolvedStatus =
+    status === "success" && filtered.length === 0 ? "empty" : status;
+
+  return paginate(
+    filtered,
+    filters,
+    resolvedStatus,
+    source,
+    therapists,
+    degraded,
+  );
 }
 
 export async function getPublicTherapistSearchResult(
   filters: TherapistSearchFilters,
 ): Promise<TherapistSearchResult> {
   if (!hasSupabaseConfig()) {
-    return buildResult(fallbackTherapists, filters, "fallback");
+    if (isPublicDemoDataEnabled()) {
+      return buildResult(fallbackTherapists, filters, "demo", "demo");
+    }
+
+    const degraded = publicDataDegraded<never>({
+      operation: "public_therapist_search",
+      reason: "configuration_missing",
+    });
+
+    return buildResult([], filters, "degraded", "live", {
+      correlationId: degraded.correlationId,
+      reason: degraded.reason,
+    });
   }
 
   try {
     const rows = await fetchTherapistRows();
     const therapists = rows.map(mapTherapistRow);
 
-    if (!therapists.length) {
-      return buildResult(fallbackTherapists, filters, "fallback");
+    return buildResult(therapists, filters, "success", "live");
+  } catch (error) {
+    if (isPublicDemoDataEnabled()) {
+      return buildResult(fallbackTherapists, filters, "demo", "demo");
     }
 
-    return buildResult(therapists, filters, "supabase");
-  } catch {
-    return buildResult(fallbackTherapists, filters, "fallback");
+    const degraded = publicDataDegraded<never>({
+      error,
+      operation: "public_therapist_search",
+      reason: "query_failed",
+    });
+
+    return buildResult([], filters, "degraded", "live", {
+      correlationId: degraded.correlationId,
+      reason: degraded.reason,
+    });
   }
 }

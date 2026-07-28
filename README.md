@@ -24,6 +24,12 @@ O Match público usa `/sua-jornada` e `/sua-jornada/resultado`. A configuração
 
 O catálogo público de terapias usa `/terapias` e `/api/public/therapies`, consultando a view segura `public_therapies_v` por REST Supabase com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. A view expõe apenas terapias com `status = published`, visíveis publicamente e vinculadas a categorias ativas, com contagem pública de terapeutas disponíveis. O detalhe `/terapias/:slug` usa `public_therapy_details_v` para conteúdo editorial e `public_therapist_search` para profissionais relacionados. O Match usa `matching_therapy_settings.is_visible_in_matching` como ativação adicional; uma terapia só entra no Match se também estiver publicada.
 
+O glossário canônico fica em `docs/product/glossary.md`. Pacientes veem
+“Encontro”; terapeuta/admin mantêm “Sessão” para operação; domínio técnico
+preserva `session` e `booking`. Planos comerciais são Free, Premium e Premium
+Plus. A área `/terapeuta/servicos` usa o label amigável “Suas terapias”, mas o
+domínio técnico continua `therapist_services`.
+
 A fundação canônica de Terapias da Plataforma x Serviços do Terapeuta está em
 `docs/architecture/therapy-service-foundation-phase1.md` e
 `docs/architecture/adr/ADR-008-platform-therapy-service-boundary.md`.
@@ -48,6 +54,11 @@ nova terapia e auditoria ficam documentados em
 `docs/architecture/admin-therapy-catalog-phase3.md`.
 
 O mapa operacional de integração entre rotas, páginas, skills, views públicas e domínios fica em `docs/product/integration-map.md`. Consulte esse arquivo antes de criar nova página pública, função ou view compartilhada.
+
+Fallback público não deve mascarar falhas de produção. Dados demonstrativos
+públicos só podem ser ativados por flag server-side explícita
+`TES_ENABLE_DEMO_DATA=true` fora de produção; zero resultados e 404 não ativam
+demo.
 
 ## Pré-requisitos
 

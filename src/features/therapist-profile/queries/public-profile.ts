@@ -1,4 +1,8 @@
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
+import {
+  isPublicDemoDataEnabled,
+  publicDataDegraded,
+} from "@/lib/public-data-result";
 
 import { getFallbackTherapistProfile } from "../fallback";
 import {
@@ -13,6 +17,7 @@ import {
   type ServiceRow,
 } from "../mappers/profile-mapper";
 import type { TherapistProfileData } from "../types";
+import type { PublicTherapistProfileResult } from "../types";
 
 function hasSupabaseConfig() {
   return Boolean(getSupabasePublicConfig());
@@ -44,8 +49,28 @@ function slugFilter(slug: string) {
 export async function getPublicTherapistProfile(
   slug: string,
 ): Promise<TherapistProfileData | null> {
+  const result = await getPublicTherapistProfileResult(slug);
+
+  return result.status === "success" || result.status === "demo"
+    ? result.data
+    : null;
+}
+
+export async function getPublicTherapistProfileResult(
+  slug: string,
+): Promise<PublicTherapistProfileResult> {
   if (!hasSupabaseConfig()) {
-    return getFallbackTherapistProfile(slug);
+    if (isPublicDemoDataEnabled()) {
+      const demo = getFallbackTherapistProfile(slug);
+      return demo
+        ? { data: demo, source: "demo", status: "demo" }
+        : { source: "live", status: "not_found" };
+    }
+
+    return publicDataDegraded({
+      operation: "public_therapist_profile",
+      reason: "configuration_missing",
+    });
   }
 
   try {
@@ -69,19 +94,34 @@ export async function getPublicTherapistProfile(
     ]);
 
     const profileRow = profiles[0];
-    if (!profileRow) return getFallbackTherapistProfile(slug);
+    if (!profileRow) return { source: "live", status: "not_found" };
 
     const content = mapContentRow(contents[0] ?? null);
     const services = serviceRows.map(mapServiceRow);
 
     return {
-      availability: mapAvailabilityRows(serviceRows),
-      profile: mapProfileRow(profileRow, content, services),
-      reviews: reviewRows.map(mapReviewRow),
-      source: "supabase",
+      data: {
+        availability: mapAvailabilityRows(serviceRows),
+        profile: mapProfileRow(profileRow, content, services),
+        reviews: reviewRows.map(mapReviewRow),
+        source: "live",
+      },
+      source: "live",
+      status: "success",
     };
-  } catch {
-    return getFallbackTherapistProfile(slug);
+  } catch (error) {
+    if (isPublicDemoDataEnabled()) {
+      const demo = getFallbackTherapistProfile(slug);
+      return demo
+        ? { data: demo, source: "demo", status: "demo" }
+        : { source: "live", status: "not_found" };
+    }
+
+    return publicDataDegraded({
+      error,
+      operation: "public_therapist_profile",
+      reason: "query_failed",
+    });
   }
 }
 

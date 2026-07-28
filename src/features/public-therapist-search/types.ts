@@ -56,6 +56,12 @@ export type TherapistSearchCard = {
 
 export type TherapistSearchResult = {
   activeFilterCount: number;
+  correlationId?: string;
+  degradedReason?:
+    | "configuration_missing"
+    | "invalid_response"
+    | "query_failed"
+    | "timeout";
   currentPage: number;
   filters: TherapistSearchFilters;
   hasNextPage: boolean;
@@ -65,7 +71,8 @@ export type TherapistSearchResult = {
     therapies: TherapistSearchOption[];
   };
   pageSize: number;
-  source: "supabase" | "fallback";
+  source: "demo" | "live";
+  status: "degraded" | "demo" | "empty" | "success";
   therapists: TherapistSearchCard[];
   totalCount: number;
   totalPages: number;

@@ -99,7 +99,7 @@ export function ClientLoginForm({
           Entre na sua conta
         </h1>
         <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
-          Continue sua jornada, acompanhe sessões e encontre caminhos no seu
+          Continue sua jornada, acompanhe encontros e encontre caminhos no seu
           tempo.
         </p>
       </div>

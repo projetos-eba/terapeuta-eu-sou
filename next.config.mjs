@@ -7,6 +7,26 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: "/app/sessoes/proximas",
+        destination: "/app/encontros",
+        permanent: false,
+      },
+      {
+        source: "/app/sessoes/historico",
+        destination: "/app/encontros#patient-history-encounters-title",
+        permanent: false,
+      },
+      {
+        source: "/app/sessoes/:bookingId",
+        destination: "/app/encontros/:bookingId",
+        permanent: false,
+      },
+      {
+        source: "/app/sessoes",
+        destination: "/app/encontros",
+        permanent: false,
+      },
+      {
         source: "/plus/servi%C3%A7os",
         destination: "/terapeuta/servicos",
         permanent: false,

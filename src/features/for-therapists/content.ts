@@ -13,8 +13,7 @@ export const forTherapistsHero = {
   eyebrow: "PARA TERAPEUTAS",
   title: "Você cuida de pessoas.",
   accent: "Nos cuidamos do espaco onde esse encontro acontece",
-  body:
-    "O TES foi criado para ajudar terapeutas a organizar atendimentos, fortalecer sua presenca e construir uma jornada profissional com mais clareza e tranquilidade.",
+  body: "O TES foi criado para ajudar terapeutas a organizar atendimentos, fortalecer sua presenca e construir uma jornada profissional com mais clareza e tranquilidade.",
   primaryCta: "Quero me cadastrar",
   secondaryCta: "Ver planos",
 };
@@ -40,8 +39,7 @@ export const trustItems = [
 
 export const benefitCards = [
   {
-    body:
-      "Seu perfil profissional, sua historia e sua forma de trabalhar em um espaco que ajuda a mostrar sua abordagem com clareza.",
+    body: "Seu perfil profissional, sua historia e sua forma de trabalhar em um espaco que ajuda a mostrar sua abordagem com clareza.",
     icon: UserRoundCheck,
     title: "Mostre quem voce e e como cuida das pessoas",
     variant: "profile",
@@ -53,36 +51,31 @@ export const benefitCards = [
     variant: "calendar",
   },
   {
-    body:
-      "Perfis verificados, privacidade e regras de plataforma para apoiar uma relacao de cuidado responsavel.",
+    body: "Perfis verificados, privacidade e regras de plataforma para apoiar uma relacao de cuidado responsavel.",
     icon: ShieldCheck,
     title: "Presenca profissional com seguranca",
     variant: "security",
   },
   {
-    body:
-      "Fluxos separados para assinatura e sessoes, mantendo clareza operacional e financeira.",
+    body: "Fluxos separados para assinatura e sessoes, mantendo clareza operacional e financeira.",
     icon: LockKeyhole,
     title: "Pagamentos seguros",
     variant: "payments",
   },
   {
-    body:
-      "Mensagens e acompanhamento para manter sua rotina mais organizada antes e depois das sessoes.",
+    body: "Mensagens e acompanhamento para manter sua rotina mais organizada antes e depois das sessoes.",
     icon: MessageCircle,
     title: "Seja encontrada por quem procura voce",
     variant: "community",
   },
   {
-    body:
-      "Metricas e sinais de descoberta para acompanhar sua evolucao sem prometer resultado financeiro.",
+    body: "Metricas e sinais de descoberta para acompanhar sua evolucao sem prometer resultado financeiro.",
     icon: ChartNoAxesColumnIncreasing,
     title: "Acompanhe sua evolucao",
     variant: "growth",
   },
   {
-    body:
-      "Converse, organize atendimentos online e acompanhe sua agenda de qualquer lugar com seguranca.",
+    body: "Converse, organize atendimentos online e acompanhe sua agenda de qualquer lugar com seguranca.",
     icon: Sparkles,
     title: "Atenda de onde estiver",
     variant: "remote",
@@ -92,7 +85,7 @@ export const benefitCards = [
 export const planCategoryLabels = {
   base: "Operação — base de todos",
   premium: "Identidade & presença — a partir do Premium",
-  premium_plus: "Gestão da prática — exclusivo Plus",
+  premium_plus: "Gestão da prática — exclusivo Premium Plus",
   academy: "Academia TES (Em breve)",
 } as const;
 

@@ -130,8 +130,7 @@ export const fallbackTherapistProfile: TherapistProfileData = {
   profile: {
     acceptsOnlineSessions: true,
     badges: ["Perfil verificado", "Terapeuta Plus"],
-    bio:
-      "Sou terapeuta integrativa há mais de 8 anos. Minha missão é oferecer acolhimento, escuta e orientação para você se conectar com sua essência, leveza e verdade.",
+    bio: "Sou terapeuta integrativa há mais de 8 anos. Minha missão é oferecer acolhimento, escuta e orientação para você se conectar com sua essência, leveza e verdade.",
     cityState: "São Paulo, SP",
     content: {
       essenceBody:
@@ -177,7 +176,8 @@ export const fallbackTherapistProfile: TherapistProfileData = {
         availability: reikiAvailability,
         bookingUrl: `${routes.public.reservation}?therapist=ana-oliveira&service=d1000000-0000-4000-8000-000000000001`,
         currency: "BRL",
-        description: "Sessão complementar de Reiki conduzida por vídeo, com foco em presença e cuidado energético responsável.",
+        description:
+          "Sessão complementar de Reiki conduzida por vídeo, com foco em presença e cuidado energético responsável.",
         durationMinutes: 50,
         id: "d1000000-0000-4000-8000-000000000001",
         priceCents: 17000,
@@ -190,7 +190,8 @@ export const fallbackTherapistProfile: TherapistProfileData = {
         availability: aromatherapyAvailability,
         bookingUrl: `${routes.public.reservation}?therapist=ana-oliveira&service=d1000000-0000-4000-8000-000000000006`,
         currency: "BRL",
-        description: "Leitura simbólica para refletir sobre escolhas, padrões e caminhos possíveis.",
+        description:
+          "Leitura simbólica para refletir sobre escolhas, padrões e caminhos possíveis.",
         durationMinutes: 60,
         id: "d1000000-0000-4000-8000-000000000006",
         priceCents: 24000,
@@ -201,7 +202,7 @@ export const fallbackTherapistProfile: TherapistProfileData = {
       },
     ],
     slug: "ana-oliveira",
-      tags: ["Reiki", "Tarô", "Oráculos"],
+    tags: ["Reiki", "Tarô", "Oráculos"],
     video: {
       provider: "external",
       thumbnailUrl: "/home/tablet-video-session.png",
@@ -212,8 +213,7 @@ export const fallbackTherapistProfile: TherapistProfileData = {
   reviews: [
     {
       authorLabel: "Paciente TES",
-      body:
-        "As sessões online me deram o acolhimento que eu precisava, no meu tempo e no meu espaço.",
+      body: "As sessões online me deram o acolhimento que eu precisava, no meu tempo e no meu espaço.",
       createdLabel: "Há dois dias",
       id: "90000000-0000-4000-8000-000000000001",
       patientContext: "Paciente há 5 meses",
@@ -228,7 +228,7 @@ export const fallbackTherapistProfile: TherapistProfileData = {
       rating: 5,
     },
   ],
-  source: "fallback",
+  source: "demo",
 };
 
 export const fallbackTherapistProfilesBySlug: Record<
@@ -241,8 +241,7 @@ export const fallbackTherapistProfilesBySlug: Record<
     profile: {
       acceptsOnlineSessions: true,
       badges: ["Perfil verificado"],
-      bio:
-        "Rafael acompanha pessoas em fases de mudança com escuta integrativa e combinados claros de sessão.",
+      bio: "Rafael acompanha pessoas em fases de mudança com escuta integrativa e combinados claros de sessão.",
       cityState: "Rio de Janeiro, RJ",
       content: {
         essenceBody:
@@ -308,7 +307,7 @@ export const fallbackTherapistProfilesBySlug: Record<
         rating: 5,
       },
     ],
-    source: "fallback",
+    source: "demo",
   },
 };
 

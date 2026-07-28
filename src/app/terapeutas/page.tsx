@@ -383,6 +383,34 @@ function EmptyState() {
   );
 }
 
+function DegradedState({ correlationId }: { correlationId?: string }) {
+  return (
+    <TESCard className="border border-brand-lavender bg-white p-10 text-center">
+      <CalendarDays className="mx-auto size-10 text-brand-primary" />
+      <h3 className="mt-4 text-2xl font-extrabold text-brand-deep">
+        Não foi possível consultar os profissionais agora
+      </h3>
+      <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-6 text-tesText-secondary">
+        Tente novamente em alguns instantes. Se o problema continuar, informe o
+        código de atendimento abaixo ao suporte.
+      </p>
+      {correlationId ? (
+        <p className="mt-4 text-xs font-bold text-tesText-secondary">
+          Código: {correlationId}
+        </p>
+      ) : null}
+    </TESCard>
+  );
+}
+
+function DemoNotice() {
+  return (
+    <div className="mb-5 rounded-2xl border border-brand-lavender bg-brand-lavenderSoft px-4 py-3 text-sm font-bold text-brand-deep">
+      Modo demonstração ativo: os profissionais abaixo são dados demonstrativos.
+    </div>
+  );
+}
+
 function Pagination({
   filters,
   totalPages,
@@ -457,13 +485,16 @@ export default async function TherapistsPage({
       />
 
       <section className="mx-auto max-w-[1440px] px-5 pb-[29px] pt-[41px] sm:px-8 lg:px-[68px]">
+        {result.status === "demo" ? <DemoNotice /> : null}
         <ResultsHeader
           activeFilterCount={result.activeFilterCount}
           filters={result.filters}
           totalCount={result.totalCount}
         />
 
-        {result.therapists.length ? (
+        {result.status === "degraded" ? (
+          <DegradedState correlationId={result.correlationId} />
+        ) : result.therapists.length ? (
           <div className="grid gap-x-[20px] gap-y-[20px] xl:grid-cols-2">
             {result.therapists.map((therapist) => (
               <TherapistResultCard
