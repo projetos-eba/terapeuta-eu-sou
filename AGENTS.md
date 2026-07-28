@@ -240,6 +240,11 @@ Stack real identificada:
 - Storybook documentado, não instalado.
 - Componentes React do Design System ainda não implementados.
 - `src/lib/routes.ts` e `src/lib/permissions.ts` existem como fontes canônicas de rotas e permissões.
+- `src/components/app-page` define o grid compartilhado dos shells
+  autenticados (`AppPageContainer`, `AppPageHeader`, `AppPageGrid`,
+  `AppPageMain`, `AppPageAside`, `AppPageSection`, `AppPageActions` e
+  `AppStickySaveBar`). Páginas novas do shell devem reutilizar esse contrato
+  antes de criar containers próprios.
 - `supabase/` possui migrations, seeds idempotentes, testes pgTAP e Edge
   Functions para autenticação, e-mail, Match, Stripe e Zoom.
 - Hostinger Mail API: contrato confirmado em 2026-07-24. `GET https://api.mail.hostinger.com/api/v1/me` lista mailboxes; envio usa `POST https://api.mail.hostinger.com/api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, payload `to: string[]`, `display_name`, `subject`, `text`, `html`, e sucesso `204` sem corpo.
@@ -275,6 +280,17 @@ Stack real identificada:
   uma única sessão curta, usa Playwright visível com contexts separados para
   terapeuta e paciente, e a emissão de JWT passa por rate limit distribuído no
   Supabase.
+- Meu Perfil M1/M2: `/terapeuta/perfil` usa a fonte canônica
+  `therapist_profiles` como tela preview-first da versão publicada;
+  `/terapeuta/perfil/editar` concentra rascunhos em
+  `therapist_profile_content_versions`, publicação pelo terapeuta via Edge
+  Function `therapist-profile-command` e RPCs `*_therapist_profile*_v1`. Não
+  criar tabela paralela de perfil para o shell. Documentos privados pertencem a
+  `therapist_private_documents` e ao bucket `therapist-private-documents`;
+  nunca expor esses dados em views ou DTOs públicos. A experiência M2 usa upload
+  público via `/api/therapist/profile/media`, grid `AppPage*` e dados derivados
+  somente leitura. Publicação pode levar 2 a 3 horas para refletir em todas as
+  superfícies públicas.
 
 ## 6. QA e definição de pronto
 

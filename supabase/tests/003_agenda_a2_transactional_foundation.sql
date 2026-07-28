@@ -190,13 +190,40 @@ select throws_ok(
   'an overlapping hold for the same service is rejected'
 );
 
+insert into public.availability_rules (
+  id,
+  therapist_profile_id,
+  service_id,
+  day_of_week,
+  start_time,
+  end_time,
+  timezone,
+  is_active
+)
+select
+  'e1000000-0000-4000-8000-000000000701',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000006',
+  extract(dow from starts_at at time zone 'America/Sao_Paulo')::integer,
+  (starts_at at time zone 'America/Sao_Paulo')::time,
+  ((starts_at + interval '2 hours') at time zone 'America/Sao_Paulo')::time,
+  'America/Sao_Paulo',
+  true
+from a2_available_slots
+where service_id = 'd1000000-0000-4000-8000-000000000001'
+on conflict (id) do nothing;
+
+update public.therapist_service_booking_settings
+set min_notice_minutes = 0
+where service_id = 'd1000000-0000-4000-8000-000000000006';
+
 select throws_ok(
   $$
     select public.reserve_booking_hold_v1(
       'b1000000-0000-4000-8000-000000000006',
       'd1000000-0000-4000-8000-000000000006',
-      (select starts_at + interval '20 minutes' from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
-      (select starts_at + interval '80 minutes' from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
+      (select starts_at + interval '30 minutes' from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
+      (select starts_at + interval '90 minutes' from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
       'America/Sao_Paulo',
       'a2-hold-conflict-other-service',
       600

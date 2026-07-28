@@ -403,6 +403,22 @@ Evitar:
 - Texto quebra antes de reduzir demais.
 - CTAs não ficam fora da área visível.
 
+## Grid de Apps
+
+`src/components/app-page` é o contrato compartilhado para páginas autenticadas:
+
+- `AppPageContainer`: largura máxima e gutters do conteúdo.
+- `AppPageHeader`: alinhamento comum de título, descrição e ações.
+- `AppPageGrid`: composição main + aside responsiva.
+- `AppPageMain` e `AppPageAside`: regiões sem width calc local.
+- `AppPageSection`: seções funcionais com tokens TES.
+- `AppPageActions`: grupos de ações com wrap.
+- `AppStickySaveBar`: barra de salvamento/ação persistente.
+
+O shell controla sidebar, topbar e área disponível; a página controla somente
+conteúdo e seções. Não usar margens negativas, `left/top` ou `width: calc(...)`
+para compensar o shell.
+
 ## Governança
 
 - Todo componente usa tokens de `tokens.md`.

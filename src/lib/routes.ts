@@ -67,6 +67,7 @@ export const routes = {
     insights: "/terapeuta/insights",
     assessorIa: "/terapeuta/assessor-ia",
     profile: "/terapeuta/perfil",
+    profileEdit: "/terapeuta/perfil/editar",
     plan: "/terapeuta/plano",
     settings: "/terapeuta/configuracoes",
     support: "/terapeuta/suporte",

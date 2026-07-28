@@ -1,0 +1,225 @@
+"use client";
+
+import { ImagePlus, Loader2, Play, Upload } from "lucide-react";
+import { useId, useState } from "react";
+
+import { TESButton } from "@/components/tes";
+
+import {
+  type TherapistProfileMediaKind,
+  uploadTherapistProfileMedia,
+} from "../therapist-profile-editor.commands";
+import type { TherapistProfileEditableFields } from "../therapist-profile-editor.types";
+import { ProfileCapabilityGate } from "./profile-capability-gate";
+import { ProfileTextField } from "./profile-field-group";
+import { ProfileSection } from "./profile-section";
+
+const maxImageBytes = 5 * 1024 * 1024;
+const maxVideoBytes = 50 * 1024 * 1024;
+
+export function ProfilePhotoUploader({
+  fields,
+  updateField,
+}: {
+  fields: TherapistProfileEditableFields;
+  updateField: <K extends keyof TherapistProfileEditableFields>(
+    key: K,
+    value: TherapistProfileEditableFields[K],
+  ) => void;
+}) {
+  return (
+    <ProfileSection
+      description="Use JPG, PNG ou WebP de até 5 MB. A foto aparece publicamente após publicação."
+      title="Foto de perfil"
+    >
+      <MediaUploadControl
+        accept="image/jpeg,image/png,image/webp"
+        currentUrl={fields.photoUrl}
+        kind="photo"
+        label="Enviar foto de perfil"
+        maxBytes={maxImageBytes}
+        onUploaded={(url) => updateField("photoUrl", url)}
+      />
+    </ProfileSection>
+  );
+}
+
+export function ProfileVideoUploader({
+  canUploadVideo,
+  fields,
+  updateField,
+}: {
+  canUploadVideo: boolean;
+  fields: TherapistProfileEditableFields;
+  updateField: <K extends keyof TherapistProfileEditableFields>(
+    key: K,
+    value: TherapistProfileEditableFields[K],
+  ) => void;
+}) {
+  return (
+    <ProfileSection
+      description="Apresente-se em um conteúdo curto e responsável. Documentos privados não aparecem aqui."
+      title="Vídeo de apresentação"
+    >
+      <ProfileCapabilityGate
+        allowed={canUploadVideo}
+        message="Vídeo de apresentação está disponível para planos Premium e Premium Plus."
+      >
+        <div className="grid gap-4">
+          <div className="relative aspect-video overflow-hidden rounded-lg border border-brand-lavender bg-brand-lavenderSoft">
+            {fields.videoThumbnailUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- preview de URL pública recém-enviada ao Storage, sem remotePatterns estáticos.
+              <img
+                alt="Prévia do vídeo de apresentação"
+                className="size-full object-cover"
+                src={fields.videoThumbnailUrl}
+              />
+            ) : (
+              <div className="grid size-full place-items-center text-center text-sm font-bold leading-6 text-brand-primary">
+                <ImagePlus aria-hidden="true" className="mb-2 size-8" />
+                Adicione uma capa para o vídeo
+              </div>
+            )}
+            <span className="absolute inset-0 grid place-items-center">
+              <span className="grid size-14 place-items-center rounded-full bg-white/90 text-brand-primary shadow-card">
+                <Play aria-hidden="true" className="ml-1 size-7 fill-current" />
+              </span>
+            </span>
+          </div>
+
+          <MediaUploadControl
+            accept="video/mp4,video/webm,video/quicktime"
+            currentUrl={fields.videoUrl}
+            kind="video"
+            label="Enviar novo vídeo"
+            maxBytes={maxVideoBytes}
+            onUploaded={(url) => {
+              updateField("videoUrl", url);
+              updateField("videoProvider", "upload");
+            }}
+          />
+          <MediaUploadControl
+            accept="image/jpeg,image/png,image/webp"
+            currentUrl={fields.videoThumbnailUrl}
+            kind="video_thumbnail"
+            label="Enviar capa do vídeo"
+            maxBytes={maxImageBytes}
+            onUploaded={(url) => updateField("videoThumbnailUrl", url)}
+          />
+
+          <div className="grid gap-4">
+            <ProfileTextField
+              id="videoUrl"
+              label="Inserir link do vídeo"
+              onChange={(value) => {
+                updateField("videoUrl", value);
+                updateField("videoProvider", "external");
+              }}
+              placeholder="Cole o link do seu vídeo"
+              value={fields.videoUrl}
+            />
+            <ProfileTextField
+              id="videoTitle"
+              label="Título do vídeo"
+              onChange={(value) => updateField("videoTitle", value)}
+              value={fields.videoTitle}
+            />
+          </div>
+        </div>
+      </ProfileCapabilityGate>
+    </ProfileSection>
+  );
+}
+
+function MediaUploadControl({
+  accept,
+  currentUrl,
+  kind,
+  label,
+  maxBytes,
+  onUploaded,
+}: {
+  accept: string;
+  currentUrl: string;
+  kind: TherapistProfileMediaKind;
+  label: string;
+  maxBytes: number;
+  onUploaded: (url: string) => void;
+}) {
+  const inputId = useId();
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFile(file: File | undefined) {
+    setError(null);
+    if (!file) return;
+    if (file.size > maxBytes) {
+      setError(
+        kind === "video"
+          ? "O vídeo deve ter no máximo 50 MB."
+          : "A imagem deve ter no máximo 5 MB.",
+      );
+      return;
+    }
+
+    setUploading(true);
+    const result = await uploadTherapistProfileMedia({ file, kind });
+    setUploading(false);
+
+    if (result.status === "error") {
+      setError(result.error.message);
+      return;
+    }
+
+    onUploaded(result.data.publicUrl);
+  }
+
+  return (
+    <div className="grid gap-2">
+      <label className="sr-only" htmlFor={inputId}>
+        {label}
+      </label>
+      <input
+        accept={accept}
+        className="sr-only"
+        disabled={uploading}
+        id={inputId}
+        onChange={(event) => void handleFile(event.target.files?.[0])}
+        type="file"
+      />
+      <TESButton
+        className="min-h-11 rounded-lg"
+        disabled={uploading}
+        onClick={() => document.getElementById(inputId)?.click()}
+        type="button"
+        variant="secondary"
+      >
+        {uploading ? (
+          <Loader2 aria-hidden="true" className="animate-spin" size={18} />
+        ) : (
+          <Upload aria-hidden="true" size={18} />
+        )}
+        {label}
+      </TESButton>
+      {uploading ? (
+        <div className="text-sm font-semibold leading-6 text-tesText-secondary">
+          <progress className="mr-2 align-middle" />
+          Enviando arquivo...
+        </div>
+      ) : null}
+      {currentUrl ? (
+        <p className="text-xs font-bold leading-5 text-tesText-subtle">
+          Mídia atual preservada até novo envio válido.
+        </p>
+      ) : null}
+      {error ? (
+        <p
+          className="text-sm font-extrabold leading-6 text-status-danger"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
