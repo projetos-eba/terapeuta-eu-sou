@@ -31,6 +31,11 @@ Lista funcional das páginas do produto. Cada item descreve persona, objetivo, c
 > perfil, busca, Match, sessões e Zoom devem tratar o formato como `online`
 > fixo. Não criar variação de UI para escolha de local ou formato de
 > atendimento.
+> M1 Perfil do terapeuta: `/terapeuta/perfil` é funcional e usa
+> `TherapistProfileEditorData` via `/api/therapist/profile` ->
+> `therapist-profile-command`. O editor possui rascunho privado, publicação pelo
+> terapeuta, dados derivados somente leitura, buckets separados para mídia
+> pública/documentos privados e aviso de propagação pública de 2 a 3 horas.
 
 Fonte primária: Figma `↳ Jornadas dos Usuários`, node `12272:2`, frame principal `12280:2`. Páginas ausentes desse node ficam marcadas como necessidade de produto, suporte, legal ou inferência controlada.
 
@@ -88,6 +93,10 @@ Fonte primária: Figma `↳ Jornadas dos Usuários`, node `12272:2`, frame princ
 | Ajuda                | `/app/ajuda`                      | Resolver dúvidas.                                                    | Busca, categorias, tickets e guias.                     | HelpSearch, FAQAccordion, TicketList.                    | Sem tickets, em análise, resolvido.       | Abrir ticket, falar com suporte.            |
 
 ## Terapeutas
+
+| Plano | Página     | Rota                | Objetivo                 | Componentes                                                                 | Estados                                                                      | Ações                                                           |
+| ----- | ---------- | ------------------- | ------------------------ | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Todos | Meu perfil | `/terapeuta/perfil` | Editar presença pública. | AppPageContainer, AppPageGrid, TherapistProfileEditorPage, StatusChecklist. | Loading, erro honesto, rascunho privado, publicado, despublicado, bloqueado. | Salvar rascunho, descartar, publicar, despublicar, ver público. |
 
 | Plano  | Página                | Rota                                | Objetivo                                       | Componentes                                                   | Estados                                       | Ações                                       |
 | ------ | --------------------- | ----------------------------------- | ---------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------- |

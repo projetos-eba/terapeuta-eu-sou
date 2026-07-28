@@ -43,9 +43,20 @@ Contrato de implementação para rotas, permissões, layouts, componentes, estad
 - TES é online-only. Rotas de serviços, agenda, reserva, perfil público, busca,
   Match, sessões e Zoom não devem criar escolha de formato; o valor técnico de
   compatibilidade é sempre `online`.
+- `/terapeuta/perfil` é a rota funcional única de “Meu perfil” para Free,
+  Premium e Premium Plus. Ela usa `/api/therapist/profile` e a Edge Function
+  `therapist-profile-command` para rascunho privado, publicação pelo terapeuta e
+  despublicação; dados derivados são somente leitura e documentos privados não
+  entram em views públicas.
 
 As tabelas por plano abaixo permanecem como matriz de capability e inventário
 dos destinos legados. Novas referências devem usar `/terapeuta/*`.
+
+## Terapeuta Autenticado
+
+| Rota                | Página     | Origem                                        | Permissão              | Objetivo                            | Layout                                          | Componentes                                                                    | Estados                                                               | Ações                                                           | Referência visual           |
+| ------------------- | ---------- | --------------------------------------------- | ---------------------- | ----------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------- | --------------------------------------------------------------- | --------------------------- |
+| `/terapeuta/perfil` | Meu perfil | Design Telas/Figma `13366:2408`, `13366:7289` | `operation_essentials` | Editar e publicar presença pública. | Grid compartilhado `AppPage*` com main + aside. | TherapistProfileEditorPage, AppPageContainer, AppPageGrid, TESDialog, SaveBar. | Loading, erro, rascunho privado, publicado, despublicado, capability. | Salvar rascunho, descartar, publicar, despublicar, ver público. | Terapeuta Plus/Premium Plus |
 
 ## Público
 

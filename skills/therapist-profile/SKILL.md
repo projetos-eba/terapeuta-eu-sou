@@ -1,0 +1,79 @@
+---
+name: therapist-profile
+description: Use when implementing, refactoring, auditing, or documenting the therapist shell page `/terapeuta/perfil`, including Figma nodes 13366:2408 and 13366:7289, draft/publication flow, private editor read model, public profile integration, Storage separation, RLS, cache and shared app grid.
+---
+
+# Meu Perfil do Terapeuta
+
+## Fontes
+
+- `AGENTS.md`
+- Figma file `OSXJi8tknHHCj82MTY2NbG`
+- Figma nodes `13366:2408` and `13366:7289`
+- `docs/architecture/therapist-profile-m1.md`
+- `docs/architecture/adr/ADR-010-therapist-profile-editor-publication.md`
+- `docs/product/routes-map.md`
+- `docs/product/integration-map.md`
+- `docs/product/page-inventory.md`
+- `docs/design-system/design-system.md`
+
+## Rotas
+
+- Shell: `/terapeuta/perfil`
+- Perfil público: `/terapeutas/:slug`
+- API adapter: `/api/therapist/profile`
+- Edge Function: `therapist-profile-command`
+
+## Contratos
+
+- `TherapistProfileEditorData`
+- `TherapistProfileCompleteness`
+- `TherapistProfileCapabilities`
+- `TherapistProfilePublicDetail` via views públicas existentes
+- `TherapistSearchCard` via `public_therapist_search`
+
+Não passar linhas cruas do Supabase para React.
+
+## Banco
+
+- Identidade canônica: `therapist_profiles`
+- Rascunho/publicado: `therapist_profile_content_versions`
+- Idempotência: `therapist_profile_mutation_requests`
+- Auditoria: `therapist_profile_events`
+- Documentos privados: `therapist_private_documents`
+- Buckets: `therapist-public-media`, `therapist-private-documents`
+
+## Regras
+
+- Salvar rascunho não altera views públicas.
+- Publicação é direta pelo terapeuta e pode levar 2 a 3 horas para propagar.
+- Administração continua responsável por verificação, suspensão, documentos,
+  plano e bloqueios.
+- Dados derivados são somente leitura.
+- Documentos privados nunca entram em HTML público, DTO público, busca pública
+  ou preview público.
+- Capabilities são validadas no frontend e no backend.
+- Sem mocks silenciosos em produção.
+
+## UI
+
+- Usar `AuthenticatedShell`.
+- Usar `src/components/app-page`.
+- Usar `TESDialog` para confirmações.
+- Manter `h1` único.
+- Labels visíveis e touch targets de pelo menos 44px.
+- Não prometer cura, diagnóstico ou resultado.
+
+## Cache
+
+- Draft/discard: não invalidar público.
+- Publish/unpublish: revalidar `therapist-profile`, `therapist-search`, `/`,
+  `/terapeutas` e `/terapeutas/:slug`.
+
+## QA
+
+- Typecheck, lint, build.
+- Vitest para parsers, mappers e componente.
+- Deno para Edge command.
+- pgTAP para RLS, publicação, rascunho e privacidade.
+- Validar que view pública não expõe campos administrativos.

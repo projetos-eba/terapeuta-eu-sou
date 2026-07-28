@@ -49,6 +49,14 @@ edição, ativação, pausa, arquivamento, reordenação, filtros e limite por p
 `/terapeuta/servicos/meus` redireciona para a rota canônica. A tela consome
 somente os contratos da Fase 1 e não exibe métricas fictícias.
 
+O Meu Perfil do terapeuta está implementado em `/terapeuta/perfil`, seguindo os
+Figma `13366:2408` e `13366:7289`. A fonte canônica permanece
+`therapist_profiles`; rascunhos ficam em `therapist_profile_content_versions`,
+publicação é feita pelo terapeuta via `therapist-profile-command`, dados
+derivados são somente leitura e documentos privados usam tabela/bucket
+separados. Publicações podem levar até 2 a 3 horas para refletir em todas as
+superfícies públicas.
+
 A administração do catálogo canônico de terapias está implementada em
 `/admin/terapias`. O shell administrativo usa sessão admin separada, RLS
 explícita e a Edge Function `admin-therapy-catalog-command`; o app Next atua
