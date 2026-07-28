@@ -185,6 +185,10 @@ Usa sidebar, topbar, cards, listas, favoritos separados, suporte lateral e ilust
 
 ### Terapeuta Básico
 
+Nota de implementação de Serviços do terapeuta (`/terapeuta/servicos`), atualizada em 2026-07-28: a página segue o Figma `13366:1943` com hero editorial, lista de serviços e lateral de dicas/ranking, mas usa composição fluida no shell autenticado. Desktop usa duas colunas; tablet colapsa lateral para grid; mobile usa hero em coluna, CTA full-width, cards sem tabela horizontal, pills com wrap e controles de ao menos 44px. Toda métrica vem de `therapist_private_services_v1`; deltas insuficientes aparecem como `null`/“Ainda sem dados”. Criação usa catálogo canônico de terapias e nunca oferece texto livre para criar terapia.
+
+Nota de implementação Admin Terapias (`/admin/terapias`), atualizada em 2026-07-28: a tela usa o shell administrativo mínimo, composição de trabalho densa e responsiva, painéis sem cartões aninhados e estados textuais além da cor. Chaves visuais persistidas no banco são semânticas (`visual_theme_key`, `approach_icon_key`, `hero_focal_point`); componentes mapeiam essas chaves para tokens TES permitidos. O formulário evita promessas de resultado e exige motivo administrativo para mutações de governança.
+
 Usa dashboard simples, checklist de perfil, agenda, pacientes, sessões, mensagens, serviços, pagamento, perfil, upgrade e suporte.
 
 ### Terapeuta Pro

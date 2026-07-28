@@ -17,7 +17,7 @@ function LeafCluster({ className = "" }: { className?: string }) {
       {Array.from({ length: 7 }).map((_, index) => (
         <span
           key={index}
-          className="absolute block h-14 w-7 rounded-[100%_0] bg-[#AAB8A3]/50"
+          className="absolute block h-14 w-7 rounded-[100%_0] bg-brand-mint/50"
           style={{
             transform: `translate(${index % 2 ? 44 : 12}px, ${index * 22}px) rotate(${
               index % 2 ? 38 : -34
@@ -31,7 +31,7 @@ function LeafCluster({ className = "" }: { className?: string }) {
 
 export function JourneyBanner() {
   return (
-    <section className="relative overflow-hidden rounded-hero border border-border bg-[linear-gradient(135deg,#F7F4FF_0%,#FFFFFF_48%,#F1E8F6_100%)] px-7 py-8 shadow-card md:px-12">
+    <section className="relative overflow-hidden rounded-hero border border-border bg-[linear-gradient(135deg,var(--tes-color-surface-soft)_0%,var(--tes-color-surface-default)_48%,var(--tes-color-brand-lavender-soft)_100%)] px-7 py-8 shadow-card md:px-12">
       <LeafCluster className="absolute -left-6 bottom-4 opacity-40" />
       <LeafCluster className="absolute -right-6 bottom-4 scale-x-[-1] opacity-40" />
       <div className="relative grid gap-9 lg:grid-cols-[340px_1fr] lg:items-center">

@@ -288,8 +288,9 @@ Testes e documentação:
 - presença ainda não possui tabela/estado canônico independente; no-show é
   projetado de `bookings` com fonte `booking_compatibility`, demais casos usam
   `unavailable`;
-- modalidade ainda é derivada de `therapist_services.online_only`, não de um
-  snapshot imutável do booking;
+- modalidade permanece como compatibilidade técnica online-only; o produto não
+  oferece escolha de formato e `therapist_services.online_only` deve ser sempre
+  verdadeiro;
 - `bookings.meeting_url` permanece para integrações externas legadas e deve
   migrar para um read model autorizado por provedor;
 - o dashboard Premium Plus ainda possui agregados de compatibilidade anteriores
@@ -305,7 +306,8 @@ Testes e documentação:
 - configurar cron e webhook remotos;
 - definir retenção legal de eventos Zoom;
 - atribuir e deduplicar participações antes de usá-las como presença;
-- criar snapshot canônico de modalidade;
+- se houver snapshot futuro de formato, ele deve preservar apenas o valor
+  `online` enquanto a política online-only estiver vigente;
 - fechar read model autorizado de sessão para paciente/admin;
 - executar testes reais Stripe/Zoom no ambiente alvo;
 - adicionar telemetria para remoção futura dos aliases de rota e projeções

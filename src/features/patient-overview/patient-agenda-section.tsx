@@ -26,7 +26,7 @@ export function PatientAgendaSection({
         </h2>
         <Link
           className="text-xs font-medium text-brand-primary outline-none hover:underline focus-visible:ring-4 focus-visible:ring-ring/20"
-          href={routes.patient.sessions as Route<string>}
+          href={routes.patient.encounters as Route<string>}
         >
           Ver agenda completa <span aria-hidden="true">→</span>
         </Link>

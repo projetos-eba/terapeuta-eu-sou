@@ -1,3 +1,7 @@
 export { fallbackTherapistProfile } from "./fallback";
-export { getPublicTherapistProfile, resolvePublicTherapistSlug } from "./queries/public-profile";
+export {
+  getPublicTherapistProfile,
+  getPublicTherapistProfileResult,
+  resolvePublicTherapistSlug,
+} from "./queries/public-profile";
 export type * from "./types";

@@ -87,8 +87,8 @@ export default async function TherapistSessionsPage({
               Sessões
             </h1>
             <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-              Gerencie seus atendimentos e acompanhe cada sessão com
-              praticidade e organização.
+              Gerencie seus atendimentos e acompanhe cada sessão com praticidade
+              e organização.
             </p>
           </div>
           <a
@@ -117,7 +117,6 @@ export default async function TherapistSessionsPage({
             bookingStatus={parsedFilters.filters.bookingStatus}
             financialStatus={parsedFilters.filters.financialStatus}
             hasActiveFilters={hasActiveFilters}
-            modality={parsedFilters.filters.modality}
             searchQuery={searchQuery}
           />
 
@@ -286,19 +285,17 @@ function SessionsFilterBar({
   bookingStatus,
   financialStatus,
   hasActiveFilters,
-  modality,
   searchQuery,
 }: {
   bookingStatus?: BookingStatusValue;
   financialStatus?: SessionFinancialStatusValue;
   hasActiveFilters: boolean;
-  modality?: "in_person" | "online";
   searchQuery: string;
 }) {
   return (
     <form
       action={routes.therapist.sessions}
-      className="mt-5 grid gap-3 rounded-[16px] border border-brand-lavender/40 bg-white p-4 shadow-card lg:grid-cols-[minmax(220px,1fr)_160px_160px_150px_auto]"
+      className="mt-5 grid gap-3 rounded-[16px] border border-brand-lavender/40 bg-white p-4 shadow-card lg:grid-cols-[minmax(220px,1fr)_160px_160px_auto]"
     >
       <label className="relative block min-w-0">
         <span className="sr-only">Buscar por cliente ou terapia</span>
@@ -327,12 +324,6 @@ function SessionsFilterBar({
         name="payment"
         options={financialStatusOptions}
         value={financialStatus}
-      />
-      <SelectField
-        label="Modalidade"
-        name="modality"
-        options={modalityOptions}
-        value={modality}
       />
       <div className="flex gap-2">
         <button
@@ -440,7 +431,7 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
                     {booking.serviceTitle}
                   </span>
                   <span className="mt-1 inline-flex max-w-full rounded-full bg-brand-lavenderSoft px-2 py-1 text-[9px] font-bold text-brand-primary">
-                    <span className="truncate">{formatModality(booking.modality)}</span>
+                    <span className="truncate">Online</span>
                   </span>
                 </td>
                 <td className="px-3 py-4 text-brand-deep">
@@ -544,7 +535,10 @@ function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
               </div>
             </div>
             <p className="mt-4 text-xs font-semibold leading-5 text-tesText-secondary">
-              {formatSessionDateTime(nextSession.startsAt, nextSession.timezone)}
+              {formatSessionDateTime(
+                nextSession.startsAt,
+                nextSession.timezone,
+              )}
             </p>
             <Link
               className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-xs font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
@@ -713,11 +707,7 @@ function RailTip({
   );
 }
 
-function StatusBadge({
-  presentation,
-}: {
-  presentation: SessionPresentation;
-}) {
+function StatusBadge({ presentation }: { presentation: SessionPresentation }) {
   const toneClasses = {
     danger: "bg-status-dangerBg text-status-danger",
     info: "bg-brand-lavenderSoft text-brand-primary",
@@ -730,7 +720,9 @@ function StatusBadge({
     <span
       className={`inline-flex max-w-full rounded-full px-3 py-1 text-[10px] font-extrabold ${toneClasses[presentation.tone]}`}
     >
-      <span className="truncate">{getCompactPresentationLabel(presentation)}</span>
+      <span className="truncate">
+        {getCompactPresentationLabel(presentation)}
+      </span>
     </span>
   );
 }
@@ -823,7 +815,10 @@ const bookingStatusOptions = [
   { label: "Confirmadas", value: BookingStatus.Confirmed },
   { label: "Pagamento pendente", value: BookingStatus.PendingPayment },
   { label: "Realizadas", value: BookingStatus.Completed },
-  { label: "Canceladas pelo paciente", value: BookingStatus.CancelledByPatient },
+  {
+    label: "Canceladas pelo paciente",
+    value: BookingStatus.CancelledByPatient,
+  },
   {
     label: "Canceladas pelo terapeuta",
     value: BookingStatus.CancelledByTherapist,
@@ -838,11 +833,6 @@ const financialStatusOptions = [
   { label: "Falhou", value: SessionFinancialStatus.Failed },
   { label: "Contestação", value: SessionFinancialStatus.Disputed },
   { label: "Reembolsado", value: SessionFinancialStatus.Refunded },
-];
-
-const modalityOptions = [
-  { label: "Online", value: "online" },
-  { label: "Presencial", value: "in_person" },
 ];
 
 function getSessionMetrics(items: SessionReadModelItem[]): SessionMetrics {
@@ -893,8 +883,7 @@ function getNextSession(items: SessionReadModelItem[]) {
         new Date(item.startsAt).getTime() >= now && !isCancelledSession(item),
     )
     .sort(
-      (a, b) =>
-        new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
+      (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
     )[0];
 }
 
@@ -965,7 +954,7 @@ function buildCsvDataHref(items: SessionReadModelItem[]) {
       "Status",
       "Pagamento",
       "Valor",
-      "Modalidade",
+      "Formato",
     ],
     ...items.map((item) => [
       item.patientName,
@@ -975,11 +964,13 @@ function buildCsvDataHref(items: SessionReadModelItem[]) {
       mapSessionPresentation(item).label,
       formatFinancialStatus(item.financialStatus),
       formatSessionMoney(item.priceCents, item.currency),
-      formatModality(item.modality),
+      "Online",
     ]),
   ];
   const csv = rows
-    .map((row) => row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(","))
+    .map((row) =>
+      row.map((cell) => `"${cell.replaceAll('"', '""')}"`).join(","),
+    )
     .join("\n");
 
   return `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
@@ -1025,10 +1016,6 @@ function formatFinancialStatus(value: string | null) {
   return value ? (labels[value] ?? "Em análise") : "Não iniciado";
 }
 
-function formatModality(value: "in_person" | "online") {
-  return value === "online" ? "Online" : "Presencial";
-}
-
 function getCompactPresentationLabel(presentation: SessionPresentation) {
   if (presentation.state === "payment_pending") return "Pag. pendente";
   if (presentation.state === "reschedule_requested") return "Reagendamento";
@@ -1043,14 +1030,11 @@ function getSearchQuery(value: string | string[] | undefined) {
 }
 
 function hasFilterState(
-  filters: { bookingStatus?: string; financialStatus?: string; modality?: string },
+  filters: { bookingStatus?: string; financialStatus?: string },
   searchQuery: string,
 ) {
   return Boolean(
-    searchQuery ||
-      filters.bookingStatus ||
-      filters.financialStatus ||
-      filters.modality,
+    searchQuery || filters.bookingStatus || filters.financialStatus,
   );
 }
 

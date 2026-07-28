@@ -72,7 +72,7 @@ export function ShellNavItem({
           ? "bg-brand-lavenderSoft text-brand-primary"
           : isLocked
             ? "text-tesText-muted hover:bg-surface-soft"
-            : "text-[#4f4a7a] hover:bg-surface-soft hover:text-brand-primary",
+            : "text-tesText-secondary hover:bg-surface-soft hover:text-brand-primary",
       )}
       href={destination as Route<string>}
       onClick={onNavigate}
@@ -80,7 +80,7 @@ export function ShellNavItem({
       <Icon aria-hidden="true" className="size-5 shrink-0" strokeWidth={1.8} />
       <span className="min-w-0 flex-1 truncate">{item.label}</span>
       {item.planLabel ? (
-        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-status-warningBg px-1.5 py-1 text-[9px] font-semibold text-brand-deep">
+        <span className="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-full bg-status-warningBg px-2 text-xs font-semibold text-brand-deep">
           <Star aria-hidden="true" className="size-3" />
           <span className="sr-only">{item.planLabel}</span>
         </span>

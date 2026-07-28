@@ -35,16 +35,16 @@ export function ShellHelpCard({
           <h2 className="text-sm font-semibold text-[var(--tes-color-primary-dark)]">
             Precisa de ajuda?
           </h2>
-          <p className="mt-2 text-xs leading-5 text-[var(--tes-color-text-secondary-app)]">
+          <p className="mt-2 text-sm leading-6 text-tesText-secondary">
             Nossa equipe está aqui para apoiar você.
           </p>
         </div>
       </div>
       <Link
         className={cn(
-          "mt-4 flex min-h-10 items-center justify-center rounded-sm px-3 text-xs font-medium outline-none transition focus-visible:ring-4 focus-visible:ring-ring/20",
+          "mt-4 flex min-h-11 items-center justify-center rounded-sm px-3 text-sm font-medium outline-none transition focus-visible:ring-4 focus-visible:ring-ring/20",
           variant === "therapist" || variant === "priority"
-            ? "bg-brand-cyan/30 text-[#447698] hover:bg-brand-cyan/45"
+            ? "bg-brand-cyan/30 text-status-info hover:bg-brand-cyan/45"
             : "bg-brand-primary text-white hover:bg-brand-primaryHover",
         )}
         href={href as Route<string>}

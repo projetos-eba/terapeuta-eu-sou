@@ -48,7 +48,7 @@ export function ShellSidebar({
         {logoutAction ? (
           <form action={logoutAction}>
             <button
-              className="flex min-h-12 w-full items-center gap-3 rounded-md px-3 text-sm font-medium text-[#4f4a7a] outline-none transition hover:bg-surface-soft hover:text-brand-primary focus-visible:ring-4 focus-visible:ring-ring/20"
+              className="flex min-h-12 w-full items-center gap-3 rounded-md px-3 text-sm font-medium text-tesText-secondary outline-none transition hover:bg-surface-soft hover:text-brand-primary focus-visible:ring-4 focus-visible:ring-ring/20"
               type="submit"
             >
               <LogOut aria-hidden="true" className="size-5" strokeWidth={1.8} />
@@ -57,7 +57,7 @@ export function ShellSidebar({
           </form>
         ) : (
           <a
-            className="flex min-h-12 items-center gap-3 rounded-md px-3 text-sm font-medium text-[#4f4a7a] outline-none transition hover:bg-surface-soft hover:text-brand-primary focus-visible:ring-4 focus-visible:ring-ring/20"
+            className="flex min-h-12 items-center gap-3 rounded-md px-3 text-sm font-medium text-tesText-secondary outline-none transition hover:bg-surface-soft hover:text-brand-primary focus-visible:ring-4 focus-visible:ring-ring/20"
             href={logoutHref}
           >
             <LogOut aria-hidden="true" className="size-5" strokeWidth={1.8} />

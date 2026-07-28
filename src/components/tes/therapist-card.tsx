@@ -29,7 +29,7 @@ function Rating({ value }: { value: string }) {
     <div className="flex items-center gap-1 text-sm font-extrabold text-brand-deep">
       <span>{value}</span>
       <span
-        className="flex text-[#F4B84A]"
+        className="flex text-status-warning"
         aria-label={`${value} de 5 estrelas`}
       >
         {Array.from({ length: 5 }).map((_, index) => (
@@ -77,8 +77,10 @@ export function TherapistCard({ therapist }: { therapist: TherapistCardData }) {
               {therapist.name}
             </h2>
             <button
+              type="button"
               aria-label={`Favoritar ${therapist.name}`}
-              className="mt-1 text-brand-primary"
+              aria-pressed="false"
+              className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
             >
               <Heart className="size-5" />
             </button>

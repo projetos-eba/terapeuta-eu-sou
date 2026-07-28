@@ -85,6 +85,32 @@ export type TherapistProfileData = {
   availability: AvailabilityDay[];
   profile: PublicTherapistProfile;
   reviews: TherapistProfileReview[];
-  source: "supabase" | "fallback";
+  source: "demo" | "live";
 };
+
+export type PublicTherapistProfileResult =
+  | {
+      data: TherapistProfileData;
+      source: "live";
+      status: "success";
+    }
+  | {
+      correlationId: string;
+      reason:
+        | "configuration_missing"
+        | "invalid_response"
+        | "query_failed"
+        | "timeout";
+      source: "live";
+      status: "degraded";
+    }
+  | {
+      source: "live";
+      status: "not_found";
+    }
+  | {
+      data: TherapistProfileData;
+      source: "demo";
+      status: "demo";
+    };
 import type { AvailableSlot as DomainAvailableSlot } from "@/domain/tes";

@@ -36,7 +36,7 @@ export function ShellUserMenu({
           Olá, {user.name}
         </span>
         {(planLabel ?? user.planLabel) ? (
-          <span className="mt-1 inline-flex rounded-full bg-status-warningBg px-2 py-0.5 text-[9px] font-semibold text-brand-deep">
+          <span className="mt-1 inline-flex min-h-6 items-center rounded-full bg-status-warningBg px-2 text-xs font-semibold text-brand-deep">
             TES {planLabel ?? user.planLabel}
           </span>
         ) : (

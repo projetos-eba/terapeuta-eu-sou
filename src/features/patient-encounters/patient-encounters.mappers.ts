@@ -97,7 +97,12 @@ export function mapPatientEncountersPage(
   );
   const mapped = input.bookings
     .map((booking) =>
-      mapPatientEncounter(booking, input, summaryBookingIds, reviewedBookingIds),
+      mapPatientEncounter(
+        booking,
+        input,
+        summaryBookingIds,
+        reviewedBookingIds,
+      ),
     )
     .filter((item): item is PatientEncounter => Boolean(item));
 
@@ -235,7 +240,7 @@ function getPrimaryAction(
     return {
       href: routes.patient.encounterDetail(booking.id),
       kind: "link",
-      label: "Abrir sessão",
+      label: "Entrar no encontro",
     };
   }
 
@@ -250,9 +255,9 @@ function getPrimaryAction(
 
     if (!hasReview) {
       return {
-        href: `${routes.patient.sessionHistory}?avaliar=${booking.id}`,
+        href: `${routes.patient.encounterHistory}?avaliar=${booking.id}`,
         kind: "link",
-        label: "Avaliar sessão",
+        label: "Avaliar encontro",
       };
     }
 
@@ -311,7 +316,9 @@ function deriveRecentJourneyTopics(
     )
     .map((booking) => {
       const service = input.serviceById.get(booking.service_id);
-      const therapy = service ? input.therapyById.get(service.therapy_id) : null;
+      const therapy = service
+        ? input.therapyById.get(service.therapy_id)
+        : null;
 
       return therapy ? topicByTherapySlug[therapy.slug] : null;
     })

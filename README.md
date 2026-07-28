@@ -24,7 +24,45 @@ O Match público usa `/sua-jornada` e `/sua-jornada/resultado`. A configuração
 
 O catálogo público de terapias usa `/terapias` e `/api/public/therapies`, consultando a view segura `public_therapies_v` por REST Supabase com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. A view expõe apenas terapias com `status = published`, visíveis publicamente e vinculadas a categorias ativas, com contagem pública de terapeutas disponíveis. O detalhe `/terapias/:slug` usa `public_therapy_details_v` para conteúdo editorial e `public_therapist_search` para profissionais relacionados. O Match usa `matching_therapy_settings.is_visible_in_matching` como ativação adicional; uma terapia só entra no Match se também estiver publicada.
 
+O glossário canônico fica em `docs/product/glossary.md`. Pacientes veem
+“Encontro”; terapeuta/admin mantêm “Sessão” para operação; domínio técnico
+preserva `session` e `booking`. Planos comerciais são Free, Premium e Premium
+Plus. A área `/terapeuta/servicos` usa o label amigável “Suas terapias”, mas o
+domínio técnico continua `therapist_services`.
+
+A fundação canônica de Terapias da Plataforma x Serviços do Terapeuta está em
+`docs/architecture/therapy-service-foundation-phase1.md` e
+`docs/architecture/adr/ADR-008-platform-therapy-service-boundary.md`.
+Terapeutas não criam terapias por texto livre: o shell deve usar
+`/api/therapist/services`, que chama a Edge Function
+`therapist-services-command` e as RPCs transacionais de serviço. Toda criação
+exige `therapyId`, `requestId` UUID idempotente e validação server-side de
+terapia, categoria, plano e duplicidade.
+
+O TES opera exclusivamente online. Campos técnicos legados de formato permanecem
+por compatibilidade, mas criação, edição, agenda, reserva, perfil público e
+sessões devem aceitar e expor somente `online`.
+
+A gestão de serviços no shell está implementada em `/terapeuta/servicos`,
+seguindo o Figma `13366:1943` com layout responsivo, criação em 3 passos,
+edição, ativação, pausa, arquivamento, reordenação, filtros e limite por plano.
+`/terapeuta/servicos/meus` redireciona para a rota canônica. A tela consome
+somente os contratos da Fase 1 e não exibe métricas fictícias.
+
+A administração do catálogo canônico de terapias está implementada em
+`/admin/terapias`. O shell administrativo usa sessão admin separada, RLS
+explícita e a Edge Function `admin-therapy-catalog-command`; o app Next atua
+apenas como adaptador fino e revalida as tags públicas afetadas. Publicação,
+despublicação, descontinuação, arquivamento, redirects de slug, solicitações de
+nova terapia e auditoria ficam documentados em
+`docs/architecture/admin-therapy-catalog-phase3.md`.
+
 O mapa operacional de integração entre rotas, páginas, skills, views públicas e domínios fica em `docs/product/integration-map.md`. Consulte esse arquivo antes de criar nova página pública, função ou view compartilhada.
+
+Fallback público não deve mascarar falhas de produção. Dados demonstrativos
+públicos só podem ser ativados por flag server-side explícita
+`TES_ENABLE_DEMO_DATA=true` fora de produção; zero resultados e 404 não ativam
+demo.
 
 ## Pré-requisitos
 
@@ -56,6 +94,8 @@ O mapa operacional de integração entre rotas, páginas, skills, views pública
 - `npm run build`: build de produção.
 - `npm run start`: serve o build.
 - `npm run lint`: lint do Next.js.
+- `npm run lint:online-only`: valida a política de produto que impede opções de
+  formato não-online fora da allowlist documentada.
 - `npm run typecheck`: valida TypeScript.
 - `npm run dev:functions`: sobe Supabase Edge Functions locais usando secrets de `supabase/functions/.env.local`, `supabase/functions/.env` ou `.env.local`, nesta ordem. As chaves locais do Supabase sao injetadas em memoria pela CLI e nao devem ser salvas na raiz do app.
 - `npm run test:auth:flows`: valida fluxo auth completo via Edge Functions, incluindo senha normal, `MASTER_PASSWORD`, confirmacao normal/automatica, reset e redirecionamentos.

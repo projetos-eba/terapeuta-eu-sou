@@ -31,7 +31,7 @@ export default async function JourneyPage() {
             <span className="inline-flex min-h-9 items-center gap-2 rounded-full border border-brand-lavender/60 bg-white/80 px-3 text-xs font-extrabold text-brand-primary shadow-card backdrop-blur">
               <span className="size-[18px] rounded-full border-2 border-brand-primary" />
               Emoções e bem-estar
-              <span className="grid size-3 place-items-center rounded-full border border-brand-primary text-[8px]">
+              <span className="grid size-5 place-items-center rounded-full border border-brand-primary text-xs leading-none">
                 i
               </span>
             </span>

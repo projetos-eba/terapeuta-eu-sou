@@ -42,11 +42,11 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 - `/terapeutas`: busca de terapeutas.
 - `/terapeutas/:slug`: perfil público do terapeuta.
 - `/reserva`: serviço, horário, conta e pagamento.
-- `/reserva/sucesso`: confirmação da sessão.
+- `/reserva/sucesso`: confirmação do encontro.
 - `/terapias`: catálogo de terapias.
 - `/terapias/:slug`: detalhe da terapia.
 - `/para-terapeutas`: página pública para terapeutas.
-- `/para-terapeutas/planos`: planos Básico, Pro e Plus.
+- `/para-terapeutas/planos`: planos Free, Premium e Premium Plus.
 - `/entrar`: login.
 - `/cadastro`: cadastro.
 - `/cliente/login`: login separado para cliente.
@@ -100,15 +100,13 @@ por redirect; elas não definem shells independentes.
 
 ## Paciente
 
-Área logada para continuidade da sessão, favoritos, mensagens, pagamentos e preferências.
+Área logada para continuidade dos encontros, favoritos, mensagens, pagamentos e preferências.
 
 ### Rotas
 
 - `/app`: visão geral.
-- `/app/sessoes`: área de sessões.
-- `/app/sessoes/proximas`: próximas sessões.
-- `/app/sessoes/historico`: histórico de sessões.
-- `/app/sessoes/:slug`: detalhe da sessão.
+- `/app/encontros`: área canônica de encontros.
+- `/app/encontros/:bookingId`: detalhe canônico do encontro.
 - `/app/mensagens`: mensagens.
 - `/app/favoritos`: hub de favoritos.
 - `/app/favoritos/terapeutas`: terapeutas favoritos.
@@ -125,18 +123,18 @@ por redirect; elas não definem shells independentes.
 
 ### Fluxos
 
-- Pós-reserva: `/reserva/sucesso` -> `/app` -> `/app/sessoes/:slug`.
+- Pós-reserva: `/reserva/sucesso` -> `/app` -> `/app/encontros/:bookingId`.
 - Favoritos: `/app/favoritos` -> `/app/favoritos/terapeutas` ou `/app/favoritos/terapias` -> perfil ou terapia -> `/reserva`.
 - Pagamentos: `/app/pagamentos` -> `/app/pagamentos/faturas` ou `/app/pagamentos/metodos`.
 - Preferências: `/app/configuracoes` -> perfil, notificações, privacidade ou segurança.
 
-## Terapeuta Básico - aliases de transição
+## Terapeuta Free - aliases de transição
 
 Operação essencial com limites claros e convites contextuais para evolução.
 
 ### Rotas
 
-- `/basico`: dashboard Básico.
+- `/basico`: redirect legado para o dashboard Free.
 - `/basico/agenda`: agenda simples.
 - `/basico/pacientes`: pacientes ativos.
 - `/basico/sessoes`: sessões.
@@ -145,7 +143,7 @@ Operação essencial com limites claros e convites contextuais para evolução.
 - `/basico/servicos/meus`: meus serviços.
 - `/basico/pagamento`: pagamento simplificado.
 - `/basico/perfil`: perfil público.
-- `/basico/upgrade`: evolução para Pro ou Plus.
+- `/basico/upgrade`: evolução para Premium ou Premium Plus.
 - `/basico/configuracoes`: configurações.
 - `/basico/suporte`: suporte.
 
@@ -155,13 +153,13 @@ Operação essencial com limites claros e convites contextuais para evolução.
 - Não acessa financeiro completo, avaliações, métricas intermediárias, IA, insights avançados ou suporte prioritário.
 - Limites usam microcopy acolhedora, sem tom punitivo.
 
-## Terapeuta Pro - aliases de transição
+## Terapeuta Premium - aliases de transição
 
 Operação profissional com financeiro, avaliações e métricas intermediárias.
 
 ### Rotas
 
-- `/pro`: dashboard Pro.
+- `/pro`: redirect legado para o dashboard Premium.
 - `/pro/agenda`: agenda avançada.
 - `/pro/pacientes`: pacientes.
 - `/pro/sessoes`: sessões.
@@ -170,26 +168,26 @@ Operação profissional com financeiro, avaliações e métricas intermediárias
 - `/pro/financeiro`: financeiro completo.
 - `/pro/metricas`: métricas intermediárias.
 - `/pro/avaliacoes`: avaliações.
-- `/pro/plano`: plano atual e evolução para Plus.
+- `/pro/plano`: plano atual e evolução para Premium Plus.
 - `/pro/perfil`: perfil público.
 - `/pro/configuracoes`: configurações.
 - `/pro/suporte`: suporte.
 
 ### Permissões
 
-- Inclui recursos do Básico.
+- Inclui recursos do Free.
 - Acessa financeiro completo, avaliações e métricas intermediárias.
-- Pode ver convites contextuais para Plus.
-- Não acessa Assessor IA, insights avançados nem histórico operacional Plus.
+- Pode ver convites contextuais para Premium Plus.
+- Não acessa Assessor IA, insights avançados nem histórico operacional Premium Plus.
 
-## Terapeuta Plus - aliases de transição
+## Terapeuta Premium Plus - aliases de transição
 
 Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 
 ### Rotas
 
-- `/plus`: dashboard Plus.
-- `/plus/agenda`: agenda Plus.
+- `/plus`: redirect legado para o dashboard Premium Plus.
+- `/plus/agenda`: agenda Premium Plus.
 - `/plus/pacientes`: pacientes.
 - `/plus/pacientes/:slug-do-paciente`: histórico operacional do paciente.
 - `/plus/sessoes`: sessões.
@@ -206,7 +204,7 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 
 ### Permissões
 
-- Inclui recursos do Pro.
+- Inclui recursos do Premium.
 - Não exibe área de upgrade.
 - Acessa IA, insights, histórico operacional do paciente e suporte prioritário.
 - Dados usam linguagem humana: “Pessoas que viram seu perfil”, “Pessoas que quiseram conhecer melhor seu trabalho”, “Pessoas que seguiram para agendar”.
@@ -243,7 +241,7 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 ## Relações
 
 - Público cria confiança e intenção.
-- Reserva transforma intenção em sessão online.
+- Reserva transforma intenção em encontro online para o paciente e sessão operacional para o terapeuta.
 - Paciente mantém continuidade depois da reserva.
 - Terapeuta opera agenda, sessões, mensagens e pagamentos.
 - Plano do terapeuta controla profundidade de dados e recursos.
@@ -257,6 +255,10 @@ Usar somente quando houver variação legada ou visual:
 - `/plus/serviços` -> `/plus/servicos`.
 - `/plus/avaliações` -> `/plus/avaliacoes`.
 - `/plus/ia` -> `/plus/assessor-ia`.
+- `/app/sessoes` -> `/app/encontros`.
+- `/app/sessoes/:bookingId` -> `/app/encontros/:bookingId`.
+- `/app/sessoes/proximas` -> `/app/encontros`.
+- `/app/sessoes/historico` -> `/app/encontros#patient-history-encounters-title`.
 
 ## Cobertura da Jornada
 
@@ -264,12 +266,12 @@ O node `12272:2` contém 6 perfis, 24 fluxos e 92 etapas:
 
 - Público: descoberta guiada, busca e reserva, terapias e caminhos, terapeutas visitantes.
 - Paciente: rotina de cuidado, relacionamento, pagamentos, conta e suporte.
-- Terapeuta Básico: operação essencial, comunicação e serviços, perfil público, conta e crescimento.
-- Terapeuta Pro: gestão do atendimento, comunicação e oferta, financeiro, evolução profissional.
-- Terapeuta Plus: operação premium, pacientes e histórico, inteligência Plus, gestão e suporte.
+- Terapeuta Free: operação essencial, comunicação e serviços, perfil público, conta e crescimento.
+- Terapeuta Premium: gestão do atendimento, comunicação e oferta, financeiro, evolução profissional.
+- Terapeuta Premium Plus: operação premium, pacientes e histórico, inteligência Premium Plus, gestão e suporte.
 - Admin: pessoas e aprovação, operação da plataforma, financeiro e assinaturas, catálogo e matching.
 
 ## Divergências
 
 - Páginas legais públicas e ajuda pública não aparecem no node `12272:2`. Elas permanecem por necessidade institucional e de produto.
-- `/app/sessoes/historico` não aparece como etapa própria no node `12272:2`; o histórico existe dentro da área `/app/sessoes`.
+- `/app/sessoes/historico` não aparece como etapa própria no node `12272:2`; o histórico existe dentro da área canônica `/app/encontros`.

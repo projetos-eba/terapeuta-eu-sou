@@ -51,7 +51,7 @@ async function fetchRows<Row>(
       Prefer: "count=exact",
       ...(init?.headers ?? {}),
     },
-    next: { revalidate: 900 },
+    next: { revalidate: 900, tags: ["therapies"] },
   });
 
   if (!response.ok) {

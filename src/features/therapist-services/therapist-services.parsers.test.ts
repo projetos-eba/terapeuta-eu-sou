@@ -1,0 +1,83 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  parseTherapistServicesCommand,
+  TherapistServicesContractError,
+} from "./therapist-services.parsers";
+
+const requestId = "a6000000-0000-4000-8000-000000000001";
+const therapyId = "22222222-2222-4222-8222-222222222225";
+const serviceId = "d1000000-0000-4000-8000-000000000001";
+
+describe("parseTherapistServicesCommand", () => {
+  it("accepts create commands only with a canonical therapyId", () => {
+    expect(
+      parseTherapistServicesCommand({
+        action: "create",
+        description: "Sessao complementar por video.",
+        durationMinutes: 60,
+        priceCents: 12000,
+        requestId,
+        therapyId,
+        title: "Reiki online",
+      }),
+    ).toMatchObject({
+      action: "create",
+      therapyId,
+    });
+  });
+
+  it("rejects free-text therapy creation", () => {
+    expect(() =>
+      parseTherapistServicesCommand({
+        action: "create",
+        durationMinutes: 60,
+        priceCents: 12000,
+        requestId,
+        therapyName: "Nova terapia",
+        title: "Servico livre",
+      }),
+    ).toThrow(TherapistServicesContractError);
+  });
+
+  it("rejects non-online delivery formats", () => {
+    expect(() =>
+      parseTherapistServicesCommand({
+        action: "create",
+        deliveryFormat: "hybrid",
+        description: "Sessao complementar por video.",
+        durationMinutes: 60,
+        priceCents: 12000,
+        requestId,
+        therapyId,
+        title: "Reiki online",
+      }),
+    ).toThrow(TherapistServicesContractError);
+  });
+
+  it("requires optimistic version for updates", () => {
+    expect(
+      parseTherapistServicesCommand({
+        action: "update",
+        expectedVersion: 4,
+        isBookable: false,
+        requestId,
+        serviceId,
+      }),
+    ).toMatchObject({
+      action: "update",
+      expectedVersion: 4,
+      isBookable: false,
+    });
+  });
+
+  it("rejects duplicated reorder ids", () => {
+    expect(() =>
+      parseTherapistServicesCommand({
+        action: "reorder",
+        requestId,
+        serviceIds: [serviceId, serviceId],
+      }),
+    ).toThrow(TherapistServicesContractError);
+  });
+});

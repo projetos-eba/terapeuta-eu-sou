@@ -349,6 +349,10 @@ Use `Product/PublicProfilePreview` quando a tela precisa mostrar como pacientes 
 
 Use `Product/ServicePlusCard` em páginas de gestão de serviços com métricas Plus. Ele pode receber variações futuras para `Destaque`, `Ativo`, `Pausado` e `Otimização sugerida`, mas a versão atual é master visual sem component properties avançadas.
 
+Implementação shell 2026-07-28: `/terapeuta/servicos` segue o Figma `Page / Terapeuta Plus / Serviços Plus` (`13366:1943`) como intenção visual, adaptado para layout fluido. Métricas demonstrativas do Figma não devem ser copiadas; usar somente contagens reais do contrato privado e mostrar “Ainda sem dados” quando deltas forem `null`. A dica “benefícios e resultados” deve ser reescrita como proposta/expectativa responsável, sem promessa de resultado.
+
+Implementação admin 2026-07-28: `/admin/terapias` deve usar seções editoriais claras, labels visíveis, motivo obrigatório para ações de governança e feedback textual para impacto. Não persistir classes visuais; use somente chaves semânticas aceitas e mapeadas pela UI. Publicação, descontinuação e arquivamento devem ser ações confirmáveis, server-side e auditadas.
+
 ### Qualidade obrigatória
 
 - Preservar Auto Layout no componente principal.
