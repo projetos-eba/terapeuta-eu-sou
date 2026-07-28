@@ -82,6 +82,9 @@ verify_jwt = false
 [functions.admin-auth-login]
 verify_jwt = false
 
+[functions.admin-therapy-catalog-command]
+verify_jwt = true
+
 [functions.therapist-auth-signup]
 verify_jwt = false
 

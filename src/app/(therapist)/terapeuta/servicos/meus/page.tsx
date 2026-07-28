@@ -1,13 +1,7 @@
-import {
-  TherapistFeaturePage,
-  therapistRoutePolicies,
-} from "@/features/therapist-shell";
+import { redirect } from "next/navigation";
+
+import { routes } from "@/lib/routes";
 
 export default function TherapistOwnServicesPage() {
-  return (
-    <TherapistFeaturePage
-      policy={therapistRoutePolicies.services}
-      title="Meus serviços"
-    />
-  );
+  redirect(routes.therapist.services);
 }

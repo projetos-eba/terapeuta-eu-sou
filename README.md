@@ -24,6 +24,29 @@ O Match público usa `/sua-jornada` e `/sua-jornada/resultado`. A configuração
 
 O catálogo público de terapias usa `/terapias` e `/api/public/therapies`, consultando a view segura `public_therapies_v` por REST Supabase com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. A view expõe apenas terapias com `status = published`, visíveis publicamente e vinculadas a categorias ativas, com contagem pública de terapeutas disponíveis. O detalhe `/terapias/:slug` usa `public_therapy_details_v` para conteúdo editorial e `public_therapist_search` para profissionais relacionados. O Match usa `matching_therapy_settings.is_visible_in_matching` como ativação adicional; uma terapia só entra no Match se também estiver publicada.
 
+A fundação canônica de Terapias da Plataforma x Serviços do Terapeuta está em
+`docs/architecture/therapy-service-foundation-phase1.md` e
+`docs/architecture/adr/ADR-008-platform-therapy-service-boundary.md`.
+Terapeutas não criam terapias por texto livre: o shell deve usar
+`/api/therapist/services`, que chama a Edge Function
+`therapist-services-command` e as RPCs transacionais de serviço. Toda criação
+exige `therapyId`, `requestId` UUID idempotente e validação server-side de
+terapia, categoria, plano e duplicidade.
+
+A gestão de serviços no shell está implementada em `/terapeuta/servicos`,
+seguindo o Figma `13366:1943` com layout responsivo, criação em 3 passos,
+edição, ativação, pausa, arquivamento, reordenação, filtros e limite por plano.
+`/terapeuta/servicos/meus` redireciona para a rota canônica. A tela consome
+somente os contratos da Fase 1 e não exibe métricas fictícias.
+
+A administração do catálogo canônico de terapias está implementada em
+`/admin/terapias`. O shell administrativo usa sessão admin separada, RLS
+explícita e a Edge Function `admin-therapy-catalog-command`; o app Next atua
+apenas como adaptador fino e revalida as tags públicas afetadas. Publicação,
+despublicação, descontinuação, arquivamento, redirects de slug, solicitações de
+nova terapia e auditoria ficam documentados em
+`docs/architecture/admin-therapy-catalog-phase3.md`.
+
 O mapa operacional de integração entre rotas, páginas, skills, views públicas e domínios fica em `docs/product/integration-map.md`. Consulte esse arquivo antes de criar nova página pública, função ou view compartilhada.
 
 ## Pré-requisitos

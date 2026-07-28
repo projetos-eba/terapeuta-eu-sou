@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 import { PublicFooter, PublicHeader } from "@/components/tes";
 import { TherapyDetailPage } from "@/features/therapies/components/detail/therapy-detail-page";
 import { buildTherapySource } from "@/features/therapies/components/detail/detail-links";
-import { getPublicTherapyDetail } from "@/features/therapies/queries/get-public-therapy-detail";
+import {
+  getPublicTherapyDetail,
+  resolvePublicTherapySlug,
+} from "@/features/therapies/queries/get-public-therapy-detail";
 import {
   getRelatedTherapists,
   parseRelatedTherapistSort,
@@ -74,6 +77,11 @@ export default async function PublicTherapyDetailRoute({
   const therapy = await getPublicTherapyDetail(slug);
 
   if (!therapy) {
+    const redirectSlug = await resolvePublicTherapySlug(slug);
+    if (redirectSlug) {
+      redirect(routes.public.therapyDetail(redirectSlug));
+    }
+
     notFound();
   }
 

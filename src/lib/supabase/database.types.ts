@@ -462,6 +462,20 @@ export type Database = {
             foreignKeyName: "availability_exception_series_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
+            referencedRelation: "therapist_private_services_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "availability_exception_series_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_metrics_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "availability_exception_series_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
             referencedRelation: "therapist_services"
             referencedColumns: ["id"]
           },
@@ -599,6 +613,20 @@ export type Database = {
             foreignKeyName: "availability_exceptions_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
+            referencedRelation: "therapist_private_services_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "availability_exceptions_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_metrics_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "availability_exceptions_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
             referencedRelation: "therapist_services"
             referencedColumns: ["id"]
           },
@@ -682,6 +710,20 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "public_therapist_search"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "availability_rules_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_private_services_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "availability_rules_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_metrics_v1"
             referencedColumns: ["service_id"]
           },
           {
@@ -1089,6 +1131,20 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "public_therapist_search"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "booking_holds_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_private_services_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "booking_holds_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_metrics_v1"
             referencedColumns: ["service_id"]
           },
           {
@@ -1557,6 +1613,20 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "public_therapist_search"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_private_services_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "bookings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_metrics_v1"
             referencedColumns: ["service_id"]
           },
           {
@@ -2390,6 +2460,13 @@ export type Database = {
             referencedRelation: "therapies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "matching_therapy_settings_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["therapy_id"]
+          },
         ]
       }
       matching_versions: {
@@ -2544,6 +2621,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "therapies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matching_weights_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["therapy_id"]
           },
           {
             foreignKeyName: "matching_weights_version_id_fkey"
@@ -3214,6 +3298,20 @@ export type Database = {
             foreignKeyName: "pre_checkout_intakes_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: false
+            referencedRelation: "therapist_private_services_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "pre_checkout_intakes_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_metrics_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "pre_checkout_intakes_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
             referencedRelation: "therapist_services"
             referencedColumns: ["id"]
           },
@@ -3794,6 +3892,20 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "public_therapist_search"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_private_services_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "session_payments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_metrics_v1"
             referencedColumns: ["service_id"]
           },
           {
@@ -4488,64 +4600,82 @@ export type Database = {
       }
       therapies: {
         Row: {
+          archived_at: string | null
           calendar_color_key: string
           category_id: string
           created_at: string
+          created_by_profile_id: string | null
+          deprecated_at: string | null
           description: string | null
           id: string
           image_url: string | null
+          is_available_for_services: boolean
           is_featured: boolean
           is_public_visible: boolean
           metadata: Json
           name: string
           popularity_score: number
           published_at: string | null
+          replacement_therapy_id: string | null
           safety_note: string | null
           search_aliases: string[]
           short_description: string
           slug: string
           status: Database["public"]["Enums"]["therapy_status"]
           updated_at: string
+          updated_by_profile_id: string | null
         }
         Insert: {
+          archived_at?: string | null
           calendar_color_key?: string
           category_id: string
           created_at?: string
+          created_by_profile_id?: string | null
+          deprecated_at?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
+          is_available_for_services?: boolean
           is_featured?: boolean
           is_public_visible?: boolean
           metadata?: Json
           name: string
           popularity_score?: number
           published_at?: string | null
+          replacement_therapy_id?: string | null
           safety_note?: string | null
           search_aliases?: string[]
           short_description: string
           slug: string
           status?: Database["public"]["Enums"]["therapy_status"]
           updated_at?: string
+          updated_by_profile_id?: string | null
         }
         Update: {
+          archived_at?: string | null
           calendar_color_key?: string
           category_id?: string
           created_at?: string
+          created_by_profile_id?: string | null
+          deprecated_at?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
+          is_available_for_services?: boolean
           is_featured?: boolean
           is_public_visible?: boolean
           metadata?: Json
           name?: string
           popularity_score?: number
           published_at?: string | null
+          replacement_therapy_id?: string | null
           safety_note?: string | null
           search_aliases?: string[]
           short_description?: string
           slug?: string
           status?: Database["public"]["Enums"]["therapy_status"]
           updated_at?: string
+          updated_by_profile_id?: string | null
         }
         Relationships: [
           {
@@ -4559,7 +4689,91 @@ export type Database = {
             foreignKeyName: "therapies_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
+            referencedRelation: "therapist_private_services_v1"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "therapies_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "therapies_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
             referencedRelation: "therapy_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapies_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapies_replacement_therapy_id_fkey"
+            columns: ["replacement_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapies_replacement_therapy_id_fkey"
+            columns: ["replacement_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_matching_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapies_replacement_therapy_id_fkey"
+            columns: ["replacement_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_matching_therapist_counts"
+            referencedColumns: ["therapy_id"]
+          },
+          {
+            foreignKeyName: "therapies_replacement_therapy_id_fkey"
+            columns: ["replacement_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapies_replacement_therapy_id_fkey"
+            columns: ["replacement_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapy_id"]
+          },
+          {
+            foreignKeyName: "therapies_replacement_therapy_id_fkey"
+            columns: ["replacement_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapy_details_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapies_replacement_therapy_id_fkey"
+            columns: ["replacement_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapies_replacement_therapy_id_fkey"
+            columns: ["replacement_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["therapy_id"]
+          },
+          {
+            foreignKeyName: "therapies_updated_by_profile_id_fkey"
+            columns: ["updated_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -5336,6 +5550,20 @@ export type Database = {
             foreignKeyName: "therapist_service_booking_settings_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: true
+            referencedRelation: "therapist_private_services_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_booking_settings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_service_metrics_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_booking_settings_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: true
             referencedRelation: "therapist_services"
             referencedColumns: ["id"]
           },
@@ -5391,53 +5619,298 @@ export type Database = {
             foreignKeyName: "therapist_service_cancellation_policies_service_id_fkey"
             columns: ["service_id"]
             isOneToOne: true
+            referencedRelation: "therapist_private_services_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_cancellation_policies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_service_metrics_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_cancellation_policies_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: true
             referencedRelation: "therapist_services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      therapist_service_events: {
+        Row: {
+          actor_user_id: string
+          created_at: string
+          event_type: string
+          id: string
+          metadata: Json
+          next_status: Database["public"]["Enums"]["service_status"] | null
+          previous_status: Database["public"]["Enums"]["service_status"] | null
+          previous_version: number | null
+          request_id: string | null
+          resulting_version: number | null
+          service_id: string | null
+          therapist_profile_id: string
+        }
+        Insert: {
+          actor_user_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          next_status?: Database["public"]["Enums"]["service_status"] | null
+          previous_status?: Database["public"]["Enums"]["service_status"] | null
+          previous_version?: number | null
+          request_id?: string | null
+          resulting_version?: number | null
+          service_id?: string | null
+          therapist_profile_id: string
+        }
+        Update: {
+          actor_user_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          next_status?: Database["public"]["Enums"]["service_status"] | null
+          previous_status?: Database["public"]["Enums"]["service_status"] | null
+          previous_version?: number | null
+          request_id?: string | null
+          resulting_version?: number | null
+          service_id?: string | null
+          therapist_profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapist_service_events_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_service_events_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profile_services_v"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_events_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_events_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_private_services_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_events_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_metrics_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_events_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_service_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_service_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_service_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_events_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      therapist_service_mutation_requests: {
+        Row: {
+          created_at: string
+          id: string
+          operation: string
+          payload_hash: string
+          request_id: string
+          response: Json
+          service_id: string | null
+          therapist_profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          operation: string
+          payload_hash: string
+          request_id: string
+          response: Json
+          service_id?: string | null
+          therapist_profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          operation?: string
+          payload_hash?: string
+          request_id?: string
+          response?: Json
+          service_id?: string | null
+          therapist_profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapist_service_mutation_requests_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profile_services_v"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_mutation_requests_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_mutation_requests_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_private_services_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_mutation_requests_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_metrics_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_mutation_requests_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_service_mutation_requests_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_service_mutation_requests_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_service_mutation_requests_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "therapist_service_mutation_requests_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
             referencedColumns: ["id"]
           },
         ]
       }
       therapist_services: {
         Row: {
+          archived_at: string | null
           created_at: string
           currency: string
+          delivery_format: string
           description: string | null
           duration_minutes: number
           id: string
+          is_bookable: boolean
           online_only: boolean
+          position: number
           price_cents: number
           status: Database["public"]["Enums"]["service_status"]
           therapist_profile_id: string
           therapy_id: string
           title: string
           updated_at: string
+          version: number
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
           currency?: string
+          delivery_format?: string
           description?: string | null
           duration_minutes: number
           id?: string
+          is_bookable?: boolean
           online_only?: boolean
+          position?: number
           price_cents: number
           status?: Database["public"]["Enums"]["service_status"]
           therapist_profile_id: string
           therapy_id: string
           title: string
           updated_at?: string
+          version?: number
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
           currency?: string
+          delivery_format?: string
           description?: string | null
           duration_minutes?: number
           id?: string
+          is_bookable?: boolean
           online_only?: boolean
+          position?: number
           price_cents?: number
           status?: Database["public"]["Enums"]["service_status"]
           therapist_profile_id?: string
           therapy_id?: string
           title?: string
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -5516,6 +5989,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "therapies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_services_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["therapy_id"]
           },
         ]
       }
@@ -5872,6 +6352,247 @@ export type Database = {
             referencedRelation: "therapies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "therapy_benefits_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["therapy_id"]
+          },
+        ]
+      }
+      therapy_catalog_events: {
+        Row: {
+          actor_profile_id: string | null
+          actor_role: Database["public"]["Enums"]["user_role"]
+          correlation_id: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          event_type: string
+          id: string
+          metadata: Json
+          next_state: Json | null
+          previous_state: Json | null
+          reason: string | null
+          request_id: string | null
+        }
+        Insert: {
+          actor_profile_id?: string | null
+          actor_role?: Database["public"]["Enums"]["user_role"]
+          correlation_id?: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          event_type: string
+          id?: string
+          metadata?: Json
+          next_state?: Json | null
+          previous_state?: Json | null
+          reason?: string | null
+          request_id?: string | null
+        }
+        Update: {
+          actor_profile_id?: string | null
+          actor_role?: Database["public"]["Enums"]["user_role"]
+          correlation_id?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          event_type?: string
+          id?: string
+          metadata?: Json
+          next_state?: Json | null
+          previous_state?: Json | null
+          reason?: string | null
+          request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapy_catalog_events_actor_profile_id_fkey"
+            columns: ["actor_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      therapy_catalog_requests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by_profile_id: string | null
+          decision: string | null
+          description: string | null
+          id: string
+          informed_name: string
+          justification: string | null
+          related_therapy_id: string | null
+          requester_profile_id: string
+          requester_therapist_profile_id: string | null
+          status: string
+          suggested_category_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by_profile_id?: string | null
+          decision?: string | null
+          description?: string | null
+          id?: string
+          informed_name: string
+          justification?: string | null
+          related_therapy_id?: string | null
+          requester_profile_id: string
+          requester_therapist_profile_id?: string | null
+          status?: string
+          suggested_category_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by_profile_id?: string | null
+          decision?: string | null
+          description?: string | null
+          id?: string
+          informed_name?: string
+          justification?: string | null
+          related_therapy_id?: string | null
+          requester_profile_id?: string
+          requester_therapist_profile_id?: string | null
+          status?: string
+          suggested_category_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapy_catalog_requests_decided_by_profile_id_fkey"
+            columns: ["decided_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_related_therapy_id_fkey"
+            columns: ["related_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_related_therapy_id_fkey"
+            columns: ["related_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_matching_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_related_therapy_id_fkey"
+            columns: ["related_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_matching_therapist_counts"
+            referencedColumns: ["therapy_id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_related_therapy_id_fkey"
+            columns: ["related_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_related_therapy_id_fkey"
+            columns: ["related_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapy_id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_related_therapy_id_fkey"
+            columns: ["related_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapy_details_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_related_therapy_id_fkey"
+            columns: ["related_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_related_therapy_id_fkey"
+            columns: ["related_therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["therapy_id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_requester_profile_id_fkey"
+            columns: ["requester_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_requester_therapist_profile_id_fkey"
+            columns: ["requester_therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_requester_therapist_profile_id_fkey"
+            columns: ["requester_therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_requester_therapist_profile_id_fkey"
+            columns: ["requester_therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_requester_therapist_profile_id_fkey"
+            columns: ["requester_therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_suggested_category_id_fkey"
+            columns: ["suggested_category_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapies_v"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_suggested_category_id_fkey"
+            columns: ["suggested_category_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_private_services_v1"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_suggested_category_id_fkey"
+            columns: ["suggested_category_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["category_id"]
+          },
+          {
+            foreignKeyName: "therapy_catalog_requests_suggested_category_id_fkey"
+            columns: ["suggested_category_id"]
+            isOneToOne: false
+            referencedRelation: "therapy_categories"
+            referencedColumns: ["id"]
+          },
         ]
       }
       therapy_categories: {
@@ -5985,6 +6706,13 @@ export type Database = {
             referencedRelation: "therapies"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "therapy_faqs_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["therapy_id"]
+          },
         ]
       }
       therapy_highlights: {
@@ -6064,6 +6792,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "therapies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_highlights_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["therapy_id"]
           },
         ]
       }
@@ -6165,6 +6900,104 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "therapies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_public_content_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: true
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["therapy_id"]
+          },
+        ]
+      }
+      therapy_slug_redirects: {
+        Row: {
+          created_at: string
+          created_by_profile_id: string | null
+          current_slug: string
+          id: string
+          old_slug: string
+          therapy_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_profile_id?: string | null
+          current_slug: string
+          id?: string
+          old_slug: string
+          therapy_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_profile_id?: string | null
+          current_slug?: string
+          id?: string
+          old_slug?: string
+          therapy_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapy_slug_redirects_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_matching_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_matching_therapist_counts"
+            referencedColumns: ["therapy_id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapy_id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapy_details_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["therapy_id"]
           },
         ]
       }
@@ -6268,6 +7101,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "therapies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_theme_weights_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["therapy_id"]
           },
         ]
       }
@@ -7080,6 +7920,233 @@ export type Database = {
         }
         Relationships: []
       }
+      public_therapy_slug_redirects_v: {
+        Row: {
+          created_at: string | null
+          current_slug: string | null
+          old_slug: string | null
+          therapy_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_slug?: string | null
+          old_slug?: string | null
+          therapy_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          current_slug?: string | null
+          old_slug?: string | null
+          therapy_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_matching_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_matching_therapist_counts"
+            referencedColumns: ["therapy_id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapy_id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapy_details_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapy_slug_redirects_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["therapy_id"]
+          },
+        ]
+      }
+      therapist_private_services_v1: {
+        Row: {
+          archived_at: string | null
+          blocking_reason: string | null
+          booking_count: number | null
+          booking_count_delta_percent: number | null
+          bookings_last_30_days: number | null
+          category_id: string | null
+          category_name: string | null
+          category_slug: string | null
+          created_at: string | null
+          currency: string | null
+          delivery_format: string | null
+          description: string | null
+          duration_minutes: number | null
+          favorite_count: number | null
+          is_available_for_services: boolean | null
+          is_bookable: boolean | null
+          is_reservable: boolean | null
+          online_only: boolean | null
+          position: number | null
+          price_cents: number | null
+          service_id: string | null
+          status: Database["public"]["Enums"]["service_status"] | null
+          therapist_profile_id: string | null
+          therapy_id: string | null
+          therapy_is_public_visible: boolean | null
+          therapy_name: string | null
+          therapy_slug: string | null
+          therapy_status: Database["public"]["Enums"]["therapy_status"] | null
+          title: string | null
+          updated_at: string | null
+          version: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "therapist_services_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_services_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_profiles_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_services_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapist_profile_id"]
+          },
+          {
+            foreignKeyName: "therapist_services_therapist_profile_id_fkey"
+            columns: ["therapist_profile_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_services_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_home_therapies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_services_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_matching_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_services_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_matching_therapist_counts"
+            referencedColumns: ["therapy_id"]
+          },
+          {
+            foreignKeyName: "therapist_services_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapies_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_services_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapist_search"
+            referencedColumns: ["therapy_id"]
+          },
+          {
+            foreignKeyName: "therapist_services_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "public_therapy_details_v"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_services_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "therapist_services_therapy_id_fkey"
+            columns: ["therapy_id"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_allowed_catalog_v1"
+            referencedColumns: ["therapy_id"]
+          },
+        ]
+      }
+      therapist_service_allowed_catalog_v1: {
+        Row: {
+          category_id: string | null
+          category_name: string | null
+          category_slug: string | null
+          category_sort_order: number | null
+          is_available_for_services: boolean | null
+          is_public_visible: boolean | null
+          is_visible_in_matching: boolean | null
+          short_description: string | null
+          therapy_id: string | null
+          therapy_name: string | null
+          therapy_slug: string | null
+          therapy_status: Database["public"]["Enums"]["therapy_status"] | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
+      therapist_service_metrics_v1: {
+        Row: {
+          booking_count: number | null
+          booking_count_delta_percent: number | null
+          bookings_last_30_days: number | null
+          favorite_count: number | null
+          service_id: string | null
+        }
+        Relationships: []
+      }
       therapist_session_read_model_v1: {
         Row: {
           _therapistProfileId: string | null
@@ -7144,6 +8211,20 @@ export type Database = {
             columns: ["serviceId"]
             isOneToOne: false
             referencedRelation: "public_therapist_search"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "bookings_service_id_fkey"
+            columns: ["serviceId"]
+            isOneToOne: false
+            referencedRelation: "therapist_private_services_v1"
+            referencedColumns: ["service_id"]
+          },
+          {
+            foreignKeyName: "bookings_service_id_fkey"
+            columns: ["serviceId"]
+            isOneToOne: false
+            referencedRelation: "therapist_service_metrics_v1"
             referencedColumns: ["service_id"]
           },
           {
@@ -7221,6 +8302,68 @@ export type Database = {
       }
     }
     Functions: {
+      admin_assert_responsible_therapy_text_v1: {
+        Args: { p_value: string }
+        Returns: undefined
+      }
+      admin_decide_therapy_catalog_request_v1: {
+        Args: {
+          p_actor_user_id: string
+          p_catalog_request_id: string
+          p_decision: string
+          p_related_therapy_id?: string
+          p_request_id: string
+          p_status: string
+        }
+        Returns: Json
+      }
+      admin_get_actor_profile_v1: {
+        Args: { p_actor_user_id: string }
+        Returns: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          email_confirmed_at: string | null
+          id: string
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_list_therapy_catalog_v1: {
+        Args: { p_actor_user_id: string }
+        Returns: Json
+      }
+      admin_therapy_impact_v1: {
+        Args: { p_actor_user_id: string; p_therapy_id: string }
+        Returns: Json
+      }
+      admin_transition_therapy_v1: {
+        Args: {
+          p_action: string
+          p_actor_user_id: string
+          p_payload?: Json
+          p_reason?: string
+          p_request_id: string
+          p_therapy_id: string
+        }
+        Returns: Json
+      }
+      admin_upsert_therapy_draft_v1: {
+        Args: { p_actor_user_id: string; p_payload: Json; p_request_id: string }
+        Returns: Json
+      }
+      admin_validate_therapy_publishable_v1: {
+        Args: { p_therapy_id: string }
+        Returns: undefined
+      }
       apply_session_payment_state_v1: {
         Args: {
           p_financial_status: Database["public"]["Enums"]["session_financial_status"]
@@ -7461,6 +8604,10 @@ export type Database = {
         }
         Returns: Json
       }
+      create_therapist_service_v1: {
+        Args: { p_actor_user_id: string; p_payload: Json; p_request_id: string }
+        Returns: Json
+      }
       create_weekly_payout_batch: {
         Args: {
           p_created_by?: string
@@ -7499,6 +8646,22 @@ export type Database = {
           p_video_session_id: string
         }
         Returns: string
+      }
+      ensure_no_duplicate_therapist_service_v1: {
+        Args: {
+          p_excluding_service_id?: string
+          p_therapist_profile_id: string
+          p_therapy_id: string
+        }
+        Returns: undefined
+      }
+      ensure_therapist_service_limit_v1: {
+        Args: {
+          p_excluding_service_id?: string
+          p_plan: Database["public"]["Enums"]["therapist_plan"]
+          p_therapist_profile_id: string
+        }
+        Returns: undefined
       }
       ensure_video_session_for_paid_booking_v1: {
         Args: { p_booking_id: string; p_environment: string; p_source?: string }
@@ -7543,7 +8706,48 @@ export type Database = {
         Returns: Json
       }
       get_therapist_dashboard_v1: { Args: never; Returns: Json }
+      get_therapist_for_service_actor_v1: {
+        Args: { p_actor_user_id: string }
+        Returns: {
+          accepts_online_sessions: boolean
+          bio: string | null
+          city: string | null
+          country: string | null
+          created_at: string
+          headline: string | null
+          id: string
+          is_accepting_bookings: boolean
+          is_public: boolean
+          languages: string[]
+          legal_name: string | null
+          metadata: Json
+          photo_url: string | null
+          plan: Database["public"]["Enums"]["therapist_plan"]
+          public_name: string
+          slug: string
+          state: string | null
+          status: Database["public"]["Enums"]["therapist_status"]
+          updated_at: string
+          user_id: string
+          visibility_flags: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "therapist_profiles"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_therapist_schedule_v1: { Args: never; Returns: Json }
+      get_therapist_service_request_replay_v1: {
+        Args: {
+          p_operation: string
+          p_payload_hash: string
+          p_request_id: string
+          p_therapist_profile_id: string
+        }
+        Returns: Json
+      }
       get_therapist_session_detail_v1: {
         Args: { p_booking_id: string }
         Returns: Json
@@ -7575,6 +8779,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_current_admin: { Args: never; Returns: boolean }
       is_current_patient_profile: {
         Args: { candidate_id: string }
         Returns: boolean
@@ -7597,6 +8802,10 @@ export type Database = {
         Returns: boolean
       }
       is_valid_timezone_v1: { Args: { p_timezone: string }; Returns: boolean }
+      list_private_therapist_services_v1: {
+        Args: { p_actor_user_id: string }
+        Returns: Json
+      }
       list_service_schedule_candidates_v1: {
         Args: {
           p_limit?: number
@@ -7611,6 +8820,10 @@ export type Database = {
           starts_at: string
           timezone: string
         }[]
+      }
+      list_therapist_service_catalog_v1: {
+        Args: { p_actor_user_id: string }
+        Returns: Json
       }
       mark_video_session_termination_confirmed_v1: {
         Args: { p_reason?: string; p_video_session_id: string }
@@ -7627,6 +8840,14 @@ export type Database = {
       release_auth_action_token_claim: {
         Args: { p_claim_id: string; p_token_id: string }
         Returns: boolean
+      }
+      reorder_therapist_services_v1: {
+        Args: {
+          p_actor_user_id: string
+          p_request_id: string
+          p_service_ids: string[]
+        }
+        Returns: Json
       }
       request_booking_reschedule_v1: {
         Args: {
@@ -7806,6 +9027,25 @@ export type Database = {
         }
         Returns: Json
       }
+      service_row_to_private_json_v1: {
+        Args: { p_service_id: string }
+        Returns: Json
+      }
+      store_therapist_service_request_v1: {
+        Args: {
+          p_operation: string
+          p_payload_hash: string
+          p_request_id: string
+          p_response: Json
+          p_service_id: string
+          p_therapist_profile_id: string
+        }
+        Returns: Json
+      }
+      submit_therapy_catalog_request_v1: {
+        Args: { p_actor_user_id: string; p_payload: Json }
+        Returns: Json
+      }
       sync_booking_video_session_from_agenda_v1: {
         Args: {
           p_booking_id: string
@@ -7821,6 +9061,10 @@ export type Database = {
           p_request_id?: string
         }
         Returns: string
+      }
+      therapist_service_limit_for_plan_v1: {
+        Args: { p_plan: Database["public"]["Enums"]["therapist_plan"] }
+        Returns: number
       }
       transition_booking_status_v1: {
         Args: {
@@ -7867,7 +9111,62 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      transition_therapist_service_v1: {
+        Args: {
+          p_action: string
+          p_actor_user_id: string
+          p_expected_version: number
+          p_request_id: string
+          p_service_id: string
+        }
+        Returns: Json
+      }
       unaccent: { Args: { "": string }; Returns: string }
+      update_therapist_service_v1: {
+        Args: {
+          p_actor_user_id: string
+          p_expected_version: number
+          p_payload: Json
+          p_request_id: string
+          p_service_id: string
+        }
+        Returns: Json
+      }
+      validate_platform_therapy_for_service_v1: {
+        Args: { p_therapy_id: string }
+        Returns: {
+          archived_at: string | null
+          calendar_color_key: string
+          category_id: string
+          created_at: string
+          created_by_profile_id: string | null
+          deprecated_at: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_available_for_services: boolean
+          is_featured: boolean
+          is_public_visible: boolean
+          metadata: Json
+          name: string
+          popularity_score: number
+          published_at: string | null
+          replacement_therapy_id: string | null
+          safety_note: string | null
+          search_aliases: string[]
+          short_description: string
+          slug: string
+          status: Database["public"]["Enums"]["therapy_status"]
+          updated_at: string
+          updated_by_profile_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "therapies"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       auth_action_purpose: "email_verification" | "password_reset"
@@ -7946,7 +9245,13 @@ export type Database = {
         | "completed"
         | "canceled"
       review_status: "pending" | "published" | "hidden" | "reported" | "removed"
-      service_status: "draft" | "active" | "paused" | "archived"
+      service_status:
+        | "draft"
+        | "active"
+        | "paused"
+        | "archived"
+        | "requires_review"
+        | "rejected"
       session_confirmation_source:
         | "patient_review"
         | "therapist_manual"
@@ -7996,7 +9301,14 @@ export type Database = {
         | "approved"
         | "rejected"
         | "suspended"
-      therapy_status: "draft" | "active" | "published" | "inactive" | "archived"
+      therapy_status:
+        | "draft"
+        | "active"
+        | "published"
+        | "inactive"
+        | "archived"
+        | "in_review"
+        | "deprecated"
       therapy_visual_theme_key: "energy" | "oracle" | "systemic"
       user_role: "patient" | "therapist" | "admin"
       video_session_control_job_status:
@@ -8229,7 +9541,14 @@ export const Constants = {
         "canceled",
       ],
       review_status: ["pending", "published", "hidden", "reported", "removed"],
-      service_status: ["draft", "active", "paused", "archived"],
+      service_status: [
+        "draft",
+        "active",
+        "paused",
+        "archived",
+        "requires_review",
+        "rejected",
+      ],
       session_confirmation_source: [
         "patient_review",
         "therapist_manual",
@@ -8285,7 +9604,15 @@ export const Constants = {
         "rejected",
         "suspended",
       ],
-      therapy_status: ["draft", "active", "published", "inactive", "archived"],
+      therapy_status: [
+        "draft",
+        "active",
+        "published",
+        "inactive",
+        "archived",
+        "in_review",
+        "deprecated",
+      ],
       therapy_visual_theme_key: ["energy", "oracle", "systemic"],
       user_role: ["patient", "therapist", "admin"],
       video_session_control_job_status: [

@@ -30,6 +30,9 @@ export type TherapistStatus =
 export const TherapyStatus = {
   Draft: "draft",
   Active: "active",
+  InReview: "in_review",
+  Published: "published",
+  Deprecated: "deprecated",
   Inactive: "inactive",
   Archived: "archived",
 } as const;
@@ -40,6 +43,8 @@ export const ServiceStatus = {
   Draft: "draft",
   Active: "active",
   Paused: "paused",
+  RequiresReview: "requires_review",
+  Rejected: "rejected",
   Archived: "archived",
 } as const;
 

@@ -61,7 +61,7 @@ async function fetchTherapistRows() {
         apikey: config.apiKey,
         Authorization: `Bearer ${config.apiKey}`,
       },
-      next: { revalidate: 900 },
+      next: { revalidate: 900, tags: ["therapist-search"] },
     },
   );
 
@@ -80,7 +80,7 @@ function normalizeSearch(value: string) {
 }
 
 const themeLabelsBySlug: Record<string, string> = {
-  "autoconhecimento": "Autoconhecimento",
+  autoconhecimento: "Autoconhecimento",
   "equilibrio-emocional": "Equilíbrio emocional",
   "mudancas-de-vida": "Mudanças de vida",
 };
@@ -100,7 +100,7 @@ function mapTherapistRow(row: PublicTherapistSearchRow): TherapistSearchCard {
   const reviewCount = row.review_count ?? 0;
   const tags = row.tags?.length
     ? row.tags
-    : row.theme_names?.slice(0, 3) ?? [row.therapy_name];
+    : (row.theme_names?.slice(0, 3) ?? [row.therapy_name]);
 
   return {
     availabilityBucket: getAvailabilityBucket(row.next_slot_at),

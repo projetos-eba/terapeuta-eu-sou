@@ -69,6 +69,7 @@ export const routes = {
     support: "/terapeuta/suporte",
   },
   admin: {
+    signIn: "/admin/login",
     home: "/admin",
     professionals: "/admin/profissionais",
     verifications: "/admin/profissionais/verificacoes",

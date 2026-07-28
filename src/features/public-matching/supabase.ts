@@ -58,6 +58,7 @@ export async function getPublicMatchingConfig(): Promise<MatchingConfig> {
       "public_matching_config?select=version_id,version,theme_id,theme_name,theme_slug,theme_description,theme_image_url,theme_sort_order,interest_id,interest_name,interest_slug,interest_sort_order&order=theme_sort_order.asc,interest_sort_order.asc",
       config.apiKey,
       300,
+      ["matching-config"],
     );
 
     if (!rows.length) {
@@ -143,13 +144,14 @@ async function fetchRows<Row>(
   query: string,
   apiKey: string,
   revalidate?: number,
+  tags?: string[],
 ) {
   const response = await fetch(`${config.url}/rest/v1/${query}`, {
     headers: {
       apikey: apiKey,
       Authorization: `Bearer ${apiKey}`,
     },
-    next: revalidate ? { revalidate } : undefined,
+    next: revalidate ? { revalidate, tags } : undefined,
   });
 
   if (!response.ok) {
