@@ -1,4 +1,6 @@
 import { createEmptyEditorFields } from "./therapist-profile-editor.parsers";
+import type { PublicTherapistProfile } from "@/features/therapist-profile/types";
+
 import type {
   TherapistProfileAccountStatus,
   TherapistProfileCapabilities,
@@ -67,6 +69,60 @@ export function serializeEditorPayload(fields: TherapistProfileEditableFields) {
     videoThumbnailUrl: emptyToNull(fields.videoThumbnailUrl),
     videoTitle: emptyToNull(fields.videoTitle),
     videoUrl: emptyToNull(fields.videoUrl),
+  };
+}
+
+export function mapEditorFieldsToPublicPreview({
+  editor,
+  fields,
+}: {
+  editor: TherapistProfileEditorData;
+  fields: TherapistProfileEditableFields;
+}): PublicTherapistProfile {
+  const slug = editor.publicProfileHref.split("/").filter(Boolean).at(-1) ?? "";
+
+  return {
+    acceptsOnlineSessions: true,
+    badges: [],
+    bio: fields.bio || fields.essenceBody || fields.shortIntro,
+    cityState: [fields.city, fields.state].filter(Boolean).join(", "),
+    content: {
+      essenceBody:
+        fields.essenceBody ||
+        "Conte sua essência para que as pessoas entendam sua abordagem.",
+      experienceYears: fields.experienceYears,
+      guideItems: fields.guideItems,
+      invitationBody:
+        fields.invitationBody ||
+        "Use este espaço para convidar a pessoa a conhecer seu trabalho.",
+      reflections: fields.reflections,
+      shortIntro: fields.shortIntro,
+    },
+    headline: fields.shortIntro || fields.headline || fields.bio,
+    heroImage: fields.photoUrl || "/icon.svg",
+    id: editor.therapistProfileId,
+    isAcceptingBookings: editor.derived.canReceiveBookings,
+    isVerified: editor.derived.verificationStatus === "approved",
+    name: fields.publicName || "Seu nome público",
+    plan: editor.derived.plan,
+    profileUrl: editor.publicProfileHref,
+    rating: {
+      average: editor.derived.averageRating,
+      count: editor.derived.reviewCount,
+      sessionsCompleted: editor.derived.completedSessions,
+    },
+    services: [],
+    slug,
+    tags: fields.guideItems.slice(0, 4).map((item) => item.label),
+    video: fields.videoUrl
+      ? {
+          provider: fields.videoProvider,
+          thumbnailUrl:
+            fields.videoThumbnailUrl || fields.photoUrl || "/icon.svg",
+          title: fields.videoTitle || "Vídeo de apresentação",
+          url: fields.videoUrl,
+        }
+      : null,
   };
 }
 

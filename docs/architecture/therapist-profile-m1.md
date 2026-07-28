@@ -1,7 +1,8 @@
-# Perfil do Terapeuta M1
+# Perfil do Terapeuta M1/M2
 
-Status documental: `functional` local para `/terapeuta/perfil`;
-`data_integrated` para propagação pública, dependente de cache e ambiente.
+Status documental: `functional` local para `/terapeuta/perfil` e
+`/terapeuta/perfil/editar`; `data_integrated` para propagação pública,
+dependente de cache e ambiente.
 
 ## Fontes de verdade
 
@@ -28,6 +29,10 @@ Status documental: `functional` local para `/terapeuta/perfil`;
 
 `/api/therapist/profile` valida o payload e encaminha para
 `therapist-profile-command`.
+
+`/api/therapist/profile/media` valida sessão, tipo, tamanho e capabilities,
+envia mídia pública para `therapist-public-media` com o token autenticado do
+terapeuta e retorna somente URL pública. Não usa `service_role` no navegador.
 
 Edge Function:
 
@@ -59,6 +64,24 @@ Todas as mutações usam `requestId`, `profile_version` e ledger
 
 Prazo comunicado na UI: alterações publicadas podem levar até 2 a 3 horas para
 aparecer em todas as superfícies públicas.
+
+## Experiência M2
+
+- `/terapeuta/perfil` segue o frame Figma `13366:2408` como tela preview-first:
+  mostra a versão pública publicada, status e checklist, com CTA para edição.
+- `/terapeuta/perfil/editar` segue o frame Figma `13366:7289` com header de
+  edição, card de progresso, formulário principal, mídia, módulos gerenciados e
+  save bar.
+- O preview principal usa `PublicTherapistProfile` como DTO, derivado da versão
+  publicada do editor privado por mapper, e nunca inclui documentos, campos
+  administrativos ou paths privados. Rascunhos aparecem somente como aviso na
+  rota principal até serem publicados.
+- Uploads públicos aceitam foto, capa de vídeo e vídeo, com validação client e
+  server-side. Documentos continuam em fluxo privado.
+- Dados derivados continuam somente leitura e aparecem como status, checklist
+  ou contexto gerenciado, conforme a superfície.
+- Estados de rascunho, alterações não salvas, publicação, despublicação,
+  conflito, capability bloqueada e falha de upload são visíveis na UI.
 
 ## Privacidade
 

@@ -280,13 +280,16 @@ Stack real identificada:
   uma única sessão curta, usa Playwright visível com contexts separados para
   terapeuta e paciente, e a emissão de JWT passa por rate limit distribuído no
   Supabase.
-- Meu Perfil M1: `/terapeuta/perfil` usa a fonte canônica
-  `therapist_profiles`, rascunhos em `therapist_profile_content_versions`,
-  publicação pelo terapeuta via Edge Function `therapist-profile-command` e
-  RPCs `*_therapist_profile*_v1`. Não criar tabela paralela de perfil para o
-  shell. Documentos privados pertencem a `therapist_private_documents` e ao
-  bucket `therapist-private-documents`; nunca expor esses dados em views ou DTOs
-  públicos. Publicação pode levar 2 a 3 horas para refletir em todas as
+- Meu Perfil M1/M2: `/terapeuta/perfil` usa a fonte canônica
+  `therapist_profiles` como tela preview-first da versão publicada;
+  `/terapeuta/perfil/editar` concentra rascunhos em
+  `therapist_profile_content_versions`, publicação pelo terapeuta via Edge
+  Function `therapist-profile-command` e RPCs `*_therapist_profile*_v1`. Não
+  criar tabela paralela de perfil para o shell. Documentos privados pertencem a
+  `therapist_private_documents` e ao bucket `therapist-private-documents`;
+  nunca expor esses dados em views ou DTOs públicos. A experiência M2 usa upload
+  público via `/api/therapist/profile/media`, grid `AppPage*` e dados derivados
+  somente leitura. Publicação pode levar 2 a 3 horas para refletir em todas as
   superfícies públicas.
 
 ## 6. QA e definição de pronto

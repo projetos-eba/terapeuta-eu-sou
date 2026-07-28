@@ -49,11 +49,13 @@ edição, ativação, pausa, arquivamento, reordenação, filtros e limite por p
 `/terapeuta/servicos/meus` redireciona para a rota canônica. A tela consome
 somente os contratos da Fase 1 e não exibe métricas fictícias.
 
-O Meu Perfil do terapeuta está implementado em `/terapeuta/perfil`, seguindo os
-Figma `13366:2408` e `13366:7289`. A fonte canônica permanece
-`therapist_profiles`; rascunhos ficam em `therapist_profile_content_versions`,
-publicação é feita pelo terapeuta via `therapist-profile-command`, dados
-derivados são somente leitura e documentos privados usam tabela/bucket
+O Meu Perfil do terapeuta está implementado com `/terapeuta/perfil` como tela
+preview-first da versão publicada, seguindo o Figma `13366:2408`, e
+`/terapeuta/perfil/editar` como tela complementar de edição, seguindo o Figma
+`13366:7289`. A fonte canônica permanece `therapist_profiles`; rascunhos ficam
+em `therapist_profile_content_versions`, publicação é feita pelo terapeuta via
+`therapist-profile-command`, dados derivados são somente leitura, mídia pública usa
+`/api/therapist/profile/media` e documentos privados usam tabela/bucket
 separados. Publicações podem levar até 2 a 3 horas para refletir em todas as
 superfícies públicas.
 

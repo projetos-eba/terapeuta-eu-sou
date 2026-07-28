@@ -19,9 +19,11 @@ description: Use when implementing, refactoring, auditing, or documenting the th
 
 ## Rotas
 
-- Shell: `/terapeuta/perfil`
+- Shell preview-first: `/terapeuta/perfil` conforme Figma `13366:2408`
+- Shell editor: `/terapeuta/perfil/editar` conforme Figma `13366:7289`
 - Perfil público: `/terapeutas/:slug`
 - API adapter: `/api/therapist/profile`
+- Media adapter: `/api/therapist/profile/media`
 - Edge Function: `therapist-profile-command`
 
 ## Contratos
@@ -59,6 +61,14 @@ Não passar linhas cruas do Supabase para React.
 
 - Usar `AuthenticatedShell`.
 - Usar `src/components/app-page`.
+- `/terapeuta/perfil` deve focar somente no preview da versão publicada, status e
+  checklist. Não renderizar formulário nessa rota.
+- `/terapeuta/perfil/editar` deve conter header, progresso, formulário
+  numerado, upload/mídia, módulos gerenciados, aviso importante e save bar.
+- Rascunhos só aparecem como aviso na rota principal; a versão pública
+  publicada continua sendo a prévia renderizada.
+- Upload público deve usar `therapist-public-media`; documentos permanecem fora
+  do preview.
 - Usar `TESDialog` para confirmações.
 - Manter `h1` único.
 - Labels visíveis e touch targets de pelo menos 44px.
@@ -74,6 +84,12 @@ Não passar linhas cruas do Supabase para React.
 
 - Typecheck, lint, build.
 - Vitest para parsers, mappers e componente.
+- Vitest para upload client-side e falha sem fallback.
+- Vitest para rota `/api/therapist/profile/media`: sessão, validação,
+  capability, path público protegido e falha sanitizada de Storage.
 - Deno para Edge command.
 - pgTAP para RLS, publicação, rascunho e privacidade.
 - Validar que view pública não expõe campos administrativos.
+- E2E `tests/e2e/therapist-profile.spec.ts`: login do terapeuta, preview-first,
+  navegação para edição, rascunho, publicação, perfil público, ausência de
+  documentos públicos e responsividade.
