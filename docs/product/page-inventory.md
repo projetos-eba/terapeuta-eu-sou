@@ -31,6 +31,13 @@ Lista funcional das páginas do produto. Cada item descreve persona, objetivo, c
 > perfil, busca, Match, sessões e Zoom devem tratar o formato como `online`
 > fixo. Não criar variação de UI para escolha de local ou formato de
 > atendimento.
+> M1/M2 Perfil do terapeuta: `/terapeuta/perfil` é funcional como tela
+> preview-first da versão publicada e usa `TherapistProfileEditorData` via
+> `/api/therapist/profile` -> `therapist-profile-command`.
+> `/terapeuta/perfil/editar` concentra rascunho privado, publicação pelo
+> terapeuta, upload de mídia pública, dados derivados somente leitura, buckets
+> separados para mídia pública/documentos privados e aviso de propagação pública
+> de 2 a 3 horas.
 
 Fonte primária: Figma `↳ Jornadas dos Usuários`, node `12272:2`, frame principal `12280:2`. Páginas ausentes desse node ficam marcadas como necessidade de produto, suporte, legal ou inferência controlada.
 
@@ -88,6 +95,11 @@ Fonte primária: Figma `↳ Jornadas dos Usuários`, node `12272:2`, frame princ
 | Ajuda                | `/app/ajuda`                      | Resolver dúvidas.                                                    | Busca, categorias, tickets e guias.                     | HelpSearch, FAQAccordion, TicketList.                    | Sem tickets, em análise, resolvido.       | Abrir ticket, falar com suporte.            |
 
 ## Terapeutas
+
+| Plano | Página        | Rota                       | Objetivo                                                   | Componentes                                                                                                                      | Estados                                                                                                                        | Ações                                                                                       |
+| ----- | ------------- | -------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
+| Todos | Meu perfil    | `/terapeuta/perfil`        | Visualizar a versão pública publicada, status e checklist. | AppPageContainer, AppPageGrid, TherapistProfileOverviewPage, PublicProfileSnapshot, ProfileStatus, ProfileCompletenessChecklist. | Loading, erro honesto, publicado, despublicado, suspenso, rascunho existente sem alterar público.                              | Ver perfil público, editar perfil.                                                          |
+| Todos | Editar perfil | `/terapeuta/perfil/editar` | Editar rascunho e publicar presença pública.               | AppPageContainer, AppPageGrid, ProfilePageHeader, ProfileEditorForm, ProfileMediaUploader, ProfileSaveBar, TESDialog.            | Loading, erro honesto, rascunho privado, alterações não salvas, upload failure, capability bloqueada, publicado, despublicado. | Visualizar perfil, salvar rascunho, descartar, publicar, despublicar, enviar mídia pública. |
 
 | Plano  | Página                | Rota                                | Objetivo                                       | Componentes                                                   | Estados                                       | Ações                                       |
 | ------ | --------------------- | ----------------------------------- | ---------------------------------------------- | ------------------------------------------------------------- | --------------------------------------------- | ------------------------------------------- |

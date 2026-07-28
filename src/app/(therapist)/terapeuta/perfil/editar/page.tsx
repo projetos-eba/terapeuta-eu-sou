@@ -1,10 +1,12 @@
-import { TherapistProfileEditorErrorState } from "@/features/therapist-profile-editor/components/therapist-profile-editor-page";
-import { TherapistProfileOverviewPage } from "@/features/therapist-profile-editor/components/therapist-profile-overview-page";
+import {
+  TherapistProfileEditorErrorState,
+  TherapistProfileEditorPage,
+} from "@/features/therapist-profile-editor/components/therapist-profile-editor-page";
 import { getTherapistProfileEditorPage } from "@/features/therapist-profile-editor/therapist-profile-editor.queries";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
-export default async function TherapistProfilePage() {
+export default async function TherapistProfileEditPage() {
   const session = await requireTherapistSession(therapistRoutePolicies.profile);
   const result = await getTherapistProfileEditorPage({
     accessToken: session.accessToken,
@@ -19,5 +21,5 @@ export default async function TherapistProfilePage() {
     );
   }
 
-  return <TherapistProfileOverviewPage editor={result.editor} />;
+  return <TherapistProfileEditorPage editor={result.editor} />;
 }

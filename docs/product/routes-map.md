@@ -43,9 +43,24 @@ Contrato de implementação para rotas, permissões, layouts, componentes, estad
 - TES é online-only. Rotas de serviços, agenda, reserva, perfil público, busca,
   Match, sessões e Zoom não devem criar escolha de formato; o valor técnico de
   compatibilidade é sempre `online`.
+- `/terapeuta/perfil` é a rota funcional preview-first de “Meu perfil” para
+  Free, Premium e Premium Plus, alinhada ao Figma `13366:2408`: mostra a versão
+  pública publicada, status e checklist. `/terapeuta/perfil/editar` é a
+  subpágina complementar alinhada ao Figma `13366:7289` para edição, rascunho,
+  publicação pelo terapeuta, despublicação e upload de mídia pública via
+  `/api/therapist/profile/media`. Ambas usam `/api/therapist/profile` e a Edge
+  Function `therapist-profile-command`; documentos privados não entram em views
+  públicas nem no preview.
 
 As tabelas por plano abaixo permanecem como matriz de capability e inventário
 dos destinos legados. Novas referências devem usar `/terapeuta/*`.
+
+## Terapeuta Autenticado
+
+| Rota                       | Página        | Origem                          | Permissão              | Objetivo                                                           | Layout                                                          | Componentes                                                                                                        | Estados                                                                                                      | Ações                                                                                       | Referência visual           |
+| -------------------------- | ------------- | ------------------------------- | ---------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- | --------------------------- |
+| `/terapeuta/perfil`        | Meu perfil    | Design Telas/Figma `13366:2408` | `operation_essentials` | Visualizar a versão pública publicada e entender status/checklist. | Grid compartilhado `AppPage*` com preview principal + aside.    | TherapistProfileOverviewPage, PublicProfileSnapshot, ProfileStatus, ProfileCompletenessChecklist.                  | Loading, erro honesto, publicado, despublicado, suspenso, rascunho existente sem alterar público.            | Ver perfil público, editar perfil.                                                          | Terapeuta Plus/Premium Plus |
+| `/terapeuta/perfil/editar` | Editar perfil | Design Telas/Figma `13366:7289` | `operation_essentials` | Editar rascunho e publicar presença pública.                       | Grid compartilhado `AppPage*` com formulário principal + aside. | TherapistProfileEditorPage, ProfilePageHeader, ProfileEditorForm, ProfileMediaUploader, ProfileSaveBar, TESDialog. | Loading, erro, rascunho privado, alterações não salvas, upload failure, publicado, despublicado, capability. | Visualizar perfil, salvar rascunho, descartar, publicar, despublicar, enviar mídia pública. | Terapeuta Plus/Premium Plus |
 
 ## Público
 
