@@ -36,7 +36,7 @@ function FeaturedTherapistCard({
 
   return (
     <TESCard className="w-[292px] shrink-0 snap-start rounded-[28px] p-5 shadow-soft sm:w-[315px] xl:w-[220px] min-[1360px]:w-[240px] min-[1500px]:w-[268px] 2xl:w-[292px]">
-      <div className="relative min-h-[252px] overflow-hidden rounded-[28px] bg-[#E8D9FF] xl:min-h-[220px] min-[1360px]:min-h-[232px] min-[1500px]:min-h-[238px] 2xl:min-h-[252px]">
+      <div className="relative min-h-[252px] overflow-hidden rounded-[28px] bg-brand-lavender xl:min-h-[220px] min-[1360px]:min-h-[232px] min-[1500px]:min-h-[238px] 2xl:min-h-[252px]">
         <Image
           src={therapist.photoUrl}
           alt={`Retrato de ${therapist.name}`}
@@ -71,8 +71,8 @@ function FeaturedTherapistCard({
         ) : null}
 
         <div className="mt-5 flex h-12 items-center gap-2 rounded-full border border-brand-lavender/40 bg-white px-4 text-sm font-extrabold text-tesText-muted shadow-[0_8px_24px_rgba(108,61,145,0.08)] xl:text-xs min-[1500px]:text-sm">
-          <Star className="size-5 fill-[#FF9B3D] text-[#FF9B3D]" />
-          <span className="text-[#F18D36]">{therapist.ratingLabel}</span>
+          <Star className="size-5 fill-status-warning text-status-warning" />
+          <span className="text-status-warning">{therapist.ratingLabel}</span>
           <span>{therapist.reviewCountLabel}</span>
         </div>
 
@@ -139,10 +139,7 @@ export function FeaturedTherapistsCarousel({
           className="flex snap-x gap-5 overflow-x-auto scroll-smooth px-8 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] xl:gap-4 xl:px-0 [&::-webkit-scrollbar]:hidden"
         >
           {therapists.map((therapist) => (
-            <FeaturedTherapistCard
-              key={therapist.slug}
-              therapist={therapist}
-            />
+            <FeaturedTherapistCard key={therapist.slug} therapist={therapist} />
           ))}
         </div>
         <button

@@ -9,7 +9,7 @@ import type {
   ZoomVideoSessionStatus,
 } from "@/domain/tes";
 
-export type SessionModality = "in_person" | "online";
+export type SessionModality = "online";
 
 export type SessionReadModelItem = {
   attendanceSource: AttendanceSource;

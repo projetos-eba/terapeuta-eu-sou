@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   AttendanceSource,
@@ -17,6 +17,10 @@ import { TherapistCalendar } from "./therapist-calendar";
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("TherapistCalendar", () => {
   it("renders real calendar controls and connected Agenda tabs", () => {
@@ -70,6 +74,25 @@ describe("TherapistCalendar", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText("Nenhuma pendência operacional neste momento."),
+    ).toBeInTheDocument();
+  });
+
+  it("filters calendar events and keeps a dedicated chronological mobile list", () => {
+    render(<TherapistCalendar data={calendarFixture()} />);
+
+    expect(
+      screen.getByRole("region", { name: "Lista cronológica da agenda" }),
+    ).toBeInTheDocument();
+
+    fireEvent.change(screen.getByRole("searchbox"), {
+      target: { value: "sem resultado" },
+    });
+
+    expect(
+      screen.getByText("0 de 1 encontro(s) nesta visualização."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Nenhum item encontrado com os filtros atuais."),
     ).toBeInTheDocument();
   });
 });

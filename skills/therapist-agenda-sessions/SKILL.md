@@ -26,6 +26,7 @@ description: Implementar e manter Agenda, disponibilidade, bookings e Sessões d
 - Agenda: `/terapeuta/agenda`.
 - Sessões: `/terapeuta/sessoes`.
 - Detalhe: `/terapeuta/sessoes/:bookingId`.
+- Paciente: `/app/encontros` e `/app/encontros/:bookingId`.
 - Aliases `/basico/*`, `/pro/*` e `/plus/*` são somente redirects.
 
 ## Contratos
@@ -51,6 +52,26 @@ Não criar enums equivalentes dentro de features.
 - Resultado de leitura é `success`, `empty` ou `error`; não transformar falha
   em coleção vazia.
 
+## Sessões
+
+- A página `/terapeuta/sessoes` usa o frame Figma `13366:2768`
+  (`Page / Terapeuta Pro / Sessões`) como referência visual.
+- A tela lista apenas dados do `get_therapist_sessions_v1`; não cria booking,
+  não confirma pagamento, não cria sala Zoom e não executa transições
+  financeiras.
+- Métricas, faixa de resumo, busca textual e exportação CSV são derivados dos
+  itens carregados no read model da página.
+- Filtros por status de booking e status financeiro permanecem na URL. O
+  parâmetro legado `modality` só pode ser `online` ou ausente; a UI não oferece
+  escolha de formato porque o TES é online-only.
+- A busca por texto filtra cliente e terapia no recorte carregado; paginação
+  continua preservando os filtros suportados e o texto da busca.
+- Ações de sala apontam para `/terapeuta/sessoes/:bookingId`; a autorização
+  final do Zoom continua no detalhe por `zoom-video-session-access`.
+- Desktop usa tabela operacional com right rail. Tablet e mobile usam cards
+  cronológicos empilhados, filtros em largura total e os mesmos links de
+  detalhe.
+
 ## Disponibilidade
 
 - A aba Horários usa o frame Figma `13366:7977` e a rota canônica
@@ -62,6 +83,13 @@ Não criar enums equivalentes dentro de features.
   `docs/architecture/agenda-a3-closure.md`.
 - O Calendário usa o frame Figma `13366:5342` e persiste estado navegável em
   `aba=calendario`, `visao=day|week|month` e `data=YYYY-MM-DD`.
+- O fechamento A6/A7 fica em
+  `docs/architecture/agenda-a6-a7-closure.md`.
+- O fechamento A8/A10 fica em
+  `docs/architecture/agenda-a8-a10-closure.md`.
+- O Calendário possui filtros locais por busca, terapia e estado, além de lista
+  cronológica mobile dedicada. Esses filtros não alteram o contrato
+  `get_therapist_calendar_v1`.
 - A UI edita faixas em escopo geral ou por terapia e preserva regras dos
   outros escopos no comando atômico.
 - Duração pertence ao serviço; `slotStepMinutes` significa intervalo de oferta,
@@ -97,12 +125,27 @@ Não criar enums equivalentes dentro de features.
 
 - `reserve_booking_hold_v1`: cria hold somente via backend confiável.
 - `consume_booking_hold_v1`: converte hold em um booking `draft`.
+- `session-booking-checkout`: Edge Function autenticada para pessoa paciente;
+  seleciona slot por `get_service_available_slots_v1`, reserva hold
+  idempotente, consome hold em booking e inicia `stripe-create-session-payment`.
 - `transition_booking_status_v1`: aplica transição operacional e auditoria.
 - `request_booking_reschedule_v1`: cria proposta versionada.
 - `resolve_booking_reschedule_v1`: aplica resolução e sincroniza a sessão local de vídeo.
+- `session-reschedule`: Edge Function autenticada para paciente ou terapeuta;
+  valida participação, seleciona o slot por `get_service_available_slots_v1` e
+  então chama `request_booking_reschedule_v1` ou
+  `resolve_booking_reschedule_v1`.
+- `request-session-cancellation`: continua sendo a função canônica de
+  cancelamento de sessão, política de reembolso e bloqueio de repasse quando
+  necessário.
 - `session_payments` continua sendo a única fonte financeira.
 - O checkout de sessão deve usar o snapshot do booking, nunca o preço atual do
   serviço.
+- A confirmação de pagamento continua exclusivamente em webhook Stripe; retorno
+  de Checkout e `session-booking-checkout` não confirmam pagamento, plano, Zoom
+  ou repasse.
+- A9 pode ser pulado por escopo, mas isso não autoriza criar novo gate Zoom; o
+  acesso segue em `zoom-video-session-access`.
 - RPCs de escrita são `service_role` only e devem ser chamados por Edge
   Functions que autenticam e autorizam o usuário.
 
@@ -128,7 +171,9 @@ Não criar enums equivalentes dentro de features.
   cópia entre dias, conflito de versão e falha real distinta de vazio.
 - O script `npm run test:deno` deve incluir
   `supabase/functions/therapist-schedule-update` e
-  `supabase/functions/therapist-blocks-update`.
+  `supabase/functions/therapist-blocks-update` e
+  `supabase/functions/session-booking-checkout` e
+  `supabase/functions/session-reschedule`.
 - O pgTAP A3 deve cobrir grants, RLS, advisory lock, stale version, replay,
   auditoria, sobreposição, timezone e propriedade do serviço.
 - O pgTAP A4 deve cobrir séries, ocorrências UTC, impactos, booking preservado,

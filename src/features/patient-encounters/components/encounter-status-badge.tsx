@@ -15,6 +15,7 @@ export function EncounterStatusBadge({
     confirmed: "bg-status-successBg text-status-success",
     live: "bg-[#FDECF1] text-status-danger",
     pending_payment: "bg-status-warningBg text-status-warning",
+    reschedule_requested: "bg-status-warningBg text-status-warning",
   }[status];
 
   return (

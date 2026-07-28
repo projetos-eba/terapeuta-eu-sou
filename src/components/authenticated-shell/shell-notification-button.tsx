@@ -15,7 +15,7 @@ export function ShellNotificationButton({ count = 0 }: { count?: number }) {
     >
       <Bell aria-hidden="true" className="size-6" strokeWidth={1.8} />
       {count > 0 ? (
-        <span className="absolute right-0.5 top-0.5 inline-flex min-w-5 items-center justify-center rounded-full bg-brand-primary px-1 text-[10px] font-semibold leading-5 text-white">
+        <span className="absolute right-0 top-0 inline-flex min-w-5 items-center justify-center rounded-full bg-brand-primary px-1 text-xs font-semibold leading-5 text-white">
           {count > 99 ? "99+" : count}
         </span>
       ) : null}

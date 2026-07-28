@@ -158,6 +158,8 @@ Connect:
 
 Sessoes e repasses:
 
+- `session-booking-checkout`
+- `session-reschedule`
 - `stripe-create-session-payment`
 - `request-session-cancellation`
 - `confirm-session-by-therapist`

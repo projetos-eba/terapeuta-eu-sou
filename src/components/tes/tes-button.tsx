@@ -15,16 +15,16 @@ const variantClasses: Record<TESButtonVariant, string> = {
   primary:
     "bg-brand-primary text-white shadow-card hover:bg-brand-primaryHover",
   gradient:
-    "bg-[linear-gradient(135deg,#6C3D91_0%,#5B337A_100%)] text-white shadow-soft hover:shadow-float",
+    "bg-[linear-gradient(135deg,var(--tes-color-brand-primary)_0%,var(--tes-color-brand-primary-hover)_100%)] text-white shadow-soft hover:shadow-float",
   secondary:
     "border border-border bg-white text-brand-primary shadow-card hover:border-brand-lavender",
   ghost: "text-brand-primary hover:bg-brand-lavenderSoft",
 };
 
 const sizeClasses: Record<TESButtonSize, string> = {
-  sm: "px-4 py-2 text-xs",
-  md: "px-5 py-3 text-sm",
-  lg: "px-7 py-3 text-sm",
+  sm: "min-h-11 px-4 py-2 text-sm",
+  md: "min-h-11 px-5 py-3 text-sm",
+  lg: "min-h-12 px-7 py-3 text-base",
 };
 
 const baseClasses =

@@ -15,6 +15,7 @@ export type BookingDetailPageData = {
     endsAt: string;
     id: string;
     minutesUntilStart: number | null;
+    operationalVersion: number;
     paymentStatus: SessionFinancialStatus | null;
     startsAt: string;
     status: BookingDetailStatus;
@@ -56,6 +57,16 @@ export type BookingDetailPageData = {
     paidAt: string | null;
     receiptUrl: string | null;
   };
+  reschedule: {
+    expiresAt: string | null;
+    id: string;
+    proposedEndsAt: string;
+    proposedStartsAt: string;
+    proposedTimezone: string;
+    reason: string | null;
+    requestedByCurrentUser: boolean;
+    status: "accepted" | "applied" | "cancelled" | "expired" | "pending" | "rejected";
+  } | null;
   service: {
     id: string;
     objective: string;

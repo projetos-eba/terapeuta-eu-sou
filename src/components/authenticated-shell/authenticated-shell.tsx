@@ -72,7 +72,7 @@ export function AuthenticatedShell({
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-[var(--tes-color-background)] text-tesText-primary">
+    <div className="min-h-screen overflow-x-hidden bg-[var(--tes-color-background)] text-tesText-primary">
       <aside
         aria-label="Navegação principal"
         className={cn(

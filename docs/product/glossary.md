@@ -1,0 +1,55 @@
+# Glossário Canônico TES
+
+Data: 2026-07-28
+
+Este glossário define linguagem de produto, contexto de uso e entidades
+técnicas relacionadas. Ele não renomeia banco, migrations, webhooks ou
+integrações existentes.
+
+## Matriz de Termos
+
+| Termo                 | Definição                                                                                             | Contexto de uso                                                 | Termo proibido ou legado                                                     | Exemplos de copy                                                    | Entidade técnica relacionada                        |
+| --------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------- |
+| Encontro              | Linguagem acolhedora para a experiência do paciente em uma reserva/sessão.                            | Interface do paciente e Zoom visto pelo paciente.               | Usar “sessão” como copy primária do paciente.                                | “Próximo encontro”, “Entrar no encontro”, “Detalhes do encontro”.   | `booking`, `video_session`, `session_payment`       |
+| Sessão                | Termo operacional e técnico para realização, pagamento, suporte, agenda profissional e administração. | Terapeuta, admin, financeiro, jurídico e documentação técnica.  | Trocar por “encontro” em financeiro, Zoom técnico ou banco.                  | “Sessões para revisar”, “Sessão contratada”, “Pagamento da sessão”. | `session`, `bookings`, `session_payments`           |
+| Booking/Reserva       | Registro transacional que conecta paciente, terapeuta, serviço, horário e estado.                     | Código, banco, Edge Functions, agenda e checkout.               | Usar nome da terapia como chave de relação.                                  | “Reserva pendente de pagamento”.                                    | `bookings`, `booking_holds`                         |
+| Terapia da plataforma | Modalidade canônica criada e governada pela plataforma.                                               | Catálogo, Match, filtros, perfil público e criação de serviços. | Terapia criada por texto livre do terapeuta.                                 | “Reiki”, “Tarô”, “Constelação Familiar”.                            | `therapies`, `therapy_categories`                   |
+| Serviço do terapeuta  | Oferta técnica/comercial de um terapeuta vinculada a uma terapia canônica.                            | Código, banco, checkout, agenda e perfil público.               | `therapist_therapies`; duplicar terapia canônica no serviço.                 | “Sessão individual de Reiki”.                                       | `therapist_services`, `service_id`                  |
+| Atendimento online    | Único formato de atendimento oferecido pelo TES.                                                      | Serviços, agenda, reserva, perfil público, Zoom e suporte.      | Presencial, híbrido, endereço de consulta ou escolha de local.               | “Atendimento online”, “Entrar no encontro”.                         | `delivery_format = online`, `online_only = true`    |
+| Suas terapias         | Nome amigável da área onde o terapeuta gerencia seus serviços.                                        | Interface do shell do terapeuta.                                | “Meus serviços” como título principal novo; “therapist therapies” no código. | “Nova terapia”, “Gerencie suas terapias”.                           | `/terapeuta/servicos`, `therapist_services`         |
+| Paciente              | Pessoa que busca, agenda e participa de encontros.                                                    | Interface cliente/paciente, suporte e auth.                     | Cliente quando a tela já decidiu a persona como paciente.                    | “Meus encontros”, “Minha jornada”.                                  | `patient_profiles`, `profiles.role = patient`       |
+| Terapeuta             | Profissional que oferece serviços na plataforma.                                                      | Shell profissional, catálogo público e admin.                   | Profissional usado como role técnica.                                        | “Entrar como terapeuta”.                                            | `therapist_profiles`, `profiles.role = therapist`   |
+| Free                  | Plano comercial inicial do terapeuta.                                                                 | Landing, cadastro, checkout, dashboard, bloqueios e e-mails.    | Básico como copy comercial nova.                                             | “Plano Free”.                                                       | enum `free`                                         |
+| Premium               | Plano comercial intermediário do terapeuta.                                                           | Landing, cadastro, checkout, dashboard, bloqueios e e-mails.    | Pro como copy comercial nova.                                                | “Escolher Premium”.                                                 | enum `premium`                                      |
+| Premium Plus          | Plano comercial avançado do terapeuta.                                                                | Landing, cadastro, checkout, dashboard, bloqueios e e-mails.    | Plus isolado como nome de plano.                                             | “Exclusivo Premium Plus”.                                           | enum `premium_plus`                                 |
+| Match                 | Jornada pública determinística que recomenda terapias, não terapeutas.                                | `/sua-jornada` e resultado.                                     | IA generativa ou recomendação direta de terapeuta.                           | “Ver caminhos sugeridos”.                                           | `matching_*`, `public_matching_*`                   |
+| Interesse             | Escolha temática dentro do Match.                                                                     | Jornada pública e cálculo.                                      | Sintoma, diagnóstico ou promessa clínica.                                    | “Escolha até 3 interesses”.                                         | `matching_interests`                                |
+| Favorito              | Relação salva pela pessoa para retomar terapeuta ou terapia.                                          | Área logada do paciente.                                        | Métrica de conversão inventada.                                              | “Terapias favoritas”.                                               | `favorite_therapists`, favoritos futuros de terapia |
+| Agendamento           | Ato de escolher serviço e horário antes da confirmação financeira.                                    | UI pública, paciente e terapeuta.                               | Pagamento confirmado.                                                        | “Seguir para agendamento”.                                          | `booking_holds`, `bookings`                         |
+| Sessão paga           | Sessão com pagamento confirmado pela autoridade financeira.                                           | Reviews, métricas, Zoom e financeiro.                           | Pagamento confirmado por redirect.                                           | “Avaliações vêm de sessões pagas”.                                  | `session_payments.financial_status = paid`          |
+| Sessão concluída      | Sessão realizada/concluída operacionalmente.                                                          | Reviews, métricas e histórico operacional.                      | Avaliação sem realização.                                                    | “Sessões concluídas pela plataforma”.                               | `bookings.status = completed`                       |
+
+## Taxonomia de Status de Implementação
+
+| Status             | Definição                                                                   |
+| ------------------ | --------------------------------------------------------------------------- |
+| `planned`          | Requisito documentado, sem UI implementada.                                 |
+| `prototyped`       | Existe no Figma ou protótipo, mas não no produto funcional.                 |
+| `mocked`           | Renderiza usando dados estáticos ou demonstrativos.                         |
+| `data_integrated`  | Consome dados reais, mas o fluxo ainda não está completo.                   |
+| `functional`       | Fluxo principal completo e validado localmente.                             |
+| `homologated`      | Validado em ambiente controlado com integrações aplicáveis.                 |
+| `production_ready` | Homologação externa, segurança, operação e conteúdo necessários concluídos. |
+
+Documentos de inventário devem preferir colunas separadas:
+
+- `implementation_status`;
+- `data_source`;
+- `qa_status`;
+- `external_homologation`;
+- `production_readiness`;
+- `known_blockers`.
+
+Não marcar como `functional` rota que apenas renderiza scaffold, usa página de
+construção, depende de mock, não possui escrita quando necessária, não trata
+erro ou não foi testada.

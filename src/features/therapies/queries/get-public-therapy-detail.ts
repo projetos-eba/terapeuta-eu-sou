@@ -9,7 +9,10 @@ function hasSupabaseConfig() {
   return Boolean(getSupabasePublicConfig());
 }
 
-async function fetchPublicView<Row>(path: string, slug: string): Promise<Row[]> {
+async function fetchPublicView<Row>(
+  path: string,
+  slug: string,
+): Promise<Row[]> {
   const config = getSupabasePublicConfig();
 
   if (!config) return [];
@@ -53,6 +56,28 @@ export async function getPublicTherapyDetail(
 
     const row = rows[0];
     return row ? mapTherapyDetail(row) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function resolvePublicTherapySlug(slug: string) {
+  if (!hasSupabaseConfig()) {
+    return null;
+  }
+
+  try {
+    const rows = await fetchPublicView<{ current_slug: string }>(
+      [
+        "public_therapy_slug_redirects_v",
+        "?select=current_slug",
+        `&old_slug=eq.${slugFilter(slug)}`,
+        "&limit=1",
+      ].join(""),
+      slug,
+    );
+
+    return rows[0]?.current_slug ?? null;
   } catch {
     return null;
   }

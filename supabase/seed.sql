@@ -3015,3 +3015,304 @@ set calendar_color_key = case
   when slug in ('taro', 'tarologia') then 'pink'
   else 'neutral'
 end;
+
+-- Fase 1: canonical platform therapies and therapist service fixtures.
+update public.therapies
+set
+  is_available_for_services = slug in (
+    'reiki',
+    'taro',
+    'constelacao-familiar'
+  ),
+  updated_at = now()
+where slug in (
+  'reiki',
+  'taro',
+  'constelacao-familiar',
+  'mindfulness',
+  'aromaterapia',
+  'cristaloterapia'
+);
+
+update public.therapies
+set
+  status = 'published',
+  is_public_visible = false,
+  is_available_for_services = true,
+  updated_at = now()
+where slug = 'aromaterapia';
+
+update public.matching_therapy_settings
+set
+  is_visible_in_matching = false,
+  updated_at = now()
+where therapy_id in (
+  select id from public.therapies where slug = 'aromaterapia'
+);
+
+update public.therapies
+set
+  status = 'deprecated',
+  is_public_visible = false,
+  is_available_for_services = false,
+  updated_at = now()
+where slug = 'cristaloterapia';
+
+insert into auth.users (
+  id,
+  instance_id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at
+)
+values (
+  'aaaaaaaa-0000-4000-8000-000000000006',
+  '00000000-0000-0000-0000-000000000000',
+  'authenticated',
+  'authenticated',
+  'marina.terapeuta@example.test',
+  crypt('tes-mock-password', gen_salt('bf')),
+  now(),
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  '{"name":"Marina Sem Serviços"}'::jsonb,
+  now(),
+  now()
+)
+on conflict (id) do update
+set
+  email = excluded.email,
+  raw_user_meta_data = excluded.raw_user_meta_data,
+  updated_at = now();
+
+insert into public.profiles (id, role, display_name, email, avatar_url)
+values (
+  'aaaaaaaa-0000-4000-8000-000000000006',
+  'therapist',
+  'Marina Sem Serviços',
+  'marina.terapeuta@example.test',
+  null
+)
+on conflict (id) do update
+set
+  role = excluded.role,
+  display_name = excluded.display_name,
+  email = excluded.email,
+  avatar_url = excluded.avatar_url,
+  updated_at = now();
+
+insert into public.therapist_profiles (
+  id,
+  user_id,
+  plan,
+  status,
+  slug,
+  public_name,
+  legal_name,
+  headline,
+  bio,
+  city,
+  state,
+  languages,
+  is_public,
+  is_accepting_bookings,
+  accepts_online_sessions,
+  metadata
+)
+values (
+  'c1000000-0000-4000-8000-000000000006',
+  'aaaaaaaa-0000-4000-8000-000000000006',
+  'free',
+  'approved',
+  'marina-sem-servicos',
+  'Marina Sem Serviços',
+  'Marina Sem Serviços',
+  'Perfil de fixture sem serviços publicados.',
+  'Fixture para validar estados vazios do shell de serviços.',
+  'São Paulo',
+  'SP',
+  array['pt-BR'],
+  false,
+  false,
+  true,
+  '{}'::jsonb
+)
+on conflict (slug) do update
+set
+  user_id = excluded.user_id,
+  plan = excluded.plan,
+  status = excluded.status,
+  public_name = excluded.public_name,
+  legal_name = excluded.legal_name,
+  headline = excluded.headline,
+  bio = excluded.bio,
+  city = excluded.city,
+  state = excluded.state,
+  languages = excluded.languages,
+  is_public = excluded.is_public,
+  is_accepting_bookings = excluded.is_accepting_bookings,
+  accepts_online_sessions = excluded.accepts_online_sessions,
+  metadata = excluded.metadata,
+  updated_at = now();
+
+insert into public.therapist_services (
+  id,
+  therapist_profile_id,
+  therapy_id,
+  title,
+  description,
+  duration_minutes,
+  price_cents,
+  currency,
+  status,
+  online_only,
+  delivery_format,
+  is_bookable,
+  position
+)
+values
+  (
+    'd1000000-0000-4000-8000-000000000021',
+    'c1000000-0000-4000-8000-000000000001',
+    '22222222-2222-4222-8222-222222222228',
+    'Tarô em pausa',
+    'Fixture de servico pausado para validar que nao aparece como reservavel.',
+    60,
+    12000,
+    'BRL',
+    'paused',
+    true,
+    'online',
+    false,
+    90
+  ),
+  (
+    'd1000000-0000-4000-8000-000000000022',
+    'c1000000-0000-4000-8000-000000000001',
+    '22222222-2222-4222-8222-222222222230',
+    'Constelação em rascunho',
+    'Fixture de servico em rascunho para validar fluxo privado.',
+    60,
+    14000,
+    'BRL',
+    'draft',
+    true,
+    'online',
+    false,
+    100
+  )
+on conflict (id) do update
+set
+  therapist_profile_id = excluded.therapist_profile_id,
+  therapy_id = excluded.therapy_id,
+  title = excluded.title,
+  description = excluded.description,
+  duration_minutes = excluded.duration_minutes,
+  price_cents = excluded.price_cents,
+  currency = excluded.currency,
+  status = excluded.status,
+  online_only = excluded.online_only,
+  delivery_format = excluded.delivery_format,
+  is_bookable = excluded.is_bookable,
+  position = excluded.position,
+  updated_at = now();
+
+-- Fase 3: local admin fixture for catalog governance.
+insert into auth.users (
+  id,
+  instance_id,
+  aud,
+  role,
+  email,
+  encrypted_password,
+  email_confirmed_at,
+  raw_app_meta_data,
+  raw_user_meta_data,
+  created_at,
+  updated_at
+)
+values (
+  'aaaaaaaa-0000-4000-8000-000000000090',
+  '00000000-0000-0000-0000-000000000000',
+  'authenticated',
+  'authenticated',
+  'admin.tes@example.test',
+  crypt('tes-mock-password', gen_salt('bf')),
+  now(),
+  '{"provider":"email","providers":["email"]}'::jsonb,
+  '{"name":"Admin TES"}'::jsonb,
+  now(),
+  now()
+)
+on conflict (id) do update
+set
+  email = excluded.email,
+  encrypted_password = excluded.encrypted_password,
+  email_confirmed_at = excluded.email_confirmed_at,
+  raw_app_meta_data = excluded.raw_app_meta_data,
+  raw_user_meta_data = excluded.raw_user_meta_data,
+  updated_at = now();
+
+update auth.users
+set
+  confirmation_token = coalesce(confirmation_token, ''),
+  recovery_token = coalesce(recovery_token, ''),
+  email_change_token_new = coalesce(email_change_token_new, ''),
+  email_change = coalesce(email_change, ''),
+  phone_change_token = coalesce(phone_change_token, ''),
+  email_change_token_current = coalesce(email_change_token_current, ''),
+  reauthentication_token = coalesce(reauthentication_token, ''),
+  updated_at = now()
+where id = 'aaaaaaaa-0000-4000-8000-000000000090';
+
+insert into auth.identities (
+  provider_id,
+  user_id,
+  identity_data,
+  provider,
+  last_sign_in_at,
+  created_at,
+  updated_at
+)
+values (
+  'aaaaaaaa-0000-4000-8000-000000000090',
+  'aaaaaaaa-0000-4000-8000-000000000090',
+  jsonb_build_object(
+    'sub',
+    'aaaaaaaa-0000-4000-8000-000000000090',
+    'email',
+    'admin.tes@example.test',
+    'email_verified',
+    true
+  ),
+  'email',
+  now(),
+  now(),
+  now()
+)
+on conflict (provider_id, provider) do update
+set
+  user_id = excluded.user_id,
+  identity_data = excluded.identity_data,
+  updated_at = now();
+
+insert into public.profiles (id, role, display_name, email, avatar_url)
+values (
+  'aaaaaaaa-0000-4000-8000-000000000090',
+  'admin',
+  'Admin TES',
+  'admin.tes@example.test',
+  null
+)
+on conflict (id) do update
+set
+  role = excluded.role,
+  display_name = excluded.display_name,
+  email = excluded.email,
+  avatar_url = excluded.avatar_url,
+  updated_at = now();

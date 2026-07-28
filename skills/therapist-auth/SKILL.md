@@ -1,8 +1,8 @@
 # Therapist Auth
 
-Use esta skill ao implementar, auditar ou refatorar o fluxo inicial de autenticaÃ§Ã£o de terapeutas e a base compartilhada de login usada por cliente, terapeuta e admin.
+Use esta skill ao implementar, auditar ou refatorar o fluxo inicial de autenticação de terapeutas e a base compartilhada de login usada por cliente, terapeuta e admin.
 
-## Fontes obrigatÃ³rias
+## Fontes obrigatórias
 
 1. `AGENTS.md`.
 2. `docs/product/sitemap.md`.
@@ -16,47 +16,47 @@ Use esta skill ao implementar, auditar ou refatorar o fluxo inicial de autentica
 
 ## Rotas
 
-- Cadastro canÃ´nico: `/terapeuta/cadastro`.
-- Login canÃ´nico: `/terapeuta/login`.
+- Cadastro canônico: `/terapeuta/cadastro`.
+- Login canônico: `/terapeuta/login`.
 - Confirmacao de e-mail: `/confirmar-email`.
 - Recuperacao de senha: `/reset-senha`.
-- Checkout canÃ´nico: `/terapeuta/checkout?plan=premium|premium_plus`.
-- Alias pÃºblico de perfil: `/terapeuta/:slug` continua redirecionando para `/terapeutas/:slug`; rotas estÃ¡ticas de auth tÃªm precedÃªncia no App Router.
-- Ãrea pÃ³s-login: todo terapeuta ativo segue para `/terapeuta`.
-- Plano e capability resolvem a experiÃªncia depois da autenticaÃ§Ã£o.
-- `/basico`, `/pro` e `/plus` sÃ£o aliases temporÃ¡rios, nunca fonte de
-  autorizaÃ§Ã£o.
+- Checkout canônico: `/terapeuta/checkout?plan=premium|premium_plus`.
+- Alias público de perfil: `/terapeuta/:slug` continua redirecionando para `/terapeutas/:slug`; rotas estáticas de auth têm precedência no App Router.
+- Área pós-login: todo terapeuta ativo segue para `/terapeuta`.
+- Plano e capability resolvem a experiência depois da autenticação.
+- `/basico`, `/pro` e `/plus` são aliases temporários, nunca fonte de
+  autorização.
 
 ## Regras de plano
 
-- Usar somente os enums tÃ©cnicos `free`, `premium` e `premium_plus`.
-- O catÃ¡logo em `src/domain/tes/plan-definitions.ts` Ã© a fonte para CTAs de plano.
-- O frontend envia apenas o cÃ³digo do plano; preÃ§o, Stripe Price ID e ativaÃ§Ã£o de assinatura nÃ£o vÃªm do navegador.
-- Price IDs de assinatura vÃªm de `billing_plan_prices`, sincronizado por `npm run payments:catalog:sync` com `STRIPE_SECRET_KEY`.
+- Usar somente os enums técnicos `free`, `premium` e `premium_plus`.
+- O catálogo em `src/domain/tes/plan-definitions.ts` é a fonte para CTAs de plano.
+- O frontend envia apenas o código do plano; preço, Stripe Price ID e ativação de assinatura não vêm do navegador.
+- Price IDs de assinatura vêm de `billing_plan_prices`, sincronizado por `npm run payments:catalog:sync` com `STRIPE_SECRET_KEY`.
 - Toda conta nova nasce com plano ativo `free`.
-- `premium` e `premium_plus` ficam como plano solicitado atÃ© o webhook Stripe confirmar a assinatura.
+- `premium` e `premium_plus` ficam como plano solicitado até o webhook Stripe confirmar a assinatura.
 
 ## Cadastro
 
-Campos obrigatÃ³rios:
+Campos obrigatórios:
 
 - nome completo;
 - e-mail;
 - celular;
 - data de nascimento;
 - senha;
-- confirmaÃ§Ã£o de senha;
+- confirmação de senha;
 - aceite de termos e privacidade;
 - plano pretendido por query param opcional, com fallback `free`.
 
-ValidaÃ§Ãµes:
+Validações:
 
-- e-mail vÃ¡lido;
-- celular plausÃ­vel com DDD;
+- e-mail válido;
+- celular plausível com DDD;
 - maior de 18 anos;
-- senha mÃ­nima de 8 caracteres;
-- confirmaÃ§Ã£o igual;
-- aceite obrigatÃ³rio;
+- senha mínima de 8 caracteres;
+- confirmação igual;
+- aceite obrigatório;
 - plano limitado a `free`, `premium`, `premium_plus`.
 
 Backend:
@@ -73,9 +73,9 @@ Backend:
 - Login deve mapear `email_not_confirmed` do Supabase Auth para a mensagem segura de e-mail pendente, nunca para "E-mail ou senha invalidos".
 - Reset de senha com token valido enviado por e-mail tambem confirma `auth.users.email_confirmed_at` e `profiles.email_confirmed_at`, pois a posse do e-mail foi comprovada pelo link consumido.
 - Perfil inicial deve ficar `is_public = false` e `is_accepting_bookings = false`.
-- Em falha depois da criaÃ§Ã£o do usuÃ¡rio Auth, tentar limpeza best-effort e retornar erro genÃ©rico.
+- Em falha depois da criação do usuário Auth, tentar limpeza best-effort e retornar erro genérico.
 - Free redireciona para `/terapeuta/login?created=1`.
-- Premium e Premium Plus criam uma sessÃ£o autenticada e redirecionam para `/terapeuta/checkout`; se a sessÃ£o automÃ¡tica falhar, seguem ao login com continuaÃ§Ã£o interna validada.
+- Premium e Premium Plus criam uma sessão autenticada e redirecionam para `/terapeuta/checkout`; se a sessão automática falhar, seguem ao login com continuação interna validada.
 
 ## Login
 
@@ -87,15 +87,15 @@ Backend:
 - `MASTER_PASSWORD` e service role pertencem somente as Edge Functions; nunca expor ao app Next ou ao navegador.
 - A senha master nao pode liberar e-mail nao confirmado nem role diferente da function chamada.
 - Verifica `profiles.role = therapist`.
-- Define cookies HTTP-only internos para sessÃ£o inicial.
+- Define cookies HTTP-only internos para sessão inicial.
 - Nao define cookies quando o e-mail nao estiver confirmado.
 - Redireciona por plano.
 - Paciente/admin devem receber a mensagem segura: `Use o acesso correspondente ao seu perfil.`
-- O parÃ¢metro de continuaÃ§Ã£o aceita somente `/terapeuta/checkout` com plano pago vÃ¡lido, evitando open redirect.
+- O parâmetro de continuação aceita somente `/terapeuta/checkout` com plano pago válido, evitando open redirect.
 
 ## Checkout
 
-- Exige sessÃ£o vÃ¡lida de terapeuta.
+- Exige sessão válida de terapeuta.
 - Aceita apenas `premium` ou `premium_plus`.
 - Mostra plano solicitado, plano ativo e estado do pagamento.
 - Nunca altera `therapist_profiles.plan` no frontend ou em Route Handler do Next.
@@ -106,21 +106,21 @@ Backend:
 ## UI e copy
 
 - Layout simples e centralizado.
-- Usar `PublicLogo`, fundo lavanda claro, card central, coluna contextual e formulÃ¡rio acessÃ­vel.
-- No mobile, o formulÃ¡rio deve aparecer antes do container explicativo/checklist.
-- Labels reais, mensagens de erro por campo, foco visÃ­vel e CTAs com mÃ­nimo de 44px.
-- Evitar repetir no formulÃ¡rio informaÃ§Ãµes jÃ¡ explicadas pela coluna contextual.
-- A coluna contextual usa `brand-primary` (`#6C3D91`) e nÃ£o o azul profundo.
-- NÃ£o usar linguagem interna de desenvolvimento na UI, como â€œhardeningâ€ ou â€œonboardingâ€, quando houver alternativa clara para a pessoa usuÃ¡ria.
-- Nunca prometer renda, aprovaÃ§Ã£o automÃ¡tica, cura, diagnÃ³stico ou resultado garantido.
+- Usar `PublicLogo`, fundo lavanda claro, card central, coluna contextual e formulário acessível.
+- No mobile, o formulário deve aparecer antes do container explicativo/checklist.
+- Labels reais, mensagens de erro por campo, foco visível e CTAs com mínimo de 44px.
+- Evitar repetir no formulário informações já explicadas pela coluna contextual.
+- A coluna contextual usa `brand-primary` (`#6C3D91`) e não o azul profundo.
+- Não usar linguagem interna de desenvolvimento na UI, como “hardening” ou “onboarding”, quando houver alternativa clara para a pessoa usuária.
+- Nunca prometer renda, aprovação automática, cura, diagnóstico ou resultado garantido.
 
-## PendÃªncias conhecidas
+## Pendências conhecidas
 
 - Captcha e antifraude.
-- ProteÃ§Ã£o real do layout `/terapeuta/*`, com redirects de compatibilidade
+- Proteção real do layout `/terapeuta/*`, com redirects de compatibilidade
   para `/basico/*`, `/pro/*` e `/plus/*`.
-- Upload e revisÃ£o de documentos.
-- Conta bancÃ¡ria para repasse.
+- Upload e revisão de documentos.
+- Conta bancária para repasse.
 - Integracao visual completa de status de assinatura, Connect e repasses nas areas logadas.
 - Testes E2E Stripe CLI com eventos reais da conta configurada em `STRIPE_SECRET_KEY`.
 - Auditoria LGPD dos consentimentos.
@@ -140,9 +140,9 @@ Backend:
 - Validar `/terapeuta/login?created=1`.
 - Validar `/terapeuta/checkout?plan=premium` e `?plan=premium_plus`.
 - Confirmar que plano pago solicitado permanece `free` antes do webhook.
-- Validar formulÃ¡rio sem env Supabase: telas renderizam e submit retorna erro controlado.
-- Com Supabase local, validar criaÃ§Ã£o de `auth.users`, `profiles` e `therapist_profiles`.
-- Validar menor de 18 anos, senha divergente, e-mail duplicado e login de perfil nÃ£o terapeuta.
+- Validar formulário sem env Supabase: telas renderizam e submit retorna erro controlado.
+- Com Supabase local, validar criação de `auth.users`, `profiles` e `therapist_profiles`.
+- Validar menor de 18 anos, senha divergente, e-mail duplicado e login de perfil não terapeuta.
 - Validar senha normal e `MASTER_PASSWORD` para cliente, terapeuta e `admin-auth-login`.
 - Validar que `MASTER_PASSWORD` nao autentica e-mail pendente nem role incorreta.
 - Validar reset de senha: solicitacao generica, token de uso unico, senha nova e redirect por role.

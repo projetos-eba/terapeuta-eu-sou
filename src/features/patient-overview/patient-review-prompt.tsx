@@ -63,7 +63,7 @@ export function PatientReviewPrompt({
       <Link
         className="mt-4 flex min-h-10 items-center justify-center rounded-sm bg-brand-primary px-4 text-xs font-medium text-white outline-none transition hover:bg-brand-primaryHover focus-visible:ring-4 focus-visible:ring-ring/20"
         href={
-          `${routes.patient.sessionHistory}?review=${review.appointmentId}` as Route<string>
+          `${routes.patient.encounters}?review=${review.appointmentId}` as Route<string>
         }
       >
         Avaliar agora

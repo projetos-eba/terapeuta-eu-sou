@@ -82,6 +82,9 @@ verify_jwt = false
 [functions.admin-auth-login]
 verify_jwt = false
 
+[functions.admin-therapy-catalog-command]
+verify_jwt = true
+
 [functions.therapist-auth-signup]
 verify_jwt = false
 
@@ -140,6 +143,12 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.stripe-create-session-payment]
+verify_jwt = false
+
+[functions.session-booking-checkout]
+verify_jwt = false
+
+[functions.session-reschedule]
 verify_jwt = false
 
 [functions.request-session-cancellation]

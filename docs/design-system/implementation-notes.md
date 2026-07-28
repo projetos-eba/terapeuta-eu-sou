@@ -74,8 +74,8 @@ src/
 Uso:
 
 ```ts
-import { routes } from '@/lib/routes';
-import { cn } from '@/lib/utils';
+import { routes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 ```
 
 ## Rotas
@@ -85,51 +85,51 @@ Centralizar rotas em `src/lib/routes.ts`.
 ```ts
 export const routes = {
   public: {
-    home: '/',
-    howItWorks: '/como-funciona',
-    journey: '/sua-jornada',
-    journeyResult: '/sua-jornada/resultado',
-    therapists: '/terapeutas',
+    home: "/",
+    howItWorks: "/como-funciona",
+    journey: "/sua-jornada",
+    journeyResult: "/sua-jornada/resultado",
+    therapists: "/terapeutas",
     therapistProfile: (slug: string) => `/terapeutas/${slug}`,
-    therapies: '/terapias',
+    therapies: "/terapias",
     therapyDetail: (slug: string) => `/terapias/${slug}`,
-    reservation: '/reserva',
-    reservationSuccess: '/reserva/sucesso',
-    forTherapists: '/para-terapeutas',
-    therapistPlans: '/para-terapeutas/planos',
-    signIn: '/entrar',
-    signUp: '/cadastro',
-    resetPassword: '/reset-senha',
-    help: '/ajuda',
-    terms: '/termos',
-    privacy: '/privacidade',
+    reservation: "/reserva",
+    reservationSuccess: "/reserva/sucesso",
+    forTherapists: "/para-terapeutas",
+    therapistPlans: "/para-terapeutas/planos",
+    signIn: "/entrar",
+    signUp: "/cadastro",
+    resetPassword: "/reset-senha",
+    help: "/ajuda",
+    terms: "/termos",
+    privacy: "/privacidade",
   },
   patient: {
-    home: '/app',
-    sessions: '/app/sessoes',
-    upcomingSessions: '/app/sessoes/proximas',
-    sessionHistory: '/app/sessoes/historico',
-    messages: '/app/mensagens',
-    favorites: '/app/favoritos',
-    favoriteTherapists: '/app/favoritos/terapeutas',
-    favoriteTherapies: '/app/favoritos/terapias',
-    payments: '/app/pagamentos',
-    settings: '/app/configuracoes',
-    help: '/app/ajuda',
+    home: "/app",
+    sessions: "/app/sessoes",
+    upcomingSessions: "/app/sessoes/proximas",
+    sessionHistory: "/app/sessoes/historico",
+    messages: "/app/mensagens",
+    favorites: "/app/favoritos",
+    favoriteTherapists: "/app/favoritos/terapeutas",
+    favoriteTherapies: "/app/favoritos/terapias",
+    payments: "/app/pagamentos",
+    settings: "/app/configuracoes",
+    help: "/app/ajuda",
   },
   therapist: {
-    basicHome: '/basico',
-    basicSessions: '/basico/sessoes',
-    basicMessages: '/basico/mensagens',
-    proHome: '/pro',
-    plusHome: '/plus',
-    plusServices: '/plus/servicos',
-    plusReviews: '/plus/avaliacoes',
-    plusAssessorIa: '/plus/assessor-ia',
+    basicHome: "/basico",
+    basicSessions: "/basico/sessoes",
+    basicMessages: "/basico/mensagens",
+    proHome: "/pro",
+    plusHome: "/plus",
+    plusServices: "/plus/servicos",
+    plusReviews: "/plus/avaliacoes",
+    plusAssessorIa: "/plus/assessor-ia",
     plusPatientJourney: (slug: string) => `/plus/pacientes/${slug}`,
   },
   admin: {
-    home: '/admin',
+    home: "/admin",
   },
 } as const;
 ```
@@ -138,10 +138,10 @@ Aliases ficam em objeto separado:
 
 ```ts
 export const routeAliases = {
-  '/como funciona': routes.public.howItWorks,
-  '/plus/serviços': routes.therapist.plusServices,
-  '/plus/avaliações': routes.therapist.plusReviews,
-  '/plus/ia': routes.therapist.plusAssessorIa,
+  "/como funciona": routes.public.howItWorks,
+  "/plus/serviços": routes.therapist.plusServices,
+  "/plus/avaliações": routes.therapist.plusReviews,
+  "/plus/ia": routes.therapist.plusAssessorIa,
 } as const;
 ```
 
@@ -150,18 +150,18 @@ export const routeAliases = {
 Permissão é contrato por recurso, não só por rota.
 
 ```ts
-type Plan = 'basic' | 'pro' | 'plus';
+type Plan = "basic" | "pro" | "plus";
 
 export const therapistCapabilities = {
-  sessions: ['basic', 'pro', 'plus'],
-  messages: ['basic', 'pro', 'plus'],
-  completeFinance: ['pro', 'plus'],
-  reviews: ['pro', 'plus'],
-  intermediateMetrics: ['pro', 'plus'],
-  advancedInsights: ['plus'],
-  aiRecommendations: ['plus'],
-  patientJourneyHistory: ['plus'],
-  prioritySupport: ['plus'],
+  sessions: ["basic", "pro", "plus"],
+  messages: ["basic", "pro", "plus"],
+  completeFinance: ["pro", "plus"],
+  reviews: ["pro", "plus"],
+  intermediateMetrics: ["pro", "plus"],
+  advancedInsights: ["plus"],
+  aiRecommendations: ["plus"],
+  patientJourneyHistory: ["plus"],
+  prioritySupport: ["plus"],
 } satisfies Record<string, Plan[]>;
 ```
 
@@ -187,10 +187,10 @@ Exemplo CSS:
 
 ```css
 :root {
-  --tes-color-brand-primary: #6C3D91;
-  --tes-color-brand-primary-hover: #5B337A;
+  --tes-color-brand-primary: #6c3d91;
+  --tes-color-brand-primary-hover: #5b337a;
   --tes-color-brand-primary-pressed: #482861;
-  --tes-color-surface-page: #FFFFFF;
+  --tes-color-surface-page: #ffffff;
   --tes-radius-card: 18px;
   --tes-shadow-card: 0 8px 24px rgba(38, 20, 51, 0.06);
 }
@@ -252,7 +252,7 @@ Categorias:
 - Banco: `DATABASE_URL`.
 - Auth: `AUTH_SECRET`, `AUTH_TRUST_HOST`.
 - Email: `EMAIL_FROM`, `RESEND_API_KEY`.
-- Pagamento: `STRIPE_SECRET_KEY` e webhook secrets pertencem somente Ã s Edge Functions. Quando houver integraÃ§Ã£o browser com Stripe.js, a chave publicÃ¡vel `pk_*` deve usar variÃ¡vel `NEXT_PUBLIC_*`, nunca `STRIPE_SECRET_KEY`.
+- Pagamento: `STRIPE_SECRET_KEY` e webhook secrets pertencem somente às Edge Functions. Quando houver integração browser com Stripe.js, a chave publicável `pk_*` deve usar variável `NEXT_PUBLIC_*`, nunca `STRIPE_SECRET_KEY`.
 - Vídeo: `VIDEO_PROVIDER`, `VIDEO_PROVIDER_API_KEY`.
 - IA: `AI_PROVIDER`, `OPENAI_API_KEY`.
 - Storage: `S3_BUCKET`, `S3_REGION`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`.
