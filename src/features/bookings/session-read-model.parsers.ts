@@ -329,7 +329,7 @@ function nullableRescheduleStatus(value: unknown): RescheduleStatus | null {
 }
 
 function modality(value: unknown): SessionModality {
-  if (value !== "online" && value !== "in_person") {
+  if (value !== "online") {
     throw new SessionReadModelContractError();
   }
   return value;

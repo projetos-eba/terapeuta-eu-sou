@@ -413,24 +413,15 @@ function OfferFields({
             value={values.price}
           />
         </Field>
-        <Field id="service-format" label="Formato">
-          <select
-            className="h-12 w-full rounded-lg border border-brand-lavender px-4 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary"
-            id="service-format"
-            onChange={(event) =>
-              onChange((current) => ({
-                ...current,
-                deliveryFormat: event.target
-                  .value as TherapistServiceDeliveryFormat,
-              }))
-            }
-            value={values.deliveryFormat}
-          >
-            <option value="online">Online</option>
-            <option value="in_person">Presencial</option>
-            <option value="hybrid">Online ou presencial</option>
-          </select>
-        </Field>
+        <div className="rounded-lg border border-brand-lavender bg-brand-lavenderSoft/60 p-4">
+          <span className="text-sm font-extrabold text-brand-deep">
+            Atendimento online
+          </span>
+          <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+            Todas as ofertas do TES acontecem online pelo fluxo seguro da
+            plataforma.
+          </p>
+        </div>
       </div>
       <div className="rounded-lg bg-brand-lavenderSoft/70 p-4 text-xs font-semibold leading-5 text-tesText-secondary">
         As regras detalhadas de reserva continuam centralizadas em Agenda /
@@ -487,7 +478,7 @@ function ReviewStep({
           priceCents === null ? "Revise o preço" : formatCurrency(priceCents),
         ],
         ["Duração", `${values.durationMinutes} min`],
-        ["Formato", formatDelivery(values.deliveryFormat)],
+        ["Formato", "Online"],
       ].map(([label, value]) => (
         <div
           className="flex flex-col gap-1 border-b border-white/80 pb-3 last:border-0 last:pb-0 sm:flex-row sm:justify-between"
@@ -589,12 +580,6 @@ export function formatCurrency(priceCents: number) {
     currency: "BRL",
     style: "currency",
   }).format(priceCents / 100);
-}
-
-function formatDelivery(format: TherapistServiceDeliveryFormat) {
-  if (format === "in_person") return "Presencial";
-  if (format === "hybrid") return "Online ou presencial";
-  return "Online";
 }
 
 function formatPriceForInput(priceCents: number) {

@@ -32,6 +32,34 @@ Deno.test("validates service creation with canonical therapy id", () => {
   }
 });
 
+Deno.test("rejects non-online delivery formats on creation", () => {
+  assertDomainError(() =>
+    validateTherapistServicesCommand({
+      action: "create",
+      deliveryFormat: "in_person",
+      description: "Sessao responsavel e complementar.",
+      durationMinutes: 60,
+      priceCents: 12000,
+      requestId,
+      therapyId,
+      title: "Reiki online",
+    }),
+  );
+
+  assertDomainError(() =>
+    validateTherapistServicesCommand({
+      action: "create",
+      deliveryFormat: "hybrid",
+      description: "Sessao responsavel e complementar.",
+      durationMinutes: 60,
+      priceCents: 12000,
+      requestId,
+      therapyId,
+      title: "Reiki online",
+    }),
+  );
+});
+
 Deno.test("rejects free-text therapy creation payloads", () => {
   assertDomainError(() =>
     validateTherapistServicesCommand({
@@ -55,6 +83,18 @@ Deno.test("validates optimistic updates", () => {
   });
 
   assertEquals(result.action, "update");
+});
+
+Deno.test("rejects non-online delivery format updates", () => {
+  assertDomainError(() =>
+    validateTherapistServicesCommand({
+      action: "update",
+      deliveryFormat: "hybrid",
+      expectedVersion: 3,
+      requestId,
+      serviceId,
+    }),
+  );
 });
 
 Deno.test("validates service transitions", () => {

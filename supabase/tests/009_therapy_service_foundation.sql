@@ -1,6 +1,6 @@
 begin;
 
-select plan(26);
+select plan(31);
 
 select has_column(
   'public',
@@ -301,6 +301,108 @@ select throws_ok(
   'THERAPY_NOT_AVAILABLE_FOR_SERVICE',
   'deprecated therapies reject new services'
 );
+
+select throws_ok(
+  $$
+    insert into public.therapist_services (
+      id,
+      therapist_profile_id,
+      therapy_id,
+      title,
+      duration_minutes,
+      price_cents,
+      currency,
+      status,
+      online_only,
+      delivery_format
+    )
+    values (
+      'd1000000-0000-4000-8000-000000000199',
+      'c1000000-0000-4000-8000-000000000002',
+      '22222222-2222-4222-8222-222222222225',
+      'Formato invalido',
+      60,
+      12000,
+      'BRL',
+      'draft',
+      false,
+      'online'
+    )
+  $$,
+  'P0001',
+  'THERAPIST_SERVICE_ONLINE_ONLY',
+  'services cannot opt out of online-only delivery'
+);
+
+select throws_ok(
+  $$
+    insert into public.therapist_services (
+      id,
+      therapist_profile_id,
+      therapy_id,
+      title,
+      duration_minutes,
+      price_cents,
+      currency,
+      status,
+      online_only,
+      delivery_format
+    )
+    values (
+      'd1000000-0000-4000-8000-000000000198',
+      'c1000000-0000-4000-8000-000000000002',
+      '22222222-2222-4222-8222-222222222225',
+      'Formato invalido',
+      60,
+      12000,
+      'BRL',
+      'draft',
+      true,
+      'hybrid'
+    )
+  $$,
+  'P0001',
+  'THERAPIST_SERVICE_ONLINE_ONLY',
+  'services cannot use hybrid delivery'
+);
+
+select throws_ok(
+  $$
+    update public.therapist_profiles
+    set accepts_online_sessions = false
+    where id = 'c1000000-0000-4000-8000-000000000001'
+  $$,
+  'P0001',
+  'THERAPIST_PROFILE_ONLINE_ONLY',
+  'therapist profiles cannot disable online sessions'
+);
+
+select throws_ok(
+  $$
+    select public.get_therapist_sessions_v1(p_modality => 'in_person')
+  $$,
+  '42501',
+  'therapist_access_required',
+  'session read model still requires therapist access before filters are applied'
+);
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"aaaaaaaa-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
+);
+
+select throws_ok(
+  $$
+    select public.get_therapist_sessions_v1(p_modality => 'in_person')
+  $$,
+  '22023',
+  'invalid_sessions_modality',
+  'session read model rejects legacy in-person modality for therapists'
+);
+
+reset role;
 
 select ok(
   exists (

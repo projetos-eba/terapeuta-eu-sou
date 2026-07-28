@@ -61,8 +61,9 @@ Não criar enums equivalentes dentro de features.
   financeiras.
 - Métricas, faixa de resumo, busca textual e exportação CSV são derivados dos
   itens carregados no read model da página.
-- Filtros por status de booking, status financeiro e modalidade permanecem na
-  URL e usam os parâmetros já aceitos por `get_therapist_sessions_v1`.
+- Filtros por status de booking e status financeiro permanecem na URL. O
+  parâmetro legado `modality` só pode ser `online` ou ausente; a UI não oferece
+  escolha de formato porque o TES é online-only.
 - A busca por texto filtra cliente e terapia no recorte carregado; paginação
   continua preservando os filtros suportados e o texto da busca.
 - Ações de sala apontam para `/terapeuta/sessoes/:bookingId`; a autorização

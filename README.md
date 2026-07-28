@@ -39,6 +39,10 @@ Terapeutas não criam terapias por texto livre: o shell deve usar
 exige `therapyId`, `requestId` UUID idempotente e validação server-side de
 terapia, categoria, plano e duplicidade.
 
+O TES opera exclusivamente online. Campos técnicos legados de formato permanecem
+por compatibilidade, mas criação, edição, agenda, reserva, perfil público e
+sessões devem aceitar e expor somente `online`.
+
 A gestão de serviços no shell está implementada em `/terapeuta/servicos`,
 seguindo o Figma `13366:1943` com layout responsivo, criação em 3 passos,
 edição, ativação, pausa, arquivamento, reordenação, filtros e limite por plano.
@@ -90,6 +94,8 @@ demo.
 - `npm run build`: build de produção.
 - `npm run start`: serve o build.
 - `npm run lint`: lint do Next.js.
+- `npm run lint:online-only`: valida a política de produto que impede opções de
+  formato não-online fora da allowlist documentada.
 - `npm run typecheck`: valida TypeScript.
 - `npm run dev:functions`: sobe Supabase Edge Functions locais usando secrets de `supabase/functions/.env.local`, `supabase/functions/.env` ou `.env.local`, nesta ordem. As chaves locais do Supabase sao injetadas em memoria pela CLI e nao devem ser salvas na raiz do app.
 - `npm run test:auth:flows`: valida fluxo auth completo via Edge Functions, incluindo senha normal, `MASTER_PASSWORD`, confirmacao normal/automatica, reset e redirecionamentos.

@@ -47,6 +47,9 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - Mutacoes usam `version` otimista e ledger de idempotencia.
 - Next nunca usa service role; service role fica em Edge Functions/RPCs
   restritas.
+- TES é online-only. `deliveryFormat` pode aparecer no contrato por
+  compatibilidade, mas deve ser omitido ou enviado como `online`; a UI não deve
+  oferecer escolha de formato.
 
 ## Dados
 
@@ -68,6 +71,8 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
   horizontal; cards e metricas colapsam em uma coluna/grid compacto.
 - Formulario de criacao tem 3 passos: catalogo canonico, configuracao da oferta
   e revisao. O dado preenchido deve persistir ao voltar.
+- Formulario informa “Atendimento online” como regra fixa, sem seletor de
+  formato.
 - CTA "Nao encontrou sua terapia?" e apenas informativo/futuro; nunca cria
   terapia.
 - Catalogo permitido nao inclui terapia `draft`, `deprecated`, `archived` ou

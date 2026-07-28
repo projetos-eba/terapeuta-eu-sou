@@ -3,14 +3,13 @@ import { DomainError } from "../_shared/payments/http.ts";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const formats = new Set(["hybrid", "in_person", "online"]);
 
 export type TherapistServicesCommandBody =
   | { action?: "catalog" | "list" }
   | {
       action?: "create";
       currency?: "BRL";
-      deliveryFormat?: "hybrid" | "in_person" | "online";
+      deliveryFormat?: string;
       description?: string | null;
       durationMinutes?: number;
       priceCents?: number;
@@ -21,7 +20,7 @@ export type TherapistServicesCommandBody =
   | {
       action?: "update";
       currency?: "BRL";
-      deliveryFormat?: "hybrid" | "in_person" | "online";
+      deliveryFormat?: string;
       description?: string | null;
       durationMinutes?: number;
       expectedVersion?: number;
@@ -50,7 +49,7 @@ export type ValidTherapistServicesCommand =
       action: "create";
       payload: {
         currency: "BRL";
-        deliveryFormat: "hybrid" | "in_person" | "online";
+        deliveryFormat: "online";
         description: string | null;
         durationMinutes: number;
         priceCents: number;
@@ -95,7 +94,7 @@ export function validateTherapistServicesCommand(
       !isInteger(body.durationMinutes, 15, 240) ||
       !isInteger(body.priceCents, 1000, 2000000) ||
       !isCurrency(body.currency) ||
-      !isFormat(body.deliveryFormat)
+      !isOnlineOnlyFormat(body.deliveryFormat)
     ) {
       invalid();
     }
@@ -150,7 +149,7 @@ export function validateTherapistServicesCommand(
       payload.currency = body.currency;
     }
     if (body.deliveryFormat !== undefined) {
-      if (!formats.has(body.deliveryFormat)) invalid();
+      if (!isOnlineOnlyFormat(body.deliveryFormat)) invalid();
       payload.deliveryFormat = body.deliveryFormat;
     }
     if (body.isBookable !== undefined) {
@@ -295,10 +294,8 @@ function isCurrency(value: unknown) {
   return value === undefined || value === "BRL";
 }
 
-function isFormat(value: unknown) {
-  return (
-    value === undefined || (typeof value === "string" && formats.has(value))
-  );
+function isOnlineOnlyFormat(value: unknown) {
+  return value === undefined || value === "online";
 }
 
 function isInteger(value: unknown, min: number, max: number): value is number {

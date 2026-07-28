@@ -40,6 +40,9 @@ Contrato de implementação para rotas, permissões, layouts, componentes, estad
 - Status documental novo deve usar a taxonomia de `docs/product/glossary.md`:
   `planned`, `prototyped`, `mocked`, `data_integrated`, `functional`,
   `homologated` e `production_ready`.
+- TES é online-only. Rotas de serviços, agenda, reserva, perfil público, busca,
+  Match, sessões e Zoom não devem criar escolha de formato; o valor técnico de
+  compatibilidade é sempre `online`.
 
 As tabelas por plano abaixo permanecem como matriz de capability e inventário
 dos destinos legados. Novas referências devem usar `/terapeuta/*`.

@@ -147,6 +147,7 @@ Regras:
 | Planos comerciais          | Free, Premium e Premium Plus         |
 | Área de serviços no shell  | Suas terapias                        |
 | Domínio técnico de ofertas | `service` / `therapist_services`     |
+| Formato de atendimento     | Online                               |
 
 Regras:
 
@@ -158,6 +159,11 @@ Regras:
 - A rota técnica da área “Suas terapias” permanece `/terapeuta/servicos`.
 - “Terapia” é modalidade canônica gerenciada pela plataforma; “Serviço” é a
   entidade técnica que representa a oferta individual do terapeuta.
+- O TES opera exclusivamente online. Não criar UI, enum, rota, copy, seed,
+  capability, schema ou integração que ofereça atendimento fora do fluxo online
+  da plataforma. Campos legados como `delivery_format`, `online_only`,
+  `accepts_online_sessions` e `modality` podem existir por compatibilidade, mas
+  devem aceitar/expor somente `online`.
 
 ## Gate de impacto documental
 
@@ -217,6 +223,8 @@ Stack real identificada:
 - Usar `src/lib/routes.ts` para rotas.
 - Usar `src/lib/permissions.ts` para permissões e recursos por plano.
 - Usar `docs/design-system/tokens.md` como fonte única de tokens.
+- Usar `docs/architecture/adr/ADR-009-online-only-delivery-policy.md` como
+  decisão arquitetural para formato online-only.
 - Todo conteúdo modal deve usar `TESDialog`, com portal sobre o shell, overlay,
   bloqueio de scroll, foco confinado, retorno de foco e fechamento por
   `Escape`; não criar `role="dialog"` diretamente em features.

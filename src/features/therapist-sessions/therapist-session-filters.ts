@@ -74,9 +74,7 @@ export function parseTherapistSessionFilters(
           : undefined,
       limit,
       modality:
-        modalityValue && isModality(modalityValue)
-          ? modalityValue
-          : undefined,
+        modalityValue && isModality(modalityValue) ? modalityValue : undefined,
       patientProfileId,
       periodEnd,
       periodStart,
@@ -139,5 +137,5 @@ function isFinancialStatus(
 }
 
 function isModality(value: string): value is SessionModality {
-  return value === "online" || value === "in_person";
+  return value === "online";
 }

@@ -21,11 +21,7 @@ export const platformTherapyStatuses = [
 
 export type PlatformTherapyStatus = (typeof platformTherapyStatuses)[number];
 
-export const therapistServiceDeliveryFormats = [
-  "online",
-  "in_person",
-  "hybrid",
-] as const;
+export const therapistServiceDeliveryFormats = ["online"] as const;
 
 export type TherapistServiceDeliveryFormat =
   (typeof therapistServiceDeliveryFormats)[number];

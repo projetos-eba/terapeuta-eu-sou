@@ -27,6 +27,10 @@ Lista funcional das páginas do produto. Cada item descreve persona, objetivo, c
 > somente como redirect de compatibilidade. Novos status de documentação devem
 > seguir `docs/product/glossary.md` e não usar “implementada” sem indicar fonte
 > de dados, QA, homologação e prontidão de produção.
+> Política online-only: todas as páginas atuais de serviços, agenda, reserva,
+> perfil, busca, Match, sessões e Zoom devem tratar o formato como `online`
+> fixo. Não criar variação de UI para escolha de local ou formato de
+> atendimento.
 
 Fonte primária: Figma `↳ Jornadas dos Usuários`, node `12272:2`, frame principal `12280:2`. Páginas ausentes desse node ficam marcadas como necessidade de produto, suporte, legal ou inferência controlada.
 

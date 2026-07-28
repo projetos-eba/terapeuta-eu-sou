@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  BookingStatus,
-  SessionFinancialStatus,
-} from "@/domain/tes";
+import { BookingStatus, SessionFinancialStatus } from "@/domain/tes";
 import { formatSessionDateTime } from "@/features/bookings";
 
 import {
@@ -17,7 +14,6 @@ describe("therapist session filters", () => {
       cursorBookingId: "f2000000-0000-4000-8000-000000000001",
       cursorStartsAt: "2026-07-26T13:00:00.000Z",
       limit: "25",
-      modality: "online",
       payment: SessionFinancialStatus.Paid,
       periodEnd: "2026-08-01T00:00:00.000Z",
       periodStart: "2026-07-01T00:00:00.000Z",
@@ -33,7 +29,6 @@ describe("therapist session filters", () => {
         },
         financialStatus: SessionFinancialStatus.Paid,
         limit: 25,
-        modality: "online",
       }),
       valid: true,
     });
@@ -52,6 +47,9 @@ describe("therapist session filters", () => {
       }).valid,
     ).toBe(false);
     expect(parseTherapistSessionFilters({ limit: "101" }).valid).toBe(false);
+    expect(parseTherapistSessionFilters({ modality: "in_person" }).valid).toBe(
+      false,
+    );
   });
 
   it("preserves filters when creating the next cursor URL", () => {
@@ -60,7 +58,6 @@ describe("therapist session filters", () => {
         bookingStatus: BookingStatus.Confirmed,
         financialStatus: SessionFinancialStatus.Paid,
         limit: 20,
-        modality: "online",
       },
       {
         bookingId: "f2000000-0000-4000-8000-000000000001",
@@ -70,6 +67,7 @@ describe("therapist session filters", () => {
 
     expect(href).toContain("status=confirmed");
     expect(href).toContain("payment=paid");
+    expect(href).not.toContain("modality=");
     expect(href).toContain("cursorBookingId=f2000000");
   });
 });
@@ -88,10 +86,7 @@ describe("session timezone formatting", () => {
 
   it("falls back to the TES business timezone for invalid identifiers", () => {
     expect(formatSessionDateTime("2026-07-26T12:30:00.000Z", "invalid")).toBe(
-      formatSessionDateTime(
-        "2026-07-26T12:30:00.000Z",
-        "America/Sao_Paulo",
-      ),
+      formatSessionDateTime("2026-07-26T12:30:00.000Z", "America/Sao_Paulo"),
     );
   });
 });

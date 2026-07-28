@@ -40,6 +40,21 @@ describe("parseTherapistServicesCommand", () => {
     ).toThrow(TherapistServicesContractError);
   });
 
+  it("rejects non-online delivery formats", () => {
+    expect(() =>
+      parseTherapistServicesCommand({
+        action: "create",
+        deliveryFormat: "hybrid",
+        description: "Sessao complementar por video.",
+        durationMinutes: 60,
+        priceCents: 12000,
+        requestId,
+        therapyId,
+        title: "Reiki online",
+      }),
+    ).toThrow(TherapistServicesContractError);
+  });
+
   it("requires optimistic version for updates", () => {
     expect(
       parseTherapistServicesCommand({

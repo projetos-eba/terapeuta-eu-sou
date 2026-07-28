@@ -146,7 +146,7 @@ export type SharedBookingSummary = {
   bookingStatus: BookingStatus;
   endsAt: ISODateTimeString;
   fulfillmentStatus: FulfillmentStatus;
-  modality: "in_person" | "online";
+  modality: "online";
   patient: PersonSummary;
   paymentStatus: PaymentStatus;
   service: ServiceSummary;
