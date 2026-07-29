@@ -66,6 +66,10 @@ export type TherapistProfileReview = {
   id: string;
   patientContext: string;
   rating: number;
+  reply: {
+    body: string;
+    publishedAt: string | null;
+  } | null;
 };
 
 export type AvailabilitySlot = DomainAvailableSlot & {

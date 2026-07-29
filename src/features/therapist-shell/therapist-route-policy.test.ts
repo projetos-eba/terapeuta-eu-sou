@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { canUseTherapistCapability, TherapistPlan } from "@/domain/tes";
 import { routes } from "@/lib/routes";
 
-import { getCanonicalTherapistPath } from "./therapist-route-policy";
+import {
+  getCanonicalTherapistPath,
+  therapistRoutePolicies,
+} from "./therapist-route-policy";
 
 describe("getCanonicalTherapistPath", () => {
   it.each([
@@ -37,5 +41,19 @@ describe("getCanonicalTherapistPath", () => {
     expect(getCanonicalTherapistPath("https://example.com/plus")).toBe(
       "https://example.com/plus",
     );
+  });
+});
+
+describe("therapist finance route policy", () => {
+  it("keeps operational finance available to Free therapists", () => {
+    expect(therapistRoutePolicies.finance.capability).toBe(
+      "operation_essentials",
+    );
+    expect(
+      canUseTherapistCapability(
+        TherapistPlan.Free,
+        therapistRoutePolicies.finance.capability,
+      ),
+    ).toBe(true);
   });
 });

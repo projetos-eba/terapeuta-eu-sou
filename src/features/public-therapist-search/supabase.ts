@@ -38,6 +38,7 @@ type PublicTherapistSearchRow = {
   review_quote: string | null;
   search_text: string | null;
   service_description: string | null;
+  service_id: string;
   service_price_cents: number;
   service_title: string;
   slug: string;
@@ -134,6 +135,7 @@ function mapTherapistRow(row: PublicTherapistSearchRow): TherapistSearchCard {
     ratingLabel: rating ? formatRatingLabel(rating) : "Novo",
     reviewsLabel: formatReviewsLabel(reviewCount),
     reviewCount,
+    serviceId: row.service_id,
     serviceTitle: row.service_title,
     slug: row.slug,
     tags,

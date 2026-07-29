@@ -61,7 +61,6 @@ export type TherapistServiceSummary = {
     bookingCount: number;
     bookingCountDeltaPercent: number | null;
     bookingsLast30Days: number;
-    favoriteCount: number;
   };
   onlineOnly: boolean;
   position: number;

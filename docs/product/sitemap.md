@@ -85,7 +85,7 @@ podem estar habilitados, bloqueados ou ocultos conforme plano e capability.
 - `/terapeuta/mensagens`: mensagens.
 - `/terapeuta/servicos`: serviços.
 - `/terapeuta/servicos/meus`: meus serviços.
-- `/terapeuta/financeiro`: financeiro conforme capability.
+- `/terapeuta/financeiro`: financeiro operacional por `operation_essentials`.
 - `/terapeuta/avaliacoes`: avaliações conforme capability.
 - `/terapeuta/metricas`: métricas intermediárias.
 - `/terapeuta/insights`: insights avançados.
@@ -141,7 +141,7 @@ Operação essencial com limites claros e convites contextuais para evolução.
 - `/basico/mensagens`: mensagens.
 - `/basico/servicos`: serviços.
 - `/basico/servicos/meus`: meus serviços.
-- `/basico/pagamento`: pagamento simplificado.
+- `/basico/pagamento`: redirect legado para financeiro operacional.
 - `/basico/perfil`: perfil público.
 - `/basico/upgrade`: evolução para Premium ou Premium Plus.
 - `/basico/configuracoes`: configurações.
@@ -149,8 +149,8 @@ Operação essencial com limites claros e convites contextuais para evolução.
 
 ### Permissões
 
-- Acessa agenda, pacientes, sessões, mensagens, serviços limitados, perfil, pagamento simples e suporte.
-- Não acessa financeiro completo, avaliações, métricas intermediárias, IA, insights avançados ou suporte prioritário.
+- Acessa agenda, pacientes, sessões, mensagens, serviços limitados, perfil, financeiro operacional e suporte.
+- Não acessa avaliações, métricas intermediárias, IA, insights avançados ou suporte prioritário.
 - Limites usam microcopy acolhedora, sem tom punitivo.
 
 ## Terapeuta Premium - aliases de transição
@@ -165,7 +165,7 @@ Operação profissional com financeiro, avaliações e métricas intermediárias
 - `/pro/sessoes`: sessões.
 - `/pro/mensagens`: mensagens.
 - `/pro/servicos`: serviços.
-- `/pro/financeiro`: financeiro completo.
+- `/pro/financeiro`: redirect legado para financeiro operacional.
 - `/pro/metricas`: métricas intermediárias.
 - `/pro/avaliacoes`: avaliações.
 - `/pro/plano`: plano atual e evolução para Premium Plus.
@@ -176,7 +176,7 @@ Operação profissional com financeiro, avaliações e métricas intermediárias
 ### Permissões
 
 - Inclui recursos do Free.
-- Acessa financeiro completo, avaliações e métricas intermediárias.
+- Acessa financeiro operacional, avaliações e métricas intermediárias.
 - Pode ver convites contextuais para Premium Plus.
 - Não acessa Assessor IA, insights avançados nem histórico operacional Premium Plus.
 
@@ -194,7 +194,7 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 - `/plus/mensagens`: mensagens.
 - `/plus/servicos`: serviços.
 - `/plus/servicos/meus`: meus serviços.
-- `/plus/financeiro`: financeiro completo.
+- `/plus/financeiro`: redirect legado para financeiro operacional.
 - `/plus/avaliacoes`: avaliações avançadas.
 - `/plus/insights`: insights exclusivos.
 - `/plus/assessor-ia`: Assessor IA.

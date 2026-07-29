@@ -369,13 +369,18 @@ Capabilities técnicas atuais em `src/domain/tes/permissions.ts`:
 | `agenda_insights`      |  Não |     Sim |          Sim |
 | `request_new_therapy`  |  Não |     Sim |          Sim |
 
-Divergência registrada: `sitemap.md` e `routes-map.md` tratam `/pro/financeiro` como financeiro completo/intermediário avançado, mas o código atual libera `advanced_financials` apenas para Premium Plus. Este plano adota a regra técnica atual:
+Divergência superada pela F0/F1 financeira: a operação financeira essencial usa
+`operation_essentials` em `/terapeuta/financeiro` para Free, Premium e Premium
+Plus. `advanced_financials` permanece reservado a análises futuras, não ao
+acesso a pagamentos, recebimentos, repasses ou conta Stripe Connect.
 
-- Básico: financeiro operacional simples.
-- Premium: financeiro intermediário, sem `advanced_financials`.
-- Premium Plus: financeiro completo/avançado com `advanced_financials`.
+- Free: financeiro operacional.
+- Premium: financeiro operacional, sem `advanced_financials`.
+- Premium Plus: financeiro operacional, com profundidade financeira futura
+  quando `advanced_financials` for implementado.
 
-Se o produto decidir que Premium deve ter financeiro completo, `src/domain/tes/permissions.ts` e a matriz comercial precisam ser alterados via gate explícito.
+Documentos atuais: `docs/payments/therapist-finance-f0-f1.md` e
+`docs/architecture/adr/ADR-012-therapist-finance-f0-f1.md`.
 
 ## 8. Modelo de dados atual
 
@@ -898,7 +903,7 @@ Fase 4 entrega:
 - sessões;
 - mensagens;
 - serviços;
-- pagamento simplificado em `/basico/pagamento`;
+- financeiro operacional em `/terapeuta/financeiro`;
 - perfil;
 - upgrade;
 - configurações;
@@ -910,7 +915,7 @@ Financeiro Básico:
 - comissão TES;
 - líquido a receber;
 - status de repasse;
-- histórico simples.
+- lista paginada de recebimentos e repasses.
 
 Não inclui:
 
@@ -932,7 +937,7 @@ Fase 5 entrega:
 - Aura limitada;
 - insights de agenda;
 - solicitação de nova terapia;
-- financeiro intermediário em `/pro/financeiro`;
+- financeiro operacional em `/terapeuta/financeiro`;
 - plano em `/pro/plano`.
 
 Não inclui:
@@ -940,7 +945,7 @@ Não inclui:
 - `full_crm`;
 - `aura_full`;
 - `advanced_financials`;
-- gestão financeira avançada Plus.
+- inteligência financeira futura.
 
 ### 17.3 Premium Plus / Plus
 
@@ -952,7 +957,7 @@ Fase 5 entrega:
 - avaliações estratégicas;
 - Aura completa determinística;
 - insights avançados;
-- financeiro completo/avançado;
+- financeiro operacional e inteligência financeira futura;
 - suporte prioritário.
 
 ## 18. Admin
@@ -1243,7 +1248,7 @@ Status: bloqueada.
 
 |   # | Decisão                                    | Classe | Fase | Status neste plano                                                                                        |
 | --: | ------------------------------------------ | ------ | ---: | --------------------------------------------------------------------------------------------------------- |
-|   1 | Rota financeira Básico                     | C      |  0/4 | Resolvida: `/basico/pagamento`.                                                                           |
+|   1 | Rota financeira Básico                     | C      |  0/4 | Superada pela rota canônica `/terapeuta/financeiro`; `/basico/pagamento` é redirect legado.               |
 |   2 | `/pro/upgrade` ou `/pro/plano`             | C      |  0/5 | Resolvida: `/pro/plano`.                                                                                  |
 |   3 | Nome público Aura/IA                       | A      |    5 | Pendente; usar linguagem determinística até decisão.                                                      |
 |   4 | Contrato do Match                          | A      |    1 | Pendente; alinhar function real e frontend.                                                               |
@@ -1253,7 +1258,7 @@ Status: bloqueada.
 |   8 | Expiração de booking pendente              | A      |    2 | Pendente antes de checkout.                                                                               |
 |   9 | Transição `payments` -> `session_payments` | A      |    2 | Obrigatória.                                                                                              |
 |  10 | Credencial de host Zoom                    | A      |    2 | Resolvida sem persistir `video_session_secret_url_removed`/Video SDK token; homologação externa pendente. |
-|  11 | Financeiro disponível ao Básico            | C      |    4 | Resolvido como operacional simples.                                                                       |
+|  11 | Financeiro disponível ao Básico            | C      |    4 | Resolvido como financeiro operacional na rota canônica `/terapeuta/financeiro`.                           |
 |  12 | Modelo de disponibilidade                  | A      |  2/4 | Pendente para reserva real.                                                                               |
 |  13 | Matriz definitiva de capabilities          | A      |    5 | Parcialmente resolvida pelo código; precisa decisão se produto quiser alterar Premium.                    |
 |  14 | Inadimplência                              | B/A    |    5 | Postergável para shell; bloqueia Billing real.                                                            |

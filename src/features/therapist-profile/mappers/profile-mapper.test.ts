@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   mapContentRow,
   mapProfileRow,
+  mapReviewRow,
   type ProfileRow,
 } from "./profile-mapper";
 
@@ -75,5 +76,40 @@ describe("profile video mapper", () => {
       title: "Um convite para você",
       url: "https://example.test/video",
     });
+  });
+});
+
+describe("profile review mapper", () => {
+  it("maps only the published therapist reply projection", () => {
+    expect(
+      mapReviewRow({
+        author_label: "Paciente TES",
+        body: "Experiência compartilhada com cuidado.",
+        created_label: "Há uma semana",
+        id: "review-1",
+        patient_context: "Sessão concluída pela plataforma",
+        rating: 5,
+        reply_body: "Obrigada pelo retorno.",
+        reply_published_at: "2026-07-28T12:00:00.000Z",
+      }),
+    ).toMatchObject({
+      reply: {
+        body: "Obrigada pelo retorno.",
+        publishedAt: "2026-07-28T12:00:00.000Z",
+      },
+    });
+  });
+
+  it("keeps the reply absent when the public view has no published reply", () => {
+    expect(
+      mapReviewRow({
+        author_label: "Paciente TES",
+        body: "Experiência compartilhada.",
+        created_label: "Há uma semana",
+        id: "review-2",
+        patient_context: "Sessão concluída pela plataforma",
+        rating: 5,
+      }).reply,
+    ).toBeNull();
   });
 });

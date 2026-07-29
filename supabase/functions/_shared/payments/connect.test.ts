@@ -47,6 +47,35 @@ Deno.test("Connect v2 user requirements restrict the account", () => {
   assertEquals(state.onboardingStatus, "requirements_due");
 });
 
+Deno.test(
+  "Connect v2 future requirements stay visible without marking the account as ready",
+  () => {
+    const account = {
+      ...accountWithTransferStatus("inactive"),
+      requirements: {
+        entries: [
+          {
+            awaiting_action_from: "user",
+            description: "business_profile.url",
+            impact: {
+              restricts_capabilities: [
+                { deadline: { status: "eventually_due" } },
+              ],
+            },
+          },
+        ],
+      },
+    };
+    const requirements = getPendingRequirements(account);
+    const state = deriveConnectAccountState(account);
+
+    assertEquals(requirements.eventuallyDue.length, 1);
+    assertEquals(requirements.eventuallyDue[0], "business_profile.url");
+    assertEquals(state.onboardingStatus, "restricted");
+    assertEquals(state.operationalStatus, "restricted");
+  },
+);
+
 Deno.test("closed Connect v2 account is disabled", () => {
   const state = deriveConnectAccountState({
     ...accountWithTransferStatus("active"),

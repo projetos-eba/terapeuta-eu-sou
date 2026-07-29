@@ -29,6 +29,10 @@ import {
   type TherapistSearchFilters,
   type TherapistSearchOption,
 } from "@/features/public-therapist-search";
+import {
+  PublicSearchMetricsTracker,
+  TrackedBookingLink,
+} from "@/features/public-metrics";
 import { routes } from "@/lib/routes";
 
 export const revalidate = 900;
@@ -259,115 +263,136 @@ function Rating({
 }
 
 function TherapistResultCard({
+  position,
+  trackMetrics,
   therapist,
 }: {
+  position: number;
+  trackMetrics: boolean;
   therapist: TherapistSearchCard;
 }) {
   const isVerified = therapist.highlightTone === "verified";
   const specialty = therapist.therapyName;
 
   return (
-    <TESCard className="grid gap-5 overflow-hidden rounded-[18px] border border-brand-lavender bg-white p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-soft sm:grid-cols-[180px_minmax(0,1fr)]">
-      <div className="relative min-h-[220px] overflow-hidden rounded-[12px] bg-surface-soft sm:min-h-full">
-        <Image
-          src={therapist.image}
-          alt={`Retrato de ${therapist.name}`}
-          fill
-          sizes="(min-width: 1280px) 180px, 100vw"
-          className="object-cover object-center"
-        />
-      </div>
-
-      <div className="grid min-w-0 gap-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-wrap gap-2">
-            <span
-              className={`inline-flex min-h-7 items-center rounded-full px-3 text-sm font-bold ${
-                isVerified
-                  ? "border border-brand-lavender bg-brand-lavenderSoft text-brand-primary"
-                  : "border border-brand-primary bg-brand-primary text-white"
-              }`}
-            >
-              {therapist.highlight}
-            </span>
-            {therapist.hasVideo ? (
-              <span className="inline-flex min-h-7 items-center rounded-full border border-brand-lavender bg-brand-lavenderSoft px-3 text-sm font-bold text-brand-primary">
-                Vídeo de apresentação
-              </span>
-            ) : null}
-          </div>
-          <Rating
-            rating={therapist.rating}
-            ratingLabel={therapist.ratingLabel}
+    <div
+      data-metric-result-position={position}
+      data-metric-therapist-slug={therapist.slug}
+    >
+      <TESCard className="grid gap-5 overflow-hidden rounded-[18px] border border-brand-lavender bg-white p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-soft sm:grid-cols-[180px_minmax(0,1fr)]">
+        <div className="relative min-h-[220px] overflow-hidden rounded-[12px] bg-surface-soft sm:min-h-full">
+          <Image
+            src={therapist.image}
+            alt={`Retrato de ${therapist.name}`}
+            fill
+            sizes="(min-width: 1280px) 180px, 100vw"
+            className="object-cover object-center"
           />
         </div>
 
-        <div className="flex items-start gap-2">
-          <div className="min-w-0">
-            <h3 className="text-2xl font-extrabold leading-tight tracking-normal text-brand-deep">
-              {therapist.name}
-            </h3>
-            <p className="mt-1 text-sm font-bold leading-6 text-brand-primary">
-              {specialty}
-            </p>
+        <div className="grid min-w-0 gap-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-wrap gap-2">
+              <span
+                className={`inline-flex min-h-7 items-center rounded-full px-3 text-sm font-bold ${
+                  isVerified
+                    ? "border border-brand-lavender bg-brand-lavenderSoft text-brand-primary"
+                    : "border border-brand-primary bg-brand-primary text-white"
+                }`}
+              >
+                {therapist.highlight}
+              </span>
+              {therapist.hasVideo ? (
+                <span className="inline-flex min-h-7 items-center rounded-full border border-brand-lavender bg-brand-lavenderSoft px-3 text-sm font-bold text-brand-primary">
+                  Vídeo de apresentação
+                </span>
+              ) : null}
+            </div>
+            <Rating
+              rating={therapist.rating}
+              ratingLabel={therapist.ratingLabel}
+            />
           </div>
-          <button
-            type="button"
-            aria-label={`Favoritar ${therapist.name}`}
-            aria-pressed="false"
-            className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-          >
-            <Heart className="size-5" />
-          </button>
-        </div>
 
-        <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-          {therapist.description}
-        </p>
-        <p className="text-xs font-semibold leading-5 text-tesText-muted">
-          {therapist.reviewsLabel}
-        </p>
-
-        <div className="flex flex-wrap gap-2">
-          {therapist.tags.slice(0, 3).map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex min-h-7 items-center justify-center rounded-full bg-brand-lavenderSoft px-3 text-sm font-semibold text-brand-primary"
+          <div className="flex items-start gap-2">
+            <div className="min-w-0">
+              <h3 className="text-2xl font-extrabold leading-tight tracking-normal text-brand-deep">
+                {therapist.name}
+              </h3>
+              <p className="mt-1 text-sm font-bold leading-6 text-brand-primary">
+                {specialty}
+              </p>
+            </div>
+            <button
+              type="button"
+              aria-label={`Favoritar ${therapist.name}`}
+              aria-pressed="false"
+              className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
             >
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div>
-            <p className="text-xs font-semibold leading-5 text-tesText-muted">
-              Próximo horário
-            </p>
-            <p className="mt-1 text-lg font-extrabold leading-normal text-brand-primary">
-              {therapist.nextSlotLabel}
-            </p>
-            <p className="mt-2 text-lg font-extrabold leading-normal text-brand-primary">
-              {therapist.priceLabel}
-            </p>
+              <Heart className="size-5" />
+            </button>
           </div>
-          <div className="flex flex-col gap-2 sm:w-[160px]">
-            <Link
-              href={therapist.href as Route}
-              className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-primary px-4 text-center text-sm font-bold leading-5 text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            >
-              Conhecer terapeuta
-            </Link>
-            <Link
-              href={routes.public.reservation as Route}
-              className="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-lavender bg-white px-4 text-center text-sm font-bold leading-5 text-brand-primary transition hover:border-brand-lavender focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            >
-              Agendar sessão
-            </Link>
+
+          <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+            {therapist.description}
+          </p>
+          <p className="text-xs font-semibold leading-5 text-tesText-muted">
+            {therapist.reviewsLabel}
+          </p>
+
+          <div className="flex flex-wrap gap-2">
+            {therapist.tags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex min-h-7 items-center justify-center rounded-full bg-brand-lavenderSoft px-3 text-sm font-semibold text-brand-primary"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-[1fr_auto] sm:items-end">
+            <div>
+              <p className="text-xs font-semibold leading-5 text-tesText-muted">
+                Próximo horário
+              </p>
+              <p className="mt-1 text-lg font-extrabold leading-normal text-brand-primary">
+                {therapist.nextSlotLabel}
+              </p>
+              <p className="mt-2 text-lg font-extrabold leading-normal text-brand-primary">
+                {therapist.priceLabel}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:w-[160px]">
+              <Link
+                href={therapist.href as Route}
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-primary px-4 text-center text-sm font-bold leading-5 text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              >
+                Conhecer terapeuta
+              </Link>
+              {trackMetrics ? (
+                <TrackedBookingLink
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-lavender bg-white px-4 text-center text-sm font-bold leading-5 text-brand-primary transition hover:border-brand-lavender focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                  href={`${routes.public.reservation}?therapist=${therapist.slug}&service=${therapist.serviceId}`}
+                  serviceId={therapist.serviceId}
+                  sourceSurface="therapist_search"
+                  therapistSlug={therapist.slug}
+                >
+                  Agendar sessão
+                </TrackedBookingLink>
+              ) : (
+                <Link
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-lavender bg-white px-4 text-center text-sm font-bold leading-5 text-brand-primary transition hover:border-brand-lavender focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                  href={routes.public.reservation as Route}
+                >
+                  Agendar sessão
+                </Link>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </TESCard>
+      </TESCard>
+    </div>
   );
 }
 
@@ -506,9 +531,14 @@ export default async function TherapistsPage({
           <DegradedState correlationId={result.correlationId} />
         ) : result.therapists.length ? (
           <div className="grid gap-x-[20px] gap-y-[20px] xl:grid-cols-2">
-            {result.therapists.map((therapist) => (
+            <PublicSearchMetricsTracker enabled={result.source === "live"} />
+            {result.therapists.map((therapist, index) => (
               <TherapistResultCard
                 key={`${therapist.slug}-${therapist.serviceTitle}`}
+                position={
+                  (result.currentPage - 1) * result.pageSize + index + 1
+                }
+                trackMetrics={result.source === "live"}
                 therapist={therapist}
               />
             ))}

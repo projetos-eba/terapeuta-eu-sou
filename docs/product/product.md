@@ -2,7 +2,6 @@
 
 Visão geral do Terapeuta Eu Sou como produto, negócio e experiência. Este documento orienta decisões de escopo, posicionamento, UX, perfis de usuário e evolução do produto.
 
-
 ## Resumo Executivo
 
 O Terapeuta Eu Sou é uma plataforma digital para aproximar pessoas de terapeutas, apoiar a reserva de sessões online e oferecer ferramentas de gestão para profissionais.
@@ -197,12 +196,11 @@ Objetivos:
 - Controlar sessões.
 - Responder mensagens.
 - Cadastrar serviços limitados.
-- Ver pagamentos simples.
+- Acompanhar financeiro operacional.
 - Evoluir de plano quando fizer sentido.
 
 Limites:
 
-- Sem financeiro completo.
 - Sem avaliações como área principal.
 - Sem métricas intermediárias.
 - Sem Assessor IA.
@@ -211,7 +209,7 @@ Limites:
 
 ## Terapeuta Pro
 
-Profissional com operação mais madura, financeiro completo, avaliações e métricas intermediárias.
+Profissional com operação mais madura, financeiro operacional, avaliações e métricas intermediárias.
 
 Objetivos:
 
@@ -261,14 +259,13 @@ Objetivos:
 - Ajustar regras de recomendação.
 - Monitorar segurança, integrações, relatórios e suporte.
 
-
 ## Modelo de Planos
 
-| Plano | Papel | Valor principal | Recursos centrais | Não inclui |
-|---|---|---|---|---|
-| Básico | Entrada profissional | Presença e operação essencial. | Perfil, agenda, pacientes, sessões, mensagens, serviços limitados, pagamento simples, suporte. | Financeiro completo, avaliações, métricas intermediárias, IA, insights avançados. |
-| Pro | Operação profissional | Gestão mais completa. | Recursos do Básico, agenda avançada, serviços completos, financeiro, avaliações, métricas, plano. | Assessor IA, insights Plus, histórico operacional Plus. |
-| Plus | Premium | Inteligência e apoio avançado. | Recursos do Pro, insights, Assessor IA, histórico operacional do paciente, suporte prioritário. | Upgrade. |
+| Plano  | Papel                 | Valor principal                | Recursos centrais                                                                                   | Não inclui                                                   |
+| ------ | --------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Básico | Entrada profissional  | Presença e operação essencial. | Perfil, agenda, pacientes, sessões, mensagens, serviços limitados, financeiro operacional, suporte. | Avaliações, métricas intermediárias, IA, insights avançados. |
+| Pro    | Operação profissional | Gestão mais completa.          | Recursos do Básico, agenda avançada, serviços completos, financeiro, avaliações, métricas, plano.   | Assessor IA, insights Plus, histórico operacional Plus.      |
+| Plus   | Premium               | Inteligência e apoio avançado. | Recursos do Pro, insights, Assessor IA, histórico operacional do paciente, suporte prioritário.     | Upgrade.                                                     |
 
 ## Jornadas Principais
 
@@ -322,7 +319,6 @@ Dashboard do plano -> agenda -> serviços -> sessões -> mensagens -> pagamentos
 - Pagamentos, assinaturas e suporte.
 - Design System TES.
 - Storybook como camada de validação futura.
-
 
 ## Regras de Experiência
 

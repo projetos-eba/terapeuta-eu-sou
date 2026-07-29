@@ -238,7 +238,7 @@ Observação: componentes listados nas tabelas abaixo que não aparecem na lista
 - Ícone isolado tem `aria-label` ou tooltip.
 - Dados usam linguagem TES.
 - Plus não mostra upgrade.
-- Básico não mostra avaliações, métricas intermediárias ou financeiro completo como navegação principal.
+- Básico mostra financeiro operacional e não mostra avaliações ou métricas intermediárias como navegação principal.
 - Assessor IA é Plus.
 - Subpáginas só existem quando simplificam o uso.
 

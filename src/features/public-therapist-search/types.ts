@@ -46,6 +46,7 @@ export type TherapistSearchCard = {
   ratingLabel: string;
   reviewsLabel: string;
   reviewCount: number;
+  serviceId: string;
   serviceTitle: string;
   slug: string;
   tags: string[];

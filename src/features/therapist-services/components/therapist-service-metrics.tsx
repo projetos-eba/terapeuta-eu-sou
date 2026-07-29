@@ -1,4 +1,4 @@
-import { CalendarCheck, Heart } from "lucide-react";
+import { CalendarCheck } from "lucide-react";
 
 import type { TherapistServiceSummary } from "../therapist-services.types";
 
@@ -8,12 +8,7 @@ export function TherapistServiceMetrics({
   service: TherapistServiceSummary;
 }) {
   return (
-    <div className="pointer-events-none grid grid-cols-2 gap-3 md:min-w-[210px] md:grid-cols-1 xl:min-w-[220px]">
-      <MetricItem
-        icon={<Heart aria-hidden="true" size={18} />}
-        label="Interesses"
-        value={service.metrics.favoriteCount}
-      />
+    <div className="pointer-events-none grid gap-3 md:min-w-[210px] xl:min-w-[220px]">
       <MetricItem
         delta={service.metrics.bookingCountDeltaPercent}
         icon={<CalendarCheck aria-hidden="true" size={18} />}
