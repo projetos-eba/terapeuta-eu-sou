@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
+import { buildPublicReservationUrl } from "@/features/booking/services/public-booking";
 import { TrackedBookingLink } from "@/features/public-metrics";
-import { routes } from "@/lib/routes";
 
 import type { AvailabilityDay, TherapistProfileService } from "../types";
 
@@ -51,12 +51,6 @@ function getCalendarDates(monthStart: Date) {
     date.setDate(firstVisibleDate.getDate() + index);
     return date;
   });
-}
-
-function getReservationHref(serviceId: string, startsAt: string) {
-  return `${routes.public.reservation}?service=${serviceId}&slot=${encodeURIComponent(
-    startsAt,
-  )}`;
 }
 
 export function AvailabilityCalendarModal({
@@ -238,7 +232,13 @@ export function AvailabilityCalendarModal({
                 selectedDay.slots.map((slot) => (
                   <TrackedBookingLink
                     className="rounded-[10px] bg-white px-4 py-3 text-center text-sm font-bold text-brand-primary shadow-sm outline-none transition hover:bg-brand-primary hover:text-white focus-visible:ring-4 focus-visible:ring-brand-primary/20"
-                    href={getReservationHref(slot.serviceId, slot.startsAt)}
+                    href={buildPublicReservationUrl({
+                      durationMinutes: service.durationMinutes,
+                      priceCents: service.priceCents,
+                      serviceId: slot.serviceId,
+                      slotStartsAt: slot.startsAt,
+                      therapistSlug,
+                    })}
                     key={`${slot.serviceId}-${slot.startsAt}`}
                     serviceId={slot.serviceId}
                     therapistSlug={therapistSlug}

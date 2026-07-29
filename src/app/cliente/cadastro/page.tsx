@@ -12,10 +12,16 @@ export const metadata: Metadata = {
   title: "Cadastro de cliente | Terapeuta Eu Sou",
 };
 
-export default function ClientSignupPage() {
+export default async function ClientSignupPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ next?: string }>;
+}) {
+  const params = await searchParams;
+
   return (
     <ClientAuthShell>
-      <ClientSignupForm />
+      <ClientSignupForm next={params?.next} />
     </ClientAuthShell>
   );
 }

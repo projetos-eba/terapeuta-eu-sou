@@ -17,10 +17,12 @@ type LoginResponse =
 
 export function ClientLoginForm({
   created,
+  next,
   reset,
   verified,
 }: {
   created: boolean;
+  next?: string;
   reset?: boolean;
   verified?: boolean;
 }) {
@@ -45,6 +47,7 @@ export function ClientLoginForm({
       const response = await fetch("/api/auth/client/login", {
         body: JSON.stringify({
           email,
+          next,
           password: String(form.get("password") ?? ""),
         }),
         headers: {
@@ -191,7 +194,11 @@ export function ClientLoginForm({
       <p className="text-center text-sm font-bold text-tesText-secondary">
         Ainda não tem conta?{" "}
         <Link
-          href={routes.public.clientSignUp}
+          href={
+            next
+              ? `${routes.public.clientSignUp}?next=${encodeURIComponent(next)}`
+              : routes.public.clientSignUp
+          }
           className="text-brand-primary hover:underline"
         >
           Criar cadastro inicial

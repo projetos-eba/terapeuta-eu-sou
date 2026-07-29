@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     const session = await loginClientWithPassword(validation.value);
     const response = NextResponse.json({
       ok: true,
-      redirectTo: session.redirectTo,
+      redirectTo: getSafeRedirect(toLoginInput(body).next) ?? session.redirectTo,
     });
 
     response.cookies.set("tes_patient_access_token", session.accessToken, {
@@ -126,6 +126,7 @@ function toLoginInput(value: unknown) {
 
   return {
     email: asString(record.email),
+    next: asString(record.next),
     password: asString(record.password),
   };
 }
@@ -136,4 +137,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asString(value: unknown) {
   return typeof value === "string" ? value : "";
+}
+
+function getSafeRedirect(value: string) {
+  if (
+    !value ||
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    /[\r\n]/.test(value)
+  ) {
+    return null;
+  }
+
+  return value;
 }

@@ -23,6 +23,8 @@ Use esta skill ao implementar, auditar ou refatorar o fluxo inicial de autentica
 - APIs:
   - `POST /api/auth/client/signup`.
   - `POST /api/auth/client/login`.
+  - `GET /api/auth/client/session`.
+  - `DELETE /api/auth/client/session`.
   - `POST /api/auth/email/verify`.
   - `POST /api/auth/email/status`.
   - `POST /api/auth/email/resend`.
@@ -63,6 +65,17 @@ Backend:
 - Terapeuta/admin devem receber a mensagem segura: `Use o acesso correspondente ao seu perfil.`
 - Guards autenticados leem `profiles`/`patient_profiles` via token do usuário; além das policies RLS, as tabelas precisam de `grant select` para `authenticated`.
 
+## Sessão pública segura
+
+- `GET /api/auth/client/session` lê o cookie HTTP-only e retorna apenas resumo
+  seguro do próprio paciente: nome, e-mail, telefone, avatar e timezone.
+- Se a sessão não existir, estiver expirada ou não pertencer a `patient`,
+  retornar `{ authenticated: false }`.
+- `DELETE /api/auth/client/session` faz logout best-effort no Supabase Auth e
+  apaga `tes_patient_access_token` e `tes_patient_refresh_token`.
+- O header público usa essa rota para trocar “Entrar | Cadastre-se” por
+  “Olá, [Nome]”, com atalhos para painel, encontros e logout.
+
 ## UI e copy
 
 - Usar fundo lavanda suave, card central, `PublicLogo`, formulário com labels reais e CTA com mínimo de 44px.
@@ -90,3 +103,4 @@ Backend:
 - Validar formulário sem env Supabase: telas renderizam e submit retorna erro controlado.
 - Com Supabase local, validar criação de `auth.users`, `profiles` e `patient_profiles`.
 - Validar menor de 18 anos, senha divergente, e-mail duplicado e login de perfil não paciente.
+- Validar header público autenticado e logout por `/api/auth/client/session`.
