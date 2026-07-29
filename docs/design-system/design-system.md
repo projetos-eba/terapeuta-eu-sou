@@ -179,6 +179,8 @@ Nota de implementação do Match público (`/sua-jornada` e `/sua-jornada/result
 
 Nota de implementação do catálogo público de terapias (`/terapias`), atualizada em 2026-07-24: a página segue o Figma `13273:1439` com hero fotográfico, busca ampla, chips de ordenação, sidebar de categorias no desktop, accordion de filtros no mobile e grid de cards compactos com imagem editorial. Descrições dos cards devem ser limitadas visualmente a três linhas, preservando a leitura do grid. Cards públicos devem educar e conduzir ao detalhe da terapia, sem vender diretamente sessão nem prometer cura, diagnóstico ou resultado.
 
+Nota de implementação da reserva pública (`/reserva`), atualizada em 2026-07-29: a página segue o Figma `Page / Público / Agendamento` (`13273:3114`) com topbar simples, stepper de reserva, cards brancos, resumo sticky e CTA primário roxo. A experiência usa Manrope para UI, `text-brand-deep` para títulos primários, bordas `border-border`, superfícies `bg-white`/`bg-surface-muted` e estados com tokens TES. O pagamento não coleta cartão no Next; a UI deve encaminhar para Checkout seguro via Edge Function autenticada, mantendo políticas, login/cadastro de cliente e copy sem promessa de cura, diagnóstico ou resultado.
+
 ### Paciente
 
 Usa sidebar, topbar, cards, listas, favoritos separados, suporte lateral e ilustrações suaves. A rota raiz é `/app`.

@@ -18,6 +18,7 @@ export default async function ClientLoginPage({
   searchParams?: Promise<{
     created?: string;
     reset?: string;
+    next?: string;
     verified?: string;
   }>;
 }) {
@@ -28,6 +29,7 @@ export default async function ClientLoginPage({
       <div className="w-full">
         <ClientLoginForm
           created={params?.created === "1"}
+          next={params?.next}
           reset={params?.reset === "1"}
           verified={params?.verified === "1"}
         />
