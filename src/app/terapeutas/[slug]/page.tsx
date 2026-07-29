@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { TherapistProfilePage } from "@/features/therapist-profile/components/profile-page";
+import { PublicProfileMetricsTracker } from "@/features/public-metrics";
 import {
   getPublicTherapistProfile,
   getPublicTherapistProfileResult,
@@ -98,6 +99,10 @@ export default async function PublicTherapistProfilePage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       {result.status === "demo" ? <DemoProfileNotice /> : null}
+      <PublicProfileMetricsTracker
+        enabled={result.status === "success"}
+        therapistSlug={data.profile.slug}
+      />
       <TherapistProfilePage profile={data.profile} reviews={data.reviews} />
     </>
   );

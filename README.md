@@ -59,6 +59,51 @@ em `therapist_profile_content_versions`, publicação é feita pelo terapeuta vi
 separados. Publicações podem levar até 2 a 3 horas para refletir em todas as
 superfícies públicas.
 
+A página de Avaliações do terapeuta está implementada em
+`/terapeuta/avaliacoes`, seguindo o Figma `13366:5844`. Ela usa o read model
+privado `get_therapist_reviews_v1`, permite responder avaliações publicadas de
+sessões online pagas e concluídas por `upsert_therapist_review_reply_v1`, e
+sincroniza respostas publicadas com `public_therapist_profile_reviews_v` para
+`/terapeutas/:slug` sem expor dados administrativos ou privados.
+
+MTR-1 a MTR-5 e o corte CSV de MTR-7 de Métricas & Relatórios estão
+implementados em
+`/terapeuta/insights`, seguindo a hierarquia do Figma `13366:3628`. O read
+model privado `get_therapist_metrics_overview_v1` oferece períodos de 30 ou 90
+dias completos, três contadores operacionais, série de sessões, descoberta,
+funil por coorte, favoritos do perfil e ranking das próprias terapias. A
+aba Sessões usa `get_therapist_session_metrics_v1`; a aba Interesse usa
+`get_therapist_interest_metrics_v1` e é exclusiva do Premium Plus. Ambas
+preservam a amostra mínima de 10 e não expõem pacientes. A exportação CSV
+autenticada reutiliza os mesmos contratos agregados.
+
+A telemetria pública é idempotente e agregada por dia, mas nasce desativada até
+a validação formal de privacidade e retenção. Ocupação permanece indisponível
+até existir histórico reproduzível da oferta. Zero, processamento, amostra
+insuficiente e falha são estados diferentes; Aura não recebe dados simulados.
+Contratos:
+`docs/architecture/therapist-metrics-mtr1-mtr3.md` e
+`docs/architecture/therapist-metrics-mtr4-mtr5-mtr7.md`.
+
+O Financeiro do terapeuta está implementado em `/terapeuta/financeiro` com
+quatro abas: Resumo, Recebimentos, Repasses e Conta de recebimento. A F0/F1 usa
+read models privados versionados sobre `session_payments`, `session_refunds`,
+`session_disputes`, lotes, transfers e `therapist_connect_accounts`; a F2
+adiciona métricas intermediárias no Resumo via
+`get_private_therapist_financial_metrics_v1` para Premium e Premium Plus
+(`advanced_metrics`). A F3 adiciona dashboard avançado Premium Plus via
+`get_private_therapist_advanced_financial_dashboard_v1`, separando realizado,
+contratado e estimado sem afetar ledger ou repasses. Não há aba dedicada de
+histórico, dados fictícios ou formulário bancário próprio. Operação financeira
+essencial é acessível para Free, Premium e Premium Plus; `advanced_financials`
+libera somente projeções, potencial, benchmark anonimizado e insights
+determinísticos.
+Documentação:
+`docs/payments/therapist-finance-f0-f1.md` e
+`docs/architecture/adr/ADR-012-therapist-finance-f0-f1.md`,
+`docs/architecture/adr/ADR-013-therapist-finance-f2-metrics.md`,
+`docs/architecture/adr/ADR-014-therapist-finance-f3-advanced-dashboard.md`.
+
 A administração do catálogo canônico de terapias está implementada em
 `/admin/terapias`. O shell administrativo usa sessão admin separada, RLS
 explícita e a Edge Function `admin-therapy-catalog-command`; o app Next atua
@@ -135,6 +180,8 @@ A Edge Function `match-therapies` calcula recomendações por regras e pesos. El
 ### Pagamentos, assinaturas e repasses
 
 A arquitetura de pagamentos fica documentada em `docs/payments/architecture.md`.
+O contrato da área financeira do terapeuta fica em
+`docs/payments/therapist-finance-f0-f1.md`.
 O setup operacional dos secrets Stripe fica em `docs/payments/stripe-secrets-setup.md`.
 O uso e rotacao do token interno ficam em `docs/payments/internal-operations-token.md`.
 

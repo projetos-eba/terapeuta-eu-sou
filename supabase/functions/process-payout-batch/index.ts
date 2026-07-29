@@ -7,6 +7,10 @@ import {
   requireInternalOperationsAccess,
   success,
 } from "../_shared/payments/http.ts";
+import {
+  buildSessionTransferCreateParams,
+  isSessionPaymentTransferable,
+} from "../_shared/payments/finance-lifecycle.ts";
 import { createIdempotencyKey } from "../_shared/payments/idempotency.ts";
 import {
   getPaymentsConfig,
@@ -103,10 +107,13 @@ runtime.serve(async (request) => {
       );
 
       if (
-        !payment?.stripe_charge_id ||
-        payment.financial_status !== "paid" ||
-        payment.refund_pending ||
-        !["batched", "transfer_pending"].includes(payment.transfer_status)
+        !payment ||
+        !isSessionPaymentTransferable({
+          financialStatus: payment.financial_status,
+          refundPending: payment.refund_pending,
+          stripeChargeId: payment.stripe_charge_id,
+          transferStatus: payment.transfer_status,
+        })
       ) {
         await markItemBlocked(
           client,
@@ -143,21 +150,16 @@ runtime.serve(async (request) => {
         }
 
         const transfer = await stripe.transfers.create(
-          {
-            amount: item.amount_cents,
-            currency: "brl",
+          buildSessionTransferCreateParams({
+            amountCents: item.amount_cents,
+            batchId,
+            bookingId: item.booking_id,
             destination,
-            metadata: {
-              payout_batch_id: batchId,
-              payout_batch_item_id: item.id,
-              system: "tes",
-              tes_session_id: item.booking_id,
-              tes_session_payment_id: item.session_payment_id,
-              tes_therapist_id: item.therapist_profile_id,
-            },
-            source_transaction: payment.stripe_charge_id,
-            transfer_group: `tes_booking_${item.booking_id}`,
-          },
+            itemId: item.id,
+            sessionPaymentId: item.session_payment_id,
+            sourceChargeId: payment.stripe_charge_id!,
+            therapistProfileId: item.therapist_profile_id,
+          }),
           { idempotencyKey },
         );
 

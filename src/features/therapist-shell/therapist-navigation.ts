@@ -83,11 +83,10 @@ const definitions: NavigationDefinition[] = [
     planLabel: "Premium Plus",
   },
   {
-    capability: "advanced_financials",
+    capability: "operation_essentials",
     href: routes.therapist.finance,
     icon: "wallet",
     label: "Financeiro",
-    planLabel: "Premium Plus",
   },
   {
     capability: "operation_essentials",

@@ -1,10 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import type { Route } from "next";
 import { CalendarDays } from "lucide-react";
 
+import { TrackedBookingLink } from "@/features/public-metrics";
 import { routes } from "@/lib/routes";
 
 import type { TherapistProfileService } from "../types";
@@ -12,9 +11,13 @@ import { AvailabilityCalendarModal } from "./availability-calendar-modal";
 
 type AvailabilitySelectorProps = {
   services: TherapistProfileService[];
+  therapistSlug: string;
 };
 
-export function AvailabilitySelector({ services }: AvailabilitySelectorProps) {
+export function AvailabilitySelector({
+  services,
+  therapistSlug,
+}: AvailabilitySelectorProps) {
   const [selectedServiceId, setSelectedServiceId] = useState(
     services[0]?.id ?? "",
   );
@@ -79,17 +82,17 @@ export function AvailabilitySelector({ services }: AvailabilitySelectorProps) {
               </div>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                 {day.slots.slice(0, 5).map((slot) => (
-                  <Link
+                  <TrackedBookingLink
                     key={`${slot.serviceId}-${slot.startsAt}`}
-                    href={
-                      `${routes.public.reservation}?service=${slot.serviceId}&slot=${encodeURIComponent(
-                        slot.startsAt,
-                      )}` as Route
-                    }
+                    href={`${routes.public.reservation}?service=${slot.serviceId}&slot=${encodeURIComponent(
+                      slot.startsAt,
+                    )}`}
+                    serviceId={slot.serviceId}
+                    therapistSlug={therapistSlug}
                     className="rounded-[9px] bg-brand-primaryPressed px-4 py-3 text-center text-sm font-medium"
                   >
                     {slot.timeLabel}
-                  </Link>
+                  </TrackedBookingLink>
                 ))}
               </div>
             </div>
@@ -115,6 +118,7 @@ export function AvailabilitySelector({ services }: AvailabilitySelectorProps) {
           days={days}
           onClose={() => setIsCalendarOpen(false)}
           service={selectedService}
+          therapistSlug={therapistSlug}
         />
       ) : null}
     </section>

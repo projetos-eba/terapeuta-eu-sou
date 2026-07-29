@@ -170,6 +170,56 @@ Sessoes e repasses:
 - `retry-failed-payout-items`
 - `reconcile-stripe-transfers`
 
+## Shell financeiro do terapeuta
+
+F0/F1 implementa `/terapeuta/financeiro` com quatro abas: Resumo,
+Recebimentos, Repasses e Conta de recebimento. A tela é operacional e
+disponível para Free, Premium e Premium Plus quando houver movimentação
+financeira.
+
+F2 adiciona métricas intermediárias na aba Resumo para Premium e Premium Plus
+via `advanced_metrics`: receita líquida comparada ao período anterior, ticket
+médio, sessões pagas/realizadas, retorno simples, cancelamentos,
+reagendamentos, faturamento por terapia e evolução financeira realizada versus
+período anterior. Free continua com o resumo operacional.
+
+F3 adiciona o dashboard avançado Premium Plus via `advanced_financials`:
+previsão do mês, potencial disponível da agenda, oportunidade do mês, Insight
+TES determinístico, retenção por coorte, evolução com projeção, ranking
+detalhado por terapia e benchmark anonimizado. Realizado, contratado e estimado
+permanecem separados; projeções não criam ledger, saldo ou repasse.
+
+F4 fecha o ciclo operacional em test mode: conta Connect ativa, pagamento de
+sessao confirmado exclusivamente por webhook Stripe, reconciliacao do Charge,
+confirmacao da realizacao, periodo de seguranca controlado somente por flag
+server-side de teste, elegibilidade, criacao de lote, Transfer com
+`source_transaction`, conclusao do repasse, dashboard atualizado e
+comprovantes/reconciliacao visiveis. O retorno da Stripe continua sem autoridade
+para confirmar pagamento, onboarding ou repasse.
+
+Read models privados:
+
+- `get_private_therapist_financial_overview_v1`;
+- `get_private_therapist_receipts_v1`;
+- `get_private_therapist_payouts_v1`;
+- `get_private_therapist_connect_account_v1`;
+- `get_private_therapist_financial_metrics_v1` para métricas F2 Premium e
+  Premium Plus;
+- `get_private_therapist_advanced_financial_dashboard_v1` e contratos
+  segmentados F3 para Premium Plus.
+
+Todos derivam terapeuta de `auth.uid()`, retornam centavos inteiros e não
+expõem linhas cruas. O frontend formata valores, mas não calcula saldos
+autoritativos. Conta de recebimento usa Stripe Connect hospedado; retorno da
+Stripe pede sincronização e nunca marca onboarding como concluído.
+
+Documentos de contrato:
+
+- `docs/payments/therapist-finance-f0-f1.md`;
+- `docs/architecture/adr/ADR-013-therapist-finance-f2-metrics.md`;
+- `docs/architecture/adr/ADR-014-therapist-finance-f3-advanced-dashboard.md`;
+- `docs/architecture/adr/ADR-015-therapist-finance-f4-operational-payout-lifecycle.md`.
+
 ## Execucao local
 
 1. Configure secrets em `supabase/functions/.env.local`.
@@ -273,3 +323,9 @@ Nao implementar, nesta etapa, integracao com prefeitura, emissor fiscal, NFS-e n
 - Pagamentos importados sem Charge ficam com
   `transfer_blocked_reason = source_charge_reconciliation_required` e são
   resolvidos por `reconcile-stripe-transfers`.
+- Controles temporais de teste (`nowOverride` e `cutoffAtOverride`) exigem
+  `TES_FINANCE_TEST_CONTROLS_ENABLED=true`, Stripe em `test` mode e token
+  interno valido; em live mode falham fechado.
+- Repasses conciliados devem carregar `stripe_transfer_id` e
+  `stripe_source_charge_id`, permitindo verificar que o Transfer foi criado com
+  `source_transaction`.

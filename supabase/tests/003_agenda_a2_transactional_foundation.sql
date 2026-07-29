@@ -375,18 +375,40 @@ select throws_ok(
 
 select throws_ok(
   $$
+    insert into public.bookings (
+      id,
+      patient_profile_id,
+      therapist_profile_id,
+      service_id,
+      starts_at,
+      ends_at,
+      timezone,
+      status,
+      payment_status
+    ) values (
+      'a2100000-0000-4000-8000-000000000024',
+      'b1000000-0000-4000-8000-000000000005',
+      'c1000000-0000-4000-8000-000000000001',
+      'd1000000-0000-4000-8000-000000000006',
+      (select starts_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
+      (select ends_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
+      'America/Sao_Paulo',
+      'confirmed',
+      'paid'
+    );
+
     select public.reserve_booking_hold_v1(
       'b1000000-0000-4000-8000-000000000006',
       'd1000000-0000-4000-8000-000000000001',
-      (select starts_at + interval '20 minutes' from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
-      (select ends_at + interval '20 minutes' from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
+      (select starts_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
+      (select ends_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
       'America/Sao_Paulo',
       'a2-booking-conflict-other-service',
       600
     )
   $$,
   'P0001',
-  'SLOT_NOT_AVAILABLE',
+  'BOOKING_CONFLICT',
   'an active booking blocks every service of the therapist'
 );
 

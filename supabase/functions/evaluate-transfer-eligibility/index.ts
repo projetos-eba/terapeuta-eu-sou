@@ -7,12 +7,14 @@ import {
   requireInternalOperationsAccess,
   success,
 } from "../_shared/payments/http.ts";
+import { resolveFinanceOperationInstant } from "../_shared/payments/finance-lifecycle.ts";
 import {
   getPaymentsConfig,
   getPaymentsRuntime,
 } from "../_shared/payments/runtime.ts";
 
 type Body = {
+  nowOverride?: string;
   sessionPaymentId?: string;
 };
 
@@ -40,15 +42,21 @@ runtime.serve(async (request) => {
       config.supabaseUrl,
       config.serviceRoleKey,
     );
+    const now = resolveFinanceOperationInstant({
+      config,
+      defaultInstant: new Date().toISOString(),
+      fieldName: "now_override",
+      override: body.nowOverride,
+    });
     const status = await client.rpc<string>(
       "refresh_session_transfer_eligibility",
       {
-        p_now: new Date().toISOString(),
+        p_now: now,
         p_session_payment_id: sessionPaymentId,
       },
     );
 
-    return success({ status });
+    return success({ evaluatedAt: now, status });
   } catch (error) {
     return failure(error, requestId);
   }

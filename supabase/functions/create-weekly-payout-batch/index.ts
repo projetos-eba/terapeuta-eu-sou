@@ -7,12 +7,14 @@ import {
   parseJsonBody,
   success,
 } from "../_shared/payments/http.ts";
+import { resolveFinanceOperationInstant } from "../_shared/payments/finance-lifecycle.ts";
 import {
   getPaymentsConfig,
   getPaymentsRuntime,
 } from "../_shared/payments/runtime.ts";
 
 type Body = {
+  cutoffAtOverride?: string;
   referencePeriodEnd?: string;
   referencePeriodStart?: string;
 };
@@ -45,13 +47,19 @@ runtime.serve(async (request) => {
       config.supabaseUrl,
       config.serviceRoleKey,
     );
+    const cutoffAt = resolveFinanceOperationInstant({
+      config,
+      defaultInstant: new Date().toISOString(),
+      fieldName: "cutoff_at_override",
+      override: body.cutoffAtOverride,
+    });
     const batchId = await client.rpc<string>("create_weekly_payout_batch", {
-      p_cutoff_at: new Date().toISOString(),
+      p_cutoff_at: cutoffAt,
       p_reference_period_end: end,
       p_reference_period_start: start,
     });
 
-    return success({ batchId });
+    return success({ batchId, cutoffAt });
   } catch (error) {
     return failure(error, requestId);
   }

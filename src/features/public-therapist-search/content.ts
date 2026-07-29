@@ -7,8 +7,7 @@ export const THERAPIST_SEARCH_PAGE_SIZE = 6;
 export const therapistSearchHero = {
   titleStart: "Encontre alguém para",
   titleAccent: "caminhar com você.",
-  body:
-    "Cada jornada é única. Conheça terapeutas preparados para acolher o momento que você está vivendo e encontre um caminho que faça sentido para você.",
+  body: "Cada jornada é única. Conheça terapeutas preparados para acolher o momento que você está vivendo e encontre um caminho que faça sentido para você.",
 };
 
 export const priceOptions = [
@@ -57,6 +56,7 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     ratingLabel: "4,9",
     reviewsLabel: "98 avaliações",
     reviewCount: 98,
+    serviceId: "d1000000-0000-4000-8000-000000000001",
     serviceTitle: "Reiki online",
     slug: "ana-oliveira",
     tags: ["Ansiedade", "Autoestima", "Autoconhecimento"],
@@ -85,6 +85,7 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     ratingLabel: "4,8",
     reviewsLabel: "74 avaliações",
     reviewCount: 74,
+    serviceId: "d1000000-0000-4000-8000-000000000002",
     serviceTitle: "Leitura simbólica de Tarô",
     slug: "rafael-santos",
     tags: ["Mudanças de vida", "Propósito", "Equilíbrio emocional"],
@@ -113,6 +114,7 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     ratingLabel: "4,9",
     reviewsLabel: "112 avaliações",
     reviewCount: 112,
+    serviceId: "d1000000-0000-4000-8000-000000000003",
     serviceTitle: "Constelação Familiar online",
     slug: "celia-martins",
     tags: ["Relacionamentos", "Família", "Padrões"],
@@ -141,6 +143,7 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     ratingLabel: "4,6",
     reviewsLabel: "88 avaliações",
     reviewCount: 88,
+    serviceId: "d1000000-0000-4000-8000-000000000004",
     serviceTitle: "Constelação de vínculos",
     slug: "juliana-costa",
     tags: ["Família", "Relacionamentos", "Comunicação"],
@@ -169,6 +172,7 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     ratingLabel: "4,7",
     reviewsLabel: "101 avaliações",
     reviewCount: 101,
+    serviceId: "d1000000-0000-4000-8000-000000000005",
     serviceTitle: "Tarô e autoconhecimento",
     slug: "lucas-pereira",
     tags: ["Autoconhecimento", "Propósito", "Mudanças de vida"],

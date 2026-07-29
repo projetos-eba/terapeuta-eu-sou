@@ -8,25 +8,17 @@ export function TherapistServicesRanking({
   services: TherapistServiceSummary[];
 }) {
   const ranked = services
-    .filter(
-      (service) =>
-        service.metrics.favoriteCount > 0 || service.metrics.bookingCount > 0,
-    )
-    .sort(
-      (a, b) =>
-        b.metrics.favoriteCount +
-        b.metrics.bookingCount -
-        (a.metrics.favoriteCount + a.metrics.bookingCount),
-    )
+    .filter((service) => service.metrics.bookingCount > 0)
+    .sort((a, b) => b.metrics.bookingCount - a.metrics.bookingCount)
     .slice(0, 3);
 
   return (
     <TESCard as="section" className="p-5 sm:p-6">
       <h2 className="font-display text-3xl font-light italic text-brand-deep">
-        Serviços mais procurados
+        Serviços mais agendados
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Seus serviços com maior destaque na plataforma.
+        Seus serviços com mais agendamentos registrados.
       </p>
       {ranked.length > 0 ? (
         <ol className="mt-6 grid gap-4">
@@ -44,7 +36,6 @@ export function TherapistServicesRanking({
                   {service.title}
                 </strong>
                 <span className="mt-1 block text-xs font-semibold leading-5 text-tesText-secondary">
-                  {service.metrics.favoriteCount} interesses ·{" "}
                   {service.metrics.bookingCount} agendamentos
                 </span>
               </span>

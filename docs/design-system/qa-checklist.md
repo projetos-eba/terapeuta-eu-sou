@@ -80,7 +80,7 @@ Lista de validação visual, funcional, técnica e de linguagem para telas TES.
 - [ ] `/para-terapeutas/planos` é a página pública de planos.
 - [ ] Guardas de autenticação impedem acesso indevido.
 - [ ] Guardas de plano impedem recursos fora do plano.
-- [ ] Básico não acessa avaliações, métricas intermediárias ou financeiro completo.
+- [ ] Básico acessa financeiro operacional e não acessa avaliações ou métricas intermediárias.
 - [ ] Pro acessa financeiro, avaliações e métricas intermediárias.
 - [ ] Plus não vê upgrade.
 - [ ] Admin exige permissão interna.
@@ -126,7 +126,7 @@ Lista de validação visual, funcional, técnica e de linguagem para telas TES.
 
 - [ ] Básico mostra progresso de perfil e plano.
 - [ ] Free acessa `/terapeuta/sessoes` e `/terapeuta/mensagens` conforme a
-  política de capability.
+      política de capability.
 - [ ] Básico mostra limites sem punição.
 - [ ] Pro tem financeiro, avaliações e métricas intermediárias.
 - [ ] Pro pode evoluir para Plus por contexto.
