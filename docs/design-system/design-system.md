@@ -198,7 +198,7 @@ Usa shell de app com mais densidade: financeiro, métricas, avaliações, tabela
 ### Terapeuta Plus
 
 Usa visual premium com insights, Assessor IA, detalhe do paciente em
-`/terapeuta/pacientes/:slug-do-paciente`, financeiro completo, avaliações e
+`/terapeuta/pacientes/:slug-do-paciente`, inteligência financeira futura, avaliações e
 suporte prioritário. Premium Plus não exibe upgrade; o acesso é controlado por
 capability dentro do shell compartilhado.
 

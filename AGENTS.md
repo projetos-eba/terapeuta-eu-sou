@@ -304,6 +304,23 @@ Stack real identificada:
   `therapist_metrics_runtime_config` até validação formal de base legal, aviso
   e retenção. Não ativar por variável pública nem simular descoberta,
   ocupação, Aura ou amostra insuficiente. MTR-6/Aura permanece pendente.
+- Financeiro do terapeuta F0/F1/F2/F3: `/terapeuta/financeiro` possui somente as
+  abas Resumo, Recebimentos, Repasses e Conta de recebimento. A fonte canônica
+  continua `session_payments`; o shell consome read models privados
+  `get_private_therapist_financial_overview_v1`,
+  `get_private_therapist_receipts_v1`,
+  `get_private_therapist_payouts_v1` e
+  `get_private_therapist_connect_account_v1`. F2 adiciona
+  `get_private_therapist_financial_metrics_v1` para métricas intermediárias no
+  Resumo, usando `advanced_metrics` para Premium e Premium Plus. Operação
+  financeira essencial é liberada para Free, Premium e Premium Plus. F3 adiciona
+  `get_private_therapist_advanced_financial_dashboard_v1` e contratos
+  segmentados para Premium Plus via `advanced_financials`, separando realizado,
+  contratado e estimado; projeções nunca alteram ledger, saldo ou repasse.
+  Connect usa
+  fluxo hospedado da Stripe, sem formulário bancário próprio e sem confirmar
+  onboarding por redirect. Benchmark financeiro é anonimizado e suprimido sem
+  amostra mínima; Insight TES financeiro é rule-based, não IA generativa.
 
 ## 6. QA e definição de pronto
 

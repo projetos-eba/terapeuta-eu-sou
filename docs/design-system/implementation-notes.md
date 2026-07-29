@@ -168,7 +168,7 @@ export const therapistCapabilities = {
 Regras:
 
 - Básico mantém sessões e mensagens com recursos limitados.
-- Básico não renderiza navegação principal de avaliações, métricas intermediárias ou financeiro completo.
+- Básico renderiza financeiro operacional e não renderiza navegação principal de avaliações ou métricas intermediárias.
 - Pro pode ver convites para Plus.
 - Plus nunca vê upgrade.
 - Admin usa guarda próprio.

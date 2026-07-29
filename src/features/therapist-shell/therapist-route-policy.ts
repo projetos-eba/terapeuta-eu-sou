@@ -14,7 +14,7 @@ export const therapistRoutePolicies = {
     capability: "aura_full",
   },
   finance: {
-    capability: "advanced_financials",
+    capability: "operation_essentials",
   },
   home: {},
   insights: {

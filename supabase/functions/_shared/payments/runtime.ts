@@ -59,8 +59,26 @@ export function getPaymentsConfig(runtime: EdgeRuntime) {
     );
   }
 
+  const financeTestControlsValue = runtime.env
+    .get("TES_FINANCE_TEST_CONTROLS_ENABLED")
+    ?.trim();
+
+  if (
+    financeTestControlsValue &&
+    financeTestControlsValue !== "true" &&
+    financeTestControlsValue !== "false"
+  ) {
+    throw new DomainError(
+      "invalid_finance_test_controls",
+      503,
+      "Configuracao financeira de teste invalida.",
+    );
+  }
+
   return {
     environment: stripeMode,
+    financeTestControlsEnabled:
+      stripeMode === "test" && financeTestControlsValue === "true",
     serviceRoleKey,
     siteUrl: getSiteUrl(runtime),
     stripeApiKey,

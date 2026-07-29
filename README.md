@@ -85,6 +85,25 @@ Contratos:
 `docs/architecture/therapist-metrics-mtr1-mtr3.md` e
 `docs/architecture/therapist-metrics-mtr4-mtr5-mtr7.md`.
 
+O Financeiro do terapeuta está implementado em `/terapeuta/financeiro` com
+quatro abas: Resumo, Recebimentos, Repasses e Conta de recebimento. A F0/F1 usa
+read models privados versionados sobre `session_payments`, `session_refunds`,
+`session_disputes`, lotes, transfers e `therapist_connect_accounts`; a F2
+adiciona métricas intermediárias no Resumo via
+`get_private_therapist_financial_metrics_v1` para Premium e Premium Plus
+(`advanced_metrics`). A F3 adiciona dashboard avançado Premium Plus via
+`get_private_therapist_advanced_financial_dashboard_v1`, separando realizado,
+contratado e estimado sem afetar ledger ou repasses. Não há aba dedicada de
+histórico, dados fictícios ou formulário bancário próprio. Operação financeira
+essencial é acessível para Free, Premium e Premium Plus; `advanced_financials`
+libera somente projeções, potencial, benchmark anonimizado e insights
+determinísticos.
+Documentação:
+`docs/payments/therapist-finance-f0-f1.md` e
+`docs/architecture/adr/ADR-012-therapist-finance-f0-f1.md`,
+`docs/architecture/adr/ADR-013-therapist-finance-f2-metrics.md`,
+`docs/architecture/adr/ADR-014-therapist-finance-f3-advanced-dashboard.md`.
+
 A administração do catálogo canônico de terapias está implementada em
 `/admin/terapias`. O shell administrativo usa sessão admin separada, RLS
 explícita e a Edge Function `admin-therapy-catalog-command`; o app Next atua
@@ -161,6 +180,8 @@ A Edge Function `match-therapies` calcula recomendações por regras e pesos. El
 ### Pagamentos, assinaturas e repasses
 
 A arquitetura de pagamentos fica documentada em `docs/payments/architecture.md`.
+O contrato da área financeira do terapeuta fica em
+`docs/payments/therapist-finance-f0-f1.md`.
 O setup operacional dos secrets Stripe fica em `docs/payments/stripe-secrets-setup.md`.
 O uso e rotacao do token interno ficam em `docs/payments/internal-operations-token.md`.
 

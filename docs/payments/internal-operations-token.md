@@ -24,6 +24,12 @@ Endpoints atuais que exigem o header:
 - `retry-failed-payout-items`
 - `reconcile-stripe-transfers`
 
+`evaluate-transfer-eligibility` e `create-weekly-payout-batch` aceitam
+sobrescrita de horario/corte somente para homologacao financeira controlada
+quando `TES_FINANCE_TEST_CONTROLS_ENABLED=true` e a chave Stripe estiver em
+test mode. Em live mode ou sem a flag explicita, qualquer override temporal deve
+falhar.
+
 `stripe-sync-billing-catalog` aceita o token apenas quando chamado como automacao interna; administradores autenticados tambem podem chamar o endpoint com JWT e papel `admin`.
 
 ## Quando nao usar
@@ -72,6 +78,14 @@ PAYMENTS_INTERNAL_OPERATIONS_TOKEN=
 ```
 
 Em ambientes publicados, use os secrets remotos da Supabase. `.env.example` deve conter somente a variavel vazia.
+
+Para sandbox financeiro controlado:
+
+```dotenv
+TES_FINANCE_TEST_CONTROLS_ENABLED=false
+```
+
+Ativar como `true` apenas em ambiente de teste, nunca em producao.
 
 ## Uso
 

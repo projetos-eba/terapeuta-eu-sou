@@ -9306,8 +9306,133 @@ export type Database = {
         Args: { p_now?: string };
         Returns: number;
       };
+      get_private_therapist_advanced_financial_dashboard_v1: {
+        Args: {
+          p_period_end?: string;
+          p_period_start?: string;
+          p_timezone?: string;
+        };
+        Returns: Json;
+      };
+      get_private_therapist_agenda_revenue_potential_v1: {
+        Args: {
+          p_period_end?: string;
+          p_period_start?: string;
+          p_timezone?: string;
+        };
+        Returns: Json;
+      };
+      get_private_therapist_connect_account_v1: { Args: never; Returns: Json };
+      get_private_therapist_financial_actor_v1: {
+        Args: never;
+        Returns: {
+          accepts_online_sessions: boolean;
+          bio: string | null;
+          city: string | null;
+          country: string | null;
+          created_at: string;
+          headline: string | null;
+          id: string;
+          is_accepting_bookings: boolean;
+          is_public: boolean;
+          languages: string[];
+          last_published_at: string | null;
+          legal_name: string | null;
+          metadata: Json;
+          photo_url: string | null;
+          plan: Database["public"]["Enums"]["therapist_plan"];
+          profile_version: number;
+          public_name: string;
+          public_status: string;
+          slug: string;
+          state: string | null;
+          status: Database["public"]["Enums"]["therapist_status"];
+          unpublished_at: string | null;
+          updated_at: string;
+          user_id: string;
+          visibility_flags: Json;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "therapist_profiles";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      get_private_therapist_financial_benchmark_v1: {
+        Args: {
+          p_period_end?: string;
+          p_period_start?: string;
+          p_timezone?: string;
+        };
+        Returns: Json;
+      };
+      get_private_therapist_financial_forecast_v1: {
+        Args: {
+          p_period_end?: string;
+          p_period_start?: string;
+          p_timezone?: string;
+        };
+        Returns: Json;
+      };
+      get_private_therapist_financial_metrics_v1: {
+        Args: {
+          p_period_end?: string;
+          p_period_start?: string;
+          p_timezone?: string;
+        };
+        Returns: Json;
+      };
+      get_private_therapist_financial_opportunities_v1: {
+        Args: {
+          p_period_end?: string;
+          p_period_start?: string;
+          p_timezone?: string;
+        };
+        Returns: Json;
+      };
+      get_private_therapist_financial_overview_v1: {
+        Args: {
+          p_period_end?: string;
+          p_period_start?: string;
+          p_timezone?: string;
+        };
+        Returns: Json;
+      };
+      get_private_therapist_payouts_v1: {
+        Args: {
+          p_page?: number;
+          p_page_size?: number;
+          p_period_end?: string;
+          p_period_start?: string;
+          p_status?: string;
+          p_timezone?: string;
+        };
+        Returns: Json;
+      };
       get_private_therapist_profile_editor_v1: {
         Args: { p_actor_user_id: string };
+        Returns: Json;
+      };
+      get_private_therapist_receipts_v1: {
+        Args: {
+          p_page?: number;
+          p_page_size?: number;
+          p_period_end?: string;
+          p_period_start?: string;
+          p_search?: string;
+          p_status?: string;
+          p_therapy_id?: string;
+          p_timezone?: string;
+        };
+        Returns: Json;
+      };
+      get_private_therapist_retention_analytics_v1: {
+        Args: {
+          p_period_end?: string;
+          p_period_start?: string;
+          p_timezone?: string;
+        };
         Returns: Json;
       };
       get_service_available_slots_v1: {
@@ -9531,6 +9656,53 @@ export type Database = {
         Args: { p_reason: string; p_video_session_id: string };
         Returns: undefined;
       };
+      normalize_private_therapist_finance_period_v1: {
+        Args: {
+          p_period_end?: string;
+          p_period_start?: string;
+          p_timezone?: string;
+        };
+        Returns: {
+          ends_at: string;
+          period_end: string;
+          period_start: string;
+          starts_at: string;
+          timezone: string;
+        }[];
+      };
+      private_therapist_finance_advanced_comparison_v1: {
+        Args: { p_current: number; p_previous: number };
+        Returns: Json;
+      };
+      private_therapist_finance_advanced_dashboard_payload_v1: {
+        Args: {
+          p_period_end?: string;
+          p_period_start?: string;
+          p_plan: Database["public"]["Enums"]["therapist_plan"];
+          p_therapist_profile_id: string;
+          p_timezone?: string;
+        };
+        Returns: Json;
+      };
+      private_therapist_finance_metric_comparison_v1: {
+        Args: {
+          p_current_has_data: boolean;
+          p_current_value: number;
+          p_previous_has_data: boolean;
+          p_previous_value: number;
+        };
+        Returns: Json;
+      };
+      private_therapist_finance_net_cents_v1: {
+        Args: {
+          p_payment: Database["public"]["Tables"]["session_payments"]["Row"];
+        };
+        Returns: number;
+      };
+      private_therapist_finance_refunded_cents_v1: {
+        Args: { p_session_payment_id: string };
+        Returns: number;
+      };
       publish_therapist_profile_draft_v1: {
         Args: {
           p_actor_user_id: string;
@@ -9541,6 +9713,21 @@ export type Database = {
       };
       record_public_therapist_metric_events_v1: {
         Args: { p_events: Json; p_session_id: string };
+        Returns: Json;
+      };
+      record_session_payment_stripe_reconciliation_v1: {
+        Args: {
+          p_payment_method_type?: string;
+          p_payment_origin?: string;
+          p_receipt_url?: string;
+          p_session_payment_id: string;
+          p_stripe_balance_transaction_id?: string;
+          p_stripe_charge_id?: string;
+          p_stripe_event_created_at: string;
+          p_stripe_event_id: string;
+          p_stripe_fee_amount_cents?: number;
+          p_stripe_net_amount_cents?: number;
+        };
         Returns: Json;
       };
       refresh_session_transfer_eligibility: {

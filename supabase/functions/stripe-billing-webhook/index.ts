@@ -16,6 +16,14 @@ import {
 
 type FinancialStatus = "canceled" | "failed" | "paid" | "processing";
 
+type StripePaymentReconciliation = {
+  balanceTransactionId: string | null;
+  feeAmountCents: number | null;
+  netAmountCents: number | null;
+  paymentMethodType: string | null;
+  receiptUrl: string | null;
+};
+
 const runtime = getPaymentsRuntime("stripe-billing-webhook");
 
 runtime.serve(async (request) => {
@@ -142,6 +150,7 @@ async function handleEvent(
     case "payment_intent.processing":
       await applyPaymentIntentState(
         client,
+        stripe,
         dataObject,
         "processing",
         eventId,
@@ -151,6 +160,7 @@ async function handleEvent(
     case "payment_intent.succeeded":
       await applyPaymentIntentState(
         client,
+        stripe,
         dataObject,
         "paid",
         eventId,
@@ -160,6 +170,7 @@ async function handleEvent(
     case "payment_intent.payment_failed":
       await applyPaymentIntentState(
         client,
+        stripe,
         dataObject,
         "failed",
         eventId,
@@ -169,6 +180,7 @@ async function handleEvent(
     case "payment_intent.canceled":
       await applyPaymentIntentState(
         client,
+        stripe,
         dataObject,
         "canceled",
         eventId,
@@ -264,17 +276,23 @@ async function handleCheckoutEvent(
 
   const paymentIntentId = stringOrNull(session.payment_intent);
   const paymentIntent = paymentIntentId
-    ? ((await stripe.paymentIntents.retrieve(
-        paymentIntentId,
-      )) as unknown as Record<string, unknown>)
+    ? ((await stripe.paymentIntents.retrieve(paymentIntentId, {
+        expand: ["latest_charge.balance_transaction"],
+      })) as unknown as Record<string, unknown>)
     : null;
+  const charge = asRecord(paymentIntent?.latest_charge);
+  const chargeId =
+    typeof paymentIntent?.latest_charge === "string"
+      ? paymentIntent.latest_charge
+      : stringOrNull(charge.id);
 
   await applySessionPaymentState(client, {
-    chargeId: stringOrNull(paymentIntent?.latest_charge),
+    chargeId,
     checkoutSessionId: stringOrNull(session.id),
     eventId,
     eventTime,
     paymentIntentId,
+    reconciliation: chargeId ? extractChargeReconciliation(charge) : null,
     sessionPaymentId,
     status: "paid",
   });
@@ -282,6 +300,7 @@ async function handleCheckoutEvent(
 
 async function applyPaymentIntentState(
   client: SupabaseRestClient,
+  stripe: ReturnType<typeof createStripeClient>,
   paymentIntent: Record<string, unknown>,
   status: FinancialStatus,
   eventId: string,
@@ -292,11 +311,18 @@ async function applyPaymentIntentState(
 
   if (!sessionPaymentId) return;
 
+  const chargeId = stringOrNull(paymentIntent.latest_charge);
+  const reconciliation =
+    status === "paid" && chargeId
+      ? await retrieveChargeReconciliation(stripe, chargeId)
+      : null;
+
   await applySessionPaymentState(client, {
-    chargeId: stringOrNull(paymentIntent.latest_charge),
+    chargeId,
     eventId,
     eventTime,
     paymentIntentId: stringOrNull(paymentIntent.id),
+    reconciliation,
     sessionPaymentId,
     status,
   });
@@ -310,6 +336,7 @@ async function applySessionPaymentState(
     eventId: string;
     eventTime: string;
     paymentIntentId?: string | null;
+    reconciliation?: StripePaymentReconciliation | null;
     sessionPaymentId: string;
     status: FinancialStatus;
   },
@@ -325,6 +352,21 @@ async function applySessionPaymentState(
   });
 
   if (input.status !== "paid") return;
+
+  if (input.chargeId || input.reconciliation) {
+    await recordSessionPaymentReconciliation(client, {
+      chargeId: input.chargeId ?? null,
+      eventId: input.eventId,
+      eventTime: input.eventTime,
+      paymentMethodType: input.reconciliation?.paymentMethodType ?? null,
+      receiptUrl: input.reconciliation?.receiptUrl ?? null,
+      sessionPaymentId: input.sessionPaymentId,
+      stripeBalanceTransactionId:
+        input.reconciliation?.balanceTransactionId ?? null,
+      stripeFeeAmountCents: input.reconciliation?.feeAmountCents ?? null,
+      stripeNetAmountCents: input.reconciliation?.netAmountCents ?? null,
+    });
+  }
 
   const zoomEnvironment = getConfiguredZoomEnvironment();
 
@@ -350,6 +392,34 @@ async function applySessionPaymentState(
     p_booking_id: payment.booking_id,
     p_environment: zoomEnvironment,
     p_source: "stripe-billing-webhook",
+  });
+}
+
+async function recordSessionPaymentReconciliation(
+  client: SupabaseRestClient,
+  input: {
+    chargeId: string | null;
+    eventId: string;
+    eventTime: string;
+    paymentMethodType: string | null;
+    receiptUrl: string | null;
+    sessionPaymentId: string;
+    stripeBalanceTransactionId: string | null;
+    stripeFeeAmountCents: number | null;
+    stripeNetAmountCents: number | null;
+  },
+) {
+  await client.rpc("record_session_payment_stripe_reconciliation_v1", {
+    p_payment_method_type: input.paymentMethodType,
+    p_payment_origin: "stripe_checkout",
+    p_receipt_url: input.receiptUrl,
+    p_session_payment_id: input.sessionPaymentId,
+    p_stripe_balance_transaction_id: input.stripeBalanceTransactionId,
+    p_stripe_charge_id: input.chargeId,
+    p_stripe_event_created_at: input.eventTime,
+    p_stripe_event_id: input.eventId,
+    p_stripe_fee_amount_cents: input.stripeFeeAmountCents,
+    p_stripe_net_amount_cents: input.stripeNetAmountCents,
   });
 }
 
@@ -779,6 +849,36 @@ function stringOrNull(value: unknown) {
 
 function numberOrZero(value: unknown) {
   return typeof value === "number" ? value : 0;
+}
+
+async function retrieveChargeReconciliation(
+  stripe: ReturnType<typeof createStripeClient>,
+  chargeId: string,
+): Promise<StripePaymentReconciliation> {
+  const charge = (await stripe.charges.retrieve(chargeId, {
+    expand: ["balance_transaction"],
+  })) as unknown as Record<string, unknown>;
+
+  return extractChargeReconciliation(charge);
+}
+
+function extractChargeReconciliation(
+  charge: Record<string, unknown>,
+): StripePaymentReconciliation {
+  const balanceTransaction = asRecord(charge.balance_transaction);
+  const paymentMethodDetails = asRecord(charge.payment_method_details);
+
+  return {
+    balanceTransactionId: stringOrNull(balanceTransaction.id),
+    feeAmountCents: numberOrNull(balanceTransaction.fee),
+    netAmountCents: numberOrNull(balanceTransaction.net),
+    paymentMethodType: stringOrNull(paymentMethodDetails.type),
+    receiptUrl: stringOrNull(charge.receipt_url),
+  };
+}
+
+function numberOrNull(value: unknown) {
+  return typeof value === "number" ? value : null;
 }
 
 function getConfiguredZoomEnvironment() {
