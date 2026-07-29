@@ -93,6 +93,16 @@ export function ReviewsCarousel({
                 <p className="mt-4 text-sm font-medium leading-[1.5] text-tesText-secondary">
                   {review.body}
                 </p>
+                {review.reply ? (
+                  <div className="mt-4 rounded-2xl bg-brand-lavenderSoft/70 p-4">
+                    <p className="text-sm font-extrabold text-brand-deep">
+                      Resposta do terapeuta
+                    </p>
+                    <p className="mt-2 text-sm font-medium leading-6 text-tesText-secondary">
+                      {review.reply.body}
+                    </p>
+                  </div>
+                ) : null}
                 <div className="mt-5 border-t border-border pt-4">
                   <p className="text-sm font-semibold text-brand-deep">
                     {review.authorLabel}

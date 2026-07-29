@@ -218,6 +218,7 @@ export const fallbackTherapistProfile: TherapistProfileData = {
       id: "90000000-0000-4000-8000-000000000001",
       patientContext: "Paciente há 5 meses",
       rating: 5,
+      reply: null,
     },
     {
       authorLabel: "Paciente TES",
@@ -226,6 +227,7 @@ export const fallbackTherapistProfile: TherapistProfileData = {
       id: "90000000-0000-4000-8000-000000000006",
       patientContext: "Sessão concluída pela plataforma",
       rating: 5,
+      reply: null,
     },
   ],
   source: "demo",
@@ -305,6 +307,7 @@ export const fallbackTherapistProfilesBySlug: Record<
         id: "90000000-0000-4000-8000-000000000002",
         patientContext: "Sessão concluída pela plataforma",
         rating: 5,
+        reply: null,
       },
     ],
     source: "demo",

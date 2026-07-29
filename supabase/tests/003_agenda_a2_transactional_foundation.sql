@@ -386,7 +386,7 @@ select throws_ok(
     )
   $$,
   'P0001',
-  'SLOT_NOT_AVAILABLE',
+  'BOOKING_CONFLICT',
   'an active booking blocks every service of the therapist'
 );
 

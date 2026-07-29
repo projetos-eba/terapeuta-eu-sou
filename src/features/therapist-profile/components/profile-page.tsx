@@ -1,6 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
-import type { Route } from "next";
 import {
   BadgeCheck,
   Clock,
@@ -14,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { PublicFooter, PublicHeader } from "@/components/tes";
+import { TrackedBookingLink } from "@/features/public-metrics";
 
 import { AvailabilitySelector } from "./availability-selector";
 import { ReviewsCarousel } from "./reviews-carousel";
@@ -101,13 +100,15 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
 
           <div className="mt-7 flex flex-wrap items-center gap-4">
             {profile.isAcceptingBookings && primaryService ? (
-              <Link
-                href={primaryService.bookingUrl as Route}
+              <TrackedBookingLink
+                href={primaryService.bookingUrl}
+                serviceId={primaryService.id}
+                therapistSlug={profile.slug}
                 className="inline-flex h-[52px] w-[204px] items-center justify-center gap-3 rounded-[15px] bg-brand-primary text-sm font-extrabold text-white"
               >
                 Agendar sessão
                 <span>→</span>
-              </Link>
+              </TrackedBookingLink>
             ) : (
               <span className="inline-flex min-h-[52px] items-center justify-center rounded-[15px] bg-brand-lavenderSoft px-6 text-sm font-extrabold text-brand-primary">
                 Agenda temporariamente indisponível
@@ -250,12 +251,14 @@ function Services({ profile }: { profile: PublicTherapistProfile }) {
                 <p className="text-xl font-extrabold text-brand-deep">
                   {service.priceLabel}
                 </p>
-                <Link
-                  href={service.bookingUrl as Route}
+                <TrackedBookingLink
+                  href={service.bookingUrl}
+                  serviceId={service.id}
+                  therapistSlug={profile.slug}
                   className="inline-flex min-h-11 items-center rounded-[12px] border border-status-info px-5 py-2 text-sm font-medium text-status-info transition hover:bg-status-infoBg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
                 >
                   Agendar
-                </Link>
+                </TrackedBookingLink>
               </div>
             </div>
           </article>
@@ -279,7 +282,10 @@ export function TherapistProfilePage({
       <IntroCards profile={profile} />
       <Services profile={profile} />
       <section className="mx-auto mt-8 grid max-w-[1348px] gap-8 px-5 pb-10 lg:grid-cols-[1.05fr_0.95fr]">
-        <AvailabilitySelector services={profile.services} />
+        <AvailabilitySelector
+          services={profile.services}
+          therapistSlug={profile.slug}
+        />
         <ReviewsCarousel
           average={profile.rating.average}
           count={profile.rating.count}

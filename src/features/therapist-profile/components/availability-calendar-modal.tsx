@@ -1,21 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import type { Route } from "next";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
+import { TrackedBookingLink } from "@/features/public-metrics";
 import { routes } from "@/lib/routes";
 
-import type {
-  AvailabilityDay,
-  TherapistProfileService,
-} from "../types";
+import type { AvailabilityDay, TherapistProfileService } from "../types";
 
 type AvailabilityCalendarModalProps = {
   days: AvailabilityDay[];
   onClose: () => void;
   service: TherapistProfileService;
+  therapistSlug: string;
 };
 
 const weekDays = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -59,13 +56,14 @@ function getCalendarDates(monthStart: Date) {
 function getReservationHref(serviceId: string, startsAt: string) {
   return `${routes.public.reservation}?service=${serviceId}&slot=${encodeURIComponent(
     startsAt,
-  )}` as Route;
+  )}`;
 }
 
 export function AvailabilityCalendarModal({
   days,
   onClose,
   service,
+  therapistSlug,
 }: AvailabilityCalendarModalProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const currentMonth = useMemo(() => getMonthStart(new Date()), []);
@@ -87,7 +85,7 @@ export function AvailabilityCalendarModal({
   );
   const visibleMonthKey = getMonthKey(visibleMonth);
   const selectedDay = selectedDate
-    ? availableByDate.get(selectedDate) ?? null
+    ? (availableByDate.get(selectedDate) ?? null)
     : null;
   const canGoPrevious = visibleMonth.getTime() > currentMonth.getTime();
   const canGoNext = visibleMonth.getTime() < latestAvailableMonth.getTime();
@@ -98,7 +96,8 @@ export function AvailabilityCalendarModal({
 
   useEffect(() => {
     const firstDayInMonth = days.find(
-      (day) => getMonthKey(new Date(`${day.date}T00:00:00`)) === visibleMonthKey,
+      (day) =>
+        getMonthKey(new Date(`${day.date}T00:00:00`)) === visibleMonthKey,
     );
     const selectedDateIsVisible =
       selectedDate &&
@@ -145,7 +144,8 @@ export function AvailabilityCalendarModal({
               Escolha um dia e horário
             </h2>
             <p className="mt-2 text-sm font-medium text-tesText-muted">
-              {service.title} · {service.durationMinutes} min · {service.priceLabel}
+              {service.title} · {service.durationMinutes} min ·{" "}
+              {service.priceLabel}
             </p>
           </div>
           <button
@@ -216,7 +216,9 @@ export function AvailabilityCalendarModal({
                     onClick={() => setSelectedDate(dateKey)}
                     type="button"
                   >
-                    <span className={!isCurrentMonth ? "opacity-35" : undefined}>
+                    <span
+                      className={!isCurrentMonth ? "opacity-35" : undefined}
+                    >
                       {date.getDate()}
                     </span>
                   </button>
@@ -234,13 +236,15 @@ export function AvailabilityCalendarModal({
             <div className="mt-4 grid gap-3">
               {selectedDay ? (
                 selectedDay.slots.map((slot) => (
-                  <Link
+                  <TrackedBookingLink
                     className="rounded-[10px] bg-white px-4 py-3 text-center text-sm font-bold text-brand-primary shadow-sm outline-none transition hover:bg-brand-primary hover:text-white focus-visible:ring-4 focus-visible:ring-brand-primary/20"
                     href={getReservationHref(slot.serviceId, slot.startsAt)}
                     key={`${slot.serviceId}-${slot.startsAt}`}
+                    serviceId={slot.serviceId}
+                    therapistSlug={therapistSlug}
                   >
                     {slot.timeLabel}
-                  </Link>
+                  </TrackedBookingLink>
                 ))
               ) : (
                 <p className="text-sm font-medium leading-6 text-tesText-muted">

@@ -419,6 +419,44 @@ O shell controla sidebar, topbar e área disponível; a página controla somente
 conteúdo e seções. Não usar margens negativas, `left/top` ou `width: calc(...)`
 para compensar o shell.
 
+### Avaliações Do Terapeuta
+
+A tela `/terapeuta/avaliacoes` segue o Figma `13366:5844` com:
+
+- hero editorial branco com título display, texto funcional e imagem responsiva;
+- cards de métricas usando tokens TES, sem métricas fictícias;
+- tabs em botões de 44px ou mais para filtros locais;
+- cards de avaliação com iniciais, estrelas, serviço/terapia, comentário,
+  status textual e CTA de resposta;
+- aside com distribuição real por nota e dicas responsáveis;
+- `TESDialog` para resposta, com label visível, erro associado e foco
+  gerenciado pelo componente compartilhado.
+
+### Métricas & Relatórios Do Terapeuta
+
+A Visão geral `/terapeuta/insights` segue o Figma `13366:3628` com adaptação
+responsiva e dados reais:
+
+- hero editorial com imagem local, título display e tabs de pelo menos 44px;
+- três KPIs operacionais em cards, sempre acompanhados de direção e contexto;
+- seletor de 30/90 dias com label visível;
+- série de atividade com barras de dados dinâmicos e equivalente textual para
+  leitores de tela;
+- conteúdo principal + aside usando `AppPageGrid`;
+- estados separados para zero, processamento, amostra insuficiente,
+  indisponibilidade e erro;
+- ranking limitado ao histórico do próprio terapeuta;
+- ocupação não é estimada quando a oferta histórica não pode ser reproduzida;
+- a aba Sessões segue o frame `13366:4259` com KPIs operacionais, evolução,
+  distribuições e heatmap agregado;
+- a aba Interesse segue o frame `13366:4896`, é exclusiva do Premium Plus e
+  protege coortes, segmentos e percentuais com amostra mínima de 10;
+- mapas de intensidade preservam contraste do texto independentemente da
+  intensidade do fundo;
+- tabelas densas possuem região rolável nomeada e equivalente textual;
+- exportação CSV é ação secundária autenticada; impressão/PDF e Aura não são
+  simuladas.
+
 ## Governança
 
 - Todo componente usa tokens de `tokens.md`.

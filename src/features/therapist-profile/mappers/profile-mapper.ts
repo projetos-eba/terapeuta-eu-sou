@@ -132,6 +132,8 @@ export type ReviewRow = {
   id: string;
   patient_context: string | null;
   rating: number;
+  reply_body?: string | null;
+  reply_published_at?: string | null;
 };
 
 function formatCurrency(cents: number) {
@@ -214,6 +216,12 @@ export function mapReviewRow(row: ReviewRow): TherapistProfileReview {
     id: row.id,
     patientContext: row.patient_context ?? "Sessão concluída pela plataforma",
     rating: row.rating,
+    reply: row.reply_body
+      ? {
+          body: row.reply_body,
+          publishedAt: row.reply_published_at ?? null,
+        }
+      : null,
   };
 }
 

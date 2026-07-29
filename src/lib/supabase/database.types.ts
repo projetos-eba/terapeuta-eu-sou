@@ -4915,6 +4915,269 @@ export type Database = {
           },
         ];
       };
+      therapist_metric_daily_aggregates: {
+        Row: {
+          booking_flow_starts: number;
+          created_at: string;
+          definition_version: number;
+          favorites_added: number;
+          fresh_through: string;
+          metric_date: string;
+          profile_views: number;
+          search_impressions: number;
+          therapist_profile_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          booking_flow_starts?: number;
+          created_at?: string;
+          definition_version?: number;
+          favorites_added?: number;
+          fresh_through: string;
+          metric_date: string;
+          profile_views?: number;
+          search_impressions?: number;
+          therapist_profile_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          booking_flow_starts?: number;
+          created_at?: string;
+          definition_version?: number;
+          favorites_added?: number;
+          fresh_through?: string;
+          metric_date?: string;
+          profile_views?: number;
+          search_impressions?: number;
+          therapist_profile_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "therapist_metric_daily_aggregates_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_home_therapists";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_daily_aggregates_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profiles_v";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_daily_aggregates_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search";
+            referencedColumns: ["therapist_profile_id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_daily_aggregates_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      therapist_metric_events: {
+        Row: {
+          created_at: string;
+          dedupe_key: string;
+          definition_version: number;
+          event_id: string;
+          event_source: string;
+          event_type: string;
+          id: string;
+          metric_date: string;
+          occurred_at: string;
+          result_position: number | null;
+          result_set_id: string | null;
+          service_id: string | null;
+          session_key_hash: string | null;
+          source_surface: string | null;
+          therapist_profile_id: string;
+          therapy_id: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          dedupe_key: string;
+          definition_version?: number;
+          event_id: string;
+          event_source: string;
+          event_type: string;
+          id?: string;
+          metric_date: string;
+          occurred_at?: string;
+          result_position?: number | null;
+          result_set_id?: string | null;
+          service_id?: string | null;
+          session_key_hash?: string | null;
+          source_surface?: string | null;
+          therapist_profile_id: string;
+          therapy_id?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          dedupe_key?: string;
+          definition_version?: number;
+          event_id?: string;
+          event_source?: string;
+          event_type?: string;
+          id?: string;
+          metric_date?: string;
+          occurred_at?: string;
+          result_position?: number | null;
+          result_set_id?: string | null;
+          service_id?: string | null;
+          session_key_hash?: string | null;
+          source_surface?: string | null;
+          therapist_profile_id?: string;
+          therapy_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "therapist_metric_events_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profile_services_v";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_private_services_v1";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_service_metrics_v1";
+            referencedColumns: ["service_id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_service_id_fkey";
+            columns: ["service_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_services";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_home_therapists";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profiles_v";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search";
+            referencedColumns: ["therapist_profile_id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_therapy_id_fkey";
+            columns: ["therapy_id"];
+            isOneToOne: false;
+            referencedRelation: "public_home_therapies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_therapy_id_fkey";
+            columns: ["therapy_id"];
+            isOneToOne: false;
+            referencedRelation: "public_matching_therapies_v";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_therapy_id_fkey";
+            columns: ["therapy_id"];
+            isOneToOne: false;
+            referencedRelation: "public_matching_therapist_counts";
+            referencedColumns: ["therapy_id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_therapy_id_fkey";
+            columns: ["therapy_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapies_v";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_therapy_id_fkey";
+            columns: ["therapy_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search";
+            referencedColumns: ["therapy_id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_therapy_id_fkey";
+            columns: ["therapy_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapy_details_v";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_therapy_id_fkey";
+            columns: ["therapy_id"];
+            isOneToOne: false;
+            referencedRelation: "therapies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_metric_events_therapy_id_fkey";
+            columns: ["therapy_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_service_allowed_catalog_v1";
+            referencedColumns: ["therapy_id"];
+          },
+        ];
+      };
+      therapist_metrics_runtime_config: {
+        Row: {
+          public_telemetry_enabled: boolean;
+          singleton: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          public_telemetry_enabled?: boolean;
+          singleton?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          public_telemetry_enabled?: boolean;
+          singleton?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       therapist_patient_relationships: {
         Row: {
           created_at: string;
@@ -5611,6 +5874,99 @@ export type Database = {
             columns: ["user_id"];
             isOneToOne: true;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      therapist_review_reply_mutation_requests: {
+        Row: {
+          created_at: string;
+          id: string;
+          operation: string;
+          payload_hash: string;
+          reply_id: string | null;
+          request_id: string;
+          review_id: string | null;
+          therapist_profile_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          operation: string;
+          payload_hash: string;
+          reply_id?: string | null;
+          request_id: string;
+          review_id?: string | null;
+          therapist_profile_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          operation?: string;
+          payload_hash?: string;
+          reply_id?: string | null;
+          request_id?: string;
+          review_id?: string | null;
+          therapist_profile_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "therapist_review_reply_mutation_reque_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_home_therapists";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_review_reply_mutation_reque_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profiles_v";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_review_reply_mutation_reque_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_search";
+            referencedColumns: ["therapist_profile_id"];
+          },
+          {
+            foreignKeyName: "therapist_review_reply_mutation_reque_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_review_reply_mutation_requests_reply_id_fkey";
+            columns: ["reply_id"];
+            isOneToOne: false;
+            referencedRelation: "review_replies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_review_reply_mutation_requests_review_id_fkey";
+            columns: ["review_id"];
+            isOneToOne: false;
+            referencedRelation: "public_home_testimonials";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_review_reply_mutation_requests_review_id_fkey";
+            columns: ["review_id"];
+            isOneToOne: false;
+            referencedRelation: "public_therapist_profile_reviews_v";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_review_reply_mutation_requests_review_id_fkey";
+            columns: ["review_id"];
+            isOneToOne: false;
+            referencedRelation: "reviews";
             referencedColumns: ["id"];
           },
         ];
@@ -8039,6 +8395,8 @@ export type Database = {
           patient_context: string | null;
           published_at: string | null;
           rating: number | null;
+          reply_body: string | null;
+          reply_published_at: string | null;
           therapist_slug: string | null;
         };
         Relationships: [];
@@ -9019,6 +9377,15 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      get_therapist_interest_metrics_v1: {
+        Args: { p_period_days?: number };
+        Returns: Json;
+      };
+      get_therapist_metrics_foundation_v1: { Args: never; Returns: Json };
+      get_therapist_metrics_overview_v1: {
+        Args: { p_period_days?: number };
+        Returns: Json;
+      };
       get_therapist_profile_actor_m1: {
         Args: { p_actor_user_id: string };
         Returns: {
@@ -9055,6 +9422,7 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      get_therapist_reviews_v1: { Args: never; Returns: Json };
       get_therapist_schedule_v1: { Args: never; Returns: Json };
       get_therapist_service_request_replay_v1: {
         Args: {
@@ -9067,6 +9435,10 @@ export type Database = {
       };
       get_therapist_session_detail_v1: {
         Args: { p_booking_id: string };
+        Returns: Json;
+      };
+      get_therapist_session_metrics_v1: {
+        Args: { p_period_days?: number };
         Returns: Json;
       };
       get_therapist_sessions_v1: {
@@ -9085,6 +9457,15 @@ export type Database = {
         Returns: Json;
       };
       get_therapist_shell_counters_v1: { Args: never; Returns: Json };
+      increment_therapist_metric_daily_v1: {
+        Args: {
+          p_event_type: string;
+          p_fresh_through: string;
+          p_metric_date: string;
+          p_therapist_profile_id: string;
+        };
+        Returns: undefined;
+      };
       is_booking_participant_profile_v1: {
         Args: { p_booking_id: string; p_profile_id: string };
         Returns: boolean;
@@ -9156,6 +9537,10 @@ export type Database = {
           p_expected_version: number;
           p_request_id: string;
         };
+        Returns: Json;
+      };
+      record_public_therapist_metric_events_v1: {
+        Args: { p_events: Json; p_session_id: string };
         Returns: Json;
       };
       refresh_session_transfer_eligibility: {
@@ -9332,6 +9717,42 @@ export type Database = {
         };
         Returns: Json;
       };
+      resolve_current_therapist_for_reviews_v1: {
+        Args: never;
+        Returns: {
+          accepts_online_sessions: boolean;
+          bio: string | null;
+          city: string | null;
+          country: string | null;
+          created_at: string;
+          headline: string | null;
+          id: string;
+          is_accepting_bookings: boolean;
+          is_public: boolean;
+          languages: string[];
+          last_published_at: string | null;
+          legal_name: string | null;
+          metadata: Json;
+          photo_url: string | null;
+          plan: Database["public"]["Enums"]["therapist_plan"];
+          profile_version: number;
+          public_name: string;
+          public_status: string;
+          slug: string;
+          state: string | null;
+          status: Database["public"]["Enums"]["therapist_status"];
+          unpublished_at: string | null;
+          updated_at: string;
+          user_id: string;
+          visibility_flags: Json;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "therapist_profiles";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       resolve_therapist_block_impact_v1: {
         Args: {
           p_actor_user_id: string;
@@ -9396,6 +9817,47 @@ export type Database = {
         };
         Returns: string;
       };
+      therapist_metric_counter_v1: {
+        Args: {
+          p_copy_key_prefix: string;
+          p_current: number;
+          p_previous: number;
+          p_unit: string;
+        };
+        Returns: Json;
+      };
+      therapist_metric_rate_v1: {
+        Args: {
+          p_copy_key_prefix: string;
+          p_current_denominator: number;
+          p_current_numerator: number;
+          p_minimum_sample?: number;
+          p_previous_denominator: number;
+          p_previous_numerator: number;
+        };
+        Returns: Json;
+      };
+      therapist_metric_sampled_counter_by_sample_v1: {
+        Args: {
+          p_copy_key_prefix: string;
+          p_current: number;
+          p_minimum_sample?: number;
+          p_observed_sample: number;
+          p_previous: number;
+          p_unit: string;
+        };
+        Returns: Json;
+      };
+      therapist_metric_sampled_counter_v1: {
+        Args: {
+          p_copy_key_prefix: string;
+          p_current: number;
+          p_minimum_sample?: number;
+          p_previous: number;
+          p_unit: string;
+        };
+        Returns: Json;
+      };
       therapist_profile_capabilities_json_m1: {
         Args: { p_plan: Database["public"]["Enums"]["therapist_plan"] };
         Returns: Json;
@@ -9451,6 +9913,14 @@ export type Database = {
           p_plan: Database["public"]["Enums"]["therapist_plan"];
         };
         Returns: Json;
+      };
+      therapist_reviews_date_label_v1: {
+        Args: { p_value: string };
+        Returns: string;
+      };
+      therapist_reviews_initials_v1: {
+        Args: { p_name: string };
+        Returns: string;
       };
       therapist_service_limit_for_plan_v1: {
         Args: { p_plan: Database["public"]["Enums"]["therapist_plan"] };
@@ -9528,6 +9998,10 @@ export type Database = {
           p_request_id: string;
           p_service_id: string;
         };
+        Returns: Json;
+      };
+      upsert_therapist_review_reply_v1: {
+        Args: { p_body: string; p_request_id: string; p_review_id: string };
         Returns: Json;
       };
       validate_platform_therapy_for_service_v1: {

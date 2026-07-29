@@ -79,7 +79,6 @@ export function mapTherapistServiceSummary(
         metrics.bookingCountDeltaPercent,
       ),
       bookingsLast30Days: number(metrics.bookingsLast30Days),
-      favoriteCount: number(metrics.favoriteCount),
     },
     onlineOnly: boolean(value.onlineOnly),
     position: number(value.position),

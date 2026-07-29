@@ -36,6 +36,7 @@ describe("TherapistServicesPage", () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText("Ainda sem dados").length).toBeGreaterThan(0);
     expect(screen.queryByText("+20%")).not.toBeInTheDocument();
+    expect(screen.queryByText("Interesses")).not.toBeInTheDocument();
   });
 
   it("filters services by status", () => {
@@ -198,7 +199,6 @@ function serviceFixture(
       bookingCount: 0,
       bookingCountDeltaPercent: null,
       bookingsLast30Days: 0,
-      favoriteCount: 0,
     },
     onlineOnly: true,
     position: 10,

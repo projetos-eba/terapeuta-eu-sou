@@ -291,6 +291,19 @@ Stack real identificada:
   público via `/api/therapist/profile/media`, grid `AppPage*` e dados derivados
   somente leitura. Publicação pode levar 2 a 3 horas para refletir em todas as
   superfícies públicas.
+- Métricas MTR-1 a MTR-5 e MTR-7 CSV: `/terapeuta/insights` usa
+  `get_therapist_metrics_overview_v1` com períodos de 30/90 dias locais
+  completos, além dos read models privados
+  `get_therapist_session_metrics_v1` e
+  `get_therapist_interest_metrics_v1`. Interesse é Premium Plus e métricas
+  protegidas exigem amostra 10. Eventos objetivos ficam em
+  `therapist_metric_events`, projeções em
+  `therapist_metric_daily_aggregates` e favoritos continuam derivados de
+  `favorite_therapists`. CSV agregado é exportado por adaptador autenticado.
+  A telemetria pública nasce desativada em
+  `therapist_metrics_runtime_config` até validação formal de base legal, aviso
+  e retenção. Não ativar por variável pública nem simular descoberta,
+  ocupação, Aura ou amostra insuficiente. MTR-6/Aura permanece pendente.
 
 ## 6. QA e definição de pronto
 

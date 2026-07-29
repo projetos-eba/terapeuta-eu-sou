@@ -59,6 +59,32 @@ em `therapist_profile_content_versions`, publicação é feita pelo terapeuta vi
 separados. Publicações podem levar até 2 a 3 horas para refletir em todas as
 superfícies públicas.
 
+A página de Avaliações do terapeuta está implementada em
+`/terapeuta/avaliacoes`, seguindo o Figma `13366:5844`. Ela usa o read model
+privado `get_therapist_reviews_v1`, permite responder avaliações publicadas de
+sessões online pagas e concluídas por `upsert_therapist_review_reply_v1`, e
+sincroniza respostas publicadas com `public_therapist_profile_reviews_v` para
+`/terapeutas/:slug` sem expor dados administrativos ou privados.
+
+MTR-1 a MTR-5 e o corte CSV de MTR-7 de Métricas & Relatórios estão
+implementados em
+`/terapeuta/insights`, seguindo a hierarquia do Figma `13366:3628`. O read
+model privado `get_therapist_metrics_overview_v1` oferece períodos de 30 ou 90
+dias completos, três contadores operacionais, série de sessões, descoberta,
+funil por coorte, favoritos do perfil e ranking das próprias terapias. A
+aba Sessões usa `get_therapist_session_metrics_v1`; a aba Interesse usa
+`get_therapist_interest_metrics_v1` e é exclusiva do Premium Plus. Ambas
+preservam a amostra mínima de 10 e não expõem pacientes. A exportação CSV
+autenticada reutiliza os mesmos contratos agregados.
+
+A telemetria pública é idempotente e agregada por dia, mas nasce desativada até
+a validação formal de privacidade e retenção. Ocupação permanece indisponível
+até existir histórico reproduzível da oferta. Zero, processamento, amostra
+insuficiente e falha são estados diferentes; Aura não recebe dados simulados.
+Contratos:
+`docs/architecture/therapist-metrics-mtr1-mtr3.md` e
+`docs/architecture/therapist-metrics-mtr4-mtr5-mtr7.md`.
+
 A administração do catálogo canônico de terapias está implementada em
 `/admin/terapias`. O shell administrativo usa sessão admin separada, RLS
 explícita e a Edge Function `admin-therapy-catalog-command`; o app Next atua
