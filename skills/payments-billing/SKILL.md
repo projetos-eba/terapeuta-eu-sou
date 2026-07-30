@@ -14,6 +14,10 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 - TES revenue is subscription revenue plus platform commission. Therapist share is a payable obligation until transfer.
 - Stripe fees are TES cost and must not reduce the therapist 80% share.
 - Connect transfer and bank payout are different events.
+- Connect Accounts v2 creation must send the Brazilian identity country plus
+  the recipient transfer capability and the merchant card payment capability
+  required by Stripe; this does not change the TES separate charges and
+  transfers model.
 - Payment confirmed is not service performed.
 - Eligibility requires paid payment, service confirmation, safety period, Connect readiness, and no refund/dispute/block.
 - The TES, nesta versao, nao emite nota fiscal. Para cobranca e comprovacao de pagamento, sao utilizadas invoices e recibos gerados pela Stripe. Esses documentos nao devem ser apresentados como substitutos de nota fiscal.

@@ -1,5 +1,8 @@
 import { handleOptions } from "../_shared/auth/cors.ts";
-import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
+import {
+  SupabaseHttpError,
+  SupabaseRestClient,
+} from "../_shared/auth/supabase-rest.ts";
 import {
   DomainError,
   failure,
@@ -45,11 +48,7 @@ runtime.serve(async (request) => {
       client,
       request,
     );
-    const existing = await client.get<ConnectAccountRow[]>(
-      `/rest/v1/therapist_connect_accounts?select=id,stripe_account_id,onboarding_status,stripe_transfers_status&therapist_profile_id=eq.${encodeURIComponent(
-        therapist.id,
-      )}&limit=1`,
-    );
+    const existing = await getExistingConnectAccount(client, therapist.id);
 
     if (existing[0]) {
       return success({ account: existing[0], reused: true });
@@ -67,40 +66,108 @@ runtime.serve(async (request) => {
     });
     const stripeAccountId = getAccountId(account);
     const state = deriveConnectAccountState(account);
-    const inserted = await client.post<ConnectAccountRow[]>(
-      "/rest/v1/therapist_connect_accounts?select=id,stripe_account_id,onboarding_status,stripe_transfers_status",
-      {
-        dashboard_type: "express",
-        fees_collector: "application",
-        last_synced_at: new Date().toISOString(),
-        losses_collector: "application",
-        disabled_reason: state.disabledReason,
-        onboarding_status:
-          state.onboardingStatus === "restricted"
-            ? "account_created"
-            : state.onboardingStatus,
-        operational_status: state.operationalStatus,
-        pending_requirements: state.pendingRequirements,
-        stripe_account_id: stripeAccountId,
-        stripe_transfers_status: state.transfersStatus,
-        therapist_profile_id: therapist.id,
-      },
-      "return=representation",
-    );
+    const inserted = await insertConnectAccount(client, {
+      charges_enabled: state.chargesEnabled,
+      details_submitted: state.detailsSubmitted,
+      disabled_reason: state.disabledReason,
+      last_synced_at: new Date().toISOString(),
+      onboarding_status:
+        state.onboardingStatus === "restricted"
+          ? "account_created"
+          : state.onboardingStatus,
+      operational_status: state.operationalStatus,
+      pending_requirements: state.pendingRequirements,
+      payouts_enabled: state.payoutsEnabled,
+      stripe_account_id: stripeAccountId,
+      stripe_transfers_status: state.transfersStatus,
+      therapist_profile_id: therapist.id,
+    });
 
-    await client.post(
-      "/rest/v1/therapist_connect_account_snapshots",
-      {
-        connect_account_id: inserted[0].id,
-        snapshot: account,
-      },
-      "return=minimal",
-    );
+    await recordConnectAccountSnapshot(client, inserted.rows[0].id, account);
 
-    return success({ account: inserted[0], reused: false });
+    return success({ account: inserted.rows[0], reused: inserted.reused });
   } catch (error) {
     return failure(error, requestId);
   }
 });
+
+function getExistingConnectAccount(
+  client: SupabaseRestClient,
+  therapistProfileId: string,
+) {
+  return client.get<ConnectAccountRow[]>(
+    `/rest/v1/therapist_connect_accounts?select=id,stripe_account_id,onboarding_status,stripe_transfers_status&therapist_profile_id=eq.${encodeURIComponent(
+      therapistProfileId,
+    )}&limit=1`,
+  );
+}
+
+async function insertConnectAccount(
+  client: SupabaseRestClient,
+  input: {
+    charges_enabled: boolean;
+    details_submitted: boolean;
+    disabled_reason: string | null;
+    last_synced_at: string;
+    onboarding_status: string;
+    operational_status: string;
+    pending_requirements: unknown;
+    payouts_enabled: boolean;
+    stripe_account_id: string;
+    stripe_transfers_status: string;
+    therapist_profile_id: string;
+  },
+): Promise<{ reused: boolean; rows: ConnectAccountRow[] }> {
+  try {
+    const rows = await client.post<ConnectAccountRow[]>(
+      "/rest/v1/therapist_connect_accounts?select=id,stripe_account_id,onboarding_status,stripe_transfers_status",
+      {
+        dashboard_type: "express",
+        fees_collector: "application",
+        losses_collector: "application",
+        ...input,
+      },
+      "return=representation",
+    );
+
+    return { reused: false, rows };
+  } catch (error) {
+    if (error instanceof SupabaseHttpError && error.status === 409) {
+      const existing = await getExistingConnectAccount(
+        client,
+        input.therapist_profile_id,
+      );
+
+      if (existing[0]) return { reused: true, rows: existing };
+    }
+
+    throw error;
+  }
+}
+
+async function recordConnectAccountSnapshot(
+  client: SupabaseRestClient,
+  connectAccountId: string,
+  account: Record<string, unknown>,
+) {
+  try {
+    await client.post(
+      "/rest/v1/therapist_connect_account_snapshots",
+      {
+        connect_account_id: connectAccountId,
+        snapshot: account,
+      },
+      "return=minimal",
+    );
+  } catch (error) {
+    console.warn(
+      JSON.stringify({
+        code: "CONNECT_ACCOUNT_SNAPSHOT_WRITE_FAILED",
+        message:
+          error instanceof SupabaseHttpError ? error.safeDetails : "unknown",
+      }),
+    );
+  }
+}
 
 export {};
