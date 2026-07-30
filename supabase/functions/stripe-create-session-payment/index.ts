@@ -17,6 +17,7 @@ import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 
 type Body = {
   bookingId?: string;
+  checkoutUiMode?: "embedded" | "hosted";
 };
 
 type BookingRow = {
@@ -57,6 +58,8 @@ runtime.serve(async (request) => {
     const { profile: patient, user } = await requirePatient(client, request);
     const body = await parseJsonBody<Body>(request);
     const bookingId = requireUuid(body.bookingId, "booking_id");
+    const checkoutUiMode =
+      body.checkoutUiMode === "embedded" ? "embedded" : "hosted";
     const booking = await getBooking(client, bookingId);
 
     if (booking.patient_profile_id !== patient.id) {
@@ -119,9 +122,7 @@ runtime.serve(async (request) => {
       booking.id,
       sessionPayment.id,
     ]);
-    const checkout = await stripe.checkout.sessions.create(
-      {
-        cancel_url: `${config.siteUrl}/reserva?booking=${booking.id}&payment=canceled`,
+    const checkoutSessionParams = {
         client_reference_id: booking.id,
         customer: customer.stripe_customer_id,
         integration_identifier: `tes_pay_${randomLetters(8)}`,
@@ -152,7 +153,7 @@ runtime.serve(async (request) => {
           tes_session_payment_id: sessionPayment.id,
           tes_therapist_id: booking.therapist_profile_id,
         },
-        mode: "payment",
+        mode: "payment" as const,
         payment_intent_data: {
           metadata: {
             environment: config.environment,
@@ -166,8 +167,18 @@ runtime.serve(async (request) => {
           },
           transfer_group: `tes_booking_${booking.id}`,
         },
-        success_url: `${config.siteUrl}/reserva/sucesso?booking=${booking.id}&session_id={CHECKOUT_SESSION_ID}`,
-      },
+        ...(checkoutUiMode === "embedded"
+          ? {
+              return_url: `${config.siteUrl}/reserva/sucesso?booking=${booking.id}&session_id={CHECKOUT_SESSION_ID}`,
+              ui_mode: "embedded_page" as const,
+            }
+          : {
+              cancel_url: `${config.siteUrl}/reserva?booking=${booking.id}&payment=canceled`,
+              success_url: `${config.siteUrl}/reserva/sucesso?booking=${booking.id}&session_id={CHECKOUT_SESSION_ID}`,
+            }),
+      };
+    const checkout = await stripe.checkout.sessions.create(
+      checkoutSessionParams,
       { idempotencyKey },
     );
 
@@ -190,6 +201,7 @@ runtime.serve(async (request) => {
       "resolution=merge-duplicates,return=minimal",
     );
     return success({
+      clientSecret: checkout.client_secret ?? null,
       checkoutSessionId: checkout.id,
       sessionPaymentId: sessionPayment.id,
       url: checkout.url,

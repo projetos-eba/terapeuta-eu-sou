@@ -1,29 +1,32 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-
-import { ReservationLinkButton } from "./checkout-button";
+import Link from "next/link";
 
 export function PrepareForm({
+  acceptedTerms,
   canContinueToPayment,
-  paymentHref,
+  marketingConsent,
+  onAdvanceToPayment,
+  onMarketingConsentChange,
+  onTermsChange,
 }: {
+  acceptedTerms: boolean;
   canContinueToPayment: boolean;
-  paymentHref: string;
+  marketingConsent: boolean;
+  onAdvanceToPayment: () => void;
+  onMarketingConsentChange: (accepted: boolean) => void;
+  onTermsChange: (accepted: boolean) => void;
 }) {
-  const [accepted, setAccepted] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    if (!accepted) {
-      event.preventDefault();
-      setError("Aceite os termos para continuar.");
-      return;
-    }
-  }
+  const canAdvance = canContinueToPayment && acceptedTerms;
 
   return (
-    <form className="space-y-8" onSubmit={handleSubmit}>
+    <form
+      className="space-y-8"
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (canAdvance) onAdvanceToPayment();
+      }}
+    >
       <div>
         <label
           htmlFor="session-intention"
@@ -77,25 +80,42 @@ export function PrepareForm({
         <div className="mt-5 space-y-5">
           <label className="flex items-start gap-4 text-sm font-semibold leading-7 text-tesText-secondary">
             <input
-              checked={accepted}
+              aria-describedby="reservation-terms-description"
+              checked={acceptedTerms}
               className="mt-1 size-5 rounded border-border text-brand-primary focus:ring-brand-primary"
               name="terms"
-              onChange={(event) => {
-                setAccepted(event.currentTarget.checked);
-                setError(null);
-              }}
+              onChange={(event) => onTermsChange(event.currentTarget.checked)}
               type="checkbox"
             />
-            <span>
-              Aceito os Termos de Uso e a Política de Privacidade do Terapeuta
-              Eu Sou. Compreendo que cancelamentos próximos ao horário seguem as
-              políticas vigentes da plataforma.
+            <span id="reservation-terms-description">
+              Aceito os{" "}
+              <Link
+                className="font-extrabold text-brand-primary underline-offset-4 hover:underline"
+                href="/termos"
+                target="_blank"
+              >
+                Termos de Uso
+              </Link>{" "}
+              e a{" "}
+              <Link
+                className="font-extrabold text-brand-primary underline-offset-4 hover:underline"
+                href="/privacidade"
+                target="_blank"
+              >
+                Política de Privacidade
+              </Link>{" "}
+              do Terapeuta Eu Sou. Compreendo que cancelamentos próximos ao
+              horário seguem as políticas vigentes da plataforma.
             </span>
           </label>
           <label className="flex items-start gap-4 text-sm font-semibold leading-7 text-tesText-secondary">
             <input
+              checked={marketingConsent}
               className="mt-1 size-5 rounded border-border text-brand-primary focus:ring-brand-primary"
               name="marketing"
+              onChange={(event) =>
+                onMarketingConsentChange(event.currentTarget.checked)
+              }
               type="checkbox"
             />
             <span>
@@ -104,19 +124,24 @@ export function PrepareForm({
             </span>
           </label>
         </div>
-        {error ? (
-          <p role="alert" className="mt-3 text-sm font-bold text-status-danger">
-            {error}
+        {!acceptedTerms ? (
+          <p
+            role="alert"
+            className="mt-3 text-sm font-bold text-status-danger"
+          >
+            Aceite os termos para continuar para o pagamento.
           </p>
         ) : null}
       </section>
 
-      <ReservationLinkButton
-        href={paymentHref}
-        disabled={!canContinueToPayment || !accepted}
+      <button
+        className="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-full bg-brand-primary px-7 py-3 text-base font-extrabold text-white shadow-soft transition hover:bg-brand-primaryHover focus:outline-none focus:ring-4 focus:ring-ring/20 disabled:pointer-events-none disabled:opacity-50"
+        disabled={!canAdvance}
+        type="submit"
       >
         Avançar para pagamento
-      </ReservationLinkButton>
+        <span aria-hidden="true">→</span>
+      </button>
     </form>
   );
 }

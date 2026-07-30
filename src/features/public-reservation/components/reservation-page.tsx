@@ -1,5 +1,9 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import {
   CalendarDays,
@@ -22,10 +26,15 @@ import { cn } from "@/lib/utils";
 
 import {
   buildClientAuthHref,
+  buildReservationHref,
   buildReservationSchedule,
 } from "../reservation-data";
 import type { AvailabilityDay } from "@/features/therapist-profile/types";
-import type { ReservationContext, ReservationSchedule } from "../types";
+import type {
+  ReservationContext,
+  ReservationSchedule,
+  ReservationStep,
+} from "../types";
 import { CheckoutButton, ReservationLinkButton } from "./checkout-button";
 import { HoldCountdown } from "./hold-countdown";
 import { PrepareForm } from "./prepare-form";
@@ -37,16 +46,110 @@ export function ReservationPage({
   availabilityDays?: AvailabilityDay[];
   context: ReservationContext;
 }) {
+  const router = useRouter();
   const schedule = buildReservationSchedule(context, availabilityDays);
   const loginHref = buildClientAuthHref("login", context.currentPath);
   const signupHref = buildClientAuthHref("signup", context.currentPath);
+  const reservationKey = `${context.serviceId ?? "service"}:${context.selectedSlot ?? "slot"}`;
+  const query = useMemo(
+    () => new URLSearchParams(context.currentPath.split("?")[1] ?? ""),
+    [context.currentPath],
+  );
+  const momentStepHref = useMemo(
+    () => buildReservationHref(query, { etapa: "momento" }),
+    [query],
+  );
+  const prepareStepHref = useMemo(
+    () => buildReservationHref(query, { etapa: "preparar" }),
+    [query],
+  );
+  const paymentStepHref = useMemo(
+    () => buildReservationHref(query, { etapa: "pagamento" }),
+    [query],
+  );
+  const [currentStep, setCurrentStep] = useState<ReservationStep>(() =>
+    context.step === "pagamento"
+      ? context.hasRequiredCheckoutData
+        ? "preparar"
+        : "momento"
+      : context.step,
+  );
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
+  const previousReservationKeyRef = useRef(reservationKey);
+  const [journeyError, setJourneyError] = useState<string | null>(
+    context.step === "pagamento"
+      ? "Aceite os termos antes de seguir para o pagamento."
+      : null,
+  );
+
+  useEffect(() => {
+    if (previousReservationKeyRef.current === reservationKey) return;
+    previousReservationKeyRef.current = reservationKey;
+    setAcceptedTerms(false);
+    setMarketingConsent(false);
+    setJourneyError(
+      context.step === "pagamento"
+        ? "Aceite os termos antes de seguir para o pagamento."
+        : null,
+    );
+    setCurrentStep(
+      context.step === "pagamento"
+        ? context.hasRequiredCheckoutData
+          ? "preparar"
+          : "momento"
+        : context.step,
+    );
+  }, [context.hasRequiredCheckoutData, context.step, reservationKey]);
+
+  useEffect(() => {
+    if (context.step === "pagamento" && !acceptedTerms) {
+      setCurrentStep(context.hasRequiredCheckoutData ? "preparar" : "momento");
+      return;
+    }
+
+    setCurrentStep(context.step);
+  }, [acceptedTerms, context.hasRequiredCheckoutData, context.step]);
+
+  useEffect(() => {
+    if (context.step === "pagamento" && !acceptedTerms) {
+      router.replace(prepareStepHref);
+    }
+  }, [acceptedTerms, context.step, prepareStepHref, router]);
+
+  const canPrepare =
+    context.canPrepareEncounter && context.isPatientAuthenticated;
+  const canPay = canPrepare && acceptedTerms;
+  const activeContext = { ...context, step: currentStep };
+
+  const goToStep = useCallback(
+    (step: ReservationStep) => {
+      if (step === "pagamento" && !canPay) {
+        setJourneyError("Aceite os termos antes de seguir para o pagamento.");
+        setCurrentStep("preparar");
+        router.push(prepareStepHref);
+        return;
+      }
+
+      setJourneyError(null);
+      setCurrentStep(step);
+      router.push(
+        step === "momento"
+          ? momentStepHref
+          : step === "preparar"
+            ? prepareStepHref
+            : paymentStepHref,
+      );
+    },
+    [canPay, momentStepHref, paymentStepHref, prepareStepHref, router],
+  );
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,#FFFFFF_0%,#FBF8FF_48%,#FFFFFF_100%)] text-brand-deep">
       <ReservationTopbar />
       <div className="mx-auto w-full max-w-[1680px] px-5 py-10 sm:px-8 lg:px-12 lg:py-16">
         <Link
-          href={routes.public.therapists as Route}
+          href={momentStepHref as Route<string>}
           className="inline-flex min-h-11 items-center gap-2 text-sm font-extrabold text-tesText-muted transition hover:text-brand-primary"
         >
           <ChevronLeft className="size-4" aria-hidden="true" />
@@ -55,8 +158,16 @@ export function ReservationPage({
 
         <div className="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_520px] xl:gap-12">
           <section>
-            <ReservationStepper current={context.step} />
-            {context.step === "momento" ? (
+            <ReservationStepper current={currentStep} onNavigate={goToStep} />
+            {journeyError ? (
+              <p
+                role="alert"
+                className="mb-6 rounded-2xl border border-status-danger/30 bg-status-dangerBg px-4 py-3 text-sm font-bold text-status-danger"
+              >
+                {journeyError}
+              </p>
+            ) : null}
+            {currentStep === "momento" ? (
               <MomentStep
                 context={context}
                 loginHref={loginHref}
@@ -64,16 +175,35 @@ export function ReservationPage({
                 signupHref={signupHref}
               />
             ) : null}
-            {context.step === "preparar" ? (
-              <PrepareStep context={context} />
+            {currentStep === "preparar" ? (
+              <PrepareStep
+                acceptedTerms={acceptedTerms}
+                context={context}
+                marketingConsent={marketingConsent}
+                onMarketingConsentChange={setMarketingConsent}
+                onTermsChange={(accepted) => {
+                  setAcceptedTerms(accepted);
+                  if (accepted) setJourneyError(null);
+                }}
+                onAdvanceToPayment={() => goToStep("pagamento")}
+              />
             ) : null}
-            {context.step === "pagamento" ? (
-              <PaymentStep context={context} loginHref={loginHref} />
+            {currentStep === "pagamento" ? (
+              <PaymentStep
+                acceptedTerms={acceptedTerms}
+                context={context}
+                loginHref={loginHref}
+              />
             ) : null}
           </section>
 
           <aside className="space-y-6 lg:sticky lg:top-6 lg:self-start">
-            <ReservationSummary context={context} />
+            <ReservationSummary
+              acceptedTerms={acceptedTerms}
+              canPay={canPay}
+              context={activeContext}
+              onAdvanceToPayment={() => goToStep("pagamento")}
+            />
             <PolicyCard />
           </aside>
         </div>
@@ -99,7 +229,13 @@ function ReservationTopbar() {
   );
 }
 
-function ReservationStepper({ current }: { current: ReservationContext["step"] }) {
+function ReservationStepper({
+  current,
+  onNavigate,
+}: {
+  current: ReservationContext["step"];
+  onNavigate: (step: ReservationStep) => void;
+}) {
   const steps = [
     ["momento", "Escolha seu momento"],
     ["preparar", "Prepare seu encontro"],
@@ -113,6 +249,26 @@ function ReservationStepper({ current }: { current: ReservationContext["step"] }
         const completed =
           (current === "preparar" && step === "momento") ||
           (current === "pagamento" && step !== "pagamento");
+        const clickable = completed;
+        const content = (
+          <>
+            <span
+              className={cn(
+                "grid size-8 shrink-0 place-items-center rounded-full",
+                active ? "bg-white/20" : "bg-white",
+              )}
+              aria-hidden="true"
+            >
+              {completed ? <Check className="size-4" /> : index + 1}
+            </span>
+            <span>
+              {label}
+              {completed ? (
+                <span className="sr-only">, etapa concluída</span>
+              ) : null}
+            </span>
+          </>
+        );
 
         return (
           <li
@@ -125,16 +281,19 @@ function ReservationStepper({ current }: { current: ReservationContext["step"] }
                   : "border-border bg-white text-tesText-muted",
             )}
             key={step}
+            aria-current={active ? "step" : undefined}
           >
-            <span
-              className={cn(
-                "grid size-8 shrink-0 place-items-center rounded-full",
-                active ? "bg-white/20" : "bg-white",
-              )}
-            >
-              {completed ? <Check className="size-4" /> : index + 1}
-            </span>
-            {label}
+            {clickable ? (
+              <button
+                className="flex min-h-11 w-full items-center gap-3 text-left focus:outline-none focus:ring-4 focus:ring-ring/20"
+                onClick={() => onNavigate(step)}
+                type="button"
+              >
+                {content}
+              </button>
+            ) : (
+              content
+            )}
           </li>
         );
       })}
@@ -298,7 +457,21 @@ function MomentStep({
   );
 }
 
-function PrepareStep({ context }: { context: ReservationContext }) {
+function PrepareStep({
+  acceptedTerms,
+  context,
+  marketingConsent,
+  onAdvanceToPayment,
+  onMarketingConsentChange,
+  onTermsChange,
+}: {
+  acceptedTerms: boolean;
+  context: ReservationContext;
+  marketingConsent: boolean;
+  onAdvanceToPayment: () => void;
+  onMarketingConsentChange: (accepted: boolean) => void;
+  onTermsChange: (accepted: boolean) => void;
+}) {
   return (
     <div className="space-y-8">
       <PageIntro
@@ -307,19 +480,25 @@ function PrepareStep({ context }: { context: ReservationContext }) {
         description="Se desejar, use este espaço para compartilhar o que gostaria de trabalhar. Isso ajuda seu terapeuta a acolher melhor o início do encontro."
       />
       <PrepareForm
+        acceptedTerms={acceptedTerms}
         canContinueToPayment={
           context.canPrepareEncounter && context.isPatientAuthenticated
         }
-        paymentHref={context.paymentStepHref}
+        marketingConsent={marketingConsent}
+        onAdvanceToPayment={onAdvanceToPayment}
+        onMarketingConsentChange={onMarketingConsentChange}
+        onTermsChange={onTermsChange}
       />
     </div>
   );
 }
 
 function PaymentStep({
+  acceptedTerms,
   context,
   loginHref,
 }: {
+  acceptedTerms: boolean;
   context: ReservationContext;
   loginHref: string;
 }) {
@@ -353,7 +532,7 @@ function PaymentStep({
         </NumberedSection>
 
         <NumberedSection number={2} title="Informações de pagamento">
-          <TESCard as="div" className="rounded-[24px] p-6">
+          <TESCard as="div" className="rounded-[24px] p-6" id="stripe-checkout">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <CreditCard className="size-6 text-brand-primary" />
@@ -365,15 +544,14 @@ function PaymentStep({
                 Checkout Stripe
               </span>
             </div>
-            <div className="mt-6 rounded-[18px] bg-surface-muted p-5">
-              <div className="flex items-start gap-3">
-                <ShieldCheck className="mt-1 size-5 shrink-0 text-brand-primary" />
-                <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-                  Você será encaminhado para o Checkout seguro. Não coletamos
-                  número de cartão, CVC ou dados bancários nesta página.
-                </p>
-              </div>
-            </div>
+            <CheckoutButton
+              acceptedTerms={acceptedTerms}
+              disabled={!context.hasRequiredCheckoutData}
+              isPatientAuthenticated={context.isPatientAuthenticated}
+              loginHref={loginHref}
+              serviceId={context.serviceId}
+              startsAt={context.selectedSlot}
+            />
           </TESCard>
         </NumberedSection>
       </section>
@@ -555,7 +733,17 @@ function ReadonlyInfo({
   );
 }
 
-function ReservationSummary({ context }: { context: ReservationContext }) {
+function ReservationSummary({
+  acceptedTerms,
+  canPay,
+  context,
+  onAdvanceToPayment,
+}: {
+  acceptedTerms: boolean;
+  canPay: boolean;
+  context: ReservationContext;
+  onAdvanceToPayment: () => void;
+}) {
   const loginHref = buildClientAuthHref("login", context.currentPath);
 
   return (
@@ -636,24 +824,41 @@ function ReservationSummary({ context }: { context: ReservationContext }) {
                 <input
                   id="coupon"
                   className="min-h-12 min-w-0 flex-1 rounded-2xl border border-border bg-white px-4 text-sm font-bold text-brand-deep outline-none focus:ring-4 focus:ring-ring/20"
+                  disabled
                   placeholder="Código"
                 />
                 <button
-                  className="min-h-12 rounded-2xl bg-status-infoBg px-5 text-sm font-extrabold text-brand-deep"
+                  className="min-h-12 rounded-2xl bg-status-infoBg px-5 text-sm font-extrabold text-brand-deep disabled:opacity-60"
+                  disabled
                   type="button"
                 >
                   Aplicar
                 </button>
               </div>
+              <p className="text-xs font-bold leading-5 text-tesText-muted">
+                Cupons ainda não estão disponíveis para esta reserva. O valor
+                final será calculado no servidor e exibido no checkout.
+              </p>
             </div>
-            <CheckoutButton
-              disabled={!context.canPrepareEncounter}
-              isPatientAuthenticated={context.isPatientAuthenticated}
-              loginHref={loginHref}
-              serviceId={context.serviceId}
-              startsAt={context.selectedSlot}
-            />
+            <TESButton
+              href="#stripe-checkout"
+              variant="secondary"
+              size="lg"
+              className="w-full"
+            >
+              Ir para pagamento seguro
+            </TESButton>
           </>
+        ) : context.step === "preparar" ? (
+          <button
+            className="inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-full bg-brand-primary px-7 py-3 text-base font-extrabold text-white shadow-soft transition hover:bg-brand-primaryHover focus:outline-none focus:ring-4 focus:ring-ring/20 disabled:pointer-events-none disabled:opacity-50"
+            disabled={!canPay}
+            onClick={onAdvanceToPayment}
+            type="button"
+          >
+            Avançar para pagamento
+            <span aria-hidden="true">→</span>
+          </button>
         ) : (
           <ReservationLinkButton
             href={context.nextStepHref}
@@ -666,6 +871,11 @@ function ReservationSummary({ context }: { context: ReservationContext }) {
               : "Avançar para pagamento"}
           </ReservationLinkButton>
         )}
+        {context.step === "preparar" && !acceptedTerms ? (
+          <p className="text-sm font-bold text-tesText-muted">
+            Aceite os Termos de Uso e a Política de Privacidade para continuar.
+          </p>
+        ) : null}
       </div>
     </TESCard>
   );

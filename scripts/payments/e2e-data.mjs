@@ -3,6 +3,7 @@ import {
   loadEnvFiles,
   requireSupabaseServiceRoleKey,
 } from "./env-utils.mjs";
+import { execFileSync } from "node:child_process";
 
 loadEnvFiles();
 
@@ -271,9 +272,9 @@ async function cleanup() {
     sessionPaymentIds,
   );
   await deleteIn("session_payments", "id", sessionPaymentIds);
-  await deleteIn("payments", "booking_id", bookingIds);
+  await deleteLegacyPayments(bookingIds);
   await deleteIn("reviews", "booking_id", bookingIds);
-  await deleteIn("bookings", "id", bookingIds);
+  await deleteBookings(bookingIds);
   await deleteIn("availability_rules", "therapist_profile_id", therapistIds);
   await deleteIn("therapist_services", "therapist_profile_id", therapistIds);
   await deleteIn(
@@ -529,7 +530,7 @@ async function createScenario(input) {
       prefer: "return=representation",
     },
   );
-  await supabaseJson("/rest/v1/payments", {
+  await insertLegacyPaymentProjection({
     body: JSON.stringify({
       amount_cents: gross,
       booking_id: booking.id,
@@ -668,6 +669,144 @@ async function deleteIn(table, column, values) {
       },
     );
   }
+}
+
+async function deleteInOptional(table, column, values) {
+  for (const value of values.filter(Boolean)) {
+    try {
+      await supabaseJson(
+        `/rest/v1/${table}?${column}=eq.${encodeURIComponent(value)}`,
+        {
+          method: "DELETE",
+          prefer: "return=minimal",
+        },
+      );
+    } catch (error) {
+      if (isLegacyPaymentsPermissionError(table, error)) {
+        console.warn(
+          "Skipping legacy payments cleanup because public.payments is not writable in this environment.",
+        );
+        continue;
+      }
+
+      throw error;
+    }
+  }
+}
+
+async function deleteLegacyPayments(bookingIds) {
+  if (tryDeleteLegacyPaymentsWithLocalDocker(bookingIds)) return;
+
+  await deleteInOptional("payments", "booking_id", bookingIds);
+}
+
+function tryDeleteLegacyPaymentsWithLocalDocker(bookingIds) {
+  const ids = bookingIds.filter(Boolean);
+  if (!ids.length) return true;
+
+  if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/)/.test(supabaseUrl)) {
+    return false;
+  }
+
+  try {
+    const containers = execFileSync(
+      "docker",
+      ["ps", "--format", "{{.Names}}"],
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"],
+      },
+    )
+      .split("\n")
+      .map((name) => name.trim())
+      .filter(Boolean);
+    const dbContainer = containers.find((name) =>
+      name.startsWith("supabase_db_"),
+    );
+
+    if (!dbContainer) return false;
+
+    const uuidList = ids
+      .map((id) => `'${String(id).replace(/'/g, "''")}'::uuid`)
+      .join(",");
+    execFileSync(
+      "docker",
+      [
+        "exec",
+        "-i",
+        dbContainer,
+        "psql",
+        "-U",
+        "postgres",
+        "-d",
+        "postgres",
+        "-c",
+        `delete from public.payments where booking_id = any(array[${uuidList}]);`,
+      ],
+      {
+        stdio: "ignore",
+      },
+    );
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function deleteBookings(values) {
+  for (const value of values.filter(Boolean)) {
+    try {
+      await supabaseJson(
+        `/rest/v1/bookings?id=eq.${encodeURIComponent(value)}`,
+        {
+          method: "DELETE",
+          prefer: "return=minimal",
+        },
+      );
+    } catch (error) {
+      if (isLegacyPaymentsBookingReferenceError(error)) {
+        console.warn(
+          "Skipping booking cleanup because a legacy public.payments row still references it.",
+        );
+        continue;
+      }
+
+      throw error;
+    }
+  }
+}
+
+async function insertLegacyPaymentProjection(init) {
+  try {
+    await supabaseJson("/rest/v1/payments", init);
+  } catch (error) {
+    if (isLegacyPaymentsPermissionError("payments", error)) {
+      console.warn(
+        "Skipping legacy payments projection seed because public.payments is not writable in this environment.",
+      );
+      return;
+    }
+
+    throw error;
+  }
+}
+
+function isLegacyPaymentsPermissionError(table, error) {
+  const message = String(error instanceof Error ? error.message : error);
+  return (
+    table === "payments" &&
+    message.includes("/rest/v1/payments") &&
+    message.includes("permission denied for table payments")
+  );
+}
+
+function isLegacyPaymentsBookingReferenceError(error) {
+  const message = String(error instanceof Error ? error.message : error);
+  return (
+    message.includes("/rest/v1/bookings") &&
+    message.includes("payments_booking_id_fkey")
+  );
 }
 
 async function supabaseJson(path, init = {}) {
