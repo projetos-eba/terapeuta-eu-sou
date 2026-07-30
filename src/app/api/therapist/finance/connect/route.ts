@@ -11,6 +11,7 @@ type EdgeEnvelope =
       data?: {
         url?: string;
       };
+      httpStatus?: number;
       ok: true;
     }
   | {
@@ -19,6 +20,7 @@ type EdgeEnvelope =
         message?: string;
         requestId?: string;
       };
+      httpStatus?: number;
       ok: false;
     };
 
@@ -48,6 +50,7 @@ export async function POST(request: Request) {
     if (action === "sync") {
       const sync = await callConnectFunction(
         config.url,
+        config.apiKey,
         accessToken,
         "stripe-connect-sync-account",
       );
@@ -62,6 +65,7 @@ export async function POST(request: Request) {
     if (action === "login") {
       const loginLink = await callConnectFunction(
         config.url,
+        config.apiKey,
         accessToken,
         "stripe-connect-create-login-link",
       );
@@ -70,6 +74,7 @@ export async function POST(request: Request) {
 
     const account = await callConnectFunction(
       config.url,
+      config.apiKey,
       accessToken,
       "stripe-connect-create-account",
     );
@@ -77,6 +82,7 @@ export async function POST(request: Request) {
 
     const accountLink = await callConnectFunction(
       config.url,
+      config.apiKey,
       accessToken,
       "stripe-connect-create-account-link",
     );
@@ -100,6 +106,7 @@ function parseAction(value: unknown): TherapistFinanceConnectAction | null {
 
 async function callConnectFunction(
   supabaseUrl: string,
+  supabasePublishableKey: string,
   accessToken: string,
   name: string,
 ) {
@@ -109,6 +116,7 @@ async function callConnectFunction(
       body: "{}",
       cache: "no-store",
       headers: {
+        apikey: supabasePublishableKey,
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
@@ -121,6 +129,7 @@ async function callConnectFunction(
 
   if (!payload) {
     return {
+      httpStatus: response.status,
       ok: false,
       error: {
         message: "Não foi possível ler a resposta da Stripe.",
@@ -128,7 +137,7 @@ async function callConnectFunction(
     } satisfies EdgeEnvelope;
   }
 
-  return payload;
+  return { ...payload, httpStatus: response.status };
 }
 
 function relayConnectLink(envelope: EdgeEnvelope) {
@@ -159,7 +168,7 @@ function relayFailure(envelope: EdgeEnvelope, status: number) {
         requestId: envelope.error?.requestId,
       },
     },
-    { headers: noStoreHeaders, status },
+    { headers: noStoreHeaders, status: envelope.httpStatus ?? status },
   );
 }
 

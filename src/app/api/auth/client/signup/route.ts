@@ -28,7 +28,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const validation = validateClientSignup(toSignupInput(body));
+  const input = toSignupInput(body);
+  const validation = validateClientSignup(input);
 
   if (!validation.ok) {
     return NextResponse.json(
@@ -49,7 +50,10 @@ export async function POST(request: Request) {
       redirectTo:
         signup.mode === "automatically_confirmed"
           ? (signup.redirectTo ??
-            `${routes.public.clientSignIn}?verified=1&automatic=1`)
+            buildClientLoginRedirect(input.next, {
+              automatic: "1",
+              verified: "1",
+            }))
           : `${routes.public.confirmEmail}?statusToken=${encodeURIComponent(
               signup.statusToken ?? "",
             )}`,
@@ -93,6 +97,7 @@ function toSignupInput(value: unknown) {
     confirmPassword: asString(record.confirmPassword),
     email: asString(record.email),
     name: asString(record.name),
+    next: asString(record.next),
     password: asString(record.password),
     phone: asString(record.phone),
     termsAccepted: record.termsAccepted === true,
@@ -105,4 +110,16 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asString(value: unknown) {
   return typeof value === "string" ? value : "";
+}
+
+function buildClientLoginRedirect(
+  next: string | undefined,
+  extras: Record<string, string>,
+) {
+  const params = new URLSearchParams(extras);
+  if (next && next.startsWith("/") && !next.startsWith("//") && !/[\r\n]/.test(next)) {
+    params.set("next", next);
+  }
+
+  return `${routes.public.clientSignIn}?${params.toString()}`;
 }

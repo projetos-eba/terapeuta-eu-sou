@@ -3,8 +3,8 @@
 import { useMemo, useState } from "react";
 import { CalendarDays } from "lucide-react";
 
+import { buildPublicReservationUrl } from "@/features/booking/services/public-booking";
 import { TrackedBookingLink } from "@/features/public-metrics";
-import { routes } from "@/lib/routes";
 
 import type { TherapistProfileService } from "../types";
 import { AvailabilityCalendarModal } from "./availability-calendar-modal";
@@ -84,9 +84,13 @@ export function AvailabilitySelector({
                 {day.slots.slice(0, 5).map((slot) => (
                   <TrackedBookingLink
                     key={`${slot.serviceId}-${slot.startsAt}`}
-                    href={`${routes.public.reservation}?service=${slot.serviceId}&slot=${encodeURIComponent(
-                      slot.startsAt,
-                    )}`}
+                    href={buildPublicReservationUrl({
+                      durationMinutes: selectedService?.durationMinutes ?? 50,
+                      priceCents: selectedService?.priceCents ?? 0,
+                      serviceId: slot.serviceId,
+                      slotStartsAt: slot.startsAt,
+                      therapistSlug,
+                    })}
                     serviceId={slot.serviceId}
                     therapistSlug={therapistSlug}
                     className="rounded-[9px] bg-brand-primaryPressed px-4 py-3 text-center text-sm font-medium"

@@ -15,7 +15,7 @@ type SignupResponse =
   | { ok: true; redirectTo: string }
   | ({ ok: false } & ClientAuthApiError);
 
-export function ClientSignupForm() {
+export function ClientSignupForm({ next }: { next?: string }) {
   const [fieldErrors, setFieldErrors] = useState<ClientAuthFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -35,6 +35,7 @@ export function ClientSignupForm() {
           confirmPassword: String(form.get("confirmPassword") ?? ""),
           email: String(form.get("email") ?? ""),
           name: String(form.get("name") ?? ""),
+          next,
           password: String(form.get("password") ?? ""),
           phone: String(form.get("phone") ?? ""),
           termsAccepted: form.get("termsAccepted") === "on",
@@ -177,7 +178,11 @@ export function ClientSignupForm() {
       <p className="text-center text-sm font-bold text-tesText-secondary">
         Já tem uma conta?{" "}
         <Link
-          href={routes.public.clientSignIn}
+          href={
+            next
+              ? `${routes.public.clientSignIn}?next=${encodeURIComponent(next)}`
+              : routes.public.clientSignIn
+          }
           className="text-brand-primary hover:underline"
         >
           Entrar

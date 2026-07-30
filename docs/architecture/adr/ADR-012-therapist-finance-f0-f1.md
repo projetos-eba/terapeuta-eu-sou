@@ -69,6 +69,14 @@ ativa, cria Login Link server-side.
 Redirect de retorno da Stripe não confirma onboarding. A UI deve sincronizar e
 mostrar o estado derivado de `therapist_connect_accounts`.
 
+Para contas Connect Accounts v2 criadas em test mode na plataforma brasileira,
+o payload canônico inclui `identity.country = br`, `identity.entity_type =
+individual`, `configuration.recipient.capabilities.stripe_balance.stripe_transfers`
+e `configuration.merchant.capabilities.card_payments`. A exigência de
+`card_payments` é uma restrição da Stripe para liberar `stripe_transfers`; ela
+não altera a decisão de produto de usar Checkout/cobrança na plataforma e
+separate charges and transfers para sessões.
+
 ## Contratos
 
 Foram aprovados quatro read models privados, todos derivando o terapeuta de

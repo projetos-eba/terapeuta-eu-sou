@@ -1,0 +1,10 @@
+version: 1
+name: public-reservation
+description: Implementa e audita a reserva pública /reserva e /reserva/sucesso.
+entrypoint: SKILL.md
+tags:
+  - public
+  - reservation
+  - checkout
+  - patient-auth
+  - stripe

@@ -11,50 +11,82 @@ export function createRecipientAccountV2(input: {
     input.apiKey,
     "/v2/core/accounts",
     {
-      body: {
-        configuration: {
-          recipient: {
-            capabilities: {
-              stripe_balance: {
-                stripe_transfers: {
-                  requested: true,
-                },
-              },
-            },
-          },
-        },
-        contact_email: input.email ?? undefined,
-        dashboard: "express",
-        defaults: {
-          responsibilities: {
-            fees_collector: "application",
-            losses_collector: "application",
-          },
-        },
-        display_name: input.therapistName,
-        include: [
-          "configuration.recipient",
-          "defaults",
-          "requirements",
-          "future_requirements",
-        ],
-        metadata: {
-          environment: input.environment,
-          system: "tes",
-          tes_therapist_id: input.therapistId,
-        },
-      },
+      body: buildRecipientAccountV2Payload(input),
+      idempotencyKey: buildRecipientAccountIdempotencyKey(input),
       method: "POST",
     },
   );
 }
 
+export function buildRecipientAccountIdempotencyKey(input: {
+  environment: string;
+  therapistId: string;
+}) {
+  return `tes-connect-recipient-v3-${input.environment}-${input.therapistId}`;
+}
+
+export function buildRecipientAccountV2Payload(input: {
+  email?: string | null;
+  environment: string;
+  therapistId: string;
+  therapistName: string;
+}) {
+  return {
+    configuration: {
+      merchant: {
+        capabilities: {
+          card_payments: {
+            requested: true,
+          },
+        },
+      },
+      recipient: {
+        capabilities: {
+          stripe_balance: {
+            stripe_transfers: {
+              requested: true,
+            },
+          },
+        },
+      },
+    },
+    contact_email: input.email ?? undefined,
+    dashboard: "express",
+    defaults: {
+      responsibilities: {
+        fees_collector: "application",
+        losses_collector: "application",
+      },
+    },
+    display_name: input.therapistName,
+    identity: {
+      country: "br",
+      entity_type: "individual",
+    },
+    include: [
+      "configuration.merchant",
+      "configuration.recipient",
+      "defaults",
+      "identity",
+      "requirements",
+      "future_requirements",
+    ],
+    metadata: {
+      environment: input.environment,
+      system: "tes",
+      tes_therapist_id: input.therapistId,
+    },
+  };
+}
+
 export function retrieveAccountV2(apiKey: string, accountId: string) {
   const include = new URLSearchParams();
   include.append("include[0]", "configuration.recipient");
-  include.append("include[1]", "defaults");
-  include.append("include[2]", "requirements");
-  include.append("include[3]", "future_requirements");
+  include.append("include[1]", "configuration.merchant");
+  include.append("include[2]", "defaults");
+  include.append("include[3]", "identity");
+  include.append("include[4]", "requirements");
+  include.append("include[5]", "future_requirements");
 
   return stripeV2Request<Record<string, unknown>>(
     apiKey,
@@ -68,27 +100,45 @@ async function stripeV2Request<T>(
   path: string,
   options: {
     body?: unknown;
+    idempotencyKey?: string;
     method: "GET" | "POST";
   },
 ) {
+  const headers = new Headers({
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+    "Stripe-Version": TES_STRIPE_API_VERSION,
+  });
+
+  if (options.idempotencyKey) {
+    headers.set("Idempotency-Key", options.idempotencyKey);
+  }
+
   const response = await fetch(`https://api.stripe.com${path}`, {
     body: options.body ? JSON.stringify(options.body) : undefined,
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      "Stripe-Version": TES_STRIPE_API_VERSION,
-    },
+    headers,
     method: options.method,
   });
   const text = await response.text();
 
   if (!response.ok) {
     throw new Error(
-      `STRIPE_V2_REQUEST_FAILED:${response.status}:${text.slice(0, 300)}`,
+      `STRIPE_V2_REQUEST_FAILED:${response.status}:${getStripeErrorCode(text)}`,
     );
   }
 
   return text ? (JSON.parse(text) as T) : ({} as T);
+}
+
+function getStripeErrorCode(value: string) {
+  try {
+    const parsed = JSON.parse(value) as { error?: { code?: unknown } };
+    return typeof parsed.error?.code === "string"
+      ? parsed.error.code
+      : "unknown";
+  } catch {
+    return "invalid_response";
+  }
 }
 
 export function getTransfersStatus(account: Record<string, unknown>) {
@@ -98,6 +148,16 @@ export function getTransfersStatus(account: Record<string, unknown>) {
   const stripeBalance = asRecord(capabilities.stripe_balance);
   const stripeTransfers = asRecord(stripeBalance.stripe_transfers);
   const status = stripeTransfers.status;
+
+  return typeof status === "string" ? status : "inactive";
+}
+
+export function getCardPaymentsStatus(account: Record<string, unknown>) {
+  const configuration = asRecord(account.configuration);
+  const merchant = asRecord(configuration.merchant);
+  const capabilities = asRecord(merchant.capabilities);
+  const cardPayments = asRecord(capabilities.card_payments);
+  const status = cardPayments.status;
 
   return typeof status === "string" ? status : "inactive";
 }
@@ -139,12 +199,18 @@ export function getPendingRequirements(account: Record<string, unknown>) {
 
 export function deriveConnectAccountState(account: Record<string, unknown>) {
   const transfersStatus = getTransfersStatus(account);
+  const cardPaymentsStatus = getCardPaymentsStatus(account);
   const pendingRequirements = getPendingRequirements(account);
   const closed = account.closed === true;
   const ready = !closed && transfersStatus === "active";
 
   return {
+    chargesEnabled: cardPaymentsStatus === "active",
     disabledReason: closed ? "account_closed" : null,
+    detailsSubmitted:
+      !closed &&
+      pendingRequirements.currentlyDue.length === 0 &&
+      pendingRequirements.eventuallyDue.length === 0,
     onboardingStatus: closed
       ? "disabled"
       : ready
@@ -154,6 +220,7 @@ export function deriveConnectAccountState(account: Record<string, unknown>) {
           : "restricted",
     operationalStatus: closed ? "disabled" : ready ? "ready" : "restricted",
     pendingRequirements,
+    payoutsEnabled: transfersStatus === "active",
     transfersStatus,
   };
 }

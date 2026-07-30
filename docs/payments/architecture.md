@@ -26,7 +26,15 @@ O redirecionamento do Checkout nunca ativa plano nem confirma pagamento sozinho.
 - Fee collection: your platform manages pricing.
 - Negative balance liability: your platform.
 - Charge pattern: separate charges and transfers.
+- Pais de identidade da conta conectada: `identity.country = br`.
+- Entidade inicial do onboarding hospedado: `identity.entity_type = individual`.
 - Capacidade esperada para repasse: `configuration.recipient.capabilities.stripe_balance.stripe_transfers.status = active`.
+- A plataforma brasileira tambem solicita
+  `configuration.merchant.capabilities.card_payments.requested = true` na
+  criacao Accounts v2 porque a Stripe exige essa capability antes de aceitar
+  `stripe_balance.stripe_transfers`. Isso nao muda o charge pattern do TES:
+  sessoes continuam como cobranca na plataforma com separate charges and
+  transfers, e o terapeuta nao recebe formulario local de cobranca.
 
 Essa configuracao permite reter fundos antes de liberar repasse. Como a plataforma paga as taxas Stripe nesse fluxo, a taxa nao e descontada dos 80% devidos ao terapeuta.
 

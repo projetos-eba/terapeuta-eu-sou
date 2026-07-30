@@ -256,6 +256,29 @@ Fluxo aprovado:
 O TES não persiste Account Link, não envia link por e-mail, não aceita account
 ID do navegador e não armazena dados bancários completos.
 
+### Diagnostico Connect Accounts v2 em homologacao
+
+Na homologacao local de 2026-07-30, a criacao inicial da conta falhava antes do
+Account Link com erro Stripe `identity_country_required`. O contrato Accounts
+v2 aprovado para o TES deve criar contas Express com:
+
+- `identity.country = br`;
+- `identity.entity_type = individual`;
+- `configuration.recipient.capabilities.stripe_balance.stripe_transfers.requested = true`;
+- `configuration.merchant.capabilities.card_payments.requested = true`.
+
+A capability de `card_payments` e exigencia da Stripe para permitir
+`stripe_transfers` na plataforma brasileira testada; ela nao transforma o fluxo
+TES em direct charge nem permite formulario local de pagamento. O padrao de
+sessoes permanece separate charges and transfers, com repasse posterior por
+Transfer Connect.
+
+A criacao da conta usa idempotencia por terapeuta e ambiente. Repetir ou
+continuar onboarding deve reutilizar a mesma linha de
+`therapist_connect_accounts` e gerar sempre um Account Link novo, sem persistir
+URL temporaria. Login Link so deve ser gerado quando a conta sincronizada
+estiver pronta para repasses.
+
 ## F4 — roteiro sandbox operacional
 
 1. Confirmar que `STRIPE_SECRET_KEY` está em test mode e que webhooks assinados

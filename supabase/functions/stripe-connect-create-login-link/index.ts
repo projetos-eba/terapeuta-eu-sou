@@ -32,8 +32,14 @@ runtime.serve(async (request) => {
     );
     const stripe = createStripeClient(config.stripeApiKey);
     const { profile: therapist } = await requireTherapist(client, request);
-    const rows = await client.get<Array<{ stripe_account_id: string }>>(
-      `/rest/v1/therapist_connect_accounts?select=stripe_account_id&therapist_profile_id=eq.${encodeURIComponent(
+    const rows = await client.get<
+      Array<{
+        onboarding_status: string;
+        stripe_account_id: string;
+        stripe_transfers_status: string;
+      }>
+    >(
+      `/rest/v1/therapist_connect_accounts?select=stripe_account_id,onboarding_status,stripe_transfers_status&therapist_profile_id=eq.${encodeURIComponent(
         therapist.id,
       )}&limit=1`,
     );
@@ -43,6 +49,17 @@ runtime.serve(async (request) => {
         "connect_account_missing",
         404,
         "Conta de repasse nao encontrada.",
+      );
+    }
+
+    if (
+      rows[0].onboarding_status !== "ready" ||
+      rows[0].stripe_transfers_status !== "active"
+    ) {
+      throw new DomainError(
+        "connect_account_not_ready",
+        409,
+        "Conclua o cadastro da conta antes de gerenciar na Stripe.",
       );
     }
 
