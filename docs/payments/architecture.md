@@ -178,6 +178,14 @@ Sessoes e repasses:
 - `retry-failed-payout-items`
 - `reconcile-stripe-transfers`
 
+`session-booking-checkout` é a fronteira autenticada da reserva pública:
+exige paciente derivado da sessão, `serviceId`, `startsAt`, `requestId` e
+aceite obrigatório dos termos. O checkout de sessão usa Stripe Embedded
+Checkout: `stripe-create-session-payment` cria a Checkout Session server-side e
+retorna apenas o `clientSecret` necessário para montar o componente oficial da
+Stripe. O retorno visual da Stripe não confirma pagamento; somente webhook
+assinado atualiza `session_payments` e o booking.
+
 ## Shell financeiro do terapeuta
 
 F0/F1 implementa `/terapeuta/financeiro` com quatro abas: Resumo,

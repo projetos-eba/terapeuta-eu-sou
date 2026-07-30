@@ -21,7 +21,7 @@
     "payments:e2e:seed": "node scripts/payments/e2e-data.mjs seed",
     "payments:e2e:status": "node scripts/payments/e2e-data.mjs status",
     "payments:e2e:cleanup": "node scripts/payments/e2e-data.mjs cleanup",
-    "test:e2e:payments:headed": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/payments/run-payments-e2e-headed.ps1",
+    "test:e2e:payments:headed": "node scripts/payments/run-payments-e2e-headed.mjs",
     "zoom:video-sdk:env": "node scripts/zoom/video-sdk-env.mjs",
     "zoom:video-sdk:test": "node scripts/zoom/video-sdk-test.mjs",
     "zoom:video-sdk:webhook:smoke": "node scripts/zoom/video-sdk-webhook-smoke.mjs",

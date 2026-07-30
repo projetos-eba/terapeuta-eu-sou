@@ -56,9 +56,13 @@ revalidada no servidor antes do checkout.
   mesmas views públicas usadas em `/terapeutas/:slug`. Não criar grade local de
   horários.
 - A API chama `session-booking-checkout` com `serviceId`, `startsAt`,
-  `requestId` e `holdTtlSeconds`.
+  `requestId`, `termsAccepted` e `holdTtlSeconds`. Sem aceite obrigatório, o
+  endpoint deve falhar antes de criar hold, booking ou pagamento.
 - `session-booking-checkout` revalida slot, cria hold/booking, consome hold e
   chama `stripe-create-session-payment`.
+- A experiência de pagamento usa Stripe Embedded Checkout. O backend retorna
+  apenas o `clientSecret` da Checkout Session incorporada; dados de cartão ficam
+  nos componentes oficiais da Stripe.
 - Redirecionamento de sucesso nunca confirma pagamento. Apenas webhook Stripe
   atualiza pagamento/booking de forma definitiva.
 - Não coletar número de cartão, CVC ou dados bancários no Next.
@@ -70,7 +74,7 @@ revalidada no servidor antes do checkout.
 - `ReservationSummary`
 - `AuthStep`
 - `PrepareForm`
-- `CheckoutButton`
+- `CheckoutButton`/container de Embedded Checkout
 - `PolicyCard`
 - `ReservationSuccessPage`
 
@@ -93,13 +97,18 @@ revalidada no servidor antes do checkout.
   seguintes; datas anteriores a hoje nunca devem aparecer como reserváveis.
 - Setas de navegação avançam/retrocedem 2 dias via `date`, bloqueando o
   retrocesso que cairia antes da data atual e sem gerar slot artificial.
-- A etapa "Preparar meu encontro" exige horário ainda disponível e conta de
-  cliente autenticada; o checkout real exige `service` + `slot` e revalida no
-  servidor.
+- A etapa "Preparar meu encontro" exige conta de cliente autenticada, slot e
+  aceite explícito dos Termos de Uso/Política de Privacidade. Todos os CTAs
+  devem compartilhar a mesma fonte de verdade do aceite.
+- Acesso direto a `etapa=pagamento` sem aceite deve voltar para preparação sem
+  criar checkout.
+- O checkout real exige `service` + `slot` + `termsAccepted` e revalida serviço,
+  preço, duração e slot no servidor.
 - Visitante deve ver opções de login/cadastro de cliente com `next`.
 - Cliente autenticado deve ver dados de conta no fluxo e no pagamento, sem
   campos editáveis nesta etapa.
-- Cliente autenticado deve conseguir chamar `/api/public/reservation/checkout`.
+- Cliente autenticado deve conseguir chamar `/api/public/reservation/checkout`
+  somente com `termsAccepted: true`.
 - Slot inexistente/indisponível deve retornar erro seguro.
 - Sem Supabase configurado, submit deve retornar erro controlado sem expor
   segredo.
@@ -114,4 +123,5 @@ revalidada no servidor antes do checkout.
   terapeuta; se essas views estiverem indisponíveis, a agenda aparece vazia em
   vez de usar dados demonstrativos silenciosos.
 - Dados opcionais de preparo do encontro ainda não são persistidos no booking.
-- Cupom visual depende de política futura de descontos.
+- Cupom permanece visualmente indisponível até existir política futura de
+  descontos validada server-side.

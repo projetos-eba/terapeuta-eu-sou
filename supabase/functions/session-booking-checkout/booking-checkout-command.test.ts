@@ -25,6 +25,7 @@ Deno.test(
       requestId,
       serviceId,
       startsAt,
+      termsAccepted: true,
     });
 
     assertEquals(command.holdTtlSeconds, 600);
@@ -44,6 +45,7 @@ Deno.test(
             requestId: "same-click",
             serviceId,
             startsAt,
+            termsAccepted: true,
           }),
         DomainError,
       ).code,
@@ -57,6 +59,7 @@ Deno.test(
             requestId,
             serviceId,
             startsAt,
+            termsAccepted: true,
           }),
         DomainError,
       ).status,
@@ -64,6 +67,21 @@ Deno.test(
     );
   },
 );
+
+Deno.test("booking checkout command requires terms acceptance", () => {
+  const error = assertThrows(
+    () =>
+      validateBookingCheckoutCommand({
+        requestId,
+        serviceId,
+        startsAt,
+      }),
+    DomainError,
+  );
+
+  assertEquals(error.code, "terms_required");
+  assertEquals(error.status, 428);
+});
 
 Deno.test(
   "booking checkout command selects the exact authoritative slot",

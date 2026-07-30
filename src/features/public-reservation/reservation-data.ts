@@ -8,7 +8,7 @@ import type {
 import type { AvailabilityDay } from "@/features/therapist-profile/types";
 
 const UUID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const therapistDirectory: Record<
   string,
@@ -160,7 +160,7 @@ export function buildReservationSchedule(
             etapa: "momento",
             slot: slot.startsAt,
           }),
-          isSelected: context.selectedSlot === slot.startsAt,
+          isSelected: context.selectedSlot === parseIsoDate(slot.startsAt),
           startsAt: slot.startsAt,
           timeLabel: slot.timeLabel,
         })) ?? [];
@@ -193,7 +193,9 @@ export function reconcileReservationContextWithAvailability(
   const selectedSlotIsAvailable = Boolean(
     context.selectedSlot &&
       availabilityDays.some((day) =>
-        day.slots.some((slot) => slot.startsAt === context.selectedSlot),
+        day.slots.some(
+          (slot) => parseIsoDate(slot.startsAt) === context.selectedSlot,
+        ),
       ),
   );
 
