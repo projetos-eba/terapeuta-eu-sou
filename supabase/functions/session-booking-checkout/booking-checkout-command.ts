@@ -9,6 +9,7 @@ export type BookingCheckoutCommandBody = {
   requestId?: string;
   serviceId?: string;
   startsAt?: string;
+  termsAccepted?: boolean;
 };
 
 export type ValidBookingCheckoutCommand = {
@@ -53,6 +54,14 @@ export function validateBookingCheckoutCommand(
       "invalid_booking_checkout_payload",
       422,
       "Revise os dados da reserva.",
+    );
+  }
+
+  if (body.termsAccepted !== true) {
+    throw new DomainError(
+      "terms_required",
+      428,
+      "Aceite os termos para continuar para o pagamento.",
     );
   }
 

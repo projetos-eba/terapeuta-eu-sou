@@ -29,6 +29,7 @@ type BookingRow = {
 type CheckoutResponse = {
   ok: true;
   data: {
+    clientSecret: string | null;
     checkoutSessionId: string;
     sessionPaymentId: string;
     url: string | null;
@@ -107,6 +108,7 @@ runtime.serve(async (request) => {
 
       return success({
         bookingId: booking.id,
+        clientSecret: checkout.data.clientSecret,
         checkoutSessionId: checkout.data.checkoutSessionId,
         holdExpiresAt: hold.expires_at,
         holdId: hold.id,
@@ -142,7 +144,10 @@ async function invokeSessionPaymentCheckout(input: {
   const response = await fetch(
     `${input.supabaseUrl}/functions/v1/stripe-create-session-payment`,
     {
-      body: JSON.stringify({ bookingId: input.bookingId }),
+      body: JSON.stringify({
+        bookingId: input.bookingId,
+        checkoutUiMode: "embedded",
+      }),
       headers: {
         apikey: input.serviceRoleKey,
         Authorization: `Bearer ${input.bearerToken}`,

@@ -6,15 +6,15 @@ import {
   invokeSupabaseFunction,
   SupabaseFunctionError,
 } from "@/lib/supabase/edge-functions";
-import { routes } from "@/lib/routes";
 
 const UUID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type CheckoutPayload = {
   ok: true;
   data: {
     bookingId: string;
+    clientSecret: string | null;
     checkoutSessionId: string;
     holdExpiresAt: string;
     holdId: string;
@@ -44,6 +44,16 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { ok: false, message: "Revise os dados da reserva." },
       { status: 422 },
+    );
+  }
+  if (!input.termsAccepted) {
+    return NextResponse.json(
+      {
+        code: "TERMS_REQUIRED",
+        ok: false,
+        message: "Aceite os termos para continuar para o pagamento.",
+      },
+      { status: 428 },
     );
   }
 
@@ -82,24 +92,42 @@ export async function POST(request: Request) {
           requestId: input.requestId,
           serviceId: input.serviceId,
           startsAt: new Date(input.startsAt).toISOString(),
+          termsAccepted: true,
         },
       },
     );
 
+    if (!response.data.clientSecret) {
+      return NextResponse.json(
+        {
+          code: "CHECKOUT_CLIENT_SECRET_MISSING",
+          ok: false,
+          message:
+            "Não conseguimos carregar o checkout incorporado agora. Tente novamente.",
+        },
+        { status: 502 },
+      );
+    }
+
     return NextResponse.json({
+      checkout: {
+        bookingId: response.data.bookingId,
+        checkoutSessionId: response.data.checkoutSessionId,
+        clientSecret: response.data.clientSecret,
+        holdExpiresAt: response.data.holdExpiresAt,
+        holdId: response.data.holdId,
+        sessionPaymentId: response.data.sessionPaymentId,
+      },
       ok: true,
-      redirectTo:
-        response.data.url ??
-        `${routes.public.reservationSuccess}?booking=${encodeURIComponent(
-          response.data.bookingId,
-        )}`,
     });
   } catch (error) {
     if (error instanceof SupabaseFunctionError) {
+      const mapped = mapCheckoutError(error.status);
       return NextResponse.json(
         {
+          code: mapped.code,
           ok: false,
-          message: mapCheckoutError(error.status),
+          message: mapped.message,
         },
         { status: error.status },
       );
@@ -107,6 +135,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
+        code: "INTERNAL_ERROR",
         ok: false,
         message: "Não conseguimos iniciar o pagamento agora.",
       },
@@ -125,6 +154,7 @@ function toCheckoutInput(value: unknown) {
     requestId: asString(record.requestId),
     serviceId: asString(record.serviceId),
     startsAt: asString(record.startsAt),
+    termsAccepted: record.termsAccepted === true,
   };
 }
 
@@ -138,14 +168,35 @@ function isIsoInstant(value: string) {
 }
 
 function mapCheckoutError(status: number) {
-  if (status === 401) return "Entre na sua conta de cliente para continuar.";
-  if (status === 403) return "Use o acesso correspondente ao seu perfil.";
+  if (status === 401) {
+    return {
+      code: "UNAUTHENTICATED",
+      message: "Entre na sua conta de cliente para continuar.",
+    };
+  }
+  if (status === 403) {
+    return {
+      code: "FORBIDDEN",
+      message: "Use o acesso correspondente ao seu perfil.",
+    };
+  }
   if (status === 409) {
-    return "Este horário não está mais disponível. Escolha outro momento.";
+    return {
+      code: "SLOT_CONFLICT",
+      message: "Este horário não está mais disponível. Escolha outro momento.",
+    };
   }
-  if (status === 422) return "Revise os dados da reserva.";
+  if (status === 422) {
+    return { code: "INVALID_REQUEST", message: "Revise os dados da reserva." };
+  }
   if (status === 503) {
-    return "O pagamento está temporariamente indisponível neste ambiente.";
+    return {
+      code: "STRIPE_CONFIGURATION_ERROR",
+      message: "O pagamento está temporariamente indisponível neste ambiente.",
+    };
   }
-  return "Não conseguimos iniciar o pagamento agora.";
+  return {
+    code: "INTERNAL_ERROR",
+    message: "Não conseguimos iniciar o pagamento agora.",
+  };
 }
