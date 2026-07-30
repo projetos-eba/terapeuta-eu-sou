@@ -1,5 +1,8 @@
 import {
+  buildRecipientAccountIdempotencyKey,
+  buildRecipientAccountV2Payload,
   deriveConnectAccountState,
+  getCardPaymentsStatus,
   getPendingRequirements,
   getTransfersStatus,
 } from "./connect.ts";
@@ -9,17 +12,20 @@ declare const Deno: {
 };
 
 Deno.test("Connect v2 active transfer capability is ready", () => {
-  const account = accountWithTransferStatus("active");
+  const account = accountWithTransferStatus("active", "active");
   const state = deriveConnectAccountState(account);
 
   assertEquals(getTransfersStatus(account), "active");
+  assertEquals(getCardPaymentsStatus(account), "active");
   assertEquals(state.onboardingStatus, "ready");
   assertEquals(state.operationalStatus, "ready");
+  assertEquals(state.chargesEnabled, true);
+  assertEquals(state.payoutsEnabled, true);
 });
 
 Deno.test("Connect v2 user requirements restrict the account", () => {
   const account = {
-    ...accountWithTransferStatus("restricted"),
+    ...accountWithTransferStatus("restricted", "restricted"),
     requirements: {
       entries: [
         {
@@ -51,7 +57,7 @@ Deno.test(
   "Connect v2 future requirements stay visible without marking the account as ready",
   () => {
     const account = {
-      ...accountWithTransferStatus("inactive"),
+      ...accountWithTransferStatus("inactive", "inactive"),
       requirements: {
         entries: [
           {
@@ -87,13 +93,72 @@ Deno.test("closed Connect v2 account is disabled", () => {
   assertEquals(state.operationalStatus, "disabled");
 });
 
-function accountWithTransferStatus(status: string) {
+Deno.test("Connect v2 recipient payload includes required identity country", () => {
+  const payload = buildRecipientAccountV2Payload({
+    email: "ana.oliveira@example.test",
+    environment: "test",
+    therapistId: "c1000000-0000-4000-8000-000000000001",
+    therapistName: "Ana Oliveira",
+  }) as {
+    configuration?: {
+      merchant?: {
+        capabilities?: {
+          card_payments?: { requested?: boolean };
+        };
+      };
+      recipient?: {
+        capabilities?: {
+          stripe_balance?: {
+            stripe_transfers?: { requested?: boolean };
+          };
+        };
+      };
+    };
+    identity?: { country?: string; entity_type?: string };
+    include?: string[];
+  };
+
+  assertEquals(payload.identity?.country, "br");
+  assertEquals(payload.identity?.entity_type, "individual");
+  assertEquals(
+    payload.configuration?.merchant?.capabilities?.card_payments?.requested,
+    true,
+  );
+  assertEquals(
+    payload.configuration?.recipient?.capabilities?.stripe_balance
+      ?.stripe_transfers?.requested,
+    true,
+  );
+  assertEquals(payload.include?.includes("identity"), true);
+});
+
+Deno.test("Connect v2 account creation idempotency key is stable per therapist environment", () => {
+  const key = buildRecipientAccountIdempotencyKey({
+    environment: "test",
+    therapistId: "c1000000-0000-4000-8000-000000000001",
+  });
+
+  assertEquals(
+    key,
+    "tes-connect-recipient-v3-test-c1000000-0000-4000-8000-000000000001",
+  );
+});
+
+function accountWithTransferStatus(
+  transfersStatus: string,
+  cardPaymentsStatus = "inactive",
+) {
   return {
     configuration: {
+      merchant: {
+        capabilities: {
+          card_payments: { status: cardPaymentsStatus },
+        },
+      },
       recipient: {
         capabilities: {
           stripe_balance: {
-            stripe_transfers: { status },
+            stripe_transfers: { status: transfersStatus },
           },
         },
       },

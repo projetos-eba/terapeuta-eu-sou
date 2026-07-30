@@ -59,11 +59,14 @@ runtime.serve(async (request) => {
     await client.patch(
       `/rest/v1/therapist_connect_accounts?id=eq.${encodeURIComponent(rows[0].id)}`,
       {
+        charges_enabled: state.chargesEnabled,
+        details_submitted: state.detailsSubmitted,
         disabled_reason: state.disabledReason,
         last_synced_at: new Date().toISOString(),
         onboarding_status: state.onboardingStatus,
         operational_status: state.operationalStatus,
         pending_requirements: state.pendingRequirements,
+        payouts_enabled: state.payoutsEnabled,
         stripe_transfers_status: state.transfersStatus,
       },
       "return=minimal",

@@ -151,11 +151,14 @@ async function syncConnectAccount(
   await client.patch(
     `/rest/v1/therapist_connect_accounts?id=eq.${encodeURIComponent(rows[0].id)}`,
     {
+      charges_enabled: state.chargesEnabled,
+      details_submitted: state.detailsSubmitted,
       disabled_reason: state.disabledReason,
       last_synced_at: new Date().toISOString(),
       onboarding_status: state.onboardingStatus,
       operational_status: state.operationalStatus,
       pending_requirements: state.pendingRequirements,
+      payouts_enabled: state.payoutsEnabled,
       stripe_event_created_at: eventTime,
       stripe_event_id: eventId,
       stripe_transfers_status: state.transfersStatus,
@@ -185,9 +188,12 @@ async function disableClosedAccount(
     )}`,
     {
       disabled_reason: "account_closed",
+      charges_enabled: false,
+      details_submitted: false,
       last_synced_at: new Date().toISOString(),
       onboarding_status: "disabled",
       operational_status: "disabled",
+      payouts_enabled: false,
       stripe_event_created_at: eventTime,
       stripe_event_id: eventId,
       stripe_transfers_status: "inactive",
