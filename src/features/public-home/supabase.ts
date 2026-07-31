@@ -1,6 +1,7 @@
 import { routes } from "@/lib/routes";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
+import { buildPublicTherapistTherapyChips } from "@/features/public-therapists/therapy-presentation";
 
 import {
   fallbackTestimonials,
@@ -41,8 +42,11 @@ type PublicHomeTherapistContentRow = {
 };
 
 type PublicHomeTherapistServiceRow = {
+  sort_order: number | null;
   therapist_slug: string;
+  therapy_id: string | null;
   therapy_name: string | null;
+  therapy_slug: string | null;
 };
 
 type PublicHomeTestimonialRow = {
@@ -127,36 +131,6 @@ function normalizeGuideItems(
   return labels.slice(0, 6);
 }
 
-function extractTherapyNamesFromText(text: string | null | undefined) {
-  if (!text) {
-    return [];
-  }
-
-  const knownTherapies = [
-    "Reiki",
-    "Tarô",
-    "Tarot",
-    "Aromaterapia",
-    "Constelação Familiar",
-    "Constelacao Familiar",
-  ];
-
-  return knownTherapies
-    .filter((therapyName) =>
-      text.toLocaleLowerCase("pt-BR").includes(
-        therapyName.toLocaleLowerCase("pt-BR"),
-      ),
-    )
-    .map((therapyName) =>
-      therapyName === "Tarot"
-        ? "Tarô"
-        : therapyName === "Constelacao Familiar"
-          ? "Constelação Familiar"
-          : therapyName,
-    )
-    .filter((therapyName, index, all) => all.indexOf(therapyName) === index);
-}
-
 function mapTherapy(row: PublicHomeTherapyRow): PublicHomeTherapy {
   return {
     categoryName: row.category_name ?? "Terapia",
@@ -184,9 +158,6 @@ function mapTherapist(row: PublicHomeTherapistRow): PublicHomeTherapist {
     reviewCountLabel: formatReviews(row.review_count),
     serviceTitle: row.service_title ?? "Sessao online",
     slug: row.slug,
-    therapyNames: extractTherapyNamesFromText(
-      `${row.headline ?? ""} ${row.service_title ?? ""}`,
-    ),
   };
 }
 
@@ -240,35 +211,38 @@ function applyTherapistServices(
   therapists: PublicHomeTherapist[],
   serviceRows: PublicHomeTherapistServiceRow[],
 ) {
-  const therapiesBySlug = new Map<string, string[]>();
+  const therapiesBySlug = new Map<string, PublicHomeTherapistServiceRow[]>();
 
   for (const row of serviceRows) {
-    const therapyName = row.therapy_name?.trim();
-
-    if (!therapyName) {
+    if (!row.therapy_name?.trim()) {
       continue;
     }
 
     const currentTherapies = therapiesBySlug.get(row.therapist_slug) ?? [];
-
-    if (!currentTherapies.includes(therapyName)) {
-      therapiesBySlug.set(row.therapist_slug, [
-        ...currentTherapies,
-        therapyName,
-      ]);
-    }
+    therapiesBySlug.set(row.therapist_slug, [...currentTherapies, row]);
   }
 
   return therapists.map((therapist) => {
-    const therapyNames = therapiesBySlug.get(therapist.slug);
+    const therapyRows = therapiesBySlug.get(therapist.slug);
 
-    if (!therapyNames?.length) {
+    if (!therapyRows?.length) {
       return therapist;
     }
 
+    const therapies = buildPublicTherapistTherapyChips(
+      therapyRows.map((row) => ({
+        id: row.therapy_id,
+        name: row.therapy_name,
+        slug: row.therapy_slug,
+        sortOrder: row.sort_order,
+      })),
+      3,
+    );
+
     return {
       ...therapist,
-      therapyNames,
+      therapies,
+      therapyNames: therapies.map((therapy) => therapy.label),
     };
   });
 }
@@ -308,7 +282,7 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
     const therapistServiceRows = therapistSlugs.length
       ? await fetchPublicHomeRows<PublicHomeTherapistServiceRow>(
           "public_therapist_profile_services_v",
-          `select=therapist_slug,therapy_name&therapist_slug=in.(${therapistSlugs.join(",")})&order=sort_order.asc`,
+          `select=therapist_slug,therapy_id,therapy_name,therapy_slug,sort_order&therapist_slug=in.(${therapistSlugs.join(",")})&order=sort_order.asc`,
         )
       : [];
 

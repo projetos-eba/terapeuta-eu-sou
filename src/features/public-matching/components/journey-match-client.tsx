@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import { ArrowRight, Check, Loader2 } from "lucide-react";
+import { ArrowRight, Check, Compass, Loader2 } from "lucide-react";
 
 import { TESButton } from "@/components/tes";
 import { routes } from "@/lib/routes";
@@ -254,11 +254,9 @@ export function JourneyMatchClient({ config }: { config: MatchingConfig }) {
 
       <section className="sticky bottom-0 z-30 -mx-5 mt-8 border-t border-[#eadff6] bg-white/95 px-5 py-4 shadow-[0_-18px_38px_rgba(74,36,111,0.10)] backdrop-blur sm:-mx-8 sm:px-8 lg:static lg:mx-0 lg:mt-[22px] lg:rounded-[32px] lg:border lg:bg-white lg:px-[124px] lg:py-[29px] lg:shadow-[0_24px_70px_rgba(74,36,111,0.12)]">
         <div className="grid items-center gap-5 lg:grid-cols-[1fr_413px]">
-          <div className="flex items-center gap-5">
-            <div className="hidden h-[83px] w-[112px] shrink-0 rounded-[18px] bg-[#f5eefc] text-brand-primary lg:grid lg:place-items-center">
-              <span className="text-sm font-extrabold uppercase tracking-[0.08em]">
-                Ícone
-              </span>
+            <div className="flex items-center gap-5">
+              <div className="hidden h-[83px] w-[112px] shrink-0 rounded-[18px] bg-[#f5eefc] text-brand-primary lg:grid lg:place-items-center">
+              <Compass className="size-9" aria-hidden="true" />
             </div>
             <div>
               <p className="text-2xl font-extrabold leading-tight text-brand-deep lg:text-[1.72rem]">

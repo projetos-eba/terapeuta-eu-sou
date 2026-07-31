@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CircleDot, Info } from "lucide-react";
 
 import { PublicFooter, PublicHeader } from "@/components/tes";
 import {
@@ -29,11 +30,9 @@ export default async function JourneyPage() {
         <div className="relative min-h-[462px] lg:min-h-[570px]">
           <div className="max-w-[530px] pt-8 lg:pt-[30px]">
             <span className="inline-flex min-h-9 items-center gap-2 rounded-full border border-brand-lavender/60 bg-white/80 px-3 text-xs font-extrabold text-brand-primary shadow-card backdrop-blur">
-              <span className="size-[18px] rounded-full border-2 border-brand-primary" />
+              <CircleDot className="size-[18px]" aria-hidden="true" />
               Emoções e bem-estar
-              <span className="grid size-5 place-items-center rounded-full border border-brand-primary text-xs leading-none">
-                i
-              </span>
+              <Info className="size-4" aria-hidden="true" />
             </span>
             <h1 className="mt-8 font-display text-[3.45rem] font-light italic leading-[0.98] text-brand-deep sm:text-[4.5rem] lg:text-[5.3rem]">
               Como você está se sentindo?

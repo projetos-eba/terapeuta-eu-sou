@@ -17,8 +17,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     routes.public.therapies,
     routes.public.therapists,
     routes.public.forTherapists,
-    routes.public.help,
-    routes.public.zoomHelp,
     routes.public.terms,
     routes.public.privacy,
   ];

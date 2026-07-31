@@ -1,5 +1,15 @@
 import { Fragment } from "react";
-import { Check, Gem, Minus, Star, UserRound } from "lucide-react";
+import {
+  BookOpen,
+  CalendarCheck,
+  Check,
+  Gem,
+  LineChart,
+  Minus,
+  Sparkles,
+  Star,
+  UserRound,
+} from "lucide-react";
 
 import {
   TherapistPlan,
@@ -22,6 +32,13 @@ const categoryOrder: PlanFeatureCategory[] = [
   "premium_plus",
   "academy",
 ];
+
+const categoryIcons = {
+  academy: BookOpen,
+  base: CalendarCheck,
+  premium: Sparkles,
+  premium_plus: LineChart,
+} satisfies Record<PlanFeatureCategory, typeof CalendarCheck>;
 
 type FeatureCellState =
   | { type: "included" }
@@ -161,7 +178,7 @@ function PlanCard({ plan }: { plan: PlanDefinition }) {
   return (
     <article
       className={cn(
-        "flex h-full flex-col rounded-[22px] border bg-white p-6 shadow-card",
+        "flex h-full min-w-0 max-w-full flex-col rounded-[22px] border bg-white p-6 shadow-card",
         plan.highlight
           ? "border-brand-primary shadow-float"
           : "border-[rgba(222,213,242,0.9)]",
@@ -277,8 +294,8 @@ export function PlansPreviewSection() {
         </div>
 
         <div className="mt-10 hidden overflow-hidden rounded-[18px] border border-border bg-white text-brand-deep shadow-float xl:block">
-          <div className="overflow-x-auto">
-            <table className="min-w-[950px] table-fixed border-collapse">
+          <div className="max-w-full overflow-x-auto">
+            <table className="w-full min-w-[950px] table-fixed border-collapse">
               <caption className="sr-only">
                 Comparativo de recursos dos planos para terapeutas
               </caption>
@@ -313,9 +330,21 @@ export function PlansPreviewSection() {
                     <tr>
                       <th
                         colSpan={4}
-                        className="border-t border-border bg-white px-5 pb-2 pt-4 text-left text-[11px] font-extrabold uppercase leading-4 tracking-[0.02em] text-brand-primary"
+                        scope="colgroup"
+                        className="border-t border-brand-primary/40 bg-brand-primary px-5 py-4 text-left text-xs font-extrabold uppercase leading-4 tracking-[0.02em] text-white"
                       >
-                        {planCategoryLabels[category]}
+                        <span className="flex items-center gap-3">
+                          {(() => {
+                            const Icon = categoryIcons[category];
+
+                            return (
+                              <span className="grid size-8 place-items-center rounded-full bg-white/14">
+                                <Icon className="size-4" aria-hidden="true" />
+                              </span>
+                            );
+                          })()}
+                          <span>{planCategoryLabels[category]}</span>
+                        </span>
                       </th>
                     </tr>
                     {therapistPlanFeatureDefinitions

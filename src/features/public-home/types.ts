@@ -19,6 +19,11 @@ export type PublicHomeTherapist = {
   reviewCountLabel: string;
   serviceTitle: string;
   slug: string;
+  therapies?: Array<{
+    id: string;
+    label: string;
+    slug: string;
+  }>;
   therapyNames?: string[];
 };
 

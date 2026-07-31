@@ -72,9 +72,9 @@ export const fallbackMatchingConfig: MatchingConfig = {
 };
 
 export const fallbackMatchingTherapies: MatchingTherapy[] = [
-  therapy("222222222225", "Reiki", "reiki", "Prática complementar de presença e cuidado energético.", 1),
-  therapy("222222222228", "Tarô", "taro", "Leitura simbólica para reflexão, escolhas e autoconhecimento.", 2),
-  therapy("222222222230", "Constelação Familiar", "constelacao-familiar", "Experiência simbólica para observar vínculos e padrões com cuidado.", 2),
+  therapy("222222222225", "Reiki", "reiki", "Prática complementar de presença e cuidado energético.", "/therapies/reiki-editorial.png", 1),
+  therapy("222222222228", "Tarô", "taro", "Leitura simbólica para reflexão, escolhas e autoconhecimento.", "/therapies/taro-editorial.png", 2),
+  therapy("222222222230", "Constelação Familiar", "constelacao-familiar", "Experiência simbólica para observar vínculos e padrões com cuidado.", "/therapies/constelacao-familiar-editorial.png", 2),
 ];
 
 export const fallbackMatchingWeights: MatchingWeight[] = [
@@ -128,12 +128,13 @@ function therapy(
   name: string,
   slug: string,
   shortDescription: string,
+  imageUrl: string,
   therapistCount: number,
 ): MatchingTherapy {
   return {
     description: shortDescription,
     id: `22222222-2222-4222-8222-${suffix}`,
-    imageUrl: null,
+    imageUrl,
     isVisibleInMatching: true,
     name,
     shortDescription,

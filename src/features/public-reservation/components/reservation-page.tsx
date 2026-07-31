@@ -935,7 +935,6 @@ function ReservationFooter() {
         <div className="flex flex-wrap gap-5">
           <Link href={routes.public.privacy as Route}>Política de privacidade</Link>
           <Link href={routes.public.terms as Route}>Termos de uso</Link>
-          <Link href={routes.public.help as Route}>Contato</Link>
         </div>
       </div>
     </footer>
@@ -967,9 +966,6 @@ export function ReservationSuccessPage() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <TESButton href={routes.patient.home} variant="gradient" size="lg">
             Ir para minha área
-          </TESButton>
-          <TESButton href={routes.public.help} variant="secondary" size="lg">
-            Falar com suporte
           </TESButton>
         </div>
       </section>

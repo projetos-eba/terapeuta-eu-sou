@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import type { Route } from "next";
-import { useEffect, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 import {
   CalendarCheck,
   ChevronRight,
@@ -78,10 +79,35 @@ export function PublicAuthMenu() {
 
 function PatientPopover({ patient }: { patient: PatientSummary }) {
   const firstName = getFirstName(patient.displayName);
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
-  async function handleLogout() {
-    await fetch("/api/auth/client/session", { method: "DELETE" });
-    window.location.assign(routes.public.home);
+  async function handleLogout(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+    setLogoutError(null);
+
+    try {
+      const response = await fetch("/api/auth/client/session", {
+        cache: "no-store",
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("logout_failed");
+      }
+
+      router.replace(routes.public.home);
+      router.refresh();
+    } catch {
+      setLogoutError("Não foi possível sair agora. Tente novamente.");
+      setIsLoggingOut(false);
+    }
   }
 
   return (
@@ -117,15 +143,21 @@ function PatientPopover({ patient }: { patient: PatientSummary }) {
             label="Meus encontros"
           />
           <button
-            className="flex min-h-12 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-extrabold text-brand-deep transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
+            className="flex min-h-12 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-extrabold text-brand-deep transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20 disabled:cursor-wait disabled:opacity-70"
+            disabled={isLoggingOut}
             onClick={handleLogout}
             type="button"
           >
             <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
               <LogOut className="size-5" aria-hidden="true" />
             </span>
-            Sair
+            {isLoggingOut ? "Saindo..." : "Sair"}
           </button>
+          {logoutError ? (
+            <p className="px-3 text-xs font-bold leading-5 text-status-danger">
+              {logoutError}
+            </p>
+          ) : null}
         </div>
       </div>
     </details>
