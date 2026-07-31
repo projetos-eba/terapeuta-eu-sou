@@ -28,7 +28,6 @@ function Logo() {
 
 export function PublicHeader() {
   const nav: Array<[string, Route]> = [
-    ["Como funciona", routes.public.howItWorks as Route],
     ["Terapias", routes.public.therapies as Route],
     ["Sua Jornada", routes.public.journey as Route],
     ["Terapeutas", routes.public.therapists as Route],
@@ -36,7 +35,7 @@ export function PublicHeader() {
   ];
 
   return (
-    <header className="mx-auto flex w-full max-w-[1680px] items-center justify-between gap-6 px-5 py-7 sm:px-8 lg:px-12">
+    <header className="relative z-50 mx-auto flex w-full max-w-[1680px] items-center justify-between gap-6 px-5 py-4 sm:px-8 lg:px-12">
       <Logo />
       <nav className="hidden items-center gap-11 text-sm font-bold text-tesText-secondary lg:flex">
         {nav.map(([label, href]) => (

@@ -51,6 +51,7 @@ export type TherapistSearchCard = {
   slug: string;
   tags: string[];
   themeSlugs: string[];
+  therapyId: string;
   therapyName: string;
   therapySlug: string;
 };

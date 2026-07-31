@@ -224,21 +224,37 @@ function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
 }
 
 function Services({ profile }: { profile: PublicTherapistProfile }) {
+  if (!profile.services.length) {
+    return null;
+  }
+
   return (
-    <section className="mx-auto mt-5 max-w-[1348px] rounded-[18px] border border-border bg-white p-7">
-      <h2 className="font-display text-2xl font-light italic text-status-info">
-        Vivências e terapias
-      </h2>
-      <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+    <section className="mx-auto mt-8 max-w-[1348px] px-5 sm:px-8">
+      <div>
+        <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
+          Serviços online
+        </p>
+        <h2 className="mt-2 font-display text-3xl font-light italic text-status-info">
+          Vivências e terapias
+        </h2>
+      </div>
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
         {profile.services.map((service) => (
           <article
             key={service.id}
-            className="grid min-h-[192px] gap-5 rounded-[24px] border border-border p-4 sm:grid-cols-[108px_1fr]"
+            className="grid min-h-[220px] gap-5 rounded-[18px] border border-border bg-white p-5 shadow-card sm:grid-cols-[128px_1fr]"
           >
-            <div className="min-h-[96px] rounded-[18px] bg-brand-primary sm:min-h-0" />
-            <div>
-              <h3 className="font-display text-[21px] font-light italic text-brand-deep">
-                {service.title}
+            <div className="grid min-h-[112px] place-items-center rounded-[16px] bg-brand-lavenderSoft text-brand-primary sm:min-h-0">
+              <Sparkles className="size-8" />
+            </div>
+            <div className="min-w-0">
+              <span className="inline-flex max-w-full rounded-full bg-brand-lavenderSoft px-3 py-1 text-xs font-extrabold text-brand-primary">
+                <span className="truncate" title={service.title}>
+                  {service.title}
+                </span>
+              </span>
+              <h3 className="mt-3 font-display text-[26px] font-light italic leading-tight text-brand-deep">
+                {service.therapyName}
               </h3>
               <p className="mt-3 min-h-[46px] text-sm leading-[1.5] text-tesText-secondary">
                 {service.description}

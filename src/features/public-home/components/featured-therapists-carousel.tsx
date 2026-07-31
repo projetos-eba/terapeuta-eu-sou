@@ -8,22 +8,30 @@ import { useRef } from "react";
 
 import { TESButton, TESCard } from "@/components/tes";
 import type { PublicHomeTherapist } from "@/features/public-home";
+import { buildPublicTherapistTherapyChips } from "@/features/public-therapists/therapy-presentation";
 import { routes } from "@/lib/routes";
 
 function getTherapistTags(therapist: PublicHomeTherapist) {
   return therapist.guideItems?.slice(0, 6) ?? [];
 }
 
-function formatTherapies(therapyNames: string[] | undefined) {
-  if (!therapyNames?.length) {
-    return "Terapias publicadas no perfil";
+function getTherapyChips(therapist: PublicHomeTherapist) {
+  if (therapist.therapies?.length) {
+    return therapist.therapies.slice(0, 3);
   }
 
-  const visibleTherapies = therapyNames.slice(0, 2);
-  const remainingCount = therapyNames.length - visibleTherapies.length;
-  const baseText = visibleTherapies.join(", ");
-
-  return remainingCount > 0 ? `${baseText} e +${remainingCount}` : baseText;
+  return buildPublicTherapistTherapyChips(
+    therapist.therapyNames?.map((name) => ({
+      name,
+      slug: name
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, ""),
+    })) ?? [],
+    3,
+  );
 }
 
 function FeaturedTherapistCard({
@@ -32,7 +40,7 @@ function FeaturedTherapistCard({
   therapist: PublicHomeTherapist;
 }) {
   const tags = getTherapistTags(therapist);
-  const therapySummary = formatTherapies(therapist.therapyNames);
+  const therapyChips = getTherapyChips(therapist);
 
   return (
     <TESCard className="w-[292px] shrink-0 snap-start rounded-[28px] p-5 shadow-soft sm:w-[315px] xl:w-[220px] min-[1360px]:w-[240px] min-[1500px]:w-[268px] 2xl:w-[292px]">
@@ -51,9 +59,27 @@ function FeaturedTherapistCard({
         <h3 className="text-[1.45rem] font-extrabold leading-tight text-brand-deep min-[1360px]:text-[1.55rem] 2xl:text-[1.65rem]">
           {therapist.name}
         </h3>
-        <p className="mt-2 text-xs font-extrabold leading-snug text-tesText-muted min-[1360px]:text-[0.82rem]">
-          {therapySummary}
-        </p>
+        {therapyChips.length ? (
+          <ul
+            aria-label={`Terapias oferecidas por ${therapist.name}`}
+            className="mt-3 flex min-h-[34px] flex-wrap gap-2"
+          >
+            {therapyChips.map((therapy) => (
+              <li key={therapy.id}>
+                <span
+                  className="block max-w-[180px] truncate rounded-full bg-brand-lavenderSoft px-3 py-1.5 text-[11px] font-extrabold leading-4 text-brand-primary"
+                  title={therapy.label}
+                >
+                  {therapy.label}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 min-h-[34px] text-xs font-extrabold leading-snug text-tesText-muted min-[1360px]:text-[0.82rem]">
+            Terapias publicadas no perfil
+          </p>
+        )}
 
         {tags.length ? (
           <div className="group mt-5 overflow-hidden border-y border-brand-lavender/35 py-3">

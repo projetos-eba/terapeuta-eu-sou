@@ -53,6 +53,7 @@ export function calculateMatchingResults(input: {
 
       return {
         explanation: buildExplanation(scorePercent),
+        imageUrl: therapy.imageUrl,
         label: getScoreLabel(scorePercent),
         matchedInterestIds: unique(matchedInterestIds),
         matchedThemeIds: unique(matchedThemeIds),

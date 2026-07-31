@@ -51,6 +51,7 @@ export type MatchingTherapy = {
 
 export type MatchingResultItem = {
   explanation: string;
+  imageUrl: string | null;
   label: string;
   matchedInterestIds: string[];
   matchedThemeIds: string[];
