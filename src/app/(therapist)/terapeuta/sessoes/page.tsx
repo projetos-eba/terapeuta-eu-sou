@@ -602,12 +602,6 @@ function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
           icon={<Clock aria-hidden="true" size={18} />}
           label="Seja pontual"
         />
-        <Link
-          className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-brand-lavender text-xs font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
-          href={routes.public.zoomHelp as Route}
-        >
-          Ver guia completo
-        </Link>
       </section>
 
       <section className="rounded-[16px] border border-brand-lavender/40 bg-white p-5 shadow-card">

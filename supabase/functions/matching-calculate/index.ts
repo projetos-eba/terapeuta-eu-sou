@@ -15,6 +15,7 @@ type MatchingRequest = {
 type MatchingTherapyRow = {
   description: string | null;
   id: string;
+  image_url: string | null;
   name: string;
   short_description: string;
   slug: string;
@@ -42,6 +43,7 @@ type MatchingWeightRow = {
 
 type MatchingTherapy = {
   id: string;
+  imageUrl: string | null;
   isVisibleInMatching: boolean;
   name: string;
   slug: string;
@@ -94,7 +96,7 @@ matchingRuntime.serve(async (request) => {
       fetchRows<MatchingTherapyRow>(
         supabaseUrl,
         serviceRoleKey,
-        "/rest/v1/public_therapies_v?select=id,name,slug,short_description,description,status,therapist_count",
+        "/rest/v1/public_matching_therapies_v?select=id,name,slug,short_description,description,image_url,status,therapist_count,is_visible_in_matching",
       ),
       fetchRows<MatchingTherapySettingRow>(
         supabaseUrl,
@@ -192,6 +194,7 @@ function calculateMatchingResults(input: {
 
       return {
         explanation: buildExplanation(scorePercent),
+        imageUrl: therapy.imageUrl,
         label: getScoreLabel(scorePercent),
         matchedInterestIds: unique(matchedInterestIds),
         matchedThemeIds: unique(matchedThemeIds),
@@ -240,6 +243,7 @@ function mergeTherapyRows(
 
   return therapies.map((therapy) => ({
     id: therapy.id,
+    imageUrl: therapy.image_url,
     isVisibleInMatching:
       settingsByTherapyId.get(therapy.id)?.is_visible_in_matching ?? true,
     name: therapy.name,

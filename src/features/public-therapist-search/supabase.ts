@@ -47,6 +47,7 @@ type PublicTherapistSearchRow = {
   theme_names: string[] | null;
   theme_slugs: string[] | null;
   therapist_headline: string | null;
+  therapy_id: string;
   therapy_name: string;
   therapy_slug: string;
 };
@@ -140,6 +141,7 @@ function mapTherapistRow(row: PublicTherapistSearchRow): TherapistSearchCard {
     slug: row.slug,
     tags,
     themeSlugs: row.theme_slugs ?? [],
+    therapyId: row.therapy_id,
     therapyName: row.therapy_name,
     therapySlug: row.therapy_slug,
   };

@@ -55,10 +55,15 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 - `/terapeuta/cadastro`: cadastro inicial de terapeuta.
 - `/terapeuta/checkout`: revisão do plano pago após o cadastro.
 - `/reset-senha`: recuperação de senha.
-- `/ajuda`: ajuda pública.
-- `/ajuda/zoom`: guia público para sessões online pelo Zoom.
 - `/termos`: termos de uso.
 - `/privacidade`: política de privacidade.
+
+Rotas públicas removidas em 2026-07-31:
+
+- `/ajuda`: superfície pública obsoleta removida da navegação e do produto.
+- `/ajuda/zoom`: superfície pública obsoleta removida da navegação e do produto.
+  A integração técnica Zoom Video SDK, runbooks e documentação operacional em
+  `docs/zoom/` permanecem válidos.
 
 ### Fluxos
 

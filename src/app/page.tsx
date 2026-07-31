@@ -119,7 +119,7 @@ function HeroSection() {
         </div>
       </div>
 
-      <div className="relative mx-5 min-h-[360px] overflow-hidden rounded-hero sm:mx-8 lg:absolute lg:inset-y-0 lg:left-[34vw] lg:right-0 lg:mx-0 lg:rounded-none">
+      <div className="pointer-events-none relative mx-5 min-h-[360px] overflow-hidden rounded-hero sm:mx-8 lg:absolute lg:inset-y-0 lg:left-[34vw] lg:right-0 lg:mx-0 lg:rounded-none">
         <Image
           src="/home/hero-section-realistic-fade.png"
           alt="Cena acolhedora de conversa terapeutica em ambiente calmo"
@@ -372,9 +372,9 @@ function TestimonialsSection({
       />
 
       <div className="mt-10 grid gap-5 md:grid-cols-3">
-        {testimonials.map((testimonial) => (
+        {testimonials.map((testimonial, testimonialIndex) => (
           <TESCard
-            key={`${testimonial.author}-${testimonial.context}`}
+            key={`${testimonial.author}-${testimonial.context}-${testimonialIndex}`}
             className="p-6"
           >
             <div className="flex items-center gap-1 text-[#F4B84A]">

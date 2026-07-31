@@ -11,7 +11,7 @@ import { PlansPreviewSection } from "./plan-comparison";
 function Hero() {
   return (
     <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#fff_0%,#faf7ff_54%,#fff_100%)] px-5 pb-14 pt-12 sm:px-8 lg:px-12 lg:pb-20">
-      <div className="pointer-events-none absolute left-[-96px] top-[430px] h-[240px] w-[360px] rounded-full border border-brand-lavender/50 opacity-40" />
+      <div className="pointer-events-none absolute left-0 top-[430px] h-[180px] w-[180px] rounded-full border border-brand-lavender/50 opacity-40" />
       <div className="pointer-events-none absolute inset-y-0 right-0 -z-10 h-[680px] w-full opacity-45 sm:opacity-55 lg:w-[930px]">
         <Image
           src="/for-therapists/hero-therapist-laptop.png"
@@ -29,7 +29,7 @@ function Hero() {
         <p className="text-sm font-extrabold uppercase tracking-[0.48em] text-brand-primary">
           {forTherapistsHero.eyebrow}
         </p>
-        <h1 className="mt-8 max-w-4xl text-[42px] font-semibold leading-[1.1] text-brand-deep sm:text-[54px]">
+        <h1 className="mt-8 max-w-full break-words text-[42px] font-semibold leading-[1.1] text-brand-deep sm:max-w-4xl sm:text-[54px]">
           {forTherapistsHero.title}
           <span className="mt-2 block bg-[linear-gradient(90deg,#6C3D91_0%,#81BAE0_100%)] bg-clip-text font-display text-[50px] font-light italic leading-[1.08] text-transparent sm:text-[70px]">
             {forTherapistsHero.accent}
@@ -82,7 +82,7 @@ function Hero() {
 
 function ProfilePreview() {
   return (
-    <div className="mt-8 rounded-[18px] border border-brand-lavender/60 bg-white/90 px-4 py-5 text-center shadow-card">
+    <div className="mt-7 rounded-[18px] border border-brand-lavender/60 bg-white/90 px-4 py-5 text-center shadow-card xl:mt-8">
       <div className="relative mx-auto size-[65px] overflow-hidden rounded-full bg-[#f7f0e8]">
         <Image
           src="/therapists/ana-oliveira.png"
@@ -120,9 +120,9 @@ function CalendarPreview() {
   const days = Array.from({ length: 28 }, (_, index) => index + 1);
 
   return (
-    <div className="mt-7 rounded-[16px] bg-white/90 p-4 shadow-card">
+    <div className="mt-7 rounded-[16px] bg-white/90 p-4 shadow-card xl:p-5">
       <p className="text-center text-xs font-extrabold text-[#534c99]">Maio 2026</p>
-      <div className="mt-4 grid grid-cols-7 gap-2 text-center text-[11px] font-extrabold text-brand-deep">
+      <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[11px] font-extrabold text-brand-deep sm:gap-2">
         {["D", "S", "T", "Q", "Q", "S", "S"].map((day, index) => (
           <span key={`${day}-${index}`}>{day}</span>
         ))}
@@ -130,7 +130,7 @@ function CalendarPreview() {
           <span
             key={day}
             className={cn(
-              "grid size-7 place-items-center rounded-full",
+              "grid aspect-square min-w-0 place-items-center rounded-full text-[10px] sm:size-7 sm:text-[11px]",
               day === 22 ? "bg-brand-primary text-white" : "text-tesText-secondary",
             )}
           >
@@ -152,9 +152,14 @@ function CalendarPreview() {
   );
 }
 
-function GrowthPreview() {
+function GrowthPreview({ className }: { className?: string }) {
   return (
-    <div className="mt-8 flex h-36 items-end gap-3 rounded-[18px] bg-white/70 p-5">
+    <div
+      className={cn(
+        "mt-8 flex h-36 items-end gap-3 rounded-[18px] bg-white/70 p-5",
+        className,
+      )}
+    >
       {[32, 48, 66, 88, 112].map((height, index) => (
         <div
           key={height}
@@ -173,42 +178,56 @@ function BentoCard({
 }) {
   const Icon = card.icon;
   const isRemote = card.variant === "remote";
+  const isCalendar = card.variant === "calendar";
+  const isCommunity = card.variant === "community";
+  const isCompact = card.variant === "security" || card.variant === "payments";
+  const isGrowth = card.variant === "growth";
 
   return (
     <article
       className={cn(
-        "relative overflow-hidden rounded-[18px] border border-[rgba(226,218,244,0.8)] p-7 shadow-card sm:p-8",
+        "relative min-w-0 rounded-[18px] border border-[rgba(226,218,244,0.8)] p-7 shadow-card sm:p-8 xl:p-10",
         isRemote
-          ? "bg-[linear-gradient(135deg,#6C3D91_0%,#AE94C3_100%)] text-white xl:col-start-4 xl:row-span-3 xl:p-10"
+          ? "flex flex-col overflow-hidden bg-[linear-gradient(135deg,#6C3D91_0%,#AE94C3_100%)] text-white lg:col-span-2 xl:col-span-1 xl:col-start-4 xl:row-span-3 xl:row-start-1"
           : "bg-white/88 text-brand-deep",
-        card.variant === "profile" ? "xl:col-start-1 xl:row-span-2" : "",
-        card.variant === "calendar" ? "xl:col-start-2 xl:row-span-2" : "",
+        isCalendar ? "bg-brand-cyanSoft/55 xl:col-start-2 xl:row-span-2 xl:row-start-1" : "",
+        isCommunity ? "flex flex-col bg-brand-lavenderSoft xl:col-start-1 xl:row-start-3" : "",
+        isCompact ? "xl:p-8" : "",
+        card.variant === "profile" ? "lg:row-span-2 xl:col-start-1 xl:row-span-2 xl:row-start-1" : "",
         card.variant === "security" ? "xl:col-start-3 xl:row-start-1" : "",
         card.variant === "payments" ? "xl:col-start-3 xl:row-start-2" : "",
-        card.variant === "community" ? "xl:col-span-1 xl:col-start-1 xl:row-start-3" : "",
-        card.variant === "growth" ? "xl:col-span-2 xl:col-start-2 xl:row-start-3" : "",
+        isGrowth
+          ? "lg:col-span-2 xl:col-span-2 xl:col-start-2 xl:row-start-3 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(220px,300px)] xl:items-center xl:gap-8"
+          : "",
       )}
     >
       <div
         className={cn(
-          "grid size-12 place-items-center rounded-full",
+          "grid h-12 w-12 shrink-0 place-items-center rounded-full xl:h-14 xl:w-14",
           isRemote ? "bg-white/18 text-white" : "bg-brand-lavenderSoft text-brand-primary",
+          isCommunity ? "bg-white/62" : "",
+          isCompact ? "xl:h-12 xl:w-12" : "",
+          isGrowth ? "xl:col-start-1 xl:row-start-1" : "",
         )}
       >
-        <Icon className="size-6" />
+        <Icon className={cn("size-6 xl:size-7", isCompact ? "xl:size-6" : "")} />
       </div>
       <h3
         className={cn(
-          "mt-5 font-display text-2xl font-semibold italic leading-tight",
-          isRemote ? "text-white xl:text-[38px]" : "text-brand-deep",
+          "mt-5 font-display text-2xl font-semibold italic leading-tight xl:text-[28px]",
+          isRemote ? "text-white xl:mt-auto xl:text-[40px]" : "text-brand-deep",
+          isCompact ? "xl:text-[25px]" : "",
+          isGrowth ? "xl:col-start-1 xl:row-start-2" : "",
         )}
       >
         {card.title}
       </h3>
       <p
         className={cn(
-          "mt-4 text-sm font-semibold leading-6",
-          isRemote ? "text-white/86" : "text-tesText-secondary",
+          "mt-4 text-sm font-semibold leading-6 xl:max-w-[230px]",
+          isRemote ? "text-white/86 xl:text-base xl:leading-7" : "text-tesText-secondary",
+          isCompact ? "xl:max-w-full xl:text-[13px] xl:leading-5" : "",
+          isGrowth ? "xl:col-start-1 xl:row-start-3 xl:max-w-[300px]" : "",
         )}
       >
         {card.body}
@@ -216,9 +235,11 @@ function BentoCard({
 
       {card.variant === "profile" ? <ProfilePreview /> : null}
       {card.variant === "calendar" ? <CalendarPreview /> : null}
-      {card.variant === "growth" ? <GrowthPreview /> : null}
+      {isGrowth ? (
+        <GrowthPreview className="xl:col-start-2 xl:row-span-3 xl:row-start-1 xl:mt-0 xl:h-48 xl:self-center" />
+      ) : null}
       {card.variant === "community" ? (
-        <div className="mt-8 flex items-center gap-3">
+        <div className="mt-8 flex items-center gap-2 xl:gap-3">
           {[
             "/therapists/ana-oliveira.png",
             "/therapists/rafael-santos-avatar.png",
@@ -227,7 +248,7 @@ function BentoCard({
           ].map((src) => (
             <div
               key={src}
-              className="relative size-12 overflow-hidden rounded-full border-4 border-white shadow-card"
+              className="relative size-11 shrink-0 overflow-hidden rounded-full border-4 border-white shadow-card xl:size-12"
             >
               <Image
                 src={src}
@@ -238,11 +259,11 @@ function BentoCard({
               />
             </div>
           ))}
-          <span className="text-lg font-extrabold text-brand-deep">+300</span>
+          <span className="text-lg font-extrabold text-brand-deep xl:text-xl">+300</span>
         </div>
       ) : null}
       {isRemote ? (
-        <div className="relative mt-12 h-48 overflow-hidden rounded-[18px] border border-white/40 bg-white/10 xl:absolute xl:bottom-10 xl:left-10 xl:right-10 xl:h-[300px]">
+        <div className="relative mt-12 h-48 overflow-hidden rounded-[18px] border border-white/40 bg-white/10 xl:mt-auto xl:h-[330px]">
           <Image
             src="/for-therapists/session-preview.png"
             alt="Atendimento online pela plataforma"
@@ -270,7 +291,7 @@ function Benefits() {
           </p>
         </div>
 
-        <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-[315px_300px_260px_354px] xl:grid-rows-[300px_282px_300px] xl:justify-center">
+        <div className="mt-10 grid min-w-0 gap-5 md:grid-cols-2 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)_minmax(0,0.78fr)_minmax(0,1.15fr)] xl:grid-rows-[minmax(340px,auto)_minmax(340px,auto)_minmax(360px,auto)] xl:items-stretch">
           {benefitCards.map((card) => (
             <BentoCard key={card.title} card={card} />
           ))}

@@ -121,6 +121,7 @@ export type ServiceRow = {
   service_id: string;
   service_title: string;
   therapist_slug: string;
+  therapy_id: string;
   therapy_name: string;
   therapy_slug: string;
 };
@@ -194,6 +195,7 @@ export function mapServiceRow(row: ServiceRow): TherapistProfileService {
     priceCents: row.price_cents,
     priceLabel: formatCurrency(row.price_cents),
     title: row.service_title,
+    therapyId: row.therapy_id,
     therapyName: row.therapy_name,
     therapySlug: row.therapy_slug,
   };

@@ -15,8 +15,8 @@ export const homeHero = {
   titleAccent: "existe um encontro",
   body: "O TES conecta voce a terapeutas, praticas e experiencias que podem apoiar diferentes momentos da vida. Aqui, cada jornada e unica. E cada encontro pode fazer sentido para voce.",
   primaryCta: {
-    label: "Quero conhecer o TES",
-    href: routes.public.howItWorks,
+    label: "Começar minha jornada",
+    href: routes.public.journey,
   },
   secondaryCta: {
     label: "Explorar terapias",

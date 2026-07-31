@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { ArrowRight, Loader2, RefreshCw, UsersRound } from "lucide-react";
 
@@ -85,8 +86,23 @@ export function MatchingResultClient() {
             className={`overflow-hidden p-0 ${index >= 3 ? "hidden md:block" : ""}`}
           >
             <article className="grid gap-0 md:grid-cols-[260px_1fr]">
-              <div className="grid min-h-[180px] place-items-center bg-brand-lavenderSoft p-8 text-brand-primary">
-                <span className="font-display text-6xl font-light italic">
+              <div className="relative min-h-[220px] overflow-hidden bg-brand-lavenderSoft">
+                {item.imageUrl ? (
+                  <Image
+                    src={item.imageUrl}
+                    alt={`Imagem editorial de ${item.title}`}
+                    fill
+                    sizes="(min-width: 768px) 260px, 100vw"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="grid h-full min-h-[220px] place-items-center p-8 text-brand-primary">
+                    <span className="font-display text-6xl font-light italic">
+                      {index + 1}
+                    </span>
+                  </div>
+                )}
+                <span className="absolute left-4 top-4 grid size-10 place-items-center rounded-full bg-white/90 font-display text-2xl font-light italic text-brand-primary shadow-card">
                   {index + 1}
                 </span>
               </div>
@@ -102,8 +118,10 @@ export function MatchingResultClient() {
                 </p>
                 <div className="mt-5 flex items-center gap-2 text-sm font-extrabold text-brand-primary">
                   <UsersRound className="size-4" />
-                  {item.therapistCount} profissional
-                  {item.therapistCount === 1 ? "" : "s"} com serviço ativo
+                  {item.therapistCount === 1
+                    ? "1 profissional"
+                    : `${item.therapistCount} profissionais`}{" "}
+                  com serviço ativo
                 </div>
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                   <TESButton

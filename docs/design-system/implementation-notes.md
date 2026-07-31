@@ -100,7 +100,6 @@ export const routes = {
     signIn: "/entrar",
     signUp: "/cadastro",
     resetPassword: "/reset-senha",
-    help: "/ajuda",
     terms: "/termos",
     privacy: "/privacidade",
   },
@@ -167,6 +166,9 @@ export const therapistCapabilities = {
 
 Regras:
 
+- As antigas superfícies públicas `/ajuda` e `/ajuda/zoom` foram removidas em
+  2026-07-31; manter suporte logado, documentação técnica de Zoom e páginas
+  legais válidas.
 - Básico mantém sessões e mensagens com recursos limitados.
 - Básico renderiza financeiro operacional e não renderiza navegação principal de avaliações ou métricas intermediárias.
 - Pro pode ver convites para Plus.

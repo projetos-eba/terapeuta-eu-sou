@@ -86,7 +86,10 @@ Atualizado em 2026-07-28.
 
 ## Pendências De Integração
 
-- `/como-funciona`, `/para-terapeutas/planos`, `/ajuda`, `/termos`, `/privacidade`, demais áreas logadas e admin fora de `/admin/terapias` ainda precisam ser implementadas ou auditadas quando entrarem no escopo.
+- `/como-funciona`, `/para-terapeutas/planos`, `/termos`, `/privacidade`,
+  demais áreas logadas e admin fora de `/admin/terapias` ainda precisam ser
+  implementadas ou auditadas quando entrarem no escopo. As antigas superfícies
+  públicas `/ajuda` e `/ajuda/zoom` foram removidas do produto em 2026-07-31.
 - `/admin/matching` deve publicar versões completas de pesos, nunca edição parcial ao vivo.
 - `/admin/terapias` edita `approach_label`, `approach_icon_key`, `visual_theme_key`, `hero_focal_point` e `therapy_faqs` sem gravar classes CSS/Tailwind no banco; o frontend mapeia `visual_theme_key` para tokens seguros.
 - `/terapeuta/checkout` chama `stripe-create-subscription-checkout`, mas o plano pago so e ativado por `stripe-billing-webhook`. O catalogo Stripe precisa ser sincronizado por `npm run payments:catalog:sync` antes do uso real.

@@ -55,6 +55,7 @@ export type TherapistProfileService = {
   priceCents: number;
   priceLabel: string;
   title: string;
+  therapyId: string;
   therapyName: string;
   therapySlug: string;
 };
