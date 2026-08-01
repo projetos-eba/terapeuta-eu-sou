@@ -93,7 +93,7 @@ export function ClientLoginForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+    <form onSubmit={handleSubmit} noValidate className="relative space-y-5">
       <div>
         <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
           Acesso cliente
@@ -181,17 +181,7 @@ export function ClientLoginForm({
         </Link>
       </div>
 
-      <TESButton
-        type="submit"
-        variant="gradient"
-        size="lg"
-        disabled={isSubmitting}
-        className="min-h-12 w-full rounded-2xl text-base"
-      >
-        {isSubmitting ? "Entrando..." : "Entrar"}
-      </TESButton>
-
-      <p className="text-center text-sm font-bold text-tesText-secondary">
+      <p className="relative z-0 text-center text-sm font-bold text-tesText-secondary">
         Ainda não tem conta?{" "}
         <Link
           href={
@@ -199,11 +189,21 @@ export function ClientLoginForm({
               ? `${routes.public.clientSignUp}?next=${encodeURIComponent(next)}`
               : routes.public.clientSignUp
           }
-          className="text-brand-primary hover:underline"
+          className="relative z-10 text-brand-primary hover:underline"
         >
           Criar cadastro inicial
         </Link>
       </p>
+
+      <TESButton
+        type="submit"
+        variant="gradient"
+        size="lg"
+        disabled={isSubmitting}
+        className="relative z-20 flex h-12 min-h-12 w-full rounded-2xl text-base"
+      >
+        {isSubmitting ? "Entrando..." : "Entrar"}
+      </TESButton>
     </form>
   );
 }

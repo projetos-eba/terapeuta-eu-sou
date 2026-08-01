@@ -111,7 +111,7 @@ function PatientPopover({ patient }: { patient: PatientSummary }) {
   }
 
   return (
-    <details className="group relative hidden sm:block">
+    <details className="group relative z-[70] hidden sm:block">
       <summary className="inline-flex h-12 cursor-pointer list-none flex-col items-start justify-center rounded-full border border-border bg-white px-6 text-sm font-extrabold leading-tight text-brand-primary shadow-card transition hover:border-brand-lavender focus:outline-none focus:ring-4 focus:ring-ring/20 [&::-webkit-details-marker]:hidden">
         <span>Olá, {firstName}</span>
         <span className="text-[11px] font-bold text-tesText-muted">
@@ -166,7 +166,7 @@ function PatientPopover({ patient }: { patient: PatientSummary }) {
 
 function GuestPopover({ isLoading }: { isLoading: boolean }) {
   return (
-    <details className="group relative hidden sm:block">
+    <details className="group relative z-[70] hidden sm:block">
       <summary className="inline-flex h-12 cursor-pointer list-none items-center justify-center gap-2 rounded-full border border-border bg-white px-6 text-sm font-extrabold text-brand-primary shadow-card transition hover:border-brand-lavender focus:outline-none focus:ring-4 focus:ring-ring/20 [&::-webkit-details-marker]:hidden">
         <LogIn className="size-4" aria-hidden="true" />
         {isLoading ? "Carregando..." : "Entrar | Cadastre-se"}

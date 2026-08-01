@@ -31,7 +31,7 @@ export function PatientSessionDetailPage({
           <SessionActionCards data={data} />
           <TherapistJourneyCard data={data} />
           <div className="grid gap-6 lg:grid-cols-2">
-            <PreparationCard />
+            <PreparationCard data={data} />
             <CancellationPolicyCard policy={data.cancellationPolicy} />
           </div>
         </div>

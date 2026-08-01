@@ -44,7 +44,7 @@ export default async function AuthenticatedLayout({
 
   return (
     <AuthenticatedShell
-      helpHref={routes.patient.help}
+      helpHref={`${routes.patient.messages}?context=suporte`}
       logoutAction={logoutPatient}
       navigation={navigation}
       notificationCount={overview?.unreadNotificationsCount ?? 0}

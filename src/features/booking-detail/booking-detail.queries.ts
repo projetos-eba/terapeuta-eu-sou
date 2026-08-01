@@ -17,6 +17,7 @@ import {
   type BookingDetailReceiptRow,
   type BookingDetailRescheduleRow,
   type BookingDetailReviewRow,
+  type BookingDetailCancellationDecisionRow,
   type BookingDetailServiceRow,
   type BookingDetailSessionPaymentRow,
   type BookingDetailSessionSummaryRow,
@@ -71,8 +72,8 @@ export const getPatientSessionDetailPage = cache(
       const bookings = await supabaseServerRestRequest<
         BookingDetailBookingRow[]
       >(
-          config,
-          `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,timezone,status,meeting_provider,meeting_url,completed_at,version&id=eq.${encodeURIComponent(bookingId)}&patient_profile_id=eq.${patientProfile.id}&limit=1`,
+        config,
+        `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,service_title_snapshot,service_duration_minutes_snapshot,service_price_cents_snapshot,currency_snapshot,starts_at,ends_at,timezone,status,meeting_provider,completed_at,version&id=eq.${encodeURIComponent(bookingId)}&patient_profile_id=eq.${patientProfile.id}&limit=1`,
       );
       const booking = bookings[0];
 
@@ -87,46 +88,54 @@ export const getPatientSessionDetailPage = cache(
         receiptRows,
         paymentRows,
         rescheduleRows,
-      ] =
-        await Promise.all([
-          supabaseServerRestRequest<BookingDetailTherapistRow[]>(
-            config,
-            `/rest/v1/therapist_profiles?select=id,slug,public_name,headline,photo_url,is_accepting_bookings&id=eq.${booking.therapist_profile_id}&limit=1`,
-          ),
-          supabaseServerRestRequest<BookingDetailServiceRow[]>(
-            config,
-            `/rest/v1/therapist_services?select=id,title,description,duration_minutes,price_cents,currency,therapy_id&id=eq.${booking.service_id}&limit=1`,
-          ),
-          supabaseServerRestRequest<BookingDetailIntakeRow[]>(
-            config,
-            `/rest/v1/booking_intake_responses?select=focus_area,shared_note,therapy_goal,visibility&booking_id=eq.${booking.id}&limit=1`,
-          ),
-          supabaseServerRestRequest<BookingDetailReceiptRow[]>(
-            config,
-            `/rest/v1/booking_payment_receipts?select=amount_cents,currency,receipt_url,paid_at&booking_id=eq.${booking.id}&limit=1`,
-          ),
-          supabaseServerRestRequest<BookingDetailSessionPaymentRow[]>(
-            config,
-            `/rest/v1/session_payments?select=financial_status&booking_id=eq.${booking.id}&limit=1`,
-          ),
-          supabaseServerRestRequest<BookingDetailRescheduleRow[]>(
-            config,
-            `/rest/v1/booking_reschedule_requests?select=id,requested_by_profile_id,proposed_starts_at,proposed_ends_at,proposed_timezone,reason,status,expires_at&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
-          ),
-        ]);
+        cancellationDecisionRows,
+      ] = await Promise.all([
+        supabaseServerRestRequest<BookingDetailTherapistRow[]>(
+          config,
+          `/rest/v1/therapist_profiles?select=id,slug,public_name,headline,photo_url,is_accepting_bookings&id=eq.${booking.therapist_profile_id}&limit=1`,
+        ),
+        supabaseServerRestRequest<BookingDetailServiceRow[]>(
+          config,
+          `/rest/v1/therapist_services?select=id,title,description,duration_minutes,price_cents,currency,therapy_id&id=eq.${booking.service_id}&limit=1`,
+        ),
+        supabaseServerRestRequest<BookingDetailIntakeRow[]>(
+          config,
+          `/rest/v1/booking_intake_responses?select=focus_area,shared_note,therapy_goal,visibility&booking_id=eq.${booking.id}&limit=1`,
+        ),
+        supabaseServerRestRequest<BookingDetailReceiptRow[]>(
+          config,
+          `/rest/v1/booking_payment_receipts?select=amount_cents,currency,receipt_url,paid_at&booking_id=eq.${booking.id}&limit=1`,
+        ),
+        supabaseServerRestRequest<BookingDetailSessionPaymentRow[]>(
+          config,
+          `/rest/v1/session_payments?select=id,financial_status,refund_pending&booking_id=eq.${booking.id}&limit=1`,
+        ),
+        supabaseServerRestRequest<BookingDetailRescheduleRow[]>(
+          config,
+          `/rest/v1/booking_reschedule_requests?select=id,requested_by_profile_id,proposed_starts_at,proposed_ends_at,proposed_timezone,reason,status,expires_at&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
+        ),
+        supabaseServerRestRequest<BookingDetailCancellationDecisionRow[]>(
+          config,
+          `/rest/v1/session_cancellation_decisions?select=decision,refund_amount_cents,requires_manual_review,review_due_at&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
+        ),
+      ]);
       const therapist = therapists[0];
-      const service = services[0];
+      const service = services[0] ?? createSnapshotService(booking);
 
       if (!therapist || !service) {
         throw new BookingDetailDataError("not_found");
       }
 
-      const [therapies, reviews, policyRows, completedBookings] =
-        await Promise.all([
-          supabaseServerRestRequest<BookingDetailTherapyRow[]>(
+      const therapyPromise = service.therapy_id
+        ? supabaseServerRestRequest<BookingDetailTherapyRow[]>(
             config,
             `/rest/v1/therapies?select=id,name,slug&id=eq.${service.therapy_id}&limit=1`,
-          ),
+          )
+        : Promise.resolve<BookingDetailTherapyRow[]>([]);
+
+      const [therapies, reviews, policyRows, completedBookings] =
+        await Promise.all([
+          therapyPromise,
           supabaseServerRestRequest<BookingDetailReviewRow[]>(
             config,
             `/rest/v1/reviews?select=rating&therapist_profile_id=eq.${therapist.id}&status=eq.published`,
@@ -137,14 +146,10 @@ export const getPatientSessionDetailPage = cache(
           ),
           supabaseServerRestRequest<BookingDetailBookingRow[]>(
             config,
-            `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,timezone,status,meeting_provider,meeting_url,completed_at,version&patient_profile_id=eq.${patientProfile.id}&therapist_profile_id=eq.${therapist.id}&status=eq.completed&order=starts_at.asc`,
+            `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,service_title_snapshot,service_duration_minutes_snapshot,service_price_cents_snapshot,currency_snapshot,starts_at,ends_at,timezone,status,meeting_provider,completed_at,version&patient_profile_id=eq.${patientProfile.id}&therapist_profile_id=eq.${therapist.id}&status=eq.completed&order=starts_at.asc`,
           ),
         ]);
-      const therapy = therapies[0];
-
-      if (!therapy) {
-        throw new BookingDetailDataError("not_found");
-      }
+      const therapy = therapies[0] ?? createSnapshotTherapy(service);
 
       const completedBookingIds = completedBookings.map((item) => item.id);
       const summaries =
@@ -166,6 +171,7 @@ export const getPatientSessionDetailPage = cache(
         receipt: receiptRows[0] ?? null,
         reschedule: rescheduleRows[0] ?? null,
         reviews,
+        cancellationDecision: cancellationDecisionRows[0] ?? null,
         service,
         sessionPayment: paymentRows[0] ?? null,
         summaries,
@@ -190,12 +196,15 @@ function createDemoBookingDetail(
   return mapBookingDetail({
     booking: {
       completed_at: null,
+      currency_snapshot: "BRL",
       ends_at: endsAt.toISOString(),
       id: bookingId,
       meeting_provider: "zoom",
-      meeting_url: "https://us02web.zoom.us/j/1234567890?pwd=terapiaeusou",
       patient_profile_id: "91000000-0000-4000-8000-000000000001",
+      service_duration_minutes_snapshot: 60,
       service_id: "93000000-0000-4000-8000-000000000020",
+      service_price_cents_snapshot: 17000,
+      service_title_snapshot: "Reiki",
       starts_at: startsAt.toISOString(),
       status: "confirmed",
       therapist_profile_id: "92000000-0000-4000-8000-000000000011",
@@ -204,12 +213,15 @@ function createDemoBookingDetail(
     },
     completedBookings: Array.from({ length: 3 }, (_, index) => ({
       completed_at: new Date(2024, 4, 10 + index).toISOString(),
+      currency_snapshot: "BRL",
       ends_at: new Date(2024, 4, 10 + index, 15).toISOString(),
       id: `96000000-0000-4000-8000-00000000000${2 + index}`,
       meeting_provider: "zoom",
-      meeting_url: null,
       patient_profile_id: "91000000-0000-4000-8000-000000000001",
+      service_duration_minutes_snapshot: 60,
       service_id: "93000000-0000-4000-8000-000000000020",
+      service_price_cents_snapshot: 17000,
+      service_title_snapshot: "Reiki",
       starts_at: new Date(2024, 4, 10 + index, 14).toISOString(),
       status: "completed",
       therapist_profile_id: "92000000-0000-4000-8000-000000000011",
@@ -248,6 +260,7 @@ function createDemoBookingDetail(
     },
     reschedule: null,
     reviews: [{ rating: 5 }, { rating: 5 }, { rating: 5 }],
+    cancellationDecision: null,
     service: {
       currency: "BRL",
       description: "Sessão online de Reiki.",
@@ -258,7 +271,9 @@ function createDemoBookingDetail(
       title: "Reiki",
     },
     sessionPayment: {
+      id: "97000000-0000-4000-8000-000000000001",
       financial_status: "paid",
+      refund_pending: false,
     },
     summaries: Array.from({ length: 3 }, (_, index) => ({
       booking_id: `96000000-0000-4000-8000-00000000000${2 + index}`,
@@ -280,4 +295,30 @@ function createDemoBookingDetail(
       slug: "reiki",
     },
   });
+}
+
+function createSnapshotService(
+  booking: BookingDetailBookingRow,
+): BookingDetailServiceRow | null {
+  if (!booking.service_title_snapshot) return null;
+
+  return {
+    currency: booking.currency_snapshot ?? "BRL",
+    description: null,
+    duration_minutes: booking.service_duration_minutes_snapshot ?? 60,
+    id: booking.service_id,
+    price_cents: booking.service_price_cents_snapshot ?? 0,
+    therapy_id: null,
+    title: booking.service_title_snapshot,
+  };
+}
+
+function createSnapshotTherapy(
+  service: BookingDetailServiceRow,
+): BookingDetailTherapyRow {
+  return {
+    id: service.therapy_id ?? service.id,
+    name: service.title,
+    slug: "terapia-contratada",
+  };
 }

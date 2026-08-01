@@ -36,6 +36,8 @@ description: Implementar e manter a visão geral autenticada do paciente TES.
 - O layout exige uma sessão de paciente; no desenvolvimento sem configuração Supabase, usa o perfil demo Carlos apenas para inspeção visual.
 - O check-in de humor salva um único registro diário por paciente.
 - Links de detalhes das subáreas mantêm as rotas canônicas planejadas em `src/lib/routes.ts`.
+- Cards do paciente não recebem `meeting_url`; entrada no Zoom acontece sempre
+  pelo detalhe do encontro e pela API autenticada de acesso ao Video SDK.
 - Copy de cuidado é acolhedora e não faz promessa de cura, diagnóstico ou resultado.
 
 ## QA

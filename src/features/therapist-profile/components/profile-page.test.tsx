@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { TherapistProfilePage } from "./profile-page";
@@ -67,5 +67,80 @@ describe("TherapistProfilePage video block", () => {
     expect(
       screen.getByRole("button", { name: "Compartilhar perfil" }),
     ).toHaveClass("size-[52px]");
+  });
+
+  it("shows public services by canonical therapy name without operational labels", () => {
+    render(
+      <TherapistProfilePage
+        profile={{
+          ...baseProfile,
+          isAcceptingBookings: true,
+          services: [
+            {
+              availability: [],
+              bookingUrl: "/reserva?service=service-1",
+              currency: "BRL",
+              description: "Sessão online com cuidado responsável.",
+              durationMinutes: 50,
+              id: "service-1",
+              priceCents: 17000,
+              priceLabel: "R$ 170",
+              title: "Reiki online",
+              therapyId: "therapy-1",
+              therapyName: "Reiki",
+              therapySlug: "reiki",
+            },
+          ],
+        }}
+        reviews={[]}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Vivências e terapias" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Serviços online")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Reiki").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Reiki online")).not.toBeInTheDocument();
+  });
+
+  it("shows one therapist reply sentence before expanding the full answer", () => {
+    render(
+      <TherapistProfilePage
+        profile={{
+          ...baseProfile,
+          rating: { average: 5, count: 1, sessionsCompleted: 1 },
+        }}
+        reviews={[
+          {
+            authorLabel: "Paciente TES",
+            body: "Conversa atenta e respeitosa com o meu momento.",
+            createdLabel: "Há uma semana",
+            id: "review-1",
+            patientContext: "Sessão concluída pela plataforma",
+            rating: 5,
+            reply: {
+              body: "Obrigada por compartilhar sua experiência com tanto cuidado. Seguimos com presença e combinados claros para a continuidade.",
+              publishedAt: null,
+            },
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "Obrigada por compartilhar sua experiência com tanto cuidado.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Seguimos com presença e combinados claros/),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Ler resposta completa" }));
+
+    expect(
+      screen.getByText(/Seguimos com presença e combinados claros/),
+    ).toBeInTheDocument();
   });
 });

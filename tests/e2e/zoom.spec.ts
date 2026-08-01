@@ -1,14 +1,14 @@
 import { expect, test } from "@playwright/test";
 
 const patientEmail =
-  process.env.PATIENT_E2E_EMAIL ?? "carlos.paciente@example.test";
+  process.env.PATIENT_E2E_EMAIL ?? "paciente.ana@example.test";
 const patientPassword = process.env.PATIENT_E2E_PASSWORD ?? "tes-mock-password";
 const therapistEmail =
   process.env.THERAPIST_E2E_EMAIL ?? "ana.oliveira@example.test";
 const therapistPassword =
   process.env.THERAPIST_E2E_PASSWORD ?? "tes-mock-password";
 const bookingId =
-  process.env.ZOOM_E2E_BOOKING_ID ?? "94000000-0000-4000-8000-000000000021";
+  process.env.ZOOM_E2E_BOOKING_ID ?? "f2000000-0000-4000-8000-000000000001";
 
 test.describe("Zoom Video SDK session gate", () => {
   test.beforeEach(async ({ page }) => {
@@ -61,7 +61,7 @@ test.describe("Zoom Video SDK session gate", () => {
     await page.goto(`/app/encontros/${bookingId}`);
 
     await expect(page.getByLabel("Sala de video")).toBeVisible();
-    await page.getByRole("button", { name: "Entrar na sessao" }).click();
+    await page.getByRole("button", { name: "Entrar no encontro" }).click();
 
     await expect(
       page.getByText("A sala ainda esta em preparacao."),
@@ -78,7 +78,99 @@ test.describe("Zoom Video SDK session gate", () => {
       intent: "join",
     });
     await expect(page.locator("body")).not.toContainText(
-      /eyJ|sdkSecret|token/i,
+      /eyJ|sdkSecret|jwt-token/i,
+    );
+  });
+
+  test("navigates waiting room and recovery actions on mobile with real clicks", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 844, width: 390 });
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "mediaDevices", {
+        configurable: true,
+        value: {
+          enumerateDevices: async () => [
+            {
+              deviceId: "audio-1",
+              groupId: "group-1",
+              kind: "audioinput",
+              label: "Microfone de teste",
+              toJSON: () => ({}),
+            },
+            {
+              deviceId: "video-1",
+              groupId: "group-1",
+              kind: "videoinput",
+              label: "Camera de teste",
+              toJSON: () => ({}),
+            },
+          ],
+          getUserMedia: async () => ({
+            getTracks: () => [{ stop: () => undefined }],
+          }),
+        },
+      });
+    });
+
+    let previewCount = 0;
+    await page.route("**/api/zoom/video-session-access", async (route) => {
+      const body = route.request().postDataJSON();
+
+      if (body.intent === "preview") {
+        previewCount += 1;
+        await route.fulfill({
+          body: JSON.stringify({
+            data: {
+              access: {
+                allowed: previewCount > 1,
+                availableFrom: "2026-07-26T12:45:00.000Z",
+                availableUntil: "2026-07-26T14:00:00.000Z",
+                reason: previewCount > 1 ? null : "THERAPIST_NOT_IN_SESSION",
+                serverNow: "2026-07-26T12:46:00.000Z",
+                videoSessionStatus: previewCount > 1 ? "ready" : "ready",
+              },
+            },
+            ok: true,
+          }),
+          contentType: "application/json",
+          status: 200,
+        });
+        return;
+      }
+
+      await route.fulfill({
+        body: JSON.stringify({
+          error: {
+            code: "expired_token",
+            message: "Token expirado.",
+          },
+          ok: false,
+        }),
+        contentType: "application/json",
+        status: 401,
+      });
+    });
+
+    await page.goto(`/app/encontros/${bookingId}`);
+
+    await expect(
+      page.getByText(/Aguardando o terapeuta iniciar/i),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Atualizar sala" }).click();
+    await expect(
+      page.getByRole("button", { name: "Entrar no encontro" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Entrar no encontro" }).click();
+    await expect(page.getByText("Token expirado.")).toBeVisible();
+    await page.getByRole("button", { name: "Revisar permissões" }).click();
+    await expect(page.getByText(/Permissoes liberadas/i)).toBeVisible();
+
+    await page.getByRole("button", { name: "Copiar referência" }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByText(/referencia/i)).toBeVisible();
+    await expect(page.locator("body")).not.toContainText(
+      /eyJ|sdkSecret|jwt-token/i,
     );
   });
 });

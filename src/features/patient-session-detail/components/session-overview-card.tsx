@@ -86,6 +86,14 @@ export function SessionOverviewCard({
               {data.booking.statusLabel}
             </span>
           </div>
+          <div>
+            <p className="text-base font-extrabold text-brand-deep">
+              Pagamento
+            </p>
+            <span className="mt-3 inline-flex min-h-7 items-center rounded-full bg-brand-lavenderSoft px-3 text-xs font-extrabold text-brand-primary">
+              {data.encounterState.payment.title}
+            </span>
+          </div>
           <CheckCircle2
             aria-hidden="true"
             className="text-brand-primary"

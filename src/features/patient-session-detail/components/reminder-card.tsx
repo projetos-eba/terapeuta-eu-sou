@@ -20,7 +20,7 @@ export function ReminderCard({
         </h2>
       </div>
       <p className="mt-8 text-sm font-semibold text-tesText-secondary">
-        {minutes ? "Sua sessão começa em" : "Sua sessão está no horário"}
+        {minutes ? "Seu encontro começa em" : "Seu encontro está no horário"}
       </p>
       <p className="mt-3 text-5xl font-extrabold leading-none text-brand-deep">
         {minutes ?? "Agora"}

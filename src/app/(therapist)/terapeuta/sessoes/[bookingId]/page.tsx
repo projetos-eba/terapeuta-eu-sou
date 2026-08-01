@@ -115,7 +115,18 @@ export default async function TherapistSessionDetailPage({
             bookingVersion={booking.bookingVersion}
             canCancel={presentation.actions.canCancel}
             canRequestReschedule={presentation.actions.canReschedule}
+            cancelDisabledReason={
+              presentation.actions.canCancel
+                ? null
+                : "Esta sessão não está elegível para cancelamento operacional."
+            }
+            cancellationImpactLabel="A política operacional será aplicada pelo backend antes de alterar agenda, pagamento ou repasse."
             reschedule={pendingReschedule}
+            rescheduleDisabledReason={
+              presentation.actions.canReschedule
+                ? null
+                : "Esta sessão não está elegível para reagendamento operacional."
+            }
           />
         </div>
       </section>

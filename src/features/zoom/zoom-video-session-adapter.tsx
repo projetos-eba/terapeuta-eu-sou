@@ -3,16 +3,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
+  Copy,
+  Headphones,
   Loader2,
   Mic,
   MicOff,
   PhoneOff,
+  RefreshCw,
   Video,
   VideoOff,
+  Wifi,
 } from "lucide-react";
 
 import { ZoomAccessReason, type ZoomAccessState } from "@/domain/tes";
-import { getZoomAccessLabel } from "@/features/bookings";
+import {
+  getZoomAccessLabel,
+  getZoomWaitingRoomStatusFromAccess,
+} from "@/features/bookings";
+import { routes } from "@/lib/routes";
 
 type VideoSessionPayload = {
   access: ZoomAccessState;
@@ -129,6 +137,7 @@ export function ZoomVideoSessionAdapter({
   const [state, setState] = useState<SessionState>("idle");
   const [currentAccess, setCurrentAccess] = useState(access);
   const [message, setMessage] = useState<string | null>(null);
+  const [recoveryMessage, setRecoveryMessage] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [audioMuted, setAudioMuted] = useState(true);
@@ -182,6 +191,10 @@ export function ZoomVideoSessionAdapter({
   const waitingForTherapist =
     actorRole === "patient" &&
     currentAccess?.reason === ZoomAccessReason.TherapistNotInSession;
+  const waitingRoomKind = getZoomWaitingRoomStatusFromAccess(
+    currentAccess,
+    new Date(nowMs),
+  );
 
   useEffect(() => {
     if (!currentAccess?.hardEndsAt) return undefined;
@@ -208,7 +221,7 @@ export function ZoomVideoSessionAdapter({
       if (refreshedAccess) {
         setCurrentAccess(refreshedAccess);
         if (refreshedAccess.allowed) {
-          setMessage("O terapeuta iniciou a sessao. Voce ja pode entrar.");
+          setMessage("O terapeuta iniciou o encontro. Voce ja pode entrar.");
         }
         return refreshedAccess;
       }
@@ -271,6 +284,7 @@ export function ZoomVideoSessionAdapter({
     inFlight.current = true;
     setCleanupFailures([]);
     setState("loading");
+    setRecoveryMessage(null);
     setMessage("Preparando sua sala...");
 
     try {
@@ -305,7 +319,7 @@ export function ZoomVideoSessionAdapter({
 
       if (requirements && (!requirements.audio || !requirements.video)) {
         throw new Error(
-          "Seu navegador nao parece liberar audio e video para esta sessao.",
+          "Seu navegador nao parece liberar audio e video para este encontro.",
         );
       }
 
@@ -341,8 +355,8 @@ export function ZoomVideoSessionAdapter({
       setState("joined");
       setMessage(
         actorRole === "therapist"
-          ? "Voce entrou como responsavel pela sessao."
-          : "Voce entrou na sessao. Aguarde se a outra pessoa ainda nao estiver presente.",
+          ? "Voce entrou como responsavel pelo encontro."
+          : "Voce entrou no encontro. Aguarde se a outra pessoa ainda nao estiver presente.",
       );
     } catch (error) {
       if (mounted.current) {
@@ -353,6 +367,47 @@ export function ZoomVideoSessionAdapter({
     } finally {
       inFlight.current = false;
     }
+  }
+
+  async function reviewPermissions() {
+    setRecoveryMessage(null);
+
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setRecoveryMessage(
+          "Seu navegador nao oferece teste de camera e microfone nesta pagina.",
+        );
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: true,
+        video: true,
+      });
+      stream.getTracks().forEach((track) => track.stop());
+      setRecoveryMessage("Permissoes liberadas. Tente entrar novamente.");
+    } catch {
+      setRecoveryMessage(
+        "Permissao negada ou dispositivo indisponivel. Revise o bloqueio do navegador.",
+      );
+    }
+  }
+
+  async function copySupportReference() {
+    const reference = `TES-${bookingId.slice(0, 8)}-${state}-${waitingRoomKind}`;
+
+    try {
+      await navigator.clipboard?.writeText(reference);
+      setRecoveryMessage("Referencia copiada para o suporte.");
+    } catch {
+      setRecoveryMessage(`Referencia do encontro: ${reference}`);
+    }
+  }
+
+  function backToWaitingRoom() {
+    setState("idle");
+    setMessage(null);
+    setRecoveryMessage(null);
   }
 
   async function toggleAudio() {
@@ -404,7 +459,7 @@ export function ZoomVideoSessionAdapter({
     if (
       endSession &&
       !window.confirm(
-        "Encerrar a sessao para todos? A outra pessoa tambem sera desconectada.",
+        "Encerrar o encontro para todos? A outra pessoa tambem sera desconectada.",
       )
     ) {
       return;
@@ -412,7 +467,9 @@ export function ZoomVideoSessionAdapter({
 
     leavingRef.current = true;
     setState("leaving");
-    setMessage(endSession ? "Encerrando a sessao..." : "Saindo da sessao...");
+    setMessage(
+      endSession ? "Encerrando o encontro..." : "Saindo do encontro...",
+    );
 
     const failures = await cleanup({ destroyClient: true, endSession });
     leavingRef.current = false;
@@ -421,10 +478,10 @@ export function ZoomVideoSessionAdapter({
     setState(failures.length > 0 ? "error" : "ended");
     setMessage(
       failures.length > 0
-        ? "A sessao tentou encerrar, mas houve falha parcial de cleanup. Confira sua conexao e tente novamente."
+        ? "O encontro tentou encerrar, mas houve falha parcial de cleanup. Confira sua conexao e tente novamente."
         : endSession
-          ? "A sessao foi encerrada para todos."
-          : "Voce saiu da sessao.",
+          ? "O encontro foi encerrado para todos."
+          : "Voce saiu do encontro.",
     );
   }
 
@@ -508,7 +565,7 @@ export function ZoomVideoSessionAdapter({
       const normalized = normalizeConnectionChange(payload);
       if (normalized.state === "Reconnecting") {
         setState("reconnecting");
-        setMessage("Reconectando a sessao...");
+        setMessage("Reconectando o encontro...");
       } else if (normalized.state === "Connected") {
         setState("joined");
         setMessage("Conexao restabelecida.");
@@ -518,18 +575,18 @@ export function ZoomVideoSessionAdapter({
         void cleanup({ destroyClient: true, endSession: false });
       } else if (normalized.state === "Fail") {
         setState("error");
-        setMessage("Falha ao manter a conexao da sessao.");
+        setMessage("Falha ao manter a conexao do encontro.");
         void cleanup({ destroyClient: true, endSession: false });
       }
     };
     const userAdded = (payload: unknown) => {
       if (!mounted.current) return;
-      setMessage("A outra pessoa entrou na sessao.");
+      setMessage("A outra pessoa entrou no encontro.");
       void renderRemoteParticipants(asParticipantArray(payload));
     };
     const userRemoved = (payload: unknown) => {
       if (!mounted.current) return;
-      setMessage("A outra pessoa saiu da sessao.");
+      setMessage("A outra pessoa saiu do encontro.");
       void detachRemoteParticipants(asParticipantArray(payload));
     };
     const userUpdated = (payload: unknown) => {
@@ -668,11 +725,14 @@ export function ZoomVideoSessionAdapter({
             aria-live="polite"
             className="text-sm font-extrabold text-brand-deep"
           >
-            Aguardando o terapeuta iniciar a sessao.
+            {waitingRoomKind === "therapist_absent_prolonged"
+              ? "Ausência prolongada do terapeuta."
+              : "Aguardando o terapeuta iniciar o encontro."}
           </p>
           <p className="text-xs font-semibold leading-5 text-tesText-secondary">
-            Assim que a presenca for confirmada pelo Zoom, a entrada sera
-            liberada automaticamente.
+            Assim que a presença for confirmada pelo Zoom, a entrada será
+            liberada automaticamente. Se a espera se prolongar, acione o suporte
+            com a referência do encontro.
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -692,12 +752,40 @@ export function ZoomVideoSessionAdapter({
               )}
               Atualizar sala
             </button>
+            <button
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
+              disabled={previewLoading}
+              onClick={() => void refreshPreviewAccess()}
+              type="button"
+            >
+              <RefreshCw aria-hidden="true" size={18} />
+              Renovar acesso
+            </button>
+            {waitingRoomKind === "therapist_absent_prolonged" ? (
+              <>
+                <button
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                  onClick={() => void copySupportReference()}
+                  type="button"
+                >
+                  <Copy aria-hidden="true" size={18} />
+                  Copiar referência
+                </button>
+                <a
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                  href={`${routes.patient.messages}?context=suporte&booking=${bookingId}`}
+                >
+                  <Headphones aria-hidden="true" size={18} />
+                  Falar com suporte
+                </a>
+              </>
+            ) : null}
             <span className="text-xs font-semibold text-tesText-secondary">
               {formatHardEndCountdown(currentAccess, nowMs)}
             </span>
           </div>
         </div>
-        {message ? (
+        {message || recoveryMessage ? (
           <p
             aria-live="polite"
             className="mt-3 flex gap-2 text-xs font-semibold leading-5 text-tesText-secondary"
@@ -707,7 +795,7 @@ export function ZoomVideoSessionAdapter({
               className="mt-0.5 shrink-0 text-brand-primary"
               size={16}
             />
-            {message}
+            {recoveryMessage ?? message}
           </p>
         ) : null}
       </section>
@@ -797,7 +885,7 @@ export function ZoomVideoSessionAdapter({
               ) : (
                 <Video aria-hidden="true" size={20} />
               )}
-              {state === "joining" ? "Entrando..." : "Entrar na sessao"}
+              {state === "joining" ? "Entrando..." : "Entrar no encontro"}
             </button>
           ) : (
             <>
@@ -837,7 +925,7 @@ export function ZoomVideoSessionAdapter({
                   onClick={() => void leaveSession(true)}
                   type="button"
                 >
-                  Encerrar sessao
+                  Encerrar encontro
                 </button>
               ) : null}
             </>
@@ -865,6 +953,68 @@ export function ZoomVideoSessionAdapter({
           />
           {message}
         </p>
+      ) : null}
+
+      {state === "error" ? (
+        <div className="mt-3 grid gap-3 rounded-lg border border-brand-lavender bg-white p-4">
+          <p className="text-sm font-extrabold text-brand-deep">
+            Recuperar acesso ao encontro
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              onClick={() => void joinSession()}
+              type="button"
+            >
+              <RefreshCw aria-hidden="true" size={18} />
+              Tentar novamente
+            </button>
+            <button
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              onClick={() => void refreshPreviewAccess()}
+              type="button"
+            >
+              <Video aria-hidden="true" size={18} />
+              Renovar acesso
+            </button>
+            <button
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              onClick={() => void reviewPermissions()}
+              type="button"
+            >
+              <Mic aria-hidden="true" size={18} />
+              Revisar permissões
+            </button>
+            <button
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              onClick={backToWaitingRoom}
+              type="button"
+            >
+              <Headphones aria-hidden="true" size={18} />
+              Voltar à sala de espera
+            </button>
+            <button
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              onClick={() => void copySupportReference()}
+              type="button"
+            >
+              <Copy aria-hidden="true" size={18} />
+              Copiar referência
+            </button>
+            <span className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-brand-lavender bg-surface-soft px-4 text-sm font-extrabold text-brand-deep">
+              <Wifi aria-hidden="true" size={18} />
+              Verifique conexão
+            </span>
+          </div>
+          {recoveryMessage ? (
+            <p
+              aria-live="polite"
+              className="text-xs font-semibold leading-5 text-tesText-secondary"
+            >
+              {recoveryMessage}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       {cleanupFailures.length > 0 ? (
@@ -939,12 +1089,13 @@ function normalizeConnectionChange(payload: unknown) {
 }
 
 function formatClosedReason(reason: string | undefined) {
-  if (!reason) return "A sessao foi encerrada.";
-  if (/host/i.test(reason)) return "A sessao foi encerrada pelo responsavel.";
-  if (/kick|remove/i.test(reason)) return "Seu acesso a sessao foi encerrado.";
-  if (/leave/i.test(reason)) return "Voce saiu da sessao.";
+  if (!reason) return "O encontro foi encerrado.";
+  if (/host/i.test(reason)) return "O encontro foi encerrado pelo responsavel.";
+  if (/kick|remove/i.test(reason))
+    return "Seu acesso ao encontro foi encerrado.";
+  if (/leave/i.test(reason)) return "Voce saiu do encontro.";
 
-  return "A sessao foi encerrada.";
+  return "O encontro foi encerrado.";
 }
 
 function formatMediaError(error: unknown, target: string) {

@@ -239,10 +239,10 @@ Rotas técnicas devem seguir `src/lib/routes.ts`. Figma pode conter nomes legado
 | Rota                              | Page real | Fase |
 | --------------------------------- | --------- | ---- |
 | `/app`                            | Não       | 3    |
-| `/app/sessoes`                    | Não       | 3    |
-| `/app/sessoes/proximas`           | Não       | 3    |
-| `/app/sessoes/historico`          | Não       | 3    |
-| `/app/sessoes/:slug`              | Não       | 3    |
+| `/app/encontros`                  | Não       | 3    |
+| `/app/encontros/:bookingId`       | Não       | 3    |
+| `/app/sessoes`                    | Compat    | 3    |
+| `/app/sessoes/:bookingId`         | Compat    | 3    |
 | `/app/mensagens`                  | Não       | 3    |
 | `/app/favoritos`                  | Não       | 3    |
 | `/app/favoritos/terapeutas`       | Não       | 3    |
@@ -255,9 +255,8 @@ Rotas técnicas devem seguir `src/lib/routes.ts`. Figma pode conter nomes legado
 | `/app/configuracoes/notificacoes` | Não       | 3    |
 | `/app/configuracoes/privacidade`  | Não       | 3    |
 | `/app/configuracoes/seguranca`    | Não       | 3    |
-| `/app/ajuda`                      | Não       | 3    |
 
-Regra: manter `/app/sessoes/:slug`. Não usar `/app/sessoes/:id` sem alteração formal em `src/lib/routes.ts`.
+Regra: `/app/encontros` e `/app/encontros/:bookingId` são canônicas para pacientes. `/app/sessoes` existe somente como compatibilidade. Não há `/app/ajuda` neste momento; suporte do paciente usa `/app/mensagens` com contexto de suporte.
 
 ### 6.3 Terapeuta Básico
 
@@ -1116,7 +1115,7 @@ Entregas:
 - `/app/pagamentos/faturas`;
 - `/app/pagamentos/metodos`;
 - `/app/configuracoes/**`;
-- `/app/ajuda`.
+- suporte do paciente via `/app/mensagens` com contexto de suporte.
 
 Dependências:
 

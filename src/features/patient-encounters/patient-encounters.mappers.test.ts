@@ -82,8 +82,70 @@ describe("patient encounters mapper", () => {
     });
 
     expect(result.nextEncounter?.status).toBe("reschedule_requested");
-    expect(result.nextEncounter?.statusLabel).toBe(
-      "Reagendamento solicitado",
+    expect(result.nextEncounter?.statusLabel).toBe("Reagendamento solicitado");
+  });
+
+  it("allows live entry from paid booking window without exposing a meeting url", () => {
+    const booking = createBooking(
+      "95000000-0000-4000-8000-000000000003",
+      new Date(Date.now() - 5 * 60 * 1000),
+    );
+
+    const result = mapPatientEncountersPage({
+      bookings: [booking],
+      favoriteTherapistsCount: 0,
+      patient,
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map([
+        [booking.id, { booking_id: booking.id, financial_status: "paid" }],
+      ]),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(result.nextEncounter?.status).toBe("live");
+    expect(result.nextEncounter?.meetingUrl).toBeNull();
+    expect(result.nextEncounter?.primaryAction.label).toBe(
+      "Entrar no encontro",
+    );
+  });
+
+  it("keeps cancelled encounters in history with refund-oriented action", () => {
+    const booking = {
+      ...createBooking(
+        "95000000-0000-4000-8000-000000000004",
+        new Date(Date.now() - 72 * 60 * 60 * 1000),
+      ),
+      cancelled_at: new Date(Date.now() - 70 * 60 * 60 * 1000).toISOString(),
+      status: "cancelled_by_patient",
+    };
+
+    const result = mapPatientEncountersPage({
+      bookings: [booking],
+      favoriteTherapistsCount: 0,
+      patient,
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map([
+        [booking.id, { booking_id: booking.id, financial_status: "paid" }],
+      ]),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(result.historyEncounters).toHaveLength(1);
+    expect(result.historyEncounters[0]?.status).toBe("cancelled");
+    expect(result.historyEncounters[0]?.primaryAction.label).toBe(
+      "Ver reembolso",
     );
   });
 });
@@ -97,7 +159,6 @@ function createBooking(id: string, startsAt: Date) {
     completed_at: null,
     ends_at: endsAt.toISOString(),
     id,
-    meeting_url: "https://example.test/sala",
     service_id: service.id,
     starts_at: startsAt.toISOString(),
     status: "confirmed",

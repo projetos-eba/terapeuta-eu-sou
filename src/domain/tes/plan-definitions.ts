@@ -248,7 +248,7 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
     code: TherapistPlan.Premium,
     ctaLabel: "Escolher Premium",
     description:
-      "Metricas, recomendacoes limitadas, insights de agenda e solicitacao de nova terapia.",
+      "Metricas com leitura direcional, insights de agenda e solicitacao de nova terapia.",
     features: therapistPlanFeatureDefinitions
       .filter((feature) => feature.minimumPlan !== TherapistPlan.PremiumPlus)
       .map((feature) => feature.code),

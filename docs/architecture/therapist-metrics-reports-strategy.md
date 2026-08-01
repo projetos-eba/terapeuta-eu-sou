@@ -16,6 +16,16 @@
 | Aura                  | mecanismo determinístico por regras; não é IA generativa           |
 | MTR-0                 | fechado por `ADR-011-therapist-metrics-contracts-and-decisions.md` |
 
+> Nota de implementação — 2026-07-31:
+> MTR-6/Aura MVP foi implementado na rota canônica
+> `/terapeuta/assessor-ia` como mecanismo determinístico Premium Plus
+> (`aura_full`). O read model privado
+> `get_therapist_aura_signals_v1(period)` expõe somente sinais agregados; o
+> motor TypeScript server-only emite recomendações versionadas; dismiss é
+> idempotente por `dismiss_therapist_aura_signal_v1`. Seeds antigos em
+> `aura_recommendations` são marcados como `demo_seed` e não entram na Aura
+> produtiva.
+
 ## 1. Resumo executivo
 
 O módulo desenhado no Figma é viável como visão de produto, mas não deve ser

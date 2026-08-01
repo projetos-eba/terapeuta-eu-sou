@@ -12,13 +12,13 @@ export function SessionDetailHeader() {
         href={routes.patient.encounters as Route<string>}
       >
         <ChevronLeft aria-hidden="true" size={18} />
-        Minhas sessões
+        Meus encontros
       </Link>
       <h1 className="mt-6 font-display text-4xl font-light italic leading-tight text-brand-deep md:text-5xl">
-        Detalhe da sessão
+        Detalhe do encontro
       </h1>
       <p className="mt-3 max-w-xl text-sm font-semibold leading-6 text-tesText-secondary md:text-base">
-        Confira todas as informações sobre sua sessão agendada.
+        Confira todas as informações sobre seu encontro agendado.
       </p>
     </header>
   );

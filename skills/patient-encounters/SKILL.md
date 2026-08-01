@@ -33,14 +33,14 @@ Required payload:
 
 ```ts
 {
-  patient,
-  nextEncounter,
-  metrics,
-  upcomingEncounters,
-  historyEncounters,
-  recentJourneyTopics,
-  unreadMessagesCount,
-  unreadNotificationsCount
+  (patient,
+    nextEncounter,
+    metrics,
+    upcomingEncounters,
+    historyEncounters,
+    recentJourneyTopics,
+    unreadMessagesCount,
+    unreadNotificationsCount);
 }
 ```
 
@@ -64,7 +64,9 @@ Session summaries are stored in `booking_session_summaries`, linked to `bookings
 - Use TES Tailwind tokens: `brand`, `surface`, `tesText`, `status`, `shadow-card`, `rounded-card`, `font-display`, `font-sans`.
 - Desktop rows are horizontal; mobile rows become stacked cards.
 - Buttons and menus must be real accessible controls.
-- Entry link is only active when `meeting_url` exists and the booking is inside the allowed join window.
+- Entry link is active only when the booking is paid, confirmed and inside the
+  allowed join window. Do not select or expose `meeting_url` in patient lists;
+  Zoom access must be requested from the detail page via authenticated backend.
 
 ## QA
 
