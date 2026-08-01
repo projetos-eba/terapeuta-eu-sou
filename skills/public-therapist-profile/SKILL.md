@@ -55,8 +55,12 @@ Preservar o padrão do node:
 - Hero com foto grande, badges, tags, avaliação, CTA e ações favoritar/compartilhar.
 - Cards `Minha essência`, `Como posso te guiar` e `Um convite para você`.
 - Seção `Vivências e terapias` com serviços, duração, preço e CTA.
+- A seção `Vivências e terapias` usa a terapia canônica como identidade
+  pública. Não exibir títulos operacionais de serviço como chip/aba, por
+  exemplo “Reiki online”.
 - Painel roxo `Próximos horários disponíveis` com seleção de serviço quando houver mais de uma oferta ativa.
-- Avaliações em carrossel automático sem dependência nova.
+- Avaliações em carrossel automático sem dependência nova. Respostas do
+  terapeuta aparecem inicialmente com uma frase e expandem sob ação explícita.
 - Copy responsável, sem promessa de cura, diagnóstico ou resultado garantido.
 
 ## QA

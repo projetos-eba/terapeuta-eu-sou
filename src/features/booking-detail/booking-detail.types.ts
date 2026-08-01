@@ -1,7 +1,6 @@
-import type {
-  BookingStatus,
-  SessionFinancialStatus,
-} from "@/domain/tes";
+import type { BookingStatus, SessionFinancialStatus } from "@/domain/tes";
+import type { PatientEncounterPresentationState } from "@/features/bookings";
+import type { PatientEncounterActionPolicy } from "@/features/bookings/patient-encounter-actions";
 
 export type BookingDetailPerspective = "patient" | "therapist" | "admin";
 
@@ -28,6 +27,8 @@ export type BookingDetailPageData = {
     lateCancelFeePercent: number;
     noShowFeePercent: number;
   };
+  actionPolicy: PatientEncounterActionPolicy;
+  encounterState: PatientEncounterPresentationState;
   intake: {
     focusArea: string;
     sharedNote: string;
@@ -65,7 +66,13 @@ export type BookingDetailPageData = {
     proposedTimezone: string;
     reason: string | null;
     requestedByCurrentUser: boolean;
-    status: "accepted" | "applied" | "cancelled" | "expired" | "pending" | "rejected";
+    status:
+      | "accepted"
+      | "applied"
+      | "cancelled"
+      | "expired"
+      | "pending"
+      | "rejected";
   } | null;
   service: {
     id: string;

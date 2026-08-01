@@ -49,7 +49,7 @@ export async function POST(request: Request) {
       status: response.status,
     });
   } catch {
-    return failure("Não foi possível cancelar esta sessão agora.", 503);
+    return failure("Não foi possível cancelar este encontro agora.", 503);
   }
 }
 

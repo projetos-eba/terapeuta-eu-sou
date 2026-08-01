@@ -68,11 +68,6 @@ export function TherapistServiceCard({
                 <h3 className="mt-1 font-display text-2xl font-light italic leading-tight text-brand-deep">
                   {service.therapy.name}
                 </h3>
-                {service.title !== service.therapy.name ? (
-                  <p className="mt-1 text-sm font-extrabold text-tesText-secondary">
-                    {service.title}
-                  </p>
-                ) : null}
               </div>
               <div className="relative z-10 flex items-center gap-2">
                 <TherapistServiceStatusBadge status={service.status} />
@@ -127,7 +122,7 @@ export function TherapistServiceCard({
             </div>
             {service.blockingReason ? (
               <p className="mt-4 rounded-lg bg-status-warningBg p-3 text-xs font-bold leading-5 text-status-warning">
-                Motivo de bloqueio: {service.blockingReason}
+                {getBlockingReasonLabel(service.blockingReason)}
               </p>
             ) : null}
             {service.status !== "active" ? (
@@ -165,4 +160,31 @@ function hashString(value: string) {
     hash |= 0;
   }
   return hash;
+}
+
+function getBlockingReasonLabel(reason: string) {
+  const labels: Record<string, string> = {
+    category_inactive:
+      "Esta terapia pertence a uma categoria indisponível no momento.",
+    service_archived:
+      "Esta terapia foi arquivada e permanece apenas para histórico.",
+    service_not_accepting_bookings:
+      "Esta terapia não está recebendo agendamentos no momento.",
+    service_not_active:
+      "Esta terapia precisa ser ativada para receber agendamentos.",
+    service_paused:
+      "Esta terapia está pausada e não aparece para novos agendamentos.",
+    therapist_not_accepting_bookings:
+      "Seu perfil não está recebendo agendamentos no momento.",
+    therapist_not_approved:
+      "Seu perfil ainda precisa estar aprovado para receber agendamentos.",
+    therapist_profile_private:
+      "Seu perfil público precisa estar publicado para receber agendamentos.",
+    therapy_not_public:
+      "Esta terapia ainda não está disponível nas superfícies públicas.",
+    therapy_not_published:
+      "Esta terapia ainda não está publicada no catálogo da plataforma.",
+  };
+
+  return labels[reason] ?? "Esta terapia não está disponível para agendamento.";
 }

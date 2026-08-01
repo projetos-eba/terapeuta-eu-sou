@@ -42,6 +42,9 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
   server-side.
 - A terapia precisa estar `published`, com categoria ativa e
   `is_available_for_services = true`.
+- Terapia sem visibilidade pública não deve ficar disponível para criação de
+  novos serviços. Serviços históricos/arquivados podem permanecer para
+  rastreabilidade, mas não aparecem no filtro padrão “Todos”.
 - `matching_therapy_settings` continua separado da criacao de servicos.
 - Metrica percentual sem serie confiavel deve ser `null`.
 - Mutacoes usam `version` otimista e ledger de idempotencia.
@@ -82,7 +85,8 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - Mesmo `requestId` com payload diferente retorna conflito.
 - Terapeuta nao ve/altera servico de outro terapeuta.
 - Paciente nao acessa a projecao privada.
-- Servico pausado nao aparece em views publicas reservaveis.
+- Serviço pausado não aparece em views públicas reserváveis.
+- Motivos técnicos de bloqueio devem ser traduzidos para texto de produto na UI.
 
 Rodar:
 

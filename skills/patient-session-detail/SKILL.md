@@ -31,7 +31,9 @@ Use this skill when implementing or refactoring the authenticated client/patient
 
 - Validate ownership through `patient_profiles.user_id = profileId` and `bookings.patient_profile_id`.
 - Return `notFound()` for unknown bookings or bookings outside the logged-in patient.
-- For Zoom, do not expose `meeting_url`; use `/api/zoom/video-session-access` to request a backend-signed Video SDK payload.
+- For Zoom, do not select or expose `meeting_url`; use
+  `/api/zoom/video-session-access` to request a backend-signed Video SDK
+  payload.
 - Do not expose `meeting_url` for non-Zoom providers unless payment is paid and booking status is allowed.
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` to client components.
 - Demo data belongs in `supabase/seed.sql`, not migrations.

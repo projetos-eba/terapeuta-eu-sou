@@ -23,7 +23,7 @@ export function PatientReviewPrompt({
         id="patient-review-title"
         className="font-display text-[24px] font-light italic text-[var(--tes-color-primary-dark)]"
       >
-        Avalie sua última sessão
+        Avalie seu último encontro
       </h2>
       <div className="mt-4 flex items-start gap-3">
         <span className="relative inline-flex size-11 shrink-0 overflow-hidden rounded-full bg-brand-lavenderSoft">

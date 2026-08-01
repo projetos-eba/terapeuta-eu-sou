@@ -58,7 +58,7 @@ export function EncounterActionsMenu({ bookingId }: { bookingId: string }) {
           ))}
           <Link
             className="block rounded-md px-3 py-2 text-sm font-bold text-status-danger transition hover:bg-status-dangerBg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-status-danger"
-            href={`${routes.patient.help}?booking=${bookingId}&topic=cancelar` as Route<string>}
+            href={routes.patient.encounterDetail(bookingId) as Route<string>}
             onClick={() => setOpen(false)}
           >
             Cancelar encontro

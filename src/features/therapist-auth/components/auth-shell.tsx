@@ -80,7 +80,7 @@ export function TherapistAuthShell({
 
           <div
             className={cn(
-              "order-1 flex flex-col justify-center px-6 py-7 sm:px-10 sm:py-10 lg:order-2 lg:px-20",
+              "relative z-10 order-1 flex flex-col justify-center px-6 py-7 sm:px-10 sm:py-10 lg:order-2 lg:px-20",
               className,
             )}
           >

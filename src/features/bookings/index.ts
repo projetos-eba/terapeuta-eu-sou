@@ -2,6 +2,8 @@ export * from "./booking-actions";
 export * from "./booking-formatters";
 export * from "./booking-status";
 export * from "./booking.types";
+export * from "./patient-encounter-actions";
+export * from "./patient-encounter-state";
 export * from "./session-formatters";
 export * from "./session-presentation";
 export * from "./session-read-model.parsers";

@@ -93,7 +93,11 @@ export function TherapistLoginForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+    <form
+      onSubmit={handleSubmit}
+      noValidate
+      className="pointer-events-auto relative z-10 space-y-5"
+    >
       <div>
         <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
           Acesso terapeuta
@@ -186,12 +190,12 @@ export function TherapistLoginForm({
         variant="gradient"
         size="lg"
         disabled={isSubmitting}
-        className="min-h-12 w-full rounded-2xl text-base"
+        className="relative z-20 min-h-12 w-full rounded-2xl text-base"
       >
         {isSubmitting ? "Entrando..." : "Entrar como terapeuta"}
       </TESButton>
 
-      <p className="text-center text-sm font-bold text-tesText-secondary">
+      <p className="relative z-0 text-center text-sm font-bold text-tesText-secondary">
         Ainda não tem conta?{" "}
         <Link
           href={routes.public.therapistSignUp}

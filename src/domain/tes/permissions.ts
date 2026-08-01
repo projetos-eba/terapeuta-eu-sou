@@ -45,7 +45,7 @@ export function canAccessAdvancedMetrics(plan: TherapistPlan) {
 
 export function canAccessAura(
   plan: TherapistPlan,
-  accessLevel: AuraAccessLevel = "limited",
+  accessLevel: AuraAccessLevel = "full",
 ) {
   if (plan === TherapistPlan.PremiumPlus) {
     return true;
