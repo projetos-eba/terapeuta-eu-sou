@@ -34,7 +34,6 @@ const groups: Array<{
   {
     title: "Suporte e legal",
     items: [
-      { label: "Contato" },
       {
         label: "Política de privacidade",
         href: routes.public.privacy as Route,

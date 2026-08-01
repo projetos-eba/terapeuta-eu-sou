@@ -150,6 +150,15 @@ Deno.test("booking checkout command maps A2 and A5 database errors", () => {
   assertEquals((conflict as DomainError).code, "booking_conflict");
 });
 
+Deno.test("booking checkout command maps missing legal publication", () => {
+  const error = mapBookingCheckoutDatabaseError(
+    new SupabaseHttpError(400, "published legal document not found"),
+  );
+
+  assertEquals((error as DomainError).code, "legal_document_not_published");
+  assertEquals((error as DomainError).status, 428);
+});
+
 Deno.test("booking checkout command preserves unknown errors", () => {
   const original = new Error("network");
 

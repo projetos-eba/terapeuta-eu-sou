@@ -10,7 +10,10 @@ import {
   isEmailAutomaticallyConfirmed,
 } from "../_shared/auth/runtime.ts";
 import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
-import { confirmAuthUserEmail, redirectForRole } from "../_shared/auth/users.ts";
+import {
+  confirmAuthUserEmail,
+  redirectForRole,
+} from "../_shared/auth/users.ts";
 import { HostingerMailApiProvider } from "../_shared/email/hostinger-mail-api-provider.ts";
 import { logEmailDelivery } from "../_shared/email/logging.ts";
 import { sendTransactionalEmail } from "../_shared/email/service.ts";
@@ -29,6 +32,7 @@ type ClientSignupValue = {
   name: string;
   password: string;
   phoneDigits: string;
+  termsAccepted?: boolean;
 };
 
 type SupabaseAuthUser = {
@@ -40,7 +44,8 @@ const clientSignupDeno = (
 ).Deno;
 const clientSignupRuntime = assertDenoRuntime(clientSignupDeno);
 const jsonHeaders = {
-  "access-control-allow-headers": "authorization, x-client-info, apikey, content-type",
+  "access-control-allow-headers":
+    "authorization, x-client-info, apikey, content-type",
   "access-control-allow-methods": "POST, OPTIONS",
   "access-control-allow-origin": "*",
   "content-type": "application/json; charset=utf-8",
@@ -76,7 +81,13 @@ clientSignupRuntime.serve(async (request) => {
 
   const value = await parseJson<ClientSignupValue>(request);
 
-  if (!value || !value.email || !value.password || !value.name) {
+  if (
+    !value ||
+    !value.email ||
+    !value.password ||
+    !value.name ||
+    value.termsAccepted !== true
+  ) {
     return jsonResponse({ error: "invalid_payload" }, 422);
   }
 
@@ -150,6 +161,15 @@ clientSignupRuntime.serve(async (request) => {
       },
     );
 
+    await registerSignupLegalAcceptances({
+      actorRole: "patient",
+      context: "patient_signup",
+      profileId: userId,
+      serviceRoleKey,
+      source: "client_auth_signup",
+      supabaseUrl,
+    });
+
     const restClient = new SupabaseRestClient(supabaseUrl, serviceRoleKey);
 
     if (automaticallyConfirmed) {
@@ -188,11 +208,9 @@ clientSignupRuntime.serve(async (request) => {
         userId,
       },
     );
-    const verificationUrl = `${
-      getSiteUrl(
-        clientSignupRuntime,
-      )
-    }/confirmar-email?token=${encodeURIComponent(token)}`;
+    const verificationUrl = `${getSiteUrl(
+      clientSignupRuntime,
+    )}/confirmar-email?token=${encodeURIComponent(token)}`;
     const provider = new HostingerMailApiProvider({ apiKey: emailApiKey! });
 
     const emailResult = await sendTransactionalEmail(restClient, provider, {
@@ -221,7 +239,8 @@ clientSignupRuntime.serve(async (request) => {
     console.error(
       JSON.stringify({
         code: "CLIENT_AUTH_SIGNUP_FAILED",
-        details: error instanceof SupabaseHttpError ? error.safeDetails : undefined,
+        details:
+          error instanceof SupabaseHttpError ? error.safeDetails : undefined,
         message: error instanceof Error ? error.message : "UNKNOWN",
         status: error instanceof SupabaseHttpError ? error.status : undefined,
       }),
@@ -270,6 +289,39 @@ async function supabaseJson<T = unknown>(
   }
 
   return text ? (JSON.parse(text) as T) : (undefined as T);
+}
+
+async function registerSignupLegalAcceptances(input: {
+  actorRole: "patient";
+  context: "patient_signup";
+  profileId: string;
+  serviceRoleKey: string;
+  source: string;
+  supabaseUrl: string;
+}) {
+  const requestId = crypto.randomUUID();
+
+  for (const documentKey of ["terms-of-use", "privacy-policy"]) {
+    await supabaseJson(
+      input.supabaseUrl,
+      input.serviceRoleKey,
+      "/rest/v1/rpc/register_legal_acceptance_v1",
+      {
+        body: {
+          p_actor_role: input.actorRole,
+          p_context: input.context,
+          p_document_key: documentKey,
+          p_evidence: {
+            source: input.source,
+            userAgent: "not_stored",
+          },
+          p_profile_id: input.profileId,
+          p_request_id: requestId,
+        },
+        method: "POST",
+      },
+    );
+  }
 }
 
 async function deleteAuthUserBestEffort(

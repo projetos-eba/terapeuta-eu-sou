@@ -1,0 +1,132 @@
+{
+  "entity": {
+    "businessName": null,
+    "tradeName": "Terapeuta Eu Sou",
+    "cnpj": null,
+    "address": null,
+    "website": "https://terapeutaeusou.com.br",
+    "generalEmail": null,
+    "supportEmail": null,
+    "privacyEmail": null,
+    "securityEmail": null,
+    "phone": null,
+    "supportHours": null,
+    "dataController": null,
+    "dataProtectionOfficer": null,
+    "dataProtectionOfficerContact": null,
+    "jurisdictionVenue": null,
+    "lastLegalReview": null
+  },
+  "documents": [
+    {
+      "documentKey": "terms-of-use",
+      "title": "Termos de Uso",
+      "audience": ["patient", "therapist", "visitor"],
+      "version": null,
+      "approvalDate": null,
+      "effectiveDate": null,
+      "status": "legal_review",
+      "language": "pt-BR",
+      "canonicalPath": "/termos",
+      "summary": "Documento recebido em PDF, aguardando extração fiel, reconciliação com produto online-only e aprovação jurídica para publicação HTML.",
+      "requiresNewAcceptance": true,
+      "approver": null,
+      "sourceFile": "/Users/antoniofelipe/Downloads/Termos de Uso.pdf",
+      "hash": null
+    },
+    {
+      "documentKey": "privacy-policy",
+      "title": "Política de Privacidade",
+      "audience": ["patient", "therapist", "visitor"],
+      "version": null,
+      "approvalDate": null,
+      "effectiveDate": null,
+      "status": "legal_review",
+      "language": "pt-BR",
+      "canonicalPath": "/privacidade",
+      "summary": "Documento recebido em PDF, aguardando extração fiel, inventário de tratamento real e aprovação jurídica para publicação HTML.",
+      "requiresNewAcceptance": true,
+      "approver": null,
+      "sourceFile": "/Users/antoniofelipe/Downloads/Política de Privacidade.pdf",
+      "hash": null
+    },
+    {
+      "documentKey": "cancellation-reschedule-refund-policy",
+      "title": "Política de Cancelamento, Reagendamento e Reembolso",
+      "audience": ["patient", "therapist"],
+      "version": null,
+      "approvalDate": null,
+      "effectiveDate": null,
+      "status": "legal_review",
+      "language": "pt-BR",
+      "canonicalPath": "/cancelamento-reagendamento-reembolso",
+      "summary": "Documento recebido em PDF, aguardando rota canônica, regras objetivas executáveis e aprovação jurídica para publicação HTML.",
+      "requiresNewAcceptance": true,
+      "approver": null,
+      "sourceFile": "/Users/antoniofelipe/Downloads/Política de Cancelamento, Reagendamento e Reembolso 2.pdf",
+      "hash": null
+    }
+  ],
+  "supportMatrix": [
+    {
+      "categoryKey": "account_access",
+      "label": "Acesso à conta",
+      "priority": "high",
+      "channel": null,
+      "supportHours": null,
+      "acknowledgement": null,
+      "firstResponseTarget": null,
+      "resolutionTarget": null,
+      "retention": null,
+      "status": "legal_review"
+    },
+    {
+      "categoryKey": "encounter_urgent",
+      "label": "Falha durante encontro",
+      "priority": "critical",
+      "channel": null,
+      "supportHours": null,
+      "acknowledgement": null,
+      "firstResponseTarget": null,
+      "resolutionTarget": null,
+      "retention": null,
+      "status": "legal_review"
+    },
+    {
+      "categoryKey": "payment_refund",
+      "label": "Pagamento, cancelamento e reembolso",
+      "priority": "high",
+      "channel": null,
+      "supportHours": null,
+      "acknowledgement": null,
+      "firstResponseTarget": null,
+      "resolutionTarget": null,
+      "retention": null,
+      "status": "legal_review"
+    },
+    {
+      "categoryKey": "privacy_request",
+      "label": "Privacidade e proteção de dados",
+      "priority": "high",
+      "channel": null,
+      "supportHours": null,
+      "acknowledgement": null,
+      "firstResponseTarget": null,
+      "resolutionTarget": null,
+      "retention": null,
+      "status": "legal_review"
+    },
+    {
+      "categoryKey": "security_report",
+      "label": "Segurança, fraude e denúncia",
+      "priority": "critical",
+      "channel": null,
+      "supportHours": null,
+      "acknowledgement": null,
+      "firstResponseTarget": null,
+      "resolutionTarget": null,
+      "retention": null,
+      "status": "legal_review"
+    }
+  ]
+}
