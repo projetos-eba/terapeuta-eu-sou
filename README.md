@@ -270,7 +270,10 @@ Scripts de pagamento:
 - `npm run payments:env -- catalog`: valida o minimo para sincronizar catalogo.
 - `npm run payments:catalog:sync`: sincroniza Stripe Billing pelo `STRIPE_SECRET_KEY` e grava Product/Price IDs no Supabase.
 - `npm run payments:catalog:verify`: compara catalogo local com Stripe real.
-- `npm run payments:webhooks:listen`: inicia forwarding local dos eventos Stripe da plataforma para `stripe-billing-webhook`.
+- `npm run payments:webhooks:listen`: inicia forwarding local dos eventos Stripe
+  da plataforma para `stripe-billing-webhook` e de `account.updated` das contas
+  conectadas para `stripe-connect-webhook`. A lista completa para configurar no
+  Dashboard fica em `docs/payments/stripe-secrets-setup.md`.
 
 `EMAIL_RATE_LIMIT_SALT` deve ser unico por ambiente, secreto e gerado com pelo menos 32 bytes aleatorios. Exemplo PowerShell para gerar um valor novo:
 
