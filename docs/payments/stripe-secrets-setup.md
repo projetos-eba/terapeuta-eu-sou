@@ -28,6 +28,96 @@ Com `supabase/config.toml` atual, as URLs locais dos webhooks sao:
 
 As rotinas de desenvolvimento usam `supabase/functions/.env.local`, `supabase/functions/.env` ou `.env.local`, nessa ordem.
 
+## Eventos para configurar no Dashboard Stripe
+
+Use destinos separados por escopo. Nao use "Selecionar tudo": eventos fora do
+contrato aumentam ruido operacional e podem entregar payloads que a Edge
+Function nao precisa processar.
+
+### Sua conta: `stripe-billing-webhook`
+
+Escopo no Dashboard: `Events on your account` / `Sua conta`.
+
+URL publica:
+
+```text
+https://<PROJECT_REF>.supabase.co/functions/v1/stripe-billing-webhook
+```
+
+Eventos obrigatorios:
+
+- `checkout.session.completed`
+- `checkout.session.async_payment_succeeded`
+- `checkout.session.async_payment_failed`
+- `checkout.session.expired`
+- `customer.subscription.created`
+- `customer.subscription.updated`
+- `customer.subscription.deleted`
+- `invoice.paid`
+- `invoice.payment_failed`
+- `invoice.payment_action_required`
+- `payment_intent.processing`
+- `payment_intent.succeeded`
+- `payment_intent.payment_failed`
+- `payment_intent.canceled`
+- `charge.refunded`
+- `refund.created`
+- `refund.updated`
+- `refund.failed`
+- `charge.dispute.created`
+- `charge.dispute.updated`
+- `charge.dispute.closed`
+- `transfer.updated`
+- `transfer.reversed`
+
+Signing secret remoto: salvar como `STRIPE_PLATFORM_WEBHOOK_SECRET`.
+
+### Contas conectadas snapshot: `stripe-connect-webhook`
+
+Escopo no Dashboard: `Events on connected accounts` / `Contas conectadas`.
+
+URL publica:
+
+```text
+https://<PROJECT_REF>.supabase.co/functions/v1/stripe-connect-webhook
+```
+
+Evento obrigatorio de compatibilidade:
+
+- `account.updated`
+
+Signing secret remoto: salvar como `STRIPE_CONNECT_WEBHOOK_SECRET`.
+
+### Contas conectadas thin Accounts v2: `stripe-connect-webhook`
+
+Escopo no Dashboard: `Events on connected accounts` / `Contas conectadas`.
+Payload style: `Thin`.
+
+Use a mesma URL publica de `stripe-connect-webhook`.
+
+Eventos obrigatorios para Accounts v2:
+
+- `v2.core.account.created`
+- `v2.core.account.updated`
+- `v2.core.account.closed`
+- `v2.core.account[configuration.merchant].updated`
+- `v2.core.account[configuration.merchant].capability_status_updated`
+- `v2.core.account[configuration.recipient].updated`
+- `v2.core.account[configuration.recipient].capability_status_updated`
+- `v2.core.account[defaults].updated`
+- `v2.core.account[identity].updated`
+- `v2.core.account[requirements].updated`
+- `v2.core.account[future_requirements].updated`
+
+`v2.core.account[configuration.customer].updated` e
+`v2.core.account[configuration.customer].capability_status_updated` nao sao
+necessarios para o fluxo TES atual, porque assinaturas de terapeutas usam
+Billing na conta da plataforma e repasses usam a configuracao
+`recipient`/`merchant` da conta conectada. Nao selecione eventos
+`v2.core.account_link.*` nem `v2.core.account_person.*` para este endpoint.
+
+Signing secret remoto: salvar como `STRIPE_CONNECT_V2_WEBHOOK_SECRET`.
+
 ## Desenvolvimento local com Stripe CLI
 
 1. Inicie o Supabase local:
@@ -58,7 +148,7 @@ O script executa:
 
 ```powershell
 stripe listen `
-  --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,checkout.session.expired,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted,invoice.paid,invoice.payment_failed,invoice.payment_action_required,payment_intent.processing,payment_intent.succeeded,payment_intent.payment_failed,payment_intent.canceled,charge.refunded,refund.created,refund.updated,refund.failed,charge.dispute.created,charge.dispute.updated,charge.dispute.closed,transfer.updated,transfer.reversed `
+  --events checkout.session.completed,checkout.session.async_payment_succeeded,checkout.session.async_payment_failed,checkout.session.expired,customer.subscription.created,customer.subscription.updated,customer.subscription.deleted,invoice.paid,invoice.payment_failed,invoice.payment_action_required,payment_intent.processing,payment_intent.succeeded,payment_intent.payment_failed,payment_intent.canceled,charge.refunded,refund.created,refund.updated,refund.failed,charge.dispute.created,charge.dispute.updated,charge.dispute.closed,transfer.updated,transfer.reversed,account.updated `
   --forward-to http://127.0.0.1:54321/functions/v1/stripe-billing-webhook `
   --forward-connect-to http://127.0.0.1:54321/functions/v1/stripe-connect-webhook
 ```
@@ -90,7 +180,8 @@ Use no `$connectedAccountId` um `stripe_account_id` real criado ou reutilizado p
 3. Abra Webhooks ou Event destinations.
 4. Crie um novo destino.
 5. Selecione `Events on your account`.
-6. Selecione somente os eventos usados por `stripe-billing-webhook`.
+6. Selecione somente os eventos da secao `Sua conta: stripe-billing-webhook`
+   deste documento.
 7. Informe a URL publica da Edge Function `stripe-billing-webhook` do projeto Supabase publicado.
 8. Crie o destino.
 9. Abra o destino criado e revele o signing secret.
@@ -102,7 +193,7 @@ Nao foi identificado nos arquivos analisados o project ref publico do Supabase p
 
 1. Crie outro destino no Workbench.
 2. Selecione `Events on connected accounts`.
-3. Para compatibilidade snapshot, selecione `account.updated`.
+3. Para compatibilidade snapshot, selecione somente `account.updated`.
 4. Informe a URL publica da Edge Function `stripe-connect-webhook` do projeto Supabase publicado.
 5. Crie o destino.
 6. Abra o destino criado e revele o signing secret.
@@ -113,9 +204,8 @@ Nao foi identificado nos arquivos analisados o project ref publico do Supabase p
 
 1. Crie um novo Event destination para eventos de contas conectadas.
 2. Em Payload style, selecione `Thin`.
-3. Selecione os eventos `v2.core.account*` usados pela integração, incluindo
-   `v2.core.account.updated`, requirements, recipient updates, capability status
-   e account closed.
+3. Selecione somente os eventos da secao de eventos thin Accounts v2 deste
+   documento.
 4. Use a mesma URL pública de `stripe-connect-webhook`.
 5. Armazene o signing secret próprio como
    `STRIPE_CONNECT_V2_WEBHOOK_SECRET`.

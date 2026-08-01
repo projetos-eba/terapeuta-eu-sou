@@ -274,6 +274,11 @@ Runbooks complementares:
 
 ## Webhooks tratados
 
+Configuracao detalhada para o Dashboard Stripe:
+`docs/payments/stripe-secrets-setup.md`.
+
+`stripe-billing-webhook`, escopo `Sua conta`:
+
 - `checkout.session.completed`
 - `checkout.session.async_payment_succeeded`
 - `checkout.session.async_payment_failed`
@@ -297,8 +302,24 @@ Runbooks complementares:
 - `charge.dispute.closed`
 - `transfer.updated`
 - `transfer.reversed`
-- `account.updated` snapshot no webhook Connect de compatibilidade
-- eventos thin `v2.core.account*`, incluindo requirements e capability status
+
+`stripe-connect-webhook`, escopo `Contas conectadas`, payload snapshot:
+
+- `account.updated`
+
+`stripe-connect-webhook`, escopo `Contas conectadas`, payload thin Accounts v2:
+
+- `v2.core.account.created`
+- `v2.core.account.updated`
+- `v2.core.account.closed`
+- `v2.core.account[configuration.merchant].updated`
+- `v2.core.account[configuration.merchant].capability_status_updated`
+- `v2.core.account[configuration.recipient].updated`
+- `v2.core.account[configuration.recipient].capability_status_updated`
+- `v2.core.account[defaults].updated`
+- `v2.core.account[identity].updated`
+- `v2.core.account[requirements].updated`
+- `v2.core.account[future_requirements].updated`
 
 ## Secrets Stripe
 
