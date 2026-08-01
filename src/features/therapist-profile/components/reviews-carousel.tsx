@@ -35,9 +35,12 @@ export function ReviewsCarousel({
   }, [pages.length]);
 
   const visibleReviews = pages[page] ?? [];
+  const [expandedReplies, setExpandedReplies] = useState<
+    Record<string, boolean>
+  >({});
 
   return (
-    <section className="rounded-[22px] border border-border bg-white p-7">
+    <section className="max-h-[620px] overflow-y-auto rounded-[22px] border border-border bg-white p-7">
       <div className="flex items-center justify-between gap-4">
         <h2 className="font-display text-[24px] font-light italic text-status-info">
           Avaliações
@@ -78,7 +81,7 @@ export function ReviewsCarousel({
             {visibleReviews.map((review) => (
               <article
                 key={review.id}
-                className="rounded-[30px] border border-brand-lavender p-[18px]"
+                className="flex min-h-[300px] flex-col rounded-[30px] border border-brand-lavender p-[18px]"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex text-status-warning">
@@ -99,11 +102,31 @@ export function ReviewsCarousel({
                       Resposta do terapeuta
                     </p>
                     <p className="mt-2 text-sm font-medium leading-6 text-tesText-secondary">
-                      {review.reply.body}
+                      {expandedReplies[review.id]
+                        ? review.reply.body
+                        : getReplyPreview(review.reply.body)}
                     </p>
+                    {getReplyPreview(review.reply.body) !==
+                    review.reply.body ? (
+                      <button
+                        type="button"
+                        className="mt-2 text-xs font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                        aria-expanded={Boolean(expandedReplies[review.id])}
+                        onClick={() =>
+                          setExpandedReplies((current) => ({
+                            ...current,
+                            [review.id]: !current[review.id],
+                          }))
+                        }
+                      >
+                        {expandedReplies[review.id]
+                          ? "Mostrar menos"
+                          : "Ler resposta completa"}
+                      </button>
+                    ) : null}
                   </div>
                 ) : null}
-                <div className="mt-5 border-t border-border pt-4">
+                <div className="mt-auto border-t border-border pt-4">
                   <p className="text-sm font-semibold text-brand-deep">
                     {review.authorLabel}
                   </p>
@@ -133,4 +156,12 @@ export function ReviewsCarousel({
       )}
     </section>
   );
+}
+
+function getReplyPreview(value: string) {
+  const trimmed = value.trim();
+  const firstSentence = trimmed.match(/^.+?[.!?](?:\s|$)/u)?.[0]?.trim();
+  if (firstSentence) return firstSentence;
+  if (trimmed.length <= 110) return trimmed;
+  return `${trimmed.slice(0, 107).trimEnd()}...`;
 }

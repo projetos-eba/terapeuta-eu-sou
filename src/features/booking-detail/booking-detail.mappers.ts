@@ -3,10 +3,13 @@ import {
   type SessionFinancialStatus as SessionFinancialStatusValue,
 } from "@/domain/tes";
 import {
-  canExposeMeetingUrl,
   getBookingDetailStatus,
   getBookingDetailStatusLabel,
 } from "./booking-detail-status";
+import {
+  getPatientEncounterActionPolicy,
+  getPatientEncounterPresentationState,
+} from "@/features/bookings";
 import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 import {
   formatJourneyStartedAt,
@@ -22,12 +25,15 @@ import type {
 
 export type BookingDetailBookingRow = {
   completed_at: string | null;
+  currency_snapshot: string | null;
   ends_at: string;
   id: string;
   meeting_provider: string | null;
-  meeting_url: string | null;
   patient_profile_id: string;
+  service_duration_minutes_snapshot: number | null;
   service_id: string;
+  service_price_cents_snapshot: number | null;
+  service_title_snapshot: string | null;
   starts_at: string;
   status: string;
   therapist_profile_id: string;
@@ -62,7 +68,7 @@ export type BookingDetailServiceRow = {
   duration_minutes: number;
   id: string;
   price_cents: number;
-  therapy_id: string;
+  therapy_id: string | null;
   title: string;
 };
 
@@ -91,7 +97,16 @@ export type BookingDetailReceiptRow = {
 };
 
 export type BookingDetailSessionPaymentRow = {
+  id: string;
+  refund_pending: boolean | null;
   financial_status: SessionFinancialStatusValue;
+};
+
+export type BookingDetailCancellationDecisionRow = {
+  decision: string;
+  refund_amount_cents: number;
+  requires_manual_review: boolean;
+  review_due_at: string | null;
 };
 
 export type BookingDetailCancellationPolicyRow = {
@@ -129,6 +144,7 @@ export type MapBookingDetailInput = {
   receipt: BookingDetailReceiptRow | null;
   reschedule: BookingDetailRescheduleRow | null;
   reviews: BookingDetailReviewRow[];
+  cancellationDecision: BookingDetailCancellationDecisionRow | null;
   service: BookingDetailServiceRow;
   sessionPayment: BookingDetailSessionPaymentRow | null;
   summaries: BookingDetailSessionSummaryRow[];
@@ -139,16 +155,9 @@ export type MapBookingDetailInput = {
 export function mapBookingDetail(
   input: MapBookingDetailInput,
 ): BookingDetailPageData {
-  const exposedMeetingUrl = canExposeMeetingUrl({
-    meetingUrl: input.booking.meeting_url,
-    paymentStatus: input.sessionPayment?.financial_status ?? null,
-    status: input.booking.status,
-  })
-    ? input.booking.meeting_url
-    : null;
   const status = getBookingDetailStatus({
     endsAt: input.booking.ends_at,
-    meetingUrl: exposedMeetingUrl,
+    paymentStatus: input.sessionPayment?.financial_status ?? null,
     startsAt: input.booking.starts_at,
     status: input.booking.status,
   });
@@ -156,7 +165,7 @@ export function mapBookingDetail(
   const canJoin =
     status === "live" &&
     input.sessionPayment?.financial_status === SessionFinancialStatus.Paid &&
-    (provider === "zoom" || Boolean(exposedMeetingUrl));
+    provider === "zoom";
   const ratingAverage =
     input.reviews.length > 0
       ? roundRating(
@@ -179,8 +188,29 @@ export function mapBookingDetail(
         new Date(left.starts_at).getTime() -
         new Date(right.starts_at).getTime(),
     )[0];
+  const cancellationPolicy = {
+    freeUntilHours: input.policy?.free_until_hours ?? 24,
+    lateCancelFeePercent: input.policy?.late_cancel_fee_percent ?? 50,
+    noShowFeePercent: input.policy?.no_show_fee_percent ?? 100,
+  };
 
   return {
+    actionPolicy: getPatientEncounterActionPolicy({
+      bookingStatus: input.booking.status,
+      cancellationDecision: input.cancellationDecision
+        ? {
+            decision: input.cancellationDecision.decision,
+            refundAmountCents: input.cancellationDecision.refund_amount_cents,
+            requiresManualReview:
+              input.cancellationDecision.requires_manual_review,
+            reviewDueAt: input.cancellationDecision.review_due_at,
+          }
+        : null,
+      cancellationPolicy,
+      endsAt: input.booking.ends_at,
+      financialStatus: input.sessionPayment?.financial_status ?? null,
+      startsAt: input.booking.starts_at,
+    }),
     booking: {
       canJoin,
       dateLabel: formatSessionDate(input.booking.starts_at),
@@ -202,11 +232,14 @@ export function mapBookingDetail(
       ),
       timezone: input.booking.timezone,
     },
-    cancellationPolicy: {
-      freeUntilHours: input.policy?.free_until_hours ?? 24,
-      lateCancelFeePercent: input.policy?.late_cancel_fee_percent ?? 50,
-      noShowFeePercent: input.policy?.no_show_fee_percent ?? 100,
-    },
+    cancellationPolicy,
+    encounterState: getPatientEncounterPresentationState({
+      bookingStatus: input.booking.status,
+      endsAt: input.booking.ends_at,
+      financialStatus: input.sessionPayment?.financial_status ?? null,
+      provider,
+      startsAt: input.booking.starts_at,
+    }),
     intake: {
       focusArea: input.intake?.focus_area ?? "Seu momento atual",
       sharedNote:
@@ -231,7 +264,7 @@ export function mapBookingDetail(
     onlineSession: {
       joinRecommendation:
         "Recomendamos entrar de 5 a 10 minutos antes do horário agendado.",
-      meetingUrl: exposedMeetingUrl,
+      meetingUrl: null,
       provider,
       securityNote:
         input.sessionPayment?.financial_status === SessionFinancialStatus.Paid

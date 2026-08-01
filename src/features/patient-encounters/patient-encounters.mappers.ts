@@ -25,7 +25,6 @@ export type BookingRecord = {
   completed_at: string | null;
   ends_at: string;
   id: string;
-  meeting_url: string | null;
   service_id: string;
   starts_at: string;
   status: string;
@@ -119,7 +118,10 @@ export function mapPatientEncountersPage(
     upcomingEncounters.map((encounter) => encounter.therapist.id),
   );
   const historyEncounters = mapped
-    .filter((encounter) => encounter.status === "completed")
+    .filter(
+      (encounter) =>
+        encounter.status === "completed" || encounter.status === "cancelled",
+    )
     .sort((left, right) => sortByStartsAt(right, left))
     .slice(0, 3);
   const completedCount = input.bookings.filter((booking) =>
@@ -167,14 +169,14 @@ function mapPatientEncounter(
 
   return {
     actionHint:
-      booking.meeting_url && status === "confirmed"
-        ? "Link liberado 10 min antes"
+      payment?.financial_status === "paid" && status === "confirmed"
+        ? "Entrada liberada 10 min antes"
         : undefined,
     approachLabel: getApproachLabel(therapy.slug),
     dateLabel: formatRelativeBookingDay(booking.starts_at),
     endsAt: booking.ends_at,
     id: booking.id,
-    meetingUrl: booking.meeting_url,
+    meetingUrl: null,
     paymentStatus: payment?.financial_status ?? null,
     primaryAction: getPrimaryAction(booking, status, summaryId, hasReview),
     rescheduleStatus: reschedule?.status ?? null,
@@ -219,7 +221,7 @@ function getEncounterStatus(
   if (
     canJoinBooking({
       endsAt: booking.ends_at,
-      meetingUrl: booking.meeting_url,
+      paymentStatus: payment?.financial_status ?? null,
       startsAt: booking.starts_at,
       status: booking.status,
     })
@@ -236,7 +238,7 @@ function getPrimaryAction(
   summaryId: string | null,
   hasReview: boolean,
 ): PatientEncounter["primaryAction"] {
-  if (status === "live" && booking.meeting_url) {
+  if (status === "live") {
     return {
       href: routes.patient.encounterDetail(booking.id),
       kind: "link",
@@ -262,9 +264,17 @@ function getPrimaryAction(
     }
 
     return {
-      href: routes.patient.help,
+      href: `${routes.patient.messages}?context=suporte&booking=${booking.id}`,
       kind: "link",
       label: "Solicitar suporte",
+    };
+  }
+
+  if (status === "cancelled") {
+    return {
+      href: routes.patient.encounterDetail(booking.id),
+      kind: "link",
+      label: "Ver reembolso",
     };
   }
 

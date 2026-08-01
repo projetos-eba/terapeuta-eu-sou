@@ -4,14 +4,14 @@ import type { BookingDetailStatus } from "./booking-detail.types";
 
 export function getBookingDetailStatus(input: {
   endsAt: string;
-  meetingUrl: string | null;
+  paymentStatus: string | null;
   startsAt: string;
   status: string;
 }): BookingDetailStatus {
   if (
     canJoinBooking({
       endsAt: input.endsAt,
-      meetingUrl: input.meetingUrl,
+      paymentStatus: input.paymentStatus,
       startsAt: input.startsAt,
       status: input.status,
     })
@@ -37,20 +37,4 @@ export function getBookingDetailStatusLabel(status: BookingDetailStatus) {
   };
 
   return labels[status] ?? "Em análise";
-}
-
-export function canExposeMeetingUrl(input: {
-  meetingUrl: string | null;
-  paymentStatus: string | null;
-  status: string;
-}) {
-  if (!input.meetingUrl || input.paymentStatus !== "paid") return false;
-
-  return ![
-    "cancelled_by_patient",
-    "cancelled_by_therapist",
-    "no_show_patient",
-    "no_show_therapist",
-    "refunded",
-  ].includes(input.status);
 }

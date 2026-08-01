@@ -112,7 +112,7 @@ por redirect; elas não definem shells independentes.
 - `/app`: visão geral.
 - `/app/encontros`: área canônica de encontros.
 - `/app/encontros/:bookingId`: detalhe canônico do encontro.
-- `/app/mensagens`: mensagens.
+- `/app/mensagens`: mensagens e suporte por templates seguros.
 - `/app/favoritos`: hub de favoritos.
 - `/app/favoritos/terapeutas`: terapeutas favoritos.
 - `/app/favoritos/terapias`: terapias favoritas.
@@ -124,7 +124,10 @@ por redirect; elas não definem shells independentes.
 - `/app/configuracoes/notificacoes`: notificações.
 - `/app/configuracoes/privacidade`: privacidade.
 - `/app/configuracoes/seguranca`: segurança.
-- `/app/ajuda`: ajuda logada.
+
+Observação: não há rota dedicada `/app/ajuda` neste momento. Links de suporte
+do paciente devem apontar para `/app/mensagens` com contexto de suporte até
+decisão futura de produto para uma central própria.
 
 ### Fluxos
 

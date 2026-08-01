@@ -106,11 +106,11 @@ async function getSupabasePatientEncountersPage(
     patientProfileId: patientProfile.id,
   };
 
-  const [bookings, favorites, conversations, notifications] =
-    await Promise.all([
+  const [bookings, favorites, conversations, notifications] = await Promise.all(
+    [
       supabaseRequest<BookingRecord[]>(
         config,
-        `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,status,meeting_url,cancellation_reason,cancelled_at,completed_at&patient_profile_id=eq.${patientProfile.id}&order=starts_at.asc`,
+        `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,status,cancellation_reason,cancelled_at,completed_at&patient_profile_id=eq.${patientProfile.id}&order=starts_at.asc`,
       ),
       supabaseRequest<FavoriteRow[]>(
         config,
@@ -124,7 +124,8 @@ async function getSupabasePatientEncountersPage(
         config,
         `/rest/v1/notifications?select=id&profile_id=eq.${encodeURIComponent(profileId)}&read_at=is.null`,
       ),
-    ]);
+    ],
+  );
   const conversationIds = conversations.map((conversation) => conversation.id);
   const therapistIds = unique(
     bookings.map((booking) => booking.therapist_profile_id),
@@ -352,7 +353,11 @@ function createDemoPatientEncountersPage(
   const therapies = new Map<string, TherapyRecord>([
     [
       "22222222-2222-4222-8222-222222222225",
-      { id: "22222222-2222-4222-8222-222222222225", name: "Reiki", slug: "reiki" },
+      {
+        id: "22222222-2222-4222-8222-222222222225",
+        name: "Reiki",
+        slug: "reiki",
+      },
     ],
     [
       "22222222-2222-4222-8222-222222222228",
@@ -372,9 +377,30 @@ function createDemoPatientEncountersPage(
     ],
   ]);
   const bookings: BookingRecord[] = [
-    createBooking("94000000-0000-4000-8000-000000000021", "92000000-0000-4000-8000-000000000014", "93000000-0000-4000-8000-000000000014", liveStart, liveEnd, "confirmed", "https://example.test/meeting/andre-live"),
-    createBooking("94000000-0000-4000-8000-000000000022", "92000000-0000-4000-8000-000000000015", "93000000-0000-4000-8000-000000000015", laterToday, laterTodayEnd, "confirmed", "https://example.test/meeting/sofia"),
-    createBooking("94000000-0000-4000-8000-000000000023", "92000000-0000-4000-8000-000000000016", "93000000-0000-4000-8000-000000000016", tomorrow, tomorrowEnd, "confirmed", "https://example.test/meeting/roberto"),
+    createBooking(
+      "94000000-0000-4000-8000-000000000021",
+      "92000000-0000-4000-8000-000000000014",
+      "93000000-0000-4000-8000-000000000014",
+      liveStart,
+      liveEnd,
+      "confirmed",
+    ),
+    createBooking(
+      "94000000-0000-4000-8000-000000000022",
+      "92000000-0000-4000-8000-000000000015",
+      "93000000-0000-4000-8000-000000000015",
+      laterToday,
+      laterTodayEnd,
+      "confirmed",
+    ),
+    createBooking(
+      "94000000-0000-4000-8000-000000000023",
+      "92000000-0000-4000-8000-000000000016",
+      "93000000-0000-4000-8000-000000000016",
+      tomorrow,
+      tomorrowEnd,
+      "confirmed",
+    ),
     ...Array.from({ length: 12 }, (_, index) => {
       const startsAt = new Date(completedBase);
       startsAt.setDate(completedBase.getDate() - index);
@@ -388,7 +414,6 @@ function createDemoPatientEncountersPage(
         startsAt,
         endsAt,
         "completed",
-        "https://example.test/meeting/history",
         endsAt.toISOString(),
       );
     }),
@@ -401,7 +426,12 @@ function createDemoPatientEncountersPage(
     reviews: [],
     rescheduleByBookingId: new Map(),
     serviceById: services,
-    sessionPaymentByBookingId: new Map(),
+    sessionPaymentByBookingId: new Map(
+      bookings.map((booking) => [
+        booking.id,
+        { booking_id: booking.id, financial_status: "paid" },
+      ]),
+    ),
     summaries: bookings
       .filter((booking) => booking.status === "completed")
       .slice(0, 3)
@@ -420,7 +450,6 @@ function createBooking(
   startsAt: Date,
   endsAt: Date,
   status: string,
-  meetingUrl: string | null,
   completedAt: string | null = null,
 ): BookingRecord {
   return {
@@ -429,7 +458,6 @@ function createBooking(
     completed_at: completedAt,
     ends_at: endsAt.toISOString(),
     id,
-    meeting_url: meetingUrl,
     service_id: serviceId,
     starts_at: startsAt.toISOString(),
     status,

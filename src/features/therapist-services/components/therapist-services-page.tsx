@@ -85,6 +85,9 @@ export function TherapistServicesPage({
     const normalized = query.trim().toLocaleLowerCase("pt-BR");
     return [...services]
       .filter((service) => {
+        if (statusFilter === "all" && service.status === "archived") {
+          return false;
+        }
         if (statusFilter !== "all" && service.status !== statusFilter) {
           return false;
         }

@@ -48,7 +48,6 @@ type BookingRow = {
   completed_at: string | null;
   ends_at: string;
   id: string;
-  meeting_url: string | null;
   service_id: string;
   starts_at: string;
   status: "completed" | "confirmed" | string;
@@ -199,7 +198,7 @@ async function getSupabasePatientOverview(
   ] = await Promise.all([
     supabaseRequest<BookingRow[]>(
       config,
-      `/rest/v1/bookings?select=id,therapist_profile_id,service_id,starts_at,ends_at,status,meeting_url,completed_at&patient_profile_id=eq.${patient.id}&order=starts_at.asc`,
+      `/rest/v1/bookings?select=id,therapist_profile_id,service_id,starts_at,ends_at,status,completed_at&patient_profile_id=eq.${patient.id}&order=starts_at.asc`,
     ),
     supabaseRequest<FavoriteRow[]>(
       config,
@@ -394,7 +393,7 @@ function toAppointment(
   return {
     endsAt: booking.ends_at,
     id: booking.id,
-    meetingUrl: booking.meeting_url,
+    meetingUrl: null,
     professional: {
       avatarUrl: getTherapistAvatarUrl(professional.photo_url, {
         name: professional.public_name,
@@ -579,7 +578,7 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
       {
         endsAt: todayEnd.toISOString(),
         id: "94000000-0000-4000-8000-000000000011",
-        meetingUrl: "https://example.test/meeting/juliane-live",
+        meetingUrl: null,
         professional: {
           avatarUrl: "/therapists/juliana-costa.png",
           id: "92000000-0000-4000-8000-000000000011",

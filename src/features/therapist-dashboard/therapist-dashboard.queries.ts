@@ -18,7 +18,7 @@ export async function queryTherapistDashboard(accessToken: string) {
 
 export async function queryTherapistRecommendations(accessToken: string) {
   return requestSupabase<AuraRecommendationRow[]>(
-    "/rest/v1/aura_recommendations?select=id,source_rule_key,title,body,context&is_active=eq.true&order=priority.desc,created_at.desc&limit=12",
+    "/rest/v1/aura_recommendations?select=id,source_rule_key,title,body,context&status=eq.active&is_active=eq.true&plan_required=eq.premium_plus&patient_profile_id=is.null&booking_id=is.null&context->>source=neq.demo_seed&order=priority.desc,created_at.desc&limit=12",
     accessToken,
     { method: "GET" },
   );

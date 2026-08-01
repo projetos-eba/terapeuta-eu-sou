@@ -44,7 +44,7 @@ export const routes = {
     notificationSettings: "/app/configuracoes/notificacoes",
     privacySettings: "/app/configuracoes/privacidade",
     securitySettings: "/app/configuracoes/seguranca",
-    help: "/app/ajuda",
+    help: "/app/mensagens",
   },
   legacyPatient: {
     sessions: "/app/sessoes",

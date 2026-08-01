@@ -6,7 +6,9 @@ import {
 import { parseStrictBoolean } from "./config.ts";
 import { evaluateVideoSessionAccess } from "./access-policy.ts";
 import { ZoomVideoSdkApiClient } from "./api-client.ts";
+import type { SupabaseRestClient } from "../auth/supabase-rest.ts";
 import { createVideoSdkApiJwt } from "./api-jwt.ts";
+import { getAuthorizedVideoBooking } from "./booking-authorization.ts";
 import {
   createVideoSdkJwt,
   normalizeSessionName,
@@ -253,6 +255,103 @@ Deno.test(
       }).reason,
       "VIDEO_SESSION_NOT_READY",
     );
+  },
+);
+
+Deno.test(
+  "access policy blocks unpaid, cancelled, too early, too late, and hard-ended bookings",
+  () => {
+    const base = {
+      actorRole: "patient" as const,
+      bookingStatus: "confirmed",
+      endsAt: "2026-07-26T13:30:00.000Z",
+      financialStatus: "paid",
+      now: new Date("2026-07-26T13:00:00.000Z"),
+      startsAt: "2026-07-26T12:30:00.000Z",
+      therapistPresent: true,
+      videoSessionReady: true,
+      videoSessionStatus: "ready",
+    };
+
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        financialStatus: null,
+      }).reason,
+      "PAYMENT_NOT_CONFIRMED",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        bookingStatus: "cancelled_by_patient",
+      }).reason,
+      "BOOKING_CANCELLED",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        now: new Date("2026-07-26T12:14:59.000Z"),
+      }).reason,
+      "TOO_EARLY",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        now: new Date("2026-07-26T14:00:00.000Z"),
+      }).reason,
+      "TOO_LATE",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        hardEndsAt: "2026-07-26T12:59:59.000Z",
+      }).reason,
+      "HARD_TIMEOUT",
+    );
+  },
+);
+
+Deno.test(
+  "booking authorization blocks access from another patient before reading payment or video data",
+  async () => {
+    const calls: string[] = [];
+    const client = {
+      get: (path: string) => {
+        calls.push(path);
+        if (path.startsWith("/rest/v1/bookings")) {
+          return Promise.resolve([
+            {
+              ends_at: "2026-07-26T13:30:00.000Z",
+              id: "94000000-0000-4000-8000-000000000021",
+              patient_profile_id: "patient-owner",
+              starts_at: "2026-07-26T12:30:00.000Z",
+              status: "confirmed",
+              therapist_profile_id: "therapist-owner",
+              therapist_profiles: { status: "approved" },
+              timezone: "America/Sao_Paulo",
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      },
+      rpc: () => Promise.resolve(null),
+    } as unknown as SupabaseRestClient;
+
+    await assertRejects(
+      () =>
+        getAuthorizedVideoBooking({
+          bookingId: "94000000-0000-4000-8000-000000000021",
+          client,
+          environment: "development",
+          profileId: "another-patient",
+          role: "patient",
+        }),
+      Error,
+      "Voce nao pode acessar esta sessao.",
+    );
+
+    assertEquals(calls.length, 1);
+    assertEquals(calls[0].startsWith("/rest/v1/bookings"), true);
   },
 );
 

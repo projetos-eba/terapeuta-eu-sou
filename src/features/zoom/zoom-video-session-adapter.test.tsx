@@ -105,7 +105,7 @@ describe("ZoomVideoSessionAdapter", () => {
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
     expect(
-      await screen.findByText(/voce entrou na sessao/i),
+      await screen.findByText(/voce entrou no encontro/i),
     ).toBeInTheDocument();
     expect(calls.slice(0, 2)).toEqual(["init", "join"]);
     expect(mockClient.join).toHaveBeenCalledWith(
@@ -129,7 +129,7 @@ describe("ZoomVideoSessionAdapter", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
-    await screen.findByText(/voce entrou na sessao/i);
+    await screen.findByText(/voce entrou no encontro/i);
 
     handlers.get("peer-video-state-change")?.({ action: "Start", userId: 9 });
 
@@ -161,10 +161,10 @@ describe("ZoomVideoSessionAdapter", () => {
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
     expect(await screen.findByText(/responsavel/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /encerrar sessao/i }));
+    fireEvent.click(screen.getByRole("button", { name: /encerrar encontro/i }));
 
     expect(
-      await screen.findByText(/sessao foi encerrada para todos/i),
+      await screen.findByText(/encontro foi encerrado para todos/i),
     ).toBeInTheDocument();
     expect(mockClient.leave).toHaveBeenCalledWith(true);
     expect(destroyClient).toHaveBeenCalled();
@@ -204,6 +204,56 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(await screen.findByText(/preparacao/i)).toBeInTheDocument();
   });
 
+  it("offers contextual recovery actions after a Zoom access failure", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({
+          error: { message: "Token expirado." },
+          ok: false,
+        }),
+        ok: false,
+      }),
+    );
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      clipboard: {
+        writeText: vi.fn(async () => undefined),
+      },
+      mediaDevices: {
+        getUserMedia: vi.fn(async () => ({
+          getTracks: () => [{ stop: vi.fn() }],
+        })),
+      },
+    });
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+
+    expect(await screen.findByText(/token expirado/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /tentar novamente/i }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: /renovar acesso/i }),
+    ).toBeVisible();
+    fireEvent.click(
+      screen.getByRole("button", { name: /revisar permissões/i }),
+    );
+    expect(
+      await screen.findByText(/permissoes liberadas/i),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /copiar referência/i }));
+    expect(await screen.findByText(/referencia copiada/i)).toBeInTheDocument();
+  });
+
   it("keeps patient waiting without issuing a join token until therapist is present", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       json: async () => ({
@@ -220,6 +270,7 @@ describe("ZoomVideoSessionAdapter", () => {
           ...allowedAccess,
           allowed: false,
           reason: ZoomAccessReason.TherapistNotInSession,
+          serverNow: "2026-07-26T12:46:00.000Z",
         }}
         actorRole="patient"
         bookingId="96000000-0000-4000-8000-000000000001"
@@ -257,6 +308,7 @@ describe("ZoomVideoSessionAdapter", () => {
             ...allowedAccess,
             allowed: false,
             reason: ZoomAccessReason.TherapistNotInSession,
+            serverNow: "2026-07-26T12:46:00.000Z",
           },
         },
         ok: true,
@@ -302,7 +354,7 @@ describe("ZoomVideoSessionAdapter", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
-    await screen.findByText(/voce entrou na sessao/i);
+    await screen.findByText(/voce entrou no encontro/i);
     fireEvent.click(screen.getByRole("button", { name: /^sair$/i }));
 
     expect(

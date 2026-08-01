@@ -46,8 +46,46 @@ describe("TherapistServicesPage", () => {
       target: { value: "paused" },
     });
 
-    expect(screen.getByText("Tarô de clareza")).toBeInTheDocument();
+    expect(screen.getByText("Tarô Terapêutico")).toBeInTheDocument();
+    expect(screen.queryByText("Tarô de clareza")).not.toBeInTheDocument();
     expect(screen.queryByText("Reiki inicial")).not.toBeInTheDocument();
+  });
+
+  it("keeps archived services out of the default list", () => {
+    renderPage({
+      items: [
+        serviceFixture({ status: "active", title: "Reiki inicial" }),
+        serviceFixture({
+          blockingReason: "service_archived",
+          serviceId: "d1000000-0000-4000-8000-000000000009",
+          status: "archived",
+          therapy: {
+            id: "22222222-2222-4222-8222-222222222226",
+            isAvailableForServices: false,
+            isPubliclyVisible: false,
+            name: "Aromaterapia",
+            slug: "aromaterapia",
+            status: "published",
+          },
+          therapyId: "22222222-2222-4222-8222-222222222226",
+          title: "Aromaterapia",
+        }),
+      ],
+    });
+
+    expect(screen.queryByText("Aromaterapia")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("Filtrar por status"), {
+      target: { value: "archived" },
+    });
+
+    expect(screen.getByText("Aromaterapia")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Esta terapia foi arquivada e permanece apenas para histórico.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("service_archived")).not.toBeInTheDocument();
   });
 
   it("does not allow creating a service from free text", () => {
@@ -150,21 +188,22 @@ describe("parsePriceToCents", () => {
   });
 });
 
-function renderPage() {
+function renderPage(overrides: { items?: TherapistServiceSummary[] } = {}) {
   render(
     <TherapistServicesPage
       catalog={catalogFixture()}
       services={{
         contractVersion: 1,
-        items: [
-          serviceFixture({ status: "draft" }),
-          serviceFixture({
-            serviceId: "d1000000-0000-4000-8000-000000000002",
-            status: "paused",
-            therapyId: "22222222-2222-4222-8222-222222222228",
-            title: "Tarô de clareza",
-          }),
-        ],
+        items:
+          overrides.items ?? [
+            serviceFixture({ status: "draft" }),
+            serviceFixture({
+              serviceId: "d1000000-0000-4000-8000-000000000002",
+              status: "paused",
+              therapyId: "22222222-2222-4222-8222-222222222228",
+              title: "Tarô de clareza",
+            }),
+          ],
         plan: "premium_plus",
         serviceLimit: 10,
         therapistProfileId: "a1000000-0000-4000-8000-000000000001",

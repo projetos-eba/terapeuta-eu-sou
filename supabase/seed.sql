@@ -900,7 +900,9 @@ insert into public.therapist_services (
   price_cents,
   currency,
   status,
-  online_only
+  online_only,
+  is_bookable,
+  archived_at
 )
 values
   (
@@ -913,7 +915,9 @@ values
     17000,
     'BRL',
     'active',
-    true
+    true,
+    true,
+    null
   ),
   (
     'd1000000-0000-4000-8000-000000000006',
@@ -924,8 +928,10 @@ values
     60,
     24000,
     'BRL',
-    'active',
-    true
+    'archived',
+    true,
+    false,
+    now()
   )
 on conflict (id) do update
 set
@@ -938,6 +944,8 @@ set
   currency = excluded.currency,
   status = excluded.status,
   online_only = excluded.online_only,
+  is_bookable = excluded.is_bookable,
+  archived_at = excluded.archived_at,
   updated_at = now();
 
 insert into public.therapist_profile_content_versions (
@@ -3038,7 +3046,7 @@ update public.therapies
 set
   status = 'published',
   is_public_visible = false,
-  is_available_for_services = true,
+  is_available_for_services = false,
   updated_at = now()
 where slug = 'aromaterapia';
 

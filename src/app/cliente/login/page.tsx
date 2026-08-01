@@ -25,14 +25,16 @@ export default async function ClientLoginPage({
   const params = await searchParams;
 
   return (
-    <ClientAuthShell className="flex items-center">
-      <div className="w-full">
-        <ClientLoginForm
-          created={params?.created === "1"}
-          next={params?.next}
-          reset={params?.reset === "1"}
-          verified={params?.verified === "1"}
-        />
+    <ClientAuthShell>
+      <div className="pointer-events-none flex min-h-full w-full items-center">
+        <div className="pointer-events-auto w-full">
+          <ClientLoginForm
+            created={params?.created === "1"}
+            next={params?.next}
+            reset={params?.reset === "1"}
+            verified={params?.verified === "1"}
+          />
+        </div>
       </div>
     </ClientAuthShell>
   );

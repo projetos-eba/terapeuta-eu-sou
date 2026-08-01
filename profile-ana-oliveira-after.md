@@ -1,0 +1,146 @@
+- generic [active] [ref=e1] [box=0,0,1540,2214]:
+  - main [ref=e2] [box=0,0,1540,2214]:
+    - generic [ref=e3] [box=0,0,1540,88]:
+      - link "Terapeuta Eu Sou" [ref=e4] [cursor=pointer] [box=48,16,142,56]:
+        - /url: /
+        - img "Terapeuta Eu Sou" [ref=e5] [box=48,16,142,56]
+      - navigation [ref=e6] [box=378,34,460,20]:
+        - link "Terapias" [ref=e7] [cursor=pointer] [box=378,34,57,20]:
+          - /url: /terapias
+        - link "Sua Jornada" [ref=e8] [cursor=pointer] [box=479,34,84,20]:
+          - /url: /sua-jornada
+        - link "Terapeutas" [ref=e9] [cursor=pointer] [box=607,34,77,20]:
+          - /url: /terapeutas
+        - link "Para Terapeutas" [ref=e10] [cursor=pointer] [box=728,34,110,20]:
+          - /url: /para-terapeutas
+      - generic [ref=e11] [box=1025,20,467,48]:
+        - group [ref=e12] [box=1025,20,212,48]:
+          - generic "Entrar | Cadastre-se" [ref=e290] [cursor=pointer] [box=1025,20,212,48]
+        - link "Começar minha jornada" [ref=e18] [cursor=pointer] [box=1249,20,243,48]:
+          - /url: /sua-jornada
+    - generic [ref=e20] [box=50,88,1440,466]:
+      - img "Retrato de Ana Oliveira" [ref=e22] [box=106,112,520,410]
+      - generic [ref=e23] [box=658,112,776,410]:
+        - generic [ref=e24] [box=658,128,776,37]:
+          - generic [ref=e25] [box=658,128,178,37]: Perfil verificado
+          - generic [ref=e29] [box=848,128,173,37]: Terapeuta Plus
+        - heading "Ana Oliveira" [level=1] [ref=e33] [box=658,173,776,72]
+        - generic [ref=e34] [box=658,252,776,30]:
+          - generic [ref=e35] [box=658,252,81,30]: Ansiedade
+          - generic [ref=e36] [box=759,252,149,30]: Autoconhecimento
+          - generic [ref=e37] [box=929,252,91,30]: Autoestima
+        - generic [ref=e38] [box=658,306,776,32]:
+          - paragraph [ref=e39] [box=658,306,35,32]: 4,8
+          - paragraph [ref=e51] [box=817,312,95,20]: 4 avaliaçãoões
+        - paragraph [ref=e52] [box=658,354,360,72]: Bem-vinda, alma bonita. Intuição que acolhe, energia que cuida e orientação que ilumina seu caminho de volta para você.
+        - generic [ref=e53] [box=658,454,776,52]:
+          - link "Agendar sessão →" [ref=e54] [cursor=pointer] [box=658,454,204,52]:
+            - /url: /reserva?duration=50&price=17000&service=d1000000-0000-4000-8000-000000000001&therapist=ana-oliveira
+            - text: Agendar sessão
+            - generic [ref=e55] [box=814,470,14,20]: →
+          - button "Adicionar Ana Oliveira aos favoritos" [ref=e56] [cursor=pointer] [box=878,454,52,52]
+          - button "Compartilhar perfil" [ref=e59] [cursor=pointer] [box=946,454,52,52]
+    - generic [ref=e66] [box=96,554,1348,435]:
+      - article [ref=e67] [box=116,586,423,403]:
+        - heading "Minha essência" [level=2] [ref=e68] [box=153,623,350,32]
+        - paragraph [ref=e69] [box=153,687,350,87]: Sou terapeuta integrativa há mais de 8 anos. Minha missão é oferecer acolhimento, escuta e orientação para você se conectar com sua essência, leveza e verdade.
+        - generic [ref=e70] [box=153,805,350,113]:
+          - generic [ref=e71] [box=153,805,163,113]:
+            - paragraph [ref=e75] [box=165,854,138,20]: +8 anos
+            - paragraph [ref=e76] [box=165,874,138,16]: de jornada
+          - generic [ref=e77] [box=339,805,163,113]:
+            - paragraph [ref=e80] [box=352,854,138,20]: "5"
+            - paragraph [ref=e81] [box=352,874,138,32]: sessões realizadas pela plataforma
+      - article [ref=e82] [box=559,586,423,403]:
+        - heading "Como posso te guiar" [level=2] [ref=e83] [box=595,623,350,32]
+        - generic [ref=e84] [box=595,687,350,185]:
+          - paragraph [ref=e89] [box=595,725,98,41]: Clareza emocional
+          - paragraph [ref=e97] [box=721,725,98,41]: Equilíbrio energético
+          - paragraph [ref=e101] [box=847,725,98,41]: Reconexão interior
+          - paragraph [ref=e106] [box=595,831,98,41]: Propósito e direção
+          - paragraph [ref=e110] [box=721,831,98,41]: Relacionamentos conscientes
+          - paragraph [ref=e118] [box=847,831,98,41]: Transições de vida
+      - article [ref=e119] [box=1001,586,423,403]:
+        - heading "Um convite para você" [level=2] [ref=e120] [box=1038,623,350,32]
+        - generic [ref=e121] [box=1038,671,350,282]:
+          - link [ref=e122] [cursor=pointer] [box=1038,671,253,184]:
+            - /url: https://example.test/videos/ana-oliveira
+            - img "Um convite para você" [ref=e123] [box=1038,671,253,184]
+          - paragraph [ref=e126] [box=1315,671,82,282]: Assista ao vídeo e me conheça um pouco mais. Falo sobre minha jornada e como posso te acompanhar no seu momento atual.
+    - generic [ref=e127] [box=96,1021,1348,276]:
+      - heading "Vivências e terapias" [level=2] [ref=e129] [box=128,1021,1284,36]
+      - article [ref=e131] [box=128,1077,632,220]:
+        - generic [ref=e139] [box=297,1098,443,179]:
+          - heading "Reiki" [level=3] [ref=e140] [box=297,1098,443,33]
+          - paragraph [ref=e141] [box=297,1142,443,46]: Sessão complementar de Reiki conduzida por vídeo, com foco em presença e cuidado energético responsável.
+          - paragraph [ref=e142] [box=297,1204,443,16]: 50 min
+          - generic [ref=e146] [box=297,1232,443,44]:
+            - paragraph [ref=e147] [box=297,1240,64,28]: R$ 170
+            - link "Agendar" [ref=e148] [cursor=pointer] [box=643,1232,96,44]:
+              - /url: /reserva?duration=50&price=17000&service=d1000000-0000-4000-8000-000000000001&therapist=ana-oliveira
+    - generic [ref=e149] [box=96,1329,1348,605]:
+      - generic [ref=e150] [box=128,1329,657,372]:
+        - generic [ref=e164] [box=212,1361,281,60]:
+          - heading "Próximos horários disponíveis" [level=2] [ref=e165] [box=212,1361,281,32]
+          - paragraph [ref=e166] [box=212,1397,281,24]: Reiki · 50 min · R$ 170
+        - generic [ref=e167] [box=160,1449,593,164]:
+          - generic [ref=e168] [box=160,1449,593,44]:
+            - generic [ref=e169] [box=160,1449,72,44]
+            - generic [ref=e172] [box=252,1449,501,44]
+          - generic [ref=e177] [box=160,1509,593,44]:
+            - generic [ref=e178] [box=160,1509,72,44]
+            - generic [ref=e181] [box=252,1509,501,44]
+          - generic [ref=e187] [box=160,1569,593,44]:
+            - generic [ref=e188] [box=160,1569,72,44]
+            - generic [ref=e191] [box=252,1569,501,44]
+        - button "Ver agenda completa e mais horários →" [ref=e197] [cursor=pointer] [box=310,1645,292,24]
+      - generic [ref=e198] [box=817,1329,595,565]:
+        - generic [ref=e199] [box=846,1358,538,44]:
+          - heading "Avaliações" [level=2] [ref=e200] [box=846,1362,100,36]
+          - button "Ver todas as avaliações →" [ref=e201] [cursor=pointer] [box=1174,1358,209,44]
+        - generic [ref=e202] [box=846,1422,538,48]:
+          - paragraph [ref=e203] [box=846,1422,58,48]: 4,8
+          - paragraph [ref=e215] [box=1016,1438,294,24]: Com base em 4 experiências compartilhadas.
+        - generic [ref=e216] [box=846,1490,538,316]:
+          - article [ref=e291] [box=846,1490,259,316]:
+            - paragraph [ref=e304] [box=998,1508,89,16]: Há uma semana
+            - paragraph [ref=e305] [box=864,1540,222,42]: Encontrei um espaço acolhedor para organizar minhas escolhas.
+            - generic [ref=e306] [box=864,1730,222,57]
+          - article [ref=e309] [box=1125,1490,259,316]:
+            - paragraph [ref=e320] [box=1276,1508,89,16]: Há uma semana
+            - paragraph [ref=e321] [box=1143,1540,222,42]: Conversa atenta e respeitosa com o meu momento.
+            - generic [ref=e322] [box=1143,1598,222,132]
+            - generic [ref=e325] [box=1143,1730,222,57]
+        - generic [ref=e253] [box=846,1821,538,44]:
+          - button "Ver página 1 de avaliações" [ref=e254] [cursor=pointer] [box=1067,1821,44,44]
+          - button "Ver página 2 de avaliações" [ref=e255] [cursor=pointer] [box=1119,1821,44,44]
+    - generic [ref=e256] [box=0,1934,1540,280]:
+      - generic [ref=e257] [box=48,1974,360,200]:
+        - link "Terapeuta Eu Sou" [ref=e258] [cursor=pointer] [box=48,1974,142,56]:
+          - /url: /
+          - img "Terapeuta Eu Sou" [ref=e259] [box=48,1974,142,56]
+        - paragraph [ref=e260] [box=48,2046,360,48]: Onde terapeutas encontram espaço e pessoas encontram caminhos.
+        - paragraph [ref=e261] [box=48,2126,360,48]: © 2026 Terapeuta Eu Sou. Todos os direitos reservados.
+      - generic [ref=e262] [box=448,1974,1044,200]:
+        - generic [ref=e263] [box=448,1974,237,200]:
+          - heading "Institucional" [level=3] [ref=e264] [box=448,1974,237,24]
+          - list [ref=e265] [box=448,2014,237,88]:
+            - listitem [ref=e266] [box=448,2014,237,24]
+            - listitem [ref=e268] [box=448,2046,237,24]
+            - listitem [ref=e270] [box=448,2078,237,24]
+        - generic [ref=e272] [box=717,1974,237,200]:
+          - heading "Para terapeutas" [level=3] [ref=e273] [box=717,1974,237,24]
+          - list [ref=e274] [box=717,2014,237,56]:
+            - listitem [ref=e275] [box=717,2014,237,24]
+            - listitem [ref=e277] [box=717,2046,237,24]
+        - generic [ref=e279] [box=986,1974,237,200]:
+          - heading "Suporte e legal" [level=3] [ref=e280] [box=986,1974,237,24]
+          - list [ref=e281] [box=986,2014,237,88]:
+            - listitem [ref=e282] [box=986,2014,237,24]: Contato
+            - listitem [ref=e283] [box=986,2046,237,24]
+            - listitem [ref=e285] [box=986,2078,237,24]
+        - generic [ref=e287] [box=1255,1974,237,200]:
+          - heading "Redes sociais" [level=3] [ref=e288] [box=1255,1974,237,24]
+          - paragraph [ref=e289] [box=1255,2014,237,48]: Canais oficiais serão exibidos quando estiverem configurados.
+  - button "Open Next.js Dev Tools" [ref=e333] [cursor=pointer] [box=22,766,32,32]
+  - alert [ref=e338] [box=-1,2213,1,1]

@@ -32,7 +32,7 @@ export function AvailabilitySelector({
   const compactDays = days.slice(0, 3);
 
   return (
-    <section className="rounded-[22px] bg-brand-primary p-8 text-white">
+    <section className="max-h-[620px] overflow-y-auto rounded-[22px] bg-brand-primary p-8 text-white">
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div className="flex items-center gap-5">
           <CalendarDays className="size-8" />
@@ -42,8 +42,9 @@ export function AvailabilitySelector({
             </h2>
             {selectedService ? (
               <p className="mt-1 text-sm font-medium leading-6 text-white/80">
-                {selectedService.title} · {selectedService.durationMinutes} min
-                · {selectedService.priceLabel}
+                {selectedService.therapyName} ·{" "}
+                {selectedService.durationMinutes} min ·{" "}
+                {selectedService.priceLabel}
               </p>
             ) : null}
           </div>
@@ -62,7 +63,7 @@ export function AvailabilitySelector({
                     : "min-h-11 rounded-full border border-white/30 px-4 py-2 text-sm font-bold text-white"
                 }
               >
-                {service.title}
+                {service.therapyName}
               </button>
             ))}
           </div>

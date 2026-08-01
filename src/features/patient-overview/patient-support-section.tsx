@@ -30,7 +30,7 @@ export function PatientSupportSection({
         </h2>
         <Link
           className="text-xs font-medium text-brand-primary outline-none hover:underline focus-visible:ring-4 focus-visible:ring-ring/20"
-          href={routes.patient.help as Route<string>}
+          href={`${routes.patient.messages}?context=suporte` as Route<string>}
         >
           Ver todos <span aria-hidden="true">→</span>
         </Link>
@@ -48,7 +48,7 @@ export function PatientSupportSection({
       )}
       <Link
         className="mt-auto flex min-h-11 items-center justify-center rounded-sm bg-brand-lavenderSoft px-4 text-xs font-medium text-brand-primary outline-none transition hover:bg-brand-lavender focus-visible:ring-4 focus-visible:ring-ring/20"
-        href={routes.patient.help as Route<string>}
+        href={`${routes.patient.messages}?context=suporte` as Route<string>}
       >
         Abrir novo ticket
       </Link>

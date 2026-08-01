@@ -27,7 +27,7 @@ export function CancellationPolicyCard({
         />
         <PolicyLine
           icon={OctagonX}
-          text={`Cobrança de ${policy.noShowFeePercent}% do valor da sessão`}
+          text={`Cobrança de ${policy.noShowFeePercent}% do valor do encontro`}
           title="Não comparecimento"
           tone="danger"
         />
@@ -55,7 +55,11 @@ function PolicyLine({
 
   return (
     <div className="flex gap-3">
-      <Icon aria-hidden="true" className={`mt-0.5 shrink-0 ${color}`} size={22} />
+      <Icon
+        aria-hidden="true"
+        className={`mt-0.5 shrink-0 ${color}`}
+        size={22}
+      />
       <div>
         <p className="text-sm font-extrabold text-brand-deep">{title}</p>
         <p className="mt-1 text-xs font-semibold leading-5 text-tesText-secondary">

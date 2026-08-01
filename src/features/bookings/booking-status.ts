@@ -20,11 +20,13 @@ export function isCancelledBookingStatus(status: string) {
 
 export function canJoinBooking(input: {
   endsAt: string;
-  meetingUrl: string | null;
+  paymentStatus?: string | null;
   startsAt: string;
   status: string;
 }) {
-  if (!input.meetingUrl || input.status !== "confirmed") return false;
+  if (input.status !== "confirmed" || input.paymentStatus !== "paid") {
+    return false;
+  }
 
   const now = Date.now();
   const startsAt = new Date(input.startsAt).getTime();

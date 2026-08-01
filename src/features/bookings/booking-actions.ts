@@ -12,11 +12,12 @@ export const encounterMoreActions = [
     label: "Enviar mensagem",
   },
   {
-    href: () => routes.public.therapists,
+    href: (bookingId: string) => routes.patient.encounterDetail(bookingId),
     label: "Reagendar",
   },
   {
-    href: () => routes.patient.help,
+    href: (bookingId: string) =>
+      `${routes.patient.messages}?context=suporte&booking=${bookingId}`,
     label: "Pedir ajuda",
   },
 ] satisfies Array<{

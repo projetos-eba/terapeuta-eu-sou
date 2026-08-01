@@ -23,7 +23,13 @@ type RescheduleState = {
   proposedTimezone: string;
   reason: string | null;
   requestedByCurrentUser: boolean;
-  status: "accepted" | "applied" | "cancelled" | "expired" | "pending" | "rejected";
+  status:
+    | "accepted"
+    | "applied"
+    | "cancelled"
+    | "expired"
+    | "pending"
+    | "rejected";
 } | null;
 
 type SessionOperationActionsProps = {
@@ -32,7 +38,10 @@ type SessionOperationActionsProps = {
   bookingVersion: number;
   canCancel: boolean;
   canRequestReschedule: boolean;
+  cancelDisabledReason: string | null;
+  cancellationImpactLabel: string;
   reschedule: RescheduleState;
+  rescheduleDisabledReason: string | null;
 };
 
 type DialogState = "cancel" | "reschedule" | null;
@@ -50,13 +59,20 @@ export function SessionOperationActions({
   bookingVersion,
   canCancel,
   canRequestReschedule,
+  cancelDisabledReason,
+  cancellationImpactLabel,
   reschedule,
+  rescheduleDisabledReason,
 }: SessionOperationActionsProps) {
   const router = useRouter();
+  const userFacingSubject = actorRole === "patient" ? "encontro" : "sessão";
+  const userFacingSubjectWithArticle =
+    actorRole === "patient" ? "este encontro" : "esta sessão";
   const [dialog, setDialog] = useState<DialogState>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const pendingReschedule = reschedule?.status === "pending" ? reschedule : null;
+  const pendingReschedule =
+    reschedule?.status === "pending" ? reschedule : null;
   const canResolvePending =
     Boolean(pendingReschedule) && !pendingReschedule?.requestedByCurrentUser;
   const canCancelPending =
@@ -85,7 +101,7 @@ export function SessionOperationActions({
       setError(
         payload?.ok === false && payload.error?.message
           ? payload.error.message
-          : "Não foi possível cancelar esta sessão agora.",
+          : `Não foi possível cancelar ${userFacingSubjectWithArticle} agora.`,
       );
       setIsSubmitting(false);
       return;
@@ -184,11 +200,12 @@ export function SessionOperationActions({
       className="rounded-card border border-brand-lavender bg-white p-5 shadow-card"
     >
       <h2 className="font-display text-3xl font-light italic text-brand-deep">
-        Alterar sessão
+        Alterar {userFacingSubject}
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
         Reagendamentos e cancelamentos passam por validação da agenda, política
-        da sessão e estado de pagamento.
+        {actorRole === "patient" ? " do encontro" : " da sessão"} e estado de
+        pagamento.
       </p>
 
       {pendingReschedule ? (
@@ -217,6 +234,11 @@ export function SessionOperationActions({
             setError(null);
             setDialog("reschedule");
           }}
+          title={
+            pendingReschedule
+              ? "Já existe uma proposta de reagendamento em aberto."
+              : (rescheduleDisabledReason ?? undefined)
+          }
           type="button"
         >
           <CalendarClock aria-hidden="true" size={18} />
@@ -229,18 +251,31 @@ export function SessionOperationActions({
             setError(null);
             setDialog("cancel");
           }}
+          title={cancelDisabledReason ?? undefined}
           type="button"
         >
           <CircleX aria-hidden="true" size={18} />
-          Cancelar sessão
+          Cancelar {userFacingSubject}
         </button>
       </div>
+      {!canRequestReschedule && rescheduleDisabledReason ? (
+        <p className="mt-3 text-xs font-semibold leading-5 text-tesText-secondary">
+          Reagendamento indisponível: {rescheduleDisabledReason}
+        </p>
+      ) : null}
+      {!canCancel && cancelDisabledReason ? (
+        <p className="mt-2 text-xs font-semibold leading-5 text-tesText-secondary">
+          Cancelamento indisponível: {cancelDisabledReason}
+        </p>
+      ) : null}
 
       {dialog === "cancel" ? (
         <CancelDialog
+          impactLabel={cancellationImpactLabel}
           isSubmitting={isSubmitting}
           onClose={() => setDialog(null)}
           onSubmit={submitCancel}
+          title={`Cancelar ${userFacingSubject}`}
         />
       ) : null}
 
@@ -275,7 +310,10 @@ function PendingReschedulePanel({
       </p>
       <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
         Novo horário sugerido:{" "}
-        {formatDateTime(reschedule.proposedStartsAt, reschedule.proposedTimezone)}
+        {formatDateTime(
+          reschedule.proposedStartsAt,
+          reschedule.proposedTimezone,
+        )}
       </p>
       {reschedule.reason ? (
         <p className="mt-2 text-xs font-semibold leading-5 text-tesText-secondary">
@@ -324,21 +362,25 @@ function PendingReschedulePanel({
 }
 
 function CancelDialog({
+  impactLabel,
   isSubmitting,
   onClose,
   onSubmit,
+  title,
 }: {
+  impactLabel: string;
   isSubmitting: boolean;
   onClose: () => void;
   onSubmit: (reason: string) => void;
+  title: string;
 }) {
   const [reason, setReason] = useState("");
 
   return (
     <TESDialog
-      description="O backend aplica a política de cancelamento, bloqueia repasse quando necessário e só registra reembolso depois da operação financeira."
+      description="A plataforma aplica a política de cancelamento, bloqueia repasse quando necessário e só registra reembolso depois da operação financeira."
       onClose={onClose}
-      title="Cancelar sessão"
+      title={title}
     >
       <form
         className="grid gap-4"
@@ -347,6 +389,9 @@ function CancelDialog({
           onSubmit(reason);
         }}
       >
+        <p className="rounded-xl border border-status-warning/30 bg-status-warningBg px-4 py-3 text-sm font-bold leading-6 text-brand-deep">
+          {impactLabel}
+        </p>
         <label className="grid gap-2">
           <span className="text-sm font-extrabold text-brand-deep">
             Motivo opcional
