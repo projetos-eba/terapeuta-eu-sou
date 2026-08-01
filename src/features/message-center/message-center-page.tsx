@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 
 import { MessageCenterActions } from "./components/message-center-actions";
+import { MarkNotificationsReadButton } from "./components/mark-notifications-read-button";
 import type {
   MessageCenterCategory,
   MessageCenterPageData,
@@ -75,13 +76,20 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
 
         <PlatformCard
           action={
-            <MessageCenterActions
-              actorRole={data.actorRole}
-              source={data.source}
-              templates={data.templates.support}
-              threads={data.threads}
-              variant="support"
-            />
+            <div className="flex flex-wrap gap-2">
+              <MarkNotificationsReadButton
+                unreadCount={
+                  data.platformItems.filter((item) => item.isUnread).length
+                }
+              />
+              <MessageCenterActions
+                actorRole={data.actorRole}
+                source={data.source}
+                templates={data.templates.support}
+                threads={data.threads}
+                variant="support"
+              />
+            </div>
           }
           description={data.platformSection.description}
           items={data.platformItems}

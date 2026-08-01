@@ -100,3 +100,9 @@ export function getTemplateByKey(key: string) {
     (template) => template.key === key,
   );
 }
+
+export function getSupportTemplateByKey(key: string) {
+  return [...patientSupport, ...therapistSupport].find(
+    (template) => template.key === key,
+  );
+}

@@ -40,11 +40,22 @@ Fluxos permitidos:
 - Leitura de cliente/terapeuta: `conversations` e `messages`.
 - Plataforma/suporte: `support_tickets` e `notifications`.
 - Envio de template entre participantes: `POST /api/messages/send-template`.
+- Abertura de chamado de suporte: `POST /api/support/tickets`.
+- Marcação de avisos como lidos: `POST /api/notifications/mark-read`.
 - Templates permitidos ficam em
   `src/features/message-center/message-center.templates.ts`.
 
 `/api/messages/send-template` deve ignorar qualquer texto vindo do navegador e
 resolver o corpo da mensagem pelo `templateKey` server-side.
+
+`/api/notifications/mark-read` deve aceitar somente usuário autenticado, limitar
+marcação em massa ao `profile_id` do próprio usuário e nunca alterar avisos de
+outro perfil.
+
+`/api/support/tickets` deve aceitar somente templates aprovados de suporte,
+resolver assunto, categoria e descrição no servidor, validar autenticação por
+papel (`patient` ou `therapist`), validar ownership do booking quando informado
+e usar `requestId` idempotente. Não aceitar texto livre vindo do navegador.
 
 ## UI
 
@@ -63,19 +74,25 @@ resolver o corpo da mensagem pelo `templateKey` server-side.
   secreta de sala.
 - Não permitir conversa livre direta para evitar fraude, assédio, desvio de
   pagamento ou uso indevido da plataforma.
-- Suporte não deve ser gravado por atalho client-side sem policy ou Edge
-  Function específica.
+- Suporte deve ser gravado somente pelo endpoint autenticado
+  `/api/support/tickets` e pelas policies de `support_tickets`; atalhos
+  client-side não podem simular protocolo em produção.
 
 ## QA
 
 - Validar `/app/mensagens` e `/terapeuta/mensagens`.
 - Verificar que não existe input de texto livre.
+- Verificar que a ação de notificações da topbar abre `/app/mensagens` no
+  contexto de avisos.
+- Verificar marcação de notificações como lidas por clique real.
 - Verificar abertura/fechamento do `TESDialog`, foco e `Escape`.
+- Verificar abertura real de chamado por template de suporte e feedback com
+  protocolo.
 - Rodar `npm run typecheck`, `npm run lint`, `npm run test` e `npm run build`.
 
 ## Pendências conhecidas
 
-- Criar fluxo server-side dedicado para abertura de chamados de suporte por
-  template, se produto quiser gravar `support_tickets` diretamente.
 - Migrar ou desabilitar a policy legada que permite insert livre em `messages`
   quando houver decisão de banco para hardening definitivo.
+- Publicar SLAs e canais oficiais antes de expor `/ajuda` como superfície
+  pública.

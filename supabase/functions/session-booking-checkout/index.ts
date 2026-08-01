@@ -26,6 +26,15 @@ type BookingRow = {
   id: string;
 };
 
+type LegalAcceptanceRow = {
+  document_key: string;
+  document_version_id: string;
+};
+
+type LegalDocumentVersionRow = {
+  document_key: string;
+};
+
 type CheckoutResponse = {
   ok: true;
   data: {
@@ -69,6 +78,9 @@ runtime.serve(async (request) => {
     );
 
     try {
+      operation = "preflight_checkout_legal_documents";
+      await assertCheckoutLegalDocumentsPublished(client);
+
       operation = "get_service_available_slots_v1";
       const slots = await client.rpc<ServiceAvailableSlotsResponse | null>(
         operation,
@@ -96,6 +108,21 @@ runtime.serve(async (request) => {
       const booking = await client.rpc<BookingRow>(operation, {
         p_hold_id: hold.id,
         p_idempotency_key: command.requestId,
+      });
+
+      operation = "register_checkout_legal_acceptances";
+      const legalAcceptances = await registerCheckoutLegalAcceptances({
+        bookingId: booking.id,
+        client,
+        profileId: patient.user_id,
+        requestId: command.requestId,
+      });
+
+      operation = "snapshot_booking_legal_versions";
+      await snapshotBookingLegalVersions({
+        bookingId: booking.id,
+        client,
+        legalAcceptances,
       });
 
       operation = "stripe-create-session-payment";
@@ -134,6 +161,92 @@ runtime.serve(async (request) => {
     return failure(error, correlationId);
   }
 });
+
+async function assertCheckoutLegalDocumentsPublished(
+  client: SupabaseRestClient,
+) {
+  const documentKeys = [
+    "terms-of-use",
+    "privacy-policy",
+    "cancellation-reschedule-refund-policy",
+  ];
+  const effectiveAt = encodeURIComponent(new Date().toISOString());
+  const rows = await client.get<LegalDocumentVersionRow[]>(
+    `/rest/v1/legal_document_versions?select=document_key&document_key=in.(${documentKeys.join(",")})&status=eq.published&effective_at=lte.${effectiveAt}`,
+  );
+  const publishedKeys = new Set(rows.map((row) => row.document_key));
+  const hasAllDocuments = documentKeys.every((key) => publishedKeys.has(key));
+
+  if (!hasAllDocuments) {
+    throw new DomainError(
+      "legal_document_not_published",
+      428,
+      "Os documentos juridicos aplicaveis ainda nao estao publicados.",
+    );
+  }
+}
+
+async function registerCheckoutLegalAcceptances(input: {
+  bookingId: string;
+  client: SupabaseRestClient;
+  profileId: string;
+  requestId: string;
+}) {
+  const evidence = {
+    source: "session_booking_checkout",
+    userAgent: "not_stored",
+  };
+  const acceptances: LegalAcceptanceRow[] = [];
+
+  for (const documentKey of [
+    "terms-of-use",
+    "privacy-policy",
+    "cancellation-reschedule-refund-policy",
+  ]) {
+    const acceptance = await input.client.rpc<LegalAcceptanceRow>(
+      "register_legal_acceptance_v1",
+      {
+        p_actor_role: "patient",
+        p_booking_id: input.bookingId,
+        p_context: "reservation_checkout",
+        p_document_key: documentKey,
+        p_evidence: evidence,
+        p_profile_id: input.profileId,
+        p_request_id: input.requestId,
+      },
+    );
+
+    acceptances.push(acceptance);
+  }
+
+  return acceptances;
+}
+
+async function snapshotBookingLegalVersions(input: {
+  bookingId: string;
+  client: SupabaseRestClient;
+  legalAcceptances: LegalAcceptanceRow[];
+}) {
+  const versionByKey = new Map(
+    input.legalAcceptances.map((acceptance) => [
+      acceptance.document_key,
+      acceptance.document_version_id,
+    ]),
+  );
+
+  await input.client.patch(
+    `/rest/v1/bookings?id=eq.${input.bookingId}`,
+    {
+      legal_acceptance_recorded_at: new Date().toISOString(),
+      legal_cancellation_policy_version_id: versionByKey.get(
+        "cancellation-reschedule-refund-policy",
+      ),
+      legal_privacy_version_id: versionByKey.get("privacy-policy"),
+      legal_terms_version_id: versionByKey.get("terms-of-use"),
+    },
+    "return=minimal",
+  );
+}
 
 async function invokeSessionPaymentCheckout(input: {
   bearerToken: string;

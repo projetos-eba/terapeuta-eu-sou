@@ -1,5 +1,10 @@
 import type { MetadataRoute } from "next";
 
+import {
+  getLegalDocument,
+  isDocumentPublishable,
+  type LegalDocument,
+} from "@/domain/legal/legal-registry";
 import { routes } from "@/lib/routes";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
@@ -17,13 +22,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     routes.public.therapies,
     routes.public.therapists,
     routes.public.forTherapists,
-    routes.public.terms,
-    routes.public.privacy,
   ];
+  const legalRoutes = [
+    getLegalDocument("terms-of-use"),
+    getLegalDocument("privacy-policy"),
+    getLegalDocument("cancellation-reschedule-refund-policy"),
+  ]
+    .filter((document): document is LegalDocument =>
+      Boolean(document && isDocumentPublishable(document)),
+    )
+    .map((document) => document.canonicalPath)
+    .filter((route): route is string => Boolean(route));
   const therapies = await getPublishedTherapyRows();
 
   return [
-    ...staticRoutes.map((route) => ({
+    ...[...staticRoutes, ...legalRoutes].map((route) => ({
       changeFrequency: "weekly" as const,
       lastModified: now,
       priority: route === routes.public.home ? 1 : 0.8,

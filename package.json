@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "npm run lint:visual && npm run lint:online-only && next lint",
+    "legal:check": "node scripts/legal-check.mjs",
     "lint:online-only": "node scripts/validate-online-only-policy.mjs",
     "lint:visual": "node scripts/validate-visual-policy.mjs",
     "dev:functions": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-functions.ps1",

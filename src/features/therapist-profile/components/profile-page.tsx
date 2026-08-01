@@ -15,6 +15,7 @@ import { PublicFooter, PublicHeader } from "@/components/tes";
 import { TrackedBookingLink } from "@/features/public-metrics";
 
 import { AvailabilitySelector } from "./availability-selector";
+import { FavoriteTherapistButton } from "./favorite-therapist-button";
 import { ReviewsCarousel } from "./reviews-carousel";
 import type { PublicTherapistProfile, TherapistProfileReview } from "../types";
 
@@ -114,18 +115,10 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
                 Agenda temporariamente indisponível
               </span>
             )}
-            <button
-              type="button"
-              aria-label={
-                profile.name
-                  ? `Adicionar ${profile.name} aos favoritos`
-                  : "Adicionar aos favoritos"
-              }
-              aria-pressed="false"
-              className="grid size-[52px] place-items-center rounded-full border border-border bg-white text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            >
-              <Heart className="size-5" />
-            </button>
+            <FavoriteTherapistButton
+              therapistName={profile.name}
+              therapistProfileId={profile.id}
+            />
             <button
               type="button"
               aria-label="Compartilhar perfil"

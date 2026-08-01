@@ -10,7 +10,10 @@ import {
   isEmailAutomaticallyConfirmed,
 } from "../_shared/auth/runtime.ts";
 import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
-import { confirmAuthUserEmail, redirectForRole } from "../_shared/auth/users.ts";
+import {
+  confirmAuthUserEmail,
+  redirectForRole,
+} from "../_shared/auth/users.ts";
 import { HostingerMailApiProvider } from "../_shared/email/hostinger-mail-api-provider.ts";
 import { logEmailDelivery } from "../_shared/email/logging.ts";
 import { sendTransactionalEmail } from "../_shared/email/service.ts";
@@ -30,6 +33,7 @@ type TherapistSignupValue = {
   password: string;
   phoneDigits: string;
   plan: "free" | "premium" | "premium_plus";
+  termsAccepted?: boolean;
 };
 
 type SupabaseAuthUser = {
@@ -41,7 +45,8 @@ const therapistSignupDeno = (
 ).Deno;
 const therapistSignupRuntime = assertDenoRuntime(therapistSignupDeno);
 const jsonHeaders = {
-  "access-control-allow-headers": "authorization, x-client-info, apikey, content-type",
+  "access-control-allow-headers":
+    "authorization, x-client-info, apikey, content-type",
   "access-control-allow-methods": "POST, OPTIONS",
   "access-control-allow-origin": "*",
   "content-type": "application/json; charset=utf-8",
@@ -84,7 +89,8 @@ therapistSignupRuntime.serve(async (request) => {
     !value.email ||
     !value.password ||
     !value.fullName ||
-    !isTherapistPlan(value.plan)
+    !isTherapistPlan(value.plan) ||
+    value.termsAccepted !== true
   ) {
     return jsonResponse({ error: "invalid_payload" }, 422);
   }
@@ -166,6 +172,15 @@ therapistSignupRuntime.serve(async (request) => {
       },
     );
 
+    await registerSignupLegalAcceptances({
+      actorRole: "therapist",
+      context: "therapist_signup",
+      profileId: userId,
+      serviceRoleKey,
+      source: "therapist_auth_signup",
+      supabaseUrl,
+    });
+
     const restClient = new SupabaseRestClient(supabaseUrl, serviceRoleKey);
 
     if (automaticallyConfirmed) {
@@ -204,11 +219,9 @@ therapistSignupRuntime.serve(async (request) => {
         userId,
       },
     );
-    const verificationUrl = `${
-      getSiteUrl(
-        therapistSignupRuntime,
-      )
-    }/confirmar-email?token=${encodeURIComponent(token)}`;
+    const verificationUrl = `${getSiteUrl(
+      therapistSignupRuntime,
+    )}/confirmar-email?token=${encodeURIComponent(token)}`;
     const provider = new HostingerMailApiProvider({ apiKey: emailApiKey! });
 
     const emailResult = await sendTransactionalEmail(restClient, provider, {
@@ -237,7 +250,8 @@ therapistSignupRuntime.serve(async (request) => {
     console.error(
       JSON.stringify({
         code: "THERAPIST_AUTH_SIGNUP_FAILED",
-        details: error instanceof SupabaseHttpError ? error.safeDetails : undefined,
+        details:
+          error instanceof SupabaseHttpError ? error.safeDetails : undefined,
         message: error instanceof Error ? error.message : "UNKNOWN",
         status: error instanceof SupabaseHttpError ? error.status : undefined,
       }),
@@ -288,6 +302,39 @@ async function supabaseJson<T = unknown>(
   return text ? (JSON.parse(text) as T) : (undefined as T);
 }
 
+async function registerSignupLegalAcceptances(input: {
+  actorRole: "therapist";
+  context: "therapist_signup";
+  profileId: string;
+  serviceRoleKey: string;
+  source: string;
+  supabaseUrl: string;
+}) {
+  const requestId = crypto.randomUUID();
+
+  for (const documentKey of ["terms-of-use", "privacy-policy"]) {
+    await supabaseJson(
+      input.supabaseUrl,
+      input.serviceRoleKey,
+      "/rest/v1/rpc/register_legal_acceptance_v1",
+      {
+        body: {
+          p_actor_role: input.actorRole,
+          p_context: input.context,
+          p_document_key: documentKey,
+          p_evidence: {
+            source: input.source,
+            userAgent: "not_stored",
+          },
+          p_profile_id: input.profileId,
+          p_request_id: requestId,
+        },
+        method: "POST",
+      },
+    );
+  }
+}
+
 async function deleteAuthUserBestEffort(
   supabaseUrl: string,
   serviceRoleKey: string,
@@ -314,13 +361,14 @@ async function parseJson<T>(request: Request) {
 }
 
 function buildUniqueSlug(name: string) {
-  const base = name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 64) || "terapeuta";
+  const base =
+    name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 64) || "terapeuta";
   const suffix = crypto.randomUUID().slice(0, 8);
 
   return `${base}-${suffix}`;

@@ -23,8 +23,10 @@ export const routes = {
     resetPassword: "/reset-senha",
     help: "/ajuda",
     zoomHelp: "/ajuda/zoom",
+    status: "/status",
     terms: "/termos",
     privacy: "/privacidade",
+    cancellationPolicy: "/cancelamento-reagendamento-reembolso",
   },
   patient: {
     home: "/app",
