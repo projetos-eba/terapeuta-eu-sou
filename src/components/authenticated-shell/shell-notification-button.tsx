@@ -1,17 +1,25 @@
 "use client";
 
+import Link from "next/link";
+import type { Route } from "next";
 import { Bell } from "lucide-react";
 
-export function ShellNotificationButton({ count = 0 }: { count?: number }) {
+export function ShellNotificationButton({
+  count = 0,
+  href,
+}: {
+  count?: number;
+  href: string;
+}) {
   return (
-    <button
+    <Link
       aria-label={
         count > 0
           ? `Notificações, ${count} não ${count === 1 ? "lida" : "lidas"}`
           : "Notificações"
       }
       className="relative inline-flex size-11 items-center justify-center rounded-full text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
-      type="button"
+      href={href as Route<string>}
     >
       <Bell aria-hidden="true" className="size-6" strokeWidth={1.8} />
       {count > 0 ? (
@@ -19,6 +27,6 @@ export function ShellNotificationButton({ count = 0 }: { count?: number }) {
           {count > 99 ? "99+" : count}
         </span>
       ) : null}
-    </button>
+    </Link>
   );
 }

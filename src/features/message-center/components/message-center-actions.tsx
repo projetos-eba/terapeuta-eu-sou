@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Loader2, MessageSquarePlus } from "lucide-react";
 
 import { TESDialog } from "@/components/tes/tes-dialog";
@@ -25,6 +25,17 @@ type ApiFailure = {
     message?: string;
   };
 };
+
+type SupportTicketResponse =
+  | ApiFailure
+  | {
+      ok: true;
+      ticket: {
+        id: string;
+        protocol: string;
+        status: string;
+      };
+    };
 
 export function MessageCenterActions({
   actorRole,
@@ -79,6 +90,8 @@ function TemplateDialog({
   const [status, setStatus] = useState<"idle" | "success">("idle");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [protocol, setProtocol] = useState<string | null>(null);
+  const supportRequestIdRef = useRef<string | null>(null);
   const selectedTemplate = templates.find(
     (template) => template.key === templateKey,
   );
@@ -91,8 +104,48 @@ function TemplateDialog({
 
     if (!selectedTemplate || !canSubmit) return;
 
-    if (variant === "support" || source === "demo") {
+    if (variant === "support") {
+      if (source === "demo") {
+        setError("Conecte-se novamente para abrir um chamado real.");
+        return;
+      }
+
+      setIsSubmitting(true);
+      supportRequestIdRef.current =
+        supportRequestIdRef.current ?? crypto.randomUUID();
+
+      const response = await fetch("/api/support/tickets", {
+        body: JSON.stringify({
+          actorRole,
+          requestId: supportRequestIdRef.current,
+          source: "message_center",
+          templateKey,
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const payload = (await response
+        .json()
+        .catch(() => null)) as SupportTicketResponse | null;
+
+      setIsSubmitting(false);
+
+      if (!response.ok || payload?.ok !== true) {
+        setError(
+          payload?.ok === false && payload.error?.message
+            ? payload.error.message
+            : "Não foi possível abrir o chamado agora.",
+        );
+        return;
+      }
+
+      setProtocol(payload.ticket.protocol);
       setStatus("success");
+      return;
+    }
+
+    if (source === "demo") {
+      setError("Conecte-se novamente para enviar um template real.");
       return;
     }
 
@@ -133,7 +186,9 @@ function TemplateDialog({
           : "Escolha uma pessoa e um modelo aprovado para enviar pela plataforma."
       }
       onClose={onClose}
-      title={variant === "support" ? "Novo contato com suporte" : "Enviar template"}
+      title={
+        variant === "support" ? "Novo contato com suporte" : "Enviar template"
+      }
     >
       {status === "success" ? (
         <div className="rounded-xl bg-status-successBg p-5 text-status-success">
@@ -143,7 +198,7 @@ function TemplateDialog({
           </p>
           <p className="mt-1 text-sm font-semibold leading-6">
             {variant === "support"
-              ? "A abertura automática de chamado depende da próxima integração server-side."
+              ? `Chamado aberto com protocolo ${protocol ?? "registrado"}. Acompanhe a resposta por esta central.`
               : "A mensagem enviada usa apenas o texto pré-aprovado."}
           </p>
         </div>
@@ -228,9 +283,15 @@ function TemplateDialog({
               type="submit"
             >
               {isSubmitting ? (
-                <Loader2 aria-hidden="true" className="animate-spin" size={17} />
+                <Loader2
+                  aria-hidden="true"
+                  className="animate-spin"
+                  size={17}
+                />
               ) : null}
-              {variant === "support" ? "Selecionar categoria" : "Enviar template"}
+              {variant === "support"
+                ? "Selecionar categoria"
+                : "Enviar template"}
             </button>
           </div>
         </form>

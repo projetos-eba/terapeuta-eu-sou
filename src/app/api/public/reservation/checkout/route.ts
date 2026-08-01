@@ -189,6 +189,12 @@ function mapCheckoutError(status: number) {
   if (status === 422) {
     return { code: "INVALID_REQUEST", message: "Revise os dados da reserva." };
   }
+  if (status === 428) {
+    return {
+      code: "LEGAL_DOCUMENTS_REQUIRED",
+      message: "Não foi possível iniciar a reserva agora.",
+    };
+  }
   if (status === 503) {
     return {
       code: "STRIPE_CONFIGURATION_ERROR",

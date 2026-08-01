@@ -1,5 +1,12 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TherapistProfilePage } from "./profile-page";
 import type { PublicTherapistProfile } from "../types";
@@ -61,12 +68,42 @@ describe("TherapistProfilePage video block", () => {
 
     expect(
       screen.getByRole("button", {
-        name: "Adicionar Ana Oliveira aos favoritos",
+        name: "Adicionar aos favoritos de Ana Oliveira",
       }),
     ).toHaveAttribute("aria-pressed", "false");
     expect(
       screen.getByRole("button", { name: "Compartilhar perfil" }),
     ).toHaveClass("size-[52px]");
+  });
+
+  it("posts favorite changes from the public profile", async () => {
+    const originalFetch = global.fetch;
+    const fetchMock = vi.fn(async () => Response.json({ ok: true }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
+
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Adicionar aos favoritos de Ana Oliveira",
+        }),
+      );
+
+      await waitFor(() =>
+        expect(
+          screen.getByRole("button", {
+            name: "Remover dos favoritos de Ana Oliveira",
+          }),
+        ).toHaveAttribute("aria-pressed", "true"),
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/patient/favorite-therapists",
+        expect.objectContaining({ method: "POST" }),
+      );
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 
   it("shows public services by canonical therapy name without operational labels", () => {
@@ -137,7 +174,9 @@ describe("TherapistProfilePage video block", () => {
       screen.queryByText(/Seguimos com presença e combinados claros/),
     ).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Ler resposta completa" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ler resposta completa" }),
+    );
 
     expect(
       screen.getByText(/Seguimos com presença e combinados claros/),

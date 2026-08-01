@@ -51,6 +51,7 @@ type AuthenticatedShellProps = {
   logoutHref?: string;
   navigation: ShellNavigationItem[];
   notificationCount?: number;
+  notificationHref?: string;
   planLabel?: string;
   user: ShellUser;
   variant?: "admin" | "patient" | "therapist";
@@ -65,6 +66,7 @@ export function AuthenticatedShell({
   logoutHref,
   navigation,
   notificationCount = 0,
+  notificationHref,
   planLabel,
   user,
   variant = "patient",
@@ -102,6 +104,9 @@ export function AuthenticatedShell({
 
       <div className="lg:pl-[var(--tes-layout-auth-sidebar-width)]">
         <ShellTopbar
+          notificationHref={
+            notificationHref ?? getDefaultNotificationHref(variant)
+          }
           notificationCount={notificationCount}
           planLabel={planLabel}
           user={user}
@@ -121,6 +126,16 @@ export function AuthenticatedShell({
       </div>
     </div>
   );
+}
+
+function getDefaultNotificationHref(
+  variant: NonNullable<AuthenticatedShellProps["variant"]>,
+) {
+  if (variant === "therapist")
+    return "/terapeuta/mensagens?context=notificacoes";
+  if (variant === "admin") return "/admin/suporte";
+
+  return "/app/mensagens?context=notificacoes";
 }
 
 export function ShellNavigationToggle({

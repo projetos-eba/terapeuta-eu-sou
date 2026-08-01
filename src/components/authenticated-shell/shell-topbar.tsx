@@ -5,12 +5,14 @@ import { ShellUserMenu } from "./shell-user-menu";
 import type { ShellUser } from "./authenticated-shell";
 
 export function ShellTopbar({
+  notificationHref,
   notificationCount,
   onOpenNavigation,
   planLabel,
   user,
   variant,
 }: {
+  notificationHref: string;
   notificationCount: number;
   onOpenNavigation: () => void;
   planLabel?: string;
@@ -27,7 +29,10 @@ export function ShellTopbar({
     >
       <ShellNavigationToggle isOpen={false} onClick={onOpenNavigation} />
       <div className="ml-auto flex items-center gap-3 sm:gap-5">
-        <ShellNotificationButton count={notificationCount} />
+        <ShellNotificationButton
+          count={notificationCount}
+          href={notificationHref}
+        />
         <ShellUserMenu planLabel={planLabel} user={user} />
       </div>
     </header>

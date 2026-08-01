@@ -178,6 +178,13 @@ export function mapBookingCheckoutDatabaseError(error: unknown) {
       "Revise os dados da reserva.",
     );
   }
+  if (details.includes("published legal document not found")) {
+    return new DomainError(
+      "legal_document_not_published",
+      428,
+      "Os documentos juridicos aplicaveis ainda nao estao publicados.",
+    );
+  }
 
   return error;
 }

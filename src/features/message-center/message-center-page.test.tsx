@@ -1,8 +1,25 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { MessageCenterPage } from "./message-center-page";
 import type { MessageCenterPageData } from "./message-center.types";
+
+const refreshMock = vi.fn();
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: refreshMock }),
+}));
+
+afterEach(() => {
+  cleanup();
+  refreshMock.mockClear();
+});
 
 describe("MessageCenterPage", () => {
   it("uses templates instead of a free text composer", () => {
@@ -16,9 +33,74 @@ describe("MessageCenterPage", () => {
     expect(screen.getByText("Confirmar sessão")).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
+
+  it("marks platform notifications as read through the API", async () => {
+    const originalFetch = global.fetch;
+    const fetchMock = vi.fn(async () => Response.json({ ok: true }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      render(<MessageCenterPage data={createData()} />);
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Marcar avisos como lidos" }),
+      );
+
+      await waitFor(() =>
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/notifications/mark-read",
+          expect.objectContaining({ method: "POST" }),
+        ),
+      );
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it("opens a real support ticket through an approved support template", async () => {
+    const originalFetch = global.fetch;
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        ok: true,
+        ticket: {
+          id: "30000000-0000-4000-8000-000000000001",
+          protocol: "30000000",
+          status: "open",
+        },
+      }),
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      render(<MessageCenterPage data={createData({ source: "supabase" })} />);
+
+      fireEvent.click(screen.getByRole("button", { name: /novo suporte/i }));
+      fireEvent.click(screen.getByRole("radio", { name: /financeiro/i }));
+      fireEvent.click(
+        screen.getByRole("button", { name: /selecionar categoria/i }),
+      );
+
+      await waitFor(() =>
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/support/tickets",
+          expect.objectContaining({
+            body: expect.stringContaining("therapist_support_finance"),
+            method: "POST",
+          }),
+        ),
+      );
+      expect(
+        await screen.findByText(/protocolo 30000000/i),
+      ).toBeInTheDocument();
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
 });
 
-function createData(): MessageCenterPageData {
+function createData(
+  overrides: Partial<Pick<MessageCenterPageData, "source">> = {},
+): MessageCenterPageData {
   return {
     actorRole: "therapist",
     hero: {
@@ -32,12 +114,22 @@ function createData(): MessageCenterPageData {
       description: "Comunicações por templates.",
       title: "Mensagens dos clientes",
     },
-    platformItems: [],
+    platformItems: [
+      {
+        body: "Atualização operacional.",
+        category: "plataforma",
+        categoryLabel: "Plataforma",
+        id: "notification-1",
+        isUnread: true,
+        timeLabel: "Hoje · 10:00",
+        title: "Aviso importante",
+      },
+    ],
     platformSection: {
       description: "Comunicados da plataforma.",
       title: "Plataforma e suporte TES",
     },
-    source: "demo",
+    source: overrides.source ?? "demo",
     templates: {
       participant: [
         {
@@ -47,7 +139,14 @@ function createData(): MessageCenterPageData {
           label: "Confirmar sessão",
         },
       ],
-      support: [],
+      support: [
+        {
+          body: "Preciso de apoio sobre repasse, financeiro ou assinatura.",
+          category: "financeiro",
+          key: "therapist_support_finance",
+          label: "Financeiro",
+        },
+      ],
     },
     threads: [
       {
