@@ -67,8 +67,12 @@ description: Implementar e manter as paginas publicas juridicas, ajuda e status 
 
 ## Pendencias conhecidas
 
-- Extrair ou receber fonte editavel aprovada dos PDFs juridicos.
-- Preencher entidade controladora, canais oficiais e SLAs.
-- Publicar versoes juridicas por migration/seed auditavel somente apos
-  aprovacao juridica.
+- Fonte HTML acessivel dos PDFs foi extraida localmente em
+  `src/domain/legal/legal-document-content.json` em 2026-08-01.
+- As versoes juridicas `2026.08.01-pdf` foram reconciliadas no registry local
+  com hashes SHA-256 dos PDFs anexados.
+- A matriz de suporte foi reconciliada com os canais autenticados existentes da
+  plataforma.
+- Preencher entidade controladora completa, CNPJ, endereco, e-mails oficiais e
+  horario operacional publico.
 - Definir fonte operacional real para `/status`.

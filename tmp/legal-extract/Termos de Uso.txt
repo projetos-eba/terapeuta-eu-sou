@@ -1,0 +1,1399 @@
+[Pagina 1]
+TERMOS DE USO 
+ 
+CAPÍTULO I 
+ 
+DAS DISPOSIÇÕES PRELIMINARES 
+ 
+Cláusula 1.1 – Apresentação 
+Os presentes Termos de Uso disciplinam o acesso, a 
+navegação e a utilização da plataforma digital TES – Terapeuta Eu Sou ("TES"), 
+estabelecendo os direitos, deveres e responsabilidades aplicáveis aos usuários, terapeutas 
+cadastrados e à própria plataforma. 
+Ao realizar seu cadastro, acessar ou utilizar qualquer 
+funcionalidade disponibilizada pelo TES, o usuário declara ter lido, compreendido e 
+aceitado integralmente estes Termos de Uso, bem como os demais documentos que os 
+complementam. 
+ 
+Cláusula 1.2 – Documentos Integrantes 
+Os presentes Termos de Uso deverão ser interpretados em 
+conjunto com os seguintes documentos, que passam a integrar a relação jurídica 
+estabelecida entre as partes: 
+I – Política de Privacidade;
+
+[Pagina 2]
+II – Política de Cancelamento, Reagendamento e 
+Reembolso; 
+III – Contrato de Adesão do Terapeuta (quando aplicável); 
+IV – Código de Conduta dos Terapeutas; 
+V – Política de Utilização da Inteligência Artificial "Aura"; 
+VI – Política de Avaliações; 
+VII – Política de Verificação de Perfis; 
+VIII – demais políticas eventualmente disponibilizadas pela 
+plataforma. 
+Na hipótese de conflito entre estes Termos de Uso e 
+documento específico destinado a disciplinar determinada funcionalidade da plataforma, 
+prevalecerá a norma especial aplicável à matéria. 
+ 
+Cláusula 1.3 – Finalidade da Plataforma 
+O TES consiste em uma plataforma digital destinada à 
+aproximação entre usuários interessados em terapias integrativas e terapeutas 
+independentes previamente cadastrados, disponibilizando infraestrutura tecnológica para 
+facilitar a contratação, o agendamento, o pagamento e a realização de atendimentos em 
+ambiente digital. 
+A plataforma disponibiliza recursos destinados à 
+organização da experiência dos usuários, incluindo ferramentas de busca, agenda,
+
+[Pagina 3]
+comunicação, histórico de atendimentos, processamento de pagamentos, 
+videoconferência e demais funcionalidades compatíveis com sua proposta de atuação. 
+ 
+Cláusula 1.4 – Natureza da Atuação da Plataforma 
+O TES atua como plataforma tecnológica de intermediação 
+e gestão operacional dos serviços disponibilizados em seu ambiente digital. 
+A plataforma não presta diretamente serviços terapêuticos, 
+não realiza consultas, diagnósticos, tratamentos, prescrições, acompanhamentos clínicos 
+ou qualquer atividade privativa de profissionais regulamentados. 
+Os atendimentos disponibilizados na plataforma são 
+realizados exclusivamente pelos terapeutas cadastrados, que atuam de forma autônoma, 
+independente e sob sua exclusiva responsabilidade técnica e profissional. 
+ 
+Cláusula 1.5 – Boa-fé e Utilização Responsável 
+A utilização da plataforma deverá ocorrer em conformidade 
+com a legislação brasileira, com os princípios da boa-fé objetiva, da cooperação, da 
+transparência e do respeito mútuo entre todos os participantes do ecossistema TES. 
+Espera-se que usuários e terapeutas utilizem a plataforma 
+de forma ética, responsável e compatível com as finalidades para as quais foi 
+desenvolvida, abstendo-se de qualquer conduta que possa causar prejuízo à plataforma, a 
+terceiros ou ao regular funcionamento dos serviços disponibilizados.
+
+[Pagina 4]
+Cláusula 1.6 – Atualizações 
+Os presentes Termos de Uso poderão ser atualizados 
+sempre que necessário para refletir alterações legislativas, regulatórias, tecnológicas ou 
+operacionais relacionadas ao funcionamento da plataforma. 
+Sempre que as alterações modificarem direitos, obrigações 
+ou condições essenciais de utilização do TES, os usuários serão previamente 
+comunicados pelos meios disponibilizados pela plataforma, podendo ser solicitado novo 
+aceite quando exigido pela legislação aplicável ou quando a natureza da alteração assim 
+recomendar. 
+ 
+Cláusula 1.7 – Aceite Eletrônico 
+O aceite destes Termos de Uso ocorrerá por meio de 
+manifestação eletrônica inequívoca do usuário durante o procedimento de cadastro ou 
+sempre que exigido em razão de atualizações relevantes. 
+O TES manterá registro eletrônico da versão aceita, da data, 
+do horário e dos elementos técnicos necessários à comprovação da manifestação de 
+vontade do usuário, observadas as disposições da legislação aplicável e da Política de 
+Privacidade. 
+ 
+CAPÍTULO II 
+ 
+DAS DEFINIÇÕES
+
+[Pagina 5]
+Cláusula 2.1 – Definições 
+Para fins de interpretação e aplicação destes Termos de Uso, 
+as expressões abaixo terão os seguintes significados: 
+I – Plataforma ou TES: ambiente digital denominado TES 
+– Terapeuta Eu Sou, destinado à aproximação entre usuários e terapeutas, 
+disponibilizando recursos tecnológicos para cadastro, busca, contratação, agendamento, 
+pagamento, comunicação e realização de atendimentos online, além de outras 
+funcionalidades oferecidas pela plataforma. 
+II – Usuário: toda pessoa física que realizar cadastro na 
+plataforma com a finalidade de utilizar suas funcionalidades, contratar serviços ou 
+interagir com terapeutas cadastrados. 
+III – Terapeuta: profissional independente que, após 
+atender aos critérios estabelecidos pelo TES e aderir aos documentos aplicáveis, 
+disponibiliza seus serviços por meio da plataforma, permanecendo responsável pela 
+condução técnica dos atendimentos realizados. 
+IV – Conta: cadastro individual criado pelo usuário ou 
+terapeuta para acesso às funcionalidades disponibilizadas pelo TES. 
+V – Atendimento: sessão ou atividade realizada entre 
+usuário e terapeuta, presencial ou online, conforme modalidade disponibilizada pelo 
+profissional e contratada pelo usuário.
+
+[Pagina 6]
+VI – Conteúdo: qualquer informação, texto, imagem, 
+vídeo, áudio, documento, comentário, avaliação ou material disponibilizado na 
+plataforma por usuários, terapeutas ou pelo próprio TES. 
+VII – Serviços da Plataforma: conjunto de 
+funcionalidades tecnológicas disponibilizadas pelo TES, incluindo, entre outras, cadastro, 
+gerenciamento de contas, busca de profissionais, agenda, processamento de pagamentos, 
+comunicação, videoconferência, inteligência artificial, histórico de atendimentos e 
+recursos administrativos. 
+VIII – Inteligência Artificial "Aura": funcionalidade 
+tecnológica disponibilizada pela plataforma destinada a auxiliar usuários e terapeutas 
+mediante sugestões, organização de informações e apoio à navegação, observadas as 
+limitações previstas nestes Termos e na Política específica de utilização da ferramenta. 
+IX – Políticas Complementares: documentos integrantes 
+destes Termos de Uso destinados a disciplinar matérias específicas, tais como Política de 
+Privacidade, Política de Cancelamento, Política de Reembolso, Código de Conduta, 
+Política de Avaliações, Política de Utilização da Inteligência Artificial e demais 
+instrumentos publicados pela plataforma. 
+X – Área Restrita: ambiente acessível exclusivamente 
+mediante autenticação do usuário ou terapeuta, contendo funcionalidades personalizadas 
+de acordo com o perfil de acesso. 
+XI – Sessão: período de atendimento contratado pelo 
+usuário junto ao terapeuta, realizado mediante os recursos disponibilizados pela 
+plataforma ou por outro meio expressamente informado pelo profissional.
+
+[Pagina 7]
+Cláusula 2.2 – Interpretação 
+Os termos definidos neste capítulo deverão ser 
+interpretados de forma uniforme em todos os documentos que integram a estrutura 
+jurídica da plataforma, salvo quando houver definição específica em política 
+complementar aplicável à matéria. 
+Na hipótese de conflito entre definições constantes destes 
+Termos e aquelas previstas em documento específico, prevalecerá a definição constante 
+da política especial relacionada ao respectivo assunto. 
+ 
+Cláusula 2.3 – Atualização das Definições 
+As definições constantes deste capítulo poderão ser 
+atualizadas para refletir alterações nas funcionalidades da plataforma, evolução 
+tecnológica ou modificações na legislação aplicável, observadas as regras de atualização 
+previstas nestes Termos de Uso. 
+ 
+CAPÍTULO III 
+ 
+DO OBJETO E DO FUNCIONAMENTO DA PLATAFORMA 
+ 
+Cláusula 3.1 – Objeto 
+O TES é uma plataforma digital destinada à aproximação 
+entre usuários e terapeutas independentes, disponibilizando infraestrutura tecnológica
+
+[Pagina 8]
+para facilitar a divulgação dos serviços oferecidos pelos profissionais cadastrados, sua 
+contratação, o agendamento de atendimentos, o processamento operacional dos 
+pagamentos e a utilização das funcionalidades disponibilizadas no ambiente da 
+plataforma. 
+A atuação do TES tem por finalidade organizar e facilitar a 
+experiência de contratação e utilização dos serviços ofertados pelos terapeutas, 
+proporcionando ambiente digital seguro, estruturado e integrado para ambas as partes. 
+ 
+Cláusula 3.2 – Funcionalidades disponibilizadas 
+A plataforma poderá disponibilizar, dentre outras 
+funcionalidades compatíveis com sua evolução tecnológica: 
+I – cadastro de usuários e terapeutas; 
+II – gerenciamento de contas; 
+III – pesquisa e localização de terapeutas; 
+IV – exibição de perfis profissionais; 
+V – sistema de agendamento; 
+VI – processamento operacional de pagamentos; 
+VII – ambiente destinado à realização de atendimentos 
+online; 
+VIII – sistema interno de mensagens e notificações; 
+IX – histórico de sessões e interações;
+
+[Pagina 9]
+X – sistema de avaliações; 
+XI – recursos de inteligência artificial destinados ao apoio 
+da utilização da plataforma; 
+XII – área administrativa destinada à gestão da operação; 
+XIII – demais funcionalidades que venham a ser 
+incorporadas ao TES. 
+A disponibilização de novas funcionalidades não implicará 
+alteração da natureza jurídica da plataforma, permanecendo aplicáveis os presentes 
+Termos de Uso e as políticas complementares, salvo quando expressamente informado 
+em sentido diverso. 
+ 
+Cláusula 3.3 – Natureza dos serviços disponibilizados 
+Os serviços disponibilizados pelo TES possuem natureza 
+exclusivamente tecnológica e consistem na disponibilização da infraestrutura necessária 
+para permitir que usuários e terapeutas interajam em ambiente digital organizado pela 
+plataforma. 
+O TES não presta diretamente serviços terapêuticos, 
+médicos, psicológicos, psiquiátricos, clínicos ou quaisquer outros serviços profissionais 
+cuja execução seja atribuída exclusivamente aos terapeutas cadastrados. 
+ 
+Cláusula 3.4 – Autonomia dos terapeutas
+
+[Pagina 10]
+Os terapeutas cadastrados exercem suas atividades de 
+forma autônoma, independente e sob sua exclusiva responsabilidade técnica, profissional, 
+ética e legal. 
+O cadastramento na plataforma não estabelece qualquer 
+vínculo empregatício, societário, associativo, de representação, parceria comercial 
+exclusiva ou relação de subordinação entre o TES e os terapeutas. 
+Cada profissional permanece integralmente responsável 
+pelos serviços que oferece, pelas informações constantes de seu perfil, pelas técnicas 
+empregadas durante os atendimentos e pelo cumprimento das obrigações legais 
+eventualmente aplicáveis à sua atividade. 
+ 
+Cláusula 3.5 – Limites da atuação da plataforma 
+Sem prejuízo das responsabilidades assumidas quanto ao 
+funcionamento da infraestrutura tecnológica disponibilizada, o TES não: 
+I – seleciona terapeutas com base em critérios técnicos 
+relacionados à eficácia dos tratamentos oferecidos; 
+II – garante resultados decorrentes das terapias contratadas; 
+III – substitui atendimento médico, psicológico, 
+psiquiátrico ou de qualquer outro profissional regulamentado; 
+IV – interfere na autonomia técnica dos terapeutas; 
+V – realiza diagnósticos, prescrições, tratamentos ou 
+acompanhamentos clínicos;
+
+[Pagina 11]
+VI – participa do conteúdo técnico das sessões realizadas 
+entre usuários e terapeutas. 
+ 
+Cláusula 3.6 – Evolução da plataforma 
+Considerando a natureza dinâmica do ambiente digital, o 
+TES poderá atualizar, modificar, ampliar, restringir ou descontinuar funcionalidades da 
+plataforma, desde que tais alterações respeitem a legislação aplicável, não impliquem 
+supressão de direitos já adquiridos pelos usuários e sejam comunicadas quando 
+produzirem impacto relevante na utilização dos serviços. 
+ 
+Cláusula 3.7 – Ambiente tecnológico 
+O usuário declara estar ciente de que a plataforma constitui 
+ambiente tecnológico destinado à organização da contratação e da experiência digital 
+relacionada aos serviços oferecidos pelos terapeutas cadastrados. 
+A utilização da plataforma não altera a natureza da relação 
+jurídica estabelecida entre usuário e terapeuta quanto à execução técnica do atendimento 
+contratado. 
+ 
+CAPÍTULO IV 
+ 
+DO CADASTRO, DA CONTA E DOS REQUISITOS PARA UTILIZAÇÃO DA 
+PLATAFORMA
+
+[Pagina 12]
+Cláusula 4.1 – Cadastro 
+A utilização das funcionalidades restritas da plataforma 
+dependerá da criação de conta individual mediante fornecimento das informações 
+solicitadas durante o procedimento de cadastro. 
+O usuário declara que todas as informações fornecidas são 
+verdadeiras, completas, atualizadas e de sua exclusiva responsabilidade, comprometendo-
+se a mantê-las permanentemente corretas enquanto utilizar a plataforma. 
+O fornecimento de informações falsas, incompletas ou 
+desatualizadas poderá acarretar a suspensão ou encerramento da conta, sem prejuízo das 
+demais medidas cabíveis. 
+ 
+Cláusula 4.2 – Requisitos para cadastro 
+Poderão realizar cadastro na plataforma as pessoas físicas 
+que: 
+I – possuam capacidade civil para contratar; 
+II – forneçam as informações obrigatórias solicitadas 
+durante o cadastro; 
+III – aceitem eletronicamente estes Termos de Uso e os 
+demais documentos aplicáveis; 
+IV – atendam aos requisitos específicos previstos para cada 
+modalidade de utilização da plataforma.
+
+[Pagina 13]
+Caso o TES identifique indícios de utilização indevida, 
+fraude, falsidade ideológica ou qualquer inconsistência relevante nas informações 
+prestadas, poderá solicitar documentos adicionais para validação do cadastro, observada 
+a legislação aplicável. 
+ 
+Cláusula 4.3 – Maioridade 
+A plataforma destina-se exclusivamente a pessoas com 
+dezoito anos completos ou legalmente capazes para celebrar contratos. 
+Ao concluir seu cadastro, o usuário declara possuir 
+capacidade civil para utilização da plataforma e assume integral responsabilidade pelas 
+informações prestadas. 
+Caso seja constatado que o cadastro foi realizado em 
+desacordo com esta cláusula, o TES poderá suspender ou cancelar a conta, adotando as 
+medidas necessárias para proteção dos dados eventualmente coletados. 
+ 
+Cláusula 4.4 – Conta de acesso 
+Cada usuário poderá manter apenas uma conta principal 
+vinculada ao seu cadastro, salvo quando a própria plataforma autorizar expressamente 
+situação diversa. 
+A conta criada é pessoal, individual e intransferível, sendo 
+vedado o compartilhamento de credenciais de acesso com terceiros.
+
+[Pagina 14]
+O usuário é integralmente responsável pela guarda de sua 
+senha, pelos dispositivos utilizados para acesso à plataforma e por todas as atividades 
+realizadas mediante utilização de sua conta. 
+ 
+Cláusula 4.5 – Segurança da conta 
+O usuário deverá adotar medidas razoáveis para 
+preservação da segurança de suas credenciais de acesso, comprometendo-se a: 
+I – manter sua senha sob sigilo; 
+II – não compartilhar seu login com terceiros; 
+III – comunicar imediatamente ao TES qualquer suspeita de 
+acesso não autorizado, perda de credenciais ou utilização 
+indevida de sua conta; 
+IV – manter atualizados seus dados de contato para fins de 
+recuperação de acesso e comunicações relacionadas à 
+segurança da conta. 
+O TES poderá adotar mecanismos adicionais de 
+autenticação e verificação de identidade sempre que entender necessário para proteção da 
+plataforma e de seus usuários. 
+ 
+Cláusula 4.6 – Atualização cadastral
+
+[Pagina 15]
+O usuário compromete-se a manter permanentemente 
+atualizados seus dados cadastrais, comunicando alterações relevantes sempre que 
+ocorrerem. 
+O TES poderá solicitar confirmação periódica das 
+informações cadastradas ou atualização documental quando necessária para preservação 
+da segurança da plataforma, prevenção a fraudes ou cumprimento de obrigações legais. 
+ 
+Cláusula 4.7 – Comunicações eletrônicas 
+O usuário autoriza que as comunicações relacionadas ao 
+funcionamento da plataforma, segurança da conta, atualização dos documentos jurídicos, 
+informações operacionais e demais assuntos pertinentes à utilização do TES sejam 
+realizadas por meio eletrônico, utilizando os canais de contato informados durante o 
+cadastro. 
+As comunicações promocionais observarão as regras 
+previstas na Política de Privacidade e poderão ser desabilitadas pelo usuário sempre que 
+houver essa possibilidade. 
+ 
+Cláusula 4.8 – Verificação de identidade 
+Sempre que necessário para preservação da segurança da 
+plataforma, prevenção de fraudes, cumprimento de obrigações legais ou proteção dos 
+usuários, o TES poderá solicitar procedimentos adicionais de verificação de identidade.
+
+[Pagina 16]
+Esses procedimentos observarão os princípios da 
+necessidade, adequação e proporcionalidade, limitando-se às informações estritamente 
+necessárias para a finalidade pretendida. 
+ 
+Cláusula 4.9 – Encerramento voluntário da conta 
+O usuário poderá solicitar o encerramento de sua conta a 
+qualquer momento, observadas as obrigações pendentes, os prazos legais de retenção de 
+dados e as disposições constantes da Política de Privacidade. 
+O encerramento da conta não extinguirá obrigações 
+anteriormente assumidas nem prejudicará o cumprimento de deveres legais relacionados 
+à conservação de registros ou ao exercício regular de direitos. 
+ 
+CAPÍTULO V 
+ 
+DO CADASTRO, PERMANÊNCIA E RESPONSABILIDADES DOS 
+TERAPEUTAS 
+ 
+Cláusula 5.1 – Cadastro de terapeutas 
+O cadastramento de terapeutas na plataforma dependerá do 
+preenchimento das informações solicitadas pelo TES, do aceite dos documentos jurídicos 
+aplicáveis e do atendimento aos critérios mínimos estabelecidos para utilização da 
+plataforma.
+
+[Pagina 17]
+O envio das informações não garante o ingresso automático 
+do profissional, permanecendo sujeito à análise cadastral e às verificações realizadas pelo 
+TES. 
+ 
+Cláusula 5.2 – Natureza da relação jurídica 
+O cadastramento do terapeuta na plataforma não estabelece 
+vínculo empregatício, societário, associativo, representativo, de franquia, parceria 
+comercial exclusiva ou qualquer relação de subordinação entre o profissional e o TES. 
+O terapeuta atua de forma autônoma e independente, sendo 
+integralmente responsável pela organização de sua atividade profissional, definição de 
+sua agenda, metodologia de atendimento, valores praticados e demais aspectos inerentes 
+à prestação dos serviços oferecidos. 
+ 
+Cláusula 5.3 – Responsabilidade profissional 
+O terapeuta declara possuir capacidade técnica, experiência 
+e demais requisitos necessários para exercer as atividades disponibilizadas em seu perfil. 
+Compete exclusivamente ao terapeuta: 
+I – prestar os atendimentos contratados; 
+II – responder pelo conteúdo técnico das sessões; 
+III – manter atualizadas as informações constantes de seu 
+perfil;
+
+[Pagina 18]
+IV – utilizar linguagem clara, ética e compatível com as 
+políticas da plataforma; 
+V – cumprir a legislação aplicável ao exercício de sua 
+atividade. 
+O TES não supervisiona tecnicamente os atendimentos 
+realizados nem assume responsabilidade pelas orientações, métodos ou práticas adotadas 
+pelos profissionais cadastrados. 
+ 
+Cláusula 5.4 – Informações do perfil 
+O terapeuta compromete-se a manter seu perfil 
+permanentemente atualizado, sendo responsável pela veracidade das informações 
+disponibilizadas aos usuários. 
+A plataforma poderá solicitar documentação complementar 
+sempre que necessário para validação cadastral, atualização das informações ou 
+manutenção dos critérios de utilização do sistema. 
+ 
+Cláusula 5.5 – Conduta esperada 
+O terapeuta compromete-se a utilizar a plataforma de 
+maneira ética, profissional e compatível com os princípios estabelecidos pelo TES. 
+Sem prejuízo das demais disposições constantes destes 
+Termos e do Código de Conduta dos Terapeutas, é vedado ao profissional: 
+I – divulgar informações falsas ou enganosas;
+
+[Pagina 19]
+II – prometer resultados, curas ou garantias de eficácia; 
+III – utilizar títulos profissionais sem respaldo ou 
+autorização legal; 
+IV – praticar qualquer forma de discriminação, assédio ou 
+conduta abusiva; 
+V – utilizar a plataforma para finalidade diversa daquela 
+prevista nestes Termos. 
+ 
+Cláusula 5.6 – Critérios de permanência 
+A permanência do terapeuta na plataforma dependerá da 
+observância destes Termos de Uso, das políticas complementares e das regras 
+operacionais estabelecidas pelo TES. 
+O descumprimento dessas disposições poderá ensejar a 
+adoção das medidas previstas nestes Termos, observados os princípios da 
+proporcionalidade, da boa-fé e do contraditório, quando aplicável. 
+ 
+Cláusula 5.7 – Verificação de informações 
+O TES poderá realizar procedimentos de conferência 
+documental e validação das informações fornecidas pelo terapeuta sempre que entender 
+necessário para preservação da segurança da plataforma, proteção dos usuários ou 
+cumprimento de obrigações legais.
+
+[Pagina 20]
+A eventual verificação documental não representa 
+certificação técnica, reconhecimento profissional ou garantia de qualidade dos serviços 
+prestados pelo terapeuta. 
+ 
+Cláusula 5.8 – Utilização da marca TES 
+O terapeuta poderá divulgar sua participação na plataforma 
+apenas nos limites autorizados pelo TES, observadas as diretrizes de identidade visual e 
+comunicação institucional eventualmente disponibilizadas. 
+É vedada qualquer utilização da marca, logotipo ou 
+identidade visual da plataforma que possa induzir terceiros a erro quanto à existência de 
+vínculo societário, representação comercial ou certificação profissional concedida pelo 
+TES. 
+ 
+Cláusula 5.9 – Instrumentos complementares 
+O cadastramento do terapeuta implica adesão não apenas 
+aos presentes Termos de Uso, mas também aos documentos específicos aplicáveis à sua 
+atuação, especialmente: 
+I – Contrato de Adesão do Terapeuta; 
+II – Código de Conduta dos Terapeutas; 
+III – Política de Cancelamento, Reagendamento e 
+Reembolso; 
+IV – Política de Avaliações;
+
+[Pagina 21]
+V – Política de Utilização da Inteligência Artificial "Aura"; 
+VI – demais documentos específicos eventualmente 
+publicados pela plataforma. 
+ 
+CAPÍTULO VI 
+ 
+DA CONTRATAÇÃO DOS SERVIÇOS E DO PROCESSAMENTO DOS 
+PAGAMENTOS 
+ 
+Cláusula 6.1 – Contratação dos serviços 
+Os serviços disponibilizados na plataforma poderão ser 
+contratados diretamente pelos usuários mediante a utilização das funcionalidades 
+disponibilizadas pelo TES. 
+A contratação ocorrerá exclusivamente após a confirmação 
+do agendamento, da disponibilidade do terapeuta e do processamento da operação 
+financeira correspondente, quando aplicável. 
+A confirmação da contratação será encaminhada ao usuário 
+pelos meios disponibilizados pela plataforma. 
+ 
+Cláusula 6.2 – Valores
+
+[Pagina 22]
+Os valores cobrados pelos atendimentos serão informados 
+ao usuário antes da conclusão da contratação. 
+O TES buscará manter tais informações permanentemente 
+atualizadas. 
+Entretanto, eventual alteração promovida pelo terapeuta 
+produzirá efeitos apenas para novas contratações, preservando-se as condições aplicáveis 
+aos atendimentos já confirmados. 
+ 
+Cláusula 6.3 – Processamento dos pagamentos 
+Os pagamentos realizados na plataforma poderão ser 
+processados por instituições financeiras, gateways de pagamento ou empresas 
+especializadas contratadas pelo TES. 
+O processamento financeiro observará as políticas e 
+condições estabelecidas pelos respectivos prestadores de serviços de pagamento, sem 
+prejuízo das disposições constantes destes Termos e da legislação aplicável. 
+O TES não armazena dados completos de cartões de crédito 
+ou outros meios de pagamento cuja guarda seja de responsabilidade exclusiva do 
+processador financeiro. 
+ 
+Cláusula 6.4 – Confirmação do pagamento 
+A confirmação do pagamento dependerá da validação 
+realizada pela instituição responsável pelo processamento da operação financeira.
+
+[Pagina 23]
+Enquanto não houver confirmação da transação, a 
+contratação poderá permanecer pendente ou não ser concluída, conforme as regras 
+operacionais da plataforma. 
+ 
+Cláusula 6.5 – Repasses financeiros 
+Quando o modelo operacional da plataforma envolver 
+retenção de comissão e posterior repasse ao terapeuta, os critérios aplicáveis serão 
+disciplinados em instrumento contratual específico celebrado entre o TES e o profissional 
+cadastrado. 
+Os usuários não participarão da relação financeira existente 
+entre a plataforma e os terapeutas quanto aos repasses internos decorrentes da utilização 
+do sistema. 
+ 
+Cláusula 6.6 – Tributos 
+Cada parte permanecerá responsável pelo cumprimento das 
+obrigações tributárias que lhe forem legalmente atribuídas. 
+O TES não assume responsabilidade por tributos incidentes 
+sobre a atividade profissional desenvolvida pelos terapeutas, salvo quando expressamente 
+exigido pela legislação aplicável. 
+ 
+Cláusula 6.7 – Falhas operacionais
+
+[Pagina 24]
+Na hipótese de indisponibilidade temporária dos sistemas 
+responsáveis pelo processamento dos pagamentos, o TES poderá suspender 
+temporariamente novas contratações até o restabelecimento da normalidade operacional. 
+Sempre que possível, o usuário será previamente informado 
+acerca da indisponibilidade identificada. 
+ 
+Cláusula 6.8 – Contestação de pagamentos 
+Eventuais questionamentos relacionados à autorização da 
+operação financeira, estornos, chargebacks ou demais procedimentos realizados pelas 
+instituições responsáveis pelo processamento dos pagamentos observarão as regras 
+estabelecidas pelo respectivo intermediador financeiro, sem prejuízo dos direitos 
+assegurados aos usuários pela legislação brasileira. 
+O TES atuará de forma colaborativa para fornecer as 
+informações necessárias à apuração dos fatos, quando solicitado pelas partes ou pelas 
+autoridades competentes. 
+ 
+Cláusula 6.9 – Comprovantes 
+Após a conclusão da contratação, a plataforma poderá 
+disponibilizar ao usuário os comprovantes eletrônicos relacionados ao agendamento, 
+pagamento e demais informações pertinentes ao atendimento contratado. 
+Esses registros poderão permanecer disponíveis na área 
+restrita da plataforma pelo período definido em suas políticas internas e na legislação 
+aplicável.
+
+[Pagina 25]
+Ao concluir a contratação por meio da Plataforma, o 
+USUÁRIO poderá optar pelo agendamento e realização do atendimento antes do término 
+do prazo de 7 (sete) dias previsto no artigo 49 do Código de Defesa do Consumidor. 
+Nessa hipótese, o USUÁRIO declara ciência de que está 
+solicitando o início imediato da prestação do serviço, observando-se as regras previstas 
+na Política de Cancelamento, Reagendamento e Reembolso e na legislação aplicável. 
+O exercício do direito de arrependimento será disciplinado 
+pela Política de Cancelamento, Reagendamento e Reembolso, que integra os presentes 
+Termos de Uso para todos os fins de direito. 
+ 
+CAPÍTULO VII 
+ 
+DA INTELIGÊNCIA ARTIFICIAL, DAS RECOMENDAÇÕES E DAS 
+FUNCIONALIDADES DA PLATAFORMA 
+ 
+Cláusula 7.1 – Funcionalidades tecnológicas 
+O TES disponibiliza ferramentas tecnológicas destinadas a 
+facilitar a utilização da plataforma, melhorar a experiência dos usuários e otimizar a 
+interação entre usuários e terapeutas. 
+Essas funcionalidades poderão incluir mecanismos de 
+busca, filtros, recomendações, organização de informações, notificações, inteligência 
+artificial e outros recursos tecnológicos compatíveis com a evolução da plataforma.
+
+[Pagina 26]
+Cláusula 7.2 – Inteligência Artificial "Aura" 
+A funcionalidade denominada Aura consiste em ferramenta 
+tecnológica desenvolvida para auxiliar os usuários durante a utilização da plataforma, 
+oferecendo suporte informacional, organização de conteúdos e facilitação da navegação. 
+A Aura possui finalidade exclusivamente informativa e 
+operacional, não realizando diagnóstico, prescrição, tratamento, aconselhamento clínico, 
+psicológico ou terapêutico. 
+As informações fornecidas pela Aura não substituem a 
+avaliação individual realizada pelos terapeutas cadastrados nem constituem 
+recomendação profissional personalizada. 
+ 
+Cláusula 7.3 – Recomendações e sugestões 
+Os resultados apresentados pela plataforma, inclusive 
+recomendações de terapeutas, sugestões de perfis, filtros de pesquisa ou organização de 
+resultados, poderão considerar critérios tecnológicos, preferências informadas pelos 
+usuários, parâmetros de pesquisa e demais fatores objetivos definidos pelo sistema. 
+Tais recomendações possuem caráter meramente auxiliar e 
+não representam certificação, classificação técnica, garantia de qualidade, indicação 
+profissional individualizada ou promessa de adequação do terapeuta às necessidades 
+específicas do usuário. 
+A decisão de contratar determinado terapeuta é de exclusiva 
+responsabilidade do usuário.
+
+[Pagina 27]
+Cláusula 7.4 – Limitações das funcionalidades inteligentes 
+O usuário reconhece que as funcionalidades 
+disponibilizadas pela plataforma baseiam-se em critérios tecnológicos e em informações 
+fornecidas pelos próprios usuários e terapeutas. 
+Por essa razão, o TES não garante que sugestões, 
+recomendações ou demais resultados apresentados sejam os mais adequados para cada 
+situação individual. 
+Sempre que necessário, recomenda-se que o usuário analise 
+cuidadosamente as informações constantes do perfil do terapeuta antes da contratação dos 
+serviços. 
+ 
+Cláusula 7.5 – Evolução tecnológica 
+O TES poderá implementar novas funcionalidades 
+tecnológicas, aperfeiçoar recursos existentes ou descontinuar ferramentas específicas, 
+sempre que necessário para evolução da plataforma, observadas a legislação aplicável e 
+as disposições destes Termos de Uso. 
+ 
+Cláusula 7.6 – Uso responsável das funcionalidades 
+Os usuários comprometem-se a utilizar as funcionalidades 
+disponibilizadas pela plataforma de forma ética, responsável e compatível com sua 
+finalidade.
+
+[Pagina 28]
+É vedada a utilização dos recursos tecnológicos do TES 
+para fins ilícitos, fraudulentos, discriminatórios ou incompatíveis com a legislação 
+brasileira e com os presentes Termos de Uso. 
+ 
+Cláusula 7.7 – Atualização das funcionalidades 
+Em razão da constante evolução tecnológica, as 
+funcionalidades da plataforma poderão sofrer alterações, melhorias, ajustes ou 
+substituições, sem que isso caracterize descumprimento contratual, desde que preservadas 
+as características essenciais do serviço contratado. 
+ 
+CAPÍTULO VIII 
+ 
+DAS A V ALIAÇÕES, COMENTÁRIOS E DO CONTEÚDO GERADO PELOS 
+USUÁRIOS 
+ 
+Cláusula 8.1 – Sistema de avaliações 
+A plataforma poderá disponibilizar sistema destinado à 
+avaliação dos atendimentos realizados pelos terapeutas cadastrados. 
+As avaliações têm por finalidade compartilhar experiências 
+relacionadas à utilização dos serviços contratados, contribuindo para a transparência e 
+melhoria contínua da plataforma.
+
+[Pagina 29]
+Cláusula 8.2 – Elegibilidade para avaliação 
+Somente poderão avaliar determinado atendimento os 
+usuários que efetivamente tenham contratado e concluído sessão por intermédio da 
+plataforma, observadas as regras operacionais vigentes. 
+O TES poderá adotar mecanismos destinados à verificação 
+da autenticidade das avaliações publicadas. 
+ 
+Cláusula 8.3 – Conteúdo das avaliações 
+As avaliações deverão refletir exclusivamente a experiência 
+individual vivenciada pelo usuário durante a utilização da plataforma ou durante o 
+atendimento contratado. 
+Os comentários deverão observar linguagem respeitosa, 
+objetiva e compatível com a boa-fé, sendo vedada a publicação de conteúdos que: 
+I – contenham informações sabidamente falsas; 
+II – sejam ofensivos, discriminatórios, caluniosos, 
+injuriosos ou difamatórios; 
+III – violem direitos de terceiros; 
+IV – divulguem dados pessoais de qualquer pessoa sem 
+autorização; 
+V – contenham ameaças, discursos de ódio ou qualquer 
+conteúdo ilícito;
+
+[Pagina 30]
+VI – sejam utilizados para promoção comercial de terceiros 
+ou publicidade não autorizada. 
+ 
+Cláusula 8.4 – Responsabilidade pelo conteúdo 
+Os usuários permanecem integralmente responsáveis pelo 
+conteúdo publicado em avaliações, comentários, mensagens e demais manifestações 
+realizadas na plataforma. 
+A publicação de conteúdo pelo usuário não transfere ao TES 
+qualquer responsabilidade quanto à veracidade das informações divulgadas. 
+ 
+Cláusula 8.5 – Moderação 
+O TES poderá analisar conteúdos publicados na plataforma 
+quando houver indícios de violação destes Termos de Uso, da legislação aplicável ou das 
+políticas internas. 
+Sem prejuízo da liberdade de manifestação dos usuários, 
+poderão ser adotadas medidas como: 
+I – solicitação de esclarecimentos; 
+II – ocultação temporária da publicação; 
+III – remoção do conteúdo; 
+IV – advertência; 
+V – suspensão da conta;
+
+[Pagina 31]
+VI – adoção das demais medidas previstas nestes Termos. 
+Sempre que possível e compatível com a natureza da 
+ocorrência, será assegurada oportunidade para manifestação da parte envolvida antes da 
+adoção de medidas definitivas. 
+ 
+Cláusula 8.6 – Direito de resposta 
+Sempre que tecnicamente viável e compatível com a 
+política da plataforma, o terapeuta poderá apresentar resposta pública às avaliações 
+recebidas, observando linguagem respeitosa e preservando a confidencialidade das 
+informações relacionadas aos atendimentos realizados. 
+ 
+Cláusula 8.7 – Utilização das avaliações 
+O usuário autoriza o TES a utilizar avaliações, comentários 
+e demais conteúdos publicados na plataforma para fins relacionados ao funcionamento 
+do sistema, melhoria dos serviços, estatísticas, divulgação institucional e aperfeiçoamento 
+da experiência dos usuários, preservados os direitos assegurados pela legislação aplicável 
+e pela Política de Privacidade. 
+Sempre que possível, a utilização ocorrerá de forma 
+dissociada de dados que permitam a identificação direta do usuário. 
+ 
+Cláusula 8.8 – Denúncias
+
+[Pagina 32]
+Qualquer usuário poderá comunicar ao TES a existência de 
+conteúdo que considere incompatível com estes Termos de Uso ou com a legislação 
+vigente. 
+Recebida a comunicação, a plataforma procederá à análise 
+do caso, podendo solicitar informações complementares antes da adoção das providências 
+cabíveis. 
+A simples apresentação de denúncia não implicará remoção 
+automática do conteúdo. 
+ 
+Cláusula 8.9 – Preservação de registros 
+Independentemente da remoção pública do conteúdo, o 
+TES poderá preservar registros relacionados às publicações realizadas na plataforma pelo 
+período necessário ao cumprimento de obrigações legais, ao exercício regular de direitos 
+ou à apuração de eventuais irregularidades. 
+ 
+CAPÍTULO IX 
+ 
+DOS DIREITOS E OBRIGAÇÕES DOS USUÁRIOS 
+ 
+Cláusula 9.1 – Direitos dos usuários
+
+[Pagina 33]
+Sem prejuízo dos direitos assegurados pela legislação 
+brasileira, especialmente pelo Código de Defesa do Consumidor e pela Lei Geral de 
+Proteção de Dados Pessoais, o usuário terá direito a: 
+I – acessar as funcionalidades disponibilizadas pela 
+plataforma, observadas as condições aplicáveis ao serviço contratado; 
+II – receber informações claras, adequadas e atualizadas 
+acerca da utilização da plataforma e dos serviços disponibilizados; 
+III – contratar livremente os terapeutas cadastrados, 
+conforme sua conveniência e disponibilidade; 
+IV – utilizar os canais de atendimento disponibilizados pelo 
+TES para esclarecimento de dúvidas, comunicação de problemas e apresentação de 
+solicitações; 
+V – exercer os direitos previstos na Política de Privacidade 
+relativamente ao tratamento de seus dados pessoais; 
+VI – avaliar os serviços contratados, observadas as regras 
+estabelecidas nestes Termos de Uso e nas políticas complementares. 
+ 
+Cláusula 9.2 – Deveres dos usuários 
+Ao utilizar a plataforma, o usuário compromete-se a: 
+I – fornecer informações verdadeiras, completas e 
+atualizadas;
+
+[Pagina 34]
+II – utilizar a plataforma exclusivamente para as finalidades 
+previstas nestes Termos; 
+III – respeitar os direitos dos terapeutas, dos demais 
+usuários e da própria plataforma; 
+IV – agir com urbanidade, boa-fé e respeito durante toda a 
+utilização dos serviços; 
+V – preservar a confidencialidade de suas credenciais de 
+acesso; 
+VI – comunicar imediatamente ao TES qualquer utilização 
+indevida de sua conta ou suspeita de violação de segurança. 
+ 
+Cláusula 9.3 – Condutas proibidas 
+É expressamente vedado ao usuário: 
+I – utilizar a plataforma para fins ilícitos ou fraudulentos; 
+II – criar identidade falsa ou fornecer informações 
+sabidamente inverídicas; 
+III – utilizar a conta de terceiros ou permitir sua utilização 
+por terceiros; 
+IV – tentar acessar áreas restritas da plataforma sem 
+autorização;
+
+[Pagina 35]
+V – praticar qualquer forma de engenharia reversa, invasão, 
+exploração de vulnerabilidades, automação não autorizada ou interferência no 
+funcionamento do sistema; 
+VI – reproduzir, copiar, distribuir ou explorar 
+comercialmente qualquer funcionalidade da plataforma sem autorização expressa do 
+TES; 
+VII – utilizar a plataforma para assediar, ameaçar, 
+constranger, discriminar ou ofender terapeutas, usuários ou colaboradores; 
+VIII – divulgar conteúdo ilícito, ofensivo ou incompatível 
+com estes Termos. 
+ 
+Cláusula 9.4 – Utilização dos atendimentos 
+Os atendimentos contratados por intermédio da plataforma 
+destinam-se exclusivamente ao usuário contratante, salvo quando a modalidade escolhida 
+admitir expressamente a participação de terceiros. 
+O usuário compromete-se a utilizar os serviços de boa-fé, 
+respeitando os horários agendados, as regras operacionais da plataforma e as orientações 
+constantes da Política de Cancelamento, Reagendamento e Reembolso. 
+ 
+Cláusula 9.5 – Gravação de sessões 
+A gravação, reprodução, transmissão, compartilhamento ou 
+qualquer forma de registro audiovisual ou sonoro dos atendimentos realizados por
+
+[Pagina 36]
+intermédio da plataforma dependerá da autorização prévia e expressa de todos os 
+participantes, ressalvadas as hipóteses previstas em lei. 
+O uso indevido de gravações poderá sujeitar o responsável 
+às medidas legais cabíveis, sem prejuízo das sanções previstas nestes Termos de Uso. 
+ 
+Cláusula 9.6 – Uso adequado da plataforma 
+O usuário reconhece que a plataforma foi desenvolvida para 
+proporcionar ambiente seguro e organizado para interação entre usuários e terapeutas. 
+Compromete-se, portanto, a não adotar qualquer 
+comportamento que possa comprometer a estabilidade do sistema, prejudicar terceiros ou 
+afetar a confiabilidade da plataforma. 
+ 
+Cláusula 9.7 – Cooperação 
+Sempre que solicitado pelo TES para apuração de 
+incidentes de segurança, denúncias, suspeitas de fraude ou outras ocorrências 
+relacionadas à utilização da plataforma, o usuário compromete-se a colaborar de boa-fé, 
+fornecendo as informações estritamente necessárias à análise da situação. 
+ 
+Cláusula 9.8 – Consequências do descumprimento 
+O descumprimento das obrigações previstas neste capítulo 
+poderá ensejar a adoção das medidas previstas nestes Termos de Uso, inclusive
+
+[Pagina 37]
+advertência, suspensão temporária, limitação de funcionalidades ou encerramento da 
+conta, observados os princípios da proporcionalidade, da boa-fé e da legislação aplicável. 
+ 
+CAPÍTULO X 
+ 
+DOS DIREITOS, DAS PRERROGATIV AS E DAS OBRIGAÇÕES DO TES 
+ 
+Cláusula 10.1 – Disponibilização da Plataforma 
+O TES compromete-se a envidar esforços razoáveis para 
+manter a plataforma em funcionamento, disponibilizando aos usuários ambiente 
+tecnológico seguro, organizado e compatível com as funcionalidades oferecidas. 
+Entretanto, em razão da própria natureza dos serviços 
+digitais, a plataforma poderá sofrer interrupções temporárias decorrentes de manutenção, 
+atualização, falhas técnicas, indisponibilidade de serviços de terceiros, caso fortuito, força 
+maior ou outros eventos alheios ao controle do TES. 
+Sempre que possível, as manutenções programadas serão 
+previamente comunicadas aos usuários. 
+ 
+Cláusula 10.2 – Atualizações da Plataforma 
+O TES poderá implementar atualizações, correções, 
+melhorias, novas funcionalidades ou alterações operacionais destinadas ao 
+aperfeiçoamento da plataforma.
+
+[Pagina 38]
+Tais modificações não caracterizarão descumprimento 
+contratual, desde que preservadas as funcionalidades essenciais do serviço contratado e 
+observada a legislação aplicável. 
+ 
+Cláusula 10.3 – Segurança da Plataforma 
+Com o objetivo de preservar a integridade do ambiente 
+digital, proteger os usuários e prevenir fraudes, o TES poderá adotar medidas técnicas e 
+administrativas destinadas à identificação de atividades suspeitas, utilização indevida da 
+plataforma ou violação destes Termos de Uso. 
+Essas medidas poderão incluir procedimentos de validação 
+cadastral, autenticação adicional, bloqueios preventivos, limitação temporária de 
+funcionalidades e outras providências compatíveis com a natureza da ocorrência. 
+ 
+Cláusula 10.4 – Monitoramento Operacional 
+O TES poderá monitorar o funcionamento da plataforma, 
+seus sistemas e registros operacionais para fins de: 
+I – prevenção e identificação de fraudes; 
+II – investigação de incidentes de segurança; 
+III – proteção dos usuários e terapeutas; 
+IV – cumprimento de obrigações legais e regulatórias; 
+V – exercício regular de direitos;
+
+[Pagina 39]
+VI – aperfeiçoamento dos serviços disponibilizados. 
+O monitoramento será realizado em conformidade com a 
+legislação vigente, especialmente a Lei Geral de Proteção de Dados Pessoais, preservando 
+a privacidade dos usuários e limitando-se às finalidades legítimas relacionadas à operação 
+da plataforma. 
+ 
+Cláusula 10.5 – Solicitação de Informações 
+Sempre que necessário para apuração de denúncias, 
+prevenção de fraudes, investigação de incidentes de segurança ou cumprimento de 
+obrigações legais, o TES poderá solicitar documentos, informações ou esclarecimentos 
+adicionais aos usuários e terapeutas. 
+A recusa injustificada ou o fornecimento de informações 
+sabidamente falsas poderá ensejar a adoção das medidas previstas nestes Termos. 
+ 
+Cláusula 10.6 – Proteção da Plataforma 
+O TES poderá adotar medidas destinadas à preservação da 
+estabilidade, segurança e continuidade de seus serviços, inclusive mediante limitação 
+temporária de funcionalidades, suspensão preventiva de determinadas operações ou 
+implementação de mecanismos adicionais de segurança, sempre que existirem indícios 
+razoáveis de risco à integridade da plataforma ou de seus usuários. 
+Sempre que a situação permitir, tais medidas observarão 
+critérios de proporcionalidade e serão revistas tão logo cesse a causa que lhes deu origem.
+
+[Pagina 40]
+Cláusula 10.7 – Atendimento aos Usuários 
+O TES disponibilizará canais de atendimento destinados ao 
+recebimento de dúvidas, solicitações, reclamações e comunicações relacionadas à 
+utilização da plataforma. 
+As manifestações serão analisadas de acordo com sua 
+natureza, complexidade e prioridade, buscando-se solução adequada dentro de prazo 
+razoável. 
+ 
+Cláusula 10.8 – Cooperação com Autoridades 
+O TES poderá fornecer informações às autoridades 
+competentes quando houver determinação judicial, requisição legalmente fundamentada 
+ou outra hipótese prevista na legislação brasileira. 
+Também poderá preservar registros eletrônicos e 
+documentos necessários ao exercício regular de direitos ou à apuração de eventuais 
+ilícitos. 
+ 
+Cláusula 10.9 – Melhoria Contínua 
+O TES poderá utilizar informações estatísticas, indicadores 
+operacionais e dados anonimizados para aperfeiçoar a plataforma, desenvolver novas 
+funcionalidades, identificar padrões de utilização e melhorar a experiência dos usuários, 
+observadas as disposições da Política de Privacidade e da legislação aplicável.
+
+[Pagina 41]
+Cláusula 10.10 – Limites de Atuação 
+O exercício das prerrogativas previstas neste capítulo 
+observará os princípios da boa-fé objetiva, transparência, proporcionalidade e finalidade, 
+não sendo interpretado como autorização para atuação arbitrária ou incompatível com os 
+direitos assegurados aos usuários e terapeutas pela legislação brasileira. 
+ 
+CAPÍTULO XI 
+ 
+DAS MEDIDAS ADMINISTRATIV AS, DA SUSPENSÃO, DA LIMITAÇÃO E DO 
+ENCERRAMENTO DE CONTAS 
+ 
+Cláusula 11.1 – Hipóteses de aplicação de medidas administrativas 
+O TES poderá adotar medidas administrativas sempre que 
+verificar indícios de descumprimento destes Termos de Uso, da legislação vigente, das 
+políticas da plataforma ou de qualquer conduta capaz de comprometer a segurança, 
+estabilidade, confiabilidade ou regular funcionamento do ambiente digital. 
+ 
+Cláusula 11.2 – Medidas aplicáveis 
+Conforme a natureza e a gravidade da ocorrência, poderão 
+ser adotadas, isolada ou cumulativamente, as seguintes medidas: 
+I – orientação ao usuário ou terapeuta;
+
+[Pagina 42]
+II – advertência; 
+III – solicitação de regularização cadastral; 
+IV – solicitação de documentos ou esclarecimentos; 
+V – limitação temporária de determinadas funcionalidades; 
+VI – suspensão preventiva da conta; 
+VII – bloqueio temporário de operações específicas; 
+VIII – encerramento definitivo da conta; 
+IX – adoção das medidas judiciais ou administrativas 
+cabíveis. 
+A escolha da medida observará os princípios da 
+razoabilidade, proporcionalidade, boa-fé objetiva e proteção da coletividade de usuários 
+da plataforma. 
+ 
+Cláusula 11.3 – Suspensão preventiva 
+O TES poderá suspender preventivamente contas ou 
+funcionalidades específicas quando existirem indícios razoáveis de: 
+I – fraude; 
+II – utilização indevida da plataforma; 
+III – comprometimento da segurança do sistema; 
+IV – violação grave destes Termos de Uso;
+
+[Pagina 43]
+V – risco relevante aos usuários, terapeutas ou à própria 
+plataforma; 
+VI – determinação judicial ou administrativa. 
+A suspensão preventiva terá caráter cautelar e permanecerá 
+vigente apenas pelo tempo necessário à apuração dos fatos. 
+ 
+Cláusula 11.4 – Direito de manifestação 
+Sempre que a natureza da ocorrência permitir e desde que 
+isso não comprometa a segurança da plataforma, a eficácia da medida adotada ou o 
+cumprimento de obrigação legal, o usuário ou terapeuta poderá apresentar 
+esclarecimentos e documentos relacionados à situação apurada. 
+A eventual manifestação será analisada pelo TES antes da 
+adoção de medida definitiva, sem que isso represente obrigação de manutenção da conta 
+quando verificada infração grave ou risco à plataforma. 
+ 
+Cláusula 11.5 – Encerramento definitivo da conta 
+O encerramento definitivo da conta poderá ocorrer, dentre 
+outras hipóteses: 
+I – reincidência em infrações relevantes; 
+II – prática de fraude; 
+III – utilização da plataforma para fins ilícitos;
+
+[Pagina 44]
+IV – fornecimento intencional de informações falsas; 
+V – descumprimento reiterado destes Termos de Uso; 
+VI – violação dos direitos de terceiros; 
+VII – utilização da plataforma de forma incompatível com 
+sua finalidade. 
+Sempre que possível e compatível com a natureza da 
+infração, o encerramento definitivo será precedido da adoção de medidas menos gravosas. 
+ 
+Cláusula 11.6 – Medidas urgentes 
+Nas hipóteses em que houver risco imediato à segurança da 
+plataforma, dos usuários, dos terapeutas ou de terceiros, o TES poderá adotar 
+imediatamente as medidas necessárias para contenção do risco, inclusive mediante 
+suspensão cautelar de contas ou funcionalidades. 
+Concluída a situação emergencial, a plataforma procederá à 
+revisão da medida adotada, podendo mantê-la, modificá-la ou revogá-la, conforme o caso. 
+ 
+Cláusula 11.7 – Preservação de registros 
+Mesmo após a suspensão ou encerramento da conta, o TES 
+poderá manter registros, documentos e informações relacionados à utilização da 
+plataforma pelo período necessário ao cumprimento de obrigações legais, exercício 
+regular de direitos, prevenção de fraudes e defesa em processos administrativos ou 
+judiciais, observadas as disposições da Política de Privacidade e da legislação aplicável.
+
+[Pagina 45]
+Cláusula 11.8 – Obrigações pendentes 
+A suspensão ou o encerramento da conta não extinguem 
+automaticamente obrigações assumidas anteriormente pelas partes, especialmente 
+aquelas relacionadas a pagamentos, responsabilidades decorrentes da utilização da 
+plataforma, cumprimento de determinações legais ou preservação de registros. 
+ 
+Cláusula 11.9 – Boa-fé e equilíbrio 
+As medidas previstas neste capítulo serão aplicadas 
+buscando preservar o equilíbrio das relações estabelecidas na plataforma, a confiança dos 
+usuários e terapeutas e a integridade do ambiente digital, observando-se sempre os 
+princípios da boa-fé objetiva, proporcionalidade e finalidade. 
+ 
+CAPÍTULO XII 
+ 
+DA PROPRIEDADE INTELECTUAL 
+ 
+Cláusula 12.1 – Titularidade 
+Todos os direitos de propriedade intelectual relacionados à 
+plataforma TES, incluindo sua identidade visual, marca, logotipo, layout, design, 
+arquitetura do sistema, textos institucionais, interfaces, funcionalidades, banco de dados, 
+algoritmos, recursos tecnológicos, materiais gráficos, conteúdos produzidos pela
+
+[Pagina 46]
+plataforma e demais elementos protegidos pela legislação brasileira pertencem ao TES 
+ou aos respectivos titulares que tenham autorizado sua utilização. 
+A utilização da plataforma não implica qualquer cessão, 
+licença definitiva ou transferência desses direitos aos usuários ou terapeutas. 
+ 
+Cláusula 12.2 – Licença de uso da plataforma 
+O TES concede ao usuário e ao terapeuta licença limitada, 
+pessoal, não exclusiva, intransferível e revogável para utilização das funcionalidades 
+disponibilizadas pela plataforma exclusivamente durante sua utilização regular. 
+Essa licença restringe-se às finalidades previstas nestes 
+Termos de Uso, sendo vedada qualquer utilização diversa sem autorização expressa do 
+TES. 
+ 
+Cláusula 12.3 – Utilizações proibidas 
+Sem autorização prévia e expressa do TES, é vedado: 
+I – reproduzir integral ou parcialmente a plataforma; 
+II – copiar seu layout, identidade visual ou elementos 
+gráficos; 
+III – utilizar a marca TES ou qualquer sinal distintivo da 
+plataforma;
+
+[Pagina 47]
+IV – desenvolver produtos, plataformas ou serviços que 
+reproduzam substancialmente sua estrutura, funcionamento 
+ou identidade visual; 
+V – utilizar robôs, crawlers, scripts ou mecanismos 
+automatizados destinados à extração de informações da 
+plataforma sem autorização; 
+VI – praticar engenharia reversa, descompilação ou 
+qualquer tentativa de obtenção do código-fonte da 
+plataforma, ressalvadas as hipóteses expressamente 
+admitidas pela legislação. 
+ 
+Cláusula 12.4 – Conteúdo dos usuários 
+Os conteúdos produzidos pelos usuários permanecerão de 
+sua titularidade. 
+Ao publicar conteúdos na plataforma, o usuário concede ao 
+TES licença não exclusiva, gratuita, mundial, limitada ao período necessário e compatível 
+com a finalidade da plataforma para armazenar, reproduzir, organizar, exibir e utilizar tais 
+conteúdos exclusivamente para operação dos serviços disponibilizados. 
+Essa autorização extinguir-se-á quando o conteúdo for 
+removido da plataforma, ressalvadas as hipóteses de preservação de registros previstas na 
+legislação ou nestes Termos de Uso. 
+ 
+Cláusula 12.5 – Conteúdo dos terapeutas
+
+[Pagina 48]
+Os terapeutas permanecem titulares dos materiais, 
+descrições, fotografias, vídeos, textos e demais conteúdos produzidos por eles próprios. 
+Ao disponibilizá-los na plataforma, autorizam sua 
+utilização pelo TES exclusivamente para divulgação dos serviços, funcionamento da 
+plataforma, ações institucionais relacionadas ao próprio ambiente digital e demais 
+finalidades compatíveis com a operação do sistema. 
+Qualquer utilização diversa dependerá de autorização 
+específica do respectivo titular. 
+ 
+Cláusula 12.6 – Marca TES 
+A marca TES – Terapeuta Eu Sou, bem como seus sinais 
+distintivos, identidade visual e elementos gráficos, constituem patrimônio intelectual da 
+plataforma, sendo vedada sua utilização sem autorização prévia e expressa. 
+Nenhuma disposição destes Termos poderá ser interpretada 
+como concessão de licença para utilização da marca fora das hipóteses expressamente 
+autorizadas pelo TES. 
+ 
+Cláusula 12.7 – Comunicação de violações 
+Qualquer pessoa que identifique possível violação aos 
+direitos de propriedade intelectual relacionados à plataforma poderá comunicar o fato ao 
+TES por meio dos canais oficiais de atendimento.
+
+[Pagina 49]
+Recebida a comunicação, a plataforma adotará as 
+providências cabíveis, observando a legislação aplicável e garantindo, sempre que 
+possível, oportunidade de manifestação ao responsável pelo conteúdo questionado. 
+ 
+Cláusula 12.8 – Reserva de direitos 
+Todos os direitos não expressamente concedidos por estes 
+Termos permanecem reservados ao TES e aos respectivos titulares de direitos de 
+propriedade intelectual. 
+ 
+CAPÍTULO XIII 
+ 
+DA PRIV ACIDADE E DA PROTEÇÃO DE DADOS PESSOAIS 
+ 
+Cláusula 13.1 – Compromisso com a proteção de dados 
+O TES compromete-se a realizar o tratamento de dados 
+pessoais em conformidade com a legislação brasileira aplicável, especialmente a Lei nº 
+13.709/2018 (Lei Geral de Proteção de Dados Pessoais – LGPD), o Marco Civil da 
+Internet e as demais normas pertinentes. 
+O tratamento de dados observará os princípios da boa-fé, 
+finalidade, adequação, necessidade, livre acesso, qualidade dos dados, transparência, 
+segurança, prevenção, não discriminação e responsabilização, conforme previstos na 
+legislação vigente.
+
+[Pagina 50]
+Cláusula 13.2 – Tratamento de dados pessoais 
+A utilização da plataforma poderá envolver o tratamento de 
+dados pessoais necessários para: 
+I – criação e manutenção das contas de usuários e 
+terapeutas; 
+II – execução dos serviços disponibilizados pela 
+plataforma; 
+III – processamento de pagamentos; 
+IV – comunicação entre as partes; 
+V – cumprimento de obrigações legais e regulatórias; 
+VI – prevenção a fraudes e incidentes de segurança; 
+VII – aperfeiçoamento da experiência de utilização da 
+plataforma; 
+VIII – exercício regular de direitos do TES. 
+O tratamento ocorrerá exclusivamente para finalidades 
+legítimas e compatíveis com a operação da plataforma. 
+ 
+Cláusula 13.3 – Política de Privacidade 
+As regras específicas relacionadas à coleta, utilização, 
+armazenamento, compartilhamento, retenção e eliminação de dados pessoais encontram-
+
+[Pagina 51]
+se disciplinadas na Política de Privacidade do TES, documento integrante destes Termos 
+de Uso. 
+Em caso de dúvidas relacionadas ao tratamento de dados 
+pessoais, deverá prevalecer a interpretação conjunta destes Termos de Uso com a Política 
+de Privacidade. 
+ 
+Cláusula 13.4 – Direitos dos titulares 
+Os titulares de dados pessoais poderão exercer os direitos 
+assegurados pela legislação aplicável, na forma prevista na Política de Privacidade e pelos 
+canais oficiais disponibilizados pelo TES. 
+As solicitações serão analisadas de acordo com os 
+requisitos legais, observadas as hipóteses de conservação obrigatória de registros, 
+exercício regular de direitos e demais limitações previstas na legislação vigente. 
+ 
+Cláusula 13.5 – Segurança da informação 
+O TES adotará medidas técnicas, administrativas e 
+organizacionais compatíveis com a natureza de suas atividades para proteger os dados 
+pessoais tratados contra acessos não autorizados, perda, alteração, destruição ou qualquer 
+forma de tratamento inadequado ou ilícito. 
+A adoção dessas medidas não afasta a necessidade de 
+utilização responsável da plataforma pelos usuários e terapeutas, que também deverão 
+contribuir para preservação da segurança de suas contas e informações.
+
+[Pagina 52]
+Cláusula 13.6 – Cookies e tecnologias similares 
+A plataforma poderá utilizar cookies, identificadores 
+eletrônicos e tecnologias semelhantes para garantir seu funcionamento, melhorar a 
+experiência dos usuários, preservar a segurança da navegação e produzir estatísticas 
+relacionadas à utilização dos serviços. 
+As regras específicas sobre essa utilização encontram-se 
+disciplinadas na Política de Privacidade e, quando aplicável, em política específica 
+disponibilizada pela plataforma. 
+ 
+Cláusula 13.7 – Alterações 
+A Política de Privacidade poderá ser atualizada para refletir 
+alterações legislativas, tecnológicas ou operacionais relacionadas ao tratamento de dados 
+pessoais. 
+Sempre que tais alterações produzirem impacto relevante 
+sobre os direitos dos titulares, o TES adotará as medidas de comunicação exigidas pela 
+legislação vigente. 
+ 
+CAPÍTULO XIV 
+ 
+DA RESPONSABILIDADE DA PLATAFORMA 
+ 
+Cláusula 14.1 – Responsabilidade da Plataforma
+
+[Pagina 53]
+O TES responde pelas atividades que efetivamente 
+integram sua atuação como plataforma digital, especialmente quanto ao funcionamento 
+de sua infraestrutura tecnológica, observadas as limitações decorrentes de caso fortuito, 
+força maior, falhas de serviços prestados por terceiros e demais hipóteses previstas na 
+legislação aplicável. 
+A plataforma compromete-se a adotar medidas razoáveis 
+para manutenção da estabilidade, segurança e continuidade de seus serviços, sem garantir 
+disponibilidade ininterrupta do ambiente digital. 
+ 
+Cláusula 14.2 – Responsabilidade dos terapeutas 
+Os terapeutas cadastrados atuam de forma autônoma e 
+independente, permanecendo exclusivamente responsáveis: 
+I – pelo conteúdo técnico dos atendimentos; 
+II – pelas técnicas terapêuticas empregadas; 
+III – pelas orientações prestadas aos usuários; 
+IV – pelas informações divulgadas em seus perfis 
+profissionais; 
+V – pelo cumprimento das obrigações legais relacionadas 
+ao exercício de sua atividade. 
+O TES não interfere na condução técnica dos atendimentos 
+nem substitui a autonomia profissional dos terapeutas.
+
+[Pagina 54]
+Cláusula 14.3 – Responsabilidade dos usuários 
+Os usuários permanecem responsáveis pela veracidade das 
+informações fornecidas durante o cadastro, pela utilização adequada da plataforma, pela 
+guarda de suas credenciais de acesso e pelo cumprimento das obrigações assumidas 
+perante os terapeutas e perante o TES. 
+ 
+Cláusula 14.4 – Serviços de terceiros 
+A plataforma poderá integrar serviços disponibilizados por 
+terceiros, incluindo processadores de pagamento, serviços de hospedagem, comunicação, 
+autenticação, videoconferência e demais recursos tecnológicos necessários ao 
+funcionamento do sistema. 
+O TES realizará a seleção desses fornecedores 
+considerando critérios técnicos e operacionais compatíveis com a natureza da plataforma. 
+Eventuais falhas exclusivamente atribuíveis aos serviços 
+prestados por terceiros serão analisadas conforme as circunstâncias do caso concreto e a 
+legislação aplicável, sem prejuízo do dever do TES de atuar de forma diligente na busca 
+de solução para os usuários. 
+ 
+Cláusula 14.5 – Indisponibilidade do sistema 
+O TES não será considerado inadimplente quando a 
+indisponibilidade temporária da plataforma decorrer de: 
+I – manutenção preventiva ou corretiva;
+
+[Pagina 55]
+II – atualização de sistemas; 
+III – falhas de infraestrutura de terceiros; 
+IV – ataques cibernéticos; 
+V – caso fortuito ou força maior; 
+VI – interrupções decorrentes de determinações legais ou 
+administrativas. 
+Sempre que possível, serão adotadas medidas destinadas à 
+redução dos impactos dessas ocorrências. 
+ 
+Cláusula 14.6 – Conteúdo publicado por terceiros 
+Os conteúdos publicados por usuários e terapeutas 
+permanecem de responsabilidade de seus respectivos autores. 
+O TES poderá adotar medidas de moderação, remoção ou 
+restrição de acesso quando verificar indícios de violação destes Termos, da legislação 
+aplicável ou dos direitos de terceiros, observados os procedimentos previstos na 
+plataforma. 
+ 
+Cláusula 14.7 – Limitação de garantias 
+O TES não garante: 
+I – que determinado terapeuta seja o mais adequado às 
+necessidades individuais do usuário;
+
+[Pagina 56]
+II – resultados específicos decorrentes dos atendimentos 
+contratados; 
+III – êxito das terapias realizadas; 
+IV – disponibilidade permanente de todas as 
+funcionalidades da plataforma; 
+V – ausência absoluta de falhas técnicas inerentes à 
+utilização de sistemas digitais. 
+A plataforma compromete-se, contudo, a envidar esforços 
+razoáveis para disponibilizar ambiente seguro, funcional e compatível com os serviços 
+oferecidos. 
+ 
+Cláusula 14.8 – Mitigação de prejuízos 
+As partes comprometem-se a adotar comportamento 
+colaborativo destinado à prevenção e mitigação de eventuais prejuízos decorrentes da 
+utilização da plataforma, comunicando prontamente qualquer incidente relevante que 
+possa comprometer a segurança, a execução dos serviços ou os direitos de terceiros. 
+ 
+Cláusula 14.9 – Exercício regular de direitos 
+A adoção, pelo TES, das medidas previstas nestes Termos 
+de Uso, inclusive suspensão de contas, remoção de conteúdo, solicitação de documentos, 
+limitação de funcionalidades ou demais providências destinadas à preservação da 
+segurança da plataforma, não caracterizará abuso de direito quando realizada de boa-fé, 
+de forma proporcional e em conformidade com estes Termos e com a legislação aplicável.
+
+[Pagina 57]
+CAPÍTULO XV 
+ 
+DAS DISPOSIÇÕES GERAIS 
+ 
+Cláusula 15.1 – Vigência 
+Os presentes Termos de Uso passam a produzir efeitos a 
+partir de sua disponibilização na plataforma e permanecerão vigentes enquanto perdurar 
+a utilização dos serviços pelo usuário ou terapeuta, observado o disposto nestes Termos e 
+na legislação aplicável. 
+ 
+Cláusula 15.2 – Alterações dos Termos de Uso 
+O TES poderá revisar ou atualizar estes Termos de Uso 
+sempre que necessário para: 
+I – adequação à legislação vigente; 
+II – implementação de novas funcionalidades; 
+III – aperfeiçoamento dos serviços; 
+IV – alterações operacionais da plataforma; 
+V – atendimento de determinações administrativas ou 
+judiciais.
+
+[Pagina 58]
+Sempre que as alterações impactarem direitos ou 
+obrigações dos usuários ou terapeutas, o TES promoverá comunicação pelos meios 
+disponíveis na plataforma, podendo solicitar novo aceite quando exigido pela legislação 
+ou quando a natureza da alteração assim recomendar. 
+ 
+Cláusula 15.3 – Comunicações 
+As comunicações relacionadas à utilização da plataforma 
+poderão ser realizadas por meio de notificações no ambiente do TES, correio eletrônico, 
+mensagens eletrônicas ou outros canais de contato informados pelo usuário durante o 
+cadastro. 
+Compete ao usuário manter seus dados de contato 
+atualizados para recebimento das comunicações encaminhadas pela plataforma. 
+ 
+Cláusula 15.4 – Independência das cláusulas 
+Caso qualquer disposição destes Termos de Uso seja 
+considerada inválida, nula ou inexequível por decisão administrativa ou judicial 
+definitiva, as demais cláusulas permanecerão plenamente válidas e eficazes, produzindo 
+todos os seus efeitos. 
+Na hipótese de invalidação parcial, as partes 
+comprometem-se a interpretar os presentes Termos preservando, na maior medida 
+possível, sua finalidade econômica e jurídica. 
+ 
+Cláusula 15.5 – Tolerância
+
+[Pagina 59]
+A eventual tolerância do TES quanto ao descumprimento de 
+qualquer disposição destes Termos de Uso não constituirá renúncia de direitos, novação 
+ou alteração contratual, permanecendo íntegra a possibilidade de exigir seu cumprimento 
+a qualquer tempo. 
+ 
+Cláusula 15.6 – Cessão da Plataforma 
+O TES poderá promover reorganizações societárias, 
+alterações em sua estrutura empresarial, sucessão, incorporação, fusão, cisão ou 
+transferência da operação da plataforma, preservando os direitos dos usuários e terapeutas 
+e observando a legislação aplicável. 
+Nessas hipóteses, os presentes Termos de Uso 
+permanecerão vinculando seus sucessores, respeitados os direitos legalmente assegurados 
+aos usuários. 
+ 
+Cláusula 15.7 – Solução consensual de conflitos 
+O TES valoriza a solução consensual de controvérsias e 
+incentivará, sempre que possível, a resolução administrativa de dúvidas, reclamações e 
+conflitos relacionados à utilização da plataforma antes da adoção de medidas judiciais. 
+A utilização dos canais de atendimento não restringe o 
+exercício dos direitos assegurados pela legislação brasileira. 
+ 
+Cláusula 15.8 – Legislação aplicável
+
+[Pagina 60]
+Os presentes Termos de Uso serão interpretados e regidos 
+pelas leis da República Federativa do Brasil, especialmente pelo Código Civil, Código de 
+Defesa do Consumidor, Marco Civil da Internet, Lei Geral de Proteção de Dados Pessoais 
+e demais normas aplicáveis. 
+ 
+Cláusula 15.9 – Foro 
+Sem prejuízo das hipóteses de competência absoluta 
+previstas na legislação brasileira e dos direitos assegurados aos consumidores, fica eleito 
+o foro da Comarca de Jundiaí/SP, para dirimir as controvérsias oriundas destes Termos 
+de Uso, quando legalmente admissível. 
+Nas relações de consumo, serão observadas as regras de 
+competência previstas na legislação vigente, inclusive aquelas destinadas à proteção do 
+consumidor. 
+ 
+Cláusula 15.10 – Aceite eletrônico 
+O aceite eletrônico manifestado pelo usuário ou terapeuta 
+possui validade jurídica e produz todos os efeitos legais, constituindo manifestação 
+inequívoca de vontade para os fins da legislação brasileira aplicável aos contratos 
+celebrados em meio eletrônico. 
+O TES poderá manter registros eletrônicos relacionados ao 
+aceite destes Termos, incluindo data, horário, versão do documento aceita e demais 
+elementos técnicos necessários à comprovação da contratação.

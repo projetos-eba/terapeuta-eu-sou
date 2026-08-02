@@ -14,15 +14,24 @@ Data: 2026-08-01
   `session_payments`, `booking_reschedule_requests`,
   `session_cancellation_decisions`, Edge Function `session-booking-checkout`.
 
-## Bloqueios de leitura dos PDFs
+## Extração e publicação local dos PDFs
 
-Os PDFs foram localizados no filesystem, mas o ambiente não possui `pdftotext`,
-`qpdf`, `mutool`, `gs`, `pypdf`, `pdfplumber`, `PyPDF2` ou `pypdfium2`.
-`strings` não extraiu conteúdo textual útil por compressão/embutimento. Por
-isso, esta fase não declara divergência textual específica entre PDF e site.
+Em 2026-08-01, os três PDFs anexados foram extraídos localmente com `pypdf`,
+normalizados em blocos de leitura e materializados em
+`src/domain/legal/legal-document-content.json`.
 
-Validação pendente: extrair texto fiel dos PDFs ou receber fonte editável
-aprovada em Markdown/MDX/DOCX.
+Hashes SHA-256 confirmados contra os PDFs em `C:/Users/vferrari/Downloads`:
+
+- `Termos de Uso.pdf`:
+  `28bb5da89e4ac90f113a8fb60f81c621c39e7e80d722ba8af67cb51e040c52d2`;
+- `Política de Privacidade.pdf`:
+  `239ff69e8730b2ed187fb6d90474bef99b5e9511bd600c398a2b36d36ae6f159`;
+- `Política de Cancelamento, Reagendamento e Reembolso.pdf`:
+  `ea6d646daa5d3e4398f3d7b243ec252a382036b59be236ee3c4866df9ea141a7`.
+
+As páginas `/termos`, `/privacidade` e
+`/cancelamento-reagendamento-reembolso` passam a publicar a versão
+`2026.08.01-pdf` quando o registry local estiver em `status = published`.
 
 ## Matriz de divergências entre PDFs, produto e código
 
@@ -64,17 +73,19 @@ aprovada em Markdown/MDX/DOCX.
 
 ## Rotas e rodapé implementados sob gate
 
-- Mantidos `/termos` e `/privacidade`, mas publicados somente quando o registry
-  indicar `status = published` com versão, vigência, aprovação e hash.
-- `/ajuda` existe apenas como preview interno e deve ser publicada apenas após
-  aprovação de canais e SLAs.
+- Mantidos `/termos` e `/privacidade`, publicados somente quando o registry
+  indicar `status = published` com versão, vigência, aprovação, hash e conteúdo
+  extraído.
+- `/cancelamento-reagendamento-reembolso` publica a política aprovada quando o
+  registry indicar documento publicável e conteúdo extraído.
+- `/ajuda` publica a matriz de suporte reconciliada quando todos os itens de
+  `supportMatrix` estiverem publicáveis; a abertura de chamado permanece nos
+  canais autenticados existentes.
 - `/status` existe apenas como preview interno e deve ser publicado somente com
   fonte operacional explícita, sem fallback de
   “tudo operacional”.
-- Criada rota canônica `/cancelamento-reagendamento-reembolso`, bloqueada ate
-  publicacao juridica.
-- Rodapé final deve conter links juridicos e de suporte somente quando as
-  respectivas superficies estiverem aprovadas/publicaveis.
+- Rodapé final contém links jurídicos e de suporte somente quando as respectivas
+  superfícies estiverem aprovadas/publicáveis.
 
 ## Modelo de versionamento e aceite
 
