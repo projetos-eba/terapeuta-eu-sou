@@ -2,6 +2,70 @@ begin;
 
 select plan(43);
 
+update public.therapist_services
+set status = 'active',
+    is_bookable = true,
+    updated_at = now()
+where id = 'd1000000-0000-4000-8000-000000000021';
+
+insert into public.therapist_service_booking_settings (
+  id,
+  service_id,
+  buffer_before_minutes,
+  buffer_after_minutes,
+  min_notice_minutes,
+  max_days_ahead,
+  interval_minutes
+)
+values (
+  'a2300000-0000-4000-8000-000000000021',
+  'd1000000-0000-4000-8000-000000000021',
+  15,
+  15,
+  0,
+  30,
+  30
+)
+on conflict (service_id) do update
+set
+  buffer_before_minutes = excluded.buffer_before_minutes,
+  buffer_after_minutes = excluded.buffer_after_minutes,
+  min_notice_minutes = excluded.min_notice_minutes,
+  max_days_ahead = excluded.max_days_ahead,
+  interval_minutes = excluded.interval_minutes,
+  updated_at = now();
+
+insert into public.availability_rules (
+  id,
+  therapist_profile_id,
+  service_id,
+  day_of_week,
+  start_time,
+  end_time,
+  timezone,
+  is_active
+)
+select
+  'e1000000-0000-4000-8000-000000000721',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000021',
+  rule.day_of_week,
+  rule.start_time,
+  rule.end_time,
+  rule.timezone,
+  true
+from public.availability_rules as rule
+where rule.id = 'e1000000-0000-4000-8000-000000000006'
+on conflict (id) do update
+set
+  service_id = excluded.service_id,
+  day_of_week = excluded.day_of_week,
+  start_time = excluded.start_time,
+  end_time = excluded.end_time,
+  timezone = excluded.timezone,
+  is_active = excluded.is_active,
+  updated_at = now();
+
 create temporary table a2_available_slots (
   service_id uuid primary key,
   starts_at timestamptz not null,
@@ -17,7 +81,7 @@ from (
   values
     ('d1000000-0000-4000-8000-000000000001'::uuid),
     ('d1000000-0000-4000-8000-000000000002'::uuid),
-    ('d1000000-0000-4000-8000-000000000006'::uuid)
+    ('d1000000-0000-4000-8000-000000000021'::uuid)
 ) as service(id)
 join public.therapist_services as therapist_service
   on therapist_service.id = service.id
@@ -203,7 +267,7 @@ insert into public.availability_rules (
 select
   'e1000000-0000-4000-8000-000000000701',
   'c1000000-0000-4000-8000-000000000001',
-  'd1000000-0000-4000-8000-000000000006',
+  'd1000000-0000-4000-8000-000000000021',
   extract(dow from starts_at at time zone 'America/Sao_Paulo')::integer,
   (starts_at at time zone 'America/Sao_Paulo')::time,
   ((starts_at + interval '2 hours') at time zone 'America/Sao_Paulo')::time,
@@ -215,13 +279,13 @@ on conflict (id) do nothing;
 
 update public.therapist_service_booking_settings
 set min_notice_minutes = 0
-where service_id = 'd1000000-0000-4000-8000-000000000006';
+where service_id = 'd1000000-0000-4000-8000-000000000021';
 
 select throws_ok(
   $$
     select public.reserve_booking_hold_v1(
       'b1000000-0000-4000-8000-000000000006',
-      'd1000000-0000-4000-8000-000000000006',
+      'd1000000-0000-4000-8000-000000000021',
       (select starts_at + interval '30 minutes' from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
       (select starts_at + interval '90 minutes' from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
       'America/Sao_Paulo',
@@ -288,9 +352,9 @@ select is(
   (
     public.reserve_booking_hold_v1(
       'b1000000-0000-4000-8000-000000000005',
-      'd1000000-0000-4000-8000-000000000006',
-      (select starts_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000006'),
-      (select ends_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000006'),
+      'd1000000-0000-4000-8000-000000000021',
+      (select starts_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000021'),
+      (select ends_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000021'),
       'America/Sao_Paulo',
       'a2-hold-consume-0001',
       600
@@ -301,9 +365,9 @@ select is(
 );
 
 update public.therapist_services
-set title = 'Aromaterapia atualizada',
+set title = 'Tarô atualizado',
     price_cents = 19900
-where id = 'd1000000-0000-4000-8000-000000000006';
+where id = 'd1000000-0000-4000-8000-000000000021';
 
 select is(
   (
@@ -354,7 +418,7 @@ select is(
       on booking.id = hold.consumed_booking_id
     where hold.idempotency_key = 'a2-hold-consume-0001'
   ),
-  24000,
+  12000,
   'service price changes after the hold do not alter the booking snapshot'
 );
 
@@ -389,7 +453,7 @@ select throws_ok(
       'a2100000-0000-4000-8000-000000000024',
       'b1000000-0000-4000-8000-000000000005',
       'c1000000-0000-4000-8000-000000000001',
-      'd1000000-0000-4000-8000-000000000006',
+      'd1000000-0000-4000-8000-000000000021',
       (select starts_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
       (select ends_at from a2_available_slots where service_id = 'd1000000-0000-4000-8000-000000000001'),
       'America/Sao_Paulo',
