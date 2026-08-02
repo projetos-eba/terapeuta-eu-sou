@@ -267,6 +267,18 @@ npm run payments:catalog:verify
 npm run payments:webhooks:listen
 ```
 
+Para homologacao conjunta de pagamento de sessao e Zoom Video SDK, use:
+
+```bash
+npm run homologation:zoom:local
+```
+
+O orquestrador captura o signing secret do Stripe CLI sem imprimi-lo e o injeta
+somente no processo local das Edge Functions. A sessao Zoom real fica bloqueada
+ate haver evidencia nao secreta de `checkout.session.completed`/PaymentIntent
+processado, `session_payments.financial_status = paid` e `video_sessions`
+criada pelo fluxo canonico.
+
 Runbooks complementares:
 
 - `docs/payments/stripe-secrets-setup.md`: obtencao e rotacao de secrets Stripe.

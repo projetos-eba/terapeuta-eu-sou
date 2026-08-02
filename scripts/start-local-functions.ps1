@@ -3,6 +3,16 @@ $ErrorActionPreference = "Stop"
 $runtimeDir = Join-Path (Get-Location) ".codex\runtime"
 New-Item -ItemType Directory -Force -Path $runtimeDir | Out-Null
 
+$functionEnvDirectory = Join-Path (Get-Location) "supabase\functions"
+$functionDefaultEnvPath = Join-Path $functionEnvDirectory ".env"
+$functionRuntimeEnvBackupPath = Join-Path $functionEnvDirectory ".env.homologation-runtime"
+
+# Recover the source env file if a forced process stop interrupted the prior run.
+if (-not (Test-Path -LiteralPath $functionDefaultEnvPath) -and
+    (Test-Path -LiteralPath $functionRuntimeEnvBackupPath)) {
+  Move-Item -LiteralPath $functionRuntimeEnvBackupPath -Destination $functionDefaultEnvPath
+}
+
 function Resolve-BaseEnvFile {
   $functionEnvFile = "supabase\functions\.env.local"
   if (Test-Path -LiteralPath $functionEnvFile) {
@@ -42,15 +52,57 @@ if (-not $supabaseUrl -or -not $anonKey -or -not $serviceRoleKey) {
 $baseEnvFile = Resolve-BaseEnvFile
 
 $baseEnvContent = Get-Content -LiteralPath $baseEnvFile -ErrorAction Stop
+$restoreFunctionDefaultEnv = $false
+
+if ((Resolve-Path -LiteralPath $functionDefaultEnvPath -ErrorAction SilentlyContinue) -and
+    -not (Test-Path -LiteralPath $functionRuntimeEnvBackupPath)) {
+  Move-Item -LiteralPath $functionDefaultEnvPath -Destination $functionRuntimeEnvBackupPath
+  $restoreFunctionDefaultEnv = $true
+}
+
 $envFile = Join-Path $runtimeDir "local-functions.env"
 $content = New-Object System.Collections.Generic.List[string]
+$forwardRuntimeSecrets = @(
+  "STRIPE_WEBHOOK_SECRET",
+  "STRIPE_PLATFORM_WEBHOOK_SECRET",
+  "STRIPE_CONNECT_WEBHOOK_SECRET",
+  "STRIPE_CONNECT_V2_WEBHOOK_SECRET"
+)
+$forwardRuntimeOverrides = @(
+  "EMAIL_PUBLIC_SITE_URL",
+  "NEXT_PUBLIC_SITE_URL"
+)
+$baseKeys = New-Object System.Collections.Generic.HashSet[string]
 
 foreach ($line in $baseEnvContent) {
   if ($line -match "^\s*SUPABASE_(URL|SERVICE_ROLE_KEY|ANON_KEY|PUBLISHABLE_KEY)\s*=") {
     continue
   }
 
+  if ($line -match "^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=" -and $forwardRuntimeOverrides -contains $Matches[1]) {
+    [void] $baseKeys.Add($Matches[1])
+    continue
+  }
+
+  if ($line -match "^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=") {
+    [void] $baseKeys.Add($Matches[1])
+  }
+
   $content.Add($line)
+}
+
+foreach ($key in $forwardRuntimeSecrets) {
+  $value = [Environment]::GetEnvironmentVariable($key)
+  if (-not [string]::IsNullOrWhiteSpace($value) -and -not $baseKeys.Contains($key)) {
+    $content.Add("$key=$value")
+  }
+}
+
+foreach ($key in $forwardRuntimeOverrides) {
+  $value = [Environment]::GetEnvironmentVariable($key)
+  if (-not [string]::IsNullOrWhiteSpace($value)) {
+    $content.Add("$key=$value")
+  }
 }
 
 $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
@@ -58,7 +110,13 @@ $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
 
 function Stop-LocalEdgeRuntimeContainer {
   $containerName = "supabase_edge_runtime_$(Split-Path -Leaf (Get-Location))"
-  docker stop $containerName 2>$null | Out-Null
+  $previousErrorActionPreference = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  try {
+    docker stop $containerName 2>$null | Out-Null
+  } finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+  }
 }
 
 Stop-LocalEdgeRuntimeContainer
@@ -72,6 +130,9 @@ try {
   & npx supabase functions serve --env-file $envFile --no-verify-jwt
   exit $LASTEXITCODE
 } finally {
+  if ($restoreFunctionDefaultEnv -and (Test-Path -LiteralPath $functionRuntimeEnvBackupPath)) {
+    Move-Item -LiteralPath $functionRuntimeEnvBackupPath -Destination $functionDefaultEnvPath
+  }
   Remove-Item Env:SUPABASE_URL -ErrorAction SilentlyContinue
   Remove-Item Env:SUPABASE_SERVICE_ROLE_KEY -ErrorAction SilentlyContinue
   Remove-Item Env:SUPABASE_ANON_KEY -ErrorAction SilentlyContinue

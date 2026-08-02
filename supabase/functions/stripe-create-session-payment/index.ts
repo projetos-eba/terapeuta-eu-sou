@@ -17,7 +17,6 @@ import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 
 type Body = {
   bookingId?: string;
-  checkoutUiMode?: "embedded" | "hosted";
 };
 
 type BookingRow = {
@@ -58,8 +57,7 @@ runtime.serve(async (request) => {
     const { profile: patient, user } = await requirePatient(client, request);
     const body = await parseJsonBody<Body>(request);
     const bookingId = requireUuid(body.bookingId, "booking_id");
-    const checkoutUiMode =
-      body.checkoutUiMode === "embedded" ? "embedded" : "hosted";
+    const checkoutUiMode = "embedded";
     const booking = await getBooking(client, bookingId);
 
     if (booking.patient_profile_id !== patient.id) {
@@ -119,30 +117,42 @@ runtime.serve(async (request) => {
       "tes",
       config.stripeMode,
       "session_payment",
+      checkoutUiMode,
       booking.id,
       sessionPayment.id,
     ]);
     const checkoutSessionParams = {
-        client_reference_id: booking.id,
-        customer: customer.stripe_customer_id,
-        integration_identifier: `tes_pay_${randomLetters(8)}`,
-        line_items: [
-          {
-            price_data: {
-              currency: booking.currency_snapshot.toLowerCase(),
-              product_data: {
-                metadata: {
-                  stripe_mode: config.stripeMode,
-                  system: "tes",
-                  tes_service_id: booking.service_id,
-                },
-                name: booking.service_title_snapshot,
+      client_reference_id: booking.id,
+      customer: customer.stripe_customer_id,
+      line_items: [
+        {
+          price_data: {
+            currency: booking.currency_snapshot.toLowerCase(),
+            product_data: {
+              metadata: {
+                stripe_mode: config.stripeMode,
+                system: "tes",
+                tes_service_id: booking.service_id,
               },
-              unit_amount: snapshot.grossAmountCents,
+              name: booking.service_title_snapshot,
             },
-            quantity: 1,
+            unit_amount: snapshot.grossAmountCents,
           },
-        ],
+          quantity: 1,
+        },
+      ],
+      metadata: {
+        environment: config.environment,
+        payment_type: "therapy_session",
+        stripe_mode: config.stripeMode,
+        system: "tes",
+        tes_patient_id: patient.id,
+        tes_session_id: booking.id,
+        tes_session_payment_id: sessionPayment.id,
+        tes_therapist_id: booking.therapist_profile_id,
+      },
+      mode: "payment" as const,
+      payment_intent_data: {
         metadata: {
           environment: config.environment,
           payment_type: "therapy_session",
@@ -153,30 +163,11 @@ runtime.serve(async (request) => {
           tes_session_payment_id: sessionPayment.id,
           tes_therapist_id: booking.therapist_profile_id,
         },
-        mode: "payment" as const,
-        payment_intent_data: {
-          metadata: {
-            environment: config.environment,
-            payment_type: "therapy_session",
-            stripe_mode: config.stripeMode,
-            system: "tes",
-            tes_patient_id: patient.id,
-            tes_session_id: booking.id,
-            tes_session_payment_id: sessionPayment.id,
-            tes_therapist_id: booking.therapist_profile_id,
-          },
-          transfer_group: `tes_booking_${booking.id}`,
-        },
-        ...(checkoutUiMode === "embedded"
-          ? {
-              return_url: `${config.siteUrl}/reserva/sucesso?booking=${booking.id}&session_id={CHECKOUT_SESSION_ID}`,
-              ui_mode: "embedded_page" as const,
-            }
-          : {
-              cancel_url: `${config.siteUrl}/reserva?booking=${booking.id}&payment=canceled`,
-              success_url: `${config.siteUrl}/reserva/sucesso?booking=${booking.id}&session_id={CHECKOUT_SESSION_ID}`,
-            }),
-      };
+        transfer_group: `tes_booking_${booking.id}`,
+      },
+      return_url: `${config.siteUrl}/reserva/sucesso?booking=${booking.id}&session_id={CHECKOUT_SESSION_ID}`,
+      ui_mode: "embedded_page" as const,
+    };
     const checkout = await stripe.checkout.sessions.create(
       checkoutSessionParams,
       { idempotencyKey },
@@ -334,15 +325,6 @@ async function getOrCreateSessionPayment(
   );
 
   return inserted[0];
-}
-
-function randomLetters(length: number) {
-  const letters = "abcdefghijklmnopqrstuvwxyz";
-  const bytes = crypto.getRandomValues(new Uint8Array(length));
-
-  return Array.from(bytes)
-    .map((byte) => letters[byte % letters.length])
-    .join("");
 }
 
 export {};

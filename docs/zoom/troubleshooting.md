@@ -10,6 +10,8 @@ listado e rode de novo. O comando nao cria fixtures nem abre browser sem:
 - Supabase local ou staging autorizado;
 - URL ngrok ativa;
 - webhook verificado e nao expirado para a URL atual;
+- pagamento Stripe test confirmado por webhook canonico quando o objetivo for
+  homologacao transacional completa;
 - nenhuma sessao ativa;
 - flags `--confirm-zoom-marketplace --confirm-single-real-session`.
 
@@ -23,6 +25,28 @@ npm run zoom:video-sdk:webhook:real-verify
 
 A confirmacao dura pouco e fica vinculada a URL ngrok atual. Nova URL exige nova
 validacao manual no Zoom e novo `real-verify`.
+
+## O Marketplace mostra `URL validation failed. Try again later`
+
+Esse erro pode ocorrer mesmo com HTTP 200 quando o corpo do
+`endpoint.url_validation` nao esta no formato exato esperado pelo Zoom. A
+resposta deve ser o JSON raiz:
+
+```json
+{
+  "plainToken": "<plainToken recebido>",
+  "encryptedToken": "<hmac sha256 do plainToken com o Secret Token>"
+}
+```
+
+Nao use o envelope padrao da API TES, como `{ "ok": true, "data": ... }`, para
+esse evento. Antes de clicar em **Validate** no Marketplace, rode:
+
+```bash
+npm run zoom:video-sdk:webhook:real-preflight
+```
+
+O resultado precisa indicar `validationShape: true`.
 
 ## Existe sessao ativa antes do teste
 
@@ -57,3 +81,11 @@ consultas de prova indicadas no erro antes de tentar novamente.
 O limite e intencional e distribuido no banco. Ele impede emissao repetida de
 JWTs por booking/perfil/papel dentro de uma janela curta. Aguarde a janela
 expirar ou investigue chamadas duplicadas no cliente antes de repetir.
+
+## O orquestrador parou em `canonical_stripe_payment_e2e_pending`
+
+Nao abra Zoom por fora. Esse bloqueio significa que ainda nao existe evidencia
+de Checkout Stripe test, webhook assinado processado, pagamento `paid` e
+`video_session` canonica para a booking. O harness tecnico com pagamento direto
+so valida Zoom isoladamente e deve ser executado apenas com a flag diagnostica
+documentada.

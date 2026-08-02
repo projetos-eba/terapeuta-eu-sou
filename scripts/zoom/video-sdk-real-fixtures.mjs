@@ -4,12 +4,148 @@ import { maskIdentifier } from "./video-sdk-real-helpers.mjs";
 
 const source = "zoom_real_homologation";
 
+export async function createZoomCheckoutFixtures({ admin, runId }) {
+  const passwordTherapist = randomPassword();
+  const passwordPatient = randomPassword();
+  const slug = `zoom-real-${runId}`;
+  const therapistEmail = `${runId}.therapist@example.com`;
+  const patientEmail = `${runId}.patient@example.com`;
+  const metadata = { runId, source };
+  const ids = {
+    patientProfileId: crypto.randomUUID(),
+    serviceId: crypto.randomUUID(),
+    therapistProfileId: crypto.randomUUID(),
+  };
+
+  const therapistUser = await admin.authCreateUser({
+    email: therapistEmail,
+    password: passwordTherapist,
+    role: "therapist",
+  });
+  const patientUser = await admin.authCreateUser({
+    email: patientEmail,
+    password: passwordPatient,
+    role: "patient",
+  });
+  ids.therapistUserId = therapistUser.id;
+  ids.patientUserId = patientUser.id;
+
+  try {
+    await admin.insert("profiles", [
+      {
+        display_name: "Homologacao Zoom Terapeuta",
+        email: therapistEmail,
+        id: ids.therapistUserId,
+        role: "therapist",
+      },
+      {
+        display_name: "Homologacao Zoom Paciente",
+        email: patientEmail,
+        id: ids.patientUserId,
+        role: "patient",
+      },
+    ]);
+
+    await admin.insert("patient_profiles", [
+      {
+        display_name: "Homologacao Zoom Paciente",
+        id: ids.patientProfileId,
+        marketing_consent: false,
+        metadata,
+        sensitive_data_consent_at: new Date().toISOString(),
+        timezone: "America/Sao_Paulo",
+        user_id: ids.patientUserId,
+      },
+    ]);
+
+    await admin.insert("therapist_profiles", [
+      {
+        accepts_online_sessions: true,
+        city: "Sao Paulo",
+        country: "BR",
+        headline: "Perfil temporario para homologacao tecnica Video SDK.",
+        id: ids.therapistProfileId,
+        is_accepting_bookings: true,
+        is_public: true,
+        legal_name: "Homologacao Zoom Terapeuta",
+        metadata,
+        plan: "premium_plus",
+        public_name: "Homologacao Zoom Terapeuta",
+        slug,
+        state: "SP",
+        status: "approved",
+        user_id: ids.therapistUserId,
+      },
+    ]);
+
+    await ensureScheduleSettings({
+      admin,
+      therapistId: ids.therapistProfileId,
+    });
+    ensureLocalCheckoutLegalDocuments({ admin });
+    await createSubscription({ admin, ids, runId });
+
+    const therapyId = await resolveTherapyId(admin);
+    await admin.insert("therapist_services", [
+      {
+        currency: "BRL",
+        description:
+          "Sessao temporaria para homologacao tecnica do Zoom Video SDK.",
+        duration_minutes: 30,
+        id: ids.serviceId,
+        online_only: true,
+        price_cents: 17000,
+        status: "active",
+        therapist_profile_id: ids.therapistProfileId,
+        therapy_id: therapyId,
+        title: "Homologacao Zoom Video SDK",
+      },
+    ]);
+    insertServiceBookingSettings({ admin, serviceId: ids.serviceId });
+
+    const targetStartsAt = new Date(Date.now() + 5 * 60_000);
+    await admin.insert("availability_rules", [
+      {
+        day_of_week: targetStartsAt.getDay(),
+        end_time: "23:59",
+        is_active: true,
+        service_id: ids.serviceId,
+        start_time: "00:00",
+        therapist_profile_id: ids.therapistProfileId,
+        timezone: "America/Sao_Paulo",
+      },
+    ]);
+
+    const availableSlot = await resolveCheckoutSlot({
+      admin,
+      serviceId: ids.serviceId,
+    });
+
+    return {
+      credentials: {
+        patient: { email: patientEmail, password: passwordPatient },
+        therapist: { email: therapistEmail, password: passwordTherapist },
+      },
+      ids,
+      reservation: {
+        serviceName: "Homologacao Zoom Video SDK",
+        slug,
+        startsAt: availableSlot.startsAt,
+      },
+      sanitized: sanitizeIds(ids),
+    };
+  } catch (error) {
+    await cleanupZoomRealFixtures({ admin, ids, runId });
+    throw error;
+  }
+}
+
 export async function createZoomRealFixtures({ admin, environment, runId }) {
   const passwordTherapist = randomPassword();
   const passwordPatient = randomPassword();
   const slug = `zoom-real-${runId}`;
-  const therapistEmail = `${runId}.therapist@example.test`;
-  const patientEmail = `${runId}.patient@example.test`;
+  const therapistEmail = `${runId}.therapist@example.com`;
+  const patientEmail = `${runId}.patient@example.com`;
   const metadata = { runId, source };
   const ids = {
     bookingId: crypto.randomUUID(),
@@ -200,6 +336,14 @@ export async function cleanupZoomRealFixtures({ admin, ids, runId }) {
     await safeDelete("video_sessions", () =>
       admin.delete("video_sessions", `booking_id=eq.${ids.bookingId}`),
     );
+    await safeDelete("session_payment_attempts", () =>
+      ids.sessionPaymentId
+        ? admin.delete(
+            "session_payment_attempts",
+            `session_payment_id=eq.${ids.sessionPaymentId}`,
+          )
+        : Promise.resolve(),
+    );
     await safeDelete("financial_ledger_entries", () =>
       admin.delete(
         "financial_ledger_entries",
@@ -226,17 +370,66 @@ export async function cleanupZoomRealFixtures({ admin, ids, runId }) {
     await safeDelete("session_payments", () =>
       admin.delete("session_payments", `booking_id=eq.${ids.bookingId}`),
     );
+    await safeDelete("legal_acceptances", () =>
+      deleteLocalLegalAcceptances({ admin, bookingId: ids.bookingId }),
+    );
     await safeDelete("bookings", () =>
       admin.delete("bookings", `id=eq.${ids.bookingId}`),
     );
+    await safeDelete("booking_holds", async () => {
+      try {
+        await admin.delete(
+          "booking_holds",
+          `consumed_booking_id=eq.${ids.bookingId}`,
+        );
+      } catch (error) {
+        if (
+          !/permission denied for table booking_holds/.test(
+            String(error?.message),
+          )
+        ) {
+          throw error;
+        }
+        assertUuid(ids.bookingId, "bookingId");
+        admin.executeLocalSql(
+          `delete from public.booking_holds where consumed_booking_id = '${ids.bookingId}'::uuid;`,
+        );
+      }
+    });
   }
 
   if (ids.serviceId) {
+    await safeDelete("booking_holds", async () => {
+      try {
+        await admin.delete("booking_holds", `service_id=eq.${ids.serviceId}`);
+      } catch (error) {
+        if (
+          !/permission denied for table booking_holds/.test(
+            String(error?.message),
+          )
+        ) {
+          throw error;
+        }
+        assertUuid(ids.serviceId, "serviceId");
+        admin.executeLocalSql(
+          `delete from public.booking_holds where service_id = '${ids.serviceId}'::uuid;`,
+        );
+      }
+    });
     await safeDelete("availability_rules", () =>
       admin.delete("availability_rules", `service_id=eq.${ids.serviceId}`),
     );
     await safeDelete("therapist_services", () =>
       admin.delete("therapist_services", `id=eq.${ids.serviceId}`),
+    );
+  }
+
+  if (ids.patientProfileId) {
+    await safeDelete("stripe_customers", () =>
+      admin.delete(
+        "stripe_customers",
+        `patient_profile_id=eq.${ids.patientProfileId}`,
+      ),
     );
   }
 
@@ -276,12 +469,12 @@ function randomPassword() {
 async function resolveTherapyId(admin) {
   const [published] = await admin.select(
     "therapies",
-    "select=id&status=eq.published&limit=1",
+    "select=id&status=eq.published&is_public_visible=eq.true&limit=1",
   );
   if (published?.id) return published.id;
-  const [anyTherapy] = await admin.select("therapies", "select=id&limit=1");
-  if (anyTherapy?.id) return anyTherapy.id;
-  throw new Error("Nenhuma terapia local encontrada para fixture temporaria.");
+  throw new Error(
+    "Nenhuma terapia publicada e publica encontrada para fixture temporaria.",
+  );
 }
 
 async function createSubscription({ admin, ids, runId }) {
@@ -313,6 +506,263 @@ async function createSubscription({ admin, ids, runId }) {
       therapist_profile_id: ids.therapistProfileId,
     },
   ]);
+}
+
+async function ensureScheduleSettings({ admin, therapistId }) {
+  const [existing] = await admin.select(
+    "therapist_schedule_settings",
+    `select=therapist_profile_id&therapist_profile_id=eq.${therapistId}&limit=1`,
+  );
+  if (existing) return;
+
+  assertUuid(therapistId, "therapistId");
+  admin.executeLocalSql(`
+    insert into public.therapist_schedule_settings (
+      therapist_profile_id,
+      timezone
+    ) values (
+      '${therapistId}'::uuid,
+      'America/Sao_Paulo'
+    )
+    on conflict (therapist_profile_id) do update
+    set
+      timezone = excluded.timezone,
+      updated_at = now();
+  `);
+}
+
+function insertServiceBookingSettings({ admin, serviceId }) {
+  assertUuid(serviceId, "serviceId");
+  admin.executeLocalSql(`
+    insert into public.therapist_service_booking_settings (
+      service_id,
+      buffer_before_minutes,
+      buffer_after_minutes,
+      min_notice_minutes,
+      max_days_ahead,
+      interval_minutes
+    ) values (
+      '${serviceId}'::uuid,
+      0,
+      0,
+      0,
+      30,
+      1
+    )
+    on conflict (service_id) do update
+    set
+      buffer_before_minutes = excluded.buffer_before_minutes,
+      buffer_after_minutes = excluded.buffer_after_minutes,
+      min_notice_minutes = excluded.min_notice_minutes,
+      max_days_ahead = excluded.max_days_ahead,
+      interval_minutes = excluded.interval_minutes,
+      updated_at = now();
+  `);
+}
+
+function ensureLocalCheckoutLegalDocuments({ admin }) {
+  admin.executeLocalSql(`
+    insert into public.legal_document_versions (
+      document_key,
+      title,
+      audience,
+      version,
+      content_hash,
+      canonical_path,
+      language,
+      status,
+      approved_at,
+      approved_by,
+      effective_at,
+      published_at,
+      requires_new_acceptance,
+      change_summary,
+      source_reference
+    )
+    select *
+    from (
+      values
+        (
+          'terms-of-use',
+          'Termos de Uso TES',
+          array['patient']::text[],
+          'homologation-local-v1',
+          'sha256:zoom-homologation-terms',
+          '/termos',
+          'pt-BR',
+          'published',
+          now() - interval '1 day',
+          'local-homologation-script',
+          now() - interval '1 day',
+          now() - interval '1 day',
+          false,
+          'Versao local minima para homologacao transacional.',
+          'scripts/zoom/video-sdk-real-fixtures.mjs'
+        ),
+        (
+          'privacy-policy',
+          'Politica de Privacidade TES',
+          array['patient']::text[],
+          'homologation-local-v1',
+          'sha256:zoom-homologation-privacy',
+          '/privacidade',
+          'pt-BR',
+          'published',
+          now() - interval '1 day',
+          'local-homologation-script',
+          now() - interval '1 day',
+          now() - interval '1 day',
+          false,
+          'Versao local minima para homologacao transacional.',
+          'scripts/zoom/video-sdk-real-fixtures.mjs'
+        ),
+        (
+          'cancellation-reschedule-refund-policy',
+          'Politica de Cancelamento, Reagendamento e Reembolso TES',
+          array['patient']::text[],
+          'homologation-local-v1',
+          'sha256:zoom-homologation-cancellation',
+          '/termos#cancelamentos',
+          'pt-BR',
+          'published',
+          now() - interval '1 day',
+          'local-homologation-script',
+          now() - interval '1 day',
+          now() - interval '1 day',
+          false,
+          'Versao local minima para homologacao transacional.',
+          'scripts/zoom/video-sdk-real-fixtures.mjs'
+        )
+    ) as document_seed (
+      document_key,
+      title,
+      audience,
+      version,
+      content_hash,
+      canonical_path,
+      language,
+      status,
+      approved_at,
+      approved_by,
+      effective_at,
+      published_at,
+      requires_new_acceptance,
+      change_summary,
+      source_reference
+    )
+    where not exists (
+      select 1
+      from public.legal_document_versions as existing
+      where existing.document_key = document_seed.document_key
+        and existing.status = 'published'
+        and existing.effective_at <= now()
+    )
+    on conflict (document_key, version) do nothing;
+  `);
+}
+
+function deleteLocalLegalAcceptances({ admin, bookingId }) {
+  assertUuid(bookingId, "bookingId");
+  admin.executeLocalSql(`
+    do $$
+    begin
+      alter table public.legal_acceptances
+        disable trigger a10_prevent_legal_acceptance_delete;
+
+      delete from public.legal_acceptances
+      where booking_id = '${bookingId}'::uuid
+        and context = 'reservation_checkout';
+
+      alter table public.legal_acceptances
+        enable trigger a10_prevent_legal_acceptance_delete;
+    exception
+      when others then
+        alter table public.legal_acceptances
+          enable trigger a10_prevent_legal_acceptance_delete;
+        raise;
+    end $$;
+  `);
+}
+
+async function resolveCheckoutSlot({ admin, serviceId }) {
+  const rangeStart = new Date(Date.now() + 2 * 60_000).toISOString();
+  const rangeEnd = new Date(Date.now() + 60 * 60_000).toISOString();
+  const slots = await admin.rpc("get_service_available_slots_v1", {
+    p_limit: 20,
+    p_range_end: rangeEnd,
+    p_range_start: rangeStart,
+    p_service_id: serviceId,
+  });
+  const slot = slots?.slots?.[0];
+  if (!slot?.startsAt) {
+    const error = new Error("checkout_slot_not_available");
+    error.details = await collectCheckoutSlotDiagnostics({
+      admin,
+      serviceId,
+      slots,
+    });
+    throw error;
+  }
+  return slot;
+}
+
+async function collectCheckoutSlotDiagnostics({ admin, serviceId, slots }) {
+  const diagnostics = {
+    serviceId: maskIdentifier(serviceId),
+    slotsContract: slots?.contractVersion ?? null,
+    slotsIsNull: slots == null,
+    slotsLength: Array.isArray(slots?.slots) ? slots.slots.length : null,
+  };
+
+  const serviceRows = await admin
+    .select(
+      "therapist_services",
+      `select=id,status,duration_minutes,therapist_profile_id,therapy_id&id=eq.${serviceId}`,
+    )
+    .catch(() => []);
+  const service = serviceRows[0];
+  if (service) {
+    diagnostics.service = {
+      durationMinutes: service.duration_minutes,
+      status: service.status,
+      therapistProfileId: maskIdentifier(service.therapist_profile_id),
+      therapyId: maskIdentifier(service.therapy_id),
+    };
+  }
+
+  const rules = await admin
+    .select(
+      "availability_rules",
+      `select=day_of_week,start_time,end_time,timezone,is_active&service_id=eq.${serviceId}`,
+    )
+    .catch(() => []);
+  diagnostics.rules = rules.map((rule) => ({
+    dayOfWeek: rule.day_of_week,
+    endTime: rule.end_time,
+    isActive: rule.is_active,
+    startTime: rule.start_time,
+    timezone: rule.timezone,
+  }));
+
+  const bookingSettings = await admin
+    .select(
+      "therapist_service_booking_settings",
+      `select=buffer_before_minutes,buffer_after_minutes,min_notice_minutes,max_days_ahead,interval_minutes&service_id=eq.${serviceId}`,
+    )
+    .catch(() => []);
+  diagnostics.bookingSettings = bookingSettings[0] ?? null;
+
+  if (service?.therapist_profile_id) {
+    const scheduleSettings = await admin
+      .select(
+        "therapist_schedule_settings",
+        `select=timezone&therapist_profile_id=eq.${service.therapist_profile_id}`,
+      )
+      .catch(() => []);
+    diagnostics.scheduleSettings = scheduleSettings[0] ?? null;
+  }
+
+  return diagnostics;
 }
 
 async function createPaidSessionPayment({ admin, ids, runId }) {

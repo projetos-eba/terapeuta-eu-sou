@@ -276,6 +276,13 @@ Stack real identificada:
   limite duro fica em `video_sessions.hard_ends_at`. Encerramentos por timeout,
   ausência do terapeuta e reconciliação usam `video_session_control_jobs` e a
   Edge Function `zoom-video-session-maintenance`.
+  A homologação local completa deve usar `npm run homologation:zoom:local`,
+  que orquestra gates de Supabase local, Edge Functions, Stripe CLI, Next,
+  webhooks e Zoom real. Sessão real de Zoom só pode avançar após evidência de
+  pagamento de sessão por Stripe Checkout test + webhook assinado, com
+  `session_payments.financial_status = paid` e `video_sessions` criada pelo
+  fluxo canônico. Fixture com pagamento direto fica restrita a diagnóstico
+  técnico isolado via flag explícita e não conclui homologação transacional.
   O comando real exige confirmação manual momentânea por flags antes de abrir
   uma única sessão curta, usa Playwright visível com contexts separados para
   terapeuta e paciente, e a emissão de JWT passa por rate limit distribuído no

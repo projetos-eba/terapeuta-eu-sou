@@ -59,8 +59,8 @@ const response = await fetch(url, {
 });
 const payload = await response.json().catch(() => null);
 const validationShape =
-  typeof payload?.data?.plainToken === "string" &&
-  typeof payload?.data?.encryptedToken === "string";
+  typeof payload?.plainToken === "string" &&
+  typeof payload?.encryptedToken === "string";
 
 if (response.ok && validationShape) {
   await recordWebhookVerification({ publicWebhookUrl: url });

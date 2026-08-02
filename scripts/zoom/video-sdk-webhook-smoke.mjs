@@ -56,11 +56,17 @@ for (const event of events) {
     },
     method: "POST",
   });
+  const payload = await response.json().catch(() => null);
+  const validationShape =
+    event.event !== "endpoint.url_validation" ||
+    (typeof payload?.plainToken === "string" &&
+      typeof payload?.encryptedToken === "string");
 
   results.push({
     event: event.event,
-    ok: response.ok,
+    ok: response.ok && validationShape,
     status: response.status,
+    validationShape,
   });
 }
 

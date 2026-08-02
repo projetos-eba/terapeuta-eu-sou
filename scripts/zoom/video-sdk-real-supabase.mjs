@@ -141,13 +141,22 @@ export function createSupabaseAdmin(runtime) {
       if (!["127.0.0.1", "localhost"].includes(safeHost(runtime.apiUrl))) {
         throw new Error("local_sql_requires_local_supabase");
       }
+      const normalizedSql = sql.replace(/\s+/g, " ").trim();
       const command =
         process.platform === "win32"
           ? [
               "cmd.exe",
-              ["/c", "npx", "supabase", "db", "query", "--local", sql],
+              [
+                "/c",
+                "npx",
+                "supabase",
+                "db",
+                "query",
+                "--local",
+                normalizedSql,
+              ],
             ]
-          : ["npx", ["supabase", "db", "query", "--local", sql]];
+          : ["npx", ["supabase", "db", "query", "--local", normalizedSql]];
       execFileSync(command[0], command[1], {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
