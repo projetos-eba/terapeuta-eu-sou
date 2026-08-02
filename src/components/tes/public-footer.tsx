@@ -1,50 +1,24 @@
-import Link from "next/link";
 import type { Route } from "next";
+import Link from "next/link";
 
 import { getPublicSocialLinks } from "@/config/public-social-links";
+import {
+  getLegalDocument,
+  isDocumentPublishable,
+  isSupportMatrixPublishable,
+} from "@/domain/legal/legal-registry";
 import { routes } from "@/lib/routes";
 
 import { PublicLogo } from "./public-header";
 
-const groups: Array<{
+type FooterGroup = {
+  items: Array<{ href?: Route; label: string }>;
   title: string;
-  items: Array<{ label: string; href?: Route }>;
-}> = [
-  {
-    title: "Institucional",
-    items: [
-      { label: "Terapias", href: routes.public.therapies as Route },
-      { label: "Terapeutas", href: routes.public.therapists as Route },
-      { label: "Sua Jornada", href: routes.public.journey as Route },
-    ],
-  },
-  {
-    title: "Para terapeutas",
-    items: [
-      {
-        label: "Seja um terapeuta",
-        href: routes.public.therapistSignUp as Route,
-      },
-      {
-        label: "Planos e benefícios",
-        href: routes.public.therapistPlans as Route,
-      },
-    ],
-  },
-  {
-    title: "Suporte e legal",
-    items: [
-      {
-        label: "Política de privacidade",
-        href: routes.public.privacy as Route,
-      },
-      { label: "Termos de uso", href: routes.public.terms as Route },
-    ],
-  },
-];
+};
 
 export function PublicFooter() {
   const socialLinks = getPublicSocialLinks();
+  const groups = getFooterGroups();
 
   return (
     <footer className="mx-auto grid max-w-[1680px] gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[360px_1fr] lg:px-12">
@@ -83,11 +57,11 @@ export function PublicFooter() {
             </ul>
           </div>
         ))}
-        <div>
-          <h3 className="text-base font-extrabold text-brand-deep">
-            Redes sociais
-          </h3>
-          {socialLinks.length ? (
+        {socialLinks.length ? (
+          <div>
+            <h3 className="text-base font-extrabold text-brand-deep">
+              Redes sociais
+            </h3>
             <ul className="mt-4 flex flex-wrap gap-3">
               {socialLinks.map((item) => {
                 const Icon = item.icon;
@@ -107,13 +81,71 @@ export function PublicFooter() {
                 );
               })}
             </ul>
-          ) : (
-            <p className="mt-4 text-sm font-semibold leading-6 text-tesText-muted">
-              Canais oficiais serão exibidos quando estiverem configurados.
-            </p>
-          )}
-        </div>
+          </div>
+        ) : null}
       </div>
     </footer>
   );
 }
+
+function getFooterGroups(): FooterGroup[] {
+  const legalItems: FooterGroup["items"] = [];
+
+  if (isDocumentPublishable(getLegalDocument("privacy-policy"))) {
+    legalItems.push({
+      href: routes.public.privacy as Route,
+      label: "Política de privacidade",
+    });
+  }
+
+  if (isDocumentPublishable(getLegalDocument("terms-of-use"))) {
+    legalItems.push({
+      href: routes.public.terms as Route,
+      label: "Termos de uso",
+    });
+  }
+
+  if (
+    isDocumentPublishable(
+      getLegalDocument("cancellation-reschedule-refund-policy"),
+    )
+  ) {
+    legalItems.push({
+      href: routes.public.cancellationPolicy as Route,
+      label: "Cancelamento e reembolso",
+    });
+  }
+
+  if (isSupportMatrixPublishable()) {
+    legalItems.push({ href: routes.public.help as Route, label: "Ajuda" });
+  }
+
+  return [
+    {
+      title: "Institucional",
+      items: [
+        { label: "Terapias", href: routes.public.therapies as Route },
+        { label: "Terapeutas", href: routes.public.therapists as Route },
+        { label: "Sua Jornada", href: routes.public.journey as Route },
+      ],
+    },
+    {
+      title: "Para terapeutas",
+      items: [
+        {
+          label: "Seja um terapeuta",
+          href: routes.public.therapistSignUp as Route,
+        },
+        {
+          label: "Planos e benefícios",
+          href: routes.public.therapistPlans as Route,
+        },
+      ],
+    },
+    {
+      title: "Suporte e legal",
+      items: legalItems,
+    },
+  ];
+}
+
