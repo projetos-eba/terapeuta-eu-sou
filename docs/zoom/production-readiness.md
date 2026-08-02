@@ -18,6 +18,9 @@ Antes de producao:
   revisar o valor operacional aprovado pelo produto;
 - executar `docs/zoom/real-homologation-runbook.md` e voltar
   `ALLOW_REAL_ZOOM=false` depois do teste;
+- executar `npm run homologation:zoom:local` em ambiente local/controlado e
+  aceitar sessao real somente depois de evidenciar pagamento Stripe test por
+  Checkout + webhook;
 - manter o rate limit distribuido de emissao de JWT ativo e validado por pgTAP;
 - manter host-first ativo: paciente so recebe JWT apos `session.user_joined`
   confiavel do terapeuta;

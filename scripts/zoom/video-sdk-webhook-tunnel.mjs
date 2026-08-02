@@ -94,6 +94,26 @@ async function assertLocalWebhook(url) {
     );
     process.exit(1);
   }
+  const payload = await response.json().catch(() => null);
+  const validationShape =
+    typeof payload?.plainToken === "string" &&
+    typeof payload?.encryptedToken === "string";
+  if (!validationShape) {
+    console.error(
+      JSON.stringify(
+        {
+          blocked: true,
+          localWebhookReachable: true,
+          status: response.status,
+          url,
+          validationShape,
+        },
+        null,
+        2,
+      ),
+    );
+    process.exit(1);
+  }
 }
 
 async function closeTunnel(listenerToClose) {

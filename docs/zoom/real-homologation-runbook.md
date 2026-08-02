@@ -120,10 +120,46 @@ Antes de abrir a sessao real, confirme visualmente na Zoom Build Platform:
 Essa confirmacao nao e persistida em `.env` nem no arquivo temporario. Ela deve
 ser passada no comando do teste real por flags momentaneas.
 
-## Fixtures
+## Comando unico
 
-Nao configure booking, e-mail ou senha manualmente. O script real cria em
-runtime:
+Use o comando abaixo como entrada principal da homologacao local:
+
+```bash
+npm run homologation:zoom:local
+```
+
+Ele valida ferramentas, ambiente local, Supabase, migrations, pgTAP, Edge
+Functions, Next, Stripe CLI, testes locais do Zoom, webhook publico validado,
+preflight real e cleanup. Logs e evidencias sanitizadas ficam em
+`.tmp/homologation/<runId>/`.
+
+O comando captura o signing secret temporario do Stripe CLI sem imprimi-lo e o
+injeta somente no processo local das Edge Functions. Se o Stripe CLI, ngrok,
+webhook Zoom, Supabase local ou qualquer gate real falhar, o processo para antes
+de abrir uma sessao Zoom.
+
+## Fixtures e pagamento
+
+Para a homologacao transacional principal, o pagamento precisa ser criado pelo
+fluxo real:
+
+1. paciente autenticado escolhe horario em `/reserva`;
+2. `/api/public/reservation/checkout` chama `session-booking-checkout`;
+3. `stripe-create-session-payment` cria Checkout Session test;
+4. Playwright navega pelo Checkout/Embedded Checkout;
+5. Stripe CLI encaminha evento assinado para a Edge Function local;
+6. `stripe-billing-webhook` marca `session_payments.financial_status = paid`;
+7. o webhook chama `ensure_video_session_for_paid_booking_v1`;
+8. `.tmp/zoom-real-homologation.json` registra evidencia nao secreta em
+   `canonicalPayment`.
+
+O harness tecnico `npm run zoom:video-sdk:test:real` nao e mais aceito como
+homologacao principal quando cria `session_payments` diretamente. A flag
+`--allow-direct-paid-fixture-for-zoom-only` deve ser usada somente para
+diagnostico isolado do Video SDK, depois de registrar que o pagamento canonico
+continua pendente.
+
+O script real tecnico cria em runtime:
 
 - usuario terapeuta;
 - perfil aprovado Premium Plus;
@@ -165,6 +201,8 @@ O fluxo autorizado para a sessao real e:
     terapeuta/paciente e `video_sessions.status = ended`.
 
 O harness recusa execucao sem `--headed` e `--slow-mo=<ms>` positivo.
+Sem a flag diagnostica, ele tambem recusa execucao sem evidencia de pagamento
+canonico por Stripe Checkout + webhook.
 
 ## Duracao, Presenca e Maintenance
 

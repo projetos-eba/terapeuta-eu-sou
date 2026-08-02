@@ -9,9 +9,7 @@ import { TESButton } from "@/components/tes";
 
 declare global {
   interface Window {
-    Stripe?: (
-      publishableKey: string,
-    ) => {
+    Stripe?: (publishableKey: string) => {
       initEmbeddedCheckout: (options: {
         fetchClientSecret: () => Promise<string>;
       }) => Promise<{
@@ -28,7 +26,7 @@ type CheckoutResponse =
       checkout: {
         bookingId: string;
         checkoutSessionId: string;
-        clientSecret: string;
+        clientSecret: string | null;
         holdExpiresAt: string;
         holdId: string;
         sessionPaymentId: string;
@@ -59,6 +57,8 @@ export function CheckoutButton({
     destroy: () => void;
     mount: (selector: string) => void;
   } | null>(null);
+  const checkoutInputKeyRef = useRef<string | null>(null);
+  const clientSecretPromiseRef = useRef<Promise<string> | null>(null);
   const requestIdRef = useRef<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -92,7 +92,12 @@ export function CheckoutButton({
 
       setIsSubmitting(true);
       setError(null);
-      requestIdRef.current = requestIdRef.current ?? crypto.randomUUID();
+      const checkoutInputKey = `${serviceId}:${startsAt}`;
+      if (checkoutInputKeyRef.current !== checkoutInputKey) {
+        checkoutInputKeyRef.current = checkoutInputKey;
+        requestIdRef.current = crypto.randomUUID();
+        clientSecretPromiseRef.current = null;
+      }
 
       try {
         await loadStripeScript();
@@ -104,26 +109,41 @@ export function CheckoutButton({
         }
 
         const checkout = await stripe.initEmbeddedCheckout({
-          fetchClientSecret: async () => {
-            const response = await fetch("/api/public/reservation/checkout", {
-              body: JSON.stringify({
-                requestId: requestIdRef.current,
-                serviceId,
-                startsAt,
-                termsAccepted: true,
-              }),
-              headers: {
-                "Content-Type": "application/json",
-              },
-              method: "POST",
-            });
-            const data = (await response.json()) as CheckoutResponse;
+          fetchClientSecret: () => {
+            if (!clientSecretPromiseRef.current) {
+              clientSecretPromiseRef.current = (async () => {
+                const response = await fetch(
+                  "/api/public/reservation/checkout",
+                  {
+                    body: JSON.stringify({
+                      requestId: requestIdRef.current,
+                      serviceId,
+                      startsAt,
+                      termsAccepted: true,
+                    }),
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    method: "POST",
+                  },
+                );
+                const data = (await response.json()) as CheckoutResponse;
 
-            if (!data.ok) {
-              throw new Error(data.message);
+                if (!data.ok) {
+                  throw new Error(data.message);
+                }
+
+                if (!data.checkout.clientSecret) {
+                  throw new Error(
+                    "NÃ£o conseguimos carregar o checkout incorporado agora.",
+                  );
+                }
+
+                return data.checkout.clientSecret;
+              })();
             }
 
-            return data.checkout.clientSecret;
+            return clientSecretPromiseRef.current;
           },
         });
 
@@ -153,17 +173,16 @@ export function CheckoutButton({
       checkoutRef.current?.destroy();
       checkoutRef.current = null;
     };
-  }, [
-    acceptedTerms,
-    disabled,
-    isPatientAuthenticated,
-    serviceId,
-    startsAt,
-  ]);
+  }, [acceptedTerms, disabled, isPatientAuthenticated, serviceId, startsAt]);
 
   if (!isPatientAuthenticated) {
     return (
-      <TESButton href={loginHref} variant="gradient" size="lg" className="mt-6 w-full">
+      <TESButton
+        href={loginHref}
+        variant="gradient"
+        size="lg"
+        className="mt-6 w-full"
+      >
         Entrar para continuar
         <ArrowRight className="size-4" aria-hidden="true" />
       </TESButton>
@@ -250,6 +269,7 @@ export function ReservationLinkButton({
 }
 
 let stripeScriptPromise: Promise<void> | null = null;
+const stripeScriptUrl = "https://js.stripe.com/v3/";
 
 function loadStripeScript() {
   stripeScriptPromise =
@@ -261,21 +281,26 @@ function loadStripeScript() {
       }
 
       const existing = document.querySelector<HTMLScriptElement>(
-        'script[src="https://js.stripe.com/clover/stripe.js"]',
+        `script[src="${stripeScriptUrl}"]`,
       );
       if (existing) {
         existing.addEventListener("load", () => resolve(), { once: true });
-        existing.addEventListener("error", () => reject(new Error("stripe_js_failed")), {
-          once: true,
-        });
+        existing.addEventListener(
+          "error",
+          () => reject(new Error("stripe_js_failed")),
+          {
+            once: true,
+          },
+        );
         return;
       }
 
       const script = document.createElement("script");
       script.async = true;
-      script.src = "https://js.stripe.com/clover/stripe.js";
+      script.src = stripeScriptUrl;
       script.onload = () => resolve();
-      script.onerror = () => reject(new Error("Não foi possível carregar a Stripe."));
+      script.onerror = () =>
+        reject(new Error("Não foi possível carregar a Stripe."));
       document.head.appendChild(script);
     });
 

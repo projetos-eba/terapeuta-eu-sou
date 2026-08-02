@@ -21,6 +21,7 @@ Nao permitido com `ALLOW_REAL_ZOOM=false`:
 Comandos:
 
 ```bash
+npm run homologation:zoom:local
 npm run zoom:video-sdk:env
 npm run zoom:video-sdk:test
 npm run zoom:video-sdk:webhook:smoke
@@ -40,9 +41,11 @@ preexistente, Supabase nao local/staging autorizado ou ambiente diferente de
 `development`, ou `ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES` ausente/invalido.
 Ele tambem exige as flags momentaneas
 `--confirm-zoom-marketplace --confirm-single-real-session --headed --slow-mo=<ms>`,
-depois da validacao manual no Zoom Build Platform. O script cria booking,
-usuarios, pagamento paid e `video_session` em runtime; nao exige UUID, e-mail ou
-senha via ambiente.
+depois da validacao manual no Zoom Build Platform. Para homologacao principal,
+use `npm run homologation:zoom:local`; o harness tecnico
+`zoom:video-sdk:test:real` fica bloqueado por padrao se depender de pagamento
+direto em fixture. A flag `--allow-direct-paid-fixture-for-zoom-only` e restrita
+a diagnostico isolado do Video SDK e nao conclui a homologacao Stripe + Zoom.
 
 O fluxo real e host-first: paciente abre a tela primeiro e fica em sala de
 espera sem receber JWT; terapeuta entra; webhook `session.user_joined` confirma

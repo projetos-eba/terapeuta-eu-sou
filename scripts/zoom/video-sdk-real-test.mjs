@@ -20,6 +20,8 @@ import {
   clearProviderSessionState,
   getCurrentWebhookUrl,
   recordProviderSessionState,
+  readRealState,
+  writeRealState,
 } from "./video-sdk-real-state.mjs";
 import {
   assertSupabaseTarget,
@@ -66,10 +68,12 @@ process.on("unhandledRejection", async (error) => {
 
 const supabaseRuntime = await getSupabaseRuntime();
 admin = createSupabaseAdmin(supabaseRuntime);
+const realState = await readRealState();
 const webhookState = await assertVerifiedWebhookState();
 const failures = [
   ...assertStaticRealZoomGates(),
   ...assertManualMarketplaceGate(),
+  ...assertCanonicalPaymentGate(realState),
   ...assertSupabaseTarget(supabaseRuntime),
   ...webhookState.failures,
 ];
@@ -155,6 +159,26 @@ function assertManualMarketplaceGate() {
   ];
 }
 
+function assertCanonicalPaymentGate(state) {
+  if (isCanonicalPaymentReady(state)) {
+    return [];
+  }
+
+  if (process.argv.includes("--allow-direct-paid-fixture-for-zoom-only")) {
+    return [];
+  }
+
+  return [
+    {
+      expected:
+        "booking paga por Checkout Stripe test e webhook canonico antes do teste real Zoom",
+      item: "--allow-direct-paid-fixture-for-zoom-only ausente",
+      where:
+        "homologacao principal deve usar npm run homologation:zoom:local; este harness legado cria pagamento direto apenas para diagnostico tecnico isolado",
+    },
+  ];
+}
+
 async function assertPublicWebhookActive() {
   const url = await getCurrentWebhookUrl();
   const body = JSON.stringify({
@@ -176,11 +200,15 @@ async function assertPublicWebhookActive() {
     },
     method: "POST",
   });
-  if (!response.ok) {
+  const payload = await response.json().catch(() => null);
+  const validationShape =
+    typeof payload?.plainToken === "string" &&
+    typeof payload?.encryptedToken === "string";
+  if (!response.ok || !validationShape) {
     block([
       {
         expected: "URL ngrok ativa e apontando para zoom-webhook local",
-        item: `HTTP ${response.status}`,
+        item: `HTTP ${response.status}, validationShape=${validationShape}`,
         where: "webhook publico temporario",
       },
     ]);
@@ -222,13 +250,7 @@ async function assertNoActiveSessions(where) {
 
 async function runRealFlow(signal) {
   throwIfAborted(signal);
-  fixture = await phase("fixtures_create", () =>
-    createZoomRealFixtures({
-      admin,
-      environment: process.env.ZOOM_ENVIRONMENT,
-      runId,
-    }),
-  );
+  fixture = await phase("fixtures_create", () => resolveRealZoomFixture());
 
   browser = await phase("browser_launch", () =>
     chromium.launch({
@@ -265,10 +287,10 @@ async function runRealFlow(signal) {
   await phase("patient_first_blocked", async () => {
     await patientPage.goto(`${baseUrl}/app/encontros/${fixture.ids.bookingId}`);
     await expect(
-      patientPage.getByText("Aguardando o terapeuta iniciar a sessao."),
+      patientPage.getByText("Aguardando o terapeuta iniciar o encontro."),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
-      patientPage.getByRole("button", { name: "Entrar na sessao" }),
+      patientPage.getByRole("button", { name: "Entrar no encontro" }),
     ).toHaveCount(0);
   });
 
@@ -277,10 +299,10 @@ async function runRealFlow(signal) {
       `${baseUrl}/terapeuta/sessoes/${fixture.ids.bookingId}`,
     );
     await therapistPage
-      .getByRole("button", { name: "Entrar na sessao" })
+      .getByRole("button", { name: /Entrar na sess.o|Entrar no encontro/i })
       .click();
     await expect(
-      therapistPage.getByText("Voce entrou como responsavel pela sessao."),
+      therapistPage.getByText(/Voce entrou como responsavel pelo encontro\./i),
     ).toBeVisible({ timeout: 45_000 });
   });
   await phase("provider_session_capture", () =>
@@ -293,12 +315,16 @@ async function runRealFlow(signal) {
   await phase("patient_join", async () => {
     await patientPage.getByRole("button", { name: "Atualizar sala" }).click();
     await expect(
-      patientPage.getByRole("button", { name: "Entrar na sessao" }),
+      patientPage.getByRole("button", { name: "Entrar no encontro" }),
     ).toBeVisible({ timeout: 45_000 });
-    await patientPage.getByRole("button", { name: "Entrar na sessao" }).click();
-    await expect(patientPage.getByText(/Voce entrou na sessao/)).toBeVisible({
-      timeout: 45_000,
-    });
+    await patientPage
+      .getByRole("button", { name: "Entrar no encontro" })
+      .click();
+    await expect(patientPage.getByText(/Voce entrou no encontro/i)).toBeVisible(
+      {
+        timeout: 45_000,
+      },
+    );
   });
   throwIfAborted(signal);
 
@@ -308,7 +334,7 @@ async function runRealFlow(signal) {
       .getByRole("button", { name: "Encerrar sessao" })
       .click();
     await expect(
-      therapistPage.getByText("A sessao foi encerrada para todos."),
+      therapistPage.getByText(/O encontro foi encerrado para todos/i),
     ).toBeVisible({ timeout: 45_000 });
   });
 
@@ -605,12 +631,30 @@ async function doCleanup(reason, detail) {
   }
 
   if (fixture && admin) {
+    if (process.env.ZOOM_HOMOLOGATION_KEEP_LOCAL_FIXTURES === "true") {
+      console.error(
+        JSON.stringify(
+          {
+            cleanup: "local_fixture_cleanup_skipped",
+            reason: "ZOOM_HOMOLOGATION_KEEP_LOCAL_FIXTURES",
+            runId,
+          },
+          null,
+          2,
+        ),
+      );
+      fixture = null;
+      return;
+    }
     try {
       await cleanupZoomRealFixtures({
         admin,
         ids: fixture.ids,
         runId,
       });
+      if (fixture.source === "canonicalPayment") {
+        await writeRealState({ canonicalPayment: null });
+      }
       fixture = null;
     } catch (error) {
       console.error(
@@ -619,6 +663,43 @@ async function doCleanup(reason, detail) {
       process.exit(1);
     }
   }
+}
+
+async function resolveRealZoomFixture() {
+  if (isCanonicalPaymentReady(realState)) {
+    return {
+      credentials: realState.canonicalPayment.credentials,
+      ids: realState.canonicalPayment.ids,
+      sanitized: Object.fromEntries(
+        Object.entries(realState.canonicalPayment.ids ?? {})
+          .filter(([, value]) => Boolean(value))
+          .map(([key, value]) => [key, maskIdentifier(String(value))]),
+      ),
+      source: "canonicalPayment",
+      videoSession: realState.canonicalPayment.videoSession,
+    };
+  }
+
+  return createZoomRealFixtures({
+    admin,
+    environment: process.env.ZOOM_ENVIRONMENT,
+    runId,
+  });
+}
+
+function isCanonicalPaymentReady(state) {
+  const payment = state?.canonicalPayment;
+  return Boolean(
+    payment?.bookingId &&
+    payment?.sessionPaymentId &&
+    payment?.financialStatus === "paid" &&
+    payment?.stripeWebhookEventId &&
+    payment?.videoSessionId &&
+    payment?.credentials?.patient?.email &&
+    payment?.credentials?.therapist?.email &&
+    payment?.ids?.bookingId &&
+    payment?.videoSession?.sessionName,
+  );
 }
 
 async function discoverOpenSessionId() {

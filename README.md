@@ -243,10 +243,19 @@ Scripts:
   `ALLOW_REAL_ZOOM=true`, webhook validado e Supabase local/staging autorizado;
   exige tambem
   `--confirm-zoom-marketplace --confirm-single-real-session --headed --slow-mo=<ms>`,
-  cria usuarios, booking, pagamento paid e `video_session` em runtime e limpa
-  as fixtures no `finally`.
+  e fica bloqueado por padrao quando usado como homologacao principal porque o
+  fluxo completo deve comprovar pagamento Stripe test por Checkout + webhook
+  antes de abrir Zoom. A variante
+  `--allow-direct-paid-fixture-for-zoom-only` existe somente para diagnostico
+  tecnico isolado do Video SDK e nao substitui homologacao transacional.
 - `npm run zoom:video-sdk:emergency-end`: encerra a sessao real capturada no
   estado temporario pela REST API oficial e nao imprime o ID completo.
+- `npm run homologation:zoom:local`: orquestra os gates locais de Supabase,
+  Edge Functions, Stripe CLI, Next, testes locais e Zoom real. O comando injeta
+  o signing secret temporario do Stripe CLI apenas no processo local das Edge
+  Functions, sanitiza logs em `.tmp/homologation/<runId>/` e para antes da
+  sessao real quando a evidencia canonica de pagamento por webhook ainda nao
+  estiver registrada.
 
 Documentacao detalhada: `docs/zoom/`.
 

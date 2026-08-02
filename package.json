@@ -33,6 +33,7 @@
     "zoom:video-sdk:real-preflight": "node scripts/zoom/video-sdk-real-preflight.mjs",
     "zoom:video-sdk:emergency-end": "node scripts/zoom/video-sdk-emergency-end.mjs",
     "zoom:video-sdk:test:real": "node scripts/zoom/video-sdk-real-test.mjs",
+    "homologation:zoom:local": "node scripts/homologation/zoom-local.mjs",
     "test:zoom": "npm run zoom:video-sdk:test",
     "test:e2e:zoom:headed": "playwright test tests/e2e/zoom.spec.ts --headed",
     "test": "vitest run",

@@ -37,19 +37,24 @@ try {
     },
     method: "POST",
   });
+  const payload = await response.json().catch(() => null);
+  const validationShape =
+    typeof payload?.plainToken === "string" &&
+    typeof payload?.encryptedToken === "string";
 
   console.log(
     JSON.stringify(
       {
-        localWebhookReachable: response.ok,
+        localWebhookReachable: response.ok && validationShape,
         status: response.status,
         url: localUrl,
+        validationShape,
       },
       null,
       2,
     ),
   );
-  if (!response.ok) process.exit(1);
+  if (!response.ok || !validationShape) process.exit(1);
 } catch (error) {
   console.error(
     JSON.stringify(
