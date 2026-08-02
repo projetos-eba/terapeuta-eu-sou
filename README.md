@@ -175,6 +175,20 @@ npx supabase db lint
 npx supabase gen types typescript --local --schema public > src/lib/supabase/database.types.ts
 ```
 
+No Windows, execute comandos da Supabase CLI de forma sequencial. Se a CLI
+falhar ao gravar `C:\Users\<usuario>\.supabase\telemetry.json`, rode o comando
+com telemetria desativada no processo atual:
+
+```powershell
+$env:SUPABASE_TELEMETRY_DISABLED='1'
+npx supabase db lint --local
+```
+
+O Logflare/Vector local permanece desativado em `supabase/config.toml` porque
+nao participa das migrations e pode reiniciar quando o Docker Desktop nao expoe
+os logs de containers para o coletor. Para mudar `supabase/config.toml`, reinicie
+a stack com `npx supabase stop` e `npx supabase start`.
+
 A Edge Function `match-therapies` calcula recomendações por regras e pesos. Ela não usa OpenAI, IA generativa, Stripe ou Zoom.
 
 ### Pagamentos, assinaturas e repasses
