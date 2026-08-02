@@ -85,6 +85,21 @@ export function isDocumentPublishable(document: LegalDocument | undefined) {
   );
 }
 
+export function isSupportCategoryPublishable(category: SupportCategory) {
+  return Boolean(
+    category.status === "published" &&
+    category.channel &&
+    category.supportHours &&
+    category.acknowledgement &&
+    category.firstResponseTarget &&
+    category.resolutionTarget,
+  );
+}
+
+export function isSupportMatrixPublishable() {
+  return supportMatrix.length > 0 && supportMatrix.every(isSupportCategoryPublishable);
+}
+
 export function getLegalReadinessIssues() {
   const issues: string[] = [];
   const requiredEntityFields: Array<keyof LegalEntityConfig> = [
@@ -113,14 +128,7 @@ export function getLegalReadinessIssues() {
   }
 
   for (const category of supportMatrix) {
-    if (
-      category.status !== "published" ||
-      !category.channel ||
-      !category.supportHours ||
-      !category.acknowledgement ||
-      !category.firstResponseTarget ||
-      !category.resolutionTarget
-    ) {
+    if (!isSupportCategoryPublishable(category)) {
       issues.push(`SUPPORT_CATEGORY_NOT_PUBLISHABLE:${category.categoryKey}`);
     }
   }

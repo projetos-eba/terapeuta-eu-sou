@@ -1,0 +1,722 @@
+[Pagina 1]
+POLÍTICA DE PRIV ACIDADE 
+ 
+CAPÍTULO I 
+ 
+APRESENTAÇÃO E OBJETIVO 
+ 
+1.1 Finalidade da Política 
+A presente Política de Privacidade estabelece as regras 
+aplicáveis ao tratamento de dados pessoais realizado pela plataforma TES – Terapeuta 
+Eu Sou ("TES"), explicando de forma transparente como as informações dos usuários, 
+terapeutas e demais titulares de dados são coletadas, utilizadas, armazenadas, 
+compartilhadas e protegidas durante a utilização da plataforma. 
+Esta Política integra os Termos de Uso do TES e deverá ser 
+interpretada em conjunto com os demais documentos jurídicos disponibilizados pela 
+plataforma. 
+ 
+1.2 Compromisso com a Privacidade 
+O TES reconhece a importância da proteção da privacidade 
+e da autodeterminação informativa de seus usuários, comprometendo-se a tratar dados 
+pessoais de forma ética, transparente, responsável e em conformidade com a legislação 
+brasileira.
+
+[Pagina 2]
+Todas as operações de tratamento de dados pessoais 
+buscarão observar os princípios previstos na Lei Geral de Proteção de Dados Pessoais 
+(Lei nº 13.709/2018), especialmente os princípios da finalidade, adequação, necessidade, 
+livre acesso, qualidade dos dados, transparência, segurança, prevenção, não 
+discriminação e responsabilização. 
+ 
+1.3 Abrangência 
+Esta Política aplica-se a todas as pessoas que utilizam a 
+plataforma TES, incluindo: 
+I – usuários cadastrados; 
+II – terapeutas cadastrados; 
+III – visitantes que navegam na plataforma; 
+IV – pessoas que entram em contato com o TES por 
+quaisquer canais oficiais; 
+V – demais titulares cujos dados pessoais sejam tratados em 
+razão da utilização dos serviços disponibilizados pela 
+plataforma. 
+ 
+1.4 Objetivos do Tratamento 
+O tratamento de dados pessoais realizado pelo TES possui, 
+dentre outras, as seguintes finalidades: 
+I – permitir o funcionamento da plataforma;
+
+[Pagina 3]
+II – viabilizar o cadastro de usuários e terapeutas; 
+III – possibilitar a contratação dos serviços 
+disponibilizados; 
+IV – processar pagamentos; 
+V – realizar comunicações relacionadas ao funcionamento 
+da plataforma; 
+VI – garantir a segurança do ambiente digital; 
+VII – prevenir fraudes e acessos não autorizados; 
+VIII – cumprir obrigações legais e regulatórias; 
+IX – exercer regularmente direitos em processos 
+administrativos ou judiciais; 
+X – aperfeiçoar continuamente os serviços 
+disponibilizados. 
+ 
+1.5 Transparência 
+O TES busca disponibilizar informações claras e acessíveis 
+acerca do tratamento de dados pessoais realizado em sua plataforma. 
+Sempre que houver alterações relevantes nesta Política ou 
+mudanças significativas na forma de tratamento dos dados pessoais, os titulares serão 
+informados pelos meios de comunicação disponibilizados pela plataforma, observadas as 
+exigências legais.
+
+[Pagina 4]
+1.6 Atualizações desta Política 
+Esta Política poderá ser atualizada sempre que necessário 
+para refletir alterações na legislação, evolução tecnológica, implementação de novas 
+funcionalidades ou mudanças na operação da plataforma. 
+Sempre que as alterações impactarem significativamente os 
+direitos dos titulares de dados, o TES adotará as medidas de comunicação previstas na 
+legislação vigente. 
+ 
+1.7 Contato 
+As solicitações relacionadas à proteção de dados pessoais, 
+exercício de direitos previstos na LGPD, esclarecimentos ou dúvidas acerca desta Política 
+poderão ser encaminhadas pelos canais oficiais disponibilizados pelo TES. 
+Caso venha a ser formalmente designado Encarregado pelo 
+Tratamento de Dados Pessoais (Data Protection Officer – DPO), suas informações de 
+contato serão disponibilizadas pela plataforma, nos termos da legislação aplicável. 
+ 
+CAPÍTULO II 
+ 
+DOS DADOS PESSOAIS TRATADOS PELA PLATAFORMA
+
+[Pagina 5]
+2.1 Dados fornecidos diretamente pelo titular 
+Durante a utilização da plataforma, o TES poderá tratar 
+dados pessoais fornecidos diretamente pelos usuários e terapeutas, necessários para 
+criação e manutenção das respectivas contas. 
+Esses dados poderão incluir, conforme a funcionalidade 
+utilizada: 
+I – nome completo; 
+II – endereço de e-mail; 
+III – número de telefone; 
+IV – data de nascimento; 
+V – fotografia de perfil; 
+VI – informações profissionais fornecidas pelos terapeutas; 
+VII – documentos eventualmente solicitados para validação 
+cadastral; 
+VIII – demais informações inseridas voluntariamente pelo 
+próprio titular. 
+O TES solicitará apenas os dados considerados necessários 
+para as finalidades específicas relacionadas ao funcionamento da plataforma. 
+ 
+2.2 Dados gerados durante a utilização da plataforma
+
+[Pagina 6]
+Além das informações fornecidas diretamente pelos 
+titulares, a utilização da plataforma poderá gerar registros relacionados ao uso dos 
+serviços disponibilizados. 
+Esses registros poderão incluir: 
+I – histórico de acessos; 
+II – registros de autenticação; 
+III – histórico de agendamentos; 
+IV – interações realizadas no ambiente da plataforma; 
+V – utilização das funcionalidades disponibilizadas; 
+VI – histórico de pagamentos e transações; 
+VII – registros técnicos destinados à segurança da 
+plataforma. 
+Essas informações são utilizadas para garantir o 
+funcionamento adequado do sistema, prevenir fraudes, solucionar problemas técnicos e 
+aperfeiçoar continuamente os serviços disponibilizados. 
+ 
+2.3 Dados de navegação 
+Durante a navegação na plataforma poderão ser coletadas 
+informações técnicas relacionadas ao dispositivo utilizado pelo usuário e à forma de 
+utilização do ambiente digital. 
+Esses registros poderão compreender, dentre outros:
+
+[Pagina 7]
+I – endereço IP; 
+II – data e horário de acesso; 
+III – navegador utilizado; 
+IV – sistema operacional; 
+V – identificadores eletrônicos; 
+VI – registros de sessão; 
+VII – informações relacionadas ao desempenho da 
+plataforma. 
+Esses dados são utilizados para fins de segurança, 
+estabilidade do sistema, prevenção de fraudes, estatísticas e melhoria da experiência de 
+utilização. 
+ 
+2.4 Dados financeiros 
+Quando houver contratação de serviços por intermédio da 
+plataforma, poderão ser tratados dados necessários ao processamento das operações 
+financeiras. 
+O TES poderá tratar informações relacionadas à 
+contratação, confirmação de pagamentos, histórico financeiro e registros de transações. 
+Os dados completos dos meios de pagamento serão tratados 
+pelos respectivos processadores financeiros contratados, de acordo com suas próprias 
+políticas de privacidade e segurança.
+
+[Pagina 8]
+2.5 Dados relacionados ao atendimento 
+Em razão da natureza da plataforma, determinadas 
+funcionalidades poderão permitir o registro de informações relacionadas aos 
+atendimentos realizados entre usuários e terapeutas. 
+O TES limitará esse tratamento às informações necessárias 
+para viabilizar a operação da plataforma, respeitando os princípios da necessidade, 
+adequação e minimização previstos na Lei Geral de Proteção de Dados Pessoais. 
+A plataforma não utiliza essas informações para elaboração 
+de perfis comportamentais incompatíveis com as finalidades informadas nesta Política. 
+ 
+2.6 Dados potencialmente sensíveis 
+Algumas funcionalidades da plataforma poderão envolver 
+o tratamento de informações que revelem aspectos relacionados ao bem-estar, interesses 
+terapêuticos ou outras informações cuja utilização demande especial cautela. 
+Sempre que o tratamento envolver dados pessoais sensíveis 
+ou informações sujeitas a regime jurídico específico, o TES observará as exigências 
+previstas na legislação aplicável, adotando medidas proporcionais à natureza dessas 
+informações. 
+ 
+2.7 Dados de terceiros
+
+[Pagina 9]
+O usuário compromete-se a fornecer exclusivamente dados 
+pessoais de terceiros quando possuir autorização legal para tanto ou quando existir 
+fundamento jurídico que legitime esse compartilhamento. 
+Caso dados de terceiros sejam inseridos na plataforma pelo 
+usuário ou terapeuta, estes permanecerão responsáveis pela legitimidade desse 
+tratamento. 
+ 
+2.8 Atualização dos dados 
+Os titulares comprometem-se a manter seus dados pessoais 
+corretos, completos e atualizados durante toda a utilização da plataforma. 
+Sempre que necessário, o TES poderá solicitar confirmação 
+ou atualização das informações cadastrais. 
+ 
+CAPÍTULO III 
+ 
+DAS FINALIDADES E DAS BASES LEGAIS DO TRATAMENTO DE DADOS 
+PESSOAIS 
+ 
+3.1 Finalidades do tratamento 
+O TES realiza o tratamento de dados pessoais 
+exclusivamente para finalidades legítimas, específicas e compatíveis com as atividades 
+desenvolvidas pela plataforma.
+
+[Pagina 10]
+Dentre as principais finalidades do tratamento de dados 
+pessoais, destacam-se: 
+I – criação, autenticação e manutenção das contas de 
+usuários e terapeutas; 
+II – disponibilização das funcionalidades da plataforma; 
+III – viabilização da contratação dos serviços oferecidos 
+pelos terapeutas; 
+IV – processamento e controle das operações financeiras; 
+V – comunicação entre usuários, terapeutas e plataforma; 
+VI – prevenção a fraudes, acessos indevidos e incidentes de 
+segurança; 
+VII – cumprimento de obrigações legais, regulatórias e 
+contratuais; 
+VIII – atendimento de solicitações dos titulares de dados; 
+IX – exercício regular de direitos em processos judiciais, 
+administrativos ou arbitrais; 
+X – aperfeiçoamento da plataforma, de suas 
+funcionalidades e da experiência de utilização. 
+ 
+3.2 Bases legais
+
+[Pagina 11]
+O tratamento de dados pessoais realizado pelo TES poderá 
+fundamentar-se, conforme a natureza da operação, nas seguintes bases legais previstas na 
+Lei Geral de Proteção de Dados Pessoais: 
+I – execução de contrato ou de procedimentos preliminares 
+relacionados à contratação dos serviços solicitados pelo 
+titular; 
+II – cumprimento de obrigação legal ou regulatória; 
+III – exercício regular de direitos em processo judicial, 
+administrativo ou arbitral; 
+IV – legítimo interesse do TES, desde que observados os 
+direitos e liberdades fundamentais dos titulares; 
+V – proteção do crédito, quando aplicável; 
+VI – consentimento do titular, exclusivamente nas hipóteses 
+em que a legislação assim exigir ou quando essa for a base 
+legal mais adequada para determinada operação de 
+tratamento. 
+ 
+3.3 Utilização do consentimento 
+O TES não utilizará o consentimento como fundamento 
+jurídico para operações de tratamento que possam ser legitimamente realizadas com base 
+em outra hipótese prevista na legislação.
+
+[Pagina 12]
+Sempre que o tratamento depender do consentimento do 
+titular, este será solicitado de forma livre, informada, inequívoca e destacada, podendo 
+ser revogado a qualquer momento, na forma da legislação vigente. 
+A revogação do consentimento não afetará a legalidade das 
+operações realizadas anteriormente nem prejudicará os tratamentos fundamentados em 
+outras bases legais. 
+ 
+3.4 Tratamentos incompatíveis 
+O TES não realizará tratamento de dados pessoais para 
+finalidades incompatíveis com aquelas informadas nesta Política, salvo quando houver 
+nova base legal aplicável ou quando a legislação permitir tratamento diverso. 
+Sempre que houver alteração substancial das finalidades 
+inicialmente informadas, os titulares serão comunicados na forma prevista nesta Política. 
+ 
+3.5 Minimização dos dados 
+O TES compromete-se a tratar apenas os dados pessoais 
+estritamente necessários para o cumprimento das finalidades informadas nesta Política. 
+Sempre que possível, serão adotadas medidas destinadas à 
+redução da quantidade de dados tratados, evitando coleta excessiva ou desnecessária. 
+ 
+3.6 Tratamento automatizado
+
+[Pagina 13]
+A plataforma poderá utilizar processos automatizados para 
+organização das informações, funcionamento das funcionalidades tecnológicas, 
+prevenção de fraudes, gerenciamento operacional e melhoria da experiência dos usuários. 
+Esses processos não têm por finalidade substituir decisões 
+humanas em situações que produzam efeitos jurídicos ou impactos relevantes sobre os 
+titulares, salvo quando autorizados pela legislação aplicável e acompanhados das 
+garantias nela previstas. 
+ 
+3.7 Alteração das finalidades 
+Caso o TES venha a tratar dados pessoais para novas 
+finalidades não previstas nesta Política, adotará as medidas necessárias para assegurar a 
+transparência das informações prestadas aos titulares e, quando exigido pela legislação, 
+providenciará a obtenção da base legal correspondente antes do início do novo tratamento. 
+ 
+CAPÍTULO IV 
+ 
+DO COMPARTILHAMENTO DE DADOS PESSOAIS 
+ 
+4.1 Compromisso com o compartilhamento responsável 
+O TES realiza o compartilhamento de dados pessoais 
+apenas quando necessário para a execução de suas atividades, para o cumprimento de
+
+[Pagina 14]
+obrigações legais ou regulatórias, para o exercício regular de direitos ou para outras 
+hipóteses autorizadas pela legislação aplicável. 
+Sempre que possível, o compartilhamento será limitado às 
+informações estritamente necessárias para a finalidade pretendida. 
+ 
+4.2 Hipóteses de compartilhamento 
+Os dados pessoais tratados pela plataforma poderão ser 
+compartilhados, quando necessário, com as seguintes categorias de destinatários: 
+I – instituições responsáveis pelo processamento de 
+pagamentos; 
+II – fornecedores de infraestrutura tecnológica, 
+hospedagem, armazenamento em nuvem e suporte 
+operacional; 
+III – fornecedores de serviços de autenticação, 
+comunicação eletrônica, envio de notificações e segurança 
+da informação; 
+IV – prestadores de serviços indispensáveis ao 
+funcionamento regular da plataforma; 
+V – autoridades públicas, órgãos reguladores ou entidades 
+competentes, quando houver obrigação legal, determinação 
+judicial ou requisição válida; 
+VI – escritórios de advocacia, auditores, consultores ou 
+profissionais contratados para defesa dos interesses
+
+[Pagina 15]
+legítimos do TES, observados os deveres de 
+confidencialidade. 
+ 
+4.3 Compartilhamento entre usuários e terapeutas 
+Em razão da natureza da plataforma, determinadas 
+informações serão compartilhadas entre usuários e terapeutas na medida necessária para 
+possibilitar a contratação, realização e gestão dos atendimentos. 
+O compartilhamento ocorrerá exclusivamente dentro dos 
+limites necessários para execução dos serviços contratados, respeitando-se a finalidade 
+da plataforma e os princípios previstos na legislação de proteção de dados. 
+ 
+4.4 Compartilhamento por obrigação legal 
+O TES poderá compartilhar dados pessoais sempre que tal 
+medida for necessária para: 
+I – cumprimento de obrigação legal ou regulatória; 
+II – atendimento de ordem judicial; 
+III – atendimento de requisição formulada por autoridade 
+competente; 
+IV – exercício regular de direitos em processos judiciais, 
+administrativos ou arbitrais; 
+V – proteção da vida, da integridade física ou de direitos do 
+próprio titular ou de terceiros, quando permitido pela legislação.
+
+[Pagina 16]
+4.5 Operadores de tratamento 
+Os terceiros contratados pelo TES para tratamento de dados 
+pessoais atuarão na qualidade de operadores ou controladores, conforme a natureza da 
+atividade desempenhada e a legislação aplicável. 
+Sempre que o tratamento ocorrer por intermédio de 
+operadores contratados pelo TES, estes deverão observar padrões compatíveis de 
+segurança, confidencialidade e proteção de dados pessoais. 
+ 
+4.6 Transferência internacional de dados 
+Em razão da utilização de serviços tecnológicos, 
+infraestrutura em nuvem ou fornecedores que possuam operações fora do território 
+nacional, determinados dados pessoais poderão ser tratados ou armazenados em 
+servidores localizados no exterior. 
+Nessas hipóteses, o TES buscará adotar medidas destinadas 
+a assegurar que o tratamento ocorra em conformidade com a legislação brasileira e com 
+padrões adequados de proteção de dados, observadas as disposições da Lei Geral de 
+Proteção de Dados Pessoais. 
+ 
+4.7 Ausência de comercialização de dados 
+O TES não comercializa dados pessoais de seus usuários ou 
+terapeutas.
+
+[Pagina 17]
+Qualquer compartilhamento realizado observará as 
+finalidades descritas nesta Política e as hipóteses autorizadas pela legislação vigente. 
+ 
+4.8 Alteração dos destinatários 
+Os fornecedores e parceiros tecnológicos utilizados pela 
+plataforma poderão ser substituídos ou atualizados ao longo da operação do TES, desde 
+que o tratamento de dados pessoais permaneça compatível com as finalidades informadas 
+nesta Política e com a legislação aplicável. 
+Alterações dessa natureza não implicarão, por si só, 
+modificação substancial desta Política de Privacidade. 
+ 
+CAPÍTULO V 
+ 
+DO ARMAZENAMENTO, DA RETENÇÃO E DA ELIMINAÇÃO DOS DADOS 
+PESSOAIS 
+ 
+5.1 Período de armazenamento 
+Os dados pessoais tratados pelo TES serão armazenados 
+apenas pelo tempo necessário para o cumprimento das finalidades informadas nesta 
+Política, observadas as obrigações legais, regulatórias e contratuais aplicáveis.
+
+[Pagina 18]
+Sempre que possível, o período de armazenamento será 
+limitado ao mínimo necessário para a adequada prestação dos serviços disponibilizados 
+pela plataforma. 
+ 
+5.2 Hipóteses de retenção 
+Mesmo após o encerramento da relação entre o titular e a 
+plataforma, determinados dados pessoais poderão ser mantidos pelo TES quando sua 
+conservação for necessária para: 
+I – cumprimento de obrigação legal ou regulatória; 
+II – exercício regular de direitos em processos judiciais, 
+administrativos ou arbitrais; 
+III – prevenção a fraudes e incidentes de segurança; 
+IV – atendimento de determinações de autoridades 
+competentes; 
+V – preservação de registros cuja manutenção seja exigida 
+pela legislação brasileira; 
+VI – proteção dos interesses legítimos do TES, desde que 
+respeitados os direitos e liberdades fundamentais do titular. 
+ 
+5.3 Exclusão dos dados 
+Encerradas as finalidades que justificaram o tratamento e 
+inexistindo obrigação legal ou outra hipótese autorizadora de retenção, os dados pessoais
+
+[Pagina 19]
+serão eliminados, anonimizados ou submetidos a procedimento equivalente que impeça 
+a identificação do titular, conforme a natureza da informação e a legislação aplicável. 
+ 
+5.4 Dados anonimizados 
+O TES poderá manter dados submetidos a processo de 
+anonimização para fins estatísticos, desenvolvimento de melhorias, estudos relacionados 
+ao funcionamento da plataforma e aperfeiçoamento de seus serviços, desde que esses 
+dados não permitam a identificação do titular ou a sua reidentificação por meios 
+razoáveis. 
+ 
+5.5 Solicitações de exclusão 
+O titular poderá solicitar a exclusão de seus dados pessoais 
+nos casos previstos na legislação aplicável. 
+Recebida a solicitação, o TES realizará a análise do pedido, 
+observando as hipóteses legais que autorizam ou determinam a conservação dos dados, 
+comunicando ao titular as providências adotadas. 
+A exclusão dos dados não será realizada quando houver 
+obrigação legal de retenção, necessidade de preservação para exercício regular de direitos 
+ou outra hipótese expressamente prevista na legislação. 
+ 
+5.6 Encerramento da conta
+
+[Pagina 20]
+O encerramento da conta do usuário ou terapeuta não 
+implica, por si só, a eliminação imediata de todos os dados pessoais tratados pela 
+plataforma. 
+Determinadas informações poderão permanecer 
+armazenadas durante o período necessário ao cumprimento das obrigações legais, à 
+prevenção de fraudes, à preservação de registros obrigatórios e à defesa dos interesses 
+legítimos do TES, observadas as disposições da presente Política. 
+ 
+5.7 Cópias de segurança 
+Os dados pessoais poderão permanecer temporariamente 
+armazenados em rotinas de backup e recuperação de desastres adotadas pela plataforma. 
+Esses registros serão mantidos apenas pelo período 
+necessário ao funcionamento seguro da infraestrutura tecnológica, observadas medidas 
+destinadas a impedir sua utilização para finalidades incompatíveis com esta Política. 
+ 
+5.8 Revisão periódica 
+O TES buscará revisar periodicamente os dados pessoais 
+armazenados, adotando medidas destinadas à eliminação, anonimização ou atualização 
+das informações que deixarem de ser necessárias para as finalidades que justificaram seu 
+tratamento. 
+ 
+CAPÍTULO VI
+
+[Pagina 21]
+DOS DIREITOS DOS TITULARES DE DADOS PESSOAIS 
+ 
+6.1 Direitos assegurados pela legislação 
+Nos termos da Lei Geral de Proteção de Dados Pessoais, o 
+titular poderá exercer, observadas as limitações legais, os seguintes direitos: 
+I – obter confirmação acerca da existência de tratamento de 
+seus dados pessoais; 
+II – solicitar acesso aos dados pessoais tratados pelo TES; 
+III – requerer a correção de dados incompletos, inexatos ou 
+desatualizados; 
+IV – solicitar a anonimização, o bloqueio ou a eliminação 
+de dados pessoais, quando cabível; 
+V – solicitar a portabilidade dos dados pessoais, quando 
+tecnicamente possível e observadas as disposições legais 
+aplicáveis; 
+VI – obter informações acerca das entidades públicas e 
+privadas com as quais seus dados pessoais tenham sido 
+compartilhados, quando aplicável; 
+VII – revogar eventual consentimento anteriormente 
+concedido, nas hipóteses em que essa for a base legal 
+utilizada para o tratamento;
+
+[Pagina 22]
+VIII – apresentar reclamações perante a Autoridade 
+Nacional de Proteção de Dados – ANPD, sem prejuízo dos 
+demais direitos assegurados pela legislação. 
+ 
+6.2 Exercício dos direitos 
+Os direitos previstos nesta Política poderão ser exercidos 
+mediante solicitação encaminhada pelos canais oficiais disponibilizados pelo TES. 
+Para proteção da privacidade e segurança dos titulares, o 
+TES poderá solicitar informações adicionais destinadas à confirmação da identidade do 
+requerente antes da adoção das providências solicitadas. 
+ 
+6.3 Análise das solicitações 
+Recebida a solicitação, o TES analisará o pedido de acordo 
+com a legislação aplicável, podendo: 
+I – atender integralmente à solicitação; 
+II – atender parcialmente ao pedido, quando houver 
+limitações legais ou técnicas; 
+III – solicitar informações complementares; 
+IV – indeferir fundamentadamente o pedido quando existir 
+obrigação legal de retenção dos dados, necessidade de 
+preservação para exercício regular de direitos ou outra 
+hipótese autorizada pela legislação.
+
+[Pagina 23]
+Sempre que possível, o titular será informado acerca dos 
+motivos que justificarem eventual limitação ou impossibilidade de atendimento. 
+ 
+6.4 Validação da identidade 
+Sempre que houver dúvida razoável quanto à identidade do 
+solicitante ou risco de acesso indevido aos dados pessoais, o TES poderá exigir 
+documentação ou informações adicionais para confirmação da identidade do titular. 
+Essa medida tem por finalidade proteger os próprios 
+titulares contra acessos não autorizados às suas informações pessoais. 
+ 
+6.5 Gratuidade 
+O exercício dos direitos previstos nesta Política será 
+realizado gratuitamente, ressalvadas as hipóteses expressamente admitidas pela 
+legislação vigente. 
+ 
+6.6 Limitações legais 
+O exercício dos direitos previstos nesta Política observará 
+as limitações estabelecidas na Lei Geral de Proteção de Dados Pessoais e demais normas 
+aplicáveis. 
+Em especial, determinados dados poderão permanecer 
+armazenados quando sua conservação for necessária para: 
+I – cumprimento de obrigação legal ou regulatória;
+
+[Pagina 24]
+II – exercício regular de direitos em processos judiciais, 
+administrativos ou arbitrais; 
+III – prevenção de fraudes; 
+IV – preservação de registros obrigatórios; 
+V – proteção dos interesses legítimos do TES, nos limites 
+autorizados pela legislação. 
+ 
+6.7 Prazo para resposta 
+O TES envidará esforços para responder às solicitações dos 
+titulares dentro dos prazos previstos na legislação aplicável, considerando a 
+complexidade da demanda, a necessidade de validação da identidade do solicitante e a 
+natureza das informações envolvidas. 
+ 
+6.8 Atendimento 
+As solicitações relacionadas ao exercício dos direitos dos 
+titulares serão tratadas com confidencialidade e analisadas individualmente, observando-
+se os princípios da boa-fé, transparência, segurança e cooperação. 
+Sempre que possível, o TES buscará fornecer respostas 
+claras e acessíveis aos titulares dos dados pessoais. 
+ 
+CAPÍTULO VII
+
+[Pagina 25]
+DAS MEDIDAS DE SEGURANÇA DA INFORMAÇÃO 
+ 
+7.1 Compromisso com a segurança 
+O TES adota medidas técnicas, administrativas e 
+organizacionais destinadas a proteger os dados pessoais tratados contra acessos não 
+autorizados, perda, destruição, alteração, divulgação, utilização indevida ou qualquer 
+forma de tratamento incompatível com a legislação vigente. 
+As medidas implementadas buscam preservar a 
+confidencialidade, integridade e disponibilidade das informações tratadas pela 
+plataforma. 
+ 
+7.2 Medidas de proteção 
+Para proteção dos dados pessoais tratados, o TES poderá 
+adotar, dentre outras medidas compatíveis com a natureza de suas atividades: 
+I – mecanismos de autenticação e controle de acesso; 
+II – utilização de conexões seguras e tecnologias de 
+criptografia, quando aplicáveis; 
+III – monitoramento de eventos relacionados à segurança da 
+plataforma; 
+IV – registro de acessos e atividades relevantes para fins de 
+auditoria;
+
+[Pagina 26]
+V – controle de permissões de acesso às informações; 
+VI – atualização periódica dos sistemas utilizados; 
+VII – utilização de fornecedores que observem padrões 
+adequados de segurança da informação; 
+VIII – demais medidas compatíveis com a evolução 
+tecnológica e com os riscos identificados. 
+ 
+7.3 Responsabilidade compartilhada 
+A proteção dos dados pessoais também depende da atuação 
+responsável dos próprios usuários e terapeutas. 
+Compete aos titulares, dentre outras medidas: 
+I – manter suas credenciais de acesso em sigilo; 
+II – utilizar senhas seguras; 
+III – não compartilhar contas de acesso; 
+IV – comunicar imediatamente ao TES qualquer suspeita de 
+utilização indevida de sua conta; 
+V – manter seus dispositivos eletrônicos protegidos por 
+mecanismos adequados de segurança. 
+ 
+7.4 Incidentes de segurança
+
+[Pagina 27]
+Caso o TES identifique incidente de segurança que possa 
+acarretar risco ou dano relevante aos titulares de dados pessoais, adotará as providências 
+cabíveis para sua contenção, investigação e mitigação dos impactos, observando as 
+obrigações previstas na legislação aplicável. 
+Sempre que exigido pela Lei Geral de Proteção de Dados 
+Pessoais, os incidentes serão comunicados às autoridades competentes e aos titulares 
+afetados, nos termos da regulamentação vigente. 
+ 
+7.5 Melhoria contínua 
+As medidas de segurança adotadas pelo TES poderão ser 
+revistas, atualizadas e aperfeiçoadas periodicamente, considerando: 
+I – evolução tecnológica; 
+II – alterações na operação da plataforma; 
+III – novos riscos identificados; 
+IV – boas práticas de segurança da informação; 
+V – alterações legislativas ou regulatórias. 
+ 
+7.6 Limitações inerentes ao ambiente digital 
+Embora o TES adote medidas destinadas à proteção dos 
+dados pessoais tratados, nenhum sistema tecnológico é absolutamente imune a falhas, 
+ataques cibernéticos ou eventos imprevisíveis.
+
+[Pagina 28]
+Por essa razão, o TES não garante segurança absoluta de 
+seus sistemas, comprometendo-se, entretanto, a adotar medidas compatíveis com a 
+natureza dos dados tratados, os riscos envolvidos e as boas práticas de segurança da 
+informação. 
+ 
+7.7 Comunicação pelos titulares 
+Os usuários e terapeutas poderão comunicar ao TES 
+qualquer suspeita de incidente de segurança, vulnerabilidade, acesso não autorizado ou 
+utilização indevida de dados pessoais por meio dos canais oficiais disponibilizados pela 
+plataforma. 
+As comunicações serão analisadas com prioridade 
+compatível com a gravidade da ocorrência. 
+ 
+7.8 Revisão das medidas de segurança 
+O TES realizará revisões periódicas de seus processos 
+internos relacionados à proteção de dados pessoais, buscando identificar oportunidades 
+de melhoria e aperfeiçoamento das medidas de segurança adotadas. 
+Essas revisões poderão envolver procedimentos técnicos, 
+administrativos, organizacionais e contratuais compatíveis com a evolução da plataforma. 
+ 
+CAPÍTULO VIII
+
+[Pagina 29]
+DAS DISPOSIÇÕES FINAIS 
+ 
+8.1 Integração com os demais documentos 
+A presente Política de Privacidade deverá ser interpretada 
+em conjunto com os Termos de Uso e demais documentos jurídicos disponibilizados pelo 
+TES, os quais disciplinam aspectos específicos relacionados ao funcionamento da 
+plataforma. 
+Na hipótese de conflito entre esta Política e os Termos de 
+Uso quanto ao tratamento de dados pessoais, prevalecerão as disposições desta Política, 
+sem prejuízo da aplicação da legislação vigente. 
+ 
+8.2 Atualizações da Política 
+O TES poderá revisar, complementar ou atualizar esta 
+Política de Privacidade sempre que necessário para refletir: 
+I – alterações legislativas ou regulatórias; 
+II – evolução tecnológica da plataforma; 
+III – implementação de novas funcionalidades; 
+IV – modificações na forma de tratamento dos dados 
+pessoais; 
+V – aperfeiçoamento das práticas internas de governança e 
+proteção de dados.
+
+[Pagina 30]
+Sempre que as alterações produzirem impacto relevante 
+sobre os direitos dos titulares, estes serão comunicados pelos meios de contato 
+disponibilizados na plataforma, observadas as exigências da legislação aplicável. 
+ 
+8.3 Canais de atendimento 
+As dúvidas, solicitações e comunicações relacionadas ao 
+tratamento de dados pessoais poderão ser encaminhadas pelos canais oficiais 
+disponibilizados pelo TES. 
+Sempre que aplicável, o atendimento observará os 
+procedimentos internos de validação da identidade do solicitante e os prazos previstos na 
+legislação vigente. 
+ 
+8.4 Interpretação 
+Esta Política deverá ser interpretada de forma sistemática, 
+observando-se os princípios da boa-fé, transparência, finalidade, necessidade, segurança, 
+prevenção e responsabilização previstos na Lei Geral de Proteção de Dados Pessoais. 
+Nenhuma disposição desta Política poderá ser interpretada 
+de forma a restringir direitos assegurados aos titulares pela legislação brasileira. 
+ 
+8.5 Independência das disposições 
+Caso qualquer disposição desta Política venha a ser 
+considerada inválida, nula ou inexequível por decisão administrativa ou judicial
+
+[Pagina 31]
+definitiva, as demais cláusulas permanecerão plenamente válidas e eficazes, produzindo 
+todos os seus efeitos. 
+Sempre que possível, a disposição eventualmente 
+invalidada será interpretada de modo a preservar sua finalidade e compatibilidade com a 
+legislação aplicável. 
+ 
+8.6 Legislação aplicável 
+Esta Política de Privacidade será regida e interpretada de 
+acordo com a legislação da República Federativa do Brasil, especialmente: 
+I – Lei nº 13.709/2018 (Lei Geral de Proteção de Dados 
+Pessoais – LGPD); 
+II – Lei nº 12.965/2014 (Marco Civil da Internet); 
+III – Lei nº 8.078/1990 (Código de Defesa do Consumidor), 
+quando aplicável; 
+IV – Código Civil Brasileiro e demais normas pertinentes. 
+ 
+8.7 Vigência 
+A presente Política de Privacidade entra em vigor na data 
+de sua disponibilização na plataforma TES e permanecerá aplicável enquanto houver 
+tratamento de dados pessoais relacionado às atividades desenvolvidas pelo TES, 
+ressalvadas as alterações posteriores regularmente publicadas.
+
+[Pagina 32]
+8.8 Histórico de versões 
+Com o objetivo de promover transparência e 
+rastreabilidade, o TES poderá manter registro das versões anteriores desta Política de 
+Privacidade, indicando a data de entrada em vigor de cada atualização e, sempre que 
+possível, as principais alterações realizadas.
