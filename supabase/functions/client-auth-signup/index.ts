@@ -9,6 +9,10 @@ import {
   getSiteUrl,
   isEmailAutomaticallyConfirmed,
 } from "../_shared/auth/runtime.ts";
+import {
+  assertSignupDependencies,
+  SignupDependencyError,
+} from "../_shared/auth/signup-dependencies.ts";
 import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
 import {
   confirmAuthUserEmail,
@@ -95,6 +99,12 @@ clientSignupRuntime.serve(async (request) => {
 
   try {
     const email = normalizeEmail(value.email);
+    const restClient = new SupabaseRestClient(supabaseUrl, serviceRoleKey);
+
+    await assertSignupDependencies(restClient, {
+      requireEmailDelivery: !automaticallyConfirmed,
+    });
+
     const authUser = await supabaseJson<SupabaseAuthUser>(
       supabaseUrl,
       serviceRoleKey,
@@ -161,17 +171,6 @@ clientSignupRuntime.serve(async (request) => {
       },
     );
 
-    await registerSignupLegalAcceptances({
-      actorRole: "patient",
-      context: "patient_signup",
-      profileId: userId,
-      serviceRoleKey,
-      source: "client_auth_signup",
-      supabaseUrl,
-    });
-
-    const restClient = new SupabaseRestClient(supabaseUrl, serviceRoleKey);
-
     if (automaticallyConfirmed) {
       await revokeAuthActionTokens(restClient, userId, "email_verification");
       await revokeEmailVerificationStatusTokens(restClient, userId);
@@ -184,6 +183,14 @@ clientSignupRuntime.serve(async (request) => {
         recipientRole: "patient",
         recipientUserId: userId,
         status: "skipped",
+      });
+      await registerSignupLegalAcceptances({
+        actorRole: "patient",
+        context: "patient_signup",
+        profileId: userId,
+        serviceRoleKey,
+        source: "client_auth_signup",
+        supabaseUrl,
       });
 
       return jsonResponse({
@@ -229,6 +236,14 @@ clientSignupRuntime.serve(async (request) => {
     if (emailResult.status !== "success") {
       throw new Error("email_verification_failed");
     }
+    await registerSignupLegalAcceptances({
+      actorRole: "patient",
+      context: "patient_signup",
+      profileId: userId,
+      serviceRoleKey,
+      source: "client_auth_signup",
+      supabaseUrl,
+    });
 
     return jsonResponse({
       mode: "email_sent",
@@ -242,7 +257,7 @@ clientSignupRuntime.serve(async (request) => {
         details:
           error instanceof SupabaseHttpError ? error.safeDetails : undefined,
         message: error instanceof Error ? error.message : "UNKNOWN",
-        status: error instanceof SupabaseHttpError ? error.status : undefined,
+        status: getSignupFailureStatus(error),
       }),
     );
 
@@ -250,10 +265,9 @@ clientSignupRuntime.serve(async (request) => {
       await deleteAuthUserBestEffort(supabaseUrl, serviceRoleKey, userId);
     }
 
-    return jsonResponse(
-      { error: "signup_failed" },
-      error instanceof SupabaseHttpError ? error.status : 500,
-    );
+    const status = getSignupFailureStatus(error);
+
+    return jsonResponse({ error: signupErrorCodeForStatus(status) }, status);
   }
 });
 
@@ -364,6 +378,36 @@ function jsonResponse(body: unknown, status = 200) {
     headers: jsonHeaders,
     status,
   });
+}
+
+function getSignupFailureStatus(error: unknown) {
+  if (error instanceof SignupDependencyError) {
+    return 503;
+  }
+
+  if (error instanceof SupabaseHttpError) {
+    return isDuplicateEmailError(error) ? 409 : error.status;
+  }
+
+  return 500;
+}
+
+function isDuplicateEmailError(error: SupabaseHttpError) {
+  const details = error.safeDetails?.toLowerCase() ?? "";
+
+  return (
+    error.status === 422 &&
+    details.includes("email") &&
+    (details.includes("already") ||
+      details.includes("registered") ||
+      details.includes("exists"))
+  );
+}
+
+function signupErrorCodeForStatus(status: number) {
+  if (status === 409) return "email_already_registered";
+  if (status === 503) return "signup_dependencies_unavailable";
+  return "signup_failed";
 }
 
 class SupabaseHttpError extends Error {
