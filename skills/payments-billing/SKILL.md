@@ -77,6 +77,9 @@ Never expose, log, screenshot, or write real secret values.
 10. Run headed payment navigation: `npm run test:e2e:payments:headed`.
 11. Inspect failed Stripe events in `stripe_webhook_events`.
 12. Cleanup E2E data: `npm run payments:e2e:cleanup`.
+13. For joint Stripe session payment + Zoom Video SDK homologation, run
+    `npm run homologation:zoom:local` and require canonical webhook evidence
+    before any real Zoom session.
 
 ## Testing Rules
 

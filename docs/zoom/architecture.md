@@ -26,6 +26,11 @@ O proxy Next envia `actorRole` e seleciona explicitamente o cookie desse papel.
 A Edge Function rejeita mismatch para impedir token cruzado entre paciente e
 terapeuta.
 
+Na homologacao principal, esse passo 1 deve vir de Checkout Stripe test e
+webhook assinado. Fixtures com pagamento direto sao permitidas somente para
+diagnostico isolado do Video SDK e nao autorizam declarar o fluxo
+transacional homologado.
+
 ## Banco
 
 - `video_sessions`: uma sessao logica local por booking.

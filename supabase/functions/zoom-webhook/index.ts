@@ -1,4 +1,5 @@
 import { getServiceRoleKey } from "../_shared/auth/runtime.ts";
+import { jsonResponse } from "../_shared/auth/cors.ts";
 import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
 import { DomainError, failure, success } from "../_shared/payments/http.ts";
 import { getPaymentsRuntime } from "../_shared/payments/runtime.ts";
@@ -64,7 +65,7 @@ runtime.serve(async (request) => {
         return new Response("Invalid validation payload", { status: 400 });
       }
 
-      return success(
+      return jsonResponse(
         await createZoomVideoChallengeResponse(
           plainToken,
           config.webhookSecretToken,

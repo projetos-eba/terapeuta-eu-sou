@@ -3324,3 +3324,81 @@ set
   email = excluded.email,
   avatar_url = excluded.avatar_url,
   updated_at = now();
+
+-- Legal fixtures required by authenticated reservation Checkout in local/test
+-- resets. The Edge Function blocks session payment creation unless all three
+-- published versions are available.
+insert into public.legal_document_versions (
+  id,
+  document_key,
+  title,
+  audience,
+  version,
+  content_hash,
+  canonical_path,
+  language,
+  status,
+  approved_at,
+  approved_by,
+  effective_at,
+  published_at,
+  requires_new_acceptance,
+  change_summary,
+  source_reference
+)
+values
+  (
+    'dddddddd-0000-4000-8000-000000000101',
+    'terms-of-use',
+    'Termos de Uso TES',
+    array['patient', 'therapist']::text[],
+    'local-seed-v1',
+    'sha256:tes-local-seed-terms-of-use',
+    '/termos',
+    'pt-BR',
+    'published',
+    now() - interval '1 day',
+    'local-seed',
+    now() - interval '1 day',
+    now() - interval '1 day',
+    false,
+    'Fixture local para testes transacionais; nao substitui revisao juridica.',
+    'supabase/seed.sql'
+  ),
+  (
+    'dddddddd-0000-4000-8000-000000000102',
+    'privacy-policy',
+    'Politica de Privacidade TES',
+    array['patient', 'therapist']::text[],
+    'local-seed-v1',
+    'sha256:tes-local-seed-privacy-policy',
+    '/privacidade',
+    'pt-BR',
+    'published',
+    now() - interval '1 day',
+    'local-seed',
+    now() - interval '1 day',
+    now() - interval '1 day',
+    false,
+    'Fixture local para testes transacionais; nao substitui revisao juridica.',
+    'supabase/seed.sql'
+  ),
+  (
+    'dddddddd-0000-4000-8000-000000000103',
+    'cancellation-reschedule-refund-policy',
+    'Politica de Cancelamento, Reagendamento e Reembolso TES',
+    array['patient', 'therapist']::text[],
+    'local-seed-v1',
+    'sha256:tes-local-seed-cancellation-policy',
+    '/termos#cancelamentos',
+    'pt-BR',
+    'published',
+    now() - interval '1 day',
+    'local-seed',
+    now() - interval '1 day',
+    now() - interval '1 day',
+    false,
+    'Fixture local para testes transacionais; nao substitui revisao juridica.',
+    'supabase/seed.sql'
+  )
+on conflict (id) do nothing;

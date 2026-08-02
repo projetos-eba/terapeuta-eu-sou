@@ -19,6 +19,7 @@ Variaveis:
 Comandos locais:
 
 ```bash
+npm run homologation:zoom:local
 npm run zoom:video-sdk:env
 npm run zoom:video-sdk:test
 npm run zoom:video-sdk:api:mock
@@ -29,6 +30,11 @@ O tunel grava somente metadados nao secretos em
 `.tmp/zoom-real-homologation.json`. A verificacao real do webhook atualiza esse
 arquivo com uma confirmacao temporaria; o teste real cria e limpa fixtures em
 runtime.
+
+`homologation:zoom:local` e o fluxo principal. Ele so avanca para sessao Zoom
+real quando a evidencia `canonicalPayment` comprova Checkout Stripe test,
+webhook assinado processado, `session_payments.financial_status = paid` e
+`video_sessions` criada pelo fluxo canonico.
 
 `ALLOW_REAL_ZOOM` aceita estritamente `true` ou `false`. Ausente, vazio ou
 invalido falha fechado como `false`.
