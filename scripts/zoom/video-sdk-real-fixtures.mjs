@@ -104,9 +104,23 @@ export async function createZoomCheckoutFixtures({ admin, runId }) {
     insertServiceBookingSettings({ admin, serviceId: ids.serviceId });
 
     const targetStartsAt = new Date(Date.now() + 5 * 60_000);
+    const targetWeekday = getWeekdayInTimezone(
+      targetStartsAt,
+      "America/Sao_Paulo",
+    );
+    const nextWeekday = (targetWeekday + 1) % 7;
     await admin.insert("availability_rules", [
       {
-        day_of_week: targetStartsAt.getDay(),
+        day_of_week: targetWeekday,
+        end_time: "23:59",
+        is_active: true,
+        service_id: ids.serviceId,
+        start_time: "00:00",
+        therapist_profile_id: ids.therapistProfileId,
+        timezone: "America/Sao_Paulo",
+      },
+      {
+        day_of_week: nextWeekday,
         end_time: "23:59",
         is_active: true,
         service_id: ids.serviceId,
@@ -138,6 +152,23 @@ export async function createZoomCheckoutFixtures({ admin, runId }) {
     await cleanupZoomRealFixtures({ admin, ids, runId });
     throw error;
   }
+}
+
+function getWeekdayInTimezone(date, timeZone) {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+  }).format(date);
+
+  return {
+    Fri: 5,
+    Mon: 1,
+    Sat: 6,
+    Sun: 0,
+    Thu: 4,
+    Tue: 2,
+    Wed: 3,
+  }[weekday];
 }
 
 export async function createZoomRealFixtures({ admin, environment, runId }) {

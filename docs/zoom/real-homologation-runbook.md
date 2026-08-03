@@ -40,12 +40,16 @@ npm run typecheck
 npm run lint
 npm run build
 npx supabase status
-npx supabase db reset
 npx supabase db lint
 npx supabase test db
 npx supabase gen types typescript --local --schema public
 npm run format:check
 ```
+
+`npx supabase db reset` não faz parte do fluxo de homologação e só deve ser
+executado com decisão explícita quando uma reconstrução completa do banco local
+for necessária. O comando único preserva a configuração e os dados de teste
+locais por padrão.
 
 ## Ngrok
 
@@ -64,6 +68,10 @@ https://<subdominio-ngrok>/functions/v1/zoom-webhook
 
 Mantenha o processo ativo ate encerrar a homologacao. Pressione `Ctrl+C` para
 parar o tunel.
+
+O túnel é obrigatório durante toda a sessão real. Um `real-verify` bem-sucedido
+sem o processo do túnel ativo não garante entrega dos eventos
+`session.user_joined` e `session.user_left`.
 
 ## Configuracao Manual no Zoom
 

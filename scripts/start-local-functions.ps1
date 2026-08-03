@@ -3,16 +3,6 @@ $ErrorActionPreference = "Stop"
 $runtimeDir = Join-Path (Get-Location) ".codex\runtime"
 New-Item -ItemType Directory -Force -Path $runtimeDir | Out-Null
 
-$functionEnvDirectory = Join-Path (Get-Location) "supabase\functions"
-$functionDefaultEnvPath = Join-Path $functionEnvDirectory ".env"
-$functionRuntimeEnvBackupPath = Join-Path $functionEnvDirectory ".env.homologation-runtime"
-
-# Recover the source env file if a forced process stop interrupted the prior run.
-if (-not (Test-Path -LiteralPath $functionDefaultEnvPath) -and
-    (Test-Path -LiteralPath $functionRuntimeEnvBackupPath)) {
-  Move-Item -LiteralPath $functionRuntimeEnvBackupPath -Destination $functionDefaultEnvPath
-}
-
 function Resolve-BaseEnvFile {
   $functionEnvFile = "supabase\functions\.env.local"
   if (Test-Path -LiteralPath $functionEnvFile) {
@@ -52,13 +42,6 @@ if (-not $supabaseUrl -or -not $anonKey -or -not $serviceRoleKey) {
 $baseEnvFile = Resolve-BaseEnvFile
 
 $baseEnvContent = Get-Content -LiteralPath $baseEnvFile -ErrorAction Stop
-$restoreFunctionDefaultEnv = $false
-
-if ((Resolve-Path -LiteralPath $functionDefaultEnvPath -ErrorAction SilentlyContinue) -and
-    -not (Test-Path -LiteralPath $functionRuntimeEnvBackupPath)) {
-  Move-Item -LiteralPath $functionDefaultEnvPath -Destination $functionRuntimeEnvBackupPath
-  $restoreFunctionDefaultEnv = $true
-}
 
 $envFile = Join-Path $runtimeDir "local-functions.env"
 $content = New-Object System.Collections.Generic.List[string]
@@ -130,9 +113,6 @@ try {
   & npx supabase functions serve --env-file $envFile --no-verify-jwt
   exit $LASTEXITCODE
 } finally {
-  if ($restoreFunctionDefaultEnv -and (Test-Path -LiteralPath $functionRuntimeEnvBackupPath)) {
-    Move-Item -LiteralPath $functionRuntimeEnvBackupPath -Destination $functionDefaultEnvPath
-  }
   Remove-Item Env:SUPABASE_URL -ErrorAction SilentlyContinue
   Remove-Item Env:SUPABASE_SERVICE_ROLE_KEY -ErrorAction SilentlyContinue
   Remove-Item Env:SUPABASE_ANON_KEY -ErrorAction SilentlyContinue

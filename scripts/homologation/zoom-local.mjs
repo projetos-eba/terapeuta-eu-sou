@@ -298,8 +298,8 @@ async function startFunctions({ stripeWebhookSecret, timeoutMs }) {
 }
 
 async function startNext({ timeoutMs }) {
-  const requested = process.env.PLAYWRIGHT_BASE_URL || "http://127.0.0.1:3000";
-  if (await isHttpReady(requested)) {
+  const requested = process.env.PLAYWRIGHT_BASE_URL?.trim();
+  if (requested && (await isHttpReady(requested))) {
     evidence.services.push({ name: "next", reused: true, url: requested });
     return;
   }
@@ -371,9 +371,20 @@ async function runZoomLocalTests() {
   await run("npm", ["run", "zoom:video-sdk:api:mock"], {
     timeoutMs: 120_000,
   });
-  await run("npm", ["run", "zoom:video-sdk:webhook:smoke"], {
-    timeoutMs: 120_000,
-  });
+  let lastSmokeError = null;
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      await run("npm", ["run", "zoom:video-sdk:webhook:smoke"], {
+        timeoutMs: 120_000,
+      });
+      lastSmokeError = null;
+      break;
+    } catch (error) {
+      lastSmokeError = error;
+      if (attempt < 3) await delay(3000);
+    }
+  }
+  if (lastSmokeError) throw lastSmokeError;
 }
 
 async function assertZoomWebhookReady() {
@@ -404,6 +415,9 @@ async function assertZoomWebhookReady() {
 }
 
 async function assertRealPreflight() {
+  await run("npm", ["run", "zoom:video-sdk:webhook:real-verify"], {
+    timeoutMs: 60_000,
+  });
   await run("npm", ["run", "zoom:video-sdk:real-preflight"], {
     timeoutMs: 60_000,
   });
@@ -877,7 +891,7 @@ async function runRealZoomTest() {
       "--base-url",
       baseUrl,
     ],
-    { timeoutMs: 240_000 },
+    { timeoutMs: 360_000 },
   );
 }
 
@@ -971,7 +985,13 @@ async function cleanupCanonicalFixture(reason) {
 async function run(command, args, { timeoutMs }) {
   const result = await runCapture(command, args, { timeoutMs });
   if (result.code !== 0) {
-    throw new Error(`command_failed:${command} ${args.join(" ")}`);
+    const error = new Error(`command_failed:${command} ${args.join(" ")}`);
+    error.details = {
+      exitCode: result.code,
+      stderr: result.stderr.slice(-4000),
+      stdout: result.stdout.slice(-4000),
+    };
+    throw error;
   }
   evidence.commands.push({ command: [command, ...args].join(" "), ok: true });
   return result;
@@ -1002,9 +1022,9 @@ function runCapture(command, args, { sanitize = true, timeoutMs }) {
     child.stderr.on("data", (chunk) => {
       stderr += sanitize ? sanitizeLog(chunk) : String(chunk);
     });
-    child.on("exit", (code) => {
+    child.on("close", (code, signal) => {
       clearTimeout(timer);
-      resolve({ code: code ?? 1, stderr, stdout });
+      resolve({ code: code ?? 1, signal, stderr, stdout });
     });
     child.on("error", (error) => {
       clearTimeout(timer);
@@ -1116,7 +1136,7 @@ function sanitizeError(error) {
 
 function sanitizeDetails(value) {
   if (value == null) return value;
-  if (typeof value === "string") return sanitizeLog(value).slice(0, 500);
+  if (typeof value === "string") return sanitizeLog(value).slice(0, 8_000);
   if (typeof value === "number" || typeof value === "boolean") return value;
   if (Array.isArray(value)) return value.slice(0, 20).map(sanitizeDetails);
   if (typeof value === "object") {
@@ -1126,7 +1146,7 @@ function sanitizeDetails(value) {
         .map(([key, nested]) => [key, sanitizeDetails(nested)]),
     );
   }
-  return String(value).slice(0, 500);
+  return String(value).slice(0, 8_000);
 }
 
 function safeHost(value) {

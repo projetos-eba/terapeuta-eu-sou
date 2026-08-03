@@ -1,5 +1,7 @@
 begin;
 
+select set_config('timezone', 'America/Sao_Paulo', true);
+
 select plan(33);
 
 select ok(
