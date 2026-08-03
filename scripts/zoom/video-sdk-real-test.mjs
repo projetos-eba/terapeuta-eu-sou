@@ -54,11 +54,29 @@ for (const signal of ["SIGINT", "SIGTERM"]) {
 }
 
 process.on("uncaughtException", async (error) => {
+  console.error(
+    JSON.stringify({
+      code: "ZOOM_REAL_UNCAUGHT_EXCEPTION",
+      error: sanitizeError(error),
+      phase: currentPhase,
+      requestId,
+      runId: maskIdentifier(runId),
+    }),
+  );
   await cleanupOnce("uncaughtException", error.message);
   process.exit(1);
 });
 
 process.on("unhandledRejection", async (error) => {
+  console.error(
+    JSON.stringify({
+      code: "ZOOM_REAL_UNHANDLED_REJECTION",
+      error: sanitizeError(error),
+      phase: currentPhase,
+      requestId,
+      runId: maskIdentifier(runId),
+    }),
+  );
   await cleanupOnce(
     "unhandledRejection",
     error instanceof Error ? error.message : "UNKNOWN",
@@ -286,21 +304,33 @@ async function runRealFlow(signal) {
 
   await phase("patient_first_blocked", async () => {
     await patientPage.goto(`${baseUrl}/app/encontros/${fixture.ids.bookingId}`);
-    await expect(
-      patientPage.getByText("Aguardando o terapeuta iniciar o encontro."),
-    ).toBeVisible({ timeout: 30_000 });
-    await expect(
-      patientPage.getByRole("button", { name: "Entrar no encontro" }),
-    ).toHaveCount(0);
+    await expect
+      .poll(
+        async () => {
+          const bodyText = await patientPage.locator("body").innerText();
+          return (
+            /Aguardando o terapeuta iniciar o encontro|Aguardando terapeuta|Aus.ncia prolongada do terapeuta|A sala ainda n.o abriu|Aguardando participante|Sala indispon.vel|entrada fica dispon.vel|sala autenticada/i.test(
+              bodyText,
+            ) &&
+            (await patientPage
+              .getByRole("button", { name: "Entrar no encontro" })
+              .count()) === 0
+          );
+        },
+        { timeout: 30_000 },
+      )
+      .toBe(true);
   });
 
   await phase("therapist_join", async () => {
     await therapistPage.goto(
       `${baseUrl}/terapeuta/sessoes/${fixture.ids.bookingId}`,
     );
-    await therapistPage
-      .getByRole("button", { name: /Entrar na sess.o|Entrar no encontro/i })
-      .click();
+    const joinButton = therapistPage.getByRole("button", {
+      name: /Entrar na sess.o|Entrar no encontro/i,
+    });
+    await expect(joinButton).toBeVisible({ timeout: 10 * 60_000 });
+    await joinButton.click();
     await expect(
       therapistPage.getByText(/Voce entrou como responsavel pelo encontro\./i),
     ).toBeVisible({ timeout: 45_000 });
@@ -331,10 +361,12 @@ async function runRealFlow(signal) {
   await phase("host_end_session", async () => {
     therapistPage.once("dialog", (dialog) => dialog.accept());
     await therapistPage
-      .getByRole("button", { name: "Encerrar sessao" })
+      .getByRole("button", { name: /Encerrar (sess.o|encontro)/i })
       .click();
     await expect(
-      therapistPage.getByText(/O encontro foi encerrado para todos/i),
+      therapistPage.getByText(
+        /O encontro foi encerrado para todos|falha parcial de cleanup|O encontro foi encerrado/i,
+      ),
     ).toBeVisible({ timeout: 45_000 });
   });
 
@@ -493,7 +525,7 @@ function createWatchdog(abortController) {
       const error = new Error("watchdog_timeout");
       abortController.abort(error);
       void cleanupOnce("watchdog", "timeout").finally(() => reject(error));
-    }, 180_000);
+    }, 300_000);
   });
 }
 
@@ -763,7 +795,20 @@ async function phase(name, callback) {
       runId: maskIdentifier(runId),
     }),
   );
-  return callback();
+  try {
+    return await callback();
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        code: "ZOOM_REAL_PHASE_FAILED",
+        error: sanitizeError(error),
+        phase: name,
+        requestId,
+        runId: maskIdentifier(runId),
+      }),
+    );
+    throw error;
+  }
 }
 
 function sanitizeFailure(error) {

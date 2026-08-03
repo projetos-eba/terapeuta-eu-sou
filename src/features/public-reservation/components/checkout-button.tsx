@@ -108,43 +108,45 @@ export function CheckoutButton({
           throw new Error("stripe_not_loaded");
         }
 
-        const checkout = await stripe.initEmbeddedCheckout({
-          fetchClientSecret: () => {
-            if (!clientSecretPromiseRef.current) {
-              clientSecretPromiseRef.current = (async () => {
-                const response = await fetch(
-                  "/api/public/reservation/checkout",
-                  {
-                    body: JSON.stringify({
-                      requestId: requestIdRef.current,
-                      serviceId,
-                      startsAt,
-                      termsAccepted: true,
-                    }),
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    method: "POST",
-                  },
+        const fetchClientSecret = () => {
+          if (!clientSecretPromiseRef.current) {
+            clientSecretPromiseRef.current = (async () => {
+              const response = await fetch("/api/public/reservation/checkout", {
+                body: JSON.stringify({
+                  requestId: requestIdRef.current,
+                  serviceId,
+                  startsAt,
+                  termsAccepted: true,
+                }),
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                method: "POST",
+              });
+              const data = (await response.json()) as CheckoutResponse;
+
+              if (!data.ok) {
+                throw new Error(data.message);
+              }
+
+              if (!data.checkout.clientSecret) {
+                throw new Error(
+                  "NÃ£o conseguimos carregar o checkout incorporado agora.",
                 );
-                const data = (await response.json()) as CheckoutResponse;
+              }
 
-                if (!data.ok) {
-                  throw new Error(data.message);
-                }
+              return data.checkout.clientSecret;
+            })();
+          }
 
-                if (!data.checkout.clientSecret) {
-                  throw new Error(
-                    "NÃ£o conseguimos carregar o checkout incorporado agora.",
-                  );
-                }
+          return clientSecretPromiseRef.current;
+        };
 
-                return data.checkout.clientSecret;
-              })();
-            }
+        await fetchClientSecret();
+        if (cancelled) return;
 
-            return clientSecretPromiseRef.current;
-          },
+        const checkout = await stripe.initEmbeddedCheckout({
+          fetchClientSecret,
         });
 
         if (cancelled) {

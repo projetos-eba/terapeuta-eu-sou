@@ -48,6 +48,24 @@ npm run zoom:video-sdk:webhook:real-preflight
 
 O resultado precisa indicar `validationShape: true`.
 
+Se o terapeuta consegue entrar no Video SDK, mas a fase
+`therapist_presence_webhook` termina em `poll_timeout`, a URL publica pode estar
+respondendo ao preflight sem estar ativa na assinatura do Zoom. Mantenha
+`npm run zoom:video-sdk:webhook:tunnel` em execução, confira no Marketplace a
+mesma URL atual e os quatro eventos selecionados, clique em **Validate** e
+salve a assinatura. O `real-verify` local confirma apenas alcance e formato;
+ele não ativa nem altera a configuração do Marketplace.
+
+Durante a homologação local, `scripts/start-local-functions.ps1` isola
+temporariamente `supabase/functions/.env` enquanto o watcher das Edge
+Functions está ativo. Isso evita que a alteração do arquivo seja interpretada
+como entrypoint pelo Supabase CLI; o arquivo é restaurado ao encerrar o
+processo.
+
+Atualização operacional: o arquivo `supabase/functions/.env` deve permanecer
+no caminho original durante todo o processo. O webhook, o túnel e as Edge
+Functions compartilham essa configuração; nenhuma etapa deve renomeá-lo.
+
 ## Existe sessao ativa antes do teste
 
 Nao rode o teste real. Primeiro identifique e encerre a sessao pelo host ou pela
