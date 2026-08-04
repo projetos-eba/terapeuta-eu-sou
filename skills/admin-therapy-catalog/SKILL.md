@@ -19,7 +19,7 @@ do catálogo canônico.
 
 ## Rotas
 
-- `/admin/login`
+- `/admin-login`
 - `/admin`
 - `/admin/terapias`
 - `/api/admin/therapies`

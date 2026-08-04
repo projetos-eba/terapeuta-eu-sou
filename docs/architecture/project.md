@@ -249,7 +249,7 @@ capabilities esperadas. Novas rotas devem usar o namespace compartilhado.
 Rotas canonicas:
 
 - `/`
-- `/como-funciona`
+- `/sobre-nos`
 - `/sua-jornada`
 - `/sua-jornada/resultado`
 - `/terapias`
@@ -259,9 +259,6 @@ Rotas canonicas:
 - `/reserva`
 - `/reserva/sucesso`
 - `/para-terapeutas`
-- `/para-terapeutas/planos`
-- `/entrar`
-- `/cadastro`
 - `/reset-senha`
 - `/ajuda`
 - `/termos`
@@ -269,11 +266,11 @@ Rotas canonicas:
 
 Fluxos principais:
 
-- Jornada guiada: `/` -> `/como-funciona` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`.
+- Jornada guiada: `/` -> `/sobre-nos` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`.
 - Busca direta: `/` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso`.
 - Terapias: `/` -> `/terapias` -> `/terapias/:slug` -> `/terapeutas`.
-- Terapeutas visitantes: `/` -> `/para-terapeutas` -> `/para-terapeutas/planos`
-  -> `/terapeuta/cadastro` -> `/terapeuta/login` -> `/terapeuta`.
+- Terapeutas visitantes: `/` -> `/para-terapeutas` -> `/terapeuta/cadastro`
+  -> `/terapeuta/login` -> `/terapeuta`.
 
 ### 7.2 Paciente
 

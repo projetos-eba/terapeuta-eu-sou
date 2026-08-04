@@ -38,12 +38,11 @@ Read in this order, only as needed for the task:
 - Route: `/`
 - Canonical source for links: `src/lib/routes.ts`
 - Primary public CTAs:
-  - `routes.public.howItWorks`
+  - `routes.public.about`
   - `routes.public.therapies`
   - `routes.public.journey`
   - `routes.public.therapists`
   - `routes.public.forTherapists`
-  - `routes.public.therapistPlans`
 - Do not create placeholder pages only to satisfy home links unless the user explicitly asks.
 
 ## Data Contract

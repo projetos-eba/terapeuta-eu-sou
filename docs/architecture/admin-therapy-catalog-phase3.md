@@ -23,7 +23,7 @@ agenda e métricas usando as mesmas fontes de verdade.
 
 ## Fluxos Administrativos
 
-1. Admin entra em `/admin/login` e recebe sessão admin em cookie HTTP-only.
+1. Admin entra em `/admin-login` e recebe sessão admin em cookie HTTP-only.
 2. `/admin/terapias` carrega catálogo, categorias, requests, impacto e eventos
    recentes por `/api/admin/therapies`.
 3. Criação de rascunho chama `admin_upsert_therapy_draft_v1` com identidade e

@@ -7,6 +7,21 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: "/como-funciona",
+        destination: "/sobre-nos",
+        permanent: false,
+      },
+      {
+        source: "/admin/login",
+        destination: "/admin-login",
+        permanent: false,
+      },
+      {
+        source: "/para-terapeutas/planos",
+        destination: "/para-terapeutas",
+        permanent: false,
+      },
+      {
         source: "/app/sessoes/proximas",
         destination: "/app/encontros",
         permanent: false,

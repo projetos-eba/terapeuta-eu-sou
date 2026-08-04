@@ -22,7 +22,7 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 - `/basico/*`, `/pro/*` e `/plus/*` são redirects temporários para
   `/terapeuta/*`.
 - `/terapeutas/*` permanece reservado ao catálogo e ao perfil público.
-- `/para-terapeutas/planos` concentra a decisão pública de planos.
+- `/para-terapeutas` concentra a decisão pública de planos e benefícios.
 - Sessões e mensagens do plano Free existem em `/terapeuta/sessoes` e
   `/terapeuta/mensagens`.
 - Favoritos do paciente separam terapeutas e terapias.
@@ -36,7 +36,7 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 ### Rotas
 
 - `/`: home pública.
-- `/como-funciona`: etapas da experiência e sessão online.
+- `/sobre-nos`: apresentação institucional do TES.
 - `/sua-jornada`: questionário guiado.
 - `/sua-jornada/resultado`: caminhos sugeridos e terapeutas relacionados.
 - `/terapeutas`: busca de terapeutas.
@@ -46,14 +46,12 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 - `/terapias`: catálogo de terapias.
 - `/terapias/:slug`: detalhe da terapia.
 - `/para-terapeutas`: página pública para terapeutas.
-- `/para-terapeutas/planos`: planos Free, Premium e Premium Plus.
-- `/entrar`: login.
-- `/cadastro`: cadastro.
 - `/cliente/login`: login separado para cliente.
 - `/cliente/cadastro`: cadastro inicial de cliente.
 - `/terapeuta/login`: login separado para terapeuta.
 - `/terapeuta/cadastro`: cadastro inicial de terapeuta.
 - `/terapeuta/checkout`: revisão do plano pago após o cadastro.
+- `/admin-login`: login separado para superadmin.
 - `/reset-senha`: recuperação de senha.
 - `/termos`: termos de uso.
 - `/privacidade`: política de privacidade.
@@ -62,16 +60,14 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
   aprovada.
 - `/ajuda`: central pública de ajuda em revisão interna, bloqueada para
   publicação até canais e SLAs aprovados.
-- `/status`: status operacional em revisão interna, bloqueado para publicação
-  até fonte operacional auditada.
 
-Observação: `/ajuda/zoom` permanece sem página pública. A integração técnica
-Zoom Video SDK, runbooks e documentação operacional em `docs/zoom/` permanecem
-válidos.
+Observação: `/ajuda/zoom` e `/status` não possuem página pública nesta fase. A
+integração técnica Zoom Video SDK, runbooks e documentação operacional em
+`docs/zoom/` permanecem válidos.
 
 ### Fluxos
 
-- Jornada guiada: `/` -> `/como-funciona` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapias/:slug` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`. O Match é público, anônimo, determinístico, recomenda terapias e guarda escolhas apenas em `sessionStorage`.
+- Jornada guiada: `/` -> `/sobre-nos` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapias/:slug` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`. O Match é público, anônimo, determinístico, recomenda terapias e guarda escolhas apenas em `sessionStorage`.
 - Busca direta: `/` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso`.
 - Terapias: `/` -> `/terapias?q=&category=&sort=&page=` -> `/terapias/:slug` -> `/terapeutas?therapy=:slug&source=therapy` -> `/terapeutas/:slug?therapy=:slug&source=therapy`. A listagem usa `public_therapies_v`; o detalhe usa `public_therapy_details_v` e profissionais de `public_therapist_search`. Ambas mostram terapias com `status = published`, categoria ativa e mantêm filtros/origem na URL. O Match só considera terapias publicadas e ativadas em `matching_therapy_settings` e aponta para `/terapias/:slug?source=match`.
 - Clientes visitantes: `/` -> `/cliente/cadastro` ou `/cliente/login` -> `/app`.
@@ -228,6 +224,7 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 ### Rotas
 
 - `/admin`: visão geral.
+- `/admin-login`: login separado para superadmin.
 - `/admin/profissionais`: profissionais.
 - `/admin/profissionais/verificacoes`: verificações.
 - `/admin/pacientes`: pacientes.
@@ -263,7 +260,10 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 
 Usar somente quando houver variação legada ou visual:
 
-- `/como funciona` -> `/como-funciona`.
+- `/como funciona` -> `/sobre-nos`.
+- `/como-funciona` -> `/sobre-nos`.
+- `/para-terapeutas/planos` -> `/para-terapeutas`.
+- `/admin/login` -> `/admin-login`.
 - `/plus/serviços` -> `/plus/servicos`.
 - `/plus/avaliações` -> `/plus/avaliacoes`.
 - `/plus/ia` -> `/plus/assessor-ia`.
