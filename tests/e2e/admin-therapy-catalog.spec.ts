@@ -37,6 +37,13 @@ test.describe("admin therapy catalog", () => {
       .getByLabel("Abordagem / descrição editorial")
       .fill("Conteúdo seguro sem promessa de resultado.");
     await page
+      .getByRole("group", {
+        name: "Selecione de 1 a 3 temas para recomendar esta terapia",
+      })
+      .getByRole("checkbox")
+      .first()
+      .check();
+    await page
       .getByLabel("Motivo da alteração")
       .fill("Criação E2E do catálogo administrativo.");
     await page.getByRole("button", { name: "Salvar rascunho" }).click();

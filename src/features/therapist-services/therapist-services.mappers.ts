@@ -57,6 +57,7 @@ export function mapTherapistServiceSummary(
   const therapy = record(value.therapy);
   const category = record(value.category);
   const metrics = record(value.metrics);
+  const matching = optionalRecord(value.matching);
 
   return {
     archivedAt: nullableString(value.archivedAt),
@@ -79,6 +80,10 @@ export function mapTherapistServiceSummary(
         metrics.bookingCountDeltaPercent,
       ),
       bookingsLast30Days: number(metrics.bookingsLast30Days),
+    },
+    matching: {
+      interestIds: stringArray(matching?.interestIds),
+      themeIds: stringArray(matching?.themeIds),
     },
     onlineOnly: boolean(value.onlineOnly),
     position: number(value.position),
@@ -113,6 +118,7 @@ function mapTherapyCatalogOption(input: unknown): TherapyCatalogOption {
     isAvailableForServices: boolean(value.isAvailableForServices),
     isPubliclyVisible: boolean(value.isPubliclyVisible),
     isVisibleInMatching: boolean(value.isVisibleInMatching),
+    matchingThemes: optionalArray(value.matchingThemes).map(mapMatchingTheme),
     name: string(value.name),
     shortDescription: string(value.shortDescription),
     slug: string(value.slug),
@@ -121,9 +127,36 @@ function mapTherapyCatalogOption(input: unknown): TherapyCatalogOption {
   };
 }
 
+function mapMatchingTheme(input: unknown): TherapyCatalogOption["matchingThemes"][number] {
+  const value = record(input);
+
+  return {
+    id: string(value.id),
+    interests: array(value.interests).map((item) => {
+      const interest = record(item);
+
+      return {
+        id: string(interest.id),
+        name: string(interest.name),
+        slug: string(interest.slug),
+        sortOrder: number(interest.sortOrder),
+        themeId: string(interest.themeId),
+      };
+    }),
+    name: string(value.name),
+    slug: string(value.slug),
+    sortOrder: number(value.sortOrder),
+  };
+}
+
 function array(value: unknown): unknown[] {
   if (!Array.isArray(value)) throw new Error("Invalid array.");
   return value;
+}
+
+function optionalArray(value: unknown): unknown[] {
+  if (value === undefined || value === null) return [];
+  return array(value);
 }
 
 function boolean(value: unknown) {
@@ -184,7 +217,17 @@ function record(value: unknown): Record<string, unknown> {
   return value as Record<string, unknown>;
 }
 
+function optionalRecord(value: unknown): Record<string, unknown> | null {
+  if (value === undefined || value === null) return null;
+  return record(value);
+}
+
 function string(value: unknown) {
   if (typeof value !== "string") throw new Error("Invalid string.");
   return value;
+}
+
+function stringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
 }

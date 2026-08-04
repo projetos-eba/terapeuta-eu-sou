@@ -22,6 +22,25 @@ const requestStatuses = new Set([
 
 export type AdminTherapyCatalogCommandBody =
   | { action?: "list" }
+  | { action?: "matchingList" }
+  | {
+      action?: "matchingSaveTheme";
+      payload?: unknown;
+      requestId?: string;
+    }
+  | {
+      action?: "matchingSaveInterest";
+      payload?: unknown;
+      requestId?: string;
+    }
+  | {
+      action?: "matchingTransition";
+      entityId?: string;
+      entityType?: string;
+      matchingAction?: string;
+      reason?: string;
+      requestId?: string;
+    }
   | { action?: "impact"; therapyId?: string }
   | {
       action?: "save";
@@ -51,6 +70,25 @@ export type AdminTherapyCatalogCommandBody =
 
 export type ValidAdminTherapyCatalogCommand =
   | { action: "list" }
+  | { action: "matchingList" }
+  | {
+      action: "matchingSaveTheme";
+      payload: Record<string, unknown>;
+      requestId: string;
+    }
+  | {
+      action: "matchingSaveInterest";
+      payload: Record<string, unknown>;
+      requestId: string;
+    }
+  | {
+      action: "matchingTransition";
+      entityId: string;
+      entityType: "theme" | "interest";
+      matchingAction: "activate" | "deactivate";
+      reason: string;
+      requestId: string;
+    }
   | { action: "impact"; therapyId: string }
   | { action: "save"; payload: Record<string, unknown>; requestId: string }
   | {
@@ -75,6 +113,48 @@ export function validateAdminTherapyCatalogCommand(
   body: AdminTherapyCatalogCommandBody,
 ): ValidAdminTherapyCatalogCommand {
   if (body.action === "list") return { action: "list" };
+  if (body.action === "matchingList") return { action: "matchingList" };
+
+  if (body.action === "matchingSaveTheme") {
+    if (!isUuid(body.requestId) || !isRecord(body.payload)) invalid();
+    return {
+      action: "matchingSaveTheme",
+      payload: body.payload,
+      requestId: body.requestId,
+    };
+  }
+
+  if (body.action === "matchingSaveInterest") {
+    if (!isUuid(body.requestId) || !isRecord(body.payload)) invalid();
+    return {
+      action: "matchingSaveInterest",
+      payload: body.payload,
+      requestId: body.requestId,
+    };
+  }
+
+  if (body.action === "matchingTransition") {
+    const reason = typeof body.reason === "string" ? body.reason.trim() : "";
+    if (
+      !isUuid(body.requestId) ||
+      !isUuid(body.entityId) ||
+      (body.entityType !== "theme" && body.entityType !== "interest") ||
+      (body.matchingAction !== "activate" &&
+        body.matchingAction !== "deactivate") ||
+      !isBoundedString(reason, 4, 500)
+    ) {
+      invalid();
+    }
+
+    return {
+      action: "matchingTransition",
+      entityId: body.entityId,
+      entityType: body.entityType,
+      matchingAction: body.matchingAction,
+      reason,
+      requestId: body.requestId,
+    };
+  }
 
   if (body.action === "impact") {
     if (!isUuid(body.therapyId)) invalid();
@@ -178,6 +258,27 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
       "A categoria precisa estar ativa para publicar.",
     );
   }
+  if (details.includes("ADMIN_THERAPY_CATALOG_THEME_REQUIRED")) {
+    return new DomainError(
+      "theme_required",
+      422,
+      "Selecione pelo menos um tema do Match antes de publicar.",
+    );
+  }
+  if (details.includes("ADMIN_THERAPY_CATALOG_INVALID_THEME_LIMIT")) {
+    return new DomainError(
+      "theme_limit",
+      422,
+      "Selecione de um a tres temas para a terapia.",
+    );
+  }
+  if (details.includes("ADMIN_THERAPY_CATALOG_INVALID_THEME")) {
+    return new DomainError(
+      "invalid_theme",
+      422,
+      "Selecione apenas temas ativos do Match.",
+    );
+  }
   if (details.includes("ADMIN_THERAPY_CATALOG_UNSAFE_COPY")) {
     return new DomainError(
       "unsafe_copy",
@@ -203,6 +304,40 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
       "therapist_required",
       403,
       "Use o acesso de terapeuta para solicitar uma terapia.",
+    );
+  }
+  if (details.includes("ADMIN_MATCHING_SLUG_CONFLICT")) {
+    return new DomainError(
+      "matching_slug_conflict",
+      409,
+      "Este slug ja esta em uso no Match.",
+    );
+  }
+  if (details.includes("ADMIN_MATCHING_THEME_DEACTIVATION_BLOCKED")) {
+    return new DomainError(
+      "matching_theme_deactivation_blocked",
+      409,
+      "Resolva as terapias publicadas que ficariam sem tema ativo antes de desativar.",
+    );
+  }
+  if (details.includes("ADMIN_MATCHING_INTEREST_THEME_LOCKED")) {
+    return new DomainError(
+      "matching_interest_theme_locked",
+      409,
+      "Este refinamento nao pode ser movido para outro tema silenciosamente.",
+    );
+  }
+  if (
+    details.includes("ADMIN_MATCHING_THEME_NOT_FOUND") ||
+    details.includes("ADMIN_MATCHING_INTEREST_NOT_FOUND")
+  ) {
+    return new DomainError("matching_not_found", 404, "Registro do Match nao encontrado.");
+  }
+  if (details.includes("ADMIN_MATCHING_INVALID_PAYLOAD")) {
+    return new DomainError(
+      "matching_invalid_payload",
+      422,
+      "Revise nome, slug, ordem e motivo antes de salvar.",
     );
   }
 

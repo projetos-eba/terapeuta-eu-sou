@@ -1,7 +1,7 @@
 export const routes = {
   public: {
     home: "/",
-    howItWorks: "/como-funciona",
+    about: "/sobre-nos",
     journey: "/sua-jornada",
     journeyResult: "/sua-jornada/resultado",
     therapists: "/terapeutas",
@@ -11,19 +11,15 @@ export const routes = {
     therapies: "/terapias",
     therapyDetail: (slug: string) => `/terapias/${slug}`,
     forTherapists: "/para-terapeutas",
-    therapistPlans: "/para-terapeutas/planos",
     clientSignIn: "/cliente/login",
     clientSignUp: "/cliente/cadastro",
     therapistSignIn: "/terapeuta/login",
     therapistSignUp: "/terapeuta/cadastro",
     confirmEmail: "/confirmar-email",
     therapistCheckout: "/terapeuta/checkout",
-    signIn: "/entrar",
-    signUp: "/cadastro",
     resetPassword: "/reset-senha",
     help: "/ajuda",
     zoomHelp: "/ajuda/zoom",
-    status: "/status",
     terms: "/termos",
     privacy: "/privacidade",
     cancellationPolicy: "/cancelamento-reagendamento-reembolso",
@@ -75,7 +71,7 @@ export const routes = {
     support: "/terapeuta/suporte",
   },
   admin: {
-    signIn: "/admin/login",
+    signIn: "/admin-login",
     home: "/admin",
     professionals: "/admin/profissionais",
     verifications: "/admin/profissionais/verificacoes",
@@ -95,5 +91,5 @@ export const routes = {
 } as const;
 
 export const routeAliases = {
-  "/como funciona": routes.public.howItWorks,
+  "/como funciona": routes.public.about,
 } as const;

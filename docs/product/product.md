@@ -261,11 +261,11 @@ Objetivos:
 
 ## Modelo de Planos
 
-| Plano  | Papel                 | Valor principal                | Recursos centrais                                                                                   | Não inclui                                                   |
-| ------ | --------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Básico | Entrada profissional  | Presença e operação essencial. | Perfil, agenda, pacientes, sessões, mensagens, serviços limitados, financeiro operacional, suporte. | Avaliações, métricas intermediárias, IA, insights avançados. |
-| Pro    | Operação profissional | Gestão mais completa.          | Recursos do Básico, agenda avançada, serviços completos, financeiro, avaliações, métricas, plano.   | Assessor IA, insights Plus, histórico operacional Plus.      |
-| Plus   | Premium               | Inteligência e apoio avançado. | Recursos do Pro, insights, Assessor IA, histórico operacional do paciente, suporte prioritário.     | Upgrade.                                                     |
+| Plano        | Papel                 | Valor principal                | Recursos centrais                                                                                    | Não inclui                                                          |
+| ------------ | --------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Free         | Entrada profissional  | Presença e operação essencial. | Perfil, agenda, pacientes, sessões, mensagens, serviços limitados, financeiro operacional, suporte.  | Avaliações, métricas intermediárias, IA, insights avançados.        |
+| Premium      | Operação profissional | Gestão mais completa.          | Recursos do Free, agenda avançada, serviços completos, financeiro, avaliações, métricas, plano.      | Assessor IA, insights Premium Plus, histórico operacional avançado. |
+| Premium Plus | Premium               | Inteligência e apoio avançado. | Recursos do Premium, insights, Assessor IA, histórico operacional do paciente e suporte prioritário. | —                                                                   |
 
 ## Jornadas Principais
 
@@ -273,7 +273,7 @@ Mapa operacional de integrações, fontes de dados e skills: `docs/product/integ
 
 ### Descoberta e Reserva
 
-`/` -> `/como-funciona` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapias/:slug` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`
+`/` -> `/sobre-nos` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapias/:slug` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`
 
 ### Busca Direta
 
@@ -285,7 +285,7 @@ Mapa operacional de integrações, fontes de dados e skills: `docs/product/integ
 
 ### Terapeutas Visitantes
 
-`/` -> `/para-terapeutas` -> `/para-terapeutas/planos` -> `/terapeuta/cadastro?plan=free|premium|premium_plus` -> `/terapeuta/login` -> `/terapeuta`
+`/` -> `/para-terapeutas` -> `/terapeuta/cadastro?plan=free|premium|premium_plus` -> `/terapeuta/login` -> `/terapeuta`
 
 `/basico/*`, `/pro/*` e `/plus/*` permanecem redirects temporários. O plano e
 as capabilities definem a experiência dentro do namespace único;
@@ -293,7 +293,7 @@ as capabilities definem a experiência dentro do namespace único;
 
 ### Pós-reserva do Paciente
 
-`/reserva/sucesso` -> `/app` -> `/app/sessoes/:slug`
+`/reserva/sucesso` -> `/app` -> `/app/encontros/:bookingId`
 
 ### Operação do Terapeuta
 

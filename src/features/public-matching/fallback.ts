@@ -72,9 +72,9 @@ export const fallbackMatchingConfig: MatchingConfig = {
 };
 
 export const fallbackMatchingTherapies: MatchingTherapy[] = [
-  therapy("222222222225", "Reiki", "reiki", "Prática complementar de presença e cuidado energético.", "/therapies/reiki-editorial.png", 1),
-  therapy("222222222228", "Tarô", "taro", "Leitura simbólica para reflexão, escolhas e autoconhecimento.", "/therapies/taro-editorial.png", 2),
-  therapy("222222222230", "Constelação Familiar", "constelacao-familiar", "Experiência simbólica para observar vínculos e padrões com cuidado.", "/therapies/constelacao-familiar-editorial.png", 2),
+  therapy("222222222225", "Reiki", "reiki", "Prática complementar de presença e cuidado energético.", "/therapies/reiki-editorial.png", 1, ["000000000001", "000000000009"]),
+  therapy("222222222228", "Tarô", "taro", "Leitura simbólica para reflexão, escolhas e autoconhecimento.", "/therapies/taro-editorial.png", 2, ["000000000002", "000000000003", "000000000001"]),
+  therapy("222222222230", "Constelação Familiar", "constelacao-familiar", "Experiência simbólica para observar vínculos e padrões com cuidado.", "/therapies/constelacao-familiar-editorial.png", 3, ["000000000003", "000000000002", "000000000006"]),
 ];
 
 export const fallbackMatchingWeights: MatchingWeight[] = [
@@ -129,7 +129,8 @@ function therapy(
   slug: string,
   shortDescription: string,
   imageUrl: string,
-  therapistCount: number,
+  sortOrder: number,
+  themeSuffixes: string[],
 ): MatchingTherapy {
   return {
     description: shortDescription,
@@ -139,8 +140,12 @@ function therapy(
     name,
     shortDescription,
     slug,
+    sortOrder,
     status: "published",
-    therapistCount,
+    themeIds: themeSuffixes.map(
+      (themeSuffix) => `71000000-0000-4000-8000-${themeSuffix}`,
+    ),
+    therapistCount: sortOrder,
   };
 }
 

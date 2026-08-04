@@ -18,6 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
   const staticRoutes = [
     routes.public.home,
+    routes.public.about,
     routes.public.journey,
     routes.public.therapies,
     routes.public.therapists,

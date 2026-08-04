@@ -86,7 +86,7 @@ Centralizar rotas em `src/lib/routes.ts`.
 export const routes = {
   public: {
     home: "/",
-    howItWorks: "/como-funciona",
+    about: "/sobre-nos",
     journey: "/sua-jornada",
     journeyResult: "/sua-jornada/resultado",
     therapists: "/terapeutas",
@@ -96,38 +96,39 @@ export const routes = {
     reservation: "/reserva",
     reservationSuccess: "/reserva/sucesso",
     forTherapists: "/para-terapeutas",
-    therapistPlans: "/para-terapeutas/planos",
-    signIn: "/entrar",
-    signUp: "/cadastro",
+    clientSignIn: "/cliente/login",
+    clientSignUp: "/cliente/cadastro",
+    therapistSignIn: "/terapeuta/login",
+    therapistSignUp: "/terapeuta/cadastro",
+    therapistCheckout: "/terapeuta/checkout",
+    confirmEmail: "/confirmar-email",
     resetPassword: "/reset-senha",
     terms: "/termos",
     privacy: "/privacidade",
+    cancellationPolicy: "/cancelamento-reagendamento-reembolso",
   },
   patient: {
     home: "/app",
-    sessions: "/app/sessoes",
-    upcomingSessions: "/app/sessoes/proximas",
-    sessionHistory: "/app/sessoes/historico",
+    encounters: "/app/encontros",
+    encounterDetail: (bookingId: string) => `/app/encontros/${bookingId}`,
     messages: "/app/mensagens",
     favorites: "/app/favoritos",
     favoriteTherapists: "/app/favoritos/terapeutas",
     favoriteTherapies: "/app/favoritos/terapias",
     payments: "/app/pagamentos",
     settings: "/app/configuracoes",
-    help: "/app/ajuda",
+    help: "/app/mensagens",
   },
   therapist: {
-    basicHome: "/basico",
-    basicSessions: "/basico/sessoes",
-    basicMessages: "/basico/mensagens",
-    proHome: "/pro",
-    plusHome: "/plus",
-    plusServices: "/plus/servicos",
-    plusReviews: "/plus/avaliacoes",
-    plusAssessorIa: "/plus/assessor-ia",
-    plusPatientJourney: (slug: string) => `/plus/pacientes/${slug}`,
+    home: "/terapeuta",
+    sessions: "/terapeuta/sessoes",
+    messages: "/terapeuta/mensagens",
+    services: "/terapeuta/servicos",
+    finance: "/terapeuta/financeiro",
+    profile: "/terapeuta/perfil",
   },
   admin: {
+    signIn: "/admin-login",
     home: "/admin",
   },
 } as const;
@@ -137,10 +138,7 @@ Aliases ficam em objeto separado:
 
 ```ts
 export const routeAliases = {
-  "/como funciona": routes.public.howItWorks,
-  "/plus/serviços": routes.therapist.plusServices,
-  "/plus/avaliações": routes.therapist.plusReviews,
-  "/plus/ia": routes.therapist.plusAssessorIa,
+  "/como funciona": routes.public.about,
 } as const;
 ```
 

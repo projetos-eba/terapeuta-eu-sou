@@ -1,6 +1,6 @@
 ---
 name: public-legal-surfaces
-description: Implementar e manter as paginas publicas juridicas, ajuda e status do TES com gate de publicacao e aceite versionado.
+description: Implementar e manter as paginas publicas juridicas e ajuda do TES com gate de publicacao e aceite versionado.
 ---
 
 # Superficies juridicas publicas TES
@@ -23,7 +23,6 @@ description: Implementar e manter as paginas publicas juridicas, ajuda e status 
 - `/cancelamento-reagendamento-reembolso`: politica de cancelamento,
   reagendamento e reembolso.
 - `/ajuda`: central publica de ajuda, bloqueada ate canais e SLAs aprovados.
-- `/status`: status operacional, bloqueado ate fonte operacional auditada.
 
 ## Regras criticas
 
@@ -38,6 +37,8 @@ description: Implementar e manter as paginas publicas juridicas, ajuda e status 
   navegador envia somente a intencao de aceite.
 - `/app/ajuda` nao existe neste momento. Suporte autenticado do paciente usa
   `/app/mensagens` com templates aprovados.
+- `/status` nao existe como superficie publica nesta fase. Nao criar pagina
+  estatica de status sem fonte operacional real e decisao de produto.
 
 ## Dados dinamicos
 

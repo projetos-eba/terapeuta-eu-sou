@@ -15,7 +15,7 @@ agenda e métricas usando as mesmas fontes de verdade.
 | Terapia canônica       | `therapies`                                                                        | Admin via `admin-therapy-catalog-command` | Views públicas e catálogo privado filtrados             |
 | Categoria              | `therapy_categories`                                                               | Admin/plataforma                          | Pública somente quando ativa                            |
 | Conteúdo público       | `therapy_public_content`, `therapy_highlights`, `therapy_benefits`, `therapy_faqs` | Admin                                     | `/terapias` e `/terapias/:slug`                         |
-| Match                  | `matching_therapy_settings`, `matching_versions`, `matching_weights`               | Admin/Match                               | `public_matching_config`, `public_matching_therapies_v` |
+| Match                  | `matching_therapy_settings`, `therapy_matching_themes`, `matching_versions`, `matching_weights` | Admin/Match                               | `public_matching_config`, `public_matching_therapies_v` |
 | Serviço do terapeuta   | `therapist_services`                                                               | Terapeuta via autoridade da Fase 1        | Perfil, busca, agenda e reserva                         |
 | Redirect de slug       | `therapy_slug_redirects`                                                           | Admin                                     | `public_therapy_slug_redirects_v`                       |
 | Solicitação de terapia | `therapy_catalog_requests`                                                         | Terapeuta cria, admin decide              | Admin e solicitante                                     |
@@ -23,7 +23,7 @@ agenda e métricas usando as mesmas fontes de verdade.
 
 ## Fluxos Administrativos
 
-1. Admin entra em `/admin/login` e recebe sessão admin em cookie HTTP-only.
+1. Admin entra em `/admin-login` e recebe sessão admin em cookie HTTP-only.
 2. `/admin/terapias` carrega catálogo, categorias, requests, impacto e eventos
    recentes por `/api/admin/therapies`.
 3. Criação de rascunho chama `admin_upsert_therapy_draft_v1` com identidade e
@@ -31,7 +31,8 @@ agenda e métricas usando as mesmas fontes de verdade.
 4. Edição salva identidade, editorial e disponibilidade usando chaves
    semânticas, sem classes Tailwind/CSS no banco.
 5. Publicação chama `admin_transition_therapy_v1` e valida categoria ativa,
-   slug único, conteúdo mínimo, copy responsável e integridade editorial.
+   slug único, conteúdo mínimo, copy responsável, ao menos um tema canônico do
+   Match e integridade editorial.
 6. Despublicação remove a superfície pública sem apagar histórico.
 7. Descontinuação impede novos serviços, preserva serviços existentes,
    bookings, snapshots e pagamentos.
@@ -98,8 +99,12 @@ são registradas de forma estruturada, sem secrets.
 
 ## Riscos Restantes
 
-- `/admin/matching` ainda não existe; pesos continuam governados pelas versões
-  já publicadas no banco.
+- `/admin/matching` possui gestão operacional de temas e refinamentos com
+  criação, edição, ativação/desativação, motivo obrigatório, `request_id` e
+  auditoria. Governança avançada de aprovação editorial pode evoluir depois.
+- `matching_weights` permanece legado compatível. A recomendação de terapias
+  passa a usar `therapy_matching_themes`: temas recomendam terapias;
+  refinamentos ordenam terapeutas dentro da terapia.
 - Aprovação de solicitação vincula ou decide o request, mas a criação assistida
   de rascunho a partir da solicitação permanece manual para evitar promover
   texto livre automaticamente.

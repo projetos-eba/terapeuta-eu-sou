@@ -21,7 +21,9 @@ type ServiceFormValues = {
   deliveryFormat: TherapistServiceDeliveryFormat;
   description: string;
   durationMinutes: number;
+  interestIds: string[];
   price: string;
+  themeIds: string[];
   therapy: TherapyCatalogOption | null;
   title: string;
 };
@@ -30,7 +32,9 @@ const defaultValues: ServiceFormValues = {
   deliveryFormat: "online",
   description: "",
   durationMinutes: 60,
+  interestIds: [],
   price: "",
+  themeIds: [],
   therapy: null,
   title: "",
 };
@@ -55,7 +59,9 @@ export function TherapistServiceForm({
           deliveryFormat: service.deliveryFormat,
           description: service.description ?? "",
           durationMinutes: service.durationMinutes,
+          interestIds: service.matching.interestIds,
           price: formatPriceForInput(service.priceCents),
+          themeIds: service.matching.themeIds,
           therapy:
             catalog.find(
               (therapy) => therapy.therapyId === service.therapyId,
@@ -78,6 +84,7 @@ export function TherapistServiceForm({
     [values.price],
   );
   const selectedTherapy = values.therapy;
+  const firstStep = mode === "edit" ? 2 : 1;
 
   useEffect(() => {
     if (Object.keys(fieldErrors).length > 0) {
@@ -101,9 +108,11 @@ export function TherapistServiceForm({
         description: values.description,
         durationMinutes: values.durationMinutes,
         expectedVersion: service.version,
+        interestIds: values.interestIds,
         priceCents,
         requestId: createStableRequestId(),
         serviceId: service.serviceId,
+        themeIds: values.themeIds,
         title: values.title,
       });
 
@@ -132,8 +141,10 @@ export function TherapistServiceForm({
       deliveryFormat: values.deliveryFormat,
       description: values.description,
       durationMinutes: values.durationMinutes,
+      interestIds: values.interestIds,
       priceCents,
       requestId: createStableRequestId(),
+      themeIds: values.themeIds,
       therapyId: selectedTherapy.therapyId,
       title: values.title,
     });
@@ -210,6 +221,8 @@ export function TherapistServiceForm({
               onSelect={(therapy) =>
                 setValues((current) => ({
                   ...current,
+                  interestIds: [],
+                  themeIds: [],
                   therapy,
                   title: current.title || therapy.name,
                 }))
@@ -225,6 +238,14 @@ export function TherapistServiceForm({
         ) : null}
 
         {step === 2 ? (
+          <MatchingFields
+            errors={fieldErrors}
+            onChange={setValues}
+            values={values}
+          />
+        ) : null}
+
+        {step === 3 ? (
           <OfferFields
             errors={fieldErrors}
             firstErrorRef={firstErrorRef}
@@ -233,15 +254,15 @@ export function TherapistServiceForm({
           />
         ) : null}
 
-        {step === 3 ? (
+        {step === 4 ? (
           <ReviewStep priceCents={priceCents} values={values} />
         ) : null}
       </div>
 
       <div className="mt-7 flex flex-col gap-3 border-t border-brand-lavender pt-5 sm:flex-row sm:items-center sm:justify-between">
         <TESButton
-          disabled={step === 1 || submitting !== null}
-          onClick={() => setStep((current) => Math.max(1, current - 1))}
+          disabled={step === firstStep || submitting !== null}
+          onClick={() => setStep((current) => Math.max(firstStep, current - 1))}
           type="button"
           variant="ghost"
         >
@@ -249,7 +270,7 @@ export function TherapistServiceForm({
           Voltar
         </TESButton>
         <div className="flex flex-col gap-3 sm:flex-row">
-          {step < 3 ? (
+          {step < 4 ? (
             <TESButton
               disabled={submitting !== null}
               onClick={() => {
@@ -432,6 +453,137 @@ function OfferFields({
   );
 }
 
+function MatchingFields({
+  errors,
+  onChange,
+  values,
+}: {
+  errors: Record<string, string>;
+  onChange: React.Dispatch<React.SetStateAction<ServiceFormValues>>;
+  values: ServiceFormValues;
+}) {
+  const themes = values.therapy?.matchingThemes ?? [];
+
+  function toggleTheme(themeId: string) {
+    onChange((current) => {
+      const selected = current.themeIds.includes(themeId);
+      const nextThemeIds = selected
+        ? current.themeIds.filter((id) => id !== themeId)
+        : [...current.themeIds, themeId].slice(0, 3);
+      const allowedInterestIds = new Set(
+        themes
+          .filter((theme) => nextThemeIds.includes(theme.id))
+          .flatMap((theme) => theme.interests.map((interest) => interest.id)),
+      );
+
+      return {
+        ...current,
+        interestIds: current.interestIds.filter((id) =>
+          allowedInterestIds.has(id),
+        ),
+        themeIds: nextThemeIds,
+      };
+    });
+  }
+
+  function toggleInterest(themeId: string, interestId: string) {
+    onChange((current) => {
+      const selected = current.interestIds.includes(interestId);
+      const theme = themes.find((item) => item.id === themeId);
+      const currentThemeInterestIds =
+        theme?.interests
+          .map((interest) => interest.id)
+          .filter((id) => current.interestIds.includes(id)) ?? [];
+
+      if (!selected && currentThemeInterestIds.length >= 3) return current;
+
+      return {
+        ...current,
+        interestIds: selected
+          ? current.interestIds.filter((id) => id !== interestId)
+          : [...current.interestIds, interestId],
+      };
+    });
+  }
+
+  return (
+    <fieldset className="space-y-4">
+      <legend className="text-sm font-extrabold text-brand-deep">
+        Temas e refinamentos deste serviço
+      </legend>
+      <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+        Escolha os temas desta terapia que você trabalha e até três refinamentos
+        em cada tema selecionado.
+      </p>
+      {errors.matching ? (
+        <p className="text-sm font-bold text-status-danger" id="service-matching-error">
+          {errors.matching}
+        </p>
+      ) : null}
+      <div className="space-y-3">
+        {themes.map((theme) => {
+          const selected = values.themeIds.includes(theme.id);
+          const selectedCount = theme.interests.filter((interest) =>
+            values.interestIds.includes(interest.id),
+          ).length;
+
+          return (
+            <div
+              className="rounded-lg border border-brand-lavender bg-white p-4"
+              key={theme.id}
+            >
+              <label className="flex min-h-11 items-center justify-between gap-3 text-sm font-extrabold text-brand-deep">
+                <span className="flex items-center gap-3">
+                  <input
+                    checked={selected}
+                    disabled={!selected && values.themeIds.length >= 3}
+                    onChange={() => toggleTheme(theme.id)}
+                    type="checkbox"
+                  />
+                  {theme.name}
+                </span>
+                <span className="text-xs font-bold text-tesText-secondary">
+                  {selectedCount} de 3
+                </span>
+              </label>
+              {selected ? (
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {theme.interests.map((interest) => {
+                    const interestSelected = values.interestIds.includes(
+                      interest.id,
+                    );
+
+                    return (
+                      <label
+                        className="flex min-h-10 items-center gap-2 rounded-md bg-brand-lavenderSoft/60 px-3 text-sm font-bold text-tesText-secondary"
+                        key={interest.id}
+                      >
+                        <input
+                          checked={interestSelected}
+                          disabled={!interestSelected && selectedCount >= 3}
+                          onChange={() => toggleInterest(theme.id, interest.id)}
+                          type="checkbox"
+                        />
+                        {interest.name}
+                      </label>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
+      {themes.length === 0 ? (
+        <p className="rounded-lg bg-brand-lavenderSoft/70 p-4 text-sm font-semibold text-tesText-secondary">
+          Esta terapia ainda não possui temas publicados para configuração de
+          serviço.
+        </p>
+      ) : null}
+    </fieldset>
+  );
+}
+
 function Field({
   children,
   error,
@@ -479,6 +631,8 @@ function ReviewStep({
         ],
         ["Duração", `${values.durationMinutes} min`],
         ["Formato", "Online"],
+        ["Temas", `${values.themeIds.length} selecionado(s)`],
+        ["Refinamentos", `${values.interestIds.length} selecionado(s)`],
       ].map(([label, value]) => (
         <div
           className="flex flex-col gap-1 border-b border-white/80 pb-3 last:border-0 last:pb-0 sm:flex-row sm:justify-between"
@@ -508,12 +662,12 @@ function StepIndicator({
 }) {
   const labels =
     mode === "edit"
-      ? ["Oferta", "Revisão"]
-      : ["Escolha da terapia", "Oferta", "Revisão"];
+      ? ["Temas", "Oferta", "Revisão"]
+      : ["Escolha da terapia", "Temas", "Oferta", "Revisão"];
   const effectiveStep = mode === "edit" ? step - 1 : step;
 
   return (
-    <ol className="grid gap-2 sm:grid-cols-3">
+    <ol className="grid gap-2 sm:grid-cols-4">
       {labels.map((label, index) => {
         const active = effectiveStep === index + 1;
 
@@ -543,6 +697,19 @@ function validate(
   const errors: Record<string, string> = {};
   if (mode === "create" && !values.therapy) {
     errors.therapy = "Escolha uma terapia da plataforma.";
+  }
+  if (values.themeIds.length < 1 || values.themeIds.length > 3) {
+    errors.matching = "Escolha de 1 a 3 temas desta terapia.";
+  }
+  const interestsByTheme = new Map<string, number>();
+  for (const theme of values.therapy?.matchingThemes ?? []) {
+    const count = theme.interests.filter((interest) =>
+      values.interestIds.includes(interest.id),
+    ).length;
+    if (count > 0) interestsByTheme.set(theme.id, count);
+  }
+  if (Array.from(interestsByTheme.values()).some((count) => count > 3)) {
+    errors.matching = "Escolha no máximo 3 refinamentos por tema.";
   }
   if (values.title.trim().length < 3) {
     errors.title = "Informe um título com pelo menos 3 caracteres.";

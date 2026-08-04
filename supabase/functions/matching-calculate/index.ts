@@ -16,6 +16,7 @@ type MatchingTherapyRow = {
   description: string | null;
   id: string;
   image_url: string | null;
+  is_visible_in_matching: boolean;
   name: string;
   short_description: string;
   slug: string;
@@ -23,8 +24,9 @@ type MatchingTherapyRow = {
   therapist_count?: number | null;
 };
 
-type MatchingTherapySettingRow = {
-  is_visible_in_matching: boolean;
+type MatchingTherapyThemeRow = {
+  sort_order: number;
+  theme_id: string;
   therapy_id: string;
 };
 
@@ -33,21 +35,15 @@ type MatchingTherapyCountRow = {
   therapy_id: string;
 };
 
-type MatchingWeightRow = {
-  interest_id: string | null;
-  is_active: boolean;
-  theme_id: string | null;
-  therapy_id: string;
-  weight: number | string;
-};
-
 type MatchingTherapy = {
   id: string;
   imageUrl: string | null;
   isVisibleInMatching: boolean;
   name: string;
   slug: string;
+  sortOrder: number;
   status: MatchingTherapyRow["status"];
+  themeIds: string[];
   therapistCount: number;
 };
 
@@ -55,8 +51,6 @@ const matchingDeno = (
   globalThis as typeof globalThis & { Deno?: MatchingDenoRuntime }
 ).Deno;
 const matchingRuntime = assertDenoRuntime(matchingDeno);
-const INTEREST_MULTIPLIER = 1.4;
-const DISPLAY_THRESHOLD = 45;
 const jsonHeaders = {
   "access-control-allow-headers":
     "authorization, x-client-info, apikey, content-type",
@@ -92,28 +86,21 @@ matchingRuntime.serve(async (request) => {
   }
 
   try {
-    const [therapyRows, settingRows, countRows, weightRows] = await Promise.all([
+    const [therapyRows, themeRows, countRows] = await Promise.all([
       fetchRows<MatchingTherapyRow>(
         supabaseUrl,
         serviceRoleKey,
         "/rest/v1/public_matching_therapies_v?select=id,name,slug,short_description,description,image_url,status,therapist_count,is_visible_in_matching",
       ),
-      fetchRows<MatchingTherapySettingRow>(
+      fetchRows<MatchingTherapyThemeRow>(
         supabaseUrl,
         serviceRoleKey,
-        "/rest/v1/matching_therapy_settings?select=therapy_id,is_visible_in_matching",
+        "/rest/v1/public_matching_therapy_themes_v?select=therapy_id,theme_id,sort_order&order=sort_order.asc",
       ),
       fetchRows<MatchingTherapyCountRow>(
         supabaseUrl,
         serviceRoleKey,
         "/rest/v1/public_matching_therapist_counts?select=therapy_id,therapist_count",
-      ),
-      fetchRows<MatchingWeightRow>(
-        supabaseUrl,
-        serviceRoleKey,
-        `/rest/v1/matching_weights?select=therapy_id,theme_id,interest_id,weight,is_active&version_id=eq.${encodeURIComponent(
-          versionId,
-        )}&is_active=eq.true`,
       ),
     ]);
 
@@ -121,10 +108,9 @@ matchingRuntime.serve(async (request) => {
       calculateMatchingResults({
         interestIds,
         source: "supabase",
-        therapies: mergeTherapyRows(therapyRows, settingRows, countRows),
+        therapies: mergeTherapyRows(therapyRows, themeRows, countRows),
         themeIds,
         versionId,
-        weights: weightRows,
       }),
     );
   } catch {
@@ -157,47 +143,26 @@ function calculateMatchingResults(input: {
   therapies: MatchingTherapy[];
   themeIds: string[];
   versionId: string;
-  weights: MatchingWeightRow[];
 }) {
   const themeIds = unique(input.themeIds);
-  const interestIds = unique(input.interestIds);
   const selectedThemeSet = new Set(themeIds);
-  const selectedInterestSet = new Set(interestIds);
-  const possibleScore = Math.max(
-    themeIds.length * 5 + interestIds.length * 5 * INTEREST_MULTIPLIER,
-    1,
-  );
+  const possibleScore = Math.max(themeIds.length, 1);
   const activeTherapies = input.therapies.filter(
     (therapy) => therapy.status === "published" && therapy.isVisibleInMatching,
   );
   const scored = activeTherapies
     .map((therapy) => {
-      const therapyWeights = input.weights.filter(
-        (weight) => weight.is_active && weight.therapy_id === therapy.id,
+      const matchedThemeIds = unique(
+        therapy.themeIds.filter((themeId) => selectedThemeSet.has(themeId)),
       );
-      const matchedThemeIds: string[] = [];
-      const matchedInterestIds: string[] = [];
-      const rawScore = therapyWeights.reduce((score, weight) => {
-        if (weight.theme_id && selectedThemeSet.has(weight.theme_id)) {
-          matchedThemeIds.push(weight.theme_id);
-          return score + normalizeWeight(weight.weight);
-        }
-
-        if (weight.interest_id && selectedInterestSet.has(weight.interest_id)) {
-          matchedInterestIds.push(weight.interest_id);
-          return score + normalizeWeight(weight.weight) * INTEREST_MULTIPLIER;
-        }
-
-        return score;
-      }, 0);
-      const scorePercent = Math.round((rawScore / possibleScore) * 100);
+      const scorePercent = Math.round((matchedThemeIds.length / possibleScore) * 100);
 
       return {
         explanation: buildExplanation(scorePercent),
         imageUrl: therapy.imageUrl,
         label: getScoreLabel(scorePercent),
-        matchedInterestIds: unique(matchedInterestIds),
-        matchedThemeIds: unique(matchedThemeIds),
+        matchedInterestIds: [],
+        matchedThemeIds,
         scorePercent,
         slug: therapy.slug,
         therapistCount: therapy.therapistCount,
@@ -211,19 +176,23 @@ function calculateMatchingResults(input: {
         return second.scorePercent - first.scorePercent;
       }
 
-      if (second.matchedInterestIds.length !== first.matchedInterestIds.length) {
-        return second.matchedInterestIds.length - first.matchedInterestIds.length;
+      const firstTherapy = activeTherapies.find(
+        (therapy) => therapy.id === first.therapyId,
+      );
+      const secondTherapy = activeTherapies.find(
+        (therapy) => therapy.id === second.therapyId,
+      );
+
+      if ((firstTherapy?.sortOrder ?? 0) !== (secondTherapy?.sortOrder ?? 0)) {
+        return (firstTherapy?.sortOrder ?? 0) - (secondTherapy?.sortOrder ?? 0);
       }
 
       return first.title.localeCompare(second.title, "pt-BR");
     });
-  const visibleResults = scored.filter(
-    (result) => result.scorePercent >= DISPLAY_THRESHOLD,
-  );
 
   return {
-    lowConfidence: visibleResults.length === 0,
-    results: visibleResults.length ? visibleResults.slice(0, 5) : scored.slice(0, 3),
+    lowConfidence: scored.length === 0,
+    results: scored.slice(0, 5),
     source: input.source,
     versionId: input.versionId,
   };
@@ -231,24 +200,38 @@ function calculateMatchingResults(input: {
 
 function mergeTherapyRows(
   therapies: MatchingTherapyRow[],
-  settings: MatchingTherapySettingRow[],
+  themes: MatchingTherapyThemeRow[],
   counts: MatchingTherapyCountRow[],
 ): MatchingTherapy[] {
-  const settingsByTherapyId = new Map(
-    settings.map((setting) => [setting.therapy_id, setting]),
-  );
+  const themesByTherapyId = new Map<string, string[]>();
+  const sortOrderByTherapyId = new Map<string, number>();
   const countsByTherapyId = new Map(
     counts.map((count) => [count.therapy_id, count]),
   );
 
+  for (const theme of themes) {
+    themesByTherapyId.set(theme.therapy_id, [
+      ...(themesByTherapyId.get(theme.therapy_id) ?? []),
+      theme.theme_id,
+    ]);
+    sortOrderByTherapyId.set(
+      theme.therapy_id,
+      Math.min(
+        sortOrderByTherapyId.get(theme.therapy_id) ?? theme.sort_order,
+        theme.sort_order,
+      ),
+    );
+  }
+
   return therapies.map((therapy) => ({
     id: therapy.id,
     imageUrl: therapy.image_url,
-    isVisibleInMatching:
-      settingsByTherapyId.get(therapy.id)?.is_visible_in_matching ?? true,
+    isVisibleInMatching: therapy.is_visible_in_matching,
     name: therapy.name,
     slug: therapy.slug,
+    sortOrder: sortOrderByTherapyId.get(therapy.id) ?? 9999,
     status: therapy.status,
+    themeIds: themesByTherapyId.get(therapy.id) ?? [],
     therapistCount:
       countsByTherapyId.get(therapy.id)?.therapist_count ??
       therapy.therapist_count ??
@@ -274,24 +257,19 @@ function normalizeStringList(value: unknown) {
   );
 }
 
-function normalizeWeight(value: number | string) {
-  const parsedWeight = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(parsedWeight) && parsedWeight > 0 ? parsedWeight : 1;
-}
-
 function getScoreLabel(score: number) {
-  if (score >= 85) return "Alta aderencia";
-  if (score >= 65) return "Boa aderencia";
+  if (score >= 100) return "3 temas em comum";
+  if (score >= 67) return "2 temas em comum";
   return "Pode fazer sentido";
 }
 
 function buildExplanation(score: number) {
-  if (score >= 85) {
-    return "Este caminho pode conversar bem com os temas e interesses que voce escolheu.";
+  if (score >= 100) {
+    return "Este caminho reune os temas principais que voce escolheu para explorar.";
   }
 
-  if (score >= 65) {
-    return "Este caminho aparece como uma possibilidade alinhada ao seu momento.";
+  if (score >= 67) {
+    return "Este caminho conversa com parte importante dos temas selecionados.";
   }
 
   return "Este caminho pode ser explorado com calma como uma possibilidade inicial.";

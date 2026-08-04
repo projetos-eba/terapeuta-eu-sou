@@ -2389,6 +2389,76 @@ from (
 join public.therapies on therapies.slug = weights.therapy_slug
 join public.matching_interests on matching_interests.slug = weights.interest_slug;
 
+delete from public.therapy_matching_themes
+where therapy_id in (
+  select distinct matching_weights.therapy_id
+  from public.matching_weights
+  where matching_weights.version_id = '73000000-0000-4000-8000-000000000001'
+    and matching_weights.theme_id is not null
+);
+
+insert into public.therapy_matching_themes (
+  therapy_id,
+  theme_id,
+  sort_order
+)
+select
+  matching_weights.therapy_id,
+  matching_weights.theme_id,
+  row_number() over (
+    partition by matching_weights.therapy_id
+    order by matching_weights.weight desc, matching_themes.sort_order asc, matching_themes.name asc
+  )::integer as sort_order
+from public.matching_weights
+join public.matching_themes
+  on matching_themes.id = matching_weights.theme_id
+where matching_weights.version_id = '73000000-0000-4000-8000-000000000001'
+  and matching_weights.is_active = true
+  and matching_weights.theme_id is not null
+  and matching_themes.is_active = true
+on conflict (therapy_id, theme_id) do update
+set
+  sort_order = excluded.sort_order,
+  updated_at = now();
+
+insert into public.therapist_service_matching_themes (
+  therapist_service_id,
+  theme_id
+)
+select
+  therapist_services.id,
+  therapy_matching_themes.theme_id
+from public.therapist_services
+join public.therapy_matching_themes
+  on therapy_matching_themes.therapy_id = therapist_services.therapy_id
+where therapist_services.status = 'active'
+  and therapist_services.therapy_id in (
+    select id
+    from public.therapies
+    where slug in ('reiki', 'taro', 'constelacao-familiar')
+  )
+on conflict (therapist_service_id, theme_id) do nothing;
+
+insert into public.therapist_service_matching_interests (
+  therapist_service_id,
+  interest_id
+)
+select fixtures.service_id::uuid, matching_interests.id
+from (
+  values
+    ('93000000-0000-4000-8000-000000000013', 'desequilibrio-energetico'),
+    ('93000000-0000-4000-8000-000000000014', 'desequilibrio-energetico'),
+    ('93000000-0000-4000-8000-000000000014', 'estresse'),
+    ('93000000-0000-4000-8000-000000000020', 'estresse'),
+    ('93000000-0000-4000-8000-000000000012', 'entender-a-si-mesmo'),
+    ('93000000-0000-4000-8000-000000000016', 'relacionamentos-amorosos'),
+    ('93000000-0000-4000-8000-000000000017', 'conflitos-familiares')
+) as fixtures(service_id, interest_slug)
+join public.matching_interests
+  on matching_interests.slug = fixtures.interest_slug
+where matching_interests.is_active = true
+on conflict (therapist_service_id, interest_id) do nothing;
+
 -- Premium Plus therapist dashboard demo data for Ana Oliveira.
 insert into public.bookings (
   id,

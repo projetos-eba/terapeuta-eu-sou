@@ -18,6 +18,13 @@ export type AdminTherapyCategory = {
   sortOrder: number;
 };
 
+export type AdminMatchingTheme = {
+  id: string;
+  name: string;
+  slug: string;
+  sortOrder: number;
+};
+
 export type AdminTherapyImpact = {
   activeServiceCount: number;
   futureBookingCount: number;
@@ -81,6 +88,7 @@ export type AdminTherapy = {
   isFeatured: boolean;
   isPubliclyVisible: boolean;
   isVisibleInMatching: boolean;
+  matchingThemeIds: string[];
   name: string;
   publicContent: AdminTherapyPublicContent;
   publishedAt: string | null;
@@ -112,6 +120,7 @@ export type AdminTherapyCatalogContract = {
   categories: AdminTherapyCategory[];
   contractVersion: 1;
   items: AdminTherapy[];
+  matchingThemes: AdminMatchingTheme[];
   requests: AdminTherapyCatalogRequest[];
 };
 
@@ -128,6 +137,7 @@ export type AdminTherapyDraftCommand = {
   isFeatured: boolean;
   isPubliclyVisible: boolean;
   isVisibleInMatching: boolean;
+  themeIds: string[];
   name: string;
   publicContent: Omit<
     AdminTherapyPublicContent,

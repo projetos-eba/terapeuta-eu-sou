@@ -21,6 +21,8 @@ Data: 2026-07-28
 | Conteúdo editorial    | `therapy_public_content`, highlights, benefits, FAQs | Plataforma/Admin                | Não é duplicado em serviço.                            |
 | Match                 | `matching_therapy_settings`, `matching_weights`      | Plataforma/Admin                | Independente de publicação e de novos serviços.        |
 | Serviço do terapeuta  | `therapist_services`                                 | Edge Function autenticada + RPC | Pertence ao terapeuta e aponta para `therapy_id`.      |
+| Temas do serviço      | `therapist_service_matching_themes`                  | Terapeuta via RPC transacional  | Subconjunto dos temas administrados da terapia.        |
+| Refinamentos serviço  | `therapist_service_matching_interests`               | Terapeuta via RPC transacional  | Até 3 por tema escolhido no serviço.                   |
 | Reservas/snapshots    | `bookings`, `booking_holds`, `session_payments`      | RPCs A2/A6 e webhooks           | Mantêm histórico mesmo se serviço/terapia mudar.       |
 
 ## Estados
@@ -35,6 +37,8 @@ Regras:
 
 - criação de serviço exige terapia `published`, categoria ativa e
   `is_available_for_services = true`;
+- criação e edição de serviço exigem 1 a 3 temas válidos da terapia e
+  refinamentos opcionais limitados a 3 por tema;
 - `published` não implica Match, catálogo de criação ou visibilidade universal;
 - serviço `paused`, `draft`, `rejected`, `requires_review` ou `archived` não é
   reservável;

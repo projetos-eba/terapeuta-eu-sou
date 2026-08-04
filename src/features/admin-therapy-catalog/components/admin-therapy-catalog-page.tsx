@@ -300,6 +300,7 @@ export function AdminTherapyCatalogPage({
           <AdminTherapyEditor
             categories={catalog.categories}
             isSaving={isMutating}
+            matchingThemes={catalog.matchingThemes}
             onCancel={() => setEditingTherapy(null)}
             onSave={saveTherapy}
             therapy={editingTherapy === "new" ? null : editingTherapy}
