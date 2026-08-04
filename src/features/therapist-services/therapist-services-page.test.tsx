@@ -121,6 +121,8 @@ describe("TherapistServicesPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /novo serviço/i }));
     fireEvent.click(screen.getByRole("option", { name: /Aromaterapia/i }));
     fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    fireEvent.click(screen.getByLabelText(/Emoções e bem-estar/i));
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
     fireEvent.change(screen.getByLabelText("Título da oferta"), {
       target: { value: "Aromaterapia acolhedora" },
     });
@@ -140,6 +142,7 @@ describe("TherapistServicesPage", () => {
       expect(mockedCommand).toHaveBeenCalledWith(
         expect.objectContaining({
           action: "create",
+          themeIds: ["71000000-0000-4000-8000-000000000001"],
           priceCents: 12000,
           therapyId: "22222222-2222-4222-8222-222222222229",
         }),
@@ -174,9 +177,7 @@ describe("TherapistServicesPage", () => {
         }),
       );
     });
-    expect(
-      await screen.findByRole("button", { name: /Pausar Reiki inicial/i }),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Serviço ativado.")).toBeInTheDocument();
   });
 });
 
@@ -239,6 +240,10 @@ function serviceFixture(
       bookingCountDeltaPercent: null,
       bookingsLast30Days: 0,
     },
+    matching: {
+      interestIds: [],
+      themeIds: ["71000000-0000-4000-8000-000000000001"],
+    },
     onlineOnly: true,
     position: 10,
     priceCents: 12000,
@@ -273,6 +278,23 @@ function catalogFixture(): TherapyCatalogContract {
         isAvailableForServices: true,
         isPubliclyVisible: true,
         isVisibleInMatching: true,
+        matchingThemes: [
+          {
+            id: "71000000-0000-4000-8000-000000000001",
+            interests: [
+              {
+                id: "72000000-0000-4000-8000-000000000001",
+                name: "Ansiedade",
+                slug: "ansiedade",
+                sortOrder: 1,
+                themeId: "71000000-0000-4000-8000-000000000001",
+              },
+            ],
+            name: "Emoções e bem-estar",
+            slug: "emocoes-bem-estar",
+            sortOrder: 1,
+          },
+        ],
         name: "Aromaterapia",
         shortDescription: "Uso cuidadoso de aromas em uma experiência guiada.",
         slug: "aromaterapia",

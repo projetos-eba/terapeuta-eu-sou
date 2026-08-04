@@ -25,11 +25,17 @@ export function parseRelatedTherapistSort(
 }
 
 export async function getRelatedTherapists({
+  interestIds = [],
+  limit = 6,
   slug,
   sort,
+  themeIds = [],
 }: {
+  interestIds?: string[];
+  limit?: number;
   slug: string;
   sort: RelatedTherapistSort;
+  themeIds?: string[];
 }): Promise<RelatedTherapistsResult> {
   if (!hasSupabaseConfig()) {
     return {
@@ -43,34 +49,25 @@ export async function getRelatedTherapists({
     const config = getSupabasePublicConfig();
     if (!config) return { items: [] };
 
-    const query = new URLSearchParams();
-    query.set(
-      "select",
-      [
-        "slug",
-        "public_name",
-        "photo_url",
-        "therapist_headline",
-        "service_description",
-        "tags",
-        "average_rating",
-        "review_count",
-        "completed_session_count",
-        "next_slot_at",
-      ].join(","),
-    );
-    query.set("therapy_slug", `eq.${slug}`);
-    query.set("order", getOrder(sort));
-    query.set("limit", "6");
-
     const response = await fetch(
-      `${config.url}/rest/v1/public_therapist_search?${query.toString()}`,
+      `${config.url}/rest/v1/rpc/get_public_therapy_therapists_v1`,
       {
+        body: JSON.stringify({
+          p_interest_ids: interestIds,
+          p_limit: limit,
+          p_theme_ids: themeIds,
+          p_therapy_slug: slug,
+        }),
         headers: {
           apikey: config.apiKey,
           Authorization: `Bearer ${config.apiKey}`,
+          "Content-Type": "application/json",
         },
-        next: { revalidate: 300, tags: [`related-therapists:${slug}`] },
+        method: "POST",
+        next:
+          themeIds.length || interestIds.length
+            ? undefined
+            : { revalidate: 300, tags: [`related-therapists:${slug}`] },
       },
     );
 
@@ -81,7 +78,7 @@ export async function getRelatedTherapists({
     const rows = (await response.json()) as RelatedTherapistRow[];
 
     return {
-      items: rows.map(mapRelatedTherapist),
+      items: applyPublicSort(rows, sort).map(mapRelatedTherapist),
     };
   } catch {
     return {
@@ -91,16 +88,35 @@ export async function getRelatedTherapists({
   }
 }
 
-function getOrder(sort: RelatedTherapistSort) {
+function applyPublicSort(rows: RelatedTherapistRow[], sort: RelatedTherapistSort) {
   if (sort === "rating") {
-    return "average_rating.desc,review_count.desc,next_slot_at.asc.nullslast,slug.asc";
+    return [...rows].sort(
+      (first, second) =>
+        Number(second.average_rating ?? 0) - Number(first.average_rating ?? 0) ||
+        Number(second.review_count ?? 0) - Number(first.review_count ?? 0) ||
+        compareNullableDate(first.next_slot_at, second.next_slot_at) ||
+        first.slug.localeCompare(second.slug, "pt-BR"),
+    );
   }
 
   if (sort === "next_slot") {
-    return "next_slot_at.asc.nullslast,average_rating.desc,review_count.desc,slug.asc";
+    return [...rows].sort(
+      (first, second) =>
+        compareNullableDate(first.next_slot_at, second.next_slot_at) ||
+        Number(second.average_rating ?? 0) - Number(first.average_rating ?? 0) ||
+        Number(second.review_count ?? 0) - Number(first.review_count ?? 0) ||
+        first.slug.localeCompare(second.slug, "pt-BR"),
+    );
   }
 
-  return "next_slot_at.asc.nullslast,average_rating.desc,review_count.desc,slug.asc";
+  return rows;
+}
+
+function compareNullableDate(first: string | null, second: string | null) {
+  if (!first && !second) return 0;
+  if (!first) return 1;
+  if (!second) return -1;
+  return new Date(first).getTime() - new Date(second).getTime();
 }
 
 function mapRelatedTherapist(row: RelatedTherapistRow): RelatedTherapist {

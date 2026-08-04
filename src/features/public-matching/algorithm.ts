@@ -6,9 +6,6 @@ import type {
   MatchingWeight,
 } from "./types";
 
-const INTEREST_MULTIPLIER = 1.4;
-const DISPLAY_THRESHOLD = 45;
-
 export function calculateMatchingResults(input: {
   config: MatchingConfig;
   selection: MatchingSelection;
@@ -18,45 +15,26 @@ export function calculateMatchingResults(input: {
   weights: MatchingWeight[];
 }): MatchingCalculationResult {
   const themeIds = unique(input.selection.themeIds);
-  const interestIds = unique(input.selection.interestIds);
   const selectedThemeSet = new Set(themeIds);
-  const selectedInterestSet = new Set(interestIds);
-  const possibleScore = Math.max(
-    themeIds.length * 5 + interestIds.length * 5 * INTEREST_MULTIPLIER,
-    1,
-  );
+  const possibleScore = Math.max(themeIds.length, 1);
   const activeTherapies = input.therapies.filter(
     (therapy) => therapy.status === "published" && therapy.isVisibleInMatching,
   );
 
   const scored = activeTherapies
     .map((therapy) => {
-      const therapyWeights = input.weights.filter(
-        (weight) => weight.isActive && weight.therapyId === therapy.id,
+      const matchedThemeIds = unique(
+        therapy.themeIds.filter((themeId) => selectedThemeSet.has(themeId)),
       );
-      const matchedThemeIds: string[] = [];
-      const matchedInterestIds: string[] = [];
-      const rawScore = therapyWeights.reduce((score, weight) => {
-        if (weight.themeId && selectedThemeSet.has(weight.themeId)) {
-          matchedThemeIds.push(weight.themeId);
-          return score + weight.weight;
-        }
-
-        if (weight.interestId && selectedInterestSet.has(weight.interestId)) {
-          matchedInterestIds.push(weight.interestId);
-          return score + weight.weight * INTEREST_MULTIPLIER;
-        }
-
-        return score;
-      }, 0);
-      const scorePercent = Math.round((rawScore / possibleScore) * 100);
+      const matchingThemeCount = matchedThemeIds.length;
+      const scorePercent = Math.round((matchingThemeCount / possibleScore) * 100);
 
       return {
         explanation: buildExplanation(scorePercent),
         imageUrl: therapy.imageUrl,
         label: getScoreLabel(scorePercent),
-        matchedInterestIds: unique(matchedInterestIds),
-        matchedThemeIds: unique(matchedThemeIds),
+        matchedInterestIds: [],
+        matchedThemeIds,
         scorePercent,
         slug: therapy.slug,
         therapistCount: therapy.therapistCount,
@@ -70,23 +48,23 @@ export function calculateMatchingResults(input: {
         return second.scorePercent - first.scorePercent;
       }
 
-      if (second.matchedInterestIds.length !== first.matchedInterestIds.length) {
-        return second.matchedInterestIds.length - first.matchedInterestIds.length;
+      const firstTherapy = activeTherapies.find(
+        (therapy) => therapy.id === first.therapyId,
+      );
+      const secondTherapy = activeTherapies.find(
+        (therapy) => therapy.id === second.therapyId,
+      );
+
+      if ((firstTherapy?.sortOrder ?? 0) !== (secondTherapy?.sortOrder ?? 0)) {
+        return (firstTherapy?.sortOrder ?? 0) - (secondTherapy?.sortOrder ?? 0);
       }
 
       return first.title.localeCompare(second.title, "pt-BR");
     });
 
-  const visibleResults = scored.filter(
-    (result) => result.scorePercent >= DISPLAY_THRESHOLD,
-  );
-  const results = visibleResults.length
-    ? visibleResults.slice(0, 5)
-    : scored.slice(0, 3);
-
   return {
-    lowConfidence: visibleResults.length === 0,
-    results,
+    lowConfidence: scored.length === 0,
+    results: scored.slice(0, 5),
     source: input.source,
     versionId: input.versionId,
   };
@@ -136,21 +114,21 @@ export function validateMatchingSelection(
 }
 
 function getScoreLabel(score: number) {
-  if (score >= 85) return "Alta aderência";
-  if (score >= 65) return "Boa aderência";
+  if (score >= 100) return "3 temas em comum";
+  if (score >= 67) return "2 temas em comum";
   return "Pode fazer sentido";
 }
 
 function buildExplanation(score: number) {
-  if (score >= 85) {
-    return "Este caminho pode conversar bem com os temas e interesses que você escolheu.";
+  if (score >= 100) {
+    return "Este caminho reúne os temas principais que você escolheu para explorar.";
   }
 
-  if (score >= 65) {
-    return "Este caminho aparece como uma possibilidade alinhada ao seu momento.";
+  if (score >= 67) {
+    return "Este caminho conversa com parte importante dos temas selecionados.";
   }
 
-  return "Este caminho pode ser explorado com calma como uma possibilidade inicial.";
+  return "Este caminho pode ser explorado com calma a partir de um tema em comum.";
 }
 
 function unique(values: string[]) {

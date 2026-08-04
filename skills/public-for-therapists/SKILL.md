@@ -24,7 +24,7 @@ Consultar antes de alterar:
 
 - Rota: `/para-terapeutas`.
 - Figma: `Page / Publico / Para Terapeutas`, node `13457:848`.
-- Nao implementar `/para-terapeutas/planos` nesta skill sem atualizar o escopo.
+- Nao criar rota separada `/para-terapeutas/planos`; a decisão pública de planos acontece em `/para-terapeutas`.
 - Nao criar tabela visual independente: cards, tabela desktop e mobile devem consumir `PlanDefinition`.
 - Enums tecnicos: `free`, `premium`, `premium_plus`.
 - `pro` e `plus` sao prefixos de rota, nao valores de banco, Stripe ou catalogo.
@@ -60,7 +60,6 @@ Consultar antes de alterar:
 
 ## Pendencias conhecidas
 
-- `/para-terapeutas/planos` consumindo o mesmo catalogo.
 - Hardening de `therapist_subscriptions`, `stripe_webhook_events`, Checkout,
   Customer Portal e liberacao server-side de plano conforme o Gate F0.
 - Decisoes comerciais: preco final, trial, prorata, tolerancia por falha de pagamento, upgrade imediato, downgrade/cancelamento no fim do ciclo.

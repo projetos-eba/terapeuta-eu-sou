@@ -34,8 +34,10 @@ export function parseTherapistServicesCommand(
       deliveryFormat: optionalDeliveryFormat(value.deliveryFormat),
       description: optionalNullableString(value.description, 800),
       durationMinutes: boundedInteger(value.durationMinutes, 15, 240),
+      interestIds: uuidArray(value.interestIds, 0, 9),
       priceCents: boundedInteger(value.priceCents, 1000, 2000000),
       requestId: uuid(value.requestId),
+      themeIds: uuidArray(value.themeIds, 1, 3),
       therapyId: uuid(value.therapyId),
       title: boundedString(value.title, 1, 120),
     };
@@ -49,10 +51,18 @@ export function parseTherapistServicesCommand(
       description: optionalNullableString(value.description, 800),
       durationMinutes: optionalInteger(value.durationMinutes, 15, 240),
       expectedVersion: boundedInteger(value.expectedVersion, 1, 999999999),
+      interestIds:
+        value.interestIds === undefined
+          ? undefined
+          : uuidArray(value.interestIds, 0, 9),
       isBookable: optionalBoolean(value.isBookable),
       priceCents: optionalInteger(value.priceCents, 0, 2000000),
       requestId: uuid(value.requestId),
       serviceId: uuid(value.serviceId),
+      themeIds:
+        value.themeIds === undefined
+          ? undefined
+          : uuidArray(value.themeIds, 1, 3),
       therapyId:
         value.therapyId === undefined ? undefined : uuid(value.therapyId),
       title:
@@ -185,4 +195,11 @@ function uuid(value: unknown): string {
   const result = string(value);
   if (!UUID.test(result)) invalid();
   return result;
+}
+
+function uuidArray(value: unknown, min: number, max: number): string[] {
+  const items = array(value).map(uuid);
+  if (items.length < min || items.length > max) invalid();
+  if (new Set(items).size !== items.length) invalid();
+  return items;
 }

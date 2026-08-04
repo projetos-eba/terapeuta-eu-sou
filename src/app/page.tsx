@@ -54,7 +54,11 @@ const therapyImages: Record<string, string> = {
 };
 
 function getTherapyImage(therapy: PublicHomeTherapy) {
-  return therapy.imageUrl || therapyImages[therapy.slug] || "/therapies/hero-therapies.png";
+  return (
+    therapy.imageUrl ||
+    therapyImages[therapy.slug] ||
+    "/therapies/hero-therapies.png"
+  );
 }
 
 function SectionHeading({
@@ -89,29 +93,34 @@ function SectionHeading({
 
 function HeroSection() {
   return (
-    <section className="relative pb-16 pt-4 lg:min-h-[680px]">
-      <div className="relative z-10 mx-auto grid max-w-[1680px] gap-10 px-5 sm:px-8 lg:min-h-[680px] lg:grid-cols-[minmax(430px,0.42fr)_minmax(0,0.58fr)] lg:px-12">
-        <div className="flex max-w-2xl flex-col justify-center py-10 lg:py-20">
-          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
+    <section className="relative pb-12 pt-2 lg:min-h-[680px] lg:pb-16 lg:pt-4">
+      <div className="relative z-10 mx-auto grid max-w-[1680px] gap-8 px-5 sm:px-8 lg:min-h-[680px] lg:grid-cols-[minmax(430px,0.42fr)_minmax(0,0.58fr)] lg:gap-10 lg:px-12">
+        <div className="flex max-w-2xl flex-col justify-center py-8 lg:py-20">
+          <p className="text-[0.7rem] font-extrabold uppercase leading-5 tracking-[0.16em] text-brand-primary sm:text-xs sm:tracking-[0.18em]">
             {homeHero.eyebrow}
           </p>
-          <h1 className="mt-5 font-display text-5xl font-light italic leading-[1.05] text-brand-deep md:text-7xl">
+          <h1 className="mt-4 max-w-[11ch] font-display text-[3.25rem] font-light italic leading-[0.98] text-brand-deep sm:max-w-[12ch] sm:text-6xl md:text-7xl lg:max-w-none">
             {homeHero.titleStart}
             <span className="mt-2 block bg-[linear-gradient(90deg,#6C3D91_0%,#81BAE0_100%)] bg-clip-text font-semibold text-transparent">
               {homeHero.titleAccent}
             </span>
           </h1>
-          <p className="mt-6 max-w-xl text-base font-semibold leading-8 text-tesText-secondary md:text-lg">
+          <p className="mt-5 max-w-xl text-base font-semibold leading-7 text-tesText-secondary md:text-lg md:leading-8">
             {homeHero.body}
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <TESButton href={homeHero.primaryCta.href} size="lg">
+          <div className="mt-7 grid gap-3 sm:flex sm:flex-wrap">
+            <TESButton
+              href={homeHero.primaryCta.href}
+              size="lg"
+              className="w-full px-5 text-center sm:w-auto"
+            >
               {homeHero.primaryCta.label}
             </TESButton>
             <TESButton
               href={homeHero.secondaryCta.href}
               size="lg"
               variant="secondary"
+              className="w-full px-5 text-center sm:w-auto"
             >
               {homeHero.secondaryCta.label}
             </TESButton>
@@ -119,10 +128,10 @@ function HeroSection() {
         </div>
       </div>
 
-      <div className="pointer-events-none relative mx-5 min-h-[360px] overflow-hidden rounded-hero sm:mx-8 lg:absolute lg:inset-y-0 lg:left-[34vw] lg:right-0 lg:mx-0 lg:rounded-none">
+      <div className="pointer-events-none relative mx-5 min-h-[280px] overflow-hidden rounded-[28px] sm:mx-8 sm:min-h-[360px] lg:absolute lg:inset-y-0 lg:left-[34vw] lg:right-0 lg:mx-0 lg:rounded-none">
         <Image
           src="/home/hero-section-realistic-fade.png"
-          alt="Cena acolhedora de conversa terapeutica em ambiente calmo"
+          alt="Cena acolhedora de conversa terapêutica em ambiente calmo"
           fill
           priority
           sizes="(min-width: 1024px) 66vw, 100vw"
@@ -143,9 +152,9 @@ function IntroSection() {
         <div className="relative z-10 lg:pt-4">
           <SectionHeading
             centered={false}
-            eyebrow="O que e o TES?"
-            title="Um espaco para quem busca novos caminhos"
-            body="Reunimos informacao, perfis publicos e uma jornada guiada para ajudar voce a encontrar praticas e profissionais com mais clareza."
+            eyebrow="O que é o TES?"
+            title="Um espaço para quem busca novos caminhos"
+            body="Reunimos informação, perfis públicos e uma jornada guiada para ajudar você a encontrar práticas e profissionais com mais clareza."
           />
         </div>
         <div className="relative min-h-[312px] lg:min-h-[292px]">
@@ -182,7 +191,7 @@ function StepsSection() {
     <section className="mx-auto max-w-[1680px] px-5 py-16 sm:px-8 lg:px-12">
       <SectionHeading
         title="Como funciona"
-        body="Quatro passos simples para voce iniciar sua jornada com calma."
+        body="Quatro passos simples para você iniciar sua jornada com calma."
       />
 
       <ol className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -225,7 +234,7 @@ function TherapyMarquee({ therapies }: { therapies: PublicHomeTherapy[] }) {
     <section className="bg-brand-lavenderSoft py-4">
       <div className="mx-auto flex max-w-[1680px] flex-wrap items-center gap-3 px-5 sm:px-8 lg:px-12">
         <p className="mr-4 max-w-[180px] text-xs font-extrabold leading-5 text-brand-primary">
-          Diferentes caminhos. Uma unica busca.
+          Diferentes caminhos. Uma única busca.
         </p>
         {therapies.map((therapy) => (
           <Link
@@ -306,12 +315,12 @@ function TherapySection({ therapies }: { therapies: PublicHomeTherapy[] }) {
       <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
         <SectionHeading
           centered={false}
-          eyebrow="Caminhos terapeuticos"
-          title="Explore praticas antes de escolher"
-          body="As descricoes sao informativas e nao prometem cura, diagnostico ou resultado."
+          eyebrow="Caminhos terapêuticos"
+          title="Explore práticas antes de escolher"
+          body="As descrições são informativas e não prometem cura, diagnóstico ou resultado."
         />
         <TESButton href={routes.public.therapies} variant="secondary">
-          Ver catalogo
+          Ver catálogo
           <ArrowRight className="size-4" />
         </TESButton>
       </div>
@@ -367,8 +376,8 @@ function TestimonialsSection({
   return (
     <section className="mx-auto max-w-[1680px] px-5 py-16 sm:px-8 lg:px-12">
       <SectionHeading
-        eyebrow="Historias reais"
-        title="Experiencias compartilhadas por quem ja passou por aqui"
+        eyebrow="Histórias reais"
+        title="Experiências compartilhadas por quem já passou por aqui"
       />
 
       <div className="mt-10 grid gap-5 md:grid-cols-3">
@@ -407,7 +416,7 @@ function FaqSection() {
   return (
     <section className="mx-auto max-w-[1680px] px-5 py-16 sm:px-8 lg:px-12">
       <SectionHeading
-        eyebrow="Duvidas frequentes"
+        eyebrow="Dúvidas frequentes"
         title="Como podemos te ajudar?"
       />
 
@@ -448,7 +457,7 @@ function JourneyCta() {
             Comece pela sua jornada
           </h2>
           <p className="mt-4 max-w-xl text-base font-semibold leading-7 text-white/85">
-            Responda algumas perguntas com calma e veja caminhos terapeuticos
+            Responda algumas perguntas com calma e veja caminhos terapêuticos
             que podem conversar com o seu momento.
           </p>
           <TESButton
@@ -457,7 +466,7 @@ function JourneyCta() {
             variant="secondary"
             className="mt-7 bg-white"
           >
-            Comecar minha jornada
+            Começar minha jornada
             <CalendarDays className="size-4" />
           </TESButton>
         </div>

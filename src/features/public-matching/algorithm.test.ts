@@ -29,7 +29,9 @@ const therapies: MatchingTherapy[] = [
     name: "Reiki",
     shortDescription: "Reiki",
     slug: "reiki",
+    sortOrder: 1,
     status: "published",
+    themeIds: ["theme-1"],
     therapistCount: 2,
   },
   {
@@ -40,7 +42,9 @@ const therapies: MatchingTherapy[] = [
     name: "Tarô",
     shortDescription: "Tarô",
     slug: "taro",
+    sortOrder: 2,
     status: "published",
+    themeIds: ["theme-1"],
     therapistCount: 1,
   },
 ];
@@ -85,5 +89,45 @@ describe("calculateMatchingResults", () => {
         title: "Reiki",
       }),
     ]);
+  });
+
+  it("does not let selected interests change therapy ranking", () => {
+    const resultWithoutInterest = calculateMatchingResults({
+      config,
+      selection: {
+        interestIds: [],
+        source: "journey",
+        themeIds: ["theme-1"],
+      },
+      source: "supabase",
+      therapies,
+      versionId: "version-1",
+      weights,
+    });
+    const resultWithInterest = calculateMatchingResults({
+      config,
+      selection: {
+        interestIds: ["interest-1"],
+        source: "journey",
+        themeIds: ["theme-1"],
+      },
+      source: "supabase",
+      therapies,
+      versionId: "version-1",
+      weights: [
+        ...weights,
+        {
+          interestId: "interest-1",
+          isActive: true,
+          themeId: null,
+          therapyId: "therapy-taro",
+          weight: 5,
+        },
+      ],
+    });
+
+    expect(resultWithInterest.results.map((item) => item.therapyId)).toEqual(
+      resultWithoutInterest.results.map((item) => item.therapyId),
+    );
   });
 });

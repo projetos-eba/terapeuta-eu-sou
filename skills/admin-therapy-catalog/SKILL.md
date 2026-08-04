@@ -19,7 +19,7 @@ do catálogo canônico.
 
 ## Rotas
 
-- `/admin/login`
+- `/admin-login`
 - `/admin`
 - `/admin/terapias`
 - `/api/admin/therapies`
@@ -42,6 +42,9 @@ Dados vêm de `admin_list_therapy_catalog_v1`, `admin_therapy_impact_v1`,
 - Terapeuta pode solicitar análise, mas a aprovação não publica texto livre.
 - Publicação, Match e disponibilidade para novos serviços são estados
   separados.
+- Terapias selecionam de 1 a 3 temas canônicos do Match; admin não seleciona
+  refinamentos por terapia.
+- `therapy_matching_themes` é a relação canônica entre terapia e temas.
 - Não persistir classes CSS/Tailwind no banco; usar chaves semânticas.
 - Toda ação de governança exige motivo e gera auditoria.
 - Não apagar serviços, bookings, snapshots ou pagamentos ao descontinuar.
@@ -63,7 +66,11 @@ garantido em conteúdo editorial e mensagens administrativas.
 
 ## Pendências conhecidas
 
-- Painel dedicado `/admin/matching` ainda precisa governar publicação completa
-  de versões de pesos.
+- `/admin` possui visão geral funcional do catálogo/Match e não redireciona
+  automaticamente para `/admin/terapias`.
+- `/admin/matching` possui primeira superfície operacional de leitura para
+  temas, vínculos e regras ativas.
+- Painel dedicado `/admin/matching` ainda precisa governar mutações completas
+  de temas/refinamentos e publicação de versões, sem apagar histórico.
 - Criação assistida de rascunho a partir de solicitação deve continuar manual
   até haver fluxo editorial aprovado.

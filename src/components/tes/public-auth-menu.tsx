@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { routes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 type PatientSummary = {
   displayName: string;
@@ -38,7 +39,11 @@ type AuthState =
       status: "authenticated";
     };
 
-export function PublicAuthMenu() {
+export function PublicAuthMenu({
+  className = "hidden sm:block",
+}: {
+  className?: string;
+}) {
   const [state, setState] = useState<AuthState>({ status: "loading" });
 
   useEffect(() => {
@@ -71,13 +76,24 @@ export function PublicAuthMenu() {
   }, []);
 
   if (state.status === "authenticated") {
-    return <PatientPopover patient={state.patient} />;
+    return <PatientPopover className={className} patient={state.patient} />;
   }
 
-  return <GuestPopover isLoading={state.status === "loading"} />;
+  return (
+    <GuestPopover
+      className={className}
+      isLoading={state.status === "loading"}
+    />
+  );
 }
 
-function PatientPopover({ patient }: { patient: PatientSummary }) {
+function PatientPopover({
+  className,
+  patient,
+}: {
+  className?: string;
+  patient: PatientSummary;
+}) {
   const firstName = getFirstName(patient.displayName);
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -111,7 +127,7 @@ function PatientPopover({ patient }: { patient: PatientSummary }) {
   }
 
   return (
-    <details className="group relative z-[70] hidden sm:block">
+    <details className={cn("group relative z-[70]", className)}>
       <summary className="inline-flex h-12 cursor-pointer list-none flex-col items-start justify-center rounded-full border border-border bg-white px-6 text-sm font-extrabold leading-tight text-brand-primary shadow-card transition hover:border-brand-lavender focus:outline-none focus:ring-4 focus:ring-ring/20 [&::-webkit-details-marker]:hidden">
         <span>Olá, {firstName}</span>
         <span className="text-[11px] font-bold text-tesText-muted">
@@ -164,9 +180,15 @@ function PatientPopover({ patient }: { patient: PatientSummary }) {
   );
 }
 
-function GuestPopover({ isLoading }: { isLoading: boolean }) {
+function GuestPopover({
+  className,
+  isLoading,
+}: {
+  className?: string;
+  isLoading: boolean;
+}) {
   return (
-    <details className="group relative z-[70] hidden sm:block">
+    <details className={cn("group relative z-[70]", className)}>
       <summary className="inline-flex h-12 cursor-pointer list-none items-center justify-center gap-2 rounded-full border border-border bg-white px-6 text-sm font-extrabold text-brand-primary shadow-card transition hover:border-brand-lavender focus:outline-none focus:ring-4 focus:ring-ring/20 [&::-webkit-details-marker]:hidden">
         <LogIn className="size-4" aria-hidden="true" />
         {isLoading ? "Carregando..." : "Entrar | Cadastre-se"}

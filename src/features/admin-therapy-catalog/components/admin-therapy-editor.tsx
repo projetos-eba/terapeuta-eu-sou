@@ -13,12 +13,14 @@ import type {
 export function AdminTherapyEditor({
   categories,
   isSaving,
+  matchingThemes,
   onCancel,
   onSave,
   therapy,
 }: {
   categories: AdminTherapyCatalogContract["categories"];
   isSaving: boolean;
+  matchingThemes: AdminTherapyCatalogContract["matchingThemes"];
   onCancel: () => void;
   onSave: (command: AdminTherapyDraftCommand) => Promise<void>;
   therapy: AdminTherapy | null;
@@ -55,6 +57,10 @@ export function AdminTherapyEditor({
       isFeatured: form.get("isFeatured") === "on",
       isPubliclyVisible: form.get("isPubliclyVisible") === "on",
       isVisibleInMatching: form.get("isVisibleInMatching") === "on",
+      themeIds: form
+        .getAll("themeIds")
+        .map(String)
+        .filter(Boolean),
       name: String(form.get("name") ?? "").trim(),
       publicContent: {
         approachIconKey: nullable(String(form.get("approachIconKey") ?? "")),
@@ -266,6 +272,34 @@ export function AdminTherapyEditor({
         </div>
       </Section>
 
+      <Section title="Temas do Match">
+        <fieldset>
+          <legend className="text-sm font-extrabold text-brand-deep">
+            Selecione de 1 a 3 temas para recomendar esta terapia
+          </legend>
+          <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+            Refinamentos não são configurados na terapia. Eles serão usados
+            depois para ordenar profissionais dentro da terapia escolhida.
+          </p>
+          <div className="mt-3 grid gap-3 md:grid-cols-2">
+            {matchingThemes.map((theme) => (
+              <Checkbox
+                defaultChecked={therapy?.matchingThemeIds.includes(theme.id)}
+                key={theme.id}
+                label={theme.name}
+                name="themeIds"
+                value={theme.id}
+              />
+            ))}
+          </div>
+          {matchingThemes.length === 0 ? (
+            <p className="mt-3 rounded-xl bg-surface-soft p-3 text-sm font-semibold text-tesText-secondary">
+              Nenhum tema ativo identificado para edição administrativa.
+            </p>
+          ) : null}
+        </fieldset>
+      </Section>
+
       <Section title="Governança">
         <Textarea
           hint="Obrigatório para rastreabilidade administrativa."
@@ -275,8 +309,8 @@ export function AdminTherapyEditor({
         />
         <div className="rounded-xl bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
           Publicar exige categoria ativa e conteúdo público mínimo. Disponível
-          no Match não edita pesos; apenas usa configuração e versão publicada
-          já existentes.
+          no Match exige de um a três temas canônicos. Refinamentos são
+          escolhidos somente nos serviços dos terapeutas.
         </div>
       </Section>
 
@@ -378,14 +412,21 @@ function Checkbox({
   defaultChecked,
   label,
   name,
+  value,
 }: {
   defaultChecked?: boolean;
   label: string;
   name: string;
+  value?: string;
 }) {
   return (
     <label className="flex min-h-11 items-center gap-3 rounded-xl border border-brand-lavender px-3 text-sm font-extrabold text-brand-deep">
-      <input defaultChecked={defaultChecked} name={name} type="checkbox" />
+      <input
+        defaultChecked={defaultChecked}
+        name={name}
+        type="checkbox"
+        value={value}
+      />
       {label}
     </label>
   );

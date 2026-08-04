@@ -47,29 +47,27 @@ As páginas `/termos`, `/privacidade` e
 | Cadastros validavam aceite booleano, sem versão jurídica normalizada                      | `src/app/api/auth/*/signup/route.ts`                      | Aceite insuficiente para prova versionada                                      | P0         | Corrigido: cadastros registram aceite versionado por RPC server-side                           |
 | `support_tickets` permitia leitura, mas não criação autenticada                           | migrations e grant local                                  | Central de suporte não consegue abrir protocolo real                           | P1         | Corrigido: endpoint autenticado cria chamado por template aprovado e request idempotente       |
 | Regras de cancelamento usam percentuais em código de apresentação                         | `src/features/bookings/patient-encounter-actions.ts`      | Texto financeiro pode divergir da política aprovada/backend                    | P1         | Requer matriz jurídica executável central                                                      |
-| `/status` não existe                                                                      | `src/lib/routes.ts`, `src/app`                            | Requisito de transparência ausente                                             | P1         | Requer rota/configuração operacional aprovada                                                  |
 
 ## LEGAL_DECISION_REQUIRED
 
-| Chave                          | Decisão necessária                         | Impacto                             | Responsável esperado | Superfície bloqueada              |
-| ------------------------------ | ------------------------------------------ | ----------------------------------- | -------------------- | --------------------------------- |
-| legal_entity.businessName      | Nome empresarial da controladora           | Publicação de documentos e rodapé   | Jurídico/Empresa     | `/termos`, `/privacidade`, rodapé |
-| legal_entity.cnpj              | CNPJ                                       | Identificação do fornecedor         | Jurídico/Empresa     | Documentos públicos               |
-| legal_entity.address           | Endereço completo                          | Documentos e atendimento            | Jurídico/Empresa     | Documentos públicos               |
-| legal_entity.generalEmail      | E-mail geral oficial                       | Contato público                     | Operação/Jurídico    | Rodapé e `/ajuda`                 |
-| legal_entity.supportEmail      | Canal de suporte                           | Atendimento e tickets               | Operação             | `/ajuda`, suporte urgente         |
-| legal_entity.privacyEmail      | Canal do titular/LGPD                      | Direitos de titulares               | Jurídico/Privacidade | `/privacidade`, `/ajuda`          |
-| legal_entity.securityEmail     | Canal de segurança                         | Denúncias e vulnerabilidades        | Segurança/Operação   | `/ajuda`, incidentes              |
-| legal_entity.supportHours      | Horário de atendimento                     | SLA público                         | Operação             | `/ajuda`, rodapé                  |
-| legal_entity.dataController    | Controlador de dados                       | LGPD                                | Jurídico/Privacidade | `/privacidade`                    |
-| legal_entity.dpo               | Encarregado ou decisão de dispensa         | LGPD                                | Jurídico/Privacidade | `/privacidade`                    |
-| legal_entity.jurisdictionVenue | Foro                                       | Termos                              | Jurídico             | `/termos`                         |
-| legal_documents.versioning     | Versão, vigência, aprovação e hash         | Aceite eletrônico                   | Jurídico/Engenharia  | Cadastros, reserva, checkout      |
-| cancellation.route             | Slug canônico da política                  | Link público e checkout             | Produto/Jurídico     | Rodapé, reserva                   |
-| cancellation.rules             | Antecedência, retenção, no-show, reembolso | Backend, Stripe e UI                | Jurídico/Financeiro  | Cancelamento/reembolso            |
-| support.slas                   | Confirmação, primeira resposta e resolução | Publicação de `/ajuda`              | Operação             | `/ajuda`, suporte urgente         |
-| status.source                  | Fonte operacional para `/status`           | Transparência sem fallback fictício | Operação/Engenharia  | `/status`                         |
-| pdf.sources                    | Fonte editável aprovada                    | HTML acessível                      | Jurídico             | Páginas jurídicas                 |
+| Chave                          | Decisão necessária                         | Impacto                           | Responsável esperado | Superfície bloqueada              |
+| ------------------------------ | ------------------------------------------ | --------------------------------- | -------------------- | --------------------------------- |
+| legal_entity.businessName      | Nome empresarial da controladora           | Publicação de documentos e rodapé | Jurídico/Empresa     | `/termos`, `/privacidade`, rodapé |
+| legal_entity.cnpj              | CNPJ                                       | Identificação do fornecedor       | Jurídico/Empresa     | Documentos públicos               |
+| legal_entity.address           | Endereço completo                          | Documentos e atendimento          | Jurídico/Empresa     | Documentos públicos               |
+| legal_entity.generalEmail      | E-mail geral oficial                       | Contato público                   | Operação/Jurídico    | Rodapé e `/ajuda`                 |
+| legal_entity.supportEmail      | Canal de suporte                           | Atendimento e tickets             | Operação             | `/ajuda`, suporte urgente         |
+| legal_entity.privacyEmail      | Canal do titular/LGPD                      | Direitos de titulares             | Jurídico/Privacidade | `/privacidade`, `/ajuda`          |
+| legal_entity.securityEmail     | Canal de segurança                         | Denúncias e vulnerabilidades      | Segurança/Operação   | `/ajuda`, incidentes              |
+| legal_entity.supportHours      | Horário de atendimento                     | SLA público                       | Operação             | `/ajuda`, rodapé                  |
+| legal_entity.dataController    | Controlador de dados                       | LGPD                              | Jurídico/Privacidade | `/privacidade`                    |
+| legal_entity.dpo               | Encarregado ou decisão de dispensa         | LGPD                              | Jurídico/Privacidade | `/privacidade`                    |
+| legal_entity.jurisdictionVenue | Foro                                       | Termos                            | Jurídico             | `/termos`                         |
+| legal_documents.versioning     | Versão, vigência, aprovação e hash         | Aceite eletrônico                 | Jurídico/Engenharia  | Cadastros, reserva, checkout      |
+| cancellation.route             | Slug canônico da política                  | Link público e checkout           | Produto/Jurídico     | Rodapé, reserva                   |
+| cancellation.rules             | Antecedência, retenção, no-show, reembolso | Backend, Stripe e UI              | Jurídico/Financeiro  | Cancelamento/reembolso            |
+| support.slas                   | Confirmação, primeira resposta e resolução | Publicação de `/ajuda`            | Operação             | `/ajuda`, suporte urgente         |
+| pdf.sources                    | Fonte editável aprovada                    | HTML acessível                    | Jurídico             | Páginas jurídicas                 |
 
 ## Rotas e rodapé implementados sob gate
 
@@ -125,7 +123,6 @@ Implementado nesta fase:
 - Aceite normalizado nos cadastros e checkout.
 - Política de cancelamento executável e igual ao texto publicado.
 - `/ajuda` com canal real e SLA operacional.
-- `/status` com fonte operacional real ou publicação administrativa auditada.
 - Suporte urgente com protocolo real.
 - Inventário de privacidade e cookies reconciliado com a implementação.
 - Gate `npm run legal:check` passando em modo strict.

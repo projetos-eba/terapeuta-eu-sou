@@ -46,6 +46,8 @@ export type MatchingTherapy = {
   shortDescription: string;
   slug: string;
   status: "active" | "archived" | "draft" | "inactive" | "published";
+  themeIds: string[];
+  sortOrder: number;
   therapistCount: number;
 };
 

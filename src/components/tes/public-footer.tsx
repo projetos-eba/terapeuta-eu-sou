@@ -138,7 +138,7 @@ function getFooterGroups(): FooterGroup[] {
         },
         {
           label: "Planos e benefícios",
-          href: routes.public.therapistPlans as Route,
+          href: routes.public.forTherapists as Route,
         },
       ],
     },
@@ -148,4 +148,3 @@ function getFooterGroups(): FooterGroup[] {
     },
   ];
 }
-
