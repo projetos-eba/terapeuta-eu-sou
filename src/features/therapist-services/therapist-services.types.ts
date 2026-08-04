@@ -35,6 +35,19 @@ export type TherapyCatalogOption = {
   isAvailableForServices: boolean;
   isPubliclyVisible: boolean;
   isVisibleInMatching: boolean;
+  matchingThemes: Array<{
+    id: string;
+    interests: Array<{
+      id: string;
+      name: string;
+      slug: string;
+      sortOrder: number;
+      themeId: string;
+    }>;
+    name: string;
+    slug: string;
+    sortOrder: number;
+  }>;
   name: string;
   shortDescription: string;
   slug: string;
@@ -62,6 +75,10 @@ export type TherapistServiceSummary = {
     bookingCountDeltaPercent: number | null;
     bookingsLast30Days: number;
   };
+  matching: {
+    interestIds: string[];
+    themeIds: string[];
+  };
   onlineOnly: boolean;
   position: number;
   priceCents: number;
@@ -87,8 +104,10 @@ export type CreateTherapistServiceCommand = {
   deliveryFormat?: TherapistServiceDeliveryFormat;
   description?: string | null;
   durationMinutes: number;
+  interestIds: string[];
   priceCents: number;
   requestId: string;
+  themeIds: string[];
   therapyId: string;
   title: string;
 };
@@ -100,10 +119,12 @@ export type UpdateTherapistServiceCommand = {
   description?: string | null;
   durationMinutes?: number;
   expectedVersion: number;
+  interestIds?: string[];
   isBookable?: boolean;
   priceCents?: number;
   requestId: string;
   serviceId: string;
+  themeIds?: string[];
   therapyId?: string;
   title?: string;
 };

@@ -1,6 +1,9 @@
 import { handleOptions } from "../_shared/auth/cors.ts";
 import { getRuntime, getServiceRoleKey } from "../_shared/auth/runtime.ts";
-import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
+import {
+  SupabaseHttpError,
+  SupabaseRestClient,
+} from "../_shared/auth/supabase-rest.ts";
 import {
   DomainError,
   failure,
@@ -64,7 +67,7 @@ runtime.serve(async (request) => {
 
       if (command.action === "create") {
         return success(
-          await client.rpc("create_therapist_service_v1", {
+          await client.rpc("create_therapist_service_with_matching_v1", {
             p_actor_user_id: user.id,
             p_payload: command.payload,
             p_request_id: command.requestId,
@@ -74,7 +77,7 @@ runtime.serve(async (request) => {
 
       if (command.action === "update") {
         return success(
-          await client.rpc("update_therapist_service_v1", {
+          await client.rpc("update_therapist_service_with_matching_v1", {
             p_actor_user_id: user.id,
             p_expected_version: command.expectedVersion,
             p_payload: command.payload,
@@ -116,6 +119,7 @@ runtime.serve(async (request) => {
         "Revise os dados do servico.",
       );
     } catch (error) {
+      logDatabaseFailure(error, correlationId);
       throw mapTherapistServiceDatabaseError(error);
     }
   } catch (error) {
@@ -133,6 +137,19 @@ function logFailure(error: unknown, correlationId: string, durationMs: number) {
       error_code:
         error instanceof DomainError ? error.code : "therapist_services_failed",
       operation: "therapist_services_command",
+    }),
+  );
+}
+
+function logDatabaseFailure(error: unknown, correlationId: string) {
+  if (!(error instanceof SupabaseHttpError)) return;
+
+  console.error(
+    JSON.stringify({
+      correlation_id: correlationId,
+      details: error.safeDetails,
+      operation: "therapist_services_command.database",
+      status: error.status,
     }),
   );
 }

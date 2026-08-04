@@ -46,6 +46,11 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
   novos serviços. Serviços históricos/arquivados podem permanecer para
   rastreabilidade, mas não aparecem no filtro padrão “Todos”.
 - `matching_therapy_settings` continua separado da criacao de servicos.
+- Ao criar/editar serviço, terapeuta escolhe de 1 a 3 temas entre os temas
+  vinculados administrativamente à terapia e até 3 refinamentos por tema.
+- Refinamentos pertencem ao serviço específico, não ao perfil genérico.
+- Backend valida que tema pertence à terapia e refinamento pertence a tema
+  escolhido no serviço; navegador não é fonte de autoridade.
 - Metrica percentual sem serie confiavel deve ser `null`.
 - Mutacoes usam `version` otimista e ledger de idempotencia.
 - Next nunca usa service role; service role fica em Edge Functions/RPCs
@@ -62,6 +67,10 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - `therapist_service_booking_settings`: regras de reserva do servico.
 - `therapist_service_mutation_requests`: idempotencia.
 - `therapist_service_events`: auditoria.
+- `therapist_service_matching_themes`: temas escolhidos pelo terapeuta no
+  serviço.
+- `therapist_service_matching_interests`: refinamentos escolhidos pelo
+  terapeuta no serviço.
 - `bookings` e `session_payments`: historico/snapshots, nao reescrever.
 
 ## QA

@@ -73,6 +73,7 @@ Rules:
 The page should preserve these sections from Figma `13273:1844`:
 
 - Public header
+- Mobile public header with logo, icon menu button, navigation links, and profile-specific login links. Do not show the large "Começar minha jornada" CTA in the header on mobile.
 - Hero with human image
 - `O que é o TES?` with the Figma-style supporting purple shape behind the trust cards
 - `Como funciona` with large editorial step images

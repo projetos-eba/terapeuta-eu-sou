@@ -8,6 +8,8 @@ import {
 const requestId = "a6000000-0000-4000-8000-000000000001";
 const therapyId = "22222222-2222-4222-8222-222222222225";
 const serviceId = "d1000000-0000-4000-8000-000000000001";
+const themeId = "71000000-0000-4000-8000-000000000001";
+const interestId = "72000000-0000-4000-8000-000000000001";
 
 describe("parseTherapistServicesCommand", () => {
   it("accepts create commands only with a canonical therapyId", () => {
@@ -18,6 +20,8 @@ describe("parseTherapistServicesCommand", () => {
         durationMinutes: 60,
         priceCents: 12000,
         requestId,
+        interestIds: [interestId],
+        themeIds: [themeId],
         therapyId,
         title: "Reiki online",
       }),
@@ -49,6 +53,8 @@ describe("parseTherapistServicesCommand", () => {
         durationMinutes: 60,
         priceCents: 12000,
         requestId,
+        interestIds: [],
+        themeIds: [themeId],
         therapyId,
         title: "Reiki online",
       }),

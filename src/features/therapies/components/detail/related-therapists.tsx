@@ -17,6 +17,7 @@ import { therapyVisualThemes } from "./therapy-visual-theme";
 
 type RelatedTherapistsProps = {
   errorMessage?: string;
+  matchContextActive?: boolean;
   source: string;
   sort: RelatedTherapistSort;
   therapists: RelatedTherapist[];
@@ -31,6 +32,7 @@ const sortLabels: Record<RelatedTherapistSort, string> = {
 
 export function RelatedTherapists({
   errorMessage,
+  matchContextActive = false,
   source,
   sort,
   therapists,
@@ -52,12 +54,15 @@ export function RelatedTherapists({
                 <DetailIcon iconKey="energy" />
               </span>
               <h2 className="text-[28px] font-extrabold leading-tight text-brand-deep sm:text-[29px]">
-                Profissionais que trabalham com {therapy.name}
+                {matchContextActive
+                  ? "Profissionais alinhados ao que você selecionou"
+                  : `Profissionais que trabalham com ${therapy.name}`}
               </h2>
             </div>
             <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
-              Terapeutas publicados com serviço online ativo relacionado a esta
-              terapia.
+              {matchContextActive
+                ? `Terapeutas publicados em ${therapy.name}, ordenados pelo contexto da sua jornada.`
+                : "Terapeutas publicados com serviço online ativo relacionado a esta terapia."}
             </p>
           </div>
 

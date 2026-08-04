@@ -31,7 +31,10 @@ Consultar antes de alterar:
 - O Match e publico, anonimo, deterministico e sem IA.
 - Recomendar terapias, nunca terapeutas.
 - Nao armazenar respostas individuais no banco.
-- Nao usar avaliacoes, disponibilidade ou plano do terapeuta no ranking.
+- Nao usar refinamentos, avaliacoes, disponibilidade ou plano do terapeuta no
+  ranking de terapias.
+- Regra definitiva: temas recomendam terapias; refinamentos recomendam
+  terapeutas dentro da terapia escolhida.
 - Usar “Tema” e “Interesse” na UI; nao usar “subtema”.
 
 ## Banco e dados
@@ -39,7 +42,10 @@ Consultar antes de alterar:
 - `matching_themes`: fonte unica dos 10 temas ativos.
 - `matching_interests`: interesses globais unicos, cada um pertencendo a exatamente um tema.
 - `matching_versions`: versoes `draft`, `published` e `archived`.
-- `matching_weights`: pesos internos de 0 a 5, com exatamente um alvo entre `theme_id` e `interest_id`.
+- `therapy_matching_themes`: relacao canonica admin-managed entre terapia e
+  tema, com no minimo 1 e no maximo 3 temas por terapia publicavel.
+- `matching_weights`: legado compativel de pesos versionados; nao e fonte
+  autoritativa para refinamentos por terapia.
 - `matching_therapy_settings`: ativação da terapia no Match; só vale quando a terapia também está `published`.
 - `public_matching_config`: view publica segura para temas/interesses publicados.
 - `public_matching_therapies_v`: fonte única dos candidatos recomendáveis pelo Match; cruza detalhe público publicado com `matching_therapy_settings.is_visible_in_matching = true`.
@@ -51,18 +57,12 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
 
 ## Algoritmo
 
-- Temas: peso normal.
-- Interesses: peso multiplicado por `1.4`.
-- Score percentual:
-  `score_bruto / (temas * 5 + interesses * 5 * 1.4) * 100`.
-- Faixas:
-  - `85-100`: Alta aderencia.
-  - `65-84`: Boa aderencia.
-  - `45-64`: Pode fazer sentido.
-  - Abaixo de 45 normalmente nao exibe.
-- Se nenhum resultado atingir 45%, retornar os 3 melhores com mensagem de baixa correspondencia.
+- `matchingThemeCount = intersection(selectedThemeIds, therapyThemeIds).length`.
+- Ordenar por `matchingThemeCount DESC`, depois `sort_order` administrativo e
+  nome/slug estavel.
+- Refinamentos selecionados sao preservados para a pagina da terapia, mas nao
+  alteram score ou ordenacao de terapias.
 - No desktop, retornar ate 5 terapias; no mobile, exibir as 3 primeiras.
-- Empate: maior quantidade de interesses compativeis e depois ordem alfabetica.
 
 ## Frontend
 
@@ -96,6 +96,7 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
   - limite de 1 a 3 temas.
   - ate 3 interesses por tema.
   - interesse precisa pertencer a tema selecionado.
+  - refinamentos nao alteram ranking de terapias.
   - resultado aponta para `/terapias/:slug`.
   - resultado retorna apenas terapias existentes em `public_matching_therapies_v`.
   - fallback sem Supabase retorna apenas Reiki, Tarô e Constelação Familiar.
@@ -103,8 +104,6 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
 
 ## Pendencias conhecidas
 
-- Testes unitarios formais do algoritmo em runner padrao do projeto.
-- Testes de integracao HTTP das APIs.
-- E2E selecao -> resultado -> terapia.
-- Tela administrativa `/admin/matching` consumindo `matching_versions` e publicando versoes.
+- E2E completo selecao -> resultado -> terapia -> perfil -> reserva ainda deve
+  ser ampliado para cobrir contexto expirado e correspondencia zero.
 - Metricas futuras somente agregadas por dia, sem armazenar combinacao individual.

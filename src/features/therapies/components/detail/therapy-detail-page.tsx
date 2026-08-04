@@ -3,7 +3,7 @@ import type {
   RelatedTherapist,
   RelatedTherapistSort,
 } from "../../types/therapy-detail";
-import { RelatedTherapists } from "./related-therapists";
+import { RelatedTherapistsMatchClient } from "./related-therapists-match-client";
 import { TherapyBenefits } from "./therapy-benefits";
 import { TherapyClosingCta } from "./therapy-closing-cta";
 import { TherapyFaq } from "./therapy-faq";
@@ -41,11 +41,11 @@ export function TherapyDetailPage({
         </section>
 
         <div className="mt-8">
-          <RelatedTherapists
+          <RelatedTherapistsMatchClient
             errorMessage={relatedErrorMessage}
+            initialTherapists={relatedTherapists}
             source={source}
             sort={sort}
-            therapists={relatedTherapists}
             therapy={therapy}
           />
         </div>

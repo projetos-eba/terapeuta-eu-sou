@@ -12,8 +12,10 @@ export type TherapistServicesCommandBody =
       deliveryFormat?: string;
       description?: string | null;
       durationMinutes?: number;
+      interestIds?: string[];
       priceCents?: number;
       requestId?: string;
+      themeIds?: string[];
       therapyId?: string;
       title?: string;
     }
@@ -24,10 +26,12 @@ export type TherapistServicesCommandBody =
       description?: string | null;
       durationMinutes?: number;
       expectedVersion?: number;
+      interestIds?: string[];
       isBookable?: boolean;
       priceCents?: number;
       requestId?: string;
       serviceId?: string;
+      themeIds?: string[];
       therapyId?: string;
       title?: string;
     }
@@ -52,7 +56,9 @@ export type ValidTherapistServicesCommand =
         deliveryFormat: "online";
         description: string | null;
         durationMinutes: number;
+        interestIds: string[];
         priceCents: number;
+        themeIds: string[];
         therapyId: string;
         title: string;
       };
@@ -61,7 +67,7 @@ export type ValidTherapistServicesCommand =
   | {
       action: "update";
       expectedVersion: number;
-      payload: Record<string, boolean | number | string | null>;
+      payload: Record<string, boolean | number | string | string[] | null>;
       requestId: string;
       serviceId: string;
     }
@@ -93,6 +99,8 @@ export function validateTherapistServicesCommand(
       !isOptionalDescription(body.description) ||
       !isInteger(body.durationMinutes, 15, 240) ||
       !isInteger(body.priceCents, 1000, 2000000) ||
+      !isUuidList(body.themeIds, 1, 3) ||
+      !isUuidList(body.interestIds, 0, 9) ||
       !isCurrency(body.currency) ||
       !isOnlineOnlyFormat(body.deliveryFormat)
     ) {
@@ -106,7 +114,9 @@ export function validateTherapistServicesCommand(
         deliveryFormat: body.deliveryFormat ?? "online",
         description: normalizeDescription(body.description),
         durationMinutes: body.durationMinutes,
+        interestIds: body.interestIds,
         priceCents: body.priceCents,
+        themeIds: body.themeIds,
         therapyId: body.therapyId,
         title,
       },
@@ -123,7 +133,7 @@ export function validateTherapistServicesCommand(
       invalid();
     }
 
-    const payload: Record<string, boolean | number | string | null> = {};
+    const payload: Record<string, boolean | number | string | string[] | null> = {};
     if (body.therapyId !== undefined) {
       if (!isUuid(body.therapyId)) invalid();
       payload.therapyId = body.therapyId;
@@ -155,6 +165,14 @@ export function validateTherapistServicesCommand(
     if (body.isBookable !== undefined) {
       if (typeof body.isBookable !== "boolean") invalid();
       payload.isBookable = body.isBookable;
+    }
+    if (body.themeIds !== undefined) {
+      if (!isUuidList(body.themeIds, 1, 3)) invalid();
+      payload.themeIds = body.themeIds;
+    }
+    if (body.interestIds !== undefined) {
+      if (!isUuidList(body.interestIds, 0, 9)) invalid();
+      payload.interestIds = body.interestIds;
     }
 
     if (Object.keys(payload).length === 0) invalid();
@@ -236,6 +254,27 @@ export function mapTherapistServiceDatabaseError(error: unknown) {
       "Você já possui um serviço ativo ou em edição para esta terapia.",
     );
   }
+  if (details.includes("INVALID_THEME_RELATION")) {
+    return new DomainError(
+      "invalid_theme_relation",
+      422,
+      "Selecione apenas temas vinculados a esta terapia.",
+    );
+  }
+  if (details.includes("INVALID_INTEREST_RELATION")) {
+    return new DomainError(
+      "invalid_interest_relation",
+      422,
+      "Selecione refinamentos apenas dentro dos temas escolhidos.",
+    );
+  }
+  if (details.includes("LIMIT_EXCEEDED")) {
+    return new DomainError(
+      "limit_exceeded",
+      422,
+      "Revise os limites de temas e refinamentos do serviço.",
+    );
+  }
   if (details.includes("THERAPIST_SERVICE_PLAN_LIMIT_REACHED")) {
     return new DomainError(
       "plan_limit_reached",
@@ -314,6 +353,16 @@ function isOptionalDescription(value: unknown) {
 
 function isUuid(value: unknown): value is string {
   return typeof value === "string" && UUID.test(value);
+}
+
+function isUuidList(value: unknown, min: number, max: number): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.length >= min &&
+    value.length <= max &&
+    value.every((item) => isUuid(item)) &&
+    new Set(value).size === value.length
+  );
 }
 
 function normalizeDescription(value: string | null | undefined) {

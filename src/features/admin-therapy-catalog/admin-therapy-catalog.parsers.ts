@@ -5,6 +5,7 @@ import {
   type AdminTherapyCatalogRequest,
   type AdminTherapyCategory,
   type AdminTherapyImpact,
+  type AdminMatchingTheme,
   type AdminTherapyPublicContent,
   type AdminTherapyStatus,
 } from "./admin-therapy-catalog.types";
@@ -25,6 +26,7 @@ export function parseAdminTherapyCatalogContract(
     categories: parseArray(record.categories, parseCategory),
     contractVersion: 1,
     items: parseArray(record.items, parseTherapy),
+    matchingThemes: parseArray(record.matchingThemes, parseMatchingTheme),
     requests: parseArray(record.requests, parseRequest),
   };
 }
@@ -35,6 +37,17 @@ function parseCategory(value: unknown): AdminTherapyCategory {
   return {
     id: asString(record.id),
     isActive: asBoolean(record.isActive),
+    name: asString(record.name),
+    slug: asString(record.slug),
+    sortOrder: asNumber(record.sortOrder),
+  };
+}
+
+function parseMatchingTheme(value: unknown): AdminMatchingTheme {
+  const record = asRecord(value);
+
+  return {
+    id: asString(record.id),
     name: asString(record.name),
     slug: asString(record.slug),
     sortOrder: asNumber(record.sortOrder),
@@ -77,6 +90,7 @@ function parseTherapy(value: unknown): AdminTherapy {
     isFeatured: asBoolean(record.isFeatured),
     isPubliclyVisible: asBoolean(record.isPubliclyVisible),
     isVisibleInMatching: asBoolean(record.isVisibleInMatching),
+    matchingThemeIds: parseStringArray(record.matchingThemeIds),
     name: asString(record.name),
     publicContent: parsePublicContent(record.publicContent),
     publishedAt: asNullableString(record.publishedAt),

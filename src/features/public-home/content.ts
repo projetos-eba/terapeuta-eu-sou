@@ -10,10 +10,10 @@ import type {
 } from "./types";
 
 export const homeHero = {
-  eyebrow: "CUIDADO QUE ACOLHE. CONEXAO QUE TRANSFORMA.",
+  eyebrow: "CUIDADO QUE ACOLHE. CONEXÃO QUE TRANSFORMA.",
   titleStart: "Entre uma pergunta e um novo caminho",
   titleAccent: "existe um encontro",
-  body: "O TES conecta voce a terapeutas, praticas e experiencias que podem apoiar diferentes momentos da vida. Aqui, cada jornada e unica. E cada encontro pode fazer sentido para voce.",
+  body: "O TES conecta você a terapeutas, práticas e experiências que podem apoiar diferentes momentos da vida. Aqui, cada jornada é única. E cada encontro pode fazer sentido para você.",
   primaryCta: {
     label: "Começar minha jornada",
     href: routes.public.journey,
@@ -27,41 +27,41 @@ export const homeHero = {
 export const homeIntroCards = [
   {
     title: "Para todas as jornadas",
-    body: "Seja qual for a sua busca, voce encontra informacao, acolhimento e caminhos possiveis.",
+    body: "Seja qual for a sua busca, você encontra informação, acolhimento e caminhos possíveis.",
   },
   {
-    title: "Variedade de praticas",
-    body: "Diferentes abordagens e terapias para apoiar o momento que voce esta vivendo.",
+    title: "Variedade de práticas",
+    body: "Diferentes abordagens e terapias para apoiar o momento que você está vivendo.",
   },
   {
     title: "Seguranca e cuidado",
-    body: "Um ambiente protegido, com perfis verificados e linguagem responsavel.",
+    body: "Um ambiente protegido, com perfis verificados e linguagem responsável.",
   },
   {
     title: "Escolha com clareza",
-    body: "Informacoes e ferramentas para decidir com calma, sem pressa e sem promessa de resultado.",
+    body: "Informações e ferramentas para decidir com calma, sem pressa e sem promessa de resultado.",
   },
 ];
 
 export const homeSteps: PublicHomeStep[] = [
   {
-    title: "Conte o que voce esta vivendo",
+    title: "Conte o que você está vivendo",
     body: "Expresse suas perguntas, sentimentos e o que faz sentido no momento.",
     image: "/home/step-mirror.png",
   },
   {
-    title: "Descubra caminhos terapeuticos",
+    title: "Descubra caminhos terapêuticos",
     body: "Navegue por terapias, abordagens e perfis de profissionais que podem apoiar sua jornada.",
     image: "/home/step-crystal.png",
   },
   {
     title: "Escolha um terapeuta",
-    body: "Conheca perfis verificados, veja avaliacoes publicadas e escolha com mais confianca.",
+    body: "Conheça perfis verificados, veja avaliações publicadas e escolha com mais confiança.",
     image: "/home/step-choice.png",
   },
   {
     title: "Agende e viva o processo",
-    body: "Marque sua sessao online e inicie uma jornada de cuidado no seu tempo.",
+    body: "Marque sua sessão online e inicie uma jornada de cuidado no seu tempo.",
     image: "/home/step-calendar.png",
   },
 ];
@@ -69,27 +69,27 @@ export const homeSteps: PublicHomeStep[] = [
 export const homeReasons: PublicHomeReason[] = [
   {
     title: "Autoconhecimento",
-    body: "Compreender padroes, emocoes e escolhas para se escutar com mais presenca.",
+    body: "Compreender padrões, emoções e escolhas para se escutar com mais presença.",
     tone: "green",
   },
   {
     title: "Espiritualidade",
-    body: "Explorar perspectivas e conexoes com o que faz sentido para voce.",
+    body: "Explorar perspectivas e conexões com o que faz sentido para você.",
     tone: "purple",
   },
   {
-    title: "Equilibrio",
+    title: "Equilíbrio",
     body: "Encontrar mais pausa, leveza e alinhamento no dia a dia.",
     tone: "blue",
   },
   {
     title: "Relacionamentos",
-    body: "Refletir sobre vinculos, dinamicas e comunicacao com mais consciencia.",
+    body: "Refletir sobre vínculos, dinâmicas e comunicação com mais consciência.",
     tone: "pink",
   },
   {
-    title: "Proposito",
-    body: "Olhar para o futuro com mais clareza e direcao na sua jornada.",
+    title: "Propósito",
+    body: "Olhar para o futuro com mais clareza e direção na sua jornada.",
     tone: "orange",
   },
 ];

@@ -1,6 +1,9 @@
 import { handleOptions } from "../_shared/auth/cors.ts";
 import { getRuntime, getServiceRoleKey } from "../_shared/auth/runtime.ts";
-import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
+import {
+  SupabaseHttpError,
+  SupabaseRestClient,
+} from "../_shared/auth/supabase-rest.ts";
 import {
   DomainError,
   failure,
@@ -71,6 +74,47 @@ runtime.serve(async (request) => {
         );
       }
 
+      if (command.action === "matchingList") {
+        return success(
+          await client.rpc("admin_list_matching_v1", {
+            p_actor_user_id: user.id,
+          }),
+        );
+      }
+
+      if (command.action === "matchingSaveTheme") {
+        return success(
+          await client.rpc("admin_upsert_matching_theme_v1", {
+            p_actor_user_id: user.id,
+            p_payload: command.payload,
+            p_request_id: command.requestId,
+          }),
+        );
+      }
+
+      if (command.action === "matchingSaveInterest") {
+        return success(
+          await client.rpc("admin_upsert_matching_interest_v1", {
+            p_actor_user_id: user.id,
+            p_payload: command.payload,
+            p_request_id: command.requestId,
+          }),
+        );
+      }
+
+      if (command.action === "matchingTransition") {
+        return success(
+          await client.rpc("admin_transition_matching_entity_v1", {
+            p_action: command.matchingAction,
+            p_actor_user_id: user.id,
+            p_entity_id: command.entityId,
+            p_entity_type: command.entityType,
+            p_reason: command.reason,
+            p_request_id: command.requestId,
+          }),
+        );
+      }
+
       if (command.action === "impact") {
         return success(
           await client.rpc("admin_therapy_impact_v1", {
@@ -82,7 +126,7 @@ runtime.serve(async (request) => {
 
       if (command.action === "save") {
         return success(
-          await client.rpc("admin_upsert_therapy_draft_v1", {
+          await client.rpc("admin_upsert_therapy_draft_with_matching_v1", {
             p_actor_user_id: user.id,
             p_payload: command.payload,
             p_request_id: command.requestId,
@@ -122,6 +166,7 @@ runtime.serve(async (request) => {
         "Revise os dados enviados.",
       );
     } catch (error) {
+      logDatabaseFailure(error, correlationId);
       throw mapAdminTherapyCatalogDatabaseError(error);
     }
   } catch (error) {
@@ -139,6 +184,19 @@ function logFailure(error: unknown, correlationId: string, durationMs: number) {
       error_code:
         error instanceof DomainError ? error.code : "admin_catalog_failed",
       operation: "admin_therapy_catalog_command",
+    }),
+  );
+}
+
+function logDatabaseFailure(error: unknown, correlationId: string) {
+  if (!(error instanceof SupabaseHttpError)) return;
+
+  console.error(
+    JSON.stringify({
+      correlation_id: correlationId,
+      details: error.safeDetails,
+      operation: "admin_therapy_catalog_command.database",
+      status: error.status,
     }),
   );
 }

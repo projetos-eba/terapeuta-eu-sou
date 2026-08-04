@@ -33,6 +33,10 @@ test.describe("therapist services management", () => {
     await expect(
       page.getByRole("dialog", { name: "Editar serviço" }),
     ).toBeVisible();
+    await page
+      .getByRole("checkbox", { name: /^Relacionamentos \d+ de/ })
+      .check();
+    await page.getByRole("button", { name: "Continuar" }).click();
     await page.getByLabel("Descrição").fill(updatedDescription);
     await page.getByRole("button", { name: "Continuar" }).click();
     await page.getByRole("button", { name: "Salvar alterações" }).click();
@@ -46,8 +50,9 @@ test.describe("therapist services management", () => {
 
     await page.goto("/terapeutas/ana-oliveira");
     await expect(
-      page.getByRole("heading", { name: serviceTitle }),
+      page.getByRole("heading", { name: "Constelação Familiar" }),
     ).toBeVisible();
+    await expect(page.getByText(updatedDescription)).toBeVisible();
 
     await page.goto("/terapeuta/servicos");
     await page.getByRole("button", { name: `Pausar ${serviceTitle}` }).click();
@@ -57,9 +62,7 @@ test.describe("therapist services management", () => {
     ).toBeVisible();
 
     await page.goto("/terapeutas/ana-oliveira");
-    await expect(page.getByRole("heading", { name: serviceTitle })).toHaveCount(
-      0,
-    );
+    await expect(page.getByText(updatedDescription)).toHaveCount(0);
   });
 
   test("keeps the services surface usable across responsive widths", async ({

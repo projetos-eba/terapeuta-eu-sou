@@ -15,6 +15,7 @@ import type {
   MatchingConfig,
   MatchingCalculationResult,
   MatchingSelection,
+  MatchingTherapy,
 } from "./types";
 
 type PublicMatchingConfigRow = {
@@ -30,6 +31,24 @@ type PublicMatchingConfigRow = {
   theme_sort_order: number;
   version: number;
   version_id: string;
+};
+
+type PublicMatchingTherapyThemeRow = {
+  sort_order: number;
+  theme_id: string;
+  therapy_id: string;
+};
+
+type PublicMatchingTherapyRow = {
+  description: string | null;
+  id: string;
+  image_url: string | null;
+  is_visible_in_matching: boolean;
+  name: string;
+  short_description: string;
+  slug: string;
+  status: MatchingTherapy["status"];
+  therapist_count: number | null;
 };
 
 type SupabaseConfig = {
@@ -105,6 +124,63 @@ export async function getPublicMatchingConfig(): Promise<MatchingConfig> {
 }
 
 export async function getMatchingCalculationData(versionId: string) {
+  const config = getSupabaseConfig();
+
+  if (config) {
+    try {
+      const [therapies, themeRows] = await Promise.all([
+        fetchRows<PublicMatchingTherapyRow>(
+          config,
+          "public_matching_therapies_v?select=id,name,slug,short_description,description,image_url,status,therapist_count,is_visible_in_matching",
+          config.apiKey,
+          300,
+          ["matching-config"],
+        ),
+        fetchRows<PublicMatchingTherapyThemeRow>(
+          config,
+          "public_matching_therapy_themes_v?select=therapy_id,theme_id,sort_order&order=sort_order.asc",
+          config.apiKey,
+          300,
+          ["matching-config"],
+        ),
+      ]);
+      const themeIdsByTherapy = new Map<string, string[]>();
+      const sortOrderByTherapy = new Map<string, number>();
+
+      for (const row of themeRows) {
+        themeIdsByTherapy.set(row.therapy_id, [
+          ...(themeIdsByTherapy.get(row.therapy_id) ?? []),
+          row.theme_id,
+        ]);
+        sortOrderByTherapy.set(
+          row.therapy_id,
+          Math.min(sortOrderByTherapy.get(row.therapy_id) ?? row.sort_order, row.sort_order),
+        );
+      }
+
+      return {
+        source: "supabase" as const,
+        therapies: therapies.map((therapy) => ({
+          description: therapy.description ?? therapy.short_description,
+          id: therapy.id,
+          imageUrl: therapy.image_url,
+          isVisibleInMatching: therapy.is_visible_in_matching,
+          name: therapy.name,
+          shortDescription: therapy.short_description,
+          slug: therapy.slug,
+          sortOrder: sortOrderByTherapy.get(therapy.id) ?? 9999,
+          status: therapy.status,
+          therapistCount: therapy.therapist_count ?? 0,
+          themeIds: themeIdsByTherapy.get(therapy.id) ?? [],
+        })),
+        versionId: versionId || fallbackMatchingVersionId,
+        weights: [],
+      };
+    } catch {
+      // Fallback remains explicit to this server branch and is reported in source.
+    }
+  }
+
   return {
     source: "fallback" as const,
     therapies: fallbackMatchingTherapies,
