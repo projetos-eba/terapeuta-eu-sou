@@ -41,7 +41,7 @@ export function TherapistAuthShell({
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col items-center justify-center gap-8">
         <PublicLogo />
         <section className="grid w-full overflow-hidden rounded-hero border border-border bg-surface-default shadow-float lg:grid-cols-[0.92fr_1.08fr]">
-          <aside className="order-2 flex flex-col justify-between gap-10 bg-brand-primary px-7 py-8 text-white sm:px-10 lg:order-1 lg:min-h-[760px] lg:px-12 lg:py-12">
+          <aside className="pointer-events-none order-2 flex flex-col justify-between gap-10 bg-brand-primary px-7 py-8 text-white sm:px-10 lg:order-1 lg:min-h-[760px] lg:px-12 lg:py-12">
             <div>
               <p className="text-xs font-extrabold uppercase tracking-[0.28em] text-white/75">
                 {eyebrow}

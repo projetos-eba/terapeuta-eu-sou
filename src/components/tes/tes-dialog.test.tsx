@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TESDialog } from "./tes-dialog";
@@ -47,5 +48,34 @@ describe("TESDialog", () => {
     expect(onClose).toHaveBeenCalledOnce();
 
     expect(document.body.style.overflow).toBe("hidden");
+  });
+
+  it("keeps focus inside the active input when the parent rerenders", async () => {
+    function RerenderingDialog() {
+      const [value, setValue] = useState("");
+
+      return (
+        <TESDialog onClose={() => undefined} title="Novo tema">
+          <label>
+            Nome
+            <input
+              aria-label="Nome"
+              onChange={(event) => setValue(event.target.value)}
+              value={value}
+            />
+          </label>
+          <button type="button">Salvar</button>
+        </TESDialog>
+      );
+    }
+
+    render(<RerenderingDialog />);
+
+    const input = await screen.findByLabelText("Nome");
+    input.focus();
+    fireEvent.change(input, { target: { value: "Emoções" } });
+
+    expect(input).toHaveFocus();
+    expect(input).toHaveValue("Emoções");
   });
 });

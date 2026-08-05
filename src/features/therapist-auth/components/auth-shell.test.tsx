@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { TherapistPlan } from "@/domain/tes";
 
 import { TherapistAuthShell } from "./auth-shell";
-import { TherapistSignupForm } from "./signup-form";
+import { TherapistPlanSelection, TherapistSignupForm } from "./signup-form";
 
 describe("therapist authentication UI", () => {
   it("uses the TES purple panel and concise contextual copy", () => {
@@ -30,5 +30,22 @@ describe("therapist authentication UI", () => {
         /Informações do perfil público não bloqueiam este primeiro acesso/i,
       ),
     ).not.toBeInTheDocument();
+  });
+
+  it("renders a plan selection step before the therapist signup form", () => {
+    render(<TherapistPlanSelection />);
+
+    expect(
+      screen.getByRole("heading", { name: "Escolha seu plano" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Selecionar Free" }),
+    ).toHaveAttribute("href", "/terapeuta/cadastro?plan=free");
+    expect(
+      screen.getByRole("link", { name: "Selecionar Premium" }),
+    ).toHaveAttribute("href", "/terapeuta/cadastro?plan=premium");
+    expect(
+      screen.getByRole("link", { name: "Selecionar Premium Plus" }),
+    ).toHaveAttribute("href", "/terapeuta/cadastro?plan=premium_plus");
   });
 });

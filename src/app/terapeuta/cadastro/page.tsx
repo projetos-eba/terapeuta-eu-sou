@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 
+import { PublicLogo } from "@/components/tes";
+import { TherapistPlan } from "@/domain/tes";
 import {
   normalizeTherapistPlan,
   TherapistAuthShell,
+  TherapistPlanSelection,
   TherapistSignupForm,
 } from "@/features/therapist-auth";
 
@@ -24,7 +27,24 @@ export default async function TherapistSignupPage({
   }>;
 }) {
   const params = await searchParams;
-  const plan = normalizeTherapistPlan(params?.plan);
+  const requestedPlan = params?.plan;
+
+  if (
+    requestedPlan !== TherapistPlan.Free &&
+    requestedPlan !== TherapistPlan.Premium &&
+    requestedPlan !== TherapistPlan.PremiumPlus
+  ) {
+    return (
+      <main className="min-h-screen bg-surface-soft px-5 py-8 text-brand-deep sm:px-8">
+        <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col items-center justify-center gap-8">
+          <PublicLogo />
+          <TherapistPlanSelection />
+        </div>
+      </main>
+    );
+  }
+
+  const plan = normalizeTherapistPlan(requestedPlan);
 
   return (
     <TherapistAuthShell

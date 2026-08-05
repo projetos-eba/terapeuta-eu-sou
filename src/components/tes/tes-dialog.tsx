@@ -31,9 +31,14 @@ export function TESDialog({
   title,
 }: TESDialogProps) {
   const [mounted, setMounted] = useState(false);
+  const onCloseRef = useRef(onClose);
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const descriptionId = useId();
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   useEffect(() => {
     setMounted(true);
@@ -53,7 +58,7 @@ export function TESDialog({
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
 
@@ -85,7 +90,7 @@ export function TESDialog({
       document.body.style.overflow = previousOverflow;
       previouslyFocused?.focus();
     };
-  }, [mounted, onClose]);
+  }, [mounted]);
 
   if (!mounted) return null;
 
@@ -94,7 +99,7 @@ export function TESDialog({
       className="fixed inset-0 z-overlay flex items-end justify-center bg-[var(--tes-color-overlay)] p-0 backdrop-blur-[2px] sm:items-center sm:p-6"
       data-testid="tes-dialog-overlay"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) onCloseRef.current();
       }}
     >
       <div

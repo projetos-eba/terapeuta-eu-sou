@@ -12,11 +12,12 @@ export default function AdminLoginPage() {
             height={58}
             priority
             src="/logo-oficial-terapeuta-eu-sou.png"
+            style={{ height: "58px", width: "144px" }}
             width={144}
           />
         </div>
         <section className="grid overflow-hidden rounded-[24px] border border-brand-lavender bg-white shadow-float lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="bg-brand-deep p-8 text-white sm:p-10">
+          <div className="order-2 bg-[linear-gradient(135deg,var(--tes-color-brand-primary)_0%,var(--tes-color-brand-primary-hover)_100%)] p-8 text-white sm:p-10 lg:order-1">
             <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-white/70">
               Operação segura
             </p>
@@ -28,7 +29,7 @@ export default function AdminLoginPage() {
               registram impacto e auditoria.
             </p>
           </div>
-          <div className="p-6 sm:p-10">
+          <div className="order-1 p-6 sm:p-10 lg:order-2">
             <AdminLoginForm />
           </div>
         </section>

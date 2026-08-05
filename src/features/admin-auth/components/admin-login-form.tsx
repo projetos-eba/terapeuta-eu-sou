@@ -56,7 +56,11 @@ export function AdminLoginForm() {
   }
 
   return (
-    <form className="space-y-5" noValidate onSubmit={handleSubmit}>
+    <form
+      className="relative z-10 space-y-5"
+      noValidate
+      onSubmit={handleSubmit}
+    >
       <div>
         <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
           Admin TES
@@ -99,7 +103,7 @@ export function AdminLoginForm() {
       />
 
       <TESButton
-        className="min-h-12 w-full rounded-2xl text-base"
+        className="relative z-10 min-h-12 w-full rounded-2xl text-base"
         disabled={isSubmitting}
         size="lg"
         type="submit"

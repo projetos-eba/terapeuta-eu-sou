@@ -50,7 +50,11 @@ export const getAdminTherapyCatalogPage = cache(
         accessToken,
         { action: "list" },
       );
-      const enrichedPayload = await enrichWithMatchingThemes(config, payload);
+      const enrichedPayload = await enrichWithMatchingThemes(
+        config,
+        accessToken,
+        payload,
+      );
 
       return {
         catalog: parseAdminTherapyCatalogContract(enrichedPayload),
@@ -71,7 +75,7 @@ export const getAdminTherapyCatalogPage = cache(
 async function callAdminTherapyCatalogEdge<T>(
   supabaseUrl: string,
   accessToken: string,
-  body: { action: "list" },
+  body: { action: "list" } | { action: "matchingList" },
 ) {
   const response = await fetch(
     `${supabaseUrl}/functions/v1/admin-therapy-catalog-command`,
@@ -99,10 +103,12 @@ async function callAdminTherapyCatalogEdge<T>(
 }
 
 type MatchingThemeRow = {
-  theme_id: string;
-  theme_name: string;
-  theme_slug: string;
-  theme_sort_order: number;
+  id: string;
+  imageUrl: string | null;
+  isActive: boolean;
+  name: string;
+  slug: string;
+  sortOrder: number;
 };
 
 type TherapyThemeRow = {
@@ -113,27 +119,26 @@ type TherapyThemeRow = {
 
 async function enrichWithMatchingThemes(
   config: { apiKey: string; url: string },
+  accessToken: string,
   payload: unknown,
 ) {
   if (!isRecord(payload)) return payload;
 
   try {
-    const [matchingConfigRows, therapyThemeRows] = await Promise.all([
-      fetchRestRows<MatchingThemeRow>(
-        config,
-        "public_matching_config?select=theme_id,theme_name,theme_slug,theme_sort_order&order=theme_sort_order.asc",
-      ),
-      fetchRestRows<TherapyThemeRow>(
-        config,
-        "public_matching_therapy_themes_v?select=therapy_id,theme_id,sort_order&order=sort_order.asc",
-      ),
-    ]);
-    const themesById = new Map<string, MatchingThemeRow>();
+    const matchingPayload = await callAdminTherapyCatalogEdge<unknown>(
+      config.url,
+      accessToken,
+      {
+        action: "matchingList",
+      },
+    );
+    const themes = parseAdminMatchingThemes(matchingPayload);
+    const therapyThemeRows = await fetchAdminRestRows<TherapyThemeRow>(
+      config,
+      accessToken,
+      "public_matching_therapy_themes_v?select=therapy_id,theme_id,sort_order&order=sort_order.asc",
+    ).catch(() => []);
     const themeIdsByTherapyId = new Map<string, string[]>();
-
-    for (const row of matchingConfigRows) {
-      themesById.set(row.theme_id, row);
-    }
 
     for (const row of therapyThemeRows) {
       themeIdsByTherapyId.set(row.therapy_id, [
@@ -149,38 +154,74 @@ async function enrichWithMatchingThemes(
             isRecord(item)
               ? {
                   ...item,
-                  matchingThemeIds: themeIdsByTherapyId.get(String(item.id)) ?? [],
+                  matchingThemeIds:
+                    themeIdsByTherapyId.get(String(item.id)) ?? [],
                 }
               : item,
           )
         : payload.items,
-      matchingThemes: Array.from(themesById.values())
+      matchingThemes: themes
+        .filter((theme) => theme.isActive)
         .map((theme) => ({
-          id: theme.theme_id,
-          name: theme.theme_name,
-          slug: theme.theme_slug,
-          sortOrder: theme.theme_sort_order,
+          id: theme.id,
+          imageUrl: theme.imageUrl,
+          name: theme.name,
+          slug: theme.slug,
+          sortOrder: theme.sortOrder,
         }))
         .sort((first, second) => first.sortOrder - second.sortOrder),
     };
   } catch {
-    return {
-      ...payload,
-      matchingThemes: [],
-    };
+    try {
+      const therapyThemeRows = await fetchAdminRestRows<TherapyThemeRow>(
+        config,
+        accessToken,
+        "public_matching_therapy_themes_v?select=therapy_id,theme_id,sort_order&order=sort_order.asc",
+      );
+      const themeIdsByTherapyId = new Map<string, string[]>();
+
+      for (const row of therapyThemeRows) {
+        themeIdsByTherapyId.set(row.therapy_id, [
+          ...(themeIdsByTherapyId.get(row.therapy_id) ?? []),
+          row.theme_id,
+        ]);
+      }
+
+      return {
+        ...payload,
+        items: Array.isArray(payload.items)
+          ? payload.items.map((item) =>
+              isRecord(item)
+                ? {
+                    ...item,
+                    matchingThemeIds:
+                      themeIdsByTherapyId.get(String(item.id)) ?? [],
+                  }
+                : item,
+            )
+          : payload.items,
+        matchingThemes: [],
+      };
+    } catch {
+      return {
+        ...payload,
+        matchingThemes: [],
+      };
+    }
   }
 }
 
-async function fetchRestRows<T>(
+async function fetchAdminRestRows<T>(
   config: { apiKey: string; url: string },
+  accessToken: string,
   query: string,
 ) {
   const response = await fetch(`${config.url}/rest/v1/${query}`, {
+    cache: "no-store",
     headers: {
       apikey: config.apiKey,
-      Authorization: `Bearer ${config.apiKey}`,
+      Authorization: `Bearer ${accessToken}`,
     },
-    next: { revalidate: 300, tags: ["admin-matching"] },
   });
 
   if (!response.ok) throw new Error("Admin matching REST fetch failed.");
@@ -189,4 +230,32 @@ async function fetchRestRows<T>(
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function parseAdminMatchingThemes(payload: unknown): MatchingThemeRow[] {
+  if (!isRecord(payload) || !Array.isArray(payload.themes)) return [];
+
+  return payload.themes
+    .filter(isRecord)
+    .map((theme) => ({
+      id: asString(theme.id),
+      imageUrl: asNullableString(theme.imageUrl),
+      isActive: theme.isActive === true,
+      name: asString(theme.name),
+      slug: asString(theme.slug),
+      sortOrder: asNumber(theme.sortOrder),
+    }))
+    .filter((theme) => theme.id && theme.name && theme.slug);
+}
+
+function asString(value: unknown) {
+  return typeof value === "string" ? value : "";
+}
+
+function asNullableString(value: unknown) {
+  return typeof value === "string" && value ? value : null;
+}
+
+function asNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }

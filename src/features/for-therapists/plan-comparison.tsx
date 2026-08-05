@@ -168,7 +168,9 @@ function getMobilePrimaryFeatures(plan: PlanDefinition) {
   return therapistPlanFeatureDefinitions
     .filter((feature) => feature.minimumPlan === featureMinimumPlan)
     .map((feature) => getPlanFeatureDefinition(feature.code))
-    .filter((feature): feature is NonNullable<typeof feature> => Boolean(feature))
+    .filter((feature): feature is NonNullable<typeof feature> =>
+      Boolean(feature),
+    )
     .slice(0, 5);
 }
 
@@ -224,8 +226,14 @@ function PlanCard({ plan }: { plan: PlanDefinition }) {
                 </h4>
                 <ul className="mt-3 space-y-2">
                   {categoryFeatures.map((feature) => {
-                    const included = planIncludesFeature(plan.code, feature.code);
-                    const cellState = getFeatureCellState(plan.code, feature.code);
+                    const included = planIncludesFeature(
+                      plan.code,
+                      feature.code,
+                    );
+                    const cellState = getFeatureCellState(
+                      plan.code,
+                      feature.code,
+                    );
                     const hasFeature =
                       included ||
                       cellState.type === "text" ||
@@ -331,14 +339,14 @@ export function PlansPreviewSection() {
                       <th
                         colSpan={4}
                         scope="colgroup"
-                        className="border-t border-brand-primary/40 bg-brand-primary px-5 py-4 text-left text-xs font-extrabold uppercase leading-4 tracking-[0.02em] text-white"
+                        className="border-t border-brand-lavender/70 bg-brand-lavenderSoft px-5 py-4 text-left text-xs font-extrabold uppercase leading-4 tracking-[0.02em] text-brand-deep"
                       >
                         <span className="flex items-center gap-3">
                           {(() => {
                             const Icon = categoryIcons[category];
 
                             return (
-                              <span className="grid size-8 place-items-center rounded-full bg-white/14">
+                              <span className="grid size-8 place-items-center rounded-full bg-white text-brand-primary shadow-card">
                                 <Icon className="size-4" aria-hidden="true" />
                               </span>
                             );
@@ -350,7 +358,10 @@ export function PlansPreviewSection() {
                     {therapistPlanFeatureDefinitions
                       .filter((feature) => feature.category === category)
                       .map((feature) => (
-                        <tr key={feature.code} className="border-t border-border/80">
+                        <tr
+                          key={feature.code}
+                          className="border-t border-border/80"
+                        >
                           <th className="bg-white px-5 py-2.5 text-left align-middle">
                             <span className="block text-xs font-extrabold leading-4 text-brand-deep">
                               {feature.label}
@@ -362,7 +373,10 @@ export function PlansPreviewSection() {
                               className="border-l border-border px-5 py-2.5 text-center align-middle"
                             >
                               <FeatureState
-                                state={getFeatureCellState(plan.code, feature.code)}
+                                state={getFeatureCellState(
+                                  plan.code,
+                                  feature.code,
+                                )}
                                 label={`${plan.name} ${feature.label}`}
                               />
                             </td>
@@ -379,8 +393,8 @@ export function PlansPreviewSection() {
                       Assinatura
                     </span>
                     <span className="mt-2 block max-w-xs text-xs font-bold leading-5 text-tesText-secondary">
-                      O cadastro envia apenas o código do plano. Preço e liberação
-                      futura são confirmados pelo backend.
+                      O cadastro envia apenas o código do plano. Preço e
+                      liberação futura são confirmados pelo backend.
                     </span>
                   </th>
                   {therapistPlanDefinitions.map((plan) => (
