@@ -20,6 +20,7 @@ export type AdminTherapyCategory = {
 
 export type AdminMatchingTheme = {
   id: string;
+  imageUrl: string | null;
   name: string;
   slug: string;
   sortOrder: number;

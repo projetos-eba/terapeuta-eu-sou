@@ -38,6 +38,13 @@ Use esta skill ao implementar, auditar ou refatorar o fluxo inicial de autentica
 
 ## Cadastro
 
+- `/terapeuta/cadastro` sem `plan` mostra a etapa previa de escolha entre Free,
+  Premium e Premium Plus, usando `src/domain/tes/plan-definitions.ts`.
+- A etapa previa de escolha de plano usa layout limpo, sem a coluna contextual
+  roxa do shell de autenticação.
+- O formulário de dados pessoais aparece somente após seleção explícita do
+  plano em `/terapeuta/cadastro?plan=free|premium|premium_plus`.
+
 Campos obrigatórios:
 
 - nome completo;
@@ -47,7 +54,7 @@ Campos obrigatórios:
 - senha;
 - confirmação de senha;
 - aceite de termos e privacidade;
-- plano pretendido por query param opcional, com fallback `free`.
+- plano pretendido por query param validado.
 
 Validações:
 

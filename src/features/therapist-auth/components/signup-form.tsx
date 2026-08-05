@@ -3,11 +3,26 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { Eye, LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
+import {
+  Check,
+  Eye,
+  Gem,
+  LockKeyhole,
+  Mail,
+  Phone,
+  Star,
+  UserRound,
+} from "lucide-react";
 
 import { TESButton } from "@/components/tes";
-import type { TherapistPlan } from "@/domain/tes";
+import {
+  TherapistPlan,
+  getPlanFeatureDefinition,
+  therapistPlanDefinitions,
+  type PlanDefinition,
+} from "@/domain/tes";
 import { routes } from "@/lib/routes";
+import { cn } from "@/lib/utils";
 
 import type { TherapistAuthApiError } from "../errors";
 import type { TherapistAuthFieldErrors } from "../types";
@@ -16,6 +31,115 @@ import { getTherapistPlanLabel } from "../validation";
 type SignupResponse =
   | { ok: true; redirectTo: string }
   | ({ ok: false } & TherapistAuthApiError);
+
+export function TherapistPlanSelection() {
+  return (
+    <section className="w-full space-y-8">
+      <div className="mx-auto max-w-3xl text-center">
+        <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
+          Cadastro inicial
+        </p>
+        <h1 className="mt-3 font-display text-5xl font-light italic leading-tight text-brand-deep sm:text-6xl">
+          Escolha seu plano
+        </h1>
+        <p className="mx-auto mt-3 max-w-2xl text-base font-semibold leading-7 text-tesText-secondary">
+          A conta nasce segura no TES. Recursos pagos só são liberados depois da
+          confirmação da assinatura pelo Stripe.
+        </p>
+      </div>
+
+      <div className="grid w-full gap-5 md:grid-cols-3">
+        {therapistPlanDefinitions.map((plan) => (
+          <PlanSelectionCard key={plan.code} plan={plan} />
+        ))}
+      </div>
+
+      <p className="text-center text-sm font-bold text-tesText-secondary">
+        Já tem uma conta?{" "}
+        <Link
+          href={routes.public.therapistSignIn}
+          className="inline-flex min-h-11 items-center text-brand-primary hover:underline"
+        >
+          Entrar como terapeuta
+        </Link>
+      </p>
+    </section>
+  );
+}
+
+function PlanSelectionCard({ plan }: { plan: PlanDefinition }) {
+  const Icon =
+    plan.code === TherapistPlan.PremiumPlus
+      ? Gem
+      : plan.code === TherapistPlan.Premium
+        ? Star
+        : UserRound;
+  const primaryFeatures = plan.features
+    .map((featureCode) => getPlanFeatureDefinition(featureCode))
+    .filter((feature): feature is NonNullable<typeof feature> =>
+      Boolean(feature),
+    )
+    .slice(0, 3);
+
+  return (
+    <article
+      className={cn(
+        "flex h-full flex-col rounded-2xl border bg-white p-5 shadow-card",
+        plan.highlight
+          ? "border-brand-primary ring-4 ring-brand-lavenderSoft"
+          : "border-border",
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <span
+          className={cn(
+            "grid size-11 place-items-center rounded-full",
+            plan.highlight
+              ? "bg-brand-primary text-white"
+              : "bg-brand-lavenderSoft text-brand-primary",
+          )}
+        >
+          <Icon className="size-5" aria-hidden="true" />
+        </span>
+        {plan.highlight ? (
+          <span className="rounded-full bg-brand-lavenderSoft px-3 py-1 text-[11px] font-extrabold uppercase text-brand-primary">
+            Recomendado
+          </span>
+        ) : null}
+      </div>
+      <h2 className="mt-5 text-xl font-extrabold text-brand-deep">
+        {plan.name}
+      </h2>
+      <p className="mt-1 min-h-10 text-sm font-semibold leading-5 text-tesText-secondary">
+        {plan.subtitle}
+      </p>
+      <p className="mt-4 font-display text-3xl font-semibold italic text-brand-deep">
+        {plan.priceLabel}
+      </p>
+      <p className="mt-1 text-xs font-bold leading-5 text-tesText-muted">
+        {plan.priceNote}
+      </p>
+      <ul className="mt-5 space-y-2">
+        {primaryFeatures.map((feature) => (
+          <li
+            key={feature.code}
+            className="flex items-start gap-2 text-xs font-bold leading-5 text-tesText-secondary"
+          >
+            <Check className="mt-0.5 size-4 shrink-0 text-status-success" />
+            <span>{feature.label}</span>
+          </li>
+        ))}
+      </ul>
+      <TESButton
+        href={plan.signupHref}
+        variant={plan.highlight ? "gradient" : "secondary"}
+        className="mt-5 min-h-11 w-full rounded-2xl xl:mt-auto"
+      >
+        Selecionar {plan.name}
+      </TESButton>
+    </article>
+  );
+}
 
 export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
   const [fieldErrors, setFieldErrors] = useState<TherapistAuthFieldErrors>({});
@@ -185,7 +309,7 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
         Já tem uma conta?{" "}
         <Link
           href={routes.public.therapistSignIn}
-          className="text-brand-primary hover:underline"
+          className="inline-flex min-h-11 items-center text-brand-primary hover:underline"
         >
           Entrar como terapeuta
         </Link>
@@ -227,6 +351,7 @@ function Field({
           id={name}
           name={name}
           type={type}
+          suppressHydrationWarning
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
           className="min-h-12 w-full bg-transparent text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-subtle"

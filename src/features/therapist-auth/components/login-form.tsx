@@ -195,11 +195,11 @@ export function TherapistLoginForm({
         {isSubmitting ? "Entrando..." : "Entrar como terapeuta"}
       </TESButton>
 
-      <p className="relative z-0 text-center text-sm font-bold text-tesText-secondary">
+      <p className="relative z-30 text-center text-sm font-bold text-tesText-secondary">
         Ainda não tem conta?{" "}
         <Link
           href={routes.public.therapistSignUp}
-          className="text-brand-primary hover:underline"
+          className="inline-flex min-h-11 items-center text-brand-primary hover:underline"
         >
           Criar cadastro inicial
         </Link>
@@ -241,6 +241,7 @@ function Field({
           id={name}
           name={name}
           type={type}
+          suppressHydrationWarning
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
           className="min-h-12 w-full bg-transparent text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-subtle"

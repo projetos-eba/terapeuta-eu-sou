@@ -3,6 +3,7 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import {
   Activity,
+  ImagePlus,
   GitBranch,
   Loader2,
   Pencil,
@@ -66,10 +67,17 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
   const [matching, setMatching] = useState(initialMatching);
   const [query, setQuery] = useState("");
   const [themeDraft, setThemeDraft] = useState<ThemeDraft | null>(null);
-  const [interestDraft, setInterestDraft] = useState<InterestDraft | null>(null);
+  const [isThemeSlugTouched, setIsThemeSlugTouched] = useState(false);
+  const [interestDraft, setInterestDraft] = useState<InterestDraft | null>(
+    null,
+  );
+  const [isInterestSlugTouched, setIsInterestSlugTouched] = useState(false);
   const [transitionDraft, setTransitionDraft] =
     useState<TransitionDraft | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [themeUploadStatus, setThemeUploadStatus] = useState<string | null>(
+    null,
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   const filteredThemes = useMemo(() => {
@@ -84,13 +92,16 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
       );
 
       return (
-        `${theme.name} ${theme.slug}`.toLocaleLowerCase("pt-BR").includes(normalized) ||
-        interestMatch
+        `${theme.name} ${theme.slug}`
+          .toLocaleLowerCase("pt-BR")
+          .includes(normalized) || interestMatch
       );
     });
   }, [matching.themes, query]);
 
-  const activeThemeCount = matching.themes.filter((theme) => theme.isActive).length;
+  const activeThemeCount = matching.themes.filter(
+    (theme) => theme.isActive,
+  ).length;
   const interestCount = matching.themes.reduce(
     (total, theme) => total + theme.interests.length,
     0,
@@ -108,6 +119,8 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
 
   function openTheme(theme?: AdminMatchingTheme) {
     setError(null);
+    setThemeUploadStatus(null);
+    setIsThemeSlugTouched(Boolean(theme));
     setThemeDraft(
       theme
         ? {
@@ -123,8 +136,12 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
     );
   }
 
-  function openInterest(theme: AdminMatchingTheme, interest?: AdminMatchingInterest) {
+  function openInterest(
+    theme: AdminMatchingTheme,
+    interest?: AdminMatchingInterest,
+  ) {
     setError(null);
+    setIsInterestSlugTouched(Boolean(interest));
     setInterestDraft(
       interest
         ? {
@@ -245,7 +262,10 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
       <section className="grid gap-4 md:grid-cols-3">
         <MetricCard label="Temas ativos" value={activeThemeCount} />
         <MetricCard label="Refinamentos" value={interestCount} />
-        <MetricCard label="Vínculos operacionais" value={impactedServiceCount} />
+        <MetricCard
+          label="Vínculos operacionais"
+          value={impactedServiceCount}
+        />
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -314,13 +334,27 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
             <TextField
               label="Nome"
               value={themeDraft.name}
-              onChange={(value) => setThemeDraft({ ...themeDraft, name: value })}
+              onChange={(value) =>
+                setThemeDraft({
+                  ...themeDraft,
+                  name: value,
+                  slug: isThemeSlugTouched
+                    ? themeDraft.slug
+                    : slugifyMatchEntity(value),
+                })
+              }
               required
             />
             <TextField
               label="Slug"
               value={themeDraft.slug}
-              onChange={(value) => setThemeDraft({ ...themeDraft, slug: value })}
+              onChange={(value) => {
+                setIsThemeSlugTouched(true);
+                setThemeDraft({
+                  ...themeDraft,
+                  slug: slugifyMatchEntity(value),
+                });
+              }}
               pattern="[a-z0-9]+(-[a-z0-9]+)*"
               required
             />
@@ -332,10 +366,26 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
               }
               required
             />
-            <TextField
-              label="Imagem"
+            <ThemeImageField
               value={themeDraft.imageUrl}
-              onChange={(value) => setThemeDraft({ ...themeDraft, imageUrl: value })}
+              uploadStatus={themeUploadStatus}
+              onChange={(value) =>
+                setThemeDraft({ ...themeDraft, imageUrl: value })
+              }
+              onUpload={async (file) => {
+                setThemeUploadStatus("Enviando imagem...");
+                const result = await uploadThemeImage(file);
+                if (result.ok) {
+                  setThemeDraft((current) => ({
+                    ...(current ?? themeDraft),
+                    imageUrl: result.publicUrl,
+                  }));
+                  setThemeUploadStatus("Imagem enviada com sucesso.");
+                  return;
+                }
+
+                setThemeUploadStatus(result.message);
+              }}
             />
             <TextField
               label="Ordem"
@@ -349,7 +399,9 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
             <TextArea
               label="Motivo"
               value={themeDraft.reason}
-              onChange={(value) => setThemeDraft({ ...themeDraft, reason: value })}
+              onChange={(value) =>
+                setThemeDraft({ ...themeDraft, reason: value })
+              }
               required
             />
             <DialogActions error={error} isSaving={isSaving} />
@@ -361,23 +413,35 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
         <TESDialog
           description="Refinamentos sempre pertencem ao tema selecionado."
           onClose={() => setInterestDraft(null)}
-          title={interestDraft.interestId ? "Editar refinamento" : "Novo refinamento"}
+          title={
+            interestDraft.interestId ? "Editar refinamento" : "Novo refinamento"
+          }
         >
           <form onSubmit={submitInterest} className="space-y-4">
             <TextField
               label="Nome"
               value={interestDraft.name}
               onChange={(value) =>
-                setInterestDraft({ ...interestDraft, name: value })
+                setInterestDraft({
+                  ...interestDraft,
+                  name: value,
+                  slug: isInterestSlugTouched
+                    ? interestDraft.slug
+                    : slugifyMatchEntity(value),
+                })
               }
               required
             />
             <TextField
               label="Slug"
               value={interestDraft.slug}
-              onChange={(value) =>
-                setInterestDraft({ ...interestDraft, slug: value })
-              }
+              onChange={(value) => {
+                setIsInterestSlugTouched(true);
+                setInterestDraft({
+                  ...interestDraft,
+                  slug: slugifyMatchEntity(value),
+                });
+              }}
               pattern="[a-z0-9]+(-[a-z0-9]+)*"
               required
             />
@@ -439,7 +503,10 @@ function ThemePanel({
   onTransition,
   theme,
 }: {
-  onEditInterest: (theme: AdminMatchingTheme, interest?: AdminMatchingInterest) => void;
+  onEditInterest: (
+    theme: AdminMatchingTheme,
+    interest?: AdminMatchingInterest,
+  ) => void;
   onEditTheme: (theme: AdminMatchingTheme) => void;
   onTransition: (draft: TransitionDraft) => void;
   theme: AdminMatchingTheme;
@@ -646,6 +713,125 @@ function TextField({
   );
 }
 
+function ThemeImageField({
+  onChange,
+  onUpload,
+  uploadStatus,
+  value,
+}: {
+  onChange: (value: string) => void;
+  onUpload: (file: File) => Promise<void>;
+  uploadStatus: string | null;
+  value: string;
+}) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <span className="text-sm font-extrabold text-brand-deep">Imagem</span>
+        <p className="mt-1 text-xs font-bold text-tesText-secondary">
+          Use as imagens da Sua Jornada como referência visual ou envie uma nova
+          imagem para este tema.
+        </p>
+      </div>
+      <div className="grid gap-4 rounded-2xl border border-brand-lavender bg-surface-soft p-3 sm:grid-cols-[180px_minmax(0,1fr)]">
+        <ThemeImagePreview imageUrl={value} />
+        <div className="space-y-3">
+          <label className="block">
+            <span className="text-xs font-extrabold text-brand-deep">
+              URL da imagem
+            </span>
+            <input
+              className="mt-2 min-h-11 w-full rounded-md border border-border bg-white px-4 text-sm font-bold text-tesText-primary outline-none focus:ring-4 focus:ring-ring/20"
+              onChange={(event) => onChange(event.target.value)}
+              placeholder="/journey/emocoes-bem-estar.png"
+              type="text"
+              value={value}
+            />
+          </label>
+          <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-full border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-within:ring-4 focus-within:ring-ring/20">
+            <ImagePlus className="size-4" aria-hidden="true" />
+            Enviar arquivo
+            <input
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void onUpload(file);
+                event.currentTarget.value = "";
+              }}
+              type="file"
+            />
+          </label>
+          {uploadStatus ? (
+            <p className="text-xs font-bold text-tesText-secondary">
+              {uploadStatus}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ThemeImagePreview({ imageUrl }: { imageUrl: string }) {
+  if (!imageUrl) {
+    return (
+      <div className="grid aspect-[4/3] place-items-center rounded-xl border border-dashed border-brand-lavender bg-white text-xs font-extrabold text-brand-primary">
+        Preview
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      alt="Preview da imagem do tema"
+      className="aspect-[4/3] w-full rounded-xl bg-white object-cover"
+      loading="lazy"
+      src={imageUrl}
+    />
+  );
+}
+
+async function uploadThemeImage(file: File) {
+  const formData = new FormData();
+  formData.set("context", "matching-theme");
+  formData.set("file", file);
+
+  try {
+    const response = await fetch("/api/admin/media", {
+      body: formData,
+      method: "POST",
+    });
+    const payload = (await response.json().catch(() => null)) as {
+      data?: { publicUrl?: unknown };
+      error?: { message?: unknown };
+      ok?: boolean;
+    } | null;
+
+    if (
+      response.ok &&
+      payload?.ok &&
+      typeof payload.data?.publicUrl === "string"
+    ) {
+      return { ok: true as const, publicUrl: payload.data.publicUrl };
+    }
+
+    return {
+      message:
+        typeof payload?.error?.message === "string"
+          ? payload.error.message
+          : "Não foi possível enviar a imagem agora.",
+      ok: false as const,
+    };
+  } catch {
+    return {
+      message: "Não foi possível conectar para enviar a imagem.",
+      ok: false as const,
+    };
+  }
+}
+
 function TextArea({
   label,
   onChange,
@@ -695,4 +881,13 @@ function DialogActions({
       </button>
     </div>
   );
+}
+
+function slugifyMatchEntity(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }

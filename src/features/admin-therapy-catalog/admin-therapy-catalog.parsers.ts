@@ -48,6 +48,7 @@ function parseMatchingTheme(value: unknown): AdminMatchingTheme {
 
   return {
     id: asString(record.id),
+    imageUrl: asNullableString(record.imageUrl),
     name: asString(record.name),
     slug: asString(record.slug),
     sortOrder: asNumber(record.sortOrder),
