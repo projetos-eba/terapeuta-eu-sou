@@ -163,7 +163,9 @@ A estrutura local fica em `supabase/`:
 
 - `supabase/config.toml`: configuração local da CLI.
 - `supabase/migrations/`: migrations do banco.
-- `supabase/seed.sql`: seed mínimo do catálogo e pesos de match.
+- `supabase/seeds/catalog.sql`: catálogo institucional de terapias e Match, seguro para aplicação manual em homologação.
+- `supabase/seeds/local-test-data.sql`: fixtures locais de usuários, perfis, serviços, agenda, pagamentos e demais dados de desenvolvimento.
+- `supabase/seed.sql`: nota de compatibilidade; a CLI carrega os seeds por `[db.seed].sql_paths`.
 - `supabase/functions/match-therapies`: primeira Edge Function determinística.
 
 Com Docker ativo:
