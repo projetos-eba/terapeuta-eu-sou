@@ -9,6 +9,8 @@ const therapistEmail =
   process.env.THERAPIST_E2E_EMAIL ?? "ana.oliveira@example.test";
 const therapistPassword =
   process.env.THERAPIST_E2E_PASSWORD ?? "tes-mock-password";
+const adminEmail = process.env.ADMIN_E2E_EMAIL ?? "invalid-admin@example.test";
+const adminPassword = process.env.ADMIN_E2E_PASSWORD ?? "invalid-password";
 
 const artifactRoot = ".tmp/playwright-auth-click";
 
@@ -73,6 +75,40 @@ test.describe("auth real click regression", () => {
       });
     }
   }
+
+  for (const viewport of viewports) {
+    test(`admin login button accepts a real click on ${viewport.label}`, async ({
+      browser,
+      baseURL,
+    }, testInfo) => {
+      const result = await runAdminLoginClickScenario(browser, {
+        baseURL: baseURL ?? "http://localhost:3000",
+        viewport,
+      });
+
+      await testInfo.attach("hit-test-before-click.json", {
+        body: JSON.stringify(result.hitTest, null, 2),
+        contentType: "application/json",
+      });
+      await testInfo.attach("screenshot-before-click", {
+        path: result.beforeScreenshotPath,
+        contentType: "image/png",
+      });
+      await testInfo.attach("screenshot-after-click", {
+        path: result.afterScreenshotPath,
+        contentType: "image/png",
+      });
+      if (result.videoPath) {
+        await testInfo.attach("video", {
+          path: result.videoPath,
+          contentType: "video/webm",
+        });
+      }
+
+      expect(result.hitTest.elementFromPoint?.isTargetOrInside).toBe(true);
+      expect(result.outcome).toMatch(/^(authenticated|auth-error)$/);
+    });
+  }
 });
 
 async function runLoginClickScenario(
@@ -122,6 +158,7 @@ async function runLoginClickScenario(
 
     const button = page.getByRole("button", { name: config.buttonName });
     await expect(button).toBeVisible();
+    await button.scrollIntoViewIfNeeded();
     const hitTest = await getClickHitTest(page, config.buttonName);
     await writeFile(hitTestPath, JSON.stringify(hitTest, null, 2));
     await page.screenshot({ path: beforeScreenshotPath });
@@ -143,6 +180,99 @@ async function runLoginClickScenario(
       beforeScreenshotPath,
       finalUrl,
       hitTest,
+      videoPath,
+    };
+  } catch (error) {
+    await page.screenshot({ path: afterScreenshotPath }).catch(() => undefined);
+    videoPath =
+      (await page
+        .video()
+        ?.path()
+        .catch(() => null)) ?? null;
+    await context.close().catch(() => undefined);
+
+    throw error;
+  }
+}
+
+async function runAdminLoginClickScenario(
+  browser: Browser,
+  config: {
+    baseURL: string;
+    viewport: (typeof viewports)[number];
+  },
+) {
+  const artifactPrefix = `admin-${config.viewport.label}`;
+  const screenshotDir = `${artifactRoot}/screenshots`;
+  const videoDir = `${artifactRoot}/videos`;
+  const hitTestDir = `${artifactRoot}/hit-tests`;
+  await Promise.all([
+    mkdir(hitTestDir, { recursive: true }),
+    mkdir(screenshotDir, { recursive: true }),
+    mkdir(videoDir, { recursive: true }),
+  ]);
+
+  const context = await browser.newContext({
+    baseURL: config.baseURL,
+    colorScheme: "light",
+    recordVideo: {
+      dir: videoDir,
+      size: {
+        height: config.viewport.height,
+        width: config.viewport.width,
+      },
+    },
+    reducedMotion: "reduce",
+    viewport: {
+      height: config.viewport.height,
+      width: config.viewport.width,
+    },
+  });
+  const page = await context.newPage();
+
+  const beforeScreenshotPath = `${screenshotDir}/${artifactPrefix}-before.png`;
+  const afterScreenshotPath = `${screenshotDir}/${artifactPrefix}-after.png`;
+  const hitTestPath = `${hitTestDir}/${artifactPrefix}.json`;
+  let videoPath: string | null = null;
+
+  try {
+    await page.goto("/admin-login");
+    await page.getByLabel("E-mail").fill(adminEmail);
+    await page.getByLabel("Senha").fill(adminPassword);
+
+    const button = page.getByRole("button", { name: "Entrar no Admin" });
+    await expect(button).toBeVisible();
+    await button.scrollIntoViewIfNeeded();
+    const hitTest = await getClickHitTest(page, "Entrar no Admin");
+    await writeFile(hitTestPath, JSON.stringify(hitTest, null, 2));
+    await page.screenshot({ path: beforeScreenshotPath });
+
+    await button.click();
+    await page.waitForFunction(
+      () =>
+        window.location.pathname === "/admin" ||
+        window.location.pathname.startsWith("/admin/") ||
+        Boolean(document.querySelector('[role="alert"]')),
+    );
+    const pathname = new URL(page.url()).pathname;
+    const outcome =
+      pathname === "/admin" || pathname.startsWith("/admin/")
+        ? "authenticated"
+        : "auth-error";
+    await page.screenshot({ path: afterScreenshotPath });
+
+    await context.close();
+    videoPath =
+      (await page
+        .video()
+        ?.path()
+        .catch(() => null)) ?? null;
+
+    return {
+      afterScreenshotPath,
+      beforeScreenshotPath,
+      hitTest,
+      outcome,
       videoPath,
     };
   } catch (error) {

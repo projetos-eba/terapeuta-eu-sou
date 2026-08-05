@@ -61,7 +61,7 @@ function failure(message: string, status: number) {
 function isMutatingAction(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const action = (value as Record<string, unknown>).action;
-  return action !== "list" && action !== "impact";
+  return action !== "list" && action !== "matchingList" && action !== "impact";
 }
 
 function revalidateTherapyCatalogSurfaces() {

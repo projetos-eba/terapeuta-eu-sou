@@ -18,6 +18,15 @@ describe("admin therapy catalog parsers", () => {
         },
       ],
       contractVersion: 1,
+      matchingThemes: [
+        {
+          id: "theme-1",
+          imageUrl: "/journey/emocoes-bem-estar.png",
+          name: "Emoções e Bem-Estar",
+          slug: "emocoes-bem-estar",
+          sortOrder: 1,
+        },
+      ],
       items: [
         {
           aliases: ["energia"],
@@ -77,6 +86,9 @@ describe("admin therapy catalog parsers", () => {
 
     expect(parsed.items[0]?.name).toBe("Reiki");
     expect(parsed.items[0]?.impact.activeServiceCount).toBe(1);
+    expect(parsed.matchingThemes[0]?.imageUrl).toBe(
+      "/journey/emocoes-bem-estar.png",
+    );
   });
 
   it("rejects unknown status values", () => {
@@ -114,6 +126,7 @@ describe("admin therapy catalog parsers", () => {
             updatedAt: "2026-07-28T00:00:00Z",
           },
         ],
+        matchingThemes: [],
         requests: [],
       }),
     ).toThrow(AdminTherapyCatalogContractError);

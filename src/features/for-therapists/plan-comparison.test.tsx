@@ -21,7 +21,8 @@ describe("PlansPreviewSection", () => {
 
       expect(header).toBeDefined();
       expect(header).toHaveAttribute("colspan", "4");
-      expect(header).toHaveClass("bg-brand-primary");
+      expect(header).toHaveClass("bg-brand-lavenderSoft");
+      expect(header).toHaveClass("text-brand-deep");
     });
   });
 });

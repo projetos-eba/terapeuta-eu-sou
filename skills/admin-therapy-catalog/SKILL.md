@@ -1,8 +1,8 @@
 # Admin Therapy Catalog
 
 Use esta skill ao alterar `/admin/terapias`, contratos de administração de
-terapias, requests de catálogo, auditoria ou integrações públicas dependentes
-do catálogo canônico.
+terapias, `/admin/matching`, requests de catálogo, auditoria ou integrações
+públicas dependentes do catálogo canônico e da taxonomia do Match.
 
 ## Fontes obrigatórias
 
@@ -15,13 +15,17 @@ do catálogo canônico.
 - `docs/design-system/design-system.md`
 - `src/lib/routes.ts`
 - `supabase/migrations/*therapy*`
+- `supabase/migrations/*matching*`
 - `supabase/functions/admin-therapy-catalog-command/*`
+- planilhas aprovadas de categoria/refinamento quando usadas como fonte de seed
 
 ## Rotas
 
 - `/admin-login`
 - `/admin`
 - `/admin/terapias`
+- `/admin/matching`
+- `/api/admin/media`
 - `/api/admin/therapies`
 
 ## Componentes e Dados
@@ -31,10 +35,18 @@ do catálogo canônico.
 - `admin-therapy-catalog.parsers.ts`
 - `admin-therapy-catalog.queries.ts`
 - `admin-therapy-catalog.commands.ts`
+- `AdminMatchingPage`
+- `admin-matching.parsers.ts`
+- `admin-matching.commands.ts`
 
 Dados vêm de `admin_list_therapy_catalog_v1`, `admin_therapy_impact_v1`,
 `admin_upsert_therapy_draft_v1`, `admin_transition_therapy_v1` e
-`admin_decide_therapy_catalog_request_v1`.
+`admin_decide_therapy_catalog_request_v1`. Temas e refinamentos do Match vêm
+do contrato admin `admin_list_matching_v1`; páginas administrativas não devem
+depender exclusivamente de views públicas como `public_matching_config`.
+Imagens administrativas públicas, como prévias de temas do Match, usam o
+bucket `admin-public-media` e são enviadas por `/api/admin/media` com token do
+admin autenticado, sem `service_role` no frontend.
 
 ## Regras
 
@@ -44,8 +56,25 @@ Dados vêm de `admin_list_therapy_catalog_v1`, `admin_therapy_impact_v1`,
   separados.
 - Terapias selecionam de 1 a 3 temas canônicos do Match; admin não seleciona
   refinamentos por terapia.
+- Temas/refinamentos de Match devem ser sincronizados por migration idempotente
+  quando vierem de planilha aprovada, preservando vínculos existentes e
+  desativando apenas legado sem vínculo operacional.
 - `therapy_matching_themes` é a relação canônica entre terapia e temas.
 - Não persistir classes CSS/Tailwind no banco; usar chaves semânticas.
+- Chave semântica de cor deve ser selecionada em lista fechada alinhada a
+  tokens TES, não como texto livre.
+- Benefícios e FAQs devem ser editados em campos estruturados; FAQ separa
+  pergunta e resposta.
+- Benefícios devem selecionar `iconKey` por lista fechada compartilhada com a
+  página pública da terapia; não aceitar chaves livres que a página pública não
+  renderiza.
+- Temas do Match exibidos no cadastro de terapia devem mostrar a mesma prévia
+  visual usada na jornada pública sempre que `matching_themes.image_url`
+  existir.
+- Terapias podem selecionar de 1 a 3 temas do Match. `category_id` permanece
+  uma categoria canônica singular da terapia.
+- Edição de imagem de tema aceita URL e upload de arquivo JPG, PNG ou WebP,
+  com preview antes de salvar.
 - Toda ação de governança exige motivo e gera auditoria.
 - Não apagar serviços, bookings, snapshots ou pagamentos ao descontinuar.
 
@@ -53,6 +82,13 @@ Dados vêm de `admin_list_therapy_catalog_v1`, `admin_therapy_impact_v1`,
 
 - Testar filtros, busca, criação de rascunho, edição, publicação bloqueada por
   conteúdo incompleto, despublicação, descontinuação e decisão de request.
+- Testar clique real em login/admin, modal de tema, foco durante digitação,
+  slug automático, lista de temas ativa no cadastro de terapia e payload
+  estruturado de benefícios/FAQs.
+- Testar preview das imagens de temas no cadastro de terapia e upload de
+  imagem no modal de tema sem salvar alterações destrutivas durante QA.
+- Testar seleção de três temas do Match e bloqueio visual de novas seleções ao
+  atingir o limite.
 - Validar RLS admin, terapeuta e visitante em pgTAP.
 - Confirmar revalidação de `therapies`, `matching-config`,
   `therapist-search`, `therapist-profile` e `therapist-services`.
@@ -70,7 +106,8 @@ garantido em conteúdo editorial e mensagens administrativas.
   automaticamente para `/admin/terapias`.
 - `/admin/matching` possui primeira superfície operacional de leitura para
   temas, vínculos e regras ativas.
-- Painel dedicado `/admin/matching` ainda precisa governar mutações completas
-  de temas/refinamentos e publicação de versões, sem apagar histórico.
+- Painel dedicado `/admin/matching` governa leitura e mutações básicas de
+  temas/refinamentos com motivo de auditoria; publicação explícita de versões
+  segue como evolução de governança.
 - Criação assistida de rascunho a partir de solicitação deve continuar manual
   até haver fluxo editorial aprovado.

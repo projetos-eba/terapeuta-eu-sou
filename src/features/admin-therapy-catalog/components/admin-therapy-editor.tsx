@@ -1,8 +1,13 @@
 "use client";
 
-import type { FormEvent } from "react";
+import { Plus, Trash2 } from "lucide-react";
+import { useState, type FormEvent } from "react";
 
 import { TESButton } from "@/components/tes";
+import {
+  DetailIcon,
+  therapyDetailIconOptions,
+} from "@/features/therapies/components/detail/detail-icons";
 
 import type {
   AdminTherapy,
@@ -25,27 +30,29 @@ export function AdminTherapyEditor({
   onSave: (command: AdminTherapyDraftCommand) => Promise<void>;
   therapy: AdminTherapy | null;
 }) {
+  const initialBenefits = therapy?.publicContent.benefits ?? [];
+  const initialFaqs = therapy?.publicContent.faqs ?? [];
+  const [benefitCount, setBenefitCount] = useState(() =>
+    Math.max(2, initialBenefits.length),
+  );
+  const [selectedThemeIds, setSelectedThemeIds] = useState(() =>
+    (therapy?.matchingThemeIds ?? []).slice(0, 3),
+  );
+  const [faqCount, setFaqCount] = useState(() =>
+    Math.max(1, initialFaqs.length),
+  );
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
 
     await onSave({
       aliases: splitLines(String(form.get("aliases") ?? "")),
-      benefits: splitLines(String(form.get("benefits") ?? "")).map((title) => ({
-        description: null,
-        iconKey: "heart",
-        title,
-      })),
+      benefits: collectBenefits(form),
       calendarColorKey: String(form.get("calendarColorKey") || "neutral"),
       categoryId: String(form.get("categoryId") ?? ""),
       description: nullable(String(form.get("description") ?? "")),
-      faqs: splitLines(String(form.get("faqs") ?? "")).map((line) => {
-        const [question, ...answer] = line.split("|");
-        return {
-          answer: answer.join("|").trim() || "Resposta editorial em revisão.",
-          question: question.trim(),
-        };
-      }),
+      faqs: collectFaqs(form),
       highlights: splitLines(String(form.get("highlights") ?? "")).map(
         (title) => ({
           iconKey: "sparkles",
@@ -57,10 +64,7 @@ export function AdminTherapyEditor({
       isFeatured: form.get("isFeatured") === "on",
       isPubliclyVisible: form.get("isPubliclyVisible") === "on",
       isVisibleInMatching: form.get("isVisibleInMatching") === "on",
-      themeIds: form
-        .getAll("themeIds")
-        .map(String)
-        .filter(Boolean),
+      themeIds: selectedThemeIds,
       name: String(form.get("name") ?? "").trim(),
       publicContent: {
         approachIconKey: nullable(String(form.get("approachIconKey") ?? "")),
@@ -122,12 +126,7 @@ export function AdminTherapyEditor({
               ))}
             </select>
           </label>
-          <Field
-            defaultValue={therapy?.calendarColorKey}
-            label="Chave semântica de cor"
-            name="calendarColorKey"
-            placeholder="purple, green, orange, blue, pink, neutral"
-          />
+          <ColorSelect defaultValue={therapy?.calendarColorKey} />
         </div>
         <Textarea
           defaultValue={therapy?.shortDescription}
@@ -229,22 +228,116 @@ export function AdminTherapyEditor({
           label="Destaques"
           name="highlights"
         />
-        <Textarea
-          defaultValue={therapy?.publicContent.benefits
-            .map((item) => item.title)
-            .join("\n")}
-          hint="Um item por linha. Evite promessas de resultado."
-          label="Benefícios / experiência esperada"
-          name="benefits"
-        />
-        <Textarea
-          defaultValue={therapy?.publicContent.faqs
-            .map((item) => `${item.question} | ${item.answer}`)
-            .join("\n")}
-          hint="Use o formato: Pergunta | Resposta"
-          label="FAQs"
-          name="faqs"
-        />
+        <div className="space-y-3">
+          <div>
+            <h4 className="text-sm font-extrabold text-brand-deep">
+              Benefícios / experiência esperada
+            </h4>
+            <p className="mt-1 text-xs font-bold text-tesText-secondary">
+              Cadastre pelo menos dois benefícios. Evite promessa de resultado.
+            </p>
+          </div>
+          {Array.from({ length: benefitCount }).map((_, index) => {
+            const benefit = initialBenefits[index];
+            const isRequired = index < 2;
+
+            return (
+              <div
+                className="grid gap-3 rounded-xl border border-brand-lavender bg-surface-soft p-3 md:grid-cols-[minmax(0,0.28fr)_minmax(0,0.24fr)_minmax(0,0.48fr)_auto]"
+                key={`benefit-${index}`}
+              >
+                <Field
+                  defaultValue={benefit?.title}
+                  label={`Benefício ${index + 1}`}
+                  name="benefitTitle"
+                  placeholder="Ex.: Pausa de presença"
+                  required={isRequired}
+                />
+                <BenefitIconSelect
+                  defaultValue={benefit?.iconKey}
+                  index={index}
+                />
+                <Field
+                  defaultValue={benefit?.description}
+                  label="Descrição opcional"
+                  name="benefitDescription"
+                  placeholder="Ex.: Apoia um momento de escuta e organização interna."
+                />
+                {index === benefitCount - 1 && benefitCount > 2 ? (
+                  <button
+                    aria-label={`Remover benefício ${index + 1}`}
+                    className="mt-7 grid size-11 place-items-center rounded-full border border-brand-lavender text-brand-primary transition hover:bg-white"
+                    onClick={() => setBenefitCount((current) => current - 1)}
+                    type="button"
+                  >
+                    <Trash2 className="size-4" aria-hidden="true" />
+                  </button>
+                ) : (
+                  <span aria-hidden="true" className="hidden md:block" />
+                )}
+              </div>
+            );
+          })}
+          <button
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
+            onClick={() => setBenefitCount((current) => current + 1)}
+            type="button"
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            Adicionar benefício
+          </button>
+        </div>
+        <div className="space-y-3">
+          <div>
+            <h4 className="text-sm font-extrabold text-brand-deep">FAQs</h4>
+            <p className="mt-1 text-xs font-bold text-tesText-secondary">
+              Separe pergunta e resposta para revisar a experiência editorial
+              com mais clareza.
+            </p>
+          </div>
+          {Array.from({ length: faqCount }).map((_, index) => {
+            const faq = initialFaqs[index];
+
+            return (
+              <div
+                className="grid gap-3 rounded-xl border border-brand-lavender bg-surface-soft p-3 md:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)_auto]"
+                key={`faq-${index}`}
+              >
+                <Field
+                  defaultValue={faq?.question}
+                  label={`Pergunta ${index + 1}`}
+                  name="faqQuestion"
+                  placeholder="Ex.: Como acontece uma sessão online?"
+                />
+                <Textarea
+                  defaultValue={faq?.answer}
+                  label="Resposta"
+                  name="faqAnswer"
+                />
+                {index === faqCount - 1 && faqCount > 1 ? (
+                  <button
+                    aria-label={`Remover FAQ ${index + 1}`}
+                    className="mt-7 grid size-11 place-items-center rounded-full border border-brand-lavender text-brand-primary transition hover:bg-white"
+                    onClick={() => setFaqCount((current) => current - 1)}
+                    type="button"
+                  >
+                    <Trash2 className="size-4" aria-hidden="true" />
+                  </button>
+                ) : (
+                  <span aria-hidden="true" className="hidden md:block" />
+                )}
+              </div>
+            );
+          })}
+          <button
+            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
+            onClick={() => setFaqCount((current) => current + 1)}
+            type="button"
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            Adicionar FAQ
+          </button>
+        </div>
       </Section>
 
       <Section title="Disponibilidade no produto">
@@ -275,22 +368,42 @@ export function AdminTherapyEditor({
       <Section title="Temas do Match">
         <fieldset>
           <legend className="text-sm font-extrabold text-brand-deep">
-            Selecione de 1 a 3 temas para recomendar esta terapia
+            Selecione de 1 a 3 temas do Match para recomendar esta terapia
           </legend>
           <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-            Refinamentos não são configurados na terapia. Eles serão usados
-            depois para ordenar profissionais dentro da terapia escolhida.
+            Categoria continua sendo uma classificação única da terapia. Temas
+            do Match podem ser múltiplos e conectam esta terapia à jornada do
+            paciente.
           </p>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            {matchingThemes.map((theme) => (
-              <Checkbox
-                defaultChecked={therapy?.matchingThemeIds.includes(theme.id)}
-                key={theme.id}
-                label={theme.name}
-                name="themeIds"
-                value={theme.id}
-              />
-            ))}
+          <p
+            aria-live="polite"
+            className="mt-2 text-xs font-extrabold uppercase tracking-[0.14em] text-brand-primary"
+          >
+            {selectedThemeIds.length} de 3 temas selecionados
+          </p>
+          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {matchingThemes.map((theme) => {
+              const selected = selectedThemeIds.includes(theme.id);
+              const disabled = !selected && selectedThemeIds.length >= 3;
+
+              return (
+                <ThemePreviewOption
+                  disabled={disabled}
+                  key={theme.id}
+                  onChange={() =>
+                    setSelectedThemeIds((current) =>
+                      current.includes(theme.id)
+                        ? current.filter((id) => id !== theme.id)
+                        : current.length >= 3
+                          ? current
+                          : [...current, theme.id],
+                    )
+                  }
+                  selected={selected}
+                  theme={theme}
+                />
+              );
+            })}
           </div>
           {matchingThemes.length === 0 ? (
             <p className="mt-3 rounded-xl bg-surface-soft p-3 text-sm font-semibold text-tesText-secondary">
@@ -328,6 +441,103 @@ export function AdminTherapyEditor({
         </TESButton>
       </div>
     </form>
+  );
+}
+
+function ThemePreviewOption({
+  disabled,
+  onChange,
+  selected,
+  theme,
+}: {
+  disabled: boolean;
+  onChange: () => void;
+  selected: boolean;
+  theme: AdminTherapyCatalogContract["matchingThemes"][number];
+}) {
+  return (
+    <label className="group relative grid cursor-pointer gap-3 overflow-hidden rounded-2xl border border-brand-lavender bg-white p-3 text-left shadow-card transition hover:border-brand-primary has-[:checked]:border-brand-primary has-[:checked]:ring-4 has-[:checked]:ring-ring/20 has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-55">
+      <input
+        aria-label={theme.name}
+        checked={selected}
+        className="peer absolute right-4 top-4 size-5 accent-brand-primary"
+        disabled={disabled}
+        name="themeIds"
+        onChange={onChange}
+        type="checkbox"
+        value={theme.id}
+      />
+      <ThemeImage imageUrl={theme.imageUrl} name={theme.name} />
+      <span className="pr-8 text-sm font-extrabold leading-5 text-brand-deep">
+        {theme.name}
+      </span>
+      <span className="text-xs font-bold text-tesText-secondary">
+        {theme.slug}
+      </span>
+    </label>
+  );
+}
+
+function BenefitIconSelect({
+  defaultValue,
+  index,
+}: {
+  defaultValue?: string | null;
+  index: number;
+}) {
+  const normalizedDefault = normalizeTherapyIconKey(defaultValue);
+  const [selectedIconKey, setSelectedIconKey] = useState(normalizedDefault);
+
+  return (
+    <label>
+      <span className="mb-2 block text-sm font-extrabold text-brand-deep">
+        Ícone visual {index + 1}
+      </span>
+      <div className="flex min-h-11 items-center gap-2 rounded-xl border border-brand-lavender bg-white px-3 focus-within:ring-4 focus-within:ring-ring/20">
+        <span className="text-brand-primary" aria-hidden="true">
+          <DetailIcon iconKey={selectedIconKey} />
+        </span>
+        <select
+          className="min-w-0 flex-1 bg-transparent text-sm font-bold text-brand-deep outline-none"
+          name="benefitIconKey"
+          onChange={(event) => setSelectedIconKey(event.target.value)}
+          value={selectedIconKey}
+        >
+          {therapyDetailIconOptions.map((option) => (
+            <option key={option.key} value={option.key}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </label>
+  );
+}
+
+function ThemeImage({
+  imageUrl,
+  name,
+}: {
+  imageUrl: string | null;
+  name: string;
+}) {
+  if (!imageUrl) {
+    return (
+      <span className="grid aspect-[16/9] place-items-center rounded-xl bg-brand-lavenderSoft text-xs font-extrabold text-brand-primary">
+        Sem imagem
+      </span>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      alt={`Previa visual de ${name}`}
+      className="aspect-[16/9] w-full rounded-xl bg-brand-lavenderSoft object-cover"
+      loading="lazy"
+      src={imageUrl}
+      title={name}
+    />
   );
 }
 
@@ -371,6 +581,43 @@ function Field({
         placeholder={placeholder}
         required={required}
       />
+    </label>
+  );
+}
+
+const colorOptions = [
+  { label: "Roxo", value: "purple" },
+  { label: "Lavanda", value: "lavender" },
+  { label: "Azul", value: "blue" },
+  { label: "Ciano", value: "cyan" },
+  { label: "Verde", value: "green" },
+  { label: "Menta", value: "mint" },
+  { label: "Laranja", value: "orange" },
+  { label: "Rosa", value: "pink" },
+  { label: "Neutro", value: "neutral" },
+] as const;
+
+function ColorSelect({ defaultValue }: { defaultValue?: string | null }) {
+  return (
+    <label>
+      <span className="mb-2 block text-sm font-extrabold text-brand-deep">
+        Chave semântica de cor
+      </span>
+      <select
+        className="min-h-11 w-full rounded-xl border border-brand-lavender px-3 text-sm font-bold text-brand-deep outline-none focus:ring-4 focus:ring-ring/20"
+        defaultValue={normalizeColorKey(defaultValue)}
+        name="calendarColorKey"
+      >
+        {colorOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+      <span className="mt-1 block text-xs font-bold text-tesText-secondary">
+        Essa chave não é uma cor livre: ela mapeia a terapia para tokens visuais
+        seguros do TES em calendários, badges e estados.
+      </span>
     </label>
   );
 }
@@ -439,9 +686,49 @@ function splitLines(value: string) {
     .filter(Boolean);
 }
 
+function collectBenefits(form: FormData) {
+  const titles = form.getAll("benefitTitle").map(String);
+  const descriptions = form.getAll("benefitDescription").map(String);
+  const iconKeys = form.getAll("benefitIconKey").map(String);
+
+  return titles
+    .map((title, index) => ({
+      description: nullable(descriptions[index] ?? ""),
+      iconKey: normalizeTherapyIconKey(iconKeys[index]),
+      title: title.trim(),
+    }))
+    .filter((benefit) => benefit.title.length > 0);
+}
+
+function collectFaqs(form: FormData) {
+  const questions = form.getAll("faqQuestion").map(String);
+  const answers = form.getAll("faqAnswer").map(String);
+
+  return questions
+    .map((question, index) => ({
+      answer: answers[index]?.trim() ?? "",
+      question: question.trim(),
+    }))
+    .filter((faq) => faq.question.length > 0 && faq.answer.length > 0);
+}
+
 function nullable(value: string) {
   const trimmed = value.trim();
   return trimmed ? trimmed : null;
+}
+
+function normalizeColorKey(value?: string | null) {
+  return typeof value === "string" &&
+    colorOptions.some((option) => option.value === value)
+    ? value
+    : "neutral";
+}
+
+function normalizeTherapyIconKey(value?: string | null) {
+  return typeof value === "string" &&
+    therapyDetailIconOptions.some((option) => option.key === value)
+    ? value
+    : "heart";
 }
 
 function parseFocalPoint(value: string): "center" | "left" | "right" {

@@ -9,6 +9,8 @@ test.describe("auth signup smoke", () => {
     page,
   }) => {
     await page.goto("/terapeuta/cadastro");
+    await page.getByRole("link", { name: "Selecionar Free" }).click();
+    await expect(page).toHaveURL(/\/terapeuta\/cadastro\?plan=free/);
 
     await page.getByLabel("Nome completo").fill("Teste Terapeuta UI");
     await page.getByLabel("E-mail").fill(makeTestEmail("therapist"));
