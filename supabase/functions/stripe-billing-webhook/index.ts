@@ -13,6 +13,10 @@ import {
   reserveWebhookEvent,
   sha256Hex,
 } from "../_shared/payments/webhook-events.ts";
+import {
+  getStripeInvoiceSubscriptionId,
+  getStripeSubscriptionPeriod,
+} from "../_shared/payments/stripe-subscription.ts";
 
 type FinancialStatus = "canceled" | "failed" | "paid" | "processing";
 
@@ -434,6 +438,8 @@ async function syncSubscription(
   const metadata = asRecord(subscription.metadata);
   const therapistId = stringOrNull(metadata.tes_therapist_id);
   const priceId = getSubscriptionPriceId(subscription);
+  const { currentPeriodEnd, currentPeriodStart } =
+    getStripeSubscriptionPeriod(subscription);
 
   if (!therapistId || !priceId) {
     throw new Error("STRIPE_SUBSCRIPTION_IDENTITY_OR_PRICE_MISSING");
@@ -470,8 +476,8 @@ async function syncSubscription(
     p_billing_plan_price_id: price.id,
     p_cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
     p_canceled_at: unixToIso(subscription.canceled_at),
-    p_current_period_end: unixToIso(subscription.current_period_end),
-    p_current_period_start: unixToIso(subscription.current_period_start),
+    p_current_period_end: unixToIso(currentPeriodEnd),
+    p_current_period_start: unixToIso(currentPeriodStart),
     p_ended_at: unixToIso(subscription.ended_at),
     p_metadata: metadata,
     p_plan_code: planCode,
@@ -491,7 +497,7 @@ async function syncInvoice(
   invoice: Record<string, unknown>,
   eventType: string,
 ) {
-  const subscriptionId = stringOrNull(invoice.subscription);
+  const subscriptionId = getStripeInvoiceSubscriptionId(invoice);
   const customerId = stringOrNull(invoice.customer);
   const subscriptionRows = subscriptionId
     ? await client.get<Array<{ id: string; therapist_profile_id: string }>>(

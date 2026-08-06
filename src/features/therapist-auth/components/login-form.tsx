@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { LockKeyhole, Mail } from "lucide-react";
@@ -30,8 +30,13 @@ export function TherapistLoginForm({
   const [formError, setFormError] = useState<string | null>(null);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [lastEmail, setLastEmail] = useState("");
+  const [isClientReady, setIsClientReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
+
+  useEffect(() => {
+    setIsClientReady(true);
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -94,6 +99,7 @@ export function TherapistLoginForm({
 
   return (
     <form
+      method="post"
       onSubmit={handleSubmit}
       noValidate
       className="pointer-events-auto relative z-10 space-y-5"
@@ -189,7 +195,7 @@ export function TherapistLoginForm({
         type="submit"
         variant="gradient"
         size="lg"
-        disabled={isSubmitting}
+        disabled={isSubmitting || !isClientReady}
         className="relative z-20 min-h-12 w-full rounded-2xl text-base"
       >
         {isSubmitting ? "Entrando..." : "Entrar como terapeuta"}

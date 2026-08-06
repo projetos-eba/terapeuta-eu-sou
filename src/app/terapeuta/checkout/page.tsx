@@ -5,22 +5,24 @@ import {
   LockKeyhole,
   ShieldCheck,
 } from "lucide-react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { TESButton } from "@/components/tes";
 import { getTherapistPlanDefinition, TherapistPlan } from "@/domain/tes";
 import {
   getTherapistDashboardHref,
+  getTherapistLoginHref,
   isPaidTherapistPlan,
   normalizeTherapistPlan,
   TherapistAuthShell,
 } from "@/features/therapist-auth";
+import { EmbeddedSubscriptionCheckout } from "@/features/therapist-subscription";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 import { routes } from "@/lib/routes";
 import {
   getSupabasePublicConfig,
   invokeSupabaseFunction,
-  SupabaseFunctionError,
 } from "@/lib/supabase/edge-functions";
 
 export const metadata: Metadata = {
@@ -50,12 +52,27 @@ export default async function TherapistCheckoutPage({
   }
 
   const checkoutContinuation = `${routes.public.therapistCheckout}?plan=${requestedPlan}`;
+  const cookieStore = await cookies();
+  const hasTherapistCookie = Boolean(
+    cookieStore.get("tes_therapist_access_token")?.value,
+  );
+  const isCheckoutReturn = isCheckoutReturnStatus(params?.checkout);
+
+  if (isCheckoutReturn && !hasTherapistCookie) {
+    return (
+      <CheckoutReturnWithoutSession
+        checkoutContinuation={checkoutContinuation}
+        checkoutStatus={params?.checkout}
+        plan={requestedPlan}
+      />
+    );
+  }
+
   const session = await requireTherapistSession({
     loginContinuation: checkoutContinuation,
   });
   const plan = getTherapistPlanDefinition(requestedPlan);
   const hasActivePaidPlan = session.plan !== TherapistPlan.Free;
-  const checkoutRequestId = crypto.randomUUID();
 
   return (
     <TherapistAuthShell
@@ -167,18 +184,7 @@ export default async function TherapistCheckoutPage({
               </div>
             </div>
 
-            <form action={startSubscriptionCheckoutAction}>
-              <input type="hidden" name="plan" value={requestedPlan} />
-              <input type="hidden" name="requestId" value={checkoutRequestId} />
-              <button
-                type="submit"
-                aria-describedby="checkout-availability"
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-brand-primary px-7 py-3 text-base font-extrabold text-white transition hover:bg-brand-primary/90"
-              >
-                <CreditCard className="size-5" aria-hidden="true" />
-                Continuar para pagamento
-              </button>
-            </form>
+            <EmbeddedSubscriptionCheckout plan={requestedPlan} />
 
             <TESButton
               href={routes.therapist.home}
@@ -200,85 +206,83 @@ export default async function TherapistCheckoutPage({
   );
 }
 
-async function startSubscriptionCheckoutAction(formData: FormData) {
-  "use server";
+function CheckoutReturnWithoutSession({
+  checkoutContinuation,
+  checkoutStatus,
+  plan,
+}: {
+  checkoutContinuation: string;
+  checkoutStatus?: string;
+  plan: "premium" | "premium_plus";
+}) {
+  const planDefinition = getTherapistPlanDefinition(plan);
+  const copy = getCheckoutStatusCopy(checkoutStatus);
 
-  const requestedPlan = normalizeTherapistPlan(
-    String(formData.get("plan") ?? ""),
-  );
-  const requestId = String(formData.get("requestId") ?? "");
+  return (
+    <TherapistAuthShell
+      className="lg:px-14"
+      eyebrow="Assinatura TES"
+      title="Seu plano segue seguro."
+      description="O retorno do pagamento informa continuidade, mas a liberacao do plano depende do webhook Stripe."
+    >
+      <div className="w-full space-y-6">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
+            Retorno do checkout
+          </p>
+          <h1 className="mt-3 font-display text-4xl font-light italic leading-tight text-brand-deep sm:text-5xl">
+            {copy.title}
+          </h1>
+          <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
+            {copy.description}
+          </p>
+        </div>
 
-  if (!isPaidTherapistPlan(requestedPlan)) {
-    redirect(routes.public.forTherapists);
-  }
+        <section className="rounded-card border border-brand-lavender bg-brand-lavenderSoft p-5 sm:p-6">
+          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
+            Plano escolhido
+          </p>
+          <h2 className="mt-2 text-2xl font-extrabold text-brand-deep">
+            TES {planDefinition.name}
+          </h2>
+          <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+            Entre novamente para acompanhar a confirmação e acessar sua área
+            profissional. Nenhum plano pago é liberado apenas por esta página.
+          </p>
+        </section>
 
-  const session = await requireTherapistSession({
-    loginContinuation: `${routes.public.therapistCheckout}?plan=${requestedPlan}`,
-  });
-  const config = getSupabasePublicConfig();
-
-  if (!config) {
-    redirect(
-      `${routes.public.therapistCheckout}?plan=${requestedPlan}&checkout=unavailable`,
-    );
-  }
-
-  try {
-    const response = await invokeSupabaseFunction<{
-      data?: { url?: string | null };
-      ok: boolean;
-    }>(config, "stripe-create-subscription-checkout", {
-      accessToken: session.accessToken,
-      body: { plan: requestedPlan, requestId },
-    });
-
-    if (response.ok && response.data?.url) {
-      redirect(response.data.url);
-    }
-  } catch (error) {
-    if (isNextRedirect(error)) throw error;
-
-    const checkoutStatus = getCheckoutFailureStatus(error);
-
-    redirect(
-      `${routes.public.therapistCheckout}?plan=${requestedPlan}&checkout=${checkoutStatus}`,
-    );
-  }
-
-  redirect(
-    `${routes.public.therapistCheckout}?plan=${requestedPlan}&checkout=unavailable`,
+        <div className="grid gap-3 sm:grid-cols-2">
+          <TESButton
+            href={getTherapistLoginHref(checkoutContinuation)}
+            size="lg"
+            variant="gradient"
+            className="min-h-12 w-full rounded-2xl text-base"
+          >
+            Entrar para acompanhar
+          </TESButton>
+          <TESButton
+            href={routes.public.forTherapists}
+            size="lg"
+            variant="secondary"
+            className="min-h-12 w-full rounded-2xl text-base"
+          >
+            Ver planos
+          </TESButton>
+        </div>
+      </div>
+    </TherapistAuthShell>
   );
 }
 
-function getCheckoutFailureStatus(error: unknown) {
-  if (error instanceof SupabaseFunctionError) {
-    if (
-      error.code === "stripe_price_missing" ||
-      error.code === "billing_price_not_found" ||
-      error.code === "stripe_catalog_mismatch"
-    ) {
-      return "catalog";
-    }
-
-    if (
-      error.code === "missing_stripe_env" ||
-      error.code === "missing_supabase_env" ||
-      error.code === "invalid_stripe_secret_key"
-    ) {
-      return "configuration";
-    }
-
-    if (
-      error.code === "unauthorized" ||
-      error.code === "role_mismatch" ||
-      error.status === 401 ||
-      error.status === 403
-    ) {
-      return "unauthorized";
-    }
-  }
-
-  return "unavailable";
+function isCheckoutReturnStatus(status?: string) {
+  return (
+    status === "success" ||
+    status === "canceled" ||
+    status === "catalog" ||
+    status === "configuration" ||
+    status === "unauthorized" ||
+    status === "unavailable"
+  );
 }
 
 function getCheckoutStatusCopy(status?: string) {
@@ -323,7 +327,7 @@ function getCheckoutStatusCopy(status?: string) {
       return {
         title: "Pagamento online seguro",
         description:
-          "Voce seguira para o Stripe para concluir a assinatura. O plano pago sera ativado somente apos a confirmacao do webhook.",
+          "Conclua o pagamento abaixo, sem sair do TES. O plano pago sera ativado somente apos a confirmacao do webhook Stripe.",
       };
   }
 }
