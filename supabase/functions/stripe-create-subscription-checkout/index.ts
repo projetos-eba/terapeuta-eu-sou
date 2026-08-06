@@ -94,6 +94,15 @@ runtime.serve(async (request) => {
       });
     }
 
+    if (checkoutUiMode === "embedded" && existingOpenSession?.client_secret) {
+      return success({
+        checkoutSessionId: existingOpenSession.id,
+        checkoutUiMode,
+        clientSecret: existingOpenSession.client_secret,
+        reused: true,
+      });
+    }
+
     await assertNoActivePaidSubscription(client, therapist.id);
 
     const successUrl = `${config.siteUrl}/terapeuta/checkout?plan=${plan}&checkout=success&session_id={CHECKOUT_SESSION_ID}`;
@@ -128,6 +137,8 @@ runtime.serve(async (request) => {
         plan_code: plan,
         stripe_mode: config.stripeMode,
         system: "tes",
+        therapist_profile_id: therapist.id,
+        therapist_user_id: user.id,
         tes_therapist_id: therapist.id,
         user_id: user.id,
       },
@@ -140,6 +151,8 @@ runtime.serve(async (request) => {
           plan_code: plan,
           stripe_mode: config.stripeMode,
           system: "tes",
+          therapist_profile_id: therapist.id,
+          therapist_user_id: user.id,
           tes_therapist_id: therapist.id,
           user_id: user.id,
         },
@@ -160,6 +173,18 @@ runtime.serve(async (request) => {
     const session = await stripe.checkout.sessions.create(params, {
       idempotencyKey,
     });
+
+    console.log(
+      JSON.stringify({
+        checkoutSessionId: session.id,
+        checkoutUiMode,
+        code: "SUBSCRIPTION_CHECKOUT_CREATED",
+        operation: "stripe_create_subscription_checkout",
+        plan,
+        requestId,
+        therapistId: therapist.id,
+      }),
+    );
 
     return success({
       checkoutSessionId: session.id,
@@ -290,8 +315,10 @@ async function findReusableOpenSubscriptionCheckout(input: {
 
     return (
       session.mode === "subscription" &&
-      Boolean(session.url) &&
       (session.expires_at ?? 0) > minimumUsableExpiry &&
+      (input.mode === "hosted"
+        ? Boolean(session.url)
+        : Boolean(session.client_secret)) &&
       metadata.checkout_ui_mode === input.mode &&
       metadata.environment === input.environment &&
       metadata.plan_code === input.plan &&
@@ -308,7 +335,7 @@ async function assertNoActivePaidSubscription(
   const rows = await client.get<Array<{ id: string }>>(
     `/rest/v1/therapist_subscriptions?select=id&therapist_profile_id=eq.${encodeURIComponent(
       therapistProfileId,
-    )}&status=in.(trialing,active,past_due,unpaid,incomplete)&limit=1`,
+    )}&status=in.(trialing,active,past_due,unpaid)&limit=1`,
   );
 
   if (rows[0]) {
