@@ -35,7 +35,6 @@ const terminalStatuses = new Set<CheckoutStatus>([
 ]);
 
 export function SubscriptionCheckoutReturnStatus({
-  plan,
   sessionId,
 }: {
   plan: "premium" | "premium_plus";
@@ -87,12 +86,8 @@ export function SubscriptionCheckoutReturnStatus({
         setAttempt(nextAttempt + 1);
 
         if (nextStatus === "active") {
+          router.replace(routes.therapist.home);
           router.refresh();
-          window.history.replaceState(
-            null,
-            "",
-            `${routes.public.therapistCheckout}?plan=${plan}`,
-          );
           return;
         }
 
@@ -122,7 +117,7 @@ export function SubscriptionCheckoutReturnStatus({
       abortRef.current?.abort();
       if (timer) clearTimeout(timer);
     };
-  }, [plan, router, sessionId, isRetrying]);
+  }, [router, sessionId, isRetrying]);
 
   return (
     <section
