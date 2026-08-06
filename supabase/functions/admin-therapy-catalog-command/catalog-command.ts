@@ -293,6 +293,22 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
       "Esta terapia possui servicos ativos ou bookings futuros. Descontinue antes de arquivar.",
     );
   }
+  if (details.includes("ADMIN_THERAPY_CATALOG_REASON_REQUIRED")) {
+    return new DomainError(
+      "reason_required",
+      422,
+      "Informe um motivo administrativo com pelo menos 10 caracteres.",
+    );
+  }
+  if (
+    details.includes("ADMIN_THERAPY_CATALOG_MATCHING_THEME_REMOVAL_BLOCKED")
+  ) {
+    return new DomainError(
+      "matching_theme_removal_blocked",
+      409,
+      "Esta alteracao afetaria servicos ou refinamentos ja configurados. Revise o impacto antes de remover o tema.",
+    );
+  }
   if (
     details.includes("ADMIN_THERAPY_CATALOG_NOT_FOUND") ||
     details.includes("ADMIN_THERAPY_CATALOG_REQUEST_NOT_FOUND")

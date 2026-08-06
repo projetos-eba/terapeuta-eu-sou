@@ -7,9 +7,16 @@ type MatchingDenoRuntime = {
 
 type MatchingRequest = {
   interestIds?: unknown;
+  matchingVersionId?: unknown;
   source?: unknown;
   themeIds?: unknown;
   versionId?: unknown;
+};
+
+type MatchingVersionRow = {
+  id: string;
+  status: "draft" | "published" | "archived";
+  version: number;
 };
 
 type MatchingTherapyRow = {
@@ -79,13 +86,27 @@ matchingRuntime.serve(async (request) => {
   const themeIds = normalizeStringList(payload?.themeIds);
   const interestIds = normalizeStringList(payload?.interestIds);
   const versionId =
-    typeof payload?.versionId === "string" ? payload.versionId : null;
+    typeof payload?.matchingVersionId === "string"
+      ? payload.matchingVersionId
+      : typeof payload?.versionId === "string"
+        ? payload.versionId
+        : null;
 
   if (!versionId || themeIds.length < 1 || themeIds.length > 3) {
     return jsonResponse({ error: "invalid_selection" }, 422);
   }
 
   try {
+    const versionRows = await fetchRows<MatchingVersionRow>(
+      supabaseUrl,
+      serviceRoleKey,
+      `/rest/v1/matching_versions?select=id,version,status&id=eq.${encodeURIComponent(versionId)}&status=eq.published&limit=1`,
+    );
+
+    if (!versionRows.length) {
+      return jsonResponse({ error: "matching_version_unavailable" }, 409);
+    }
+
     const [therapyRows, themeRows, countRows] = await Promise.all([
       fetchRows<MatchingTherapyRow>(
         supabaseUrl,
@@ -139,7 +160,7 @@ async function fetchRows<T>(
 
 function calculateMatchingResults(input: {
   interestIds: string[];
-  source: "fallback" | "supabase";
+  source: "demo" | "supabase";
   therapies: MatchingTherapy[];
   themeIds: string[];
   versionId: string;
@@ -155,12 +176,13 @@ function calculateMatchingResults(input: {
       const matchedThemeIds = unique(
         therapy.themeIds.filter((themeId) => selectedThemeSet.has(themeId)),
       );
-      const scorePercent = Math.round((matchedThemeIds.length / possibleScore) * 100);
+      const matchingThemeCount = matchedThemeIds.length;
+      const scorePercent = Math.round((matchingThemeCount / possibleScore) * 100);
 
       return {
         explanation: buildExplanation(scorePercent),
         imageUrl: therapy.imageUrl,
-        label: getScoreLabel(scorePercent),
+        label: getThemeCountLabel(matchingThemeCount),
         matchedInterestIds: [],
         matchedThemeIds,
         scorePercent,
@@ -257,10 +279,10 @@ function normalizeStringList(value: unknown) {
   );
 }
 
-function getScoreLabel(score: number) {
-  if (score >= 100) return "3 temas em comum";
-  if (score >= 67) return "2 temas em comum";
-  return "Pode fazer sentido";
+function getThemeCountLabel(matchingThemeCount: number) {
+  return matchingThemeCount === 1
+    ? "1 tema em comum"
+    : `${matchingThemeCount} temas em comum`;
 }
 
 function buildExplanation(score: number) {

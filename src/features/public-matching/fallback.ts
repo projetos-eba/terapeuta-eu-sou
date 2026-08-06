@@ -3,7 +3,7 @@ import type { MatchingConfig, MatchingTherapy, MatchingWeight } from "./types";
 export const fallbackMatchingVersionId = "73000000-0000-4000-8000-000000000001";
 
 export const fallbackMatchingConfig: MatchingConfig = {
-  source: "fallback",
+  source: "demo",
   version: 1,
   versionId: fallbackMatchingVersionId,
   themes: [

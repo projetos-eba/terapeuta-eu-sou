@@ -2,15 +2,17 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { mapTherapistProfileEditorContract } from "@/features/therapist-profile-editor/therapist-profile-editor.mappers";
+import {
+  hasValidUploadSignature,
+  isSupportedImageType,
+  isSupportedVideoType,
+} from "@/lib/media/upload-validation";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 const bucket = "therapist-public-media";
 const maxImageBytes = 5 * 1024 * 1024;
 const maxVideoBytes = 50 * 1024 * 1024;
 const noStoreHeaders = { "Cache-Control": "no-store" };
-
-const imageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
-const videoTypes = new Set(["video/mp4", "video/quicktime", "video/webm"]);
 
 type MediaKind = "photo" | "video" | "video_thumbnail";
 
@@ -37,7 +39,7 @@ export async function POST(request: Request) {
     return failure("Envie um arquivo válido.", 400);
   }
 
-  const validation = validateFile(file, kind);
+  const validation = await validateFile(file, kind);
   if (validation) return failure(validation, 422);
 
   const userId = await readAuthenticatedUserId(config, accessToken);
@@ -180,22 +182,28 @@ function isUploadedFile(value: unknown): value is File {
   );
 }
 
-function validateFile(file: File, kind: MediaKind) {
+async function validateFile(file: File, kind: MediaKind) {
   if (kind === "video") {
-    if (!videoTypes.has(file.type)) {
+    if (!isSupportedVideoType(file.type)) {
       return "Envie um vídeo em MP4, WebM ou MOV.";
     }
     if (file.size > maxVideoBytes) {
       return "O vídeo deve ter no máximo 50 MB.";
     }
+    if (!(await hasValidUploadSignature(file))) {
+      return "O conteúdo do arquivo não corresponde ao formato informado.";
+    }
     return null;
   }
 
-  if (!imageTypes.has(file.type)) {
+  if (!isSupportedImageType(file.type)) {
     return "Envie uma imagem em JPG, PNG ou WebP.";
   }
   if (file.size > maxImageBytes) {
     return "A imagem deve ter no máximo 5 MB.";
+  }
+  if (!(await hasValidUploadSignature(file))) {
+    return "O conteúdo do arquivo não corresponde ao formato informado.";
   }
   return null;
 }

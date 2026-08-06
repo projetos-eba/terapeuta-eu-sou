@@ -14,9 +14,9 @@ import {
   sha256Hex,
 } from "../_shared/payments/webhook-events.ts";
 import {
-  getStripeInvoiceSubscriptionId,
-  getStripeSubscriptionPeriod,
-} from "../_shared/payments/stripe-subscription.ts";
+  recordStripeSubscriptionInvoice,
+  syncTherapistSubscriptionFromStripe,
+} from "../_shared/payments/subscription-sync.ts";
 
 type FinancialStatus = "canceled" | "failed" | "paid" | "processing";
 
@@ -130,12 +130,23 @@ async function handleEvent(
       const subscriptionId = String(dataObject.id ?? "");
       if (!subscriptionId) return "ignored";
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      await syncSubscription(
+      const syncResult = await syncTherapistSubscriptionFromStripe(
         client,
         subscription as unknown as Record<string, unknown>,
-        eventId,
-        eventTime,
+        {
+          environment: getPaymentsConfig(runtime).environment,
+          eventId,
+          eventTime,
+        },
       );
+      logSubscriptionSync({
+        eventId,
+        eventType,
+        plan: syncResult.plan,
+        status: syncResult.status,
+        stripeSubscriptionId: syncResult.stripeSubscriptionId,
+        therapistId: syncResult.therapistProfileId,
+      });
       return "processed";
     }
     case "invoice.paid":
@@ -145,7 +156,7 @@ async function handleEvent(
       const invoiceId = String(dataObject.id ?? "");
       if (!invoiceId) return "ignored";
       const invoice = await stripe.invoices.retrieve(invoiceId);
-      await syncInvoice(
+      await recordStripeSubscriptionInvoice(
         client,
         invoice as unknown as Record<string, unknown>,
         eventType,
@@ -229,20 +240,31 @@ async function handleCheckoutEvent(
   eventTime: string,
 ) {
   if (
-    eventType === "checkout.session.completed" &&
     session.mode === "subscription" &&
     typeof session.subscription === "string"
   ) {
     const subscription = await stripe.subscriptions.retrieve(
       session.subscription,
     );
-    await syncSubscription(
+    const syncResult = await syncTherapistSubscriptionFromStripe(
       client,
       subscription as unknown as Record<string, unknown>,
-      eventId,
-      eventTime,
-      String(session.id),
+      {
+        checkoutSessionId: String(session.id),
+        environment: getPaymentsConfig(runtime).environment,
+        eventId,
+        eventTime,
+      },
     );
+    logSubscriptionSync({
+      checkoutSessionId: String(session.id),
+      eventId,
+      eventType,
+      plan: syncResult.plan,
+      status: syncResult.status,
+      stripeSubscriptionId: syncResult.stripeSubscriptionId,
+      therapistId: syncResult.therapistProfileId,
+    });
     return;
   }
 
@@ -426,108 +448,6 @@ async function recordSessionPaymentReconciliation(
     p_stripe_fee_amount_cents: input.stripeFeeAmountCents,
     p_stripe_net_amount_cents: input.stripeNetAmountCents,
   });
-}
-
-async function syncSubscription(
-  client: SupabaseRestClient,
-  subscription: Record<string, unknown>,
-  eventId: string,
-  eventTime: string,
-  checkoutSessionId?: string,
-) {
-  const metadata = asRecord(subscription.metadata);
-  const therapistId = stringOrNull(metadata.tes_therapist_id);
-  const priceId = getSubscriptionPriceId(subscription);
-  const { currentPeriodEnd, currentPeriodStart } =
-    getStripeSubscriptionPeriod(subscription);
-
-  if (!therapistId || !priceId) {
-    throw new Error("STRIPE_SUBSCRIPTION_IDENTITY_OR_PRICE_MISSING");
-  }
-
-  const [price] = await client.get<
-    Array<{
-      billing_plans: { code: "premium" | "premium_plus" } | null;
-      id: string;
-      plan_id: string;
-    }>
-  >(
-    `/rest/v1/billing_plan_prices?select=id,plan_id,billing_plans!inner(code)&stripe_price_id=eq.${encodeURIComponent(
-      priceId,
-    )}&is_active=eq.true&limit=1`,
-  );
-  const planCode = normalizePlan(price?.billing_plans?.code);
-
-  if (!price || !planCode) {
-    throw new Error("STRIPE_SUBSCRIPTION_PRICE_NOT_MAPPED");
-  }
-
-  const customerId = stringOrNull(subscription.customer);
-  const localCustomer = customerId
-    ? await client.get<Array<{ id: string }>>(
-        `/rest/v1/stripe_customers?select=id&stripe_customer_id=eq.${encodeURIComponent(
-          customerId,
-        )}&limit=1`,
-      )
-    : [];
-
-  await client.rpc("apply_therapist_subscription_event_v1", {
-    p_billing_plan_id: price.plan_id,
-    p_billing_plan_price_id: price.id,
-    p_cancel_at_period_end: Boolean(subscription.cancel_at_period_end),
-    p_canceled_at: unixToIso(subscription.canceled_at),
-    p_current_period_end: unixToIso(currentPeriodEnd),
-    p_current_period_start: unixToIso(currentPeriodStart),
-    p_ended_at: unixToIso(subscription.ended_at),
-    p_metadata: metadata,
-    p_plan_code: planCode,
-    p_status: normalizeSubscriptionStatus(subscription.status),
-    p_stripe_checkout_session_id: checkoutSessionId ?? null,
-    p_stripe_customer_id: localCustomer[0]?.id ?? null,
-    p_stripe_event_created_at: eventTime,
-    p_stripe_event_id: eventId,
-    p_stripe_latest_invoice_id: stringOrNull(subscription.latest_invoice),
-    p_stripe_subscription_id: String(subscription.id),
-    p_therapist_profile_id: therapistId,
-  });
-}
-
-async function syncInvoice(
-  client: SupabaseRestClient,
-  invoice: Record<string, unknown>,
-  eventType: string,
-) {
-  const subscriptionId = getStripeInvoiceSubscriptionId(invoice);
-  const customerId = stringOrNull(invoice.customer);
-  const subscriptionRows = subscriptionId
-    ? await client.get<Array<{ id: string; therapist_profile_id: string }>>(
-        `/rest/v1/therapist_subscriptions?select=id,therapist_profile_id&stripe_subscription_id=eq.${encodeURIComponent(
-          subscriptionId,
-        )}&limit=1`,
-      )
-    : [];
-
-  await client.post(
-    "/rest/v1/billing_invoices?on_conflict=stripe_invoice_id",
-    {
-      amount_due_cents: numberOrZero(invoice.amount_due),
-      amount_paid_cents: numberOrZero(invoice.amount_paid),
-      currency: String(invoice.currency ?? "brl").toUpperCase(),
-      due_at: unixToIso(invoice.due_date),
-      hosted_invoice_url: stringOrNull(invoice.hosted_invoice_url),
-      invoice_pdf: stringOrNull(invoice.invoice_pdf),
-      metadata: { eventType },
-      paid_at: unixToIso(asRecord(invoice.status_transitions).paid_at),
-      status: String(invoice.status ?? "unknown"),
-      stripe_customer_id: customerId,
-      stripe_invoice_id: String(invoice.id),
-      stripe_subscription_id: subscriptionId,
-      therapist_profile_id: subscriptionRows[0]?.therapist_profile_id ?? null,
-      therapist_subscription_id: subscriptionRows[0]?.id ?? null,
-      updated_at: new Date().toISOString(),
-    },
-    "resolution=merge-duplicates,return=minimal",
-  );
 }
 
 async function handleChargeRefunded(
@@ -815,35 +735,6 @@ function asRecord(value: unknown): Record<string, unknown> {
     : {};
 }
 
-function normalizePlan(value: unknown) {
-  return value === "premium" || value === "premium_plus" ? value : null;
-}
-
-function getSubscriptionPriceId(subscription: Record<string, unknown>) {
-  const items = asRecord(subscription.items);
-  const data = Array.isArray(items.data) ? items.data : [];
-  const firstItem = asRecord(data[0]);
-  const price = asRecord(firstItem.price);
-
-  return stringOrNull(price.id);
-}
-
-function normalizeSubscriptionStatus(value: unknown) {
-  const allowed = new Set([
-    "incomplete",
-    "incomplete_expired",
-    "trialing",
-    "active",
-    "past_due",
-    "canceled",
-    "unpaid",
-    "paused",
-  ]);
-  const status = String(value ?? "incomplete");
-
-  return allowed.has(status) ? status : "incomplete";
-}
-
 function unixToIso(value: unknown) {
   return typeof value === "number"
     ? new Date(value * 1000).toISOString()
@@ -886,6 +777,30 @@ function extractChargeReconciliation(
 
 function numberOrNull(value: unknown) {
   return typeof value === "number" ? value : null;
+}
+
+function logSubscriptionSync(input: {
+  checkoutSessionId?: string;
+  eventId: string;
+  eventType: string;
+  plan: string;
+  status: string;
+  stripeSubscriptionId: string;
+  therapistId: string;
+}) {
+  console.log(
+    JSON.stringify({
+      checkoutSessionId: input.checkoutSessionId ?? null,
+      code: "SUBSCRIPTION_WEBHOOK_SYNCED",
+      operation: "stripe_billing_webhook_subscription_sync",
+      plan: input.plan,
+      statusNew: input.status,
+      stripeEventId: input.eventId,
+      stripeEventType: input.eventType,
+      stripeSubscriptionId: input.stripeSubscriptionId,
+      therapistId: input.therapistId,
+    }),
+  );
 }
 
 function getConfiguredZoomEnvironment() {

@@ -119,6 +119,9 @@ verify_jwt = false
 [functions.stripe-create-subscription-checkout]
 verify_jwt = false
 
+[functions.stripe-subscription-checkout-status]
+verify_jwt = false
+
 [functions.stripe-change-therapist-subscription]
 verify_jwt = false
 

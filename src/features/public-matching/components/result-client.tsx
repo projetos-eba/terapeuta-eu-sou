@@ -34,6 +34,20 @@ export function MatchingResultClient() {
         });
 
         if (!response.ok) {
+          if (response.status === 409) {
+            setError(
+              "A jornada foi atualizada. Refaca suas escolhas para usar a versao publicada mais recente.",
+            );
+            return;
+          }
+
+          if (response.status === 503) {
+            setError(
+              "O Match esta temporariamente indisponivel. Tente novamente em alguns instantes.",
+            );
+            return;
+          }
+
           throw new Error("matching_failed");
         }
 

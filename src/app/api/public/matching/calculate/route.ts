@@ -25,7 +25,20 @@ export async function POST(request: Request) {
   }
 
   const selection = toSelection(body);
-  const config = await getPublicMatchingConfig();
+  const configResult = await getPublicMatchingConfig();
+
+  if (configResult.status === "unavailable") {
+    return NextResponse.json(
+      {
+        correlationId: configResult.correlationId,
+        error: "matching_unavailable",
+        reason: configResult.reason,
+      },
+      { status: 503 },
+    );
+  }
+
+  const config = configResult.config;
   const validationError = validateMatchingSelection(config, selection);
 
   if (validationError) {
@@ -35,6 +48,17 @@ export async function POST(request: Request) {
         message: validationError,
       },
       { status: 422 },
+    );
+  }
+
+  if (selection.matchingVersionId !== config.versionId) {
+    return NextResponse.json(
+      {
+        currentVersionId: config.versionId,
+        error: "matching_version_stale",
+        message: "Atualize a jornada para usar a versão publicada mais recente.",
+      },
+      { status: 409 },
     );
   }
 
@@ -48,6 +72,17 @@ export async function POST(request: Request) {
   }
 
   const calculationData = await getMatchingCalculationData(config.versionId);
+  if (calculationData.status === "unavailable") {
+    return NextResponse.json(
+      {
+        correlationId: calculationData.correlationId,
+        error: "matching_unavailable",
+        reason: calculationData.reason,
+      },
+      { status: 503 },
+    );
+  }
+
   const result = calculateMatchingResults({
     config,
     selection,
@@ -68,6 +103,12 @@ function toSelection(value: unknown): MatchingSelection {
 
   return {
     interestIds: toStringList(record.interestIds),
+    matchingVersionId:
+      typeof record.matchingVersionId === "string"
+        ? record.matchingVersionId
+        : typeof record.versionId === "string"
+          ? record.versionId
+          : "",
     source: "journey",
     themeIds: toStringList(record.themeIds),
   };

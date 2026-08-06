@@ -9,7 +9,9 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 
 ## Boundaries
 
-- Therapist subscriptions use Stripe Billing and activate paid plans only from signed webhooks.
+- Therapist subscriptions use Stripe Billing and activate paid plans only from
+  signed webhooks or authenticated server-side reconciliation against Stripe
+  Checkout Session/Subscription.
 - Patient session payments use Stripe Checkout/PaymentIntent and `session_payments` as the canonical financial source.
 - TES revenue is subscription revenue plus platform commission. Therapist share is a payable obligation until transfer.
 - Stripe fees are TES cost and must not reduce the therapist 80% share.
@@ -25,6 +27,9 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 ## Invariants
 
 - Never trust money, Price IDs, Customer IDs, PaymentIntent IDs, transfer IDs, or plan activation from the browser.
+- Never treat `checkout=success`, `session_id`, `plan`, or any browser-provided
+  status as sufficient evidence; recover the object from Stripe and validate
+  therapist ownership before syncing.
 - Use integer cents and basis points only.
 - Preserve policy snapshots through `financial_policy_versions`.
 - Use Separate Charges and Transfers; never transfer at charge time.
@@ -44,11 +49,11 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 
 Tables: `billing_plans`, `billing_plan_prices`, `stripe_customers`, `therapist_subscriptions`, `billing_invoices`, `therapist_connect_accounts`, `session_payments`, `session_payment_attempts`, `session_refunds`, `session_cancellation_decisions`, `session_disputes`, `session_service_confirmations`, `payout_batches`, `payout_batch_items`, `stripe_transfers`, `stripe_transfer_reversals`, `financial_ledger_entries`, `stripe_webhook_events`, `financial_policy_versions`.
 
-Shared modules: `supabase/functions/_shared/payments/runtime.ts`, `stripe-client.ts`, `connect.ts`, `http.ts`, `idempotency.ts`, `money.ts`.
+Shared modules: `supabase/functions/_shared/payments/runtime.ts`, `stripe-client.ts`, `connect.ts`, `http.ts`, `idempotency.ts`, `money.ts`, `subscription-sync.ts`.
 
 Edge Functions:
 
-- Billing: `stripe-sync-billing-catalog`, `stripe-create-subscription-checkout`, `stripe-change-therapist-subscription`, `stripe-cancel-therapist-subscription`, `stripe-create-billing-portal`, `stripe-billing-webhook`.
+- Billing: `stripe-sync-billing-catalog`, `stripe-create-subscription-checkout`, `stripe-subscription-checkout-status`, `stripe-change-therapist-subscription`, `stripe-cancel-therapist-subscription`, `stripe-create-billing-portal`, `stripe-billing-webhook`.
 - Connect: `stripe-connect-create-account`, `stripe-connect-create-account-link`, `stripe-connect-create-login-link`, `stripe-connect-sync-account`, `stripe-connect-webhook`.
 - Sessions and payouts: `stripe-create-session-payment`, `request-session-cancellation`, `confirm-session-by-therapist`, `auto-confirm-sessions`, `evaluate-transfer-eligibility`, `create-weekly-payout-batch`, `process-payout-batch`, `retry-failed-payout-items`, `reconcile-stripe-transfers`.
 
@@ -85,6 +90,9 @@ Never expose, log, screenshot, or write real secret values.
 
 - Run unit tests, SQL migration reset, RLS checks where applicable, Stripe CLI tests, duplicate webhook tests, out-of-order event tests, retry tests, and reconciliation checks.
 - Payment navigation tests must run with a visible browser. Do not validate financial flows exclusively in headless.
+- `/terapeuta/checkout?checkout=success&session_id=...` must not mount a new
+  embedded Checkout; it must poll the authenticated status route with a bounded
+  retry window.
 - E2E must use real Supabase Auth users and RLS, no auth bypass.
 - Use Stripe test mode only and never real cards.
 - Do not persist passwords, tokens, card data, or secrets in screenshots, traces, or reports.

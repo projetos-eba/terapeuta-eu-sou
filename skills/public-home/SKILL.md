@@ -58,10 +58,15 @@ The home may read public content through REST Supabase using only public env var
 Rules:
 
 - Never expose operational therapist fields, private patient data, payment data, intake data, Zoom links, or secrets.
-- Keep local fallback content in `src/features/public-home/content.ts` so `/` renders when Supabase is unconfigured or unavailable.
+- Keep local demo content in `src/features/public-home/content.ts`, but never
+  activate it silently. Demo data requires `TES_ENABLE_DEMO_DATA=true` on the
+  server and must be visible in the UI.
 - Therapy fallback content must stay aligned with the current public catalog phase: `reiki`, `taro` and `constelacao-familiar`. Do not link fallback cards to therapy slugs that are `draft`, not visible, or missing public detail content.
 - Featured therapist photos must use the stable local assets in `public/therapists/`, shared with `/terapeutas`, `/terapeutas/:slug`, therapy detail cards and patient session cards.
-- The featured therapists carousel should show five profiles on desktop when possible. If the public view returns fewer than five rows in development, complete the shelf with non-duplicated local fallback profiles so the layout does not collapse.
+- The featured therapists carousel should show five real profiles on desktop
+  when possible. If the public view returns zero rows, show an honest empty
+  state; do not complete the shelf with local profiles unless demo is explicitly
+  enabled.
 - Featured therapist cards must not invent guide-theme chips. Show chips only from published `public_therapist_profile_content_v.guide_items`, with a minimum of 3 and maximum of 6 visible items. Therapists without published guide items should render without this chip row.
 - The small line under the therapist name should show public therapies/techniques from `public_therapist_profile_services_v`, with at most two names plus `e +N` when there are more.
 - Therapy preview cards should use editorial therapy photos, not generic icons. Use `image_url` from `public_therapies_v` when present and the stable local images for Reiki, Tarô and Constelação Familiar as fallback.
@@ -107,7 +112,8 @@ Use TES tokens through Tailwind classes and CSS variables. Do not change global 
 
 - Compare the page visually with Figma node `13273:1844` on desktop and mobile.
 - Check that all CTAs use `routes.public`.
-- Check fallback rendering with placeholder or missing Supabase env.
+- Check unavailable rendering with missing Supabase env, and demo rendering only
+  with `TES_ENABLE_DEMO_DATA=true` outside production.
 - Check Supabase rendering when local Supabase is available.
 - Run `npm run typecheck`, `npm run lint`, and `npm run build`.
 - For migration changes, run `npx supabase db lint`; run `npx supabase db reset` only when local data reset is acceptable for the task.
