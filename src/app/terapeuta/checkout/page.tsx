@@ -17,7 +17,10 @@ import {
   normalizeTherapistPlan,
   TherapistAuthShell,
 } from "@/features/therapist-auth";
-import { EmbeddedSubscriptionCheckout } from "@/features/therapist-subscription";
+import {
+  EmbeddedSubscriptionCheckout,
+  SubscriptionCheckoutReturnStatus,
+} from "@/features/therapist-subscription";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 import { routes } from "@/lib/routes";
 import {
@@ -42,6 +45,7 @@ export default async function TherapistCheckoutPage({
     checkout?: string;
     created?: string;
     plan?: string;
+    session_id?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -51,7 +55,7 @@ export default async function TherapistCheckoutPage({
     redirect(routes.public.forTherapists);
   }
 
-  const checkoutContinuation = `${routes.public.therapistCheckout}?plan=${requestedPlan}`;
+  const checkoutContinuation = buildCheckoutContinuation(requestedPlan, params);
   const cookieStore = await cookies();
   const hasTherapistCookie = Boolean(
     cookieStore.get("tes_therapist_access_token")?.value,
@@ -73,6 +77,8 @@ export default async function TherapistCheckoutPage({
   });
   const plan = getTherapistPlanDefinition(requestedPlan);
   const hasActivePaidPlan = session.plan !== TherapistPlan.Free;
+  const isSuccessfulCheckoutReturn =
+    params?.checkout === "success" && Boolean(params.session_id);
 
   return (
     <TherapistAuthShell
@@ -184,7 +190,16 @@ export default async function TherapistCheckoutPage({
               </div>
             </div>
 
-            <EmbeddedSubscriptionCheckout plan={requestedPlan} />
+            {isSuccessfulCheckoutReturn && params?.session_id ? (
+              <SubscriptionCheckoutReturnStatus
+                plan={requestedPlan}
+                sessionId={params.session_id}
+              />
+            ) : params?.checkout === "success" ? (
+              <CheckoutReturnMissingSessionId plan={requestedPlan} />
+            ) : (
+              <EmbeddedSubscriptionCheckout plan={requestedPlan} />
+            )}
 
             <TESButton
               href={routes.therapist.home}
@@ -274,6 +289,28 @@ function CheckoutReturnWithoutSession({
   );
 }
 
+function CheckoutReturnMissingSessionId({
+  plan,
+}: {
+  plan: "premium" | "premium_plus";
+}) {
+  return (
+    <section className="rounded-card border border-border bg-white p-5 sm:p-6">
+      <p className="text-sm font-extrabold text-brand-deep">
+        Retorno incompleto do checkout
+      </p>
+      <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+        Nao recebemos a identificacao da sessao Stripe para consultar a
+        confirmacao. Seu plano continua Free e voce pode iniciar uma nova
+        tentativa.
+      </p>
+      <div className="mt-5">
+        <EmbeddedSubscriptionCheckout plan={plan} />
+      </div>
+    </section>
+  );
+}
+
 function isCheckoutReturnStatus(status?: string) {
   return (
     status === "success" ||
@@ -283,6 +320,36 @@ function isCheckoutReturnStatus(status?: string) {
     status === "unauthorized" ||
     status === "unavailable"
   );
+}
+
+function buildCheckoutContinuation(
+  plan: "premium" | "premium_plus",
+  params:
+    | {
+        checkout?: string;
+        created?: string;
+        session_id?: string;
+      }
+    | undefined,
+) {
+  const searchParams = new URLSearchParams({ plan });
+
+  if (isCheckoutReturnStatus(params?.checkout)) {
+    searchParams.set("checkout", params?.checkout ?? "");
+  }
+
+  if (
+    typeof params?.session_id === "string" &&
+    /^cs_(test|live)_[A-Za-z0-9_]+$/.test(params.session_id)
+  ) {
+    searchParams.set("session_id", params.session_id);
+  }
+
+  if (params?.created === "1") {
+    searchParams.set("created", "1");
+  }
+
+  return `${routes.public.therapistCheckout}?${searchParams.toString()}`;
 }
 
 function getCheckoutStatusCopy(status?: string) {

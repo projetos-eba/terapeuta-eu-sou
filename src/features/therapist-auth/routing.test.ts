@@ -54,6 +54,16 @@ describe("therapist auth routing", () => {
     );
   });
 
+  it("preserves safe checkout return parameters through login", () => {
+    expect(
+      getSafeTherapistContinuation(
+        `${routes.public.therapistCheckout}?plan=premium_plus&checkout=success&session_id=cs_test_safeReturn123&created=1&ignored=https://evil.test`,
+      ),
+    ).toBe(
+      `${routes.public.therapistCheckout}?plan=premium_plus&checkout=success&session_id=cs_test_safeReturn123&created=1`,
+    );
+  });
+
   it("falls back to the active plan dashboard after login", () => {
     expect(
       getTherapistLoginRedirect(
