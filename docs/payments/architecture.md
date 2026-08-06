@@ -1,6 +1,6 @@
 # Arquitetura de pagamentos TES
 
-Atualizado em 2026-07-25.
+Atualizado em 2026-08-06.
 
 ## Visao geral
 
@@ -11,7 +11,13 @@ O TES separa dois fluxos Stripe:
   hospedado como contingencia.
 - Stripe Connect: cobranca de sessoes na conta da plataforma, com separate charges and transfers e repasse posterior ao terapeuta.
 
-O redirecionamento do Checkout nunca ativa plano nem confirma pagamento sozinho. O estado local muda por webhooks assinados, reservados atomicamente e idempotentes.
+O redirecionamento do Checkout nunca ativa plano nem confirma pagamento sozinho.
+O estado local muda por webhooks assinados, reservados atomicamente e
+idempotentes. Quando o retorno chega antes do webhook, a tela chama uma rota
+autenticada de status que recupera a Checkout Session e a Subscription
+diretamente na Stripe, valida `customer`, `client_reference_id`, metadata,
+ambiente e Price ID, e aplica a mesma sincronizacao idempotente usada pelo
+webhook. O parametro `checkout=success` continua sem autoridade propria.
 
 ## Rotas de retorno
 
@@ -124,6 +130,9 @@ sequenceDiagram
   S->>TES: webhook assinado
   TES->>DB: atualiza therapist_subscriptions
   TES->>DB: ativa therapist_profiles.plan se estado Stripe permitir
+  T->>TES: retorno success consulta status autenticado
+  TES->>S: recupera Checkout Session/Subscription
+  TES->>DB: reconcilia se a Stripe confirmar assinatura paga valida
 ```
 
 ```mermaid
@@ -153,6 +162,7 @@ Billing:
 
 - `stripe-sync-billing-catalog`
 - `stripe-create-subscription-checkout`
+- `stripe-subscription-checkout-status`
 - `stripe-change-therapist-subscription`
 - `stripe-cancel-therapist-subscription`
 - `stripe-create-billing-portal`
