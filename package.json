@@ -22,6 +22,7 @@
     "payments:e2e:seed": "node scripts/payments/e2e-data.mjs seed",
     "payments:e2e:status": "node scripts/payments/e2e-data.mjs status",
     "payments:e2e:cleanup": "node scripts/payments/e2e-data.mjs cleanup",
+    "payments:e2e:subscription:approved": "node scripts/payments/complete-subscription-checkout-local.mjs",
     "test:e2e:payments:headed": "node scripts/payments/run-payments-e2e-headed.mjs",
     "zoom:video-sdk:env": "node scripts/zoom/video-sdk-env.mjs",
     "zoom:video-sdk:test": "node scripts/zoom/video-sdk-test.mjs",
