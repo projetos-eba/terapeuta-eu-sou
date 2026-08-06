@@ -11,8 +11,11 @@ export class SupabaseFunctionError extends Error {
   constructor(
     readonly functionName: string,
     readonly status: number,
+    readonly code?: string,
+    message?: string,
+    readonly requestId?: string,
   ) {
-    super(`Supabase Edge Function ${functionName} failed.`);
+    super(message ?? `Supabase Edge Function ${functionName} failed.`);
   }
 }
 
@@ -41,19 +44,58 @@ export async function invokeSupabaseFunction<T>(
     method: options.method ?? "POST",
   });
 
-  if (!response.ok) {
-    throw new SupabaseFunctionError(functionName, response.status);
-  }
-
   if (response.status === 204) {
     return undefined as T;
   }
 
   const text = await response.text();
 
+  if (!response.ok) {
+    const failure = parseSupabaseFunctionFailure(text);
+
+    throw new SupabaseFunctionError(
+      functionName,
+      response.status,
+      failure.code,
+      failure.message,
+      failure.requestId,
+    );
+  }
+
   if (!text) {
     return undefined as T;
   }
 
   return JSON.parse(text) as T;
+}
+
+function parseSupabaseFunctionFailure(text: string) {
+  if (!text) return {};
+
+  try {
+    const payload = JSON.parse(text) as {
+      error?: {
+        code?: unknown;
+        message?: unknown;
+        requestId?: unknown;
+      };
+    };
+
+    return {
+      code:
+        typeof payload.error?.code === "string"
+          ? payload.error.code
+          : undefined,
+      message:
+        typeof payload.error?.message === "string"
+          ? payload.error.message
+          : undefined,
+      requestId:
+        typeof payload.error?.requestId === "string"
+          ? payload.error.requestId
+          : undefined,
+    };
+  } catch {
+    return {};
+  }
 }

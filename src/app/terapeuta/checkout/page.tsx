@@ -20,6 +20,7 @@ import { routes } from "@/lib/routes";
 import {
   getSupabasePublicConfig,
   invokeSupabaseFunction,
+  SupabaseFunctionError,
 } from "@/lib/supabase/edge-functions";
 
 export const metadata: Metadata = {
@@ -54,6 +55,7 @@ export default async function TherapistCheckoutPage({
   });
   const plan = getTherapistPlanDefinition(requestedPlan);
   const hasActivePaidPlan = session.plan !== TherapistPlan.Free;
+  const checkoutRequestId = crypto.randomUUID();
 
   return (
     <TherapistAuthShell
@@ -156,14 +158,10 @@ export default async function TherapistCheckoutPage({
                 />
                 <div>
                   <p className="text-sm font-extrabold text-brand-deep">
-                    {params?.checkout === "success"
-                      ? "Pagamento em confirmacao"
-                      : "Pagamento online seguro"}
+                    {getCheckoutStatusCopy(params?.checkout).title}
                   </p>
                   <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                    {params?.checkout === "success"
-                      ? "Recebemos seu retorno do Stripe. O plano pago sera liberado somente apos o webhook confirmar a assinatura."
-                      : "Voce seguira para o Stripe para concluir a assinatura. O plano pago sera ativado somente apos a confirmacao do webhook."}
+                    {getCheckoutStatusCopy(params?.checkout).description}
                   </p>
                 </div>
               </div>
@@ -171,6 +169,7 @@ export default async function TherapistCheckoutPage({
 
             <form action={startSubscriptionCheckoutAction}>
               <input type="hidden" name="plan" value={requestedPlan} />
+              <input type="hidden" name="requestId" value={checkoutRequestId} />
               <button
                 type="submit"
                 aria-describedby="checkout-availability"
@@ -207,6 +206,7 @@ async function startSubscriptionCheckoutAction(formData: FormData) {
   const requestedPlan = normalizeTherapistPlan(
     String(formData.get("plan") ?? ""),
   );
+  const requestId = String(formData.get("requestId") ?? "");
 
   if (!isPaidTherapistPlan(requestedPlan)) {
     redirect(routes.public.forTherapists);
@@ -229,21 +229,103 @@ async function startSubscriptionCheckoutAction(formData: FormData) {
       ok: boolean;
     }>(config, "stripe-create-subscription-checkout", {
       accessToken: session.accessToken,
-      body: { plan: requestedPlan },
+      body: { plan: requestedPlan, requestId },
     });
 
     if (response.ok && response.data?.url) {
       redirect(response.data.url);
     }
-  } catch {
+  } catch (error) {
+    if (isNextRedirect(error)) throw error;
+
+    const checkoutStatus = getCheckoutFailureStatus(error);
+
     redirect(
-      `${routes.public.therapistCheckout}?plan=${requestedPlan}&checkout=unavailable`,
+      `${routes.public.therapistCheckout}?plan=${requestedPlan}&checkout=${checkoutStatus}`,
     );
   }
 
   redirect(
     `${routes.public.therapistCheckout}?plan=${requestedPlan}&checkout=unavailable`,
   );
+}
+
+function getCheckoutFailureStatus(error: unknown) {
+  if (error instanceof SupabaseFunctionError) {
+    if (
+      error.code === "stripe_price_missing" ||
+      error.code === "billing_price_not_found" ||
+      error.code === "stripe_catalog_mismatch"
+    ) {
+      return "catalog";
+    }
+
+    if (
+      error.code === "missing_stripe_env" ||
+      error.code === "missing_supabase_env" ||
+      error.code === "invalid_stripe_secret_key"
+    ) {
+      return "configuration";
+    }
+
+    if (
+      error.code === "unauthorized" ||
+      error.code === "role_mismatch" ||
+      error.status === 401 ||
+      error.status === 403
+    ) {
+      return "unauthorized";
+    }
+  }
+
+  return "unavailable";
+}
+
+function getCheckoutStatusCopy(status?: string) {
+  switch (status) {
+    case "success":
+      return {
+        title: "Pagamento em confirmacao",
+        description:
+          "Recebemos seu retorno do Stripe. O plano pago sera liberado somente apos o webhook confirmar a assinatura.",
+      };
+    case "canceled":
+      return {
+        title: "Checkout cancelado",
+        description:
+          "Seu plano continua Free. Voce pode retomar o pagamento quando quiser, sem alterar sua conta pelo retorno do Stripe.",
+      };
+    case "catalog":
+      return {
+        title: "Catalogo em sincronizacao",
+        description:
+          "Nao conseguimos carregar o preco deste plano agora. Nossa equipe precisa sincronizar o catalogo Stripe antes de liberar o checkout.",
+      };
+    case "configuration":
+      return {
+        title: "Pagamento indisponivel",
+        description:
+          "A configuracao de pagamentos esta indisponivel neste ambiente. Tente novamente em alguns instantes.",
+      };
+    case "unauthorized":
+      return {
+        title: "Sessao expirada",
+        description:
+          "Entre novamente como terapeuta para continuar com a assinatura escolhida.",
+      };
+    case "unavailable":
+      return {
+        title: "Checkout indisponivel",
+        description:
+          "Nao conseguimos iniciar o checkout agora. Seu plano continua Free e nenhuma cobranca foi criada.",
+      };
+    default:
+      return {
+        title: "Pagamento online seguro",
+        description:
+          "Voce seguira para o Stripe para concluir a assinatura. O plano pago sera ativado somente apos a confirmacao do webhook.",
+      };
+  }
 }
 
 async function openBillingPortalAction() {
@@ -267,11 +349,22 @@ async function openBillingPortalAction() {
     if (response.ok && response.data?.url) {
       redirect(response.data.url);
     }
-  } catch {
+  } catch (error) {
+    if (isNextRedirect(error)) throw error;
+
     redirect(getTherapistDashboardHref(session.plan));
   }
 
   redirect(getTherapistDashboardHref(session.plan));
+}
+
+function isNextRedirect(error: unknown) {
+  return (
+    error instanceof Error &&
+    "digest" in error &&
+    typeof error.digest === "string" &&
+    error.digest.startsWith("NEXT_REDIRECT")
+  );
 }
 
 function StatusItem({
