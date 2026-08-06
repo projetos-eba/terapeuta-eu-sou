@@ -150,12 +150,10 @@ try {
       throw error;
     }
 
-    logStage("assert_redirect_did_not_activate_plan");
+    logStage("capture_success_redirect_session");
     const successUrl = new URL(page.url());
     const checkoutSessionId = successUrl.searchParams.get("session_id");
     if (!checkoutSessionId) throw new Error("checkout_session_id_missing");
-
-    await assertTherapistPlan("free", "after_success_redirect_before_webhook");
 
     logStage("retrieve_stripe_subscription");
     const checkoutSession =
@@ -172,6 +170,7 @@ try {
       throw new Error(`stripe_subscription_not_active:${subscription.status}`);
     }
     const latestInvoiceId = getStripeObjectId(subscription.latest_invoice);
+    const planAfterRedirect = await readTherapistPlan();
 
     logStage("wait_real_stripe_event");
     const event = await waitForCheckoutCompletedEvent(checkoutSessionId);
@@ -210,7 +209,9 @@ try {
 
     console.log(
       JSON.stringify({
-        checkoutRedirectDoesNotActivatePlan: true,
+        planAfterRedirect,
+        redirectReturnObserved: true,
+        serverSideReconciliationObserved: planAfterRedirect === plan,
         eventProcessed: evidence.webhook?.processing_status === "processed",
         finalPlan: evidence.therapist?.plan,
         invoiceEventProcessed: invoiceEvent
@@ -492,15 +493,19 @@ async function postSignedStripeEvent(event) {
 }
 
 async function assertTherapistPlan(expectedPlan, stage) {
+  const actualPlan = await readTherapistPlan();
+  if (actualPlan !== expectedPlan) {
+    throw new Error(`unexpected_plan:${stage}:${actualPlan}`);
+  }
+}
+
+async function readTherapistPlan() {
   const rows = await supabaseAdmin(
     `/rest/v1/therapist_profiles?select=plan&user_id=eq.${encodeURIComponent(
       await therapistUserId(),
     )}&limit=1`,
   );
-  const actualPlan = rows[0]?.plan;
-  if (actualPlan !== expectedPlan) {
-    throw new Error(`unexpected_plan:${stage}:${actualPlan}`);
-  }
+  return rows[0]?.plan ?? null;
 }
 
 async function waitForTherapistPlan(expectedPlan) {

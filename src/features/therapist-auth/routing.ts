@@ -74,8 +74,35 @@ export function getSafeTherapistContinuation(value?: string | null) {
       return null;
     }
 
-    return getTherapistCheckoutHref(plan);
+    const safeSearchParams = new URLSearchParams({ plan });
+    const checkoutStatus = url.searchParams.get("checkout");
+    const sessionId = url.searchParams.get("session_id");
+
+    if (isAllowedCheckoutReturnStatus(checkoutStatus)) {
+      safeSearchParams.set("checkout", checkoutStatus);
+    }
+
+    if (sessionId && /^cs_(test|live)_[A-Za-z0-9_]+$/.test(sessionId)) {
+      safeSearchParams.set("session_id", sessionId);
+    }
+
+    if (url.searchParams.get("created") === "1") {
+      safeSearchParams.set("created", "1");
+    }
+
+    return `${routes.public.therapistCheckout}?${safeSearchParams.toString()}`;
   } catch {
     return null;
   }
+}
+
+function isAllowedCheckoutReturnStatus(value: string | null) {
+  return (
+    value === "success" ||
+    value === "canceled" ||
+    value === "catalog" ||
+    value === "configuration" ||
+    value === "unauthorized" ||
+    value === "unavailable"
+  );
 }

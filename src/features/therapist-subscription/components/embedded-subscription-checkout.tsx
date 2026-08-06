@@ -46,6 +46,7 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
   const [fallbackError, setFallbackError] = useState<string | null>(null);
   const [isOpeningHostedCheckout, setIsOpeningHostedCheckout] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [resetKey, setResetKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,7 +93,7 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
                   method: "POST",
                 },
               );
-              const data = (await response.json()) as CheckoutResponse;
+              const data = await parseCheckoutResponse(response);
 
               if (!data.ok) {
                 throw new Error(data.message);
@@ -146,7 +147,7 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
       checkoutRef.current?.destroy();
       checkoutRef.current = null;
     };
-  }, [plan]);
+  }, [plan, resetKey]);
 
   async function openHostedCheckoutFallback() {
     setFallbackError(null);
@@ -164,7 +165,7 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
         },
         method: "POST",
       });
-      const data = (await response.json()) as CheckoutResponse;
+      const data = await parseCheckoutResponse(response);
 
       if (!data.ok) {
         throw new Error(data.message);
@@ -237,19 +238,31 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
           >
             {error}
           </p>
-          <button
-            type="button"
-            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-brand-primary/30 bg-white px-5 py-2.5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={isOpeningHostedCheckout}
-            onClick={() => void openHostedCheckoutFallback()}
-          >
-            {isOpeningHostedCheckout ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <CreditCard className="size-4" aria-hidden="true" />
-            )}
-            Continuar para pagamento em nova etapa
-          </button>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-brand-primary/30 bg-white px-5 py-2.5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
+              onClick={() => {
+                setFallbackError(null);
+                setResetKey((value) => value + 1);
+              }}
+            >
+              Tentar novamente
+            </button>
+            <button
+              type="button"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-2xl border border-brand-primary/30 bg-white px-5 py-2.5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={isOpeningHostedCheckout}
+              onClick={() => void openHostedCheckoutFallback()}
+            >
+              {isOpeningHostedCheckout ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <CreditCard className="size-4" aria-hidden="true" />
+              )}
+              Abrir Stripe
+            </button>
+          </div>
           {fallbackError ? (
             <p className="text-xs font-bold text-status-danger">
               {fallbackError}
@@ -275,6 +288,38 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
       ) : null}
     </section>
   );
+}
+
+async function parseCheckoutResponse(response: Response) {
+  const text = await response.text();
+  let data: CheckoutResponse | null = null;
+
+  try {
+    data = text ? (JSON.parse(text) as CheckoutResponse) : null;
+  } catch {
+    data = null;
+  }
+
+  if (!response.ok) {
+    return {
+      code: data?.ok === false ? data.code : "checkout_unavailable",
+      message:
+        data?.ok === false
+          ? data.message
+          : "Não conseguimos iniciar o pagamento agora. Tente novamente.",
+      ok: false,
+    } satisfies CheckoutResponse;
+  }
+
+  if (!data) {
+    return {
+      code: "invalid_checkout_response",
+      message: "Não conseguimos iniciar o pagamento agora. Tente novamente.",
+      ok: false,
+    } satisfies CheckoutResponse;
+  }
+
+  return data;
 }
 
 function loadStripeScript() {

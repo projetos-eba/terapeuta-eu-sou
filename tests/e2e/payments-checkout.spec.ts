@@ -71,4 +71,26 @@ test.describe("payments checkout smoke", () => {
       page.locator("#subscription-embedded-checkout iframe").first(),
     ).toBeVisible({ timeout: 30_000 });
   });
+
+  test("does not create a new embedded checkout after success redirect", async ({
+    page,
+  }) => {
+    await page.goto(
+      "/terapeuta/login?next=%2Fterapeuta%2Fcheckout%3Fplan%3Dpremium_plus%26checkout%3Dsuccess%26session_id%3Dcs_test_fake_success_return",
+    );
+
+    await page.getByLabel("E-mail").fill(therapistEmail);
+    await page.getByLabel("Senha").fill(password);
+    await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
+
+    await expect(page).toHaveURL(/checkout=success/);
+    await expect(
+      page.getByText(
+        /Confirmando seu pagamento|Confirmacao temporariamente indisponivel/i,
+      ),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.locator("#subscription-embedded-checkout iframe"),
+    ).toHaveCount(0);
+  });
 });
