@@ -6,7 +6,9 @@ Atualizado em 2026-07-25.
 
 O TES separa dois fluxos Stripe:
 
-- Stripe Billing: assinatura mensal dos terapeutas nos planos `premium` e `premium_plus`.
+- Stripe Billing: assinatura mensal dos terapeutas nos planos `premium` e
+  `premium_plus`, com Checkout incorporado como fluxo principal e Checkout
+  hospedado como contingencia.
 - Stripe Connect: cobranca de sessoes na conta da plataforma, com separate charges and transfers e repasse posterior ao terapeuta.
 
 O redirecionamento do Checkout nunca ativa plano nem confirma pagamento sozinho. O estado local muda por webhooks assinados, reservados atomicamente e idempotentes.
@@ -118,7 +120,7 @@ sequenceDiagram
   T->>TES: criar checkout de assinatura
   TES->>DB: valida terapeuta e plano
   TES->>S: cria Checkout Session subscription
-  S-->>T: Checkout hospedado
+  S-->>T: client_secret do Checkout incorporado ou URL hospedada de fallback
   S->>TES: webhook assinado
   TES->>DB: atualiza therapist_subscriptions
   TES->>DB: ativa therapist_profiles.plan se estado Stripe permitir
@@ -301,6 +303,7 @@ Configuracao detalhada para o Dashboard Stripe:
 - `invoice.paid`
 - `invoice.payment_failed`
 - `invoice.payment_action_required`
+- `invoice.finalization_failed`
 - `payment_intent.processing`
 - `payment_intent.succeeded`
 - `payment_intent.payment_failed`

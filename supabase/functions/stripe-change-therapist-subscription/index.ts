@@ -13,6 +13,7 @@ import {
   getPaymentsRuntime,
 } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
+import { getStripeSubscriptionPeriod } from "../_shared/payments/stripe-subscription.ts";
 
 type Body = {
   targetPlan?: string;
@@ -81,7 +82,7 @@ runtime.serve(async (request) => {
     }
 
     const [targetPrice] = await client.get<BillingPriceRow[]>(
-      `/rest/v1/billing_plan_prices?select=stripe_price_id&billing_plans!inner(code)&billing_plans.code=eq.${targetPlan}&is_active=eq.true&limit=1`,
+      `/rest/v1/billing_plan_prices?select=stripe_price_id,billing_plans!inner(code)&billing_plans.code=eq.${targetPlan}&is_active=eq.true&limit=1`,
     );
 
     if (!targetPrice?.stripe_price_id) {
@@ -139,13 +140,10 @@ runtime.serve(async (request) => {
       });
     }
 
-    const currentPeriodStart = numberOrNull(
-      (subscription as unknown as Record<string, unknown>)
-        .current_period_start,
-    );
-    const currentPeriodEnd = numberOrNull(
-      (subscription as unknown as Record<string, unknown>).current_period_end,
-    );
+    const { currentPeriodEnd, currentPeriodStart } =
+      getStripeSubscriptionPeriod(
+        subscription as unknown as Record<string, unknown>,
+      );
 
     if (currentPeriodStart === null || currentPeriodEnd === null) {
       throw new DomainError(
@@ -156,20 +154,18 @@ runtime.serve(async (request) => {
     }
 
     const schedule = await stripe.subscriptionSchedules.create(
-      {
-        from_subscription: subscription.id,
-        metadata: {
-          plan_code: targetPlan,
-          system: "tes",
-          tes_therapist_id: therapist.id,
-          user_id: user.id,
-        },
-      },
+      { from_subscription: subscription.id },
       { idempotencyKey },
     );
 
     await stripe.subscriptionSchedules.update(schedule.id, {
       end_behavior: "release",
+      metadata: {
+        plan_code: targetPlan,
+        system: "tes",
+        tes_therapist_id: therapist.id,
+        user_id: user.id,
+      },
       phases: [
         {
           end_date: currentPeriodEnd,
@@ -228,10 +224,6 @@ runtime.serve(async (request) => {
 function normalizePaidPlan(value: unknown): "premium" | "premium_plus" {
   if (value === "premium" || value === "premium_plus") return value;
   throw new DomainError("invalid_plan", 422, "Escolha um plano pago valido.");
-}
-
-function numberOrNull(value: unknown) {
-  return typeof value === "number" ? value : null;
 }
 
 export {};

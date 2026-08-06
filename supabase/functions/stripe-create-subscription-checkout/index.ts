@@ -15,6 +15,7 @@ import {
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 
 type Body = {
+  checkoutUiMode?: string;
   plan?: string;
   requestId?: string;
 };
@@ -57,6 +58,7 @@ runtime.serve(async (request) => {
     const body = await parseJsonBody<Body>(request);
     const plan = normalizePaidPlan(body.plan);
     const checkoutRequestId = normalizeRequestId(body.requestId);
+    const checkoutUiMode = normalizeCheckoutUiMode(body.checkoutUiMode);
     const price = await getBillingPrice(client, plan);
 
     if (!price.stripe_price_id) {
@@ -77,14 +79,16 @@ runtime.serve(async (request) => {
     const existingOpenSession = await findReusableOpenSubscriptionCheckout({
       customerId: customer.stripe_customer_id,
       environment: config.environment,
+      mode: checkoutUiMode,
       plan,
       stripe,
       therapistId: therapist.id,
     });
 
-    if (existingOpenSession?.url) {
+    if (checkoutUiMode === "hosted" && existingOpenSession?.url) {
       return success({
         checkoutSessionId: existingOpenSession.id,
+        checkoutUiMode,
         reused: true,
         url: existingOpenSession.url,
       });
@@ -98,6 +102,7 @@ runtime.serve(async (request) => {
       "tes",
       config.stripeMode,
       "subscription_checkout_v2",
+      checkoutUiMode,
       therapist.id,
       plan,
       checkoutRequestId,
@@ -111,14 +116,14 @@ runtime.serve(async (request) => {
       .replace(/:/g, "_")
       .slice(0, 64);
 
-    const params = {
-      cancel_url: cancelUrl,
+    const baseParams = {
       client_reference_id: therapist.id,
       integration_identifier: integrationIdentifier,
       customer: customer.stripe_customer_id,
       line_items: [{ price: price.stripe_price_id, quantity: 1 }],
       metadata: {
         checkout_request_id: checkoutRequestId,
+        checkout_ui_mode: checkoutUiMode,
         environment: config.environment,
         plan_code: plan,
         stripe_mode: config.stripeMode,
@@ -130,6 +135,7 @@ runtime.serve(async (request) => {
       subscription_data: {
         metadata: {
           checkout_request_id: checkoutRequestId,
+          checkout_ui_mode: checkoutUiMode,
           environment: config.environment,
           plan_code: plan,
           stripe_mode: config.stripeMode,
@@ -138,14 +144,27 @@ runtime.serve(async (request) => {
           user_id: user.id,
         },
       },
-      success_url: successUrl,
     };
+    const params =
+      checkoutUiMode === "embedded"
+        ? {
+            ...baseParams,
+            return_url: `${config.siteUrl}/terapeuta/checkout?plan=${plan}&checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+            ui_mode: "embedded_page" as const,
+          }
+        : {
+            ...baseParams,
+            cancel_url: cancelUrl,
+            success_url: successUrl,
+          };
     const session = await stripe.checkout.sessions.create(params, {
       idempotencyKey,
     });
 
     return success({
       checkoutSessionId: session.id,
+      checkoutUiMode,
+      clientSecret: session.client_secret ?? null,
       url: session.url,
     });
   } catch (error) {
@@ -168,6 +187,18 @@ function normalizeRequestId(value: unknown) {
   }
 
   return value;
+}
+
+function normalizeCheckoutUiMode(value: unknown): "embedded" | "hosted" {
+  if (value === "embedded") return "embedded";
+  if (value === "hosted" || value === undefined || value === null) {
+    return "hosted";
+  }
+  throw new DomainError(
+    "invalid_checkout_ui_mode",
+    422,
+    "Modo de checkout invalido.",
+  );
 }
 
 function isUuid(value: string) {
@@ -242,6 +273,7 @@ async function getOrCreateTherapistCustomer(input: {
 async function findReusableOpenSubscriptionCheckout(input: {
   customerId: string;
   environment: string;
+  mode: "embedded" | "hosted";
   plan: "premium" | "premium_plus";
   stripe: ReturnType<typeof createStripeClient>;
   therapistId: string;
@@ -260,6 +292,7 @@ async function findReusableOpenSubscriptionCheckout(input: {
       session.mode === "subscription" &&
       Boolean(session.url) &&
       (session.expires_at ?? 0) > minimumUsableExpiry &&
+      metadata.checkout_ui_mode === input.mode &&
       metadata.environment === input.environment &&
       metadata.plan_code === input.plan &&
       metadata.system === "tes" &&

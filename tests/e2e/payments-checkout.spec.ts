@@ -41,14 +41,22 @@ test.describe("payments checkout smoke", () => {
     ).toBeVisible();
     await expect(page.getByText("TES Premium")).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Continuar para pagamento" }),
+      page.getByRole("heading", { name: "Checkout seguro no TES" }),
     ).toBeVisible();
-    await expect(page.getByText(/webhook/i)).toBeVisible();
+    await expect(
+      page.getByText(/O formulário abaixo é carregado pela Stripe/i),
+    ).toBeVisible();
+    await expect(
+      page.locator("#subscription-embedded-checkout iframe").first(),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(
+      page.getByText(
+        /Premium e Premium Plus só são liberados após confirmação do webhook Stripe/i,
+      ),
+    ).toBeVisible();
   });
 
-  test("opens Stripe Checkout for Premium Plus with a real click", async ({
-    page,
-  }) => {
+  test("mounts embedded Stripe Checkout for Premium Plus", async ({ page }) => {
     await page.goto(
       "/terapeuta/login?next=%2Fterapeuta%2Fcheckout%3Fplan%3Dpremium_plus",
     );
@@ -58,13 +66,9 @@ test.describe("payments checkout smoke", () => {
     await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
 
     await expect(page).toHaveURL(/\/terapeuta\/checkout\?plan=premium_plus/);
-    await page
-      .getByRole("button", { name: "Continuar para pagamento" })
-      .click();
-
-    await expect(page).toHaveURL(/checkout\.stripe\.com/);
-    await expect(page.getByText(/premium plus/i)).toBeVisible({
-      timeout: 20_000,
-    });
+    await expect(page.getByText("TES Premium Plus")).toBeVisible();
+    await expect(
+      page.locator("#subscription-embedded-checkout iframe").first(),
+    ).toBeVisible({ timeout: 30_000 });
   });
 });
