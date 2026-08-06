@@ -133,6 +133,8 @@ sequenceDiagram
   T->>TES: retorno success consulta status autenticado
   TES->>S: recupera Checkout Session/Subscription
   TES->>DB: reconcilia se a Stripe confirmar assinatura paga valida
+  TES-->>T: retorna status active e atualiza cookie auxiliar de plano
+  T->>T: redireciona para /terapeuta sem recriar Checkout
 ```
 
 ```mermaid

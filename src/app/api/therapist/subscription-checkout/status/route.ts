@@ -2,6 +2,11 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import {
+  TherapistPlan,
+  type TherapistPlan as TherapistPlanValue,
+} from "@/domain/tes";
+import { setTherapistPlanCookie } from "@/features/therapist-auth/session-cookies";
+import {
   getSupabasePublicConfig,
   invokeSupabaseFunction,
   SupabaseFunctionError,
@@ -62,13 +67,22 @@ export async function POST(request: Request) {
       method: "POST",
     });
 
-    return NextResponse.json(
+    const response = NextResponse.json(
       {
         checkout: payload.data,
         ok: true,
       },
       { status: 200 },
     );
+
+    if (
+      payload.data.status === "active" &&
+      isConfirmedPaidPlan(payload.data.plan)
+    ) {
+      setTherapistPlanCookie(response, payload.data.plan);
+    }
+
+    return response;
   } catch (error) {
     if (error instanceof Response) return error;
 
@@ -97,6 +111,12 @@ export async function POST(request: Request) {
       requestId,
     );
   }
+}
+
+function isConfirmedPaidPlan(
+  plan: StatusResponse["plan"],
+): plan is TherapistPlanValue {
+  return plan === TherapistPlan.Premium || plan === TherapistPlan.PremiumPlus;
 }
 
 async function parseSessionId(request: Request) {
