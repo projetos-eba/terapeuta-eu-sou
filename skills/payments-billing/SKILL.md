@@ -93,6 +93,9 @@ Never expose, log, screenshot, or write real secret values.
 - `/terapeuta/checkout?checkout=success&session_id=...` must not mount a new
   embedded Checkout; it must poll the authenticated status route with a bounded
   retry window.
+- When that authenticated status route returns a Stripe-confirmed paid
+  subscription as `active`, the web session may refresh its auxiliary plan
+  cookie and the checkout UI must redirect to `/terapeuta`.
 - E2E must use real Supabase Auth users and RLS, no auth bypass.
 - Use Stripe test mode only and never real cards.
 - Do not persist passwords, tokens, card data, or secrets in screenshots, traces, or reports.
