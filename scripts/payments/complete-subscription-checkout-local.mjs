@@ -19,6 +19,13 @@ loadEnvFiles();
 const runId = process.env.PAYMENTS_E2E_RUN_ID ?? "tes-payments-e2e-local";
 const password = process.env.PAYMENTS_E2E_PASSWORD ?? "TesE2e!ChangeMe2026";
 const baseUrl = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3000";
+const plan = normalizePaidPlan(process.env.PAYMENTS_E2E_PLAN ?? "premium");
+const scenario = normalizeScenario(
+  process.env.PAYMENTS_E2E_SCENARIO ?? "approved",
+);
+const shouldOpenPortal = process.env.PAYMENTS_E2E_OPEN_PORTAL === "true";
+const shouldKeepSubscription =
+  process.env.PAYMENTS_E2E_KEEP_SUBSCRIPTION === "true";
 const supabaseUrl = getSupabaseUrl();
 const supabaseAnonKey = getSupabaseAnonKey();
 const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
@@ -63,6 +70,8 @@ let cachedTherapistUserId;
 let subscriptionId = null;
 
 try {
+  logStage("cleanup_existing_e2e_stripe_subscriptions");
+  await cancelExistingE2EStripeSubscriptions();
   logStage("launch_browser");
   browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({
@@ -72,80 +81,154 @@ try {
 
   logStage("open_login");
   await page.goto(
-    `${baseUrl}/terapeuta/login?next=%2Fterapeuta%2Fcheckout%3Fplan%3Dpremium`,
+    `${baseUrl}/terapeuta/login?next=${encodeURIComponent(
+      `/terapeuta/checkout?plan=${plan}`,
+    )}`,
   );
   await page.getByLabel("E-mail").fill(therapistEmail);
   await page.getByLabel("Senha").fill(password);
   logStage("submit_login");
   await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
-  await page.waitForURL(/\/terapeuta\/checkout\?plan=premium/, {
-    timeout: 20_000,
-  });
+  await page.waitForURL(
+    new RegExp(`/terapeuta/checkout\\?plan=${plan.replace("_", "_")}`),
+    {
+      timeout: 20_000,
+    },
+  );
 
   logStage("assert_free_before_checkout");
   await assertTherapistPlan("free", "before_checkout");
 
-  logStage("open_stripe_checkout");
-  await page.getByRole("button", { name: "Continuar para pagamento" }).click();
-  await page.waitForURL(/checkout\.stripe\.com/, { timeout: 30_000 });
+  logStage("wait_embedded_stripe_checkout");
+  await page
+    .locator("#subscription-embedded-checkout iframe")
+    .first()
+    .waitFor({ state: "visible", timeout: 45_000 });
 
-  logStage("fill_approved_card");
-  await fillApprovedStripeCard(page);
-  logStage("wait_success_redirect");
-  await page.waitForURL(/\/terapeuta\/checkout\?.*checkout=success/, {
-    timeout: 120_000,
-  });
+  if (scenario === "canceled") {
+    logStage("cancel_stripe_checkout");
+    await cancelStripeCheckout(page);
+    await page.waitForURL(/\/terapeuta\/checkout\?.*checkout=canceled/, {
+      timeout: 30_000,
+    });
+    await assertTherapistPlan("free", "after_checkout_canceled");
+    console.log(
+      JSON.stringify({
+        finalPlan: "free",
+        ok: true,
+        plan,
+        scenario,
+      }),
+    );
+  } else if (scenario === "declined") {
+    logStage("fill_declined_card");
+    await fillStripeCard(page, "4000000000000002");
+    logStage("assert_declined_state");
+    await expectStripeDecline(page);
+    await assertTherapistPlan("free", "after_declined_card");
+    console.log(
+      JSON.stringify({
+        finalPlan: "free",
+        ok: true,
+        plan,
+        scenario,
+      }),
+    );
+  } else {
+    logStage("fill_approved_card");
+    await fillStripeCard(page, "4242424242424242");
+    logStage("wait_success_redirect");
+    try {
+      await page.waitForURL(/\/terapeuta\/checkout\?.*checkout=success/, {
+        timeout: 120_000,
+      });
+    } catch (error) {
+      await page.screenshot({
+        fullPage: true,
+        path: `test-results/payments-subscription-approved/${plan}-${scenario}-redirect-timeout.png`,
+      });
+      throw error;
+    }
 
-  logStage("assert_redirect_did_not_activate_plan");
-  const successUrl = new URL(page.url());
-  const checkoutSessionId = successUrl.searchParams.get("session_id");
-  if (!checkoutSessionId) throw new Error("checkout_session_id_missing");
+    logStage("assert_redirect_did_not_activate_plan");
+    const successUrl = new URL(page.url());
+    const checkoutSessionId = successUrl.searchParams.get("session_id");
+    if (!checkoutSessionId) throw new Error("checkout_session_id_missing");
 
-  await assertTherapistPlan("free", "after_success_redirect_before_webhook");
+    await assertTherapistPlan("free", "after_success_redirect_before_webhook");
 
-  logStage("retrieve_stripe_subscription");
-  const checkoutSession =
-    await stripe.checkout.sessions.retrieve(checkoutSessionId);
-  subscriptionId =
-    typeof checkoutSession.subscription === "string"
-      ? checkoutSession.subscription
-      : checkoutSession.subscription?.id;
+    logStage("retrieve_stripe_subscription");
+    const checkoutSession =
+      await stripe.checkout.sessions.retrieve(checkoutSessionId);
+    subscriptionId =
+      typeof checkoutSession.subscription === "string"
+        ? checkoutSession.subscription
+        : checkoutSession.subscription?.id;
 
-  if (!subscriptionId) throw new Error("stripe_subscription_missing");
+    if (!subscriptionId) throw new Error("stripe_subscription_missing");
 
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-  if (subscription.status !== "active") {
-    throw new Error(`stripe_subscription_not_active:${subscription.status}`);
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+    if (subscription.status !== "active") {
+      throw new Error(`stripe_subscription_not_active:${subscription.status}`);
+    }
+    const latestInvoiceId = getStripeObjectId(subscription.latest_invoice);
+
+    logStage("wait_real_stripe_event");
+    const event = await waitForCheckoutCompletedEvent(checkoutSessionId);
+    logStage("post_signed_webhook_event");
+    const webhookResponse = await postSignedStripeEvent(event);
+
+    if (!webhookResponse.ok) {
+      throw new Error(`webhook_failed:${webhookResponse.status}`);
+    }
+
+    let invoiceEvent = null;
+    if (latestInvoiceId) {
+      logStage("wait_real_invoice_paid_event");
+      invoiceEvent = await waitForStripeEvent("invoice.paid", latestInvoiceId);
+      logStage("post_signed_invoice_webhook_event");
+      const invoiceWebhookResponse = await postSignedStripeEvent(invoiceEvent);
+
+      if (!invoiceWebhookResponse.ok) {
+        throw new Error(
+          `invoice_webhook_failed:${invoiceWebhookResponse.status}`,
+        );
+      }
+    }
+
+    logStage("wait_local_plan_update");
+    await waitForTherapistPlan(plan);
+    logStage("collect_evidence");
+    const evidence = await collectBillingEvidence(event.id, subscriptionId);
+
+    if (shouldOpenPortal) {
+      logStage("open_billing_portal");
+      const portalButton = await waitForBillingPortalButton(page);
+      await portalButton.click();
+      await page.waitForURL(/billing\.stripe\.com/, { timeout: 30_000 });
+    }
+
+    console.log(
+      JSON.stringify({
+        checkoutRedirectDoesNotActivatePlan: true,
+        eventProcessed: evidence.webhook?.processing_status === "processed",
+        finalPlan: evidence.therapist?.plan,
+        invoiceEventProcessed: invoiceEvent
+          ? evidence.invoice?.status === "paid"
+          : undefined,
+        invoiceStatus: evidence.invoice?.status ?? null,
+        localSubscriptionStatus: evidence.subscription?.status ?? null,
+        ok: true,
+        plan,
+        portalOpened: shouldOpenPortal || undefined,
+        scenario,
+        stripeSubscriptionStatus: subscription.status,
+        webhookDelivery: "local_signed_replay_of_real_stripe_event",
+      }),
+    );
   }
-
-  logStage("wait_real_stripe_event");
-  const event = await waitForCheckoutCompletedEvent(checkoutSessionId);
-  logStage("post_signed_webhook_event");
-  const webhookResponse = await postSignedStripeEvent(event);
-
-  if (!webhookResponse.ok) {
-    throw new Error(`webhook_failed:${webhookResponse.status}`);
-  }
-
-  logStage("wait_local_plan_update");
-  await waitForTherapistPlan("premium");
-  logStage("collect_evidence");
-  const evidence = await collectBillingEvidence(event.id, subscriptionId);
-
-  console.log(
-    JSON.stringify({
-      checkoutRedirectDoesNotActivatePlan: true,
-      eventProcessed: evidence.webhook?.processing_status === "processed",
-      finalPlan: evidence.therapist?.plan,
-      invoiceStatus: evidence.invoice?.status ?? null,
-      localSubscriptionStatus: evidence.subscription?.status ?? null,
-      ok: true,
-      stripeSubscriptionStatus: subscription.status,
-      webhookDelivery: "local_signed_replay_of_real_stripe_event",
-    }),
-  );
 } finally {
-  if (subscriptionId) {
+  if (subscriptionId && !shouldKeepSubscription) {
     await stripe.subscriptions.cancel(subscriptionId).catch(() => undefined);
   }
 
@@ -153,14 +236,32 @@ try {
 }
 
 function logStage(stage) {
-  console.log(JSON.stringify({ stage }));
+  console.log(JSON.stringify({ plan, scenario, stage }));
 }
 
-async function fillApprovedStripeCard(page) {
+function normalizePaidPlan(value) {
+  if (value === "premium" || value === "premium_plus") return value;
+
+  console.error("PAYMENTS_E2E_PLAN must be premium or premium_plus.");
+  process.exit(1);
+}
+
+function normalizeScenario(value) {
+  if (value === "approved" || value === "declined" || value === "canceled") {
+    return value;
+  }
+
+  console.error(
+    "PAYMENTS_E2E_SCENARIO must be approved, declined or canceled.",
+  );
+  process.exit(1);
+}
+
+async function fillStripeCard(page, cardNumber) {
   await fillStripeField(
     page,
     /Card number|Numero do cartao|Número do cartão/i,
-    "4242424242424242",
+    cardNumber,
     [
       'input[name="cardnumber"]',
       'input[autocomplete="cc-number"]',
@@ -202,6 +303,48 @@ async function fillApprovedStripeCard(page) {
     page,
     /Pay|Pagar|Finalizar|Confirmar|Subscribe|Assinar/i,
   );
+}
+
+async function cancelStripeCheckout(page) {
+  const locator =
+    (await findLocatorInPageOrFrames(page, (scope) =>
+      scope.getByRole("link", { name: /Cancelar e voltar/i }).first(),
+    )) ??
+    (await findLocatorInPageOrFrames(page, (scope) =>
+      scope
+        .getByRole("link", {
+          name: /Voltar|Return|Cancelar|Cancel|Back|Terapeuta/i,
+        })
+        .first(),
+    )) ??
+    (await findFirstSelectorInPageOrFrames(page, [
+      'a[href*="checkout=canceled"]',
+      'a[href*="/terapeuta/checkout"]',
+    ]));
+
+  if (!locator) throw new Error("stripe_cancel_link_not_found");
+
+  await locator.click({ timeout: 15_000 });
+}
+
+async function expectStripeDecline(page) {
+  const deadline = Date.now() + 30_000;
+  const errorText =
+    /declined|recusad|cartao foi recusado|cartão foi recusado|Your card was declined/i;
+
+  while (Date.now() < deadline) {
+    const errorLocator = await findLocatorInPageOrFrames(page, (scope) =>
+      scope.getByText(errorText).first(),
+    );
+    if (errorLocator) return;
+    await delay(500);
+  }
+
+  await page.screenshot({
+    fullPage: true,
+    path: `test-results/payments-subscription-approved/${plan}-${scenario}-decline-timeout.png`,
+  });
+  throw new Error("stripe_decline_message_not_visible");
 }
 
 async function fillStripeField(page, label, value, selectors = []) {
@@ -246,6 +389,19 @@ async function clickStripeButton(page, label) {
   if (!locator) throw new Error("stripe_submit_button_not_found");
   await locator.scrollIntoViewIfNeeded({ timeout: 10_000 });
   await locator.click({ timeout: 15_000 });
+}
+
+async function waitForBillingPortalButton(page) {
+  const deadline = Date.now() + 60_000;
+  const locator = page.getByRole("button", { name: "Gerenciar assinatura" });
+
+  while (Date.now() < deadline) {
+    await page.reload({ waitUntil: "networkidle" });
+    if (await locator.isVisible().catch(() => false)) return locator;
+    await delay(2000);
+  }
+
+  throw new Error("billing_portal_button_not_visible_after_webhook");
 }
 
 async function findFirstSelectorInPageOrFrames(page, selectors) {
@@ -299,19 +455,23 @@ async function findLocatorInPageOrFrames(page, buildLocator) {
 }
 
 async function waitForCheckoutCompletedEvent(checkoutSessionId) {
+  return waitForStripeEvent("checkout.session.completed", checkoutSessionId);
+}
+
+async function waitForStripeEvent(type, objectId) {
   const deadline = Date.now() + 90_000;
   while (Date.now() < deadline) {
     const events = await stripe.events.list({
       limit: 20,
-      type: "checkout.session.completed",
+      type,
     });
     const event = events.data.find(
-      (item) => item.data?.object?.id === checkoutSessionId,
+      (item) => item.data?.object?.id === objectId,
     );
     if (event) return event;
     await delay(3000);
   }
-  throw new Error("stripe_checkout_completed_event_not_found");
+  throw new Error(`stripe_event_not_found:${type}`);
 }
 
 async function postSignedStripeEvent(event) {
@@ -385,6 +545,44 @@ async function collectBillingEvidence(stripeEventId, stripeSubscriptionId) {
   return { invoice, subscription, therapist, webhook };
 }
 
+async function cancelExistingE2EStripeSubscriptions() {
+  const userId = await therapistUserId();
+  const [therapist] = await supabaseAdmin(
+    `/rest/v1/therapist_profiles?select=id&user_id=eq.${encodeURIComponent(
+      userId,
+    )}&limit=1`,
+  );
+
+  if (!therapist?.id) return;
+
+  const customers = await supabaseAdmin(
+    `/rest/v1/stripe_customers?select=stripe_customer_id&therapist_profile_id=eq.${encodeURIComponent(
+      therapist.id,
+    )}&role=eq.therapist`,
+  );
+
+  for (const customer of customers) {
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customer.stripe_customer_id,
+      limit: 100,
+      status: "all",
+    });
+
+    for (const subscription of subscriptions.data) {
+      if (
+        subscription.status === "canceled" ||
+        subscription.status === "incomplete_expired" ||
+        subscription.metadata?.system !== "tes" ||
+        subscription.metadata?.tes_therapist_id !== therapist.id
+      ) {
+        continue;
+      }
+
+      await stripe.subscriptions.cancel(subscription.id).catch(() => undefined);
+    }
+  }
+}
+
 async function therapistUserId() {
   if (cachedTherapistUserId) return cachedTherapistUserId;
   const response = await fetch(
@@ -421,4 +619,12 @@ async function supabaseAdmin(path) {
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getStripeObjectId(value) {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object" && typeof value.id === "string") {
+    return value.id;
+  }
+  return null;
 }

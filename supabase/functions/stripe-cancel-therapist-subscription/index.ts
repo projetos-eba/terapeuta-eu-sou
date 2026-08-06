@@ -12,6 +12,7 @@ import {
   getPaymentsRuntime,
 } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
+import { getStripeSubscriptionScheduleId } from "../_shared/payments/stripe-subscription.ts";
 
 type SubscriptionRow = {
   id: string;
@@ -57,6 +58,30 @@ runtime.serve(async (request) => {
       );
     }
 
+    const subscriptionBeforeCancel = await stripe.subscriptions.retrieve(
+      localSubscription.stripe_subscription_id,
+    );
+    const scheduleId = getStripeSubscriptionScheduleId(
+      subscriptionBeforeCancel,
+    );
+
+    if (scheduleId) {
+      await stripe.subscriptionSchedules.release(
+        scheduleId,
+        { preserve_cancel_date: false },
+        {
+          idempotencyKey: createIdempotencyKey([
+            "tes",
+            config.stripeMode,
+            "subscription_cancel_release_schedule",
+            therapist.id,
+            localSubscription.stripe_subscription_id,
+            scheduleId,
+          ]),
+        },
+      );
+    }
+
     const idempotencyKey = createIdempotencyKey([
       "tes",
       config.stripeMode,
@@ -87,6 +112,7 @@ runtime.serve(async (request) => {
         metadata: {
           cancelAtPeriodEnd: true,
           currentPlan: localSubscription.plan_code,
+          releasedStripeScheduleId: scheduleId,
         },
         therapist_profile_id: therapist.id,
         therapist_subscription_id: localSubscription.id,
