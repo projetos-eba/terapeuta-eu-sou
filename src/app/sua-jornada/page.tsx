@@ -13,10 +13,8 @@ export const metadata: Metadata = {
   title: "Sua Jornada | Terapeuta Eu Sou",
 };
 
-export const revalidate = 300;
-
 export default async function JourneyPage() {
-  const config = await getPublicMatchingConfig();
+  const configResult = await getPublicMatchingConfig();
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#fbf9ff] text-tesText-primary">
@@ -44,7 +42,22 @@ export default async function JourneyPage() {
           </div>
         </div>
 
-        <JourneyMatchClient config={config} />
+        {configResult.status === "unavailable" ? (
+          <div className="relative rounded-[26px] border border-status-warning/30 bg-white/90 p-8 text-center shadow-card">
+            <p className="text-base font-extrabold text-brand-deep">
+              O Match está temporariamente indisponível.
+            </p>
+            <p className="mx-auto mt-3 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
+              Não encontramos uma versão publicada da jornada agora. Você ainda
+              pode explorar o catálogo de terapias com calma.
+            </p>
+          </div>
+        ) : (
+          <JourneyMatchClient
+            config={configResult.config}
+            isDemo={configResult.status === "demo"}
+          />
+        )}
       </section>
 
       <PublicFooter />

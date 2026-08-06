@@ -4,7 +4,7 @@ import { calculateMatchingResults } from "./algorithm";
 import type { MatchingConfig, MatchingTherapy, MatchingWeight } from "./types";
 
 const config: MatchingConfig = {
-  source: "fallback",
+  source: "demo",
   themes: [
     {
       description: "Tema",
@@ -72,6 +72,7 @@ describe("calculateMatchingResults", () => {
       config,
       selection: {
         interestIds: [],
+        matchingVersionId: "version-1",
         source: "journey",
         themeIds: ["theme-1"],
       },
@@ -96,6 +97,7 @@ describe("calculateMatchingResults", () => {
       config,
       selection: {
         interestIds: [],
+        matchingVersionId: "version-1",
         source: "journey",
         themeIds: ["theme-1"],
       },
@@ -108,6 +110,7 @@ describe("calculateMatchingResults", () => {
       config,
       selection: {
         interestIds: ["interest-1"],
+        matchingVersionId: "version-1",
         source: "journey",
         themeIds: ["theme-1"],
       },
@@ -129,5 +132,43 @@ describe("calculateMatchingResults", () => {
     expect(resultWithInterest.results.map((item) => item.therapyId)).toEqual(
       resultWithoutInterest.results.map((item) => item.therapyId),
     );
+  });
+
+  it("labels the real number of matched themes instead of deriving labels from percentages", () => {
+    const result = calculateMatchingResults({
+      config: {
+        ...config,
+        themes: [
+          ...config.themes,
+          {
+            description: "Tema 2",
+            id: "theme-2",
+            imageUrl: null,
+            interests: [],
+            name: "Tema 2",
+            slug: "tema-2",
+            sortOrder: 2,
+          },
+        ],
+      },
+      selection: {
+        interestIds: [],
+        matchingVersionId: "version-1",
+        source: "journey",
+        themeIds: ["theme-1"],
+      },
+      source: "supabase",
+      therapies: [
+        {
+          ...therapies[0],
+          themeIds: ["theme-1", "theme-2"],
+        },
+      ],
+      versionId: "version-1",
+      weights,
+    });
+
+    expect(result.results[0]?.label).toBe("1 tema em comum");
+    expect(result.results[0]?.scorePercent).toBe(100);
   });
 });

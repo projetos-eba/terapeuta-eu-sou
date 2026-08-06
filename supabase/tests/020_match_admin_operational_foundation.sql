@@ -1,6 +1,6 @@
 begin;
 
-select plan(22);
+select plan(24);
 
 select has_table(
   'public',
@@ -172,8 +172,20 @@ select lives_ok(
     select public.replace_therapist_service_matching_v1(
       'aaaaaaaa-0000-4000-8000-000000000001',
       'd1000000-0000-4000-8000-000000000001',
-      array['71000000-0000-4000-8000-000000000009']::uuid[],
-      array['72000000-0000-4000-8000-000000000101']::uuid[],
+      array[
+        (
+          select id
+          from public.matching_themes
+          where slug = 'emocoes-bem-estar'
+        )
+      ]::uuid[],
+      array[
+        (
+          select id
+          from public.matching_interests
+          where slug = 'ansiedade'
+        )
+      ]::uuid[],
       'ad100000-0000-4000-8000-000000000004'
     )
   $$,
@@ -185,8 +197,20 @@ select throws_ok(
     select public.replace_therapist_service_matching_v1(
       'aaaaaaaa-0000-4000-8000-000000000001',
       'd1000000-0000-4000-8000-000000000001',
-      array['71000000-0000-4000-8000-000000000009']::uuid[],
-      array['72000000-0000-4000-8000-000000000102']::uuid[],
+      array[
+        (
+          select id
+          from public.matching_themes
+          where slug = 'emocoes-bem-estar'
+        )
+      ]::uuid[],
+      array[
+        (
+          select id
+          from public.matching_interests
+          where slug = 'relacionamentos-amorosos'
+        )
+      ]::uuid[],
       'ad100000-0000-4000-8000-000000000005'
     )
   $$,
@@ -200,7 +224,13 @@ select throws_ok(
     select public.replace_therapist_service_matching_v1(
       'aaaaaaaa-0000-4000-8000-000000000002',
       'd1000000-0000-4000-8000-000000000001',
-      array['71000000-0000-4000-8000-000000000009']::uuid[],
+      array[
+        (
+          select id
+          from public.matching_themes
+          where slug = 'emocoes-bem-estar'
+        )
+      ]::uuid[],
       '{}'::uuid[],
       'ad100000-0000-4000-8000-000000000006'
     )
@@ -208,6 +238,48 @@ select throws_ok(
   'P0002',
   'THERAPIST_SERVICE_NOT_FOUND',
   'therapist cannot configure another therapist service'
+);
+
+select throws_ok(
+  $$
+    select public.admin_replace_therapy_matching_themes_v1(
+      'aaaaaaaa-0000-4000-8000-000000000090',
+      'ad100000-0000-4000-8000-000000000007',
+      '22222222-2222-4222-8222-222222222225',
+      array[
+        (
+          select id
+          from public.matching_themes
+          where slug = 'energia-equilibrio-energetico'
+        )
+      ]::uuid[],
+      'Bloquear remocao de tema usado por servico ativo.'
+    )
+  $$,
+  'P0001',
+  'ADMIN_THERAPY_CATALOG_MATCHING_THEME_REMOVAL_BLOCKED',
+  'admin cannot remove a therapy Match theme while services keep dependent configuration'
+);
+
+select throws_ok(
+  $$
+    select public.admin_replace_therapy_matching_themes_v1(
+      'aaaaaaaa-0000-4000-8000-000000000090',
+      'ad100000-0000-4000-8000-000000000008',
+      '22222222-2222-4222-8222-222222222225',
+      array[
+        (
+          select id
+          from public.matching_themes
+          where slug = 'emocoes-bem-estar'
+        )
+      ]::uuid[],
+      ''
+    )
+  $$,
+  'P0001',
+  'ADMIN_THERAPY_CATALOG_REASON_REQUIRED',
+  'admin must provide a reason before replacing therapy Match themes'
 );
 
 set local role authenticated;
@@ -247,8 +319,20 @@ select ok(
   jsonb_array_length(
     public.get_public_therapy_therapists_v1(
       'reiki',
-      array['71000000-0000-4000-8000-000000000009']::uuid[],
-      array['72000000-0000-4000-8000-000000000101']::uuid[],
+      array[
+        (
+          select id
+          from public.matching_themes
+          where slug = 'emocoes-bem-estar'
+        )
+      ]::uuid[],
+      array[
+        (
+          select id
+          from public.matching_interests
+          where slug = 'ansiedade'
+        )
+      ]::uuid[],
       12
     )
   ) >= 1,

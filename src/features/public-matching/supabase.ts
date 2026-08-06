@@ -4,6 +4,11 @@ import {
   getSupabasePublicConfig as getSharedSupabasePublicConfig,
   invokeSupabaseFunction,
 } from "@/lib/supabase/edge-functions";
+import {
+  createPublicDataCorrelationId,
+  isPublicDemoDataEnabled,
+  logPublicDataFailure,
+} from "@/lib/public-data-result";
 
 import {
   fallbackMatchingConfig,
@@ -12,10 +17,13 @@ import {
   fallbackMatchingWeights,
 } from "./fallback";
 import type {
-  MatchingConfig,
   MatchingCalculationResult,
+  MatchingConfig,
+  MatchingConfigResult,
+  MatchingUnavailableReason,
   MatchingSelection,
   MatchingTherapy,
+  MatchingWeight,
 } from "./types";
 
 type PublicMatchingConfigRow = {
@@ -56,6 +64,28 @@ type SupabaseConfig = {
   url: string;
 };
 
+type MatchingCalculationDataResult =
+  | {
+      source: "supabase";
+      status: "success";
+      therapies: MatchingTherapy[];
+      versionId: string;
+      weights: MatchingWeight[];
+    }
+  | {
+      source: "demo";
+      status: "demo";
+      therapies: MatchingTherapy[];
+      versionId: string;
+      weights: MatchingWeight[];
+    }
+  | {
+      correlationId: string;
+      reason: MatchingUnavailableReason;
+      source: "supabase";
+      status: "unavailable";
+    };
+
 function getSupabaseConfig(): SupabaseConfig | null {
   const config = getSharedSupabasePublicConfig();
 
@@ -64,11 +94,11 @@ function getSupabaseConfig(): SupabaseConfig | null {
   return config;
 }
 
-export async function getPublicMatchingConfig(): Promise<MatchingConfig> {
+export async function getPublicMatchingConfig(): Promise<MatchingConfigResult> {
   const config = getSupabaseConfig();
 
   if (!config) {
-    return fallbackMatchingConfig;
+    return matchingUnavailable("configuration_missing", "matching.config");
   }
 
   try {
@@ -76,12 +106,10 @@ export async function getPublicMatchingConfig(): Promise<MatchingConfig> {
       config,
       "public_matching_config?select=version_id,version,theme_id,theme_name,theme_slug,theme_description,theme_image_url,theme_sort_order,interest_id,interest_name,interest_slug,interest_sort_order&order=theme_sort_order.asc,interest_sort_order.asc",
       config.apiKey,
-      300,
-      ["matching-config"],
     );
 
     if (!rows.length) {
-      return fallbackMatchingConfig;
+      return matchingUnavailable("version_unavailable", "matching.config");
     }
 
     const themesById = new Map<string, MatchingConfig["themes"][number]>();
@@ -111,19 +139,25 @@ export async function getPublicMatchingConfig(): Promise<MatchingConfig> {
     });
 
     return {
+      config: {
+        source: "supabase",
+        themes: Array.from(themesById.values()).sort(
+          (first, second) => first.sortOrder - second.sortOrder,
+        ),
+        version: rows[0].version,
+        versionId: rows[0].version_id,
+      },
       source: "supabase",
-      themes: Array.from(themesById.values()).sort(
-        (first, second) => first.sortOrder - second.sortOrder,
-      ),
-      version: rows[0].version,
-      versionId: rows[0].version_id,
+      status: "success",
     };
-  } catch {
-    return fallbackMatchingConfig;
+  } catch (error) {
+    return matchingUnavailable("query_failed", "matching.config", error);
   }
 }
 
-export async function getMatchingCalculationData(versionId: string) {
+export async function getMatchingCalculationData(
+  versionId: string,
+): Promise<MatchingCalculationDataResult> {
   const config = getSupabaseConfig();
 
   if (config) {
@@ -133,15 +167,11 @@ export async function getMatchingCalculationData(versionId: string) {
           config,
           "public_matching_therapies_v?select=id,name,slug,short_description,description,image_url,status,therapist_count,is_visible_in_matching",
           config.apiKey,
-          300,
-          ["matching-config"],
         ),
         fetchRows<PublicMatchingTherapyThemeRow>(
           config,
           "public_matching_therapy_themes_v?select=therapy_id,theme_id,sort_order&order=sort_order.asc",
           config.apiKey,
-          300,
-          ["matching-config"],
         ),
       ]);
       const themeIdsByTherapy = new Map<string, string[]>();
@@ -160,6 +190,7 @@ export async function getMatchingCalculationData(versionId: string) {
 
       return {
         source: "supabase" as const,
+        status: "success" as const,
         therapies: therapies.map((therapy) => ({
           description: therapy.description ?? therapy.short_description,
           id: therapy.id,
@@ -176,17 +207,21 @@ export async function getMatchingCalculationData(versionId: string) {
         versionId: versionId || fallbackMatchingVersionId,
         weights: [],
       };
-    } catch {
-      // Fallback remains explicit to this server branch and is reported in source.
+    } catch (error) {
+      return matchingCalculationUnavailable(
+        "query_failed",
+        "matching.calculate",
+        versionId,
+        error,
+      );
     }
   }
 
-  return {
-    source: "fallback" as const,
-    therapies: fallbackMatchingTherapies,
-    versionId: versionId || fallbackMatchingVersionId,
-    weights: fallbackMatchingWeights,
-  };
+  return matchingCalculationUnavailable(
+    "configuration_missing",
+    "matching.calculate",
+    versionId,
+  );
 }
 
 export async function calculateMatchingWithFunction(
@@ -204,6 +239,7 @@ export async function calculateMatchingWithFunction(
       {
         body: {
           interestIds: selection.interestIds,
+          matchingVersionId: selection.matchingVersionId,
           source: selection.source,
           themeIds: selection.themeIds,
           versionId,
@@ -215,19 +251,84 @@ export async function calculateMatchingWithFunction(
   }
 }
 
+function matchingUnavailable(
+  reason: MatchingUnavailableReason,
+  operation: string,
+  error?: unknown,
+): MatchingConfigResult {
+  if (isPublicDemoDataEnabled()) {
+    return {
+      config: fallbackMatchingConfig,
+      source: "demo",
+      status: "demo",
+    };
+  }
+
+  const correlationId = createPublicDataCorrelationId();
+
+  logPublicDataFailure({
+    correlationId,
+    error,
+    operation,
+    reason: reason === "version_unavailable" ? "invalid_response" : reason,
+  });
+
+  return {
+    correlationId,
+    reason,
+    source: "supabase",
+    status: "unavailable",
+  };
+}
+
+function matchingCalculationUnavailable(
+  reason: MatchingUnavailableReason,
+  operation: string,
+  versionId: string,
+  error?: unknown,
+): MatchingCalculationDataResult {
+  if (isPublicDemoDataEnabled()) {
+    return {
+      source: "demo",
+      status: "demo",
+      therapies: fallbackMatchingTherapies,
+      versionId: versionId || fallbackMatchingVersionId,
+      weights: fallbackMatchingWeights,
+    };
+  }
+
+  const correlationId = createPublicDataCorrelationId();
+
+  logPublicDataFailure({
+    correlationId,
+    error,
+    operation,
+    reason: toPublicDataReason(reason),
+  });
+
+  return {
+    correlationId,
+    reason,
+    source: "supabase",
+    status: "unavailable",
+  };
+}
+
+function toPublicDataReason(reason: MatchingUnavailableReason) {
+  return reason === "version_unavailable" ? "invalid_response" : reason;
+}
+
 async function fetchRows<Row>(
   config: SupabaseConfig,
   query: string,
   apiKey: string,
-  revalidate?: number,
-  tags?: string[],
 ) {
   const response = await fetch(`${config.url}/rest/v1/${query}`, {
+    cache: "no-store",
     headers: {
       apikey: apiKey,
       Authorization: `Bearer ${apiKey}`,
     },
-    next: revalidate ? { revalidate, tags } : undefined,
   });
 
   if (!response.ok) {

@@ -1,7 +1,11 @@
 import { assertEquals, assertThrows } from "jsr:@std/assert";
 
+import { SupabaseHttpError } from "../_shared/auth/supabase-rest.ts";
 import { DomainError } from "../_shared/payments/http.ts";
-import { validateAdminTherapyCatalogCommand } from "./catalog-command.ts";
+import {
+  mapAdminTherapyCatalogDatabaseError,
+  validateAdminTherapyCatalogCommand,
+} from "./catalog-command.ts";
 
 const requestId = "11111111-1111-4111-8111-111111111111";
 const therapyId = "22222222-2222-4222-8222-222222222222";
@@ -84,4 +88,20 @@ Deno.test("accepts therapist catalog request foundation payload", () => {
   });
 
   assertEquals(command.action, "submitRequest");
+});
+
+Deno.test("maps blocked Match theme removal to a stable domain error", () => {
+  const mapped = mapAdminTherapyCatalogDatabaseError(
+    new SupabaseHttpError(
+      400,
+      'ADMIN_THERAPY_CATALOG_MATCHING_THEME_REMOVAL_BLOCKED:{"affectedServiceCount":1}',
+    ),
+  );
+
+  if (!(mapped instanceof DomainError)) {
+    throw new Error("Expected DomainError.");
+  }
+
+  assertEquals(mapped.code, "matching_theme_removal_blocked");
+  assertEquals(mapped.status, 409);
 });

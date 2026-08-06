@@ -23,26 +23,6 @@ export function getAdminShellConfig(): {
         icon: "search",
         label: "Match",
       },
-      {
-        href: routes.admin.professionals,
-        icon: "user-pen",
-        label: "Profissionais",
-      },
-      {
-        href: routes.admin.sessions,
-        icon: "calendar",
-        label: "Sessões",
-      },
-      {
-        href: routes.admin.payments,
-        icon: "wallet",
-        label: "Pagamentos",
-      },
-      {
-        href: routes.admin.security,
-        icon: "settings",
-        label: "Segurança",
-      },
     ],
   };
 }

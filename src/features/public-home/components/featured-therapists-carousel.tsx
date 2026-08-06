@@ -152,30 +152,44 @@ export function FeaturedTherapistsCarousel({
       </div>
 
       <div className="relative mt-9">
-        <button
-          type="button"
-          aria-label="Ver terapeutas anteriores"
-          onClick={() => scrollByCard("left")}
-          className="absolute -left-6 top-1/2 z-20 hidden size-12 -translate-y-1/2 place-items-center rounded-full border border-brand-lavender/50 bg-white text-brand-primary shadow-card transition hover:-translate-x-0.5 hover:border-brand-primary md:grid 2xl:-left-8"
-        >
-          <ArrowLeft className="size-5" />
-        </button>
-        <div
-          ref={carouselRef}
-          className="flex snap-x gap-5 overflow-x-auto scroll-smooth px-8 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] xl:gap-4 xl:px-0 [&::-webkit-scrollbar]:hidden"
-        >
-          {therapists.map((therapist) => (
-            <FeaturedTherapistCard key={therapist.slug} therapist={therapist} />
-          ))}
-        </div>
-        <button
-          type="button"
-          aria-label="Ver proximos terapeutas"
-          onClick={() => scrollByCard("right")}
-          className="absolute -right-6 top-1/2 z-20 hidden size-12 -translate-y-1/2 place-items-center rounded-full border border-brand-lavender/50 bg-white text-brand-primary shadow-card transition hover:translate-x-0.5 hover:border-brand-primary md:grid 2xl:-right-8"
-        >
-          <ArrowRight className="size-5" />
-        </button>
+        {therapists.length ? (
+          <>
+            <button
+              type="button"
+              aria-label="Ver terapeutas anteriores"
+              onClick={() => scrollByCard("left")}
+              className="absolute -left-6 top-1/2 z-20 hidden size-12 -translate-y-1/2 place-items-center rounded-full border border-brand-lavender/50 bg-white text-brand-primary shadow-card transition hover:-translate-x-0.5 hover:border-brand-primary md:grid 2xl:-left-8"
+            >
+              <ArrowLeft className="size-5" />
+            </button>
+            <div
+              ref={carouselRef}
+              className="flex snap-x gap-5 overflow-x-auto scroll-smooth px-8 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] xl:gap-4 xl:px-0 [&::-webkit-scrollbar]:hidden"
+            >
+              {therapists.map((therapist) => (
+                <FeaturedTherapistCard key={therapist.slug} therapist={therapist} />
+              ))}
+            </div>
+            <button
+              type="button"
+              aria-label="Ver proximos terapeutas"
+              onClick={() => scrollByCard("right")}
+              className="absolute -right-6 top-1/2 z-20 hidden size-12 -translate-y-1/2 place-items-center rounded-full border border-brand-lavender/50 bg-white text-brand-primary shadow-card transition hover:translate-x-0.5 hover:border-brand-primary md:grid 2xl:-right-8"
+            >
+              <ArrowRight className="size-5" />
+            </button>
+          </>
+        ) : (
+          <TESCard className="p-8 text-center">
+            <p className="text-base font-extrabold text-brand-deep">
+              Ainda não há terapeutas reais para destacar.
+            </p>
+            <p className="mx-auto mt-3 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
+              Você pode explorar o catálogo de terapias enquanto novos perfis
+              aprovados entram na plataforma.
+            </p>
+          </TESCard>
+        )}
       </div>
     </section>
   );

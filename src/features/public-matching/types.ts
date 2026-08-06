@@ -17,14 +17,39 @@ export type MatchingTheme = {
 };
 
 export type MatchingConfig = {
-  source: "fallback" | "supabase";
+  source: "demo" | "supabase";
   themes: MatchingTheme[];
   versionId: string;
   version: number;
 };
 
+export type MatchingUnavailableReason =
+  | "configuration_missing"
+  | "invalid_response"
+  | "query_failed"
+  | "version_unavailable";
+
+export type MatchingConfigResult =
+  | {
+      config: MatchingConfig;
+      source: "supabase";
+      status: "success";
+    }
+  | {
+      config: MatchingConfig;
+      source: "demo";
+      status: "demo";
+    }
+  | {
+      correlationId: string;
+      reason: MatchingUnavailableReason;
+      source: "supabase";
+      status: "unavailable";
+    };
+
 export type MatchingSelection = {
   interestIds: string[];
+  matchingVersionId: string;
   source: "journey";
   themeIds: string[];
 };
@@ -67,6 +92,6 @@ export type MatchingResultItem = {
 export type MatchingCalculationResult = {
   lowConfidence: boolean;
   results: MatchingResultItem[];
-  source: "fallback" | "supabase";
+  source: "demo" | "supabase";
   versionId: string;
 };
