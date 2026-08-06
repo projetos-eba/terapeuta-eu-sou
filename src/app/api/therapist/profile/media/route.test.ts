@@ -41,7 +41,7 @@ describe("therapist profile media route", () => {
 
     const response = await POST(
       makeRequest({
-        file: new File(["image"], "photo.webp", { type: "image/webp" }),
+        file: makeWebpFile("photo.webp"),
         kind: "photo",
       }),
     );
@@ -78,7 +78,7 @@ describe("therapist profile media route", () => {
 
     const response = await POST(
       makeRequest({
-        file: new File(["video"], "intro.mp4", { type: "video/mp4" }),
+        file: makeMp4File("intro.mp4"),
         kind: "video",
       }),
     );
@@ -96,7 +96,7 @@ describe("therapist profile media route", () => {
 
     const response = await POST(
       makeRequest({
-        file: new File(["image"], "photo.webp", { type: "image/webp" }),
+        file: makeWebpFile("photo.webp"),
         kind: "photo",
       }),
     );
@@ -126,7 +126,7 @@ describe("therapist profile media route", () => {
 
     const response = await POST(
       makeRequest({
-        file: new File(["image"], "photo.webp", { type: "image/webp" }),
+        file: makeWebpFile("photo.webp"),
         kind: "photo",
       }),
     );
@@ -136,6 +136,27 @@ describe("therapist profile media route", () => {
     expect(payload.error.message).toBe(
       "Não foi possível enviar o arquivo agora.",
     );
+  });
+
+  it("rejects files whose bytes do not match the declared MIME type", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      makeRequest({
+        file: new File(["not really an image"], "photo.webp", {
+          type: "image/webp",
+        }),
+        kind: "photo",
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(payload.error.message).toBe(
+      "O conteúdo do arquivo não corresponde ao formato informado.",
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 
@@ -187,6 +208,30 @@ function jsonResponse(payload: unknown, init: ResponseInit = {}) {
     status: 200,
     ...init,
   });
+}
+
+function makeWebpFile(name: string) {
+  return new File(
+    [
+      new Uint8Array([
+        0x52, 0x49, 0x46, 0x46, 0x10, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
+      ]),
+    ],
+    name,
+    { type: "image/webp" },
+  );
+}
+
+function makeMp4File(name: string) {
+  return new File(
+    [
+      new Uint8Array([
+        0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d,
+      ]),
+    ],
+    name,
+    { type: "video/mp4" },
+  );
 }
 
 function makeEditorContract(

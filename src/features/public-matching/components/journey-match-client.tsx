@@ -11,48 +11,60 @@ import type { MatchingConfig, MatchingTheme } from "../types";
 
 export const MATCHING_SESSION_KEY = "tes.publicMatching.selection.v1";
 
-const FIGMA_AREAS = [
-  {
-    image: "/journey/emocoes-bem-estar.png",
-    title: "Emoções e Bem-Estar",
-  },
-  {
-    image: "/journey/relacionamentos.png",
-    title: "Relacionamentos",
-  },
-  {
+const JOURNEY_VISUALS: Record<string, { image: string; title: string }> = {
+  "autoconhecimento-transformacao": {
     image: "/journey/autoconhecimento-transformacao.png",
     title: "Autoconhecimento e Transformação",
   },
-  {
-    image: "/journey/proposito-direcao.png",
-    title: "Propósito e Direção",
-  },
-  {
+  "autoestima-poder-pessoal": {
     image: "/journey/autoestima-poder-pessoal.png",
     title: "Autoestima e Poder Pessoal",
   },
-  {
-    image: "/journey/espiritualidade-conexao-interior.png",
-    title: "Espiritualidade e Conexão Interior",
-  },
-  {
-    image: "/journey/energia-equilibrio.png",
-    title: "Energia e Equilíbrio Energético",
-  },
-  {
-    image: "/journey/libertacao-renovacao.png",
-    title: "Libertação e Renovação",
-  },
-  {
+  "corpo-relaxamento-qualidade-vida": {
     image: "/journey/corpo-relaxamento.png",
     title: "Corpo, Relaxamento e Qualidade de Vida",
   },
-  {
+  "corpo-relaxamento": {
+    image: "/journey/corpo-relaxamento.png",
+    title: "Corpo, Relaxamento e Qualidade de Vida",
+  },
+  "emocoes-bem-estar": {
+    image: "/journey/emocoes-bem-estar.png",
+    title: "Emoções e Bem-Estar",
+  },
+  "energia-equilibrio-energetico": {
+    image: "/journey/energia-equilibrio.png",
+    title: "Energia e Equilíbrio Energético",
+  },
+  "energia-equilibrio": {
+    image: "/journey/energia-equilibrio.png",
+    title: "Energia e Equilíbrio Energético",
+  },
+  espiritualidade: {
+    image: "/journey/espiritualidade-conexao-interior.png",
+    title: "Espiritualidade e Conexão Interior",
+  },
+  "espiritualidade-conexao-interior": {
+    image: "/journey/espiritualidade-conexao-interior.png",
+    title: "Espiritualidade e Conexão Interior",
+  },
+  "libertacao-renovacao": {
+    image: "/journey/libertacao-renovacao.png",
+    title: "Libertação e Renovação",
+  },
+  "proposito-direcao": {
+    image: "/journey/proposito-direcao.png",
+    title: "Propósito e Direção",
+  },
+  relacionamentos: {
+    image: "/journey/relacionamentos.png",
+    title: "Relacionamentos",
+  },
+  "vida-profissional-prosperidade": {
     image: "/journey/vida-profissional-prosperidade.png",
     title: "Vida Profissional e Prosperidade",
   },
-];
+};
 
 const DETAIL_COPY: Record<string, { badge: string; subtitle: string }> = {
   "autoestima-poder-pessoal": {
@@ -97,7 +109,13 @@ const DETAIL_COPY: Record<string, { badge: string; subtitle: string }> = {
   },
 };
 
-export function JourneyMatchClient({ config }: { config: MatchingConfig }) {
+export function JourneyMatchClient({
+  config,
+  isDemo = false,
+}: {
+  config: MatchingConfig;
+  isDemo?: boolean;
+}) {
   const [selectedThemeIds, setSelectedThemeIds] = useState<string[]>([]);
   const [selectedInterestIds, setSelectedInterestIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -168,6 +186,7 @@ export function JourneyMatchClient({ config }: { config: MatchingConfig }) {
       MATCHING_SESSION_KEY,
       JSON.stringify({
         interestIds: selectedInterestIds,
+        matchingVersionId: config.versionId,
         source: "journey",
         themeIds: selectedThemeIds,
       }),
@@ -178,6 +197,12 @@ export function JourneyMatchClient({ config }: { config: MatchingConfig }) {
   return (
     <div className="relative">
       <JourneyStepper />
+
+      {isDemo ? (
+        <div className="mt-6 rounded-2xl border border-status-warning/30 bg-status-warningBg px-4 py-3 text-sm font-bold leading-6 text-status-warning">
+          Modo demonstração ativo: esta jornada usa dados demonstrativos.
+        </div>
+      ) : null}
 
       <section className="mt-12 grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:mt-[46px] lg:grid-cols-5 lg:gap-x-3 lg:gap-y-4 xl:gap-x-[12px]">
         {themes.map((theme) => {
@@ -416,14 +441,19 @@ function decorateThemes(themes: MatchingTheme[]): DecoratedTheme[] {
   return themes
     .slice()
     .sort((first, second) => first.sortOrder - second.sortOrder)
-    .map((theme, index) => ({
-      ...theme,
-      visual: {
-        image:
-          theme.imageUrl && theme.imageUrl.startsWith("/journey/")
-            ? theme.imageUrl
-            : FIGMA_AREAS[index]?.image ?? "/journey/emocoes-bem-estar.png",
-        title: FIGMA_AREAS[index]?.title ?? theme.name,
-      },
-    }));
+    .map((theme) => {
+      const visual = JOURNEY_VISUALS[theme.slug];
+
+      return {
+        ...theme,
+        visual: {
+          image:
+            visual?.image ??
+            (theme.imageUrl && !theme.imageUrl.startsWith("/journey/")
+              ? theme.imageUrl
+              : "/journey/emocoes-bem-estar.png"),
+          title: visual?.title ?? theme.name,
+        },
+      };
+    });
 }

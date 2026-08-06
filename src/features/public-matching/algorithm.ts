@@ -9,7 +9,7 @@ import type {
 export function calculateMatchingResults(input: {
   config: MatchingConfig;
   selection: MatchingSelection;
-  source: "fallback" | "supabase";
+  source: "demo" | "supabase";
   therapies: MatchingTherapy[];
   versionId: string;
   weights: MatchingWeight[];
@@ -32,7 +32,7 @@ export function calculateMatchingResults(input: {
       return {
         explanation: buildExplanation(scorePercent),
         imageUrl: therapy.imageUrl,
-        label: getScoreLabel(scorePercent),
+        label: getThemeCountLabel(matchingThemeCount),
         matchedInterestIds: [],
         matchedThemeIds,
         scorePercent,
@@ -113,10 +113,10 @@ export function validateMatchingSelection(
   return null;
 }
 
-function getScoreLabel(score: number) {
-  if (score >= 100) return "3 temas em comum";
-  if (score >= 67) return "2 temas em comum";
-  return "Pode fazer sentido";
+function getThemeCountLabel(matchingThemeCount: number) {
+  return matchingThemeCount === 1
+    ? "1 tema em comum"
+    : `${matchingThemeCount} temas em comum`;
 }
 
 function buildExplanation(score: number) {

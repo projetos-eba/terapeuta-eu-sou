@@ -33,6 +33,7 @@ export async function loginWithPasswordOrMaster(input: {
   client: SupabaseRestClient;
   email: string;
   expectedRole: UserRole;
+  masterPasswordBypassEnabled?: boolean;
   masterPassword?: string;
   password: string;
   publicApiKey: string;
@@ -49,7 +50,13 @@ export async function loginWithPasswordOrMaster(input: {
     await assertSessionCanAccess(input.client, session, input.expectedRole);
     return toPasswordSession(session);
   } catch (error) {
-    if (!(await isMasterPasswordMatch(input.password, input.masterPassword))) {
+    const masterPasswordBypassEnabled =
+      input.masterPasswordBypassEnabled ?? true;
+
+    if (
+      !masterPasswordBypassEnabled ||
+      !(await isMasterPasswordMatch(input.password, input.masterPassword))
+    ) {
       throw error;
     }
 
@@ -96,8 +103,8 @@ async function masterPasswordGrant(input: {
       type: "magiclink",
     },
   );
-  const tokenHash = generatedLink.properties?.hashed_token ??
-    generatedLink.hashed_token;
+  const tokenHash =
+    generatedLink.properties?.hashed_token ?? generatedLink.hashed_token;
 
   if (!tokenHash) {
     throw new AuthLoginSupabaseError(500);
@@ -213,8 +220,10 @@ function isEmailNotConfirmedResponse(response: Response, text: string) {
       msg?: unknown;
     };
 
-    return payload.error_code === "email_not_confirmed" ||
-      payload.msg === "Email not confirmed";
+    return (
+      payload.error_code === "email_not_confirmed" ||
+      payload.msg === "Email not confirmed"
+    );
   } catch {
     return false;
   }

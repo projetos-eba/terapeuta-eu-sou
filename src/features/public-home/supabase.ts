@@ -1,4 +1,9 @@
 import { routes } from "@/lib/routes";
+import {
+  createPublicDataCorrelationId,
+  isPublicDemoDataEnabled,
+  logPublicDataFailure,
+} from "@/lib/public-data-result";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 import { buildPublicTherapistTherapyChips } from "@/features/public-therapists/therapy-presentation";
@@ -170,21 +175,6 @@ function mapTestimonial(row: PublicHomeTestimonialRow): PublicHomeTestimonial {
   };
 }
 
-function completeFeaturedTherapists(
-  therapists: PublicHomeTherapist[],
-): PublicHomeTherapist[] {
-  if (therapists.length >= 5) {
-    return therapists.slice(0, 5);
-  }
-
-  const currentSlugs = new Set(therapists.map((therapist) => therapist.slug));
-  const complementaryTherapists = fallbackTherapists.filter(
-    (therapist) => !currentSlugs.has(therapist.slug),
-  );
-
-  return [...therapists, ...complementaryTherapists].slice(0, 5);
-}
-
 function applyTherapistContent(
   therapists: PublicHomeTherapist[],
   contentRows: PublicHomeTherapistContentRow[],
@@ -249,12 +239,7 @@ function applyTherapistServices(
 
 export async function getPublicHomeData(): Promise<PublicHomeData> {
   if (!hasSupabaseConfig()) {
-    return {
-      source: "fallback",
-      testimonials: fallbackTestimonials,
-      therapies: fallbackTherapies,
-      therapists: fallbackTherapists,
-    };
+    return homeUnavailable("configuration_missing");
   }
 
   try {
@@ -293,22 +278,46 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
 
     return {
       source: "supabase",
-      testimonials: testimonialRows.length
-        ? testimonialRows.map(mapTestimonial)
-        : fallbackTestimonials,
-      therapies: therapyRows.length
-        ? therapyRows.map(mapTherapy)
-        : fallbackTherapies,
-      therapists: therapistRows.length
-        ? completeFeaturedTherapists(mappedTherapists)
-        : fallbackTherapists,
+      status: therapistRows.length ? "success" : "empty",
+      testimonials: testimonialRows.map(mapTestimonial),
+      therapies: therapyRows.map(mapTherapy),
+      therapists: mappedTherapists.slice(0, 5),
     };
-  } catch {
+  } catch (error) {
+    return homeUnavailable("query_failed", error);
+  }
+}
+
+function homeUnavailable(
+  reason: "configuration_missing" | "query_failed",
+  error?: unknown,
+): PublicHomeData {
+  if (isPublicDemoDataEnabled()) {
     return {
-      source: "fallback",
+      source: "demo",
+      status: "demo",
       testimonials: fallbackTestimonials,
       therapies: fallbackTherapies,
       therapists: fallbackTherapists,
     };
   }
+
+  const correlationId = createPublicDataCorrelationId();
+
+  logPublicDataFailure({
+    correlationId,
+    error,
+    operation: "public-home",
+    reason,
+  });
+
+  return {
+    correlationId,
+    reason,
+    source: "supabase",
+    status: "degraded",
+    testimonials: [],
+    therapies: [],
+    therapists: [],
+  };
 }

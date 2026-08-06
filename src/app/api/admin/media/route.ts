@@ -1,12 +1,15 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import {
+  hasValidUploadSignature,
+  isSupportedImageType,
+} from "@/lib/media/upload-validation";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 const bucket = "admin-public-media";
 const maxImageBytes = 5 * 1024 * 1024;
 const noStoreHeaders = { "Cache-Control": "no-store" };
-const imageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 type SupabaseUser = {
   id?: unknown;
@@ -39,7 +42,7 @@ export async function POST(request: Request) {
     return failure("Envie uma imagem válida para o tema.", 400);
   }
 
-  const validation = validateImage(file);
+  const validation = await validateImage(file);
   if (validation) return failure(validation, 422);
 
   const userId = await readAdminUserId(config, accessToken);
@@ -82,13 +85,17 @@ export async function POST(request: Request) {
   );
 }
 
-function validateImage(file: File) {
-  if (!imageTypes.has(file.type)) {
+async function validateImage(file: File) {
+  if (!isSupportedImageType(file.type)) {
     return "Use uma imagem JPG, PNG ou WebP.";
   }
 
   if (file.size > maxImageBytes) {
     return "A imagem deve ter no máximo 5 MB.";
+  }
+
+  if (!(await hasValidUploadSignature(file))) {
+    return "O conteúdo do arquivo não corresponde ao formato informado.";
   }
 
   return null;

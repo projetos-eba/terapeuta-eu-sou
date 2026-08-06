@@ -52,7 +52,10 @@ export type PublicHomeFaq = {
 };
 
 export type PublicHomeData = {
-  source: "supabase" | "fallback";
+  correlationId?: string;
+  reason?: "configuration_missing" | "query_failed";
+  source: "demo" | "supabase";
+  status: "degraded" | "demo" | "empty" | "success";
   testimonials: PublicHomeTestimonial[];
   therapies: PublicHomeTherapy[];
   therapists: PublicHomeTherapist[];

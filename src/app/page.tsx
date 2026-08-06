@@ -29,6 +29,7 @@ import {
 } from "@/features/public-home";
 import { FeaturedTherapistsCarousel } from "@/features/public-home/components/featured-therapists-carousel";
 import type {
+  PublicHomeData,
   PublicHomeReason,
   PublicHomeTestimonial,
   PublicHomeTherapy,
@@ -475,6 +476,30 @@ function JourneyCta() {
   );
 }
 
+function PublicHomeDataNotice({ data }: { data: PublicHomeData }) {
+  if (data.status === "demo") {
+    return (
+      <div className="mx-auto mt-4 max-w-[1680px] px-5 sm:px-8 lg:px-12">
+        <div className="rounded-2xl border border-status-warning/30 bg-status-warningBg px-4 py-3 text-sm font-bold leading-6 text-status-warning">
+          Modo demonstração ativo: a Home usa dados demonstrativos.
+        </div>
+      </div>
+    );
+  }
+
+  if (data.status === "degraded") {
+    return (
+      <div className="mx-auto mt-4 max-w-[1680px] px-5 sm:px-8 lg:px-12">
+        <div className="rounded-2xl border border-status-warning/30 bg-white px-4 py-3 text-sm font-bold leading-6 text-tesText-secondary">
+          Alguns dados públicos estão temporariamente indisponíveis.
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export default async function HomePage() {
   const data = await getPublicHomeData();
 
@@ -482,6 +507,7 @@ export default async function HomePage() {
     <main className="min-h-screen overflow-hidden bg-[#FCFAFF] text-tesText-primary">
       <PublicHeader />
       <HeroSection />
+      <PublicHomeDataNotice data={data} />
       <IntroSection />
       <StepsSection />
       <TherapyMarquee therapies={data.therapies} />

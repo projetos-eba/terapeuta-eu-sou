@@ -76,6 +76,11 @@ admin autenticado, sem `service_role` no frontend.
 - Edição de imagem de tema aceita URL e upload de arquivo JPG, PNG ou WebP,
   com preview antes de salvar.
 - Toda ação de governança exige motivo e gera auditoria.
+- Remover tema do Match de uma terapia deve identificar servicos e
+  refinamentos afetados e bloquear a alteracao enquanto houver configuracao
+  operacional dependente. A auditoria registra o bloqueio e o resumo de impacto;
+  nao apagar vinculos, servicos, bookings, snapshots ou pagamentos de forma
+  silenciosa.
 - Não apagar serviços, bookings, snapshots ou pagamentos ao descontinuar.
 
 ## QA

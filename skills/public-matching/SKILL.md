@@ -66,10 +66,18 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
 
 ## Frontend
 
-- `src/app/sua-jornada/page.tsx`: Server Component com config e fallback.
+- `src/app/sua-jornada/page.tsx`: Server Component com config live, demo
+  explicito ou estado indisponivel honesto.
 - `JourneyMatchClient`: selecao de temas/interesses, limites e envio.
 - `src/app/sua-jornada/resultado/page.tsx`: `noindex`.
 - `MatchingResultClient`: recarrega escolhas do `sessionStorage`, recalcula pela API e redireciona para `/sua-jornada` quando nao houver estado.
+- A selecao salva em `sessionStorage` deve incluir `matchingVersionId`. A API
+  rejeita versao ausente, invalida ou desatualizada antes de recalcular.
+- As consultas server-side de configuracao/candidatos usam `cache: "no-store"`
+  para evitar selecao com IDs de uma versao antiga e calculo contra outra.
+- Labels de correspondencia usam a contagem real de temas coincidentes:
+  “1 tema em comum”, “2 temas em comum” ou “3 temas em comum”. Percentual nao
+  pode ser usado para afirmar quantidade de temas.
 - Assets oficiais extraidos do Figma ficam versionados em `public/journey/`.
 - A pagina deve manter hero com imagem fade, stepper, grid 5x2 de cards ilustrados no desktop e cards empilhados no mobile.
 - Ao remover um tema, remover tambem seus interesses.
@@ -99,7 +107,9 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
   - refinamentos nao alteram ranking de terapias.
   - resultado aponta para `/terapias/:slug`.
   - resultado retorna apenas terapias existentes em `public_matching_therapies_v`.
-  - fallback sem Supabase retorna apenas Reiki, Tarô e Constelação Familiar.
+  - sem Supabase, erro de consulta ou ausencia de versao publicada retorna
+    indisponibilidade honesta; demo so ativa com `TES_ENABLE_DEMO_DATA=true`
+    fora de producao e deve ser observavel na UI/API.
   - nenhum peso interno aparece no navegador.
 
 ## Pendencias conhecidas
