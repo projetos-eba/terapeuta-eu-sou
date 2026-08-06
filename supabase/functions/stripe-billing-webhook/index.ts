@@ -136,7 +136,8 @@ async function handleEvent(
     }
     case "invoice.paid":
     case "invoice.payment_failed":
-    case "invoice.payment_action_required": {
+    case "invoice.payment_action_required":
+    case "invoice.finalization_failed": {
       const invoiceId = String(dataObject.id ?? "");
       if (!invoiceId) return "ignored";
       const invoice = await stripe.invoices.retrieve(invoiceId);

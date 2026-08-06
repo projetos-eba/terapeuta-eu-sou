@@ -13,14 +13,17 @@ import {
 const requestId = "a6000000-0000-4000-8000-000000000001";
 const therapyId = "22222222-2222-4222-8222-222222222225";
 const serviceId = "d1000000-0000-4000-8000-000000000001";
+const themeId = "33333333-3333-4333-8333-333333333333";
 
 Deno.test("validates service creation with canonical therapy id", () => {
   const result = validateTherapistServicesCommand({
     action: "create",
     description: "Sessao responsavel e complementar.",
     durationMinutes: 60,
+    interestIds: [],
     priceCents: 12000,
     requestId,
+    themeIds: [themeId],
     therapyId,
     title: "Reiki online",
   });

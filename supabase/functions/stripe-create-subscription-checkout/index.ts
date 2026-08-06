@@ -16,6 +16,7 @@ import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 
 type Body = {
   plan?: string;
+  requestId?: string;
 };
 
 type BillingPriceRow = {
@@ -55,6 +56,7 @@ runtime.serve(async (request) => {
     );
     const body = await parseJsonBody<Body>(request);
     const plan = normalizePaidPlan(body.plan);
+    const checkoutRequestId = normalizeRequestId(body.requestId);
     const price = await getBillingPrice(client, plan);
 
     if (!price.stripe_price_id) {
@@ -72,24 +74,51 @@ runtime.serve(async (request) => {
       stripe,
       therapist,
     });
+    const existingOpenSession = await findReusableOpenSubscriptionCheckout({
+      customerId: customer.stripe_customer_id,
+      environment: config.environment,
+      plan,
+      stripe,
+      therapistId: therapist.id,
+    });
+
+    if (existingOpenSession?.url) {
+      return success({
+        checkoutSessionId: existingOpenSession.id,
+        reused: true,
+        url: existingOpenSession.url,
+      });
+    }
+
+    await assertNoActivePaidSubscription(client, therapist.id);
 
     const successUrl = `${config.siteUrl}/terapeuta/checkout?plan=${plan}&checkout=success&session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${config.siteUrl}/terapeuta/checkout?plan=${plan}&checkout=canceled`;
     const idempotencyKey = createIdempotencyKey([
       "tes",
       config.stripeMode,
-      "subscription_checkout",
+      "subscription_checkout_v2",
       therapist.id,
       plan,
+      checkoutRequestId,
     ]);
+    const integrationIdentifier = createIdempotencyKey([
+      "tes_sub",
+      therapist.id,
+      plan,
+      checkoutRequestId,
+    ])
+      .replace(/:/g, "_")
+      .slice(0, 64);
 
     const params = {
       cancel_url: cancelUrl,
       client_reference_id: therapist.id,
-      integration_identifier: `tes_sub_${randomLetters(8)}`,
+      integration_identifier: integrationIdentifier,
       customer: customer.stripe_customer_id,
       line_items: [{ price: price.stripe_price_id, quantity: 1 }],
       metadata: {
+        checkout_request_id: checkoutRequestId,
         environment: config.environment,
         plan_code: plan,
         stripe_mode: config.stripeMode,
@@ -100,6 +129,7 @@ runtime.serve(async (request) => {
       mode: "subscription" as const,
       subscription_data: {
         metadata: {
+          checkout_request_id: checkoutRequestId,
           environment: config.environment,
           plan_code: plan,
           stripe_mode: config.stripeMode,
@@ -107,7 +137,6 @@ runtime.serve(async (request) => {
           tes_therapist_id: therapist.id,
           user_id: user.id,
         },
-        proration_behavior: "none" as const,
       },
       success_url: successUrl,
     };
@@ -127,6 +156,24 @@ runtime.serve(async (request) => {
 function normalizePaidPlan(value: unknown): "premium" | "premium_plus" {
   if (value === "premium" || value === "premium_plus") return value;
   throw new DomainError("invalid_plan", 422, "Escolha um plano pago valido.");
+}
+
+function normalizeRequestId(value: unknown) {
+  if (typeof value !== "string" || !isUuid(value)) {
+    throw new DomainError(
+      "invalid_request_id",
+      422,
+      "Envie um identificador valido para a tentativa de checkout.",
+    );
+  }
+
+  return value;
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }
 
 async function getBillingPrice(client: SupabaseRestClient, plan: string) {
@@ -192,13 +239,52 @@ async function getOrCreateTherapistCustomer(input: {
   return inserted[0];
 }
 
-function randomLetters(length: number) {
-  const letters = "abcdefghijklmnopqrstuvwxyz";
-  const bytes = crypto.getRandomValues(new Uint8Array(length));
+async function findReusableOpenSubscriptionCheckout(input: {
+  customerId: string;
+  environment: string;
+  plan: "premium" | "premium_plus";
+  stripe: ReturnType<typeof createStripeClient>;
+  therapistId: string;
+}) {
+  const sessions = await input.stripe.checkout.sessions.list({
+    customer: input.customerId,
+    limit: 10,
+    status: "open",
+  });
+  const minimumUsableExpiry = Math.floor(Date.now() / 1000) + 120;
 
-  return Array.from(bytes)
-    .map((byte) => letters[byte % letters.length])
-    .join("");
+  return sessions.data.find((session) => {
+    const metadata = session.metadata ?? {};
+
+    return (
+      session.mode === "subscription" &&
+      Boolean(session.url) &&
+      (session.expires_at ?? 0) > minimumUsableExpiry &&
+      metadata.environment === input.environment &&
+      metadata.plan_code === input.plan &&
+      metadata.system === "tes" &&
+      metadata.tes_therapist_id === input.therapistId
+    );
+  });
+}
+
+async function assertNoActivePaidSubscription(
+  client: SupabaseRestClient,
+  therapistProfileId: string,
+) {
+  const rows = await client.get<Array<{ id: string }>>(
+    `/rest/v1/therapist_subscriptions?select=id&therapist_profile_id=eq.${encodeURIComponent(
+      therapistProfileId,
+    )}&status=in.(trialing,active,past_due,unpaid,incomplete)&limit=1`,
+  );
+
+  if (rows[0]) {
+    throw new DomainError(
+      "active_subscription_exists",
+      409,
+      "Ja existe uma assinatura paga em andamento para este perfil.",
+    );
+  }
 }
 
 export {};

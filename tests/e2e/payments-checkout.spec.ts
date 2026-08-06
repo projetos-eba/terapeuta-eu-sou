@@ -45,4 +45,26 @@ test.describe("payments checkout smoke", () => {
     ).toBeVisible();
     await expect(page.getByText(/webhook/i)).toBeVisible();
   });
+
+  test("opens Stripe Checkout for Premium Plus with a real click", async ({
+    page,
+  }) => {
+    await page.goto(
+      "/terapeuta/login?next=%2Fterapeuta%2Fcheckout%3Fplan%3Dpremium_plus",
+    );
+
+    await page.getByLabel("E-mail").fill(therapistEmail);
+    await page.getByLabel("Senha").fill(password);
+    await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
+
+    await expect(page).toHaveURL(/\/terapeuta\/checkout\?plan=premium_plus/);
+    await page
+      .getByRole("button", { name: "Continuar para pagamento" })
+      .click();
+
+    await expect(page).toHaveURL(/checkout\.stripe\.com/);
+    await expect(page.getByText(/premium plus/i)).toBeVisible({
+      timeout: 20_000,
+    });
+  });
 });
