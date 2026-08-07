@@ -49,6 +49,13 @@ Não passar linhas cruas do Supabase para React.
 
 - Salvar rascunho não altera views públicas.
 - Publicação é direta pelo terapeuta e pode levar 2 a 3 horas para propagar.
+- Na primeira configuração, a ação primária deve ser `Publicar alterações`.
+  Antes de enviar ao backend, validar nome do perfil, texto curto/headline e
+  minha essência/bio. Se houver alterações locais válidas, a UI deve salvar o
+  rascunho e publicar com a versão retornada pelo servidor no mesmo fluxo
+  confirmado.
+- Em perfis já publicados, a ação primária volta a ser `Salvar alterações`;
+  publicação posterior continua explícita sobre rascunho salvo.
 - Administração continua responsável por verificação, suspensão, documentos,
   plano e bloqueios.
 - Dados derivados são somente leitura.
@@ -65,6 +72,9 @@ Não passar linhas cruas do Supabase para React.
   checklist. Não renderizar formulário nessa rota.
 - `/terapeuta/perfil/editar` deve conter header, progresso, formulário
   numerado, upload/mídia, módulos gerenciados, aviso importante e save bar.
+- Evitar CTAs conflitantes na primeira configuração: não mostrar `Salvar
+  rascunho` como ação concorrente quando o perfil ainda não tem versão
+  publicada.
 - Rascunhos só aparecem como aviso na rota principal; a versão pública
   publicada continua sendo a prévia renderizada.
 - Upload público deve usar `therapist-public-media`; documentos permanecem fora

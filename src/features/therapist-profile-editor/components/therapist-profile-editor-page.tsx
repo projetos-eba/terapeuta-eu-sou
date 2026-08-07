@@ -19,6 +19,8 @@ import {
   serializeEditorPayload,
 } from "../therapist-profile-editor.mappers";
 import type {
+  SimpleTherapistProfileMutationCommand,
+  SaveTherapistProfileDraftCommand,
   TherapistProfileEditableFields,
   TherapistProfileEditorData,
   TherapistProfileMutationResult,
@@ -66,6 +68,9 @@ export function TherapistProfileEditorPage({
   );
   const hasDraft = Boolean(editor.draft);
   const isPublished = editor.derived.publicStatus === "published";
+  const isFirstConfiguration = !isPublished;
+  const mustSaveBeforePublishing =
+    hasUnsavedChanges || (isFirstConfiguration && !hasDraft);
 
   function updateField<K extends keyof TherapistProfileEditableFields>(
     key: K,
@@ -81,13 +86,28 @@ export function TherapistProfileEditorPage({
     setLiveMessage("Alterações locais descartadas.");
   }
 
+  function showValidationError(message: string, focusId: string) {
+    setInlineError(message);
+    setLiveMessage(message);
+    document.getElementById(focusId)?.focus();
+  }
+
+  function requestPublishConfirmation() {
+    const validationError = validatePublishFields(fields);
+    if (validationError) {
+      showValidationError(validationError.message, validationError.focusId);
+      return;
+    }
+
+    setInlineError(null);
+    setConfirmAction("publish");
+  }
+
   async function runMutation(action: PendingAction) {
     if (action === "save_draft") {
-      const validationError = validateFields(fields);
+      const validationError = validateDraftFields(fields);
       if (validationError) {
-        setInlineError(validationError);
-        setLiveMessage(validationError);
-        document.getElementById("publicName")?.focus();
+        showValidationError(validationError.message, validationError.focusId);
         return;
       }
     }
@@ -95,32 +115,91 @@ export function TherapistProfileEditorPage({
     setPendingAction(action);
     setInlineError(null);
 
-    const command =
+    const result = await sendMutationCommand(action, editor, fields);
+    setPendingAction(null);
+
+    if (!result) return;
+
+    applyMutationResult(action, result);
+  }
+
+  async function runPublishChanges() {
+    const validationError = validatePublishFields(fields);
+    if (validationError) {
+      showValidationError(validationError.message, validationError.focusId);
+      return;
+    }
+
+    setPendingAction("publish");
+    setInlineError(null);
+
+    let sourceEditor = editor;
+    if (mustSaveBeforePublishing) {
+      const saveResult = await sendMutationCommand(
+        "save_draft",
+        sourceEditor,
+        fields,
+      );
+      if (!saveResult) {
+        setPendingAction(null);
+        return;
+      }
+      sourceEditor = saveResult.editor;
+    }
+
+    const publishResult = await sendMutationCommand(
+      "publish",
+      sourceEditor,
+      fields,
+    );
+    setPendingAction(null);
+
+    if (!publishResult) {
+      setEditor(sourceEditor);
+      setFields(buildInitialEditorFields(sourceEditor));
+      return;
+    }
+
+    applyMutationResult("publish", publishResult);
+  }
+
+  async function sendMutationCommand(
+    action: PendingAction,
+    sourceEditor: TherapistProfileEditorData,
+    sourceFields: TherapistProfileEditableFields,
+  ) {
+    const command: SaveTherapistProfileDraftCommand | SimpleTherapistProfileMutationCommand =
       action === "save_draft"
         ? {
             action,
-            expectedVersion: editor.version,
-            payload: serializeEditorPayload(fields),
+            expectedVersion: sourceEditor.version,
+            payload: serializeEditorPayload(sourceFields),
             requestId: createStableRequestId(),
           }
         : {
             action,
-            expectedVersion: editor.version,
+            expectedVersion: sourceEditor.version,
             requestId: createStableRequestId(),
           };
 
     const result = await sendTherapistProfileCommand(command);
-    setPendingAction(null);
 
     if (result.status === "error") {
       setInlineError(result.error.message);
       setLiveMessage(result.error.message);
-      return;
+      return null;
     }
 
-    const mutation = result.data as TherapistProfileMutationResult;
-    setEditor(mutation.editor);
-    setFields(buildInitialEditorFields(mutation.editor));
+    return result.data as TherapistProfileMutationResult;
+  }
+
+  function applyMutationResult(
+    action: PendingAction,
+    mutation: TherapistProfileMutationResult,
+  ) {
+    const nextEditor = mutation.editor;
+    setEditor(nextEditor);
+    setFields(buildInitialEditorFields(nextEditor));
     setConfirmAction(null);
 
     const message = getSuccessMessage(action, mutation.idempotentReplay);
@@ -138,8 +217,26 @@ export function TherapistProfileEditorPage({
         onReset={() =>
           hasUnsavedChanges ? setConfirmAction("reset") : resetLocalChanges()
         }
-        onSaveDraft={() => void runMutation("save_draft")}
-        saving={pendingAction === "save_draft"}
+        onPrimaryAction={() =>
+          isFirstConfiguration
+            ? requestPublishConfirmation()
+            : void runMutation("save_draft")
+        }
+        primaryDisabled={
+          pendingAction !== null ||
+          (isFirstConfiguration
+            ? false
+            : !hasUnsavedChanges)
+        }
+        primaryLabel={
+          isFirstConfiguration ? "Publicar alterações" : "Salvar alterações"
+        }
+        primaryLoading={
+          isFirstConfiguration
+            ? pendingAction === "publish"
+            : pendingAction === "save_draft"
+        }
+        primaryMode={isFirstConfiguration ? "publish" : "save"}
       />
 
       {inlineError ? (
@@ -161,10 +258,11 @@ export function TherapistProfileEditorPage({
             updateField={updateField}
           />
           <ProfileSaveBar
+            firstConfiguration={isFirstConfiguration}
             hasDraft={hasDraft}
             hasUnsavedChanges={hasUnsavedChanges}
             onDiscardDraft={() => setConfirmAction("discard_draft")}
-            onPublish={() => setConfirmAction("publish")}
+            onPublish={requestPublishConfirmation}
             onSaveDraft={() => void runMutation("save_draft")}
             onUnpublish={() => setConfirmAction("unpublish")}
             pendingAction={pendingAction}
@@ -199,6 +297,10 @@ export function TherapistProfileEditorPage({
           onConfirm={() => {
             if (confirmAction === "reset") {
               resetLocalChanges();
+              return;
+            }
+            if (confirmAction === "publish") {
+              void runPublishChanges();
               return;
             }
             void runMutation(confirmAction);
@@ -290,14 +392,180 @@ function ConfirmDialog({
   );
 }
 
-function validateFields(fields: TherapistProfileEditableFields) {
-  if (fields.publicName.trim().length < 2) {
-    return "Informe o nome do perfil antes de salvar.";
+type FieldValidationError = {
+  focusId: keyof TherapistProfileEditableFields;
+  message: string;
+};
+
+function validateDraftFields(
+  fields: TherapistProfileEditableFields,
+): FieldValidationError | null {
+  const publicName = fields.publicName.trim();
+  if (publicName.length < 2) {
+    return {
+      focusId: "publicName",
+      message: "Informe o nome do perfil antes de salvar.",
+    };
+  }
+  if (publicName.length > 120) {
+    return {
+      focusId: "publicName",
+      message: "O nome do perfil deve ter até 120 caracteres.",
+    };
   }
   if (fields.shortIntro.length > 200) {
-    return "O texto curto deve ter até 200 caracteres.";
+    return {
+      focusId: "shortIntro",
+      message: "O texto curto deve ter até 200 caracteres.",
+    };
+  }
+  if (fields.headline.length > 180) {
+    return {
+      focusId: "headline",
+      message: "O destaque do perfil deve ter até 180 caracteres.",
+    };
+  }
+  if (fields.bio.length > 1600) {
+    return {
+      focusId: "bio",
+      message: "A apresentação do perfil deve ter até 1600 caracteres.",
+    };
+  }
+  if (fields.essenceBody.length > 600) {
+    return {
+      focusId: "essenceBody",
+      message: "Minha essência deve ter até 600 caracteres.",
+    };
+  }
+  if (fields.invitationBody.length > 600) {
+    return {
+      focusId: "invitationBody",
+      message: "O convite do perfil deve ter até 600 caracteres.",
+    };
+  }
+  if (fields.city.length > 80 || fields.state.length > 40) {
+    return {
+      focusId: fields.city.length > 80 ? "city" : "state",
+      message: "Revise cidade e estado antes de salvar.",
+    };
+  }
+  if (fields.guideItems.length > 6) {
+    return {
+      focusId: "guideItems",
+      message: "Mantenha no máximo 6 itens em Como posso te guiar.",
+    };
+  }
+  if (hasInvalidListItem(fields.guideItems.map((item) => item.label), 80)) {
+    return {
+      focusId: "guideItems",
+      message: "Cada item de Como posso te guiar deve ter até 80 caracteres.",
+    };
+  }
+  if (fields.reflections.length > 6) {
+    return {
+      focusId: "reflections",
+      message: "Mantenha no máximo 6 conteúdos/reflexões.",
+    };
+  }
+  if (hasInvalidListItem(fields.reflections.map((item) => item.title), 120)) {
+    return {
+      focusId: "reflections",
+      message: "Cada conteúdo/reflexão deve ter até 120 caracteres.",
+    };
+  }
+  if (
+    fields.reflections.some(
+      (item) =>
+        item.excerpt.length > 240 ||
+        item.href.length > 500 ||
+        item.imageUrl.length > 500 ||
+        !Number.isInteger(item.minutesToRead) ||
+        item.minutesToRead < 1 ||
+        item.minutesToRead > 60,
+    )
+  ) {
+    return {
+      focusId: "reflections",
+      message: "Revise os dados dos conteúdos/reflexões antes de salvar.",
+    };
+  }
+  if (hasInvalidMediaUrl(fields.photoUrl, "public")) {
+    return {
+      focusId: "photoUrl",
+      message: "Envie uma foto válida ou use uma URL pública da imagem.",
+    };
+  }
+  if (hasInvalidMediaUrl(fields.videoThumbnailUrl, "public")) {
+    return {
+      focusId: "videoThumbnailUrl",
+      message: "Envie uma capa válida ou use uma URL pública da imagem.",
+    };
+  }
+  if (hasInvalidMediaUrl(fields.videoUrl, "https")) {
+    return {
+      focusId: "videoUrl",
+      message: "Use um link de vídeo seguro começando com https://.",
+    };
+  }
+  if (fields.videoTitle.length > 120) {
+    return {
+      focusId: "videoTitle",
+      message: "O título do vídeo deve ter até 120 caracteres.",
+    };
   }
   return null;
+}
+
+function validatePublishFields(
+  fields: TherapistProfileEditableFields,
+): FieldValidationError | null {
+  const draftError = validateDraftFields(fields);
+  if (draftError) return draftError;
+
+  const missingFields: Array<{
+    focusId: keyof TherapistProfileEditableFields;
+    label: string;
+  }> = [];
+  if (!fields.shortIntro.trim() && !fields.headline.trim()) {
+    missingFields.push({ focusId: "shortIntro", label: "texto curto" });
+  }
+  if (!fields.essenceBody.trim() && !fields.bio.trim()) {
+    missingFields.push({ focusId: "essenceBody", label: "sua essência" });
+  }
+
+  if (missingFields.length > 0) {
+    return {
+      focusId: missingFields[0].focusId,
+      message: `Preencha ${formatFieldList(
+        missingFields.map((field) => field.label),
+      )} antes de publicar.`,
+    };
+  }
+
+  return null;
+}
+
+function formatFieldList(labels: string[]) {
+  if (labels.length <= 1) return labels[0] ?? "";
+  if (labels.length === 2) return `${labels[0]} e ${labels[1]}`;
+  return `${labels.slice(0, -1).join(", ")} e ${labels.at(-1)}`;
+}
+
+function hasInvalidListItem(items: string[], max: number) {
+  return items.some((item) => {
+    const normalized = item.trim();
+    return normalized.length > 0 && normalized.length > max;
+  });
+}
+
+function hasInvalidMediaUrl(value: string, mode: "https" | "public") {
+  const normalized = value.trim();
+  if (!normalized) return false;
+  if (/\s/.test(normalized)) return true;
+  if (mode === "https") return !normalized.startsWith("https://");
+  return !(
+    normalized.startsWith("https://") || normalized.startsWith("/")
+  );
 }
 
 function getSuccessMessage(action: PendingAction, replay: boolean) {

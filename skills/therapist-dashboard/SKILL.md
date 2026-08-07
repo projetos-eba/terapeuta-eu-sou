@@ -37,17 +37,29 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
 - Configuração: `src/features/therapist-shell`.
 - Dashboard: `src/features/therapist-dashboard`.
 - Sessão: `src/lib/auth/therapist-session.ts`.
+- Readiness: `getTherapistHomeReadiness({ session })`, derivado de
+  `therapist_profiles`, conteúdo publicado/rascunho, serviços ativos,
+  disponibilidade e Stripe Connect.
 - Read model: RPC `public.get_therapist_dashboard_v1()`.
 - Recomendações: `public.aura_recommendations`, consultadas separadamente.
 - Assets locais: `public/therapist/dashboard/`.
 
 Não distribuir queries pelos componentes. A entrada única da página é
+`getTherapistHomeReadiness({ session })`; quando o terapeuta está operacional e
+é Premium Plus aprovado, carregar o dashboard completo por
 `getTherapistDashboardPage({ profileId, accessToken })`.
 
 ## Regras
 
 - `premium_plus` é superset funcional.
 - Autorização usa access token e RLS; o cookie de plano é somente hint.
+- `/terapeuta` deve primeiro mostrar checklist para perfil publicado, terapias
+  ativas e agenda configurada.
+- Stripe Connect aparece como item recomendado; status em análise é normal e
+  não bloqueia a entrada no dashboard.
+- Free/Premium com checklist essencial concluído recebem dashboard base com
+  estados vazios úteis; não consultar o read model Premium Plus para esses
+  planos.
 - Não usar service role no app Next.
 - Não expor visitante individual em analytics.
 - Não usar dados privados do paciente para recomendações da Aura.
@@ -63,8 +75,9 @@ Não distribuir queries pelos componentes. A entrada única da página é
 - Sem recomendações: dashboard principal continua disponível.
 - Supabase indisponível: mensagem segura sem payload interno.
 - Sessão inválida: redirecionar para `/terapeuta/login`.
-- Capability indisponível: redirecionar para `/terapeuta` sem inferir
-  autorização pela URL.
+- Capability indisponível: mostrar dashboard base/estado vazio quando a rota for
+  `/terapeuta`; redirecionar para `/terapeuta` apenas em rotas protegidas por
+  capability específica.
 - Suspenso ou rejeitado: bloquear o dashboard.
 
 ## QA
@@ -83,8 +96,12 @@ Não distribuir queries pelos componentes. A entrada única da página é
 
 ## Pendências conhecidas
 
-- Premium Plus é a experiência profunda desta etapa dentro de `/terapeuta`.
+- Premium Plus aprovado é a experiência profunda desta etapa dentro de
+  `/terapeuta`.
+- Dashboard base após checklist essencial ainda não possui todos os read models
+  reais de Free/Premium; deve manter métricas vazias honestas até os contratos
+  transacionais dessas superfícies evoluírem.
 - Demais rotas usam estado “Em construção” até seus respectivos frames e
   contratos funcionais serem implementados.
-- Premium e Free usam wrappers compartilhados e serão aprofundados sem
-  duplicar o dashboard.
+- Premium e Free usam wrappers compartilhados e serão aprofundados sem duplicar
+  o dashboard.

@@ -25,9 +25,13 @@ export async function POST(request: Request) {
     command = parseTherapistProfileCommand(rawBody);
   } catch (error) {
     if (error instanceof TherapistProfileContractError) {
-      return failure("Revise os dados do perfil.", 422);
+      return failure("Revise os dados do perfil antes de continuar.", 422, {
+        code: "VALIDATION_ERROR",
+      });
     }
-    return failure("Não foi possível validar o perfil.", 422);
+    return failure("Não foi possível validar o perfil.", 422, {
+      code: "VALIDATION_ERROR",
+    });
   }
 
   const config = getSupabasePublicConfig();
@@ -35,7 +39,9 @@ export async function POST(request: Request) {
   const accessToken = cookieStore.get("tes_therapist_access_token")?.value;
 
   if (!config || !accessToken) {
-    return failure("Entre na sua conta para continuar.", 401);
+    return failure("Entre na sua conta para continuar.", 401, {
+      code: "FORBIDDEN",
+    });
   }
 
   try {
@@ -66,13 +72,19 @@ export async function POST(request: Request) {
       status: response.status,
     });
   } catch {
-    return failure("Não foi possível atualizar o perfil agora.", 503);
+    return failure("Não foi possível atualizar o perfil agora.", 503, {
+      code: "UNAVAILABLE",
+    });
   }
 }
 
-function failure(message: string, status: number) {
+function failure(
+  message: string,
+  status: number,
+  options: { code?: string } = {},
+) {
   return NextResponse.json(
-    { ok: false, error: { message } },
+    { ok: false, error: { code: options.code, message } },
     { headers: noStoreHeaders, status },
   );
 }

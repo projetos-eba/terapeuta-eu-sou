@@ -67,7 +67,7 @@ export function ShellNavItem({
       aria-disabled={isLocked && !item.upgradeHref ? true : undefined}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "group flex min-h-12 items-center gap-3 rounded-md px-3 text-sm font-medium outline-none transition focus-visible:ring-4 focus-visible:ring-ring/20",
+        "group flex h-12 w-full shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium outline-none transition focus-visible:ring-4 focus-visible:ring-ring/20",
         isActive
           ? "bg-brand-lavenderSoft text-brand-primary"
           : isLocked

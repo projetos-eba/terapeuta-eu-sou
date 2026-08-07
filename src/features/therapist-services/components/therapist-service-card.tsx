@@ -51,14 +51,25 @@ export function TherapistServiceCard({
       <div className="grid gap-5 p-5 md:grid-cols-[minmax(0,1fr)_220px]">
         <div className="grid gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
           <div
-            aria-hidden="true"
             className={cn(
-              "size-24 rounded-lg sm:size-28",
-              identityTones[
-                Math.abs(hashString(service.therapyId)) % identityTones.length
-              ],
+              "size-24 overflow-hidden rounded-lg sm:size-28",
+              !service.therapy.imageUrl
+                ? identityTones[
+                    Math.abs(hashString(service.therapyId)) %
+                      identityTones.length
+                  ]
+                : "bg-brand-lavenderSoft",
             )}
-          />
+          >
+            {service.therapy.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- imagem vem do catalogo publico administrado.
+              <img
+                alt={`Imagem da terapia ${service.therapy.name}`}
+                className="size-full object-cover"
+                src={service.therapy.imageUrl}
+              />
+            ) : null}
+          </div>
           <div className="min-w-0">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
