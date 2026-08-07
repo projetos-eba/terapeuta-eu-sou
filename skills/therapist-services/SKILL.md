@@ -72,6 +72,10 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - `therapist_service_matching_interests`: refinamentos escolhidos pelo
   terapeuta no serviço.
 - `bookings` e `session_payments`: historico/snapshots, nao reescrever.
+- Imagem exibida em `/terapeuta/servicos` vem da terapia administrada pela
+  plataforma: `therapy_public_content.hero_image_url` com fallback para
+  `therapies.image_url`. O terapeuta nao envia imagem propria do servico nesta
+  tela.
 
 ## QA
 

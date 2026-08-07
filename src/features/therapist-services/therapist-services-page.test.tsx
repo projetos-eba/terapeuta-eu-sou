@@ -39,6 +39,28 @@ describe("TherapistServicesPage", () => {
     expect(screen.queryByText("Interesses")).not.toBeInTheDocument();
   });
 
+  it("renders the platform therapy image managed by admin", () => {
+    renderPage({
+      items: [
+        serviceFixture({
+          therapy: {
+            id: "22222222-2222-4222-8222-222222222227",
+            imageUrl: "https://cdn.example.test/reiki-admin.jpg",
+            isAvailableForServices: true,
+            isPubliclyVisible: true,
+            name: "Reiki",
+            slug: "reiki",
+            status: "published",
+          },
+        }),
+      ],
+    });
+
+    expect(
+      screen.getByRole("img", { name: "Imagem da terapia Reiki" }),
+    ).toHaveAttribute("src", "https://cdn.example.test/reiki-admin.jpg");
+  });
+
   it("filters services by status", () => {
     renderPage();
 
@@ -61,6 +83,7 @@ describe("TherapistServicesPage", () => {
           status: "archived",
           therapy: {
             id: "22222222-2222-4222-8222-222222222226",
+            imageUrl: null,
             isAvailableForServices: false,
             isPubliclyVisible: false,
             name: "Aromaterapia",
@@ -251,6 +274,7 @@ function serviceFixture(
     status: "draft",
     therapy: {
       id: therapyId,
+      imageUrl: null,
       isAvailableForServices: true,
       isPubliclyVisible: true,
       name: overrides.title?.startsWith("Tarô") ? "Tarô Terapêutico" : "Reiki",
@@ -278,6 +302,7 @@ function catalogFixture(): TherapyCatalogContract {
         isAvailableForServices: true,
         isPubliclyVisible: true,
         isVisibleInMatching: true,
+        imageUrl: "https://cdn.example.test/aromaterapia.jpg",
         matchingThemes: [
           {
             id: "71000000-0000-4000-8000-000000000001",

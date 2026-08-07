@@ -122,6 +122,7 @@ export type TherapistProfileEditorPayload = Omit<
   | "bio"
   | "city"
   | "essenceBody"
+  | "reflections"
   | "headline"
   | "invitationBody"
   | "photoUrl"
@@ -142,6 +143,13 @@ export type TherapistProfileEditorPayload = Omit<
   videoThumbnailUrl: string | null;
   videoTitle: string | null;
   videoUrl: string | null;
+  reflections: Array<{
+    excerpt: string | null;
+    href: string | null;
+    imageUrl: string | null;
+    minutesToRead: number;
+    title: string;
+  }>;
 };
 
 export type ReadTherapistProfileCommand = {

@@ -36,7 +36,7 @@ export function ShellSidebar({
         />
       </div>
 
-      <nav aria-label="Seções do ambiente" className="mt-3 space-y-1">
+      <nav aria-label="Seções do ambiente" className="mt-3 flex flex-col gap-1">
         {navigation
           .filter((item) => item.accessState !== "hidden")
           .map((item) => (
