@@ -35,6 +35,7 @@ export type TherapyCatalogOption = {
   isAvailableForServices: boolean;
   isPubliclyVisible: boolean;
   isVisibleInMatching: boolean;
+  imageUrl: string | null;
   matchingThemes: Array<{
     id: string;
     interests: Array<{
@@ -86,6 +87,7 @@ export type TherapistServiceSummary = {
   status: TherapistServiceStatus;
   therapy: {
     id: string;
+    imageUrl: string | null;
     isAvailableForServices: boolean;
     isPubliclyVisible: boolean;
     name: string;

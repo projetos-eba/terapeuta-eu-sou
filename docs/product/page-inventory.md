@@ -12,7 +12,9 @@ Lista funcional das páginas do produto. Cada item descreve persona, objetivo, c
 > `/api/therapist/services`, `therapist_service_allowed_catalog_v1` e
 > `therapist_private_services_v1`. Criação exige `therapyId` da plataforma,
 > `requestId` idempotente e `version` otimista; terapeutas não criam terapias
-> por texto livre.
+> por texto livre. Imagens dos cards vêm do catálogo administrado
+> (`therapy_public_content.hero_image_url` com fallback para
+> `therapies.image_url`), não de upload livre por serviço.
 > Fase 2 implementa `/terapeuta/servicos` como tela única de gestão no shell
 > autenticado, seguindo Figma `13366:1943` com adaptação responsiva. A subrota
 > `/terapeuta/servicos/meus` redireciona para a tela canônica para evitar duas
@@ -46,6 +48,10 @@ Lista funcional das páginas do produto. Cada item descreve persona, objetivo, c
 > `advanced_metrics`; F3 adiciona dashboard avançado Premium Plus via
 > `advanced_financials`, com realizado, contratado e estimado separados. Free
 > permanece com operação financeira essencial.
+> Configurações do terapeuta: `/terapeuta/configuracoes` é funcional para
+> todos os planos do shell e edita somente dados internos da conta em
+> `profiles` (`display_name`, `phone`) via rota autenticada. Perfil público,
+> agenda, plano e Stripe Connect permanecem em suas superfícies próprias.
 
 Fonte primária: Figma `↳ Jornadas dos Usuários`, node `12272:2`, frame principal `12280:2`. Páginas ausentes desse node ficam marcadas como necessidade de produto, suporte, legal ou inferência controlada.
 
@@ -101,11 +107,19 @@ Fonte primária: Figma `↳ Jornadas dos Usuários`, node `12272:2`, frame princ
 
 ## Terapeutas
 
+`/terapeuta` é adaptativo: mostra checklist de primeiros passos enquanto faltam
+perfil público publicado, terapia ativa ou agenda configurada. Depois desses
+itens essenciais, mostra uma visão geral operacional com estados vazios úteis
+para Free/Premium e usa o read model completo apenas para Premium Plus aprovado.
+Stripe Connect é recomendado no checklist financeiro, mas não bloqueia o
+dashboard porque a análise pode depender da Stripe.
+
 | Plano                | Página        | Rota                       | Objetivo                                                                   | Componentes                                                                                                                             | Estados                                                                                                                        | Ações                                                                                                         |
 | -------------------- | ------------- | -------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
 | Todos                | Meu perfil    | `/terapeuta/perfil`        | Visualizar a versão pública publicada, status e checklist.                 | AppPageContainer, AppPageGrid, TherapistProfileOverviewPage, PublicProfileSnapshot, ProfileStatus, ProfileCompletenessChecklist.        | Loading, erro honesto, publicado, despublicado, suspenso, rascunho existente sem alterar público.                              | Ver perfil público, editar perfil.                                                                            |
 | Todos                | Editar perfil | `/terapeuta/perfil/editar` | Editar rascunho e publicar presença pública.                               | AppPageContainer, AppPageGrid, ProfilePageHeader, ProfileEditorForm, ProfileMediaUploader, ProfileSaveBar, TESDialog.                   | Loading, erro honesto, rascunho privado, alterações não salvas, upload failure, capability bloqueada, publicado, despublicado. | Visualizar perfil, salvar rascunho, descartar, publicar, despublicar, enviar mídia pública.                   |
 | Premium/Premium Plus | Métricas      | `/terapeuta/insights`      | Acompanhar mudanças nos atendimentos sem comparação com outros terapeutas. | AppPageContainer, AppPageGrid, TherapistMetricsLayout, TherapistMetricsPage, TherapistSessionMetricsPage, TherapistInterestMetricsPage. | Loading, erro, zero, processamento, amostra insuficiente, indisponível, capability bloqueada e direção subiu/estável/caiu.     | Alternar abas e 30/90 dias; consultar sessões; consultar continuidade no Premium Plus; exportar CSV agregado. |
+| Todos                | Configurações | `/terapeuta/configuracoes` | Ajustar dados internos da conta e acessar áreas proprietárias.             | AppPageContainer, AppPageGrid, TherapistSettingsPage, TherapistSettingsErrorState, AppPageSection, TESButton.                           | Loading, erro honesto, validação local, salvando, sucesso, sessão expirada, role inválido.                              | Salvar nome/telefone internos, editar perfil público, abrir agenda, abrir financeiro, alterar senha, ver políticas. |
 
 | Plano                     | Página                | Rota                                | Objetivo                                                                                                                                       | Componentes                                                                                                                                                            | Estados                                                                                                                                                                                                                                                                                                                                            | Ações                                                                                                                                                       |
 | ------------------------- | --------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |

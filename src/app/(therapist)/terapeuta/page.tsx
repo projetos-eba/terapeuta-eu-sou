@@ -1,5 +1,7 @@
 import { TherapistPlan, TherapistStatus } from "@/domain/tes";
 import {
+  createEmptyTherapistDashboardData,
+  getTherapistHomeReadiness,
   getTherapistDashboardPage,
   TherapistDashboardError,
   TherapistDashboardPage,
@@ -9,13 +11,35 @@ import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
 export default async function TherapistHomePage() {
   const session = await requireTherapistSession();
+  let readiness;
 
-  if (session.status !== TherapistStatus.Approved) {
-    return <TherapistGettingStartedPage session={session} />;
+  try {
+    readiness = await getTherapistHomeReadiness({ session });
+  } catch (error) {
+    const message =
+      error instanceof TherapistDashboardError &&
+      error.code === "session_expired"
+        ? "Sua sessão expirou. Entre novamente para continuar."
+        : "Não foi possível carregar seu progresso agora. Tente novamente em alguns instantes.";
+
+    return <TherapistHomeError message={message} />;
   }
 
-  if (session.plan !== TherapistPlan.PremiumPlus) {
-    return <TherapistGettingStartedPage session={session} />;
+  if (!readiness.isOperationallyReady) {
+    return (
+      <TherapistGettingStartedPage readiness={readiness} session={session} />
+    );
+  }
+
+  if (
+    session.status !== TherapistStatus.Approved ||
+    session.plan !== TherapistPlan.PremiumPlus
+  ) {
+    return (
+      <TherapistDashboardPage
+        data={createEmptyTherapistDashboardData({ readiness, session })}
+      />
+    );
   }
 
   try {
@@ -32,15 +56,19 @@ export default async function TherapistHomePage() {
         ? "Sua sessão expirou. Entre novamente para continuar."
         : "Não foi possível carregar seu painel agora. Tente novamente em alguns instantes.";
 
-    return (
-      <section className="mx-auto max-w-[920px] rounded-panel border border-[var(--tes-color-border)] bg-white p-8 text-center shadow-card">
-        <h1 className="font-display text-4xl font-light italic text-brand-deep">
-          Seu painel está temporariamente indisponível
-        </h1>
-        <p className="mt-4 text-sm leading-6 text-tesText-secondary">
-          {message}
-        </p>
-      </section>
-    );
+    return <TherapistHomeError message={message} />;
   }
+}
+
+function TherapistHomeError({ message }: { message: string }) {
+  return (
+    <section className="mx-auto max-w-[920px] rounded-panel border border-[var(--tes-color-border)] bg-white p-8 text-center shadow-card">
+      <h1 className="font-display text-4xl font-light italic text-brand-deep">
+        Seu painel está temporariamente indisponível
+      </h1>
+      <p className="mt-4 text-sm leading-6 text-tesText-secondary">
+        {message}
+      </p>
+    </section>
+  );
 }

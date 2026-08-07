@@ -69,6 +69,8 @@ export function TherapistProfileEditorPage({
   const hasDraft = Boolean(editor.draft);
   const isPublished = editor.derived.publicStatus === "published";
   const isFirstConfiguration = !isPublished;
+  const mustSaveBeforePublishing =
+    hasUnsavedChanges || (isFirstConfiguration && !hasDraft);
 
   function updateField<K extends keyof TherapistProfileEditableFields>(
     key: K,
@@ -132,7 +134,7 @@ export function TherapistProfileEditorPage({
     setInlineError(null);
 
     let sourceEditor = editor;
-    if (hasUnsavedChanges) {
+    if (mustSaveBeforePublishing) {
       const saveResult = await sendMutationCommand(
         "save_draft",
         sourceEditor,
@@ -223,7 +225,7 @@ export function TherapistProfileEditorPage({
         primaryDisabled={
           pendingAction !== null ||
           (isFirstConfiguration
-            ? !hasDraft && !hasUnsavedChanges
+            ? false
             : !hasUnsavedChanges)
         }
         primaryLabel={
@@ -398,16 +400,117 @@ type FieldValidationError = {
 function validateDraftFields(
   fields: TherapistProfileEditableFields,
 ): FieldValidationError | null {
-  if (fields.publicName.trim().length < 2) {
+  const publicName = fields.publicName.trim();
+  if (publicName.length < 2) {
     return {
       focusId: "publicName",
       message: "Informe o nome do perfil antes de salvar.",
+    };
+  }
+  if (publicName.length > 120) {
+    return {
+      focusId: "publicName",
+      message: "O nome do perfil deve ter até 120 caracteres.",
     };
   }
   if (fields.shortIntro.length > 200) {
     return {
       focusId: "shortIntro",
       message: "O texto curto deve ter até 200 caracteres.",
+    };
+  }
+  if (fields.headline.length > 180) {
+    return {
+      focusId: "headline",
+      message: "O destaque do perfil deve ter até 180 caracteres.",
+    };
+  }
+  if (fields.bio.length > 1600) {
+    return {
+      focusId: "bio",
+      message: "A apresentação do perfil deve ter até 1600 caracteres.",
+    };
+  }
+  if (fields.essenceBody.length > 600) {
+    return {
+      focusId: "essenceBody",
+      message: "Minha essência deve ter até 600 caracteres.",
+    };
+  }
+  if (fields.invitationBody.length > 600) {
+    return {
+      focusId: "invitationBody",
+      message: "O convite do perfil deve ter até 600 caracteres.",
+    };
+  }
+  if (fields.city.length > 80 || fields.state.length > 40) {
+    return {
+      focusId: fields.city.length > 80 ? "city" : "state",
+      message: "Revise cidade e estado antes de salvar.",
+    };
+  }
+  if (fields.guideItems.length > 6) {
+    return {
+      focusId: "guideItems",
+      message: "Mantenha no máximo 6 itens em Como posso te guiar.",
+    };
+  }
+  if (hasInvalidListItem(fields.guideItems.map((item) => item.label), 80)) {
+    return {
+      focusId: "guideItems",
+      message: "Cada item de Como posso te guiar deve ter até 80 caracteres.",
+    };
+  }
+  if (fields.reflections.length > 6) {
+    return {
+      focusId: "reflections",
+      message: "Mantenha no máximo 6 conteúdos/reflexões.",
+    };
+  }
+  if (hasInvalidListItem(fields.reflections.map((item) => item.title), 120)) {
+    return {
+      focusId: "reflections",
+      message: "Cada conteúdo/reflexão deve ter até 120 caracteres.",
+    };
+  }
+  if (
+    fields.reflections.some(
+      (item) =>
+        item.excerpt.length > 240 ||
+        item.href.length > 500 ||
+        item.imageUrl.length > 500 ||
+        !Number.isInteger(item.minutesToRead) ||
+        item.minutesToRead < 1 ||
+        item.minutesToRead > 60,
+    )
+  ) {
+    return {
+      focusId: "reflections",
+      message: "Revise os dados dos conteúdos/reflexões antes de salvar.",
+    };
+  }
+  if (hasInvalidMediaUrl(fields.photoUrl, "public")) {
+    return {
+      focusId: "photoUrl",
+      message: "Envie uma foto válida ou use uma URL pública da imagem.",
+    };
+  }
+  if (hasInvalidMediaUrl(fields.videoThumbnailUrl, "public")) {
+    return {
+      focusId: "videoThumbnailUrl",
+      message: "Envie uma capa válida ou use uma URL pública da imagem.",
+    };
+  }
+  if (hasInvalidMediaUrl(fields.videoUrl, "https")) {
+    return {
+      focusId: "videoUrl",
+      message: "Use um link de vídeo seguro começando com https://.",
+    };
+  }
+  if (fields.videoTitle.length > 120) {
+    return {
+      focusId: "videoTitle",
+      message: "O título do vídeo deve ter até 120 caracteres.",
     };
   }
   return null;
@@ -446,6 +549,23 @@ function formatFieldList(labels: string[]) {
   if (labels.length <= 1) return labels[0] ?? "";
   if (labels.length === 2) return `${labels[0]} e ${labels[1]}`;
   return `${labels.slice(0, -1).join(", ")} e ${labels.at(-1)}`;
+}
+
+function hasInvalidListItem(items: string[], max: number) {
+  return items.some((item) => {
+    const normalized = item.trim();
+    return normalized.length > 0 && normalized.length > max;
+  });
+}
+
+function hasInvalidMediaUrl(value: string, mode: "https" | "public") {
+  const normalized = value.trim();
+  if (!normalized) return false;
+  if (/\s/.test(normalized)) return true;
+  if (mode === "https") return !normalized.startsWith("https://");
+  return !(
+    normalized.startsWith("https://") || normalized.startsWith("/")
+  );
 }
 
 function getSuccessMessage(action: PendingAction, replay: boolean) {

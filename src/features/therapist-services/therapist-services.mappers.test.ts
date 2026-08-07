@@ -20,6 +20,7 @@ describe("therapist service mappers", () => {
             isAvailableForServices: true,
             isPubliclyVisible: true,
             isVisibleInMatching: false,
+            imageUrl: "https://cdn.example.test/reiki.jpg",
             name: "Reiki",
             shortDescription: "Pratica complementar.",
             slug: "reiki",
@@ -32,7 +33,13 @@ describe("therapist service mappers", () => {
         therapistProfileId: "c1000000-0000-4000-8000-000000000001",
       }),
     ).toMatchObject({
-      items: [{ name: "Reiki", status: "published" }],
+      items: [
+        {
+          imageUrl: "https://cdn.example.test/reiki.jpg",
+          name: "Reiki",
+          status: "published",
+        },
+      ],
       serviceLimit: 6,
     });
   });
@@ -68,6 +75,7 @@ describe("therapist service mappers", () => {
           status: "active",
           therapy: {
             id: "22222222-2222-4222-8222-222222222225",
+            imageUrl: "https://cdn.example.test/reiki-service.jpg",
             isAvailableForServices: true,
             isPubliclyVisible: true,
             name: "Reiki",
@@ -86,6 +94,9 @@ describe("therapist service mappers", () => {
     });
 
     expect(result.items[0].metrics.bookingCountDeltaPercent).toBeNull();
+    expect(result.items[0].therapy.imageUrl).toBe(
+      "https://cdn.example.test/reiki-service.jpg",
+    );
   });
 
   it("rejects legacy non-online service formats", () => {

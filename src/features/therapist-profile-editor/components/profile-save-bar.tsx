@@ -33,7 +33,7 @@ export function ProfileSaveBar({
   const publishDisabled =
     pendingAction !== null ||
     (firstConfiguration
-      ? !hasDraft && !hasUnsavedChanges
+      ? false
       : !hasDraft || hasUnsavedChanges);
   const message = getSaveBarMessage({
     firstConfiguration,
@@ -143,8 +143,8 @@ function getSaveBarMessage({
 
     return {
       description:
-        "Preencha as informações principais para liberar a primeira publicação.",
-      title: "Seu perfil ainda não tem dados prontos para publicar.",
+        "Ao publicar, o TES salva a versão atual e envia os dados para o perfil público.",
+      title: "Revise as informações principais antes da primeira publicação.",
     };
   }
 

@@ -92,6 +92,7 @@ export function mapTherapistServiceSummary(
     status: parseTherapistServiceStatus(value.status),
     therapy: {
       id: string(therapy.id),
+      imageUrl: optionalNullableString(therapy.imageUrl),
       isAvailableForServices: boolean(therapy.isAvailableForServices),
       isPubliclyVisible: boolean(therapy.isPubliclyVisible),
       name: string(therapy.name),
@@ -118,6 +119,7 @@ function mapTherapyCatalogOption(input: unknown): TherapyCatalogOption {
     isAvailableForServices: boolean(value.isAvailableForServices),
     isPubliclyVisible: boolean(value.isPubliclyVisible),
     isVisibleInMatching: boolean(value.isVisibleInMatching),
+    imageUrl: optionalNullableString(value.imageUrl),
     matchingThemes: optionalArray(value.matchingThemes).map(mapMatchingTheme),
     name: string(value.name),
     shortDescription: string(value.shortDescription),
@@ -193,6 +195,11 @@ function nullableNumber(value: unknown): number | null {
 
 function nullableString(value: unknown): string | null {
   if (value === null) return null;
+  return string(value);
+}
+
+function optionalNullableString(value: unknown): string | null {
+  if (value === undefined || value === null) return null;
   return string(value);
 }
 

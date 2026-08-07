@@ -89,4 +89,44 @@ describe("therapist profile editor mappers", () => {
 
     expect(payload.videoUrl).toBeNull();
   });
+
+  it("removes empty guide items and reflections before sending the payload", () => {
+    const editor = mapTherapistProfileEditorContract(contract);
+    const payload = serializeEditorPayload({
+      ...buildInitialEditorFields(editor),
+      guideItems: [
+        { icon: "sparkles", label: "Escuta" },
+        { icon: "sparkles", label: "   " },
+      ],
+      reflections: [
+        {
+          excerpt: "",
+          href: "",
+          imageUrl: "",
+          minutesToRead: 3,
+          title: "Sobre a vida curta",
+        },
+        {
+          excerpt: "",
+          href: "",
+          imageUrl: "",
+          minutesToRead: 3,
+          title: "   ",
+        },
+      ],
+    });
+
+    expect(payload.guideItems).toEqual([
+      { icon: "sparkles", label: "Escuta" },
+    ]);
+    expect(payload.reflections).toEqual([
+      {
+        excerpt: null,
+        href: null,
+        imageUrl: null,
+        minutesToRead: 3,
+        title: "Sobre a vida curta",
+      },
+    ]);
+  });
 });

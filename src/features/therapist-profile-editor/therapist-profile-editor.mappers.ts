@@ -61,9 +61,24 @@ export function serializeEditorPayload(fields: TherapistProfileEditableFields) {
     bio: emptyToNull(fields.bio),
     city: emptyToNull(fields.city),
     essenceBody: emptyToNull(fields.essenceBody),
+    guideItems: fields.guideItems
+      .map((item) => ({
+        icon: emptyToNull(item.icon) ?? "sparkles",
+        label: item.label.trim(),
+      }))
+      .filter((item) => item.label.length > 0),
     headline: emptyToNull(fields.headline),
     invitationBody: emptyToNull(fields.invitationBody),
     photoUrl: emptyToNull(fields.photoUrl),
+    reflections: fields.reflections
+      .map((item) => ({
+        excerpt: emptyToNull(item.excerpt),
+        href: emptyToNull(item.href),
+        imageUrl: emptyToNull(item.imageUrl),
+        minutesToRead: item.minutesToRead,
+        title: item.title.trim(),
+      }))
+      .filter((item) => item.title.length > 0),
     shortIntro: emptyToNull(fields.shortIntro),
     state: emptyToNull(fields.state),
     videoThumbnailUrl: emptyToNull(fields.videoThumbnailUrl),

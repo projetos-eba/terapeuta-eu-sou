@@ -307,6 +307,35 @@ describe("TherapistProfileEditorPage", () => {
     expect(commandMocks.sendTherapistProfileCommand).not.toHaveBeenCalled();
   });
 
+  it("blocks unsafe video links before sending the first publication", () => {
+    render(
+      <TherapistProfileEditorPage editor={makeFirstConfigurationEditor()} />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Nome do perfil"), {
+      target: { value: "Codex Terapeuta Playwright" },
+    });
+    fireEvent.change(screen.getByLabelText("Texto curto"), {
+      target: { value: "Isso é um teste" },
+    });
+    fireEvent.change(screen.getByLabelText("Minha essência"), {
+      target: {
+        value: "Minha essência completa para a primeira publicação.",
+      },
+    });
+    fireEvent.change(screen.getByLabelText("Inserir link do vídeo"), {
+      target: { value: "http://example.test/videos/ana-oliveira" },
+    });
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Publicar alterações" })[0],
+    );
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Use um link de vídeo seguro começando com https://.",
+    );
+    expect(commandMocks.sendTherapistProfileCommand).not.toHaveBeenCalled();
+  });
+
   it("saves and publishes the first complete profile setup in one confirmed action", async () => {
     commandMocks.createStableRequestId
       .mockReturnValueOnce("11111111-1111-4111-8111-111111111111")
@@ -393,6 +422,88 @@ describe("TherapistProfileEditorPage", () => {
     );
     expect(screen.getAllByText(/Alterações publicadas/).length).toBeGreaterThan(
       0,
+    );
+  });
+
+  it("creates a draft before publishing a complete first profile without local edits", async () => {
+    commandMocks.createStableRequestId
+      .mockReturnValueOnce("11111111-1111-4111-8111-111111111111")
+      .mockReturnValueOnce("22222222-2222-4222-8222-222222222222");
+
+    const base = makeFirstConfigurationEditor();
+    const readyFields = {
+      ...base.published.fields,
+      essenceBody: "Minha essência completa para a primeira publicação.",
+      guideItems: [{ icon: "sparkles", label: "Escuta acolhedora" }],
+      publicName: "Ana Oliveira",
+      shortIntro: "Acolhimento online com clareza.",
+    };
+    const readyEditor = makeFirstConfigurationEditor({
+      published: {
+        ...base.published,
+        fields: readyFields,
+      },
+    });
+    const savedEditor = makeFirstConfigurationEditor({
+      draft: {
+        baseProfileVersion: 1,
+        contentVersionId: "first-draft-version",
+        fields: readyFields,
+        publishedAt: null,
+        status: "draft",
+        updatedAt: "2026-08-07T13:41:00.000Z",
+      },
+      published: readyEditor.published,
+      version: 1,
+    });
+    const publishedEditor = makeEditor({
+      draft: null,
+      published: {
+        ...makeEditor().published,
+        fields: readyFields,
+        publishedAt: "2026-08-07T13:42:00.000Z",
+        status: "published",
+      },
+      version: 2,
+    });
+    commandMocks.sendTherapistProfileCommand
+      .mockResolvedValueOnce({
+        data: { editor: savedEditor, idempotentReplay: false },
+        status: "success",
+      })
+      .mockResolvedValueOnce({
+        data: { editor: publishedEditor, idempotentReplay: false },
+        status: "success",
+      });
+
+    render(<TherapistProfileEditorPage editor={readyEditor} />);
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Publicar alterações" })[0],
+    );
+    const dialog = await screen.findByRole("dialog", {
+      name: "Publicar alterações?",
+    });
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Publicar alterações" }),
+    );
+
+    await waitFor(() => {
+      expect(commandMocks.sendTherapistProfileCommand).toHaveBeenCalledTimes(2);
+    });
+    expect(commandMocks.sendTherapistProfileCommand).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        action: "save_draft",
+        expectedVersion: 1,
+      }),
+    );
+    expect(commandMocks.sendTherapistProfileCommand).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        action: "publish",
+        expectedVersion: 1,
+      }),
     );
   });
 
