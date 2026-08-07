@@ -19,6 +19,8 @@ import {
   serializeEditorPayload,
 } from "../therapist-profile-editor.mappers";
 import type {
+  SimpleTherapistProfileMutationCommand,
+  SaveTherapistProfileDraftCommand,
   TherapistProfileEditableFields,
   TherapistProfileEditorData,
   TherapistProfileMutationResult,
@@ -66,6 +68,7 @@ export function TherapistProfileEditorPage({
   );
   const hasDraft = Boolean(editor.draft);
   const isPublished = editor.derived.publicStatus === "published";
+  const isFirstConfiguration = !isPublished;
 
   function updateField<K extends keyof TherapistProfileEditableFields>(
     key: K,
@@ -81,13 +84,28 @@ export function TherapistProfileEditorPage({
     setLiveMessage("Alterações locais descartadas.");
   }
 
+  function showValidationError(message: string, focusId: string) {
+    setInlineError(message);
+    setLiveMessage(message);
+    document.getElementById(focusId)?.focus();
+  }
+
+  function requestPublishConfirmation() {
+    const validationError = validatePublishFields(fields);
+    if (validationError) {
+      showValidationError(validationError.message, validationError.focusId);
+      return;
+    }
+
+    setInlineError(null);
+    setConfirmAction("publish");
+  }
+
   async function runMutation(action: PendingAction) {
     if (action === "save_draft") {
-      const validationError = validateFields(fields);
+      const validationError = validateDraftFields(fields);
       if (validationError) {
-        setInlineError(validationError);
-        setLiveMessage(validationError);
-        document.getElementById("publicName")?.focus();
+        showValidationError(validationError.message, validationError.focusId);
         return;
       }
     }
@@ -95,32 +113,91 @@ export function TherapistProfileEditorPage({
     setPendingAction(action);
     setInlineError(null);
 
-    const command =
+    const result = await sendMutationCommand(action, editor, fields);
+    setPendingAction(null);
+
+    if (!result) return;
+
+    applyMutationResult(action, result);
+  }
+
+  async function runPublishChanges() {
+    const validationError = validatePublishFields(fields);
+    if (validationError) {
+      showValidationError(validationError.message, validationError.focusId);
+      return;
+    }
+
+    setPendingAction("publish");
+    setInlineError(null);
+
+    let sourceEditor = editor;
+    if (hasUnsavedChanges) {
+      const saveResult = await sendMutationCommand(
+        "save_draft",
+        sourceEditor,
+        fields,
+      );
+      if (!saveResult) {
+        setPendingAction(null);
+        return;
+      }
+      sourceEditor = saveResult.editor;
+    }
+
+    const publishResult = await sendMutationCommand(
+      "publish",
+      sourceEditor,
+      fields,
+    );
+    setPendingAction(null);
+
+    if (!publishResult) {
+      setEditor(sourceEditor);
+      setFields(buildInitialEditorFields(sourceEditor));
+      return;
+    }
+
+    applyMutationResult("publish", publishResult);
+  }
+
+  async function sendMutationCommand(
+    action: PendingAction,
+    sourceEditor: TherapistProfileEditorData,
+    sourceFields: TherapistProfileEditableFields,
+  ) {
+    const command: SaveTherapistProfileDraftCommand | SimpleTherapistProfileMutationCommand =
       action === "save_draft"
         ? {
             action,
-            expectedVersion: editor.version,
-            payload: serializeEditorPayload(fields),
+            expectedVersion: sourceEditor.version,
+            payload: serializeEditorPayload(sourceFields),
             requestId: createStableRequestId(),
           }
         : {
             action,
-            expectedVersion: editor.version,
+            expectedVersion: sourceEditor.version,
             requestId: createStableRequestId(),
           };
 
     const result = await sendTherapistProfileCommand(command);
-    setPendingAction(null);
 
     if (result.status === "error") {
       setInlineError(result.error.message);
       setLiveMessage(result.error.message);
-      return;
+      return null;
     }
 
-    const mutation = result.data as TherapistProfileMutationResult;
-    setEditor(mutation.editor);
-    setFields(buildInitialEditorFields(mutation.editor));
+    return result.data as TherapistProfileMutationResult;
+  }
+
+  function applyMutationResult(
+    action: PendingAction,
+    mutation: TherapistProfileMutationResult,
+  ) {
+    const nextEditor = mutation.editor;
+    setEditor(nextEditor);
+    setFields(buildInitialEditorFields(nextEditor));
     setConfirmAction(null);
 
     const message = getSuccessMessage(action, mutation.idempotentReplay);
@@ -138,8 +215,26 @@ export function TherapistProfileEditorPage({
         onReset={() =>
           hasUnsavedChanges ? setConfirmAction("reset") : resetLocalChanges()
         }
-        onSaveDraft={() => void runMutation("save_draft")}
-        saving={pendingAction === "save_draft"}
+        onPrimaryAction={() =>
+          isFirstConfiguration
+            ? requestPublishConfirmation()
+            : void runMutation("save_draft")
+        }
+        primaryDisabled={
+          pendingAction !== null ||
+          (isFirstConfiguration
+            ? !hasDraft && !hasUnsavedChanges
+            : !hasUnsavedChanges)
+        }
+        primaryLabel={
+          isFirstConfiguration ? "Publicar alterações" : "Salvar alterações"
+        }
+        primaryLoading={
+          isFirstConfiguration
+            ? pendingAction === "publish"
+            : pendingAction === "save_draft"
+        }
+        primaryMode={isFirstConfiguration ? "publish" : "save"}
       />
 
       {inlineError ? (
@@ -161,10 +256,11 @@ export function TherapistProfileEditorPage({
             updateField={updateField}
           />
           <ProfileSaveBar
+            firstConfiguration={isFirstConfiguration}
             hasDraft={hasDraft}
             hasUnsavedChanges={hasUnsavedChanges}
             onDiscardDraft={() => setConfirmAction("discard_draft")}
-            onPublish={() => setConfirmAction("publish")}
+            onPublish={requestPublishConfirmation}
             onSaveDraft={() => void runMutation("save_draft")}
             onUnpublish={() => setConfirmAction("unpublish")}
             pendingAction={pendingAction}
@@ -199,6 +295,10 @@ export function TherapistProfileEditorPage({
           onConfirm={() => {
             if (confirmAction === "reset") {
               resetLocalChanges();
+              return;
+            }
+            if (confirmAction === "publish") {
+              void runPublishChanges();
               return;
             }
             void runMutation(confirmAction);
@@ -290,14 +390,62 @@ function ConfirmDialog({
   );
 }
 
-function validateFields(fields: TherapistProfileEditableFields) {
+type FieldValidationError = {
+  focusId: keyof TherapistProfileEditableFields;
+  message: string;
+};
+
+function validateDraftFields(
+  fields: TherapistProfileEditableFields,
+): FieldValidationError | null {
   if (fields.publicName.trim().length < 2) {
-    return "Informe o nome do perfil antes de salvar.";
+    return {
+      focusId: "publicName",
+      message: "Informe o nome do perfil antes de salvar.",
+    };
   }
   if (fields.shortIntro.length > 200) {
-    return "O texto curto deve ter até 200 caracteres.";
+    return {
+      focusId: "shortIntro",
+      message: "O texto curto deve ter até 200 caracteres.",
+    };
   }
   return null;
+}
+
+function validatePublishFields(
+  fields: TherapistProfileEditableFields,
+): FieldValidationError | null {
+  const draftError = validateDraftFields(fields);
+  if (draftError) return draftError;
+
+  const missingFields: Array<{
+    focusId: keyof TherapistProfileEditableFields;
+    label: string;
+  }> = [];
+  if (!fields.shortIntro.trim() && !fields.headline.trim()) {
+    missingFields.push({ focusId: "shortIntro", label: "texto curto" });
+  }
+  if (!fields.essenceBody.trim() && !fields.bio.trim()) {
+    missingFields.push({ focusId: "essenceBody", label: "sua essência" });
+  }
+
+  if (missingFields.length > 0) {
+    return {
+      focusId: missingFields[0].focusId,
+      message: `Preencha ${formatFieldList(
+        missingFields.map((field) => field.label),
+      )} antes de publicar.`,
+    };
+  }
+
+  return null;
+}
+
+function formatFieldList(labels: string[]) {
+  if (labels.length <= 1) return labels[0] ?? "";
+  if (labels.length === 2) return `${labels[0]} e ${labels[1]}`;
+  return `${labels.slice(0, -1).join(", ")} e ${labels.at(-1)}`;
 }
 
 function getSuccessMessage(action: PendingAction, replay: boolean) {
