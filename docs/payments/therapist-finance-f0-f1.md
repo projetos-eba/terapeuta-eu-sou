@@ -24,7 +24,6 @@ Fora do escopo da F0/F1:
 - potencial financeiro da agenda;
 - oportunidade do mês;
 - retenção;
-- benchmark da plataforma;
 - ranking estratégico de terapias;
 - recomendações TES;
 - IA financeira;
@@ -37,7 +36,8 @@ Premium Plus. Free permanece com o resumo operacional da F0/F1.
 
 Atualização F3: Premium Plus ganhou o dashboard financeiro avançado no Resumo,
 com previsão, potencial da agenda, oportunidades, retenção avançada, evolução
-com projeção, ranking detalhado e benchmark anonimizado. Premium mantém F2.
+com projeção e ranking detalhado. Benchmark não é exibido na experiência
+financeira do terapeuta. Premium mantém F2.
 
 Atualização F4: a homologação operacional passou a cobrir a cadeia completa:
 conta Connect, pagamento de sessão confirmado por webhook, comprovante,
@@ -151,15 +151,13 @@ Todos exigem `advanced_financials` via plano `premium_plus`:
 - `get_private_therapist_agenda_revenue_potential_v1`;
 - `get_private_therapist_financial_opportunities_v1`;
 - `get_private_therapist_retention_analytics_v1`;
-- `get_private_therapist_financial_benchmark_v1`.
 
 Metodologias versionadas:
 
 - `tes-financial-forecast-v1`;
 - `tes-agenda-potential-v1`;
 - `tes-financial-opportunities-v1`;
-- `tes-retention-v1`;
-- `tes-financial-benchmark-v1`.
+- `tes-retention-v1`.
 
 Previsão do mês separa:
 
@@ -170,9 +168,9 @@ Previsão do mês separa:
 Esses valores nunca são somados como receita garantida. O potencial estimado não
 cria ledger, não altera saldo e não entra em repasse.
 
-O benchmark só aparece com no mínimo 20 terapeutas elegíveis e 100 sessões
-agregadas. Caso contrário, retorna `insufficient_sample`, sem IDs ou valores de
-outros terapeutas.
+Benchmark não é exibido na UI financeira do terapeuta nesta versão. Contratos
+legados de benchmark não devem ser usados em novas superfícies sem nova decisão
+de produto, privacidade e QA.
 
 ### Contratos F4 operacionais
 
@@ -217,7 +215,6 @@ política real.
 | Oportunidade do mês       | Ação determinística com evidências e confiança.                                  | `get_private_therapist_financial_opportunities_v1`                                                    | Item explícito de sem oportunidade confiável. | `advanced_financials`  |
 | Insight TES financeiro    | Explicação rule-based vinculada a evidências.                                    | Oportunidades F3                                                                                      | Estado sem insight suficiente.                | `advanced_financials`  |
 | Retenção avançada         | Coortes com janela incompleta censurada e retorno pago em até 90 dias.           | `bookings`, `session_payments`                                                                        | `insufficient_data`.                          | `advanced_financials`  |
-| Benchmark anonimizado     | Comparação agregada com supressão estatística.                                   | Agregados de `session_payments`                                                                       | `insufficient_sample`.                        | `advanced_financials`  |
 | Evolução com projeção     | Realizado, contratado, estimado e período anterior em séries separadas.          | `session_payments` + potencial F3                                                                     | Série vazia honesta.                          | `advanced_financials`  |
 
 ## Divergências conscientes do Figma
@@ -231,7 +228,7 @@ política real.
 - Origem de cobrança não é método de pagamento. Link ou Checkout aparecem como
   origem, enquanto método usa dados reais quando persistidos.
 - A composição visual não mostra taxa Stripe como desconto do terapeuta.
-- Na F2, projeção, potencial, oportunidade e benchmark ficaram fora do escopo.
+- Na F2, projeção, potencial e oportunidade ficaram fora do escopo.
   Na F3, esses blocos foram implementados somente para Premium Plus, com
   `advanced_financials`.
 - O termo visual “Agenda vazia” do Figma foi renomeado para “Potencial
@@ -321,9 +318,9 @@ Validações obrigatórias da fase:
 - roteiro Stripe sandbox quando secrets de test mode estiverem presentes.
 - F2: pgTAP de métricas, Vitest de mapper/UI e validação de capability Free,
   Premium e Premium Plus.
-- F3: pgTAP de capability Premium Plus, supressão de benchmark, ausência de
-  IDs privados, ausência de escrita no ledger, metodologias versionadas e
-  separação entre realizado, contratado e estimado.
+- F3: pgTAP de capability Premium Plus, ausência de IDs privados, ausência de
+  escrita no ledger, metodologias versionadas e separação entre realizado,
+  contratado e estimado.
 - F4: pgTAP de lifecycle operacional com comprovante, confirmação de sessão,
   segurança controlada, elegibilidade, lote, Transfer com `source_transaction`,
   conciliação e read models privados atualizados.

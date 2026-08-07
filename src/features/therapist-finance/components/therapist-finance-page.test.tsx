@@ -104,11 +104,11 @@ describe("TherapistFinancePage", () => {
       screen.getByText(/não representa receita garantida/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Benchmark anonimizado" }),
-    ).toBeInTheDocument();
+      screen.queryByRole("heading", { name: "Benchmark anonimizado" }),
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByText(/Benchmark suprimido por privacidade estatística/i),
-    ).toBeInTheDocument();
+      screen.queryByText(/Benchmark suprimido por privacidade estatística/i),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Insight TES" }),
     ).toBeInTheDocument();
