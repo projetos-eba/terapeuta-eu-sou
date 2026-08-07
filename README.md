@@ -18,6 +18,12 @@ público. `/basico/*`, `/pro/*` e `/plus/*` respondem apenas com redirects
 temporários para a rota equivalente. Plano e capability são validados pela
 sessão autenticada, nunca pelo prefixo da URL.
 
+A home autenticada `/terapeuta` mostra um painel de primeiros passos para
+terapeutas novos, Free, Premium ou com perfil ainda não aprovado. O dashboard
+operacional completo é carregado somente para Premium Plus com
+`therapist_profiles.status = approved`; erros de infraestrutura continuam sendo
+exibidos como indisponibilidade honesta.
+
 O fluxo inicial de cliente usa rotas separadas em `/cliente/cadastro` e `/cliente/login`. O cadastro também usa Supabase Auth/Admin via REST server-side, cria `profiles.role = patient` e `patient_profiles`; documentos, verificação profissional e dados bancários não fazem parte do cadastro de cliente.
 
 O Match público usa `/sua-jornada` e `/sua-jornada/resultado`. A configuração vem de `matching_themes`, `matching_interests` e da view `public_matching_config`; o cálculo roda em `/api/public/matching/calculate` com pesos versionados em `matching_weights`, usando apenas a versão publicada. O fluxo é anônimo, usa `sessionStorage` para escolhas temporárias e recomenda terapias, não terapeutas.
@@ -96,8 +102,9 @@ adiciona métricas intermediárias no Resumo via
 contratado e estimado sem afetar ledger ou repasses. Não há aba dedicada de
 histórico, dados fictícios ou formulário bancário próprio. Operação financeira
 essencial é acessível para Free, Premium e Premium Plus; `advanced_financials`
-libera somente projeções, potencial, benchmark anonimizado e insights
-determinísticos.
+libera projeções, potencial, retenção avançada, evolução, ranking por terapia e
+insights determinísticos. Benchmark não é exibido na experiência financeira do
+terapeuta.
 Documentação:
 `docs/payments/therapist-finance-f0-f1.md` e
 `docs/architecture/adr/ADR-012-therapist-finance-f0-f1.md`,

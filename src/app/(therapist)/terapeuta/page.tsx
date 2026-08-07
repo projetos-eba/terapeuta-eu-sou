@@ -1,17 +1,21 @@
-import { TherapistPlan } from "@/domain/tes";
+import { TherapistPlan, TherapistStatus } from "@/domain/tes";
 import {
   getTherapistDashboardPage,
   TherapistDashboardError,
   TherapistDashboardPage,
 } from "@/features/therapist-dashboard";
-import { TherapistConstructionPage } from "@/features/therapist-shell";
+import { TherapistGettingStartedPage } from "@/features/therapist-dashboard/therapist-getting-started-page";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
 export default async function TherapistHomePage() {
   const session = await requireTherapistSession();
 
+  if (session.status !== TherapistStatus.Approved) {
+    return <TherapistGettingStartedPage session={session} />;
+  }
+
   if (session.plan !== TherapistPlan.PremiumPlus) {
-    return <TherapistConstructionPage title="Início" />;
+    return <TherapistGettingStartedPage session={session} />;
   }
 
   try {
