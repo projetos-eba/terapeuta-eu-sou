@@ -22,8 +22,7 @@ Criar read models privados F3:
 - `get_private_therapist_financial_forecast_v1`;
 - `get_private_therapist_agenda_revenue_potential_v1`;
 - `get_private_therapist_financial_opportunities_v1`;
-- `get_private_therapist_retention_analytics_v1`;
-- `get_private_therapist_financial_benchmark_v1`.
+- `get_private_therapist_retention_analytics_v1`.
 
 Todos derivam o terapeuta de `auth.uid()`, exigem plano `premium_plus` e
 retornam estados discriminados. Free mantém a operação F0/F1. Premium mantém
@@ -37,16 +36,15 @@ F2. Premium Plus acessa F2 e F3 via capability `advanced_financials`.
 | `tes-agenda-potential-v1`        | Potencial da agenda         | Deduplica janelas de disponibilidade, subtrai bloqueios/reservas pagas e usa preço histórico quando há. |
 | `tes-financial-opportunities-v1` | Oportunidades e Insight TES | Gera ações por regras determinísticas a partir de evidências retornadas no contrato.                    |
 | `tes-retention-v1`               | Retenção avançada           | Usa primeira sessão concluída, retorno pago em até 90 dias e censura janelas incompletas.               |
-| `tes-financial-benchmark-v1`     | Benchmark anonimizado       | Suprime métricas quando há menos de 20 terapeutas elegíveis ou 100 sessões agregadas.                   |
 
 Projeções nunca criam lançamentos em `financial_ledger_entries`, nunca alteram
 saldo, repasse, comissão, reembolso, disputa ou transferência.
 
-## Benchmark e Privacidade
+## Benchmark
 
-Benchmark retorna apenas agregados. O contrato nunca expõe IDs, nomes ou
-valores de outros terapeutas. Quando a amostra mínima não é atingida, retorna
-`status = insufficient_sample`, `sampleSize = null` e medianas/percentis nulos.
+Benchmark não é exibido na interface financeira do terapeuta nesta versão.
+Contratos SQL legados de benchmark não devem alimentar novas superfícies sem
+nova decisão de produto, privacidade e QA.
 
 ## Interface
 
@@ -60,8 +58,7 @@ Plus:
 - Insight TES rule-based;
 - retenção por coorte;
 - evolução com realizado, contratado, estimado e período anterior;
-- ranking detalhado por terapia;
-- benchmark anonimizado ou estado de supressão.
+- ranking detalhado por terapia.
 
 Premium vê um card de upgrade Premium Plus. Recebimentos, Repasses,
 comprovantes, reembolsos e Conta de recebimento não são bloqueados por

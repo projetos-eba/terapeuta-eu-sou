@@ -216,8 +216,9 @@ período anterior. Free continua com o resumo operacional.
 F3 adiciona o dashboard avançado Premium Plus via `advanced_financials`:
 previsão do mês, potencial disponível da agenda, oportunidade do mês, Insight
 TES determinístico, retenção por coorte, evolução com projeção, ranking
-detalhado por terapia e benchmark anonimizado. Realizado, contratado e estimado
-permanecem separados; projeções não criam ledger, saldo ou repasse.
+detalhado por terapia. Benchmark não é exibido na experiência financeira do
+terapeuta. Realizado, contratado e estimado permanecem separados; projeções não
+criam ledger, saldo ou repasse.
 
 F4 fecha o ciclo operacional em test mode: conta Connect ativa, pagamento de
 sessao confirmado exclusivamente por webhook Stripe, reconciliacao do Charge,
