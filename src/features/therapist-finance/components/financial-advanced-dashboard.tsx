@@ -1,6 +1,5 @@
 import Link from "next/link";
 import {
-  Activity,
   BarChart3,
   CalendarDays,
   LockKeyhole,
@@ -14,7 +13,6 @@ import { AppPageSection } from "@/components/app-page";
 import { routes } from "@/lib/routes";
 
 import type {
-  FinancialMetricComparison,
   FinancialOpportunityAction,
   TherapistAdvancedFinancialDashboard,
   TherapistFinanceAdvancedAccess,
@@ -83,7 +81,6 @@ export function FinancialAdvancedDashboard({
       </div>
 
       <AdvancedRevenueByTherapy dashboard={dashboard} />
-      <BenchmarkCard dashboard={dashboard} />
     </section>
   );
 }
@@ -100,8 +97,8 @@ function AdvancedLockedState() {
         </h2>
         <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
           Projeções, potencial da agenda, oportunidades, retenção avançada,
-          benchmark anonimizado e insights acionáveis fazem parte do Premium
-          Plus. Recebimentos, repasses e conta Stripe continuam disponíveis.
+          evolução financeira e insights acionáveis fazem parte do Premium Plus.
+          Recebimentos, repasses e conta Stripe continuam disponíveis.
         </p>
       </div>
       <Link
@@ -765,99 +762,6 @@ function AdvancedRevenueByTherapy({
         <EmptyAdvancedState message="Nenhuma terapia teve pagamento confirmado neste período." />
       )}
     </AppPageSection>
-  );
-}
-
-function BenchmarkCard({
-  dashboard,
-}: {
-  dashboard: TherapistAdvancedFinancialDashboard;
-}) {
-  const benchmark = dashboard.benchmark;
-  const available = benchmark.status === "available";
-
-  return (
-    <AppPageSection className="grid gap-4">
-      <div className="flex items-start gap-3">
-        <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-          <Activity aria-hidden="true" size={21} />
-        </span>
-        <div>
-          <h2 className="text-xl font-extrabold text-brand-deep">
-            Benchmark anonimizado
-          </h2>
-          <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-            Exibido apenas com amostra mínima e sem identificação de outros
-            terapeutas.
-          </p>
-        </div>
-      </div>
-      {available ? (
-        <div className="grid gap-3 md:grid-cols-3">
-          <BenchmarkMetric
-            label="Ticket médio"
-            metric={benchmark.metrics.averageTicketCents}
-            valueFormatter={(value) =>
-              value === null ? "Sem base" : formatCurrency(value)
-            }
-          />
-          <BenchmarkMetric
-            label="Taxa de retorno"
-            metric={benchmark.metrics.returnRate}
-            valueFormatter={formatPercent}
-          />
-          <BenchmarkMetric
-            label="Ocupação"
-            metric={benchmark.metrics.occupancyRate}
-            valueFormatter={formatPercent}
-          />
-        </div>
-      ) : (
-        <EmptyAdvancedState
-          message={`Benchmark suprimido por privacidade estatística. Mínimo: ${benchmark.minimumTherapists} terapeutas elegíveis e ${benchmark.minimumSessions} sessões agregadas.`}
-        />
-      )}
-    </AppPageSection>
-  );
-}
-
-function BenchmarkMetric({
-  label,
-  metric,
-  valueFormatter,
-}: {
-  label: string;
-  metric: {
-    cohortMedian: number | null;
-    percentile: number | null;
-    therapistValue: number | null;
-  };
-  valueFormatter: (value: number | null) => string;
-}) {
-  return (
-    <div className="rounded-card border border-brand-lavender bg-white p-4">
-      <h3 className="text-base font-extrabold text-brand-deep">{label}</h3>
-      <dl className="mt-3 grid gap-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        <div className="flex justify-between gap-3">
-          <dt>Você</dt>
-          <dd className="font-extrabold text-brand-deep">
-            {valueFormatter(metric.therapistValue)}
-          </dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt>Mediana</dt>
-          <dd className="font-extrabold text-brand-deep">
-            {valueFormatter(metric.cohortMedian)}
-          </dd>
-        </div>
-        <div className="flex justify-between gap-3">
-          <dt>Percentil</dt>
-          <dd className="font-extrabold text-brand-deep">
-            {formatPercent(metric.percentile)}
-          </dd>
-        </div>
-      </dl>
-    </div>
   );
 }
 

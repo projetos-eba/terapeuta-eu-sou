@@ -138,14 +138,22 @@ export function ClientSignupForm({ next }: { next?: string }) {
       </div>
 
       <div>
-        <label className="flex items-start gap-3 text-sm font-semibold leading-6 text-tesText-secondary">
+        <div className="flex items-start gap-3 text-sm font-semibold leading-6 text-tesText-secondary">
           <input
+            aria-describedby="client-terms-accepted-description"
+            aria-label="Li e concordo com os Termos de Uso e a Política de Privacidade."
+            id="client-terms-accepted"
             name="termsAccepted"
             type="checkbox"
-            className="mt-1 size-5 rounded border-border text-brand-primary focus:ring-brand-primary"
+            className="mt-1 size-5 shrink-0 rounded border-border text-brand-primary focus:ring-brand-primary"
           />
-          <span>
-            Li e concordo com os{" "}
+          <p id="client-terms-accepted-description">
+            <label
+              className="cursor-pointer"
+              htmlFor="client-terms-accepted"
+            >
+              Li e concordo com os
+            </label>{" "}
             <Link
               href={routes.public.terms as Route}
               className="font-extrabold text-brand-primary hover:underline"
@@ -160,8 +168,8 @@ export function ClientSignupForm({ next }: { next?: string }) {
               Política de Privacidade
             </Link>
             .
-          </span>
-        </label>
+          </p>
+        </div>
         <FieldError message={fieldErrors.termsAccepted} />
       </div>
 
