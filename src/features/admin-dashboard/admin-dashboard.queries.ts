@@ -285,6 +285,7 @@ function buildOperationModule(
     countResults,
     description:
       "Base operacional sem detalhes clínicos: profissionais, pacientes e sessões.",
+    href: routes.admin.sessions,
     keys: [
       "active-therapists",
       "pending-therapists",
@@ -303,6 +304,7 @@ function buildFinanceModule(countResults: CountResult[]): AdminDashboardModule {
     countResults,
     description:
       "Sinais financeiros separados por sessão, assinatura, refund, dispute e repasse.",
+    href: routes.admin.payments,
     keys: [
       "pending-session-payments",
       "paid-session-payments",
@@ -323,6 +325,7 @@ function buildIntegrationModule(
     countResults,
     description:
       "Alertas técnicos de Stripe, Zoom, e-mail e conta de recebimento, sem secrets.",
+    href: routes.admin.integrations,
     keys: [
       "failed-webhooks",
       "failed-zoom-webhooks",
@@ -340,17 +343,9 @@ function buildPendingModules(): AdminDashboardModule[] {
   return [
     {
       description:
-        "Listagem, verificação, documentos privados, suspensão e auditoria ainda exigem contrato dedicado.",
-      key: "professionals",
-      label: "Profissionais",
-      metrics: [],
-      status: "pending",
-    },
-    {
-      description:
-        "Módulo de segurança precisa registrar sessões administrativas, tentativas, MFA e revogação global.",
-      key: "security",
-      label: "Segurança e auditoria",
+        "Configurações da plataforma permanecem ocultas até existir contrato de governança.",
+      key: "settings",
+      label: "Configurações",
       metrics: [],
       status: "pending",
     },
@@ -360,12 +355,14 @@ function buildPendingModules(): AdminDashboardModule[] {
 function moduleFromCounts({
   countResults,
   description,
+  href,
   key,
   keys,
   label,
 }: {
   countResults: CountResult[];
   description: string;
+  href?: string;
   key: string;
   keys: string[];
   label: string;
@@ -386,6 +383,7 @@ function moduleFromCounts({
 
   return {
     description,
+    href,
     key,
     label,
     metrics,
@@ -429,6 +427,7 @@ function buildAlerts({
     alerts.push({
       description:
         "Há falhas recentes em provedores críticos. Revise logs operacionais sem expor payload sensível.",
+      href: routes.admin.integrations,
       key: "integration-failures",
       label: "Falhas de integração",
       severity: "critical",
@@ -449,6 +448,7 @@ function buildAlerts({
     alerts.push({
       description:
         "Algumas contagens técnicas não puderam ser lidas com a sessão administrativa atual.",
+      href: routes.admin.integrations,
       key: "integration-degraded",
       label: "Leitura técnica parcial",
       severity: "info",

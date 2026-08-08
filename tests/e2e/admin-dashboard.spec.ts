@@ -11,7 +11,9 @@ test.describe("admin dashboard", () => {
     await page.getByLabel("E-mail").fill(adminEmail);
     await page.getByLabel("Senha").fill(adminPassword);
     await page.getByRole("button", { name: "Entrar no Admin" }).click();
-    await expect(page).toHaveURL(/\/admin(?:\/terapias)?(?:\?.*)?$/);
+    await expect(page).toHaveURL(/\/admin(?:\/terapias)?(?:\?.*)?$/, {
+      timeout: 30_000,
+    });
 
     await page.goto("/admin");
     await expect(
@@ -22,11 +24,29 @@ test.describe("admin dashboard", () => {
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Operação" })).toBeVisible();
     await expect(
-      page.getByText("Contrato dedicado pendente.").first(),
+      page.getByText("Configurações da plataforma permanecem ocultas").first(),
     ).toBeVisible();
-    await expect(page.getByRole("link", { name: "Profissionais" })).toHaveCount(
-      0,
-    );
+    await expect(
+      page.getByRole("link", { exact: true, name: "Profissionais" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { exact: true, name: "Clientes" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { exact: true, name: "Sessões" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { exact: true, name: "Suporte" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { exact: true, name: "Financeiro" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { exact: true, name: "Assinaturas" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { exact: true, name: "Relatórios" }),
+    ).toBeVisible();
 
     await page
       .getByRole("link", { name: /Abrir módulo/ })

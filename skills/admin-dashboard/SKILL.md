@@ -21,12 +21,15 @@ shell admin ou métricas agregadas usadas para priorização operacional.
 ## Rota
 
 - `/admin`
+- `/admin/integracoes`
+- `/admin/seguranca`
 
 ## Componentes e dados
 
 - Página: `src/app/(admin)/admin/page.tsx`
 - UI: `src/features/admin-dashboard/components/admin-dashboard-page.tsx`
 - Consulta: `src/features/admin-dashboard/admin-dashboard.queries.ts`
+- Plataforma admin: `src/features/admin-platform/*`
 - Dados: REST Supabase autenticado com token admin e
   `admin-therapy-catalog-command`.
 
@@ -53,8 +56,11 @@ shell admin ou métricas agregadas usadas para priorização operacional.
 ## Pendências conhecidas
 
 - `/admin/profissionais`, `/admin/sessoes`, `/admin/pagamentos`,
-  `/admin/integracoes`, `/admin/seguranca` e demais módulos dedicados ainda
-  precisam de confirmação para criação de rotas/páginas.
+  e demais módulos dedicados ainda precisam de confirmação para criação de
+  rotas/páginas.
+- `/admin/integracoes` e `/admin/seguranca` existem como fundação operacional;
+  ainda dependem de read models dedicados para substituir leituras REST
+  heterogêneas quando o módulo evoluir para ações críticas.
 - O dashboard usa contagens agregadas; ações críticas continuam pendentes de
   contratos com permissão, motivo, confirmação, `requestId`, versão esperada e
   auditoria.
