@@ -12,7 +12,9 @@ import {
   success,
 } from "../_shared/payments/http.ts";
 import {
+  assertAdminCatalogPermission,
   mapAdminTherapyCatalogDatabaseError,
+  permissionForAdminTherapyCatalogCommand,
   type AdminTherapyCatalogCommandBody,
   validateAdminTherapyCatalogCommand,
 } from "./catalog-command.ts";
@@ -47,6 +49,7 @@ runtime.serve(async (request) => {
     const command = validateAdminTherapyCatalogCommand(
       await parseJsonBody<AdminTherapyCatalogCommandBody>(request),
     );
+    const permission = permissionForAdminTherapyCatalogCommand(command);
 
     if (command.action === "submitRequest") {
       return success(
@@ -57,13 +60,7 @@ runtime.serve(async (request) => {
       );
     }
 
-    if (user.role !== "admin") {
-      throw new DomainError(
-        "admin_required",
-        403,
-        "Acesso administrativo necessario.",
-      );
-    }
+    assertAdminCatalogPermission(user.role, permission);
 
     try {
       if (command.action === "list") {

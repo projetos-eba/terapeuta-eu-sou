@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { connection } from "next/server";
 import { CircleDot, Info } from "lucide-react";
 
 import { PublicFooter, PublicHeader } from "@/components/tes";
@@ -14,6 +15,8 @@ export const metadata: Metadata = {
 };
 
 export default async function JourneyPage() {
+  await connection();
+
   const configResult = await getPublicMatchingConfig();
 
   return (

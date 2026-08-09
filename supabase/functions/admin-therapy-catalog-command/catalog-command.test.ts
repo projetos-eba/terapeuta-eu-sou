@@ -3,7 +3,9 @@ import { assertEquals, assertThrows } from "jsr:@std/assert";
 import { SupabaseHttpError } from "../_shared/auth/supabase-rest.ts";
 import { DomainError } from "../_shared/payments/http.ts";
 import {
+  assertAdminCatalogPermission,
   mapAdminTherapyCatalogDatabaseError,
+  permissionForAdminTherapyCatalogCommand,
   validateAdminTherapyCatalogCommand,
 } from "./catalog-command.ts";
 
@@ -88,6 +90,45 @@ Deno.test("accepts therapist catalog request foundation payload", () => {
   });
 
   assertEquals(command.action, "submitRequest");
+});
+
+Deno.test("maps admin catalog commands to stable permissions", () => {
+  assertEquals(
+    permissionForAdminTherapyCatalogCommand(
+      validateAdminTherapyCatalogCommand({ action: "list" }),
+    ),
+    "admin.therapies.read",
+  );
+  assertEquals(
+    permissionForAdminTherapyCatalogCommand(
+      validateAdminTherapyCatalogCommand({
+        action: "matchingSaveTheme",
+        payload: { name: "Tema" },
+        requestId,
+      }),
+    ),
+    "admin.matching.manage",
+  );
+  assertEquals(
+    permissionForAdminTherapyCatalogCommand(
+      validateAdminTherapyCatalogCommand({
+        action: "submitRequest",
+        payload: { informedName: "Terapia solicitada" },
+      }),
+    ),
+    null,
+  );
+});
+
+Deno.test("admin catalog permission gate rejects non-admin roles", () => {
+  assertAdminCatalogPermission("admin", "admin.therapies.manage");
+  assertAdminCatalogPermission("therapist", null);
+
+  assertThrows(
+    () =>
+      assertAdminCatalogPermission("therapist", "admin.therapies.manage"),
+    DomainError,
+  );
 });
 
 Deno.test("maps blocked Match theme removal to a stable domain error", () => {

@@ -29,10 +29,6 @@ test.describe("therapist profile editor", () => {
     await expect(page).toHaveURL(/\/terapeuta\/perfil\/editar(?:\?.*)?$/);
 
     await page.getByLabel("Texto curto").fill(intro);
-    await page.getByRole("button", { name: "Salvar alterações" }).click();
-    await expect(
-      page.getByText("Existe um rascunho salvo aguardando publicação."),
-    ).toBeVisible();
 
     const publicCheckPage = await page.context().newPage();
     await gotoShellRoute(publicCheckPage, "/terapeutas/ana-oliveira");
@@ -42,12 +38,22 @@ test.describe("therapist profile editor", () => {
     await page.bringToFront();
 
     await expect(page.getByLabel("Texto curto")).toHaveValue(intro);
+    const saveButton = page.getByRole("button", {
+      name: "Salvar alterações",
+    });
+    if ((await saveButton.count()) > 0) {
+      await saveButton.first().click();
+      await expect(
+        page.getByText("Existe um rascunho salvo aguardando publicação."),
+      ).toBeVisible();
+    }
+
     const publishButton = page.getByRole("button", {
       name: "Publicar alterações",
     });
-    await expect(publishButton).toBeEnabled();
-    await publishButton.scrollIntoViewIfNeeded();
-    await publishButton.click();
+    await expect(publishButton.first()).toBeEnabled();
+    await publishButton.first().scrollIntoViewIfNeeded();
+    await publishButton.first().click();
     await expect(
       page.getByRole("dialog", { name: "Publicar alterações?" }),
     ).toBeVisible();

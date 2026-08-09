@@ -196,3 +196,6 @@ verify_jwt = false
 
 [functions.therapist-blocks-update]
 verify_jwt = false
+
+[functions.therapist-reviews-command]
+verify_jwt = false

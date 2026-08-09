@@ -135,24 +135,23 @@ function Field({
 
   return (
     <div>
-      <label
-        className="mb-2 block text-sm font-extrabold text-brand-deep"
-        htmlFor={name}
-      >
-        {label}
+      <label className="block" htmlFor={name}>
+        <span className="mb-2 block text-sm font-extrabold text-brand-deep">
+          {label}
+        </span>
+        <div className="flex min-h-12 items-center gap-3 rounded-2xl border border-border bg-white px-4 shadow-card focus-within:ring-4 focus-within:ring-ring/20">
+          <span className="text-tesText-muted">{icon}</span>
+          <input
+            {...props}
+            aria-describedby={error ? errorId : undefined}
+            aria-invalid={Boolean(error)}
+            className="h-12 min-w-0 flex-1 bg-transparent text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-muted"
+            id={name}
+            name={name}
+            type={type}
+          />
+        </div>
       </label>
-      <div className="flex min-h-12 items-center gap-3 rounded-2xl border border-border bg-white px-4 shadow-card focus-within:ring-4 focus-within:ring-ring/20">
-        <span className="text-tesText-muted">{icon}</span>
-        <input
-          {...props}
-          aria-describedby={error ? errorId : undefined}
-          aria-invalid={Boolean(error)}
-          className="min-w-0 flex-1 bg-transparent text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-muted"
-          id={name}
-          name={name}
-          type={type}
-        />
-      </div>
       {error ? (
         <p className="mt-2 text-xs font-bold text-status-danger" id={errorId}>
           {error}
