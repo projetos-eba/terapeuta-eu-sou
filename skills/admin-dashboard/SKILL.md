@@ -30,13 +30,16 @@ shell admin ou métricas agregadas usadas para priorização operacional.
 - UI: `src/features/admin-dashboard/components/admin-dashboard-page.tsx`
 - Consulta: `src/features/admin-dashboard/admin-dashboard.queries.ts`
 - Plataforma admin: `src/features/admin-platform/*`
-- Dados: REST Supabase autenticado com token admin e
-  `admin-therapy-catalog-command`.
+- Dados: RPC Supabase autenticado com token admin via
+  `admin_get_dashboard_v1()`. Mutacoes do catalogo continuam em comandos
+  especificos como `admin-therapy-catalog-command`.
 
 ## Regras
 
 - Não usar `service_role` no Next.
 - Não expor PII em métricas de visão geral.
+- Não consultar tabelas canonicas horizontalmente do shell para montar
+  contagens do Dashboard; usar read model admin dedicado.
 - Cada fonte agregada deve degradar de forma explícita quando falhar.
 - Links do shell e do dashboard só devem apontar para rotas com página real.
 - Módulos sem página dedicada aparecem como pendentes, sem link clicável.
@@ -59,8 +62,8 @@ shell admin ou métricas agregadas usadas para priorização operacional.
   e demais módulos dedicados ainda precisam de confirmação para criação de
   rotas/páginas.
 - `/admin/integracoes` e `/admin/seguranca` existem como fundação operacional;
-  ainda dependem de read models dedicados para substituir leituras REST
-  heterogêneas quando o módulo evoluir para ações críticas.
+  Integrações já usa `admin_get_integration_health_v1()`, enquanto Segurança
+  continua lendo `admin_audit_events` sanitizado.
 - O dashboard usa contagens agregadas; ações críticas continuam pendentes de
   contratos com permissão, motivo, confirmação, `requestId`, versão esperada e
   auditoria.

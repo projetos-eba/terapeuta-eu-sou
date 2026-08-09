@@ -44,9 +44,11 @@ o registry de módulos do shell admin.
   - `buildModuleSignals`
   - `buildSecurityReviewItems`
 
-As páginas usam REST Supabase autenticado com token admin, sem `service_role`
-no Next. Leituras bloqueadas por RLS/grants aparecem como `Indisponível`.
-Erro ou bloqueio nunca deve ser transformado em zero.
+`/admin/integracoes` usa RPC Supabase autenticado com token admin via
+`admin_get_integration_health_v1()`, sem `service_role` no Next. `/admin/seguranca`
+continua lendo `admin_audit_events` sanitizado para auditoria recente.
+Leituras bloqueadas por RLS/grants aparecem como `Indisponível`. Erro ou
+bloqueio nunca deve ser transformado em zero.
 
 ## Regras
 
@@ -54,6 +56,8 @@ Erro ou bloqueio nunca deve ser transformado em zero.
   Authorization completo, payload sensível ou dados bancários completos.
 - Health de Stripe, Zoom, Connect e E-mail deve ser diagnóstico, não painel de
   segredos.
+- Health de integrações não deve consultar tabelas canonicas horizontalmente no
+  shell; usar read model admin dedicado e DTO minimo.
 - Webhooks continuam autoridade externa e devem depender de assinatura,
   idempotência e proteção contra replay.
 - Findings de Supabase Advisor que não são consultáveis em runtime devem
@@ -87,8 +91,7 @@ evidência de advisors, logs, testes e validação cross-shell.
 
 ## Pendências conhecidas
 
-- Substituir leituras REST heterogêneas por read model/BFF admin dedicado na
-  evolução do dashboard e das páginas de plataforma.
-- Ligar `/admin/seguranca` a uma trilha de auditoria append-only persistente.
+- Segurança ainda pode ganhar read model dedicado se evoluir para filtros,
+  detalhes e ações; hoje consome `admin_audit_events` sanitizado.
 - Revalidar Supabase Advisor em HML/remoto; a Fase 2 validou localmente.
 - Inspecionar o node Figma admin quando o conector estiver disponível.

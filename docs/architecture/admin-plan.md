@@ -261,6 +261,42 @@ Transformar `/admin` em um centro operacional real e consolidar a base visual, r
 - Navegacao por teclado e foco visivel funcionam.
 - `npm run lint`, `npm run typecheck` e `npm run build` passam para o escopo alterado.
 
+### Execucao complementar - Dashboard e Integracoes (2026-08-09)
+
+Status: implementado localmente na branch `dev-antonio`.
+
+Mudancas:
+
+- Criado `admin_get_dashboard_v1()` como read model admin-only para `/admin`.
+- Criado `admin_get_integration_health_v1()` como read model admin-only para
+  `/admin/integracoes`.
+- Removidas da visao geral as contagens horizontais via REST para tabelas
+  canonicas como `therapist_profiles`, `bookings`, `session_payments`,
+  `stripe_webhook_events`, `zoom_video_webhook_events`,
+  `email_delivery_logs` e `therapist_connect_accounts`.
+- Removida da saude de integracoes a leitura horizontal via REST dessas mesmas
+  fontes operacionais.
+- Eventos recentes do Dashboard passam a vir de `admin_audit_events` em DTO
+  sanitizado, sem `previous_state`, `next_state`, provider IDs, payloads,
+  metadata crua ou secrets.
+- Falha no RPC deixa metricas como `unavailable`/modulos degradados, sem
+  converter erro de infraestrutura em zero.
+
+Validacoes locais realizadas no corte:
+
+- `npx vitest run src/features/admin-dashboard/admin-dashboard.queries.test.ts src/features/admin-platform/admin-platform.queries.test.ts`
+- `npm run typecheck`
+- `npx supabase db reset`
+- `npx supabase test db --local supabase/tests/042_admin_dashboard_integration_health_read_models.sql`
+- `npx supabase db lint`
+
+Observacoes:
+
+- O `db lint` manteve apenas o aviso ja conhecido de parametro nao usado em
+  `public.admin_execute_operation_command_v1`.
+- Validacao HML e Playwright autenticado ainda precisam ser executados no
+  ambiente alvo antes de declarar o Admin 100% fechado.
+
 ## Fase 3 - Pessoas, Operacao e Moderacao
 
 ### Objetivo
