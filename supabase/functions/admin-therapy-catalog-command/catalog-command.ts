@@ -20,6 +20,12 @@ const requestStatuses = new Set([
   "under_review",
 ]);
 
+export type AdminCatalogPermission =
+  | "admin.matching.manage"
+  | "admin.matching.read"
+  | "admin.therapies.manage"
+  | "admin.therapies.read";
+
 export type AdminTherapyCatalogCommandBody =
   | { action?: "list" }
   | { action?: "matchingList" }
@@ -224,6 +230,38 @@ export function validateAdminTherapyCatalogCommand(
   }
 
   invalid();
+}
+
+export function permissionForAdminTherapyCatalogCommand(
+  command: ValidAdminTherapyCatalogCommand,
+): AdminCatalogPermission | null {
+  if (command.action === "submitRequest") return null;
+  if (command.action === "matchingList") return "admin.matching.read";
+  if (
+    command.action === "matchingSaveTheme" ||
+    command.action === "matchingSaveInterest" ||
+    command.action === "matchingTransition"
+  ) {
+    return "admin.matching.manage";
+  }
+  if (command.action === "list" || command.action === "impact") {
+    return "admin.therapies.read";
+  }
+  return "admin.therapies.manage";
+}
+
+export function assertAdminCatalogPermission(
+  role: string,
+  permission: AdminCatalogPermission | null,
+) {
+  if (!permission) return;
+  if (role === "admin") return;
+
+  throw new DomainError(
+    "admin_required",
+    403,
+    "Acesso administrativo necessario.",
+  );
 }
 
 export function mapAdminTherapyCatalogDatabaseError(error: unknown) {

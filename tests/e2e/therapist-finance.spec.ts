@@ -60,7 +60,8 @@ test.describe("therapist finance", () => {
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Benchmark anonimizado" }),
-    ).toBeVisible();
+    ).toHaveCount(0);
+    await expect(page.getByText(/Benchmark suprimido/i)).toHaveCount(0);
 
     await page.getByRole("link", { name: "Recebimentos" }).click();
     await expect(page).toHaveURL(/\/terapeuta\/financeiro\?tab=recebimentos$/);

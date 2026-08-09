@@ -3,7 +3,9 @@ import { getAdminDashboardPage } from "@/features/admin-dashboard/admin-dashboar
 import { requireAdminSession } from "@/lib/auth/admin-session";
 
 export default async function AdminHomePage() {
-  const session = await requireAdminSession();
+  const session = await requireAdminSession({
+    permission: "admin.dashboard.read",
+  });
   const result = await getAdminDashboardPage({
     accessToken: session.accessToken,
   });

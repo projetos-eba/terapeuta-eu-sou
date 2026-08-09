@@ -5,19 +5,13 @@ import {
   hasValidUploadSignature,
   isSupportedImageType,
 } from "@/lib/media/upload-validation";
+import { canUseAdminPermission } from "@/lib/auth/admin-permissions";
+import { readAdminSessionFromAccessToken } from "@/lib/auth/admin-session";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 const bucket = "admin-public-media";
 const maxImageBytes = 5 * 1024 * 1024;
 const noStoreHeaders = { "Cache-Control": "no-store" };
-
-type SupabaseUser = {
-  id?: unknown;
-};
-
-type ProfileRow = {
-  role?: unknown;
-};
 
 export async function POST(request: Request) {
   const config = getSupabasePublicConfig();
@@ -45,13 +39,16 @@ export async function POST(request: Request) {
   const validation = await validateImage(file);
   if (validation) return failure(validation, 422);
 
-  const userId = await readAdminUserId(config, accessToken);
-  if (!userId) {
+  const session = await readAdminApiSession(config, accessToken);
+  if (
+    !session ||
+    !canUseAdminPermission(session.permissions, "admin.matching.manage")
+  ) {
     return failure("Acesso administrativo necessário.", 403);
   }
 
   const extension = extensionFor(file.type);
-  const objectPath = `matching/themes/${userId}-${crypto.randomUUID()}${extension}`;
+  const objectPath = `matching/themes/${session.userId}-${crypto.randomUUID()}${extension}`;
   const uploadResponse = await fetch(
     `${config.url}/storage/v1/object/${bucket}/${objectPath}`,
     {
@@ -101,42 +98,15 @@ async function validateImage(file: File) {
   return null;
 }
 
-async function readAdminUserId(
+async function readAdminApiSession(
   config: { apiKey: string; url: string },
   accessToken: string,
 ) {
-  const userResponse = await fetch(`${config.url}/auth/v1/user`, {
-    cache: "no-store",
-    headers: {
-      apikey: config.apiKey,
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
-  if (!userResponse.ok) return null;
-  const user = (await userResponse
-    .json()
-    .catch(() => null)) as SupabaseUser | null;
-  const userId = typeof user?.id === "string" ? user.id : null;
-  if (!userId) return null;
-
-  const profileResponse = await fetch(
-    `${config.url}/rest/v1/profiles?select=role&id=eq.${encodeURIComponent(userId)}&limit=1`,
-    {
-      cache: "no-store",
-      headers: {
-        apikey: config.apiKey,
-        Authorization: `Bearer ${accessToken}`,
-      },
-    },
-  );
-
-  if (!profileResponse.ok) return null;
-  const profiles = (await profileResponse.json().catch(() => null)) as
-    | ProfileRow[]
-    | null;
-
-  return profiles?.[0]?.role === "admin" ? userId : null;
+  try {
+    return await readAdminSessionFromAccessToken(config, accessToken);
+  } catch {
+    return null;
+  }
 }
 
 function extensionFor(contentType: string) {

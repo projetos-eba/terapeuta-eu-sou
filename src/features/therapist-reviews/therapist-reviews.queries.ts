@@ -29,18 +29,43 @@ export async function mutateTherapistReviewReply({
   requestId: string;
   reviewId: string;
 }) {
-  return requestSupabase<unknown>(
-    "/rest/v1/rpc/upsert_therapist_review_reply_v1",
-    accessToken,
+  const config = getSupabasePublicConfig();
+  if (!config) throw new TherapistReviewsError("unavailable");
+
+  const response = await fetch(
+    `${config.url}/functions/v1/therapist-reviews-command`,
     {
-      body: {
-        p_body: body,
-        p_request_id: requestId,
-        p_review_id: reviewId,
+      body: JSON.stringify({
+        action: "reply",
+        body,
+        requestId,
+        reviewId,
+      }),
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       },
       method: "POST",
     },
   );
+  const payload = (await response.json().catch(() => null)) as EdgeEnvelope;
+
+  if (response.status === 401) {
+    throw new TherapistReviewsError("session_expired");
+  }
+
+  if (response.status === 403 || response.status === 404) {
+    throw new TherapistReviewsError("forbidden");
+  }
+
+  if (!response.ok || !payload || payload.ok !== true) {
+    const errorPayload =
+      payload && "error" in payload ? payload.error : payload;
+    throw mapRpcError(errorPayload);
+  }
+
+  return payload.data;
 }
 
 async function requestSupabase<T>(
@@ -79,26 +104,43 @@ async function requestSupabase<T>(
 }
 
 function mapRpcError(payload: unknown) {
-  const message = isRecord(payload) ? string(payload.message) : "";
+  const recordPayload = isRecord(payload) ? payload : {};
+  const code = string(recordPayload.code);
+  const message = string(recordPayload.message);
 
-  if (message === "REQUEST_CONFLICT") {
+  if (code === "REQUEST_CONFLICT" || message === "REQUEST_CONFLICT") {
     return new TherapistReviewsError("request_conflict");
   }
-  if (message === "REVIEW_NOT_FOUND") {
+  if (code === "REVIEW_NOT_FOUND" || message === "REVIEW_NOT_FOUND") {
     return new TherapistReviewsError("review_not_found");
   }
-  if (message === "VALIDATION_ERROR") {
+  if (code === "VALIDATION_ERROR" || message === "VALIDATION_ERROR") {
     return new TherapistReviewsError("validation_error");
   }
-  if (message === "PROFILE_NOT_FOUND") {
+  if (code === "PROFILE_NOT_FOUND" || message === "PROFILE_NOT_FOUND") {
     return new TherapistReviewsError("forbidden");
   }
-  if (message === "CAPABILITY_NOT_ALLOWED") {
+  if (code === "CAPABILITY_NOT_ALLOWED" || message === "CAPABILITY_NOT_ALLOWED") {
     return new TherapistReviewsError("forbidden");
   }
+  if (code === "FORBIDDEN") return new TherapistReviewsError("forbidden");
 
   return new TherapistReviewsError("unavailable");
 }
+
+type EdgeEnvelope =
+  | {
+      data: unknown;
+      ok: true;
+    }
+  | {
+      error?: {
+        code?: string;
+        message?: string;
+      };
+      ok: false;
+    }
+  | null;
 
 export function getTherapistReviewsErrorMessage(error: unknown) {
   if (error instanceof TherapistReviewsError) {

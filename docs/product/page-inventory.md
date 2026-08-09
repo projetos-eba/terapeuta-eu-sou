@@ -181,7 +181,7 @@ dashboard porque a análise pode depender da Stripe.
 | Integrações   | `/admin/integracoes`                | Manter sistemas externos.      | IntegrationCard, StatusList, LogTable.          | Operacional, instável, erro.                       | Conectar, testar.                                       |
 | Segurança     | `/admin/seguranca`                  | Moderação e privacidade.       | IncidentTable, PolicyCard.                      | Crítico, resolvido.                                | Bloquear, auditar.                                      |
 | Relatórios    | `/admin/relatorios`                 | Exportar e acompanhar.         | ReportBuilder, ExportButton.                    | Gerando, sem dados.                                | Exportar.                                               |
-| Configurações | `/admin/configuracoes`              | Configurar plataforma.         | SettingsSection, SaveBar.                       | Salvando, erro.                                    | Salvar.                                                 |
+| Configurações | `/admin/configuracoes`              | Governar produto, operação, flags, integrações e release sem expor secrets. | AdminSettingsPage, AppPageSection, checklist de release. | Configuração ausente, revisão manual, operacional, sessão expirada. | Ler estado, revisar guardrails e seguir alteração crítica por PR/deploy/secrets remotos. |
 | Suporte       | `/admin/suporte`                    | Acompanhar suporte.            | TicketTable, PriorityBadge.                     | Sem tickets.                                       | Responder, escalar.                                     |
 
 ## Observações de Fonte

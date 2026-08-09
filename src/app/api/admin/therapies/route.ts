@@ -2,6 +2,11 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import {
+  canUseAdminPermission,
+  type AdminPermission,
+} from "@/lib/auth/admin-permissions";
+import { readAdminSessionFromAccessToken } from "@/lib/auth/admin-session";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 const noStoreHeaders = { "Cache-Control": "no-store" };
@@ -21,6 +26,13 @@ export async function POST(request: Request) {
 
   if (!config || !accessToken) {
     return failure("Entre com uma conta administrativa para continuar.", 401);
+  }
+
+  const permission = permissionForCommand(body);
+  const session = await readAdminApiSession(config, accessToken);
+
+  if (!session || !canUseAdminPermission(session.permissions, permission)) {
+    return failure("Acesso administrativo necessário.", 403);
   }
 
   try {
@@ -49,6 +61,43 @@ export async function POST(request: Request) {
   } catch {
     return failure("Nao foi possivel atualizar o catalogo agora.", 503);
   }
+}
+
+async function readAdminApiSession(
+  config: { apiKey: string; url: string },
+  accessToken: string,
+) {
+  try {
+    return await readAdminSessionFromAccessToken(config, accessToken);
+  } catch {
+    return null;
+  }
+}
+
+function permissionForCommand(value: unknown): AdminPermission {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return "admin.therapies.manage";
+  }
+
+  const action = (value as Record<string, unknown>).action;
+
+  if (action === "list" || action === "impact") {
+    return "admin.therapies.read";
+  }
+
+  if (action === "matchingList") {
+    return "admin.matching.read";
+  }
+
+  if (
+    action === "matchingSaveTheme" ||
+    action === "matchingSaveInterest" ||
+    action === "matchingTransition"
+  ) {
+    return "admin.matching.manage";
+  }
+
+  return "admin.therapies.manage";
 }
 
 function failure(message: string, status: number) {

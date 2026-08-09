@@ -8,6 +8,7 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { parsePriceToCents } from "./components/therapist-service-form";
+import { TherapistServiceForm } from "./components/therapist-service-form";
 import { TherapistServicesPage } from "./components/therapist-services-page";
 import { sendTherapistServicesCommand } from "./therapist-services.commands";
 import type {
@@ -201,6 +202,58 @@ describe("TherapistServicesPage", () => {
       );
     });
     expect(await screen.findByText("Serviço ativado.")).toBeInTheDocument();
+  });
+
+  it("closes the edit dialog after a successful update", async () => {
+    const updatedService = serviceFixture({
+      description:
+        "Descricao revisada em teste automatizado, sem promessa de resultado.",
+      version: 3,
+    });
+    const onClose = vi.fn();
+    const onSaved = vi.fn();
+
+    mockedCommand.mockResolvedValueOnce({
+      data: {
+        contractVersion: 1,
+        idempotentReplay: false,
+        service: updatedService,
+      },
+      status: "success",
+    });
+
+    render(
+      <TherapistServiceForm
+        catalog={catalogFixture().items}
+        mode="edit"
+        onClose={onClose}
+        onSaved={onSaved}
+        service={serviceFixture({
+          therapyId: "22222222-2222-4222-8222-222222222229",
+          therapy: {
+            id: "22222222-2222-4222-8222-222222222229",
+            imageUrl: "https://cdn.example.test/aromaterapia.jpg",
+            isAvailableForServices: true,
+            isPubliclyVisible: true,
+            name: "Aromaterapia",
+            slug: "aromaterapia",
+            status: "published",
+          },
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.change(screen.getByLabelText("Descrição"), {
+      target: { value: updatedService.description },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+    await waitFor(() => {
+      expect(onSaved).toHaveBeenCalledWith(updatedService, "Serviço atualizado.");
+      expect(onClose).toHaveBeenCalledOnce();
+    });
   });
 });
 
