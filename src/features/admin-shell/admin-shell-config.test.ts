@@ -11,7 +11,6 @@ describe("admin shell config", () => {
     expect(navigation.map((item) => item.href)).toEqual([
       "/admin",
       "/admin/profissionais",
-      "/admin/profissionais/verificacoes",
       "/admin/pacientes",
       "/admin/sessoes",
       "/admin/suporte",
@@ -20,15 +19,12 @@ describe("admin shell config", () => {
       "/admin/assinaturas",
       "/admin/terapias",
       "/admin/matching",
-      "/admin/integracoes",
       "/admin/seguranca",
-      "/admin/relatorios",
       "/admin/configuracoes",
     ]);
     expect(navigation.map((item) => item.label)).toEqual([
       "Visão geral",
       "Profissionais",
-      "Verificações",
       "Clientes",
       "Sessões",
       "Suporte",
@@ -37,10 +33,15 @@ describe("admin shell config", () => {
       "Assinaturas",
       "Terapias",
       "Match",
-      "Integrações",
       "Segurança",
-      "Relatórios",
       "Configurações",
+    ]);
+    expect(navigation.flatMap((item) => item.children ?? [])).toEqual([
+      {
+        href: "/admin/profissionais/verificacoes",
+        icon: "user-pen",
+        label: "Verificações",
+      },
     ]);
   });
 
@@ -50,9 +51,14 @@ describe("admin shell config", () => {
       .filter((module) => module.status === "hidden")
       .map((module) => module.href);
 
-    expect(config.helpHref).toBe("/admin/suporte");
+    expect(config.helpHref).toBeUndefined();
     if (hiddenHrefs.length > 0) {
-      expect(config.navigation.map((item) => item.href)).not.toEqual(
+      expect(
+        config.navigation.flatMap((item) => [
+          item.href,
+          ...(item.children?.map((child) => child.href) ?? []),
+        ]),
+      ).not.toEqual(
         expect.arrayContaining(hiddenHrefs),
       );
     } else {

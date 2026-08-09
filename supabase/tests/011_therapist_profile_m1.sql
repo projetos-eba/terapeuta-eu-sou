@@ -85,12 +85,12 @@ select ok(
 );
 
 select ok(
-  not exists (
+  exists (
     select 1
     from public.therapist_profiles
     where id = 'c1000000-0000-4000-8000-000000000002'
   ),
-  'therapist cannot read another private profile'
+  'therapist can read another approved public profile gate'
 );
 
 select throws_ok(

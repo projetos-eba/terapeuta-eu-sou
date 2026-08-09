@@ -7,7 +7,7 @@ import { ShellNavItem } from "./shell-nav-item";
 
 type ShellSidebarProps = {
   helpCardVariant?: "default" | "priority" | "therapist";
-  helpHref: string;
+  helpHref?: string;
   helpLabel?: string;
   logoutAction?: () => void | Promise<void>;
   logoutHref?: string;
@@ -39,9 +39,32 @@ export function ShellSidebar({
       <nav aria-label="Seções do ambiente" className="mt-3 flex flex-col gap-1">
         {navigation
           .filter((item) => item.accessState !== "hidden")
-          .map((item) => (
-            <ShellNavItem item={item} key={item.href} onNavigate={onNavigate} />
-          ))}
+          .map((item) => {
+            const children =
+              item.children?.filter((child) => child.accessState !== "hidden") ??
+              [];
+
+            return (
+              <div className="flex flex-col gap-1" key={item.href}>
+                <ShellNavItem item={item} onNavigate={onNavigate} />
+                {children.length > 0 ? (
+                  <div
+                    aria-label={`Subseções de ${item.label}`}
+                    className="flex flex-col gap-1"
+                  >
+                    {children.map((child) => (
+                      <ShellNavItem
+                        depth={1}
+                        item={child}
+                        key={child.href}
+                        onNavigate={onNavigate}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
       </nav>
 
       <div className="mt-8">
@@ -66,13 +89,15 @@ export function ShellSidebar({
         )}
       </div>
 
-      <div className="mt-auto pt-8">
-        <ShellHelpCard
-          href={helpHref}
-          label={helpLabel}
-          variant={helpCardVariant}
-        />
-      </div>
+      {helpHref ? (
+        <div className="mt-auto pt-8">
+          <ShellHelpCard
+            href={helpHref}
+            label={helpLabel}
+            variant={helpCardVariant}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

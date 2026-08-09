@@ -2,6 +2,23 @@ import type { ShellNavigationItem } from "@/components/authenticated-shell";
 import type { AdminPermission } from "@/lib/auth/admin-permissions";
 import { routes } from "@/lib/routes";
 
+type AdminModuleKey =
+  | "dashboard"
+  | "integrations"
+  | "matching"
+  | "patients"
+  | "payments"
+  | "professionals"
+  | "reports"
+  | "reviews"
+  | "security"
+  | "sessions"
+  | "settings"
+  | "subscriptions"
+  | "support"
+  | "therapies"
+  | "verifications";
+
 type AdminModuleStatus = "enabled" | "hidden";
 
 type AdminModule = ShellNavigationItem & {
@@ -12,22 +29,8 @@ type AdminModule = ShellNavigationItem & {
     | "operation"
     | "people"
     | "platform";
-  key:
-    | "dashboard"
-    | "integrations"
-    | "matching"
-    | "patients"
-    | "payments"
-    | "professionals"
-    | "reports"
-    | "reviews"
-    | "security"
-    | "sessions"
-    | "settings"
-    | "subscriptions"
-    | "support"
-    | "therapies"
-    | "verifications";
+  key: AdminModuleKey;
+  parentKey?: AdminModuleKey;
   permission: AdminPermission;
   status: AdminModuleStatus;
 };
@@ -57,6 +60,7 @@ export const adminModuleRegistry: AdminModule[] = [
     icon: "user-pen",
     key: "verifications",
     label: "Verificações",
+    parentKey: "professionals",
     permission: "admin.professionals.verify",
     status: "enabled",
   },
@@ -139,7 +143,7 @@ export const adminModuleRegistry: AdminModule[] = [
     key: "integrations",
     label: "Integrações",
     permission: "admin.integrations.read",
-    status: "enabled",
+    status: "hidden",
   },
   {
     group: "platform",
@@ -157,7 +161,7 @@ export const adminModuleRegistry: AdminModule[] = [
     key: "reports",
     label: "Relatórios",
     permission: "admin.reports.read",
-    status: "enabled",
+    status: "hidden",
   },
   {
     group: "platform",
@@ -171,19 +175,33 @@ export const adminModuleRegistry: AdminModule[] = [
 ];
 
 export function getAdminShellConfig(): {
-  helpHref: string;
+  helpHref?: string;
   navigation: ShellNavigationItem[];
 } {
   const navigation = adminModuleRegistry
-    .filter((module) => module.status === "enabled")
-    .map((module) => ({
-      href: module.href,
-      icon: module.icon,
-      label: module.label,
-    }));
+    .filter(
+      (module) => module.status === "enabled" && module.parentKey === undefined,
+    )
+    .map((module) => {
+      const children = adminModuleRegistry
+        .filter(
+          (child) =>
+            child.status === "enabled" &&
+            child.parentKey === module.key,
+        )
+        .map((child) => ({
+          href: child.href,
+          icon: child.icon,
+          label: child.label,
+        }));
 
-  return {
-    helpHref: routes.admin.support,
-    navigation,
-  };
+      return {
+        children: children.length > 0 ? children : undefined,
+        href: module.href,
+        icon: module.icon,
+        label: module.label,
+      };
+    });
+
+  return { navigation };
 }

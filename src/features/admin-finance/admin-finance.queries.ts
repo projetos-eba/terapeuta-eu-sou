@@ -5,8 +5,12 @@ import { cache } from "react";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 import { parseContentRangeTotal } from "../admin-dashboard/admin-dashboard.utils";
-import { mapAdminFinanceRows } from "./admin-finance.mappers";
+import {
+  mapAdminFinanceDetail,
+  mapAdminFinanceRows,
+} from "./admin-finance.mappers";
 import type {
+  AdminFinanceDetailPageResult,
   AdminFinanceMetric,
   AdminFinanceModuleKey,
   AdminFinancePageData,
@@ -33,6 +37,41 @@ type ModuleSpec = {
   sourceLabel: string;
   title: string;
 };
+
+type AdminFinanceReadModel = {
+  generatedAt?: unknown;
+  metrics?: unknown;
+  module?: unknown;
+  rows?: unknown;
+};
+
+type AdminFinanceReadResult =
+  | {
+      model: AdminFinanceReadModel;
+      status: "available";
+    }
+  | {
+      errorCode: string;
+      status: "forbidden" | "unavailable";
+    };
+
+type AdminFinanceDetailReadModel = {
+  events?: unknown;
+  generatedAt?: unknown;
+  id?: unknown;
+  module?: unknown;
+  record?: unknown;
+};
+
+type AdminFinanceDetailReadResult =
+  | {
+      model: AdminFinanceDetailReadModel;
+      status: "available";
+    }
+  | {
+      errorCode: string;
+      status: "forbidden" | "not_found" | "unavailable";
+    };
 
 const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
   payments: {
@@ -127,6 +166,64 @@ export const getAdminFinancePage = cache(async function getAdminFinancePage({
     };
   }
 
+  if (module === "payments" || module === "subscriptions") {
+    const readResult = await fetchAdminFinanceReadModel({
+      accessToken,
+      config,
+      module,
+    });
+
+    if (readResult.status !== "available") {
+      return {
+        data: {
+          description: spec.description,
+          emptyMessage: spec.emptyMessage,
+          generatedAt: new Date().toISOString(),
+          metrics: spec.metrics.map((metricSpec) =>
+            unavailableMetric(metricSpec, readResult.status),
+          ),
+          rows: [],
+          rowsStatus: readResult.status,
+          rowsTitle: spec.rowsTitle,
+          rowsUnavailableMessage:
+            readResult.status === "forbidden"
+              ? "A sessão atual não tem permissão para consultar este módulo."
+              : "A leitura administrativa falhou. Isso não é tratado como lista vazia.",
+          safetyNotes: spec.safetyNotes,
+          sourceLabel: spec.sourceLabel,
+          title: spec.title,
+        },
+        status: "success",
+      };
+    }
+
+    const metricsPayload = isRecord(readResult.model.metrics)
+      ? readResult.model.metrics
+      : {};
+    const rowsPayload = Array.isArray(readResult.model.rows)
+      ? readResult.model.rows
+      : [];
+
+    return {
+      data: {
+        description: spec.description,
+        emptyMessage: spec.emptyMessage,
+        generatedAt:
+          asString(readResult.model.generatedAt) ?? new Date().toISOString(),
+        metrics: spec.metrics.map((metricSpec) =>
+          availableMetric(metricSpec, metricsPayload),
+        ),
+        rows: mapAdminFinanceRows({ module, rows: rowsPayload }),
+        rowsStatus: "available",
+        rowsTitle: spec.rowsTitle,
+        safetyNotes: spec.safetyNotes,
+        sourceLabel: spec.sourceLabel,
+        title: spec.title,
+      },
+      status: "success",
+    };
+  }
+
   const metrics = await fetchMetrics(config, accessToken, spec.metrics);
   const rowsResult = spec.rowsQuery
     ? await fetchRows(config, accessToken, spec.rowsQuery)
@@ -154,6 +251,224 @@ export const getAdminFinancePage = cache(async function getAdminFinancePage({
     status: "success",
   };
 });
+
+export const getAdminFinanceDetailPage = cache(
+  async function getAdminFinanceDetailPage({
+    accessToken,
+    id,
+    module,
+  }: {
+    accessToken: string;
+    id: string;
+    module: Extract<AdminFinanceModuleKey, "payments" | "subscriptions">;
+  }): Promise<AdminFinanceDetailPageResult> {
+    const config = getSupabasePublicConfig();
+
+    if (!config) {
+      return {
+        message: "Configuração Supabase ausente para carregar este detalhe.",
+        status: "error",
+      };
+    }
+
+    const readResult = await fetchAdminFinanceDetailReadModel({
+      accessToken,
+      config,
+      id,
+      module,
+    });
+
+    if (readResult.status === "not_found") {
+      return { status: "not_found" };
+    }
+
+    if (readResult.status !== "available") {
+      return {
+        message:
+          readResult.status === "forbidden"
+            ? "A sessão atual não tem permissão para consultar este detalhe."
+            : "A leitura administrativa do detalhe financeiro falhou.",
+        status: "error",
+      };
+    }
+
+    if (!isRecord(readResult.model.record)) {
+      return { status: "not_found" };
+    }
+
+    return {
+      data: mapAdminFinanceDetail({
+        events: Array.isArray(readResult.model.events)
+          ? readResult.model.events
+          : [],
+        generatedAt:
+          asString(readResult.model.generatedAt) ?? new Date().toISOString(),
+        module,
+        record: readResult.model.record,
+      }),
+      status: "success",
+    };
+  },
+);
+
+async function fetchAdminFinanceReadModel({
+  accessToken,
+  config,
+  module,
+}: {
+  accessToken: string;
+  config: { apiKey: string; url: string };
+  module: Extract<AdminFinanceModuleKey, "payments" | "subscriptions">;
+}): Promise<AdminFinanceReadResult> {
+  try {
+    const response = await fetch(
+      `${config.url}/rest/v1/rpc/admin_get_finance_module_v1`,
+      {
+        body: JSON.stringify({
+          p_limit: 12,
+          p_module: module,
+          p_offset: 0,
+        }),
+        cache: "no-store",
+        headers: {
+          apikey: config.apiKey,
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      },
+    );
+
+    if (response.status === 401 || response.status === 403) {
+      logAdminFinanceReadFailure({
+        errorCode: "ADMIN_FINANCE_FORBIDDEN",
+        module,
+        status: response.status,
+      });
+
+      return { errorCode: "ADMIN_FINANCE_FORBIDDEN", status: "forbidden" };
+    }
+
+    if (!response.ok) {
+      logAdminFinanceReadFailure({
+        errorCode: "ADMIN_FINANCE_QUERY_FAILED",
+        module,
+        status: response.status,
+      });
+
+      return { errorCode: "ADMIN_FINANCE_QUERY_FAILED", status: "unavailable" };
+    }
+
+    const model = await response.json().catch(() => null);
+
+    if (!isRecord(model)) {
+      logAdminFinanceReadFailure({
+        errorCode: "ADMIN_FINANCE_INVALID_JSON",
+        module,
+        status: response.status,
+      });
+
+      return { errorCode: "ADMIN_FINANCE_INVALID_JSON", status: "unavailable" };
+    }
+
+    return { model, status: "available" };
+  } catch {
+    logAdminFinanceReadFailure({
+      errorCode: "ADMIN_FINANCE_NETWORK_ERROR",
+      module,
+    });
+
+    return { errorCode: "ADMIN_FINANCE_NETWORK_ERROR", status: "unavailable" };
+  }
+}
+
+async function fetchAdminFinanceDetailReadModel({
+  accessToken,
+  config,
+  id,
+  module,
+}: {
+  accessToken: string;
+  config: { apiKey: string; url: string };
+  id: string;
+  module: Extract<AdminFinanceModuleKey, "payments" | "subscriptions">;
+}): Promise<AdminFinanceDetailReadResult> {
+  try {
+    const response = await fetch(
+      `${config.url}/rest/v1/rpc/admin_get_finance_detail_v1`,
+      {
+        body: JSON.stringify({
+          p_id: id,
+          p_module: module,
+        }),
+        cache: "no-store",
+        headers: {
+          apikey: config.apiKey,
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      },
+    );
+
+    if (response.status === 401 || response.status === 403) {
+      logAdminFinanceReadFailure({
+        errorCode: "ADMIN_FINANCE_DETAIL_FORBIDDEN",
+        module,
+        status: response.status,
+      });
+
+      return {
+        errorCode: "ADMIN_FINANCE_DETAIL_FORBIDDEN",
+        status: "forbidden",
+      };
+    }
+
+    if (!response.ok) {
+      logAdminFinanceReadFailure({
+        errorCode: "ADMIN_FINANCE_DETAIL_QUERY_FAILED",
+        module,
+        status: response.status,
+      });
+
+      return {
+        errorCode: "ADMIN_FINANCE_DETAIL_QUERY_FAILED",
+        status: "unavailable",
+      };
+    }
+
+    const model = await response.json().catch(() => null);
+
+    if (!isRecord(model)) {
+      logAdminFinanceReadFailure({
+        errorCode: "ADMIN_FINANCE_DETAIL_INVALID_JSON",
+        module,
+        status: response.status,
+      });
+
+      return {
+        errorCode: "ADMIN_FINANCE_DETAIL_INVALID_JSON",
+        status: "unavailable",
+      };
+    }
+
+    if (model.record === null) {
+      return { errorCode: "ADMIN_FINANCE_DETAIL_NOT_FOUND", status: "not_found" };
+    }
+
+    return { model, status: "available" };
+  } catch {
+    logAdminFinanceReadFailure({
+      errorCode: "ADMIN_FINANCE_DETAIL_NETWORK_ERROR",
+      module,
+    });
+
+    return {
+      errorCode: "ADMIN_FINANCE_DETAIL_NETWORK_ERROR",
+      status: "unavailable",
+    };
+  }
+}
 
 async function fetchMetrics(
   config: { apiKey: string; url: string },
@@ -280,4 +595,66 @@ function metric(
     source,
     tone,
   };
+}
+
+function availableMetric(
+  spec: CountSpec,
+  metricsPayload: Record<string, unknown>,
+): AdminFinanceMetric {
+  const value = metricsPayload[spec.key];
+
+  return {
+    description: spec.description,
+    key: spec.key,
+    label: spec.label,
+    source: spec.source,
+    status:
+      typeof value === "number" && Number.isFinite(value)
+        ? "available"
+        : "unavailable",
+    tone: spec.tone,
+    value: typeof value === "number" && Number.isFinite(value) ? value : null,
+  };
+}
+
+function unavailableMetric(
+  spec: CountSpec,
+  status: "forbidden" | "unavailable",
+): AdminFinanceMetric {
+  return {
+    description: spec.description,
+    key: spec.key,
+    label: spec.label,
+    source: spec.source,
+    status,
+    tone: spec.tone,
+    value: null,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function asString(value: unknown) {
+  return typeof value === "string" && value ? value : undefined;
+}
+
+function logAdminFinanceReadFailure({
+  errorCode,
+  module,
+  status,
+}: {
+  errorCode: string;
+  module: AdminFinanceModuleKey;
+  status?: number;
+}) {
+  console.error(
+    JSON.stringify({
+      errorCode,
+      module,
+      operation: "admin.finance.read",
+      status,
+    }),
+  );
 }

@@ -17,7 +17,7 @@ test.describe("admin finance modules", () => {
     await page.getByLabel("E-mail").fill(adminEmail);
     await page.getByLabel("Senha").fill(adminPassword);
     await page.getByRole("button", { name: "Entrar no Admin" }).click();
-    await expect(page).toHaveURL(/\/admin\/terapias(?:\?.*)?$/, {
+    await expect(page).toHaveURL(/\/admin(?:\/terapias)?(?:\?.*)?$/, {
       timeout: 30_000,
     });
 
@@ -30,6 +30,23 @@ test.describe("admin finance modules", () => {
       await expect(
         page.getByRole("heading", { name: "Guardrails financeiros" }),
       ).toBeVisible();
+
+      if (path !== "/admin/relatorios") {
+        const detailLinks = page.getByRole("link", { name: "Ver detalhes" });
+
+        if ((await detailLinks.count()) > 0) {
+          await detailLinks.first().click();
+          await expect(page).toHaveURL(new RegExp(`${path}/[0-9a-f-]+$`));
+          await expect(
+            page.getByRole("heading", { name: "Segurança financeira" }),
+          ).toBeVisible();
+          await expect(
+            page.getByRole("heading", { name: "Eventos recentes" }),
+          ).toBeVisible();
+          await page.getByRole("link", { name: "Voltar" }).click();
+          await expect(page).toHaveURL(new RegExp(`${path}(?:\\?.*)?$`));
+        }
+      }
     }
 
     await page.goto("/admin");
@@ -41,7 +58,7 @@ test.describe("admin finance modules", () => {
     ).toBeVisible();
     await expect(
       page.getByRole("link", { exact: true, name: "Relatórios" }),
-    ).toBeVisible();
+    ).toHaveCount(0);
 
     const content = await page.content();
     expect(content).not.toContain("stripe_payment_intent_id");

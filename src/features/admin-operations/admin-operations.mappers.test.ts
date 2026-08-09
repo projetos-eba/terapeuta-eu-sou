@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { mapAdminOperationRows } from "./admin-operations.mappers";
+import {
+  mapAdminOperationDetail,
+  mapAdminOperationRows,
+} from "./admin-operations.mappers";
 
 describe("admin operation mappers", () => {
   it("maps professionals with public and operational fields", () => {
@@ -23,6 +26,7 @@ describe("admin operation mappers", () => {
       })[0],
     ).toEqual(
       expect.objectContaining({
+        detailHref: "/admin/profissionais/therapist-1",
         id: "therapist-1",
         statusLabel: "approved",
         subtitle: "ana-oliveira",
@@ -46,6 +50,7 @@ describe("admin operation mappers", () => {
     });
 
     expect(JSON.stringify(row)).not.toContain("Comentário privado");
+    expect(row.detailHref).toBe("/admin/avaliacoes/review-1");
     expect(row.title).toBe("Avaliação operacional");
   });
 
@@ -65,6 +70,7 @@ describe("admin operation mappers", () => {
     });
 
     expect(JSON.stringify(row)).not.toContain("secret.example");
+    expect(row.detailHref).toBe("/admin/sessoes/booking-1");
     expect(row.title).toBe("Reiki");
   });
 
@@ -86,6 +92,48 @@ describe("admin operation mappers", () => {
     });
 
     expect(JSON.stringify(row)).not.toContain("Detalhe sensível");
+    expect(row.detailHref).toBe("/admin/suporte/ticket-1");
     expect(row.title).toBe("Ajuda com pagamento");
+  });
+
+  it("maps safe support details without exposing the ticket description", () => {
+    const detail = mapAdminOperationDetail({
+      auditEvents: [],
+      generatedAt: "2026-08-08T10:00:00.000Z",
+      module: "support",
+      record: {
+        category: "payment",
+        description: "Descrição sensível fora da visão operacional.",
+        id: "ticket-1",
+        priority: "high",
+        requester_name: "Paciente",
+        source: "app",
+        status: "open",
+        subject: "Ajuda com pagamento",
+        urgency: "high",
+      },
+    });
+
+    expect(JSON.stringify(detail)).not.toContain("Descrição sensível");
+    expect(detail.backHref).toBe("/admin/suporte");
+    expect(detail.title).toBe("Ajuda com pagamento");
+  });
+
+  it("maps safe verification details without exposing document metadata", () => {
+    const detail = mapAdminOperationDetail({
+      auditEvents: [],
+      generatedAt: "2026-08-08T10:00:00.000Z",
+      module: "verifications",
+      record: {
+        documents_metadata: { privatePath: "bucket/private/document.pdf" },
+        id: "verification-1",
+        status: "submitted",
+        therapist_name: "Ana Oliveira",
+      },
+    });
+
+    expect(JSON.stringify(detail)).not.toContain("document.pdf");
+    expect(detail.backHref).toBe("/admin/profissionais/verificacoes");
+    expect(detail.title).toBe("Ana Oliveira");
   });
 });

@@ -1,4 +1,12 @@
-import { AlertTriangle, CheckCircle2, Clock3, ShieldCheck } from "lucide-react";
+import Link from "next/link";
+import type { Route } from "next";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  CheckCircle2,
+  Clock3,
+  ShieldCheck,
+} from "lucide-react";
 
 import {
   AppPageAside,
@@ -10,10 +18,12 @@ import {
 } from "@/components/app-page";
 
 import type {
+  AdminOperationDetailPageData,
   AdminOperationMetric,
   AdminOperationPageData,
   AdminOperationRow,
 } from "../admin-operations.types";
+import { AdminOperationCommandPanel } from "./admin-operation-command-panel";
 
 export function AdminOperationPage({ data }: { data: AdminOperationPageData }) {
   return (
@@ -53,6 +63,14 @@ export function AdminOperationPage({ data }: { data: AdminOperationPageData }) {
                   message={
                     data.rowsUnavailableMessage ??
                     "Não foi possível carregar estes registros agora."
+                  }
+                />
+              ) : data.rowsStatus === "forbidden" ? (
+                <StateMessage
+                  icon="warning"
+                  message={
+                    data.rowsUnavailableMessage ??
+                    "Acesso restrito para este módulo."
                   }
                 />
               ) : data.rows.length === 0 ? (
@@ -118,13 +136,20 @@ function MetricCard({ metric }: { metric: AdminOperationMetric }) {
         <Icon aria-hidden="true" className={metricIconClass(metric)} />
       </div>
       <strong className="mt-4 block text-3xl font-extrabold text-brand-deep">
-        {metric.status === "available" ? metric.value : "Indisponível"}
+        {formatMetricValue(metric)}
       </strong>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
         {metric.description}
       </p>
     </article>
   );
+}
+
+function formatMetricValue(metric: AdminOperationMetric) {
+  if (metric.status === "available") return metric.value;
+  if (metric.status === "forbidden") return "Acesso restrito";
+
+  return "Indisponível";
 }
 
 function OperationRow({ row }: { row: AdminOperationRow }) {
@@ -158,7 +183,149 @@ function OperationRow({ row }: { row: AdminOperationRow }) {
           ))}
         </dl>
       </div>
+      {row.detailHref ? (
+        <div className="mt-4 flex justify-end">
+          <Link
+            className="inline-flex min-h-10 items-center justify-center rounded-md border border-border bg-white px-4 text-sm font-extrabold text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+            href={row.detailHref as Route<string>}
+          >
+            Ver detalhes
+          </Link>
+        </div>
+      ) : null}
     </article>
+  );
+}
+
+export function AdminOperationDetailPage({
+  data,
+}: {
+  data: AdminOperationDetailPageData;
+}) {
+  return (
+    <AppPageContainer className="max-w-[1440px] py-5 lg:py-6">
+      <Link
+        className="mb-4 inline-flex min-h-10 items-center gap-2 rounded-md border border-border bg-white px-4 text-sm font-extrabold text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+        href={data.backHref as Route<string>}
+      >
+        <ArrowLeft aria-hidden="true" className="size-4" />
+        Voltar
+      </Link>
+
+      <AppPageHeader eyebrow="Admin" title={data.title}>
+        {data.subtitle ?? "Detalhe operacional seguro."}
+      </AppPageHeader>
+
+      <AppPageGrid className="xl:grid-cols-[minmax(0,1fr)_380px]">
+        <AppPageMain>
+          <div className="space-y-4">
+            {data.sections.map((section) => (
+              <AppPageSection key={section.title}>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h2 className="text-xl font-extrabold text-brand-deep">
+                      {section.title}
+                    </h2>
+                    {section.description ? (
+                      <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                        {section.description}
+                      </p>
+                    ) : null}
+                  </div>
+                  {data.statusLabel ? (
+                    <StatusBadge label={data.statusLabel} />
+                  ) : null}
+                </div>
+                <dl className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {section.fields.map((field) => (
+                    <div
+                      className="rounded-md border border-border bg-surface-muted p-3"
+                      key={`${section.title}-${field.label}`}
+                    >
+                      <dt className="text-xs font-bold text-tesText-secondary">
+                        {field.label}
+                      </dt>
+                      <dd className="mt-1 break-words text-sm font-extrabold text-brand-deep">
+                        {field.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </AppPageSection>
+            ))}
+          </div>
+        </AppPageMain>
+
+        <AppPageAside>
+          <AppPageSection>
+            <AdminOperationCommandPanel data={data} />
+          </AppPageSection>
+
+          <AppPageSection>
+            <div className="flex items-start gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-md bg-status-successBg text-status-success">
+                <ShieldCheck aria-hidden="true" className="size-5" />
+              </span>
+              <div>
+                <h2 className="text-lg font-extrabold text-brand-deep">
+                  Segurança do detalhe
+                </h2>
+                <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                  Fonte segura gerada em {formatDateTime(data.generatedAt)}.
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 space-y-3">
+              {data.safetyNotes.map((note) => (
+                <p
+                  className="rounded-md border border-border bg-surface-muted p-3 text-sm font-semibold leading-6 text-tesText-secondary"
+                  key={note}
+                >
+                  {note}
+                </p>
+              ))}
+            </div>
+          </AppPageSection>
+
+          <AppPageSection>
+            <h2 className="text-lg font-extrabold text-brand-deep">
+              Auditoria recente
+            </h2>
+            {data.auditEvents.length === 0 ? (
+              <p className="mt-3 rounded-md border border-border bg-surface-muted p-3 text-sm font-semibold leading-6 text-tesText-secondary">
+                Nenhum evento administrativo recente para este registro.
+              </p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {data.auditEvents.map((event) => (
+                  <article
+                    className="rounded-md border border-border bg-white p-3"
+                    key={event.id}
+                  >
+                    <p className="text-sm font-extrabold text-brand-deep">
+                      {event.action}
+                    </p>
+                    <p className="mt-1 text-xs font-bold text-tesText-secondary">
+                      {formatDateTime(event.createdAt)} · {event.source}
+                    </p>
+                    {event.permission ? (
+                      <p className="mt-2 text-xs font-bold text-tesText-secondary">
+                        {event.permission}
+                      </p>
+                    ) : null}
+                    {event.reason ? (
+                      <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+                        {event.reason}
+                      </p>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+            )}
+          </AppPageSection>
+        </AppPageAside>
+      </AppPageGrid>
+    </AppPageContainer>
   );
 }
 

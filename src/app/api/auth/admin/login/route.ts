@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     const session = await loginAdminWithPassword(validation.value);
     const response = NextResponse.json({
       ok: true,
-      redirectTo: routes.admin.therapies,
+      redirectTo: routes.admin.home,
     });
 
     setAdminSessionCookies(response, session);

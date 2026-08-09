@@ -74,12 +74,22 @@ export const routes = {
     signIn: "/admin-login",
     home: "/admin",
     professionals: "/admin/profissionais",
+    professionalDetail: (professionalId: string) =>
+      `/admin/profissionais/${professionalId}`,
     verifications: "/admin/profissionais/verificacoes",
+    verificationDetail: (verificationId: string) =>
+      `/admin/profissionais/verificacoes/${verificationId}`,
     patients: "/admin/pacientes",
+    patientDetail: (patientId: string) => `/admin/pacientes/${patientId}`,
     sessions: "/admin/sessoes",
+    sessionDetail: (sessionId: string) => `/admin/sessoes/${sessionId}`,
     payments: "/admin/pagamentos",
+    paymentDetail: (paymentId: string) => `/admin/pagamentos/${paymentId}`,
     reviews: "/admin/avaliacoes",
+    reviewDetail: (reviewId: string) => `/admin/avaliacoes/${reviewId}`,
     subscriptions: "/admin/assinaturas",
+    subscriptionDetail: (subscriptionId: string) =>
+      `/admin/assinaturas/${subscriptionId}`,
     therapies: "/admin/terapias",
     matching: "/admin/matching",
     integrations: "/admin/integracoes",
@@ -87,6 +97,7 @@ export const routes = {
     reports: "/admin/relatorios",
     settings: "/admin/configuracoes",
     support: "/admin/suporte",
+    supportDetail: (ticketId: string) => `/admin/suporte/${ticketId}`,
   },
 } as const;
 
