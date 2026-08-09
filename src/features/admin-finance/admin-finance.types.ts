@@ -1,4 +1,9 @@
 import type { AdminOperationalTone } from "@/features/admin-platform/admin-platform.types";
+import type {
+  AdminListOption,
+  AdminListPageInfo,
+  AdminListQuery,
+} from "@/features/admin-shared/admin-list-query";
 
 export type AdminFinanceModuleKey = "payments" | "reports" | "subscriptions";
 
@@ -29,8 +34,15 @@ export type AdminFinanceRow = {
 export type AdminFinancePageData = {
   description: string;
   emptyMessage: string;
+  filterOptions: {
+    sort: AdminListOption[];
+    status: AdminListOption[];
+  };
   generatedAt: string;
   metrics: AdminFinanceMetric[];
+  listHref: string;
+  page: AdminListPageInfo;
+  query: AdminListQuery;
   rows: AdminFinanceRow[];
   rowsStatus: "available" | "forbidden" | "unavailable";
   rowsTitle: string;

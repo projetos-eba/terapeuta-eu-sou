@@ -5,7 +5,6 @@ import { cache } from "react";
 import { adminModuleRegistry } from "@/features/admin-shell/admin-shell-config";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
-import { parseContentRangeTotal } from "../admin-dashboard/admin-dashboard.utils";
 import {
   buildIntegrationHealth,
   buildModuleSignals,
@@ -23,7 +22,6 @@ type CountSpec = {
   description: string;
   key: string;
   label: string;
-  query: string;
   source: string;
   tone: AdminOperationalTone;
 };
@@ -44,6 +42,12 @@ type AdminAuditEventRow = {
   source?: string | null;
 };
 
+type IntegrationHealthReadModel = {
+  generatedAt?: string | null;
+  last?: Record<string, string | null | undefined> | null;
+  signals?: Record<string, number | null | undefined> | null;
+};
+
 export const getAdminIntegrationsPage = cache(
   async function getAdminIntegrationsPage({
     accessToken,
@@ -59,11 +63,8 @@ export const getAdminIntegrationsPage = cache(
       };
     }
 
-    const countResults = await fetchCountResults(
-      config,
-      accessToken,
-      getIntegrationCountSpecs(),
-    );
+    const readModel = await fetchIntegrationHealthReadModel(config, accessToken);
+    const countResults = readModel.countResults;
 
     const signal = createSignalLookup(countResults);
     const integrations = [
@@ -103,7 +104,7 @@ export const getAdminIntegrationsPage = cache(
 
     return {
       data: {
-        generatedAt: new Date().toISOString(),
+        generatedAt: readModel.generatedAt ?? new Date().toISOString(),
         integrations,
         summary: countResults.map(toSignal),
       },
@@ -148,48 +149,65 @@ export const getAdminSecurityPage = cache(async function getAdminSecurityPage({
   };
 });
 
-async function fetchCountResults(
+async function fetchIntegrationHealthReadModel(
   config: { apiKey: string; url: string },
   accessToken: string,
-  specs: CountSpec[],
-) {
-  return Promise.all(
-    specs.map(async (spec): Promise<CountResult> => {
-      const value = await fetchCount(config, accessToken, spec.query);
+): Promise<{
+  countResults: CountResult[];
+  generatedAt: string | null;
+}> {
+  const specs = getIntegrationCountSpecs();
 
-      return {
-        ...spec,
-        status: value === null ? "unavailable" : "available",
-        value,
-      };
-    }),
-  );
-}
-
-async function fetchCount(
-  config: { apiKey: string; url: string },
-  accessToken: string,
-  query: string,
-) {
   try {
-    const separator = query.includes("?") ? "&" : "?";
     const response = await fetch(
-      `${config.url}/rest/v1/${query}${separator}select=id&limit=1`,
+      `${config.url}/rest/v1/rpc/admin_get_integration_health_v1`,
       {
+        body: "{}",
         cache: "no-store",
         headers: {
           apikey: config.apiKey,
           Authorization: `Bearer ${accessToken}`,
-          Prefer: "count=exact",
+          "Content-Type": "application/json",
         },
+        method: "POST",
       },
     );
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      return {
+        countResults: unavailableCountResults(specs),
+        generatedAt: null,
+      };
+    }
 
-    return parseContentRangeTotal(response.headers.get("content-range"));
+    const payload = (await response
+      .json()
+      .catch(() => null)) as IntegrationHealthReadModel | null;
+
+    if (!payload || typeof payload !== "object") {
+      return {
+        countResults: unavailableCountResults(specs),
+        generatedAt: null,
+      };
+    }
+
+    return {
+      countResults: specs.map((spec) => {
+        const value = payload.signals?.[spec.key];
+
+        return {
+          ...spec,
+          status: typeof value === "number" ? "available" : "unavailable",
+          value: typeof value === "number" ? value : null,
+        };
+      }),
+      generatedAt: payload.generatedAt ?? null,
+    };
   } catch {
-    return null;
+    return {
+      countResults: unavailableCountResults(specs),
+      generatedAt: null,
+    };
   }
 }
 
@@ -283,57 +301,58 @@ function getIntegrationCountSpecs(): CountSpec[] {
       description: "Webhooks Stripe com processamento falho.",
       key: "failed-stripe-webhooks",
       label: "Falhas Stripe",
-      query: "stripe_webhook_events?processing_status=eq.failed",
-      source: "stripe_webhook_events",
+      source: "admin_get_integration_health_v1",
       tone: "danger",
     },
     {
       description: "Assinaturas com pagamento ou ativação incompleta.",
       key: "attention-subscriptions",
       label: "Assinaturas em atenção",
-      query: "therapist_subscriptions?status=in.(past_due,unpaid,incomplete)",
-      source: "therapist_subscriptions",
+      source: "admin_get_integration_health_v1",
       tone: "warning",
     },
     {
       description: "Pagamentos de sessão aguardando confirmação financeira.",
       key: "pending-session-payments",
       label: "Pagamentos pendentes",
-      query: "session_payments?financial_status=eq.pending",
-      source: "session_payments",
+      source: "admin_get_integration_health_v1",
       tone: "warning",
     },
     {
       description: "Contas Connect restritas ou incompletas.",
       key: "restricted-connect-accounts",
       label: "Connect restrito",
-      query: "therapist_connect_accounts?operational_status=neq.active",
-      source: "therapist_connect_accounts",
+      source: "admin_get_integration_health_v1",
       tone: "warning",
     },
     {
       description: "Webhooks Zoom Video SDK com processamento falho.",
       key: "failed-zoom-webhooks",
       label: "Falhas Zoom",
-      query: "zoom_video_webhook_events?processing_status=eq.failed",
-      source: "zoom_video_webhook_events",
+      source: "admin_get_integration_health_v1",
       tone: "danger",
     },
     {
       description: "Sessões Zoom marcadas como falhas.",
       key: "failed-video-sessions",
       label: "Sessões Zoom falhas",
-      query: "video_sessions?status=eq.failed",
-      source: "video_sessions",
+      source: "admin_get_integration_health_v1",
       tone: "danger",
     },
     {
       description: "E-mails transacionais com erro de entrega.",
       key: "failed-emails",
       label: "Falhas de e-mail",
-      query: "email_delivery_logs?status=eq.error",
-      source: "email_delivery_logs",
+      source: "admin_get_integration_health_v1",
       tone: "danger",
     },
   ];
+}
+
+function unavailableCountResults(specs: CountSpec[]): CountResult[] {
+  return specs.map((spec) => ({
+    ...spec,
+    status: "unavailable",
+    value: null,
+  }));
 }

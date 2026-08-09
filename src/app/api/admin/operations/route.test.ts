@@ -77,7 +77,7 @@ describe("admin operation command route", () => {
     expect(response.status).toBe(200);
     expect(payload.ok).toBe(true);
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://tes.supabase.test/rest/v1/rpc/admin_execute_operation_command_v1",
+      "https://tes.supabase.test/rest/v1/rpc/admin_execute_operation_command_v2",
       expect.objectContaining({
         body: expect.stringContaining("professional.suspend"),
         headers: expect.objectContaining({
@@ -161,6 +161,37 @@ describe("admin operation command route", () => {
       expect.any(String),
       expect.objectContaining({
         body: expect.stringContaining("verification.approve"),
+      }),
+    );
+  });
+
+  it("allows pausing verification review through v2", async () => {
+    sessionMocks.readAdminSessionFromAccessToken.mockResolvedValue({
+      accessToken: "admin-token",
+      avatarUrl: null,
+      email: "admin@example.test",
+      name: "Admin TES",
+      permissions: ["admin.professionals.verify"],
+      role: "admin",
+      userId: "admin-user",
+    });
+    const fetchMock = vi.fn(async () => jsonResponse({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      makeJsonRequest({
+        action: "verification.pause_review",
+        entityId: "22222222-2222-4222-8222-222222222222",
+        reason: "Análise pausada para ajuste operacional.",
+        requestId: "verification-pause-request",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://tes.supabase.test/rest/v1/rpc/admin_execute_operation_command_v2",
+      expect.objectContaining({
+        body: expect.stringContaining("verification.pause_review"),
       }),
     );
   });

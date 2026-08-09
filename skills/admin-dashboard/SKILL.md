@@ -30,13 +30,16 @@ shell admin ou métricas agregadas usadas para priorização operacional.
 - UI: `src/features/admin-dashboard/components/admin-dashboard-page.tsx`
 - Consulta: `src/features/admin-dashboard/admin-dashboard.queries.ts`
 - Plataforma admin: `src/features/admin-platform/*`
-- Dados: REST Supabase autenticado com token admin e
-  `admin-therapy-catalog-command`.
+- Dados: RPC Supabase autenticado com token admin via
+  `admin_get_dashboard_v1()`. Mutacoes do catalogo continuam em comandos
+  especificos como `admin-therapy-catalog-command`.
 
 ## Regras
 
 - Não usar `service_role` no Next.
 - Não expor PII em métricas de visão geral.
+- Não consultar tabelas canonicas horizontalmente do shell para montar
+  contagens do Dashboard; usar read model admin dedicado.
 - Cada fonte agregada deve degradar de forma explícita quando falhar.
 - Links do shell e do dashboard só devem apontar para rotas com página real.
 - Módulos sem página dedicada aparecem como pendentes, sem link clicável.
@@ -55,12 +58,12 @@ shell admin ou métricas agregadas usadas para priorização operacional.
 
 ## Pendências conhecidas
 
-- `/admin/profissionais`, `/admin/sessoes`, `/admin/pagamentos`,
-  e demais módulos dedicados ainda precisam de confirmação para criação de
-  rotas/páginas.
-- `/admin/integracoes` e `/admin/seguranca` existem como fundação operacional;
-  ainda dependem de read models dedicados para substituir leituras REST
-  heterogêneas quando o módulo evoluir para ações críticas.
-- O dashboard usa contagens agregadas; ações críticas continuam pendentes de
-  contratos com permissão, motivo, confirmação, `requestId`, versão esperada e
-  auditoria.
+- `/admin/integracoes` e `/admin/relatorios` permanecem ocultos no menu até
+  homologação específica, embora as rotas protegidas existam.
+- O dashboard usa contagens agregadas via `admin_get_dashboard_v1()`.
+- Listas operacionais e financeiras usam RPCs v2 paginadas; a implementação
+  interna ainda usa uma janela sanitizada limitada e pode ser substituída por
+  SQL indexado por módulo sem alterar o contrato público.
+- Ações financeiras, reconciliações Stripe/Zoom e exports reais continuam
+  pendentes de comandos dedicados com permissão, motivo, `requestId`,
+  idempotência e auditoria.
