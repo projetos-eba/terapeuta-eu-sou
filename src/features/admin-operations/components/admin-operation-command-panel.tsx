@@ -22,7 +22,9 @@ type CommandAction =
   | "support.reopen"
   | "support.resolve"
   | "verification.approve"
+  | "verification.pause_review"
   | "verification.reject"
+  | "verification.reopen_review"
   | "verification.request_changes";
 
 type CommandOption = {
@@ -196,6 +198,36 @@ function getCommandOptions(
   }
 
   if (module === "verifications") {
+    if (statusLabel === "in_review") {
+      return [
+        {
+          action: "verification.approve",
+          label: "Aprovar verificação",
+          tone: "success",
+        },
+        {
+          action: "verification.pause_review",
+          label: "Suspender análise",
+          tone: "warning",
+        },
+        {
+          action: "verification.reject",
+          label: "Reprovar verificação",
+          tone: "danger",
+        },
+      ];
+    }
+
+    if (statusLabel === "changes_requested" || statusLabel === "rejected") {
+      return [
+        {
+          action: "verification.reopen_review",
+          label: "Reabrir análise",
+          tone: "neutral",
+        },
+      ];
+    }
+
     return [
       {
         action: "verification.approve",

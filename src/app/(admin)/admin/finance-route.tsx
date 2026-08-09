@@ -14,8 +14,10 @@ const financeModulePermissions = {
 
 export async function AdminFinanceRoute({
   module,
+  searchParams,
 }: {
   module: AdminFinanceModuleKey;
+  searchParams?: Record<string, string | string[] | undefined>;
 }) {
   const session = await requireAdminSession({
     permission: financeModulePermissions[module],
@@ -23,6 +25,7 @@ export async function AdminFinanceRoute({
   const result = await getAdminFinancePage({
     accessToken: session.accessToken,
     module,
+    searchParams,
   });
 
   if (result.status === "error") {

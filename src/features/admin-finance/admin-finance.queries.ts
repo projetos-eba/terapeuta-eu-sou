@@ -3,8 +3,16 @@ import "server-only";
 import { cache } from "react";
 
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
+import { routes } from "@/lib/routes";
+import {
+  ADMIN_LIST_DEFAULT_PAGE_SIZE,
+  parseAdminListQuery,
+  toAdminListRpcQuery,
+  type AdminListOption,
+  type AdminListPageInfo,
+  type AdminListQuery,
+} from "@/features/admin-shared/admin-list-query";
 
-import { parseContentRangeTotal } from "../admin-dashboard/admin-dashboard.utils";
 import {
   mapAdminFinanceDetail,
   mapAdminFinanceRows,
@@ -30,18 +38,19 @@ type ModuleSpec = {
   description: string;
   emptyMessage: string;
   metrics: CountSpec[];
-  rowsFactory?: (metrics: AdminFinanceMetric[]) => unknown[];
-  rowsQuery?: string;
   rowsTitle: string;
   safetyNotes: string[];
   sourceLabel: string;
+  statusOptions: AdminListOption[];
   title: string;
 };
 
 type AdminFinanceReadModel = {
+  filtersApplied?: unknown;
   generatedAt?: unknown;
   metrics?: unknown;
   module?: unknown;
+  page?: unknown;
   rows?: unknown;
 };
 
@@ -88,8 +97,6 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
       metric("ledger-entries", "Ledger", "Lançamentos financeiros auditáveis.", "financial_ledger_entries", "financial_ledger_entries", "info"),
       metric("stripe-transfers", "Transfers", "Transferências registradas sem expor IDs externos.", "stripe_transfers", "stripe_transfers", "info"),
     ],
-    rowsQuery:
-      "session_payments?select=id,booking_id,financial_status,service_status,transfer_status,gross_amount_cents,therapist_amount_cents,platform_gross_commission_cents,currency,refund_pending,disputed_at,updated_at&order=updated_at.desc&limit=12",
     rowsTitle: "Pagamentos recentes",
     safetyNotes: [
       "Esta página não exibe PaymentIntent, Checkout Session, Charge, Balance Transaction ou payload Stripe.",
@@ -98,6 +105,15 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
     ],
     sourceLabel:
       "session_payments, session_refunds, session_disputes, financial_ledger_entries, payout_batches, stripe_transfers",
+    statusOptions: [
+      option("", "Todos os status"),
+      option("pending", "Pendentes"),
+      option("processing", "Processando"),
+      option("paid", "Pagos"),
+      option("partially_refunded", "Parcialmente reembolsados"),
+      option("failed", "Falhos"),
+      option("canceled", "Cancelados"),
+    ],
     title: "Financeiro",
   },
   reports: {
@@ -112,7 +128,6 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
       metric("report-subscriptions", "Assinaturas", "Assinaturas de terapeutas.", "therapist_subscriptions", "therapist_subscriptions", "info"),
       metric("report-stripe-failures", "Falhas Stripe", "Eventos Stripe com falha.", "stripe_webhook_events?processing_status=eq.failed", "stripe_webhook_events", "danger"),
     ],
-    rowsFactory: buildReportRows,
     rowsTitle: "Relatórios disponíveis",
     safetyNotes: [
       "Exports ainda não são gerados no cliente; devem nascer server-side, paginados, auditados e protegidos contra CSV injection.",
@@ -121,6 +136,11 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
     ],
     sourceLabel:
       "therapist_profiles, patient_profiles, bookings, session_payments, therapist_subscriptions",
+    statusOptions: [
+      option("", "Todos os status"),
+      option("planned", "Planejados"),
+      option("unavailable", "Indisponíveis"),
+    ],
     title: "Relatórios",
   },
   subscriptions: {
@@ -135,8 +155,6 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
       metric("active-prices", "Preços ativos", "Price IDs allowlisted no catálogo de Billing.", "billing_plan_prices?is_active=eq.true", "billing_plan_prices", "info"),
       metric("stripe-customers", "Customers", "Vínculos de customer por perfil.", "stripe_customers", "stripe_customers", "info"),
     ],
-    rowsQuery:
-      "therapist_subscriptions?select=id,therapist_profile_id,plan_code,status,current_period_start,current_period_end,cancel_at_period_end,canceled_at,ended_at,updated_at&order=updated_at.desc&limit=12",
     rowsTitle: "Assinaturas recentes",
     safetyNotes: [
       "A lista não expõe subscription ID, checkout session, latest invoice, invoice URL ou metadados brutos.",
@@ -145,19 +163,38 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
     ],
     sourceLabel:
       "therapist_subscriptions, billing_plan_prices, stripe_customers, billing_invoices",
+    statusOptions: [
+      option("", "Todos os status"),
+      option("trialing", "Trial"),
+      option("active", "Ativas"),
+      option("past_due", "Em atraso"),
+      option("unpaid", "Inadimplentes"),
+      option("incomplete", "Incompletas"),
+      option("canceled", "Canceladas"),
+    ],
     title: "Assinaturas",
   },
 };
 
+const SORT_OPTIONS: AdminListOption[] = [
+  option("recent", "Mais recentes"),
+  option("oldest", "Mais antigos"),
+  option("status", "Status"),
+  option("amount", "Valor"),
+];
+
 export const getAdminFinancePage = cache(async function getAdminFinancePage({
   accessToken,
   module,
+  searchParams,
 }: {
   accessToken: string;
   module: AdminFinanceModuleKey;
+  searchParams?: Record<string, string | string[] | undefined>;
 }): Promise<AdminFinancePageResult> {
   const config = getSupabasePublicConfig();
   const spec = MODULES[module];
+  const query = parseAdminListQuery(searchParams);
 
   if (!config) {
     return {
@@ -166,56 +203,36 @@ export const getAdminFinancePage = cache(async function getAdminFinancePage({
     };
   }
 
-  if (module === "payments" || module === "subscriptions") {
-    const readResult = await fetchAdminFinanceReadModel({
-      accessToken,
-      config,
-      module,
-    });
+  const readResult = await fetchAdminFinanceReadModel({
+    accessToken,
+    config,
+    module,
+    query,
+  });
 
-    if (readResult.status !== "available") {
-      return {
-        data: {
-          description: spec.description,
-          emptyMessage: spec.emptyMessage,
-          generatedAt: new Date().toISOString(),
-          metrics: spec.metrics.map((metricSpec) =>
-            unavailableMetric(metricSpec, readResult.status),
-          ),
-          rows: [],
-          rowsStatus: readResult.status,
-          rowsTitle: spec.rowsTitle,
-          rowsUnavailableMessage:
-            readResult.status === "forbidden"
-              ? "A sessão atual não tem permissão para consultar este módulo."
-              : "A leitura administrativa falhou. Isso não é tratado como lista vazia.",
-          safetyNotes: spec.safetyNotes,
-          sourceLabel: spec.sourceLabel,
-          title: spec.title,
-        },
-        status: "success",
-      };
-    }
-
-    const metricsPayload = isRecord(readResult.model.metrics)
-      ? readResult.model.metrics
-      : {};
-    const rowsPayload = Array.isArray(readResult.model.rows)
-      ? readResult.model.rows
-      : [];
-
+  if (readResult.status !== "available") {
     return {
       data: {
         description: spec.description,
         emptyMessage: spec.emptyMessage,
-        generatedAt:
-          asString(readResult.model.generatedAt) ?? new Date().toISOString(),
+        filterOptions: {
+          sort: SORT_OPTIONS,
+          status: spec.statusOptions,
+        },
+        generatedAt: new Date().toISOString(),
+        listHref: getFinanceListHref(module),
         metrics: spec.metrics.map((metricSpec) =>
-          availableMetric(metricSpec, metricsPayload),
+          unavailableMetric(metricSpec, readResult.status),
         ),
-        rows: mapAdminFinanceRows({ module, rows: rowsPayload }),
-        rowsStatus: "available",
+        page: emptyPage(query),
+        query,
+        rows: [],
+        rowsStatus: readResult.status,
         rowsTitle: spec.rowsTitle,
+        rowsUnavailableMessage:
+          readResult.status === "forbidden"
+            ? "A sessão atual não tem permissão para consultar este módulo."
+            : "A leitura administrativa falhou. Isso não é tratado como lista vazia.",
         safetyNotes: spec.safetyNotes,
         sourceLabel: spec.sourceLabel,
         title: spec.title,
@@ -224,26 +241,32 @@ export const getAdminFinancePage = cache(async function getAdminFinancePage({
     };
   }
 
-  const metrics = await fetchMetrics(config, accessToken, spec.metrics);
-  const rowsResult = spec.rowsQuery
-    ? await fetchRows(config, accessToken, spec.rowsQuery)
-    : { rows: spec.rowsFactory?.(metrics) ?? [], status: "available" as const };
+  const metricsPayload = isRecord(readResult.model.metrics)
+    ? readResult.model.metrics
+    : {};
+  const rowsPayload = Array.isArray(readResult.model.rows)
+    ? readResult.model.rows
+    : [];
 
   return {
     data: {
       description: spec.description,
       emptyMessage: spec.emptyMessage,
-      generatedAt: new Date().toISOString(),
-      metrics,
-      rows: rowsResult.status === "available"
-        ? mapAdminFinanceRows({ module, rows: rowsResult.rows })
-        : [],
-      rowsStatus: rowsResult.status,
+      filterOptions: {
+        sort: SORT_OPTIONS,
+        status: spec.statusOptions,
+      },
+      generatedAt:
+        asString(readResult.model.generatedAt) ?? new Date().toISOString(),
+      listHref: getFinanceListHref(module),
+      metrics: spec.metrics.map((metricSpec) =>
+        availableMetric(metricSpec, metricsPayload),
+      ),
+      page: mapPageInfo(readResult.model.page, query),
+      query,
+      rows: mapAdminFinanceRows({ module, rows: rowsPayload }),
+      rowsStatus: "available",
       rowsTitle: spec.rowsTitle,
-      rowsUnavailableMessage:
-        rowsResult.status === "unavailable"
-          ? "A leitura foi bloqueada ou falhou. Isso não é tratado como lista vazia."
-          : undefined,
       safetyNotes: spec.safetyNotes,
       sourceLabel: spec.sourceLabel,
       title: spec.title,
@@ -315,19 +338,20 @@ async function fetchAdminFinanceReadModel({
   accessToken,
   config,
   module,
+  query,
 }: {
   accessToken: string;
   config: { apiKey: string; url: string };
-  module: Extract<AdminFinanceModuleKey, "payments" | "subscriptions">;
+  module: AdminFinanceModuleKey;
+  query: AdminListQuery;
 }): Promise<AdminFinanceReadResult> {
   try {
     const response = await fetch(
-      `${config.url}/rest/v1/rpc/admin_get_finance_module_v1`,
+      `${config.url}/rest/v1/rpc/admin_get_finance_module_v2`,
       {
         body: JSON.stringify({
-          p_limit: 12,
           p_module: module,
-          p_offset: 0,
+          p_query: toAdminListRpcQuery(query),
         }),
         cache: "no-store",
         headers: {
@@ -470,115 +494,6 @@ async function fetchAdminFinanceDetailReadModel({
   }
 }
 
-async function fetchMetrics(
-  config: { apiKey: string; url: string },
-  accessToken: string,
-  specs: CountSpec[],
-) {
-  return Promise.all(
-    specs.map(async (spec): Promise<AdminFinanceMetric> => {
-      const value = await fetchCount(config, accessToken, spec.query);
-
-      return {
-        description: spec.description,
-        key: spec.key,
-        label: spec.label,
-        source: spec.source,
-        status: value === null ? "unavailable" : "available",
-        tone: spec.tone,
-        value,
-      };
-    }),
-  );
-}
-
-async function fetchCount(
-  config: { apiKey: string; url: string },
-  accessToken: string,
-  query: string,
-) {
-  try {
-    const separator = query.includes("?") ? "&" : "?";
-    const response = await fetch(
-      `${config.url}/rest/v1/${query}${separator}select=id&limit=1`,
-      {
-        cache: "no-store",
-        headers: {
-          apikey: config.apiKey,
-          Authorization: `Bearer ${accessToken}`,
-          Prefer: "count=exact",
-        },
-      },
-    );
-
-    if (!response.ok) return null;
-
-    return parseContentRangeTotal(response.headers.get("content-range"));
-  } catch {
-    return null;
-  }
-}
-
-async function fetchRows(
-  config: { apiKey: string; url: string },
-  accessToken: string,
-  query: string,
-): Promise<{ rows: unknown[]; status: "available" } | { status: "unavailable" }> {
-  try {
-    const response = await fetch(`${config.url}/rest/v1/${query}`, {
-      cache: "no-store",
-      headers: {
-        apikey: config.apiKey,
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (!response.ok) return { status: "unavailable" };
-
-    const rows = await response.json().catch(() => null);
-
-    return Array.isArray(rows)
-      ? { rows, status: "available" }
-      : { status: "unavailable" };
-  } catch {
-    return { status: "unavailable" };
-  }
-}
-
-function buildReportRows(metrics: AdminFinanceMetric[]) {
-  return [
-    reportRow("professionals", "Relatório de profissionais", "Status, publicação, plano e prontidão operacional.", "therapist_profiles", metrics),
-    reportRow("patients", "Relatório de clientes", "Base de clientes com mínimo operacional, sem conteúdo clínico.", "patient_profiles", metrics),
-    reportRow("sessions", "Relatório de sessões", "Reservas, estados, janelas e conciliação operacional.", "bookings", metrics),
-    reportRow("payments", "Relatório financeiro", "Pagamentos, refunds, disputes, ledger e repasses.", "session_payments", metrics),
-    reportRow("subscriptions", "Relatório de assinaturas", "Billing de terapeutas, planos e estados de cobrança.", "therapist_subscriptions", metrics),
-  ];
-}
-
-function reportRow(
-  id: string,
-  title: string,
-  description: string,
-  source: string,
-  metrics: AdminFinanceMetric[],
-) {
-  const hasUnavailableSource = metrics.some(
-    (metricItem) =>
-      metricItem.source === source && metricItem.status === "unavailable",
-  );
-
-  return {
-    description,
-    export_status: "Pendente de comando auditado",
-    id,
-    privacy: "Mínimo necessário",
-    scope: "Admin read-only",
-    source,
-    status: hasUnavailableSource ? "Indisponível" : "Planejado",
-    title,
-  };
-}
-
 function metric(
   key: string,
   label: string,
@@ -595,6 +510,49 @@ function metric(
     source,
     tone,
   };
+}
+
+function option(value: string, label: string): AdminListOption {
+  return { label, value };
+}
+
+function getFinanceListHref(module: AdminFinanceModuleKey) {
+  if (module === "payments") return routes.admin.payments;
+  if (module === "subscriptions") return routes.admin.subscriptions;
+
+  return routes.admin.reports;
+}
+
+function emptyPage(query: AdminListQuery): AdminListPageInfo {
+  return {
+    hasNext: false,
+    page: query.page,
+    pageSize: query.pageSize || ADMIN_LIST_DEFAULT_PAGE_SIZE,
+    total: 0,
+  };
+}
+
+function mapPageInfo(value: unknown, query: AdminListQuery): AdminListPageInfo {
+  if (!isRecord(value)) return emptyPage(query);
+
+  return {
+    hasNext: Boolean(value.hasNext),
+    page: asPositiveNumber(value.page, query.page),
+    pageSize: asPositiveNumber(value.pageSize, query.pageSize),
+    total: asNonNegativeNumber(value.total, 0),
+  };
+}
+
+function asPositiveNumber(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : fallback;
+}
+
+function asNonNegativeNumber(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : fallback;
 }
 
 function availableMetric(

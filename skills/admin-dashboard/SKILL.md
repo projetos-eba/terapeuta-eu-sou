@@ -58,12 +58,12 @@ shell admin ou métricas agregadas usadas para priorização operacional.
 
 ## Pendências conhecidas
 
-- `/admin/profissionais`, `/admin/sessoes`, `/admin/pagamentos`,
-  e demais módulos dedicados ainda precisam de confirmação para criação de
-  rotas/páginas.
-- `/admin/integracoes` e `/admin/seguranca` existem como fundação operacional;
-  Integrações já usa `admin_get_integration_health_v1()`, enquanto Segurança
-  continua lendo `admin_audit_events` sanitizado.
-- O dashboard usa contagens agregadas; ações críticas continuam pendentes de
-  contratos com permissão, motivo, confirmação, `requestId`, versão esperada e
-  auditoria.
+- `/admin/integracoes` e `/admin/relatorios` permanecem ocultos no menu até
+  homologação específica, embora as rotas protegidas existam.
+- O dashboard usa contagens agregadas via `admin_get_dashboard_v1()`.
+- Listas operacionais e financeiras usam RPCs v2 paginadas; a implementação
+  interna ainda usa uma janela sanitizada limitada e pode ser substituída por
+  SQL indexado por módulo sem alterar o contrato público.
+- Ações financeiras, reconciliações Stripe/Zoom e exports reais continuam
+  pendentes de comandos dedicados com permissão, motivo, `requestId`,
+  idempotência e auditoria.

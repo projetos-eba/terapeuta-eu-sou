@@ -22,7 +22,9 @@ const actionPermissions = {
   "support.reopen": "admin.support.manage",
   "support.resolve": "admin.support.manage",
   "verification.approve": "admin.professionals.verify",
+  "verification.pause_review": "admin.professionals.verify",
   "verification.reject": "admin.professionals.verify",
+  "verification.reopen_review": "admin.professionals.verify",
   "verification.request_changes": "admin.professionals.verify",
 } satisfies Record<string, AdminPermission>;
 
@@ -62,7 +64,7 @@ export async function POST(request: Request) {
 
   try {
     const response = await fetch(
-      `${config.url}/rest/v1/rpc/admin_execute_operation_command_v1`,
+      `${config.url}/rest/v1/rpc/admin_execute_operation_command_v2`,
       {
         body: JSON.stringify({
           p_action: input.value.action,

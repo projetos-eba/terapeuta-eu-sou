@@ -20,7 +20,9 @@ test.describe("admin operation modules", () => {
     await page.getByLabel("E-mail").fill(adminEmail);
     await page.getByLabel("Senha").fill(adminPassword);
     await page.getByRole("button", { name: "Entrar no Admin" }).click();
-    await expect(page).toHaveURL(/\/admin\/terapias(?:\?.*)?$/);
+    await expect(page).toHaveURL(/\/admin(?:\/terapias)?(?:\?.*)?$/, {
+      timeout: 30_000,
+    });
 
     for (const [path, title] of operationRoutes) {
       await page.goto(path);

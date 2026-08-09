@@ -3,6 +3,15 @@ import "server-only";
 import { cache } from "react";
 
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
+import { routes } from "@/lib/routes";
+import {
+  ADMIN_LIST_DEFAULT_PAGE_SIZE,
+  parseAdminListQuery,
+  toAdminListRpcQuery,
+  type AdminListOption,
+  type AdminListPageInfo,
+  type AdminListQuery,
+} from "@/features/admin-shared/admin-list-query";
 
 import {
   mapAdminOperationDetail,
@@ -30,13 +39,16 @@ type ModuleSpec = {
   metrics: CountSpec[];
   safetyNotes: string[];
   sourceLabel: string;
+  statusOptions: AdminListOption[];
   title: string;
 };
 
 type AdminOperationReadModel = {
+  filtersApplied?: unknown;
   generatedAt?: unknown;
   metrics?: unknown;
   module?: unknown;
+  page?: unknown;
   rows?: unknown;
 };
 
@@ -94,6 +106,12 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
       "Ações de bloqueio exigem contrato dedicado, motivo e auditoria.",
     ],
     sourceLabel: "patient_profiles",
+    statusOptions: [
+      option("", "Todos os status"),
+      option("active", "Ativos"),
+      option("deleted", "Excluídos"),
+      option("anonymized", "Anonimizados"),
+    ],
     title: "Clientes",
   },
   professionals: {
@@ -136,6 +154,16 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
       "Publicação e plano de assinatura não devem ser alterados diretamente pelo admin.",
     ],
     sourceLabel: "therapist_profiles",
+    statusOptions: [
+      option("", "Todos os status"),
+      option("draft", "Rascunho"),
+      option("submitted", "Enviado"),
+      option("in_review", "Em análise"),
+      option("changes_requested", "Ajustes solicitados"),
+      option("approved", "Aprovados"),
+      option("rejected", "Reprovados"),
+      option("suspended", "Suspensos"),
+    ],
     title: "Profissionais",
   },
   reviews: {
@@ -170,6 +198,13 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
       "Ocultar/restaurar avaliação usa comando auditado e preserva o registro original.",
     ],
     sourceLabel: "reviews",
+    statusOptions: [
+      option("", "Todos os status"),
+      option("pending", "Pendentes"),
+      option("reported", "Reportadas"),
+      option("published", "Publicadas"),
+      option("hidden", "Ocultas"),
+    ],
     title: "Avaliações",
   },
   sessions: {
@@ -204,6 +239,15 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
       "Cancelamento, reembolso e reagendamento exigem comandos de domínio.",
     ],
     sourceLabel: "bookings",
+    statusOptions: [
+      option("", "Todos os status"),
+      option("pending_payment", "Pagamento pendente"),
+      option("confirmed", "Confirmadas"),
+      option("completed", "Concluídas"),
+      option("cancelled_by_patient", "Canceladas pelo cliente"),
+      option("cancelled_by_therapist", "Canceladas pelo terapeuta"),
+      option("refunded", "Reembolsadas"),
+    ],
     title: "Sessões",
   },
   support: {
@@ -238,6 +282,13 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
       "Resolver/reabrir usa comando auditado; resposta e escalação seguem fora desta fase.",
     ],
     sourceLabel: "support_tickets",
+    statusOptions: [
+      option("", "Todos os status"),
+      option("open", "Abertos"),
+      option("in_progress", "Em andamento"),
+      option("resolved", "Resolvidos"),
+      option("closed", "Fechados"),
+    ],
     title: "Suporte",
   },
   verifications: {
@@ -266,19 +317,37 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
       "Aprovar, reprovar ou solicitar ajuste usa comando com motivo e auditoria.",
     ],
     sourceLabel: "therapist_verifications",
+    statusOptions: [
+      option("", "Todos os status"),
+      option("submitted", "Enviadas"),
+      option("in_review", "Em análise"),
+      option("changes_requested", "Ajustes solicitados"),
+      option("approved", "Aprovadas"),
+      option("rejected", "Reprovadas"),
+    ],
     title: "Verificações",
   },
 };
 
+const SORT_OPTIONS: AdminListOption[] = [
+  option("recent", "Mais recentes"),
+  option("oldest", "Mais antigos"),
+  option("status", "Status"),
+  option("name", "Nome"),
+];
+
 export const getAdminOperationPage = cache(async function getAdminOperationPage({
   accessToken,
   module,
+  searchParams,
 }: {
   accessToken: string;
   module: AdminOperationModuleKey;
+  searchParams?: Record<string, string | string[] | undefined>;
 }): Promise<AdminOperationPageResult> {
   const config = getSupabasePublicConfig();
   const spec = MODULES[module];
+  const query = parseAdminListQuery(searchParams);
 
   if (!config) {
     return {
@@ -291,6 +360,7 @@ export const getAdminOperationPage = cache(async function getAdminOperationPage(
     accessToken,
     config,
     module,
+    query,
   });
 
   if (readResult.status !== "available") {
@@ -300,15 +370,22 @@ export const getAdminOperationPage = cache(async function getAdminOperationPage(
         : "A leitura administrativa falhou. Isso não é tratado como lista vazia.";
 
     return {
-      data: {
-        description: spec.description,
-        emptyMessage: spec.emptyMessage,
-        generatedAt: new Date().toISOString(),
-        metrics: spec.metrics.map((metricSpec) =>
-          unavailableMetric(metricSpec, readResult.status),
-        ),
-        rows: [],
-        rowsStatus: readResult.status,
+        data: {
+          description: spec.description,
+          emptyMessage: spec.emptyMessage,
+          filterOptions: {
+            sort: SORT_OPTIONS,
+            status: spec.statusOptions,
+          },
+          generatedAt: new Date().toISOString(),
+          listHref: getOperationListHref(module),
+          metrics: spec.metrics.map((metricSpec) =>
+            unavailableMetric(metricSpec, readResult.status),
+          ),
+          page: emptyPage(query),
+          query,
+          rows: [],
+          rowsStatus: readResult.status,
         rowsUnavailableMessage,
         safetyNotes: spec.safetyNotes,
         sourceLabel: spec.sourceLabel,
@@ -331,9 +408,16 @@ export const getAdminOperationPage = cache(async function getAdminOperationPage(
       emptyMessage: spec.emptyMessage,
       generatedAt:
         asString(readResult.model.generatedAt) ?? new Date().toISOString(),
+      listHref: getOperationListHref(module),
       metrics: spec.metrics.map((metricSpec) =>
         availableMetric(metricSpec, metricsPayload),
       ),
+      filterOptions: {
+        sort: SORT_OPTIONS,
+        status: spec.statusOptions,
+      },
+      page: mapPageInfo(readResult.model.page, query),
+      query,
       rows: mapAdminOperationRows({ module, rows: rowsPayload }),
       rowsStatus: "available",
       safetyNotes: spec.safetyNotes,
@@ -407,14 +491,16 @@ async function fetchAdminOperationReadModel({
   accessToken,
   config,
   module,
+  query,
 }: {
   accessToken: string;
   config: { apiKey: string; url: string },
   module: AdminOperationModuleKey;
+  query: AdminListQuery;
 }): Promise<AdminOperationReadResult> {
   try {
     const response = await fetch(
-      `${config.url}/rest/v1/rpc/admin_get_operation_module_v1`,
+      `${config.url}/rest/v1/rpc/admin_get_operation_module_v2`,
       {
         cache: "no-store",
         headers: {
@@ -424,9 +510,8 @@ async function fetchAdminOperationReadModel({
         },
         method: "POST",
         body: JSON.stringify({
-          p_limit: 12,
           p_module: module,
-          p_offset: 0,
+          p_query: toAdminListRpcQuery(query),
         }),
       },
     );
@@ -617,6 +702,52 @@ function metric(
     source,
     tone,
   };
+}
+
+function option(value: string, label: string): AdminListOption {
+  return { label, value };
+}
+
+function getOperationListHref(module: AdminOperationModuleKey) {
+  if (module === "professionals") return routes.admin.professionals;
+  if (module === "verifications") return routes.admin.verifications;
+  if (module === "patients") return routes.admin.patients;
+  if (module === "sessions") return routes.admin.sessions;
+  if (module === "support") return routes.admin.support;
+
+  return routes.admin.reviews;
+}
+
+function emptyPage(query: AdminListQuery): AdminListPageInfo {
+  return {
+    hasNext: false,
+    page: query.page,
+    pageSize: query.pageSize,
+    total: 0,
+  };
+}
+
+function mapPageInfo(value: unknown, query: AdminListQuery): AdminListPageInfo {
+  if (!isRecord(value)) return emptyPage(query);
+
+  return {
+    hasNext: Boolean(value.hasNext),
+    page: asPositiveNumber(value.page, query.page),
+    pageSize: asPositiveNumber(value.pageSize, query.pageSize),
+    total: asNonNegativeNumber(value.total, 0),
+  };
+}
+
+function asPositiveNumber(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : fallback;
+}
+
+function asNonNegativeNumber(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : fallback;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

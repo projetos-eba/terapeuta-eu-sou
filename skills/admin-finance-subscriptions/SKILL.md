@@ -23,8 +23,11 @@ Use this skill when changing `/admin/pagamentos`, `/admin/assinaturas`,
 
 ## Data Contract
 
-These pages are admin read-only in Phase 4. They may read aggregate counts and
-minimal operational rows from:
+These pages are admin read-only in Phase 4. They read aggregate counts and
+minimal operational rows through
+`admin_get_finance_module_v2(p_module, p_query)`, with `search`, `status`,
+`sort`, `page` and `pageSize` in the URL. The implementation must not fall back
+to horizontal REST table reads from the shell.
 
 - `session_payments`
 - `session_payment_attempts`
@@ -66,8 +69,15 @@ Do not send generic `select *` payloads to React.
 
 ## QA
 
-- Unit: `npm run test -- admin-finance.mappers admin-shell-config`
+- Unit: `npm run test -- admin-finance.mappers admin-finance.queries admin-list-query admin-shell-config`
 - App checks: `npm run typecheck`, `npm run lint`, `npm run build`
 - Browser: navigate `/admin/pagamentos`, `/admin/assinaturas`,
-  `/admin/relatorios`, `/admin/integracoes` as an admin user and confirm no
-  forbidden fields appear in page HTML.
+  `/admin/relatorios`, `/admin/integracoes` as an admin user, use filters and
+  pagination, and confirm no forbidden fields appear in page HTML.
+
+## Known Limits
+
+- The v2 read model keeps the public contract stable and filters sanitized DTOs
+  server-side. If production volume requires full-dataset search beyond the
+  current bounded window, replace the internal SQL with module-specific indexed
+  queries without changing the React/BFF contract.

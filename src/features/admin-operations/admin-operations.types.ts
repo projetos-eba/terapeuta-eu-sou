@@ -1,4 +1,9 @@
 import type { AdminOperationalTone } from "@/features/admin-platform/admin-platform.types";
+import type {
+  AdminListOption,
+  AdminListPageInfo,
+  AdminListQuery,
+} from "@/features/admin-shared/admin-list-query";
 
 export type AdminOperationMetric = {
   description: string;
@@ -27,8 +32,15 @@ export type AdminOperationRow = {
 export type AdminOperationPageData = {
   description: string;
   emptyMessage: string;
+  filterOptions: {
+    sort: AdminListOption[];
+    status: AdminListOption[];
+  };
   generatedAt: string;
   metrics: AdminOperationMetric[];
+  listHref: string;
+  page: AdminListPageInfo;
+  query: AdminListQuery;
   rows: AdminOperationRow[];
   rowsStatus: "available" | "forbidden" | "unavailable";
   rowsUnavailableMessage?: string;
