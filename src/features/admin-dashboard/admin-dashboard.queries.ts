@@ -74,12 +74,12 @@ export const getAdminDashboardPage = cache(
     const operationModule = buildOperationModule(countResults);
     const financeModule = buildFinanceModule(countResults);
     const integrationModule = buildIntegrationModule(countResults);
-    const pendingModules = buildPendingModules();
     const alerts = buildAlerts({
       catalogModule,
       countResults,
       integrationModule,
     });
+    const settingsModule = buildSettingsModule();
 
     return {
       dashboard: {
@@ -91,7 +91,7 @@ export const getAdminDashboardPage = cache(
           operationModule,
           financeModule,
           integrationModule,
-          ...pendingModules,
+          settingsModule,
         ],
         summary: [
           ...catalogModule.metrics,
@@ -339,17 +339,33 @@ function buildIntegrationModule(
   });
 }
 
-function buildPendingModules(): AdminDashboardModule[] {
-  return [
-    {
-      description:
-        "Configurações da plataforma permanecem ocultas até existir contrato de governança.",
-      key: "settings",
-      label: "Configurações",
-      metrics: [],
-      status: "pending",
-    },
-  ];
+function buildSettingsModule(): AdminDashboardModule {
+  return {
+    description:
+      "Governança de produto, operação, flags e integrações sem expor secrets.",
+    href: routes.admin.settings,
+    key: "settings",
+    label: "Configurações",
+    metrics: [
+      metric(
+        "admin-settings-governance",
+        "Governança",
+        1,
+        "Página admin de configurações habilitada.",
+        "adminModuleRegistry",
+        "success",
+      ),
+      metric(
+        "admin-secrets-readonly",
+        "Secrets protegidos",
+        1,
+        "Sem editor de secrets no navegador.",
+        "AGENTS.md",
+        "success",
+      ),
+    ],
+    status: "ready",
+  };
 }
 
 function moduleFromCounts({

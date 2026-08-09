@@ -57,13 +57,14 @@ select ok(
   'authenticated therapists can invoke the F3 retention RPC'
 );
 
-select ok(
+select is(
   has_function_privilege(
     'authenticated',
     'public.get_private_therapist_financial_benchmark_v1(date,date,text)',
     'EXECUTE'
   ),
-  'authenticated therapists can invoke the F3 benchmark RPC'
+  false,
+  'authenticated therapists cannot invoke the legacy standalone benchmark RPC'
 );
 
 create temporary table finance_f3_ledger_count as
@@ -319,14 +320,17 @@ select is(
   'segmented forecast RPC delegates to the F3 forecast contract'
 );
 
-select is(
-  public.get_private_therapist_financial_benchmark_v1(
-    current_date - 29,
-    current_date,
-    'America/Sao_Paulo'
-  ) #>> '{benchmark,minimumTherapists}',
-  '20',
-  'benchmark RPC declares the minimum therapist privacy threshold'
+select throws_ok(
+  $$
+    select public.get_private_therapist_financial_benchmark_v1(
+      current_date - 29,
+      current_date,
+      'America/Sao_Paulo'
+    )
+  $$,
+  '42501',
+  null,
+  'legacy standalone benchmark RPC is not available through authenticated Data API'
 );
 
 select ok(

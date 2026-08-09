@@ -24,7 +24,7 @@ test.describe("admin dashboard", () => {
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Operação" })).toBeVisible();
     await expect(
-      page.getByText("Configurações da plataforma permanecem ocultas").first(),
+      page.getByText("Governança de produto, operação, flags").first(),
     ).toBeVisible();
     await expect(
       page.getByRole("link", { exact: true, name: "Profissionais" }),
@@ -46,6 +46,9 @@ test.describe("admin dashboard", () => {
     ).toBeVisible();
     await expect(
       page.getByRole("link", { exact: true, name: "Relatórios" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { exact: true, name: "Configurações" }),
     ).toBeVisible();
 
     await page

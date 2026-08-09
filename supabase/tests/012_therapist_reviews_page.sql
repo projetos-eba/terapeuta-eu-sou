@@ -17,16 +17,22 @@ select ok(
   'authenticated therapists can invoke the private reviews read model'
 );
 
-select ok(
+select is(
   has_function_privilege(
     'authenticated',
     'public.upsert_therapist_review_reply_v1(uuid,text,uuid)',
     'EXECUTE'
   ),
-  'authenticated therapists can invoke the reply authority'
+  false,
+  'authenticated therapists cannot invoke the legacy reply authority directly'
 );
 
 set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  'aaaaaaaa-0000-4000-8000-000000000001',
+  true
+);
 select set_config(
   'request.jwt.claims',
   '{"sub":"aaaaaaaa-0000-4000-8000-000000000001","role":"authenticated"}',
@@ -38,8 +44,12 @@ select ok(
   'Ana reads her own paid completed published reviews'
 );
 
+reset role;
+set local role service_role;
+
 select is(
-  public.upsert_therapist_review_reply_v1(
+  public.upsert_therapist_review_reply_for_actor_v1(
+    'aaaaaaaa-0000-4000-8000-000000000001',
     'e8000000-0000-4000-8000-000000000001',
     'Obrigada por compartilhar sua experiência com a plataforma.',
     'a8120000-0000-4000-8000-000000000001'
@@ -49,7 +59,8 @@ select is(
 );
 
 select is(
-  public.upsert_therapist_review_reply_v1(
+  public.upsert_therapist_review_reply_for_actor_v1(
+    'aaaaaaaa-0000-4000-8000-000000000001',
     'e8000000-0000-4000-8000-000000000001',
     'Obrigada por compartilhar sua experiência com a plataforma.',
     'a8120000-0000-4000-8000-000000000001'
@@ -60,7 +71,8 @@ select is(
 
 select throws_ok(
   $$
-    select public.upsert_therapist_review_reply_v1(
+    select public.upsert_therapist_review_reply_for_actor_v1(
+      'aaaaaaaa-0000-4000-8000-000000000001',
       'e8000000-0000-4000-8000-000000000001',
       'Resposta diferente usando a mesma chave.',
       'a8120000-0000-4000-8000-000000000001'
@@ -69,6 +81,19 @@ select throws_ok(
   'P0001',
   'REQUEST_CONFLICT',
   'same request id with a different payload conflicts'
+);
+
+reset role;
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  'aaaaaaaa-0000-4000-8000-000000000001',
+  true
+);
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"aaaaaaaa-0000-4000-8000-000000000001","role":"authenticated"}',
+  true
 );
 
 select throws_ok(
@@ -93,15 +118,13 @@ select throws_ok(
   'authenticated clients cannot insert review replies directly'
 );
 
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"aaaaaaaa-0000-4000-8000-000000000002","role":"authenticated"}',
-  true
-);
+reset role;
+set local role service_role;
 
 select throws_ok(
   $$
-    select public.upsert_therapist_review_reply_v1(
+    select public.upsert_therapist_review_reply_for_actor_v1(
+      'aaaaaaaa-0000-4000-8000-000000000002',
       'e8000000-0000-4000-8000-000000000001',
       'Tentativa de responder avaliação de outro terapeuta.',
       'a8120000-0000-4000-8000-000000000002'
@@ -112,6 +135,13 @@ select throws_ok(
   'therapist cannot reply to another therapist review'
 );
 
+reset role;
+set local role authenticated;
+select set_config(
+  'request.jwt.claim.sub',
+  'aaaaaaaa-0000-4000-8000-000000000004',
+  true
+);
 select set_config(
   'request.jwt.claims',
   '{"sub":"aaaaaaaa-0000-4000-8000-000000000004","role":"authenticated"}',
@@ -123,6 +153,12 @@ select throws_ok(
   'P0001',
   'CAPABILITY_NOT_ALLOWED',
   'free therapist cannot invoke the Premium reviews read model directly'
+);
+
+select set_config(
+  'request.jwt.claim.sub',
+  'bbbbbbbb-0000-4000-8000-000000000001',
+  true
 );
 
 select set_config(

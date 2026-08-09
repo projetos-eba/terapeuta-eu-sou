@@ -3,7 +3,9 @@ import { getAdminMatchingPage } from "@/features/admin-matching/admin-matching.q
 import { requireAdminSession } from "@/lib/auth/admin-session";
 
 export default async function AdminMatchingRoute() {
-  const session = await requireAdminSession();
+  const session = await requireAdminSession({
+    permission: "admin.matching.read",
+  });
   const result = await getAdminMatchingPage({
     accessToken: session.accessToken,
   });

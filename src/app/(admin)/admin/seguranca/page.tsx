@@ -5,7 +5,9 @@ import {
 import { requireAdminSession } from "@/lib/auth/admin-session";
 
 export default async function AdminSecurityRoute() {
-  const session = await requireAdminSession();
+  const session = await requireAdminSession({
+    permissions: ["admin.security.read", "admin.audit.read"],
+  });
   const result = await getAdminSecurityPage({
     accessToken: session.accessToken,
   });

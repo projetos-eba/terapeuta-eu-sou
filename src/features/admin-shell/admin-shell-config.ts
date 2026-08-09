@@ -1,4 +1,5 @@
 import type { ShellNavigationItem } from "@/components/authenticated-shell";
+import type { AdminPermission } from "@/lib/auth/admin-permissions";
 import { routes } from "@/lib/routes";
 
 type AdminModuleStatus = "enabled" | "hidden";
@@ -27,7 +28,7 @@ type AdminModule = ShellNavigationItem & {
     | "support"
     | "therapies"
     | "verifications";
-  permission: string;
+  permission: AdminPermission;
   status: AdminModuleStatus;
 };
 
@@ -164,8 +165,8 @@ export const adminModuleRegistry: AdminModule[] = [
     icon: "settings",
     key: "settings",
     label: "Configurações",
-    permission: "admin.settings.manage",
-    status: "hidden",
+    permission: "admin.settings.read",
+    status: "enabled",
   },
 ];
 

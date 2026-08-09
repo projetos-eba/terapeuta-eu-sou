@@ -76,10 +76,15 @@ export function AdminSecurityPage({ data }: { data: AdminSecurityPageData }) {
               Auditoria recente
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Eventos administrativos acessíveis pelo contrato atual.
+              Eventos administrativos da trilha central append-only.
             </p>
             <div className="mt-4 space-y-3">
-              {data.auditEvents.length === 0 ? (
+              {data.auditEventsStatus === "unavailable" ? (
+                <p className="rounded-md border border-status-warning bg-status-warningBg p-3 text-sm font-bold text-status-warning">
+                  Auditoria central indisponível. Verifique grants, migration
+                  aplicada e sessão admin antes de considerar a trilha vazia.
+                </p>
+              ) : data.auditEvents.length === 0 ? (
                 <p className="rounded-md bg-surface-muted p-3 text-sm font-bold text-tesText-secondary">
                   Sem eventos administrativos recentes acessíveis.
                 </p>
@@ -95,6 +100,10 @@ export function AdminSecurityPage({ data }: { data: AdminSecurityPageData }) {
                     <p className="mt-1 text-xs font-bold text-tesText-secondary">
                       {event.entityType} · {event.actorRole} ·{" "}
                       {formatDateTime(event.createdAt)}
+                    </p>
+                    <p className="mt-1 text-xs font-bold text-tesText-muted">
+                      {event.permission ?? "permissão não informada"} ·{" "}
+                      {event.source}
                     </p>
                     {event.reason ? (
                       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">

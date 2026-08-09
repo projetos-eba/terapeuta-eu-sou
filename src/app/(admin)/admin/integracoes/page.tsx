@@ -5,7 +5,9 @@ import {
 import { requireAdminSession } from "@/lib/auth/admin-session";
 
 export default async function AdminIntegrationsRoute() {
-  const session = await requireAdminSession();
+  const session = await requireAdminSession({
+    permission: "admin.integrations.read",
+  });
   const result = await getAdminIntegrationsPage({
     accessToken: session.accessToken,
   });

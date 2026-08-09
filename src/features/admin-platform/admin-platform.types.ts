@@ -52,8 +52,11 @@ export type AdminSecurityPageData = {
     entityType: string;
     eventType: string;
     id: string;
+    permission: string | null;
     reason: string | null;
+    source: string;
   }>;
+  auditEventsStatus: "available" | "unavailable";
   generatedAt: string;
   moduleSignals: AdminOperationalSignal[];
   reviewItems: AdminSecurityReviewItem[];

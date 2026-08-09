@@ -3,14 +3,23 @@ import {
   getAdminFinancePage,
   type AdminFinanceModuleKey,
 } from "@/features/admin-finance";
+import type { AdminPermission } from "@/lib/auth/admin-permissions";
 import { requireAdminSession } from "@/lib/auth/admin-session";
+
+const financeModulePermissions = {
+  payments: "admin.payments.read",
+  reports: "admin.reports.read",
+  subscriptions: "admin.subscriptions.read",
+} satisfies Record<AdminFinanceModuleKey, AdminPermission>;
 
 export async function AdminFinanceRoute({
   module,
 }: {
   module: AdminFinanceModuleKey;
 }) {
-  const session = await requireAdminSession();
+  const session = await requireAdminSession({
+    permission: financeModulePermissions[module],
+  });
   const result = await getAdminFinancePage({
     accessToken: session.accessToken,
     module,

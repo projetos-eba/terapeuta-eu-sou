@@ -90,6 +90,10 @@ test.describe("auth real click regression", () => {
         body: JSON.stringify(result.hitTest, null, 2),
         contentType: "application/json",
       });
+      await testInfo.attach("field-hit-tests-before-fill.json", {
+        body: JSON.stringify(result.fieldHitTests, null, 2),
+        contentType: "application/json",
+      });
       await testInfo.attach("screenshot-before-click", {
         path: result.beforeScreenshotPath,
         contentType: "image/png",
@@ -233,12 +237,25 @@ async function runAdminLoginClickScenario(
   const beforeScreenshotPath = `${screenshotDir}/${artifactPrefix}-before.png`;
   const afterScreenshotPath = `${screenshotDir}/${artifactPrefix}-after.png`;
   const hitTestPath = `${hitTestDir}/${artifactPrefix}.json`;
+  const fieldHitTestPath = `${hitTestDir}/${artifactPrefix}-fields.json`;
   let videoPath: string | null = null;
 
   try {
     await page.goto("/admin-login");
-    await page.getByLabel("E-mail").fill(adminEmail);
-    await page.getByLabel("Senha").fill(adminPassword);
+    const emailField = page.getByLabel("E-mail");
+    const passwordField = page.getByLabel("Senha");
+    const fieldHitTests = {
+      email: await getInputHitTest(page, "#email"),
+      password: await getInputHitTest(page, "#password"),
+    };
+    await writeFile(fieldHitTestPath, JSON.stringify(fieldHitTests, null, 2));
+
+    await emailField.click();
+    await expect(emailField).toBeFocused();
+    await emailField.fill(adminEmail);
+    await passwordField.click();
+    await expect(passwordField).toBeFocused();
+    await passwordField.fill(adminPassword);
 
     const button = page.getByRole("button", { name: "Entrar no Admin" });
     await expect(button).toBeVisible();
@@ -271,6 +288,7 @@ async function runAdminLoginClickScenario(
     return {
       afterScreenshotPath,
       beforeScreenshotPath,
+      fieldHitTests,
       hitTest,
       outcome,
       videoPath,
@@ -347,6 +365,40 @@ async function getClickHitTest(page: Page, buttonName: string) {
           }
         : null,
       fixedOrAbsoluteAncestors,
+    };
+  });
+}
+
+async function getInputHitTest(page: Page, selector: string) {
+  return page.locator(selector).evaluate((input) => {
+    const rect = input.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const elementFromPoint = document.elementFromPoint(x, y);
+
+    return {
+      boundingBox: {
+        bottom: rect.bottom,
+        height: rect.height,
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        width: rect.width,
+      },
+      clickPoint: { x, y },
+      elementFromPoint: elementFromPoint
+        ? {
+            className:
+              elementFromPoint instanceof HTMLElement
+                ? elementFromPoint.className
+                : "",
+            id: elementFromPoint.id,
+            isTargetOrInside:
+              elementFromPoint === input || input.contains(elementFromPoint),
+            tagName: elementFromPoint.tagName,
+            text: elementFromPoint.textContent?.trim().slice(0, 120) ?? "",
+          }
+        : null,
     };
   });
 }

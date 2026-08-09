@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { isAdminPermission } from "@/lib/auth/admin-permissions";
+
 import { adminModuleRegistry, getAdminShellConfig } from "./admin-shell-config";
 
 describe("admin shell config", () => {
@@ -21,6 +23,7 @@ describe("admin shell config", () => {
       "/admin/integracoes",
       "/admin/seguranca",
       "/admin/relatorios",
+      "/admin/configuracoes",
     ]);
     expect(navigation.map((item) => item.label)).toEqual([
       "Visão geral",
@@ -37,6 +40,7 @@ describe("admin shell config", () => {
       "Integrações",
       "Segurança",
       "Relatórios",
+      "Configurações",
     ]);
   });
 
@@ -47,18 +51,29 @@ describe("admin shell config", () => {
       .map((module) => module.href);
 
     expect(config.helpHref).toBe("/admin/suporte");
-    expect(config.navigation.map((item) => item.href)).not.toEqual(
-      expect.arrayContaining(hiddenHrefs),
-    );
+    if (hiddenHrefs.length > 0) {
+      expect(config.navigation.map((item) => item.href)).not.toEqual(
+        expect.arrayContaining(hiddenHrefs),
+      );
+    } else {
+      expect(hiddenHrefs).toEqual([]);
+    }
   });
 
   it("keeps a permission contract for every admin module", () => {
     expect(
       adminModuleRegistry.every(
         (module) =>
-          module.permission.startsWith("admin.") &&
+          isAdminPermission(module.permission) &&
           ["enabled", "hidden"].includes(module.status),
       ),
     ).toBe(true);
+  });
+
+  it("keeps read-only settings out of manage capability until mutations exist", () => {
+    expect(
+      adminModuleRegistry.find((module) => module.key === "settings")
+        ?.permission,
+    ).toBe("admin.settings.read");
   });
 });

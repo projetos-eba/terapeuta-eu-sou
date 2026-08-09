@@ -33,13 +33,15 @@ type CountResult = CountSpec & {
   value: number | null;
 };
 
-type TherapyCatalogEventRow = {
+type AdminAuditEventRow = {
+  action?: string | null;
   actor_role?: string | null;
   created_at?: string | null;
   entity_type?: string | null;
-  event_type?: string | null;
   id?: string | null;
+  permission?: string | null;
   reason?: string | null;
+  source?: string | null;
 };
 
 export const getAdminIntegrationsPage = cache(
@@ -124,7 +126,7 @@ export const getAdminSecurityPage = cache(async function getAdminSecurityPage({
     };
   }
 
-  const [auditEvents] = await Promise.all([
+  const [auditEventsResult] = await Promise.all([
     fetchRecentAuditEvents(config, accessToken),
   ]);
   const enabledCount = adminModuleRegistry.filter(
@@ -136,7 +138,8 @@ export const getAdminSecurityPage = cache(async function getAdminSecurityPage({
 
   return {
     data: {
-      auditEvents,
+      auditEvents: auditEventsResult.events,
+      auditEventsStatus: auditEventsResult.status,
       generatedAt: new Date().toISOString(),
       moduleSignals: buildModuleSignals({ enabledCount, hiddenCount }),
       reviewItems: buildSecurityReviewItems(),
@@ -196,7 +199,7 @@ async function fetchRecentAuditEvents(
 ) {
   try {
     const response = await fetch(
-      `${config.url}/rest/v1/therapy_catalog_events?select=id,actor_role,entity_type,event_type,reason,created_at&order=created_at.desc&limit=8`,
+      `${config.url}/rest/v1/admin_audit_events?select=id,actor_role,permission,action,entity_type,reason,source,created_at&order=created_at.desc&limit=8`,
       {
         cache: "no-store",
         headers: {
@@ -206,24 +209,37 @@ async function fetchRecentAuditEvents(
       },
     );
 
-    if (!response.ok) return [];
+    if (!response.ok) {
+      return {
+        events: [],
+        status: "unavailable" as const,
+      };
+    }
 
     const rows = (await response
       .json()
-      .catch(() => [])) as TherapyCatalogEventRow[];
+      .catch(() => [])) as AdminAuditEventRow[];
 
-    return rows
-      .map((row) => ({
-        actorRole: row.actor_role ?? "admin",
-        createdAt: row.created_at ?? "",
-        entityType: row.entity_type ?? "therapy",
-        eventType: row.event_type ?? "evento",
-        id: row.id ?? crypto.randomUUID(),
-        reason: row.reason ?? null,
-      }))
-      .filter((event) => event.createdAt);
+    return {
+      events: rows
+        .map((row) => ({
+          actorRole: row.actor_role ?? "admin",
+          createdAt: row.created_at ?? "",
+          entityType: row.entity_type ?? "therapy",
+          eventType: row.action ?? "evento",
+          id: row.id ?? crypto.randomUUID(),
+          permission: row.permission ?? null,
+          reason: row.reason ?? null,
+          source: row.source ?? "admin",
+        }))
+        .filter((event) => event.createdAt),
+      status: "available" as const,
+    };
   } catch {
-    return [];
+    return {
+      events: [],
+      status: "unavailable" as const,
+    };
   }
 }
 

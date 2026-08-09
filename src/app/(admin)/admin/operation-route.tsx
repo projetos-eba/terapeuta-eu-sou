@@ -3,14 +3,26 @@ import {
   getAdminOperationPage,
   type AdminOperationModuleKey,
 } from "@/features/admin-operations";
+import type { AdminPermission } from "@/lib/auth/admin-permissions";
 import { requireAdminSession } from "@/lib/auth/admin-session";
+
+const operationModulePermissions = {
+  patients: "admin.patients.read",
+  professionals: "admin.professionals.read",
+  reviews: "admin.reviews.read",
+  sessions: "admin.sessions.read",
+  support: "admin.support.read",
+  verifications: "admin.professionals.verify",
+} satisfies Record<AdminOperationModuleKey, AdminPermission>;
 
 export async function AdminOperationRoute({
   module,
 }: {
   module: AdminOperationModuleKey;
 }) {
-  const session = await requireAdminSession();
+  const session = await requireAdminSession({
+    permission: operationModulePermissions[module],
+  });
   const result = await getAdminOperationPage({
     accessToken: session.accessToken,
     module,

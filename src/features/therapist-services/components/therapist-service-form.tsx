@@ -125,7 +125,11 @@ export function TherapistServiceForm({
 
       if ("service" in result.data) {
         onSaved(result.data.service, "Serviço atualizado.");
+        onClose();
+        return;
       }
+
+      setSubmitError("Resposta inesperada ao atualizar serviço.");
       return;
     }
 
@@ -164,6 +168,7 @@ export function TherapistServiceForm({
     if (nextStatus === "draft") {
       setSubmitting(null);
       onSaved(createResult.data.service, "Serviço salvo como rascunho.");
+      onClose();
       return;
     }
 
@@ -186,7 +191,11 @@ export function TherapistServiceForm({
 
     if ("service" in activateResult.data) {
       onSaved(activateResult.data.service, "Serviço criado e ativado.");
+      onClose();
+      return;
     }
+
+    setSubmitError("Resposta inesperada ao ativar serviço.");
   }
 
   const title = mode === "edit" ? "Editar serviço" : "Novo serviço";

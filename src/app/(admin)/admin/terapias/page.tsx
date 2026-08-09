@@ -3,7 +3,9 @@ import { getAdminTherapyCatalogPage } from "@/features/admin-therapy-catalog/adm
 import { requireAdminSession } from "@/lib/auth/admin-session";
 
 export default async function AdminTherapiesPage() {
-  const session = await requireAdminSession();
+  const session = await requireAdminSession({
+    permission: "admin.therapies.read",
+  });
   const result = await getAdminTherapyCatalogPage({
     accessToken: session.accessToken,
   });
