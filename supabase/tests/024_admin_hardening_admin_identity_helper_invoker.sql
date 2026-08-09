@@ -65,13 +65,14 @@ select is(
   'therapist caller does not resolve as admin'
 );
 
-select is_empty(
+select isnt_empty(
   $$
     select 1
     from public.matching_therapy_settings
+    where is_visible_in_matching = true
     limit 1
   $$,
-  'non-admin caller remains blocked from admin-only catalog settings'
+  'non-admin caller can read public visible matching settings'
 );
 
 select * from finish();

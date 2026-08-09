@@ -46,9 +46,11 @@ const icons = {
 };
 
 export function ShellNavItem({
+  depth = 0,
   item,
   onNavigate,
 }: {
+  depth?: number;
   item: ShellNavigationItem;
   onNavigate?: () => void;
 }) {
@@ -68,6 +70,7 @@ export function ShellNavItem({
       aria-current={isActive ? "page" : undefined}
       className={cn(
         "group flex h-12 w-full shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium outline-none transition focus-visible:ring-4 focus-visible:ring-ring/20",
+        depth > 0 && "h-10 pl-10 text-[13px]",
         isActive
           ? "bg-brand-lavenderSoft text-brand-primary"
           : isLocked
@@ -77,16 +80,22 @@ export function ShellNavItem({
       href={destination as Route<string>}
       onClick={onNavigate}
     >
-      <Icon aria-hidden="true" className="size-5 shrink-0" strokeWidth={1.8} />
-      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+      <Icon
+        aria-hidden="true"
+        className="pointer-events-none size-5 shrink-0"
+        strokeWidth={1.8}
+      />
+      <span className="pointer-events-none min-w-0 flex-1 truncate">
+        {item.label}
+      </span>
       {item.planLabel ? (
-        <span className="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-full bg-status-warningBg px-2 text-xs font-semibold text-brand-deep">
+        <span className="pointer-events-none inline-flex min-h-6 shrink-0 items-center gap-1 rounded-full bg-status-warningBg px-2 text-xs font-semibold text-brand-deep">
           <Star aria-hidden="true" className="size-3" />
           <span className="sr-only">{item.planLabel}</span>
         </span>
       ) : null}
       {item.badge && item.badge > 0 ? (
-        <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-lavenderSoft text-xs font-semibold text-brand-primary">
+        <span className="pointer-events-none inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-lavenderSoft text-xs font-semibold text-brand-primary">
           {item.badge > 99 ? "99+" : item.badge}
         </span>
       ) : null}

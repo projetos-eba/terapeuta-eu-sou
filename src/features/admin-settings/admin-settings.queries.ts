@@ -160,7 +160,7 @@ function buildOperationalGroup({
       signal(
         "critical-actions",
         "Ações críticas",
-        "Suspensão, financeiro e exports seguem bloqueados sem comando dedicado.",
+        "Suspensão, verificações, suporte e moderação usam comando auditado. Financeiro, sessões e exports seguem bloqueados sem boundary próprio.",
         "docs/architecture/admin-plan.md",
         "manual_review",
         "warning",

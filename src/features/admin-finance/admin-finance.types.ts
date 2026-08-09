@@ -7,7 +7,7 @@ export type AdminFinanceMetric = {
   key: string;
   label: string;
   source: string;
-  status: "available" | "unavailable";
+  status: "available" | "forbidden" | "unavailable";
   tone: AdminOperationalTone;
   value: number | null;
 };
@@ -18,6 +18,7 @@ export type AdminFinanceField = {
 };
 
 export type AdminFinanceRow = {
+  detailHref?: string;
   fields: AdminFinanceField[];
   id: string;
   statusLabel?: string;
@@ -31,7 +32,7 @@ export type AdminFinancePageData = {
   generatedAt: string;
   metrics: AdminFinanceMetric[];
   rows: AdminFinanceRow[];
-  rowsStatus: "available" | "unavailable";
+  rowsStatus: "available" | "forbidden" | "unavailable";
   rowsTitle: string;
   rowsUnavailableMessage?: string;
   safetyNotes: string[];
@@ -47,4 +48,45 @@ export type AdminFinancePageResult =
   | {
       message: string;
       status: "error";
+    };
+
+export type AdminFinanceEvent = {
+  amountLabel?: string;
+  createdAt: string;
+  id: string;
+  kind: string;
+  subtitle?: string;
+  title: string;
+};
+
+export type AdminFinanceDetailSection = {
+  description?: string;
+  fields: AdminFinanceField[];
+  title: string;
+};
+
+export type AdminFinanceDetailPageData = {
+  backHref: string;
+  events: AdminFinanceEvent[];
+  generatedAt: string;
+  id: string;
+  module: Extract<AdminFinanceModuleKey, "payments" | "subscriptions">;
+  safetyNotes: string[];
+  sections: AdminFinanceDetailSection[];
+  statusLabel?: string;
+  subtitle?: string;
+  title: string;
+};
+
+export type AdminFinanceDetailPageResult =
+  | {
+      data: AdminFinanceDetailPageData;
+      status: "success";
+    }
+  | {
+      message: string;
+      status: "error";
+    }
+  | {
+      status: "not_found";
     };
