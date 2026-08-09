@@ -12,6 +12,7 @@ import { ShellTopbar } from "./shell-topbar";
 export type ShellNavigationItem = {
   accessState?: "enabled" | "hidden" | "locked";
   badge?: number;
+  children?: ShellNavigationItem[];
   href: string;
   icon:
     | "brain"
@@ -45,7 +46,7 @@ export type ShellUser = {
 type AuthenticatedShellProps = {
   children: ReactNode;
   helpCardVariant?: "default" | "priority" | "therapist";
-  helpHref: string;
+  helpHref?: string;
   helpLabel?: string;
   logoutAction?: () => void | Promise<void>;
   logoutHref?: string;

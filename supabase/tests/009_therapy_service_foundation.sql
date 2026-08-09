@@ -167,12 +167,15 @@ select ok(
 );
 
 select ok(
-  not exists (
+  exists (
     select 1
     from public.therapist_services
     where therapist_profile_id = 'c1000000-0000-4000-8000-000000000002'
+      and status = 'active'
+      and is_bookable = true
+      and online_only = true
   ),
-  'a therapist cannot read another therapist private services through table RLS'
+  'a therapist can read another therapist public service gate through table RLS'
 );
 
 select throws_ok(

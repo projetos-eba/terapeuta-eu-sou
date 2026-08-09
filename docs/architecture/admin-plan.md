@@ -28,21 +28,21 @@ O plano abaixo consolida o inventario do arquivo original `admin-plan.md`, as ro
 
 | Rota | Modulo | Status atual esperado |
 | --- | --- | --- |
-| `/admin` | Visao geral | Evoluir para dashboard operacional real |
-| `/admin/profissionais` | Profissionais | Implementar |
-| `/admin/profissionais/verificacoes` | Verificacoes | Implementar |
-| `/admin/pacientes` | Clientes | Implementar |
-| `/admin/sessoes` | Sessoes | Implementar |
-| `/admin/pagamentos` | Pagamentos | Implementar |
-| `/admin/avaliacoes` | Avaliacoes | Implementar |
-| `/admin/assinaturas` | Assinaturas | Implementar |
+| `/admin` | Visao geral | Implementado como dashboard operacional inicial |
+| `/admin/profissionais` | Profissionais | Implementado como listagem operacional read-only |
+| `/admin/profissionais/verificacoes` | Verificacoes | Implementado como subitem de Profissionais, read-only |
+| `/admin/pacientes` | Clientes | Implementado como listagem operacional read-only |
+| `/admin/sessoes` | Sessoes | Implementado como listagem operacional read-only |
+| `/admin/pagamentos` | Pagamentos | Implementado como leitura financeira read-only |
+| `/admin/avaliacoes` | Avaliacoes | Implementado como listagem operacional read-only |
+| `/admin/assinaturas` | Assinaturas | Implementado como leitura de Billing read-only |
 | `/admin/terapias` | Terapias | Revisar, endurecer e homologar |
 | `/admin/matching` | Match | Revisar, endurecer e homologar |
-| `/admin/integracoes` | Integracoes | Implementar |
-| `/admin/seguranca` | Seguranca | Implementar |
-| `/admin/relatorios` | Relatorios | Implementar |
-| `/admin/configuracoes` | Configuracoes | Implementar |
-| `/admin/suporte` | Suporte | Implementar |
+| `/admin/integracoes` | Integracoes | Rota protegida e oculta no menu |
+| `/admin/seguranca` | Seguranca | Implementado como diagnostico e auditoria read-only |
+| `/admin/relatorios` | Relatorios | Rota protegida e oculta no menu; exports pendentes |
+| `/admin/configuracoes` | Configuracoes | Implementado como diagnostico read-only |
+| `/admin/suporte` | Suporte | Implementado como listagem operacional read-only |
 
 Regra de navegacao: o menu admin deve expor apenas modulos funcionais. Rotas em construcao podem existir internamente, mas nao devem ser anunciadas como prontas nem virar links mortos.
 
@@ -710,8 +710,9 @@ Ambiente Supabase consultado via MCP: `http://127.0.0.1:54321`.
   - `/admin/terapias`;
   - `/admin/matching`.
 - O shell admin expunha no menu somente as tres paginas implementadas, mas o `helpHref` apontava para `/admin/suporte`, rota ainda inexistente.
-- Correcao aplicada: `src/features/admin-shell/admin-shell-config.ts` agora possui `adminModuleRegistry` com `status`, `permission`, `group` e `key`; somente modulos `enabled` entram na navegacao.
-- Correcao aplicada: `helpHref` do shell admin foi movido para `/admin` enquanto `/admin/suporte` estiver `hidden`.
+- Correcao aplicada: `src/features/admin-shell/admin-shell-config.ts` agora possui `adminModuleRegistry` com `status`, `permission`, `group`, `key` e `parentKey`; somente modulos `enabled` entram na navegacao.
+- Correcao aplicada: `helpHref` do shell admin foi removido enquanto nao houver card de ajuda administrativo dedicado.
+- Correcao aplicada na retomada final: `/admin/profissionais/verificacoes` passou a ser subitem de `Profissionais`; `/admin/integracoes` e `/admin/relatorios` seguem protegidas e ocultas no menu.
 - Teste atualizado: `src/features/admin-shell/admin-shell-config.test.ts` valida que modulos ocultos nao aparecem no menu nem no help link e que todo modulo possui contrato de permissao.
 
 ### Matriz Inicial de Modulos
@@ -719,20 +720,20 @@ Ambiente Supabase consultado via MCP: `http://127.0.0.1:54321`.
 | Modulo | Rota | Status Fase 1 | Permissao inicial |
 | --- | --- | --- | --- |
 | Visao geral | `/admin` | enabled | `admin.dashboard.read` |
+| Profissionais | `/admin/profissionais` | enabled | `admin.professionals.read` |
+| Verificacoes | `/admin/profissionais/verificacoes` | enabled como subitem de Profissionais | `admin.professionals.verify` |
+| Pacientes | `/admin/pacientes` | enabled | `admin.patients.read` |
+| Sessoes | `/admin/sessoes` | enabled | `admin.sessions.read` |
+| Suporte | `/admin/suporte` | enabled | `admin.support.read` |
+| Avaliacoes | `/admin/avaliacoes` | enabled | `admin.reviews.read` |
+| Pagamentos | `/admin/pagamentos` | enabled | `admin.payments.read` |
+| Assinaturas | `/admin/assinaturas` | enabled | `admin.subscriptions.read` |
 | Terapias | `/admin/terapias` | enabled | `admin.therapies.read` |
 | Match | `/admin/matching` | enabled | `admin.matching.read` |
-| Profissionais | `/admin/profissionais` | hidden | `admin.professionals.read` |
-| Verificacoes | `/admin/profissionais/verificacoes` | hidden | `admin.professionals.verify` |
-| Pacientes | `/admin/pacientes` | hidden | `admin.patients.read` |
-| Sessoes | `/admin/sessoes` | hidden | `admin.sessions.read` |
-| Suporte | `/admin/suporte` | hidden | `admin.support.read` |
-| Avaliacoes | `/admin/avaliacoes` | hidden | `admin.reviews.read` |
-| Pagamentos | `/admin/pagamentos` | hidden | `admin.payments.read` |
-| Assinaturas | `/admin/assinaturas` | hidden | `admin.subscriptions.read` |
 | Integracoes | `/admin/integracoes` | hidden | `admin.integrations.read` |
-| Seguranca | `/admin/seguranca` | hidden | `admin.security.read` |
+| Seguranca | `/admin/seguranca` | enabled | `admin.security.read` |
 | Relatorios | `/admin/relatorios` | hidden | `admin.reports.read` |
-| Configuracoes | `/admin/configuracoes` | hidden | `admin.settings.manage` |
+| Configuracoes | `/admin/configuracoes` | enabled | `admin.settings.read` |
 
 ### Supabase - Admin RPCs
 
@@ -846,6 +847,232 @@ Breaking changes revisados no changelog Supabase:
 - Inspecionar Figma admin node `13425:778` via MCP/plugin quando disponivel.
 - Definir contrato persistente de auditoria admin antes da primeira mutacao nova.
 - Reavaliar `SECURITY DEFINER` views publicas com foco em `security_invoker` ou revogacao de acesso quando aplicavel.
+
+Impacto documental: Documentacao atualizada.
+
+## Execucao Complementar Admin Operations - 2026-08-09
+
+Status: implementada localmente para corrigir Profissionais/Clientes exibindo
+zero apesar de haver dados reais.
+
+### Causa-raiz
+
+`src/features/admin-operations/admin-operations.queries.ts` consultava tabelas
+canonicas diretamente via PostgREST usando o access token do admin. As RLS
+dessas tabelas foram desenhadas para leitura horizontal restrita por paciente,
+terapeuta e superficies publicas; portanto o admin nao deve ser tratado como
+cliente privilegiado generico das tabelas.
+
+O comportamento correto e distinguir:
+
+- dado real zero;
+- acesso restrito;
+- falha de consulta;
+- configuracao ausente.
+
+### Matriz da Correcao
+
+| Pagina admin | Fonte anterior | Problema | Fonte correta | Acao |
+| --- | --- | --- | --- | --- |
+| Profissionais | REST direto em `therapist_profiles` | RLS podia transformar dado real em zero/indisponivel | `admin_get_operation_module_v1('professionals')` | Read model admin com DTO minimo |
+| Clientes | REST direto em `patient_profiles` | RLS podia transformar dado real em zero/indisponivel | `admin_get_operation_module_v1('patients')` | Read model admin com agregados minimos |
+| Sessoes | REST direto em `bookings` | risco de expor URL/dado operacional sensivel | `admin_get_operation_module_v1('sessions')` | DTO sem `meeting_url` |
+| Suporte | REST direto em `support_tickets` | risco de expor descricao/contexto sensivel | `admin_get_operation_module_v1('support')` | DTO sem descricao completa |
+| Avaliacoes | REST direto em `reviews` | risco de expor comentario completo na lista | `admin_get_operation_module_v1('reviews')` | DTO sem corpo do comentario |
+| Verificacoes | REST direto em `therapist_verifications` | risco de expor metadados/documentos privados | `admin_get_operation_module_v1('verifications')` | DTO sem documentos privados |
+
+### Entregas
+
+- Criada a RPC `public.admin_get_operation_module_v1(text, integer, integer)`.
+- RPC valida `auth.uid()` e `profiles.role = admin` antes de consultar fontes
+  canonicas.
+- RPC usa `SECURITY DEFINER`, `set search_path = ''`, schema explicito,
+  `revoke` de `public/anon` e `grant execute` apenas para `authenticated` e
+  `service_role`.
+- Adapter Next passou a chamar a RPC em vez de consultar tabelas diretamente.
+- UI passou a mostrar `Acesso restrito` quando a resposta for `401/403`, e
+  `Indisponivel` quando houver falha operacional.
+- Menu admin ocultou `Verificacoes`, `Integracoes` e `Relatorios` do menu
+  principal sem remover as rotas.
+- `AuthenticatedShell` passou a aceitar ausencia de `helpHref`; Admin nao
+  renderiza mais o card lateral "Precisa de ajuda?".
+- Policy de `therapist_private_documents` foi reforcada para exigir
+  `uploaded_by = auth.uid()` alem da propriedade do perfil.
+
+### Evidencia Supabase
+
+Consulta no Supabase conectado apos a migration:
+
+- `profiles`: 26;
+- `therapist_profiles`: 14;
+- `patient_profiles`: 11;
+- `bookings`: 44;
+- `reviews`: 16;
+- `support_tickets`: 2;
+- `therapist_verifications`: 0;
+- `admin_get_operation_module_v1`: presente.
+
+Com claims de admin no SQL, a RPC retornou:
+
+- Profissionais: `total-professionals = 14`, 12 linhas paginadas;
+- Clientes: `total-patients = 11`, 11 linhas paginadas.
+
+Com claims de terapeuta comum, a RPC falhou com `admin permission required`.
+
+### Validacao
+
+Comandos executados:
+
+```bash
+npx supabase db reset
+npx supabase test db supabase/tests/039_admin_operation_read_models.sql
+npm run typecheck
+npm run lint
+npm run test
+npm run build
+npx supabase test db
+```
+
+Resultados:
+
+- Migration aplicada localmente via reset.
+- Teste focado novo: 21 asserts passaram.
+- Typecheck: passou.
+- Lint: passou.
+- Vitest: 98 arquivos, 365 testes passaram.
+- Build Next: passou.
+- pgTAP completo: 40 arquivos, 1016 testes passaram.
+
+### Pendencias
+
+- Evoluir filtros, busca e paginacao server-side por modulo.
+- Detalhes operacionais iniciais foram criados para Profissionais, Clientes,
+  Sessoes, Suporte, Avaliacoes e Verificacoes usando RPC segura dedicada.
+- Comandos administrativos iniciais foram criados para verificacao,
+  suspensao/reativacao, suporte e moderacao. Operacoes financeiras e comandos
+  de sessao permanecem pendentes de boundary proprio.
+- Aplicar as migrations no ambiente HML antes de validar a UI remota.
+- Executar Playwright headed contra HML apos deploy das migrations.
+
+Impacto documental: Documentacao atualizada.
+
+## Execucao Complementar Admin Detalhes - 2026-08-09
+
+Status: implementada localmente como Fase 2 de detalhes operacionais seguros.
+
+### Entregas
+
+- Criada a RPC `public.admin_get_operation_detail_v1(text, uuid)`.
+- RPC valida `auth.uid()` como perfil `admin` antes de consultar dados
+  horizontais.
+- RPC retorna DTO minimizado para:
+  - `/admin/profissionais/:id`;
+  - `/admin/profissionais/verificacoes/:id`;
+  - `/admin/pacientes/:id`;
+  - `/admin/sessoes/:id`;
+  - `/admin/suporte/:id`;
+  - `/admin/avaliacoes/:id`.
+- Listagens operacionais passaram a exibir CTA `Ver detalhes`.
+- Detalhes exibem seções operacionais, notas de segurança e auditoria recente
+  sanitizada via `admin_audit_events`.
+- Nao sao expostos:
+  - `meeting_url`, JWT ou payload Zoom;
+  - comentario completo de avaliacao;
+  - descricao completa de ticket;
+  - documentos/metadados privados de verificacao;
+  - payload Stripe, Authorization, cookies ou service role.
+
+### Validacao
+
+Comandos executados:
+
+```bash
+npm run typecheck
+npx vitest run src/features/admin-operations/admin-operations.mappers.test.ts src/features/admin-shell/admin-shell-config.test.ts src/app/api/auth/admin/login/route.test.ts
+npx supabase db reset
+npx supabase test db supabase/tests/039_admin_operation_read_models.sql
+```
+
+Resultados:
+
+- Typecheck: passou.
+- Vitest focado: 3 arquivos, 11 testes passaram.
+- Migration aplicada localmente via reset.
+- pgTAP focado: 1 arquivo, 34 testes passaram.
+
+### Pendencias Remanescentes
+
+- Transformar os detalhes iniciais em abas completas por dominio quando houver
+  comandos e read models especificos.
+- Criar comandos seguros para suspensao, verificacao, suporte e moderacao.
+- Criar detalhes financeiros especificos para pagamentos e assinaturas em fase
+  propria, sem expor payloads Stripe.
+- Validar as novas rotas com Playwright em browser apos iniciar dev server.
+
+Impacto documental: Documentacao atualizada.
+
+## Execucao Complementar Admin Comandos - 2026-08-09
+
+Status: implementada localmente como Fase 3 de comandos operacionais seguros.
+
+### Entregas
+
+- Criada a RPC `public.admin_execute_operation_command_v1(...)`.
+- RPC valida `auth.uid()` como perfil `admin`, exige `reason` e `request_id`,
+  executa somente acoes allowlisted e grava auditoria append-only via
+  `record_admin_audit_event_v1`.
+- Criada a rota `POST /api/admin/operations` como BFF autenticado do shell
+  admin, com validacao de cookie admin, permissao por capability e payload
+  minimizado.
+- Criado painel de `Ações administrativas` nas paginas de detalhe elegiveis.
+- Acoes habilitadas:
+  - suspender/reativar profissional;
+  - aprovar/reprovar/solicitar ajuste de verificacao;
+  - resolver/reabrir ticket de suporte;
+  - ocultar/restaurar avaliacao.
+- Acoes deliberadamente fora desta fase:
+  - pagamentos, estornos, repasses e conciliacao;
+  - cancelamento ou reagendamento de sessoes;
+  - publicacao direta de perfil e alteracao manual de plano.
+- Superficies publicas e privadas relacionadas sao revalidadas apos comando,
+  sem expor secrets, cookies, Authorization, service role, payload Stripe, JWT
+  Zoom ou documentos privados.
+
+### Validacao
+
+Comandos executados:
+
+```bash
+npm run typecheck
+npx vitest run src/app/api/admin/operations/route.test.ts src/features/admin-operations/admin-operations.mappers.test.ts
+npx supabase db reset
+npx supabase test db supabase/tests/040_admin_operation_commands.sql
+npx supabase test db
+npm run lint
+npm run test
+npm run build
+PLAYWRIGHT_BASE_URL=http://localhost:3001 npx playwright test tests/e2e/admin-finance.spec.ts --project=chromium
+```
+
+Resultados:
+
+- Typecheck: passou.
+- Vitest focado: 2 arquivos, 12 testes passaram.
+- Migration aplicada localmente via reset.
+- pgTAP focado novo: 1 arquivo, 20 testes passaram.
+- pgTAP completo: 41 arquivos, 1049 testes passaram.
+- Lint: passou.
+- Vitest completo: 100 arquivos, 374 testes passaram.
+- Build Next: passou.
+
+### Pendencias Remanescentes
+
+- Criar boundary proprio para comandos de sessao quando houver regra de negocio
+  fechada para cancelamento, reagendamento, notificacao, pagamento e Zoom.
+- Criar boundary financeiro separado para refund, payout e reconciliacao,
+  usando Stripe/webhooks/ledger como fontes de verdade.
+- Testar IDOR e fluxo visual com Playwright em browser apos aplicar migrations
+  no ambiente HML.
 
 Impacto documental: Documentacao atualizada.
 
@@ -1869,26 +2096,26 @@ Conclusao HML desta coleta:
 
 #### Fase 3 - Pessoas, Operacao e Moderacao
 
-- Criar paginas de detalhe:
-  `/admin/profissionais/:id`, `/admin/profissionais/verificacoes/:id`,
-  `/admin/pacientes/:id`, `/admin/sessoes/:id`, `/admin/suporte/:id` e
-  `/admin/avaliacoes/:id`.
-- Criar comandos seguros para aprovar/rejeitar verificacao, suspender/reativar
-  profissional, resolver/reabrir suporte, ocultar/restaurar avaliacao,
-  cancelar/reagendar sessao quando permitido.
-- Antes dos comandos, criar RBAC backend-side por capability, expectedVersion,
-  motivo obrigatorio e requestId/idempotencia. A fundacao RBAC backend-side
-  existe localmente para paginas e comandos de Terapias/Match; as novas
-  mutacoes criticas devem reutilizar esse catalogo e gravar em
-  `admin_audit_events`.
+- Evoluir as paginas de detalhe iniciais para abas completas por dominio. As
+  rotas basicas ja existem para `/admin/profissionais/:id`,
+  `/admin/profissionais/verificacoes/:id`, `/admin/pacientes/:id`,
+  `/admin/sessoes/:id`, `/admin/suporte/:id` e `/admin/avaliacoes/:id`.
+- Comandos seguros iniciais existem para aprovar/rejeitar/solicitar ajuste de
+  verificacao, suspender/reativar profissional, resolver/reabrir suporte e
+  ocultar/restaurar avaliacao.
+- Cancelar/reagendar sessao permanece pendente ate existir boundary proprio de
+  dominio que sincronize reserva, pagamento, notificacao e Zoom.
+- Evoluir comandos iniciais com `expectedVersion` por dominio quando os read
+  models de detalhe passarem a expor versao operacional explicita.
 - Testar IDOR/cross-shell para admin, terapeuta, paciente e visitante.
 
 #### Fase 4 - Financeiro, Assinaturas e Relatorios
 
 - Manter financeiro read-only ate existir boundary de comando proprio para
   refund, payout e reconciliacao; impacto P1 por risco financeiro.
-- Criar detalhes `/admin/pagamentos/:id` e `/admin/assinaturas/:id` com
-  minimizacao de Stripe IDs/payloads.
+- Detalhes `/admin/pagamentos/:id` e `/admin/assinaturas/:id` foram criados
+  localmente com RPCs admin e minimizacao de Stripe IDs/payloads. Pendente:
+  aplicar migrations em HML e validar navegacao autenticada no ambiente alvo.
 - Implementar reconciliacao admin sem edicao direta de ledger/status/amount.
 - Homologar Stripe test mode em HML: Billing, Connect, session payment,
   webhook duplicado, assinatura invalida, replay e evento fora de ordem.
@@ -1910,6 +2137,74 @@ Conclusao HML desta coleta:
   Network para todas as rotas habilitadas.
 - Reexecutar Advisor final remoto e anexar comparacao before/after antes de
   declarar qualquer estado `HOMOLOGATED`.
+
+Impacto documental: Documentacao atualizada.
+
+## Execucao Complementar Admin Financeiro - 2026-08-09
+
+Status: implementada localmente como aprofundamento da Fase 4, substituindo a
+leitura direta das paginas de Pagamentos e Assinaturas por read models RPC
+administrativos e adicionando detalhes read-only sanitizados.
+
+### Entregas
+
+- Criada a migration
+  `supabase/migrations/20260809054500_admin_finance_read_models.sql`.
+- Criadas as RPCs `admin_get_finance_module_v1(text, integer, integer)` e
+  `admin_get_finance_detail_v1(text, uuid)`.
+- Criadas as rotas dinamicas `/admin/pagamentos/:id` e
+  `/admin/assinaturas/:id`.
+- As listagens de Pagamentos e Assinaturas passaram a consumir RPCs
+  `security definer` com validacao interna de `auth.uid()` como admin, em vez
+  de consultar diretamente tabelas financeiras pelo browser.
+- Os detalhes mostram estados locais, valores, participantes, ciclo, faturas e
+  eventos recentes sem enviar IDs externos Stripe, URLs/PDFs de invoice,
+  payloads, metadados brutos ou segredos para o DTO da UI.
+- As acoes financeiras continuam fora da UI. Refund, payout, ajuste,
+  reconciliacao manual ou mudanca de assinatura exigem boundary proprio com
+  RBAC, motivo, idempotencia, Stripe/ledger e auditoria.
+
+### Validacao
+
+Comandos executados:
+
+```bash
+npm run typecheck
+npx vitest run src/features/admin-finance/admin-finance.mappers.test.ts
+npx supabase db reset
+npx supabase test db supabase/tests/041_admin_finance_read_models.sql
+npx supabase test db
+npm run lint
+npm run test
+npm run build
+```
+
+Resultados:
+
+- Typecheck passou.
+- Teste focado de mappers passou: 1 arquivo, 5 testes.
+- `supabase db reset` passou aplicando a migration nova.
+- pgTAP focado passou: 26 testes cobrindo RPCs, grants, bloqueio de
+  nao-admin, DTOs sanitizados e modulo invalido fechado.
+- pgTAP completo passou: 42 arquivos, 1075 testes.
+- Lint passou sem warnings.
+- Suite Vitest completa passou: 100 arquivos, 376 testes.
+- Build Next passou e incluiu `/admin/pagamentos/[paymentId]` e
+  `/admin/assinaturas/[subscriptionId]`.
+- Playwright focado passou: 1 spec Chromium, cobrindo login admin, navegacao em
+  Pagamentos, Assinaturas e Relatorios por URL direta, clique em detalhe quando
+  ha registro no seed e ausencia de `Relatorios` no menu por estar oculto.
+
+### Pendencias Residuais
+
+- Aplicar a migration em HML e validar com sessao admin real.
+- Executar Playwright de navegacao em HML nas rotas de detalhe apos deploy.
+- Homologar Stripe test mode real para Billing, Connect, pagamentos de sessao,
+  webhook duplicado, replay e eventos fora de ordem.
+- Criar comandos financeiros apenas quando houver contrato de dominio completo
+  para RBAC, auditoria append-only, idempotencia e reconciliacao Stripe/ledger.
+- Relatorios/exportacoes seguem ocultos/pendentes de backend server-side
+  auditado, limites e protecao contra CSV injection.
 
 Impacto documental: Documentacao atualizada.
 
