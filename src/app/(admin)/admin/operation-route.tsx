@@ -17,8 +17,10 @@ const operationModulePermissions = {
 
 export async function AdminOperationRoute({
   module,
+  searchParams,
 }: {
   module: AdminOperationModuleKey;
+  searchParams?: Record<string, string | string[] | undefined>;
 }) {
   const session = await requireAdminSession({
     permission: operationModulePermissions[module],
@@ -26,6 +28,7 @@ export async function AdminOperationRoute({
   const result = await getAdminOperationPage({
     accessToken: session.accessToken,
     module,
+    searchParams,
   });
 
   if (result.status === "error") {

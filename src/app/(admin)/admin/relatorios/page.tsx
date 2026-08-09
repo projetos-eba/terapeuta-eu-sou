@@ -1,5 +1,11 @@
 import { AdminFinanceRoute } from "../finance-route";
 
-export default function AdminReportsPage() {
-  return <AdminFinanceRoute module="reports" />;
+export default async function AdminReportsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  return (
+    <AdminFinanceRoute module="reports" searchParams={await searchParams} />
+  );
 }

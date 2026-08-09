@@ -2,7 +2,6 @@ import "server-only";
 
 import { cache } from "react";
 
-import { getAdminTherapyCatalogPage } from "@/features/admin-therapy-catalog/admin-therapy-catalog.queries";
 import { routes } from "@/lib/routes";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
@@ -14,13 +13,11 @@ import type {
   AdminDashboardModule,
   AdminDashboardTone,
 } from "./admin-dashboard.types";
-import { parseContentRangeTotal } from "./admin-dashboard.utils";
 
 type CountSpec = {
   description: string;
   key: string;
   label: string;
-  query: string;
   source: string;
   tone: AdminDashboardTone;
 };
@@ -30,11 +27,17 @@ type CountResult = CountSpec & {
   value: number | null;
 };
 
-type TherapyCatalogEventRow = {
-  actor_role?: string | null;
-  created_at?: string | null;
-  entity_type?: string | null;
-  event_type?: string | null;
+type DashboardReadModel = {
+  events?: DashboardReadModelEvent[];
+  generatedAt?: string | null;
+  metrics?: Record<string, number | null | undefined> | null;
+};
+
+type DashboardReadModelEvent = {
+  actorRole?: string | null;
+  createdAt?: string | null;
+  entityType?: string | null;
+  eventType?: string | null;
   id?: string | null;
   reason?: string | null;
 };
@@ -64,13 +67,11 @@ export const getAdminDashboardPage = cache(
       };
     }
 
-    const [catalogResult, countResults, events] = await Promise.all([
-      getAdminTherapyCatalogPage({ accessToken }),
-      fetchCountResults(config, accessToken),
-      fetchRecentEvents(config, accessToken),
-    ]);
+    const readModel = await fetchDashboardReadModel(config, accessToken);
+    const countResults = readModel.countResults;
+    const events = readModel.events;
 
-    const catalogModule = buildCatalogModule(catalogResult);
+    const catalogModule = buildCatalogModule(countResults);
     const operationModule = buildOperationModule(countResults);
     const financeModule = buildFinanceModule(countResults);
     const integrationModule = buildIntegrationModule(countResults);
@@ -85,7 +86,7 @@ export const getAdminDashboardPage = cache(
       dashboard: {
         alerts,
         events,
-        generatedAt: new Date().toISOString(),
+        generatedAt: readModel.generatedAt ?? new Date().toISOString(),
         modules: [
           catalogModule,
           operationModule,
@@ -116,166 +117,88 @@ export const getAdminDashboardPage = cache(
   },
 );
 
-async function fetchCountResults(
+async function fetchDashboardReadModel(
   config: { apiKey: string; url: string },
   accessToken: string,
-) {
-  return Promise.all(
-    getCountSpecs().map(async (spec): Promise<CountResult> => {
-      const value = await fetchCount(config, accessToken, spec.query);
+): Promise<{
+  countResults: CountResult[];
+  events: AdminDashboardEvent[];
+  generatedAt: string | null;
+}> {
+  const specs = getCountSpecs();
 
+  try {
+    const response = await fetch(
+      `${config.url}/rest/v1/rpc/admin_get_dashboard_v1`,
+      {
+        body: "{}",
+        cache: "no-store",
+        headers: {
+          apikey: config.apiKey,
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      },
+    );
+
+    if (!response.ok) {
       return {
-        ...spec,
-        status: value === null ? "unavailable" : "available",
-        value,
+        countResults: unavailableCountResults(specs),
+        events: [],
+        generatedAt: null,
       };
-    }),
-  );
-}
+    }
 
-async function fetchCount(
-  config: { apiKey: string; url: string },
-  accessToken: string,
-  query: string,
-) {
-  try {
-    const separator = query.includes("?") ? "&" : "?";
-    const response = await fetch(
-      `${config.url}/rest/v1/${query}${separator}select=id&limit=1`,
-      {
-        cache: "no-store",
-        headers: {
-          apikey: config.apiKey,
-          Authorization: `Bearer ${accessToken}`,
-          Prefer: "count=exact",
-        },
-      },
-    );
-
-    if (!response.ok) return null;
-
-    return parseContentRangeTotal(response.headers.get("content-range"));
-  } catch {
-    return null;
-  }
-}
-
-async function fetchRecentEvents(
-  config: { apiKey: string; url: string },
-  accessToken: string,
-): Promise<AdminDashboardEvent[]> {
-  try {
-    const response = await fetch(
-      `${config.url}/rest/v1/therapy_catalog_events?select=id,actor_role,entity_type,event_type,reason,created_at&order=created_at.desc&limit=6`,
-      {
-        cache: "no-store",
-        headers: {
-          apikey: config.apiKey,
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    );
-
-    if (!response.ok) return [];
-
-    const rows = (await response
+    const payload = (await response
       .json()
-      .catch(() => [])) as TherapyCatalogEventRow[];
+      .catch(() => null)) as DashboardReadModel | null;
 
-    return rows
-      .map((row) => ({
-        actorRole: row.actor_role ?? "admin",
-        createdAt: row.created_at ?? "",
-        entityType: row.entity_type ?? "therapy",
-        eventType: row.event_type ?? "evento",
-        id: row.id ?? crypto.randomUUID(),
-        reason: row.reason ?? null,
-      }))
-      .filter((event) => event.createdAt);
-  } catch {
-    return [];
-  }
-}
+    if (!payload || typeof payload !== "object") {
+      return {
+        countResults: unavailableCountResults(specs),
+        events: [],
+        generatedAt: null,
+      };
+    }
 
-function buildCatalogModule(
-  catalogResult: Awaited<ReturnType<typeof getAdminTherapyCatalogPage>>,
-): AdminDashboardModule {
-  if (catalogResult.status === "error") {
     return {
-      description:
-        "Catálogo canônico, solicitações de terapias e integridade do Match.",
-      href: routes.admin.therapies,
-      key: "catalog",
-      label: "Catálogo e Match",
-      metrics: [
-        unavailableMetric(
-          "published-therapies",
-          "Terapias publicadas",
-          "Falha ao carregar catálogo admin.",
-          "admin-therapy-catalog-command",
-          "warning",
-        ),
-      ],
-      status: "degraded",
+      countResults: specs.map((spec) => {
+        const value = payload.metrics?.[spec.key];
+
+        return {
+          ...spec,
+          status: typeof value === "number" ? "available" : "unavailable",
+          value: typeof value === "number" ? value : null,
+        };
+      }),
+      events: mapDashboardEvents(payload.events ?? []),
+      generatedAt: payload.generatedAt ?? null,
+    };
+  } catch {
+    return {
+      countResults: unavailableCountResults(specs),
+      events: [],
+      generatedAt: null,
     };
   }
+}
 
-  const catalog = catalogResult.catalog;
-  const publishedCount = catalog.items.filter(
-    (therapy) => therapy.status === "published" && therapy.isPubliclyVisible,
-  ).length;
-  const draftCount = catalog.items.filter(
-    (therapy) => therapy.status === "draft" || therapy.status === "in_review",
-  ).length;
-  const matchingVisibleCount = catalog.items.filter(
-    (therapy) => therapy.isVisibleInMatching,
-  ).length;
-  const pendingRequests = catalog.requests.filter((request) =>
-    ["submitted", "under_review", "needs_information"].includes(request.status),
-  ).length;
-
-  return {
+function buildCatalogModule(countResults: CountResult[]): AdminDashboardModule {
+  return moduleFromCounts({
     description:
       "Catálogo canônico, solicitações de terapias e integridade do Match.",
     href: routes.admin.therapies,
+    keys: [
+      "published-therapies",
+      "draft-therapies",
+      "matching-visible-therapies",
+      "pending-therapy-requests",
+    ],
     key: "catalog",
     label: "Catálogo e Match",
-    metrics: [
-      metric(
-        "published-therapies",
-        "Terapias publicadas",
-        publishedCount,
-        "Conteúdo público disponível.",
-        "admin-therapy-catalog-command",
-        "success",
-      ),
-      metric(
-        "draft-therapies",
-        "Rascunhos e revisão",
-        draftCount,
-        "Itens ainda fora da vitrine pública.",
-        "admin-therapy-catalog-command",
-        "warning",
-      ),
-      metric(
-        "matching-visible-therapies",
-        "Visíveis no Match",
-        matchingVisibleCount,
-        "Terapias ativas na jornada pública.",
-        "admin-therapy-catalog-command",
-        "info",
-      ),
-      metric(
-        "pending-therapy-requests",
-        "Solicitações pendentes",
-        pendingRequests,
-        "Pedidos de novas terapias aguardando decisão.",
-        "therapy_catalog_requests",
-        pendingRequests > 0 ? "warning" : "success",
-      ),
-    ],
-    status: "ready",
-  };
+    countResults,
+  });
 }
 
 function buildOperationModule(
@@ -531,153 +454,183 @@ function toMetric(result: CountResult): AdminDashboardMetric {
 }
 
 function getCountSpecs(): CountSpec[] {
-  const now = encodeURIComponent(new Date().toISOString());
-
   return [
+    {
+      description: "Conteúdo público disponível.",
+      key: "published-therapies",
+      label: "Terapias publicadas",
+      source: "admin_get_dashboard_v1",
+      tone: "success",
+    },
+    {
+      description: "Itens ainda fora da vitrine pública.",
+      key: "draft-therapies",
+      label: "Rascunhos e revisão",
+      source: "admin_get_dashboard_v1",
+      tone: "warning",
+    },
+    {
+      description: "Terapias ativas na jornada pública.",
+      key: "matching-visible-therapies",
+      label: "Visíveis no Match",
+      source: "admin_get_dashboard_v1",
+      tone: "info",
+    },
+    {
+      description: "Pedidos de novas terapias aguardando decisão.",
+      key: "pending-therapy-requests",
+      label: "Solicitações pendentes",
+      source: "admin_get_dashboard_v1",
+      tone: "warning",
+    },
     {
       description: "Profissionais aprovados no cadastro.",
       key: "active-therapists",
       label: "Profissionais ativos",
-      query: "therapist_profiles?status=eq.approved",
-      source: "therapist_profiles",
+      source: "admin_get_dashboard_v1",
       tone: "success",
     },
     {
       description: "Profissionais aguardando análise ou ajustes.",
       key: "pending-therapists",
       label: "Profissionais pendentes",
-      query: "therapist_profiles?status=in.(draft,submitted,in_review)",
-      source: "therapist_profiles",
+      source: "admin_get_dashboard_v1",
       tone: "warning",
     },
     {
       description: "Pacientes cadastrados na plataforma.",
       key: "active-patients",
       label: "Pacientes ativos",
-      query: "patient_profiles",
-      source: "patient_profiles",
+      source: "admin_get_dashboard_v1",
       tone: "info",
     },
     {
       description: "Sessões futuras com reserva criada.",
       key: "future-sessions",
       label: "Sessões futuras",
-      query: `bookings?starts_at=gte.${now}`,
-      source: "bookings",
+      source: "admin_get_dashboard_v1",
       tone: "info",
     },
     {
       description: "Sessões em estado que pede acompanhamento operacional.",
       key: "attention-sessions",
       label: "Sessões com atenção",
-      query:
-        "bookings?status=in.(pending_payment,no_show_patient,no_show_therapist,refunded)",
-      source: "bookings",
+      source: "admin_get_dashboard_v1",
       tone: "warning",
     },
     {
       description: "Tickets de suporte ainda abertos.",
       key: "open-support-tickets",
       label: "Tickets abertos",
-      query: "support_tickets?status=eq.open",
-      source: "support_tickets",
+      source: "admin_get_dashboard_v1",
       tone: "warning",
     },
     {
       description: "Pagamentos de sessão aguardando confirmação financeira.",
       key: "pending-session-payments",
       label: "Pagamentos pendentes",
-      query: "session_payments?financial_status=eq.pending",
-      source: "session_payments",
+      source: "admin_get_dashboard_v1",
       tone: "warning",
     },
     {
       description: "Pagamentos confirmados por autoridade financeira.",
       key: "paid-session-payments",
       label: "Sessões pagas",
-      query: "session_payments?financial_status=in.(paid,partially_refunded)",
-      source: "session_payments",
+      source: "admin_get_dashboard_v1",
       tone: "success",
     },
     {
       description: "Reembolsos ainda não concluídos.",
       key: "pending-refunds",
       label: "Refunds pendentes",
-      query: "session_refunds?status=eq.pending",
-      source: "session_refunds",
+      source: "admin_get_dashboard_v1",
       tone: "warning",
     },
     {
       description: "Disputas sem encerramento registrado.",
       key: "open-disputes",
       label: "Disputes abertas",
-      query: "session_disputes?closed_at=is.null",
-      source: "session_disputes",
+      source: "admin_get_dashboard_v1",
       tone: "danger",
     },
     {
       description: "Lotes de repasse ainda em aberto ou processamento.",
       key: "open-payout-batches",
       label: "Lotes de repasse",
-      query: "payout_batches?status=in.(draft,open,processing)",
-      source: "payout_batches",
+      source: "admin_get_dashboard_v1",
       tone: "info",
     },
     {
       description: "Assinaturas pagas ativas ou em trial.",
       key: "active-subscriptions",
       label: "Assinaturas ativas",
-      query: "therapist_subscriptions?status=in.(trialing,active)",
-      source: "therapist_subscriptions",
+      source: "admin_get_dashboard_v1",
       tone: "success",
     },
     {
       description: "Assinaturas com pagamento ou ativação incompleta.",
       key: "attention-subscriptions",
       label: "Assinaturas em atenção",
-      query: "therapist_subscriptions?status=in.(past_due,unpaid,incomplete)",
-      source: "therapist_subscriptions",
+      source: "admin_get_dashboard_v1",
       tone: "warning",
     },
     {
       description: "Webhooks Stripe com processamento falho.",
       key: "failed-webhooks",
       label: "Falhas Stripe",
-      query: "stripe_webhook_events?processing_status=eq.failed",
-      source: "stripe_webhook_events",
+      source: "admin_get_dashboard_v1",
       tone: "danger",
     },
     {
       description: "Webhooks Zoom Video SDK com processamento falho.",
       key: "failed-zoom-webhooks",
       label: "Falhas Zoom",
-      query: "zoom_video_webhook_events?processing_status=eq.failed",
-      source: "zoom_video_webhook_events",
+      source: "admin_get_dashboard_v1",
       tone: "danger",
     },
     {
       description: "Sessões Zoom marcadas como falhas.",
       key: "failed-video-sessions",
       label: "Sessões Zoom falhas",
-      query: "video_sessions?status=eq.failed",
-      source: "video_sessions",
+      source: "admin_get_dashboard_v1",
       tone: "danger",
     },
     {
       description: "E-mails transacionais com erro de entrega.",
       key: "failed-emails",
       label: "Falhas de e-mail",
-      query: "email_delivery_logs?status=eq.error",
-      source: "email_delivery_logs",
+      source: "admin_get_dashboard_v1",
       tone: "danger",
     },
     {
       description: "Contas Connect ainda restritas ou incompletas.",
       key: "restricted-connect-accounts",
       label: "Connect restrito",
-      query: "therapist_connect_accounts?operational_status=neq.active",
-      source: "therapist_connect_accounts",
+      source: "admin_get_dashboard_v1",
       tone: "warning",
     },
   ];
+}
+
+function unavailableCountResults(specs: CountSpec[]): CountResult[] {
+  return specs.map((spec) => ({
+    ...spec,
+    status: "unavailable",
+    value: null,
+  }));
+}
+
+function mapDashboardEvents(
+  rows: DashboardReadModelEvent[],
+): AdminDashboardEvent[] {
+  return rows
+    .map((row) => ({
+      actorRole: row.actorRole ?? "admin",
+      createdAt: row.createdAt ?? "",
+      entityType: row.entityType ?? "admin",
+      eventType: row.eventType ?? "evento",
+      id: row.id ?? crypto.randomUUID(),
+      reason: row.reason ?? null,
+    }))
+    .filter((event) => event.createdAt);
 }

@@ -45,11 +45,17 @@ test.describe("admin dashboard", () => {
       page.getByRole("link", { exact: true, name: "Assinaturas" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { exact: true, name: "Relatórios" }),
+      page.getByRole("link", { exact: true, name: "Segurança" }),
     ).toBeVisible();
     await expect(
       page.getByRole("link", { exact: true, name: "Configurações" }),
     ).toBeVisible();
+    await expect(
+      page.getByRole("link", { exact: true, name: "Integrações" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { exact: true, name: "Relatórios" }),
+    ).toHaveCount(0);
 
     await page
       .getByRole("link", { name: /Abrir módulo/ })

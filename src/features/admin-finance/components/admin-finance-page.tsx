@@ -3,11 +3,15 @@ import type { Route } from "next";
 import {
   AlertTriangle,
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   CheckCircle2,
   Clock3,
+  Search,
   ShieldCheck,
 } from "lucide-react";
 
+import { buildAdminListHref } from "@/features/admin-shared/admin-list-query";
 import {
   AppPageAside,
   AppPageContainer,
@@ -55,6 +59,70 @@ export function AdminFinancePage({ data }: { data: AdminFinancePageData }) {
               </p>
             </div>
 
+            <form
+              action={data.listHref}
+              className="mt-5 grid gap-3 rounded-md border border-border bg-surface-muted p-3 lg:grid-cols-[minmax(0,1fr)_180px_180px_auto]"
+              method="get"
+            >
+              <label className="relative block">
+                <span className="sr-only">Buscar registros</span>
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-brand-primary"
+                />
+                <input
+                  className="min-h-11 w-full rounded-md border border-border bg-white py-2 pl-10 pr-3 text-sm font-semibold text-brand-deep outline-none transition placeholder:text-tesText-muted focus:border-brand-primary focus:ring-4 focus:ring-ring/20"
+                  defaultValue={data.query.search}
+                  name="q"
+                  placeholder="Buscar por nome, status ou identificador"
+                  type="search"
+                />
+              </label>
+              <label>
+                <span className="sr-only">Filtrar por status</span>
+                <select
+                  className="min-h-11 w-full rounded-md border border-border bg-white px-3 text-sm font-extrabold text-brand-deep outline-none transition focus:border-brand-primary focus:ring-4 focus:ring-ring/20"
+                  defaultValue={data.query.status}
+                  name="status"
+                >
+                  {data.filterOptions.status.map((option) => (
+                    <option key={option.value || "all"} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="sr-only">Ordenar registros</span>
+                <select
+                  className="min-h-11 w-full rounded-md border border-border bg-white px-3 text-sm font-extrabold text-brand-deep outline-none transition focus:border-brand-primary focus:ring-4 focus:ring-ring/20"
+                  defaultValue={data.query.sort || "recent"}
+                  name="sort"
+                >
+                  {data.filterOptions.sort.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="flex gap-2">
+                <input name="pageSize" type="hidden" value={data.query.pageSize} />
+                <button
+                  className="inline-flex min-h-11 flex-1 items-center justify-center rounded-md bg-brand-primary px-4 text-sm font-extrabold text-white shadow-card outline-none transition hover:bg-brand-deep focus-visible:ring-4 focus-visible:ring-ring/20 lg:flex-none"
+                  type="submit"
+                >
+                  Filtrar
+                </button>
+                <Link
+                  className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-white px-4 text-sm font-extrabold text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+                  href={data.listHref as Route<string>}
+                >
+                  Limpar
+                </Link>
+              </div>
+            </form>
+
             <div className="mt-5 overflow-hidden rounded-md border border-border">
               {data.rowsStatus === "unavailable" ? (
                 <StateMessage
@@ -82,6 +150,8 @@ export function AdminFinancePage({ data }: { data: AdminFinancePageData }) {
                 </div>
               )}
             </div>
+
+            <Pagination data={data} />
           </AppPageSection>
         </AppPageMain>
 
@@ -116,6 +186,55 @@ export function AdminFinancePage({ data }: { data: AdminFinancePageData }) {
       </AppPageGrid>
     </AppPageContainer>
   );
+}
+
+function Pagination({ data }: { data: AdminFinancePageData }) {
+  const start =
+    data.page.total === 0 ? 0 : (data.page.page - 1) * data.page.pageSize + 1;
+  const end = Math.min(data.page.page * data.page.pageSize, data.page.total);
+  const previousHref = buildAdminListHref(data.listHref, data.query, {
+    page: Math.max(data.page.page - 1, 1),
+  });
+  const nextHref = buildAdminListHref(data.listHref, data.query, {
+    page: data.page.page + 1,
+  });
+
+  return (
+    <div className="mt-4 flex flex-col gap-3 rounded-md border border-border bg-white p-3 text-sm font-bold text-tesText-secondary sm:flex-row sm:items-center sm:justify-between">
+      <p>
+        Mostrando {start}-{end} de {data.page.total} registros
+      </p>
+      <div className="flex gap-2">
+        <Link
+          aria-disabled={data.page.page <= 1}
+          className={paginationLinkClass(data.page.page <= 1)}
+          href={previousHref as Route<string>}
+          tabIndex={data.page.page <= 1 ? -1 : undefined}
+        >
+          <ChevronLeft aria-hidden="true" className="size-4" />
+          Anterior
+        </Link>
+        <Link
+          aria-disabled={!data.page.hasNext}
+          className={paginationLinkClass(!data.page.hasNext)}
+          href={nextHref as Route<string>}
+          tabIndex={!data.page.hasNext ? -1 : undefined}
+        >
+          Próxima
+          <ChevronRight aria-hidden="true" className="size-4" />
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function paginationLinkClass(disabled: boolean) {
+  const base =
+    "inline-flex min-h-10 items-center gap-2 rounded-md border px-4 text-sm font-extrabold outline-none transition focus-visible:ring-4 focus-visible:ring-ring/20";
+
+  return disabled
+    ? `${base} pointer-events-none border-border bg-surface-muted text-tesText-muted`
+    : `${base} border-border bg-white text-brand-primary hover:bg-brand-lavenderSoft`;
 }
 
 function MetricCard({ metric }: { metric: AdminFinanceMetric }) {

@@ -261,6 +261,42 @@ Transformar `/admin` em um centro operacional real e consolidar a base visual, r
 - Navegacao por teclado e foco visivel funcionam.
 - `npm run lint`, `npm run typecheck` e `npm run build` passam para o escopo alterado.
 
+### Execucao complementar - Dashboard e Integracoes (2026-08-09)
+
+Status: implementado localmente na branch `dev-antonio`.
+
+Mudancas:
+
+- Criado `admin_get_dashboard_v1()` como read model admin-only para `/admin`.
+- Criado `admin_get_integration_health_v1()` como read model admin-only para
+  `/admin/integracoes`.
+- Removidas da visao geral as contagens horizontais via REST para tabelas
+  canonicas como `therapist_profiles`, `bookings`, `session_payments`,
+  `stripe_webhook_events`, `zoom_video_webhook_events`,
+  `email_delivery_logs` e `therapist_connect_accounts`.
+- Removida da saude de integracoes a leitura horizontal via REST dessas mesmas
+  fontes operacionais.
+- Eventos recentes do Dashboard passam a vir de `admin_audit_events` em DTO
+  sanitizado, sem `previous_state`, `next_state`, provider IDs, payloads,
+  metadata crua ou secrets.
+- Falha no RPC deixa metricas como `unavailable`/modulos degradados, sem
+  converter erro de infraestrutura em zero.
+
+Validacoes locais realizadas no corte:
+
+- `npx vitest run src/features/admin-dashboard/admin-dashboard.queries.test.ts src/features/admin-platform/admin-platform.queries.test.ts`
+- `npm run typecheck`
+- `npx supabase db reset`
+- `npx supabase test db --local supabase/tests/042_admin_dashboard_integration_health_read_models.sql`
+- `npx supabase db lint`
+
+Observacoes:
+
+- O `db lint` manteve apenas o aviso ja conhecido de parametro nao usado em
+  `public.admin_execute_operation_command_v1`.
+- Validacao HML e Playwright autenticado ainda precisam ser executados no
+  ambiente alvo antes de declarar o Admin 100% fechado.
+
 ## Fase 3 - Pessoas, Operacao e Moderacao
 
 ### Objetivo
@@ -847,6 +883,109 @@ Breaking changes revisados no changelog Supabase:
 - Inspecionar Figma admin node `13425:778` via MCP/plugin quando disponivel.
 - Definir contrato persistente de auditoria admin antes da primeira mutacao nova.
 - Reavaliar `SECURITY DEFINER` views publicas com foco em `security_invoker` ou revogacao de acesso quando aplicavel.
+
+Impacto documental: Documentacao atualizada.
+
+## Retomada Admin - 2026-08-09 - Contratos v2 de listas e comandos
+
+Status: executada localmente como endurecimento incremental das fases 1 a 5 do
+fechamento Admin, sem criar branch nova.
+
+### Entregas
+
+- Consolidado o patch anterior de dashboard e health de integracoes no commit
+  `5b56b7ca` (`fix(admin): centralize dashboard integration read models`).
+- Criada a migration
+  `supabase/migrations/20260809145029_admin_module_pagination_v2.sql`.
+- Criados os contratos:
+  - `admin_get_operation_module_v2(p_module text, p_query jsonb)`;
+  - `admin_get_finance_module_v2(p_module text, p_query jsonb)`;
+  - `admin_execute_operation_command_v2(...)`.
+- Criado o parser compartilhado `src/features/admin-shared/admin-list-query.ts`
+  para `q`, `status`, `sort`, `page` e `pageSize`.
+- As paginas `/admin/profissionais`, `/admin/profissionais/verificacoes`,
+  `/admin/pacientes`, `/admin/sessoes`, `/admin/suporte`,
+  `/admin/avaliacoes`, `/admin/pagamentos`, `/admin/assinaturas` e
+  `/admin/relatorios` passaram a receber filtros/paginacao via URL.
+- Financeiro e Relatorios deixaram de usar leitura REST horizontal de tabelas no
+  shell; todos os modulos financeiros passam pela RPC v2.
+- Verificacoes ganhou comandos adicionais:
+  - `verification.pause_review`;
+  - `verification.reopen_review`.
+
+### Contrato v2
+
+Entrada `p_query`:
+
+```json
+{
+  "search": "texto opcional",
+  "status": "status allowlisted pela UI",
+  "sort": "recent|oldest|status|name|amount",
+  "page": 1,
+  "pageSize": 12
+}
+```
+
+Saida:
+
+```json
+{
+  "generatedAt": "...",
+  "module": "...",
+  "metrics": {},
+  "rows": [],
+  "page": {
+    "page": 1,
+    "pageSize": 12,
+    "total": 0,
+    "hasNext": false
+  },
+  "filtersApplied": {}
+}
+```
+
+### Guardrails preservados
+
+- `anon` nao executa RPCs admin v2.
+- `authenticated` pode invocar as RPCs, mas cada funcao valida `auth.uid()` como
+  perfil admin ativo antes de retornar dados.
+- `service_role` continua permitido somente em contexto servidor.
+- Listas continuam sem documentos privados, URL secreta de reuniao, comentario
+  completo de review, descricao completa de ticket, payload Stripe, IDs
+  externos Stripe e metadados brutos.
+- Comandos de verificacao exigem motivo, `requestId`, permissao admin e
+  auditoria append-only.
+
+### Validacao executada
+
+Comandos executados:
+
+```bash
+npm run typecheck
+npx vitest run src/features/admin-shared/admin-list-query.test.ts src/features/admin-operations/admin-operations.queries.test.ts src/features/admin-finance/admin-finance.queries.test.ts src/app/api/admin/operations/route.test.ts
+npx supabase db reset
+npx supabase test db --local supabase/tests/043_admin_module_pagination_v2.sql
+npm run lint
+```
+
+Resultados:
+
+- Typecheck: passou.
+- Testes unitarios focados: 4 arquivos, 12 testes passaram.
+- Supabase db reset: passou com a migration v2.
+- pgTAP v2: 19 testes passaram.
+- Lint: passou.
+
+### Limite residual conhecido
+
+As RPCs v2 mantem o contrato publico estavel e filtram/paginam server-side sobre
+DTOs ja sanitizados, com janela interna limitada a ate 50 registros por modulo.
+Isso elimina filtragem local no React e remove REST horizontal do shell, mas nao
+substitui ainda uma busca indexada em toda a base para alto volume. Se a base
+administrativa crescer alem dessa janela, a implementacao interna da v2 deve ser
+trocada por SQL especifico por modulo, mantendo o mesmo contrato de entrada e
+saida.
 
 Impacto documental: Documentacao atualizada.
 
