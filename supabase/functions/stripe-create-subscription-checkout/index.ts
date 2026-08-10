@@ -12,6 +12,7 @@ import {
   getPaymentsConfig,
   getPaymentsRuntime,
 } from "../_shared/payments/runtime.ts";
+import { getLiveSmokeCheckoutDiscounts } from "../_shared/payments/live-smoke.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 
 type Body = {
@@ -60,6 +61,16 @@ runtime.serve(async (request) => {
     const checkoutRequestId = normalizeRequestId(body.requestId);
     const checkoutUiMode = normalizeCheckoutUiMode(body.checkoutUiMode);
     const price = await getBillingPrice(client, plan);
+    const liveSmokeDiscounts = getLiveSmokeCheckoutDiscounts({
+      couponId: runtime.env.get("PAYMENTS_LIVE_SMOKE_COUPON_ID"),
+      enabledValue: runtime.env.get("PAYMENTS_LIVE_SMOKE_ENABLED"),
+      stripeMode: config.stripeMode,
+      therapistProfileId: therapist.id,
+      therapistProfileIdAllowlist: runtime.env.get(
+        "PAYMENTS_LIVE_SMOKE_THERAPIST_PROFILE_ID",
+      ),
+    });
+    const liveSmokeCoupon = liveSmokeDiscounts[0]?.coupon ?? null;
 
     if (!price.stripe_price_id) {
       throw new DomainError(
@@ -83,6 +94,7 @@ runtime.serve(async (request) => {
       plan,
       stripe,
       therapistId: therapist.id,
+      liveSmokeCoupon,
     });
 
     if (checkoutUiMode === "hosted" && existingOpenSession?.url) {
@@ -134,6 +146,7 @@ runtime.serve(async (request) => {
         checkout_request_id: checkoutRequestId,
         checkout_ui_mode: checkoutUiMode,
         environment: config.environment,
+        ...(liveSmokeCoupon ? { live_smoke_coupon: liveSmokeCoupon } : {}),
         plan_code: plan,
         stripe_mode: config.stripeMode,
         system: "tes",
@@ -148,6 +161,7 @@ runtime.serve(async (request) => {
           checkout_request_id: checkoutRequestId,
           checkout_ui_mode: checkoutUiMode,
           environment: config.environment,
+          ...(liveSmokeCoupon ? { live_smoke_coupon: liveSmokeCoupon } : {}),
           plan_code: plan,
           stripe_mode: config.stripeMode,
           system: "tes",
@@ -157,6 +171,7 @@ runtime.serve(async (request) => {
           user_id: user.id,
         },
       },
+      ...(liveSmokeDiscounts.length ? { discounts: liveSmokeDiscounts } : {}),
     };
     const params =
       checkoutUiMode === "embedded"
@@ -179,6 +194,7 @@ runtime.serve(async (request) => {
         checkoutSessionId: session.id,
         checkoutUiMode,
         code: "SUBSCRIPTION_CHECKOUT_CREATED",
+        liveSmokeCouponApplied: Boolean(liveSmokeCoupon),
         operation: "stripe_create_subscription_checkout",
         plan,
         requestId,
@@ -302,6 +318,7 @@ async function findReusableOpenSubscriptionCheckout(input: {
   plan: "premium" | "premium_plus";
   stripe: ReturnType<typeof createStripeClient>;
   therapistId: string;
+  liveSmokeCoupon: string | null;
 }) {
   const sessions = await input.stripe.checkout.sessions.list({
     customer: input.customerId,
@@ -321,6 +338,9 @@ async function findReusableOpenSubscriptionCheckout(input: {
         : Boolean(session.client_secret)) &&
       metadata.checkout_ui_mode === input.mode &&
       metadata.environment === input.environment &&
+      (input.liveSmokeCoupon
+        ? metadata.live_smoke_coupon === input.liveSmokeCoupon
+        : !metadata.live_smoke_coupon) &&
       metadata.plan_code === input.plan &&
       metadata.system === "tes" &&
       metadata.tes_therapist_id === input.therapistId
