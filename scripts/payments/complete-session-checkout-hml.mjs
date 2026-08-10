@@ -1,0 +1,546 @@
+#!/usr/bin/env node
+
+import { createHmac } from "node:crypto";
+import process from "node:process";
+import Stripe from "stripe";
+import { chromium } from "playwright";
+
+import {
+  assertStripeModeAllowedForSupabaseUrl,
+  getStripeMode,
+  getStripeSecretKey,
+  getSupabaseAnonKey,
+  getSupabaseServiceRoleKey,
+  getSupabaseUrl,
+  loadEnvFiles,
+} from "./env-utils.mjs";
+
+loadEnvFiles();
+
+const args = new Set(process.argv.slice(2));
+const scenario = readArg("scenario", "approved");
+const baseUrl =
+  process.env.PLAYWRIGHT_BASE_URL?.replace(/\/+$/g, "") ??
+  "https://hml.terapeutaeusou.com.br";
+const expectedHmlRef =
+  process.env.PAYMENTS_HML_SUPABASE_REF?.trim() || "emzwqkmrryuqvqiohqnu";
+const publicTherapistSlug =
+  process.env.PAYMENTS_HML_PUBLIC_THERAPIST_SLUG?.trim() ??
+  "antonio-ferrari-e2e";
+const patientEmail = process.env.PAYMENTS_HML_PATIENT_EMAIL?.trim();
+const patientPassword = process.env.PAYMENTS_HML_PATIENT_PASSWORD?.trim();
+const supabaseUrl = getTargetSupabaseUrl();
+const supabaseAnonKey = getSupabaseAnonKey();
+const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
+const stripeSecretKey = getStripeSecretKey();
+const stripeWebhookSecret =
+  process.env.STRIPE_PLATFORM_WEBHOOK_SECRET ?? process.env.STRIPE_WEBHOOK_SECRET;
+
+if (!["approved", "declined", "expired", "refund"].includes(scenario)) {
+  console.error("Use --scenario=approved, declined, expired or refund.");
+  process.exit(1);
+}
+
+for (const [name, value] of Object.entries({
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: supabaseAnonKey,
+  PAYMENTS_HML_PATIENT_EMAIL: patientEmail,
+  PAYMENTS_HML_PATIENT_PASSWORD: patientPassword,
+  STRIPE_SECRET_KEY: stripeSecretKey,
+  STRIPE_WEBHOOK_SECRET: stripeWebhookSecret,
+  SUPABASE_SERVICE_ROLE_KEY: supabaseServiceRoleKey,
+  SUPABASE_URL: supabaseUrl,
+})) {
+  if (!value) {
+    console.error(`${name} is required for session checkout homologation.`);
+    process.exit(1);
+  }
+}
+
+if (!stripeSecretKey.startsWith("sk_test_")) {
+  console.error("Use Stripe test mode for HML session checkout validation.");
+  process.exit(1);
+}
+
+assertStripeModeAllowedForSupabaseUrl({
+  stripeMode: getStripeMode(stripeSecretKey),
+  supabaseUrl,
+});
+
+if (supabaseProjectRef(supabaseUrl) !== expectedHmlRef) {
+  console.error(
+    `Session checkout HML requires Supabase ref ${expectedHmlRef}; found ${supabaseProjectRef(supabaseUrl) ?? "unknown"}.`,
+  );
+  process.exit(1);
+}
+
+const stripe = new Stripe(stripeSecretKey, {
+  apiVersion: "2026-06-24.dahlia",
+});
+
+let browser;
+let checkoutSessionId = null;
+
+try {
+  logStage("resolve_public_fixture");
+  const fixture = await getPublicFixture(publicTherapistSlug);
+  const reservationPath = buildReservationPath(fixture);
+
+  logStage("launch_browser");
+  browser = await chromium.launch({ headless: false });
+  const context = await browser.newContext({
+    recordVideo: { dir: `test-results/payments-session-${scenario}` },
+  });
+  const page = await context.newPage();
+
+  logStage("patient_login");
+  await page.goto(
+    `${baseUrl}/cliente/login?next=${encodeURIComponent(reservationPath)}`,
+  );
+  await page.getByLabel("E-mail").fill(patientEmail);
+  await page.getByLabel("Senha").fill(patientPassword);
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await page.waitForURL(new RegExp(`/reserva\\?`), { timeout: 30_000 });
+
+  logStage("accept_terms_and_start_checkout");
+  await page.getByRole("checkbox").first().check();
+  await page.getByRole("button", { name: /Avançar para pagamento/i }).click();
+
+  const checkoutResponsePromise = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/public/reservation/checkout") &&
+      response.request().method() === "POST",
+    { timeout: 45_000 },
+  );
+
+  await page
+    .locator("#reservation-embedded-checkout iframe")
+    .first()
+    .waitFor({ state: "visible", timeout: 60_000 });
+
+  const checkoutResponse = await checkoutResponsePromise;
+  const checkoutPayload = await checkoutResponse.json();
+  if (!checkoutPayload?.ok || !checkoutPayload.checkout?.checkoutSessionId) {
+    throw new Error(`checkout_creation_failed:${checkoutResponse.status()}`);
+  }
+
+  checkoutSessionId = checkoutPayload.checkout.checkoutSessionId;
+
+  if (scenario === "expired") {
+    logStage("expire_checkout_session");
+    await stripe.checkout.sessions.expire(checkoutSessionId);
+    const event = await waitForStripeEvent({
+      objectId: checkoutSessionId,
+      type: "checkout.session.expired",
+    });
+    await postSignedStripeEventTwice(event);
+    await waitForSessionPayment(checkoutSessionId, "canceled");
+    printEvidence({
+      checkoutSessionId,
+      finalStatus: "canceled",
+      ok: true,
+      scenario,
+    });
+    process.exit(0);
+  }
+
+  if (scenario === "declined") {
+    logStage("fill_declined_card");
+    await fillStripeCard(page, "4000000000000002");
+    await expectStripeDecline(page);
+    const paymentIntentId = await waitForCheckoutPaymentIntent(checkoutSessionId);
+    const event = await waitForStripeEvent({
+      objectId: paymentIntentId,
+      type: "payment_intent.payment_failed",
+    });
+    await postSignedStripeEventTwice(event);
+    await waitForSessionPayment(checkoutSessionId, "failed");
+    printEvidence({
+      checkoutSessionId,
+      finalStatus: "failed",
+      ok: true,
+      scenario,
+    });
+    process.exit(0);
+  }
+
+  logStage("fill_approved_card");
+  await fillStripeCard(page, "4242424242424242");
+  await page.waitForURL(/\/reserva\/sucesso\?.*session_id=/, {
+    timeout: 120_000,
+  });
+
+  const successUrl = new URL(page.url());
+  const returnedSessionId = successUrl.searchParams.get("session_id");
+  if (returnedSessionId !== checkoutSessionId) {
+    throw new Error("checkout_session_mismatch_after_redirect");
+  }
+
+  const checkout = await stripe.checkout.sessions.retrieve(checkoutSessionId);
+  if (checkout.payment_status !== "paid") {
+    throw new Error(`stripe_checkout_not_paid:${checkout.payment_status}`);
+  }
+
+  const checkoutEvent = await waitForStripeEvent({
+    objectId: checkoutSessionId,
+    type: "checkout.session.completed",
+  });
+  await postSignedStripeEventTwice(checkoutEvent);
+
+  const paymentIntentId =
+    typeof checkout.payment_intent === "string"
+      ? checkout.payment_intent
+      : checkout.payment_intent?.id;
+  if (!paymentIntentId) throw new Error("payment_intent_missing");
+
+  const paymentIntentEvent = await waitForStripeEvent({
+    objectId: paymentIntentId,
+    type: "payment_intent.succeeded",
+  });
+  await postSignedStripeEventTwice(paymentIntentEvent);
+
+  const paidPayment = await waitForSessionPayment(checkoutSessionId, "paid");
+
+  if (scenario === "refund") {
+    logStage("create_refund");
+    const refund = await stripe.refunds.create({
+      payment_intent: paymentIntentId,
+      reason: "requested_by_customer",
+    });
+    const chargeId = paidPayment.stripe_charge_id;
+    const refundEvent = await waitForStripeEvent({
+      objectId: chargeId,
+      type: "charge.refunded",
+    });
+    await postSignedStripeEventTwice(refundEvent);
+    const refundedPayment = await waitForAnySessionPaymentStatus(
+      checkoutSessionId,
+      ["refunded", "partially_refunded"],
+    );
+    printEvidence({
+      checkoutSessionId,
+      finalStatus: refundedPayment.financial_status,
+      ok: true,
+      refundId: maskStripeId(refund.id),
+      scenario,
+    });
+    process.exit(0);
+  }
+
+  printEvidence({
+    bookingId: paidPayment.booking_id,
+    checkoutSessionId,
+    finalStatus: paidPayment.financial_status,
+    ok: true,
+    scenario,
+    webhookDelivery: "signed_replay_of_real_stripe_events",
+  });
+} finally {
+  if (browser) await browser.close();
+}
+
+function readArg(name, fallback) {
+  const prefix = `--${name}=`;
+  const found = process.argv.slice(2).find((value) => value.startsWith(prefix));
+  return found ? found.slice(prefix.length) : fallback;
+}
+
+function logStage(stage) {
+  console.log(JSON.stringify({ scenario, stage }));
+}
+
+function printEvidence(payload) {
+  console.log(
+    JSON.stringify({
+      ...payload,
+      checkoutSessionId: maskStripeId(payload.checkoutSessionId),
+    }),
+  );
+}
+
+async function getPublicFixture(slug) {
+  const [fixture] = await supabaseAdmin(
+    `/rest/v1/public_therapist_search?select=slug,public_name,service_id,therapy_slug,next_slot_at&slug=eq.${encodeURIComponent(slug)}&limit=1`,
+  );
+  if (!fixture?.service_id || !fixture?.next_slot_at) {
+    throw new Error(`public_fixture_not_ready:${slug}`);
+  }
+  return fixture;
+}
+
+function buildReservationPath(fixture) {
+  const params = new URLSearchParams({
+    etapa: "preparar",
+    service: fixture.service_id,
+    slot: fixture.next_slot_at,
+    source: "stripe_phase3_hml",
+    therapist: fixture.slug,
+  });
+  if (fixture.therapy_slug) params.set("therapy", fixture.therapy_slug);
+  return `/reserva?${params.toString()}`;
+}
+
+async function fillStripeCard(page, cardNumber) {
+  await fillStripeField(page, /Card number|Numero do cartao|Número do cartão/i, cardNumber, [
+    'input[name="cardnumber"]',
+    'input[autocomplete="cc-number"]',
+    'input[data-elements-stable-field-name="cardNumber"]',
+  ]);
+  await fillStripeField(page, /Expiration|Validade|MM\s*\/\s*YY|MM\s*\/\s*AA/i, "1234", [
+    'input[name="expiry"]',
+    'input[autocomplete="cc-exp"]',
+    'input[data-elements-stable-field-name="cardExpiry"]',
+  ]);
+  await fillStripeField(page, /CVC|Codigo de seguranca|Código de segurança/i, "123", [
+    'input[name="cvc"]',
+    'input[autocomplete="cc-csc"]',
+    'input[data-elements-stable-field-name="cardCvc"]',
+  ]);
+  await fillOptionalStripeField(page, /Name on card|Nome no cartao|Nome no cartão|Nome/i, "Homologacao TES", [
+    'input[name="billingName"]',
+    'input[autocomplete="cc-name"]',
+  ]);
+  await fillOptionalStripeField(page, /ZIP|Postal|CEP/i, "01001000", [
+    'input[name="postalCode"]',
+    'input[autocomplete="postal-code"]',
+    'input[data-elements-stable-field-name="postalCode"]',
+  ]);
+  await clickStripeButton(page, /Pay|Pagar|Finalizar|Confirmar/i);
+}
+
+async function expectStripeDecline(page) {
+  const deadline = Date.now() + 45_000;
+  const errorText =
+    /declined|recusad|cartao foi recusado|cartão foi recusado|Your card was declined/i;
+
+  while (Date.now() < deadline) {
+    const errorLocator = await findLocatorInPageOrFrames(page, (scope) =>
+      scope.getByText(errorText).first(),
+    );
+    if (errorLocator) return;
+    await delay(500);
+  }
+
+  await page.screenshot({
+    fullPage: true,
+    path: `test-results/payments-session-${scenario}/decline-timeout.png`,
+  });
+  throw new Error("stripe_decline_message_not_visible");
+}
+
+async function fillStripeField(page, label, value, selectors = []) {
+  const locator =
+    (await findLocatorInPageOrFrames(page, (scope) =>
+      scope.getByLabel(label).first(),
+    )) ??
+    (await findLocatorInPageOrFrames(page, (scope) =>
+      scope.getByPlaceholder(label).first(),
+    )) ??
+    (await findFirstSelectorInPageOrFrames(page, selectors));
+
+  if (!locator) throw new Error(`stripe_field_not_found:${label}`);
+  await locator.fill(value, { timeout: 15_000 });
+}
+
+async function fillOptionalStripeField(page, label, value, selectors = []) {
+  const locator =
+    (await findLocatorInPageOrFrames(page, (scope) =>
+      scope.getByLabel(label).first(),
+    )) ??
+    (await findLocatorInPageOrFrames(page, (scope) =>
+      scope.getByPlaceholder(label).first(),
+    )) ??
+    (await findFirstSelectorInPageOrFrames(page, selectors));
+
+  if (locator)
+    await locator.fill(value, { timeout: 10_000 }).catch(() => undefined);
+}
+
+async function clickStripeButton(page, label) {
+  const locator =
+    (await findFirstSelectorInPageOrFrames(page, [
+      'button[type="submit"]',
+      '[data-testid="hosted-payment-submit-button"]',
+    ])) ??
+    (await findLocatorInPageOrFrames(page, (scope) =>
+      scope.getByRole("button", { name: label }).first(),
+    )) ??
+    (await findFirstEnabledButtonInPageOrFrames(page));
+
+  if (!locator) throw new Error("stripe_submit_button_not_found");
+  await locator.scrollIntoViewIfNeeded({ timeout: 10_000 });
+  await locator.click({ timeout: 15_000 });
+}
+
+async function findFirstSelectorInPageOrFrames(page, selectors) {
+  for (const selector of selectors) {
+    const locator = await findLocatorInPageOrFrames(page, (scope) =>
+      scope.locator(selector).first(),
+    );
+    if (locator) return locator;
+  }
+  return null;
+}
+
+async function findFirstEnabledButtonInPageOrFrames(page) {
+  const deadline = Date.now() + 15_000;
+  while (Date.now() < deadline) {
+    for (const scope of [page, ...page.frames()]) {
+      const buttons = scope.locator("button");
+      const count = await buttons.count().catch(() => 0);
+      for (let index = 0; index < count; index += 1) {
+        const button = buttons.nth(index);
+        try {
+          if ((await button.isVisible()) && (await button.isEnabled())) {
+            return button;
+          }
+        } catch {
+          // Stripe frame tree can change while inspected.
+        }
+      }
+    }
+    await delay(500);
+  }
+  return null;
+}
+
+async function findLocatorInPageOrFrames(page, buildLocator) {
+  const deadline = Date.now() + 20_000;
+  while (Date.now() < deadline) {
+    for (const scope of [page, ...page.frames()]) {
+      const locator = buildLocator(scope);
+      try {
+        if ((await locator.count()) > 0 && (await locator.isVisible())) {
+          return locator;
+        }
+      } catch {
+        // Cross-origin Stripe frames can appear while the tree changes.
+      }
+    }
+    await delay(500);
+  }
+  return null;
+}
+
+async function waitForCheckoutPaymentIntent(sessionId) {
+  const deadline = Date.now() + 45_000;
+  while (Date.now() < deadline) {
+    const checkout = await stripe.checkout.sessions.retrieve(sessionId);
+    const paymentIntentId =
+      typeof checkout.payment_intent === "string"
+        ? checkout.payment_intent
+        : checkout.payment_intent?.id;
+    if (paymentIntentId) return paymentIntentId;
+    await delay(2000);
+  }
+  throw new Error("payment_intent_not_attached_to_checkout");
+}
+
+async function waitForStripeEvent({ objectId, type }) {
+  const deadline = Date.now() + 90_000;
+  while (Date.now() < deadline) {
+    const events = await stripe.events.list({ limit: 30, type });
+    const event = events.data.find((item) => item.data?.object?.id === objectId);
+    if (event) return event;
+    await delay(3000);
+  }
+  throw new Error(`stripe_event_not_found:${type}`);
+}
+
+async function postSignedStripeEventTwice(event) {
+  const firstResponse = await postSignedStripeEvent(event);
+  if (!firstResponse.ok) {
+    throw new Error(`webhook_failed:${event.type}:${firstResponse.status}`);
+  }
+
+  const duplicateResponse = await postSignedStripeEvent(event);
+  if (!duplicateResponse.ok) {
+    throw new Error(
+      `webhook_duplicate_failed:${event.type}:${duplicateResponse.status}`,
+    );
+  }
+}
+
+async function postSignedStripeEvent(event) {
+  const rawBody = JSON.stringify(event);
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = createHmac("sha256", stripeWebhookSecret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+
+  return fetch(`${supabaseUrl}/functions/v1/stripe-billing-webhook`, {
+    body: rawBody,
+    headers: {
+      "content-type": "application/json",
+      "stripe-signature": `t=${timestamp},v1=${signature}`,
+    },
+    method: "POST",
+  });
+}
+
+async function waitForSessionPayment(checkoutSessionId, expectedStatus) {
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    const [payment] = await getSessionPayment(checkoutSessionId);
+    if (payment?.financial_status === expectedStatus) return payment;
+    await delay(2000);
+  }
+  throw new Error(`session_payment_not_updated:${expectedStatus}`);
+}
+
+async function waitForAnySessionPaymentStatus(checkoutSessionId, statuses) {
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    const [payment] = await getSessionPayment(checkoutSessionId);
+    if (payment && statuses.includes(payment.financial_status)) return payment;
+    await delay(2000);
+  }
+  throw new Error(`session_payment_not_updated:${statuses.join("|")}`);
+}
+
+function getSessionPayment(checkoutSessionId) {
+  return supabaseAdmin(
+    `/rest/v1/session_payments?select=id,booking_id,financial_status,stripe_charge_id,stripe_payment_intent_id,stripe_checkout_session_id&stripe_checkout_session_id=eq.${encodeURIComponent(checkoutSessionId)}&limit=1`,
+  );
+}
+
+async function supabaseAdmin(path) {
+  const response = await fetch(`${supabaseUrl}${path}`, {
+    headers: {
+      apikey: supabaseServiceRoleKey,
+      authorization: `Bearer ${supabaseServiceRoleKey}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`supabase_admin_query_failed:${response.status}`);
+  }
+  return response.json();
+}
+
+function maskStripeId(value) {
+  if (!value || typeof value !== "string") return null;
+  if (value.length <= 12) return value;
+  return `${value.slice(0, 7)}...${value.slice(-4)}`;
+}
+
+function getTargetSupabaseUrl() {
+  const explicit =
+    process.env.SUPABASE_URL?.trim() ??
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ??
+    "";
+
+  return (explicit || getSupabaseUrl()).replace(/\/+$/g, "");
+}
+
+function supabaseProjectRef(value) {
+  try {
+    const host = new URL(value).host;
+    const match = /^([a-z0-9-]+)\.supabase\.co$/i.exec(host);
+    return match?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
