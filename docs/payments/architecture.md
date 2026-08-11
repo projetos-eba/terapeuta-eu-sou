@@ -65,6 +65,11 @@ As regras ficam em `financial_policy_versions`. A versao inicial e `tes-payments
 - prazo de seguranca de 7 dias apos confirmacao antes de elegibilidade para repasse;
 - lote semanal terca-feira 10:00 America/Sao_Paulo, com cutoff explicito e periodo unico por indice idempotente;
 - upgrades de assinatura cobram prorrata imediatamente; downgrades e cancelamentos entram no fim do periodo.
+- Premium Plus para Premium cria Subscription Schedule e registra o plano/data
+  futuros na metadata da assinatura local e remota para projeção consistente.
+- cancelamento usa `cancel_at_period_end`, libera eventual schedule de
+  downgrade e preserva o plano efetivo ate o fim pago; a mesma funcao aceita
+  reversao autenticada e idempotente com `cancel_at_period_end = false`.
 
 ## Dados principais
 

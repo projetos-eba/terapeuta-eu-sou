@@ -1,0 +1,7 @@
+interface:
+  display_name: Planos do terapeuta
+  short_description: Mantém planos, upgrade e gestão segura de assinatura do terapeuta.
+  default_prompt: >-
+    Implemente ou revise a central de planos e assinatura do terapeuta usando a
+    skill, mantendo /terapeuta/plano para upgrades, Configurações para
+    downgrade/cancelamento e Stripe/Supabase como autoridades do estado.

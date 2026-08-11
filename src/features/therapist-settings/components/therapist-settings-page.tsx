@@ -27,6 +27,8 @@ import {
   AppPageSection,
 } from "@/components/app-page";
 import { TESButton } from "@/components/tes";
+import { SubscriptionManagementPanel } from "@/features/therapist-plan/components/subscription-management-panel";
+import type { TherapistPlanPageData } from "@/features/therapist-plan/therapist-plan.types";
 import { routes } from "@/lib/routes";
 
 import { updateTherapistSettings } from "../therapist-settings.commands";
@@ -36,8 +38,10 @@ import type {
 } from "../therapist-settings.types";
 
 export function TherapistSettingsPage({
+  planData,
   settings,
 }: {
+  planData: TherapistPlanPageData;
   settings: TherapistSettingsData;
 }) {
   const initialFields = pickEditableFields(settings);
@@ -132,10 +136,13 @@ export function TherapistSettingsPage({
 
       <AppPageGrid>
         <AppPageMain>
+          <SubscriptionManagementPanel data={planData} />
           <AccountSection
             email={settings.account.email}
             fields={fields}
-            onChange={(next) => setFields((current) => ({ ...current, ...next }))}
+            onChange={(next) =>
+              setFields((current) => ({ ...current, ...next }))
+            }
             onSubmit={() => void submit()}
             pending={pending}
           />
@@ -479,7 +486,10 @@ function ProtectedDataPanel() {
     <AppPageSection className="grid gap-4">
       <SectionHeading icon={ShieldCheck} title="Dados protegidos" />
       <ul className="grid gap-3 text-sm font-semibold leading-6 text-tesText-secondary">
-        <li>Plano e assinatura são alterados somente pela área Meu plano.</li>
+        <li>
+          Upgrades ficam em Planos; cancelamentos e mudanças futuras ficam nesta
+          página.
+        </li>
         <li>Dados bancários completos ficam no ambiente seguro da Stripe.</li>
         <li>Documentos privados não aparecem no perfil público.</li>
       </ul>
@@ -609,7 +619,9 @@ function planLabel(plan: TherapistSettingsData["profile"]["plan"]) {
   return "Free";
 }
 
-function profileStatusLabel(status: TherapistSettingsData["profile"]["status"]) {
+function profileStatusLabel(
+  status: TherapistSettingsData["profile"]["status"],
+) {
   const labels = {
     approved: "Aprovado",
     changes_requested: "Ajustes solicitados",

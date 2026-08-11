@@ -36,6 +36,8 @@ Legacy namespaces `/basico/configuracoes`, `/pro/configuracoes` and
 - Shared feature files: `src/features/therapist-settings/`.
 - Source of account settings: `profiles`.
 - Source of public profile state: `therapist_profiles`.
+- Source of plan catalog: `billing_plans` and active `billing_plan_prices`.
+- Source of paid subscription state: `therapist_subscriptions`.
 
 Do not use service role in the Next.js app. The route must use the therapist
 access token and Supabase RLS.
@@ -47,7 +49,10 @@ access token and Supabase RLS.
 - E-mail is read-only here.
 - Public profile content belongs to `/terapeuta/perfil/editar`.
 - Availability belongs to `/terapeuta/agenda`.
-- Plan and subscription state belong to `/terapeuta/plano`.
+- Upgrades belong to `/terapeuta/plano`.
+- Scheduled downgrade, cancellation and cancellation reversal belong to the
+  `Plano e assinatura` section on this page.
+- Cancellation keeps the effective paid plan until `current_period_end`.
 - Stripe Connect data belongs to `/terapeuta/financeiro?tab=conta`.
 - Password changes use the public reset password flow.
 - Never log cookies, Authorization headers, Supabase keys or personal secrets.
@@ -74,6 +79,9 @@ Any broader profile update requires a new security review.
 - UI disables the main save action until there are changes.
 - UI shows success, local validation error and safe remote error states.
 - Links point to the canonical shell routes.
+- Free sees `Conhecer planos`; Premium can open Premium Plus and cancel;
+  Premium Plus can schedule Premium or cancel; a scheduled cancellation can be
+  reversed.
 - Run `npm run typecheck`, `npm run lint`, `npm run test` and
   `npm run build` for full delivery when the environment permits.
 
