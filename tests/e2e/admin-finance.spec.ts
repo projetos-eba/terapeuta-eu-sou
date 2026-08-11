@@ -4,15 +4,42 @@ const adminEmail = process.env.ADMIN_E2E_EMAIL ?? "admin.tes@example.test";
 const adminPassword = process.env.ADMIN_E2E_PASSWORD ?? "tes-mock-password";
 
 const financeRoutes = [
-  ["/admin/pagamentos", "Financeiro", "Transações e repasses", false],
-  ["/admin/assinaturas", "Assinaturas", "Assinaturas recentes", true],
-  ["/admin/relatorios", "Relatórios", "Relatórios disponíveis", true],
+  {
+    detailHeadings: [
+      "Detalhes do financeiro",
+      "Composição dos valores",
+      "Movimentações recentes",
+    ],
+    contextualHeading: null,
+    path: "/admin/pagamentos",
+    rowsTitle: "Transações e repasses",
+    title: "Financeiro",
+  },
+  {
+    detailHeadings: ["Assinatura", "Eventos recentes"],
+    contextualHeading: "Indicadores complementares",
+    path: "/admin/assinaturas",
+    rowsTitle: "Assinaturas recentes",
+    title: "Assinaturas",
+  },
+  {
+    detailHeadings: [],
+    contextualHeading: "Guardrails financeiros",
+    path: "/admin/relatorios",
+    rowsTitle: "Relatórios disponíveis",
+    title: "Relatórios",
+  },
 ] as const;
+
+const chunkErrorPattern = /ChunkLoadError|Loading chunk .* failed/i;
 
 test.describe("admin finance modules", () => {
   test("loads finance, subscriptions and reports with safe read-only surfaces", async ({
     page,
   }) => {
+    const runtimeErrors: string[] = [];
+    page.on("pageerror", (error) => runtimeErrors.push(error.message));
+
     await page.goto("/admin-login");
     await page.getByLabel("E-mail").fill(adminEmail);
     await page.getByLabel("Senha").fill(adminPassword);
@@ -21,18 +48,25 @@ test.describe("admin finance modules", () => {
       timeout: 30_000,
     });
 
-    for (const [path, title, rowsTitle, hasGuardrails] of financeRoutes) {
+    for (const {
+      contextualHeading,
+      detailHeadings,
+      path,
+      rowsTitle,
+      title,
+    } of financeRoutes) {
       await page.goto(path);
       await expect(
         page.getByRole("heading", { level: 1, name: title }),
       ).toBeVisible();
+      await expect(page.getByText(chunkErrorPattern)).toHaveCount(0);
       await expect(
         page.getByRole("heading", { name: rowsTitle }),
       ).toBeVisible();
 
-      if (hasGuardrails) {
+      if (contextualHeading) {
         await expect(
-          page.getByRole("heading", { name: "Guardrails financeiros" }),
+          page.getByRole("heading", { name: contextualHeading }),
         ).toBeVisible();
       }
 
@@ -42,12 +76,14 @@ test.describe("admin finance modules", () => {
         if ((await detailLinks.count()) > 0) {
           await detailLinks.first().click();
           await expect(page).toHaveURL(new RegExp(`${path}/[0-9a-f-]+$`));
-          await expect(
-            page.getByRole("heading", { name: "Segurança financeira" }),
-          ).toBeVisible();
-          await expect(
-            page.getByRole("heading", { name: "Eventos recentes" }),
-          ).toBeVisible();
+          await expect(page.getByText(chunkErrorPattern)).toHaveCount(0);
+
+          for (const heading of detailHeadings) {
+            await expect(
+              page.getByRole("heading", { name: heading }),
+            ).toBeVisible();
+          }
+
           await page.getByRole("link", { name: "Voltar" }).click();
           await expect(page).toHaveURL(new RegExp(`${path}(?:\\?.*)?$`));
         }
@@ -72,5 +108,8 @@ test.describe("admin finance modules", () => {
     expect(content).not.toContain("hosted_invoice_url");
     expect(content).not.toContain("invoice_pdf");
     expect(content).not.toContain("payload_sanitized");
+    expect(
+      runtimeErrors.filter((message) => chunkErrorPattern.test(message)),
+    ).toEqual([]);
   });
 });

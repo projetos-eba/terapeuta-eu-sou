@@ -420,7 +420,7 @@ export function formatStatusLabel(value?: string) {
     completed: "Concluída",
     confirmed: "Confirmada",
     deleted: "Excluído",
-    draft: "Rascunho",
+    draft: "Perfil em construção",
     hidden: "Oculta",
     in_progress: "Em andamento",
     in_review: "Em análise",
@@ -432,7 +432,7 @@ export function formatStatusLabel(value?: string) {
     rejected: "Não aprovado",
     reported: "Sinalizada",
     resolved: "Resolvido",
-    submitted: "Enviado",
+    submitted: "Aguardando análise",
     success: "Disponível",
     suspended: "Suspenso",
   };
@@ -465,9 +465,9 @@ export function formatAuditActionLabel(value?: string) {
     "support.reopen": "Atendimento reaberto",
     "support.resolve": "Atendimento concluído",
     "verification.approve": "Verificação aprovada",
-    "verification.pause_review": "Análise pausada",
+    "verification.pause_review": "Ajustes solicitados",
     "verification.reject": "Verificação não aprovada",
-    "verification.reopen_review": "Análise reaberta",
+    "verification.reopen_review": "Análise iniciada ou reaberta",
     "verification.request_changes": "Ajustes solicitados",
   };
 

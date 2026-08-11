@@ -116,10 +116,17 @@ Do not send generic `select *` payloads to React.
 - App checks: `npm run typecheck`, `npm run lint`, `npm run build`
 - Browser: navigate `/admin/pagamentos`, `/admin/assinaturas`,
   `/admin/relatorios`, `/admin/integracoes` as an admin user, use filters and
-  pagination, and confirm no forbidden fields appear in page HTML.
+  pagination, confirm no forbidden fields appear in page HTML and assert that
+  neither a Next error overlay nor `ChunkLoadError` is present on list or detail
+  routes.
 - Open a real payment detail and verify value composition, related session,
   translated reconciliation, refund/payout status, responsive layout and no
   horizontal overflow with Playwright MCP.
+- Validate subscription details independently from payment details; their
+  headings and sections follow different product contracts.
+- Do not run `next build` concurrently with `next dev` in the same worktree.
+  Both use `.next`, which can invalidate development chunks. Stop the dev server
+  before building and restart it before browser validation.
 
 ## Known Limits
 
