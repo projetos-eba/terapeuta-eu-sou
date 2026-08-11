@@ -130,6 +130,16 @@ export function AdminTherapyCatalogPage({
       return true;
     });
   }, [catalog.items, filters]);
+  const publishedCount = catalog.items.filter(
+    (therapy) => therapy.status === "published",
+  ).length;
+  const matchingCount = catalog.items.filter(
+    (therapy) => therapy.isVisibleInMatching,
+  ).length;
+  const serviceCount = catalog.items.reduce(
+    (total, therapy) => total + therapy.impact.activeServiceCount,
+    0,
+  );
 
   async function saveTherapy(command: AdminTherapyDraftCommand) {
     setIsMutating(true);
@@ -144,7 +154,7 @@ export function AdminTherapyCatalogPage({
     setIsMutating(false);
 
     if (result.status === "error") {
-      setMessage(result.error.message);
+      setMessage("Não foi possível salvar a terapia agora. Tente novamente.");
       return;
     }
 
@@ -170,7 +180,7 @@ export function AdminTherapyCatalogPage({
     setIsMutating(false);
 
     if (result.status === "error") {
-      setMessage(result.error.message);
+      setMessage("Não foi possível concluir esta ação agora. Tente novamente.");
       return;
     }
 
@@ -181,31 +191,39 @@ export function AdminTherapyCatalogPage({
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1440px] space-y-6">
-      <section className="rounded-2xl border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-3xl">
-            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
-              Catálogo da plataforma
-            </p>
-            <h1 className="mt-3 font-display text-4xl font-light italic leading-tight text-brand-deep sm:text-5xl">
-              Terapias
-            </h1>
-            <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
-              Controle publicação, Match, disponibilidade para serviços e
-              impacto antes de mudanças no catálogo.
-            </p>
-          </div>
-          <TESButton
-            className="min-h-11 w-full rounded-xl sm:w-auto"
-            onClick={() => setEditingTherapy("new")}
-            type="button"
-            variant="gradient"
-          >
-            <Plus aria-hidden="true" className="size-4" />
-            Criar rascunho
-          </TESButton>
+    <div className="mx-auto w-full max-w-[1166px] space-y-6 py-1">
+      <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-xs font-extrabold uppercase tracking-[0.42em] text-brand-primary">
+            Admin
+          </p>
+          <h1 className="mt-3 font-display text-[3.15rem] font-normal italic leading-[0.95] text-brand-deep sm:text-[4.4rem]">
+            Terapias
+          </h1>
+          <p className="mt-4 text-base font-semibold leading-7 text-tesText-secondary sm:text-lg">
+            Organize o catálogo, a presença no Match e a disponibilidade das
+            terapias na plataforma.
+          </p>
         </div>
+        <TESButton
+          className="min-h-12 w-full rounded-full px-6 sm:w-auto"
+          onClick={() => setEditingTherapy("new")}
+          type="button"
+          variant="gradient"
+        >
+          <Plus aria-hidden="true" className="size-4" />
+          Criar rascunho
+        </TESButton>
+      </header>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <CatalogMetric
+          label="Terapias cadastradas"
+          value={catalog.items.length}
+        />
+        <CatalogMetric label="Publicadas" value={publishedCount} />
+        <CatalogMetric label="Visíveis no Match" value={matchingCount} />
+        <CatalogMetric label="Serviços ativos" value={serviceCount} />
       </section>
 
       {message ? (
@@ -217,7 +235,7 @@ export function AdminTherapyCatalogPage({
         </p>
       ) : null}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
         <main className="space-y-4">
           <Filters
             categories={catalog.categories}
@@ -279,12 +297,12 @@ export function AdminTherapyCatalogPage({
             )}
           </Panel>
 
-          <Panel title="Fontes de verdade">
+          <Panel title="Como o catálogo funciona">
             <ul className="space-y-3 text-sm font-semibold leading-6 text-tesText-secondary">
-              <li>Terapia canônica: `therapies`.</li>
-              <li>Serviço do terapeuta: `therapist_services.therapy_id`.</li>
-              <li>Match: configuração e pesos publicados separados.</li>
-              <li>Reserva e agenda continuam baseadas no serviço.</li>
+              <li>Uma terapia só aparece ao público depois de publicada.</li>
+              <li>A presença no Match pode ser acompanhada separadamente.</li>
+              <li>Serviços ativos mostram o impacto antes de cada mudança.</li>
+              <li>Arquivar preserva o histórico administrativo.</li>
             </ul>
           </Panel>
         </aside>
@@ -366,7 +384,7 @@ function Filters({
   onChange: (filters: FilterState) => void;
 }) {
   return (
-    <section className="rounded-2xl border border-brand-lavender bg-white p-4 shadow-card">
+    <section className="rounded-[28px] border border-brand-lavender/70 bg-white p-5 shadow-[0_22px_60px_rgba(20,16,90,0.09)]">
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         <label className="md:col-span-2 xl:col-span-1">
           <span className="mb-2 block text-xs font-extrabold uppercase tracking-[0.16em] text-tesText-secondary">
@@ -379,7 +397,7 @@ function Filters({
               onChange={(event) =>
                 onChange({ ...filters, query: event.target.value })
               }
-              placeholder="Nome, slug, alias"
+              placeholder="Nome, descrição ou endereço"
               value={filters.query}
             />
           </span>
@@ -498,7 +516,7 @@ function TherapyCard({
   therapy: AdminTherapy;
 }) {
   return (
-    <article className="rounded-2xl border border-brand-lavender bg-white p-4 shadow-card sm:p-5">
+    <article className="rounded-[28px] border border-brand-lavender/70 bg-white p-5 shadow-[0_22px_60px_rgba(20,16,90,0.09)] sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -517,9 +535,6 @@ function TherapyCard({
           <h2 className="mt-3 text-xl font-extrabold text-brand-deep">
             {therapy.name}
           </h2>
-          <p className="mt-1 break-words text-sm font-bold text-tesText-secondary">
-            /terapias/{therapy.slug}
-          </p>
           <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
             {therapy.shortDescription}
           </p>
@@ -589,7 +604,9 @@ function TherapyCard({
                 className="text-xs font-semibold leading-5 text-tesText-secondary"
                 key={event.id}
               >
-                <strong className="text-brand-deep">{event.eventType}</strong>{" "}
+                <strong className="text-brand-deep">
+                  {historyLabel(event.eventType)}
+                </strong>{" "}
                 em {new Date(event.createdAt).toLocaleString("pt-BR")}
                 {event.reason ? ` - ${event.reason}` : ""}
               </p>
@@ -629,7 +646,7 @@ function ImpactSummary({ therapy }: { therapy: AdminTherapy }) {
     ["Serviços", therapy.impact.serviceCount],
     ["Ativos", therapy.impact.activeServiceCount],
     ["Terapeutas", therapy.impact.therapistCount],
-    ["Bookings futuros", therapy.impact.futureBookingCount],
+    ["Sessões futuras", therapy.impact.futureBookingCount],
   ];
 
   return (
@@ -654,7 +671,7 @@ function Panel({
   title: string;
 }) {
   return (
-    <section className="rounded-2xl border border-brand-lavender bg-white p-5 shadow-card">
+    <section className="rounded-[28px] border border-brand-lavender/70 bg-white p-5 shadow-[0_22px_60px_rgba(20,16,90,0.09)]">
       <h2 className="text-lg font-extrabold text-brand-deep">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
@@ -669,6 +686,30 @@ function transitionLabel(action: AdminTherapyTransition) {
     review: "revisão",
     unpublish: "despublicação",
   }[action];
+}
+
+function historyLabel(value: string) {
+  const labels: Record<string, string> = {
+    archive: "Terapia arquivada",
+    create: "Terapia criada",
+    deprecate: "Terapia descontinuada",
+    publish: "Terapia publicada",
+    review: "Revisão iniciada",
+    unpublish: "Publicação retirada",
+    update: "Terapia atualizada",
+  };
+  return labels[value.toLowerCase()] ?? "Atualização administrativa";
+}
+
+function CatalogMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <article className="rounded-[24px] border border-brand-lavender/70 bg-white p-5 shadow-[0_20px_55px_rgba(20,16,90,0.08)]">
+      <p className="text-sm font-extrabold text-tesText-secondary">{label}</p>
+      <p className="mt-4 text-[2.35rem] font-extrabold leading-none text-brand-deep">
+        {value}
+      </p>
+    </article>
+  );
 }
 
 function normalize(value: string) {

@@ -27,6 +27,7 @@ import type {
   AdminFinancePageData,
   AdminFinanceRow,
 } from "../admin-finance.types";
+import { AdminPaymentDetailPage } from "./admin-payment-detail-page";
 
 export function AdminFinancePage({ data }: { data: AdminFinancePageData }) {
   return (
@@ -107,7 +108,11 @@ export function AdminFinancePage({ data }: { data: AdminFinancePageData }) {
                 </select>
               </label>
               <div className="flex gap-2">
-                <input name="pageSize" type="hidden" value={data.query.pageSize} />
+                <input
+                  name="pageSize"
+                  type="hidden"
+                  value={data.query.pageSize}
+                />
                 <button
                   className="inline-flex min-h-11 flex-1 items-center justify-center rounded-md bg-brand-primary px-4 text-sm font-extrabold text-white shadow-card outline-none transition hover:bg-brand-deep focus-visible:ring-4 focus-visible:ring-ring/20 lg:flex-none"
                   type="submit"
@@ -320,6 +325,10 @@ export function AdminFinanceDetailPage({
 }: {
   data: AdminFinanceDetailPageData;
 }) {
+  if (data.module === "payments") {
+    return <AdminPaymentDetailPage data={data} />;
+  }
+
   return (
     <AppPageContainer className="max-w-[1440px] py-5 lg:py-6">
       <Link

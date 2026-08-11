@@ -20,6 +20,7 @@ Use this skill when changing `/admin/pagamentos`, `/admin/assinaturas`,
 ## Routes
 
 - `/admin/pagamentos` displays as `Financeiro` in the admin shell.
+- `/admin/pagamentos/[paymentId]` displays the dedicated financial detail.
 - `/admin/assinaturas` displays as `Assinaturas`.
 - `/admin/relatorios` displays as `Relatórios`.
 
@@ -64,6 +65,31 @@ Do not send generic `select *` payloads to React.
   read model, Stripe payloads, ledger, DTOs, internal guardrails or
   configuration failures.
 
+### Visual contract for payments and subscriptions
+
+- Figma `Design System / Componentes / 09 Patterns administrativos`
+  (`12857:666`) defines the shared rhythm: editorial header, KPI cards,
+  contextual summary and a table contained within the page grid.
+- `/admin/pagamentos` uses a maximum content width of `1166px`. Its desktop
+  table groups gross value, therapist payout and TES commission into one
+  column so the page never creates horizontal overflow outside the card.
+- `/admin/assinaturas` uses `AdminSubscriptionsPage`, with four primary KPIs,
+  complementary indicators, plan distribution for the visible page and
+  responsive desktop/mobile records.
+- Plan distribution is derived only from `data.rows`; label it as the current
+  page rather than a platform-wide total.
+- Payment, transfer, subscription and invoice statuses must be translated to
+  product language before rendering. Provider identifiers remain internal.
+- Empty, forbidden and unavailable states use fixed product copy and never
+  expose backend error messages.
+- `/admin/pagamentos/[paymentId]` uses `AdminPaymentDetailPage` and follows the
+  detail hierarchy already established for professionals and clients:
+  breadcrumbs, editorial heading, transaction hero, value KPIs, grouped
+  sections and recent movements.
+- Technical reconciliation labels are translated before rendering:
+  PaymentIntent, Charge, Balance Transaction, metadata and ledger terminology
+  must not appear in the browser. The underlying DTO remains unchanged.
+
 ## Never Expose In The Browser
 
 - Stripe secret keys, webhook secrets or service role keys.
@@ -91,6 +117,9 @@ Do not send generic `select *` payloads to React.
 - Browser: navigate `/admin/pagamentos`, `/admin/assinaturas`,
   `/admin/relatorios`, `/admin/integracoes` as an admin user, use filters and
   pagination, and confirm no forbidden fields appear in page HTML.
+- Open a real payment detail and verify value composition, related session,
+  translated reconciliation, refund/payout status, responsive layout and no
+  horizontal overflow with Playwright MCP.
 
 ## Known Limits
 
@@ -101,3 +130,6 @@ Do not send generic `select *` payloads to React.
 - `/admin/pagamentos` can approximate the composition and rhythm of the admin
   finance reference, but it cannot show charts or derived financial analytics
   until those values exist in the backend contract.
+- `/admin/assinaturas` cannot show MRR, churn, renewal projections, revenue by
+  plan or historical evolution because the current contract exposes counts and
+  sanitized operational rows only.

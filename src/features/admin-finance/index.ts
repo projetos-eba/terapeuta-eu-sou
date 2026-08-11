@@ -3,6 +3,7 @@ export {
   AdminFinancePage,
 } from "./components/admin-finance-page";
 export { AdminPaymentsPage } from "./components/admin-payments-page";
+export { AdminSubscriptionsPage } from "./components/admin-subscriptions-page";
 export {
   getAdminFinanceDetailPage,
   getAdminFinancePage,
