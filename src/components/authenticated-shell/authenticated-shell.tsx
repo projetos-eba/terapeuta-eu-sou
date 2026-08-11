@@ -20,6 +20,7 @@ export type ShellNavigationItem = {
     | "calendar"
     | "chart"
     | "credit-card"
+    | "crown"
     | "heart"
     | "help"
     | "home"
@@ -34,6 +35,7 @@ export type ShellNavigationItem = {
     | "wallet";
   label: string;
   planLabel?: "Premium" | "Premium Plus";
+  tone?: "default" | "upgrade";
   upgradeHref?: string;
 };
 

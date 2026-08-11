@@ -27,6 +27,25 @@ export function isTherapistPlanAtLeast(
   return therapistPlanLevels[plan] >= therapistPlanLevels[minimumPlan];
 }
 
+export function isPaidTherapistPlan(plan: TherapistPlan) {
+  return plan !== TherapistPlan.Free;
+}
+
+export function getTherapistUpgradeOptions(plan: TherapistPlan) {
+  return (Object.values(TherapistPlan) as TherapistPlan[]).filter(
+    (candidate) => therapistPlanLevels[candidate] > therapistPlanLevels[plan],
+  );
+}
+
+export function getTherapistDowngradeOptions(plan: TherapistPlan) {
+  if (plan === TherapistPlan.PremiumPlus) return [TherapistPlan.Premium];
+  return [];
+}
+
+export function canUpgradeTherapistPlan(plan: TherapistPlan) {
+  return getTherapistUpgradeOptions(plan).length > 0;
+}
+
 export function normalizeLegacyTherapistPlan(plan: string): TherapistPlan {
   const legacyPlanMap: Record<string, TherapistPlan> = {
     basic: TherapistPlan.Free,

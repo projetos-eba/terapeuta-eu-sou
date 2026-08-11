@@ -12,7 +12,11 @@ describe("buildTherapistNavigation", () => {
       unreadMessagesCount: 4,
     });
 
-    expect(navigation.map((item) => item.href)).toEqual([
+    expect(
+      navigation
+        .filter((item) => item.accessState !== "hidden")
+        .map((item) => item.href),
+    ).toEqual([
       routes.therapist.home,
       routes.therapist.agenda,
       routes.therapist.patients,
@@ -28,8 +32,11 @@ describe("buildTherapistNavigation", () => {
       routes.therapist.support,
     ]);
     expect(navigation.every((item) => item.accessState === "enabled")).toBe(
-      true,
+      false,
     );
+    expect(
+      navigation.find((item) => item.label === "Upgrade")?.accessState,
+    ).toBe("hidden");
     expect(navigation.find((item) => item.label === "Mensagens")?.badge).toBe(
       4,
     );
@@ -51,6 +58,11 @@ describe("buildTherapistNavigation", () => {
     expect(
       navigation.find((item) => item.label === "Avaliações")?.accessState,
     ).toBe("enabled");
+    expect(navigation.find((item) => item.label === "Upgrade")).toMatchObject({
+      accessState: "enabled",
+      href: routes.therapist.plan,
+      tone: "upgrade",
+    });
   });
 
   it("keeps essential Free features enabled", () => {
@@ -69,5 +81,8 @@ describe("buildTherapistNavigation", () => {
     expect(navigation.every((item) => item.href.startsWith("/terapeuta"))).toBe(
       true,
     );
+    expect(
+      navigation.find((item) => item.label === "Upgrade")?.accessState,
+    ).toBe("enabled");
   });
 });

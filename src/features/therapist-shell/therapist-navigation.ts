@@ -1,5 +1,6 @@
 import {
   canUseTherapistCapability,
+  canUpgradeTherapistPlan,
   planIncludesFeature,
   TherapistPlan,
   type PlanFeatureCode,
@@ -16,6 +17,8 @@ type NavigationDefinition = {
   icon: TherapistShellNavigation[number]["icon"];
   label: string;
   planLabel?: "Premium" | "Premium Plus";
+  tone?: "default" | "upgrade";
+  upgradeOnly?: boolean;
 };
 
 const definitions: NavigationDefinition[] = [
@@ -83,6 +86,13 @@ const definitions: NavigationDefinition[] = [
     planLabel: "Premium Plus",
   },
   {
+    href: routes.therapist.plan,
+    icon: "crown",
+    label: "Upgrade",
+    tone: "upgrade",
+    upgradeOnly: true,
+  },
+  {
     capability: "operation_essentials",
     href: routes.therapist.finance,
     icon: "wallet",
@@ -112,6 +122,15 @@ export function buildTherapistNavigation({
   const upgradeHref = routes.therapist.plan;
 
   return definitions.map((definition) => {
+    if (definition.upgradeOnly && !canUpgradeTherapistPlan(plan)) {
+      return {
+        accessState: "hidden" as const,
+        href: definition.href,
+        icon: definition.icon,
+        label: definition.label,
+        tone: definition.tone,
+      };
+    }
     const hasAccess = definition.capability
       ? canUseTherapistCapability(plan, definition.capability)
       : definition.feature
@@ -127,6 +146,7 @@ export function buildTherapistNavigation({
       planLabel:
         definition.planLabel && !hasAccess ? definition.planLabel : undefined,
       upgradeHref: hasAccess ? undefined : upgradeHref,
+      tone: definition.tone,
     };
   });
 }

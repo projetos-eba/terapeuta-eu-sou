@@ -188,7 +188,7 @@ function getStatusCopy(status: CheckoutStatus, error: string | null) {
     return {
       title: "Confirmacao temporariamente indisponivel",
       description:
-        "Nao conseguimos consultar a Stripe neste instante. Seu plano continua protegido e voce pode verificar novamente.",
+        "Não conseguimos consultar a confirmação neste instante. Seu plano continua protegido e você pode verificar novamente.",
     };
   }
 
@@ -197,13 +197,13 @@ function getStatusCopy(status: CheckoutStatus, error: string | null) {
       return {
         title: "Pagamento confirmado",
         description:
-          "A Stripe confirmou a assinatura e estamos atualizando sua area profissional.",
+          "Sua assinatura foi confirmada e estamos atualizando sua área profissional.",
       };
     case "failed":
       return {
         title: "Pagamento nao confirmado",
         description:
-          "A Stripe nao confirmou esta assinatura. Seu plano continua Free e voce pode iniciar uma nova tentativa.",
+          "Esta assinatura não foi confirmada. Seu plano continua Free e você pode iniciar uma nova tentativa.",
       };
     case "canceled":
       return {
@@ -221,13 +221,13 @@ function getStatusCopy(status: CheckoutStatus, error: string | null) {
       return {
         title: "Pagamento exige acao",
         description:
-          "A assinatura ainda precisa de uma acao na Stripe antes de liberar o plano.",
+          "A assinatura ainda precisa de uma ação antes de liberar o plano.",
       };
     default:
       return {
         title: "Confirmando seu pagamento",
         description:
-          "Estamos consultando a Stripe e o banco TES. O plano pago so sera liberado apos confirmacao server-side.",
+          "Estamos confirmando o pagamento. O plano pago será liberado assim que essa etapa for concluída.",
       };
   }
 }

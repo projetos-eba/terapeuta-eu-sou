@@ -109,6 +109,7 @@ try {
   await invokeFunction(
     auth.access_token,
     "stripe-cancel-therapist-subscription",
+    { action: "cancel" },
   );
   await postSubscriptionEventAfter({
     since: cancelStartedAt,
@@ -123,16 +124,11 @@ try {
 
   logStage("reactivate_cancel_at_period_end");
   const reactivateStartedAt = stripeNow();
-  await stripe.subscriptions.update(stripeSubscriptionId, {
-    cancel_at_period_end: false,
-    metadata: {
-      plan_code: "premium_plus",
-      system: "tes",
-      tes_therapist_id: therapist.id,
-      user_id: auth.user.id,
-    },
-    proration_behavior: "none",
-  });
+  await invokeFunction(
+    auth.access_token,
+    "stripe-cancel-therapist-subscription",
+    { action: "resume" },
+  );
   await postSubscriptionEventAfter({
     since: reactivateStartedAt,
     stripeSubscriptionId,
