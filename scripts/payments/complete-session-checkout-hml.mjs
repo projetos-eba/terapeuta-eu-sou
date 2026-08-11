@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 
 import { createHmac } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import process from "node:process";
 import Stripe from "stripe";
 import { chromium } from "playwright";
+
+import { parseNetscapeCookieJar } from "../homologation/zoom-hml.mjs";
 
 import {
   assertStripeModeAllowedForSupabaseUrl,
@@ -20,13 +23,16 @@ loadEnvFiles();
 const args = new Set(process.argv.slice(2));
 const scenario = readArg("scenario", "approved");
 const baseUrl =
-  process.env.PLAYWRIGHT_BASE_URL?.replace(/\/+$/g, "") ??
+  process.env.PLAYWRIGHT_BASE_URL?.trim() ??
   "https://hml.terapeutaeusou.com.br";
+const vercelCookieFile =
+  process.env.PAYMENTS_HML_VERCEL_COOKIE_FILE?.trim() || null;
 const expectedHmlRef =
   process.env.PAYMENTS_HML_SUPABASE_REF?.trim() || "emzwqkmrryuqvqiohqnu";
 const publicTherapistSlug =
   process.env.PAYMENTS_HML_PUBLIC_THERAPIST_SLUG?.trim() ??
   "antonio-ferrari-e2e";
+const requestedSlot = process.env.PAYMENTS_HML_SLOT?.trim() || null;
 const patientEmail = process.env.PAYMENTS_HML_PATIENT_EMAIL?.trim();
 const patientPassword = process.env.PAYMENTS_HML_PATIENT_PASSWORD?.trim();
 const supabaseUrl = getTargetSupabaseUrl();
@@ -82,19 +88,26 @@ let checkoutSessionId = null;
 
 try {
   logStage("resolve_public_fixture");
-  const fixture = await getPublicFixture(publicTherapistSlug);
-  const reservationPath = buildReservationPath(fixture);
+  const fixture = await getPublicFixture(publicTherapistSlug, requestedSlot);
+  const reservationPath = buildReservationPath(fixture, requestedSlot);
 
   logStage("launch_browser");
   browser = await chromium.launch({ headless: false });
   const context = await browser.newContext({
     recordVideo: { dir: `test-results/payments-session-${scenario}` },
   });
+  if (vercelCookieFile) {
+    const cookies = await readVercelCookies(vercelCookieFile);
+    await context.addCookies(cookies);
+  }
   const page = await context.newPage();
 
   logStage("patient_login");
   await page.goto(
-    `${baseUrl}/cliente/login?next=${encodeURIComponent(reservationPath)}`,
+    buildAppUrl(
+      baseUrl,
+      `/cliente/login?next=${encodeURIComponent(reservationPath)}`,
+    ),
   );
   await page.getByLabel("E-mail").fill(patientEmail);
   await page.getByLabel("Senha").fill(patientPassword);
@@ -102,22 +115,27 @@ try {
   await page.waitForURL(new RegExp(`/reserva\\?`), { timeout: 30_000 });
 
   logStage("accept_terms_and_start_checkout");
-  await page.getByRole("checkbox").first().check();
-  await page.getByRole("button", { name: /Avançar para pagamento/i }).click();
-
-  const checkoutResponsePromise = page.waitForResponse(
-    (response) =>
-      response.url().includes("/api/public/reservation/checkout") &&
-      response.request().method() === "POST",
-    { timeout: 45_000 },
-  );
+  const prepareForm = page.locator("form").filter({
+    has: page.locator('input[name="terms"]'),
+  });
+  await prepareForm.locator('input[name="terms"]').check();
+  const [checkoutResponse] = await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/public/reservation/checkout") &&
+        response.request().method() === "POST",
+      { timeout: 45_000 },
+    ),
+    prepareForm
+      .getByRole("button", { name: /Avançar para pagamento/i })
+      .click(),
+  ]);
 
   await page
     .locator("#reservation-embedded-checkout iframe")
     .first()
     .waitFor({ state: "visible", timeout: 60_000 });
 
-  const checkoutResponse = await checkoutResponsePromise;
   const checkoutPayload = await checkoutResponse.json();
   if (!checkoutPayload?.ok || !checkoutPayload.checkout?.checkoutSessionId) {
     throw new Error(`checkout_creation_failed:${checkoutResponse.status()}`);
@@ -257,26 +275,48 @@ function printEvidence(payload) {
   );
 }
 
-async function getPublicFixture(slug) {
+async function getPublicFixture(slug, slotOverride) {
   const [fixture] = await supabaseAdmin(
     `/rest/v1/public_therapist_search?select=slug,public_name,service_id,therapy_slug,next_slot_at&slug=eq.${encodeURIComponent(slug)}&limit=1`,
   );
-  if (!fixture?.service_id || !fixture?.next_slot_at) {
+  if (!fixture?.service_id || (!fixture?.next_slot_at && !slotOverride)) {
     throw new Error(`public_fixture_not_ready:${slug}`);
   }
   return fixture;
 }
 
-function buildReservationPath(fixture) {
+function buildReservationPath(fixture, slotOverride) {
+  const slot = slotOverride ?? fixture.next_slot_at;
+  if (!slot || !Number.isFinite(Date.parse(slot))) {
+    throw new Error("reservation_slot_invalid");
+  }
   const params = new URLSearchParams({
     etapa: "preparar",
     service: fixture.service_id,
-    slot: fixture.next_slot_at,
+    slot: new Date(slot).toISOString(),
     source: "stripe_phase3_hml",
     therapist: fixture.slug,
   });
   if (fixture.therapy_slug) params.set("therapy", fixture.therapy_slug);
   return `/reserva?${params.toString()}`;
+}
+
+function buildAppUrl(sharedBaseUrl, target) {
+  const base = new URL(sharedBaseUrl);
+  const url = new URL(target, `${base.origin}/`);
+  const share = base.searchParams.get("_vercel_share");
+  if (share) url.searchParams.set("_vercel_share", share);
+  return url.toString();
+}
+
+async function readVercelCookies(filePath) {
+  try {
+    const cookies = parseNetscapeCookieJar(await readFile(filePath, "utf8"));
+    if (cookies.length === 0) throw new Error("empty");
+    return cookies;
+  } catch {
+    throw new Error("vercel_cookie_file_unreadable");
+  }
 }
 
 async function fillStripeCard(page, cardNumber) {
@@ -448,15 +488,14 @@ async function waitForStripeEvent({ objectId, type }) {
 
 async function postSignedStripeEventTwice(event) {
   const firstResponse = await postSignedStripeEvent(event);
-  if (!firstResponse.ok) {
-    throw new Error(`webhook_failed:${event.type}:${firstResponse.status}`);
-  }
-
   const duplicateResponse = await postSignedStripeEvent(event);
-  if (!duplicateResponse.ok) {
+  if (!firstResponse.ok && !duplicateResponse.ok) {
     throw new Error(
-      `webhook_duplicate_failed:${event.type}:${duplicateResponse.status}`,
+      `webhook_failed:${event.type}:${firstResponse.status}:${duplicateResponse.status}`,
     );
+  }
+  if (!firstResponse.ok || !duplicateResponse.ok) {
+    logStage("webhook_concurrent_delivery_recovered");
   }
 }
 

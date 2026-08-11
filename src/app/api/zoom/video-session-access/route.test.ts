@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const headerMocks = vi.hoisted(() => ({
   cookieGet: vi.fn(),
@@ -33,6 +33,10 @@ describe("zoom video session access route", () => {
       apiKey: "publishable-key",
       url: "https://tes.supabase.test",
     });
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("rejects unauthenticated patients before calling the Edge Function", async () => {
@@ -162,6 +166,35 @@ describe("zoom video session access route", () => {
         }),
       }),
     );
+  });
+
+  it("fails safely when the upstream access request does not finish", async () => {
+    vi.useFakeTimers();
+    headerMocks.cookieGet.mockImplementation((name: string) =>
+      name === "tes_patient_access_token"
+        ? { value: "patient-access-token" }
+        : undefined,
+    );
+    const fetchMock = vi.fn(
+      (_url: string, init: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const responsePromise = POST(
+      makeRequest({ actorRole: "patient", intent: "preview" }),
+    );
+    await vi.advanceTimersByTimeAsync(10_000);
+    const response = await responsePromise;
+    const payload = await response.json();
+
+    expect(response.status).toBe(504);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(payload.message).toMatch(/demorou mais que o esperado/i);
   });
 });
 

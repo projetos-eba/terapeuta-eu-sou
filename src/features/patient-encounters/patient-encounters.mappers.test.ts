@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { mapPatientEncountersPage } from "./patient-encounters.mappers";
 
@@ -29,6 +29,10 @@ const therapy = {
 };
 
 describe("patient encounters mapper", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("uses canonical payment status before confirming an encounter", () => {
     const booking = createBooking(
       "95000000-0000-4000-8000-000000000001",
@@ -86,9 +90,12 @@ describe("patient encounters mapper", () => {
   });
 
   it("allows live entry from paid booking window without exposing a meeting url", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-01T13:45:00.000Z"));
+
     const booking = createBooking(
       "95000000-0000-4000-8000-000000000003",
-      new Date(Date.now() - 5 * 60 * 1000),
+      new Date("2026-08-01T14:00:00.000Z"),
     );
 
     const result = mapPatientEncountersPage({
@@ -112,6 +119,38 @@ describe("patient encounters mapper", () => {
     expect(result.nextEncounter?.meetingUrl).toBeNull();
     expect(result.nextEncounter?.primaryAction.label).toBe(
       "Entrar no encontro",
+    );
+  });
+
+  it("keeps the entry hint aligned to T-15 before the live window starts", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-01T13:44:00.000Z"));
+
+    const booking = createBooking(
+      "95000000-0000-4000-8000-000000000005",
+      new Date("2026-08-01T14:00:00.000Z"),
+    );
+
+    const result = mapPatientEncountersPage({
+      bookings: [booking],
+      favoriteTherapistsCount: 0,
+      patient,
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map([
+        [booking.id, { booking_id: booking.id, financial_status: "paid" }],
+      ]),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(result.nextEncounter?.status).toBe("confirmed");
+    expect(result.nextEncounter?.actionHint).toBe(
+      "Entrada liberada 15 min antes",
     );
   });
 

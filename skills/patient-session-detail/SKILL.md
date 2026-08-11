@@ -15,6 +15,7 @@ Use this skill when implementing or refactoring the authenticated client/patient
 ## Route
 
 - Canonical route: `/app/encontros/[bookingId]`.
+- Dedicated video route: `/app/encontros/[bookingId]/video`.
 - Legacy route: `/app/sessoes/[bookingId]` redirects to `/app/encontros/[bookingId]`.
 - `routes.patient.encounterDetail(bookingId)` is the canonical detail helper.
 - Keep `routes.patient.sessionDetail(bookingId)` only as legacy.
@@ -55,6 +56,8 @@ Use these support tables when needed:
 - Use TES Tailwind tokens: `brand`, `surface`, `tesText`, `status`, `shadow-card`, `rounded-card`, `font-display`, `font-sans`.
 - Therapist avatars shown in patient session cards/details must come from the same stable `public/therapists/*.png` assets used by public therapist pages and seed data.
 - Use real buttons and links.
+- O detalhe deve direcionar para a sala dedicada; não montar o Video SDK no
+  card de acesso.
 - Video session entry must be a client component with visible or aria-live feedback.
 - Zoom join must be a client component that dynamic-imports `@zoom/videosdk` and never trusts a browser-provided role.
 - Use local assets or token-based placeholders only; do not commit temporary Figma asset URLs.

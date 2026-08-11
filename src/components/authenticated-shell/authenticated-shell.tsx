@@ -1,6 +1,7 @@
 "use client";
 
 import { Menu, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
@@ -73,6 +74,11 @@ export function AuthenticatedShell({
   variant = "patient",
 }: AuthenticatedShellProps) {
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
+  const pathname = usePathname();
+
+  if (isDedicatedVideoCallPath(pathname)) {
+    return <main className="min-h-dvh">{children}</main>;
+  }
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--tes-color-background)] text-tesText-primary">
@@ -126,6 +132,13 @@ export function AuthenticatedShell({
         </main>
       </div>
     </div>
+  );
+}
+
+export function isDedicatedVideoCallPath(pathname: string) {
+  return (
+    /^\/app\/encontros\/[^/]+\/video\/?$/.test(pathname) ||
+    /^\/terapeuta\/sessoes\/[^/]+\/video\/?$/.test(pathname)
   );
 }
 

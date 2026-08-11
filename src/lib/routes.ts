@@ -30,6 +30,7 @@ export const routes = {
     encounters: "/app/encontros",
     encounterHistory: "/app/encontros#patient-history-encounters-title",
     encounterDetail: (bookingId: string) => `/app/encontros/${bookingId}`,
+    encounterVideo: (bookingId: string) => `/app/encontros/${bookingId}/video`,
     messages: "/app/mensagens",
     favorites: "/app/favoritos",
     favoriteTherapists: "/app/favoritos/terapeutas",
@@ -57,6 +58,8 @@ export const routes = {
     patientJourney: (patientId: string) => `/terapeuta/pacientes/${patientId}`,
     sessions: "/terapeuta/sessoes",
     sessionDetail: (bookingId: string) => `/terapeuta/sessoes/${bookingId}`,
+    sessionVideo: (bookingId: string) =>
+      `/terapeuta/sessoes/${bookingId}/video`,
     messages: "/terapeuta/mensagens",
     services: "/terapeuta/servicos",
     ownServices: "/terapeuta/servicos/meus",

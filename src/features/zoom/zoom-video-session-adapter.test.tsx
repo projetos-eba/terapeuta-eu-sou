@@ -1,4 +1,11 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ZoomAccessReason } from "@/domain/tes";
@@ -63,6 +70,7 @@ const allowedAccess = {
 
 describe("ZoomVideoSessionAdapter", () => {
   afterEach(() => {
+    vi.useRealTimers();
     cleanup();
     calls.length = 0;
     handlers.clear();
@@ -115,6 +123,72 @@ describe("ZoomVideoSessionAdapter", () => {
       undefined,
     );
     expect(document.body.textContent).not.toMatch(/jwt-token|secret|token/i);
+  });
+
+  it("uses the authoritative access returned when joining", async () => {
+    const serverNow = Date.now();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({
+          data: {
+            access: {
+              ...allowedAccess,
+              hardEndsAt: new Date(serverNow + 30 * 60_000).toISOString(),
+              serverNow: new Date(serverNow).toISOString(),
+            },
+            roleType: 0,
+            sdkKey: "public-sdk-key",
+            sessionName: "tesvs-session",
+            sessionPasscode: null,
+            token: "jwt-token-role-0",
+            userName: "Paciente",
+          },
+          ok: true,
+        }),
+        ok: true,
+      }),
+    );
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+
+    expect(await screen.findByText(/tempo restante:/i)).toBeInTheDocument();
+  });
+
+  it("blocks entry while offline and refreshes the room after reconnecting", async () => {
+    const fetchMock = accessResponse(0);
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent(window, new Event("offline"));
+
+    expect(
+      await screen.findByText(/sem conexão com a internet/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /entrar/i })).toBeDisabled();
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fireEvent(window, new Event("online"));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole("button", { name: /entrar/i })).toBeEnabled();
+    });
   });
 
   it("renders remote video on peer-video-state-change and detaches on leave", async () => {
@@ -300,6 +374,67 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(document.body.textContent).not.toMatch(/jwt-token|secret|token/i);
   });
 
+  it("recovers a stalled preview and transitions automatically when the therapist joins", async () => {
+    vi.useFakeTimers();
+    const waitingAccess = {
+      ...allowedAccess,
+      allowed: false,
+      reason: ZoomAccessReason.TherapistNotInSession,
+      serverNow: "2026-07-26T12:46:00.000Z",
+    };
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(
+        (_url: string, init: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init.signal?.addEventListener("abort", () => {
+              reject(new DOMException("Aborted", "AbortError"));
+            });
+          }),
+      )
+      .mockResolvedValueOnce({
+        json: async () => ({ data: { access: allowedAccess }, ok: true }),
+        ok: true,
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={waitingAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5_000);
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole("button", { name: /atualizar sala/i }),
+    ).toBeDisabled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(12_000);
+    });
+    expect(
+      screen.getByText(/tentaremos novamente automaticamente/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /atualizar sala/i }),
+    ).toBeEnabled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(7_500);
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(
+      screen.getByRole("button", { name: /entrar no encontro/i }),
+    ).toBeEnabled();
+    expect(screen.queryByText(/aguardando o terapeuta iniciar/i)).toBeNull();
+  });
+
   it("previews patient access before showing join when server data is absent", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       json: async () => ({
@@ -341,6 +476,84 @@ describe("ZoomVideoSessionAdapter", () => {
     );
   });
 
+  it("retries the initial preview after an upstream failure", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        json: async () => ({
+          error: { message: "upstream timeout" },
+          ok: false,
+        }),
+        ok: false,
+      })
+      .mockResolvedValueOnce({
+        json: async () => ({ data: { access: allowedAccess }, ok: true }),
+        ok: true,
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={null}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByText(/tentaremos novamente automaticamente/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /tentar atualizar sala/i }),
+    ).toBeEnabled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_000);
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(
+      screen.getByRole("button", { name: /entrar no encontro/i }),
+    ).toBeEnabled();
+  });
+
+  it("cancels a pending join access request when leaving the page", async () => {
+    let aborted = false;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(
+        (_url: string, init: RequestInit) =>
+          new Promise((_resolve, reject) => {
+            init.signal?.addEventListener("abort", () => {
+              aborted = true;
+              reject(new DOMException("Aborted", "AbortError"));
+            });
+          }),
+      ),
+    );
+
+    const view = render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    view.unmount();
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(aborted).toBe(true);
+  });
+
   it("reports cleanup failures instead of hiding them", async () => {
     vi.stubGlobal("fetch", accessResponse(0));
     mockClient.leave.mockRejectedValueOnce(new Error("leave failed"));
@@ -358,7 +571,7 @@ describe("ZoomVideoSessionAdapter", () => {
     fireEvent.click(screen.getByRole("button", { name: /^sair$/i }));
 
     expect(
-      await screen.findByText(/falha parcial de cleanup/i),
+      await screen.findByText(/nao foi possivel concluir todas as etapas/i),
     ).toBeInTheDocument();
   });
 });

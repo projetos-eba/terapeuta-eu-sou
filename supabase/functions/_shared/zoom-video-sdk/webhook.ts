@@ -82,7 +82,6 @@ export async function createZoomVideoWebhookEventKey(input: {
       input.sessionName ?? "no-session-name",
       input.providerUserId ?? "no-provider-user",
       input.providerUserKey ?? "no-provider-user-key",
-      input.requestId ?? "no-request",
       await sha256Hex(input.body),
     ].join(":"),
   );
@@ -94,7 +93,42 @@ export function normalizeZoomVideoEventTime(value: unknown) {
     return new Date(milliseconds).toISOString();
   }
 
-  return new Date().toISOString();
+  return null;
+}
+
+export function buildApplyZoomVideoSessionEventParams(input: {
+  afterEndsMinutes: number;
+  durationSeconds: number | null;
+  environment: string;
+  eventAt: string | null;
+  eventType: string;
+  maxDurationMinutes: number;
+  providerSessionId: string | null;
+  providerUserId: string | null;
+  providerUserKey: string | null;
+  sessionName: string | null;
+  supportedEvents: ReadonlySet<string>;
+}) {
+  if (!input.supportedEvents.has(input.eventType)) {
+    return null;
+  }
+
+  if (!input.sessionName && !input.providerSessionId) {
+    return null;
+  }
+
+  return {
+    p_after_ends_minutes: input.afterEndsMinutes,
+    p_duration_seconds: input.durationSeconds,
+    p_environment: input.environment,
+    p_event_at: input.eventAt,
+    p_event_type: input.eventType,
+    p_max_duration_minutes: input.maxDurationMinutes,
+    p_provider_session_id: input.providerSessionId,
+    p_provider_user_id: input.providerUserId,
+    p_provider_user_key: input.providerUserKey,
+    p_session_name: input.sessionName,
+  };
 }
 
 export function getZoomVideoWebhookObject(body: ZoomVideoWebhookBody) {

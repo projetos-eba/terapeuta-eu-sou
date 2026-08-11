@@ -39,7 +39,6 @@ export default async function AuthenticatedLayout({
       icon: "message",
       label: "Mensagens",
     },
-    { href: routes.patient.profileSettings, icon: "user", label: "Perfil" },
   ];
 
   return (

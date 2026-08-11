@@ -26,6 +26,7 @@ description: Implementar e manter Agenda, disponibilidade, bookings e Sessões d
 - Agenda: `/terapeuta/agenda`.
 - Sessões: `/terapeuta/sessoes`.
 - Detalhe: `/terapeuta/sessoes/:bookingId`.
+- Sala dedicada: `/terapeuta/sessoes/:bookingId/video`.
 - Paciente: `/app/encontros` e `/app/encontros/:bookingId`.
 - Aliases `/basico/*`, `/pro/*` e `/plus/*` são somente redirects.
 
@@ -66,8 +67,9 @@ Não criar enums equivalentes dentro de features.
   escolha de formato porque o TES é online-only.
 - A busca por texto filtra cliente e terapia no recorte carregado; paginação
   continua preservando os filtros suportados e o texto da busca.
-- Ações de sala apontam para `/terapeuta/sessoes/:bookingId`; a autorização
-  final do Zoom continua no detalhe por `zoom-video-session-access`.
+- Ações de sala apontam primeiro para `/terapeuta/sessoes/:bookingId`; o
+  detalhe direciona para `/terapeuta/sessoes/:bookingId/video`, onde a
+  autorização final continua por `zoom-video-session-access`.
 - Desktop usa tabela operacional com right rail. Tablet e mobile usam cards
   cronológicos empilhados, filtros em largura total e os mesmos links de
   detalhe.

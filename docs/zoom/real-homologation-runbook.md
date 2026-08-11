@@ -17,11 +17,81 @@ explicita.
 - Nenhuma sessao Video SDK ativa antes do teste.
 - Capacidade de encerramento pelo host e pela REST API Video SDK.
 
+## Harness HML remoto
+
+Use o harness HML separado quando a booking ja existir em HML, paga pelo fluxo
+canonico Stripe test + webhook, e a meta for validar a sessao real contra o app
+remoto com contexts de cliente, terapeuta e Admin. Esse fluxo nao cria fixture,
+nao faz pagamento direto, nao usa `supabase status` local e nao faz deploy.
+
+Variaveis obrigatorias no mesmo processo do comando:
+
+- `PLAYWRIGHT_BASE_URL` ou `ZOOM_HML_BASE_URL` apontando para
+  `https://hml.terapeutaeusou.com.br/...?_vercel_share=...`
+- `SUPABASE_URL` apontando para o projeto HML
+  `emzwqkmrryuqvqiohqnu`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `ZOOM_HML_BOOKING_ID`
+- `ZOOM_HML_SESSION_PAYMENT_ID`
+- `ZOOM_HML_VIDEO_SESSION_ID`
+- `ZOOM_HML_PATIENT_EMAIL`
+- `ZOOM_HML_PATIENT_PASSWORD`
+- `ZOOM_HML_THERAPIST_EMAIL`
+- `ZOOM_HML_THERAPIST_PASSWORD`
+- `ZOOM_HML_ADMIN_EMAIL`
+- `ZOOM_HML_ADMIN_PASSWORD`
+
+O harness falha fechado quando qualquer item acima estiver ausente, quando a URL
+nao trouxer `_vercel_share`, quando o Supabase nao for HML remoto, quando a
+booking nao estiver `confirmed` + `payment_status = paid`, quando
+`session_payments.financial_status != paid`, quando `video_sessions` nao
+corresponder ao `booking_id`, quando `provider_session_id` ja existir antes do
+inicio, quando a reserva nao estiver entre 15 e 20 minutos antes do horario
+agendado, ou quando houver sessao Zoom ativa antes do teste.
+
+Execucao:
+
+```bash
+node scripts/homologation/zoom-hml.mjs \
+  --confirm-single-hml-session \
+  --confirm-hml-vercel-share \
+  --duration-seconds=45
+```
+
+Regras do harness HML:
+
+1. Playwright sempre visivel (`headless: false`).
+2. Contexts separados para cliente, terapeuta e Admin.
+3. Captura `console`, `pageerror`, `requestfailed` e respostas HTTP >= 400 com
+   sanitizacao de `_vercel_share`, JWT, e-mail, UUID, tokens e secrets.
+4. Paciente acessa antes de T-15 e o harness comprova que a entrada permanece
+   bloqueada; a espera automatica ate T-15 e limitada a 5 minutos.
+5. Em T-15, o paciente entra na sala de espera e permanece bloqueado enquanto
+   o terapeuta estiver ausente.
+6. Terapeuta entra, o harness valida `therapist_present=true`,
+   `provider_session_id` e `hard_ends_at` via Supabase HML.
+7. Paciente entra apenas depois da presenca confiavel do terapeuta.
+8. O harness exercita controles reais do Video SDK no terapeuta
+   (`Silenciar`/`Ativar audio`, `Ativar camera`/`Desligar camera`) e encerra a
+   sessao pelo botao `Encerrar encontro`.
+9. Em caso de falha durante cleanup, o fallback permitido e `PUT
+/videosdk/sessions/{sessionId}/status` via `endSessionByApi`; o harness nunca
+   grava fixture paga direta nem atualiza `video_sessions` manualmente.
+10. Evidencia final fica em `.tmp/homologation/zoom-hml-*/evidence.json`,
+    somente com IDs em hash.
+
+Reflexos exigidos:
+
+- Paciente: espera antes do host e bloqueio do CTA apos encerramento.
+- Terapeuta: entrada host-first, controles do SDK e encerramento para todos.
+- Admin: `/admin/sessoes/:bookingId` carrega detalhes antes e depois da sessao
+  sem expor URL secreta, JWT ou `provider_session_id`.
+
 ## Custo e Consumo
 
 O Zoom Video SDK pode contabilizar uso quando participantes entram na sessao.
-Use uma unica sessao curta, com camera desligada e microfone silenciado. A meta e
-10 a 20 segundos. O limite duro vem de
+Use uma unica sessao curta, com camera desligada e microfone silenciado. A meta
+de HML e 30 a 60 segundos. O limite duro vem de
 `ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES`; o harness visual tem watchdog local
 de 180 segundos.
 
@@ -31,6 +101,7 @@ de 180 segundos.
 npm install
 npm run zoom:video-sdk:env
 npm run zoom:video-sdk:test
+npx vitest run scripts/homologation/zoom-hml.test.mjs
 npm run zoom:video-sdk:api:mock
 npm run zoom:video-sdk:webhook:smoke
 npm run test
@@ -211,6 +282,11 @@ O fluxo autorizado para a sessao real e:
 O harness recusa execucao sem `--headed` e `--slow-mo=<ms>` positivo.
 Sem a flag diagnostica, ele tambem recusa execucao sem evidencia de pagamento
 canonico por Stripe Checkout + webhook.
+
+O harness HML remoto nao aceita fixture paga direta em nenhuma circunstancia.
+Ele exige booking, `session_payment` e `video_session` preexistentes no
+Supabase HML remoto e nao usa flags de bypass equivalentes a
+`--allow-direct-paid-fixture-for-zoom-only`.
 
 ## Duracao, Presenca e Maintenance
 

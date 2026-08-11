@@ -35,7 +35,7 @@ description: Implementar e manter a visão geral autenticada do paciente TES.
 
 - O layout exige uma sessão de paciente; no desenvolvimento sem configuração Supabase, usa o perfil demo Carlos apenas para inspeção visual.
 - O check-in de humor salva um único registro diário por paciente.
-- Links de detalhes das subáreas mantêm as rotas canônicas planejadas em `src/lib/routes.ts`.
+- Ações e itens do shell só recebem link quando a página de destino está implementada; rotas planejadas sem página não devem gerar prefetch, redirect ou navegação para `404`.
 - Cards do paciente não recebem `meeting_url`; entrada no Zoom acontece sempre
   pelo detalhe do encontro e pela API autenticada de acesso ao Video SDK.
 - Copy de cuidado é acolhedora e não faz promessa de cura, diagnóstico ou resultado.
@@ -52,3 +52,4 @@ description: Implementar e manter a visão geral autenticada do paciente TES.
 
 - A imagem exata do hero do Figma não está versionada localmente; usa-se o asset existente `/public/home/hero-section-realistic-fade.png` como adaptação temporária.
 - As páginas de destino de algumas ações do shell serão implementadas nas próximas etapas autenticadas.
+- Enquanto `/app/configuracoes/perfil` e `/app/configuracoes/notificacoes` não tiverem páginas, `Perfil` permanece fora da navegação e o card `Notificações` é somente informativo.

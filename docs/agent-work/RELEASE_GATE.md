@@ -80,3 +80,25 @@ Estado: `NOT_READY`.
 - Limitação preexistente: `npm run format:check` global encontra arquivos fora
   do padrão que não pertencem a este lote; a checagem focada dos arquivos do
   lote foi aprovada.
+
+## Gate Zoom Video SDK + HML — 2026-08-11
+
+Estado: `NOT_READY`.
+
+- Aprovados localmente: auditoria de lifecycle, adapter de sala e chamada,
+  janela T-15, reconexão, preflight, idempotência do webhook, leitura Admin
+  sanitizada, harness HML e regressões de produto.
+- Gate local aprovado: TypeScript, lint, build, Vitest, Deno, Playwright headed,
+  pgTAP com 1.211 testes e lint do schema sem erros.
+- HML Supabase: migrations de hardening de sessão Admin e transição de
+  verificações aplicadas e contratos consultados diretamente no projeto de
+  homologação. A migration final de privilégios dos RPCs Zoom ainda deve ser
+  publicada e revalidada antes do webhook.
+- Pendente: executar Playwright headed em HML usando `_vercel_share` e contexts
+  independentes para cliente, terapeuta e Admin.
+- Fonte remota disponível: o Supabase de HML está acessível por CLI e MCP. A
+  persistência da chamada real ainda não existe e não pode ser inferida pelas
+  validações de schema.
+- Bloqueio de interface: o compartilhamento `_vercel_share` fornecido não
+  liberou a navegação na última tentativa. É necessário revalidar o acesso e o
+  deploy da aplicação antes de abrir a sessão real.

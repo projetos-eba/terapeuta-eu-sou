@@ -8,7 +8,6 @@ import {
   Video,
 } from "lucide-react";
 
-import { ZoomVideoSessionAdapter } from "@/features/zoom/zoom-video-session-adapter";
 import { routes } from "@/lib/routes";
 
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
@@ -116,8 +115,8 @@ export function OnlineSessionCard({
               size={16}
             />
             Uma nova tentativa só deve ser concluída por fluxo autenticado. O
-            retorno do checkout não confirma pagamento; a confirmação vem pelo
-            webhook financeiro.
+            pagamento precisa estar confirmado antes de liberar o acesso ao
+            encontro.
           </p>
           <Link
             className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
@@ -132,11 +131,13 @@ export function OnlineSessionCard({
 
       {data.onlineSession.provider === "zoom" &&
       data.encounterState.payment.kind === "confirmed" ? (
-        <ZoomVideoSessionAdapter
-          access={null}
-          actorRole="patient"
-          bookingId={data.booking.id}
-        />
+        <Link
+          className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand-primary px-6 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          href={routes.patient.encounterVideo(data.booking.id) as Route<string>}
+        >
+          <Video aria-hidden="true" size={20} />
+          Abrir sala do encontro
+        </Link>
       ) : data.onlineSession.provider === "zoom" ? (
         <button
           className="mt-6 inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-brand-lavenderSoft px-6 text-sm font-extrabold text-tesText-secondary"

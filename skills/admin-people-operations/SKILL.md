@@ -109,9 +109,11 @@ refresh, cópia de link e QA com Playwright.
 - Os detalhes de Sessão e Suporte seguem a hierarquia visual dos detalhes de
   Profissional e Cliente: breadcrumb, título editorial, hero de identidade,
   KPIs, seções de dados e histórico lateral.
-- O detalhe de Sessão exibe somente agenda, duração, participantes, formato
-  online, pagamento, estado e rastreabilidade já presentes no DTO. Provider e
-  IDs de perfil não aparecem na interface.
+- O detalhe de Sessão exibe agenda, duração, participantes, formato online,
+  pagamento, estado, presença na sala, horários reais, motivo de encerramento,
+  resumo de participação e acompanhamentos automáticos presentes no DTO seguro.
+  Identificadores do provedor, nome interno da sala, chaves, correlações e IDs de
+  perfil não aparecem na interface.
 - O detalhe de Suporte exibe solicitante, categoria, prioridade, urgência,
   vínculo com reserva, rastreabilidade e os comandos já autorizados. Não
   inventar descrição, SLA, responsável ou conversa quando ausentes.
@@ -131,9 +133,12 @@ refresh, cópia de link e QA com Playwright.
   - `draft`: `Perfil em construção`;
   - `submitted`: `Aguardando análise`;
   - `in_review`: `Em análise`.
-- Ações seguem a sequência: iniciar análise em `submitted`; decidir apenas em
-  `in_review`; reabrir após ajuste solicitado ou não aprovação; não oferecer
-  nova decisão para registro já aprovado.
+- Ações seguem a sequência `submitted` → `in_review` → decisão. Os comandos
+  administrativos de decisão preservam a experiência de uma ação e fazem a
+  passagem por `in_review` atomicamente no servidor; uma atualização direta de
+  `submitted` para um estado final continua bloqueada. Reabrir somente após
+  ajuste solicitado ou não aprovação; não oferecer nova decisão para registro
+  já aprovado.
 - `enforce_therapist_verification_transition_v1` deve preservar essa sequência
   no banco mesmo quando um comando for chamado fora da interface.
 - A lista `/admin/profissionais/verificacoes` continua lendo apenas
@@ -178,7 +183,8 @@ refresh, cópia de link e QA com Playwright.
   - publicar um perfil elegível e confirmar, na mesma transação, uma única
     verificação `submitted` e o status administrativo `submitted`;
   - confirmar que republicação não duplica a fila nem rebaixa aprovados;
-  - em Playwright, validar `Iniciar análise` antes dos comandos de decisão.
+  - em Playwright, validar tanto `Iniciar análise` quanto a decisão administrativa
+    auditada a partir de um item aguardando análise.
 
 ## Pendências conhecidas
 

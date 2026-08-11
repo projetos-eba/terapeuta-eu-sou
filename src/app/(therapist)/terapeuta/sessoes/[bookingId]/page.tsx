@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { ShieldCheck, Video } from "lucide-react";
+import Link from "next/link";
+import type { Route } from "next";
 
 import {
   formatSessionDateTime,
@@ -13,8 +15,8 @@ import {
   getTherapistSessionDetail,
   getTherapistSessionPendingReschedule,
 } from "@/features/therapist-sessions";
-import { ZoomVideoSessionAdapter } from "@/features/zoom/zoom-video-session-adapter";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
+import { routes } from "@/lib/routes";
 
 export default async function TherapistSessionDetailPage({
   params,
@@ -102,11 +104,15 @@ export default async function TherapistSessionDetailPage({
           </div>
         </dl>
 
-        <ZoomVideoSessionAdapter
-          access={booking.zoomAccess}
-          actorRole="therapist"
-          bookingId={booking.bookingId}
-        />
+        <Link
+          className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand-primary px-6 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          href={
+            routes.therapist.sessionVideo(booking.bookingId) as Route<string>
+          }
+        >
+          <Video aria-hidden="true" size={20} />
+          Abrir sala da sessão
+        </Link>
 
         <div className="mt-6">
           <SessionOperationActions
@@ -139,13 +145,12 @@ export default async function TherapistSessionDetailPage({
           Segurança da sala
         </h2>
         <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-          A autorização final é refeita no backend ao entrar. O token da sala é
-          efêmero e não fica salvo nesta página.
+          O acesso é individual e confirmado novamente ao entrar na sala.
         </p>
         <p className="mt-4 flex gap-2 text-xs font-semibold leading-5 text-tesText-secondary">
           <Video aria-hidden="true" className="mt-0.5" size={16} />
-          Pagamento, horário, responsável e janela de acesso são verificados
-          separadamente.
+          Pagamento, horário, responsável e janela de acesso precisam estar
+          válidos para iniciar a sessão.
         </p>
       </aside>
     </main>

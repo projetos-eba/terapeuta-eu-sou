@@ -198,7 +198,10 @@ function getDetailSections(
         field("Status público", asText(record.public_status)),
         field("Publicado", asBooleanLabel(record.is_public)),
         field("Recebe reservas", asBooleanLabel(record.is_accepting_bookings)),
-        field("Atendimento online", asBooleanLabel(record.accepts_online_sessions)),
+        field(
+          "Atendimento online",
+          asBooleanLabel(record.accepts_online_sessions),
+        ),
       ]),
       section("Operação", [
         field("Serviços totais", formatCount(record.service_count)),
@@ -232,13 +235,17 @@ function getDetailSections(
   }
 
   if (module === "sessions") {
+    const videoSession = asRecordOrNull(record.video_session);
+
     return [
       section("Sessão", [
-        field("Booking", asText(record.id)),
         field("Status", asText(record.status)),
         field("Pagamento", asText(record.payment_status)),
         field("Serviço", asText(record.service_title_snapshot)),
-        field("Duração", formatMinutes(record.service_duration_minutes_snapshot)),
+        field(
+          "Duração",
+          formatMinutes(record.service_duration_minutes_snapshot),
+        ),
       ]),
       section("Agenda", [
         field("Início", formatDate(record.starts_at)),
@@ -249,11 +256,18 @@ function getDetailSections(
       ]),
       section("Participantes", [
         field("Terapeuta", asText(record.therapist_name)),
-        field("Perfil terapeuta", asText(record.therapist_profile_id)),
         field("Cliente", asText(record.patient_name)),
-        field("Perfil cliente", asText(record.patient_profile_id)),
-        field("Provider online", asText(record.meeting_provider)),
+        field("Formato", formatMeetingMode(record.meeting_provider)),
       ]),
+      section("Sala online", getVideoSessionLifecycleFields(videoSession)),
+      section(
+        "Participação na sala",
+        getVideoSessionParticipationFields(videoSession),
+      ),
+      section(
+        "Acompanhamento do encerramento",
+        getVideoSessionControlJobFields(videoSession),
+      ),
       timestampSection(record),
     ];
   }
@@ -304,8 +318,14 @@ function getDetailSections(
       field("Status", asText(record.status)),
       field("Terapeuta", asText(record.therapist_name)),
       field("Perfil terapeuta", asText(record.therapist_profile_id)),
-      field("Ajuste solicitado", asBooleanLabel(record.changes_requested_present)),
-      field("Reprovação registrada", asBooleanLabel(record.rejection_reason_present)),
+      field(
+        "Ajuste solicitado",
+        asBooleanLabel(record.changes_requested_present),
+      ),
+      field(
+        "Reprovação registrada",
+        asBooleanLabel(record.rejection_reason_present),
+      ),
       field("Revisado por", asText(record.reviewed_by)),
       field("Enviado em", formatDate(record.submitted_at)),
       field("Revisado em", formatDate(record.reviewed_at)),
@@ -339,6 +359,15 @@ function timestampSection(record: UnknownRecord) {
 
 function field(label: string, value: string) {
   return value ? { label, value } : null;
+}
+
+function asRecordOrNull(value: unknown): UnknownRecord | null {
+  return isRecord(value) ? value : null;
+}
+
+function asRecordArray(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord);
 }
 
 function isRecord(value: unknown): value is UnknownRecord {
@@ -390,6 +419,296 @@ function shortId(value: string) {
   return value ? value.slice(0, 8) : "sem-id";
 }
 
+function getVideoSessionLifecycleFields(videoSession: UnknownRecord | null) {
+  if (!videoSession) {
+    return [
+      field(
+        "Situação da sala",
+        "A sala online ainda não possui atividade registrada.",
+      ),
+    ];
+  }
+
+  return [
+    field(
+      "Situação da sala",
+      formatVideoSessionStatus(asText(videoSession.status)),
+    ),
+    field("Início real", formatDate(videoSession.actual_started_at)),
+    field("Fim real", formatDate(videoSession.actual_ended_at)),
+    field("Limite de segurança", formatDate(videoSession.hard_ends_at)),
+    field(
+      "Profissional na sala",
+      formatTherapistPresence(videoSession.therapist_present),
+    ),
+    field(
+      "Participantes ativos",
+      formatParticipantCount(videoSession.participant_count),
+    ),
+    field(
+      "Último evento recebido",
+      formatDate(videoSession.last_provider_event_at),
+    ),
+    field(
+      "Motivo do encerramento",
+      formatVideoSessionTerminationReason(
+        asText(videoSession.termination_reason),
+      ),
+    ),
+  ];
+}
+
+function getVideoSessionParticipationFields(
+  videoSession: UnknownRecord | null,
+) {
+  if (!videoSession) {
+    return [
+      field(
+        "Resumo da participação",
+        "Ainda não há movimentações registradas para a sala online desta sessão.",
+      ),
+    ];
+  }
+
+  const participations = asRecordArray(videoSession.participations);
+  const latestTherapistEvent = getLatestParticipationByRole(
+    participations,
+    "therapist",
+  );
+  const latestPatientEvent = getLatestParticipationByRole(
+    participations,
+    "patient",
+  );
+
+  if (participations.length === 0) {
+    return [
+      field(
+        "Resumo da participação",
+        "A sala online já existe, mas ainda não recebeu movimentações registradas.",
+      ),
+    ];
+  }
+
+  return [
+    field("Movimentações recentes", formatCount(participations.length)),
+    field(
+      "Primeira entrada do profissional",
+      formatDate(videoSession.therapist_first_joined_at),
+    ),
+    field(
+      "Última entrada do profissional",
+      formatDate(videoSession.therapist_last_joined_at),
+    ),
+    field(
+      "Última saída do profissional",
+      formatDate(videoSession.therapist_last_left_at),
+    ),
+    field(
+      "Última saída registrada",
+      formatDate(videoSession.last_participant_left_at),
+    ),
+    field(
+      "Movimentação mais recente do profissional",
+      formatParticipationSummary(latestTherapistEvent),
+    ),
+    field(
+      "Movimentação mais recente do cliente",
+      formatParticipationSummary(latestPatientEvent),
+    ),
+  ];
+}
+
+function getVideoSessionControlJobFields(videoSession: UnknownRecord | null) {
+  if (!videoSession) {
+    return [
+      field(
+        "Acompanhamento do encerramento",
+        "Ainda não há acompanhamento automático registrado para esta sessão.",
+      ),
+    ];
+  }
+
+  const controlJobs = asRecordArray(videoSession.control_jobs);
+  const latestJob = controlJobs[0] ?? null;
+
+  if (!latestJob) {
+    return [
+      field(
+        "Acompanhamento do encerramento",
+        "Nenhum acompanhamento automático foi necessário até agora.",
+      ),
+    ];
+  }
+
+  return [
+    field("Acompanhamentos registrados", formatCount(controlJobs.length)),
+    field(
+      "Objetivo do acompanhamento",
+      formatControlJobOperation(asText(latestJob.operation)),
+    ),
+    field(
+      "Situação do acompanhamento",
+      formatControlJobStatus(asText(latestJob.status)),
+    ),
+    field(
+      "Tentativas",
+      formatAttemptSummary(latestJob.attempts, latestJob.max_attempts),
+    ),
+    field("Próxima tentativa", formatDate(latestJob.next_run_at)),
+    field("Concluído em", formatDate(latestJob.completed_at)),
+    field(
+      "Última atualização",
+      formatDate(latestJob.updated_at) || formatDate(latestJob.created_at),
+    ),
+  ];
+}
+
+function getLatestParticipationByRole(
+  participations: UnknownRecord[],
+  role: "patient" | "therapist",
+) {
+  return (
+    participations.find(
+      (participation) => asText(participation.participant_role) === role,
+    ) ?? null
+  );
+}
+
+function formatVideoSessionStatus(value: string) {
+  const labels: Record<string, string> = {
+    active: "Em andamento",
+    canceled: "Cancelada",
+    ended: "Encerrada",
+    failed: "Com problema",
+    ready: "Pronta para iniciar",
+  };
+
+  return labels[value.toLowerCase()] ?? "Situação indisponível";
+}
+
+function formatVideoSessionTerminationReason(value: string) {
+  const labels: Record<string, string> = {
+    hard_timeout: "Encerrada ao atingir o limite de segurança",
+    host_left: "Encerrada após a saída do profissional",
+    manual_end: "Encerrada manualmente",
+    provider_ended: "Encerrada pela própria sala online",
+    reconcile_orphan: "Encerrada após conferência automática",
+    therapist_absent: "Encerrada por ausência do profissional",
+  };
+
+  return labels[value.toLowerCase()] ?? "Motivo não informado";
+}
+
+function formatTherapistPresence(value: unknown) {
+  if (value === true) return "Profissional presente agora";
+  if (value === false) return "Profissional fora da sala no momento";
+  return "";
+}
+
+function formatParticipantCount(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "";
+  if (value === 0) return "Nenhuma pessoa ativa agora";
+  if (value === 1) return "1 pessoa ativa agora";
+  return `${new Intl.NumberFormat("pt-BR").format(value)} pessoas ativas agora`;
+}
+
+function formatParticipationSummary(participation: UnknownRecord | null) {
+  if (!participation) return "";
+
+  const role = formatParticipationRole(asText(participation.participant_role));
+  const action = formatParticipationAction(asText(participation.event_type));
+  const happenedAt =
+    formatDate(participation.left_at) ||
+    formatDate(participation.joined_at) ||
+    formatDate(participation.created_at);
+  const duration = formatParticipationDuration(participation.duration_seconds);
+
+  const segments = [
+    role,
+    action,
+    happenedAt ? `em ${happenedAt}` : "",
+    duration,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return segments.trim();
+}
+
+function formatParticipationRole(value: string) {
+  const labels: Record<string, string> = {
+    patient: "Cliente",
+    therapist: "Profissional",
+    unknown: "Participante",
+  };
+
+  return labels[value.toLowerCase()] ?? "Participante";
+}
+
+function formatParticipationAction(value: string) {
+  const labels: Record<string, string> = {
+    "session.user_joined": "entrou na sala",
+    "session.user_left": "saiu da sala",
+  };
+
+  return labels[value.toLowerCase()] ?? "teve uma movimentação";
+}
+
+function formatParticipationDuration(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 1) {
+    return "";
+  }
+
+  const minutes = Math.floor(value / 60);
+
+  if (minutes < 1) {
+    return `(${value}s de permanência)`;
+  }
+
+  return `(${minutes} min de permanência)`;
+}
+
+function formatControlJobOperation(value: string) {
+  const labels: Record<string, string> = {
+    confirm_end: "Confirmar o encerramento da sala",
+    end_hard_timeout: "Encerrar ao atingir o limite de segurança",
+    end_therapist_absent: "Encerrar por ausência do profissional",
+    reconcile_orphan: "Conferir sala sem vínculo confirmado",
+  };
+
+  return labels[value.toLowerCase()] ?? "Acompanhamento automático";
+}
+
+function formatControlJobStatus(value: string) {
+  const labels: Record<string, string> = {
+    dead_letter: "Precisa de atenção manual",
+    done: "Concluído",
+    processing: "Em andamento",
+    queued: "Aguardando execução",
+    retry: "Nova tentativa agendada",
+  };
+
+  return labels[value.toLowerCase()] ?? "Situação indisponível";
+}
+
+function formatAttemptSummary(attempts: unknown, maxAttempts: unknown) {
+  if (
+    typeof attempts !== "number" ||
+    !Number.isFinite(attempts) ||
+    typeof maxAttempts !== "number" ||
+    !Number.isFinite(maxAttempts)
+  ) {
+    return "";
+  }
+
+  return `${new Intl.NumberFormat("pt-BR").format(attempts)} de ${new Intl.NumberFormat("pt-BR").format(maxAttempts)}`;
+}
+
+function formatMeetingMode(value: unknown) {
+  if (asText(value)) return "Online";
+  return "";
+}
+
 function asList(value: unknown) {
   if (!Array.isArray(value)) return "";
 
@@ -397,7 +716,9 @@ function asList(value: unknown) {
 }
 
 function asLocation(city: unknown, state: unknown, country: unknown) {
-  return [asText(city), asText(state), asText(country)].filter(Boolean).join(", ");
+  return [asText(city), asText(state), asText(country)]
+    .filter(Boolean)
+    .join(", ");
 }
 
 function mapAuditEvent(row: UnknownRecord): AdminOperationAuditEvent {
