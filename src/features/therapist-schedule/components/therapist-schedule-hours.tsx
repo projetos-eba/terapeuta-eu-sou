@@ -187,11 +187,7 @@ export function TherapistScheduleHours({
   }
 
   function updateServiceSetting(
-    field:
-      | "bufferAfterMinutes"
-      | "bufferBeforeMinutes"
-      | "minimumNoticeMinutes"
-      | "slotStepMinutes",
+    field: "minimumNoticeMinutes" | "slotStepMinutes",
     value: number,
   ) {
     if (!currentService) return;
@@ -713,11 +709,7 @@ function SessionRulesCard({
   timezone,
 }: {
   onSettingChange: (
-    field:
-      | "bufferAfterMinutes"
-      | "bufferBeforeMinutes"
-      | "minimumNoticeMinutes"
-      | "slotStepMinutes",
+    field: "minimumNoticeMinutes" | "slotStepMinutes",
     value: number,
   ) => void;
   onTimezoneChange: (value: string) => void;
@@ -790,28 +782,6 @@ function SessionRulesCard({
               value={service.settings.minimumNoticeMinutes}
             />
           </RuleRow>
-          <RuleRow
-            description="Reservado antes e depois de cada encontro."
-            icon={Clock3}
-            label="Tempo de preparo"
-          >
-            <div className="grid grid-cols-2 gap-2">
-              <LabeledMinutesSelect
-                label="Antes"
-                onChange={(value) =>
-                  onSettingChange("bufferBeforeMinutes", value)
-                }
-                value={service.settings.bufferBeforeMinutes}
-              />
-              <LabeledMinutesSelect
-                label="Depois"
-                onChange={(value) =>
-                  onSettingChange("bufferAfterMinutes", value)
-                }
-                value={service.settings.bufferAfterMinutes}
-              />
-            </div>
-          </RuleRow>
         </div>
       ) : (
         <div className="p-6">
@@ -821,9 +791,8 @@ function SessionRulesCard({
               className="mt-0.5 shrink-0 text-brand-primary"
               size={18}
             />
-            Selecione uma terapia para ajustar duração, oferta, antecedência e
-            buffers. As faixas gerais continuam disponíveis para todos os
-            serviços.
+            Selecione uma terapia para ajustar duração, oferta e antecedência.
+            As faixas gerais continuam disponíveis para todos os serviços.
           </p>
         </div>
       )}
@@ -1088,30 +1057,6 @@ function MinutesSelect({
         </option>
       ))}
     </select>
-  );
-}
-
-function LabeledMinutesSelect({
-  label,
-  onChange,
-  value,
-}: {
-  label: string;
-  onChange: (value: number) => void;
-  value: number;
-}) {
-  return (
-    <label className="text-xs font-bold text-tesText-muted">
-      {label}
-      <span className="mt-1 block">
-        <MinutesSelect
-          ariaLabel={`${label} da sessão`}
-          onChange={onChange}
-          options={[0, 5, 10, 15, 20, 30, 45, 60]}
-          value={value}
-        />
-      </span>
-    </label>
   );
 }
 

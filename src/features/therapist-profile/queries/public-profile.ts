@@ -1,3 +1,4 @@
+import { getPublicServiceAvailability } from "@/features/availability/queries/public-service-availability";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 import {
   isPublicDemoDataEnabled,
@@ -6,7 +7,6 @@ import {
 
 import { getFallbackTherapistProfile } from "../fallback";
 import {
-  mapAvailabilityRows,
   mapContentRow,
   mapProfileRow,
   mapReviewRow,
@@ -105,11 +105,21 @@ export async function getPublicTherapistProfileResult(
     if (!profileRow) return { source: "live", status: "not_found" };
 
     const content = mapContentRow(contents[0] ?? null);
-    const services = serviceRows.map(mapServiceRow);
+    const availabilityResults = await Promise.all(
+      serviceRows.map((service) =>
+        getPublicServiceAvailability(service.service_id),
+      ),
+    );
+    if (availabilityResults.some((result) => result.status === "error")) {
+      throw new Error("Public service availability is unavailable.");
+    }
+    const services = serviceRows.map((service, index) =>
+      mapServiceRow(service, availabilityResults[index]?.data ?? []),
+    );
 
     return {
       data: {
-        availability: mapAvailabilityRows(serviceRows),
+        availability: services[0]?.availability ?? [],
         profile: mapProfileRow(profileRow, content, services),
         reviews: reviewRows.map(mapReviewRow),
         source: "live",

@@ -40,6 +40,7 @@ describe("TherapistScheduleHours", () => {
     );
     expect(screen.getByText("Duração da sessão")).toBeInTheDocument();
     expect(screen.getByText("50 min")).toBeInTheDocument();
+    expect(screen.queryByText("Tempo de preparo")).not.toBeInTheDocument();
     expect(
       screen.queryByText("Reagendamento automático"),
     ).not.toBeInTheDocument();
@@ -105,10 +106,20 @@ describe("TherapistScheduleHours", () => {
     const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
     const payload = JSON.parse(String(request.body)) as {
       expectedVersion: number;
-      serviceSettings: Array<{ slotStepMinutes: number }>;
+      serviceSettings: Array<{
+        bufferAfterMinutes: number;
+        bufferBeforeMinutes: number;
+        slotStepMinutes: number;
+      }>;
     };
     expect(payload.expectedVersion).toBe(1);
-    expect(payload.serviceSettings[0].slotStepMinutes).toBe(45);
+    expect(payload.serviceSettings[0]).toEqual(
+      expect.objectContaining({
+        bufferAfterMinutes: 10,
+        bufferBeforeMinutes: 10,
+        slotStepMinutes: 45,
+      }),
+    );
     expect(navigationMocks.refresh).toHaveBeenCalledOnce();
   });
 

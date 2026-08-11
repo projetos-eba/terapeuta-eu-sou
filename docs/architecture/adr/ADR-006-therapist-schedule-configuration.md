@@ -6,9 +6,9 @@ Status: aceito e implementado; A3.0-A3.3 concluídos.
 
 ## Contexto
 
-O Figma de Horários apresenta disponibilidade semanal, duração, intervalo,
-buffer, antecedência e fuso como uma única experiência. No domínio, porém,
-esses valores não possuem a mesma autoridade:
+O Figma original de Horários apresentava disponibilidade semanal, duração,
+intervalo, buffer, antecedência e fuso como uma única experiência. No domínio,
+porém, esses valores não possuem a mesma autoridade:
 
 - a duração pertence ao serviço;
 - buffers, antecedência, horizonte e cadência são configurações do serviço;
@@ -52,7 +52,9 @@ serviços".
 
 O campo visual "Duração da sessão" é somente leitura. "Intervalo entre
 sessões" não é usado como sinônimo de `slotStepMinutes`; a interface usa
-"Intervalo de oferta".
+"Intervalo de oferta". Os buffers continuam preservados no contrato e no motor
+de disponibilidade, mas não são expostos como controles na interface para
+reduzir complexidade operacional.
 
 ## Segurança e concorrência
 

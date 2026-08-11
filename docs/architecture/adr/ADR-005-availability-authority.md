@@ -10,12 +10,13 @@ autoritativa de slots concluída em A5 em 2026-07-27.
 
 ## Contexto
 
-O serviço TypeScript atual gera preview para o perfil público, mas não oferece
-garantia transacional e interpreta os dias no timezone do runtime.
+O serviço TypeScript legado gerava preview para o perfil público, mas não
+oferecia garantia transacional e interpretava os dias no timezone do runtime.
 
 ## Decisão
 
-- O preview TypeScript continua apenas para apresentação.
+- O perfil público e a reserva consomem o RPC autoritativo; o preview TypeScript
+  não pode alimentar horários reserváveis.
 - Todo booking do terapeuta bloqueia o horário, independentemente do serviço.
 - Buffers fazem parte do intervalo ocupado.
 - Faixas inválidas ou sobrepostas falham com erro de domínio.
@@ -37,8 +38,8 @@ garantia transacional e interpreta os dias no timezone do runtime.
 
 ## Consequências
 
-Consumidores de reserva devem migrar do preview TypeScript para
-`get_service_available_slots_v1`. A UI deve tratar `SLOT_NOT_AVAILABLE`,
+Consumidores de reserva usam `get_service_available_slots_v1`. A UI deve tratar
+`SLOT_NOT_AVAILABLE`,
 `SLOT_HELD_BY_ANOTHER_USER` e `BOOKING_CONFLICT`, permitindo nova escolha. A2
 continua sendo a barreira final contra duas reservas ativas para o mesmo
 terapeuta.
