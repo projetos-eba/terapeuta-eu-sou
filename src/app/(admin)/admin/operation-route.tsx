@@ -47,5 +47,5 @@ export async function AdminOperationRoute({
     );
   }
 
-  return <AdminOperationPage data={result.data} />;
+  return <AdminOperationPage data={result.data} module={module} />;
 }

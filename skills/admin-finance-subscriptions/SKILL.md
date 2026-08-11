@@ -9,6 +9,8 @@ Use this skill when changing `/admin/pagamentos`, `/admin/assinaturas`,
 - `docs/architecture/admin-plan.md`
 - Figma file `Projeto Terapeuta Eu Sou Atualizado`, admin reference node
   `13425:778`
+- Local visual reference image:
+  `/Users/antoniofelipe/Downloads/ChatGPT Image Aug 10, 2026, 11_25_44 PM (6).png`
 - `src/lib/routes.ts`
 - `src/features/admin-shell/admin-shell-config.ts`
 - `src/features/admin-finance/*`
@@ -47,6 +49,21 @@ to horizontal REST table reads from the shell.
 
 Do not send generic `select *` payloads to React.
 
+### Current practical limits for `/admin/pagamentos`
+
+- The payments module currently exposes only metric counts and sanitized
+  operational rows.
+- The first four metrics can be used as KPI cards and the remaining metrics can
+  be shown as secondary operational indicators.
+- Do not invent monetary totals, deltas, charts, date ranges, payment method
+  breakdowns, export actions, type filters or workflow actions that are not
+  present in `data.metrics`, `data.rows` or `data.query`.
+- Payment rows must stay anchored to the sanitized mapper contract already in
+  use by `src/features/admin-finance/admin-finance.mappers.ts`.
+- Frontend copy for `/admin/pagamentos` must avoid technical labels such as
+  read model, Stripe payloads, ledger, DTOs, internal guardrails or
+  configuration failures.
+
 ## Never Expose In The Browser
 
 - Stripe secret keys, webhook secrets or service role keys.
@@ -81,3 +98,6 @@ Do not send generic `select *` payloads to React.
   server-side. If production volume requires full-dataset search beyond the
   current bounded window, replace the internal SQL with module-specific indexed
   queries without changing the React/BFF contract.
+- `/admin/pagamentos` can approximate the composition and rhythm of the admin
+  finance reference, but it cannot show charts or derived financial analytics
+  until those values exist in the backend contract.

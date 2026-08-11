@@ -1,5 +1,5 @@
-versão: 2026-07-26
-fonte: project.md — MVP Transacional TES consolidado
+versão: 2026-08-11
+fonte: project.md — MVP Transacional TES consolidado + docs/agent-work
 próxima revisão: ao alterar stack, perfis, planos ou integrações
 
 > **NUNCA:**
@@ -9,6 +9,9 @@ próxima revisão: ao alterar stack, perfis, planos ou integrações
 > - Criar componente equivalente a um já existente em `src/components/`.
 > - Refatorar fora do escopo da solicitação recebida.
 > - Expor secrets, credenciais ou valores de `.env` em qualquer output.
+> - Exibir informações, mensagens ou termos de desenvolvimento no front-end,
+>   incluindo nomes técnicos de tabela, read model, stack, ambiente, debug,
+>   mock, seed, TODO ou erro interno.
 > - Afirmar que validação ocorreu sem tê-la executado de fato.
 > - Remover rota, componente ou migration sem plano de transição aprovado.
 > - Prometer cura, diagnóstico ou resultado garantido em qualquer copy ou comentário de código.
@@ -198,6 +201,9 @@ Nenhuma tarefa pode ser considerada pronta sem essa declaração.
 - Botões de ícone precisam de nome acessível.
 - Interfaces operacionais priorizam tarefa, estado, risco, prazo e valor antes
   de decoração.
+- O front-end deve falar em linguagem de produto. Nunca exibir mensagens de
+  desenvolvimento para usuários finais ou admins; detalhes técnicos pertencem
+  a logs, documentação, testes ou painéis internos apropriados.
 
 ## 5. Implementação
 
@@ -433,6 +439,31 @@ Regras:
 - Nunca criar, ajustar ou popular banco de forma ad hoc sem deixar arquivo rastreável no repositório.
 - Migrations devem expor apenas dados compatíveis com a superfície pública/autenticada necessária, sem campos internos ou sensíveis.
 - Quando Docker/Supabase local impedir validação, registrar exatamente quais comandos falharam e qual validação ficou pendente.
+
+## 9.3 Operação multi-agent
+
+Quando a solicitação pedir trabalho multi-agent, usar os agentes de projeto em
+`.codex/agents/` e os contratos de `docs/agent-work/`.
+
+Regras:
+
+- `AGENTS.md` da raiz continua sendo a constituição global; cada agente lê
+  também o `AGENTS.md` mais próximo dos arquivos em seu escopo.
+- O Orchestrator coordena objetivo, dependências, owners, handoffs, integração e
+  QA; não absorve implementação que pertença a um agente de domínio adequado.
+- Cada tarefa de escrita tem owner único, reviewer, arquivos reservados e
+  dependências registradas em `TASK_MATRIX.md` ou no canal de coordenação.
+- Security & Supabase possui ownership final de migrations, RLS, grants e tipos
+  gerados; o agente funcional entrega o contrato e revisa o comportamento.
+- Arquivos de alto conflito listados em `DOMAIN_OWNERSHIP.md` exigem
+  coordination note e handoff antes de edição concorrente.
+- Trabalho paralelo de escrita usa branch/worktree isolada; não trabalhar em
+  `main`, não fazer force push e não resetar worktree alheia.
+- Toda integração exige handoff no formato de `HANDOFF_TEMPLATE.md`, revisão de
+  domínio e o estado aplicável de `RELEASE_GATE.md`; implementação não equivale
+  a `DONE`.
+- Ferramentas seguem menor privilégio. Produção é read-only por padrão e toda
+  escrita produtiva exige instrução humana explícita.
 
 ## 10. Formato de entrega
 
