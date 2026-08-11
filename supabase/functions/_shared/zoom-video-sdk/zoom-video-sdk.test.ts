@@ -17,7 +17,10 @@ import {
 import { hmacSha256Hex } from "./crypto.ts";
 import { createVideoUserKey } from "./session-identity.ts";
 import {
+  buildApplyZoomVideoSessionEventParams,
   createZoomVideoChallengeResponse,
+  createZoomVideoWebhookEventKey,
+  normalizeZoomVideoEventTime,
   verifyZoomVideoWebhookSignature,
 } from "./webhook.ts";
 import {
@@ -431,6 +434,110 @@ Deno.test(
         signature: "v0=invalid",
         timestamp: String(Math.floor(Date.now() / 1000) - 600),
       }),
+    );
+  },
+);
+
+Deno.test(
+  "webhook event key stays stable across retries with different request ids",
+  async () => {
+    const baseInput = {
+      body: JSON.stringify({
+        event: "session.user_joined",
+        event_ts: 1_753_531_200,
+        payload: {
+          object: {
+            participant: {
+              id: "participant-1",
+              user_key: "tes-v1-t-aaaaaaaaaaaaaaaaaaaaaaaa",
+            },
+            session_id: "provider-session-1",
+          },
+        },
+      }),
+      eventTs: 1_753_531_200,
+      eventType: "session.user_joined",
+      providerSessionId: "provider-session-1",
+      providerUserId: "participant-1",
+      providerUserKey: "tes-v1-t-aaaaaaaaaaaaaaaaaaaaaaaa",
+      sessionName: null,
+    };
+
+    const firstKey = await createZoomVideoWebhookEventKey({
+      ...baseInput,
+      requestId: "request-a",
+    });
+    const retryKey = await createZoomVideoWebhookEventKey({
+      ...baseInput,
+      requestId: "request-b",
+    });
+
+    assertEquals(firstKey, retryKey);
+  },
+);
+
+Deno.test(
+  "webhook event time does not fall back to now for missing values",
+  () => {
+    assertEquals(normalizeZoomVideoEventTime(undefined), null);
+    assertEquals(normalizeZoomVideoEventTime("invalid"), null);
+    assertEquals(
+      normalizeZoomVideoEventTime(1_753_531_200),
+      "2025-07-26T12:00:00.000Z",
+    );
+  },
+);
+
+Deno.test(
+  "webhook event params accept provider session id without session name and pass environment",
+  () => {
+    const params = buildApplyZoomVideoSessionEventParams({
+      afterEndsMinutes: 30,
+      durationSeconds: 42,
+      environment: "development",
+      eventAt: "2026-07-26T12:00:00.000Z",
+      eventType: "session.user_joined",
+      maxDurationMinutes: 45,
+      providerSessionId: "provider-session-1",
+      providerUserId: "participant-1",
+      providerUserKey: "tes-v1-p-aaaaaaaaaaaaaaaaaaaaaaaa",
+      sessionName: null,
+      supportedEvents: new Set([
+        "session.started",
+        "session.ended",
+        "session.user_joined",
+        "session.user_left",
+      ]),
+    });
+
+    assertEquals(params, {
+      p_after_ends_minutes: 30,
+      p_duration_seconds: 42,
+      p_environment: "development",
+      p_event_at: "2026-07-26T12:00:00.000Z",
+      p_event_type: "session.user_joined",
+      p_max_duration_minutes: 45,
+      p_provider_session_id: "provider-session-1",
+      p_provider_user_id: "participant-1",
+      p_provider_user_key: "tes-v1-p-aaaaaaaaaaaaaaaaaaaaaaaa",
+      p_session_name: null,
+    });
+
+    assertEquals(
+      buildApplyZoomVideoSessionEventParams({
+        afterEndsMinutes: 30,
+        durationSeconds: 42,
+        environment: "development",
+        eventAt: "2026-07-26T12:00:00.000Z",
+        eventType: "session.user_joined",
+        maxDurationMinutes: 45,
+        providerSessionId: null,
+        providerUserId: "participant-1",
+        providerUserKey: "tes-v1-p-aaaaaaaaaaaaaaaaaaaaaaaa",
+        sessionName: null,
+        supportedEvents: new Set(["session.user_joined"]),
+      }),
+      null,
     );
   },
 );

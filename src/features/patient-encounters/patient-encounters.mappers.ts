@@ -1,4 +1,5 @@
 import {
+  BOOKING_JOIN_WINDOW_BEFORE_MINUTES,
   canJoinBooking,
   isCancelledBookingStatus,
   isCompletedBookingStatus,
@@ -170,7 +171,7 @@ function mapPatientEncounter(
   return {
     actionHint:
       payment?.financial_status === "paid" && status === "confirmed"
-        ? "Entrada liberada 10 min antes"
+        ? `Entrada liberada ${BOOKING_JOIN_WINDOW_BEFORE_MINUTES} min antes`
         : undefined,
     approachLabel: getApproachLabel(therapy.slug),
     dateLabel: formatRelativeBookingDay(booking.starts_at),

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
 import { getClientSessionSummary } from "@/features/client-auth/session-summary";
+import { getPublicServiceAvailability } from "@/features/availability/queries/public-service-availability";
 import {
   mergeReservationContextWithPublicProfile,
   reconcileReservationContextWithAvailability,
@@ -53,7 +54,13 @@ export default async function PublicReservationPage({
         ) ??
         profile.services[0];
 
-      availabilityDays = selectedService?.availability ?? [];
+      const availabilityResult = selectedService
+        ? await getPublicServiceAvailability(selectedService.id)
+        : null;
+      availabilityDays =
+        availabilityResult?.status === "success"
+          ? availabilityResult.data
+          : [];
       context = mergeReservationContextWithPublicProfile(context, {
         avatarUrl: profile.heroImage,
         headline: profile.headline,

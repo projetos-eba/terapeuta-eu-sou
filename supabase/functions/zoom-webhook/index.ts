@@ -10,6 +10,7 @@ import {
 } from "../_shared/zoom-video-sdk/errors.ts";
 import { sha256Hex } from "../_shared/zoom-video-sdk/crypto.ts";
 import {
+  buildApplyZoomVideoSessionEventParams,
   createZoomVideoChallengeResponse,
   createZoomVideoWebhookEventKey,
   extractVideoParticipant,
@@ -85,6 +86,7 @@ runtime.serve(async (request) => {
     const participant = extractVideoParticipant(object);
     const eventType = body.event ?? "unknown";
     const eventTs = typeof body.event_ts === "number" ? body.event_ts : null;
+    const eventAt = normalizeZoomVideoEventTime(body.event_ts);
     const sessionName = extractVideoSessionName(object);
     const providerSessionId = extractVideoSessionId(object);
     const providerUserId =
@@ -108,7 +110,7 @@ runtime.serve(async (request) => {
     >("reserve_zoom_video_webhook_event_v1", {
       p_account_identifier: stringOrNull(body.payload?.account_id),
       p_event_key: eventKey,
-      p_event_ts: normalizeZoomVideoEventTime(body.event_ts),
+      p_event_ts: eventAt,
       p_event_type: eventType,
       p_payload_sanitized: {
         event: eventType,
@@ -131,7 +133,23 @@ runtime.serve(async (request) => {
     }
 
     try {
-      if (!SUPPORTED_EVENTS.has(eventType) || !sessionName) {
+      const applyEventParams = buildApplyZoomVideoSessionEventParams({
+        afterEndsMinutes: 30,
+        durationSeconds:
+          numberOrNull(participant.duration) ??
+          numberOrNull(participant.duration_seconds),
+        environment: config.environment,
+        eventAt,
+        eventType,
+        maxDurationMinutes: config.lifecycle.maxDurationMinutes,
+        providerSessionId,
+        providerUserId,
+        providerUserKey,
+        sessionName,
+        supportedEvents: SUPPORTED_EVENTS,
+      });
+
+      if (!applyEventParams) {
         await client.rpc("apply_zoom_video_webhook_transition_v1", {
           p_error_code: null,
           p_error_message: null,
@@ -142,19 +160,7 @@ runtime.serve(async (request) => {
         return success({ ignored: true, received: true });
       }
 
-      await client.rpc("apply_zoom_video_session_event_v1", {
-        p_duration_seconds:
-          numberOrNull(participant.duration) ??
-          numberOrNull(participant.duration_seconds),
-        p_after_ends_minutes: 30,
-        p_event_at: normalizeZoomVideoEventTime(body.event_ts),
-        p_event_type: eventType,
-        p_max_duration_minutes: config.lifecycle.maxDurationMinutes,
-        p_provider_session_id: providerSessionId,
-        p_provider_user_id: providerUserId,
-        p_provider_user_key: providerUserKey,
-        p_session_name: sessionName,
-      });
+      await client.rpc("apply_zoom_video_session_event_v1", applyEventParams);
       await client.rpc("apply_zoom_video_webhook_transition_v1", {
         p_error_code: null,
         p_error_message: null,

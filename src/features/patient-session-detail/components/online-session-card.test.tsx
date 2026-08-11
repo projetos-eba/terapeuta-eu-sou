@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { BookingStatus, SessionFinancialStatus } from "@/domain/tes";
 import {
@@ -10,14 +10,8 @@ import {
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
 import { OnlineSessionCard } from "./online-session-card";
 
-vi.mock("@/features/zoom/zoom-video-session-adapter", () => ({
-  ZoomVideoSessionAdapter: () => (
-    <div aria-label="adapter zoom">Adapter Zoom renderizado</div>
-  ),
-}));
-
 describe("OnlineSessionCard", () => {
-  it("does not render the Zoom adapter when payment is not confirmed", () => {
+  it("does not enable the dedicated room when payment is not confirmed", () => {
     render(
       <OnlineSessionCard
         data={makeData({
@@ -26,13 +20,15 @@ describe("OnlineSessionCard", () => {
       />,
     );
 
-    expect(screen.queryByLabelText("adapter zoom")).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "Abrir sala do encontro" }),
+    ).toBeNull();
     expect(
       screen.getByRole("button", { name: /pagamento necessário/i }),
     ).toBeDisabled();
   });
 
-  it("renders the Zoom adapter only for confirmed payment", () => {
+  it("links to the dedicated Zoom room only for confirmed payment", () => {
     render(
       <OnlineSessionCard
         data={makeData({
@@ -41,7 +37,12 @@ describe("OnlineSessionCard", () => {
       />,
     );
 
-    expect(screen.getByLabelText("adapter zoom")).toBeVisible();
+    expect(
+      screen.getByRole("link", { name: "Abrir sala do encontro" }),
+    ).toHaveAttribute(
+      "href",
+      "/app/encontros/f2000000-0000-4000-8000-000000000001/video",
+    );
   });
 });
 

@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
+const UPSTREAM_TIMEOUT_MS = 10_000;
+
 export async function POST(request: Request) {
   let body: unknown;
 
@@ -59,18 +61,40 @@ export async function POST(request: Request) {
     );
   }
 
-  const response = await fetch(
-    `${config.url}/functions/v1/zoom-video-session-access`,
-    {
-      body: JSON.stringify({ actorRole, bookingId, intent: intent ?? "join" }),
-      cache: "no-store",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), UPSTREAM_TIMEOUT_MS);
+  let response: Response;
+
+  try {
+    response = await fetch(
+      `${config.url}/functions/v1/zoom-video-session-access`,
+      {
+        body: JSON.stringify({ actorRole, bookingId, intent: intent ?? "join" }),
+        cache: "no-store",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+        signal: controller.signal,
       },
-      method: "POST",
-    },
-  );
+    );
+  } catch (error) {
+    if (isAbortError(error)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message:
+            "A sala demorou mais que o esperado para responder. Tente novamente.",
+        },
+        { headers: noStoreHeaders, status: 504 },
+      );
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+
   const payload = (await response.json().catch(() => null)) as unknown;
 
   return NextResponse.json(payload ?? { ok: false }, {
@@ -117,4 +141,8 @@ function isSameOriginRequest(request: Request) {
   } catch {
     return false;
   }
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
 }

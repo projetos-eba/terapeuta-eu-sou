@@ -28,10 +28,8 @@ export function PatientActivitySection({
     },
     {
       description: `${activity.unreadNotificationsCount} nova${activity.unreadNotificationsCount === 1 ? " notificação" : "s notificações"}`,
-      href: routes.patient.notificationSettings,
       kind: "notifications" as const,
       label: "Notificações",
-      linkLabel: "Ver notificações",
     },
     {
       description: activity.lastActivityLabel

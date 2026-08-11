@@ -87,6 +87,7 @@ podem estar habilitados, bloqueados ou ocultos conforme plano e capability.
 - `/terapeuta/pacientes/:slug-do-paciente`: histórico operacional protegido.
 - `/terapeuta/sessoes`: sessões.
 - `/terapeuta/sessoes/:bookingId`: detalhe da sessão.
+- `/terapeuta/sessoes/:bookingId/video`: sala dedicada da videochamada.
 - `/terapeuta/mensagens`: mensagens.
 - `/terapeuta/servicos`: serviços.
 - `/terapeuta/servicos/meus`: meus serviços.
@@ -112,6 +113,7 @@ por redirect; elas não definem shells independentes.
 - `/app`: visão geral.
 - `/app/encontros`: área canônica de encontros.
 - `/app/encontros/:bookingId`: detalhe canônico do encontro.
+- `/app/encontros/:bookingId/video`: sala dedicada da videochamada.
 - `/app/mensagens`: mensagens e suporte por templates seguros.
 - `/app/favoritos`: hub de favoritos.
 - `/app/favoritos/terapeutas`: terapeutas favoritos.
@@ -132,6 +134,7 @@ decisão futura de produto para uma central própria.
 ### Fluxos
 
 - Pós-reserva: `/reserva/sucesso` -> `/app` -> `/app/encontros/:bookingId`.
+- Videochamada: `/app/encontros/:bookingId` -> `/app/encontros/:bookingId/video`.
 - Favoritos: `/app/favoritos` -> `/app/favoritos/terapeutas` ou `/app/favoritos/terapias` -> perfil ou terapia -> `/reserva`.
 - Pagamentos: `/app/pagamentos` -> `/app/pagamentos/faturas` ou `/app/pagamentos/metodos`.
 - Preferências: `/app/configuracoes` -> perfil, notificações, privacidade ou segurança.

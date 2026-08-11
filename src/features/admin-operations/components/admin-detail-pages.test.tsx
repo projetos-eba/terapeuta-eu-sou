@@ -50,9 +50,52 @@ describe("admin operation detail pages", () => {
               fields: [
                 { label: "Terapeuta", value: "Ana Oliveira" },
                 { label: "Cliente", value: "Marina Rocha" },
-                { label: "Provider online", value: "zoom" },
+                { label: "Formato", value: "Online" },
               ],
               title: "Participantes",
+            },
+            {
+              fields: [
+                { label: "Situação da sala", value: "Em andamento" },
+                { label: "Início real", value: "11/08/2026, 14:03" },
+                {
+                  label: "Limite de segurança",
+                  value: "11/08/2026, 15:20",
+                },
+                {
+                  label: "Profissional na sala",
+                  value: "Profissional presente agora",
+                },
+                {
+                  label: "Último evento recebido",
+                  value: "11/08/2026, 14:40",
+                },
+              ],
+              title: "Sala online",
+            },
+            {
+              fields: [
+                { label: "Movimentações recentes", value: "2" },
+                {
+                  label: "Movimentação mais recente do profissional",
+                  value:
+                    "Profissional entrou na sala em 11/08/2026, 14:03 (20 min de permanência)",
+                },
+              ],
+              title: "Participação na sala",
+            },
+            {
+              fields: [
+                {
+                  label: "Objetivo do acompanhamento",
+                  value: "Encerrar ao atingir o limite de segurança",
+                },
+                {
+                  label: "Situação do acompanhamento",
+                  value: "Nova tentativa agendada",
+                },
+              ],
+              title: "Acompanhamento do encerramento",
             },
           ],
         })}
@@ -62,8 +105,60 @@ describe("admin operation detail pages", () => {
     expect(html).toContain("Detalhes da sessão");
     expect(html).toContain("Ana Oliveira");
     expect(html).toContain("Online");
-    expect(html).not.toContain("Provider online");
+    expect(html).toContain("Em andamento");
+    expect(html).toContain("Profissional presente agora");
+    expect(html).toContain("Nova tentativa agendada");
     expect(html).not.toContain("Booking");
+    expect(html).not.toContain("Provider online");
+    expect(html).not.toContain("session.user_joined");
+    expect(html).not.toContain("provider_session_id");
+    expect(html).not.toContain("JWT");
+  });
+
+  it("renders an honest session detail when the online room has no safe payload yet", () => {
+    const html = renderToStaticMarkup(
+      <AdminSessionDetailPage
+        data={detailData({
+          sections: [
+            {
+              fields: [
+                { label: "Pagamento", value: "pending" },
+                { label: "Serviço", value: "Aromaterapia" },
+                { label: "Duração", value: "50 min" },
+              ],
+              title: "Sessão",
+            },
+            {
+              fields: [{ label: "Início", value: "11/08/2026, 14:00" }],
+              title: "Agenda",
+            },
+            {
+              fields: [
+                { label: "Terapeuta", value: "Ana Oliveira" },
+                { label: "Cliente", value: "Marina Rocha" },
+                { label: "Formato", value: "Online" },
+              ],
+              title: "Participantes",
+            },
+            {
+              fields: [
+                {
+                  label: "Situação da sala",
+                  value: "A sala online ainda não possui atividade registrada.",
+                },
+              ],
+              title: "Sala online",
+            },
+          ],
+          statusLabel: "pending_payment",
+        })}
+      />,
+    );
+
+    expect(
+      html.match(/A sala online ainda não possui atividade registrada\./g),
+    ).toHaveLength(1);
+    expect(html).toContain("Quando ainda não há atividade registrada");
   });
 
   it("renders support context and available action", () => {

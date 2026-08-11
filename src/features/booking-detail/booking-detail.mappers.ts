@@ -263,7 +263,7 @@ export function mapBookingDetail(
     },
     onlineSession: {
       joinRecommendation:
-        "Recomendamos entrar de 5 a 10 minutos antes do horário agendado.",
+        "A sala de espera fica disponível 15 minutos antes do horário agendado.",
       meetingUrl: null,
       provider,
       securityNote:

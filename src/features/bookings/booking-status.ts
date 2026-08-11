@@ -1,5 +1,9 @@
 export { isBookingStatus } from "@/domain/tes";
 
+export const BOOKING_JOIN_WINDOW_BEFORE_MINUTES = 15;
+export const BOOKING_JOIN_WINDOW_BEFORE_MS =
+  BOOKING_JOIN_WINDOW_BEFORE_MINUTES * 60 * 1000;
+
 export function isActiveBookingStatus(status: string) {
   return status === "confirmed" || status === "pending_payment";
 }
@@ -31,7 +35,7 @@ export function canJoinBooking(input: {
   const now = Date.now();
   const startsAt = new Date(input.startsAt).getTime();
   const endsAt = new Date(input.endsAt).getTime();
-  const joinWindowStartsAt = startsAt - 10 * 60 * 1000;
+  const joinWindowStartsAt = startsAt - BOOKING_JOIN_WINDOW_BEFORE_MS;
 
   return now >= joinWindowStartsAt && now <= endsAt;
 }
