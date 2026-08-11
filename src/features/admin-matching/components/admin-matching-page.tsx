@@ -233,51 +233,61 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
       return;
     }
 
-    setError(result.error.message);
+    setError("Não foi possível concluir esta ação agora. Tente novamente.");
   }
 
   return (
-    <div className="mx-auto w-full max-w-[1440px] space-y-6">
-      <section className="rounded-2xl border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
-              Governança
-            </p>
-            <h1 className="mt-3 font-display text-4xl font-light italic leading-tight text-brand-deep sm:text-5xl">
-              Match
-            </h1>
-            <p className="mt-3 max-w-3xl text-base font-semibold leading-7 text-tesText-secondary">
-              Temas recomendam terapias. Refinamentos recomendam profissionais
-              dentro da terapia escolhida.
-            </p>
-          </div>
-          <TESButton onClick={() => openTheme()} className="min-h-12">
-            <Plus className="size-4" />
-            Novo tema
-          </TESButton>
+    <div className="mx-auto w-full max-w-[1166px] space-y-6 py-1">
+      <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+        <div className="max-w-3xl">
+          <p className="text-xs font-extrabold uppercase tracking-[0.42em] text-brand-primary">
+            Admin
+          </p>
+          <h1 className="mt-3 font-display text-[3.15rem] font-normal italic leading-[0.95] text-brand-deep sm:text-[4.4rem]">
+            Match
+          </h1>
+          <p className="mt-4 text-base font-semibold leading-7 text-tesText-secondary sm:text-lg">
+            Organize temas e refinamentos que ajudam clientes a encontrar
+            terapias e profissionais.
+          </p>
         </div>
-      </section>
+        <TESButton
+          onClick={() => openTheme()}
+          className="min-h-12 rounded-full px-6"
+        >
+          <Plus className="size-4" />
+          Novo tema
+        </TESButton>
+      </header>
 
       <section className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="Temas ativos" value={activeThemeCount} />
-        <MetricCard label="Refinamentos" value={interestCount} />
+        <MetricCard
+          label="Temas ativos"
+          value={activeThemeCount}
+          description="Disponíveis na jornada atual."
+        />
+        <MetricCard
+          label="Refinamentos"
+          value={interestCount}
+          description="Opções para aproximar escolhas."
+        />
         <MetricCard
           label="Vínculos operacionais"
           value={impactedServiceCount}
+          description="Serviços relacionados à configuração."
         />
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
         <main className="space-y-4">
-          <label className="flex min-h-12 items-center gap-3 rounded-md border border-border bg-white px-4 shadow-sm">
+          <label className="flex min-h-14 items-center gap-3 rounded-[20px] border border-brand-lavender/70 bg-white px-5 shadow-[0_14px_40px_rgba(20,16,90,0.07)]">
             <Search className="size-4 text-brand-primary" aria-hidden="true" />
             <span className="sr-only">Buscar temas e refinamentos</span>
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="min-h-11 flex-1 bg-transparent text-sm font-bold text-tesText-primary outline-none"
-              placeholder="Buscar por nome ou slug"
+              placeholder="Buscar temas ou refinamentos"
             />
           </label>
 
@@ -304,7 +314,7 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
         </main>
 
         <aside className="space-y-4">
-          <section className="rounded-2xl border border-brand-lavender bg-white p-5 shadow-card">
+          <section className="rounded-[28px] border border-brand-lavender/70 bg-white p-5 shadow-[0_22px_60px_rgba(20,16,90,0.09)]">
             <div className="flex items-center gap-3">
               <span className="grid size-10 place-items-center rounded-xl bg-brand-lavenderSoft text-brand-primary">
                 <SlidersHorizontal aria-hidden="true" className="size-5" />
@@ -326,7 +336,7 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
 
       {themeDraft ? (
         <TESDialog
-          description="Informe nome, slug, ordem e motivo para auditoria."
+          description="Informe nome, endereço amigável, ordem e motivo da alteração."
           onClose={() => setThemeDraft(null)}
           title={themeDraft.themeId ? "Editar tema" : "Novo tema"}
         >
@@ -346,7 +356,7 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
               required
             />
             <TextField
-              label="Slug"
+              label="Endereço amigável"
               value={themeDraft.slug}
               onChange={(value) => {
                 setIsThemeSlugTouched(true);
@@ -384,7 +394,9 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
                   return;
                 }
 
-                setThemeUploadStatus(result.message);
+                setThemeUploadStatus(
+                  "Não foi possível enviar a imagem agora. Tente novamente.",
+                );
               }}
             />
             <TextField
@@ -433,7 +445,7 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
               required
             />
             <TextField
-              label="Slug"
+              label="Endereço amigável"
               value={interestDraft.slug}
               onChange={(value) => {
                 setIsInterestSlugTouched(true);
@@ -512,7 +524,7 @@ function ThemePanel({
   theme: AdminMatchingTheme;
 }) {
   return (
-    <section className="rounded-2xl border border-brand-lavender bg-white p-5 shadow-card">
+    <section className="rounded-[28px] border border-brand-lavender/70 bg-white p-5 shadow-[0_22px_60px_rgba(20,16,90,0.09)] sm:p-6">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div className="flex items-start gap-3">
           <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-lavenderSoft text-brand-primary">
@@ -526,7 +538,7 @@ function ThemePanel({
               <StatusBadge isActive={theme.isActive} />
             </div>
             <p className="mt-1 text-sm font-bold text-tesText-secondary">
-              {theme.slug} · ordem {theme.sortOrder}
+              Ordem de exibição {theme.sortOrder}
             </p>
             <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
               {theme.description}
@@ -591,8 +603,8 @@ function ThemePanel({
                     <StatusBadge isActive={interest.isActive} />
                   </div>
                   <p className="mt-1 text-xs font-bold text-tesText-secondary">
-                    {interest.slug} · ordem {interest.sortOrder} ·{" "}
-                    {interest.serviceCount} serviços
+                    Ordem {interest.sortOrder} · {interest.serviceCount}{" "}
+                    serviços
                   </p>
                 </div>
                 <div className="flex gap-1">
@@ -626,14 +638,23 @@ function ThemePanel({
   );
 }
 
-function MetricCard({ label, value }: { label: string; value: number }) {
+function MetricCard({
+  description,
+  label,
+  value,
+}: {
+  description: string;
+  label: string;
+  value: number;
+}) {
   return (
-    <div className="rounded-2xl border border-brand-lavender bg-white p-5 shadow-card">
-      <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brand-primary">
-        {label}
-      </p>
-      <p className="mt-3 font-display text-4xl font-light italic text-brand-deep">
+    <div className="rounded-[24px] border border-brand-lavender/70 bg-white p-5 shadow-[0_20px_55px_rgba(20,16,90,0.08)]">
+      <p className="text-sm font-extrabold text-tesText-secondary">{label}</p>
+      <p className="mt-4 text-[2.35rem] font-extrabold leading-none text-brand-deep">
         {value}
+      </p>
+      <p className="mt-3 text-sm font-semibold leading-6 text-tesText-muted">
+        {description}
       </p>
     </div>
   );

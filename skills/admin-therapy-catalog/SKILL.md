@@ -39,6 +39,21 @@ públicas dependentes do catálogo canônico e da taxonomia do Match.
 - `admin-matching.parsers.ts`
 - `admin-matching.commands.ts`
 
+## Contrato visual
+
+- Usar o ritmo dos padrões administrativos do Figma, node `12857:666`:
+  cabeçalho editorial sem card externo, conteúdo com largura máxima de
+  `1166px`, KPIs compactos, cards com raio de 24 a 28px e painéis laterais
+  contidos no grid.
+- `/admin/terapias` prioriza catálogo, publicação, presença no Match, impacto e
+  solicitações. Não renderizar nomes de tabelas ou contratos internos.
+- `/admin/matching` prioriza temas, refinamentos, vínculos e regras da jornada.
+  Slugs continuam no formulário por necessidade editorial, apresentados como
+  `Endereço amigável`; não devem dominar cards ou resumos.
+- Mensagens de falha recebidas dos comandos não são propagadas diretamente ao
+  usuário. A interface usa copy fixa de produto e os detalhes permanecem nos
+  canais de diagnóstico.
+
 Dados vêm de `admin_list_therapy_catalog_v1`, `admin_therapy_impact_v1`,
 `admin_upsert_therapy_draft_v1`, `admin_transition_therapy_v1` e
 `admin_decide_therapy_catalog_request_v1`. Temas e refinamentos do Match vêm
@@ -99,6 +114,8 @@ admin autenticado, sem `service_role` no frontend.
   `therapist-search`, `therapist-profile` e `therapist-services`.
 - Verificar responsividade em 320, 375, 768, 1024 e 1440 px quando houver
   mudança visual.
+- Validar com Playwright a ausência de overflow horizontal, abertura dos
+  diálogos e foco dos campos, sem salvar mutações durante QA visual.
 
 ## Copy responsável
 

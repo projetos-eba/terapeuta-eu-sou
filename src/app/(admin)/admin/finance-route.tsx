@@ -1,6 +1,7 @@
 import {
   AdminFinancePage,
   AdminPaymentsPage,
+  AdminSubscriptionsPage,
   getAdminFinancePage,
   type AdminFinanceModuleKey,
 } from "@/features/admin-finance";
@@ -48,6 +49,10 @@ export async function AdminFinanceRoute({
 
   if (module === "payments") {
     return <AdminPaymentsPage data={result.data} />;
+  }
+
+  if (module === "subscriptions") {
+    return <AdminSubscriptionsPage data={result.data} />;
   }
 
   return <AdminFinancePage data={result.data} />;

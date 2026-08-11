@@ -55,7 +55,8 @@ export async function AdminFinanceDetailRoute({
           Detalhe financeiro indisponível
         </h1>
         <p className="mt-4 text-sm font-semibold leading-6 text-tesText-secondary">
-          {result.message}
+          Não foi possível carregar este detalhe agora. Tente novamente mais
+          tarde.
         </p>
       </section>
     );

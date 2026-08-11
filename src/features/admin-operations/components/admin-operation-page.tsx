@@ -30,8 +30,11 @@ import type {
 import { AdminOperationCommandPanel } from "./admin-operation-command-panel";
 import { AdminPatientDetailPage } from "./admin-patient-detail-page";
 import { AdminPatientsPage } from "./admin-patients-page";
+import { AdminOperationalOverviewPage } from "./admin-operational-overview-page";
 import { AdminProfessionalDetailPage } from "./admin-professional-detail-page";
 import { AdminProfessionalsPage } from "./admin-professionals-page";
+import { AdminSessionDetailPage } from "./admin-session-detail-page";
+import { AdminSupportDetailPage } from "./admin-support-detail-page";
 import { AdminVerificationDetailPage } from "./admin-verification-detail-page";
 import { AdminVerificationsPage } from "./admin-verifications-page";
 
@@ -52,6 +55,10 @@ export function AdminOperationPage({
 
   if (module === "verifications") {
     return <AdminVerificationsPage data={data} />;
+  }
+
+  if (module === "sessions" || module === "support") {
+    return <AdminOperationalOverviewPage data={data} module={module} />;
   }
 
   return (
@@ -359,6 +366,14 @@ export function AdminOperationDetailPage({
 
   if (data.module === "verifications") {
     return <AdminVerificationDetailPage data={data} />;
+  }
+
+  if (data.module === "sessions") {
+    return <AdminSessionDetailPage data={data} />;
+  }
+
+  if (data.module === "support") {
+    return <AdminSupportDetailPage data={data} />;
   }
 
   return (
