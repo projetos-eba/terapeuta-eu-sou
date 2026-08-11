@@ -19,10 +19,10 @@ export function PatientActivityCard({
   linkLabel,
 }: {
   description: string;
-  href: string;
+  href?: string;
   kind: ActivityKind;
   label: string;
-  linkLabel: string;
+  linkLabel?: string;
 }) {
   const Icon = activityIcons[kind];
   const iconBackground =
@@ -47,15 +47,17 @@ export function PatientActivityCard({
           <p className="mt-1 text-xs text-[var(--tes-color-text-secondary-app)]">
             {description}
           </p>
-          <Link
-            className="mt-3 inline-flex text-xs font-medium text-brand-primary outline-none hover:underline focus-visible:ring-4 focus-visible:ring-ring/20"
-            href={href as Route<string>}
-          >
-            {linkLabel}{" "}
-            <span aria-hidden="true" className="ml-1">
-              →
-            </span>
-          </Link>
+          {href && linkLabel ? (
+            <Link
+              className="mt-3 inline-flex text-xs font-medium text-brand-primary outline-none hover:underline focus-visible:ring-4 focus-visible:ring-ring/20"
+              href={href as Route<string>}
+            >
+              {linkLabel}{" "}
+              <span aria-hidden="true" className="ml-1">
+                →
+              </span>
+            </Link>
+          ) : null}
         </div>
       </div>
     </article>

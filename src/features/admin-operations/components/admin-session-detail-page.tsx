@@ -29,17 +29,32 @@ export function AdminSessionDetailPage({
   const session = findSection(data, "Sessão");
   const schedule = findSection(data, "Agenda");
   const participants = findSection(data, "Participantes");
+  const onlineRoom = findSection(data, "Sala online");
+  const roomParticipation = findSection(data, "Participação na sala");
+  const roomFollowUp = findSection(data, "Acompanhamento do encerramento");
   const traceability = findSection(data, "Rastreabilidade");
   const sessionFields = fieldMap(session?.fields ?? []);
   const scheduleFields = fieldMap(schedule?.fields ?? []);
   const participantFields = fieldMap(participants?.fields ?? []);
+  const onlineRoomFields = fieldMap(onlineRoom?.fields ?? []);
   const status = formatStatusLabel(data.statusLabel);
-  const payment = formatStatusLabel(sessionFields.get("Pagamento"));
+  const payment = formatPaymentLabel(sessionFields.get("Pagamento"));
+  const roomStatus = onlineRoomFields.get("Situação da sala") ?? "";
+  const therapistPresence = onlineRoomFields.get("Profissional na sala") ?? "";
+  const participantCount = onlineRoomFields.get("Participantes ativos") ?? "";
+  const terminationReason =
+    onlineRoomFields.get("Motivo do encerramento") ?? "";
+  const latestEvent = onlineRoomFields.get("Último evento recebido") ?? "";
+  const roomStatusBadge =
+    roomStatus && !isAbsenceMessage(roomStatus)
+      ? [{ label: roomStatus, tone: roomTone(roomStatus) }]
+      : [];
 
   const stats = [
     statItem("Duração", sessionFields.get("Duração")),
-    statItem("Início", scheduleFields.get("Início")),
-    statItem("Término", scheduleFields.get("Término")),
+    statItem("Sala online", !isAbsenceMessage(roomStatus) ? roomStatus : ""),
+    statItem("Participantes ativos", participantCount),
+    statItem("Profissional na sala", therapistPresence),
     statItem("Pagamento", payment),
   ].filter(Boolean) as Array<{ label: string; value: string }>;
 
@@ -58,6 +73,44 @@ export function AdminSessionDetailPage({
     productField("Formato", describeMeeting()),
   ].filter(Boolean) as Array<{ label: string; value: string }>;
 
+  const onlineRoomSummary = [
+    productField("Situação da sala", roomStatus),
+    productField("Início real", onlineRoomFields.get("Início real")),
+    productField("Fim real", onlineRoomFields.get("Fim real")),
+    productField(
+      "Limite de segurança",
+      onlineRoomFields.get("Limite de segurança"),
+    ),
+    productField("Profissional na sala", therapistPresence),
+    productField("Participantes ativos", participantCount),
+    productField("Último evento recebido", latestEvent),
+    productField("Motivo do encerramento", terminationReason),
+  ].filter(Boolean) as Array<{ label: string; value: string }>;
+
+  const participationSummary = (
+    roomParticipation?.fields?.length
+      ? roomParticipation.fields
+      : [
+          {
+            label: "Resumo da participação",
+            value:
+              "Ainda não há movimentações registradas para a sala online desta sessão.",
+          },
+        ]
+  ).filter(Boolean);
+
+  const followUpSummary = (
+    roomFollowUp?.fields?.length
+      ? roomFollowUp.fields
+      : [
+          {
+            label: "Acompanhamento do encerramento",
+            value:
+              "Ainda não há acompanhamento automático registrado para esta sessão.",
+          },
+        ]
+  ).filter(Boolean);
+
   return (
     <AppPageContainer className="max-w-[1320px] py-5 lg:py-6">
       <div className="space-y-6">
@@ -70,7 +123,7 @@ export function AdminSessionDetailPage({
             ]}
           />
           <EditorialHeader
-            subtitle="Acompanhe agenda, participantes e situação financeira da sessão em uma única visão."
+            subtitle="Acompanhe agenda, presença na sala online, encerramento e rastreabilidade operacional da sessão em uma única visão."
             title="Detalhes da sessão"
           />
         </div>
@@ -81,24 +134,37 @@ export function AdminSessionDetailPage({
             ...(payment
               ? [{ label: payment, tone: paymentTone(payment) }]
               : []),
+            ...roomStatusBadge,
           ]}
           details={
             [
               productField("Profissional", participantFields.get("Terapeuta")),
               productField("Cliente", participantFields.get("Cliente")),
               productField("Início", scheduleFields.get("Início")),
+              productField(
+                "Sala online",
+                !isAbsenceMessage(roomStatus) ? roomStatus : "",
+              ),
               productField("Formato", describeMeeting()),
             ].filter(Boolean) as Array<{ label: string; value: string }>
           }
           meta={
-            sessionFields.get("Duração")
-              ? [
-                  {
+            [
+              sessionFields.get("Duração")
+                ? {
                     label: "Duração prevista",
                     value: sessionFields.get("Duração") as string,
-                  },
-                ]
-              : undefined
+                  }
+                : null,
+              onlineRoomFields.get("Limite de segurança")
+                ? {
+                    label: "Limite de segurança",
+                    value: onlineRoomFields.get(
+                      "Limite de segurança",
+                    ) as string,
+                  }
+                : null,
+            ].filter(Boolean) as Array<{ label: string; value: string }>
           }
           name={data.title}
           title="Sessão"
@@ -119,6 +185,21 @@ export function AdminSessionDetailPage({
               title="Participantes"
             />
             <DetailSectionCard
+              description="Situação atual da sala online, com horários reais, limite de segurança e último sinal recebido."
+              fields={onlineRoomSummary}
+              title="Sala online"
+            />
+            <DetailSectionCard
+              description="Resumo das entradas e saídas registradas para profissional e cliente."
+              fields={participationSummary}
+              title="Participação na sala"
+            />
+            <DetailSectionCard
+              description="Acompanhamentos automáticos usados quando a sala precisa de confirmação ou encerramento."
+              fields={followUpSummary}
+              title="Acompanhamento do encerramento"
+            />
+            <DetailSectionCard
               description="Registro de criação e atualização desta sessão."
               fields={traceability?.fields ?? []}
               title="Rastreabilidade"
@@ -131,6 +212,14 @@ export function AdminSessionDetailPage({
                 {[
                   productField("Sessão", status),
                   productField("Pagamento", payment),
+                  productField(
+                    "Sala online",
+                    !isAbsenceMessage(roomStatus) ? roomStatus : "",
+                  ),
+                  productField("Profissional na sala", therapistPresence),
+                  productField("Participantes ativos", participantCount),
+                  productField("Último evento recebido", latestEvent),
+                  productField("Encerramento", terminationReason),
                   productField("Serviço", sessionFields.get("Serviço")),
                 ]
                   .filter(Boolean)
@@ -148,6 +237,18 @@ export function AdminSessionDetailPage({
                     </div>
                   ))}
               </dl>
+            </AsideCard>
+            <AsideCard title="Leitura desta visão">
+              <div className="space-y-3">
+                <p className="rounded-[20px] border border-brand-lavender/60 bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
+                  Esta tela reúne horários confirmados, presença e encerramento
+                  da sala online para apoiar o acompanhamento da sessão.
+                </p>
+                <p className="rounded-[20px] border border-brand-lavender/60 bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
+                  Quando ainda não há atividade registrada, a informação aparece
+                  de forma clara, sem preencher lacunas com suposições.
+                </p>
+              </div>
             </AsideCard>
             <AsideCard title="Histórico administrativo">
               <ProductHistory events={data.auditEvents} />
@@ -173,6 +274,22 @@ function describeMeeting() {
   return "Online";
 }
 
+function formatPaymentLabel(value?: string) {
+  const key = (value ?? "").trim().toLowerCase();
+
+  if (!key) return "";
+
+  const labels: Record<string, string> = {
+    canceled: "Cancelado",
+    failed: "Falhou",
+    paid: "Pago",
+    pending: "Pendente",
+    refunded: "Reembolsado",
+  };
+
+  return labels[key] ?? formatStatusLabel(value);
+}
+
 function statusTone(status: string) {
   if (status === "Concluída" || status === "Confirmada")
     return "success" as const;
@@ -181,10 +298,25 @@ function statusTone(status: string) {
   return "primary" as const;
 }
 
+function roomTone(status: string) {
+  if (["Em andamento", "Pronta para iniciar"].includes(status))
+    return "success" as const;
+  if (["Cancelada", "Com problema"].includes(status)) return "danger" as const;
+  if (status === "Encerrada") return "muted" as const;
+  return "primary" as const;
+}
+
 function paymentTone(status: string) {
-  if (["Pago", "Confirmado", "Concluído"].includes(status))
+  if (["Pago", "Confirmado", "Concluída"].includes(status))
     return "success" as const;
   if (["Falhou", "Cancelado", "Reembolsado"].includes(status))
     return "danger" as const;
   return "warning" as const;
+}
+
+function isAbsenceMessage(value?: string) {
+  return [
+    "A sala online ainda não possui atividade registrada.",
+    "Ainda sem registro operacional da sala online.",
+  ].includes(value ?? "");
 }

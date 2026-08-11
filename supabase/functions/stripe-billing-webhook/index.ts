@@ -17,6 +17,8 @@ import {
   recordStripeSubscriptionInvoice,
   syncTherapistSubscriptionFromStripe,
 } from "../_shared/payments/subscription-sync.ts";
+import { normalizeStripeBillingWebhookError } from "./errors.ts";
+import { ensureVideoSessionForPaidSessionPayment } from "./session-payment-side-effects.ts";
 
 type FinancialStatus = "canceled" | "failed" | "paid" | "processing";
 
@@ -98,7 +100,19 @@ runtime.serve(async (request) => {
       throw error;
     }
   } catch (error) {
-    return failure(error, requestId);
+    const normalizedError = normalizeStripeBillingWebhookError(error);
+
+    if (normalizedError !== error) {
+      console.warn(
+        JSON.stringify({
+          code: "STRIPE_WEBHOOK_SIGNATURE_INVALID",
+          message: error instanceof Error ? error.message.slice(0, 500) : null,
+          request_id: requestId,
+        }),
+      );
+    }
+
+    return failure(normalizedError, requestId);
   }
 });
 
@@ -304,14 +318,13 @@ async function handleCheckoutEvent(
   const paymentIntentId = stringOrNull(session.payment_intent);
   const paymentIntent = paymentIntentId
     ? ((await stripe.paymentIntents.retrieve(paymentIntentId, {
-        expand: ["latest_charge.balance_transaction"],
-      })) as unknown as Record<string, unknown>)
+      expand: ["latest_charge.balance_transaction"],
+    })) as unknown as Record<string, unknown>)
     : null;
   const charge = asRecord(paymentIntent?.latest_charge);
-  const chargeId =
-    typeof paymentIntent?.latest_charge === "string"
-      ? paymentIntent.latest_charge
-      : stringOrNull(charge.id);
+  const chargeId = typeof paymentIntent?.latest_charge === "string"
+    ? paymentIntent.latest_charge
+    : stringOrNull(charge.id);
 
   await applySessionPaymentState(client, {
     chargeId,
@@ -339,10 +352,9 @@ async function applyPaymentIntentState(
   if (!sessionPaymentId) return;
 
   const chargeId = stringOrNull(paymentIntent.latest_charge);
-  const reconciliation =
-    status === "paid" && chargeId
-      ? await retrieveChargeReconciliation(stripe, chargeId)
-      : null;
+  const reconciliation = status === "paid" && chargeId
+    ? await retrieveChargeReconciliation(stripe, chargeId)
+    : null;
 
   await applySessionPaymentState(client, {
     chargeId,
@@ -388,8 +400,7 @@ async function applySessionPaymentState(
       paymentMethodType: input.reconciliation?.paymentMethodType ?? null,
       receiptUrl: input.reconciliation?.receiptUrl ?? null,
       sessionPaymentId: input.sessionPaymentId,
-      stripeBalanceTransactionId:
-        input.reconciliation?.balanceTransactionId ?? null,
+      stripeBalanceTransactionId: input.reconciliation?.balanceTransactionId ?? null,
       stripeFeeAmountCents: input.reconciliation?.feeAmountCents ?? null,
       stripeNetAmountCents: input.reconciliation?.netAmountCents ?? null,
     });
@@ -401,24 +412,17 @@ async function applySessionPaymentState(
     console.warn(
       JSON.stringify({
         code: "VIDEO_SESSION_NOT_CREATED",
-        message:
-          "Zoom Video SDK environment is not configured for session payment.",
+        message: "Zoom Video SDK environment is not configured for session payment.",
         sessionPaymentId: input.sessionPaymentId,
       }),
     );
     return;
   }
 
-  const [payment] = await client.get<Array<{ booking_id: string }>>(
-    `/rest/v1/session_payments?select=booking_id&id=eq.${encodeURIComponent(input.sessionPaymentId)}&limit=1`,
-  );
-
-  if (!payment?.booking_id) return;
-
-  await client.rpc("ensure_video_session_for_paid_booking_v1", {
-    p_booking_id: payment.booking_id,
-    p_environment: zoomEnvironment,
-    p_source: "stripe-billing-webhook",
+  await ensureVideoSessionForPaidSessionPayment(client, {
+    sessionPaymentId: input.sessionPaymentId,
+    source: "stripe-billing-webhook",
+    zoomEnvironment,
   });
 }
 
@@ -458,9 +462,11 @@ async function handleChargeRefunded(
   if (!paymentIntentId) return;
 
   const rows = await client.get<Array<{ id: string }>>(
-    `/rest/v1/session_payments?select=id&stripe_payment_intent_id=eq.${encodeURIComponent(
-      paymentIntentId,
-    )}&limit=1`,
+    `/rest/v1/session_payments?select=id&stripe_payment_intent_id=eq.${
+      encodeURIComponent(
+        paymentIntentId,
+      )
+    }&limit=1`,
   );
   if (!rows[0]) return;
 
@@ -503,10 +509,9 @@ async function handleRefundEvent(
   if (!payment) return;
 
   const amountCents = numberOrZero(refund.amount);
-  const refundStatus =
-    eventType === "refund.failed"
-      ? "failed"
-      : String(refund.status ?? "pending");
+  const refundStatus = eventType === "refund.failed"
+    ? "failed"
+    : String(refund.status ?? "pending");
 
   await client.post(
     "/rest/v1/session_refunds?on_conflict=stripe_refund_id",
@@ -527,9 +532,11 @@ async function handleRefundEvent(
   if (refundStatus !== "succeeded") return;
 
   const successfulRefunds = await client.get<Array<{ amount_cents: number }>>(
-    `/rest/v1/session_refunds?select=amount_cents&session_payment_id=eq.${encodeURIComponent(
-      payment.id,
-    )}&status=eq.succeeded`,
+    `/rest/v1/session_refunds?select=amount_cents&session_payment_id=eq.${
+      encodeURIComponent(
+        payment.id,
+      )
+    }&status=eq.succeeded`,
   );
   const totalRefundedCents = successfulRefunds.reduce(
     (total, row) => total + row.amount_cents,
@@ -539,10 +546,9 @@ async function handleRefundEvent(
   await client.patch(
     `/rest/v1/session_payments?id=eq.${encodeURIComponent(payment.id)}`,
     {
-      financial_status:
-        totalRefundedCents >= payment.gross_amount_cents
-          ? "refunded"
-          : "partially_refunded",
+      financial_status: totalRefundedCents >= payment.gross_amount_cents
+        ? "refunded"
+        : "partially_refunded",
       refund_pending: false,
       transfer_blocked_reason: "refund",
       transfer_status: "blocked",
@@ -579,7 +585,9 @@ async function handleDispute(
   const rows = await client.get<
     Array<{ id: string; financial_status: string }>
   >(
-    `/rest/v1/session_payments?select=id,financial_status&stripe_charge_id=eq.${encodeURIComponent(chargeId)}&limit=1`,
+    `/rest/v1/session_payments?select=id,financial_status&stripe_charge_id=eq.${
+      encodeURIComponent(chargeId)
+    }&limit=1`,
   );
   const payment = rows[0];
   if (!payment) return;
@@ -626,10 +634,9 @@ async function handleDispute(
       `/rest/v1/session_payments?id=eq.${encodeURIComponent(payment.id)}`,
       {
         disputed_at: null,
-        financial_status:
-          payment.financial_status === "partially_refunded"
-            ? "partially_refunded"
-            : "paid",
+        financial_status: payment.financial_status === "partially_refunded"
+          ? "partially_refunded"
+          : "paid",
         transfer_blocked_reason: null,
         updated_at: new Date().toISOString(),
       },
@@ -679,9 +686,11 @@ async function handleTransferEvent(
   const [localTransfer] = await client.get<
     Array<{ id: string; session_payment_id: string }>
   >(
-    `/rest/v1/stripe_transfers?select=id,session_payment_id&stripe_transfer_id=eq.${encodeURIComponent(
-      transferId,
-    )}&limit=1`,
+    `/rest/v1/stripe_transfers?select=id,session_payment_id&stripe_transfer_id=eq.${
+      encodeURIComponent(
+        transferId,
+      )
+    }&limit=1`,
   );
 
   if (!localTransfer) return;
@@ -704,9 +713,11 @@ async function handleTransferEvent(
     "return=minimal",
   );
   await client.patch(
-    `/rest/v1/session_payments?id=eq.${encodeURIComponent(
-      localTransfer.session_payment_id,
-    )}`,
+    `/rest/v1/session_payments?id=eq.${
+      encodeURIComponent(
+        localTransfer.session_payment_id,
+      )
+    }`,
     {
       transfer_blocked_reason: "transfer_reversed",
       transfer_status: "reversed",
@@ -736,9 +747,7 @@ function asRecord(value: unknown): Record<string, unknown> {
 }
 
 function unixToIso(value: unknown) {
-  return typeof value === "number"
-    ? new Date(value * 1000).toISOString()
-    : null;
+  return typeof value === "number" ? new Date(value * 1000).toISOString() : null;
 }
 
 function stringOrNull(value: unknown) {

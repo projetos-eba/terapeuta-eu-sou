@@ -1,0 +1,17 @@
+/.agents
+/.codex
+/.playwright-mcp
+/.tmp
+/Referencias
+/artifacts
+/coverage
+/docs
+/scripts
+/skills
+/supabase
+/test-results
+/tests
+/tmp
+/*.log
+/*.png
+/*.tsbuildinfo

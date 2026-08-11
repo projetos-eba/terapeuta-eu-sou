@@ -45,6 +45,26 @@ test.describe("admin operation modules", () => {
       }
     }
 
+    await page.goto("/admin/sessoes");
+    await page
+      .getByRole("link", { name: "Ver detalhes do registro" })
+      .first()
+      .click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Detalhes da sessão" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Sala online" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Participação na sala" }),
+    ).toBeVisible();
+
+    const sessionDetail = await page.locator("body").innerText();
+    expect(sessionDetail).not.toMatch(
+      /provider_session_id|session_name|participant_correlation_key|video_session_control_jobs/i,
+    );
+
     await page.goto("/admin");
     await expect(
       page.getByRole("link", { exact: true, name: "Profissionais" }),

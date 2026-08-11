@@ -6,6 +6,10 @@ import {
   SessionFinancialStatus,
   ZoomAccessReason,
 } from "@/domain/tes";
+import {
+  BOOKING_JOIN_WINDOW_BEFORE_MINUTES,
+  BOOKING_JOIN_WINDOW_BEFORE_MS,
+} from "./booking-status";
 
 import type {
   SessionPresentation,
@@ -193,7 +197,7 @@ export function mapSessionPresentation(
 
   if (
     session.zoomAccess.reason === ZoomAccessReason.VideoSessionNotReady &&
-    currentTime >= startsAt - 15 * 60_000
+    currentTime >= startsAt - BOOKING_JOIN_WINDOW_BEFORE_MS
   ) {
     return presentation(
       "room_preparing",
@@ -237,7 +241,7 @@ export function getZoomAccessLabel(access: SessionReadModelItem["zoomAccess"]) {
     [ZoomAccessReason.TherapistNotInSession]: "Aguardando terapeuta",
     [ZoomAccessReason.TherapistSuspended]: "Acesso suspenso",
     [ZoomAccessReason.HardTimeout]: "Tempo encerrado",
-    [ZoomAccessReason.TooEarly]: "Disponível 15 min antes",
+    [ZoomAccessReason.TooEarly]: `Disponível ${BOOKING_JOIN_WINDOW_BEFORE_MINUTES} min antes`,
     [ZoomAccessReason.TooLate]: "Janela de acesso encerrada",
     [ZoomAccessReason.Unknown]: "Acesso indisponível",
   };

@@ -17,6 +17,13 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
 ## Arquitetura
 
 - Browser: `@zoom/videosdk`.
+- Paciente acessa a sala dedicada por `/app/encontros/:bookingId/video`.
+- Terapeuta acessa a sala dedicada por
+  `/terapeuta/sessoes/:bookingId/video`.
+- O detalhe do booking apenas direciona para a sala; o Video SDK não deve ser
+  montado dentro de cards ou páginas operacionais.
+- `ZoomVideoCallPage` remove sidebar e topbar somente nessas rotas e reutiliza
+  uma única instância de `ZoomVideoSessionAdapter`.
 - Backend: `zoom-video-session-access` gera JWT curto do Video SDK.
 - `role_type=0` para paciente e `role_type=1` para terapeuta responsavel.
 - `video_sessions` e a fonte local da sessao por booking.
@@ -37,8 +44,16 @@ payload bruto, audio, video, chat, transcricao ou dado clinico.
 `session_name` e `user_key` devem ser opacos e limitados. O browser nunca
 define papel, token, session name ou user key.
 
+Os dois overloads de `apply_zoom_video_session_event_v1` sao exclusivos de
+`service_role`. Toda migration que recriar esses RPCs deve revogar `EXECUTE` de
+`PUBLIC`, `anon` e `authenticated`, conceder somente a `service_role` e manter
+regressao pgTAP para as duas assinaturas.
+
 ## Testes
 
+- Validar que os CTAs de detalhe apontam para a sala do mesmo booking.
+- Validar que a sala dedicada não renderiza sidebar nem topbar.
+- Validar desktop e mobile, foco visível, nomes acessíveis e retorno ao detalhe.
 - `npm run zoom:video-sdk:env`
 - `npm run zoom:video-sdk:test`
 - `npm run zoom:video-sdk:webhook:smoke`
@@ -48,6 +63,7 @@ define papel, token, session name ou user key.
 - `npm run zoom:video-sdk:api:mock`
 - `npm run zoom:video-sdk:real-preflight`
 - `npm run homologation:zoom:local`
+- `node scripts/homologation/zoom-hml.mjs --confirm-single-hml-session --confirm-hml-vercel-share --duration-seconds=45`
 - `npm run zoom:video-sdk:test:real -- --confirm-zoom-marketplace --confirm-single-real-session --headed --slow-mo=250 --allow-direct-paid-fixture-for-zoom-only` somente para diagnostico tecnico isolado
 - `npm run zoom:video-sdk:emergency-end`
 
@@ -67,6 +83,18 @@ Com `ALLOW_REAL_ZOOM=false`, nao fazer chamada externa nem entrar em sessao real
 - O teste real exige confirmacao manual momentanea do Marketplace Zoom por flags
   e usa contexts Playwright separados para terapeuta e paciente; a execucao real
   deve ser visivel (`--headed`) e com `--slow-mo`.
+- O harness HML separado em `scripts/homologation/zoom-hml.mjs` exige URL remota
+  com `_vercel_share`, `SUPABASE_URL` HML remoto
+  `emzwqkmrryuqvqiohqnu`, booking/`session_payment`/`video_session`
+  preexistentes via env, contexts Playwright isolados para cliente, terapeuta e
+  Admin, booking entre 15 e 20 minutos antes do inicio para provar o bloqueio e
+  a transicao em T-15, duracao configuravel entre 30 e 60 segundos e evidencias
+  JSON sanitizadas sob `.tmp/homologation/`.
+- O harness HML falha fechado sem booking/IDs/credenciais, sem `_vercel_share`,
+  com `provider_session_id` preexistente, com qualquer sessao Zoom ativa antes
+  do teste, ou se o pagamento canonico estiver ausente. Ele nao cria fixture
+  paga direta, nao usa `supabase status` local como evidencia remota e nao faz
+  deploy.
 - Homologacao transacional principal deve passar por Checkout Stripe test,
   webhook assinado e `session_payments.financial_status = paid`; fixture com
   pagamento direto nao conclui homologacao Stripe + Zoom.
@@ -80,5 +108,7 @@ Com `ALLOW_REAL_ZOOM=false`, nao fazer chamada externa nem entrar em sessao real
 ## Pendencias Conhecidas
 
 - Homologar webhook publico no ambiente alvo.
+- Reexecutar o Security Advisor do ambiente alvo apos qualquer alteracao nos
+  RPCs de eventos Zoom e confirmar que nao ha permissao publica residual.
 - Fechar politica de retencao legal de eventos operacionais.
 - Rodar teste real controlado somente com `ALLOW_REAL_ZOOM=true`.

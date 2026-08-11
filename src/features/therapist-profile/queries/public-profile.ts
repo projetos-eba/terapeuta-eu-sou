@@ -23,16 +23,22 @@ function hasSupabaseConfig() {
   return Boolean(getSupabasePublicConfig());
 }
 
-async function fetchView<T>(view: string, query: string) {
+async function fetchView<T>(
+  view: string,
+  query: string,
+  options: { fresh?: boolean } = {},
+) {
   const config = getSupabasePublicConfig();
   if (!config) return [];
 
   const response = await fetch(`${config.url}/rest/v1/${view}?${query}`, {
+    ...(options.fresh
+      ? { cache: "no-store" as const }
+      : { next: { revalidate: 900, tags: ["therapist-profile"] } }),
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
       apikey: config.apiKey,
     },
-    next: { revalidate: 900, tags: ["therapist-profile"] },
   });
 
   if (!response.ok) {
@@ -86,6 +92,8 @@ export async function getPublicTherapistProfileResult(
       fetchView<ServiceRow>(
         "public_therapist_profile_services_v",
         `select=*&therapist_slug=eq.${slugFilter(slug)}&order=sort_order.asc`,
+        // Availability and booking conflicts must never inherit the profile cache.
+        { fresh: true },
       ),
       fetchView<ReviewRow>(
         "public_therapist_profile_reviews_v",
