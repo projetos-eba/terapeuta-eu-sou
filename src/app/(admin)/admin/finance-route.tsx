@@ -1,5 +1,6 @@
 import {
   AdminFinancePage,
+  AdminPaymentsPage,
   getAdminFinancePage,
   type AdminFinanceModuleKey,
 } from "@/features/admin-finance";
@@ -38,10 +39,15 @@ export async function AdminFinanceRoute({
           Módulo indisponível
         </h1>
         <p className="mt-4 text-sm font-semibold leading-6 text-tesText-secondary">
-          {result.message}
+          Não foi possível carregar este conteúdo agora. Tente novamente em
+          alguns instantes.
         </p>
       </section>
     );
+  }
+
+  if (module === "payments") {
+    return <AdminPaymentsPage data={result.data} />;
   }
 
   return <AdminFinancePage data={result.data} />;

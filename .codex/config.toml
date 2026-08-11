@@ -1,0 +1,35 @@
+# Compatibilidade confirmada com codex-cli 0.142.5.
+# Esta versão registra roles por config_file e usa max_threads no topo.
+max_threads = 6
+
+[agents.orchestrator]
+description = "Coordena objetivos multi-domain, dependências, handoffs, integração e QA no TES."
+config_file = "agents/orchestrator.toml"
+
+[agents.security_supabase]
+description = "Revisa segurança, Supabase e possui ownership final de migrations, RLS, grants e Storage."
+config_file = "agents/security-supabase.toml"
+
+[agents.admin]
+description = "Implementa e revisa superfícies, read models e commands administrativos do TES."
+config_file = "agents/admin.toml"
+
+[agents.stripe_finance]
+description = "Implementa e revisa Stripe Billing/Connect, pagamentos, ledger, repasses e reconciliação."
+config_file = "agents/stripe-finance.toml"
+
+[agents.sessions_zoom]
+description = "Implementa e revisa agenda, bookings, sessões e Zoom Video SDK."
+config_file = "agents/sessions-zoom.toml"
+
+[agents.qa_release]
+description = "Executa regressão, homologação, evidências e release gate sem assumir features de negócio."
+config_file = "agents/qa-release.toml"
+
+[agents.public_patient]
+description = "Implementa e revisa as experiências pública e do paciente."
+config_file = "agents/public-patient.toml"
+
+[agents.therapist_product]
+description = "Implementa e revisa o shell e o produto do terapeuta, respeitando owners financeiros e de sessão."
+config_file = "agents/therapist-product.toml"

@@ -33,6 +33,21 @@ shell admin ou métricas agregadas usadas para priorização operacional.
 - Dados: RPC Supabase autenticado com token admin via
   `admin_get_dashboard_v1()`. Mutacoes do catalogo continuam em comandos
   especificos como `admin-therapy-catalog-command`.
+- Referência visual principal: Figma `Page / Admin Plataforma / Visão geral —
+  editável` (`13425:778`).
+- A tela atual usa apenas contagens agregadas disponíveis. Não exibir receita,
+  retenção ou séries temporais do Figma enquanto o contrato não trouxer esses
+  dados diretamente.
+- Os gráficos da Visão Geral devem buscar fidelidade visual ao Figma usando
+  somente agregados reais disponíveis: linha/área para comparação de indicadores
+  atuais, donut por área administrativa e funil operacional derivado das
+  contagens renderizadas. Não simular histórico, receita, retenção ou
+  distribuição por plano sem payload dedicado.
+- Gráficos devem oferecer tooltip no elemento gráfico interativo em si
+  (pontos, fatias, barras ou camadas), não em textos auxiliares. O tooltip deve
+  explicar valor, percentual ou contexto em linguagem de produto. Não depender
+  apenas do atributo nativo `title`; usar tooltip visual legível em hover e foco
+  quando o gráfico for customizado.
 
 ## Regras
 
@@ -43,8 +58,13 @@ shell admin ou métricas agregadas usadas para priorização operacional.
 - Cada fonte agregada deve degradar de forma explícita quando falhar.
 - Links do shell e do dashboard só devem apontar para rotas com página real.
 - Módulos sem página dedicada aparecem como pendentes, sem link clicável.
+- CTAs de cards analíticos só podem existir quando houver fluxo claro e destino
+  habilitado. Se o destino for genérico, oculto ou ainda não representar o
+  conteúdo do card, usar rodapé informativo sem link.
 - Pagamentos, assinaturas, refunds, disputes e repasses permanecem separados.
 - Alertas de integrações não podem expor secrets ou payload sensível.
+- A UI não deve exibir termos de desenvolvimento. Detalhes técnicos ficam em
+  logs, testes e documentação; o front usa linguagem de produto.
 
 ## QA
 
@@ -54,7 +74,9 @@ shell admin ou métricas agregadas usadas para priorização operacional.
 - `npm run build`
 - `npx supabase db lint`
 - `npx supabase test db`
-- Playwright em `/admin-login` e `/admin` quando houver sessão admin local.
+- Playwright MCP em `/admin-login` e `/admin` quando houver sessão admin local,
+  com screenshots desktop/mobile e checagem de overflow, cortes visuais e
+  mensagens de desenvolvimento no front-end.
 
 ## Pendências conhecidas
 

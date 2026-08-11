@@ -4,12 +4,17 @@ const adminEmail = process.env.ADMIN_E2E_EMAIL ?? "admin.tes@example.test";
 const adminPassword = process.env.ADMIN_E2E_PASSWORD ?? "tes-mock-password";
 
 const operationRoutes = [
-  ["/admin/profissionais", "Profissionais"],
-  ["/admin/profissionais/verificacoes", "Verificações"],
-  ["/admin/pacientes", "Clientes"],
-  ["/admin/sessoes", "Sessões"],
-  ["/admin/suporte", "Suporte"],
-  ["/admin/avaliacoes", "Avaliações"],
+  ["/admin/profissionais", "Profissionais", "Lista de profissionais", false],
+  [
+    "/admin/profissionais/verificacoes",
+    "Verificações de profissionais",
+    "Solicitações recentes",
+    false,
+  ],
+  ["/admin/pacientes", "Clientes", "Base de clientes", false],
+  ["/admin/sessoes", "Sessões", "Registros recentes", true],
+  ["/admin/suporte", "Suporte", "Registros recentes", true],
+  ["/admin/avaliacoes", "Avaliações", "Registros recentes", true],
 ] as const;
 
 test.describe("admin operation modules", () => {
@@ -24,15 +29,20 @@ test.describe("admin operation modules", () => {
       timeout: 30_000,
     });
 
-    for (const [path, title] of operationRoutes) {
+    for (const [path, title, rowsTitle, hasGuardrails] of operationRoutes) {
       await page.goto(path);
       await expect(
         page.getByRole("heading", { level: 1, name: title }),
       ).toBeVisible();
       await expect(
-        page.getByRole("heading", { name: "Registros recentes" }),
+        page.getByRole("heading", { name: rowsTitle }),
       ).toBeVisible();
-      await expect(page.getByRole("heading", { name: "Guardrails" })).toBeVisible();
+
+      if (hasGuardrails) {
+        await expect(
+          page.getByRole("heading", { name: "Guardrails" }),
+        ).toBeVisible();
+      }
     }
 
     await page.goto("/admin");

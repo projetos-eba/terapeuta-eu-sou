@@ -86,9 +86,9 @@ describe("admin dashboard queries", () => {
     expect(result.dashboard.summary).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          key: "published-therapies",
+          key: "active-therapists",
           status: "available",
-          value: 5,
+          value: 4,
         }),
       ]),
     );
