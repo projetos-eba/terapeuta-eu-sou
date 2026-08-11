@@ -47,7 +47,7 @@ export function AdminVerificationsPage({
             ]}
           />
           <EditorialHeader
-            subtitle="Revise cadastros enviados, acompanhe pendências e siga para a análise individual de cada profissional."
+            subtitle="Analise os perfis publicados que aguardam uma decisão administrativa e acompanhe os ajustes solicitados."
             title="Verificações de profissionais"
           />
         </div>
@@ -159,8 +159,8 @@ export function AdminVerificationsPage({
               />
             ) : data.rows.length === 0 ? (
               <HonestState
-                message="Não há cadastros que correspondam aos filtros selecionados."
-                title="Nenhuma verificação encontrada"
+                message={getEmptyQueueMessage(data)}
+                title="Nenhum cadastro na fila"
               />
             ) : (
               <>
@@ -183,18 +183,20 @@ export function AdminVerificationsPage({
           <AsideCard title="Como funciona a revisão">
             <div className="space-y-3">
               <p className="rounded-[20px] border border-brand-lavender/60 bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-                Cada cadastro segue para uma análise individual. A lista mostra
-                somente o que já está disponível para triagem e abertura do
-                detalhe.
+                <strong className="text-brand-deep">
+                  1. Aguardando análise:
+                </strong>{" "}
+                o profissional publicou o perfil e entrou na fila de revisão.
               </p>
               <p className="rounded-[20px] border border-brand-lavender/60 bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-                Ao abrir um registro, a operação pode aprovar, solicitar ajuste,
-                pausar a análise ou encerrar a revisão conforme o estado atual.
+                <strong className="text-brand-deep">2. Em análise:</strong> abra
+                o cadastro, confira as informações disponíveis e registre o
+                início da revisão.
               </p>
               <p className="rounded-[20px] border border-brand-lavender/60 bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-                Quando algo não aparece aqui, a plataforma mantém o estado
-                honesto em vez de preencher a tela com informações não
-                confirmadas.
+                <strong className="text-brand-deep">3. Decisão:</strong> aprove
+                o profissional, solicite ajustes ou registre a não aprovação com
+                um motivo claro.
               </p>
             </div>
           </AsideCard>
@@ -202,6 +204,14 @@ export function AdminVerificationsPage({
       </div>
     </main>
   );
+}
+
+function getEmptyQueueMessage(data: AdminOperationPageData) {
+  if (data.query.search || data.query.status) {
+    return "Não há cadastros que correspondam aos filtros selecionados.";
+  }
+
+  return "Não há profissionais aguardando revisão neste momento. Novos perfis publicados aparecerão aqui automaticamente.";
 }
 
 function MetricCard({ metric }: { metric: AdminOperationMetric }) {

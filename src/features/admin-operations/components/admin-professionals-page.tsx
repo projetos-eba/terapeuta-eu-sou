@@ -25,6 +25,7 @@ import type {
   AdminOperationPageData,
   AdminOperationRow,
 } from "../admin-operations.types";
+import { formatPlanLabel } from "./admin-operation-display";
 
 type BreakdownItem = {
   colorClass: string;
@@ -54,7 +55,7 @@ export function AdminProfessionalsPage({
   data: AdminOperationPageData;
 }) {
   const planBreakdown = buildBreakdown(
-    data.rows.map((row) => getField(row, "Plano")),
+    data.rows.map((row) => formatPlanLabel(getField(row, "Plano"))),
     PLAN_COLORS,
   );
   const statusBreakdown = buildBreakdown(
@@ -93,7 +94,10 @@ export function AdminProfessionalsPage({
         </section>
 
         <section className="grid gap-5 xl:grid-cols-3">
-          <PlanDistributionCard items={planBreakdown} rowsStatus={data.rowsStatus} />
+          <PlanDistributionCard
+            items={planBreakdown}
+            rowsStatus={data.rowsStatus}
+          />
           <UnavailableTrendCard />
           <StatusDistributionCard
             items={statusBreakdown}
@@ -109,8 +113,8 @@ export function AdminProfessionalsPage({
                   Lista de profissionais
                 </h2>
                 <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                  Listagem operacional com dados mínimos e sem conteúdo
-                  sensível desnecessário.
+                  Listagem operacional com dados mínimos e sem conteúdo sensível
+                  desnecessário.
                 </p>
               </div>
               <Link
@@ -276,7 +280,10 @@ function UnavailableTrendCard() {
       title="Crescimento da base"
     >
       <div className="mt-6 rounded-[20px] border border-dashed border-brand-lavender bg-surface-soft p-5">
-        <div className="flex h-32 items-end gap-2 opacity-70" aria-hidden="true">
+        <div
+          className="flex h-32 items-end gap-2 opacity-70"
+          aria-hidden="true"
+        >
           {[18, 34, 28, 52, 46, 68, 60].map((height) => (
             <span
               className="flex-1 rounded-t-full bg-brand-lavenderSoft"
@@ -321,7 +328,8 @@ function StatusDistributionCard({
                   style={{
                     width: `${Math.max(
                       8,
-                      (item.value / Math.max(...items.map((entry) => entry.value))) *
+                      (item.value /
+                        Math.max(...items.map((entry) => entry.value))) *
                         100,
                     )}%`,
                   }}
@@ -457,13 +465,15 @@ function ProfessionalsTableRow({ row }: { row: AdminOperationRow }) {
         </div>
       </td>
       <td className="px-5 py-5">
-        <TableBadge>{getField(row, "Plano") || "Não informado"}</TableBadge>
+        <TableBadge>
+          {formatPlanLabel(getField(row, "Plano")) || "Não informado"}
+        </TableBadge>
       </td>
       <td className="px-5 py-5">
         <StatusPill status={row.statusLabel} />
       </td>
       <td className="px-5 py-5 text-sm font-bold text-tesText-secondary">
-        {getField(row, "Perfil público") || "Não informado"}
+        {formatPublicProfileStatus(getField(row, "Perfil público"))}
       </td>
       <td className="px-5 py-5 text-sm font-bold text-tesText-secondary">
         {getField(row, "Reservas") || "Não informado"}
@@ -520,7 +530,7 @@ function ProfessionalMobileCard({ row }: { row: AdminOperationRow }) {
                 {label}
               </dt>
               <dd className="mt-1 text-sm font-extrabold text-brand-deep">
-                {getField(row, label) || "Não informado"}
+                {formatProfessionalField(row, label)}
               </dd>
             </div>
           ),
@@ -618,7 +628,9 @@ function StateMessage({ message }: { message: string }) {
         <span className="mx-auto grid size-12 place-items-center rounded-[18px] bg-brand-lavenderSoft text-brand-primary">
           <Clock3 aria-hidden="true" className="size-5" />
         </span>
-        <p className="mt-4 text-base font-extrabold text-brand-deep">{message}</p>
+        <p className="mt-4 text-base font-extrabold text-brand-deep">
+          {message}
+        </p>
       </div>
     </div>
   );
@@ -690,7 +702,8 @@ function donutStyle(items: BreakdownItem[]): CSSProperties {
       const start = (accumulated / total) * 100;
       accumulated += item.value;
       const end = (accumulated / total) * 100;
-      const color = colorMap[item.colorClass] ?? "var(--tes-color-brand-primary)";
+      const color =
+        colorMap[item.colorClass] ?? "var(--tes-color-brand-primary)";
 
       return `${color} ${start}% ${end}%`;
     })
@@ -719,16 +732,37 @@ function shortId(id: string) {
 function translateStatus(status?: string) {
   const labels: Record<string, string> = {
     approved: "Aprovado",
-    changes_requested: "Ajustes",
-    draft: "Rascunho",
+    changes_requested: "Ajustes solicitados",
+    draft: "Perfil em construção",
     in_review: "Em análise",
     published: "Publicado",
-    rejected: "Reprovado",
-    submitted: "Enviado",
+    rejected: "Não aprovado",
+    submitted: "Aguardando análise",
     suspended: "Suspenso",
   };
 
-  return status ? labels[status] ?? status : "Sem status";
+  return status ? (labels[status] ?? "Status não identificado") : "Sem status";
+}
+
+function formatProfessionalField(row: AdminOperationRow, label: string) {
+  const value = getField(row, label);
+
+  if (label === "Plano") return formatPlanLabel(value) || "Não informado";
+  if (label === "Perfil público") return formatPublicProfileStatus(value);
+
+  return value || "Não informado";
+}
+
+function formatPublicProfileStatus(status?: string) {
+  const labels: Record<string, string> = {
+    archived: "Arquivado",
+    draft: "Em preparação",
+    in_review: "Em análise",
+    published: "Publicado",
+    unpublished: "Não publicado",
+  };
+
+  return status ? (labels[status] ?? "Não informado") : "Não informado";
 }
 
 function statusPillClass(status?: string) {

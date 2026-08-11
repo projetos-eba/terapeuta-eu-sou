@@ -156,8 +156,8 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
     sourceLabel: "therapist_profiles",
     statusOptions: [
       option("", "Todos os status"),
-      option("draft", "Rascunho"),
-      option("submitted", "Enviado"),
+      option("draft", "Perfil em construção"),
+      option("submitted", "Aguardando análise"),
       option("in_review", "Em análise"),
       option("changes_requested", "Ajustes solicitados"),
       option("approved", "Aprovados"),
@@ -299,15 +299,15 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
     metrics: [
       metric(
         "total-verifications",
-        "Verificações",
-        "Processos registrados.",
+        "Cadastros na fila",
+        "Perfis enviados para revisão.",
         "therapist_verifications",
         "info",
       ),
       metric(
         "pending-verifications",
         "Pendentes",
-        "Verificações em análise ou ajuste.",
+        "Aguardando análise, em análise ou com ajustes solicitados.",
         "therapist_verifications",
         "warning",
       ),
@@ -319,7 +319,7 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
     sourceLabel: "therapist_verifications",
     statusOptions: [
       option("", "Todos os status"),
-      option("submitted", "Enviadas"),
+      option("submitted", "Aguardando análise"),
       option("in_review", "Em análise"),
       option("changes_requested", "Ajustes solicitados"),
       option("approved", "Aprovadas"),

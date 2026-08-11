@@ -55,7 +55,7 @@ export function AdminOperationCommandPanel({
   if (options.length === 0) {
     return (
       <div className="rounded-md border border-border bg-surface-muted p-3 text-sm font-semibold leading-6 text-tesText-secondary">
-        Nenhuma ação administrativa direta está habilitada para este estado.
+        {getEmptyActionMessage(data.module, data.statusLabel)}
       </div>
     );
   }
@@ -99,7 +99,7 @@ export function AdminOperationCommandPanel({
       }
 
       setReason("");
-      setSuccess("Ação registrada com auditoria.");
+      setSuccess(getCommandSuccessMessage(option.action));
       router.refresh();
     } catch {
       setError("Não foi possível conectar agora. Tente novamente.");
@@ -137,7 +137,10 @@ export function AdminOperationCommandPanel({
 
       {error ? (
         <p className="flex items-start gap-2 rounded-md border border-status-danger/20 bg-status-dangerBg p-3 text-sm font-bold leading-6 text-status-danger">
-          <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+          <AlertTriangle
+            aria-hidden="true"
+            className="mt-0.5 size-4 shrink-0"
+          />
           {error}
         </p>
       ) : null}
@@ -173,7 +176,7 @@ export function AdminOperationCommandPanel({
   );
 }
 
-function getCommandOptions(
+export function getCommandOptions(
   module: AdminOperationModuleKey,
   statusLabel?: string,
 ): CommandOption[] {
@@ -188,16 +191,28 @@ function getCommandOptions(
       ];
     }
 
-    return [
-      {
-        action: "professional.suspend",
-        label: "Suspender profissional",
-        tone: "danger",
-      },
-    ];
+    return statusLabel === "approved"
+      ? [
+          {
+            action: "professional.suspend",
+            label: "Suspender profissional",
+            tone: "danger",
+          },
+        ]
+      : [];
   }
 
   if (module === "verifications") {
+    if (statusLabel === "submitted") {
+      return [
+        {
+          action: "verification.reopen_review",
+          label: "Iniciar análise",
+          tone: "neutral",
+        },
+      ];
+    }
+
     if (statusLabel === "in_review") {
       return [
         {
@@ -207,7 +222,7 @@ function getCommandOptions(
         },
         {
           action: "verification.pause_review",
-          label: "Suspender análise",
+          label: "Solicitar ajustes",
           tone: "warning",
         },
         {
@@ -228,23 +243,7 @@ function getCommandOptions(
       ];
     }
 
-    return [
-      {
-        action: "verification.approve",
-        label: "Aprovar verificação",
-        tone: "success",
-      },
-      {
-        action: "verification.request_changes",
-        label: "Solicitar ajuste",
-        tone: "warning",
-      },
-      {
-        action: "verification.reject",
-        label: "Reprovar verificação",
-        tone: "danger",
-      },
-    ];
+    return [];
   }
 
   if (module === "support") {
@@ -288,6 +287,39 @@ function getCommandOptions(
   }
 
   return [];
+}
+
+function getEmptyActionMessage(
+  module: AdminOperationModuleKey,
+  statusLabel?: string,
+) {
+  if (module === "verifications" && statusLabel === "approved") {
+    return "Esta análise já foi concluída e não possui novas decisões pendentes.";
+  }
+
+  if (module === "professionals" && statusLabel !== "approved") {
+    return "A aprovação deste cadastro é conduzida pela fila de verificações.";
+  }
+
+  return "Nenhuma ação administrativa está disponível para este estado.";
+}
+
+function getCommandSuccessMessage(action: CommandAction) {
+  const messages: Record<CommandAction, string> = {
+    "professional.reactivate": "Profissional reativado com sucesso.",
+    "professional.suspend": "Profissional suspenso com sucesso.",
+    "review.hide": "Avaliação ocultada com sucesso.",
+    "review.restore": "Avaliação restaurada com sucesso.",
+    "support.reopen": "Atendimento reaberto com sucesso.",
+    "support.resolve": "Atendimento concluído com sucesso.",
+    "verification.approve": "Profissional aprovado com sucesso.",
+    "verification.pause_review": "Ajustes solicitados ao profissional.",
+    "verification.reject": "Cadastro não aprovado.",
+    "verification.reopen_review": "Análise iniciada ou reaberta.",
+    "verification.request_changes": "Ajustes solicitados ao profissional.",
+  };
+
+  return messages[action];
 }
 
 function commandButtonClass(tone: CommandOption["tone"]) {

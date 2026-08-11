@@ -9,6 +9,8 @@ import {
 
 describe("admin operation display helpers", () => {
   it("formats admin statuses into product labels", () => {
+    expect(formatStatusLabel("draft")).toBe("Perfil em construção");
+    expect(formatStatusLabel("submitted")).toBe("Aguardando análise");
     expect(formatStatusLabel("in_review")).toBe("Em análise");
     expect(formatStatusLabel("changes_requested")).toBe("Ajustes solicitados");
     expect(formatStatusLabel("rejected")).toBe("Não aprovado");
@@ -23,7 +25,7 @@ describe("admin operation display helpers", () => {
 
   it("formats audit actions into product copy", () => {
     expect(formatAuditActionLabel("verification.pause_review")).toBe(
-      "Análise pausada",
+      "Ajustes solicitados",
     );
     expect(formatAuditActionLabel("professional.suspend")).toBe(
       "Profissional suspenso",
