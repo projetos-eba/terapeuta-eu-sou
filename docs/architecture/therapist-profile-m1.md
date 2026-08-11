@@ -53,6 +53,28 @@ RPCs:
 Todas as mutações usam `requestId`, `profile_version` e ledger
 `therapist_profile_mutation_requests`.
 
+### Publicação e revisão administrativa
+
+A publicação de um perfil elegível e sua entrada na revisão administrativa são
+uma única unidade transacional. O trigger
+`sync_therapist_verification_queue_on_publish`, apoiado por
+`sync_therapist_verification_queue_on_publish_v1`, garante que:
+
+- perfil publicado sem verificação receba uma entrada `submitted`;
+- reenvio após ajustes ou não aprovação retorne a entrada existente para
+  `submitted`, sem duplicá-la;
+- `therapist_profiles.status` acompanhe `submitted` ou `in_review`;
+- perfis `approved` e `suspended` nunca sejam rebaixados por republicação;
+- falha ao sincronizar a fila reverta também a publicação.
+
+O trigger `enforce_therapist_verification_transition` impede que comandos
+ignorem a sequência `submitted -> in_review -> decisão`. Ajustes solicitados e
+não aprovação podem voltar para análise; aprovação é terminal no fluxo atual.
+
+O backfill da migration `20260811113000` corrige somente perfis com
+`public_status = published`, `is_public = true` e estado administrativo ainda
+revisável. Ele não aprova registros nem inclui rascunhos não publicados.
+
 ## Cache
 
 | Evento             | Tags/rotas                                                                        |

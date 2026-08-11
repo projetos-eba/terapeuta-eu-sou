@@ -1,3 +1,7 @@
+import Link from "next/link";
+import type { Route } from "next";
+import { ArrowRight } from "lucide-react";
+
 import {
   AppPageAside,
   AppPageContainer,
@@ -33,6 +37,7 @@ export function AdminVerificationDetailPage({
   const verificationFields = fieldMap(verification?.fields ?? []);
   const status = formatStatusLabel(verificationFields.get("Status"));
   const therapistName = verificationFields.get("Terapeuta") || data.title;
+  const therapistProfileId = verificationFields.get("Perfil terapeuta");
   const adjustment = verificationFields.get("Ajuste solicitado");
   const rejection = verificationFields.get("Reprovação registrada");
 
@@ -44,10 +49,6 @@ export function AdminVerificationDetailPage({
     {
       label: "Situação da análise",
       value: status,
-    },
-    {
-      label: "Cadastro vinculado",
-      value: verificationFields.get("Perfil terapeuta") ?? "",
     },
     {
       label: "Revisado por",
@@ -112,10 +113,6 @@ export function AdminVerificationDetailPage({
           }
           details={[
             {
-              label: "Cadastro vinculado",
-              value: verificationFields.get("Perfil terapeuta") ?? "",
-            },
-            {
               label: "Revisado por",
               value: verificationFields.get("Revisado por") ?? "",
             },
@@ -162,6 +159,26 @@ export function AdminVerificationDetailPage({
           </AppPageMain>
 
           <AppPageAside className="space-y-5">
+            {therapistProfileId ? (
+              <AsideCard title="Cadastro do profissional">
+                <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+                  Consulte os dados operacionais do profissional antes de
+                  registrar sua decisão.
+                </p>
+                <Link
+                  className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary outline-none transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+                  href={
+                    routes.admin.professionalDetail(
+                      therapistProfileId,
+                    ) as Route<string>
+                  }
+                >
+                  Abrir cadastro do profissional
+                  <ArrowRight aria-hidden="true" className="size-4" />
+                </Link>
+              </AsideCard>
+            ) : null}
+
             <AsideCard title="Ações disponíveis">
               <AdminOperationCommandPanel data={data} />
             </AsideCard>

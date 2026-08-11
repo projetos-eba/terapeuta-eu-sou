@@ -118,17 +118,30 @@ refresh, cópia de link e QA com Playwright.
 
 ## Fluxo crítico
 
-- Ao publicar ou reenviar um perfil de terapeuta, a Edge Function
-  `therapist-profile-command` deve sincronizar a fila de revisão:
+- Ao publicar ou reenviar um perfil de terapeuta, o banco deve sincronizar a
+  fila na mesma transação da publicação por meio de
+  `sync_therapist_verification_queue_on_publish_v1`:
   - cria `therapist_verifications` quando o perfil publicado ainda não entrou
     na fila;
   - reenfileira registros em `changes_requested` ou `rejected` como
     `submitted`;
   - ajusta `therapist_profiles.status` para `submitted` quando o perfil entrou
     em revisão e ainda não estava aprovado/suspenso.
+- A nomenclatura administrativa deve distinguir:
+  - `draft`: `Perfil em construção`;
+  - `submitted`: `Aguardando análise`;
+  - `in_review`: `Em análise`.
+- Ações seguem a sequência: iniciar análise em `submitted`; decidir apenas em
+  `in_review`; reabrir após ajuste solicitado ou não aprovação; não oferecer
+  nova decisão para registro já aprovado.
+- `enforce_therapist_verification_transition_v1` deve preservar essa sequência
+  no banco mesmo quando um comando for chamado fora da interface.
 - A lista `/admin/profissionais/verificacoes` continua lendo apenas
   `therapist_verifications`; perfis aptos não devem depender de inferência
   client-side para aparecer.
+- O reparo de inconsistências nunca aprova automaticamente: perfis publicados
+  elegíveis sem fila entram como `submitted`; aprovados e suspensos permanecem
+  inalterados.
 
 ## Regras
 
@@ -162,6 +175,10 @@ refresh, cópia de link e QA com Playwright.
     em listagens.
   - abrir um detalhe real de Sessão e um de Suporte; verificar breadcrumb,
     campos traduzidos, ação de suporte disponível e ausência de termos internos.
+  - publicar um perfil elegível e confirmar, na mesma transação, uma única
+    verificação `submitted` e o status administrativo `submitted`;
+  - confirmar que republicação não duplica a fila nem rebaixa aprovados;
+  - em Playwright, validar `Iniciar análise` antes dos comandos de decisão.
 
 ## Pendências conhecidas
 

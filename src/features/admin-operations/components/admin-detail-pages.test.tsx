@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { AdminOperationDetailPageData } from "../admin-operations.types";
 import { AdminSessionDetailPage } from "./admin-session-detail-page";
 import { AdminSupportDetailPage } from "./admin-support-detail-page";
+import { AdminVerificationDetailPage } from "./admin-verification-detail-page";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
@@ -95,5 +96,36 @@ describe("admin operation detail pages", () => {
     expect(html).toContain("Prioridade Alta");
     expect(html).toContain("Resolver ticket");
     expect(html).not.toContain("Fonte segura");
+  });
+
+  it("guides a submitted verification into analysis before a decision", () => {
+    const html = renderToStaticMarkup(
+      <AdminVerificationDetailPage
+        data={detailData({
+          backHref: "/admin/profissionais/verificacoes",
+          module: "verifications",
+          sections: [
+            {
+              fields: [
+                { label: "Status", value: "submitted" },
+                { label: "Terapeuta", value: "Ana Oliveira" },
+                {
+                  label: "Perfil terapeuta",
+                  value: "c1000000-0000-4000-8000-000000000001",
+                },
+              ],
+              title: "Verificação",
+            },
+          ],
+          statusLabel: "submitted",
+          title: "Ana Oliveira",
+        })}
+      />,
+    );
+
+    expect(html).toContain("Aguardando análise");
+    expect(html).toContain("Iniciar análise");
+    expect(html).toContain("Abrir cadastro do profissional");
+    expect(html).not.toContain("Aprovar verificação");
   });
 });

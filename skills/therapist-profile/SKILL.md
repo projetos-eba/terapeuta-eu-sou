@@ -58,6 +58,11 @@ Não passar linhas cruas do Supabase para React.
   publicação posterior continua explícita sobre rascunho salvo.
 - Administração continua responsável por verificação, suspensão, documentos,
   plano e bloqueios.
+- Publicar um perfil elegível também o envia atomicamente para a fila
+  administrativa: cria ou reenfileira `therapist_verifications` e usa o estado
+  `submitted`, sem aprovação automática. Falha na fila deve abortar a
+  publicação em vez de produzir sucesso parcial.
+- Perfis já aprovados ou suspensos não podem ser rebaixados por republicação.
 - Dados derivados são somente leitura.
 - Documentos privados nunca entram em HTML público, DTO público, busca pública
   ou preview público.
@@ -73,7 +78,7 @@ Não passar linhas cruas do Supabase para React.
 - `/terapeuta/perfil/editar` deve conter header, progresso, formulário
   numerado, upload/mídia, módulos gerenciados, aviso importante e save bar.
 - Evitar CTAs conflitantes na primeira configuração: não mostrar `Salvar
-  rascunho` como ação concorrente quando o perfil ainda não tem versão
+rascunho` como ação concorrente quando o perfil ainda não tem versão
   publicada.
 - Rascunhos só aparecem como aviso na rota principal; a versão pública
   publicada continua sendo a prévia renderizada.
@@ -98,7 +103,7 @@ Não passar linhas cruas do Supabase para React.
 - Vitest para rota `/api/therapist/profile/media`: sessão, validação,
   capability, path público protegido e falha sanitizada de Storage.
 - Deno para Edge command.
-- pgTAP para RLS, publicação, rascunho e privacidade.
+- pgTAP para RLS, publicação, rascunho, fila administrativa e privacidade.
 - Validar que view pública não expõe campos administrativos.
 - E2E `tests/e2e/therapist-profile.spec.ts`: login do terapeuta, preview-first,
   navegação para edição, rascunho, publicação, perfil público, ausência de

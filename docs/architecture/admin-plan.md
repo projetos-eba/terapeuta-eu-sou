@@ -886,6 +886,34 @@ Breaking changes revisados no changelog Supabase:
 
 Impacto documental: Documentacao atualizada.
 
+## Correcao da fila de verificacoes - 2026-08-11
+
+Diagnostico confirmado na homologacao com Playwright visivel e operacao somente
+leitura: a pagina de profissionais registrava perfis `draft` com ciclo publico
+`published`, enquanto a fila de verificacoes permanecia vazia. A publicacao era
+concluida antes de uma sincronizacao posterior da Edge Function; falhas nessa
+etapa eram registradas sem reverter a publicacao.
+
+Decisao implementada:
+
+- publicacao e entrada em `therapist_verifications` passam a compartilhar a
+  mesma transacao no banco;
+- perfil publicado elegivel sem fila recebe `submitted`, sem aprovacao
+  automatica;
+- reenvios apos ajustes ou nao aprovacao reutilizam o registro mais recente;
+- perfis aprovados e suspensos nao sao rebaixados;
+- o Admin apresenta `Perfil em construcao`, `Aguardando analise` e `Em analise`
+  como etapas distintas;
+- em `submitted`, a unica acao e iniciar a analise; decisoes ficam disponiveis
+  somente em `in_review`.
+- a mesma sequencia e validada no banco para impedir que chamadas diretas aos
+  comandos pulem a etapa de analise ou reabram uma aprovacao.
+
+Migration: `20260811113000_sync_published_profiles_to_verification_queue.sql`.
+Teste pgTAP: `044_therapist_verification_queue_sync.sql`.
+
+Impacto documental: Documentacao atualizada.
+
 ## Retomada Admin - 2026-08-09 - Contratos v2 de listas e comandos
 
 Status: executada localmente como endurecimento incremental das fases 1 a 5 do
