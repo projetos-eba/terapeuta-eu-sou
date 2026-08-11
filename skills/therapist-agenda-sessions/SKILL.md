@@ -94,8 +94,9 @@ Não criar enums equivalentes dentro de features.
   `get_therapist_calendar_v1`.
 - A UI edita faixas em escopo geral ou por terapia e preserva regras dos
   outros escopos no comando atômico.
-- Duração pertence ao serviço; `slotStepMinutes` significa intervalo de oferta,
-  enquanto `bufferBeforeMinutes` e `bufferAfterMinutes` representam preparo.
+- Duração pertence ao serviço e `slotStepMinutes` significa intervalo de oferta.
+  `bufferBeforeMinutes` e `bufferAfterMinutes` continuam preservados no domínio
+  e no cálculo autoritativo, mas não são controles expostos na UI de Horários.
 - Não exibir toggle de reagendamento automático antes do domínio e dos
   comandos correspondentes.
 - A aba Bloqueios usa o frame Figma `13366:8393`, o read model
