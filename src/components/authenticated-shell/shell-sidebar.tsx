@@ -42,7 +42,8 @@ export function ShellSidebar({
 
       for (const item of navigation) {
         const visibleChildren =
-          item.children?.filter((child) => child.accessState !== "hidden") ?? [];
+          item.children?.filter((child) => child.accessState !== "hidden") ??
+          [];
         if (
           visibleChildren.length > 0 &&
           (pathname === item.href ||
@@ -65,7 +66,8 @@ export function ShellSidebar({
       <div className="flex h-[74px] items-center px-3">
         <Image
           alt="Terapeuta Eu Sou"
-          height={70}
+          className="h-auto w-[174px]"
+          height={93}
           priority
           src="/logo-oficial-terapeuta-eu-sou.png"
           width={174}
@@ -77,8 +79,9 @@ export function ShellSidebar({
           .filter((item) => item.accessState !== "hidden")
           .map((item) => {
             const children =
-              item.children?.filter((child) => child.accessState !== "hidden") ??
-              [];
+              item.children?.filter(
+                (child) => child.accessState !== "hidden",
+              ) ?? [];
             const isGroup = children.length > 0;
 
             return (

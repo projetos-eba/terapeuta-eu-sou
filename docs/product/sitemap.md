@@ -97,12 +97,24 @@ podem estar habilitados, bloqueados ou ocultos conforme plano e capability.
 - `/terapeuta/insights`: insights avançados.
 - `/terapeuta/assessor-ia`: Assessor IA.
 - `/terapeuta/perfil`: perfil público.
-- `/terapeuta/plano`: plano, assinatura e upgrade.
-- `/terapeuta/configuracoes`: configurações.
+- `/terapeuta/plano`: central de comparação e upgrade para planos superiores.
+- `/terapeuta/configuracoes`: configurações, incluindo downgrade agendado,
+  cancelamento ao fim do período e reversão do cancelamento em `Plano e
+assinatura`.
 - `/terapeuta/suporte`: suporte conforme plano.
 
 As seções por plano abaixo registram capabilities e destinos legados mantidos
 por redirect; elas não definem shells independentes.
+
+### Fluxo de planos
+
+- Free: `/terapeuta/plano` -> Premium ou Premium Plus -> checkout ->
+  confirmação segura -> shell atualizado sem novo login.
+- Premium: `/terapeuta/plano` -> Premium Plus com prorrata imediata.
+- Premium Plus: `/terapeuta/configuracoes#plano-assinatura` -> Premium na
+  próxima renovação.
+- Premium/Premium Plus: `/terapeuta/configuracoes#plano-assinatura` ->
+  cancelamento ao fim do período -> Free somente após a vigência paga.
 
 ## Paciente
 

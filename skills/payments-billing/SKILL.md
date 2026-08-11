@@ -39,6 +39,10 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 - Webhook reservation must be atomic; failed/stale leases may be retried.
 - Checkout completion only confirms a session when `payment_status` is paid.
 - Subscription plan comes from the effective Stripe Price mapping.
+- Subscription upgrade is immediate and prorated; Premium Plus to Premium uses
+  a Subscription Schedule at period end; cancellation uses
+  `cancel_at_period_end` and can be reversed without removing already-paid
+  benefits.
 - Separate transfers require the session Charge as `source_transaction`.
 - Ledger is append-only; use compensating entries.
 - Refunds, disputes, internal contests, and admin blocks prevent payout.
@@ -96,6 +100,11 @@ Never expose, log, screenshot, or write real secret values.
 - When that authenticated status route returns a Stripe-confirmed paid
   subscription as `active`, the web session may refresh its auxiliary plan
   cookie and the checkout UI must redirect to `/terapeuta`.
+- `/terapeuta/plano` reads catalog prices from `billing_plan_prices`; it must
+  fail closed instead of substituting static or demonstrative prices.
+- `/terapeuta/configuracoes#plano-assinatura` represents scheduled plan changes
+  from subscription metadata and never changes entitlements before the
+  effective date.
 - E2E must use real Supabase Auth users and RLS, no auth bypass.
 - Use Stripe test mode only and never real cards.
 - Do not persist passwords, tokens, card data, or secrets in screenshots, traces, or reports.

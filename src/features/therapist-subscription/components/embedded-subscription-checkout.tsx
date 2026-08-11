@@ -62,7 +62,7 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
 
       const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
       if (!publishableKey) {
-        setError("Configuração pública da Stripe ausente neste ambiente.");
+        setError("O pagamento está temporariamente indisponível.");
         setIsLoading(false);
         return;
       }
@@ -73,7 +73,7 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
 
         const stripe = window.Stripe?.(publishableKey);
         if (!stripe) {
-          throw new Error("Não conseguimos carregar a Stripe agora.");
+          throw new Error("Não conseguimos carregar o pagamento agora.");
         }
 
         const fetchClientSecret = () => {
@@ -203,8 +203,8 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
             Checkout seguro no TES
           </h2>
           <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-            O formulário abaixo é carregado pela Stripe. O TES não recebe número
-            de cartão, CVC ou dados de autenticação bancária.
+            Seus dados de pagamento são processados em ambiente protegido. O TES
+            não recebe número de cartão, CVC ou dados de autenticação bancária.
           </p>
         </div>
       </div>
@@ -215,8 +215,8 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
             className="mt-0.5 size-4 shrink-0 text-brand-primary"
             aria-hidden="true"
           />
-          O redirect de retorno não ativa o plano. Premium e Premium Plus só são
-          liberados após confirmação do webhook Stripe.
+          Premium e Premium Plus só são liberados após a confirmação segura do
+          pagamento.
         </p>
       </div>
 
@@ -260,7 +260,7 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
               ) : (
                 <CreditCard className="size-4" aria-hidden="true" />
               )}
-              Abrir Stripe
+              Continuar em nova etapa
             </button>
           </div>
           {fallbackError ? (
@@ -334,7 +334,7 @@ function loadStripeScript() {
       existingScript.addEventListener("load", () => resolve(), { once: true });
       existingScript.addEventListener(
         "error",
-        () => reject(new Error("Não conseguimos carregar a Stripe agora.")),
+        () => reject(new Error("Não conseguimos carregar o pagamento agora.")),
         { once: true },
       );
     });
@@ -347,7 +347,7 @@ function loadStripeScript() {
     script.addEventListener("load", () => resolve(), { once: true });
     script.addEventListener(
       "error",
-      () => reject(new Error("Não conseguimos carregar a Stripe agora.")),
+      () => reject(new Error("Não conseguimos carregar o pagamento agora.")),
       { once: true },
     );
     document.head.appendChild(script);

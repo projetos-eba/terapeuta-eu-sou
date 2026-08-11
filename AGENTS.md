@@ -258,6 +258,12 @@ Stack real identificada:
 - Stripe Billing, Checkout de sessões, Connect Accounts v2, ledger e lotes de
   repasse concluíram o Gate F0 de hardening. A homologação E2E externa no Stripe
   test mode continua obrigatória antes de produção.
+- Planos do terapeuta: `/terapeuta/plano` é a central de upgrades e lê catálogo
+  e preços ativos de `billing_plans`/`billing_plan_prices`;
+  `/terapeuta/configuracoes#plano-assinatura` concentra downgrade agendado,
+  cancelamento ao fim do período e reversão. O plano efetivo continua vindo de
+  `therapist_profiles.plan`, sincronizado pelo billing; não desbloquear recurso
+  por retorno do navegador nem remover benefício antes de `current_period_end`.
 - Agenda A2 implementada com snapshots imutáveis em `bookings`,
   `booking_holds` com TTL e idempotência, intervalo ocupado indexável,
   exclusão GiST por terapeuta, locks transacionais, transições auditadas e

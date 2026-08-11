@@ -21,8 +21,10 @@ type Body = {
 
 type SubscriptionRow = {
   id: string;
+  metadata: Record<string, unknown>;
   plan_code: "premium" | "premium_plus";
   stripe_subscription_id: string;
+  updated_at: string;
 };
 
 type BillingPriceRow = {
@@ -60,7 +62,7 @@ runtime.serve(async (request) => {
     const body = await parseJsonBody<Body>(request);
     const targetPlan = normalizePaidPlan(body.targetPlan);
     const [localSubscription] = await client.get<SubscriptionRow[]>(
-      `/rest/v1/therapist_subscriptions?select=id,plan_code,stripe_subscription_id&therapist_profile_id=eq.${encodeURIComponent(
+      `/rest/v1/therapist_subscriptions?select=id,plan_code,stripe_subscription_id,metadata,updated_at&therapist_profile_id=eq.${encodeURIComponent(
         therapist.id,
       )}&status=in.(active,trialing,past_due)&order=created_at.desc&limit=1`,
     );
@@ -115,6 +117,7 @@ runtime.serve(async (request) => {
       therapist.id,
       targetPlan,
       subscription.id,
+      localSubscription.updated_at,
     ]);
 
     if (isUpgrade) {
@@ -152,6 +155,34 @@ runtime.serve(async (request) => {
         "Assinatura Stripe sem periodo vigente.",
       );
     }
+
+    const effectiveAt = new Date(currentPeriodEnd * 1000).toISOString();
+    if (
+      localSubscription.metadata?.scheduled_plan_code === targetPlan &&
+      typeof localSubscription.metadata?.stripe_schedule_id === "string"
+    ) {
+      return success({
+        change: "downgrade_at_period_end",
+        effectiveAt:
+          typeof localSubscription.metadata.scheduled_plan_effective_at ===
+          "string"
+            ? localSubscription.metadata.scheduled_plan_effective_at
+            : effectiveAt,
+        stripeScheduleId: localSubscription.metadata.stripe_schedule_id,
+      });
+    }
+
+    await stripe.subscriptions.update(subscription.id, {
+      metadata: {
+        plan_code: localSubscription.plan_code,
+        scheduled_plan_code: targetPlan,
+        scheduled_plan_effective_at: effectiveAt,
+        system: "tes",
+        tes_therapist_id: therapist.id,
+        user_id: user.id,
+      },
+      proration_behavior: "none",
+    });
 
     const schedule = await stripe.subscriptionSchedules.create(
       { from_subscription: subscription.id },
@@ -196,6 +227,19 @@ runtime.serve(async (request) => {
       ],
     });
 
+    const scheduledMetadata = {
+      ...localSubscription.metadata,
+      scheduled_plan_code: targetPlan,
+      scheduled_plan_effective_at: effectiveAt,
+      stripe_schedule_id: schedule.id,
+    };
+
+    await client.patch(
+      `/rest/v1/therapist_subscriptions?id=eq.${encodeURIComponent(localSubscription.id)}`,
+      { metadata: scheduledMetadata },
+      "return=minimal",
+    );
+
     await client.post(
       "/rest/v1/therapist_subscription_events",
       {
@@ -213,7 +257,7 @@ runtime.serve(async (request) => {
 
     return success({
       change: "downgrade_at_period_end",
-      effectiveAt: new Date(currentPeriodEnd * 1000).toISOString(),
+      effectiveAt,
       stripeScheduleId: schedule.id,
     });
   } catch (error) {

@@ -9,6 +9,7 @@ import {
   ChartNoAxesCombined,
   CircleHelp,
   CreditCard,
+  Crown,
   Heart,
   House,
   MessageSquareDot,
@@ -31,6 +32,7 @@ export const shellIcons = {
   calendar: CalendarDays,
   chart: ChartNoAxesCombined,
   "credit-card": CreditCard,
+  crown: Crown,
   heart: Heart,
   help: CircleHelp,
   home: House,
@@ -71,6 +73,8 @@ export function ShellNavItem({
       className={cn(
         "group flex h-12 w-full shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium outline-none transition focus-visible:ring-4 focus-visible:ring-ring/20",
         depth > 0 && "h-10 pl-10 text-[13px]",
+        item.tone === "upgrade" &&
+          "border border-status-warning/25 bg-status-warningBg/55 text-brand-primary hover:bg-status-warningBg",
         isActive
           ? "bg-brand-lavenderSoft text-brand-primary"
           : isLocked
@@ -93,6 +97,12 @@ export function ShellNavItem({
           <Star aria-hidden="true" className="size-3" />
           <span className="sr-only">{item.planLabel}</span>
         </span>
+      ) : null}
+      {item.tone === "upgrade" ? (
+        <Crown
+          aria-hidden="true"
+          className="pointer-events-none size-3.5 shrink-0 text-status-warning"
+        />
       ) : null}
       {item.badge && item.badge > 0 ? (
         <span className="pointer-events-none inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-lavenderSoft text-xs font-semibold text-brand-primary">

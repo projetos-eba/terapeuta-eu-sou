@@ -238,7 +238,7 @@ function CheckoutReturnWithoutSession({
       className="lg:px-14"
       eyebrow="Assinatura TES"
       title="Seu plano segue seguro."
-      description="O retorno do pagamento informa continuidade, mas a liberacao do plano depende do webhook Stripe."
+      description="A liberação do plano acontece somente após a confirmação segura do pagamento."
     >
       <div className="w-full space-y-6">
         <div>
@@ -300,9 +300,8 @@ function CheckoutReturnMissingSessionId({
         Retorno incompleto do checkout
       </p>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Nao recebemos a identificacao da sessao Stripe para consultar a
-        confirmacao. Seu plano continua Free e voce pode iniciar uma nova
-        tentativa.
+        Não foi possível consultar esta tentativa de pagamento. Seu plano
+        continua Free e você pode iniciar uma nova tentativa.
       </p>
       <div className="mt-5">
         <EmbeddedSubscriptionCheckout plan={plan} />
@@ -358,25 +357,25 @@ function getCheckoutStatusCopy(status?: string) {
       return {
         title: "Pagamento em confirmacao",
         description:
-          "Recebemos seu retorno do Stripe. O plano pago sera liberado somente apos o webhook confirmar a assinatura.",
+          "Recebemos seu retorno do pagamento. O plano pago será liberado somente após a confirmação segura.",
       };
     case "canceled":
       return {
         title: "Checkout cancelado",
         description:
-          "Seu plano continua Free. Voce pode retomar o pagamento quando quiser, sem alterar sua conta pelo retorno do Stripe.",
+          "Seu plano continua Free. Você pode retomar o pagamento quando quiser.",
       };
     case "catalog":
       return {
-        title: "Catalogo em sincronizacao",
+        title: "Plano temporariamente indisponível",
         description:
-          "Nao conseguimos carregar o preco deste plano agora. Nossa equipe precisa sincronizar o catalogo Stripe antes de liberar o checkout.",
+          "Não conseguimos carregar o preço deste plano agora. Tente novamente em instantes.",
       };
     case "configuration":
       return {
         title: "Pagamento indisponivel",
         description:
-          "A configuracao de pagamentos esta indisponivel neste ambiente. Tente novamente em alguns instantes.",
+          "Não foi possível iniciar o pagamento agora. Tente novamente em alguns instantes.",
       };
     case "unauthorized":
       return {
@@ -394,7 +393,7 @@ function getCheckoutStatusCopy(status?: string) {
       return {
         title: "Pagamento online seguro",
         description:
-          "Conclua o pagamento abaixo, sem sair do TES. O plano pago sera ativado somente apos a confirmacao do webhook Stripe.",
+          "Conclua o pagamento abaixo, sem sair do TES. O plano pago será ativado somente após a confirmação segura.",
       };
   }
 }
