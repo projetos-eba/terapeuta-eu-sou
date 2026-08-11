@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 
 import type { ShellNavigationItem } from "./authenticated-shell";
 
-const icons = {
+export const shellIcons = {
   brain: BrainCircuit,
   calendar: CalendarDays,
   chart: ChartNoAxesCombined,
@@ -55,7 +55,7 @@ export function ShellNavItem({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
-  const Icon = icons[item.icon];
+  const Icon = shellIcons[item.icon];
   const isNamespaceRoot = ["/app", "/terapeuta"].includes(item.href);
   const isActive =
     pathname === item.href ||

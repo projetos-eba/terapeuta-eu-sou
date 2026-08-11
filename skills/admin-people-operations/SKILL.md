@@ -33,6 +33,8 @@ profissionais, verificações, clientes/pacientes, sessões, suporte e avaliaç�
 ## Componentes e dados
 
 - Página compartilhada: `AdminOperationPage`
+- Página dedicada de profissionais: `AdminProfessionalsPage`
+- Página dedicada de clientes: `AdminPatientsPage`
 - Consulta compartilhada: `getAdminOperationPage`
 - Mapeadores: `mapAdminOperationRows`
 - Read model: `admin_get_operation_module_v2(p_module, p_query)` para listas
@@ -54,6 +56,48 @@ As páginas usam token admin autenticado no servidor Next e RPC Supabase sem
 `Indisponível`, nunca como zero. Filtros e paginação vivem na URL para suportar
 refresh, cópia de link e QA com Playwright.
 
+## Referências visuais
+
+- Figma `Page / Admin Plataforma / Profissionais — editável` (`13425:1020`):
+  hero, KPIs, painéis de apoio e tabela operacional da rota
+  `/admin/profissionais`.
+- Figma `Page / Admin Plataforma / Clientes — editável` (`13425:1394`):
+  hero, KPIs, painéis de apoio e tabela operacional da rota `/admin/pacientes`.
+  A implementação atual substitui o card de suporte por faixas de tempo desde a
+  última atividade disponível na lista; só chamar de "última sessão" quando o
+  contrato expuser esse dado diretamente. Títulos dos cards analíticos devem
+  seguir o padrão compacto com ícone e `text-lg`.
+- Raster `Detalhe do profissional`:
+  `/Users/antoniofelipe/Downloads/ChatGPT Image Aug 10, 2026, 11_25_43 PM (1).png`
+  como direção visual para `/admin/profissionais/[professionalId]`, usando
+  somente monograma, tiles reais e seções honestas.
+- Raster `Detalhes do cliente`:
+  `/Users/antoniofelipe/Downloads/ChatGPT Image Aug 10, 2026, 11_25_43 PM (2).png`
+  como direção visual para `/admin/pacientes/[patientId]`, sem objetivo,
+  progresso, contato ou histórico clínico.
+- Raster `Verificações de profissionais — fila`:
+  `/Users/antoniofelipe/Downloads/ChatGPT Image Aug 10, 2026, 11_25_44 PM (3).png`
+  como direção visual para `/admin/profissionais/verificacoes`, preservando só
+  métricas reais total/pendentes, filtros atuais e links de detalhe.
+- Raster `Verificações de profissionais — detalhe`:
+  mesma referência raster acima, usando o painel direito apenas como direção
+  de hierarquia para `/admin/profissionais/verificacoes/[verificationId]`,
+  sem documentos, checklist, observação persistida ou PII extra.
+
+## Fluxo crítico
+
+- Ao publicar ou reenviar um perfil de terapeuta, a Edge Function
+  `therapist-profile-command` deve sincronizar a fila de revisão:
+  - cria `therapist_verifications` quando o perfil publicado ainda não entrou
+    na fila;
+  - reenfileira registros em `changes_requested` ou `rejected` como
+    `submitted`;
+  - ajusta `therapist_profiles.status` para `submitted` quando o perfil entrou
+    em revisão e ainda não estava aprovado/suspenso.
+- A lista `/admin/profissionais/verificacoes` continua lendo apenas
+  `therapist_verifications`; perfis aptos não devem depender de inferência
+  client-side para aparecer.
+
 ## Regras
 
 - Não expor conteúdo clínico, intake, mensagens privadas, URL secreta de
@@ -66,6 +110,10 @@ refresh, cópia de link e QA com Playwright.
 - Sessões usam `bookings` como fonte operacional; Zoom e financeiro continuam
   subordinados aos domínios próprios.
 - Reviews em listagem devem mostrar estado/moderação, não comentário completo.
+- Telas admin não devem expor termos de desenvolvimento no front-end, como
+  nomes de tabela, read model, stack, ambiente, debug, mock, seed, TODO ou erro
+  interno. Usar linguagem de produto para estados indisponíveis e registrar
+  detalhes técnicos apenas em logs, testes ou documentação.
 
 ## QA
 
@@ -88,4 +136,16 @@ refresh, cópia de link e QA com Playwright.
 - Ampliar páginas de detalhe para workspace com abas quando o contrato visual de
   cada aba for refinado.
 - Validar Supabase Advisor em HML/remoto antes de declarar fase homologada.
-- Inspecionar Figma admin quando o conector estiver disponível.
+- Manter a tela dedicada de profissionais alinhada ao Figma `13425:1020` sempre
+  que o contrato de dados evoluir para especialidade, crescimento, pacientes,
+  sessões e avaliação por profissional.
+- Manter a tela dedicada de clientes alinhada ao Figma `13425:1394` quando
+  existirem métricas consolidadas de recorrência, ticket médio, responsável,
+  próxima sessão, plano e engajamento.
+- Os detalhes de profissional e cliente seguem a direção visual dos rasters,
+  mas só podem renderizar os campos já mapeados em `admin_get_operation_detail_v1`;
+  avatar real, contato, avaliação, receita, retenção, responsável, jornada e
+  notas clínicas continuam fora do escopo.
+- A fila e o detalhe de verificações não exibem documentos, preview de anexos,
+  exportação, prioridade, responsável ou observação persistida enquanto esses
+  dados não fizerem parte do contrato seguro do módulo.

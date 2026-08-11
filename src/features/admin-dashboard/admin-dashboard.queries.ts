@@ -62,7 +62,7 @@ export const getAdminDashboardPage = cache(
 
     if (!config) {
       return {
-        message: "Configuração Supabase ausente para carregar a visão geral.",
+        message: "Não foi possível carregar a visão geral agora.",
         status: "error",
       };
     }
@@ -102,15 +102,14 @@ export const getAdminDashboardPage = cache(
         ]
           .filter((metric) =>
             [
-              "published-therapies",
-              "pending-therapy-requests",
-              "pending-therapists",
+              "active-therapists",
+              "active-patients",
               "future-sessions",
-              "pending-session-payments",
-              "failed-webhooks",
+              "paid-session-payments",
+              "active-subscriptions",
             ].includes(metric.key),
           )
-          .slice(0, 6),
+          .slice(0, 5),
       },
       status: "success",
     };
@@ -226,7 +225,7 @@ function buildFinanceModule(countResults: CountResult[]): AdminDashboardModule {
   return moduleFromCounts({
     countResults,
     description:
-      "Sinais financeiros separados por sessão, assinatura, refund, dispute e repasse.",
+      "Pagamentos, assinaturas, reembolsos, disputas e repasses.",
     href: routes.admin.payments,
     keys: [
       "pending-session-payments",
@@ -247,7 +246,7 @@ function buildIntegrationModule(
   return moduleFromCounts({
     countResults,
     description:
-      "Alertas técnicos de Stripe, Zoom, e-mail e conta de recebimento, sem secrets.",
+      "Pagamentos, vídeo, e-mail e contas de recebimento.",
     href: routes.admin.integrations,
     keys: [
       "failed-webhooks",
@@ -265,7 +264,7 @@ function buildIntegrationModule(
 function buildSettingsModule(): AdminDashboardModule {
   return {
     description:
-      "Governança de produto, operação, flags e integrações sem expor secrets.",
+      "Governança de produto, operação e critérios de release.",
     href: routes.admin.settings,
     key: "settings",
     label: "Configurações",
@@ -274,15 +273,15 @@ function buildSettingsModule(): AdminDashboardModule {
         "admin-settings-governance",
         "Governança",
         1,
-        "Página admin de configurações habilitada.",
+        "Área de configurações habilitada.",
         "adminModuleRegistry",
         "success",
       ),
       metric(
         "admin-secrets-readonly",
-        "Secrets protegidos",
+        "Credenciais protegidas",
         1,
-        "Sem editor de secrets no navegador.",
+        "Alterações sensíveis permanecem fora da interface.",
         "AGENTS.md",
         "success",
       ),
@@ -314,7 +313,7 @@ function moduleFromCounts({
       : unavailableMetric(
           metricKey,
           metricKey,
-          "Métrica não configurada.",
+          "Indicador ainda indisponível.",
           "admin-dashboard",
           "neutral",
         );
@@ -349,10 +348,10 @@ function buildAlerts({
   if (catalogModule.status === "degraded") {
     alerts.push({
       description:
-        "A visão geral não conseguiu carregar o contrato administrativo de terapias.",
+        "Alguns indicadores do catálogo precisam de nova tentativa de leitura.",
       href: routes.admin.therapies,
       key: "catalog-degraded",
-      label: "Catálogo em modo degradado",
+      label: "Catálogo pede atenção",
       severity: "warning",
     });
   }
@@ -365,7 +364,7 @@ function buildAlerts({
   if (failedStripe > 0 || failedZoom > 0 || failedEmails > 0) {
     alerts.push({
       description:
-        "Há falhas recentes em provedores críticos. Revise logs operacionais sem expor payload sensível.",
+        "Há falhas recentes em integrações críticas. Revise a área responsável.",
       href: routes.admin.integrations,
       key: "integration-failures",
       label: "Falhas de integração",
@@ -386,10 +385,10 @@ function buildAlerts({
   if (integrationModule.status === "degraded") {
     alerts.push({
       description:
-        "Algumas contagens técnicas não puderam ser lidas com a sessão administrativa atual.",
+        "Alguns indicadores de integrações precisam de nova tentativa de leitura.",
       href: routes.admin.integrations,
       key: "integration-degraded",
-      label: "Leitura técnica parcial",
+      label: "Integrações pedem atenção",
       severity: "info",
     });
   }
@@ -542,14 +541,14 @@ function getCountSpecs(): CountSpec[] {
     {
       description: "Reembolsos ainda não concluídos.",
       key: "pending-refunds",
-      label: "Refunds pendentes",
+      label: "Reembolsos pendentes",
       source: "admin_get_dashboard_v1",
       tone: "warning",
     },
     {
       description: "Disputas sem encerramento registrado.",
       key: "open-disputes",
-      label: "Disputes abertas",
+      label: "Disputas abertas",
       source: "admin_get_dashboard_v1",
       tone: "danger",
     },
@@ -575,23 +574,23 @@ function getCountSpecs(): CountSpec[] {
       tone: "warning",
     },
     {
-      description: "Webhooks Stripe com processamento falho.",
+      description: "Integrações de pagamento com processamento falho.",
       key: "failed-webhooks",
-      label: "Falhas Stripe",
+      label: "Falhas de pagamento",
       source: "admin_get_dashboard_v1",
       tone: "danger",
     },
     {
-      description: "Webhooks Zoom Video SDK com processamento falho.",
+      description: "Integrações de vídeo com processamento falho.",
       key: "failed-zoom-webhooks",
-      label: "Falhas Zoom",
+      label: "Falhas de vídeo",
       source: "admin_get_dashboard_v1",
       tone: "danger",
     },
     {
-      description: "Sessões Zoom marcadas como falhas.",
+      description: "Sessões de vídeo marcadas como falhas.",
       key: "failed-video-sessions",
-      label: "Sessões Zoom falhas",
+      label: "Sessões de vídeo falhas",
       source: "admin_get_dashboard_v1",
       tone: "danger",
     },
@@ -603,9 +602,9 @@ function getCountSpecs(): CountSpec[] {
       tone: "danger",
     },
     {
-      description: "Contas Connect ainda restritas ou incompletas.",
+      description: "Contas de recebimento ainda restritas ou incompletas.",
       key: "restricted-connect-accounts",
-      label: "Connect restrito",
+      label: "Recebimento restrito",
       source: "admin_get_dashboard_v1",
       tone: "warning",
     },

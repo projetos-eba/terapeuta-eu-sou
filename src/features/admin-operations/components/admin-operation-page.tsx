@@ -28,8 +28,32 @@ import type {
   AdminOperationRow,
 } from "../admin-operations.types";
 import { AdminOperationCommandPanel } from "./admin-operation-command-panel";
+import { AdminPatientDetailPage } from "./admin-patient-detail-page";
+import { AdminPatientsPage } from "./admin-patients-page";
+import { AdminProfessionalDetailPage } from "./admin-professional-detail-page";
+import { AdminProfessionalsPage } from "./admin-professionals-page";
+import { AdminVerificationDetailPage } from "./admin-verification-detail-page";
+import { AdminVerificationsPage } from "./admin-verifications-page";
 
-export function AdminOperationPage({ data }: { data: AdminOperationPageData }) {
+export function AdminOperationPage({
+  data,
+  module,
+}: {
+  data: AdminOperationPageData;
+  module?: string;
+}) {
+  if (module === "professionals") {
+    return <AdminProfessionalsPage data={data} />;
+  }
+
+  if (module === "patients") {
+    return <AdminPatientsPage data={data} />;
+  }
+
+  if (module === "verifications") {
+    return <AdminVerificationsPage data={data} />;
+  }
+
   return (
     <AppPageContainer className="max-w-[1440px] py-5 lg:py-6">
       <AppPageHeader eyebrow="Admin" title={data.title}>
@@ -51,8 +75,8 @@ export function AdminOperationPage({ data }: { data: AdminOperationPageData }) {
                   Registros recentes
                 </h2>
                 <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                  Fonte: {data.sourceLabel}. Listagem limitada, sem dados
-                  sensíveis desnecessários.
+                  Listagem limitada, com dados operacionais mínimos e sem
+                  conteúdo sensível desnecessário.
                 </p>
               </div>
               <p className="rounded-md bg-surface-muted px-3 py-2 text-xs font-bold text-tesText-secondary">
@@ -108,7 +132,11 @@ export function AdminOperationPage({ data }: { data: AdminOperationPageData }) {
                 </select>
               </label>
               <div className="flex gap-2">
-                <input name="pageSize" type="hidden" value={data.query.pageSize} />
+                <input
+                  name="pageSize"
+                  type="hidden"
+                  value={data.query.pageSize}
+                />
                 <button
                   className="inline-flex min-h-11 flex-1 items-center justify-center rounded-md bg-brand-primary px-4 text-sm font-extrabold text-white shadow-card outline-none transition hover:bg-brand-deep focus-visible:ring-4 focus-visible:ring-ring/20 lg:flex-none"
                   type="submit"
@@ -321,6 +349,18 @@ export function AdminOperationDetailPage({
 }: {
   data: AdminOperationDetailPageData;
 }) {
+  if (data.module === "professionals") {
+    return <AdminProfessionalDetailPage data={data} />;
+  }
+
+  if (data.module === "patients") {
+    return <AdminPatientDetailPage data={data} />;
+  }
+
+  if (data.module === "verifications") {
+    return <AdminVerificationDetailPage data={data} />;
+  }
+
   return (
     <AppPageContainer className="max-w-[1440px] py-5 lg:py-6">
       <Link

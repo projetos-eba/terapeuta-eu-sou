@@ -4,9 +4,9 @@ const adminEmail = process.env.ADMIN_E2E_EMAIL ?? "admin.tes@example.test";
 const adminPassword = process.env.ADMIN_E2E_PASSWORD ?? "tes-mock-password";
 
 const financeRoutes = [
-  ["/admin/pagamentos", "Financeiro", "Pagamentos recentes"],
-  ["/admin/assinaturas", "Assinaturas", "Assinaturas recentes"],
-  ["/admin/relatorios", "Relatórios", "Relatórios disponíveis"],
+  ["/admin/pagamentos", "Financeiro", "Transações e repasses", false],
+  ["/admin/assinaturas", "Assinaturas", "Assinaturas recentes", true],
+  ["/admin/relatorios", "Relatórios", "Relatórios disponíveis", true],
 ] as const;
 
 test.describe("admin finance modules", () => {
@@ -21,15 +21,20 @@ test.describe("admin finance modules", () => {
       timeout: 30_000,
     });
 
-    for (const [path, title, rowsTitle] of financeRoutes) {
+    for (const [path, title, rowsTitle, hasGuardrails] of financeRoutes) {
       await page.goto(path);
       await expect(
         page.getByRole("heading", { level: 1, name: title }),
       ).toBeVisible();
-      await expect(page.getByRole("heading", { name: rowsTitle })).toBeVisible();
       await expect(
-        page.getByRole("heading", { name: "Guardrails financeiros" }),
+        page.getByRole("heading", { name: rowsTitle }),
       ).toBeVisible();
+
+      if (hasGuardrails) {
+        await expect(
+          page.getByRole("heading", { name: "Guardrails financeiros" }),
+        ).toBeVisible();
+      }
 
       if (path !== "/admin/relatorios") {
         const detailLinks = page.getByRole("link", { name: "Ver detalhes" });
