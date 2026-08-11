@@ -9,6 +9,9 @@ admin navigation completion, or settings/governance copy.
 - `docs/architecture/admin-plan.md`
 - Figma file `Projeto Terapeuta Eu Sou Atualizado`, admin reference node
   `13425:778`
+- Figma administrative patterns node `12857:666`
+- Local visual reference:
+  `/Users/antoniofelipe/Downloads/ChatGPT Image Aug 10, 2026, 11_25_45 PM (9).png`
 - `src/lib/routes.ts`
 - `src/features/admin-shell/admin-shell-config.ts`
 - `src/features/admin-settings/*`
@@ -24,6 +27,11 @@ This page is governance, not a secret editor. It summarizes product settings,
 operation settings, feature flags, integration readiness and release checks
 without mutating production-critical state.
 
+The local raster is a visual direction only. Editable platform name, currency,
+notifications, two-factor authentication, branding, integrations and admin
+management are not implemented because no safe read/write contracts exist for
+them. Do not render controls that imply those mutations are available.
+
 ## Never Expose
 
 - Secret values.
@@ -33,8 +41,9 @@ without mutating production-critical state.
   values, Zoom secret values or e-mail provider API keys.
 - Bank data, document data or clinical content.
 
-Environment variable names may be shown only when they are already documented
-and useful for deployment diagnosis. Values must never be rendered.
+Environment variable names and implementation sources must not be rendered in
+the admin UI. They belong in logs, tests and documentation. Values must never
+be rendered.
 
 ## Guardrails
 
@@ -54,4 +63,7 @@ and useful for deployment diagnosis. Values must never be rendered.
 - `npm run lint`
 - `npm run build`
 - Browser: navigate `/admin/configuracoes`, verify the settings groups,
-  release checklist and absence of secret values.
+  release checklist, anchor navigation, responsive grid and absence of secret
+  values, source paths or development terminology.
+- Validate at desktop and mobile widths with Playwright MCP and confirm no
+  horizontal overflow.
