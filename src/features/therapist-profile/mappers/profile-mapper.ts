@@ -1,4 +1,3 @@
-import { buildAvailabilityDays } from "@/features/availability/services/availability-service";
 import { buildPublicReservationUrl } from "@/features/booking/services/public-booking";
 import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 
@@ -145,24 +144,6 @@ function formatCurrency(cents: number) {
   }).format(cents / 100);
 }
 
-function buildServiceAvailability(service: ServiceRow): AvailabilityDay[] {
-  return buildAvailabilityDays({
-    bookings: service.booking_conflicts ?? [],
-    exceptions: service.availability_exceptions ?? [],
-    rules: service.availability_rules ?? [],
-    selectedServiceId: service.service_id,
-    serviceDurationMinutes: service.duration_minutes,
-    settings: {
-      bufferAfterMinutes: service.buffer_after_minutes ?? 10,
-      bufferBeforeMinutes: service.buffer_before_minutes ?? 10,
-      intervalMinutes: service.interval_minutes ?? 30,
-      maxDaysAhead: service.max_days_ahead ?? 30,
-      minNoticeMinutes: service.min_notice_minutes ?? 120,
-      serviceId: service.service_id,
-    },
-  });
-}
-
 export function mapContentRow(row: ContentRow | null): TherapistProfileContent {
   return {
     essenceBody:
@@ -178,9 +159,12 @@ export function mapContentRow(row: ContentRow | null): TherapistProfileContent {
   };
 }
 
-export function mapServiceRow(row: ServiceRow): TherapistProfileService {
+export function mapServiceRow(
+  row: ServiceRow,
+  availability: AvailabilityDay[] = [],
+): TherapistProfileService {
   return {
-    availability: buildServiceAvailability(row),
+    availability,
     bookingUrl: buildPublicReservationUrl({
       durationMinutes: row.duration_minutes,
       priceCents: row.price_cents,
@@ -199,15 +183,6 @@ export function mapServiceRow(row: ServiceRow): TherapistProfileService {
     therapyName: row.therapy_name,
     therapySlug: row.therapy_slug,
   };
-}
-
-export function mapAvailabilityRows(
-  serviceRows: ServiceRow[],
-): AvailabilityDay[] {
-  const service = serviceRows[0];
-  if (!service) return [];
-
-  return buildServiceAvailability(service);
 }
 
 export function mapReviewRow(row: ReviewRow): TherapistProfileReview {
