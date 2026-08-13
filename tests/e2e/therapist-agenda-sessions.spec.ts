@@ -20,7 +20,7 @@ test.describe("therapist Agenda and Sessions foundation", () => {
     await expect(
       page.getByRole("heading", { level: 1, name: "Minha agenda" }),
     ).toBeVisible();
-    await expect(page.getByText("Quem você acolhe hoje")).toBeVisible();
+    await expect(page.getByText("Encontros de hoje")).toBeVisible();
     await expect(page.getByText("Insights para sua agenda")).toBeVisible();
     await expect(
       page.getByRole("link", { exact: true, name: "Semana" }),

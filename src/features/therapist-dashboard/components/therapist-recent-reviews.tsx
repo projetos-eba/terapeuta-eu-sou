@@ -33,7 +33,7 @@ export function TherapistRecentReviews({
                   <strong className="text-xs text-brand-deep">
                     {review.patientName} · {"★".repeat(review.rating)}
                   </strong>
-                  <time className="text-[9px] text-tesText-muted">
+                  <time className="text-[10px] text-tesText-muted md:text-[11px]">
                     {formatDate(review.publishedAt)}
                   </time>
                 </div>

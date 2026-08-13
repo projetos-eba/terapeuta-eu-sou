@@ -85,6 +85,45 @@ Não criar enums equivalentes dentro de features.
   `docs/architecture/agenda-a3-closure.md`.
 - O Calendário usa o frame Figma `13366:5342` e persiste estado navegável em
   `aba=calendario`, `visao=day|week|month` e `data=YYYY-MM-DD`.
+- A composição visual do Calendário segue o frame `13366:5342`: título em
+  `font-display` itálico, copy “Organize seus horários, acompanhe seus
+  encontros e mantenha sua agenda sempre atualizada.”, tabs Calendário /
+  Horários / Bloqueios, alternância Dia / Semana / Mês, seletor de período,
+  grade e right rail. Tratar a imagem de referência como fonte da copy apenas
+  quando o node Figma não puder ser lido pelo MCP.
+- Reutilizar os tokens TES e os componentes existentes. Não criar uma grade,
+  sidebar, modal ou botão paralelo; detalhes de encontro usam `TESDialog`.
+- Aplicar a regra de legibilidade TES: texto funcional com pelo menos `14px`;
+  metadados secundários com mínimo de `11px` no desktop e `10px` no mobile.
+  Nunca usar `8px` ou `9px`; para microtexto responsivo usar
+  `text-[10px] md:text-[11px]`.
+- Posicionar filtros de calendário imediatamente antes da área da agenda. Eles
+  iniciam abertos em desktop e recolhidos em mobile, sem deslocar a descoberta
+  operacional para depois da grade ou do right rail.
+- No cabeçalho semanal, aplicar padding vertical explícito e uniforme nos dias.
+  A separação da grade deve ocorrer pelo respiro, não por uma linha horizontal;
+  o primeiro marcador de hora começa abaixo do topo da grade e nunca toca uma
+  borda ou divisória.
+- Os limites da grade de Dia e Semana devem ser derivados das regras ativas de
+  `get_therapist_schedule_v1()` nos dias visíveis, incluindo bookings, holds e
+  bloqueios para que nenhum evento fique cortado. `08:00–22:00` é somente o
+  fallback sem regras ou eventos; uma faixa configurada em `00:00–06:00` deve
+  exibir a madrugada. O modelo atual não aceita uma única regra atravessando a
+  meia-noite: use faixas separadas em cada dia quando esse cenário existir.
+- Conferir sobreposição antes de concluir: rótulos da primeira linha/coluna de
+  grades não podem cruzar bordas; eventos precisam de padding interno e cards,
+  legendas e tabelas devem preservar respiro uniforme nas bordas.
+- Desktop mantém grade com right rail; em tablet o right rail vira duas
+  colunas; em mobile a grade vira lista cronológica e controles, ações e tabs
+  permanecem operáveis sem rolagem horizontal da página. Preservar a rolagem
+  interna apenas para a grade de calendário quando necessária.
+- O seletor de período deve continuar acessível por teclado e manter as ações
+  de período anterior, próximo e Hoje. Filtros locais podem ser recolhidos
+  abaixo do conteúdo principal, mas permanecem disponíveis e não alteram a
+  URL nem o contrato do read model.
+- Copy operacional canônica: “Encontros de hoje”, “Pendências da agenda”,
+  “Insights para sua agenda”, “Insight TES” e “Clique em um horário para ver
+  ou editar o agendamento.”
 - O fechamento A6/A7 fica em
   `docs/architecture/agenda-a6-a7-closure.md`.
 - O fechamento A8/A10 fica em
@@ -168,6 +207,10 @@ Não criar enums equivalentes dentro de features.
 
 - Validar Horários em desktop, tablet e mobile; controles devem ter área de
   toque de pelo menos 44px, foco visível e rótulos acessíveis.
+- Para o Calendário, validar visualmente em navegador visível nos breakpoints
+  desktop, tablet e mobile; capturar screenshot, conferir tabs, seletor de
+  período, grade/lista, cards do right rail, foco dos controles e ausência de
+  rolagem horizontal da página.
 - Validar que todo diálogo cobre sidebar e topbar, bloqueia scroll, fecha por
   `Escape`, confina e devolve foco.
 - Testar seleção de terapia, herança de faixas gerais, ativação por dia,
