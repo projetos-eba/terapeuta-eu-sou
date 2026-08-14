@@ -6,6 +6,18 @@ max_threads = 6
 description = "Coordena objetivos multi-domain, dependências, handoffs, integração e QA no TES."
 config_file = "agents/orchestrator.toml"
 
+[agents.product_ux]
+description = "Define tarefa dominante, hierarquia, estados e transformação responsiva antes da implementação."
+config_file = "agents/product-ux.toml"
+
+[agents.visual_director]
+description = "Define composição, direção visual e crítica de identidade TES sem assumir domínio ou implementação."
+config_file = "agents/visual-director.toml"
+
+[agents.design_system_guardian]
+description = "Governa reuso, variantes, tokens e admissão de patterns antes da implementação."
+config_file = "agents/design-system-guardian.toml"
+
 [agents.security_supabase]
 description = "Revisa segurança, Supabase e possui ownership final de migrations, RLS, grants e Storage."
 config_file = "agents/security-supabase.toml"

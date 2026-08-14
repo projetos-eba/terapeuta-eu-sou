@@ -22,7 +22,7 @@ Use this skill when implementing or refactoring the authenticated client/patient
 
 ## Domain
 
-- Product copy can say "sessão" or "encontro".
+- Product copy for patient-facing UI must say "encontro".
 - Technical domain must remain `bookings`.
 - Do not create tables named `sessions`, `encounters`, or `patient_encounters`.
 - Detail query entry point: `getPatientSessionDetailPage({ profileId, bookingId })`.
@@ -52,24 +52,32 @@ Use these support tables when needed:
 ## UI Rules
 
 - Reuse authenticated shell.
-- Main layout: primary content and right rail on desktop; stacked cards on tablet/mobile.
+- Density: `Balanced`, with `Comfortable` only in the primary context region.
+- First fold must answer: therapist, date/time, booking state and next authorized step.
+- Main layout: open editorial header + dominant encounter context + optional contextual aside on desktop; linear priority flow on mobile.
+- Prefer `AccentSemanticSurface` once for the dominant encounter context; use open sections + `border-border` hairlines elsewhere.
+- Do not replicate a right rail only to fill width. Support and reminder are contextual, not mandatory.
 - Use TES Tailwind tokens: `brand`, `surface`, `tesText`, `status`, `shadow-card`, `rounded-card`, `font-display`, `font-sans`.
 - Therapist avatars shown in patient session cards/details must come from the same stable `public/therapists/*.png` assets used by public therapist pages and seed data.
 - Use real buttons and links.
 - O detalhe deve direcionar para a sala dedicada; não montar o Video SDK no
   card de acesso.
+- Do not expose or render raw Zoom/meeting URLs, copy-link controls, tokens, host data or technical roles in patient UI.
 - Video session entry must be a client component with visible or aria-live feedback.
 - Zoom join must be a client component that dynamic-imports `@zoom/videosdk` and never trusts a browser-provided role.
 - Use local assets or token-based placeholders only; do not commit temporary Figma asset URLs.
+- Do not invent testimonials, therapeutic journey claims, images or summaries that are not present in the canonical detail data.
 
 ## QA
 
 - Run `npm run typecheck`, `npm run lint`, `npm run build`.
+- Run focused tests for patient detail components when changing access or state presentation.
 - Run Supabase validation when possible: `npx supabase db reset`.
 - Test:
   - `/app/encontros/96000000-0000-4000-8000-000000000001`
   - `/app/sessoes/96000000-0000-4000-8000-000000000001`
   - click "Ver detalhes" from `/app/encontros`.
+- Validate desktop, tablet and mobile before approval; the page cannot depend on horizontal scrolling or on an always-visible rail.
 
 ## Copy Safety
 
