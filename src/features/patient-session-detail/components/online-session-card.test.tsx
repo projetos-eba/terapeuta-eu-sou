@@ -21,14 +21,17 @@ describe("OnlineSessionCard", () => {
     );
 
     expect(
-      screen.queryByRole("link", { name: "Abrir sala do encontro" }),
+      screen.queryByRole("link", { name: /ir para a sala segura/i }),
     ).toBeNull();
     expect(
-      screen.getByRole("button", { name: /pagamento necessário/i }),
-    ).toBeDisabled();
+      screen.getByRole("link", { name: /pedir ajuda com pagamento/i }),
+    ).toHaveAttribute(
+      "href",
+      "/app/mensagens?context=suporte&booking=f2000000-0000-4000-8000-000000000001",
+    );
   });
 
-  it("links to the dedicated Zoom room only for confirmed payment", () => {
+  it("shows the secure room guidance only after confirmed payment", () => {
     render(
       <OnlineSessionCard
         data={makeData({
@@ -38,21 +41,46 @@ describe("OnlineSessionCard", () => {
     );
 
     expect(
-      screen.getByRole("link", { name: "Abrir sala do encontro" }),
+      screen.getByRole("link", { name: /ir para a sala segura/i }),
     ).toHaveAttribute(
       "href",
       "/app/encontros/f2000000-0000-4000-8000-000000000001/video",
     );
   });
+
+  it("does not expose raw meeting URLs for external providers", () => {
+    render(
+      <OnlineSessionCard
+        data={makeData({
+          canJoin: true,
+          financialStatus: SessionFinancialStatus.Paid,
+          meetingUrl: "https://example.com/meeting",
+          provider: "external",
+        })}
+      />,
+    );
+
+    expect(screen.queryByRole("textbox")).toBeNull();
+    expect(screen.queryByRole("button", { name: /copiar link/i })).toBeNull();
+    expect(
+      screen.getByRole("link", { name: /abrir videochamada/i }),
+    ).toHaveAttribute("href", "https://example.com/meeting");
+  });
 });
 
 function makeData({
+  canJoin,
   financialStatus,
+  meetingUrl = null,
+  provider = "zoom",
 }: {
+  canJoin?: boolean;
   financialStatus: SessionFinancialStatus;
+  meetingUrl?: string | null;
+  provider?: "external" | "google_meet" | "zoom";
 }): PatientSessionDetailPageData {
   const booking = {
-    canJoin: financialStatus === SessionFinancialStatus.Paid,
+    canJoin: canJoin ?? financialStatus === SessionFinancialStatus.Paid,
     dateLabel: "Sábado, 01 de ago",
     durationLabel: "1h de duração",
     endsAt: "2026-08-01T15:00:00.000Z",
@@ -91,7 +119,7 @@ function makeData({
       endsAt: booking.endsAt,
       financialStatus,
       now: new Date("2026-08-01T13:50:00.000Z"),
-      provider: "zoom",
+      provider,
       startsAt: booking.startsAt,
     }),
     intake: {
@@ -108,8 +136,8 @@ function makeData({
     },
     onlineSession: {
       joinRecommendation: "Entre alguns minutos antes.",
-      meetingUrl: null,
-      provider: "zoom",
+      meetingUrl,
+      provider,
       securityNote: "Acesso autenticado.",
     },
     patient: {

@@ -9,30 +9,30 @@ export function EncounterHistorySection({
   return (
     <section
       aria-labelledby="patient-history-encounters-title"
-      className="rounded-card border border-brand-lavender bg-white p-5 shadow-card md:p-7"
+      className="border-t border-border pt-7 sm:pt-8"
     >
-      <h2
-        id="patient-history-encounters-title"
-        className="font-display text-3xl font-light italic text-brand-deep md:text-4xl"
-      >
-        Histórico de encontros
-      </h2>
-      <p className="mt-2 text-sm font-semibold text-tesText-secondary">
-        Revisite suas experiências anteriores.
-      </p>
+      <div className="max-w-[720px]">
+        <h2
+          className="font-display text-[1.8rem] font-light italic leading-tight text-brand-deep sm:text-[2.1rem]"
+          id="patient-history-encounters-title"
+        >
+          Encontros anteriores
+        </h2>
+        <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+          Retome detalhes, resumos e ações disponíveis sem perder o contexto.
+        </p>
+      </div>
 
       {encounters.length > 0 ? (
-        <div className="mt-6 divide-y divide-brand-lavender/70">
+        <div className="mt-5 divide-y divide-border border-y border-border">
           {encounters.map((encounter) => (
             <EncounterRow encounter={encounter} key={encounter.id} />
           ))}
         </div>
       ) : (
-        <div className="mt-6 rounded-card border border-dashed border-brand-lavender bg-surface-soft p-6 text-center">
-          <p className="text-sm font-extrabold text-brand-deep">
-            Seu histórico aparecerá aqui depois dos encontros realizados.
-          </p>
-        </div>
+        <p className="mt-5 max-w-[620px] text-sm font-semibold leading-6 text-tesText-muted">
+          Seu histórico aparecerá aqui depois dos encontros realizados.
+        </p>
       )}
     </section>
   );

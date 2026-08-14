@@ -1,27 +1,48 @@
 import type { ReactNode } from "react";
 
+import { cn } from "@/lib/utils";
+
 import type { PatientEncounterStatus } from "../patient-encounters.types";
+
+const statusClasses: Record<PatientEncounterStatus, string> = {
+  cancelled: "bg-status-dangerBg text-status-danger",
+  completed: "text-status-success",
+  confirmed: "text-brand-primary",
+  live: "bg-status-successBg text-status-success",
+  pending_payment: "bg-status-warningBg text-status-warning",
+  reschedule_requested: "bg-status-warningBg text-status-warning",
+};
+
+const emphasizedStatuses = new Set<PatientEncounterStatus>([
+  "cancelled",
+  "live",
+  "pending_payment",
+  "reschedule_requested",
+]);
 
 export function EncounterStatusBadge({
   children,
+  className,
   status,
 }: {
   children: ReactNode;
+  className?: string;
   status: PatientEncounterStatus;
 }) {
-  const tone = {
-    cancelled: "bg-status-dangerBg text-status-danger",
-    completed: "bg-status-successBg text-status-success",
-    confirmed: "bg-status-successBg text-status-success",
-    live: "bg-[#FDECF1] text-status-danger",
-    pending_payment: "bg-status-warningBg text-status-warning",
-    reschedule_requested: "bg-status-warningBg text-status-warning",
-  }[status];
+  const emphasized = emphasizedStatuses.has(status);
 
   return (
     <span
-      className={`inline-flex min-h-8 w-fit items-center rounded-full px-3 text-xs font-extrabold ${tone}`}
+      className={cn(
+        "inline-flex min-h-8 w-fit items-center gap-2 text-sm font-extrabold",
+        emphasized ? "rounded-full px-3" : "px-0",
+        statusClasses[status],
+        className,
+      )}
     >
+      {!emphasized ? (
+        <span aria-hidden="true" className="size-2 rounded-full bg-current" />
+      ) : null}
       {children}
     </span>
   );

@@ -58,6 +58,30 @@ function collectMatches(content, regex, projectPath, type) {
   return matches;
 }
 
+function collectDesktopTenPixelMatches(content, projectPath) {
+  const violations = [];
+  const lines = content.split("\n");
+
+  lines.forEach((lineContent, index) => {
+    const usesTenPixelText =
+      lineContent.includes("text-[10px]") ||
+      /font-size:\s*10px/i.test(lineContent);
+    const promotesOnDesktop =
+      /(?:sm|md|lg|xl|2xl):text-\[(?:11|1[2-9]|[2-9]\d)px\]/.test(lineContent);
+
+    if (usesTenPixelText && !promotesOnDesktop) {
+      violations.push({
+        line: index + 1,
+        projectPath,
+        snippet: lineContent.trim(),
+        type: "10px sem promoção para >= 11px no desktop",
+      });
+    }
+  });
+
+  return violations;
+}
+
 function reportViolation(violation) {
   return `${violation.projectPath}:${violation.line} ${violation.type}: ${violation.snippet}`;
 }
@@ -91,6 +115,18 @@ for (const file of files) {
     !matches(visualPolicyConfig.minFontSizeAllowlist, projectPath)
   ) {
     violations.push(...smallTextMatches);
+  }
+
+  const desktopTenPixelMatches = collectDesktopTenPixelMatches(
+    content,
+    projectPath,
+  );
+
+  if (
+    desktopTenPixelMatches.length &&
+    !matches(visualPolicyConfig.minFontSizeAllowlist, projectPath)
+  ) {
+    violations.push(...desktopTenPixelMatches);
   }
 
   const hexMatches = collectMatches(

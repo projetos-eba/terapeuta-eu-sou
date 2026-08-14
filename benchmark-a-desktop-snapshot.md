@@ -1,0 +1,53 @@
+- generic [active] [ref=f2e1] [box=0,0,1584,1868]:
+  - generic [ref=f2e2] [box=0,0,1584,1868]:
+    - complementary "Navegação principal" [ref=f2e3] [box=0,0,242,1100]:
+      - generic [ref=f2e4] [box=0,0,241,1100]:
+        - img "Terapeuta Eu Sou" [ref=f2e6] [box=25,3,174,93]
+        - navigation "Seções do ambiente" [ref=f2e7] [box=13,98,215,672]:
+          - link "Início" [ref=f2e9] [cursor=pointer] [box=13,98,215,48]:
+            - /url: /terapeuta
+          - link "Agenda" [ref=f2e11] [cursor=pointer] [box=13,150,215,48]:
+            - /url: /terapeuta/agenda
+          - link "Histórico da Jornada" [ref=f2e13] [cursor=pointer] [box=13,202,215,48]:
+            - /url: /terapeuta/pacientes
+          - link "Sessões" [ref=f2e15] [cursor=pointer] [box=13,254,215,48]:
+            - /url: /terapeuta/sessoes
+          - link "Mensagens 2" [ref=f2e17] [cursor=pointer] [box=13,306,215,48]:
+            - /url: /terapeuta/mensagens
+          - link "Suas terapias" [ref=f2e19] [cursor=pointer] [box=13,358,215,48]:
+            - /url: /terapeuta/servicos
+          - link "Meu perfil" [ref=f2e21] [cursor=pointer] [box=13,410,215,48]:
+            - /url: /terapeuta/perfil
+          - link "Avaliações" [ref=f2e23] [cursor=pointer] [box=13,462,215,48]:
+            - /url: /terapeuta/avaliacoes
+          - link "Métricas & Relatórios" [ref=f2e25] [cursor=pointer] [box=13,514,215,48]:
+            - /url: /terapeuta/insights
+          - link "Aura IA" [ref=f2e27] [cursor=pointer] [box=13,566,215,48]:
+            - /url: /terapeuta/assessor-ia
+          - link "Financeiro" [ref=f2e29] [cursor=pointer] [box=13,618,215,48]:
+            - /url: /terapeuta/financeiro
+          - link "Configurações" [ref=f2e31] [cursor=pointer] [box=13,670,215,48]:
+            - /url: /terapeuta/configuracoes
+          - link "Ajuda" [ref=f2e33] [cursor=pointer] [box=13,722,215,48]:
+            - /url: /terapeuta/suporte
+        - button "Sair" [ref=f2e36] [cursor=pointer] [box=13,802,215,48]
+        - generic [ref=f2e42] [box=13,915,215,169]:
+          - generic [ref=f2e46] [box=54,931,158,76]
+          - link "Fale conosco" [ref=f2e49] [cursor=pointer] [box=30,1023,182,44]:
+            - /url: /terapeuta/suporte
+    - generic [ref=f2e50] [box=0,0,1584,1868]:
+      - banner [ref=f2e51] [box=242,0,1342,96]:
+        - generic [ref=f2e52] [box=1300,21,252,54]:
+          - link "Notificações, 2 não lidas" [ref=f2e53] [cursor=pointer] [box=1300,26,44,44]:
+            - /url: /terapeuta/mensagens?context=notificacoes
+          - generic [ref=f2e60] [box=1430,24,118,48]
+      - main [ref=f2e63] [box=242,96,1342,1772]:
+        - main [ref=f2e64] [box=308,120,1210,1724]:
+          - generic [ref=f2e65] [box=308,120,1210,111]
+          - navigation "Seções da agenda" [ref=f2e84] [box=308,255,520,49]
+          - region "Controles do calendário" [ref=f2e88] [box=308,324,1210,84]
+          - region "Filtros do calendário" [ref=f2e104] [box=308,420,1210,154]
+          - generic [ref=f2e139] [box=308,594,1210,987]
+          - article [ref=f2e436] [box=308,1608,1210,180]
+  - button "Open Next.js Dev Tools" [ref=f2e455] [cursor=pointer] [box=22,1046,32,32]
+  - alert [ref=f2e460] [box=-1,1867,1,1]
