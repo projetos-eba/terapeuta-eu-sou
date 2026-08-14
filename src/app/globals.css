@@ -169,3 +169,26 @@
     color: var(--tes-color-brand-deep);
   }
 }
+
+@layer utilities {
+  /*
+   * Legibility guardrail for legacy arbitrary microtext utilities.
+   * New components must still declare `text-[10px] md:text-[11px]` directly.
+   */
+  .text-\[8px\],
+  .text-\[9px\],
+  .text-\[0\.65rem\],
+  .text-\[0\.68rem\] {
+    font-size: 10px;
+  }
+
+  @media (min-width: 768px) {
+    .text-\[8px\],
+    .text-\[9px\],
+    .text-\[10px\],
+    .text-\[0\.65rem\],
+    .text-\[0\.68rem\] {
+      font-size: 11px;
+    }
+  }
+}

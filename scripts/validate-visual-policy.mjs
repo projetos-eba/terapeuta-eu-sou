@@ -76,12 +76,14 @@ for (const file of files) {
 
   const smallTextMatches = collectMatches(
     content,
-    /text-\[(\d+(?:\.\d+)?)px\]|font-size:\s*(\d+(?:\.\d+)?)px/gi,
+    /text-\[(\d+(?:\.\d+)?)(px|rem)\]|font-size:\s*(\d+(?:\.\d+)?)(px|rem)/gi,
     projectPath,
-    "font-size abaixo de 11px",
+    "font-size abaixo de 10px",
   ).filter((match) => {
-    const size = Number(match.snippet.match(/\d+(?:\.\d+)?/)?.[0] ?? 999);
-    return size < 11;
+    const value = Number(match.snippet.match(/\d+(?:\.\d+)?/)?.[0] ?? 999);
+    const isRem = match.snippet.toLowerCase().includes("rem");
+    const size = isRem ? value * 16 : value;
+    return size < 10;
   });
 
   if (

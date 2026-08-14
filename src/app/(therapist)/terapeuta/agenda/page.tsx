@@ -138,12 +138,18 @@ export default async function TherapistAgendaPage({
     );
   }
 
-  const calendarResult = await getTherapistCalendar({
-    accessToken: session.accessToken,
-    anchorDate: normalizeCalendarDate(params.data),
-    profileId: session.profileId,
-    view: parseCalendarView(params.visao),
-  });
+  const [calendarResult, scheduleResult] = await Promise.all([
+    getTherapistCalendar({
+      accessToken: session.accessToken,
+      anchorDate: normalizeCalendarDate(params.data),
+      profileId: session.profileId,
+      view: parseCalendarView(params.visao),
+    }),
+    getTherapistSchedule({
+      accessToken: session.accessToken,
+      profileId: session.profileId,
+    }),
+  ]);
 
   if (calendarResult.status === "error") {
     return (
@@ -193,7 +199,14 @@ export default async function TherapistAgendaPage({
     );
   }
 
-  return <TherapistCalendar data={calendarResult.data} />;
+  return (
+    <TherapistCalendar
+      data={calendarResult.data}
+      scheduleRules={
+        scheduleResult.status === "success" ? scheduleResult.data.rules : null
+      }
+    />
+  );
 }
 
 function BlocksErrorState({

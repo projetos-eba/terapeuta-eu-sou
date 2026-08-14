@@ -9,6 +9,7 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Clock3,
   Construction,
   CreditCard,
@@ -18,10 +19,11 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { mapSessionPresentation } from "@/features/bookings";
 import { TESDialog } from "@/components/tes/tes-dialog";
+import type { TherapistScheduleRule } from "@/domain/tes";
 import { routes } from "@/lib/routes";
 
 import type {
@@ -38,9 +40,8 @@ import type {
 const dayLabels = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX", "SÁB"];
 const weekDayLabels = ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"];
 const hourBlocks = [8, 10, 12, 14, 16, 18, 20];
-const timelineStartHour = 8;
-const timelineEndHour = 22;
 const hourHeight = 66;
+const defaultTimelineRange = { endHour: 22, startHour: 8 };
 
 type CalendarStatusFilter = "all" | "paid" | "pending_payment" | "reschedule";
 
@@ -94,8 +95,10 @@ const colorStyles: Record<
 
 export function TherapistCalendar({
   data,
+  scheduleRules = null,
 }: {
   data: TherapistCalendarReadModel;
+  scheduleRules?: TherapistScheduleRule[] | null;
 }) {
   const router = useRouter();
   const [selectedBooking, setSelectedBooking] =
@@ -105,6 +108,22 @@ export function TherapistCalendar({
     serviceId: "all",
     status: "all",
   });
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  useEffect(() => {
+    const desktopQuery = window.matchMedia?.("(min-width: 768px)");
+
+    if (!desktopQuery) {
+      setFiltersOpen(true);
+      return;
+    }
+
+    const syncFiltersVisibility = () => setFiltersOpen(desktopQuery.matches);
+    syncFiltersVisibility();
+    desktopQuery.addEventListener("change", syncFiltersVisibility);
+
+    return () => desktopQuery.removeEventListener("change", syncFiltersVisibility);
+  }, []);
   const days = useMemo(
     () => dateKeysBetween(data.range.localStart, data.range.localEndExclusive),
     [data.range.localEndExclusive, data.range.localStart],
@@ -135,18 +154,18 @@ export function TherapistCalendar({
   const nextDate = addDays(data.anchorDate, step);
 
   return (
-    <main className="mx-auto w-full max-w-[1180px] pb-14 text-tesText-primary">
+    <main className="mx-auto w-full max-w-[1210px] pb-14 text-tesText-primary">
       <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-[36px] font-light leading-tight text-brand-deep sm:text-[42px]">
+          <h1 className="font-display text-[42px] font-light italic leading-[0.98] text-brand-deep sm:text-[52px]">
             Minha agenda
           </h1>
-          <p className="mt-1 max-w-[540px] text-sm font-semibold leading-6 text-tesText-secondary">
-            Organize seus horários, acompanhe seus encontros e ofereça mais
-            momentos de acolhimento.
+          <p className="mt-3 max-w-[560px] text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
+            Organize seus horários, acompanhe seus encontros e mantenha sua
+            agenda sempre atualizada.
           </p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2 lg:shrink-0">
           <Link
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-deep transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
             href={`${routes.therapist.agenda}?aba=bloqueios` as Route}
@@ -168,7 +187,7 @@ export function TherapistCalendar({
 
       <section
         aria-label="Controles do calendário"
-        className="mt-3 flex flex-col gap-4 rounded-[14px] border border-brand-lavender/50 bg-white p-4 shadow-card md:flex-row md:items-center md:justify-between"
+        className="mt-5 flex flex-col gap-4 rounded-card border border-brand-lavender/60 bg-white p-4 shadow-card sm:p-5 md:flex-row md:items-center md:justify-between"
       >
         <div className="grid grid-cols-3 gap-2">
           {(["day", "week", "month"] as const).map((view) => (
@@ -187,7 +206,7 @@ export function TherapistCalendar({
           ))}
         </div>
 
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2 md:order-2">
           <Link
             aria-label="Período anterior"
             className="grid size-11 shrink-0 place-items-center rounded-lg border border-brand-lavender bg-white text-brand-primary transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
@@ -199,11 +218,19 @@ export function TherapistCalendar({
             <span className="sr-only">Escolher data da agenda</span>
             <CalendarDays
               aria-hidden="true"
-              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-brand-primary"
+              className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-brand-primary"
+              size={18}
+            />
+            <span className="pointer-events-none flex min-h-11 min-w-[220px] items-center rounded-lg border border-brand-lavender bg-white py-2 pl-11 pr-10 text-xs font-extrabold text-brand-deep sm:min-w-[270px] sm:text-sm">
+              {periodLabel}
+            </span>
+            <ChevronDown
+              aria-hidden="true"
+              className="pointer-events-none absolute right-3 top-1/2 z-10 -translate-y-1/2 text-brand-primary"
               size={18}
             />
             <input
-              className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white py-2 pl-10 pr-3 text-xs font-extrabold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 sm:min-w-[250px] sm:text-sm"
+              className="absolute inset-0 z-20 h-full w-full cursor-pointer opacity-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
               onChange={(event) => {
                 if (isDateKey(event.target.value)) {
                   router.push(calendarHref(data.view, event.target.value));
@@ -222,7 +249,7 @@ export function TherapistCalendar({
           </Link>
         </div>
         <Link
-          className="inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+          className="inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary md:order-3"
           href={calendarHref(data.view, todayKey)}
         >
           Hoje
@@ -231,20 +258,15 @@ export function TherapistCalendar({
 
       <CalendarFilters
         filters={filters}
+        isOpen={filtersOpen}
         onChange={setFilters}
+        onOpenChange={setFiltersOpen}
         resultCount={filteredBookings.length}
         services={data.services}
         totalCount={data.bookings.length}
       />
 
-      <div className="mt-4 flex items-center justify-between gap-4 px-1">
-        <h2 className="text-sm font-extrabold capitalize text-brand-deep sm:text-base">
-          {periodLabel}
-        </h2>
-        <p className="text-xs font-bold text-tesText-muted">{data.timezone}</p>
-      </div>
-
-      <div className="mt-3 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0">
           <MobileChronologicalList
             blocks={filteredBlocks}
@@ -270,6 +292,7 @@ export function TherapistCalendar({
                 days={days}
                 holds={filteredHolds}
                 onSelect={setSelectedBooking}
+                scheduleRules={scheduleRules}
                 timezone={data.timezone}
                 todayKey={todayKey}
               />
@@ -334,13 +357,17 @@ function AgendaTabs() {
 
 function CalendarFilters({
   filters,
+  isOpen,
   onChange,
+  onOpenChange,
   resultCount,
   services,
   totalCount,
 }: {
   filters: CalendarFiltersState;
+  isOpen: boolean;
   onChange: (filters: CalendarFiltersState) => void;
+  onOpenChange: (isOpen: boolean) => void;
   resultCount: number;
   services: TherapistCalendarReadModel["services"];
   totalCount: number;
@@ -353,11 +380,28 @@ function CalendarFilters({
   return (
     <section
       aria-label="Filtros do calendário"
-      className="mt-4 rounded-[14px] border border-brand-lavender/50 bg-white p-4 shadow-card"
+      className="mt-5 rounded-card border border-brand-lavender/50 bg-white shadow-card"
     >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
+      <button
+        aria-controls="calendar-filter-panel"
+        aria-expanded={isOpen}
+        className="flex min-h-12 w-full items-center justify-between gap-3 px-4 text-left text-sm font-extrabold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary sm:px-5"
+        onClick={() => onOpenChange(!isOpen)}
+        type="button"
+      >
+        Filtrar agenda
+        <ChevronDown
+          aria-hidden="true"
+          className={`size-4 text-brand-primary transition ${isOpen ? "rotate-180" : ""}`}
+        />
+      </button>
+      <div
+        className="flex flex-col gap-3 border-t border-brand-lavender/60 p-4 lg:flex-row lg:items-end sm:p-5"
+        hidden={!isOpen}
+        id="calendar-filter-panel"
+      >
         <label className="min-w-0 flex-1">
-          <span className="mb-1 flex items-center gap-2 text-[10px] font-extrabold uppercase text-tesText-muted">
+          <span className="mb-1 flex items-center gap-2 text-[10px] font-extrabold uppercase text-tesText-muted md:text-[11px]">
             <Search aria-hidden="true" size={14} />
             Buscar
           </span>
@@ -373,7 +417,7 @@ function CalendarFilters({
         </label>
 
         <label className="min-w-0 lg:w-[220px]">
-          <span className="mb-1 block text-[10px] font-extrabold uppercase text-tesText-muted">
+          <span className="mb-1 block text-[10px] font-extrabold uppercase text-tesText-muted md:text-[11px]">
             Terapia
           </span>
           <select
@@ -393,7 +437,7 @@ function CalendarFilters({
         </label>
 
         <label className="min-w-0 lg:w-[230px]">
-          <span className="mb-1 flex items-center gap-2 text-[10px] font-extrabold uppercase text-tesText-muted">
+          <span className="mb-1 flex items-center gap-2 text-[10px] font-extrabold uppercase text-tesText-muted md:text-[11px]">
             <SlidersHorizontal aria-hidden="true" size={14} />
             Estado
           </span>
@@ -425,13 +469,13 @@ function CalendarFilters({
           <X aria-hidden="true" size={15} />
           Limpar
         </button>
+        <p
+          aria-live="polite"
+          className="text-[11px] font-bold text-tesText-secondary lg:pb-3"
+        >
+          {resultCount} de {totalCount} encontro(s) nesta visualização.
+        </p>
       </div>
-      <p
-        aria-live="polite"
-        className="mt-3 text-[11px] font-bold text-tesText-secondary"
-      >
-        {resultCount} de {totalCount} encontro(s) nesta visualização.
-      </p>
     </section>
   );
 }
@@ -442,6 +486,7 @@ function TimelineCalendar({
   days,
   holds,
   onSelect,
+  scheduleRules,
   timezone,
   todayKey,
 }: {
@@ -450,10 +495,20 @@ function TimelineCalendar({
   days: string[];
   holds: TherapistCalendarHold[];
   onSelect: (booking: TherapistCalendarBooking) => void;
+  scheduleRules: TherapistScheduleRule[] | null;
   timezone: string;
   todayKey: string;
 }) {
-  const gridHeight = (timelineEndHour - timelineStartHour) * hourHeight;
+  const timelineRange = timelineRangeForCalendar({
+    blocks,
+    bookings,
+    days,
+    holds,
+    scheduleRules,
+    timezone,
+  });
+  const gridHeight =
+    (timelineRange.endHour - timelineRange.startHour) * hourHeight;
   const widthClass = days.length === 1 ? "min-w-[360px]" : "min-w-[760px]";
 
   return (
@@ -461,15 +516,15 @@ function TimelineCalendar({
       <div className="overflow-x-auto">
         <div className={widthClass}>
           <div
-            className="grid border-b border-brand-lavender"
-            style={{ gridTemplateColumns: `64px repeat(${days.length}, 1fr)` }}
+            className="grid"
+            style={{ gridTemplateColumns: `72px repeat(${days.length}, 1fr)` }}
           >
             <span aria-hidden="true" />
             {days.map((day) => {
               const current = day === todayKey;
               return (
-                <div className="py-3 text-center" key={day}>
-                  <span className="block text-[10px] font-extrabold text-tesText-muted">
+                <div className="pb-4 pt-5 text-center" key={day}>
+                  <span className="block text-[10px] font-extrabold text-tesText-muted md:text-[11px]">
                     {dayLabels[dayOfWeek(day)]}
                   </span>
                   <span
@@ -489,19 +544,27 @@ function TimelineCalendar({
           <div
             className="relative grid"
             style={{
-              gridTemplateColumns: `64px repeat(${days.length}, 1fr)`,
+              gridTemplateColumns: `72px repeat(${days.length}, 1fr)`,
               height: gridHeight,
             }}
           >
             <div className="relative border-r border-brand-lavender/70">
               {Array.from(
-                { length: timelineEndHour - timelineStartHour + 1 },
-                (_, index) => timelineStartHour + index,
+                { length: timelineRange.endHour - timelineRange.startHour + 1 },
+                (_, index) => timelineRange.startHour + index,
               ).map((hour) => (
                 <span
-                  className="absolute right-3 -translate-y-1/2 text-[10px] font-bold text-tesText-muted"
+                  className={`absolute right-4 text-[10px] font-bold text-tesText-muted md:text-[11px] ${
+                    hour === timelineRange.startHour
+                      ? "top-3"
+                      : "-translate-y-1/2"
+                  }`}
                   key={hour}
-                  style={{ top: (hour - timelineStartHour) * hourHeight }}
+                  style={
+                    hour === timelineRange.startHour
+                      ? undefined
+                      : { top: (hour - timelineRange.startHour) * hourHeight }
+                  }
                 >
                   {String(hour).padStart(2, "0")}:00
                 </span>
@@ -515,15 +578,16 @@ function TimelineCalendar({
                 style={{ gridColumn: index + 2 }}
               >
                 {Array.from(
-                  { length: timelineEndHour - timelineStartHour + 1 },
-                  (_, hourIndex) => (
-                    <span
-                      aria-hidden="true"
-                      className="absolute inset-x-0 border-t border-brand-lavender/55"
-                      key={hourIndex}
-                      style={{ top: hourIndex * hourHeight }}
-                    />
-                  ),
+                  { length: timelineRange.endHour - timelineRange.startHour + 1 },
+                  (_, hourIndex) =>
+                    hourIndex === 0 ? null : (
+                      <span
+                        aria-hidden="true"
+                        className="absolute inset-x-0 border-t border-brand-lavender/55"
+                        key={hourIndex}
+                        style={{ top: hourIndex * hourHeight }}
+                      />
+                    ),
                 )}
                 {blocks
                   .filter(
@@ -534,6 +598,7 @@ function TimelineCalendar({
                     <TimelineBlock
                       block={block}
                       key={block.id}
+                      timelineRange={timelineRange}
                       timezone={timezone}
                     />
                   ))}
@@ -546,6 +611,7 @@ function TimelineCalendar({
                     <TimelineHold
                       hold={hold}
                       key={hold.id}
+                      timelineRange={timelineRange}
                       timezone={timezone}
                     />
                   ))}
@@ -559,6 +625,7 @@ function TimelineCalendar({
                       booking={booking}
                       key={booking.bookingId}
                       onSelect={onSelect}
+                      timelineRange={timelineRange}
                       timezone={timezone}
                     />
                   ))}
@@ -567,8 +634,13 @@ function TimelineCalendar({
           </div>
         </div>
       </div>
+      {scheduleRules === null ? (
+        <p className="border-t border-brand-lavender/60 px-4 py-3 text-center text-[11px] font-bold text-tesText-secondary" role="status">
+          A grade mostra os encontros registrados enquanto seus horários são carregados.
+        </p>
+      ) : null}
       <p className="border-t border-brand-lavender/60 px-4 py-3 text-center text-[11px] font-bold text-tesText-secondary">
-        Selecione um encontro para ver os detalhes.
+        Clique em um horário para ver ou editar o agendamento.
       </p>
     </section>
   );
@@ -577,15 +649,18 @@ function TimelineCalendar({
 function TimelineBooking({
   booking,
   onSelect,
+  timelineRange,
   timezone,
 }: {
   booking: TherapistCalendarBooking;
   onSelect: (booking: TherapistCalendarBooking) => void;
+  timelineRange: TimelineRange;
   timezone: string;
 }) {
   const placement = timelinePlacement(
     booking.startsAt,
     booking.endsAt,
+    timelineRange,
     timezone,
   );
   if (!placement) return null;
@@ -595,20 +670,20 @@ function TimelineBooking({
   return (
     <button
       aria-label={`${booking.serviceTitle} com ${booking.patientName}, ${formatTimeRange(booking.startsAt, booking.endsAt, timezone)}`}
-      className={`absolute inset-x-1 z-10 overflow-hidden rounded-md border p-1.5 text-left shadow-sm transition hover:z-20 hover:brightness-[0.98] focus-visible:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-primary ${style.border} ${style.surface}`}
+      className={`absolute inset-x-2 z-10 overflow-hidden rounded-md border px-2.5 py-2 text-left shadow-sm transition hover:z-20 hover:brightness-[0.98] focus-visible:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-primary ${style.border} ${style.surface}`}
       onClick={() => onSelect(booking)}
       style={{ height: placement.height, top: placement.top }}
       type="button"
     >
       <span
-        className={`block text-[10px] font-extrabold leading-none ${style.text}`}
+        className={`block text-[11px] font-extrabold leading-none ${style.text}`}
       >
         {formatTime(booking.startsAt, timezone)}
       </span>
-      <span className="mt-1 block truncate text-[9px] font-extrabold leading-none text-brand-deep">
+      <span className="mt-1.5 block truncate text-[10px] font-extrabold leading-none text-brand-deep md:text-[11px]">
         {booking.serviceTitle}
       </span>
-      <span className="mt-1 block truncate text-[8px] font-bold leading-none text-tesText-secondary">
+      <span className="mt-1.5 block truncate text-[10px] font-bold leading-none text-tesText-secondary md:text-[11px]">
         {booking.patientName}
       </span>
       <span className="sr-only">{status.label}</span>
@@ -618,20 +693,22 @@ function TimelineBooking({
 
 function TimelineBlock({
   block,
+  timelineRange,
   timezone,
 }: {
   block: TherapistCalendarBlock;
+  timelineRange: TimelineRange;
   timezone: string;
 }) {
   const placement = block.allDay
     ? { height: 32, top: 2 }
-    : timelinePlacement(block.startsAt, block.endsAt, timezone);
+    : timelinePlacement(block.startsAt, block.endsAt, timelineRange, timezone);
   if (!placement) return null;
 
   return (
     <Link
       aria-label={`Bloqueio: ${block.reason ?? "Período indisponível"}`}
-      className="absolute inset-x-1 z-[5] overflow-hidden rounded-md border border-dashed border-tesText-muted bg-surface-mist/90 p-2 text-left text-[9px] font-extrabold text-tesText-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+      className="absolute inset-x-2 z-[5] overflow-hidden rounded-md border border-dashed border-tesText-muted bg-surface-mist/90 px-2.5 py-2 text-left text-[10px] font-extrabold text-tesText-secondary md:text-[11px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
       href={`${routes.therapist.agenda}?aba=bloqueios` as Route}
       style={{ height: placement.height, top: placement.top }}
     >
@@ -642,19 +719,26 @@ function TimelineBlock({
 
 function TimelineHold({
   hold,
+  timelineRange,
   timezone,
 }: {
   hold: TherapistCalendarHold;
+  timelineRange: TimelineRange;
   timezone: string;
 }) {
-  const placement = timelinePlacement(hold.startsAt, hold.endsAt, timezone);
+  const placement = timelinePlacement(
+    hold.startsAt,
+    hold.endsAt,
+    timelineRange,
+    timezone,
+  );
   if (!placement) return null;
   const style = colorStyles[hold.colorKey];
 
   return (
     <div
       aria-label={`Horário temporariamente reservado para ${hold.serviceTitle}`}
-      className={`absolute inset-x-1 z-[6] overflow-hidden rounded-md border border-dashed p-2 text-[9px] font-extrabold ${style.border} ${style.surface} ${style.text}`}
+      className={`absolute inset-x-2 z-[6] overflow-hidden rounded-md border border-dashed px-2.5 py-2 text-[10px] font-extrabold md:text-[11px] ${style.border} ${style.surface} ${style.text}`}
       style={{ height: placement.height, top: placement.top }}
     >
       Em reserva · {hold.serviceTitle}
@@ -682,7 +766,7 @@ function MonthCalendar({
           <div className="grid grid-cols-7 border-b border-brand-lavender bg-surface-soft/70">
             {weekDayLabels.map((day) => (
               <span
-                className="py-3 text-center text-[10px] font-extrabold text-tesText-muted"
+                className="py-3 text-center text-[10px] font-extrabold text-tesText-muted md:text-[11px]"
                 key={day}
               >
                 {day}
@@ -714,7 +798,7 @@ function MonthCalendar({
                       const style = colorStyles[booking.colorKey];
                       return (
                         <button
-                          className={`flex min-h-7 items-center gap-1 rounded px-2 text-left text-[9px] font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${style.surface} ${style.text}`}
+                          className={`flex min-h-8 items-center gap-1 rounded px-2.5 text-left text-[10px] font-extrabold md:text-[11px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${style.surface} ${style.text}`}
                           key={booking.bookingId}
                           onClick={() => onSelect(booking)}
                           type="button"
@@ -727,7 +811,7 @@ function MonthCalendar({
                       );
                     })}
                     {dayBookings.length > 3 ? (
-                      <span className="text-[9px] font-bold text-tesText-muted">
+                      <span className="text-[10px] font-bold text-tesText-muted md:text-[11px]">
                         +{dayBookings.length - 3} encontro(s)
                       </span>
                     ) : null}
@@ -790,7 +874,7 @@ function MobileChronologicalList({
                     {item.time}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-[10px] font-extrabold uppercase text-tesText-muted">
+                    <span className="block text-[10px] font-extrabold uppercase text-tesText-muted md:text-[11px]">
                       {item.dateLabel} · {presentation.label}
                     </span>
                     <span className="mt-1 block truncate text-sm font-extrabold text-brand-deep">
@@ -820,7 +904,7 @@ function MobileChronologicalList({
                     {item.time}
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-[10px] font-extrabold uppercase text-tesText-muted">
+                    <span className="block text-[10px] font-extrabold uppercase text-tesText-muted md:text-[11px]">
                       {item.dateLabel} · Em reserva
                     </span>
                     <span className="mt-1 block truncate text-sm font-extrabold text-brand-deep">
@@ -845,7 +929,7 @@ function MobileChronologicalList({
                   {item.block.allDay ? "Dia" : item.time}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-[10px] font-extrabold uppercase text-tesText-muted">
+                  <span className="block text-[10px] font-extrabold uppercase text-tesText-muted md:text-[11px]">
                     {item.dateLabel} · Bloqueio
                   </span>
                   <span className="mt-1 block truncate text-sm font-extrabold text-brand-deep">
@@ -877,11 +961,11 @@ function CalendarLegend({
   return (
     <section
       aria-label="Legenda das terapias"
-      className="mt-4 flex flex-wrap gap-x-5 gap-y-3 rounded-xl border border-brand-lavender/60 bg-white px-4 py-3"
+      className="mt-4 flex flex-wrap gap-x-5 gap-y-3 rounded-xl border border-brand-lavender/60 bg-white px-5 py-4"
     >
       {services.map((service) => (
         <span
-          className="inline-flex items-center gap-2 text-[10px] font-extrabold text-tesText-secondary"
+          className="inline-flex items-center gap-2 text-[10px] font-extrabold text-tesText-secondary md:text-[11px]"
           key={service.id}
         >
           <span
@@ -890,7 +974,7 @@ function CalendarLegend({
           {service.title}
         </span>
       ))}
-      <span className="inline-flex items-center gap-2 text-[10px] font-extrabold text-tesText-secondary">
+      <span className="inline-flex items-center gap-2 text-[10px] font-extrabold text-tesText-secondary md:text-[11px]">
         <span className="size-3 rounded-sm bg-[#77738d]" />
         Indisponível
       </span>
@@ -907,12 +991,17 @@ function TodayCard({
   onSelect: (booking: TherapistCalendarBooking) => void;
   timezone: string;
 }) {
+  const todayKey = dateKeyForInstant(new Date().toISOString(), timezone);
+
   return (
-    <article className="rounded-[14px] border border-brand-lavender/60 bg-white p-5 shadow-card">
-      <h2 className="text-base font-extrabold text-brand-deep">
-        Quem você acolhe hoje
+    <article className="rounded-[14px] border border-brand-lavender/60 bg-white p-6 shadow-card">
+      <h2 className="text-lg font-extrabold text-brand-deep">
+        Encontros de hoje
       </h2>
       <p className="mt-1 text-xs font-bold text-tesText-secondary">
+        {formatTodayLabel(timezone)}
+      </p>
+      <p className="mt-3 text-sm font-extrabold text-brand-primary">
         {bookings.length} encontro(s)
       </p>
       {bookings.length ? (
@@ -925,18 +1014,18 @@ function TodayCard({
               type="button"
             >
               <span
-                className={`grid size-9 place-items-center rounded-full text-[10px] font-extrabold text-white ${colorStyles[booking.colorKey].badge}`}
+                className={`grid size-9 place-items-center rounded-full text-[10px] font-extrabold text-white md:text-[11px] ${colorStyles[booking.colorKey].badge}`}
               >
                 {initials(booking.patientName)}
               </span>
               <span className="min-w-0">
-                <span className="block text-[10px] font-extrabold text-brand-primary">
+                <span className="block text-[10px] font-extrabold text-brand-primary md:text-[11px]">
                   {formatTimeRange(booking.startsAt, booking.endsAt, timezone)}
                 </span>
                 <span className="mt-1 block truncate text-xs font-extrabold text-brand-deep">
                   {booking.patientName}
                 </span>
-                <span className="block truncate text-[9px] font-bold text-tesText-secondary">
+                <span className="block truncate text-[10px] font-bold text-tesText-secondary md:text-[11px]">
                   {booking.serviceTitle}
                 </span>
               </span>
@@ -955,10 +1044,10 @@ function TodayCard({
       )}
       <Link
         className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-brand-lavender text-xs font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
-        href={routes.therapist.sessions as Route}
+        href={calendarHref("day", todayKey)}
       >
         <CalendarDays aria-hidden="true" size={16} />
-        Ver sessões
+        Ver agenda do dia
       </Link>
     </article>
   );
@@ -972,12 +1061,12 @@ function AttentionCard({
   timezone: string;
 }) {
   return (
-    <article className="rounded-[14px] border border-brand-lavender/60 bg-white p-5 shadow-card">
+    <article className="rounded-[14px] border border-brand-lavender/60 bg-white p-6 shadow-card">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-extrabold text-brand-deep">
-          Precisam da sua atenção
+        <h2 className="text-lg font-extrabold text-brand-deep">
+          Pendências da agenda
         </h2>
-        <span className="grid min-w-7 place-items-center rounded-full bg-brand-lavenderSoft px-2 py-1 text-[10px] font-extrabold text-brand-primary">
+        <span className="grid min-w-7 place-items-center rounded-full bg-brand-lavenderSoft px-2 py-1 text-[10px] font-extrabold text-brand-primary md:text-[11px]">
           {items.length}
         </span>
       </div>
@@ -1010,10 +1099,10 @@ function AttentionCard({
                 <span className="block truncate text-[11px] font-extrabold text-brand-deep">
                   {item.title}
                 </span>
-                <span className="mt-0.5 block text-[9px] font-bold text-tesText-secondary">
+                <span className="mt-0.5 block text-[10px] font-bold text-tesText-secondary md:text-[11px]">
                   {item.description}
                 </span>
-                <span className="block text-[9px] font-bold text-tesText-muted">
+                <span className="block text-[10px] font-bold text-tesText-muted md:text-[11px]">
                   {formatCompactDateTime(item.startsAt, timezone)}
                 </span>
               </span>
@@ -1040,18 +1129,18 @@ function DemandCard({ demand }: { demand: TherapistCalendarDemandItem[] }) {
   );
   const maximum = Math.max(0, ...demand.map((item) => item.count));
   return (
-    <article className="rounded-[14px] border border-brand-lavender/60 bg-white p-5 shadow-card md:col-span-2 xl:col-span-1">
+    <article className="rounded-[14px] border border-brand-lavender/60 bg-white p-6 shadow-card md:col-span-2 xl:col-span-1">
       <h2 className="text-base font-extrabold text-brand-deep">
         Insights para sua agenda
       </h2>
-      <p className="mt-1 text-[10px] font-bold text-tesText-muted">
+      <p className="mt-1 text-[10px] font-bold text-tesText-muted md:text-[11px]">
         Com base nos últimos 90 dias
       </p>
-      <div className="mt-5 grid grid-cols-[36px_repeat(7,1fr)] gap-1 text-center">
+      <div className="mt-5 grid grid-cols-[38px_repeat(7,minmax(0,1fr))] gap-1.5 text-center">
         <span aria-hidden="true" />
         {weekDayLabels.map((day) => (
           <span
-            className="text-[8px] font-extrabold text-tesText-muted"
+            className="text-[10px] font-extrabold text-tesText-muted md:text-[11px]"
             key={day}
           >
             {day}
@@ -1059,7 +1148,7 @@ function DemandCard({ demand }: { demand: TherapistCalendarDemandItem[] }) {
         ))}
         {hourBlocks.flatMap((hour) => [
           <span
-            className="self-center text-[8px] font-extrabold text-tesText-muted"
+            className="self-center text-[10px] font-extrabold text-tesText-muted md:text-[11px]"
             key={`label-${hour}`}
           >
             {String(hour).padStart(2, "0")}h
@@ -1068,7 +1157,7 @@ function DemandCard({ demand }: { demand: TherapistCalendarDemandItem[] }) {
             const count = values.get(`${day}-${hour}`) ?? 0;
             return (
               <span
-                className={`grid aspect-square min-h-5 place-items-center rounded text-[8px] font-extrabold ${heatmapStyle(count, maximum)}`}
+                className={`grid aspect-square min-h-6 place-items-center rounded text-[10px] font-extrabold md:text-[11px] ${heatmapStyle(count, maximum)}`}
                 key={`${day}-${hour}`}
                 title={`${count} encontro(s)`}
               >
@@ -1078,7 +1167,7 @@ function DemandCard({ demand }: { demand: TherapistCalendarDemandItem[] }) {
           }),
         ])}
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-2 text-[8px] font-bold text-tesText-secondary">
+      <div className="mt-5 grid grid-cols-2 gap-x-3 gap-y-2 text-[10px] font-bold text-tesText-secondary md:text-[11px]">
         <HeatLegend className="bg-[#f3effb]" label="Nenhuma procura" />
         <HeatLegend className="bg-[#d8dcff]" label="Baixa procura" />
         <HeatLegend className="bg-[#b895ff]" label="Média procura" />
@@ -1110,7 +1199,7 @@ function TesScheduleTip({ demand }: { demand: TherapistCalendarDemandItem[] }) {
       <div className="inline-flex items-center gap-2">
         <Sparkles aria-hidden="true" className="text-brand-primary" size={19} />
         <h2 className="font-display text-[24px] font-light text-brand-deep">
-          Dica TES
+          Insight TES
         </h2>
       </div>
       <p className="mx-auto mt-3 max-w-[620px] text-xs font-semibold leading-5 text-tesText-secondary">
@@ -1122,7 +1211,7 @@ function TesScheduleTip({ demand }: { demand: TherapistCalendarDemandItem[] }) {
         className="mt-4 inline-flex min-h-10 items-center gap-2 text-xs font-extrabold text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
         href={routes.therapist.insights as Route}
       >
-        Ver mais insights
+        Ver todos os insights da agenda
         <ArrowRight aria-hidden="true" size={15} />
       </Link>
     </article>
@@ -1157,7 +1246,7 @@ function BookingDialog({
               {booking.therapyName}
             </p>
           </div>
-          <span className="rounded-full bg-white px-3 py-1 text-[10px] font-extrabold text-brand-deep">
+          <span className="rounded-full bg-white px-3 py-1 text-[10px] font-extrabold text-brand-deep md:text-[11px]">
             {presentation.label}
           </span>
         </div>
@@ -1312,11 +1401,75 @@ function calendarHref(view: TherapistCalendarView, date: string): Route {
   return `${routes.therapist.agenda}?aba=calendario&visao=${view}&data=${date}` as Route;
 }
 
-function timelinePlacement(startsAt: string, endsAt: string, timezone: string) {
+type TimelineRange = {
+  endHour: number;
+  startHour: number;
+};
+
+function timelineRangeForCalendar({
+  blocks,
+  bookings,
+  days,
+  holds,
+  scheduleRules,
+  timezone,
+}: {
+  blocks: TherapistCalendarBlock[];
+  bookings: TherapistCalendarBooking[];
+  days: string[];
+  holds: TherapistCalendarHold[];
+  scheduleRules: TherapistScheduleRule[] | null;
+  timezone: string;
+}): TimelineRange {
+  const visibleDays = new Set(days.map(dayOfWeek));
+  const startMinutes: number[] = [];
+  const endMinutes: number[] = [];
+
+  for (const rule of scheduleRules ?? []) {
+    if (!rule.isActive || !visibleDays.has(rule.dayOfWeek)) continue;
+    startMinutes.push(clockMinutes(rule.startTime));
+    endMinutes.push(clockMinutes(rule.endTime));
+  }
+
+  for (const item of [...bookings, ...holds, ...blocks]) {
+    if (
+      "allDay" in item &&
+      item.allDay
+    ) {
+      continue;
+    }
+    if (!days.includes(dateKeyForInstant(item.startsAt, timezone))) continue;
+
+    const start = timeMinutes(item.startsAt, timezone);
+    const end = timeMinutes(item.endsAt, timezone);
+    startMinutes.push(start);
+    endMinutes.push(end > start ? end : 24 * 60);
+  }
+
+  if (startMinutes.length === 0 || endMinutes.length === 0) {
+    return defaultTimelineRange;
+  }
+
+  const startHour = Math.max(0, Math.floor(Math.min(...startMinutes) / 60));
+  const endHour = Math.min(
+    24,
+    Math.max(startHour + 1, Math.ceil(Math.max(...endMinutes) / 60)),
+  );
+
+  return { endHour, startHour };
+}
+
+function timelinePlacement(
+  startsAt: string,
+  endsAt: string,
+  timelineRange: TimelineRange,
+  timezone: string,
+) {
   const start = timeMinutes(startsAt, timezone);
-  const end = timeMinutes(endsAt, timezone);
-  const visibleStart = timelineStartHour * 60;
-  const visibleEnd = timelineEndHour * 60;
+  const localEnd = timeMinutes(endsAt, timezone);
+  const end = localEnd > start ? localEnd : localEnd + 24 * 60;
+  const visibleStart = timelineRange.startHour * 60;
+  const visibleEnd = timelineRange.endHour * 60;
   if (end <= visibleStart || start >= visibleEnd) return null;
   return {
     height: Math.max(
@@ -1377,6 +1530,11 @@ function timeMinutes(value: string, timezone: string) {
   return Number(values.hour) * 60 + Number(values.minute);
 }
 
+function clockMinutes(value: string) {
+  const [hour, minute] = value.split(":").map(Number);
+  return hour * 60 + minute;
+}
+
 function formatTime(value: string, timezone: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     hour: "2-digit",
@@ -1407,6 +1565,15 @@ function formatCompactDate(value: string, timezone: string) {
     timeZone: timezone,
     weekday: "short",
   }).format(new Date(value));
+}
+
+function formatTodayLabel(timezone: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "numeric",
+    month: "long",
+    timeZone: timezone,
+    weekday: "long",
+  }).format(new Date());
 }
 
 function formatLongDate(value: string, timezone: string) {

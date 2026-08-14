@@ -103,12 +103,6 @@ export const visualPolicyConfig = {
   ],
   minFontSizeAllowlist: [
     {
-      pathPattern:
-        /^src\/features\/therapist-agenda\/components\/therapist-calendar\.tsx$/,
-      reason:
-        "Calendário denso legado; deve ser reorganizado em fase própria antes de remover microtexto.",
-    },
-    {
       pathPattern: /^src\/app\/\(therapist\)\/terapeuta\/sessoes\/page\.tsx$/,
       reason: "Tabela operacional densa legada; saneamento dedicado pendente.",
     },

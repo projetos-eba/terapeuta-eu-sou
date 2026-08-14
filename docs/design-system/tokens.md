@@ -205,6 +205,12 @@ Figma:
 | `font.size.caption`     |  `12px` |      `1.35` | `500` | Badges.           |
 | `font.size.micro`       |  `11px` |       `1.3` | `600` | Tabelas densas.   |
 
+Regra de legibilidade: o menor texto em desktop é `11px`; em mobile é
+`10px`. Esses tamanhos ficam restritos a metadados secundários, grade densa,
+legenda ou status. Texto funcional segue com mínimo de `14px`. Nunca usar
+tamanhos inferiores; no Tailwind, declarar variação explícita, por exemplo
+`text-[10px] md:text-[11px]`.
+
 Exemplo:
 
 ```tsx

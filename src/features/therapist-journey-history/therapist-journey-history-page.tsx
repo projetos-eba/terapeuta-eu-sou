@@ -661,7 +661,7 @@ function ChipList({
     <div className="flex flex-wrap gap-1.5">
       {items.map((item, index) => (
         <span
-          className={`${size === "sm" ? "min-h-6 px-2 text-[9px]" : "min-h-7 px-3 text-[11px]"} inline-flex items-center rounded-lg bg-brand-lavenderSoft font-extrabold text-brand-primary`}
+          className={`${size === "sm" ? "min-h-6 px-2 text-[10px] md:text-[11px]" : "min-h-7 px-3 text-[11px]"} inline-flex items-center rounded-lg bg-brand-lavenderSoft font-extrabold text-brand-primary`}
           key={`${item}-${index}`}
         >
           {item}
