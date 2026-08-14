@@ -84,6 +84,34 @@ export function createSupabaseAdmin(runtime) {
   }
 
   return {
+    async authCreateSessionForEmail(email) {
+      const generatedLink = await request(`${authUrl}/admin/generate_link`, {
+        body: JSON.stringify({ email, type: "magiclink" }),
+        method: "POST",
+      });
+      const tokenHash =
+        generatedLink?.properties?.hashed_token ?? generatedLink?.hashed_token;
+      if (!tokenHash) throw new Error("auth_magic_link_token_missing");
+
+      const session = await request(`${authUrl}/verify`, {
+        body: JSON.stringify({ token_hash: tokenHash, type: "magiclink" }),
+        method: "POST",
+      });
+      if (
+        !session?.access_token ||
+        !session?.refresh_token ||
+        !session?.user?.id
+      ) {
+        throw new Error("auth_magic_link_session_invalid");
+      }
+
+      return {
+        accessToken: session.access_token,
+        expiresIn: session.expires_in ?? 3600,
+        refreshToken: session.refresh_token,
+        userId: session.user.id,
+      };
+    },
     async authCreateUser({ email, password, role }) {
       const body = await request(`${authUrl}/admin/users`, {
         body: JSON.stringify({

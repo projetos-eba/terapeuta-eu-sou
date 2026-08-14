@@ -63,7 +63,7 @@ regressao pgTAP para as duas assinaturas.
 - `npm run zoom:video-sdk:api:mock`
 - `npm run zoom:video-sdk:real-preflight`
 - `npm run homologation:zoom:local`
-- `node scripts/homologation/zoom-hml.mjs --confirm-single-hml-session --confirm-hml-vercel-share --duration-seconds=45`
+- `node scripts/homologation/zoom-hml.mjs --confirm-single-hml-session --confirm-hml-vercel-share --prepare-canonical-hml-fixture --resolve-canonical-hml-fixture --use-admin-magic-link-sessions --duration-seconds=45`
 - `npm run zoom:video-sdk:test:real -- --confirm-zoom-marketplace --confirm-single-real-session --headed --slow-mo=250 --allow-direct-paid-fixture-for-zoom-only` somente para diagnostico tecnico isolado
 - `npm run zoom:video-sdk:emergency-end`
 
@@ -84,13 +84,21 @@ Com `ALLOW_REAL_ZOOM=false`, nao fazer chamada externa nem entrar em sessao real
   e usa contexts Playwright separados para terapeuta e paciente; a execucao real
   deve ser visivel (`--headed`) e com `--slow-mo`.
 - O harness HML separado em `scripts/homologation/zoom-hml.mjs` exige URL remota
-  com `_vercel_share`, `SUPABASE_URL` HML remoto
-  `emzwqkmrryuqvqiohqnu`, booking/`session_payment`/`video_session`
-  preexistentes via env, contexts Playwright isolados para cliente, terapeuta e
-  Admin, booking entre 15 e 20 minutos antes do inicio para provar o bloqueio e
-  a transicao em T-15, duracao configuravel entre 30 e 60 segundos e evidencias
-  JSON sanitizadas sob `.tmp/homologation/`.
-- O harness HML falha fechado sem booking/IDs/credenciais, sem `_vercel_share`,
+  com `_vercel_share` e `SUPABASE_URL` do projeto HML
+  `emzwqkmrryuqvqiohqnu`. Ele primeiro resolve uma booking elegível dos perfis
+  declarados; com `--prepare-canonical-hml-fixture`, cria uma nova reserva pelo
+  Checkout Stripe test real e só aceita a fixture depois do webhook processado,
+  `session_payments.financial_status = paid` e `video_sessions` existente.
+  Ajustes temporários de disponibilidade são restaurados no `finally`.
+- `--use-admin-magic-link-sessions` cria sessões de Auth de uso único em memória
+  para os três contexts sem trocar senha nem persistir tokens. Continua exigindo
+  `service_role` apenas no processo local de homologação e nunca no browser.
+- O harness usa contexts Playwright isolados para cliente, terapeuta e Admin,
+  booking entre 15 e 20 minutos antes do início, duração entre 30 e 60 segundos
+  e evidências sanitizadas sob `.tmp/homologation/`. O gate real também exige
+  recuperação de permissão, câmera bidirecional e viewports desktop/tablet/
+  mobile durante a chamada.
+- O harness HML falha fechado sem fixture canônica resolvida, sem `_vercel_share`,
   com `provider_session_id` preexistente, com qualquer sessao Zoom ativa antes
   do teste, ou se o pagamento canonico estiver ausente. Ele nao cria fixture
   paga direta, nao usa `supabase status` local como evidencia remota e nao faz

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createElement, useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   Copy,
@@ -66,6 +66,7 @@ type ZoomParticipant = {
 
 type ZoomVideoClient = {
   getAllUser?: () => ZoomParticipant[];
+  getCurrentUserInfo?: () => ZoomParticipant;
   getMediaStream: () => ZoomMediaStream;
   init: (
     language: string,
@@ -89,24 +90,10 @@ type ZoomMediaStream = {
     quality?: number,
   ) => Promise<HTMLElement | HTMLElement[]>;
   detachVideo?: (userId: number) => Promise<HTMLElement | HTMLElement[] | void>;
-  getCurrentUserInfo?: () => { userId?: number };
   muteAudio?: () => Promise<void> | void;
-  renderVideo?: (
-    canvas: HTMLCanvasElement,
-    userId: number,
-    width: number,
-    height: number,
-    x: number,
-    y: number,
-    quality: number,
-  ) => Promise<void> | void;
   startAudio?: () => Promise<void> | void;
   startVideo?: () => Promise<void> | void;
   stopAudio?: () => Promise<void> | void;
-  stopRenderVideo?: (
-    canvas: HTMLCanvasElement,
-    userId: number,
-  ) => Promise<void> | void;
   stopVideo?: () => Promise<void> | void;
   unmuteAudio?: () => Promise<void> | void;
 };
@@ -169,9 +156,10 @@ export function ZoomVideoSessionAdapter({
   const previewAbortControllerRef = useRef<AbortController | null>(null);
   const joinAbortControllerRef = useRef<AbortController | null>(null);
   const leavingRef = useRef(false);
-  const localVideoRef = useRef<HTMLCanvasElement | null>(null);
-  const remoteVideoRef = useRef<HTMLDivElement | null>(null);
+  const localVideoRef = useRef<HTMLElement | null>(null);
+  const remoteVideoRef = useRef<HTMLElement | null>(null);
   const localUserIdRef = useRef<number | null>(null);
+  const localUserElementsRef = useRef<HTMLElement[]>([]);
   const remoteUserElementsRef = useRef<Map<number, HTMLElement[]>>(new Map());
   const listenersRef = useRef<
     Array<{ event: string; handler: (...args: unknown[]) => void }>
@@ -510,7 +498,7 @@ export function ZoomVideoSessionAdapter({
 
       const stream = client.getMediaStream();
       streamRef.current = stream;
-      localUserIdRef.current = stream.getCurrentUserInfo?.().userId ?? null;
+      localUserIdRef.current = client.getCurrentUserInfo?.().userId ?? null;
       await stream.startAudio?.();
       await stream.muteAudio?.();
       await renderExistingRemoteVideos();
@@ -597,25 +585,41 @@ export function ZoomVideoSessionAdapter({
 
   async function toggleVideo() {
     const stream = streamRef.current;
-    const canvas = localVideoRef.current;
-    if (!stream || !canvas || state !== "joined" || leavingRef.current) return;
+    const container = localVideoRef.current;
+    if (!stream || !container || state !== "joined" || leavingRef.current)
+      return;
 
     try {
       if (videoOn) {
         const userId =
-          localUserIdRef.current ?? stream.getCurrentUserInfo?.().userId;
-        if (userId) await stream.stopRenderVideo?.(canvas, userId);
+          localUserIdRef.current ??
+          clientRef.current?.getCurrentUserInfo?.().userId;
+        if (userId) await stream.detachVideo?.(userId);
+        removeVideoElements(localUserElementsRef.current);
+        localUserElementsRef.current = [];
         await stream.stopVideo?.();
         setVideoOn(false);
         return;
       }
 
       await stream.startVideo?.();
-      const userId = stream.getCurrentUserInfo?.().userId;
-      localUserIdRef.current = userId ?? null;
-      if (userId) {
-        await stream.renderVideo?.(canvas, userId, 320, 180, 0, 0, 2);
+      const userId = clientRef.current?.getCurrentUserInfo?.().userId;
+      if (!userId) {
+        await stream.stopVideo?.();
+        throw new Error("participant_not_ready");
       }
+      localUserIdRef.current = userId ?? null;
+      const attached = await stream.attachVideo?.(userId, 2);
+      const elements = normalizeVideoElements(attached);
+      if (elements.length === 0) {
+        await stream.stopVideo?.();
+        throw new Error("local_video_not_attached");
+      }
+      for (const element of elements) {
+        styleVideoElement(element);
+        container.appendChild(element);
+      }
+      localUserElementsRef.current = elements;
       setVideoOn(true);
     } catch (error) {
       setMessage(formatMediaError(error, "camera"));
@@ -683,13 +687,14 @@ export function ZoomVideoSessionAdapter({
 
     await stopAllRemoteVideos(failures);
 
-    const localCanvas = localVideoRef.current;
     const localUserId = localUserIdRef.current;
-    if (stream && localCanvas && localUserId) {
-      await recordCleanupFailure(failures, "stopRenderVideo:local", () =>
-        stream.stopRenderVideo?.(localCanvas, localUserId),
+    if (stream && localUserId) {
+      await recordCleanupFailure(failures, "detachVideo:local", () =>
+        stream.detachVideo?.(localUserId),
       );
     }
+    removeVideoElements(localUserElementsRef.current);
+    localUserElementsRef.current = [];
     await recordCleanupFailure(failures, "stopVideo", () =>
       stream?.stopVideo?.(),
     );
@@ -829,9 +834,10 @@ export function ZoomVideoSessionAdapter({
 
     try {
       const attached = await stream.attachVideo(userId, 2);
-      const elements = Array.isArray(attached) ? attached : [attached];
+      const elements = normalizeVideoElements(attached);
+      if (elements.length === 0) throw new Error("remote_video_not_attached");
       for (const element of elements) {
-        element.classList.add("h-full", "w-full", "object-cover");
+        styleVideoElement(element);
         container.appendChild(element);
       }
       remoteUserElementsRef.current.set(userId, elements);
@@ -1049,34 +1055,43 @@ export function ZoomVideoSessionAdapter({
   return (
     <section className={sectionClassName} aria-label="Sala de video">
       <div className="grid gap-4 rounded-lg border border-brand-lavender bg-surface-soft p-4">
-        <div className="grid gap-3 md:grid-cols-2">
+        <div
+          className={cn(
+            "relative grid overflow-hidden rounded-lg bg-brand-deep",
+            displayMode === "dedicated"
+              ? "h-[clamp(14rem,42dvh,26rem)] md:grid-cols-2 md:h-[min(52dvh,32rem)]"
+              : "min-h-[180px] md:grid-cols-2",
+          )}
+          data-testid="zoom-video-stage"
+        >
           <div
             className={cn(
-              "grid overflow-hidden rounded-lg bg-brand-deep",
+              "relative z-10 overflow-hidden rounded-lg border border-white/30 bg-brand-deep shadow-card",
               displayMode === "dedicated"
-                ? "min-h-[260px] sm:min-h-[420px] xl:min-h-[500px]"
+                ? "absolute right-3 top-3 aspect-video w-[38%] md:static md:aspect-auto md:h-full md:w-auto md:rounded-none md:border-0 md:shadow-none"
                 : "min-h-[180px]",
             )}
+            data-testid="zoom-local-video"
           >
-            <canvas
-              aria-label="Seu video"
-              className={cn(
-                "h-full w-full",
-                displayMode === "dedicated"
-                  ? "min-h-[260px] sm:min-h-[420px] xl:min-h-[500px]"
-                  : "min-h-[180px]",
-              )}
-              ref={localVideoRef}
-            />
+            <div
+              className="absolute inset-0 grid place-items-center px-3 text-center text-xs font-semibold text-white/80"
+              hidden={videoOn}
+            >
+              Sua câmera está desligada
+            </div>
+            {createElement("zoom-video-player-container", {
+              "aria-label": "Seu video",
+              className: "absolute inset-0 block h-full w-full overflow-hidden",
+              ref: localVideoRef,
+            })}
           </div>
           <div
             aria-label="Video remoto"
             className={cn(
-              "relative grid overflow-hidden rounded-lg bg-white text-sm font-semibold text-tesText-secondary",
-              displayMode === "dedicated"
-                ? "min-h-[260px] sm:min-h-[420px] xl:min-h-[500px]"
-                : "min-h-[180px]",
+              "relative grid h-full overflow-hidden bg-white text-sm font-semibold text-tesText-secondary",
+              displayMode === "dedicated" ? "min-h-0" : "min-h-[180px]",
             )}
+            data-testid="zoom-remote-video"
           >
             <div
               className="absolute inset-0 grid place-items-center px-4 text-center"
@@ -1084,11 +1099,11 @@ export function ZoomVideoSessionAdapter({
             >
               Aguardando participante
             </div>
-            <div
-              aria-hidden={remoteParticipantCount === 0}
-              className="h-full min-h-[180px] w-full"
-              ref={remoteVideoRef}
-            />
+            {createElement("zoom-video-player-container", {
+              "aria-hidden": remoteParticipantCount === 0,
+              className: "absolute inset-0 block h-full w-full overflow-hidden",
+              ref: remoteVideoRef,
+            })}
           </div>
         </div>
 
@@ -1311,6 +1326,21 @@ function asParticipantArray(value: unknown): ZoomParticipant[] {
       },
     ];
   });
+}
+
+function normalizeVideoElements(value: unknown): HTMLElement[] {
+  const items = Array.isArray(value) ? value : [value];
+  return items.filter(
+    (item): item is HTMLElement => item instanceof HTMLElement,
+  );
+}
+
+function styleVideoElement(element: HTMLElement) {
+  element.classList.add("block", "h-full", "w-full", "object-cover");
+}
+
+function removeVideoElements(elements: HTMLElement[]) {
+  for (const element of elements) element.remove();
 }
 
 function normalizeConnectionChange(payload: unknown) {

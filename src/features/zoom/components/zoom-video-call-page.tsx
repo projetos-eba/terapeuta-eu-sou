@@ -25,7 +25,7 @@ export function ZoomVideoCallPage({
   sessionTitle: string;
 }) {
   return (
-    <div className="relative min-h-dvh overflow-hidden bg-[linear-gradient(145deg,#fdfcff_0%,#f4effb_48%,#eef8f7_100%)] text-tesText-primary">
+    <div className="relative h-screen h-dvh overflow-hidden bg-[linear-gradient(145deg,#fdfcff_0%,#f4effb_48%,#eef8f7_100%)] text-tesText-primary">
       <div
         aria-hidden="true"
         className="absolute -left-32 top-20 size-80 rounded-full bg-brand-primary/10 blur-3xl"
@@ -36,7 +36,7 @@ export function ZoomVideoCallPage({
       />
 
       <header className="relative z-sticky border-b border-brand-lavender/70 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex min-h-20 w-full max-w-[1480px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-16 w-full max-w-[1480px] items-center justify-between gap-3 px-4 sm:h-20 sm:gap-4 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-4">
             <Link
               aria-label="Voltar aos detalhes"
@@ -53,7 +53,7 @@ export function ZoomVideoCallPage({
               src="/logo-oficial-terapeuta-eu-sou.png"
               width={150}
             />
-            <div className="min-w-0 border-l border-brand-lavender pl-4">
+            <div className="min-w-0 border-l border-brand-lavender pl-3 sm:pl-4">
               <p className="truncate text-sm font-extrabold text-brand-deep">
                 {sessionTitle}
               </p>
@@ -70,17 +70,17 @@ export function ZoomVideoCallPage({
         </div>
       </header>
 
-      <main className="relative z-sticky mx-auto grid w-full max-w-[1480px] gap-5 px-4 py-5 sm:px-6 lg:px-8 lg:py-7">
-        <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+      <main className="relative z-sticky mx-auto grid h-[calc(100dvh-4rem)] min-h-0 w-full max-w-[1480px] grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-y-auto px-4 py-3 sm:h-[calc(100dvh-5rem)] sm:gap-4 sm:px-6 sm:py-4 lg:px-8">
+        <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end sm:gap-3">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
               {actorRole === "patient" ? "Seu encontro" : "Sua sessão"}
             </p>
-            <h1 className="mt-1 font-display text-3xl font-light italic text-brand-deep sm:text-4xl">
+            <h1 className="mt-0.5 font-display text-2xl font-light italic text-brand-deep sm:mt-1 sm:text-4xl">
               Sala de vídeo
             </h1>
           </div>
-          <p className="flex max-w-xl items-start gap-2 text-sm font-semibold leading-6 text-tesText-secondary">
+          <p className="hidden max-w-xl items-start gap-2 text-sm font-semibold leading-6 text-tesText-secondary sm:flex">
             <ShieldCheck
               aria-hidden="true"
               className="mt-0.5 shrink-0 text-brand-primary"
@@ -91,7 +91,7 @@ export function ZoomVideoCallPage({
           </p>
         </div>
 
-        <div className="rounded-[28px] border border-brand-lavender/80 bg-white/90 p-3 shadow-[0_24px_70px_rgba(44,25,95,0.12)] backdrop-blur sm:p-5">
+        <div className="min-h-0 rounded-[24px] border border-brand-lavender/80 bg-white/90 p-2.5 shadow-[0_24px_70px_rgba(44,25,95,0.12)] backdrop-blur sm:rounded-[28px] sm:p-4">
           <ZoomVideoSessionAdapter
             access={access}
             actorRole={actorRole}
