@@ -14,9 +14,23 @@ export function SessionActionCards({
   data: PatientSessionDetailPageData;
 }) {
   const { cancellation, reschedule } = data.actionPolicy;
+  const hasReceipt = Boolean(data.receipt.receiptUrl);
 
   return (
-    <div className="grid gap-4">
+    <section className="grid gap-6 border-t border-border pt-8">
+      <div>
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-brand-primary sm:text-xs">
+          Ajustes e comprovantes
+        </p>
+        <h2 className="mt-3 font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]">
+          Gerencie este encontro
+        </h2>
+        <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
+          Cancelamento e reagendamento seguem a disponibilidade da agenda, a
+          política vigente e a confirmação financeira da plataforma.
+        </p>
+      </div>
+
       <SessionOperationActions
         actorRole="patient"
         bookingId={data.booking.id}
@@ -28,41 +42,45 @@ export function SessionActionCards({
         rescheduleDisabledReason={reschedule.disabledReason}
         reschedule={data.reschedule}
       />
-      <section className="rounded-card border border-brand-lavender bg-white p-5 shadow-card">
-        <div className="flex items-start gap-4">
-          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-            <ReceiptText aria-hidden="true" size={22} />
+
+      <section className="rounded-[28px] border border-border bg-white/80 p-5 sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+            <ReceiptText aria-hidden="true" size={18} />
           </span>
           <div>
-            <h2 className="text-base font-extrabold text-brand-deep">
-              {cancellation.title}
-            </h2>
-            <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              {cancellation.impactLabel}
+            <h3 className="text-base font-extrabold text-brand-deep sm:text-lg">
+              {hasReceipt ? "Comprovante e política" : cancellation.title}
+            </h3>
+            <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
+              {hasReceipt
+                ? "Baixe seu comprovante quando disponível e confira os impactos autorizados para reagendar ou cancelar este encontro."
+                : cancellation.impactLabel}
             </p>
           </div>
         </div>
       </section>
+
       <section
         aria-label="Ações complementares do encontro"
-        className="grid gap-4 md:grid-cols-2"
+        className="grid gap-4"
       >
         {data.receipt.receiptUrl ? (
           <ActionLink
-            description="Baixe recibo do pagamento"
+            description="Baixe o comprovante quando ele estiver disponível para este encontro."
             href={data.receipt.receiptUrl}
             icon={Download}
             title="Baixar comprovante"
           />
         ) : (
           <ActionButton
-            description="Comprovante indisponível"
+            description="O comprovante ainda não está disponível neste fluxo."
             icon={Download}
             title="Baixar comprovante"
           />
         )}
         <ActionLink
-          description="Ver outras ações para este encontro"
+          description="Peça ajuda ou acesse outras orientações seguras para este encontro."
           href={
             `${routes.patient.messages}?context=suporte&booking=${data.booking.id}` as Route<string>
           }
@@ -70,7 +88,7 @@ export function SessionActionCards({
           title="Mais opções"
         />
       </section>
-    </div>
+    </section>
   );
 }
 
@@ -87,18 +105,26 @@ function ActionLink({
 }) {
   return (
     <Link
-      className="rounded-card border border-brand-lavender bg-white p-5 text-center shadow-card transition hover:-translate-y-0.5 hover:border-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+      className="flex min-h-16 items-center justify-between gap-4 rounded-card border border-border bg-white px-5 py-4 transition hover:border-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:px-6"
       href={href as Route<string>}
     >
-      <Icon
+      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+        <Icon aria-hidden="true" size={18} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-extrabold text-brand-deep sm:text-base">
+          {title}
+        </span>
+        <span className="mt-1 block text-[11px] font-semibold leading-5 text-tesText-secondary sm:text-xs">
+          {description}
+        </span>
+      </span>
+      <span
         aria-hidden="true"
-        className="mx-auto text-brand-primary"
-        size={26}
-      />
-      <p className="mt-4 text-sm font-extrabold text-brand-deep">{title}</p>
-      <p className="mx-auto mt-2 max-w-[150px] text-xs font-semibold leading-5 text-tesText-secondary">
-        {description}
-      </p>
+        className="text-lg font-extrabold text-brand-primary"
+      >
+        ›
+      </span>
     </Link>
   );
 }
@@ -114,19 +140,21 @@ function ActionButton({
 }) {
   return (
     <button
-      className="cursor-not-allowed rounded-card border border-brand-lavender bg-white p-5 text-center opacity-70 shadow-card"
+      className="flex min-h-16 w-full cursor-not-allowed items-center justify-between gap-4 rounded-card border border-border bg-white px-5 py-4 opacity-70 sm:px-6"
       disabled
       type="button"
     >
-      <Icon
-        aria-hidden="true"
-        className="mx-auto text-tesText-muted"
-        size={26}
-      />
-      <p className="mt-4 text-sm font-extrabold text-brand-deep">{title}</p>
-      <p className="mx-auto mt-2 max-w-[150px] text-xs font-semibold leading-5 text-tesText-secondary">
-        {description}
-      </p>
+      <span className="grid size-11 shrink-0 place-items-center rounded-full bg-surface-soft text-tesText-muted">
+        <Icon aria-hidden="true" size={18} />
+      </span>
+      <span className="min-w-0 flex-1 text-left">
+        <span className="block text-sm font-extrabold text-brand-deep sm:text-base">
+          {title}
+        </span>
+        <span className="mt-1 block text-[11px] font-semibold leading-5 text-tesText-secondary sm:text-xs">
+          {description}
+        </span>
+      </span>
     </button>
   );
 }

@@ -42,11 +42,18 @@ Toda alteração deve respeitar:
 Antes de alterar arquivos, ler somente o necessário para a tarefa, nesta ordem:
 
 1. `AGENTS.md`.
-2. Figma atualizado, quando a tarefa envolver UI, fluxo, navegação, visual ou componentes.
-3. `docs/product/sitemap.md`.
-4. `docs/design-system/design-system.md`.
-5. `docs/product/routes-map.md`.
-6. `docs/product/glossary.md`.
+2. Skill e documentação de produto/domínio aplicáveis à página ou feature.
+3. `docs/product/sitemap.md`, `docs/product/routes-map.md` e
+   `docs/product/glossary.md`.
+4. `docs/design-system/experience-principles.md`,
+   `docs/design-system/density.md` e
+   `docs/design-system/anti-patterns.md`, quando a tarefa envolver UI.
+5. `docs/design-system/design-system.md`,
+   `docs/design-system/composition-patterns.md` e
+   `docs/design-system/interaction-patterns.md`, quando a tarefa envolver UI ou
+   componentes.
+6. Figma atualizado, quando a tarefa envolver UI, fluxo, navegação, visual ou
+   componentes.
 7. `README.md`.
 8. Arquivos diretamente afetados pela tarefa.
    Consultar documentos adicionais somente quando necessário e solicitado:
@@ -60,6 +67,8 @@ Antes de alterar arquivos, ler somente o necessário para a tarefa, nesta ordem:
 - `docs/design-system/FIGMA_STORYBOOK_SYNC_MAP.md`: sincronização Figma, código e Storybook.
 - `docs/design-system/DESIGN_SYSTEM_FINAL_HANDOFF.md`: histórico do Design System e pendências.
 - `docs/design-system/qa-checklist.md`: QA detalhado.
+- `docs/design-system/visual-quality-score.md`: rubrica e eliminatórios de UI.
+- `docs/design-system/visual-qa.md`: evidência visual em desktop, tablet e mobile.
 - `docs/design-system/implementation-notes.md`: arquitetura planejada, setup, permissões e variáveis.
 - `skills/recreate-figma-pages/*`: recriação de telas rasterizadas do Figma.
   Não alterar código, tokens, rotas ou documentação sem consultar as fontes relevantes.
@@ -70,15 +79,16 @@ Quando houver conflito, usar esta prioridade:
 
 1. Solicitação atual do usuário.
 2. `AGENTS.md`.
-3. Figma atualizado do arquivo `Projeto Terapeuta Eu Sou Atualizado`.
-4. `docs/product/sitemap.md`.
-5. `docs/design-system/design-system.md`.
-6. `docs/product/product.md`.
-7. `docs/product/routes-map.md`.
-8. `docs/design-system/tokens.md`.
-9. Código existente.
-10. Padrões inferidos por recorrência documentada.
-    Regras de conflito:
+3. Produto/domínio: ADRs, skill aplicável, `docs/product/product.md`, sitemap,
+   routes map e glossary.
+4. `docs/design-system/experience-principles.md` e regras de densidade.
+5. `docs/design-system/design-system.md`, composition/interaction patterns e
+   tokens TES.
+6. Figma atualizado do arquivo `Projeto Terapeuta Eu Sou Atualizado`.
+7. Código existente, com `src/lib/routes.ts` e `src/lib/permissions.ts` como
+   autoridades executáveis de seus respectivos contratos.
+8. Padrões inferidos por recorrência documentada.
+   Regras de conflito:
 
 - Registrar a inconsistência explicitamente.
 - Explicar impacto e risco.
@@ -100,8 +110,10 @@ Arquivo principal:
 - `↳ Sitemap`, node `12259:2`: estrutura visual de navegação.
 - `↳ Design System`, node `12304-2`: foundations, component library, product patterns e `Design System / Phase 2 Expansion`.
   Status de acesso registrado:
-- Acessado com sucesso via MCP para os nodes `12272:2`, `5999:10563` e `12259:2`.
-- `ícones` e `↳ Design System` existem como páginas essenciais, mas seus node IDs diretos ainda precisam ser resolvidos para auditorias futuras via MCP.
+- Acessado com sucesso via MCP para os nodes `12272:2`, `5999:10563`,
+  `12259:2`, `12304:2` e `13366:5342`.
+- A página `ícones` existe como fonte essencial; seu node `12450:506` deve ser
+  consultado antes de criar ou substituir iconografia.
   Ao trabalhar com Figma:
 - Usar `↳ Jornadas dos Usuários` para fluxo e permissão.
 - Usar `↳ Design Telas` para comparação visual.
@@ -246,7 +258,8 @@ Stack real identificada:
 - Manter alterações pequenas e rastreáveis.
   Estado real importante:
 - Storybook documentado, não instalado.
-- Componentes React do Design System ainda não implementados.
+- Primitives e patterns React TES existem parcialmente em `src/components/tes`
+  e `src/components/app-page`; o catálogo Figma continua mais amplo que o código.
 - `src/lib/routes.ts` e `src/lib/permissions.ts` existem como fontes canônicas de rotas e permissões.
 - `src/components/app-page` define o grid compartilhado dos shells
   autenticados (`AppPageContainer`, `AppPageHeader`, `AppPageGrid`,
@@ -436,6 +449,21 @@ Regras:
 - A skill deve registrar fontes obrigatórias, node(s) Figma, rotas, componentes, dados dinâmicos, fallback, checklist de QA, copy responsável e pendências conhecidas da página.
 - A skill deve ser atualizada junto com a página sempre que mudarem layout, fonte de dados, rota, componente crítico, regra de negócio ou documentação relacionada.
 - Exceção: páginas de perfil de terapeuta não usam uma única skill por plano. Devem existir skills por função contemplando simultaneamente Básico, Premium e Premium Plus, para evitar divergência entre os três planos.
+
+### Separação de autoridade visual e domínio
+
+- `skills/tes-ui-experience` é autoridade global de experiência, hierarquia,
+  densidade, composição, responsividade e crítica visual.
+- `skills/tes-design-system` é autoridade global de tokens, primitives,
+  patterns, componentes, variantes, estados e critérios de admissão.
+- Skills de página/feature preservam domínio, estados, dados, segurança, copy
+  específica e declaram densidade/patterns aplicáveis sem duplicar regras
+  visuais universais.
+- Refatorações benchmark e rollouts visuais devem seguir
+  `docs/design-refactor/multi-agent-workflow.md`, obter `>= 85` no Visual
+  Quality Score e não conter critério eliminatório.
+- Rollout visual amplo permanece condicionado à Calibration definida em
+  `docs/design-refactor/benchmark-plan.md`.
 
 ## 9.2 Banco, migrations e seeds
 

@@ -20,6 +20,7 @@ vi.mock("next/navigation", () => ({
 
 afterEach(() => {
   cleanup();
+  vi.unstubAllGlobals();
 });
 
 describe("TherapistCalendar", () => {
@@ -119,6 +120,35 @@ describe("TherapistCalendar", () => {
 
     expect(screen.getByText("00:00")).toBeInTheDocument();
     expect(screen.queryByText("08:00")).not.toBeInTheDocument();
+  });
+
+  it("starts with filters collapsed on mobile and announces active filters", () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({
+        addEventListener: vi.fn(),
+        matches: false,
+        removeEventListener: vi.fn(),
+      }),
+    );
+
+    render(<TherapistCalendar data={calendarFixture()} />);
+
+    const trigger = screen.getByRole("button", { name: /Filtrar agenda/ });
+    const filterPanel = document.getElementById("calendar-filter-panel");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(filterPanel).not.toBeVisible();
+    expect(
+      screen.getByText("Ver distribuição dos horários").closest("details"),
+    ).not.toHaveAttribute("open");
+
+    fireEvent.click(trigger);
+    expect(filterPanel).toBeVisible();
+    fireEvent.change(screen.getByRole("searchbox"), {
+      target: { value: "Beatriz" },
+    });
+
+    expect(trigger).toHaveAccessibleName(/1\s*filtro\(s\) ativo\(s\)/);
   });
 });
 

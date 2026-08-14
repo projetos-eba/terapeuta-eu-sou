@@ -91,7 +91,16 @@ describe("TherapistScheduleHours", () => {
       ),
     );
     vi.stubGlobal("fetch", fetchMock);
-    renderSchedule();
+    const initialSchedule = scheduleFixture();
+    initialSchedule.rules.push({
+      dayOfWeek: 3,
+      endTime: "18:00",
+      id: "e1000000-0000-4000-8000-000000000099",
+      isActive: true,
+      serviceId: "d1000000-0000-4000-8000-000000000099",
+      startTime: "09:00",
+    });
+    renderSchedule(initialSchedule);
 
     fireEvent.change(
       screen.getByLabelText("Intervalo de oferta dos horários"),
@@ -106,6 +115,7 @@ describe("TherapistScheduleHours", () => {
     const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
     const payload = JSON.parse(String(request.body)) as {
       expectedVersion: number;
+      rules: Array<{ serviceId: string | null }>;
       serviceSettings: Array<{
         bufferAfterMinutes: number;
         bufferBeforeMinutes: number;
@@ -113,6 +123,8 @@ describe("TherapistScheduleHours", () => {
       }>;
     };
     expect(payload.expectedVersion).toBe(1);
+    expect(payload.rules).toHaveLength(1);
+    expect(payload.rules[0]?.serviceId).toBe(serviceId);
     expect(payload.serviceSettings[0]).toEqual(
       expect.objectContaining({
         bufferAfterMinutes: 10,
@@ -181,11 +193,11 @@ describe("TherapistScheduleHours", () => {
 const serviceId = "d1000000-0000-4000-8000-000000000001";
 const therapistProfileId = "c1000000-0000-4000-8000-000000000001";
 
-function renderSchedule() {
+function renderSchedule(initialSchedule = scheduleFixture()) {
   return render(
     <TherapistScheduleHours
       agenda={null}
-      initialSchedule={scheduleFixture()}
+      initialSchedule={initialSchedule}
       referenceNow="2026-07-26T13:00:00.000Z"
     />,
   );

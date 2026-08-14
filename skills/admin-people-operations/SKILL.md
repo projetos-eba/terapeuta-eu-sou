@@ -165,9 +165,55 @@ refresh, cópia de link e QA com Playwright.
   interno. Usar linguagem de produto para estados indisponíveis e registrar
   detalhes técnicos apenas em logs, testes ou documentação.
 
+## Benchmark B — Profissionais
+
+O Benchmark B de `/admin/profissionais` usa densidade `Operational` e foi
+aprovado com `86,5/100` e foi estruturado para triagem por exceção, não como
+dashboard analítico.
+
+Decisões da página:
+
+- header aberto e compacto, específico do Admin; não usar o wrapper card-heavy
+  de `AppPageHeader` nem alterá-lo globalmente;
+- `MetricStrip` local no desktop/tablet, com somente as quatro métricas
+  autoritativas do read model; no mobile a faixa é omitida para colocar a
+  primeira entidade na primeira dobra, e o total do recorte permanece no header
+  da lista;
+- uma única surface operacional, sem sombra, contém filtros, tabela/lista e
+  paginação;
+- busca permanece visível; status e ordenação ficam visíveis no desktop/tablet
+  e recolhidos no mobile;
+- desktop usa `OperationalTable` com identidade, situação, disponibilidade,
+  contexto e ação textual;
+- tablet/mobile usam `ResponsiveEntityList`, com dividers e sem card/caixa para
+  cada atributo;
+- status usa ponto semântico + texto + orientação curta; plano, publicação e
+  reservas não viram pills por padrão;
+- `Ver profissional` permanece ação textual visível; aprovação continua na fila
+  de verificações e suspensão/reativação no detalhe;
+- estados `empty`, filtro sem resultado, `unavailable` e `forbidden` permanecem
+  distintos;
+- loading route-level preserva a anatomia da operação sem inventar registros;
+- `ContextRail`, `CommandBar`, cores semânticas de terapia e componentes locais
+  da Agenda não são transferidos para esta página.
+
+Candidates locais até Calibration:
+
+- `OperationalTable`;
+- `ResponsiveEntityList`;
+- `MetricStrip`;
+- `OperationalFilterBar`;
+- `EntityIdentity`;
+- `OperationalStatus`;
+- `OperationalPagination`;
+- `ExceptionSummary`.
+
+Não promover esses candidates nem consolidar as duplicações de filtros,
+métricas, status e paginação antes do Benchmark C e da Calibration.
+
 ## QA
 
-- `npm run test -- admin-operations.mappers admin-operations.queries admin-list-query admin-shell-config`
+- `npm run test -- admin-professionals-page admin-operations.mappers admin-operations.queries admin-list-query admin-shell-config`
 - `npm run typecheck`
 - `npm run lint`
 - `npm run build`
@@ -178,6 +224,8 @@ refresh, cópia de link e QA com Playwright.
   - confirmar que o menu expõe somente rotas implementadas;
   - confirmar que review comment, ticket description e meeting URL não aparecem
     em listagens.
+  - em `/admin/profissionais`, validar busca, zero resultado, limpar filtros,
+    detalhe, disclosure mobile e ausência de overflow em 1440, 1024 e 390px;
   - abrir um detalhe real de Sessão e um de Suporte; verificar breadcrumb,
     campos traduzidos, ação de suporte disponível e ausência de termos internos.
   - publicar um perfil elegível e confirmar, na mesma transação, uma única

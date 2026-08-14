@@ -103,6 +103,11 @@ export const visualPolicyConfig = {
   ],
   minFontSizeAllowlist: [
     {
+      pathPattern: /^src\/app\/globals\.css$/,
+      reason:
+        "Regra global de metadata aplica 10px apenas no media query mobile e 11px como base desktop.",
+    },
+    {
       pathPattern: /^src\/app\/\(therapist\)\/terapeuta\/sessoes\/page\.tsx$/,
       reason: "Tabela operacional densa legada; saneamento dedicado pendente.",
     },

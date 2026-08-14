@@ -122,7 +122,8 @@ export function TherapistCalendar({
     syncFiltersVisibility();
     desktopQuery.addEventListener("change", syncFiltersVisibility);
 
-    return () => desktopQuery.removeEventListener("change", syncFiltersVisibility);
+    return () =>
+      desktopQuery.removeEventListener("change", syncFiltersVisibility);
   }, []);
   const days = useMemo(
     () => dateKeysBetween(data.range.localStart, data.range.localEndExclusive),
@@ -157,7 +158,7 @@ export function TherapistCalendar({
     <main className="mx-auto w-full max-w-[1210px] pb-14 text-tesText-primary">
       <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-display text-[42px] font-light italic leading-[0.98] text-brand-deep sm:text-[52px]">
+          <h1 className="font-display text-[36px] font-light italic leading-[0.98] text-brand-deep sm:text-[42px] lg:text-[52px]">
             Minha agenda
           </h1>
           <p className="mt-3 max-w-[560px] text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
@@ -187,16 +188,16 @@ export function TherapistCalendar({
 
       <section
         aria-label="Controles do calendário"
-        className="mt-5 flex flex-col gap-4 rounded-card border border-brand-lavender/60 bg-white p-4 shadow-card sm:p-5 md:flex-row md:items-center md:justify-between"
+        className="mt-5 flex flex-col gap-4 rounded-xl bg-surface-soft/70 p-3 sm:p-4 lg:flex-row lg:items-center lg:justify-between"
       >
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-1 rounded-xl bg-white p-1 ring-1 ring-brand-lavender/70">
           {(["day", "week", "month"] as const).map((view) => (
             <Link
               aria-current={data.view === view ? "page" : undefined}
-              className={`inline-flex min-h-11 items-center justify-center rounded-lg border px-5 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${
+              className={`inline-flex min-h-11 items-center justify-center rounded-lg px-5 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${
                 data.view === view
-                  ? "border-brand-primary bg-brand-primary text-white"
-                  : "border-brand-lavender bg-white text-brand-deep hover:border-brand-primary"
+                  ? "bg-brand-primary text-white"
+                  : "text-brand-deep hover:bg-brand-lavenderSoft"
               }`}
               href={calendarHref(view, data.anchorDate)}
               key={view}
@@ -206,54 +207,56 @@ export function TherapistCalendar({
           ))}
         </div>
 
-        <div className="flex min-w-0 items-center gap-2 md:order-2">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center lg:justify-end">
+          <div className="flex min-w-0 items-center gap-2">
+            <Link
+              aria-label="Período anterior"
+              className="grid size-11 shrink-0 place-items-center rounded-lg border border-brand-lavender bg-white text-brand-primary transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+              href={calendarHref(data.view, previousDate)}
+            >
+              <ChevronLeft aria-hidden="true" size={20} />
+            </Link>
+            <label className="relative min-w-0 flex-1">
+              <span className="sr-only">Escolher data da agenda</span>
+              <CalendarDays
+                aria-hidden="true"
+                className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-brand-primary"
+                size={18}
+              />
+              <span className="pointer-events-none flex min-h-11 min-w-[220px] items-center rounded-lg border border-brand-lavender bg-white py-2 pl-11 pr-10 text-sm font-extrabold text-brand-deep sm:min-w-[270px]">
+                {periodLabel}
+              </span>
+              <ChevronDown
+                aria-hidden="true"
+                className="pointer-events-none absolute right-3 top-1/2 z-10 -translate-y-1/2 text-brand-primary"
+                size={18}
+              />
+              <input
+                className="absolute inset-0 z-20 h-full w-full cursor-pointer opacity-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                onChange={(event) => {
+                  if (isDateKey(event.target.value)) {
+                    router.push(calendarHref(data.view, event.target.value));
+                  }
+                }}
+                type="date"
+                value={data.anchorDate}
+              />
+            </label>
+            <Link
+              aria-label="Próximo período"
+              className="grid size-11 shrink-0 place-items-center rounded-lg border border-brand-lavender bg-white text-brand-primary transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+              href={calendarHref(data.view, nextDate)}
+            >
+              <ChevronRight aria-hidden="true" size={20} />
+            </Link>
+          </div>
           <Link
-            aria-label="Período anterior"
-            className="grid size-11 shrink-0 place-items-center rounded-lg border border-brand-lavender bg-white text-brand-primary transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
-            href={calendarHref(data.view, previousDate)}
+            className="inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+            href={calendarHref(data.view, todayKey)}
           >
-            <ChevronLeft aria-hidden="true" size={20} />
-          </Link>
-          <label className="relative min-w-0 flex-1">
-            <span className="sr-only">Escolher data da agenda</span>
-            <CalendarDays
-              aria-hidden="true"
-              className="pointer-events-none absolute left-4 top-1/2 z-10 -translate-y-1/2 text-brand-primary"
-              size={18}
-            />
-            <span className="pointer-events-none flex min-h-11 min-w-[220px] items-center rounded-lg border border-brand-lavender bg-white py-2 pl-11 pr-10 text-xs font-extrabold text-brand-deep sm:min-w-[270px] sm:text-sm">
-              {periodLabel}
-            </span>
-            <ChevronDown
-              aria-hidden="true"
-              className="pointer-events-none absolute right-3 top-1/2 z-10 -translate-y-1/2 text-brand-primary"
-              size={18}
-            />
-            <input
-              className="absolute inset-0 z-20 h-full w-full cursor-pointer opacity-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-              onChange={(event) => {
-                if (isDateKey(event.target.value)) {
-                  router.push(calendarHref(data.view, event.target.value));
-                }
-              }}
-              type="date"
-              value={data.anchorDate}
-            />
-          </label>
-          <Link
-            aria-label="Próximo período"
-            className="grid size-11 shrink-0 place-items-center rounded-lg border border-brand-lavender bg-white text-brand-primary transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
-            href={calendarHref(data.view, nextDate)}
-          >
-            <ChevronRight aria-hidden="true" size={20} />
+            Hoje
           </Link>
         </div>
-        <Link
-          className="inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary md:order-3"
-          href={calendarHref(data.view, todayKey)}
-        >
-          Hoje
-        </Link>
       </section>
 
       <CalendarFilters
@@ -300,10 +303,12 @@ export function TherapistCalendar({
           </div>
 
           <CalendarLegend services={data.services} />
-          <TesScheduleTip demand={data.demand} />
         </div>
 
-        <aside className="grid gap-5 md:grid-cols-2 xl:grid-cols-1">
+        <aside
+          aria-label="Contexto da agenda"
+          className="grid gap-5 md:grid-cols-2 xl:block xl:rounded-[14px] xl:border xl:border-brand-lavender/60 xl:bg-white xl:px-5"
+        >
           <TodayCard
             bookings={todayBookings}
             onSelect={setSelectedBooking}
@@ -313,6 +318,8 @@ export function TherapistCalendar({
           <DemandCard demand={data.demand} />
         </aside>
       </div>
+
+      <TesScheduleTip demand={data.demand} />
 
       {selectedBooking ? (
         <BookingDialog
@@ -335,14 +342,14 @@ function AgendaTabs() {
   return (
     <nav
       aria-label="Seções da agenda"
-      className="mt-5 grid max-w-[520px] grid-cols-3 overflow-hidden rounded-xl border border-brand-lavender bg-white"
+      className="mt-6 grid max-w-[520px] grid-cols-3 border-b border-brand-lavender/70"
     >
       {tabs.map((tab) => (
         <Link
           aria-current={tab.id === "calendario" ? "page" : undefined}
-          className={`relative flex min-h-14 items-center justify-center px-3 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-primary ${
+          className={`relative flex min-h-12 items-center justify-center px-3 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-primary ${
             tab.id === "calendario"
-              ? "text-brand-deep after:absolute after:inset-x-1 after:bottom-0 after:h-1 after:rounded-full after:bg-brand-primary"
+              ? "text-brand-deep after:absolute after:inset-x-3 after:bottom-[-1px] after:h-0.5 after:rounded-full after:bg-brand-primary"
               : "text-tesText-secondary hover:text-brand-primary"
           }`}
           href={tab.href as Route}
@@ -376,11 +383,16 @@ function CalendarFilters({
     filters.query.trim() !== "" ||
     filters.serviceId !== "all" ||
     filters.status !== "all";
+  const activeFilterCount = [
+    filters.query.trim() !== "",
+    filters.serviceId !== "all",
+    filters.status !== "all",
+  ].filter(Boolean).length;
 
   return (
     <section
       aria-label="Filtros do calendário"
-      className="mt-5 rounded-card border border-brand-lavender/50 bg-white shadow-card"
+      className="mt-3 border-y border-brand-lavender/50 bg-white"
     >
       <button
         aria-controls="calendar-filter-panel"
@@ -389,14 +401,27 @@ function CalendarFilters({
         onClick={() => onOpenChange(!isOpen)}
         type="button"
       >
-        Filtrar agenda
-        <ChevronDown
-          aria-hidden="true"
-          className={`size-4 text-brand-primary transition ${isOpen ? "rotate-180" : ""}`}
-        />
+        <span className="flex items-center gap-2">
+          Filtrar agenda
+          {activeFilterCount ? (
+            <span className="grid min-w-6 place-items-center rounded-full bg-brand-lavenderSoft px-1.5 py-0.5 text-[10px] font-extrabold text-brand-primary md:text-[11px]">
+              {activeFilterCount}
+              <span className="sr-only"> filtro(s) ativo(s)</span>
+            </span>
+          ) : null}
+        </span>
+        <span className="flex items-center gap-3">
+          <span className="text-[10px] font-bold text-tesText-muted md:text-[11px]">
+            {resultCount} de {totalCount}
+          </span>
+          <ChevronDown
+            aria-hidden="true"
+            className={`size-4 text-brand-primary transition ${isOpen ? "rotate-180" : ""}`}
+          />
+        </span>
       </button>
       <div
-        className="flex flex-col gap-3 border-t border-brand-lavender/60 p-4 lg:flex-row lg:items-end sm:p-5"
+        className={`${isOpen ? "flex" : "hidden"} flex-col gap-3 border-t border-brand-lavender/60 p-4 sm:p-5 lg:flex-row lg:items-end`}
         hidden={!isOpen}
         id="calendar-filter-panel"
       >
@@ -459,7 +484,7 @@ function CalendarFilters({
         </label>
 
         <button
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender px-4 text-xs font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft disabled:cursor-not-allowed disabled:opacity-45"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft disabled:cursor-not-allowed disabled:opacity-45"
           disabled={!hasFilters}
           onClick={() =>
             onChange({ query: "", serviceId: "all", status: "all" })
@@ -509,10 +534,36 @@ function TimelineCalendar({
   });
   const gridHeight =
     (timelineRange.endHour - timelineRange.startHour) * hourHeight;
-  const widthClass = days.length === 1 ? "min-w-[360px]" : "min-w-[760px]";
+  const widthClass =
+    days.length === 1 ? "min-w-[360px]" : "min-w-[760px] xl:min-w-0";
+  const [currentInstant, setCurrentInstant] = useState<string | null>(null);
+
+  useEffect(() => {
+    const updateCurrentInstant = () =>
+      setCurrentInstant(new Date().toISOString());
+    updateCurrentInstant();
+    const timer = window.setInterval(updateCurrentInstant, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const currentDayKey = currentInstant
+    ? dateKeyForInstant(currentInstant, timezone)
+    : null;
+  const currentMinutes = currentInstant
+    ? timeMinutes(currentInstant, timezone)
+    : null;
+  const currentTimeTop =
+    currentMinutes !== null &&
+    currentMinutes >= timelineRange.startHour * 60 &&
+    currentMinutes <= timelineRange.endHour * 60
+      ? ((currentMinutes - timelineRange.startHour * 60) / 60) * hourHeight
+      : null;
 
   return (
-    <section className="overflow-hidden rounded-[14px] border border-brand-lavender/70 bg-white shadow-card">
+    <section
+      aria-label="Agenda por horário"
+      className="overflow-hidden rounded-[14px] border border-brand-lavender/70 bg-white"
+    >
       <div className="overflow-x-auto">
         <div className={widthClass}>
           <div
@@ -577,8 +628,25 @@ function TimelineCalendar({
                 key={day}
                 style={{ gridColumn: index + 2 }}
               >
+                {day === todayKey &&
+                day === currentDayKey &&
+                currentTimeTop !== null ? (
+                  <span
+                    aria-label="Horário atual"
+                    className="pointer-events-none absolute inset-x-0 z-[8] border-t border-brand-primary"
+                    role="img"
+                    style={{ top: currentTimeTop }}
+                  >
+                    <span className="absolute -left-1 -top-1 size-2 rounded-full bg-brand-primary" />
+                    <span className="absolute left-2 top-1 rounded bg-white/95 px-1 py-0.5 text-[11px] font-extrabold leading-none text-brand-primary">
+                      Agora
+                    </span>
+                  </span>
+                ) : null}
                 {Array.from(
-                  { length: timelineRange.endHour - timelineRange.startHour + 1 },
+                  {
+                    length: timelineRange.endHour - timelineRange.startHour + 1,
+                  },
                   (_, hourIndex) =>
                     hourIndex === 0 ? null : (
                       <span
@@ -635,11 +703,15 @@ function TimelineCalendar({
         </div>
       </div>
       {scheduleRules === null ? (
-        <p className="border-t border-brand-lavender/60 px-4 py-3 text-center text-[11px] font-bold text-tesText-secondary" role="status">
-          A grade mostra os encontros registrados enquanto seus horários são carregados.
+        <p
+          className="border-t border-brand-lavender/60 px-4 py-3 text-center text-sm font-semibold text-tesText-secondary"
+          role="status"
+        >
+          A grade mostra os encontros registrados enquanto seus horários são
+          carregados.
         </p>
       ) : null}
-      <p className="border-t border-brand-lavender/60 px-4 py-3 text-center text-[11px] font-bold text-tesText-secondary">
+      <p className="border-t border-brand-lavender/60 px-4 py-3 text-center text-sm font-semibold text-tesText-secondary">
         Clique em um horário para ver ou editar o agendamento.
       </p>
     </section>
@@ -680,10 +752,10 @@ function TimelineBooking({
       >
         {formatTime(booking.startsAt, timezone)}
       </span>
-      <span className="mt-1.5 block truncate text-[10px] font-extrabold leading-none text-brand-deep md:text-[11px]">
+      <span className="mt-1.5 block truncate text-sm font-extrabold leading-tight text-brand-deep">
         {booking.serviceTitle}
       </span>
-      <span className="mt-1.5 block truncate text-[10px] font-bold leading-none text-tesText-secondary md:text-[11px]">
+      <span className="mt-1 block truncate text-[10px] font-bold leading-tight text-tesText-secondary md:text-[11px]">
         {booking.patientName}
       </span>
       <span className="sr-only">{status.label}</span>
@@ -708,7 +780,7 @@ function TimelineBlock({
   return (
     <Link
       aria-label={`Bloqueio: ${block.reason ?? "Período indisponível"}`}
-      className="absolute inset-x-2 z-[5] overflow-hidden rounded-md border border-dashed border-tesText-muted bg-surface-mist/90 px-2.5 py-2 text-left text-[10px] font-extrabold text-tesText-secondary md:text-[11px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+      className="absolute inset-x-2 z-[5] overflow-hidden rounded-md border border-dashed border-tesText-muted bg-surface-mist/90 px-2.5 py-2 text-left text-sm font-extrabold text-tesText-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
       href={`${routes.therapist.agenda}?aba=bloqueios` as Route}
       style={{ height: placement.height, top: placement.top }}
     >
@@ -738,10 +810,10 @@ function TimelineHold({
   return (
     <div
       aria-label={`Horário temporariamente reservado para ${hold.serviceTitle}`}
-      className={`absolute inset-x-2 z-[6] overflow-hidden rounded-md border border-dashed px-2.5 py-2 text-[10px] font-extrabold md:text-[11px] ${style.border} ${style.surface} ${style.text}`}
+      className={`absolute inset-x-2 z-[6] overflow-hidden rounded-md border border-dashed px-2.5 py-2 text-sm font-extrabold ${style.border} ${style.surface} ${style.text}`}
       style={{ height: placement.height, top: placement.top }}
     >
-      Em reserva · {hold.serviceTitle}
+      Reserva em andamento · {hold.serviceTitle}
     </div>
   );
 }
@@ -760,7 +832,10 @@ function MonthCalendar({
   todayKey: string;
 }) {
   return (
-    <section className="overflow-hidden rounded-[14px] border border-brand-lavender/70 bg-white shadow-card">
+    <section
+      aria-label="Agenda mensal"
+      className="overflow-hidden rounded-[14px] border border-brand-lavender/70 bg-white"
+    >
       <div className="overflow-x-auto">
         <div className="min-w-[760px]">
           <div className="grid grid-cols-7 border-b border-brand-lavender bg-surface-soft/70">
@@ -785,7 +860,7 @@ function MonthCalendar({
                   key={day}
                 >
                   <span
-                    className={`grid size-7 place-items-center rounded-full text-xs font-extrabold ${
+                    className={`grid size-7 place-items-center rounded-full text-sm font-extrabold ${
                       day === todayKey
                         ? "bg-brand-primary text-white"
                         : "text-brand-deep"
@@ -798,7 +873,7 @@ function MonthCalendar({
                       const style = colorStyles[booking.colorKey];
                       return (
                         <button
-                          className={`flex min-h-8 items-center gap-1 rounded px-2.5 text-left text-[10px] font-extrabold md:text-[11px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${style.surface} ${style.text}`}
+                          className={`flex min-h-11 items-center gap-1.5 rounded px-2.5 text-left text-sm font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${style.surface} ${style.text}`}
                           key={booking.bookingId}
                           onClick={() => onSelect(booking)}
                           type="button"
@@ -844,7 +919,7 @@ function MobileChronologicalList({
   return (
     <section
       aria-label="Lista cronológica da agenda"
-      className="rounded-[14px] border border-brand-lavender/70 bg-white shadow-card md:hidden"
+      className="rounded-[14px] border border-brand-lavender/70 bg-white md:hidden"
     >
       <div className="border-b border-brand-lavender/60 px-4 py-3">
         <h2 className="text-sm font-extrabold text-brand-deep">
@@ -881,7 +956,7 @@ function MobileChronologicalList({
                       {item.booking.patientName}
                     </span>
                     <span
-                      className={`block truncate text-xs font-bold ${style.text}`}
+                      className={`block truncate text-sm font-bold ${style.text}`}
                     >
                       {item.booking.serviceTitle}
                     </span>
@@ -910,7 +985,7 @@ function MobileChronologicalList({
                     <span className="mt-1 block truncate text-sm font-extrabold text-brand-deep">
                       {item.hold.serviceTitle}
                     </span>
-                    <span className="block text-xs font-bold text-tesText-secondary">
+                    <span className="block text-sm font-bold text-tesText-secondary">
                       Expira em breve se não houver pagamento.
                     </span>
                   </span>
@@ -935,7 +1010,7 @@ function MobileChronologicalList({
                   <span className="mt-1 block truncate text-sm font-extrabold text-brand-deep">
                     {item.block.reason ?? "Período indisponível"}
                   </span>
-                  <span className="block text-xs font-bold text-tesText-secondary">
+                  <span className="block text-sm font-bold text-tesText-secondary">
                     Revisar bloqueio
                   </span>
                 </span>
@@ -958,27 +1033,47 @@ function CalendarLegend({
   services: TherapistCalendarReadModel["services"];
 }) {
   if (services.length === 0) return null;
-  return (
-    <section
-      aria-label="Legenda das terapias"
-      className="mt-4 flex flex-wrap gap-x-5 gap-y-3 rounded-xl border border-brand-lavender/60 bg-white px-5 py-4"
-    >
+  const legendItems = (
+    <>
       {services.map((service) => (
         <span
           className="inline-flex items-center gap-2 text-[10px] font-extrabold text-tesText-secondary md:text-[11px]"
           key={service.id}
         >
           <span
+            aria-hidden="true"
             className={`size-3 rounded-sm ${colorStyles[service.colorKey].badge}`}
           />
           {service.title}
         </span>
       ))}
       <span className="inline-flex items-center gap-2 text-[10px] font-extrabold text-tesText-secondary md:text-[11px]">
-        <span className="size-3 rounded-sm bg-[#77738d]" />
+        <span aria-hidden="true" className="size-3 rounded-sm bg-[#77738d]" />
         Indisponível
       </span>
-    </section>
+    </>
+  );
+  return (
+    <>
+      <details className="group mt-4 md:hidden">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary">
+          Legenda da agenda
+          <ChevronDown
+            aria-hidden="true"
+            className="size-4 text-brand-primary transition group-open:rotate-180"
+          />
+        </summary>
+        <div className="flex flex-wrap gap-x-5 gap-y-3 pb-2 pt-1">
+          {legendItems}
+        </div>
+      </details>
+      <section
+        aria-label="Legenda das terapias"
+        className="mt-4 hidden flex-wrap gap-x-5 gap-y-3 px-1 py-3 md:flex"
+      >
+        {legendItems}
+      </section>
+    </>
   );
 }
 
@@ -994,7 +1089,7 @@ function TodayCard({
   const todayKey = dateKeyForInstant(new Date().toISOString(), timezone);
 
   return (
-    <article className="rounded-[14px] border border-brand-lavender/60 bg-white p-6 shadow-card">
+    <article className="rounded-xl bg-white p-5 xl:rounded-none xl:bg-transparent xl:px-0 xl:py-6">
       <h2 className="text-lg font-extrabold text-brand-deep">
         Encontros de hoje
       </h2>
@@ -1022,7 +1117,7 @@ function TodayCard({
                 <span className="block text-[10px] font-extrabold text-brand-primary md:text-[11px]">
                   {formatTimeRange(booking.startsAt, booking.endsAt, timezone)}
                 </span>
-                <span className="mt-1 block truncate text-xs font-extrabold text-brand-deep">
+                <span className="mt-1 block truncate text-sm font-extrabold text-brand-deep">
                   {booking.patientName}
                 </span>
                 <span className="block truncate text-[10px] font-bold text-tesText-secondary md:text-[11px]">
@@ -1038,12 +1133,12 @@ function TodayCard({
           ))}
         </div>
       ) : (
-        <p className="mt-4 rounded-lg bg-surface-soft p-4 text-xs font-bold leading-5 text-tesText-secondary">
+        <p className="mt-4 rounded-lg bg-surface-soft p-4 text-sm font-semibold leading-5 text-tesText-secondary">
           Nenhum encontro agendado para hoje.
         </p>
       )}
       <Link
-        className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-brand-lavender text-xs font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+        className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-brand-lavender text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
         href={calendarHref("day", todayKey)}
       >
         <CalendarDays aria-hidden="true" size={16} />
@@ -1061,7 +1156,11 @@ function AttentionCard({
   timezone: string;
 }) {
   return (
-    <article className="rounded-[14px] border border-brand-lavender/60 bg-white p-6 shadow-card">
+    <article
+      className={`rounded-xl p-5 xl:rounded-none xl:border-t xl:border-brand-lavender/60 xl:bg-transparent xl:px-0 xl:py-6 ${
+        items.length ? "bg-status-warningBg/30" : "bg-white"
+      }`}
+    >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-extrabold text-brand-deep">
           Pendências da agenda
@@ -1096,7 +1195,7 @@ function AttentionCard({
                 )}
               </span>
               <span className="min-w-0">
-                <span className="block truncate text-[11px] font-extrabold text-brand-deep">
+                <span className="block truncate text-sm font-extrabold text-brand-deep">
                   {item.title}
                 </span>
                 <span className="mt-0.5 block text-[10px] font-bold text-tesText-secondary md:text-[11px]">
@@ -1115,7 +1214,7 @@ function AttentionCard({
           ))}
         </div>
       ) : (
-        <p className="mt-4 rounded-lg bg-status-successBg p-4 text-xs font-bold leading-5 text-status-success">
+        <p className="mt-4 rounded-lg bg-status-successBg p-4 text-sm font-semibold leading-5 text-status-success">
           Nenhuma pendência operacional neste momento.
         </p>
       )}
@@ -1129,13 +1228,39 @@ function DemandCard({ demand }: { demand: TherapistCalendarDemandItem[] }) {
   );
   const maximum = Math.max(0, ...demand.map((item) => item.count));
   return (
-    <article className="rounded-[14px] border border-brand-lavender/60 bg-white p-6 shadow-card md:col-span-2 xl:col-span-1">
-      <h2 className="text-base font-extrabold text-brand-deep">
+    <article className="rounded-xl bg-white p-5 md:col-span-2 xl:col-span-1 xl:rounded-none xl:border-t xl:border-brand-lavender/60 xl:bg-transparent xl:px-0 xl:py-6">
+      <h2 className="text-lg font-extrabold text-brand-deep">
         Insights para sua agenda
       </h2>
       <p className="mt-1 text-[10px] font-bold text-tesText-muted md:text-[11px]">
         Com base nos últimos 90 dias
       </p>
+      <details className="group mt-4 md:hidden">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-sm font-extrabold text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary">
+          Ver distribuição dos horários
+          <ChevronDown
+            aria-hidden="true"
+            className="size-4 transition group-open:rotate-180"
+          />
+        </summary>
+        <DemandHeatmapContent maximum={maximum} values={values} />
+      </details>
+      <div className="hidden md:block">
+        <DemandHeatmapContent maximum={maximum} values={values} />
+      </div>
+    </article>
+  );
+}
+
+function DemandHeatmapContent({
+  maximum,
+  values,
+}: {
+  maximum: number;
+  values: Map<string, number>;
+}) {
+  return (
+    <>
       <div className="mt-5 grid grid-cols-[38px_repeat(7,minmax(0,1fr))] gap-1.5 text-center">
         <span aria-hidden="true" />
         {weekDayLabels.map((day) => (
@@ -1173,7 +1298,7 @@ function DemandCard({ demand }: { demand: TherapistCalendarDemandItem[] }) {
         <HeatLegend className="bg-[#b895ff]" label="Média procura" />
         <HeatLegend className="bg-[#7b2cf4]" label="Alta procura" />
       </div>
-    </article>
+    </>
   );
 }
 
@@ -1195,20 +1320,20 @@ function HeatLegend({
 function TesScheduleTip({ demand }: { demand: TherapistCalendarDemandItem[] }) {
   const peak = [...demand].sort((left, right) => right.count - left.count)[0];
   return (
-    <article className="mt-5 rounded-[14px] border border-brand-lavender/40 bg-brand-lavenderSoft/70 p-6 text-center shadow-card">
+    <article className="mt-7 border-l-2 border-brand-primary bg-brand-lavenderSoft/70 px-5 py-6 text-left sm:px-6">
       <div className="inline-flex items-center gap-2">
         <Sparkles aria-hidden="true" className="text-brand-primary" size={19} />
         <h2 className="font-display text-[24px] font-light text-brand-deep">
           Insight TES
         </h2>
       </div>
-      <p className="mx-auto mt-3 max-w-[620px] text-xs font-semibold leading-5 text-tesText-secondary">
+      <p className="mt-3 max-w-[720px] text-sm font-semibold leading-6 text-tesText-secondary">
         {peak
           ? `${fullDayLabel(peak.dayOfWeek)} entre ${String(peak.hourBlock).padStart(2, "0")}h e ${String(peak.hourBlock + 2).padStart(2, "0")}h concentrou mais encontros no período analisado.`
           : "Conforme seus encontros forem acontecendo, este espaço mostrará os períodos mais procurados."}
       </p>
       <Link
-        className="mt-4 inline-flex min-h-10 items-center gap-2 text-xs font-extrabold text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+        className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-extrabold text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
         href={routes.therapist.insights as Route}
       >
         Ver todos os insights da agenda
@@ -1432,10 +1557,7 @@ function timelineRangeForCalendar({
   }
 
   for (const item of [...bookings, ...holds, ...blocks]) {
-    if (
-      "allDay" in item &&
-      item.allDay
-    ) {
+    if ("allDay" in item && item.allDay) {
       continue;
     }
     if (!days.includes(dateKeyForInstant(item.startsAt, timezone))) continue;

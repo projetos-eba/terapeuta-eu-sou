@@ -16,11 +16,14 @@ export default async function PatientEncountersRoute() {
     return <PatientEncountersPage data={data} />;
   } catch {
     return (
-      <main className="mx-auto max-w-[830px] rounded-card border border-brand-lavender bg-white p-8 text-center shadow-card">
-        <h1 className="font-display text-3xl font-light italic text-brand-deep">
+      <main className="mx-auto grid w-full max-w-[840px] gap-4 pb-12 pt-8 text-tesText-primary">
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-brand-primary sm:text-xs">
+          Encontros
+        </p>
+        <h1 className="max-w-[680px] font-display text-[2.2rem] font-light italic leading-tight text-brand-deep sm:text-[2.7rem]">
           Não foi possível carregar seus encontros.
         </h1>
-        <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
+        <p className="max-w-[620px] text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
           Atualize a página em alguns instantes ou acione o suporte se o
           problema continuar.
         </p>

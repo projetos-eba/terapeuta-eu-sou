@@ -7,8 +7,10 @@ fora de escopo.
 
 ## Regras Automatizadas
 
-- Não usar `text-[8px]`, `text-[9px]`, `text-[10px]` ou valores CSS
-  `font-size` menores que `11px` fora da allowlist.
+- Não usar `text-[8px]`, `text-[9px]` ou valores CSS menores que `10px`.
+- `10px` é permitido somente para metadados secundários no mobile e deve
+  evoluir para pelo menos `11px` a partir do breakpoint desktop aplicável.
+- No desktop, não usar texto menor que `11px`.
 - Texto funcional deve permanecer em `14px` ou mais.
 - Não introduzir hex hardcoded em código funcional fora da allowlist.
 - Tokens globais podem declarar valores hex em `src/app/globals.css`.

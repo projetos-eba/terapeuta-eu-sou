@@ -1,21 +1,18 @@
 import Image from "next/image";
-import Link from "next/link";
-import type { Route } from "next";
 
+import { TESButton } from "@/components/tes/tes-button";
+
+import { getEncounterGuidance } from "../patient-encounters.copy";
 import type { PatientEncounter } from "../patient-encounters.types";
-import { EncounterActionsMenu } from "./encounter-actions-menu";
 import { EncounterStatusBadge } from "./encounter-status-badge";
 
-export function EncounterRow({
-  encounter,
-}: {
-  encounter: PatientEncounter;
-}) {
+export function EncounterRow({ encounter }: { encounter: PatientEncounter }) {
+  const guidance = getEncounterGuidance(encounter);
+
   return (
-    <article className="grid gap-4 py-5 md:grid-cols-[minmax(240px,1.3fr)_150px_170px_138px_44px] md:items-center">
-      <div className="flex min-w-0 items-center gap-4">
+    <article className="grid gap-5 py-6 md:grid-cols-[minmax(0,1.25fr)_minmax(130px,0.55fr)_minmax(200px,0.85fr)_auto] md:items-center md:gap-6">
+      <div className="flex min-w-0 items-start gap-4">
         <Avatar
-          alt=""
           name={encounter.therapist.name}
           src={encounter.therapist.avatarUrl}
         />
@@ -23,20 +20,20 @@ export function EncounterRow({
           <h3 className="truncate text-base font-extrabold text-brand-deep">
             {encounter.therapist.name}
           </h3>
-          <p className="mt-1 text-sm font-bold text-tesText-secondary">
+          <p className="mt-1 text-sm font-bold leading-6 text-tesText-secondary">
             {encounter.serviceLabel}
           </p>
-          <p className="mt-1 text-xs font-bold text-tesText-muted">
-            {encounter.approachLabel}
+          <p className="text-[11px] font-semibold leading-5 text-tesText-muted sm:text-xs">
+            {encounter.therapyLabel} · {encounter.approachLabel}
           </p>
         </div>
       </div>
 
       <div>
-        <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-tesText-muted md:hidden">
-          Data
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-tesText-muted sm:text-xs">
+          Quando
         </p>
-        <p className="mt-1 text-sm font-extrabold text-brand-deep md:mt-0">
+        <p className="mt-2 text-sm font-extrabold text-brand-deep">
           {encounter.dateLabel}
         </p>
         <p className="mt-1 text-sm font-semibold text-tesText-secondary">
@@ -44,14 +41,19 @@ export function EncounterRow({
         </p>
       </div>
 
-      <EncounterStatusBadge status={encounter.status}>
-        {encounter.statusLabel}
-      </EncounterStatusBadge>
+      <div>
+        <EncounterStatusBadge status={encounter.status}>
+          {encounter.statusLabel}
+        </EncounterStatusBadge>
+        <p className="mt-2 max-w-[260px] text-sm font-semibold leading-6 text-tesText-secondary">
+          {guidance}
+        </p>
+      </div>
 
-      <div className="flex flex-col gap-2 md:items-end">
+      <div className="md:justify-self-end">
         {encounter.primaryAction.disabled ? (
           <button
-            className="inline-flex min-h-10 cursor-not-allowed items-center justify-center rounded-full bg-brand-lavenderSoft px-4 text-sm font-extrabold text-tesText-secondary"
+            className="inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center rounded-full bg-brand-lavenderSoft px-4 text-sm font-extrabold text-tesText-secondary sm:w-auto"
             disabled
             title={encounter.primaryAction.reason}
             type="button"
@@ -59,38 +61,24 @@ export function EncounterRow({
             {encounter.primaryAction.label}
           </button>
         ) : (
-          <Link
-            className="inline-flex min-h-10 items-center justify-center rounded-full bg-brand-primary px-4 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            href={encounter.primaryAction.href as Route<string>}
+          <TESButton
+            className="w-full sm:w-auto"
+            href={encounter.primaryAction.href}
+            variant="secondary"
           >
             {encounter.primaryAction.label}
-          </Link>
+          </TESButton>
         )}
-        {encounter.actionHint ? (
-          <span className="text-xs font-bold text-tesText-muted">
-            {encounter.actionHint}
-          </span>
-        ) : null}
       </div>
-
-      <EncounterActionsMenu bookingId={encounter.id} />
     </article>
   );
 }
 
-function Avatar({
-  alt,
-  name,
-  src,
-}: {
-  alt: string;
-  name: string;
-  src: string | null;
-}) {
+function Avatar({ name, src }: { name: string; src: string | null }) {
   if (src) {
     return (
       <Image
-        alt={alt}
+        alt=""
         className="size-14 shrink-0 rounded-full object-cover"
         height={56}
         src={src}
