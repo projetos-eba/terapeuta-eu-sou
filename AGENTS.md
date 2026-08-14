@@ -197,7 +197,9 @@ Nenhuma tarefa pode ser considerada pronta sem essa declaração.
 
 - Cores funcionais devem usar tokens TES.
 - Texto funcional deve ter no mínimo 14px.
-- 11px é o menor tamanho permitido e somente para metadados secundários.
+- Metadados secundários podem usar no mínimo 11px em desktop e 10px em mobile.
+  Nenhum texto pode ficar abaixo desses limites; quando houver variação
+  responsiva, declarar explicitamente o tamanho mobile e o tamanho desktop.
 - Botões de ícone precisam de nome acessível.
 - Interfaces operacionais priorizam tarefa, estado, risco, prazo e valor antes
   de decoração.

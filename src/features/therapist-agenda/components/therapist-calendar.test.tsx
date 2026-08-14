@@ -95,6 +95,31 @@ describe("TherapistCalendar", () => {
       screen.getByText("Nenhum item encontrado com os filtros atuais."),
     ).toBeInTheDocument();
   });
+
+  it("uses the configured availability to render early-morning hours", () => {
+    const fixture = calendarFixture();
+    fixture.bookings[0]!.startsAt = "2026-07-27T07:00:00.000Z";
+    fixture.bookings[0]!.endsAt = "2026-07-27T07:50:00.000Z";
+
+    render(
+      <TherapistCalendar
+        data={fixture}
+        scheduleRules={[
+          {
+            dayOfWeek: 1,
+            endTime: "06:00",
+            id: "e1000000-0000-4000-8000-000000000001",
+            isActive: true,
+            serviceId: null,
+            startTime: "00:00",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("00:00")).toBeInTheDocument();
+    expect(screen.queryByText("08:00")).not.toBeInTheDocument();
+  });
 });
 
 function calendarFixture(): TherapistCalendarReadModel {

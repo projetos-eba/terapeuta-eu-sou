@@ -430,7 +430,7 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
                   <span className="block truncate font-extrabold text-brand-primary">
                     {booking.serviceTitle}
                   </span>
-                  <span className="mt-1 inline-flex max-w-full rounded-full bg-brand-lavenderSoft px-2 py-1 text-[9px] font-bold text-brand-primary">
+                  <span className="mt-1 inline-flex max-w-full rounded-full bg-brand-lavenderSoft px-2 py-1 text-[10px] font-bold text-brand-primary md:text-[11px]">
                     <span className="truncate">Online</span>
                   </span>
                 </td>
