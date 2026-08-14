@@ -689,16 +689,19 @@ export function ZoomVideoSessionAdapter({
     await stopAllRemoteVideos(failures);
 
     const localUserId = localUserIdRef.current;
-    if (stream && localUserId) {
+    const hadAttachedLocalVideo = localUserElementsRef.current.length > 0;
+    if (stream && localUserId && hadAttachedLocalVideo) {
       await recordCleanupFailure(failures, "detachVideo:local", () =>
         stream.detachVideo?.(localUserId),
       );
     }
     removeVideoElements(localUserElementsRef.current);
     localUserElementsRef.current = [];
-    await recordCleanupFailure(failures, "stopVideo", () =>
-      stream?.stopVideo?.(),
-    );
+    if (hadAttachedLocalVideo) {
+      await recordCleanupFailure(failures, "stopVideo", () =>
+        stream?.stopVideo?.(),
+      );
+    }
     await recordCleanupFailure(failures, "stopAudio", () =>
       stream?.stopAudio?.(),
     );

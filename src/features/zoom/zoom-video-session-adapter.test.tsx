@@ -309,6 +309,7 @@ describe("ZoomVideoSessionAdapter", () => {
     ).toBeInTheDocument();
     expect(mockClient.leave).toHaveBeenCalledWith(true);
     expect(destroyClient).toHaveBeenCalled();
+    expect(mockStream.stopVideo).not.toHaveBeenCalled();
   });
 
   it("does not request access twice while loading", async () => {
