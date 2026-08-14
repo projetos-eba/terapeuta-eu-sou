@@ -58,6 +58,7 @@ describe("patient encounters mapper", () => {
 
     expect(result.nextEncounter?.status).toBe("pending_payment");
     expect(result.nextEncounter?.statusLabel).toBe("Pagamento pendente");
+    expect(result.nextEncounter?.primaryAction.label).toBe("Ver pagamento");
   });
 
   it("surfaces pending reschedule requests on active encounters", () => {
@@ -87,6 +88,9 @@ describe("patient encounters mapper", () => {
 
     expect(result.nextEncounter?.status).toBe("reschedule_requested");
     expect(result.nextEncounter?.statusLabel).toBe("Reagendamento solicitado");
+    expect(result.nextEncounter?.primaryAction.label).toBe(
+      "Acompanhar reagendamento",
+    );
   });
 
   it("allows live entry from paid booking window without exposing a meeting url", () => {

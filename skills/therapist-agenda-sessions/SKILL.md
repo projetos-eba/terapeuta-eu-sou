@@ -20,6 +20,19 @@ description: Implementar e manter Agenda, disponibilidade, bookings e Sessões d
 11. `docs/architecture/agenda-sessions-preparation.md`.
 12. `docs/architecture/adr/ADR-006-therapist-schedule-configuration.md`.
 13. `docs/architecture/adr/ADR-007-therapist-availability-blocks.md`.
+14. `skills/tes-ui-experience/SKILL.md` para experiência e direção visual.
+15. `skills/tes-design-system/SKILL.md` para tokens, patterns e componentes.
+
+## Contrato visual da feature
+
+- Densidade dominante: `Operational` no calendário, filtros e comandos;
+  `Balanced` no right rail, empty states e orientação.
+- Composition patterns aplicáveis: `PageHeader`, `SegmentedNavigation`,
+  `CommandBar`, `FilterBar`, `Timeline`, `ContextRail`, `InsightPanel` e
+  `StatusCluster`.
+- Regras universais de hierarquia, surfaces, tipografia, responsividade,
+  componentização e Visual QA pertencem às skills globais. Esta skill mantém
+  somente as decisões específicas de Agenda/Sessões e seu domínio.
 
 ## Rotas
 
@@ -93,10 +106,6 @@ Não criar enums equivalentes dentro de features.
   quando o node Figma não puder ser lido pelo MCP.
 - Reutilizar os tokens TES e os componentes existentes. Não criar uma grade,
   sidebar, modal ou botão paralelo; detalhes de encontro usam `TESDialog`.
-- Aplicar a regra de legibilidade TES: texto funcional com pelo menos `14px`;
-  metadados secundários com mínimo de `11px` no desktop e `10px` no mobile.
-  Nunca usar `8px` ou `9px`; para microtexto responsivo usar
-  `text-[10px] md:text-[11px]`.
 - Posicionar filtros de calendário imediatamente antes da área da agenda. Eles
   iniciam abertos em desktop e recolhidos em mobile, sem deslocar a descoberta
   operacional para depois da grade ou do right rail.
@@ -110,13 +119,15 @@ Não criar enums equivalentes dentro de features.
   fallback sem regras ou eventos; uma faixa configurada em `00:00–06:00` deve
   exibir a madrugada. O modelo atual não aceita uma única regra atravessando a
   meia-noite: use faixas separadas em cada dia quando esse cenário existir.
-- Conferir sobreposição antes de concluir: rótulos da primeira linha/coluna de
-  grades não podem cruzar bordas; eventos precisam de padding interno e cards,
-  legendas e tabelas devem preservar respiro uniforme nas bordas.
-- Desktop mantém grade com right rail; em tablet o right rail vira duas
-  colunas; em mobile a grade vira lista cronológica e controles, ações e tabs
-  permanecem operáveis sem rolagem horizontal da página. Preservar a rolagem
-  interna apenas para a grade de calendário quando necessária.
+- Na Timeline da Agenda, rótulos da primeira linha/coluna não podem cruzar
+  bordas; eventos precisam de padding interno e a primeira hora deve começar
+  abaixo do cabeçalho dos dias.
+- Desktop mantém grade com ContextRail; em tablet o rail vira duas colunas; em
+  mobile a grade vira lista cronológica. Esta transformação é específica da
+  Agenda e complementa as regras responsivas globais.
+- No mobile, a legenda e a distribuição de demanda iniciam recolhidas; o
+  heatmap completo permanece visível a partir de tablet. Essas informações são
+  apoio e nunca antecedem a lista cronológica.
 - O seletor de período deve continuar acessível por teclado e manter as ações
   de período anterior, próximo e Hoje. Filtros locais podem ser recolhidos
   abaixo do conteúdo principal, mas permanecem disponíveis e não alteram a
@@ -133,6 +144,10 @@ Não criar enums equivalentes dentro de features.
   `get_therapist_calendar_v1`.
 - A UI edita faixas em escopo geral ou por terapia e preserva regras dos
   outros escopos no comando atômico.
+- O payload de Horários só pode reenviar regras e settings de terapias presentes
+  no read model editável. Regras órfãs de terapia arquivada não devem transformar
+  um ajuste válido em `schedule_service_forbidden`; a validação autoritativa
+  continua no RPC.
 - Duração pertence ao serviço e `slotStepMinutes` significa intervalo de oferta.
   `bufferBeforeMinutes` e `bufferAfterMinutes` continuam preservados no domínio
   e no cálculo autoritativo, mas não são controles expostos na UI de Horários.
@@ -205,12 +220,11 @@ Não criar enums equivalentes dentro de features.
 
 ## QA
 
-- Validar Horários em desktop, tablet e mobile; controles devem ter área de
-  toque de pelo menos 44px, foco visível e rótulos acessíveis.
-- Para o Calendário, validar visualmente em navegador visível nos breakpoints
-  desktop, tablet e mobile; capturar screenshot, conferir tabs, seletor de
-  período, grade/lista, cards do right rail, foco dos controles e ausência de
-  rolagem horizontal da página.
+- Aplicar `docs/design-system/visual-qa.md` e o gate de
+  `docs/design-system/visual-quality-score.md`.
+- Para o Calendário, além do gate global, conferir tabs, seletor de período,
+  grade/lista, range derivado de schedule/eventos e ausência de corte na
+  madrugada.
 - Validar que todo diálogo cobre sidebar e topbar, bloqueia scroll, fecha por
   `Escape`, confina e devolve foco.
 - Testar seleção de terapia, herança de faixas gerais, ativação por dia,

@@ -2,6 +2,28 @@
 
 Sistema visual e comportamental do Terapeuta Eu Sou. A interface deve parecer clara, acolhedora, premium e humana.
 
+## Autoridades operacionais
+
+Este documento registra fundamentos e histórico do sistema. Para decisões de
+produto e implementação, usar a seguinte cadeia:
+
+1. produto, domínio e tarefa real;
+2. [TES Experience Language](./experience-principles.md);
+3. [níveis de densidade](./density.md);
+4. [anti-patterns](./anti-patterns.md);
+5. [composition patterns](./composition-patterns.md) e
+   [interaction patterns](./interaction-patterns.md);
+6. tokens, components e skill da feature;
+7. Figma/referências;
+8. [Visual QA](./visual-qa.md) e
+   [Visual Quality Score](./visual-quality-score.md).
+
+As skills globais `tes-ui-experience` e `tes-design-system` aplicam esta cadeia.
+Figma permanece referência importante, mas não prevalece sobre produto, domínio,
+acessibilidade ou regras globais calibradas. O histórico abaixo pode descrever
+estados anteriores; o código e o inventário auditado em
+`docs/design-refactor/audit.md` registram o estado atual.
+
 ## Fontes
 
 - `↳ Jornadas dos Usuários` (`12272:2`, frame principal `12280:2`): navegação, fluxos e permissões.

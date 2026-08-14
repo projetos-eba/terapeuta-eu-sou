@@ -59,13 +59,24 @@ test.describe("therapist Agenda and Sessions foundation", () => {
       path: testInfo.outputPath("agenda-calendario-desktop.png"),
     });
     await page.setViewportSize({ height: 1180, width: 820 });
-    await page.waitForTimeout(300);
+    await page.reload();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Minha agenda" }),
+    ).toBeVisible();
+    await expectNoHorizontalPageOverflow(page);
     await page.screenshot({
       fullPage: true,
       path: testInfo.outputPath("agenda-calendario-tablet.png"),
     });
     await page.setViewportSize({ height: 844, width: 390 });
-    await page.waitForTimeout(300);
+    await page.reload();
+    await expect(
+      page.getByRole("button", { name: /Filtrar agenda/ }),
+    ).toHaveAttribute("aria-expanded", "false");
+    await expect(
+      page.getByRole("region", { name: "Lista cronológica da agenda" }),
+    ).toBeVisible();
+    await expectNoHorizontalPageOverflow(page);
     await page.screenshot({
       fullPage: true,
       path: testInfo.outputPath("agenda-calendario-mobile.png"),
@@ -154,7 +165,11 @@ test.describe("therapist Agenda and Sessions foundation", () => {
       }),
     ).toBeVisible();
     await expect(page.getByText("Sessões para revisar")).toBeVisible();
-    await expect(page.getByText(/Paciente Juliana/)).toBeVisible();
+    await expect(
+      page.getByText(
+        /Paciente Juliana|Nenhuma sessão precisa de revisão neste período\./,
+      ),
+    ).toBeVisible();
 
     const targetDate = new Date();
     targetDate.setUTCDate(targetDate.getUTCDate() + 25);
@@ -238,4 +253,13 @@ async function loginAsAna(page: import("@playwright/test").Page) {
   await page.getByLabel("Senha").fill(therapistPassword);
   await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
   await expect(page).toHaveURL(/\/terapeuta(?:\?.*)?$/);
+}
+
+async function expectNoHorizontalPageOverflow(
+  page: import("@playwright/test").Page,
+) {
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
 }

@@ -1,0 +1,4 @@
+interface:
+  display_name: "TES UI Experience"
+  short_description: "Direção de experiência e linguagem visual TES"
+  default_prompt: "Use $tes-ui-experience para definir hierarquia, densidade, composição e responsividade de uma experiência TES."

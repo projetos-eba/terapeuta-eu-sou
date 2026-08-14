@@ -246,15 +246,27 @@ export function TherapistScheduleHours({
 
     setIsSaving(true);
     setFeedback(null);
+    const schedulableServices = services.filter(
+      (service) => service.status !== "archived",
+    );
+    const schedulableServiceIds = new Set(
+      schedulableServices.map((service) => service.id),
+    );
     const payload: SaveTherapistScheduleInput = {
       expectedVersion: scheduleVersion,
       requestId: crypto.randomUUID(),
-      rules: rules.map((rule) => ({
-        ...rule,
-        endTime: normalizeClock(rule.endTime),
-        startTime: normalizeClock(rule.startTime),
-      })),
-      serviceSettings: services.map((service) => ({
+      rules: rules
+        .filter(
+          (rule) =>
+            rule.serviceId === null ||
+            schedulableServiceIds.has(rule.serviceId),
+        )
+        .map((rule) => ({
+          ...rule,
+          endTime: normalizeClock(rule.endTime),
+          startTime: normalizeClock(rule.startTime),
+        })),
+      serviceSettings: schedulableServices.map((service) => ({
         ...service.settings,
         serviceId: service.id,
       })),

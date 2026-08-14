@@ -247,6 +247,22 @@ function getPrimaryAction(
     };
   }
 
+  if (status === "pending_payment") {
+    return {
+      href: routes.patient.encounterDetail(booking.id),
+      kind: "link",
+      label: "Ver pagamento",
+    };
+  }
+
+  if (status === "reschedule_requested") {
+    return {
+      href: routes.patient.encounterDetail(booking.id),
+      kind: "link",
+      label: "Acompanhar reagendamento",
+    };
+  }
+
   if (status === "completed") {
     if (summaryId) {
       return {
@@ -288,7 +304,7 @@ function getPrimaryAction(
 
 function getStatusLabel(status: PatientEncounterStatus) {
   const labels: Record<PatientEncounterStatus, string> = {
-    cancelled: "Cancelada",
+    cancelled: "Encontro cancelado",
     completed: "Realizada",
     confirmed: "Confirmada",
     live: "Ao vivo agora",

@@ -138,4 +138,84 @@ test.describe("admin operation modules", () => {
       }
     }
   });
+
+  test("keeps professional triage, filters and detail access operable across viewports", async ({
+    page,
+  }) => {
+    await page.goto("/admin-login");
+    await page.getByLabel("E-mail").fill(adminEmail);
+    await page.getByLabel("Senha").fill(adminPassword);
+    await page.getByRole("button", { name: "Entrar no Admin" }).click();
+    await expect(page).toHaveURL(/\/admin(?:\/terapias)?(?:\?.*)?$/, {
+      timeout: 30_000,
+    });
+
+    for (const viewport of [
+      { height: 900, width: 1440 },
+      { height: 900, width: 820 },
+      { height: 844, width: 390 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto("/admin/profissionais");
+
+      await expect(
+        page.getByRole("heading", { level: 1, name: "Profissionais" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Lista de profissionais" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("link", { name: "Ver verificações" }),
+      ).toBeVisible();
+
+      const hasHorizontalOverflow = await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth,
+      );
+      expect(hasHorizontalOverflow).toBe(false);
+
+      if (viewport.width < 768) {
+        const filters = page.locator("summary:visible");
+        await expect(filters).toBeVisible();
+        await filters.focus();
+        await page.keyboard.press("Enter");
+        await expect(
+          page.locator('select[name="status"]:visible'),
+        ).toBeVisible();
+      }
+    }
+
+    await page.setViewportSize({ height: 900, width: 1440 });
+    await page.goto("/admin/profissionais");
+    const filterForm = page.locator('form[role="search"]:visible');
+    const searchInput = filterForm.locator('input[name="q"]');
+    const statusSelect = filterForm.locator('select[name="status"]');
+    await searchInput.focus();
+    await page.keyboard.press("Tab");
+    await expect(statusSelect).toBeFocused();
+    await expect
+      .poll(() =>
+        statusSelect.evaluate(
+          (element) => getComputedStyle(element).boxShadow !== "none",
+        ),
+      )
+      .toBe(true);
+
+    await searchInput.fill("profissional-inexistente-tes");
+    await filterForm.getByRole("button", { name: "Aplicar" }).click();
+    await expect(
+      page.getByRole("heading", {
+        name: "Nenhum resultado para estes filtros",
+      }),
+    ).toBeVisible();
+    await page.getByRole("link", { name: "Limpar filtros" }).click();
+
+    const detailLink = page
+      .getByRole("link", { name: /^Ver profissional/ })
+      .first();
+    await expect(detailLink).toBeVisible();
+    await detailLink.click();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Detalhe do profissional" }),
+    ).toBeVisible();
+  });
 });

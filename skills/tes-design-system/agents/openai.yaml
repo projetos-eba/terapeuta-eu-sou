@@ -1,0 +1,4 @@
+interface:
+  display_name: "TES Design System"
+  short_description: "Governança de tokens, patterns e componentes"
+  default_prompt: "Use $tes-design-system para decidir reuso, variantes, tokens, acessibilidade e admissão de componentes TES."
