@@ -50,7 +50,18 @@ Frame dedicado no Figma: Não identificado nos arquivos analisados.
 - Confirmar retorno ao detalhe e foco visível.
 - Validar waiting room, preflight, áudio, vídeo, reconexão, saída e
   encerramento conforme o papel.
-- Validar desktop e mobile com controles de pelo menos 44px.
+- O `userId` local vem de `ZoomVideoClient.getCurrentUserInfo()`, nunca do
+  media stream. A self-view e os vídeos remotos usam `attachVideo` dentro de
+  `zoom-video-player-container`; `renderVideo` em canvas não é o contrato
+  preferencial.
+- Validar câmera inicialmente desligada, ativação após o join, desligamento e
+  visualização bidirecional real. Exercitar também permissão negada, nova
+  concessão e recuperação sem recriar booking ou relaxar autorização.
+- Em mobile a chamada deve caber em `100dvh` com fallback de viewport, vídeo
+  remoto dominante, self-view contida e controles essenciais visíveis. Não
+  usar as antigas alturas mínimas cumulativas por participante.
+- Validar desktop, tablet, mobile de aproximadamente 390px e mobile baixo, com
+  controles de pelo menos 44px, sem overflow da página.
 - Executar testes focados, `npm run typecheck`, `npm run lint` e
   `npm run build`.
 - Homologações reais devem usar Playwright headed, contexts isolados, Zoom real
