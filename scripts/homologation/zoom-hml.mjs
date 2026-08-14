@@ -285,12 +285,14 @@ export function summarizeAccessPayload(payload) {
           : null,
     hasJoinPayload: Boolean(
       data &&
-        typeof data === "object" &&
-        ("token" in data || "sessionName" in data || "sdkKey" in data),
+      typeof data === "object" &&
+      ("token" in data || "sessionName" in data || "sdkKey" in data),
     ),
     ok: payload?.ok === true,
     roleType:
-      data && typeof data === "object" && (data.roleType === 0 || data.roleType === 1)
+      data &&
+      typeof data === "object" &&
+      (data.roleType === 0 || data.roleType === 1)
         ? data.roleType
         : null,
   };
@@ -376,7 +378,8 @@ export function summarizeBrowserEvents(browserEvents) {
 
         if (event.kind === "console") {
           const level = event.level ?? "log";
-          summary.consoleLevels[level] = (summary.consoleLevels[level] ?? 0) + 1;
+          summary.consoleLevels[level] =
+            (summary.consoleLevels[level] ?? 0) + 1;
           if (summary.samples.console.length < 5) {
             summary.samples.console.push({
               args: Array.isArray(event.args) ? event.args : [],
@@ -620,16 +623,29 @@ export function collectHarnessFailures({
   const required = [
     "SUPABASE_URL",
     "SUPABASE_SERVICE_ROLE_KEY",
-    "ZOOM_HML_BOOKING_ID",
-    "ZOOM_HML_SESSION_PAYMENT_ID",
-    "ZOOM_HML_VIDEO_SESSION_ID",
     "ZOOM_HML_PATIENT_EMAIL",
-    "ZOOM_HML_PATIENT_PASSWORD",
     "ZOOM_HML_THERAPIST_EMAIL",
-    "ZOOM_HML_THERAPIST_PASSWORD",
     "ZOOM_HML_ADMIN_EMAIL",
-    "ZOOM_HML_ADMIN_PASSWORD",
   ];
+
+  if (
+    !argv.includes("--resolve-canonical-hml-fixture") &&
+    !argv.includes("--prepare-canonical-hml-fixture")
+  ) {
+    required.push(
+      "ZOOM_HML_BOOKING_ID",
+      "ZOOM_HML_SESSION_PAYMENT_ID",
+      "ZOOM_HML_VIDEO_SESSION_ID",
+    );
+  }
+
+  if (!argv.includes("--use-admin-magic-link-sessions")) {
+    required.push(
+      "ZOOM_HML_PATIENT_PASSWORD",
+      "ZOOM_HML_THERAPIST_PASSWORD",
+      "ZOOM_HML_ADMIN_PASSWORD",
+    );
+  }
 
   for (const name of required) {
     if (!env[name]?.trim()) {
@@ -721,25 +737,445 @@ function createConfig({
       env,
     }),
     adminEmail: env.ZOOM_HML_ADMIN_EMAIL.trim(),
-    adminPassword: env.ZOOM_HML_ADMIN_PASSWORD.trim(),
+    adminPassword: env.ZOOM_HML_ADMIN_PASSWORD?.trim() || null,
+    authMode: argv.includes("--use-admin-magic-link-sessions")
+      ? "admin_magic_link"
+      : "password",
     baseUrl,
-    bookingId: env.ZOOM_HML_BOOKING_ID.trim(),
+    bookingId: env.ZOOM_HML_BOOKING_ID?.trim() || null,
     durationSeconds: resolveDurationSeconds({ argv, env }),
     patientEmail: env.ZOOM_HML_PATIENT_EMAIL.trim(),
-    patientPassword: env.ZOOM_HML_PATIENT_PASSWORD.trim(),
-    resumeEvidenceFile:
-      env.ZOOM_HML_RESUME_EVIDENCE_FILE?.trim() || null,
-    sessionPaymentId: env.ZOOM_HML_SESSION_PAYMENT_ID.trim(),
+    patientPassword: env.ZOOM_HML_PATIENT_PASSWORD?.trim() || null,
+    resumeEvidenceFile: env.ZOOM_HML_RESUME_EVIDENCE_FILE?.trim() || null,
+    sessionPaymentId: env.ZOOM_HML_SESSION_PAYMENT_ID?.trim() || null,
     supabaseRuntime: {
       apiUrl: env.SUPABASE_URL.trim(),
       environment: "external",
       serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY.trim(),
     },
     therapistEmail: env.ZOOM_HML_THERAPIST_EMAIL.trim(),
-    therapistPassword: env.ZOOM_HML_THERAPIST_PASSWORD.trim(),
+    therapistPassword: env.ZOOM_HML_THERAPIST_PASSWORD?.trim() || null,
     vercelCookieFile: env.ZOOM_HML_VERCEL_COOKIE_FILE?.trim() || null,
-    videoSessionId: env.ZOOM_HML_VIDEO_SESSION_ID.trim(),
+    videoSessionId: env.ZOOM_HML_VIDEO_SESSION_ID?.trim() || null,
   };
+}
+
+export async function resolveCanonicalHmlFixture(
+  admin,
+  { patientEmail, therapistEmail },
+) {
+  const [patientUser] = await admin.select(
+    "profiles",
+    `select=id,role&email=eq.${encodeURIComponent(patientEmail)}&role=eq.patient&limit=1`,
+  );
+  const [therapistUser] = await admin.select(
+    "profiles",
+    `select=id,role&email=eq.${encodeURIComponent(therapistEmail)}&role=eq.therapist&limit=1`,
+  );
+  if (!patientUser?.id || !therapistUser?.id) {
+    throw new Error("hml_fixture_profiles_missing");
+  }
+
+  const [patientProfile] = await admin.select(
+    "patient_profiles",
+    `select=id&user_id=eq.${encodeURIComponent(patientUser.id)}&limit=1`,
+  );
+  const [therapistProfile] = await admin.select(
+    "therapist_profiles",
+    `select=id&user_id=eq.${encodeURIComponent(therapistUser.id)}&limit=1`,
+  );
+  if (!patientProfile?.id || !therapistProfile?.id) {
+    throw new Error("hml_fixture_domain_profiles_missing");
+  }
+
+  const rangeStart = new Date(Date.now() + 5_000).toISOString();
+  const rangeEnd = new Date(
+    Date.now() +
+      (HML_JOIN_WINDOW_BEFORE_MINUTES * 60 + MAX_HML_JOIN_WINDOW_WAIT_SECONDS) *
+        1000,
+  ).toISOString();
+  const bookings = await admin.select(
+    "bookings",
+    `select=id,starts_at&patient_profile_id=eq.${encodeURIComponent(
+      patientProfile.id,
+    )}&therapist_profile_id=eq.${encodeURIComponent(
+      therapistProfile.id,
+    )}&status=eq.confirmed&payment_status=eq.paid&starts_at=gte.${encodeURIComponent(
+      rangeStart,
+    )}&starts_at=lte.${encodeURIComponent(rangeEnd)}&order=starts_at.asc&limit=10`,
+  );
+
+  for (const booking of bookings) {
+    const [payment] = await admin.select(
+      "session_payments",
+      `select=id,stripe_checkout_session_id,financial_status&booking_id=eq.${encodeURIComponent(
+        booking.id,
+      )}&financial_status=eq.paid&limit=1`,
+    );
+    const [videoSession] = await admin.select(
+      "video_sessions",
+      `select=id,status,provider_session_id&booking_id=eq.${encodeURIComponent(
+        booking.id,
+      )}&status=eq.ready&provider_session_id=is.null&limit=1`,
+    );
+    const [stripeWebhook] = payment?.stripe_checkout_session_id
+      ? await admin.select(
+          "stripe_webhook_events",
+          `select=stripe_event_id&object_id=eq.${encodeURIComponent(
+            payment.stripe_checkout_session_id,
+          )}&event_type=eq.checkout.session.completed&processing_status=eq.processed&limit=1`,
+        )
+      : [];
+    if (payment?.id && videoSession?.id && stripeWebhook?.stripe_event_id) {
+      return {
+        bookingId: booking.id,
+        sessionPaymentId: payment.id,
+        videoSessionId: videoSession.id,
+      };
+    }
+  }
+
+  throw new Error("canonical_hml_fixture_not_found");
+}
+
+async function createCanonicalHmlFixture({ admin, config, evidence, logDir }) {
+  const [patientUser] = await admin.select(
+    "profiles",
+    `select=id&email=eq.${encodeURIComponent(config.patientEmail)}&role=eq.patient&limit=1`,
+  );
+  const [therapistUser] = await admin.select(
+    "profiles",
+    `select=id&email=eq.${encodeURIComponent(config.therapistEmail)}&role=eq.therapist&limit=1`,
+  );
+  const [patientProfile] = patientUser?.id
+    ? await admin.select(
+        "patient_profiles",
+        `select=id&user_id=eq.${encodeURIComponent(patientUser.id)}&limit=1`,
+      )
+    : [];
+  const [therapistProfile] = therapistUser?.id
+    ? await admin.select(
+        "therapist_profiles",
+        `select=id,slug&user_id=eq.${encodeURIComponent(therapistUser.id)}&limit=1`,
+      )
+    : [];
+  if (!patientProfile?.id || !therapistProfile?.id) {
+    throw new Error("hml_fixture_domain_profiles_missing");
+  }
+
+  const [service] = await admin.select(
+    "therapist_services",
+    `select=id,title,duration_minutes,price_cents&therapist_profile_id=eq.${encodeURIComponent(
+      therapistProfile.id,
+    )}&status=eq.active&is_bookable=eq.true&online_only=eq.true&order=created_at.asc&limit=1`,
+  );
+  if (!service?.id) throw new Error("hml_fixture_bookable_service_missing");
+
+  const [settings] = await admin.select(
+    "therapist_service_booking_settings",
+    `select=service_id,buffer_before_minutes,buffer_after_minutes,min_notice_minutes,max_days_ahead,interval_minutes&service_id=eq.${encodeURIComponent(
+      service.id,
+    )}&limit=1`,
+  );
+  if (!settings?.service_id) throw new Error("hml_fixture_settings_missing");
+
+  let temporaryRuleId = null;
+  const target = new Date(Date.now() + 17 * 60_000);
+  const weekday = Number(
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Sao_Paulo",
+      weekday: "short",
+    })
+      .format(target)
+      .replace(/Sun|Mon|Tue|Wed|Thu|Fri|Sat/, (name) =>
+        String(
+          { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[name],
+        ),
+      ),
+  );
+
+  await admin.patch(
+    "therapist_service_booking_settings",
+    `service_id=eq.${encodeURIComponent(service.id)}`,
+    {
+      buffer_after_minutes: 0,
+      buffer_before_minutes: 0,
+      interval_minutes: 1,
+      max_days_ahead: Math.max(settings.max_days_ahead ?? 1, 1),
+      min_notice_minutes: 0,
+    },
+  );
+
+  try {
+    const insertedRules = await admin.insert("availability_rules", [
+      {
+        day_of_week: weekday,
+        end_time: "23:59",
+        is_active: true,
+        service_id: service.id,
+        start_time: "00:00",
+        therapist_profile_id: therapistProfile.id,
+        timezone: "America/Sao_Paulo",
+      },
+    ]);
+    temporaryRuleId = insertedRules?.[0]?.id ?? null;
+
+    const desiredSlotStart = new Date(Date.now() + 17 * 60_000);
+    const desiredSlotEnd = new Date(Date.now() + 18 * 60_000);
+    // The authoritative slot RPC only returns candidates whose full duration
+    // fits inside p_range_end. Keep the desired start window narrow while
+    // extending the query range enough to contain the complete meeting.
+    const slotQueryEnd = new Date(
+      desiredSlotEnd.getTime() + service.duration_minutes * 60_000,
+    );
+    const slots = await admin.rpc("get_service_available_slots_v1", {
+      p_limit: 30,
+      p_range_end: slotQueryEnd.toISOString(),
+      p_range_start: desiredSlotStart.toISOString(),
+      p_service_id: service.id,
+    });
+    const slot = slots?.slots?.find(
+      (candidate) => Date.parse(candidate.startsAt) <= desiredSlotEnd.getTime(),
+    );
+    if (!slot?.startsAt) throw new Error("hml_fixture_slot_not_available");
+
+    const browser = await chromium.launch({ headless: false, slowMo: 200 });
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    attachPageCapture(page, "fixture", evidence);
+    try {
+      await authenticateContextWithAdminSession({
+        admin,
+        baseUrl: config.baseUrl,
+        context,
+        email: config.patientEmail,
+        role: "patient",
+      });
+      const params = new URLSearchParams({
+        duration: String(service.duration_minutes),
+        etapa: "preparar",
+        price: String(service.price_cents),
+        service: service.id,
+        serviceName: service.title,
+        slot: slot.startsAt,
+        therapist: therapistProfile.slug,
+      });
+      await page.goto(
+        buildSharedUrl(config.baseUrl, `/reserva?${params.toString()}`),
+        { waitUntil: "domcontentloaded" },
+      );
+      const prepareForm = page.locator("form").filter({
+        has: page.locator('input[name="terms"]'),
+      });
+      const terms = prepareForm.locator('input[name="terms"]');
+      const advance = prepareForm.getByRole("button", {
+        name: /Avan.ar para pagamento/i,
+      });
+      await expect(terms).toBeVisible({ timeout: 30_000 });
+      await terms.check();
+      await expect(terms).toBeChecked();
+      await expect(advance).toBeEnabled({ timeout: 15_000 });
+      await advance.click();
+      await page.waitForURL(/etapa=pagamento/, { timeout: 30_000 });
+      await page
+        .locator("#reservation-embedded-checkout iframe")
+        .first()
+        .waitFor({ state: "attached", timeout: 90_000 });
+      await completeHmlStripeCheckout(page, { logDir });
+
+      const fixture = await waitForHmlCanonicalPayment(admin, {
+        patientProfileId: patientProfile.id,
+        serviceId: service.id,
+      });
+      await page.screenshot({
+        path: path.join(logDir, "canonical-payment-confirmed.png"),
+      });
+      evidence.fixture = {
+        bookingId: maskIdentifier(fixture.bookingId),
+        canonicalStripeWebhook: true,
+        renewable: true,
+        sessionPaymentId: maskIdentifier(fixture.sessionPaymentId),
+        videoSessionId: maskIdentifier(fixture.videoSessionId),
+      };
+      return fixture;
+    } finally {
+      await context.close().catch(() => undefined);
+      await browser.close().catch(() => undefined);
+    }
+  } finally {
+    if (temporaryRuleId) {
+      await admin
+        .delete(
+          "availability_rules",
+          `id=eq.${encodeURIComponent(temporaryRuleId)}`,
+        )
+        .catch(() => undefined);
+    }
+    await admin.patch(
+      "therapist_service_booking_settings",
+      `service_id=eq.${encodeURIComponent(service.id)}`,
+      {
+        buffer_after_minutes: settings.buffer_after_minutes,
+        buffer_before_minutes: settings.buffer_before_minutes,
+        interval_minutes: settings.interval_minutes,
+        max_days_ahead: settings.max_days_ahead,
+        min_notice_minutes: settings.min_notice_minutes,
+      },
+    );
+  }
+}
+
+async function completeHmlStripeCheckout(page, { logDir }) {
+  const fields = [
+    {
+      labels: /Card number|N.mero do cart.o/i,
+      selectors: ['input[autocomplete="cc-number"]', 'input[name="number"]'],
+      value: "4242424242424242",
+    },
+    {
+      labels: /Expiration|Validade|MM\s*\/\s*(YY|AA)/i,
+      selectors: ['input[autocomplete="cc-exp"]', 'input[name="expiry"]'],
+      value: "1234",
+    },
+    {
+      labels: /CVC|C.digo de seguran.a/i,
+      selectors: ['input[autocomplete="cc-csc"]', 'input[name="cvc"]'],
+      value: "123",
+    },
+    {
+      labels:
+        /Name on card|Cardholder name|Nome do titular do cart.o|Nome completo/i,
+      selectors: ['input[autocomplete="cc-name"]', 'input[name="billingName"]'],
+      value: "TES HML",
+    },
+  ];
+  for (const field of fields) {
+    const locator = await findHmlStripeLocator(
+      page,
+      field.labels,
+      field.selectors,
+    );
+    if (!locator) throw new Error("stripe_checkout_field_missing");
+    await locator.fill(field.value);
+  }
+  await page.screenshot({
+    path: path.join(logDir, "stripe-checkout-filled.png"),
+  });
+  const submit = await findHmlStripeButton(page);
+  if (!submit) throw new Error("stripe_checkout_submit_missing");
+  await submit.evaluate((button) => button.click());
+  await delay(5_000);
+  await page
+    .screenshot({ path: path.join(logDir, "stripe-checkout-submitted.png") })
+    .catch(() => undefined);
+}
+
+async function findHmlStripeLocator(page, labels, selectors) {
+  const deadline = Date.now() + 20_000;
+  while (Date.now() < deadline) {
+    for (const frame of [page, ...page.frames()]) {
+      for (const locator of [
+        frame.getByLabel(labels).first(),
+        ...selectors.map((selector) => frame.locator(selector).first()),
+      ]) {
+        if (
+          (await locator.count().catch(() => 0)) > 0 &&
+          (await locator.isVisible().catch(() => false))
+        ) {
+          return locator;
+        }
+      }
+    }
+    await delay(300);
+  }
+  return null;
+}
+
+async function findHmlStripeButton(page) {
+  const deadline = Date.now() + 20_000;
+  while (Date.now() < deadline) {
+    for (const frame of [page, ...page.frames()]) {
+      const paymentButton = frame
+        .getByRole("button", {
+          name: /^(?:Pagar|Pay)(?:\s+(?:R\$|US\$|\$)|$)/i,
+        })
+        .first();
+      if (
+        (await paymentButton.count().catch(() => 0)) > 0 &&
+        (await paymentButton.isVisible().catch(() => false)) &&
+        (await paymentButton.isEnabled().catch(() => false))
+      ) {
+        return paymentButton;
+      }
+
+      const buttons = frame.locator('button[type="submit"]');
+      const count = await buttons.count().catch(() => 0);
+      for (let index = 0; index < count; index += 1) {
+        const button = buttons.nth(index);
+        if (
+          (await button.isVisible().catch(() => false)) &&
+          (await button.isEnabled().catch(() => false))
+        ) {
+          return button;
+        }
+      }
+    }
+    await delay(300);
+  }
+  return null;
+}
+
+async function waitForHmlCanonicalPayment(
+  admin,
+  { patientProfileId, serviceId },
+) {
+  return poll({
+    intervalMs: 2_000,
+    timeoutMs: 150_000,
+    task: async () => {
+      const [booking] = await admin.select(
+        "bookings",
+        `select=id,status,payment_status&patient_profile_id=eq.${encodeURIComponent(
+          patientProfileId,
+        )}&service_id=eq.${encodeURIComponent(
+          serviceId,
+        )}&order=created_at.desc&limit=1`,
+      );
+      if (!booking?.id) return null;
+      const [payment] = await admin.select(
+        "session_payments",
+        `select=id,financial_status,stripe_checkout_session_id&booking_id=eq.${encodeURIComponent(
+          booking.id,
+        )}&limit=1`,
+      );
+      const [videoSession] = await admin.select(
+        "video_sessions",
+        `select=id&booking_id=eq.${encodeURIComponent(booking.id)}&limit=1`,
+      );
+      const [webhook] = payment?.stripe_checkout_session_id
+        ? await admin.select(
+            "stripe_webhook_events",
+            `select=stripe_event_id&object_id=eq.${encodeURIComponent(
+              payment.stripe_checkout_session_id,
+            )}&event_type=eq.checkout.session.completed&processing_status=eq.processed&limit=1`,
+          )
+        : [];
+      if (
+        booking.status === "confirmed" &&
+        booking.payment_status === "paid" &&
+        payment?.financial_status === "paid" &&
+        videoSession?.id &&
+        webhook?.stripe_event_id
+      ) {
+        return {
+          bookingId: booking.id,
+          sessionPaymentId: payment.id,
+          videoSessionId: videoSession.id,
+        };
+      }
+      return null;
+    },
+  });
 }
 
 function createEvidence(config) {
@@ -750,6 +1186,7 @@ function createEvidence(config) {
     checks: [],
     config: {
       allowManualRefreshFallback: config.allowManualRefreshFallback,
+      authMode: config.authMode,
       baseUrl: sanitizeUrlForEvidence(config.baseUrl),
       bookingId: maskIdentifier(config.bookingId),
       durationSeconds: config.durationSeconds,
@@ -925,6 +1362,59 @@ async function loginWithSharedRedirect(
   await expect(page).toHaveURL(successPathPattern, { timeout: 30_000 });
 }
 
+async function authenticateContextWithAdminSession({
+  admin,
+  baseUrl,
+  context,
+  email,
+  role,
+}) {
+  const session = await admin.authCreateSessionForEmail(email);
+  const [profile] = await admin.select(
+    "profiles",
+    `select=id,role&id=eq.${encodeURIComponent(session.userId)}&limit=1`,
+  );
+  if (profile?.role !== role) throw new Error(`auth_role_mismatch:${role}`);
+
+  const cookies = [
+    {
+      name: `tes_${role === "patient" ? "patient" : role}_access_token`,
+      value: session.accessToken,
+      maxAge: session.expiresIn,
+    },
+    {
+      name: `tes_${role === "patient" ? "patient" : role}_refresh_token`,
+      value: session.refreshToken,
+      maxAge: 60 * 60 * 24 * 30,
+    },
+  ];
+
+  if (role === "therapist") {
+    const [therapist] = await admin.select(
+      "therapist_profiles",
+      `select=plan&user_id=eq.${encodeURIComponent(session.userId)}&limit=1`,
+    );
+    if (!therapist?.plan) throw new Error("therapist_profile_missing");
+    cookies.push({
+      maxAge: 60 * 60 * 24 * 30,
+      name: "tes_therapist_plan",
+      value: therapist.plan,
+    });
+  }
+
+  const origin = new URL(baseUrl).origin;
+  await context.addCookies(
+    cookies.map((cookie) => ({
+      httpOnly: true,
+      name: cookie.name,
+      sameSite: "Lax",
+      secure: true,
+      url: origin,
+      value: cookie.value,
+    })),
+  );
+}
+
 async function assertContextHasNoAuth(context, label) {
   const cookies = await context.cookies();
   const inherited = cookies.find((cookie) =>
@@ -1053,8 +1543,20 @@ async function assertRemotePreflight(admin, config, evidence) {
   }
 
   if (!evidence.resume) {
+    const startsAtMs = Date.parse(state.booking?.starts_at ?? "");
+    const millisecondsUntilStart = startsAtMs - Date.now();
     try {
-      resolveJoinWindowWaitMs({ startsAt: state.booking?.starts_at });
+      if (!Number.isFinite(startsAtMs) || millisecondsUntilStart <= 0) {
+        throw new Error("booking_starts_at_invalid_or_elapsed");
+      }
+      if (
+        millisecondsUntilStart >
+        (HML_JOIN_WINDOW_BEFORE_MINUTES * 60 +
+          MAX_HML_JOIN_WINDOW_WAIT_SECONDS) *
+          1000
+      ) {
+        throw new Error("booking_too_far_from_join_window");
+      }
     } catch (error) {
       failures.push({
         expected: `reserva entre ${HML_JOIN_WINDOW_BEFORE_MINUTES} e ${HML_JOIN_WINDOW_BEFORE_MINUTES + MAX_HML_JOIN_WINDOW_WAIT_SECONDS / 60} minutos antes do início`,
@@ -1287,7 +1789,6 @@ async function assertPatientBeforeJoinWindow(page) {
 
 async function exerciseParticipantControls(page) {
   await exerciseToggle(page, "Silenciar", "Ativar audio");
-  await exerciseToggle(page, "Ativar camera", "Desligar camera");
 }
 
 async function exerciseToggle(page, firstLabel, secondLabel) {
@@ -1308,6 +1809,167 @@ async function exerciseToggle(page, firstLabel, secondLabel) {
     return;
   }
   throw new Error(`control_not_found:${firstLabel}:${secondLabel}`);
+}
+
+async function setChromiumMediaPermissions(page, granted) {
+  const origin = new URL(page.url()).origin;
+  if (granted) {
+    await page.context().grantPermissions(["camera", "microphone"], { origin });
+    return;
+  }
+
+  await page.context().clearPermissions();
+  const session = await page.context().newCDPSession(page);
+  try {
+    const { targetInfo } = await session.send("Target.getTargetInfo");
+    await session.send("Browser.grantPermissions", {
+      browserContextId: targetInfo.browserContextId,
+      origin,
+      permissions: [],
+    });
+  } finally {
+    await session.detach().catch(() => undefined);
+  }
+}
+
+async function validatePatientPermissionRecovery(page) {
+  await setChromiumMediaPermissions(page, false);
+  const denied = await probeBrowserMedia(page);
+  if (denied.outcome !== "rejected" || denied.errorName !== "NotAllowedError") {
+    throw new Error(`media_permission_denial_failed:${denied.outcome}`);
+  }
+
+  await setChromiumMediaPermissions(page, true);
+  const granted = await probeBrowserMedia(page);
+  if (granted.outcome !== "resolved") {
+    throw new Error(`media_permission_recovery_failed:${granted.outcome}`);
+  }
+}
+
+async function probeBrowserMedia(page) {
+  return page.evaluate(async () => {
+    const timeout = new Promise((resolve) =>
+      window.setTimeout(() => resolve({ outcome: "timeout" }), 5_000),
+    );
+    const media = navigator.mediaDevices
+      .getUserMedia({ audio: true, video: true })
+      .then((stream) => {
+        stream.getTracks().forEach((track) => track.stop());
+        return { outcome: "resolved" };
+      })
+      .catch((error) => ({
+        errorName: error instanceof DOMException ? error.name : "unknown",
+        outcome: "rejected",
+      }));
+    return Promise.race([media, timeout]);
+  });
+}
+
+async function setCamera(page, enabled) {
+  const button = page.getByRole("button", {
+    name: enabled ? "Ativar camera" : "Desligar camera",
+  });
+  await expect(button).toBeVisible({ timeout: 20_000 });
+  await button.click();
+  await expect(
+    page.getByRole("button", {
+      name: enabled ? "Desligar camera" : "Ativar camera",
+    }),
+  ).toBeVisible({ timeout: 20_000 });
+}
+
+async function assertAttachedVideo(page, testId) {
+  const stage = page.getByTestId(testId);
+  await expect(stage.locator("video-player")).toHaveCount(1, {
+    timeout: 30_000,
+  });
+  const size = await stage.locator("video-player").evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { height: rect.height, width: rect.width };
+  });
+  if (size.width < 1 || size.height < 1) {
+    throw new Error(`video_not_visible:${testId}`);
+  }
+}
+
+async function validateBidirectionalCamera({ patientPage, therapistPage }) {
+  await expect(
+    patientPage.getByRole("button", { name: "Ativar camera" }),
+  ).toBeVisible();
+  await expect(
+    therapistPage.getByRole("button", { name: "Ativar camera" }),
+  ).toBeVisible();
+
+  await setCamera(patientPage, true);
+  await assertAttachedVideo(patientPage, "zoom-local-video");
+  await assertAttachedVideo(therapistPage, "zoom-remote-video");
+
+  await setCamera(therapistPage, true);
+  await assertAttachedVideo(therapistPage, "zoom-local-video");
+  await assertAttachedVideo(patientPage, "zoom-remote-video");
+
+  await setCamera(patientPage, false);
+  await setCamera(therapistPage, false);
+}
+
+async function captureResponsiveCallEvidence(page, logDir, evidence) {
+  const viewports = [
+    { height: 900, label: "desktop", width: 1440 },
+    { height: 900, label: "tablet", width: 900 },
+    { height: 844, label: "mobile", width: 390 },
+    { height: 667, label: "mobile-short", width: 390 },
+  ];
+  evidence.responsive = [];
+
+  for (const viewport of viewports) {
+    await page.setViewportSize({
+      height: viewport.height,
+      width: viewport.width,
+    });
+    await delay(250);
+    const metrics = await page.evaluate(() => {
+      const criticalNames = ["Ativar audio", "Ativar camera", "Sair"];
+      const buttons = [...document.querySelectorAll("button")]
+        .filter((button) =>
+          criticalNames.includes(button.textContent?.trim() ?? ""),
+        )
+        .map((button) => {
+          const rect = button.getBoundingClientRect();
+          return {
+            bottom: Math.round(rect.bottom),
+            name: button.textContent?.trim() ?? "",
+            top: Math.round(rect.top),
+          };
+        });
+      return {
+        buttons,
+        documentHeight: document.documentElement.scrollHeight,
+        documentWidth: document.documentElement.scrollWidth,
+        viewportHeight: window.innerHeight,
+        viewportWidth: window.innerWidth,
+      };
+    });
+    const controlsFit = metrics.buttons.every(
+      (button) => button.top >= 0 && button.bottom <= metrics.viewportHeight,
+    );
+    const noPageOverflow =
+      metrics.documentWidth <= metrics.viewportWidth + 1 &&
+      metrics.documentHeight <= metrics.viewportHeight + 1;
+    evidence.responsive.push({
+      controlsFit,
+      label: viewport.label,
+      noPageOverflow,
+      viewport: `${viewport.width}x${viewport.height}`,
+    });
+    await page.screenshot({
+      path: path.join(logDir, `call-${viewport.label}.png`),
+    });
+    if (!controlsFit || !noPageOverflow) {
+      const error = new Error(`responsive_call_failed:${viewport.label}`);
+      error.details = { metrics };
+      throw error;
+    }
+  }
 }
 
 async function assertAdminDetail(page) {
@@ -1373,11 +2035,19 @@ async function observePatientJoinState(page) {
       : await page.locator("body").innerText()) ?? "";
   const text = sanitizeLog(rawText).slice(0, 500);
 
-  if (/Aguardando o terapeuta iniciar o encontro|Aguardando terapeuta/i.test(rawText)) {
+  if (
+    /Aguardando o terapeuta iniciar o encontro|Aguardando terapeuta/i.test(
+      rawText,
+    )
+  ) {
     return { kind: "waiting_for_therapist", text };
   }
 
-  if (/Verificando sala|O terapeuta iniciou o encontro\. Voce ja pode entrar\./i.test(rawText)) {
+  if (
+    /Verificando sala|O terapeuta iniciou o encontro\. Voce ja pode entrar\./i.test(
+      rawText,
+    )
+  ) {
     return { kind: "transitioning", text };
   }
 
@@ -1403,18 +2073,18 @@ async function assertTherapistClosedState(page) {
 
 async function runFlow({ admin, config, evidence, logDir }) {
   const browser = await chromium.launch({
-    args: [
-      "--use-fake-device-for-media-stream",
-      "--use-fake-ui-for-media-stream",
-    ],
+    args: ["--use-fake-device-for-media-stream"],
+    headless: false,
+    slowMo: 200,
+  });
+  const patientBrowser = await chromium.launch({
+    args: ["--use-fake-device-for-media-stream", "--deny-permission-prompts"],
     headless: false,
     slowMo: 200,
   });
 
   const adminContext = await browser.newContext();
-  const patientContext = await browser.newContext({
-    permissions: ["camera", "microphone"],
-  });
+  const patientContext = await patientBrowser.newContext();
   const therapistContext = await browser.newContext({
     permissions: ["camera", "microphone"],
   });
@@ -1447,8 +2117,27 @@ async function runFlow({ admin, config, evidence, logDir }) {
       assertNoRemoteActiveSessions(sessionSnapshot.videoSession),
     );
 
-    await phase(evidence, "therapist_login", () =>
-      loginWithSharedRedirect(pages.therapist, {
+    await phase(evidence, "therapist_login", async () => {
+      if (config.authMode === "admin_magic_link") {
+        await authenticateContextWithAdminSession({
+          admin,
+          baseUrl: config.baseUrl,
+          context: therapistContext,
+          email: config.therapistEmail,
+          role: "therapist",
+        });
+        await pages.therapist.goto(
+          buildSharedUrl(config.baseUrl, "/terapeuta"),
+          {
+            waitUntil: "domcontentloaded",
+          },
+        );
+        await expect(pages.therapist).toHaveURL(/\/terapeuta(?:\?.*)?$/, {
+          timeout: 30_000,
+        });
+        return;
+      }
+      await loginWithSharedRedirect(pages.therapist, {
         baseUrl: config.baseUrl,
         buttonName: "Entrar como terapeuta",
         credentials: {
@@ -1458,15 +2147,31 @@ async function runFlow({ admin, config, evidence, logDir }) {
         endpoint: "/api/auth/therapist/login",
         loginPath: "/terapeuta/login",
         successPathPattern: /\/terapeuta(?:\?.*)?$/,
-      }),
-    );
+      });
+    });
     await phase(evidence, "context_isolation_after_therapist", async () => {
       await assertContextHasNoAuth(patientContext, "patient_after_therapist");
       await assertContextHasNoAuth(adminContext, "admin_after_therapist");
     });
 
-    await phase(evidence, "patient_login", () =>
-      loginWithSharedRedirect(pages.patient, {
+    await phase(evidence, "patient_login", async () => {
+      if (config.authMode === "admin_magic_link") {
+        await authenticateContextWithAdminSession({
+          admin,
+          baseUrl: config.baseUrl,
+          context: patientContext,
+          email: config.patientEmail,
+          role: "patient",
+        });
+        await pages.patient.goto(buildSharedUrl(config.baseUrl, "/app"), {
+          waitUntil: "domcontentloaded",
+        });
+        await expect(pages.patient).toHaveURL(/\/app(?:\?.*)?$/, {
+          timeout: 30_000,
+        });
+        return;
+      }
+      await loginWithSharedRedirect(pages.patient, {
         baseUrl: config.baseUrl,
         buttonName: "Entrar",
         credentials: {
@@ -1476,14 +2181,33 @@ async function runFlow({ admin, config, evidence, logDir }) {
         endpoint: "/api/auth/client/login",
         loginPath: "/cliente/login",
         successPathPattern: /\/app(?:\?.*)?$/,
-      }),
-    );
+      });
+    });
     await phase(evidence, "context_isolation_after_patient", () =>
       assertContextHasNoAuth(adminContext, "admin_after_patient"),
     );
 
-    await phase(evidence, "admin_login", () =>
-      loginWithSharedRedirect(pages.admin, {
+    await phase(evidence, "admin_login", async () => {
+      if (config.authMode === "admin_magic_link") {
+        await authenticateContextWithAdminSession({
+          admin,
+          baseUrl: config.baseUrl,
+          context: adminContext,
+          email: config.adminEmail,
+          role: "admin",
+        });
+        await pages.admin.goto(buildSharedUrl(config.baseUrl, "/admin"), {
+          waitUntil: "domcontentloaded",
+        });
+        await expect(pages.admin).toHaveURL(
+          /\/admin(?:\/terapias)?(?:\?.*)?$/,
+          {
+            timeout: 30_000,
+          },
+        );
+        return;
+      }
+      await loginWithSharedRedirect(pages.admin, {
         baseUrl: config.baseUrl,
         buttonName: "Entrar no Admin",
         credentials: {
@@ -1493,29 +2217,40 @@ async function runFlow({ admin, config, evidence, logDir }) {
         endpoint: "/api/auth/admin/login",
         loginPath: "/admin-login",
         successPathPattern: /\/admin(?:\/terapias)?(?:\?.*)?$/,
-      }),
-    );
+      });
+    });
 
     if (!evidence.resume) {
-      const joinWindowWaitMs = resolveJoinWindowWaitMs({
-        startsAt: sessionSnapshot.booking.starts_at,
-      });
-      await phase(evidence, "patient_before_join_window", async () => {
-        await pages.patient.goto(
-          buildSharedUrl(config.baseUrl, `/app/encontros/${config.bookingId}`),
-          { waitUntil: "domcontentloaded" },
-        );
-        await assertPatientBeforeJoinWindow(pages.patient);
-        await assertSafeShell(pages.patient, "patient_before_join_window");
-        evidence.joinWindow = {
-          opensBeforeMinutes: HML_JOIN_WINDOW_BEFORE_MINUTES,
-          waitSeconds: Math.ceil(joinWindowWaitMs / 1000),
-        };
-      });
+      const joinWindowWaitMs =
+        Date.parse(sessionSnapshot.booking.starts_at) -
+        HML_JOIN_WINDOW_BEFORE_MINUTES * 60_000 -
+        Date.now();
+      if (joinWindowWaitMs > 0) {
+        await phase(evidence, "patient_before_join_window", async () => {
+          await pages.patient.goto(
+            buildSharedUrl(
+              config.baseUrl,
+              `/app/encontros/${config.bookingId}/video`,
+            ),
+            { waitUntil: "domcontentloaded" },
+          );
+          await assertPatientBeforeJoinWindow(pages.patient);
+          await assertSafeShell(pages.patient, "patient_before_join_window");
+          evidence.joinWindow = {
+            opensBeforeMinutes: HML_JOIN_WINDOW_BEFORE_MINUTES,
+            waitSeconds: Math.ceil(joinWindowWaitMs / 1000),
+          };
+        });
 
-      await phase(evidence, "wait_for_join_window", () =>
-        delay(joinWindowWaitMs + 1_500),
-      );
+        await phase(evidence, "wait_for_join_window", () =>
+          delay(joinWindowWaitMs + 1_500),
+        );
+      } else {
+        evidence.joinWindow = {
+          alreadyOpenAtRunStart: true,
+          opensBeforeMinutes: HML_JOIN_WINDOW_BEFORE_MINUTES,
+        };
+      }
     } else {
       evidence.joinWindow = {
         opensBeforeMinutes: HML_JOIN_WINDOW_BEFORE_MINUTES,
@@ -1526,13 +2261,24 @@ async function runFlow({ admin, config, evidence, logDir }) {
 
     await phase(evidence, "patient_waiting_room", async () => {
       await pages.patient.goto(
-        buildSharedUrl(config.baseUrl, `/app/encontros/${config.bookingId}`),
+        buildSharedUrl(
+          config.baseUrl,
+          `/app/encontros/${config.bookingId}/video`,
+        ),
         {
           waitUntil: "domcontentloaded",
         },
       );
       await assertPatientWaiting(pages.patient);
       await assertSafeShell(pages.patient, "patient_waiting");
+    });
+
+    await phase(evidence, "patient_permission_recovery", async () => {
+      await validatePatientPermissionRecovery(pages.patient);
+      evidence.mediaPermissions = {
+        deniedThenGranted: true,
+        patient: true,
+      };
     });
 
     await phase(evidence, "admin_session_detail_prejoin", async () => {
@@ -1555,6 +2301,13 @@ async function runFlow({ admin, config, evidence, logDir }) {
         {
           waitUntil: "domcontentloaded",
         },
+      );
+      await pages.therapist
+        .getByRole("link", { name: /Abrir sala da sess.o/i })
+        .click();
+      await expect(pages.therapist).toHaveURL(
+        new RegExp(`/terapeuta/sessoes/${config.bookingId}/video`),
+        { timeout: 30_000 },
       );
       const joinButton = pages.therapist.getByRole("button", {
         name: /Entrar no encontro|Entrar na sess.o/i,
@@ -1628,6 +2381,23 @@ async function runFlow({ admin, config, evidence, logDir }) {
         ),
       ],
     };
+
+    await phase(evidence, "bidirectional_camera", async () => {
+      await validateBidirectionalCamera({
+        patientPage: pages.patient,
+        therapistPage: pages.therapist,
+      });
+      evidence.camera = {
+        activatedAfterJoin: true,
+        patientLocalAndTherapistRemote: true,
+        therapistLocalAndPatientRemote: true,
+        toggledOff: true,
+      };
+    });
+
+    await phase(evidence, "responsive_call", () =>
+      captureResponsiveCallEvidence(pages.patient, logDir, evidence),
+    );
 
     await phase(evidence, "therapist_controls", () =>
       exerciseParticipantControls(pages.therapist),
@@ -1724,6 +2494,7 @@ async function runFlow({ admin, config, evidence, logDir }) {
       therapistContext.close(),
     ]);
     await browser.close().catch(() => undefined);
+    await patientBrowser.close().catch(() => undefined);
     await writeEvidence(logDir, evidence);
   }
 }
@@ -1758,10 +2529,8 @@ export async function main({
   }
 
   const config = createConfig({ argv, env });
+  const admin = createSupabaseAdmin(config.supabaseRuntime);
   const evidence = createEvidence(config);
-  if (argv.includes("--resume-after-validated-join-window")) {
-    evidence.resume = await loadResumeEvidence(config);
-  }
   const logDir = path.join(
     process.cwd(),
     ".tmp",
@@ -1770,9 +2539,39 @@ export async function main({
   );
   await mkdir(logDir, { recursive: true });
 
-  const admin = createSupabaseAdmin(config.supabaseRuntime);
-
   try {
+    if (
+      argv.includes("--resolve-canonical-hml-fixture") ||
+      argv.includes("--prepare-canonical-hml-fixture")
+    ) {
+      let fixture;
+      try {
+        fixture = await resolveCanonicalHmlFixture(admin, {
+          patientEmail: config.patientEmail,
+          therapistEmail: config.therapistEmail,
+        });
+        evidence.fixture = { reused: true, renewable: true };
+      } catch (error) {
+        if (
+          !argv.includes("--prepare-canonical-hml-fixture") ||
+          !String(error?.message).includes("canonical_hml_fixture_not_found")
+        ) {
+          throw error;
+        }
+        fixture = await phase(evidence, "canonical_fixture_checkout", () =>
+          createCanonicalHmlFixture({ admin, config, evidence, logDir }),
+        );
+      }
+      Object.assign(config, fixture);
+      Object.assign(evidence.config, {
+        bookingId: maskIdentifier(config.bookingId),
+        sessionPaymentId: maskIdentifier(config.sessionPaymentId),
+        videoSessionId: maskIdentifier(config.videoSessionId),
+      });
+    }
+    if (argv.includes("--resume-after-validated-join-window")) {
+      evidence.resume = await loadResumeEvidence(config);
+    }
     await phase(evidence, "run_hml_flow", () =>
       runFlow({ admin, config, evidence, logDir }),
     );
@@ -1818,9 +2617,7 @@ async function loadResumeEvidence(config) {
     throw new Error("resume_evidence_file_missing");
   }
   try {
-    const prior = JSON.parse(
-      await readFile(config.resumeEvidenceFile, "utf8"),
-    );
+    const prior = JSON.parse(await readFile(config.resumeEvidenceFile, "utf8"));
     return validateResumeEvidence(prior, config);
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("resume_")) {

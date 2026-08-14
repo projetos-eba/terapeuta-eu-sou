@@ -12,6 +12,7 @@ import {
   resolveDurationSeconds,
   resolveManualRefreshFallbackEnabled,
   resolveJoinWindowWaitMs,
+  resolveCanonicalHmlFixture,
   sanitizeLog,
   sanitizeUrlForEvidence,
   summarizeAccessPayload,
@@ -148,6 +149,89 @@ describe("zoom HML harness contract", () => {
         expect.objectContaining({ item: "--confirm-hml-vercel-share" }),
       ]),
     );
+  });
+
+  it("allows renewable fixture resolution and privileged one-time sessions without stored passwords or ids", () => {
+    const env = {
+      ...baseEnv,
+      ZOOM_HML_ADMIN_PASSWORD: "",
+      ZOOM_HML_BOOKING_ID: "",
+      ZOOM_HML_PATIENT_PASSWORD: "",
+      ZOOM_HML_SESSION_PAYMENT_ID: "",
+      ZOOM_HML_THERAPIST_PASSWORD: "",
+      ZOOM_HML_VIDEO_SESSION_ID: "",
+    };
+    const failures = collectHarnessFailures({
+      argv: [
+        "--confirm-hml-vercel-share",
+        "--confirm-single-hml-session",
+        "--resolve-canonical-hml-fixture",
+        "--use-admin-magic-link-sessions",
+      ],
+      env,
+      staticZoomGateFailures: [],
+    });
+
+    expect(failures).toEqual([]);
+  });
+
+  it("resolves only a paid booking with processed Stripe webhook and a fresh video session", async () => {
+    const admin = {
+      select: async (table) => {
+        if (table === "profiles") {
+          admin.profileReads = (admin.profileReads ?? 0) + 1;
+          return [
+            {
+              id:
+                admin.profileReads === 1
+                  ? "f2000000-0000-4000-8000-000000000010"
+                  : "f2000000-0000-4000-8000-000000000011",
+            },
+          ];
+        }
+        if (table === "patient_profiles") {
+          return [{ id: "f2000000-0000-4000-8000-000000000012" }];
+        }
+        if (table === "therapist_profiles") {
+          return [{ id: "f2000000-0000-4000-8000-000000000013" }];
+        }
+        if (table === "bookings") {
+          return [
+            {
+              id: "f2000000-0000-4000-8000-000000000001",
+              starts_at: new Date(Date.now() + 17 * 60_000).toISOString(),
+            },
+          ];
+        }
+        if (table === "session_payments") {
+          return [
+            {
+              financial_status: "paid",
+              id: "f2000000-0000-4000-8000-000000000002",
+              stripe_checkout_session_id: "cs_test_canonical",
+            },
+          ];
+        }
+        if (table === "video_sessions") {
+          return [{ id: "f2000000-0000-4000-8000-000000000003" }];
+        }
+        if (table === "stripe_webhook_events") {
+          return [{ stripe_event_id: "evt_test_canonical" }];
+        }
+        return [];
+      },
+    };
+
+    await expect(
+      resolveCanonicalHmlFixture(admin, {
+        patientEmail: "patient@example.test",
+        therapistEmail: "therapist@example.test",
+      }),
+    ).resolves.toEqual({
+      bookingId: "f2000000-0000-4000-8000-000000000001",
+      sessionPaymentId: "f2000000-0000-4000-8000-000000000002",
+      videoSessionId: "f2000000-0000-4000-8000-000000000003",
+    });
   });
 
   it("extracts the expected HML Supabase project ref", () => {

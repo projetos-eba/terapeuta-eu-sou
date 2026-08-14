@@ -18,8 +18,10 @@ const destroyClient = vi.fn(() => {
   calls.push("destroy");
 });
 const remoteElement = document.createElement("video");
+const localElement = document.createElement("video");
 const mockClient = {
   getAllUser: vi.fn(() => []),
+  getCurrentUserInfo: vi.fn(() => ({ userId: 7 })),
   getMediaStream: vi.fn(() => mockStream),
   init: vi.fn(async () => {
     calls.push("init");
@@ -38,11 +40,11 @@ const mockClient = {
   }),
 };
 const mockStream = {
-  attachVideo: vi.fn(async () => remoteElement),
+  attachVideo: vi.fn(async (userId: number) =>
+    userId === 7 ? localElement : remoteElement,
+  ),
   detachVideo: vi.fn(async () => undefined),
-  getCurrentUserInfo: vi.fn(() => ({ userId: 7 })),
   muteAudio: vi.fn(async () => undefined),
-  renderVideo: vi.fn(async () => undefined),
   startAudio: vi.fn(async () => undefined),
   startVideo: vi.fn(async () => undefined),
   stopAudio: vi.fn(async () => undefined),
@@ -75,6 +77,7 @@ describe("ZoomVideoSessionAdapter", () => {
     calls.length = 0;
     handlers.clear();
     remoteElement.remove();
+    localElement.remove();
     vi.clearAllMocks();
     vi.unstubAllGlobals();
   });
@@ -217,6 +220,70 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(destroyClient).toHaveBeenCalled();
   });
 
+  it("attaches each remote participant only once when Zoom emits concurrent events", async () => {
+    vi.stubGlobal("fetch", accessResponse(0));
+    let releaseAttach: (() => void) | undefined;
+    const attachGate = new Promise<void>((resolve) => {
+      releaseAttach = resolve;
+    });
+    mockStream.attachVideo.mockImplementation(async (userId: number) => {
+      if (userId === 9) await attachGate;
+      return userId === 7 ? localElement : remoteElement;
+    });
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/voce entrou no encontro/i);
+    mockStream.attachVideo.mockClear();
+
+    handlers.get("user-updated")?.([{ bVideoOn: true, userId: 9 }]);
+    handlers.get("peer-video-state-change")?.({ action: "Start", userId: 9 });
+    releaseAttach?.();
+
+    await waitFor(() => {
+      expect(mockStream.attachVideo).toHaveBeenCalledTimes(1);
+      expect(mockStream.attachVideo).toHaveBeenCalledWith(9, 2);
+    });
+  });
+
+  it("uses the VideoClient participant id and attaches self-view after enabling the camera", async () => {
+    vi.stubGlobal("fetch", accessResponse(0));
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/voce entrou no encontro/i);
+    fireEvent.click(screen.getByRole("button", { name: /ativar camera/i }));
+
+    await waitFor(() => {
+      expect(mockClient.getCurrentUserInfo).toHaveBeenCalled();
+      expect(mockStream.startVideo).toHaveBeenCalled();
+      expect(mockStream.attachVideo).toHaveBeenCalledWith(7, 2);
+      expect(screen.getByTestId("zoom-local-video")).toContainElement(
+        localElement,
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /desligar camera/i }));
+    await waitFor(() => {
+      expect(mockStream.detachVideo).toHaveBeenCalledWith(7);
+      expect(mockStream.stopVideo).toHaveBeenCalled();
+    });
+  });
+
   it("allows therapist role 1 to end the session after confirmation", async () => {
     vi.stubGlobal("fetch", accessResponse(1));
     vi.stubGlobal(
@@ -242,6 +309,7 @@ describe("ZoomVideoSessionAdapter", () => {
     ).toBeInTheDocument();
     expect(mockClient.leave).toHaveBeenCalledWith(true);
     expect(destroyClient).toHaveBeenCalled();
+    expect(mockStream.stopVideo).not.toHaveBeenCalled();
   });
 
   it("does not request access twice while loading", async () => {

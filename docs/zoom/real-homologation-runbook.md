@@ -19,10 +19,11 @@ explicita.
 
 ## Harness HML remoto
 
-Use o harness HML separado quando a booking ja existir em HML, paga pelo fluxo
-canonico Stripe test + webhook, e a meta for validar a sessao real contra o app
-remoto com contexts de cliente, terapeuta e Admin. Esse fluxo nao cria fixture,
-nao faz pagamento direto, nao usa `supabase status` local e nao faz deploy.
+Use o harness HML separado para validar a sessao real contra o app remoto com
+contexts de cliente, terapeuta e Admin. Ele pode resolver uma booking elegivel
+ja existente ou preparar uma nova pelo Checkout Stripe test real. Nunca cria
+pagamento direto, nao usa `supabase status` local como evidencia remota e nao
+faz deploy.
 
 Variaveis obrigatorias no mesmo processo do comando:
 
@@ -31,15 +32,27 @@ Variaveis obrigatorias no mesmo processo do comando:
 - `SUPABASE_URL` apontando para o projeto HML
   `emzwqkmrryuqvqiohqnu`
 - `SUPABASE_SERVICE_ROLE_KEY`
+- `ZOOM_HML_PATIENT_EMAIL`
+- `ZOOM_HML_THERAPIST_EMAIL`
+- `ZOOM_HML_ADMIN_EMAIL`
+
+Com IDs preexistentes, continuam aceitas:
+
 - `ZOOM_HML_BOOKING_ID`
 - `ZOOM_HML_SESSION_PAYMENT_ID`
 - `ZOOM_HML_VIDEO_SESSION_ID`
-- `ZOOM_HML_PATIENT_EMAIL`
-- `ZOOM_HML_PATIENT_PASSWORD`
-- `ZOOM_HML_THERAPIST_EMAIL`
-- `ZOOM_HML_THERAPIST_PASSWORD`
-- `ZOOM_HML_ADMIN_EMAIL`
-- `ZOOM_HML_ADMIN_PASSWORD`
+
+Sem IDs, use `--resolve-canonical-hml-fixture`. Para criar uma nova reserva
+quando nenhuma elegivel existir, acrescente `--prepare-canonical-hml-fixture`.
+Esse modo usa um servico online bookable real do terapeuta informado, restaura
+no `finally` qualquer regra temporaria de disponibilidade e confirma Checkout,
+webhook Stripe processado, pagamento `paid` e `video_session` antes de abrir o
+Zoom.
+
+As senhas permanecem aceitas no modo legado. Para nao depender de senhas
+estaticas, `--use-admin-magic-link-sessions` gera sessoes de uso unico em memoria
+via Auth Admin e injeta somente os cookies HTTP-only de cada context. Nenhum
+token e impresso ou gravado na evidencia.
 
 O harness falha fechado quando qualquer item acima estiver ausente, quando a URL
 nao trouxer `_vercel_share`, quando o Supabase nao for HML remoto, quando a
@@ -55,6 +68,9 @@ Execucao:
 node scripts/homologation/zoom-hml.mjs \
   --confirm-single-hml-session \
   --confirm-hml-vercel-share \
+  --prepare-canonical-hml-fixture \
+  --resolve-canonical-hml-fixture \
+  --use-admin-magic-link-sessions \
   --duration-seconds=45
 ```
 
@@ -71,13 +87,17 @@ Regras do harness HML:
 6. Terapeuta entra, o harness valida `therapist_present=true`,
    `provider_session_id` e `hard_ends_at` via Supabase HML.
 7. Paciente entra apenas depois da presenca confiavel do terapeuta.
-8. O harness exercita controles reais do Video SDK no terapeuta
-   (`Silenciar`/`Ativar audio`, `Ativar camera`/`Desligar camera`) e encerra a
-   sessao pelo botao `Encerrar encontro`.
-9. Em caso de falha durante cleanup, o fallback permitido e `PUT
+8. O harness nega e concede novamente a permissao de camera do paciente,
+   confirma entrada inicial sem camera, ativacao durante a chamada, self-view e
+   video remoto para os dois papeis e desligamento consistente.
+9. Durante a chamada, valida desktop, tablet, mobile de 390px e viewport mobile
+   baixo, sem overflow da pagina e com audio, camera e saida dentro do viewport.
+10. O harness exercita audio real do Video SDK e encerra a sessao pelo botao
+   `Encerrar encontro`.
+11. Em caso de falha durante cleanup, o fallback permitido e `PUT
 /videosdk/sessions/{sessionId}/status` via `endSessionByApi`; o harness nunca
    grava fixture paga direta nem atualiza `video_sessions` manualmente.
-10. Evidencia final fica em `.tmp/homologation/zoom-hml-*/evidence.json`,
+12. Evidencia final fica em `.tmp/homologation/zoom-hml-*/evidence.json`,
     somente com IDs em hash.
 
 Reflexos exigidos:
