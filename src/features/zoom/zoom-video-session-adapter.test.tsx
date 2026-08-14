@@ -220,6 +220,39 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(destroyClient).toHaveBeenCalled();
   });
 
+  it("attaches each remote participant only once when Zoom emits concurrent events", async () => {
+    vi.stubGlobal("fetch", accessResponse(0));
+    let releaseAttach: (() => void) | undefined;
+    const attachGate = new Promise<void>((resolve) => {
+      releaseAttach = resolve;
+    });
+    mockStream.attachVideo.mockImplementation(async (userId: number) => {
+      if (userId === 9) await attachGate;
+      return userId === 7 ? localElement : remoteElement;
+    });
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/voce entrou no encontro/i);
+    mockStream.attachVideo.mockClear();
+
+    handlers.get("user-updated")?.([{ bVideoOn: true, userId: 9 }]);
+    handlers.get("peer-video-state-change")?.({ action: "Start", userId: 9 });
+    releaseAttach?.();
+
+    await waitFor(() => {
+      expect(mockStream.attachVideo).toHaveBeenCalledTimes(1);
+      expect(mockStream.attachVideo).toHaveBeenCalledWith(9, 2);
+    });
+  });
+
   it("uses the VideoClient participant id and attaches self-view after enabling the camera", async () => {
     vi.stubGlobal("fetch", accessResponse(0));
 

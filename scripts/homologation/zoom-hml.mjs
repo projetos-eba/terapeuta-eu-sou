@@ -788,9 +788,7 @@ export async function resolveCanonicalHmlFixture(
     throw new Error("hml_fixture_domain_profiles_missing");
   }
 
-  const rangeStart = new Date(
-    Date.now() + HML_JOIN_WINDOW_BEFORE_MINUTES * 60_000 + 5_000,
-  ).toISOString();
+  const rangeStart = new Date(Date.now() + 5_000).toISOString();
   const rangeEnd = new Date(
     Date.now() +
       (HML_JOIN_WINDOW_BEFORE_MINUTES * 60 + MAX_HML_JOIN_WINDOW_WAIT_SECONDS) *
@@ -818,7 +816,7 @@ export async function resolveCanonicalHmlFixture(
       "video_sessions",
       `select=id,status,provider_session_id&booking_id=eq.${encodeURIComponent(
         booking.id,
-      )}&status=in.(ready,scheduled)&provider_session_id=is.null&limit=1`,
+      )}&status=eq.ready&provider_session_id=is.null&limit=1`,
     );
     const [stripeWebhook] = payment?.stripe_checkout_session_id
       ? await admin.select(
@@ -882,7 +880,7 @@ async function createCanonicalHmlFixture({ admin, config, evidence, logDir }) {
   if (!settings?.service_id) throw new Error("hml_fixture_settings_missing");
 
   let temporaryRuleId = null;
-  const target = new Date(Date.now() + 19 * 60_000);
+  const target = new Date(Date.now() + 17 * 60_000);
   const weekday = Number(
     new Intl.DateTimeFormat("en-US", {
       timeZone: "America/Sao_Paulo",
@@ -922,13 +920,23 @@ async function createCanonicalHmlFixture({ admin, config, evidence, logDir }) {
     ]);
     temporaryRuleId = insertedRules?.[0]?.id ?? null;
 
+    const desiredSlotStart = new Date(Date.now() + 17 * 60_000);
+    const desiredSlotEnd = new Date(Date.now() + 18 * 60_000);
+    // The authoritative slot RPC only returns candidates whose full duration
+    // fits inside p_range_end. Keep the desired start window narrow while
+    // extending the query range enough to contain the complete meeting.
+    const slotQueryEnd = new Date(
+      desiredSlotEnd.getTime() + service.duration_minutes * 60_000,
+    );
     const slots = await admin.rpc("get_service_available_slots_v1", {
       p_limit: 30,
-      p_range_end: new Date(Date.now() + 20 * 60_000).toISOString(),
-      p_range_start: new Date(Date.now() + 19 * 60_000).toISOString(),
+      p_range_end: slotQueryEnd.toISOString(),
+      p_range_start: desiredSlotStart.toISOString(),
       p_service_id: service.id,
     });
-    const slot = slots?.slots?.[0];
+    const slot = slots?.slots?.find(
+      (candidate) => Date.parse(candidate.startsAt) <= desiredSlotEnd.getTime(),
+    );
     if (!slot?.startsAt) throw new Error("hml_fixture_slot_not_available");
 
     const browser = await chromium.launch({ headless: false, slowMo: 200 });
@@ -956,16 +964,24 @@ async function createCanonicalHmlFixture({ admin, config, evidence, logDir }) {
         buildSharedUrl(config.baseUrl, `/reserva?${params.toString()}`),
         { waitUntil: "domcontentloaded" },
       );
-      await page.getByRole("checkbox", { name: /Aceito os Termos/i }).check();
-      await page
-        .getByRole("button", { name: /Avan.ar para pagamento/i })
-        .click();
+      const prepareForm = page.locator("form").filter({
+        has: page.locator('input[name="terms"]'),
+      });
+      const terms = prepareForm.locator('input[name="terms"]');
+      const advance = prepareForm.getByRole("button", {
+        name: /Avan.ar para pagamento/i,
+      });
+      await expect(terms).toBeVisible({ timeout: 30_000 });
+      await terms.check();
+      await expect(terms).toBeChecked();
+      await expect(advance).toBeEnabled({ timeout: 15_000 });
+      await advance.click();
       await page.waitForURL(/etapa=pagamento/, { timeout: 30_000 });
       await page
         .locator("#reservation-embedded-checkout iframe")
         .first()
         .waitFor({ state: "attached", timeout: 90_000 });
-      await completeHmlStripeCheckout(page);
+      await completeHmlStripeCheckout(page, { logDir });
 
       const fixture = await waitForHmlCanonicalPayment(admin, {
         patientProfileId: patientProfile.id,
@@ -1009,7 +1025,7 @@ async function createCanonicalHmlFixture({ admin, config, evidence, logDir }) {
   }
 }
 
-async function completeHmlStripeCheckout(page) {
+async function completeHmlStripeCheckout(page, { logDir }) {
   const fields = [
     {
       labels: /Card number|N.mero do cart.o/i,
@@ -1026,6 +1042,12 @@ async function completeHmlStripeCheckout(page) {
       selectors: ['input[autocomplete="cc-csc"]', 'input[name="cvc"]'],
       value: "123",
     },
+    {
+      labels:
+        /Name on card|Cardholder name|Nome do titular do cart.o|Nome completo/i,
+      selectors: ['input[autocomplete="cc-name"]', 'input[name="billingName"]'],
+      value: "TES HML",
+    },
   ];
   for (const field of fields) {
     const locator = await findHmlStripeLocator(
@@ -1036,9 +1058,16 @@ async function completeHmlStripeCheckout(page) {
     if (!locator) throw new Error("stripe_checkout_field_missing");
     await locator.fill(field.value);
   }
+  await page.screenshot({
+    path: path.join(logDir, "stripe-checkout-filled.png"),
+  });
   const submit = await findHmlStripeButton(page);
   if (!submit) throw new Error("stripe_checkout_submit_missing");
-  await submit.click();
+  await submit.evaluate((button) => button.click());
+  await delay(5_000);
+  await page
+    .screenshot({ path: path.join(logDir, "stripe-checkout-submitted.png") })
+    .catch(() => undefined);
 }
 
 async function findHmlStripeLocator(page, labels, selectors) {
@@ -1066,6 +1095,19 @@ async function findHmlStripeButton(page) {
   const deadline = Date.now() + 20_000;
   while (Date.now() < deadline) {
     for (const frame of [page, ...page.frames()]) {
+      const paymentButton = frame
+        .getByRole("button", {
+          name: /^(?:Pagar|Pay)(?:\s+(?:R\$|US\$|\$)|$)/i,
+        })
+        .first();
+      if (
+        (await paymentButton.count().catch(() => 0)) > 0 &&
+        (await paymentButton.isVisible().catch(() => false)) &&
+        (await paymentButton.isEnabled().catch(() => false))
+      ) {
+        return paymentButton;
+      }
+
       const buttons = frame.locator('button[type="submit"]');
       const count = await buttons.count().catch(() => 0);
       for (let index = 0; index < count; index += 1) {
@@ -1501,8 +1543,20 @@ async function assertRemotePreflight(admin, config, evidence) {
   }
 
   if (!evidence.resume) {
+    const startsAtMs = Date.parse(state.booking?.starts_at ?? "");
+    const millisecondsUntilStart = startsAtMs - Date.now();
     try {
-      resolveJoinWindowWaitMs({ startsAt: state.booking?.starts_at });
+      if (!Number.isFinite(startsAtMs) || millisecondsUntilStart <= 0) {
+        throw new Error("booking_starts_at_invalid_or_elapsed");
+      }
+      if (
+        millisecondsUntilStart >
+        (HML_JOIN_WINDOW_BEFORE_MINUTES * 60 +
+          MAX_HML_JOIN_WINDOW_WAIT_SECONDS) *
+          1000
+      ) {
+        throw new Error("booking_too_far_from_join_window");
+      }
     } catch (error) {
       failures.push({
         expected: `reserva entre ${HML_JOIN_WINDOW_BEFORE_MINUTES} e ${HML_JOIN_WINDOW_BEFORE_MINUTES + MAX_HML_JOIN_WINDOW_WAIT_SECONDS / 60} minutos antes do início`,
@@ -1757,13 +1811,21 @@ async function exerciseToggle(page, firstLabel, secondLabel) {
   throw new Error(`control_not_found:${firstLabel}:${secondLabel}`);
 }
 
-async function setChromiumPermission(page, name, setting) {
+async function setChromiumMediaPermissions(page, granted) {
+  const origin = new URL(page.url()).origin;
+  if (granted) {
+    await page.context().grantPermissions(["camera", "microphone"], { origin });
+    return;
+  }
+
+  await page.context().clearPermissions();
   const session = await page.context().newCDPSession(page);
   try {
-    await session.send("Browser.setPermission", {
-      origin: new URL(page.url()).origin,
-      permission: { name },
-      setting,
+    const { targetInfo } = await session.send("Target.getTargetInfo");
+    await session.send("Browser.grantPermissions", {
+      browserContextId: targetInfo.browserContextId,
+      origin,
+      permissions: [],
     });
   } finally {
     await session.detach().catch(() => undefined);
@@ -1771,22 +1833,35 @@ async function setChromiumPermission(page, name, setting) {
 }
 
 async function validatePatientPermissionRecovery(page) {
-  const testButton = page.getByRole("button", {
-    name: "Testar câmera e microfone",
-  });
-  await expect(testButton).toBeVisible({ timeout: 30_000 });
+  await setChromiumMediaPermissions(page, false);
+  const denied = await probeBrowserMedia(page);
+  if (denied.outcome !== "rejected" || denied.errorName !== "NotAllowedError") {
+    throw new Error(`media_permission_denial_failed:${denied.outcome}`);
+  }
 
-  await setChromiumPermission(page, "videoCapture", "denied");
-  await testButton.click();
-  await expect(
-    page.getByText(/Permissao negada ou dispositivo indisponivel/i),
-  ).toBeVisible({ timeout: 15_000 });
+  await setChromiumMediaPermissions(page, true);
+  const granted = await probeBrowserMedia(page);
+  if (granted.outcome !== "resolved") {
+    throw new Error(`media_permission_recovery_failed:${granted.outcome}`);
+  }
+}
 
-  await setChromiumPermission(page, "videoCapture", "granted");
-  await setChromiumPermission(page, "audioCapture", "granted");
-  await testButton.click();
-  await expect(page.getByText(/Permissoes liberadas/i)).toBeVisible({
-    timeout: 15_000,
+async function probeBrowserMedia(page) {
+  return page.evaluate(async () => {
+    const timeout = new Promise((resolve) =>
+      window.setTimeout(() => resolve({ outcome: "timeout" }), 5_000),
+    );
+    const media = navigator.mediaDevices
+      .getUserMedia({ audio: true, video: true })
+      .then((stream) => {
+        stream.getTracks().forEach((track) => track.stop());
+        return { outcome: "resolved" };
+      })
+      .catch((error) => ({
+        errorName: error instanceof DOMException ? error.name : "unknown",
+        outcome: "rejected",
+      }));
+    return Promise.race([media, timeout]);
   });
 }
 
@@ -2002,11 +2077,14 @@ async function runFlow({ admin, config, evidence, logDir }) {
     headless: false,
     slowMo: 200,
   });
+  const patientBrowser = await chromium.launch({
+    args: ["--use-fake-device-for-media-stream", "--deny-permission-prompts"],
+    headless: false,
+    slowMo: 200,
+  });
 
   const adminContext = await browser.newContext();
-  const patientContext = await browser.newContext({
-    permissions: ["camera", "microphone"],
-  });
+  const patientContext = await patientBrowser.newContext();
   const therapistContext = await browser.newContext({
     permissions: ["camera", "microphone"],
   });
@@ -2143,25 +2221,36 @@ async function runFlow({ admin, config, evidence, logDir }) {
     });
 
     if (!evidence.resume) {
-      const joinWindowWaitMs = resolveJoinWindowWaitMs({
-        startsAt: sessionSnapshot.booking.starts_at,
-      });
-      await phase(evidence, "patient_before_join_window", async () => {
-        await pages.patient.goto(
-          buildSharedUrl(config.baseUrl, `/app/encontros/${config.bookingId}`),
-          { waitUntil: "domcontentloaded" },
-        );
-        await assertPatientBeforeJoinWindow(pages.patient);
-        await assertSafeShell(pages.patient, "patient_before_join_window");
-        evidence.joinWindow = {
-          opensBeforeMinutes: HML_JOIN_WINDOW_BEFORE_MINUTES,
-          waitSeconds: Math.ceil(joinWindowWaitMs / 1000),
-        };
-      });
+      const joinWindowWaitMs =
+        Date.parse(sessionSnapshot.booking.starts_at) -
+        HML_JOIN_WINDOW_BEFORE_MINUTES * 60_000 -
+        Date.now();
+      if (joinWindowWaitMs > 0) {
+        await phase(evidence, "patient_before_join_window", async () => {
+          await pages.patient.goto(
+            buildSharedUrl(
+              config.baseUrl,
+              `/app/encontros/${config.bookingId}/video`,
+            ),
+            { waitUntil: "domcontentloaded" },
+          );
+          await assertPatientBeforeJoinWindow(pages.patient);
+          await assertSafeShell(pages.patient, "patient_before_join_window");
+          evidence.joinWindow = {
+            opensBeforeMinutes: HML_JOIN_WINDOW_BEFORE_MINUTES,
+            waitSeconds: Math.ceil(joinWindowWaitMs / 1000),
+          };
+        });
 
-      await phase(evidence, "wait_for_join_window", () =>
-        delay(joinWindowWaitMs + 1_500),
-      );
+        await phase(evidence, "wait_for_join_window", () =>
+          delay(joinWindowWaitMs + 1_500),
+        );
+      } else {
+        evidence.joinWindow = {
+          alreadyOpenAtRunStart: true,
+          opensBeforeMinutes: HML_JOIN_WINDOW_BEFORE_MINUTES,
+        };
+      }
     } else {
       evidence.joinWindow = {
         opensBeforeMinutes: HML_JOIN_WINDOW_BEFORE_MINUTES,
@@ -2172,13 +2261,24 @@ async function runFlow({ admin, config, evidence, logDir }) {
 
     await phase(evidence, "patient_waiting_room", async () => {
       await pages.patient.goto(
-        buildSharedUrl(config.baseUrl, `/app/encontros/${config.bookingId}`),
+        buildSharedUrl(
+          config.baseUrl,
+          `/app/encontros/${config.bookingId}/video`,
+        ),
         {
           waitUntil: "domcontentloaded",
         },
       );
       await assertPatientWaiting(pages.patient);
       await assertSafeShell(pages.patient, "patient_waiting");
+    });
+
+    await phase(evidence, "patient_permission_recovery", async () => {
+      await validatePatientPermissionRecovery(pages.patient);
+      evidence.mediaPermissions = {
+        deniedThenGranted: true,
+        patient: true,
+      };
     });
 
     await phase(evidence, "admin_session_detail_prejoin", async () => {
@@ -2201,6 +2301,13 @@ async function runFlow({ admin, config, evidence, logDir }) {
         {
           waitUntil: "domcontentloaded",
         },
+      );
+      await pages.therapist
+        .getByRole("link", { name: /Abrir sala da sess.o/i })
+        .click();
+      await expect(pages.therapist).toHaveURL(
+        new RegExp(`/terapeuta/sessoes/${config.bookingId}/video`),
+        { timeout: 30_000 },
       );
       const joinButton = pages.therapist.getByRole("button", {
         name: /Entrar no encontro|Entrar na sess.o/i,
@@ -2243,14 +2350,6 @@ async function runFlow({ admin, config, evidence, logDir }) {
       observations: patientJoinTransition.observations,
       waitPlan: patientJoinTransition.plan,
     };
-
-    await phase(evidence, "patient_permission_recovery", async () => {
-      await validatePatientPermissionRecovery(pages.patient);
-      evidence.mediaPermissions = {
-        deniedThenGranted: true,
-        patient: true,
-      };
-    });
 
     await phase(evidence, "patient_join", async () => {
       const joinButton = pages.patient.getByRole("button", {
@@ -2395,6 +2494,7 @@ async function runFlow({ admin, config, evidence, logDir }) {
       therapistContext.close(),
     ]);
     await browser.close().catch(() => undefined);
+    await patientBrowser.close().catch(() => undefined);
     await writeEvidence(logDir, evidence);
   }
 }

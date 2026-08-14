@@ -161,6 +161,7 @@ export function ZoomVideoSessionAdapter({
   const localUserIdRef = useRef<number | null>(null);
   const localUserElementsRef = useRef<HTMLElement[]>([]);
   const remoteUserElementsRef = useRef<Map<number, HTMLElement[]>>(new Map());
+  const remoteVideoAttachInFlightRef = useRef<Set<number>>(new Set());
   const listenersRef = useRef<
     Array<{ event: string; handler: (...args: unknown[]) => void }>
   >([]);
@@ -715,6 +716,7 @@ export function ZoomVideoSessionAdapter({
     zoomModuleRef.current = null;
     localUserIdRef.current = null;
     remoteUserElementsRef.current.clear();
+    remoteVideoAttachInFlightRef.current.clear();
     setRemoteParticipantCount(0);
     setVideoOn(false);
     setAudioMuted(true);
@@ -830,7 +832,13 @@ export function ZoomVideoSessionAdapter({
     const stream = streamRef.current;
     const container = remoteVideoRef.current;
     if (!stream?.attachVideo || !container) return;
-    if (remoteUserElementsRef.current.has(userId)) return;
+    if (
+      remoteUserElementsRef.current.has(userId) ||
+      remoteVideoAttachInFlightRef.current.has(userId)
+    )
+      return;
+
+    remoteVideoAttachInFlightRef.current.add(userId);
 
     try {
       const attached = await stream.attachVideo(userId, 2);
@@ -846,6 +854,8 @@ export function ZoomVideoSessionAdapter({
       );
     } catch (error) {
       setMessage(formatMediaError(error, "video remoto"));
+    } finally {
+      remoteVideoAttachInFlightRef.current.delete(userId);
     }
   }
 
