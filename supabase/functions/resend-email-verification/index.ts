@@ -50,10 +50,24 @@ runtime.serve(async (request) => {
   try {
     automaticallyConfirmed = isEmailAutomaticallyConfirmed(runtime);
   } catch {
+    console.error(
+      JSON.stringify({
+        code: "EMAIL_VERIFICATION_RESEND_CONFIRMATION_CONFIG_INVALID",
+      }),
+    );
     return jsonResponse({ ok: true, message: PUBLIC_MESSAGE });
   }
 
   if (!supabaseUrl || !serviceRoleKey || !apiKey || automaticallyConfirmed) {
+    console.error(
+      JSON.stringify({
+        code: "EMAIL_VERIFICATION_RESEND_CONFIGURATION_INCOMPLETE",
+        automaticallyConfirmed,
+        hasEmailApiKey: Boolean(apiKey),
+        hasServiceRoleKey: Boolean(serviceRoleKey),
+        hasSupabaseUrl: Boolean(supabaseUrl),
+      }),
+    );
     return jsonResponse({ ok: true, message: PUBLIC_MESSAGE });
   }
 
@@ -120,7 +134,7 @@ runtime.serve(async (request) => {
     )}/confirmar-email?token=${encodeURIComponent(token)}`;
     const provider = new HostingerMailApiProvider({ apiKey });
 
-    await sendTransactionalEmail(client, provider, {
+    const emailResult = await sendTransactionalEmail(client, provider, {
       actionKey: "email_verification",
       correlationId: crypto.randomUUID(),
       recipient: {
@@ -135,7 +149,18 @@ runtime.serve(async (request) => {
         url: verificationUrl,
       },
     });
+
+    if (emailResult.status !== "success") {
+      console.error(
+        JSON.stringify({
+          code: "EMAIL_VERIFICATION_RESEND_NOT_ACCEPTED",
+          correlationId: emailResult.correlationId,
+          status: emailResult.status,
+        }),
+      );
+    }
   } catch {
+    console.error(JSON.stringify({ code: "EMAIL_VERIFICATION_RESEND_FAILED" }));
     // Public response intentionally stays generic.
   }
 

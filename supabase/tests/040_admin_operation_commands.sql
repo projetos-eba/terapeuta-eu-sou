@@ -182,6 +182,10 @@ where therapist_profile_id = (
 order by created_at desc, id desc
 limit 1;
 
+update public.therapist_verifications
+set status = 'in_review'::public.therapist_status
+where id = (select verification_id from admin_operation_command_verification);
+
 select lives_ok(
   format(
     'select public.admin_execute_operation_command_v1(''verification.approve'', %L::uuid, ''Documentacao revisada e aprovada'', ''verification-approve-1'')',

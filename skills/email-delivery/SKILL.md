@@ -12,13 +12,14 @@ Use esta skill ao implementar, auditar ou refatorar e-mails transacionais, confi
 6. `docs/design-system/design-system.md`.
 7. `src/lib/routes.ts`.
 8. `src/lib/supabase/edge-functions.ts`.
-9. `supabase/migrations/20260724130000_transactional_email_auth_flows.sql`.
+9. `supabase/migrations/20260724131000_transactional_email_auth_flows.sql`.
 10. `supabase/migrations/20260724133000_email_verification_status_tokens.sql`.
 11. `supabase/migrations/20260724134000_add_profiles_email_confirmed_at.sql`.
-12. `supabase/functions/_shared/email/`.
-13. `supabase/functions/_shared/auth/`.
-14. `supabase/functions/client-auth-signup/`.
-15. `supabase/functions/therapist-auth-signup/`.
+12. `supabase/migrations/20260814190000_provision_transactional_email_actions.sql`.
+13. `supabase/functions/_shared/email/`.
+14. `supabase/functions/_shared/auth/`.
+15. `supabase/functions/client-auth-signup/`.
+16. `supabase/functions/therapist-auth-signup/`.
 
 ## Rotas e APIs
 
@@ -40,6 +41,10 @@ Use esta skill ao implementar, auditar ou refatorar e-mails transacionais, confi
 - `email_verification_status_tokens`: tokens opacos de polling; guardar somente hash SHA-256, sem e-mail.
 - `email_rate_limit_events`: eventos persistentes com identificadores hashados.
 - `profiles.email_confirmed_at`: espelho transacional da confirmacao do Supabase Auth para polling e bloqueio server-side; Auth continua sendo fonte autoritativa.
+
+As acoes essenciais de Auth sao provisionadas pela migration, sem sobrescrever
+um estado operacional que tenha sido desativado deliberadamente. Remetente e
+habilitacao por acao continuam configuracao operacional do ambiente.
 
 ## Edge Functions
 

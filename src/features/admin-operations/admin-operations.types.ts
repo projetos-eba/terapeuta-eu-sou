@@ -4,6 +4,7 @@ import type {
   AdminListPageInfo,
   AdminListQuery,
 } from "@/features/admin-shared/admin-list-query";
+import type { AdminProfessionalDocumentReviewData } from "@/features/therapist-private-documents/private-documents.types";
 
 export type AdminOperationMetric = {
   description: string;
@@ -75,17 +76,59 @@ export type AdminOperationDetailSection = {
   title: string;
 };
 
+/**
+ * Public-safe profile preview used only by the professional detail.
+ *
+ * This intentionally mirrors the published projection rather than profile
+ * drafts. Administrative detail must not become a backdoor to unpublished
+ * therapist content.
+ */
+export type AdminProfessionalPublishedProfile = {
+  content: {
+    essenceBody: string | null;
+    experienceYears: number | null;
+    guideItems: Array<{ label: string }>;
+    invitationBody: string | null;
+    shortIntro: string | null;
+  } | null;
+  services: Array<{
+    description: string | null;
+    durationMinutes: number | null;
+    priceCents: number | null;
+    serviceTitle: string | null;
+    therapyName: string | null;
+  }> | null;
+  status: "available" | "unavailable";
+};
+
+export type AdminProfessionalVerificationSummary = {
+  reviewedAt: string | null;
+  status:
+    | "approved"
+    | "changes_requested"
+    | "draft"
+    | "in_review"
+    | "none"
+    | "rejected"
+    | "submitted"
+    | "suspended";
+  submittedAt: string | null;
+};
+
 export type AdminOperationDetailPageData = {
   auditEvents: AdminOperationAuditEvent[];
   backHref: string;
   generatedAt: string;
   id: string;
   module: AdminOperationModuleKey;
+  privateDocuments?: AdminProfessionalDocumentReviewData | null;
   safetyNotes: string[];
   sections: AdminOperationDetailSection[];
   statusLabel?: string;
   subtitle?: string;
   title: string;
+  publicProfile?: AdminProfessionalPublishedProfile;
+  verificationSummary?: AdminProfessionalVerificationSummary | null;
 };
 
 export type AdminOperationDetailPageResult =

@@ -37,6 +37,9 @@ function mapProfessionalRow(row: UnknownRecord, index: number) {
       field("Perfil público", asText(row.public_status)),
       field("Publicado", asBooleanLabel(row.is_public)),
       field("Reservas", asBooleanLabel(row.is_accepting_bookings)),
+      field("Publicação", publicationLabel(row.publication_eligibility)),
+      field("Pendências de publicação", publicationBlockers(row.publication_blockers)),
+      field("Verificação", asText(row.verification_status)),
       field("Serviços", formatCount(row.service_count)),
       field("Stripe Connect", asText(row.connect_status)),
       field("Próxima sessão", formatDate(row.next_session_at)),
@@ -59,6 +62,8 @@ function mapVerificationRow(row: UnknownRecord, index: number) {
       field("Perfil", asText(row.therapist_profile_id)),
       field("Enviado", formatDate(row.submitted_at)),
       field("Revisado", formatDate(row.reviewed_at)),
+      field("Publicação", publicationLabel(row.publication_eligibility)),
+      field("Pendências de publicação", publicationBlockers(row.publication_blockers)),
       field("Atualizado", formatDate(row.updated_at)),
     ]),
     id,
@@ -202,6 +207,9 @@ function getDetailSections(
           "Atendimento online",
           asBooleanLabel(record.accepts_online_sessions),
         ),
+        field("Elegibilidade pública", publicationLabel(record.publication_eligibility)),
+        field("Bloqueadores reais", publicationBlockers(record.publication_blockers)),
+        field("Última verificação", asText(record.verification_status)),
       ]),
       section("Operação", [
         field("Serviços totais", formatCount(record.service_count)),
@@ -329,6 +337,9 @@ function getDetailSections(
       field("Revisado por", asText(record.reviewed_by)),
       field("Enviado em", formatDate(record.submitted_at)),
       field("Revisado em", formatDate(record.reviewed_at)),
+      field("Estado administrativo do perfil", asText(record.profile_status)),
+      field("Elegibilidade pública", publicationLabel(record.publication_eligibility)),
+      field("Bloqueadores reais", publicationBlockers(record.publication_blockers)),
     ]),
     timestampSection(record),
   ];
@@ -388,6 +399,30 @@ function asBooleanLabel(value: unknown) {
   if (value === false) return "Não";
 
   return "";
+}
+
+function publicationLabel(value: unknown) {
+  if (!isRecord(value)) return "";
+  return value.eligible === true
+    ? "Publicado e elegível"
+    : "Aprovado · publicação pendente";
+}
+
+function publicationBlockers(value: unknown) {
+  if (!Array.isArray(value)) return "";
+  const labels: Record<string, string> = {
+    no_active_bookable_online_service: "nenhum serviço publicável",
+    not_accepting_bookings: "não aceita novos agendamentos",
+    online_sessions_disabled: "atendimento online desativado",
+    profile_not_approved: "cadastro ainda não aprovado",
+    profile_not_public: "perfil público desativado",
+    therapy_category_inactive: "categoria da terapia inativa",
+    therapy_not_public: "terapia não publicada ou não visível",
+  };
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => labels[item] ?? item)
+    .join(" · ");
 }
 
 function formatMinutes(value: unknown) {

@@ -165,64 +165,8 @@ using (
   )
 );
 
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values
-  (
-    'therapist-public-media',
-    'therapist-public-media',
-    true,
-    5242880,
-    array['image/jpeg', 'image/png', 'image/webp', 'video/mp4']::text[]
-  ),
-  (
-    'therapist-private-documents',
-    'therapist-private-documents',
-    false,
-    10485760,
-    array['application/pdf', 'image/jpeg', 'image/png', 'image/webp']::text[]
-  )
-on conflict (id) do update
-set
-  public = excluded.public,
-  file_size_limit = excluded.file_size_limit,
-  allowed_mime_types = excluded.allowed_mime_types;
-
-drop policy if exists "Public therapist media is readable"
-  on storage.objects;
-create policy "Public therapist media is readable"
-on storage.objects
-for select
-using (bucket_id = 'therapist-public-media');
-
-drop policy if exists "Therapists manage own public media folder"
-  on storage.objects;
-create policy "Therapists manage own public media folder"
-on storage.objects
-for all
-to authenticated
-using (
-  bucket_id = 'therapist-public-media'
-  and (storage.foldername(name))[1] = auth.uid()::text
-)
-with check (
-  bucket_id = 'therapist-public-media'
-  and (storage.foldername(name))[1] = auth.uid()::text
-);
-
-drop policy if exists "Therapists manage own private document folder"
-  on storage.objects;
-create policy "Therapists manage own private document folder"
-on storage.objects
-for all
-to authenticated
-using (
-  bucket_id = 'therapist-private-documents'
-  and (storage.foldername(name))[1] = auth.uid()::text
-)
-with check (
-  bucket_id = 'therapist-private-documents'
-  and (storage.foldername(name))[1] = auth.uid()::text
-);
+-- Storage buckets are declared in config.toml. Storage RLS is platform-owned
+-- and must be managed after the Storage service has initialized its schema.
 
 revoke insert, update, delete on public.therapist_profiles from anon, authenticated;
 revoke insert, update, delete on public.therapist_profile_content_versions from anon, authenticated;
