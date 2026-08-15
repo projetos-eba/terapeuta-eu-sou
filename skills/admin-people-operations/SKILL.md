@@ -144,6 +144,12 @@ refresh, cópia de link e QA com Playwright.
 - A lista `/admin/profissionais/verificacoes` continua lendo apenas
   `therapist_verifications`; perfis aptos não devem depender de inferência
   client-side para aparecer.
+- `professional.publish` é o único comando administrativo que pode ativar a
+  presença pública e as reservas. Ele exige `admin.professionals.verify`,
+  motivo, `request_id`, auditoria e critérios autoritativos satisfeitos; nunca
+  é uma exceção aos blockers de serviço, terapia, categoria ou online-only.
+- Relações entre profissional e verificação existem apenas nos DTOs seguros
+  para decidir o destino de navegação. Não renderizar UUIDs técnicos na tela.
 - O reparo de inconsistências nunca aprova automaticamente: perfis publicados
   elegíveis sem fila entram como `submitted`; aprovados e suspensos permanecem
   inalterados.

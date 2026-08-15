@@ -35,6 +35,67 @@ describe("admin operation mappers", () => {
     );
   });
 
+  it("opens the current verification for a professional awaiting approval", () => {
+    const [row] = mapAdminOperationRows({
+      module: "professionals",
+      rows: [
+        {
+          id: "therapist-1",
+          latest_verification_id: "verification-1",
+          public_name: "Ana Oliveira",
+          status: "in_review",
+          verification_status: "in_review",
+        },
+      ],
+    });
+
+    expect(row?.detailHref).toBe(
+      "/admin/profissionais/verificacoes/verification-1",
+    );
+  });
+
+  it("opens the professional detail from an approved verification", () => {
+    const [row] = mapAdminOperationRows({
+      module: "verifications",
+      rows: [
+        {
+          id: "verification-1",
+          status: "approved",
+          therapist_name: "Ana Oliveira",
+          therapist_profile_id: "therapist-1",
+        },
+      ],
+    });
+
+    expect(row?.detailHref).toBe("/admin/profissionais/therapist-1");
+    expect(row?.fields).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ value: "therapist-1" }),
+      ]),
+    );
+  });
+
+  it("keeps internal professional relationships out of verification detail fields", () => {
+    const detail = mapAdminOperationDetail({
+      auditEvents: [],
+      generatedAt: "2026-08-15T02:00:00.000Z",
+      module: "verifications",
+      record: {
+        id: "verification-1",
+        status: "approved",
+        therapist_name: "Ana Oliveira",
+        therapist_profile_id: "therapist-1",
+      },
+    });
+
+    expect(detail.relatedProfessionalId).toBe("therapist-1");
+    expect(detail.sections.flatMap((section) => section.fields)).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ value: "therapist-1" }),
+      ]),
+    );
+  });
+
   it("does not expose review comments in admin moderation list rows", () => {
     const [row] = mapAdminOperationRows({
       module: "reviews",

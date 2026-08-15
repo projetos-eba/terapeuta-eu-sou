@@ -29,9 +29,18 @@ export function mapAdminOperationRows({
 
 function mapProfessionalRow(row: UnknownRecord, index: number) {
   const id = asText(row.id) || `professional-${index}`;
+  const verificationId = asText(row.latest_verification_id);
+  const verificationStatus = asText(row.verification_status);
+  const pendingVerification =
+    Boolean(verificationId) &&
+    ["changes_requested", "in_review", "rejected", "submitted"].includes(
+      verificationStatus,
+    );
 
   return {
-    detailHref: getAdminOperationDetailHref("professionals", id),
+    detailHref: pendingVerification
+      ? routes.admin.verificationDetail(verificationId)
+      : getAdminOperationDetailHref("professionals", id),
     fields: compactFields([
       field("Plano", asText(row.plan)),
       field("Perfil público", asText(row.public_status)),
@@ -55,11 +64,15 @@ function mapProfessionalRow(row: UnknownRecord, index: number) {
 function mapVerificationRow(row: UnknownRecord, index: number) {
   const therapistName = asText(row.therapist_name);
   const id = asText(row.id) || `verification-${index}`;
+  const professionalId = asText(row.therapist_profile_id);
+  const status = asText(row.status);
 
   return {
-    detailHref: getAdminOperationDetailHref("verifications", id),
+    detailHref:
+      status === "approved" && professionalId
+        ? routes.admin.professionalDetail(professionalId)
+        : getAdminOperationDetailHref("verifications", id),
     fields: compactFields([
-      field("Perfil", asText(row.therapist_profile_id)),
       field("Enviado", formatDate(row.submitted_at)),
       field("Revisado", formatDate(row.reviewed_at)),
       field("Publicação", publicationLabel(row.publication_eligibility)),
@@ -170,12 +183,20 @@ export function mapAdminOperationDetail({
   const id = asText(record.id);
   const row = mapAdminOperationRows({ module, rows: [record] })[0];
 
+  const relatedProfessionalId =
+    module === "verifications" ? asText(record.therapist_profile_id) || null : null;
+  const relatedVerificationId =
+    module === "professionals" ? asText(record.latest_verification_id) || null : null;
+
   return {
     auditEvents: auditEvents.filter(isRecord).map(mapAuditEvent),
     backHref: getAdminOperationBackHref(module),
     generatedAt,
     id,
     module,
+    relatedProfessionalId,
+    relatedVerificationId,
+    canPublish: canPublishAdministratively(record),
     safetyNotes: getDetailSafetyNotes(module),
     sections: getDetailSections(module, record),
     statusLabel: row?.statusLabel,
@@ -191,8 +212,6 @@ function getDetailSections(
   if (module === "professionals") {
     return [
       section("Identidade operacional", [
-        field("ID do perfil", asText(record.id)),
-        field("Usuário", asText(record.user_id)),
         field("Slug público", asText(record.slug)),
         field("Cidade", asLocation(record.city, record.state, record.country)),
         field("Idiomas", asList(record.languages)),
@@ -325,7 +344,6 @@ function getDetailSections(
       field("Verificação", asText(record.id)),
       field("Status", asText(record.status)),
       field("Terapeuta", asText(record.therapist_name)),
-      field("Perfil terapeuta", asText(record.therapist_profile_id)),
       field(
         "Ajuste solicitado",
         asBooleanLabel(record.changes_requested_present),
@@ -370,6 +388,24 @@ function timestampSection(record: UnknownRecord) {
 
 function field(label: string, value: string) {
   return value ? { label, value } : null;
+}
+
+function canPublishAdministratively(record: UnknownRecord) {
+  const eligibility = asRecordOrNull(record.publication_eligibility);
+  const blockers = Array.isArray(eligibility?.blockers)
+    ? eligibility.blockers.filter((blocker): blocker is string => typeof blocker === "string")
+    : [];
+  const publicationSwitchBlockers = new Set([
+    "not_accepting_bookings",
+    "profile_not_public",
+    "profile_not_published",
+  ]);
+
+  return (
+    eligibility?.eligible === false &&
+    blockers.length > 0 &&
+    blockers.every((blocker) => publicationSwitchBlockers.has(blocker))
+  );
 }
 
 function asRecordOrNull(value: unknown): UnknownRecord | null {

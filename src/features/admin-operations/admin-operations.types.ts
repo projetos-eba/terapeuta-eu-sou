@@ -121,6 +121,14 @@ export type AdminOperationDetailPageData = {
   generatedAt: string;
   id: string;
   module: AdminOperationModuleKey;
+  /**
+   * Relacionamento usado exclusivamente para navegação e comandos entre
+   * Profissionais e Verificações. Nunca é apresentado como dado de interface.
+   */
+  relatedProfessionalId?: string | null;
+  relatedVerificationId?: string | null;
+  /** Indica se a publicação administrativa pode ser solicitada agora. */
+  canPublish?: boolean;
   privateDocuments?: AdminProfessionalDocumentReviewData | null;
   safetyNotes: string[];
   sections: AdminOperationDetailSection[];
