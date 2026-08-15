@@ -165,6 +165,37 @@ describe("admin operation command route", () => {
     );
   });
 
+  it("maps administrative publication to the verification capability", async () => {
+    sessionMocks.readAdminSessionFromAccessToken.mockResolvedValue({
+      accessToken: "admin-token",
+      avatarUrl: null,
+      email: "admin@example.test",
+      name: "Admin TES",
+      permissions: ["admin.professionals.verify"],
+      role: "admin",
+      userId: "admin-user",
+    });
+    const fetchMock = vi.fn(async () => jsonResponse({ ok: true }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      makeJsonRequest({
+        action: "professional.publish",
+        entityId: "22222222-2222-4222-8222-222222222222",
+        reason: "Perfil revisado e pronto para publicação.",
+        requestId: "publication-request",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        body: expect.stringContaining("professional.publish"),
+      }),
+    );
+  });
+
   it("allows pausing verification review through v2", async () => {
     sessionMocks.readAdminSessionFromAccessToken.mockResolvedValue({
       accessToken: "admin-token",

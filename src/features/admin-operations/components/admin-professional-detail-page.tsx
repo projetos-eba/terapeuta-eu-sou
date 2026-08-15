@@ -78,7 +78,6 @@ export function AdminProfessionalDetailPage({
   const publication = describePublication(profile);
   const progressStages = buildProfessionalProgressStages({
     profile,
-    review: data.privateDocuments ?? null,
     traceability,
     verificationSummary: data.verificationSummary ?? null,
   });
@@ -977,28 +976,13 @@ function documentStatusCopy(
 
 function buildProfessionalProgressStages({
   profile,
-  review,
   traceability,
   verificationSummary,
 }: {
   profile: Map<string, string>;
-  review: AdminOperationDetailPageData["privateDocuments"];
   traceability: AdminOperationField[];
   verificationSummary: AdminOperationDetailPageData["verificationSummary"];
 }) {
-  if (review?.timeline.steps.length) {
-    return review.timeline.steps.map((step) => ({
-      detail: step.detail ?? adminTimelineFallback(step.key),
-      eyebrow: progressEyebrow(
-        step.state === "complete",
-        step.state === "current",
-      ),
-      key: step.key,
-      label: step.label,
-      state: step.state,
-    }));
-  }
-
   const traceabilityMap = fieldMap(traceability);
   const verificationStatus = verificationSummary?.status ?? "none";
   const createdAt = traceabilityMap.get("Criado em");
@@ -1136,16 +1120,6 @@ function reachedPostReview(status: string) {
 function progressEyebrow(reached: boolean, current: boolean) {
   if (current) return "Agora";
   return reached ? "Concluído" : "Pendente";
-}
-
-function adminTimelineFallback(
-  key: "approved" | "bookable" | "created" | "published" | "review",
-) {
-  if (key === "created") return "Cadastro registrado na plataforma.";
-  if (key === "review") return "Acompanhamento administrativo em andamento.";
-  if (key === "approved") return "Decisão administrativa registrada.";
-  if (key === "published") return "Perfil publicado na superfície pública.";
-  return "Disponibilidade atual para agendamento.";
 }
 
 function ProgressStageBullet({

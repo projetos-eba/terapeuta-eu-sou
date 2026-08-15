@@ -15,6 +15,7 @@ import type {
 } from "../admin-operations.types";
 
 type CommandAction =
+  | "professional.publish"
   | "professional.reactivate"
   | "professional.suspend"
   | "review.hide"
@@ -29,6 +30,7 @@ type CommandAction =
 
 type CommandOption = {
   action: CommandAction;
+  entityId?: string;
   label: string;
   tone: "danger" | "neutral" | "success" | "warning";
 };
@@ -48,8 +50,8 @@ export function AdminOperationCommandPanel({
   const [reason, setReason] = useState("");
   const [success, setSuccess] = useState<string | null>(null);
   const options = useMemo(
-    () => getCommandOptions(data.module, data.statusLabel),
-    [data.module, data.statusLabel],
+    () => getCommandOptions(data),
+    [data],
   );
 
   if (options.length === 0) {
@@ -77,7 +79,7 @@ export function AdminOperationCommandPanel({
       const response = await fetch("/api/admin/operations", {
         body: JSON.stringify({
           action: option.action,
-          entityId: data.id,
+          entityId: option.entityId ?? data.id,
           reason: trimmedReason,
           requestId: crypto.randomUUID(),
         }),
@@ -177,9 +179,12 @@ export function AdminOperationCommandPanel({
 }
 
 export function getCommandOptions(
-  module: AdminOperationModuleKey,
-  statusLabel?: string,
+  data: Pick<
+    AdminOperationDetailPageData,
+    "canPublish" | "module" | "relatedProfessionalId" | "statusLabel"
+  >,
 ): CommandOption[] {
+  const { canPublish, module, relatedProfessionalId, statusLabel } = data;
   if (module === "professionals") {
     if (statusLabel === "suspended") {
       return [
@@ -191,15 +196,26 @@ export function getCommandOptions(
       ];
     }
 
-    return statusLabel === "approved"
-      ? [
+    if (statusLabel === "approved") {
+      return [
+        ...(canPublish
+          ? [
+              {
+                action: "professional.publish" as const,
+                label: "Tornar publicado e elegível",
+                tone: "success" as const,
+              },
+            ]
+          : []),
           {
             action: "professional.suspend",
             label: "Suspender profissional",
             tone: "danger",
           },
-        ]
-      : [];
+        ];
+    }
+
+    return [];
   }
 
   if (module === "verifications") {
@@ -239,6 +255,21 @@ export function getCommandOptions(
           action: "verification.reopen_review",
           label: "Reabrir análise",
           tone: "neutral",
+        },
+      ];
+    }
+
+    if (
+      statusLabel === "approved" &&
+      canPublish &&
+      relatedProfessionalId
+    ) {
+      return [
+        {
+          action: "professional.publish",
+          entityId: relatedProfessionalId,
+          label: "Tornar publicado e elegível",
+          tone: "success",
         },
       ];
     }
@@ -294,7 +325,7 @@ function getEmptyActionMessage(
   statusLabel?: string,
 ) {
   if (module === "verifications" && statusLabel === "approved") {
-    return "Esta análise já foi concluída e não possui novas decisões pendentes.";
+    return "Esta análise foi concluída. A publicação só fica disponível quando o perfil atende a todos os critérios.";
   }
 
   if (module === "professionals" && statusLabel !== "approved") {
@@ -316,6 +347,7 @@ function getCommandSuccessMessage(action: CommandAction, payload?: ApiEnvelope) 
       : "Verificação aprovada. A publicação ainda está pendente.";
   }
   const messages: Record<CommandAction, string> = {
+    "professional.publish": "Perfil publicado e disponível para reservas.",
     "professional.reactivate": "Profissional reativado com sucesso.",
     "professional.suspend": "Profissional suspenso com sucesso.",
     "review.hide": "Avaliação ocultada com sucesso.",

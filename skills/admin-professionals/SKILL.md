@@ -50,7 +50,26 @@ description: Operação de aprovação, publicação e suspensão de profissiona
 
 `get_therapist_publication_eligibility_v1` é a única regra: perfil aprovado, público, aceitando reservas online e com serviço ativo/reservável/online cuja terapia seja publicada, visível e de categoria ativa.
 
-Verificação aprovada não altera switches públicos. Quando a regra falhar, exibir “Aprovado · publicação pendente” e os blockers devolvidos pela função.
+Verificação aprovada não altera switches públicos por si só. O admin com
+`admin.professionals.verify` pode executar `professional.publish`, sempre com
+motivo, idempotência e auditoria, somente quando os únicos blockers forem os
+três switches que o próprio comando ativa (`public_status`, `is_public` e
+`is_accepting_bookings`). O comando então publica o perfil e libera reservas
+na mesma transação. Qualquer outro blocker mantém “Aprovado · publicação
+pendente” e impede a ação.
+
+## Navegação correlacionada
+
+- Em `/admin/profissionais`, `Ver profissional` abre a verificação mais recente
+  para status `submitted`, `in_review`, `changes_requested` ou `rejected`; após
+  aprovação ou suspensão, abre o detalhe do profissional.
+- Em `/admin/profissionais/verificacoes`, `Abrir análise` abre a verificação
+  enquanto houver decisão pendente; quando aprovada, abre o detalhe do
+  profissional.
+- IDs de correlação são somente dados internos do DTO; nunca são renderizados.
+- O detalhe de verificação pode usar `therapist-private-documents` para listar
+  documentos autorizados e abrir cada arquivo por URL temporária, sem path de
+  storage ou dados de conta.
 
 ## Estados
 

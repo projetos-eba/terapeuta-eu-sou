@@ -15,6 +15,7 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const actionPermissions = {
+  "professional.publish": "admin.professionals.verify",
   "professional.reactivate": "admin.professionals.suspend",
   "professional.suspend": "admin.professionals.suspend",
   "review.hide": "admin.reviews.moderate",
