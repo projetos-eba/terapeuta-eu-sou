@@ -123,6 +123,17 @@ Capacidades a consolidar antes ou durante a Fase 1:
 - `admin.therapies.read`
 - `admin.therapies.manage`
 - `admin.matching.read`
+
+### Publicação administrativa de profissionais
+
+`professional.publish` reutiliza `admin.professionals.verify`. É um comando
+auditado, idempotente e com motivo obrigatório que pode ativar publicação e
+reservas somente para perfil aprovado, online e com serviço publicável. A
+validação autoritativa não permite contornar bloqueadores de serviço, terapia
+ou categoria; os únicos blockers removidos pelo comando são os próprios
+switches públicos ativados na mesma transação. A lista de profissionais e a
+fila de verificações carregam referências internas seguras para direcionar o
+admin ao detalhe correto, sem renderizar identificadores técnicos.
 - `admin.matching.manage`
 - `admin.reviews.read`
 - `admin.reviews.moderate`

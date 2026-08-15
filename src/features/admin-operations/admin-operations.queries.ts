@@ -513,6 +513,16 @@ export const getAdminOperationDetailPage = cache(
       detail.verificationSummary = verificationSummary;
     }
 
+    if (module === "verifications" && detail.relatedProfessionalId) {
+      const privateDocuments = await getAdminProfessionalDocumentReview({
+        accessToken,
+        therapistProfileId: detail.relatedProfessionalId,
+      });
+
+      detail.privateDocuments =
+        privateDocuments.status === "success" ? privateDocuments.data : null;
+    }
+
     return {
       data: detail,
       status: "success",

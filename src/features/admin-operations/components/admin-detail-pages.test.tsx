@@ -479,15 +479,12 @@ describe("admin operation detail pages", () => {
         data={detailData({
           backHref: "/admin/profissionais/verificacoes",
           module: "verifications",
+          relatedProfessionalId: "c1000000-0000-4000-8000-000000000001",
           sections: [
             {
               fields: [
                 { label: "Status", value: "submitted" },
                 { label: "Terapeuta", value: "Ana Oliveira" },
-                {
-                  label: "Perfil terapeuta",
-                  value: "c1000000-0000-4000-8000-000000000001",
-                },
               ],
               title: "Verificação",
             },
@@ -500,7 +497,7 @@ describe("admin operation detail pages", () => {
 
     expect(html).toContain("Aguardando análise");
     expect(html).toContain("Iniciar análise");
-    expect(html).toContain("Abrir cadastro do profissional");
+    expect(html).toContain("Ver cadastro do profissional");
     expect(html).not.toContain("Aprovar verificação");
   });
 });
