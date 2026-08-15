@@ -40,6 +40,8 @@ export function AdminVerificationDetailPage({
   const therapistProfileId = verificationFields.get("Perfil terapeuta");
   const adjustment = verificationFields.get("Ajuste solicitado");
   const rejection = verificationFields.get("Reprovação registrada");
+  const publicationEligibility = verificationFields.get("Elegibilidade pública");
+  const publicationBlockers = verificationFields.get("Bloqueadores reais");
 
   const identityFields = [
     {
@@ -72,6 +74,14 @@ export function AdminVerificationDetailPage({
     {
       label: "Revisado em",
       value: verificationFields.get("Revisado em") ?? "",
+    },
+    {
+      label: "Elegibilidade pública",
+      value: publicationEligibility ?? "",
+    },
+    {
+      label: "Bloqueadores reais",
+      value: publicationBlockers ?? "",
     },
   ].filter((field) => field.value);
 
@@ -150,6 +160,14 @@ export function AdminVerificationDetailPage({
               description="Indicadores reais sobre ajustes e encerramento da revisão."
               fields={indicatorFields}
               title="Indicadores"
+            />
+            <DetailSectionCard
+              description="Aprovar encerra a análise administrativa. A publicação só acontece quando todas as condições públicas reais estiverem satisfeitas."
+              fields={[
+                { label: "Situação", value: publicationEligibility ?? "" },
+                { label: "Pendências", value: publicationBlockers ?? "" },
+              ].filter((field) => field.value)}
+              title="Publicação"
             />
             <DetailSectionCard
               description="Registro de criação e atualização da análise."

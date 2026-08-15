@@ -9,7 +9,11 @@ import type {
   TherapistProfileEditableFields,
   TherapistProfileEditorData,
   TherapistProfileMutationResult,
+  TherapistPrivateDocumentKind,
+  TherapistPrivateDocumentStatus,
+  TherapistPrivateDocumentValidationState,
   TherapistProfilePublicStatus,
+  TherapistProfileVerificationSummary,
   TherapistProfileVerificationStatus,
   TherapistProfileVersionedContent,
 } from "./therapist-profile-editor.types";
@@ -27,6 +31,9 @@ export function mapTherapistProfileEditorContract(
     completeness: mapCompleteness(value.completeness),
     derived: mapDerived(value.derived),
     draft: value.draft ? mapVersionedContent(value.draft, "draft") : null,
+    privateDocuments: array(value.privateDocuments).map((item) =>
+      mapPrivateDocument(item),
+    ),
     propagationNotice: stringOr(
       value.propagationNotice,
       "As alterações publicadas podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
@@ -35,6 +42,9 @@ export function mapTherapistProfileEditorContract(
     published: mapVersionedContent(published, "published"),
     therapistProfileId: requiredString(value.therapistProfileId),
     updatedAt: requiredString(value.updatedAt),
+    verificationSummary: value.verificationSummary
+      ? mapVerificationSummary(value.verificationSummary)
+      : null,
     version: numberOr(value.version, 1),
   };
 }
@@ -194,6 +204,38 @@ function mapDerived(input: unknown): TherapistProfileDerivedData {
   };
 }
 
+function mapPrivateDocument(input: unknown) {
+  const value = asObject(input);
+
+  return {
+    createdAt: requiredString(value.createdAt),
+    fileName: requiredString(value.fileName),
+    fileSizeBytes: numberOr(value.fileSizeBytes, 0),
+    id: requiredString(value.id),
+    kind: privateDocumentKind(value.kind),
+    mimeType: requiredString(value.mimeType),
+    reviewNote: stringOrNull(value.reviewNote),
+    reviewedAt: stringOrNull(value.reviewedAt),
+    status: privateDocumentStatus(value.status),
+    updatedAt: requiredString(value.updatedAt),
+    validationState: privateDocumentValidationState(value.validationState),
+  };
+}
+
+function mapVerificationSummary(
+  input: unknown,
+): TherapistProfileVerificationSummary {
+  const value = asObject(input);
+
+  return {
+    id: requiredString(value.id),
+    rejectionReason: stringOrNull(value.rejectionReason),
+    reviewedAt: stringOrNull(value.reviewedAt),
+    status: verificationStatus(value.status),
+    submittedAt: stringOrNull(value.submittedAt),
+  };
+}
+
 function mapEditableFields(input: unknown): TherapistProfileEditableFields {
   const value = asObject(input);
   const fallback = createEmptyEditorFields();
@@ -329,11 +371,56 @@ function requiredString(value: unknown) {
 function verificationStatus(
   value: unknown,
 ): TherapistProfileVerificationStatus {
+  if (value === "none") return "none";
   return accountStatus(value);
+}
+
+function privateDocumentKind(value: unknown): TherapistPrivateDocumentKind {
+  if (value === "address_proof" || value === "identity_document") {
+    return value;
+  }
+
+  throw new Error("therapist_profile_invalid_private_document_kind");
+}
+
+function privateDocumentStatus(
+  value: unknown,
+): TherapistPrivateDocumentStatus {
+  if (
+    value === "accepted" ||
+    value === "archived" ||
+    value === "rejected" ||
+    value === "uploaded"
+  ) {
+    return value;
+  }
+
+  throw new Error("therapist_profile_invalid_private_document_status");
+}
+
+function privateDocumentValidationState(
+  value: unknown,
+): TherapistPrivateDocumentValidationState {
+  if (
+    value === "failed" ||
+    value === "not_scanned" ||
+    value === "passed" ||
+    value === "pending"
+  ) {
+    return value;
+  }
+
+  throw new Error("therapist_profile_invalid_private_document_validation");
 }
 
 function stringOr(value: unknown, fallback: string) {
   return typeof value === "string" ? value : fallback;
+}
+
+function stringOrNull(value: unknown) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
 }
 
 function videoProvider(value: unknown) {

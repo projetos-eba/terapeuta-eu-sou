@@ -13,7 +13,10 @@ vi.mock("@/lib/supabase/public-config", () => ({
   getSupabasePublicConfig: configMocks.getSupabasePublicConfig,
 }));
 
-import { getAdminOperationPage } from "./admin-operations.queries";
+import {
+  getAdminOperationDetailPage,
+  getAdminOperationPage,
+} from "./admin-operations.queries";
 
 describe("admin operation queries", () => {
   beforeEach(() => {
@@ -80,6 +83,85 @@ describe("admin operation queries", () => {
         total: 1,
       });
       expect(JSON.stringify(result.data)).not.toContain("secret");
+    }
+  });
+
+  it("loads only the safe published profile projection for a professional detail", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          auditEvents: [],
+          generatedAt: "2026-08-14T12:00:00.000Z",
+          module: "professionals",
+          record: {
+            id: "00000000-0000-4000-8000-000000000001",
+            public_name: "Ana Oliveira",
+            slug: "ana-oliveira",
+            status: "approved",
+          },
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse([
+          {
+            essence_body: "Escuta responsável.",
+            experience_years: 8,
+            guide_items: [{ label: "Escuta atenta", private_note: "ignore" }],
+            invitation_body: "Conheça esta abordagem.",
+            short_intro: "Presença para o seu momento.",
+          },
+        ]),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse([
+          {
+            description: "Atendimento online.",
+            duration_minutes: 60,
+            price_cents: 18000,
+            service_title: "Encontro de Reiki",
+            therapy_name: "Reiki",
+          },
+        ]),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getAdminOperationDetailPage({
+      accessToken: "admin-token",
+      id: "00000000-0000-4000-8000-000000000001",
+      module: "professionals",
+    });
+
+    expect(result.status).toBe("success");
+    expect(fetchMock.mock.calls[1]?.[0]).toContain(
+      "/rest/v1/public_therapist_profile_content_v?therapist_profile_id=eq.00000000-0000-4000-8000-000000000001",
+    );
+    expect(fetchMock.mock.calls[2]?.[0]).toContain(
+      "/rest/v1/public_therapist_profile_services_v?therapist_slug=eq.ana-oliveira",
+    );
+    if (result.status === "success") {
+      expect(result.data.publicProfile).toEqual({
+        content: {
+          essenceBody: "Escuta responsável.",
+          experienceYears: 8,
+          guideItems: [{ label: "Escuta atenta" }],
+          invitationBody: "Conheça esta abordagem.",
+          shortIntro: "Presença para o seu momento.",
+        },
+        services: [
+          {
+            description: "Atendimento online.",
+            durationMinutes: 60,
+            priceCents: 18000,
+            serviceTitle: "Encontro de Reiki",
+            therapyName: "Reiki",
+          },
+        ],
+        status: "available",
+      });
+      expect(JSON.stringify(result.data.publicProfile)).not.toContain(
+        "private_note",
+      );
     }
   });
 });

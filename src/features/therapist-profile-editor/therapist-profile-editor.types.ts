@@ -23,9 +23,48 @@ export type TherapistProfileVerificationStatus =
   | "changes_requested"
   | "draft"
   | "in_review"
+  | "none"
   | "rejected"
   | "submitted"
   | "suspended";
+
+export type TherapistPrivateDocumentKind =
+  | "address_proof"
+  | "identity_document";
+
+export type TherapistPrivateDocumentStatus =
+  | "accepted"
+  | "archived"
+  | "rejected"
+  | "uploaded";
+
+export type TherapistPrivateDocumentValidationState =
+  | "failed"
+  | "not_scanned"
+  | "passed"
+  | "pending";
+
+export type TherapistPrivateDocumentSummary = {
+  createdAt: string;
+  fileName: string;
+  fileSizeBytes: number;
+  id: string;
+  kind: TherapistPrivateDocumentKind;
+  mimeType: string;
+  reviewNote?: string | null;
+  reviewedAt?: string | null;
+  status: TherapistPrivateDocumentStatus;
+  updatedAt: string;
+  validationState: TherapistPrivateDocumentValidationState;
+};
+
+export type TherapistProfileVerificationSummary = {
+  id: string;
+  rejectionReason: string | null;
+  reviewedAt: string | null;
+  status: TherapistProfileVerificationStatus;
+  submittedAt: string | null;
+};
 
 export type TherapistProfilePlan = "free" | "premium" | "premium_plus";
 
@@ -109,11 +148,13 @@ export type TherapistProfileEditorData = {
   completeness: TherapistProfileCompleteness;
   derived: TherapistProfileDerivedData;
   draft: TherapistProfileVersionedContent | null;
+  privateDocuments: TherapistPrivateDocumentSummary[];
   propagationNotice: string;
   publicProfileHref: string;
   published: TherapistProfileVersionedContent;
   therapistProfileId: string;
   updatedAt: string;
+  verificationSummary: TherapistProfileVerificationSummary | null;
   version: number;
 };
 

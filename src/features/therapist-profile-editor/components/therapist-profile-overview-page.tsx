@@ -13,6 +13,7 @@ import { routes } from "@/lib/routes";
 import { mapEditorFieldsToPublicPreview } from "../therapist-profile-editor.mappers";
 import type { TherapistProfileEditorData } from "../therapist-profile-editor.types";
 import { ProfileCompletenessChecklist } from "./profile-completeness";
+import { TherapistProfileRegistrationSurface } from "./therapist-profile-registration-surface";
 import { ProfileInfoBanner, ProfileSection } from "./profile-section";
 import { ProfileStatus } from "./profile-status";
 import { PublicProfileSnapshot } from "./public-profile-snapshot";
@@ -22,6 +23,19 @@ export function TherapistProfileOverviewPage({
 }: {
   editor: TherapistProfileEditorData;
 }) {
+  const hasRequiredDocuments = ["identity_document", "address_proof"].every(
+    (kind) =>
+      editor.privateDocuments.some(
+        (item) => item.kind === kind && item.status !== "rejected",
+      ),
+  );
+  const verificationStatus =
+    editor.verificationSummary?.status ?? editor.derived.verificationStatus;
+
+  if (verificationStatus !== "approved" || !hasRequiredDocuments) {
+    return <TherapistProfileRegistrationSurface editor={editor} />;
+  }
+
   const publishedProfile = mapEditorFieldsToPublicPreview({
     editor,
     fields: editor.published.fields,

@@ -59,6 +59,7 @@ function makeEditor(
       verificationStatus: "approved",
     },
     draft: null,
+    privateDocuments: [],
     propagationNotice:
       "As alterações publicadas podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
     publicProfileHref: "/terapeutas/ana-oliveira",
@@ -89,6 +90,7 @@ function makeEditor(
     },
     therapistProfileId: "c1000000-0000-4000-8000-000000000001",
     updatedAt: "2026-07-28T12:00:00.000Z",
+    verificationSummary: null,
     version: 4,
   };
 

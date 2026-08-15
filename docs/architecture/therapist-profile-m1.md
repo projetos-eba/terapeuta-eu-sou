@@ -42,6 +42,34 @@ Edge Function:
 - `publish`;
 - `unpublish`.
 
+### Documentos privados para análise
+
+O cadastro inicial pode exigir `Documento de identidade` e `Comprovante de
+endereço`. A superfície de progresso em `/terapeuta/perfil` mostra essas
+pendências e permite ao terapeuta anexar ou substituir cada documento sem
+transformar o fluxo em uma confirmação automática.
+
+- `POST /api/therapist/profile/documents` encaminha o upload autenticado para
+  a Edge Function `therapist-private-documents`;
+- o backend valida assinatura, MIME e limite de 10 MB antes de gravar no bucket
+  privado; a interface aceita PDF, JPG, PNG e WebP;
+- uma substituição cria o novo registro antes de arquivar a versão anterior do
+  mesmo tipo, preservando o documento anterior caso o novo upload falhe;
+- visualização ocorre por URL assinada temporária, emitida somente depois de
+  autenticação e autorização; path de Storage e URL assinada não fazem parte do
+  DTO de UI;
+- a rota autenticada faz proxy server-side da assinatura temporária (60 s), de
+  modo que navegador nenhum recebe bucket, path interno ou URL assinada;
+- cada documento obrigatório tem decisão própria (`uploaded`, `accepted` ou
+  `rejected`); solicitar reenvio exige uma orientação e registra evento
+  imutável de auditoria, sem alterar automaticamente a verificação geral;
+- a aba `Documentos` em `/admin/profissionais/:id` usa adapter administrativo
+  próprio e também solicita uma URL temporária. Ela não usa projection pública
+  do perfil.
+
+O envio deixa o documento em estado pendente de conferência. Ele não aprova o
+perfil, não publica o profissional e não confirma elegibilidade por si só.
+
 RPCs:
 
 - `get_private_therapist_profile_editor_v1`;
@@ -100,6 +128,9 @@ aparecer em todas as superfícies públicas.
   rota principal até serem publicados.
 - Uploads públicos aceitam foto, capa de vídeo e vídeo, com validação client e
   server-side. Documentos continuam em fluxo privado.
+- Quando a verificação ainda depende de documentação ou está em análise,
+  `/terapeuta/perfil` mostra uma progressão do cadastro e a próxima ação real;
+  após aprovação, volta à prévia pública da versão publicada.
 - Dados derivados continuam somente leitura e aparecem como status, checklist
   ou contexto gerenciado, conforme a superfície.
 - Estados de rascunho, alterações não salvas, publicação, despublicação,
@@ -110,6 +141,10 @@ aparecer em todas as superfícies públicas.
 Views públicas não incluem `legal_name`, `documents_metadata`,
 `storage_object_path`, `uploaded_by` nem `profile_payload`. RLS permite que o
 terapeuta leia apenas seus documentos privados; paciente e visitante não leem.
+
+URLs para visualização de documentos são temporárias e emitidas por adapter
+autorizado. O navegador não recebe credencial de serviço, path interno do
+objeto ou acesso direto ao bucket.
 
 Antivírus/varredura de documentos: não identificado nos arquivos analisados. O
 campo `validation_state` registra a limitação e permite integração futura.

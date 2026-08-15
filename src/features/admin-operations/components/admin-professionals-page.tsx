@@ -486,6 +486,16 @@ function ProfessionalTableRow({ row }: { row: AdminOperationRow }) {
           label="Reservas"
           value={getField(row, "Reservas") || "Não informado"}
         />
+        <CompactPair
+          className="mt-2"
+          label="Publicação"
+          value={getField(row, "Publicação") || "Não informado"}
+        />
+        {getField(row, "Pendências de publicação") ? (
+          <p className="mt-2 text-xs font-semibold leading-5 text-status-warning">
+            {getField(row, "Pendências de publicação")}
+          </p>
+        ) : null}
       </td>
       <td className="px-5 py-4 align-top">
         <p className="text-sm font-extrabold text-brand-deep">
@@ -539,6 +549,10 @@ function ProfessionalEntity({ row }: { row: AdminOperationRow }) {
         <EntityField
           label="Reservas"
           value={getField(row, "Reservas") || "Não informado"}
+        />
+        <EntityField
+          label="Publicação"
+          value={getField(row, "Publicação") || "Não informado"}
         />
         <EntityField
           label="Plano"

@@ -12,6 +12,7 @@ import {
   type AdminListPageInfo,
   type AdminListQuery,
 } from "@/features/admin-shared/admin-list-query";
+import { getAdminProfessionalDocumentReview } from "@/features/therapist-private-documents/private-documents.queries";
 
 import {
   mapAdminOperationDetail,
@@ -23,6 +24,8 @@ import type {
   AdminOperationModuleKey,
   AdminOperationPageData,
   AdminOperationPageResult,
+  AdminProfessionalPublishedProfile,
+  AdminProfessionalVerificationSummary,
 } from "./admin-operations.types";
 
 type CountSpec = {
@@ -472,20 +475,212 @@ export const getAdminOperationDetailPage = cache(
       return { status: "not_found" };
     }
 
+    const detail = mapAdminOperationDetail({
+      auditEvents: Array.isArray(readResult.model.auditEvents)
+        ? readResult.model.auditEvents
+        : [],
+      generatedAt:
+        asString(readResult.model.generatedAt) ?? new Date().toISOString(),
+      module,
+      record: readResult.model.record,
+    });
+
+    if (module === "professionals") {
+      const profileId = detail.id;
+      const slug = asString(readResult.model.record.slug);
+      const [publicProfile, verificationSummary, privateDocuments] =
+        await Promise.all([
+        fetchAdminProfessionalPublishedProfile({
+          accessToken,
+          config,
+          profileId,
+          slug,
+        }),
+        fetchAdminProfessionalVerificationSummary({
+          accessToken,
+          config,
+          profileId,
+        }),
+        getAdminProfessionalDocumentReview({
+          accessToken,
+          therapistProfileId: profileId,
+        }),
+      ]);
+
+      detail.publicProfile = publicProfile;
+      detail.privateDocuments =
+        privateDocuments.status === "success" ? privateDocuments.data : null;
+      detail.verificationSummary = verificationSummary;
+    }
+
     return {
-      data: mapAdminOperationDetail({
-        auditEvents: Array.isArray(readResult.model.auditEvents)
-          ? readResult.model.auditEvents
-          : [],
-        generatedAt:
-          asString(readResult.model.generatedAt) ?? new Date().toISOString(),
-        module,
-        record: readResult.model.record,
-      }),
+      data: detail,
       status: "success",
     };
   },
 );
+
+async function fetchAdminProfessionalPublishedProfile({
+  accessToken,
+  config,
+  profileId,
+  slug,
+}: {
+  accessToken: string;
+  config: { apiKey: string; url: string },
+  profileId: string;
+  slug?: string;
+}): Promise<AdminProfessionalPublishedProfile> {
+  const unavailable = {
+    content: null,
+    services: null,
+    status: "unavailable" as const,
+  };
+
+  try {
+    const contentResponse = await fetch(
+      `${config.url}/rest/v1/public_therapist_profile_content_v?therapist_profile_id=eq.${encodeURIComponent(profileId)}&select=short_intro,essence_body,invitation_body,experience_years,guide_items`,
+      {
+        cache: "no-store",
+        headers: adminReadHeaders({ accessToken, config }),
+      },
+    );
+
+    if (!contentResponse.ok) return unavailable;
+
+    const contentPayload = await contentResponse.json().catch(() => null);
+    const contentRow = Array.isArray(contentPayload)
+      ? contentPayload.find(isRecord)
+      : null;
+
+    if (!contentRow) {
+      return { content: null, services: [], status: "available" };
+    }
+
+    const services = slug
+      ? await fetchAdminProfessionalPublishedServices({
+          accessToken,
+          config,
+          slug,
+        })
+      : [];
+
+    return {
+      content: {
+        essenceBody: asString(contentRow.essence_body) ?? null,
+        experienceYears: asFiniteNumber(contentRow.experience_years),
+        guideItems: mapGuideItems(contentRow.guide_items),
+        invitationBody: asString(contentRow.invitation_body) ?? null,
+        shortIntro: asString(contentRow.short_intro) ?? null,
+      },
+      services,
+      status: "available",
+    };
+  } catch {
+    return unavailable;
+  }
+}
+
+async function fetchAdminProfessionalVerificationSummary({
+  accessToken,
+  config,
+  profileId,
+}: {
+  accessToken: string;
+  config: { apiKey: string; url: string };
+  profileId: string;
+}): Promise<AdminProfessionalVerificationSummary | null> {
+  try {
+    const response = await fetch(
+      `${config.url}/rest/v1/therapist_verifications?therapist_profile_id=eq.${encodeURIComponent(profileId)}&select=status,submitted_at,reviewed_at&order=submitted_at.desc.nullslast,created_at.desc&limit=1`,
+      {
+        cache: "no-store",
+        headers: adminReadHeaders({ accessToken, config }),
+      },
+    );
+
+    if (!response.ok) return null;
+
+    const payload = await response.json().catch(() => null);
+    const row = Array.isArray(payload) ? payload.find(isRecord) : null;
+
+    if (!row) return null;
+
+    return {
+      reviewedAt: asString(row.reviewed_at) ?? null,
+      status: normalizeVerificationStatus(asString(row.status)),
+      submittedAt: asString(row.submitted_at) ?? null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchAdminProfessionalPublishedServices({
+  accessToken,
+  config,
+  slug,
+}: {
+  accessToken: string;
+  config: { apiKey: string; url: string };
+  slug: string;
+}): Promise<AdminProfessionalPublishedProfile["services"]> {
+  try {
+    const response = await fetch(
+      `${config.url}/rest/v1/public_therapist_profile_services_v?therapist_slug=eq.${encodeURIComponent(slug)}&select=service_title,therapy_name,description,duration_minutes,price_cents&order=sort_order.asc`,
+      {
+        cache: "no-store",
+        headers: adminReadHeaders({ accessToken, config }),
+      },
+    );
+
+    if (!response.ok) return null;
+
+    const payload = await response.json().catch(() => null);
+    if (!Array.isArray(payload)) return null;
+
+    return payload.filter(isRecord).map((row) => ({
+      description: asString(row.description) ?? null,
+      durationMinutes: asFiniteNumber(row.duration_minutes),
+      priceCents: asFiniteNumber(row.price_cents),
+      serviceTitle: asString(row.service_title) ?? null,
+      therapyName: asString(row.therapy_name) ?? null,
+    }));
+  } catch {
+    return null;
+  }
+}
+
+function adminReadHeaders({
+  accessToken,
+  config,
+}: {
+  accessToken: string;
+  config: { apiKey: string };
+}) {
+  return {
+    apikey: config.apiKey,
+    Authorization: `Bearer ${accessToken}`,
+  };
+}
+
+function normalizeVerificationStatus(
+  value?: string | null,
+): AdminProfessionalVerificationSummary["status"] {
+  if (
+    value === "approved" ||
+    value === "changes_requested" ||
+    value === "draft" ||
+    value === "in_review" ||
+    value === "rejected" ||
+    value === "submitted" ||
+    value === "suspended"
+  ) {
+    return value;
+  }
+
+  return "none";
+}
 
 async function fetchAdminOperationReadModel({
   accessToken,
@@ -494,7 +689,7 @@ async function fetchAdminOperationReadModel({
   query,
 }: {
   accessToken: string;
-  config: { apiKey: string; url: string },
+  config: { apiKey: string; url: string };
   module: AdminOperationModuleKey;
   query: AdminListQuery;
 }): Promise<AdminOperationReadResult> {
@@ -756,6 +951,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asString(value: unknown) {
   return typeof value === "string" && value ? value : undefined;
+}
+
+function asFiniteNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function mapGuideItems(value: unknown) {
+  if (!Array.isArray(value)) return [];
+
+  return value.filter(isRecord).flatMap((item) => {
+    const label = asString(item.label);
+    return label ? [{ label }] : [];
+  });
 }
 
 function logAdminOperationReadFailure({

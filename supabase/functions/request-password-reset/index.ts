@@ -6,7 +6,10 @@ import {
   getSiteUrl,
 } from "../_shared/auth/runtime.ts";
 import { handleOptions, jsonResponse } from "../_shared/auth/cors.ts";
-import { parseJson, SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
+import {
+  parseJson,
+  SupabaseRestClient,
+} from "../_shared/auth/supabase-rest.ts";
 import { createAuthActionToken } from "../_shared/auth/tokens.ts";
 import { findProfileByEmail } from "../_shared/auth/users.ts";
 import { HostingerMailApiProvider } from "../_shared/email/hostinger-mail-api-provider.ts";
@@ -34,6 +37,14 @@ runtime.serve(async (request) => {
   const apiKey = runtime.env.get("EMAIL_SERVER_API_KEY");
 
   if (!supabaseUrl || !serviceRoleKey || !apiKey) {
+    console.error(
+      JSON.stringify({
+        code: "PASSWORD_RESET_EMAIL_CONFIGURATION_INCOMPLETE",
+        hasEmailApiKey: Boolean(apiKey),
+        hasServiceRoleKey: Boolean(serviceRoleKey),
+        hasSupabaseUrl: Boolean(supabaseUrl),
+      }),
+    );
     return jsonResponse({ ok: true, message: PUBLIC_MESSAGE });
   }
 
@@ -77,7 +88,7 @@ runtime.serve(async (request) => {
     )}`;
     const provider = new HostingerMailApiProvider({ apiKey });
 
-    await sendTransactionalEmail(client, provider, {
+    const emailResult = await sendTransactionalEmail(client, provider, {
       actionKey: "password_reset",
       correlationId: crypto.randomUUID(),
       recipient: {
@@ -92,7 +103,20 @@ runtime.serve(async (request) => {
         url: resetUrl,
       },
     });
+
+    if (emailResult.status !== "success") {
+      console.error(
+        JSON.stringify({
+          code: "PASSWORD_RESET_EMAIL_DELIVERY_NOT_ACCEPTED",
+          correlationId: emailResult.correlationId,
+          status: emailResult.status,
+        }),
+      );
+    }
   } catch {
+    console.error(
+      JSON.stringify({ code: "PASSWORD_RESET_EMAIL_DELIVERY_FAILED" }),
+    );
     // Public response intentionally stays generic to avoid account enumeration.
   }
 
