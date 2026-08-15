@@ -1,13 +1,28 @@
 const imageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const documentTypes = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
 const videoTypes = new Set(["video/mp4", "video/quicktime", "video/webm"]);
 
 export type SupportedUploadMimeType =
+  | "application/pdf"
   | "image/jpeg"
   | "image/png"
   | "image/webp"
   | "video/mp4"
   | "video/quicktime"
   | "video/webm";
+
+export function isSupportedDocumentType(
+  contentType: string,
+): contentType is
+  | "application/pdf"
+  | Extract<SupportedUploadMimeType, `image/${string}`> {
+  return documentTypes.has(contentType);
+}
 
 export function isSupportedImageType(
   contentType: string,
@@ -25,6 +40,8 @@ export async function hasValidUploadSignature(file: File) {
   const bytes = new Uint8Array(await file.arrayBuffer());
 
   switch (file.type) {
+    case "application/pdf":
+      return hasAscii(bytes, 0, "%PDF");
     case "image/jpeg":
       return hasPrefix(bytes, [0xff, 0xd8, 0xff]);
     case "image/png":

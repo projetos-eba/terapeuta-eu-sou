@@ -134,6 +134,7 @@ function editorFixture(
       verificationStatus: "draft",
     },
     draft: null,
+    privateDocuments: [],
     propagationNotice: "",
     publicProfileHref: "/terapeutas/teste",
     published: {
@@ -163,6 +164,7 @@ function editorFixture(
     },
     therapistProfileId: overrides.therapistProfileId ?? profileId,
     updatedAt: "2026-08-07T10:00:00.000Z",
+    verificationSummary: null,
     version: 1,
   };
 }

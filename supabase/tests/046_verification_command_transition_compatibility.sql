@@ -1,6 +1,6 @@
 begin;
 
-select plan(11);
+select plan(13);
 
 select ok(
   to_regprocedure(
@@ -41,13 +41,25 @@ select set_config(
 select lives_ok(
   $$
     select public.admin_execute_operation_command_v1(
+      'verification.reopen_review',
+      'a9000000-0000-4000-8000-000000000461'::uuid,
+      'Inicio formal da analise administrativa',
+      'verification-transition-review-461'
+    )
+  $$,
+  'audited admin command starts review from submitted'
+);
+
+select lives_ok(
+  $$
+    select public.admin_execute_operation_command_v1(
       'verification.approve',
       'a9000000-0000-4000-8000-000000000461'::uuid,
       'Documentacao revisada e aprovada',
       'verification-transition-approve-461'
     )
   $$,
-  'audited admin command can decide a submitted verification'
+  'audited admin command can decide a verification in review'
 );
 
 reset role;
@@ -83,13 +95,25 @@ select set_config(
 select lives_ok(
   $$
     select public.admin_execute_operation_command_v2(
+      'verification.reopen_review',
+      'a9000000-0000-4000-8000-000000000462'::uuid,
+      'Inicio formal da analise administrativa',
+      'verification-transition-review-462'
+    )
+  $$,
+  'review can be started before requesting changes'
+);
+
+select lives_ok(
+  $$
+    select public.admin_execute_operation_command_v2(
       'verification.pause_review',
       'a9000000-0000-4000-8000-000000000462'::uuid,
       'Revisao pausada para ajustes documentais',
       'verification-transition-pause-462'
     )
   $$,
-  'audited admin command can request changes from a submitted verification'
+  'audited admin command can request changes from review'
 );
 
 reset role;

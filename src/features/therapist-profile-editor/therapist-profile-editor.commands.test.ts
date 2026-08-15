@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { uploadTherapistProfileMedia } from "./therapist-profile-editor.commands";
+import {
+  uploadTherapistPrivateDocument,
+  uploadTherapistProfileMedia,
+} from "./therapist-profile-editor.commands";
 
 describe("therapist profile media commands", () => {
   afterEach(() => {
@@ -58,6 +61,78 @@ describe("therapist profile media commands", () => {
     if (result.status === "error") {
       expect(result.error.message).toBe(
         "Envie uma imagem em JPG, PNG ou WebP.",
+      );
+    }
+  });
+
+  it("maps a successful private document upload", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            data: {
+              documentCenter: {
+                documents: [
+                  {
+                    fileName: "rg.pdf",
+                    id: "document-1",
+                    kind: "identity_document",
+                    mimeType: "application/pdf",
+                    sizeBytes: 1200,
+                    status: "uploaded",
+                    uploadedAt: "2026-08-14T12:00:00.000Z",
+                    validationState: "pending",
+                  },
+                ],
+                verificationStatus: "submitted",
+              },
+            },
+            ok: true,
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    const file = new File(["%PDF-1.7"], "rg.pdf", { type: "application/pdf" });
+    const result = await uploadTherapistPrivateDocument({
+      file,
+      kind: "identity_document",
+    });
+
+    expect(result.status).toBe("success");
+    if (result.status === "success") {
+      expect(result.data.documents[0]?.kind).toBe("identity_document");
+      expect(result.data.documents).toHaveLength(1);
+      expect(result.data.verificationStatus).toBe("submitted");
+    }
+  });
+
+  it("surfaces private document upload failures honestly", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            error: { message: "Não foi possível enviar o documento agora." },
+            ok: false,
+          }),
+          { status: 502 },
+        ),
+      ),
+    );
+
+    const file = new File(["%PDF-1.7"], "rg.pdf", { type: "application/pdf" });
+    const result = await uploadTherapistPrivateDocument({
+      file,
+      kind: "identity_document",
+    });
+
+    expect(result.status).toBe("error");
+    if (result.status === "error") {
+      expect(result.error.message).toBe(
+        "Não foi possível enviar o documento agora.",
       );
     }
   });

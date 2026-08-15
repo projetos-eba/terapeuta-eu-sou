@@ -39,6 +39,30 @@ function makeEditor(
       verificationStatus: "approved",
     },
     draft: null,
+    privateDocuments: [
+      {
+        createdAt: "2026-07-28T11:00:00.000Z",
+        fileName: "rg.pdf",
+        fileSizeBytes: 1200,
+        id: "doc-identity",
+        kind: "identity_document",
+        mimeType: "application/pdf",
+        status: "uploaded",
+        updatedAt: "2026-07-28T11:00:00.000Z",
+        validationState: "not_scanned",
+      },
+      {
+        createdAt: "2026-07-28T11:05:00.000Z",
+        fileName: "endereco.pdf",
+        fileSizeBytes: 1400,
+        id: "doc-address",
+        kind: "address_proof",
+        mimeType: "application/pdf",
+        status: "uploaded",
+        updatedAt: "2026-07-28T11:05:00.000Z",
+        validationState: "not_scanned",
+      },
+    ],
     propagationNotice:
       "As alterações publicadas podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
     publicProfileHref: "/terapeutas/ana-oliveira",
@@ -69,6 +93,13 @@ function makeEditor(
     },
     therapistProfileId: "c1000000-0000-4000-8000-000000000001",
     updatedAt: "2026-07-28T12:00:00.000Z",
+    verificationSummary: {
+      id: "verification-1",
+      rejectionReason: null,
+      reviewedAt: "2026-07-29T09:00:00.000Z",
+      status: "approved",
+      submittedAt: "2026-07-28T11:10:00.000Z",
+    },
     version: 4,
   };
 
@@ -133,5 +164,47 @@ describe("TherapistProfileOverviewPage", () => {
       within(preview!).queryByText("Ana Rascunho Privado"),
     ).not.toBeInTheDocument();
     expect(screen.queryByText(/documento/i)).not.toBeInTheDocument();
+  });
+
+  it("switches to the registration flow while documents are still missing", () => {
+    render(
+      <TherapistProfileOverviewPage
+        editor={makeEditor({
+          derived: {
+            ...makeEditor().derived,
+            verificationStatus: "submitted",
+          },
+          privateDocuments: [
+            {
+              createdAt: "2026-07-28T11:00:00.000Z",
+              fileName: "rg.pdf",
+              fileSizeBytes: 1200,
+              id: "doc-identity",
+              kind: "identity_document",
+              mimeType: "application/pdf",
+              status: "uploaded",
+              updatedAt: "2026-07-28T11:00:00.000Z",
+              validationState: "not_scanned",
+            },
+          ],
+          verificationSummary: {
+            id: "verification-2",
+            rejectionReason: null,
+            reviewedAt: null,
+            status: "submitted",
+            submittedAt: "2026-07-28T11:10:00.000Z",
+          },
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Cadastro em análise" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Seu progresso de cadastro")).toBeInTheDocument();
+    expect(screen.getByText("Documentos enviados")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Preview do perfil" }),
+    ).not.toBeInTheDocument();
   });
 });

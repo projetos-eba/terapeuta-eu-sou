@@ -215,7 +215,13 @@ test.describe("admin operation modules", () => {
     await expect(detailLink).toBeVisible();
     await detailLink.click();
     await expect(
-      page.getByRole("heading", { level: 1, name: "Detalhe do profissional" }),
+      page.getByRole("heading", { name: "Fluxo do perfil" }),
     ).toBeVisible();
+    await expect(page.getByRole("tab", { name: "Documentos" })).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth,
+      ),
+    ).toBe(false);
   });
 });

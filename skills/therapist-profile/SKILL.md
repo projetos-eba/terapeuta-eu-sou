@@ -24,7 +24,10 @@ description: Use when implementing, refactoring, auditing, or documenting the th
 - Perfil público: `/terapeutas/:slug`
 - API adapter: `/api/therapist/profile`
 - Media adapter: `/api/therapist/profile/media`
+- Private documents adapter: `/api/therapist/profile/documents`
+- Private document signed preview: `/api/therapist/profile/documents/[documentId]`
 - Edge Function: `therapist-profile-command`
+- Edge Function privada de documentos: `therapist-private-documents`
 
 ## Contratos
 
@@ -56,8 +59,9 @@ Não passar linhas cruas do Supabase para React.
   confirmado.
 - Em perfis já publicados, a ação primária volta a ser `Salvar alterações`;
   publicação posterior continua explícita sobre rascunho salvo.
-- Administração continua responsável por verificação, suspensão, documentos,
-  plano e bloqueios.
+- O terapeuta anexa documentos privados obrigatórios nesta superfície; a
+  administração continua responsável por revisão, aprovação, suspensão, plano
+  e bloqueios.
 - Publicar um perfil elegível também o envia atomicamente para a fila
   administrativa: cria ou reenfileira `therapist_verifications` e usa o estado
   `submitted`, sem aprovação automática. Falha na fila deve abortar a
@@ -66,6 +70,13 @@ Não passar linhas cruas do Supabase para React.
 - Dados derivados são somente leitura.
 - Documentos privados nunca entram em HTML público, DTO público, busca pública
   ou preview público.
+- Cada documento obrigatório possui estado próprio: `uploaded`, `accepted` ou
+  `rejected`; pedido de reenvio exige orientação do admin e gera evento de
+  auditoria. Essa decisão não aprova nem altera automaticamente a verificação
+  geral do profissional.
+- A visualização autenticada usa proxy server-side de uma assinatura de 60 s.
+  O navegador nunca recebe bucket, path interno ou URL assinada; outro
+  terapeuta não pode abrir documentos alheios.
 - Capabilities são validadas no frontend e no backend.
 - Sem mocks silenciosos em produção.
 
@@ -73,8 +84,11 @@ Não passar linhas cruas do Supabase para React.
 
 - Usar `AuthenticatedShell`.
 - Usar `src/components/app-page`.
-- `/terapeuta/perfil` deve focar somente no preview da versão publicada, status e
-  checklist. Não renderizar formulário nessa rota.
+- `/terapeuta/perfil` continua sendo uma leitura orientada e não um formulário,
+  mas quando o cadastro ainda depende de documentos privados ou está em análise
+  administrativa a rota deve trocar a prévia pública por uma superfície de
+  progresso/envio honesta, com etapas, pendências e orientação do próximo
+  passo.
 - `/terapeuta/perfil/editar` deve conter header, progresso, formulário
   numerado, upload/mídia, módulos gerenciados, aviso importante e save bar.
 - Evitar CTAs conflitantes na primeira configuração: não mostrar `Salvar
@@ -84,6 +98,13 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
   publicada continua sendo a prévia renderizada.
 - Upload público deve usar `therapist-public-media`; documentos permanecem fora
   do preview.
+- Upload privado deve usar `therapist-private-documents`, com os tipos
+  obrigatórios `identity_document` e `address_proof`, validação de assinatura
+  de arquivo, tamanho máximo de 10 MB e linguagem de produto sem expor buckets
+  ou detalhes técnicos.
+- A UI deve deixar claro que os documentos são privados, usados apenas para
+  validação administrativa e podem ser substituídos pelo terapeuta via nova
+  anexação do mesmo tipo.
 - Usar `TESDialog` para confirmações.
 - Manter `h1` único.
 - Labels visíveis e touch targets de pelo menos 44px.
@@ -102,6 +123,9 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
 - Vitest para upload client-side e falha sem fallback.
 - Vitest para rota `/api/therapist/profile/media`: sessão, validação,
   capability, path público protegido e falha sanitizada de Storage.
+- Vitest para rota `/api/therapist/profile/documents`: sessão, encaminhamento
+  autenticado, falha sanitizada e ausência de vazamento de metadados
+  sensíveis.
 - Deno para Edge command.
 - pgTAP para RLS, publicação, rascunho, fila administrativa e privacidade.
 - Validar que view pública não expõe campos administrativos.

@@ -99,7 +99,7 @@ export function AdminOperationCommandPanel({
       }
 
       setReason("");
-      setSuccess(getCommandSuccessMessage(option.action));
+      setSuccess(getCommandSuccessMessage(option.action, payload));
       router.refresh();
     } catch {
       setError("Não foi possível conectar agora. Tente novamente.");
@@ -304,7 +304,17 @@ function getEmptyActionMessage(
   return "Nenhuma ação administrativa está disponível para este estado.";
 }
 
-function getCommandSuccessMessage(action: CommandAction) {
+function getCommandSuccessMessage(action: CommandAction, payload?: ApiEnvelope) {
+  const eligibility =
+    payload && payload.ok && isRecord(payload.data)
+      ? publicationEligibility(payload.data)
+      : null;
+  if (action === "verification.approve" && eligibility?.eligible === false) {
+    const blockers = publicationBlockers(eligibility.blockers);
+    return blockers
+      ? `Verificação aprovada. A publicação está pendente: ${blockers}.`
+      : "Verificação aprovada. A publicação ainda está pendente.";
+  }
   const messages: Record<CommandAction, string> = {
     "professional.reactivate": "Profissional reativado com sucesso.",
     "professional.suspend": "Profissional suspenso com sucesso.",
@@ -320,6 +330,31 @@ function getCommandSuccessMessage(action: CommandAction) {
   };
 
   return messages[action];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function publicationEligibility(value: Record<string, unknown>) {
+  const nextState = isRecord(value.nextState) ? value.nextState : null;
+  const eligibility = nextState?.publicationEligibility;
+  return isRecord(eligibility) ? eligibility : null;
+}
+
+function publicationBlockers(value: unknown) {
+  if (!Array.isArray(value)) return "";
+  const labels: Record<string, string> = {
+    no_active_bookable_online_service: "nenhum serviço publicável",
+    not_accepting_bookings: "não aceita novos agendamentos",
+    profile_not_public: "perfil público desativado",
+    profile_not_published: "perfil ainda não publicado",
+    therapy_not_public: "terapia não publicada ou não visível",
+  };
+  return value
+    .filter((item): item is string => typeof item === "string")
+    .map((item) => labels[item] ?? item)
+    .join(" · ");
 }
 
 function commandButtonClass(tone: CommandOption["tone"]) {

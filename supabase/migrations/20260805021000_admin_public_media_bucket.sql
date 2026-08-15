@@ -1,51 +1,8 @@
 -- Public media uploaded by TES admins for catalog and Match surfaces.
 -- Reads are public; writes remain restricted to authenticated admin profiles.
 
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values (
-  'admin-public-media',
-  'admin-public-media',
-  true,
-  5242880,
-  array['image/jpeg', 'image/png', 'image/webp']::text[]
-)
-on conflict (id) do update
-set
-  public = excluded.public,
-  file_size_limit = excluded.file_size_limit,
-  allowed_mime_types = excluded.allowed_mime_types;
-
-drop policy if exists "Public admin media is readable"
-  on storage.objects;
-create policy "Public admin media is readable"
-on storage.objects
-for select
-using (bucket_id = 'admin-public-media');
-
-drop policy if exists "Admins manage admin public media"
-  on storage.objects;
-create policy "Admins manage admin public media"
-on storage.objects
-for all
-to authenticated
-using (
-  bucket_id = 'admin-public-media'
-  and exists (
-    select 1
-    from public.profiles
-    where profiles.id = auth.uid()
-      and profiles.role = 'admin'
-  )
-)
-with check (
-  bucket_id = 'admin-public-media'
-  and exists (
-    select 1
-    from public.profiles
-    where profiles.id = auth.uid()
-      and profiles.role = 'admin'
-  )
-);
+-- The bucket is declared in config.toml. Storage policies are applied only
+-- after the Storage service initializes its platform-owned schema.
 
 update public.matching_themes
 set image_url = case slug
