@@ -456,7 +456,7 @@ function OfferFields({
       <div className="rounded-lg bg-brand-lavenderSoft/70 p-4 text-xs font-semibold leading-5 text-tesText-secondary">
         As regras detalhadas de reserva continuam centralizadas em Agenda /
         Horários. Esta oferta só fica reservável após ativação válida pelo
-        backend.
+        pelas regras de segurança da plataforma.
       </div>
     </div>
   );

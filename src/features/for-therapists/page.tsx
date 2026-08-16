@@ -302,8 +302,8 @@ function Benefits() {
             Feito para quem cuida de pessoas
           </h2>
           <p className="mx-auto mt-4 max-w-3xl text-base font-semibold leading-7 text-tesText-secondary">
-            Tudo o que voce precisa para organizar sua rotina, fortalecer sua
-            presenca e acompanhar sua jornada profissional.
+            Tudo o que você precisa para organizar sua rotina, fortalecer sua
+            presença e acompanhar sua jornada profissional.
           </p>
         </div>
 

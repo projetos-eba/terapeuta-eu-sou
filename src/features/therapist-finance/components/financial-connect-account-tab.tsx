@@ -35,7 +35,7 @@ export function FinancialConnectAccountTab({
             {state.description}
           </p>
           <p className="mt-4 rounded-lg bg-brand-lavenderSoft/70 p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-            Você será redirecionado para um ambiente seguro da Stripe. O TES não
+            Você será redirecionado para um ambiente seguro de pagamentos. O TES não
             armazena seus dados bancários completos.
           </p>
         </div>
@@ -69,7 +69,7 @@ export function FinancialConnectAccountTab({
           </h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
             A conclusão do cadastro, análise e liberação para repasses acontece
-            no ambiente hospedado da Stripe.
+            no ambiente seguro de pagamentos.
           </p>
           <div className="mt-5">
             <FinancialConnectAccountActions
@@ -90,8 +90,8 @@ export function FinancialConnectAccountTab({
             Checklist seguro
           </h3>
           <ul className="mt-4 grid gap-3 text-sm font-semibold leading-6 text-tesText-secondary">
-            <li>Dados bancários completos ficam somente na Stripe.</li>
-            <li>O retorno da Stripe não marca a conta como pronta sozinho.</li>
+            <li>Dados bancários completos ficam somente no ambiente seguro.</li>
+            <li>O retorno não marca a conta como pronta sozinho.</li>
             <li>O status exibido vem da última sincronização autorizada.</li>
           </ul>
         </div>
@@ -123,7 +123,7 @@ function getConnectState(account: TherapistConnectAccount) {
   if (!account.accountExists) {
     return {
       description:
-        "Cadastre seus dados com segurança no ambiente da Stripe para receber os valores das suas sessões.",
+        "Cadastre seus dados com segurança no ambiente de pagamentos para receber os valores das suas sessões.",
       iconClass: "bg-brand-lavenderSoft text-brand-primary",
       notice: null,
       primaryAction: "create_or_continue" as const,
@@ -141,7 +141,7 @@ function getConnectState(account: TherapistConnectAccount) {
       iconClass: "bg-status-successBg text-status-success",
       notice: null,
       primaryAction: "login" as const,
-      primaryLabel: "Gerenciar conta na Stripe",
+      primaryLabel: "Gerenciar conta de recebimento",
       statusLabel: "Conta pronta para receber",
       title: "Conta pronta para receber",
       tone: "ready" as const,
@@ -151,13 +151,13 @@ function getConnectState(account: TherapistConnectAccount) {
   if (account.onboardingStatus === "requirements_due") {
     return {
       description:
-        "A Stripe precisa de informações adicionais para continuar a análise da sua conta.",
+        "Precisamos de informações adicionais para continuar a análise da sua conta.",
       iconClass: "bg-status-warningBg text-status-warning",
       notice: requirementNotice(account.currentlyDue.length),
       primaryAction: "create_or_continue" as const,
-      primaryLabel: "Atualizar dados na Stripe",
+      primaryLabel: "Atualizar dados de recebimento",
       statusLabel: "Requisitos pendentes",
-      title: "Atualize seus dados na Stripe",
+      title: "Atualize seus dados de recebimento",
       tone: "warning" as const,
     };
   }
@@ -170,9 +170,9 @@ function getConnectState(account: TherapistConnectAccount) {
       description:
         "As informações enviadas estão em análise. Você pode sincronizar para buscar uma atualização.",
       iconClass: "bg-brand-lavenderSoft text-brand-primary",
-      notice: "Informações em análise pela Stripe.",
+      notice: "Informações em análise.",
       primaryAction: "create_or_continue" as const,
-      primaryLabel: "Atualizar dados na Stripe",
+      primaryLabel: "Atualizar dados de recebimento",
       statusLabel: "Informações em análise",
       title: "Informações em análise",
       tone: "neutral" as const,
@@ -185,11 +185,11 @@ function getConnectState(account: TherapistConnectAccount) {
   ) {
     return {
       description:
-        "A conta está restrita para repasses. Revise as informações solicitadas no ambiente da Stripe.",
+        "A conta está restrita para repasses. Revise as informações solicitadas no ambiente seguro.",
       iconClass: "bg-status-dangerBg text-status-danger",
       notice: translateDisabledReason(account.disabledReason),
       primaryAction: "create_or_continue" as const,
-      primaryLabel: "Atualizar dados na Stripe",
+      primaryLabel: "Atualizar dados de recebimento",
       statusLabel: "Conta restrita",
       title: "Conta restrita",
       tone: "danger" as const,
@@ -198,7 +198,7 @@ function getConnectState(account: TherapistConnectAccount) {
 
   return {
     description:
-      "Continue o cadastro no ambiente da Stripe para liberar os repasses das suas sessões.",
+      "Continue o cadastro no ambiente seguro para liberar os repasses das suas sessões.",
     iconClass: "bg-brand-lavenderSoft text-brand-primary",
     notice: null,
     primaryAction: "create_or_continue" as const,
@@ -211,10 +211,10 @@ function getConnectState(account: TherapistConnectAccount) {
 
 function requirementNotice(count: number) {
   if (count <= 0) {
-    return "Abra a Stripe para conferir se há informações pendentes.";
+    return "Abra o ambiente seguro para conferir se há informações pendentes.";
   }
 
-  return `${count} requisito(s) pendente(s). Abra a Stripe para revisar com segurança.`;
+  return `${count} requisito(s) pendente(s). Abra o ambiente seguro para revisar com segurança.`;
 }
 
 function translateCapability(value: string) {
@@ -230,16 +230,16 @@ function translateCapability(value: string) {
 
 function translateDisabledReason(value: string | null) {
   if (!value)
-    return "A Stripe restringiu a conta. Abra o ambiente seguro para revisar.";
+    return "A conta foi restringida. Abra o ambiente seguro para revisar.";
 
   const labels: Record<string, string> = {
-    account_closed: "A conta foi encerrada na Stripe.",
+    account_closed: "A conta foi encerrada.",
     requirements_past_due:
-      "Há informações obrigatórias vencidas no cadastro da Stripe.",
+      "Há informações obrigatórias vencidas no cadastro.",
   };
 
   return (
     labels[value] ??
-    "A Stripe restringiu a conta. Abra o ambiente seguro para revisar."
+    "A conta foi restringida. Abra o ambiente seguro para revisar."
   );
 }

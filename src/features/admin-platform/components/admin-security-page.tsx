@@ -26,8 +26,8 @@ export function AdminSecurityPage({ data }: { data: AdminSecurityPageData }) {
   return (
     <AppPageContainer className="max-w-[1440px] py-5 lg:py-6">
       <AppPageHeader eyebrow="Admin" title="Segurança">
-        Controle inicial da superfície administrativa, auditoria recente e
-        pendências de hardening identificadas na Fase 1.
+        Acompanhe a segurança da operação, as revisões recentes e os pontos que
+        ainda precisam de atenção.
       </AppPageHeader>
 
       <AppPageGrid className="xl:grid-cols-[minmax(0,1fr)_380px]">
@@ -39,8 +39,8 @@ export function AdminSecurityPage({ data }: { data: AdminSecurityPageData }) {
                   Superfície admin
                 </h2>
                 <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                  Módulos ocultos continuam fora da navegação para evitar links
-                  mortos e operações sem contrato.
+                  Áreas ainda não liberadas permanecem fora da navegação até que
+                  estejam prontas para uso.
                 </p>
               </div>
               <p className="rounded-md bg-surface-muted px-3 py-2 text-xs font-bold text-tesText-secondary">
@@ -59,8 +59,8 @@ export function AdminSecurityPage({ data }: { data: AdminSecurityPageData }) {
               Revisões obrigatórias
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Estes itens dependem de validação Supabase Advisor e revisão de
-              contrato antes de liberar o admin como 100%.
+              Estes itens precisam de uma revisão de segurança antes da
+              liberação completa.
             </p>
             <div className="mt-5 grid gap-3">
               {data.reviewItems.map((item) => (
@@ -76,13 +76,13 @@ export function AdminSecurityPage({ data }: { data: AdminSecurityPageData }) {
               Auditoria recente
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Eventos administrativos da trilha central append-only.
+              Registros recentes das ações administrativas.
             </p>
             <div className="mt-4 space-y-3">
               {data.auditEventsStatus === "unavailable" ? (
                 <p className="rounded-md border border-status-warning bg-status-warningBg p-3 text-sm font-bold text-status-warning">
-                  Auditoria central indisponível. Verifique grants, migration
-                  aplicada e sessão admin antes de considerar a trilha vazia.
+                  Os registros de auditoria estão indisponíveis no momento.
+                  Tente novamente mais tarde.
                 </p>
               ) : data.auditEvents.length === 0 ? (
                 <p className="rounded-md bg-surface-muted p-3 text-sm font-bold text-tesText-secondary">
@@ -100,10 +100,6 @@ export function AdminSecurityPage({ data }: { data: AdminSecurityPageData }) {
                     <p className="mt-1 text-xs font-bold text-tesText-secondary">
                       {event.entityType} · {event.actorRole} ·{" "}
                       {formatDateTime(event.createdAt)}
-                    </p>
-                    <p className="mt-1 text-xs font-bold text-tesText-muted">
-                      {event.permission ?? "permissão não informada"} ·{" "}
-                      {event.source}
                     </p>
                     {event.reason ? (
                       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
@@ -130,7 +126,7 @@ function SignalCard({ signal }: { signal: AdminOperationalSignal }) {
             {signal.label}
           </p>
           <p className="mt-1 text-xs font-bold text-tesText-secondary">
-            {signal.source}
+            Indicador de segurança
           </p>
         </div>
         <span className={toneClass(signal)} />
@@ -165,7 +161,7 @@ function ReviewItem({ item }: { item: AdminSecurityReviewItem }) {
             {item.description}
           </p>
           <p className="mt-2 text-xs font-bold text-tesText-secondary">
-            Fonte: {item.source}
+            Revisão de segurança
           </p>
         </div>
       </div>

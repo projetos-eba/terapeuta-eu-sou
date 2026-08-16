@@ -77,7 +77,7 @@ function mapSubscriptionRow(row: UnknownRecord, index: number) {
     id,
     statusLabel: asText(row.status),
     subtitle:
-      "Plano local deve refletir Billing somente após webhook ou reconciliação server-side.",
+      "O plano exibido deve refletir uma confirmação financeira válida.",
     title: `Assinatura ${plan || "sem plano"}`,
   } satisfies AdminFinanceRow;
 }
@@ -143,8 +143,8 @@ function getDetailSections(
         field("Valor bruto", formatCurrency(record.gross_amount_cents, record.currency)),
         field("Repasse terapeuta", formatCurrency(record.therapist_amount_cents, record.currency)),
         field("Comissão TES", formatCurrency(record.platform_gross_commission_cents, record.currency)),
-        field("Taxa Stripe", formatCurrency(record.stripe_fee_amount_cents, record.currency)),
-        field("Líquido Stripe", formatCurrency(record.stripe_net_amount_cents, record.currency)),
+        field("Taxas da plataforma", formatCurrency(record.stripe_fee_amount_cents, record.currency)),
+        field("Valor líquido", formatCurrency(record.stripe_net_amount_cents, record.currency)),
       ]),
       section("Participantes e sessão", [
         field("Terapeuta", asText(record.therapist_name)),
@@ -156,20 +156,20 @@ function getDetailSections(
         field("Término", formatDate(record.ends_at)),
       ]),
       section("Conciliação segura", [
-        field("Checkout Stripe recebido", asBooleanLabel(record.has_checkout_session)),
-        field("PaymentIntent recebido", asBooleanLabel(record.has_payment_intent)),
-        field("Charge recebida", asBooleanLabel(record.has_charge)),
-        field("Balance transaction recebida", asBooleanLabel(record.has_balance_transaction)),
-        field("Evento Stripe em", formatDate(record.stripe_event_created_at)),
-        field("Metadados internos presentes", asBooleanLabel(record.metadata_present)),
+        field("Pagamento iniciado", asBooleanLabel(record.has_checkout_session)),
+        field("Pagamento confirmado", asBooleanLabel(record.has_payment_intent)),
+        field("Cobrança registrada", asBooleanLabel(record.has_charge)),
+        field("Movimentação registrada", asBooleanLabel(record.has_balance_transaction)),
+        field("Última confirmação", formatDate(record.stripe_event_created_at)),
+        field("Informações adicionais presentes", asBooleanLabel(record.metadata_present)),
       ]),
       section("Risco e repasse", [
         field("Reembolso pendente", asBooleanLabel(record.refund_pending)),
         field("Reembolsos", formatCount(record.refund_count)),
         field("Valor reembolsado", formatCurrency(record.refunded_amount_cents, record.currency)),
         field("Disputas", formatCount(record.dispute_count)),
-        field("Transfers", formatCount(record.transfer_count)),
-        field("Ledger", formatCount(record.ledger_entry_count)),
+        field("Transferências", formatCount(record.transfer_count)),
+        field("Lançamentos", formatCount(record.ledger_entry_count)),
         field("Elegível em", formatDate(record.eligible_at)),
       ]),
       timestampSection(record),
@@ -181,7 +181,7 @@ function getDetailSections(
       field("Assinatura local", asText(record.id)),
       field("Terapeuta", asText(record.therapist_name)),
       field("Perfil terapeuta", asText(record.therapist_profile_id)),
-      field("Plano Billing", formatPlan(record.plan_code)),
+      field("Plano", formatPlan(record.plan_code)),
       field("Plano no perfil", formatPlan(record.therapist_current_plan)),
       field("Status", asText(record.status)),
     ]),
@@ -194,15 +194,15 @@ function getDetailSections(
       field("Encerrada em", formatDate(record.ended_at)),
     ]),
     section("Conciliação segura", [
-      field("Customer vinculado", asBooleanLabel(record.customer_linked)),
-      field("Ambiente", asText(record.customer_environment)),
-      field("Live mode", asBooleanLabel(record.customer_livemode)),
-      field("E-mail do customer presente", asBooleanLabel(record.customer_email_present)),
-      field("Subscription Stripe recebida", asBooleanLabel(record.has_subscription_reference)),
-      field("Checkout Session recebida", asBooleanLabel(record.has_checkout_session)),
-      field("Última invoice recebida", asBooleanLabel(record.has_latest_invoice_reference)),
-      field("Evento Stripe em", formatDate(record.stripe_event_created_at)),
-      field("Metadados internos presentes", asBooleanLabel(record.metadata_present)),
+      field("Conta vinculada", asBooleanLabel(record.customer_linked)),
+      field("Contexto da conta", asText(record.customer_environment)),
+      field("Conta ativa", asBooleanLabel(record.customer_livemode)),
+      field("E-mail da conta presente", asBooleanLabel(record.customer_email_present)),
+      field("Assinatura confirmada", asBooleanLabel(record.has_subscription_reference)),
+      field("Pagamento iniciado", asBooleanLabel(record.has_checkout_session)),
+      field("Última fatura recebida", asBooleanLabel(record.has_latest_invoice_reference)),
+      field("Última confirmação", formatDate(record.stripe_event_created_at)),
+      field("Informações adicionais presentes", asBooleanLabel(record.metadata_present)),
     ]),
     section("Faturas e eventos", [
       field("Faturas", formatCount(record.invoice_count)),
@@ -342,14 +342,14 @@ function getDetailSafetyNotes(
 ) {
   if (module === "payments") {
     return [
-      "Esta visão é read-only: não cria refund, transfer, reversão ou ajuste de ledger.",
-      "IDs externos e payloads Stripe ficam fora do DTO exibido no browser.",
-      "Qualquer mudança financeira precisa de comando próprio reconciliado com Stripe e ledger.",
+      "Esta visão é apenas para consulta: não cria reembolso, transferência, reversão ou ajuste.",
+      "Identificadores externos e dados sensíveis ficam fora da interface.",
+      "Qualquer mudança financeira precisa de uma ação autorizada e conferida.",
     ];
   }
 
   return [
-    "Plano local só deve convergir por webhook Stripe assinado ou reconciliação server-side autenticada.",
+    "O plano só deve mudar após confirmação financeira autorizada.",
     "A página não ativa, cancela ou altera assinatura por parâmetro de URL ou ação visual.",
     "IDs externos, invoice URL, PDF e metadados brutos não são carregados no DTO.",
   ];
@@ -370,7 +370,7 @@ function mapFinanceEvent(
       id: asText(event.id),
       kind,
       subtitle: `${asText(event.direction)} · ${asText(event.source_table)}`,
-      title: asText(event.entry_type) || "Lançamento de ledger",
+      title: asText(event.entry_type) || "Lançamento financeiro",
     };
   }
 

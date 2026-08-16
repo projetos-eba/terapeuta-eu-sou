@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
+import type { ReactNode } from "react";
 import {
   ArrowRight,
   CalendarDays,
@@ -68,7 +69,7 @@ function SectionHeading({
   body,
   centered = true,
 }: {
-  body?: string;
+  body?: ReactNode;
   centered?: boolean;
   eyebrow?: string;
   title: string;
@@ -84,9 +85,9 @@ function SectionHeading({
         {title}
       </h2>
       {body ? (
-        <p className="mt-4 text-base font-semibold leading-7 text-tesText-secondary md:text-lg">
+        <div className="mt-4 text-base font-semibold leading-7 text-tesText-secondary md:text-lg">
           {body}
-        </p>
+        </div>
       ) : null}
     </div>
   );
@@ -148,14 +149,32 @@ function HeroSection() {
 function IntroSection() {
   return (
     <section className="relative overflow-hidden py-12 lg:py-16">
-      <div className="pointer-events-none absolute right-0 top-[90px] hidden h-[286px] rounded-l-[38px] bg-brand-primary lg:left-[635px] lg:block 2xl:left-[735px]" />
-      <div className="relative mx-auto grid max-w-[1680px] gap-9 px-5 sm:px-8 lg:grid-cols-[420px_minmax(0,1fr)] lg:items-start lg:px-12">
+      <div className="pointer-events-none absolute right-0 top-[90px] hidden h-[286px] rounded-l-[38px] bg-brand-primary lg:left-[735px] lg:block" />
+      <div className="relative mx-auto grid max-w-[1680px] gap-9 px-5 sm:px-8 lg:grid-cols-[minmax(0,610px)_minmax(0,1fr)] lg:items-start lg:px-12">
         <div className="relative z-10 lg:pt-4">
           <SectionHeading
             centered={false}
             eyebrow="O que é o TES?"
             title="Um espaço para quem busca novos caminhos"
-            body="Reunimos informação, perfis públicos e uma jornada guiada para ajudar você a encontrar práticas e profissionais com mais clareza."
+            body={
+              <>
+                <span className="block">
+                  Nem toda jornada começa sabendo exatamente o que precisa.
+                </span>
+                <span className="block">
+                  Às vezes ela começa com uma pergunta.
+                </span>
+                <span className="block">
+                  Uma fase de mudança. Uma busca por mais clareza.
+                </span>
+                <span className="block">
+                  O TES foi criado para acolher você e conectar a terapeutas,
+                </span>
+                <span className="block">
+                  práticas e experiências que podem apoiar diferentes momentos da vida.
+                </span>
+              </>
+            }
           />
         </div>
         <div className="relative min-h-[312px] lg:min-h-[292px]">

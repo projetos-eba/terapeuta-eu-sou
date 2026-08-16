@@ -64,7 +64,7 @@ describe("TherapistMetricsPage", () => {
       "href",
       "/terapeuta/insights?tab=interest&period=30",
     );
-    expect(screen.getByRole("link", { name: "Exportar CSV" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Baixar relatório" })).toHaveAttribute(
       "href",
       "/api/therapist/metrics/export?tab=overview&period=30",
     );

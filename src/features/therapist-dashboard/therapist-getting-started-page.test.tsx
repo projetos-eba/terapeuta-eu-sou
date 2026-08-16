@@ -5,7 +5,7 @@ import { TherapistGettingStartedPage } from "./therapist-getting-started-page";
 import type { TherapistHomeReadiness } from "./therapist-home-readiness.types";
 
 describe("TherapistGettingStartedPage", () => {
-  it("gives a new paid therapist operational first steps", () => {
+  it("shows the real registration progress and its next actions", () => {
     render(
       <TherapistGettingStartedPage
         readiness={readinessFixture}
@@ -18,28 +18,27 @@ describe("TherapistGettingStartedPage", () => {
     );
 
     expect(
-      screen.getByRole("heading", { name: "Olá, Antonio." }),
+      screen.getByRole("heading", { name: "Complete seu cadastro" }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("Premium Plus").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Premium Plus/)).toBeInTheDocument();
+    expect(screen.getByText("Seu progresso de cadastro")).toBeInTheDocument();
+    expect(screen.getByText("Etapas do cadastro")).toBeInTheDocument();
+    expect(screen.getByText("Pendências para análise")).toBeInTheDocument();
+    expect(screen.getByText("Resumo do seu perfil")).toBeInTheDocument();
+    expect(screen.getByText("Como funciona")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Checklist de primeiros passos" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Publicar perfil" }),
+      screen.getByRole("link", { name: "Continuar cadastro" }),
     ).toHaveAttribute("href", "/terapeuta/perfil/editar");
     expect(
-      screen.getByRole("link", { name: "Gerenciar terapias" }),
-    ).toHaveAttribute("href", "/terapeuta/servicos");
-    expect(screen.getByRole("link", { name: "Abrir agenda" })).toHaveAttribute(
-      "href",
-      "/terapeuta/agenda",
-    );
+      screen.getAllByText("Documento de identidade").length,
+    ).toBeGreaterThan(0);
     expect(
-      screen.getByRole("link", { name: "Conectar conta" }),
-    ).toHaveAttribute("href", "/terapeuta/financeiro?tab=conta");
-    expect(screen.getByText("0 de 3 concluídos")).toBeInTheDocument();
-    expect(screen.getByText("Recomendado")).toBeInTheDocument();
-    expect(screen.getByText("Em rascunho")).toBeInTheDocument();
+      screen.getAllByText("Comprovante de endereço").length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByText("Cadastro ainda não enviado para análise"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Antonio Silva")).toBeInTheDocument();
   });
 });
 
@@ -87,10 +86,33 @@ const readinessFixture: TherapistHomeReadiness = {
     },
   ],
   completedRequiredCount: 0,
+  documents: [
+    {
+      complete: false,
+      description: "Envie um documento oficial com foto.",
+      id: "identity_document",
+      state: "pending",
+      title: "Documento de identidade",
+    },
+    {
+      complete: false,
+      description: "Envie um comprovante emitido nos últimos 90 dias.",
+      id: "address_proof",
+      state: "pending",
+      title: "Comprovante de endereço",
+    },
+  ],
   isOperationallyReady: false,
   plan: "premium_plus",
   profileCompleteness: 17,
+  profileSummary: {
+    city: "",
+    headline: "",
+    publicName: "Antonio Silva",
+    state: "",
+  },
   profilePublicStatus: "draft",
   requiredCount: 3,
   therapistStatus: "draft",
+  verificationStatus: "draft",
 };

@@ -805,7 +805,7 @@ function buildHealthRows({
       value: formatMetricValue(pendingTherapists),
     },
     {
-      label: "Tickets abertos",
+      label: "Chamados abertos",
       tone: hasPositiveValue(openSupport) ? "warning" : "success",
       value: formatMetricValue(openSupport),
     },

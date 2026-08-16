@@ -30,6 +30,20 @@ describe("mapTherapistHomeReadiness", () => {
         state: "pending",
       }),
     );
+    expect(readiness.documents).toEqual([
+      expect.objectContaining({
+        complete: false,
+        id: "identity_document",
+        state: "pending",
+      }),
+      expect.objectContaining({
+        complete: false,
+        id: "address_proof",
+        state: "pending",
+      }),
+    ]);
+    expect(readiness.profileSummary.publicName).toBe("Codex Terapeuta");
+    expect(readiness.verificationStatus).toBe("draft");
   });
 
   it("unlocks the base dashboard when profile, services and agenda are ready", () => {
@@ -52,7 +66,7 @@ describe("mapTherapistHomeReadiness", () => {
     expect(readiness.requiredCount).toBe(3);
   });
 
-  it("shows Stripe Connect in review as non-blocking and complete", () => {
+  it("shows the receiving account in review as non-blocking and complete", () => {
     const readiness = mapTherapistHomeReadiness({
       connect: connectFixture({
         onboardingStatus: "onboarding_started",
@@ -80,6 +94,40 @@ describe("mapTherapistHomeReadiness", () => {
     );
   });
 
+  it("exposes only safe document states for the registration journey", () => {
+    const readiness = mapTherapistHomeReadiness({
+      connect: null,
+      editor: editorFixture({
+        privateDocuments: [
+          documentFixture({ kind: "identity_document", status: "accepted" }),
+          documentFixture({ kind: "address_proof", status: "rejected" }),
+        ],
+      }),
+      session: {
+        plan: TherapistPlan.Free,
+        profileId,
+        status: TherapistStatus.Draft,
+      },
+    });
+
+    expect(readiness.documents).toEqual([
+      {
+        complete: true,
+        description: "Envie um documento oficial com foto.",
+        id: "identity_document",
+        state: "complete",
+        title: "Documento de identidade",
+      },
+      {
+        complete: false,
+        description: "Envie um comprovante emitido nos últimos 90 dias.",
+        id: "address_proof",
+        state: "attention",
+        title: "Comprovante de endereço",
+      },
+    ]);
+  });
+
   it("rejects profile data from another therapist", () => {
     expect(() =>
       mapTherapistHomeReadiness({
@@ -102,6 +150,7 @@ function editorFixture(
     activeServiceCount: number;
     availabilityRuleCount: number;
     publicStatus: TherapistProfileEditorData["derived"]["publicStatus"];
+    privateDocuments: TherapistProfileEditorData["privateDocuments"];
     therapistProfileId: string;
   }> = {},
 ): TherapistProfileEditorData {
@@ -134,7 +183,7 @@ function editorFixture(
       verificationStatus: "draft",
     },
     draft: null,
-    privateDocuments: [],
+    privateDocuments: overrides.privateDocuments ?? [],
     propagationNotice: "",
     publicProfileHref: "/terapeutas/teste",
     published: {
@@ -166,6 +215,25 @@ function editorFixture(
     updatedAt: "2026-08-07T10:00:00.000Z",
     verificationSummary: null,
     version: 1,
+  };
+}
+
+function documentFixture(
+  overrides: Partial<TherapistProfileEditorData["privateDocuments"][number]>,
+): TherapistProfileEditorData["privateDocuments"][number] {
+  return {
+    createdAt: "2026-08-07T10:00:00.000Z",
+    fileName: "documento.pdf",
+    fileSizeBytes: 1024,
+    id: "00000000-0000-4000-8000-000000000010",
+    kind: "identity_document",
+    mimeType: "application/pdf",
+    reviewNote: null,
+    reviewedAt: null,
+    status: "uploaded",
+    updatedAt: "2026-08-07T10:00:00.000Z",
+    validationState: "passed",
+    ...overrides,
   };
 }
 

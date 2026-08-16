@@ -50,7 +50,7 @@ function mapProfessionalRow(row: UnknownRecord, index: number) {
       field("Pendências de publicação", publicationBlockers(row.publication_blockers)),
       field("Verificação", asText(row.verification_status)),
       field("Serviços", formatCount(row.service_count)),
-      field("Stripe Connect", asText(row.connect_status)),
+      field("Conta de recebimento", asText(row.connect_status)),
       field("Próxima sessão", formatDate(row.next_session_at)),
       field("Atualizado", formatDate(row.updated_at)),
     ]),
@@ -95,7 +95,7 @@ function mapPatientRow(row: UnknownRecord, index: number) {
       field("Status", asText(row.account_status)),
       field("Fuso", asText(row.timezone)),
       field("Reservas", formatCount(row.booking_count)),
-      field("Tickets", formatCount(row.ticket_count)),
+      field("Chamados", formatCount(row.ticket_count)),
       field("Última atividade", formatDate(row.last_activity_at)),
       field("Criado", formatDate(row.created_at)),
     ]),
@@ -144,8 +144,8 @@ function mapSupportRow(row: UnknownRecord, index: number) {
     ]),
     id,
     statusLabel: asText(row.status),
-    subtitle: `Ticket ${shortId(asText(row.id))}`,
-    title: asText(row.subject) || "Ticket sem assunto",
+    subtitle: "Solicitação de suporte",
+    title: asText(row.subject) || "Chamado sem assunto",
   } satisfies AdminOperationRow;
 }
 
@@ -235,7 +235,7 @@ function getDetailSections(
         field("Serviços ativos", formatCount(record.active_service_count)),
         field("Sessões totais", formatCount(record.total_booking_count)),
         field("Sessões futuras", formatCount(record.future_booking_count)),
-        field("Stripe Connect", asText(record.connect_status)),
+      field("Conta de recebimento", asText(record.connect_status)),
         field("Próxima sessão", formatDate(record.next_session_at)),
       ]),
       timestampSection(record),
@@ -254,7 +254,7 @@ function getDetailSections(
       section("Atividade", [
         field("Reservas totais", formatCount(record.booking_count)),
         field("Reservas futuras", formatCount(record.future_booking_count)),
-        field("Tickets", formatCount(record.ticket_count)),
+      field("Chamados", formatCount(record.ticket_count)),
         field("Última atividade", formatDate(record.last_activity_at)),
       ]),
       timestampSection(record),
@@ -301,8 +301,8 @@ function getDetailSections(
 
   if (module === "support") {
     return [
-      section("Ticket", [
-        field("Ticket", asText(record.id)),
+      section("Solicitação", [
+        field("Referência", asText(record.id)),
         field("Assunto", asText(record.subject)),
         field("Categoria", asText(record.category)),
         field("Status", asText(record.status)),
@@ -833,28 +833,28 @@ function getFallbackDetailTitle(module: AdminOperationModuleKey, id: string) {
   if (module === "verifications") return `Verificação ${shortId(id)}`;
   if (module === "patients") return `Cliente ${shortId(id)}`;
   if (module === "sessions") return `Sessão ${shortId(id)}`;
-  if (module === "support") return `Ticket ${shortId(id)}`;
+  if (module === "support") return "Detalhe do chamado";
 
   return `Avaliação ${shortId(id)}`;
 }
 
 function getDetailSafetyNotes(module: AdminOperationModuleKey) {
   const common = [
-    "Detalhe administrativo carregado por RPC segura, com validação server-side de admin.",
-    "Eventos de auditoria não exibem estados completos nem payloads sensíveis.",
+    "Detalhe administrativo disponível após validação de acesso.",
+    "Eventos de auditoria não exibem dados sensíveis.",
   ];
 
   if (module === "sessions") {
     return [
       ...common,
-      "URL secreta, JWT, senha de sala e payload Zoom não são expostos neste detalhe.",
+      "Links privados e credenciais da sala não são expostos neste detalhe.",
     ];
   }
 
   if (module === "support") {
     return [
       ...common,
-      "Descrição completa do ticket permanece fora desta visão até existir fluxo de atendimento com política própria.",
+      "A descrição completa do chamado permanece fora desta visão para proteger dados sensíveis.",
     ];
   }
 

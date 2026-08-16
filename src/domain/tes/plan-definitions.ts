@@ -226,7 +226,7 @@ export function getPlanSignupHref(plan: TherapistPlan) {
 export const therapistPlanDefinitions: PlanDefinition[] = [
   {
     code: TherapistPlan.Free,
-    ctaLabel: "Comecar gratuitamente",
+    ctaLabel: "Começar gratuitamente",
     description:
       "Operação essencial para publicar sua presença e organizar o início.",
     features: therapistPlanFeatureDefinitions
@@ -259,7 +259,7 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
     },
     monthlyPriceCents: 6000,
     name: "Premium",
-    priceLabel: "R$ 60/mes",
+    priceLabel: "R$ 60/mês",
     priceNote: "Cobrança mensal recorrente",
     signupHref: getPlanSignupHref(TherapistPlan.Premium),
     stripePriceId: null,
@@ -276,7 +276,7 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
     },
     monthlyPriceCents: 12000,
     name: "Premium Plus",
-    priceLabel: "R$ 120/mes",
+    priceLabel: "R$ 120/mês",
     priceNote: "Cobrança mensal recorrente",
     signupHref: getPlanSignupHref(TherapistPlan.PremiumPlus),
     stripePriceId: null,

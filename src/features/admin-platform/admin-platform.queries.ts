@@ -58,7 +58,7 @@ export const getAdminIntegrationsPage = cache(
 
     if (!config) {
       return {
-        message: "Configuração Supabase ausente para carregar integrações.",
+        message: "Não foi possível carregar as integrações agora.",
         status: "error",
       };
     }
@@ -70,9 +70,9 @@ export const getAdminIntegrationsPage = cache(
     const integrations = [
       buildIntegrationHealth({
         description:
-          "Webhooks de pagamentos, assinaturas, repasses e reconciliação financeira.",
+          "Pagamentos, assinaturas, repasses e conferência financeira.",
         key: "stripe",
-        label: "Stripe",
+        label: "Pagamentos",
         signals: [
           signal("failed-stripe-webhooks"),
           signal("attention-subscriptions"),
@@ -83,14 +83,14 @@ export const getAdminIntegrationsPage = cache(
         description:
           "Contas de recebimento de terapeutas e disponibilidade para repasses.",
         key: "connect",
-        label: "Stripe Connect",
+        label: "Conta de recebimento",
         signals: [signal("restricted-connect-accounts")],
       }),
       buildIntegrationHealth({
         description:
-          "Sessões online, webhooks do Video SDK e eventos de participação.",
+          "Sessões online e participação nos encontros.",
         key: "zoom",
-        label: "Zoom",
+        label: "Encontros online",
         signals: [signal("failed-zoom-webhooks"), signal("failed-video-sessions")],
       }),
       buildIntegrationHealth({
@@ -122,7 +122,7 @@ export const getAdminSecurityPage = cache(async function getAdminSecurityPage({
 
   if (!config) {
     return {
-      message: "Configuração Supabase ausente para carregar segurança.",
+        message: "Não foi possível carregar a segurança agora.",
       status: "error",
     };
   }
@@ -298,9 +298,9 @@ function toSignal(result: CountResult): AdminOperationalSignal {
 function getIntegrationCountSpecs(): CountSpec[] {
   return [
     {
-      description: "Webhooks Stripe com processamento falho.",
+      description: "Pagamentos com processamento falho.",
       key: "failed-stripe-webhooks",
-      label: "Falhas Stripe",
+      label: "Falhas de pagamento",
       source: "admin_get_integration_health_v1",
       tone: "danger",
     },
@@ -319,23 +319,23 @@ function getIntegrationCountSpecs(): CountSpec[] {
       tone: "warning",
     },
     {
-      description: "Contas Connect restritas ou incompletas.",
+      description: "Contas de recebimento restritas ou incompletas.",
       key: "restricted-connect-accounts",
-      label: "Connect restrito",
+      label: "Contas restritas",
       source: "admin_get_integration_health_v1",
       tone: "warning",
     },
     {
-      description: "Webhooks Zoom Video SDK com processamento falho.",
+      description: "Encontros online com processamento falho.",
       key: "failed-zoom-webhooks",
-      label: "Falhas Zoom",
+      label: "Falhas em encontros online",
       source: "admin_get_integration_health_v1",
       tone: "danger",
     },
     {
-      description: "Sessões Zoom marcadas como falhas.",
+      description: "Sessões online marcadas como falhas.",
       key: "failed-video-sessions",
-      label: "Sessões Zoom falhas",
+      label: "Sessões online com falha",
       source: "admin_get_integration_health_v1",
       tone: "danger",
     },

@@ -39,7 +39,7 @@ export const getAdminTherapyCatalogPage = cache(
 
     if (!config) {
       return {
-        message: "Configuração Supabase ausente para carregar o catálogo.",
+        message: "Não foi possível carregar o catálogo agora.",
         status: "error",
       };
     }

@@ -8,10 +8,10 @@ export const metadata: Metadata = {
     canonical: routes.public.forTherapists,
   },
   description:
-    "Conheca o espaco do Terapeuta Eu Sou para terapeutas organizarem atendimentos, presenca profissional e planos com clareza.",
+    "Conheça o espaço do Terapeuta Eu Sou para terapeutas organizarem atendimentos, presença profissional e planos com clareza.",
   openGraph: {
     description:
-      "Uma landing publica para terapeutas conhecerem recursos, planos e caminhos de cadastro no TES.",
+      "Uma landing pública para terapeutas conhecerem recursos, planos e caminhos de cadastro no TES.",
     title: "Para Terapeutas | Terapeuta Eu Sou",
     type: "website",
     url: routes.public.forTherapists,

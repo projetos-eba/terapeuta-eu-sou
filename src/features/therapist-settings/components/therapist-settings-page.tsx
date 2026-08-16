@@ -147,7 +147,7 @@ export function TherapistSettingsPage({
             pending={pending}
           />
           <SettingsShortcutSection
-            description="Cada área mantém sua própria fonte de dados para evitar divergência no shell."
+            description="Cada área mantém suas informações organizadas para facilitar sua rotina."
             items={[
               {
                 description:
@@ -167,7 +167,7 @@ export function TherapistSettingsPage({
               },
               {
                 description:
-                  "Revise a conta Stripe Connect e o estado dos repasses.",
+                  "Revise sua conta de recebimento e o estado dos repasses.",
                 href: `${routes.therapist.finance}?tab=account`,
                 icon: CreditCard,
                 label: "Conta de recebimento",
@@ -253,14 +253,14 @@ function AccountSection({
     <AppPageSection>
       <div className="grid gap-6">
         <SectionHeading
-          description="Estes dados identificam sua conta dentro do shell. Seu perfil público continua sendo editado em Meu perfil."
+          description="Estes dados identificam sua conta de acesso. Seu perfil público continua sendo editado em Meu perfil."
           icon={UserRound}
           title="Dados da conta"
         />
         <div className="grid gap-4 md:grid-cols-2">
           <TextField
             id="displayName"
-            label="Nome de uso interno"
+            label="Nome de acesso"
             onChange={(value) => onChange({ displayName: value })}
             required
             value={fields.displayName}
@@ -490,7 +490,7 @@ function ProtectedDataPanel() {
           Upgrades ficam em Planos; cancelamentos e mudanças futuras ficam nesta
           página.
         </li>
-        <li>Dados bancários completos ficam no ambiente seguro da Stripe.</li>
+        <li>Dados bancários completos ficam no ambiente seguro de pagamentos.</li>
         <li>Documentos privados não aparecem no perfil público.</li>
       </ul>
     </AppPageSection>

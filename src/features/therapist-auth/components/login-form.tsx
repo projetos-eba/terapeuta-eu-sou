@@ -91,7 +91,7 @@ export function TherapistLoginForm({
       const data = (await response.json()) as { message?: string };
       setResendMessage(data.message ?? "Verifique seu e-mail em instantes.");
     } catch {
-      setResendMessage("Nao foi possivel reenviar agora. Tente novamente.");
+      setResendMessage("Não foi possível reenviar agora. Tente novamente.");
     } finally {
       setIsResending(false);
     }
@@ -152,7 +152,7 @@ export function TherapistLoginForm({
               onClick={handleResend}
               className="min-h-11 rounded-2xl"
             >
-              Reenviar confirmacao
+              Reenviar confirmação
             </TESButton>
           ) : null}
           {resendMessage ? (

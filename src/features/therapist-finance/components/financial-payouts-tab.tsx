@@ -326,8 +326,8 @@ export function FinancialPayoutsTab({
             Como o valor é calculado
           </h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            O cálculo do repasse vem do read model financeiro. O navegador
-            apenas apresenta a composição autorizada.
+            O cálculo do repasse considera os registros financeiros confirmados.
+            Esta tela apresenta apenas a composição autorizada.
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr]">

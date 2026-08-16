@@ -104,8 +104,8 @@ function ConnectReturnNotice({ notice }: { notice: "refresh" | "return" }) {
       <div>
         <h2 className="text-base font-extrabold text-brand-deep">
           {notice === "refresh"
-            ? "Link da Stripe expirado"
-            : "Retorno da Stripe recebido"}
+            ? "Link de recebimento expirado"
+            : "Retorno da conta recebido"}
         </h2>
         <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
           {notice === "refresh"

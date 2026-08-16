@@ -94,29 +94,29 @@ export function buildSecurityReviewItems(): AdminSecurityReviewItem[] {
   return [
     {
       description:
-        "Security Advisor local apontou views públicas com SECURITY DEFINER. Revisar contrato antes de declarar admin 100%.",
+        "A revisão de segurança encontrou áreas públicas que precisam de conferência antes da liberação completa.",
       key: "security-definer-views",
-      label: "Views públicas SECURITY DEFINER",
+      label: "Áreas públicas em conferência",
       severity: "warning",
-      source: "Supabase Security Advisor",
+      source: "Revisão de segurança",
       status: "manual_review",
     },
     {
       description:
-        "Há funções SECURITY DEFINER executáveis por authenticated. Classificar por domínio antes de alterar grants.",
+        "Há permissões que precisam de classificação por área antes de qualquer alteração.",
       key: "authenticated-security-definer-functions",
       label: "Funções privilegiadas expostas",
       severity: "warning",
-      source: "Supabase Security Advisor",
+      source: "Revisão de segurança",
       status: "manual_review",
     },
     {
       description:
-        "Algumas tabelas com RLS não possuem policies e devem permanecer service-role only ou receber read model admin dedicado.",
+        "Algumas áreas precisam de regras de acesso específicas antes de serem liberadas.",
       key: "rls-enabled-no-policy",
-      label: "RLS sem policy em tabelas internas",
+      label: "Regras de acesso pendentes",
       severity: "info",
-      source: "Supabase Security Advisor",
+      source: "Revisão de segurança",
       status: "manual_review",
     },
   ];

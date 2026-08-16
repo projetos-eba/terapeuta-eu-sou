@@ -17,13 +17,31 @@ export type TherapistHomeChecklistItem = {
   title: string;
 };
 
+export type TherapistHomeDocument = {
+  complete: boolean;
+  description: string;
+  id: "address_proof" | "identity_document";
+  state: "attention" | "complete" | "pending";
+  title: string;
+};
+
+export type TherapistHomeProfileSummary = {
+  city: string;
+  headline: string;
+  publicName: string;
+  state: string;
+};
+
 export type TherapistHomeReadiness = {
   checklist: TherapistHomeChecklistItem[];
   completedRequiredCount: number;
+  documents: TherapistHomeDocument[];
   isOperationallyReady: boolean;
   plan: TherapistPlan;
   profileCompleteness: number;
+  profileSummary: TherapistHomeProfileSummary;
   profilePublicStatus: string;
   requiredCount: number;
   therapistStatus: TherapistStatus;
+  verificationStatus: string;
 };

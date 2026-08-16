@@ -518,9 +518,9 @@ function getCountSpecs(): CountSpec[] {
       tone: "warning",
     },
     {
-      description: "Tickets de suporte ainda abertos.",
+      description: "Chamados de suporte ainda abertos.",
       key: "open-support-tickets",
-      label: "Tickets abertos",
+      label: "Chamados abertos",
       source: "admin_get_dashboard_v1",
       tone: "warning",
     },

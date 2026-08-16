@@ -331,8 +331,7 @@ function MomentStep({
               Agenda disponível
             </h2>
             <p className="mt-2 text-sm font-bold text-tesText-muted">
-              Horários no fuso America/Sao_Paulo. O slot será revalidado antes
-              do pagamento.
+              Horários no fuso America/Sao_Paulo. Escolha o melhor dia e horário que te atenda.
             </p>
           </div>
           <span className="rounded-full bg-brand-lavenderSoft px-4 py-2 text-sm font-extrabold text-brand-primary">

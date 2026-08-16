@@ -40,6 +40,12 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
 - Readiness: `getTherapistHomeReadiness({ session })`, derivado de
   `therapist_profiles`, conteúdo publicado/rascunho, serviços ativos,
   disponibilidade e Stripe Connect.
+- Onboarding: quando a prontidão essencial ainda não foi alcançada,
+  `TherapistGettingStartedPage` apresenta o progresso circular, as etapas
+  reais, pendências de documentos, resumo do perfil e orientação de análise.
+  Os documentos privados são resumidos apenas como estado e encaminham para
+  `/terapeuta/perfil`, que continua sendo a superfície canônica de envio; não
+  duplicar upload, URLs ou dados privados no dashboard.
 - Read model: RPC `public.get_therapist_dashboard_v1()`.
 - Recomendações: `public.aura_recommendations`, consultadas separadamente.
 - Assets locais: `public/therapist/dashboard/`.
@@ -55,6 +61,9 @@ Não distribuir queries pelos componentes. A entrada única da página é
 - Autorização usa access token e RLS; o cookie de plano é somente hint.
 - `/terapeuta` deve primeiro mostrar checklist para perfil publicado, terapias
   ativas e agenda configurada.
+- A transição para o dashboard normal acontece pela mesma prontidão essencial
+  já autorizada. Documentos e verificação devem orientar o cadastro, sem
+  alterar silenciosamente a regra de publicação, reservas ou elegibilidade.
 - Stripe Connect aparece como item recomendado; status em análise é normal e
   não bloqueia a entrada no dashboard.
 - Free/Premium com checklist essencial concluído recebem dashboard base com
@@ -89,6 +98,9 @@ Não distribuir queries pelos componentes. A entrada única da página é
 - `npm run build`.
 - Login local com `ana.oliveira@example.test`.
 - Validar desktop, tablet e mobile.
+- No onboarding, validar o anel de progresso, checklist, pendências,
+  resumo de perfil e rail de orientação em 1440px, 1024px e 390px, sem rolagem
+  horizontal.
 - Confirmar drawer, foco visível, item ativo, badges e logout.
 - Confirmar que todos os links do menu evitam 404.
 - Confirmar RLS entre Ana, Rafael e paciente.

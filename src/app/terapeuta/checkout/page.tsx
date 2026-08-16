@@ -30,12 +30,12 @@ import {
 
 export const metadata: Metadata = {
   description:
-    "Revisao do plano escolhido antes do pagamento da assinatura profissional TES.",
+    "Revisão do plano escolhido antes do pagamento da assinatura profissional TES.",
   robots: {
     follow: false,
     index: false,
   },
-  title: "Checkout do plano | Terapeuta Eu Sou",
+  title: "Pagamento do plano | Terapeuta Eu Sou",
 };
 
 export default async function TherapistCheckoutPage({
@@ -84,7 +84,7 @@ export default async function TherapistCheckoutPage({
     <TherapistAuthShell
       className="lg:px-14"
       eyebrow="Assinatura TES"
-      title="Seu proximo passo, com seguranca."
+      title="Seu próximo passo, com segurança."
       description="Revise o plano escolhido antes de seguir para o pagamento."
     >
       <div className="w-full space-y-6">
@@ -94,13 +94,13 @@ export default async function TherapistCheckoutPage({
           </p>
           <h1 className="mt-3 font-display text-4xl font-light italic leading-tight text-brand-deep sm:text-5xl">
             {hasActivePaidPlan
-              ? "Seu plano ja esta ativo"
+              ? "Seu plano já está ativo"
               : "Finalize sua assinatura"}
           </h1>
           <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
             {hasActivePaidPlan
-              ? `Voce esta no plano ${getTherapistPlanDefinition(session.plan).name}.`
-              : `Sua conta esta pronta. Falta confirmar o plano ${plan.name}.`}
+              ? `Você está no plano ${getTherapistPlanDefinition(session.plan).name}.`
+              : `Sua conta está pronta. Falta confirmar o plano ${plan.name}.`}
           </p>
         </div>
 
@@ -156,7 +156,7 @@ export default async function TherapistCheckoutPage({
               variant="gradient"
               className="min-h-12 w-full rounded-2xl text-base"
             >
-              Acessar minha area
+              Acessar minha área
             </TESButton>
             <form action={openBillingPortalAction}>
               <button
@@ -214,7 +214,7 @@ export default async function TherapistCheckoutPage({
 
         <p className="flex items-center justify-center gap-2 text-center text-xs font-bold text-tesText-muted">
           <ShieldCheck className="size-4" aria-hidden="true" />O pagamento da
-          assinatura sera processado com seguranca pelo Stripe.
+          assinatura será processado em ambiente seguro de pagamento.
         </p>
       </div>
     </TherapistAuthShell>
@@ -243,7 +243,7 @@ function CheckoutReturnWithoutSession({
       <div className="w-full space-y-6">
         <div>
           <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
-            Retorno do checkout
+            Retorno do pagamento
           </p>
           <h1 className="mt-3 font-display text-4xl font-light italic leading-tight text-brand-deep sm:text-5xl">
             {copy.title}
@@ -297,7 +297,7 @@ function CheckoutReturnMissingSessionId({
   return (
     <section className="rounded-card border border-border bg-white p-5 sm:p-6">
       <p className="text-sm font-extrabold text-brand-deep">
-        Retorno incompleto do checkout
+            Retorno incompleto do pagamento
       </p>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
         Não foi possível consultar esta tentativa de pagamento. Seu plano
@@ -355,13 +355,13 @@ function getCheckoutStatusCopy(status?: string) {
   switch (status) {
     case "success":
       return {
-        title: "Pagamento em confirmacao",
+        title: "Pagamento em confirmação",
         description:
           "Recebemos seu retorno do pagamento. O plano pago será liberado somente após a confirmação segura.",
       };
     case "canceled":
       return {
-        title: "Checkout cancelado",
+        title: "Pagamento cancelado",
         description:
           "Seu plano continua Free. Você pode retomar o pagamento quando quiser.",
       };
@@ -373,21 +373,21 @@ function getCheckoutStatusCopy(status?: string) {
       };
     case "configuration":
       return {
-        title: "Pagamento indisponivel",
+        title: "Pagamento indisponível",
         description:
           "Não foi possível iniciar o pagamento agora. Tente novamente em alguns instantes.",
       };
     case "unauthorized":
       return {
-        title: "Sessao expirada",
+        title: "Sessão expirada",
         description:
           "Entre novamente como terapeuta para continuar com a assinatura escolhida.",
       };
     case "unavailable":
       return {
-        title: "Checkout indisponivel",
+        title: "Pagamento indisponível",
         description:
-          "Nao conseguimos iniciar o checkout agora. Seu plano continua Free e nenhuma cobranca foi criada.",
+          "Não conseguimos iniciar o pagamento agora. Seu plano continua Free e nenhuma cobrança foi criada.",
       };
     default:
       return {

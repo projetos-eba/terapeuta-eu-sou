@@ -32,8 +32,8 @@ export function AdminIntegrationsPage({
   return (
     <AppPageContainer className="max-w-[1440px] py-5 lg:py-6">
       <AppPageHeader eyebrow="Admin" title="Integrações">
-        Acompanhe provedores externos e sinais técnicos sem expor secrets,
-        payloads sensíveis ou credenciais.
+        Acompanhe os serviços que sustentam pagamentos, encontros e
+        comunicações da plataforma.
       </AppPageHeader>
 
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -51,8 +51,8 @@ export function AdminIntegrationsPage({
                   Sinais operacionais
                 </h2>
                 <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                  Leituras bloqueadas por RLS ou grants aparecem como
-                  indisponíveis, nunca como zero.
+                  Quando uma informação não puder ser consultada, ela aparece
+                  como indisponível, nunca como zero.
                 </p>
               </div>
               <p className="rounded-md bg-surface-muted px-3 py-2 text-xs font-bold text-tesText-secondary">
@@ -74,9 +74,9 @@ export function AdminIntegrationsPage({
               Regras de segurança
             </h2>
             <div className="mt-4 space-y-3 text-sm font-semibold leading-6 text-tesText-secondary">
-              <p>Secrets permanecem fora do browser e fora dos payloads.</p>
-              <p>Webhooks dependem de assinatura, replay protection e idempotência.</p>
-              <p>Falha técnica mantém estado degradado até validação real.</p>
+              <p>Dados sensíveis permanecem protegidos durante toda a operação.</p>
+              <p>Confirmações duplicadas são bloqueadas automaticamente.</p>
+              <p>Falhas mantêm o serviço em acompanhamento até a normalização.</p>
             </div>
           </AppPageSection>
         </AppPageAside>
@@ -119,7 +119,7 @@ function SignalCard({ signal }: { signal: AdminOperationalSignal }) {
             {signal.label}
           </p>
           <p className="mt-1 text-xs font-bold text-tesText-secondary">
-            {signal.source}
+            Indicador operacional
           </p>
         </div>
         <span className={toneClass(signal)} />

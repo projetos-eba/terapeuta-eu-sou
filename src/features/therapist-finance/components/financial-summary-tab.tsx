@@ -140,8 +140,8 @@ export function FinancialSummaryTab({
             Composição do valor líquido
           </h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            A composição usa os registros financeiros confirmados. A taxa Stripe
-            não aparece como desconto do terapeuta.
+            A composição usa os registros financeiros confirmados. As taxas da
+            plataforma não aparecem como desconto do terapeuta.
           </p>
           <p className="mt-4 rounded-lg bg-brand-lavenderSoft/60 p-4 text-sm font-semibold leading-6 text-tesText-secondary">
             Dados atualizados em{" "}
