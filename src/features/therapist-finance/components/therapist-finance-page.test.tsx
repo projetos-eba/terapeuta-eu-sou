@@ -141,7 +141,7 @@ describe("TherapistFinancePage", () => {
     renderPage("receipts");
 
     expect(screen.getAllByText("Cartão").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Checkout Stripe").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Pagamento online").length).toBeGreaterThan(0);
     expect(screen.getByText("Reembolsos")).toBeInTheDocument();
   });
 

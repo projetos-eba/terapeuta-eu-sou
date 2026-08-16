@@ -30,8 +30,8 @@ export default async function TherapistLoginPage({
   return (
     <TherapistAuthShell
       eyebrow="Acesso profissional"
-      title="Entre para cuidar da sua rotina."
-      description="Este login é separado do acesso de pacientes para manter perfis, permissões e passos profissionais bem definidos."
+      title="Seu espaço começa aqui"
+      description="Acesse sua área profissional e acompanhe sua rotina com clareza."
     >
       <div className="w-full">
         <TherapistLoginForm

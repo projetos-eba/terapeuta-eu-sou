@@ -98,7 +98,7 @@ function AdvancedLockedState() {
         <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
           Projeções, potencial da agenda, oportunidades, retenção avançada,
           evolução financeira e insights acionáveis fazem parte do Premium Plus.
-          Recebimentos, repasses e conta Stripe continuam disponíveis.
+          Recebimentos, repasses e conta de recebimento continuam disponíveis.
         </p>
       </div>
       <Link

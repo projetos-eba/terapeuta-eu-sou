@@ -51,8 +51,7 @@ export function AdminFinancePage({ data }: { data: AdminFinancePageData }) {
                   {data.rowsTitle}
                 </h2>
                 <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                  Fonte: {data.sourceLabel}. Listagem mínima e sem payloads
-                  sensíveis.
+                  Listagem resumida, com proteção de dados sensíveis.
                 </p>
               </div>
               <p className="rounded-md bg-surface-muted px-3 py-2 text-xs font-bold text-tesText-secondary">
@@ -171,8 +170,8 @@ export function AdminFinancePage({ data }: { data: AdminFinancePageData }) {
                   Guardrails financeiros
                 </h2>
                 <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                  Regras para preservar Stripe, Billing, Connect e ledger como
-                  fontes confiáveis.
+                  Regras para manter os registros financeiros confiáveis e
+                  protegidos.
                 </p>
               </div>
             </div>

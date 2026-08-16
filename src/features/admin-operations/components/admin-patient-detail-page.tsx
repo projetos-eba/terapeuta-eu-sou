@@ -54,7 +54,7 @@ export function AdminPatientDetailPage({
   const stats = [
     statItem("Reservas totais", activityFields.get("Reservas totais")),
     statItem("Reservas futuras", activityFields.get("Reservas futuras")),
-    statItem("Tickets", activityFields.get("Tickets")),
+    statItem("Chamados", activityFields.get("Chamados")),
     statItem("Última atividade", activityFields.get("Última atividade")),
   ].filter(Boolean) as Array<{ label: string; value: string }>;
 
@@ -91,8 +91,8 @@ export function AdminPatientDetailPage({
       value: activityFields.get("Reservas futuras") ?? "",
     },
     {
-      label: "Tickets",
-      value: activityFields.get("Tickets") ?? "",
+      label: "Chamados",
+      value: activityFields.get("Chamados") ?? "",
     },
     {
       label: "Última atividade",
@@ -121,11 +121,11 @@ export function AdminPatientDetailPage({
           badges={badges}
           details={details}
           meta={
-            activityFields.get("Tickets")
+            activityFields.get("Chamados")
               ? [
                   {
-                    label: "Tickets em histórico",
-                    value: activityFields.get("Tickets") as string,
+                    label: "Chamados em histórico",
+                    value: activityFields.get("Chamados") as string,
                   },
                 ]
               : undefined

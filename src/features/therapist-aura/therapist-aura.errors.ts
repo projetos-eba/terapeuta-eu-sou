@@ -16,7 +16,7 @@ export function getTherapistAuraErrorMessage(code: TherapistAuraErrorCode) {
     forbidden:
       "A Aura completa está disponível para terapeutas Premium Plus com conta ativa.",
     invalid_contract:
-      "A resposta da Aura veio em um formato inesperado. Já registramos este estado para revisão técnica.",
+      "Não foi possível concluir esta leitura agora. Tente novamente em instantes.",
     session_expired: "Sua sessão expirou. Entre novamente para continuar.",
     unavailable:
       "Não foi possível consultar os sinais da Aura agora. Tente novamente em instantes.",

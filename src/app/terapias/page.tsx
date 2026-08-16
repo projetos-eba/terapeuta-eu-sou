@@ -51,8 +51,7 @@ export default async function TherapiesPage({
               Conheça os caminhos terapêuticos disponíveis
             </h1>
             <p className="mt-5 max-w-[625px] text-lg font-bold leading-8 text-tesText-secondary sm:text-xl">
-              Explore terapias publicadas pela plataforma, entenda cada caminho
-              e siga com mais clareza.
+              Connheça diferentes práticas e descubra quais fazem sentido para o momento que você está vivendo.
             </p>
 
             <form

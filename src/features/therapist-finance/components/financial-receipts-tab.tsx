@@ -330,7 +330,7 @@ export function FinancialReceiptsTab({
               Nenhum recebimento encontrado
             </h3>
             <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              Quando uma sessão tiver pagamento confirmado pelo Stripe, ela
+              Quando uma sessão tiver pagamento confirmado, ela
               aparecerá aqui.
             </p>
           </div>

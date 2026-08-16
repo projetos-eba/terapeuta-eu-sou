@@ -86,7 +86,7 @@ export function ClientLoginForm({
       const data = (await response.json()) as { message?: string };
       setResendMessage(data.message ?? "Verifique seu e-mail em instantes.");
     } catch {
-      setResendMessage("Nao foi possivel reenviar agora. Tente novamente.");
+      setResendMessage("Não foi possível reenviar agora. Tente novamente.");
     } finally {
       setIsResending(false);
     }

@@ -112,7 +112,7 @@ function FeatureState({
 
   return (
     <span
-      aria-label={included ? `${label}: incluido` : `${label}: nao incluido`}
+      aria-label={included ? `${label}: incluído` : `${label}: não incluído`}
       className={cn(
         "mx-auto grid size-5 place-items-center",
         included ? "text-status-success" : "text-tesText-muted",
@@ -154,7 +154,7 @@ function getMobilePlanIntro(plan: PlanDefinition) {
     return "Tudo do plano Premium, mais:";
   }
 
-  return "Beneficios do plano:";
+  return "Benefícios do plano:";
 }
 
 function getMobilePrimaryFeatures(plan: PlanDefinition) {
@@ -287,11 +287,11 @@ export function PlansPreviewSection() {
       <div className="mx-auto max-w-[1320px]">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="font-display text-4xl font-light italic leading-tight md:text-5xl">
-            Escolha o plano ideal para voce
+            Escolha o plano ideal para você
           </h2>
           <p className="mt-4 text-sm font-semibold leading-6 text-white/82">
             Recursos pensados para facilitar sua rotina e cuidar do que importa:
-            suas conexoes.
+            suas conexões.
           </p>
         </div>
 

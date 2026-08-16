@@ -17,7 +17,7 @@ const checklist = [
   },
   {
     description:
-      "Recursos pagos só são liberados após a confirmação do Stripe.",
+      "Recursos pagos só são liberados após a confirmação do pagamento.",
     icon: CreditCard,
     title: "Plano seguro",
   },

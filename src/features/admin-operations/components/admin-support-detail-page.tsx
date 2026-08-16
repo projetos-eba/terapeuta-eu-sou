@@ -27,7 +27,8 @@ export function AdminSupportDetailPage({
 }: {
   data: AdminOperationDetailPageData;
 }) {
-  const ticket = findSection(data, "Ticket");
+  const ticket =
+    findSection(data, "Solicitação") ?? findSection(data, "Ticket");
   const relationships = findSection(data, "Relacionamentos");
   const traceability = findSection(data, "Rastreabilidade");
   const ticketFields = fieldMap(ticket?.fields ?? []);

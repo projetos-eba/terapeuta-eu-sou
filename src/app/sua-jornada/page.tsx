@@ -33,7 +33,6 @@ export default async function JourneyPage() {
             <span className="inline-flex min-h-9 items-center gap-2 rounded-full border border-brand-lavender/60 bg-white/80 px-3 text-xs font-extrabold text-brand-primary shadow-card backdrop-blur">
               <CircleDot className="size-[18px]" aria-hidden="true" />
               Emoções e bem-estar
-              <Info className="size-4" aria-hidden="true" />
             </span>
             <h1 className="mt-8 font-display text-[3.45rem] font-light italic leading-[0.98] text-brand-deep sm:text-[4.5rem] lg:text-[5.3rem]">
               Como você está se sentindo?

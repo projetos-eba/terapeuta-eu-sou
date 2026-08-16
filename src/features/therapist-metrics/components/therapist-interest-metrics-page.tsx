@@ -383,7 +383,7 @@ function UnavailableSignals() {
     {
       label: "Sentimento pós-sessão",
       reason:
-        "O evento consentido e sua interface ainda não foram implementados.",
+        "Ainda não há dados suficientes para esta leitura.",
     },
     {
       label: "Lacuna da agenda",
