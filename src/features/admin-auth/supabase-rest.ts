@@ -55,7 +55,7 @@ export async function loginAdminWithPassword(
 
 export class AdminAuthConfigError extends Error {
   constructor() {
-    super("Admin auth Supabase configuration is missing.");
+    super("Admin authentication configuration is missing.");
   }
 }
 
@@ -73,6 +73,6 @@ export class AdminAuthEmailUnconfirmedError extends Error {
 
 export class AdminAuthSupabaseError extends Error {
   constructor(readonly status: number) {
-    super("Supabase admin auth request failed.");
+    super("Admin authentication request failed.");
   }
 }

@@ -87,7 +87,7 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
   patients: {
     description:
       "Acompanhe a base de clientes com dados operacionais mínimos e sem conteúdo clínico.",
-    emptyMessage: "Nenhum cliente acessível para a sessão administrativa atual.",
+    emptyMessage: "Nenhum cliente disponível para esta consulta.",
     metrics: [
       metric(
         "total-patients",
@@ -106,9 +106,9 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
     ],
     safetyNotes: [
       "A lista evita dados sensíveis de jornada, mensagens, intake ou conteúdo clínico.",
-      "Ações de bloqueio exigem contrato dedicado, motivo e auditoria.",
+      "Ações de bloqueio exigem motivo e registro da decisão.",
     ],
-    sourceLabel: "patient_profiles",
+    sourceLabel: "Clientes",
     statusOptions: [
       option("", "Todos os status"),
       option("active", "Ativos"),
@@ -119,9 +119,8 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
   },
   professionals: {
     description:
-      "Gerencie a superfície operacional dos terapeutas sem alterar plano, verificação ou publicação diretamente.",
-    emptyMessage:
-      "Nenhum profissional acessível para a sessão administrativa atual.",
+      "Gerencie a operação dos terapeutas sem alterar plano, verificação ou publicação diretamente.",
+    emptyMessage: "Nenhum profissional disponível para esta consulta.",
     metrics: [
       metric(
         "total-professionals",
@@ -153,10 +152,10 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
       ),
     ],
     safetyNotes: [
-      "Suspensão e reativação usam comando com motivo, idempotência por requestId e auditoria.",
-      "Publicação e plano de assinatura não devem ser alterados diretamente pelo admin.",
+      "Suspensão e reativação exigem motivo e registro da decisão.",
+      "Publicação e plano de assinatura seguem fluxos próprios de aprovação.",
     ],
-    sourceLabel: "therapist_profiles",
+    sourceLabel: "Profissionais",
     statusOptions: [
       option("", "Todos os status"),
       option("draft", "Perfil em construção"),
@@ -172,7 +171,7 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
   reviews: {
     description:
       "Monitore avaliações para moderação sem expor comentários em listagem operacional.",
-    emptyMessage: "Nenhuma avaliação acessível para a sessão administrativa atual.",
+    emptyMessage: "Nenhuma avaliação disponível para esta consulta.",
     metrics: [
       metric(
         "total-reviews",
@@ -198,9 +197,9 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
     ],
     safetyNotes: [
       "Comentários não aparecem na lista para reduzir exposição desnecessária.",
-      "Ocultar/restaurar avaliação usa comando auditado e preserva o registro original.",
+      "Ocultar ou restaurar uma avaliação registra a decisão e preserva o histórico.",
     ],
-    sourceLabel: "reviews",
+    sourceLabel: "Avaliações",
     statusOptions: [
       option("", "Todos os status"),
       option("pending", "Pendentes"),
@@ -212,8 +211,8 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
   },
   sessions: {
     description:
-      "Acompanhe reservas, pagamento e janela online sem expor URL secreta de reunião.",
-    emptyMessage: "Nenhuma sessão acessível para a sessão administrativa atual.",
+      "Acompanhe reservas, pagamento e encontros online sem expor links privados.",
+    emptyMessage: "Nenhuma sessão disponível para esta consulta.",
     metrics: [
       metric(
         "total-sessions",
@@ -238,10 +237,10 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
       ),
     ],
     safetyNotes: [
-      "URLs de reunião e dados clínicos não são carregados nesta visão.",
-      "Cancelamento, reembolso e reagendamento exigem comandos de domínio.",
+      "Links de reunião e dados clínicos não são carregados nesta visão.",
+      "Cancelamento, reembolso e reagendamento exigem confirmação autorizada.",
     ],
-    sourceLabel: "bookings",
+    sourceLabel: "Sessões",
     statusOptions: [
       option("", "Todos os status"),
       option("pending_payment", "Pagamento pendente"),
@@ -255,36 +254,36 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
   },
   support: {
     description:
-      "Acompanhe tickets e urgência operacional sem abrir conteúdo sensível por padrão.",
-    emptyMessage: "Nenhum ticket acessível para a sessão administrativa atual.",
+      "Acompanhe chamados e urgência operacional sem abrir conteúdo sensível por padrão.",
+    emptyMessage: "Nenhum chamado disponível para esta consulta.",
     metrics: [
       metric(
         "total-support",
-        "Tickets",
-        "Tickets registrados.",
+        "Chamados",
+        "Chamados registrados.",
         "support_tickets",
         "info",
       ),
       metric(
         "open-support",
         "Abertos",
-        "Tickets ainda abertos.",
+        "Chamados ainda abertos.",
         "support_tickets",
         "warning",
       ),
       metric(
         "urgent-support",
         "Urgentes",
-        "Tickets marcados como urgentes.",
+        "Chamados marcados como urgentes.",
         "support_tickets",
         "danger",
       ),
     ],
     safetyNotes: [
-      "A descrição completa do ticket não aparece nesta lista.",
-      "Resolver/reabrir usa comando auditado; resposta e escalação seguem fora desta fase.",
+      "A descrição completa do chamado não aparece nesta lista.",
+      "Resolver ou reabrir registra a decisão; resposta e escalação seguem o fluxo de atendimento.",
     ],
-    sourceLabel: "support_tickets",
+    sourceLabel: "Suporte",
     statusOptions: [
       option("", "Todos os status"),
       option("open", "Abertos"),
@@ -296,9 +295,8 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
   },
   verifications: {
     description:
-      "Acompanhe verificações de terapeutas sem expor documentos privados em payload de lista.",
-    emptyMessage:
-      "Nenhuma verificação acessível para a sessão administrativa atual.",
+      "Acompanhe verificações de terapeutas sem expor documentos privados na lista.",
+    emptyMessage: "Nenhuma verificação disponível para esta consulta.",
     metrics: [
       metric(
         "total-verifications",
@@ -316,10 +314,10 @@ const MODULES: Record<AdminOperationModuleKey, ModuleSpec> = {
       ),
     ],
     safetyNotes: [
-      "Metadados de documentos privados não são carregados nesta lista.",
-      "Aprovar, reprovar ou solicitar ajuste usa comando com motivo e auditoria.",
+      "Informações de documentos privados não são carregadas nesta lista.",
+      "Aprovar, reprovar ou solicitar ajuste exige motivo e registro da decisão.",
     ],
-    sourceLabel: "therapist_verifications",
+    sourceLabel: "Verificações",
     statusOptions: [
       option("", "Todos os status"),
       option("submitted", "Aguardando análise"),
@@ -354,7 +352,7 @@ export const getAdminOperationPage = cache(async function getAdminOperationPage(
 
   if (!config) {
     return {
-      message: "Configuração Supabase ausente para carregar este módulo.",
+      message: "Não foi possível carregar este módulo agora.",
       status: "error",
     };
   }
@@ -445,7 +443,7 @@ export const getAdminOperationDetailPage = cache(
 
     if (!config) {
       return {
-        message: "Configuração Supabase ausente para carregar este detalhe.",
+        message: "Não foi possível carregar este detalhe agora.",
         status: "error",
       };
     }

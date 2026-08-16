@@ -85,23 +85,23 @@ type AdminFinanceDetailReadResult =
 const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
   payments: {
     description:
-      "Visão financeira read-only de sessões, refunds, disputas, ledger, transfers e repasses.",
-    emptyMessage: "Nenhum pagamento de sessão acessível para a sessão administrativa atual.",
+      "Visão financeira das sessões, reembolsos, contestações e repasses.",
+    emptyMessage: "Nenhum pagamento de sessão disponível para esta consulta.",
     metrics: [
       metric("pending-session-payments", "Pendentes", "Aguardando autoridade financeira.", "session_payments?financial_status=eq.pending", "session_payments", "warning"),
-      metric("paid-session-payments", "Pagos", "Confirmados por Stripe/webhook/reconciliação.", "session_payments?financial_status=in.(paid,partially_refunded)", "session_payments", "success"),
+      metric("paid-session-payments", "Pagos", "Pagamentos confirmados e conciliados.", "session_payments?financial_status=in.(paid,partially_refunded)", "session_payments", "success"),
       metric("failed-session-payments", "Falhos", "Tentativas ou pagamentos recusados.", "session_payments?financial_status=eq.failed", "session_payments", "danger"),
-      metric("pending-refunds", "Refunds pendentes", "Reembolsos ainda não finalizados.", "session_refunds?status=eq.pending", "session_refunds", "warning"),
+      metric("pending-refunds", "Reembolsos pendentes", "Reembolsos ainda não finalizados.", "session_refunds?status=eq.pending", "session_refunds", "warning"),
       metric("open-disputes", "Disputas abertas", "Disputas sem fechamento.", "session_disputes?closed_at=is.null", "session_disputes", "danger"),
       metric("open-payout-batches", "Repasses abertos", "Lotes de repasse em aberto/processamento.", "payout_batches?status=in.(draft,open,processing)", "payout_batches", "info"),
-      metric("ledger-entries", "Ledger", "Lançamentos financeiros auditáveis.", "financial_ledger_entries", "financial_ledger_entries", "info"),
-      metric("stripe-transfers", "Transfers", "Transferências registradas sem expor IDs externos.", "stripe_transfers", "stripe_transfers", "info"),
+      metric("ledger-entries", "Lançamentos", "Registros financeiros auditáveis.", "financial_ledger_entries", "financial_ledger_entries", "info"),
+      metric("stripe-transfers", "Transferências", "Transferências registradas com segurança.", "stripe_transfers", "stripe_transfers", "info"),
     ],
     rowsTitle: "Pagamentos recentes",
     safetyNotes: [
-      "Esta página não exibe PaymentIntent, Checkout Session, Charge, Balance Transaction ou payload Stripe.",
-      "Refunds, disputas e ajustes permanecem read-only até existir comando com RBAC, motivo, idempotência e auditoria.",
-      "Ledger e repasses são fontes de conferência. A UI não altera lançamento financeiro diretamente.",
+      "Detalhes sensíveis de pagamento não são exibidos nesta página.",
+      "Reembolsos, contestações e ajustes exigem revisão e registro antes de qualquer alteração.",
+      "Os lançamentos e repasses são usados apenas para conferência. A tela não altera registros diretamente.",
     ],
     sourceLabel:
       "session_payments, session_refunds, session_disputes, financial_ledger_entries, payout_batches, stripe_transfers",
@@ -118,7 +118,7 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
   },
   reports: {
     description:
-      "Mapa de relatórios administrativos seguros, com exportação server-side pendente de contrato auditado.",
+      "Mapa de relatórios administrativos seguros, com geração controlada.",
     emptyMessage: "Nenhuma área de relatório configurada para esta fase.",
     metrics: [
       metric("report-professionals", "Profissionais", "Base operacional de terapeutas.", "therapist_profiles", "therapist_profiles", "info"),
@@ -126,12 +126,12 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
       metric("report-sessions", "Sessões", "Reservas e estados operacionais.", "bookings", "bookings", "info"),
       metric("report-payments", "Pagamentos", "Pagamentos de sessão.", "session_payments", "session_payments", "info"),
       metric("report-subscriptions", "Assinaturas", "Assinaturas de terapeutas.", "therapist_subscriptions", "therapist_subscriptions", "info"),
-      metric("report-stripe-failures", "Falhas Stripe", "Eventos Stripe com falha.", "stripe_webhook_events?processing_status=eq.failed", "stripe_webhook_events", "danger"),
+      metric("report-stripe-failures", "Falhas de pagamento", "Pagamentos que precisam de atenção.", "stripe_webhook_events?processing_status=eq.failed", "stripe_webhook_events", "danger"),
     ],
     rowsTitle: "Relatórios disponíveis",
     safetyNotes: [
-      "Exports ainda não são gerados no cliente; devem nascer server-side, paginados, auditados e protegidos contra CSV injection.",
-      "Relatórios genéricos não carregam PII desnecessária, documento privado, conteúdo clínico ou payload de webhook.",
+      "Relatórios são gerados de forma controlada, paginada e auditada.",
+      "Relatórios não carregam dados pessoais desnecessários, documentos privados ou conteúdo clínico.",
       "Falha de leitura fica indisponível e não é tratada como zero.",
     ],
     sourceLabel:
@@ -145,21 +145,21 @@ const MODULES: Record<AdminFinanceModuleKey, ModuleSpec> = {
   },
   subscriptions: {
     description:
-      "Acompanhe Billing de terapeutas sem editar plano local nem simular ativação de assinatura.",
+      "Acompanhe as assinaturas de terapeutas sem alterar planos diretamente.",
     emptyMessage: "Nenhuma assinatura acessível para a sessão administrativa atual.",
     metrics: [
       metric("active-subscriptions", "Ativas", "Assinaturas active ou trialing.", "therapist_subscriptions?status=in.(trialing,active)", "therapist_subscriptions", "success"),
       metric("attention-subscriptions", "Em atenção", "Cobrança incompleta, inadimplente ou sem pagamento.", "therapist_subscriptions?status=in.(past_due,unpaid,incomplete)", "therapist_subscriptions", "warning"),
       metric("ending-subscriptions", "Cancelam no fim", "Assinaturas marcadas para cancelamento futuro.", "therapist_subscriptions?cancel_at_period_end=eq.true", "therapist_subscriptions", "warning"),
-      metric("failed-invoices", "Faturas falhas", "Invoices que pedem revisão operacional.", "billing_invoices?status=in.(uncollectible,void,open)", "billing_invoices", "warning"),
-      metric("active-prices", "Preços ativos", "Price IDs allowlisted no catálogo de Billing.", "billing_plan_prices?is_active=eq.true", "billing_plan_prices", "info"),
-      metric("stripe-customers", "Customers", "Vínculos de customer por perfil.", "stripe_customers", "stripe_customers", "info"),
+      metric("failed-invoices", "Faturas com falha", "Faturas que pedem revisão operacional.", "billing_invoices?status=in.(uncollectible,void,open)", "billing_invoices", "warning"),
+      metric("active-prices", "Preços ativos", "Preços ativos no catálogo de planos.", "billing_plan_prices?is_active=eq.true", "billing_plan_prices", "info"),
+      metric("stripe-customers", "Contas vinculadas", "Contas de recebimento vinculadas ao perfil.", "stripe_customers", "stripe_customers", "info"),
     ],
     rowsTitle: "Assinaturas recentes",
     safetyNotes: [
-      "A lista não expõe subscription ID, checkout session, latest invoice, invoice URL ou metadados brutos.",
-      "Plano do terapeuta só deve mudar por webhook Stripe assinado ou reconciliação server-side autenticada.",
-      "Eventos fora de ordem precisam convergir consultando o estado atual da Stripe antes de qualquer mudança.",
+      "A lista não exibe identificadores, links ou detalhes sensíveis de cobrança.",
+      "Alterações de plano dependem de confirmação financeira e revisão autorizada.",
+      "Informações fora de ordem são revisadas antes de qualquer mudança.",
     ],
     sourceLabel:
       "therapist_subscriptions, billing_plan_prices, stripe_customers, billing_invoices",
@@ -198,7 +198,7 @@ export const getAdminFinancePage = cache(async function getAdminFinancePage({
 
   if (!config) {
     return {
-      message: "Configuração Supabase ausente para carregar este módulo.",
+        message: "Não foi possível carregar este módulo agora.",
       status: "error",
     };
   }
@@ -289,7 +289,7 @@ export const getAdminFinanceDetailPage = cache(
 
     if (!config) {
       return {
-        message: "Configuração Supabase ausente para carregar este detalhe.",
+        message: "Não foi possível carregar este detalhe agora.",
         status: "error",
       };
     }

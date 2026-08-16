@@ -96,7 +96,7 @@ export function AdminProfessionalDetailPage({
     },
     {
       label: "Conta de recebimento",
-      value: formatStatusLabel(operation.get("Stripe Connect")),
+      value: formatStatusLabel(operation.get("Conta de recebimento")),
     },
   ]);
   const activityFields = compactFields([

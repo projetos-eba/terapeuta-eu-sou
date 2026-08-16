@@ -58,7 +58,7 @@ export async function sendTherapistFinanceConnectCommand(
           message:
             payload?.ok === false && payload.error?.message
               ? payload.error.message
-              : "Não foi possível conectar com a Stripe agora.",
+              : "Não foi possível conectar sua conta de recebimento agora.",
           requestId:
             payload?.ok === false ? payload.error?.requestId : undefined,
           status: response.status,

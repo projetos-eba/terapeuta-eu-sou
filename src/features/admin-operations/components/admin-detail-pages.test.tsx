@@ -469,7 +469,7 @@ describe("admin operation detail pages", () => {
 
     expect(html).toContain("Detalhes do suporte");
     expect(html).toContain("Prioridade Alta");
-    expect(html).toContain("Resolver ticket");
+    expect(html).toContain("Resolver chamado");
     expect(html).not.toContain("Fonte segura");
   });
 

@@ -38,7 +38,7 @@ export const getAdminMatchingPage = cache(async function getAdminMatchingPage({
 
   if (!config) {
     return {
-      message: "Configuração Supabase ausente para carregar o Match.",
+      message: "Não foi possível carregar o Match agora.",
       status: "error",
     };
   }

@@ -127,7 +127,7 @@ export function formatPaymentMethod(value: string | null) {
 export function formatPaymentOrigin(value: string) {
   const labels: Record<string, string> = {
     legacy_import: "Importação legada",
-    stripe_checkout: "Checkout Stripe",
+    stripe_checkout: "Pagamento online",
     unknown: "Origem não informada",
   };
 

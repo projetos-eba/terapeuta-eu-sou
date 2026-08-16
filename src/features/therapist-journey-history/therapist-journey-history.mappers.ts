@@ -143,7 +143,7 @@ export function mapJourneyHistoryPage(
         id: "stale",
         label: "Sem sessão recente",
         tone: "danger",
-        trendLabel: "precisam de revisao",
+        trendLabel: "precisam de revisão",
         value: summary.stale,
       },
     ],
@@ -177,11 +177,11 @@ export function mapJourneyHistoryDetail(
         date: booking.starts_at,
         description:
           summary?.summary ??
-          "Sessao registrada sem resumo compartilhado nesta superficie.",
+          "Sessão registrada sem resumo compartilhado nesta superfície.",
         href: routes.therapist.sessionDetail(booking.id),
         id: booking.id,
         status: booking.status,
-        title: summary?.title ?? service?.title ?? "Sessao TES",
+        title: summary?.title ?? service?.title ?? "Sessão TES",
       };
     });
 

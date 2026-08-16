@@ -101,7 +101,7 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
 
               if (!data.checkout.clientSecret) {
                 throw new Error(
-                  "Não conseguimos carregar o checkout incorporado agora.",
+                  "Não conseguimos carregar o pagamento agora.",
                 );
               }
 
@@ -172,7 +172,7 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
       }
 
       if (!data.checkout.url) {
-        throw new Error("Não conseguimos abrir o checkout em nova etapa.");
+        throw new Error("Não conseguimos abrir o pagamento em uma nova etapa.");
       }
 
       window.location.assign(data.checkout.url);
@@ -180,7 +180,7 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
       setFallbackError(
         error instanceof Error
           ? error.message
-          : "Não conseguimos abrir o checkout em nova etapa.",
+          : "Não conseguimos abrir o pagamento em uma nova etapa.",
       );
       setIsOpeningHostedCheckout(false);
     }
@@ -200,7 +200,7 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
             id="subscription-checkout-title"
             className="text-base font-extrabold text-brand-deep"
           >
-            Checkout seguro no TES
+            Pagamento seguro no TES
           </h2>
           <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
             Seus dados de pagamento são processados em ambiente protegido. O TES
@@ -226,7 +226,7 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
           className="flex min-h-[260px] items-center justify-center rounded-[18px] border border-dashed border-brand-lavender bg-brand-lavenderSoft/40 p-6 text-sm font-bold text-tesText-muted"
         >
           <Loader2 className="mr-3 size-5 animate-spin text-brand-primary" />
-          Carregando checkout seguro...
+          Carregando pagamento seguro...
         </div>
       ) : null}
 

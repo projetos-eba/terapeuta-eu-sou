@@ -44,7 +44,7 @@ export function TherapistPlanSelection() {
         </h1>
         <p className="mx-auto mt-3 max-w-2xl text-base font-semibold leading-7 text-tesText-secondary">
           A conta nasce segura no TES. Recursos pagos só são liberados depois da
-          confirmação da assinatura pelo Stripe.
+          confirmação segura do pagamento.
         </p>
       </div>
 

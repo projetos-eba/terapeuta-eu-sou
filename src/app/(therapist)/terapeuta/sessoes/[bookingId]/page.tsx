@@ -126,7 +126,7 @@ export default async function TherapistSessionDetailPage({
                 ? null
                 : "Esta sessão não está elegível para cancelamento operacional."
             }
-            cancellationImpactLabel="A política operacional será aplicada pelo backend antes de alterar agenda, pagamento ou repasse."
+            cancellationImpactLabel="A política operacional será aplicada antes de alterar agenda, pagamento ou repasse."
             reschedule={pendingReschedule}
             rescheduleDisabledReason={
               presentation.actions.canReschedule

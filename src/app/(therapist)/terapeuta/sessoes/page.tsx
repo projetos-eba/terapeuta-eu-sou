@@ -625,7 +625,7 @@ function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
               size={17}
             />
             Cancelamentos e reembolsos seguem exclusivamente os estados
-            financeiros confirmados pelo Stripe.
+            financeiros confirmados.
           </li>
         </ul>
         <Link

@@ -177,9 +177,9 @@ function ResultsHeader({
           Caminhos que podem fazer sentido para você
         </h2>
         <p className="mt-1 max-w-[600px] text-[15px] font-semibold leading-6 text-tesText-secondary">
-          Com calma, compare abordagens, histórias e formas de acolhimento.
+          Conheça diferentes terapeutras, suas histórias e formas de cuidado.
           <br />
-          Escolha quando sentir que encontrou alguém com quem deseja caminhar.
+          Escolha com tranquiilidade quem faz sentido para o momento que você está vivendo.
         </p>
         {activeFilterCount > 0 ? (
           <p className="mt-2 text-xs font-bold text-brand-primary">

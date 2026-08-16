@@ -445,7 +445,7 @@ function PatientsList({ data }: { data: AdminOperationPageData }) {
                 "Nome",
                 "Status",
                 "Reservas",
-                "Tickets",
+                "Chamados",
                 "Última atividade",
                 "Criado",
                 "Ações",
@@ -502,7 +502,7 @@ function PatientsTableRow({ row }: { row: AdminOperationRow }) {
         {getField(row, "Reservas") || "0"}
       </td>
       <td className="px-5 py-5 text-sm font-bold text-tesText-secondary">
-        {getField(row, "Tickets") || "0"}
+        {getField(row, "Chamados") || "0"}
       </td>
       <td className="px-5 py-5 text-sm font-bold text-tesText-secondary">
         {getField(row, "Última atividade") || "Sem registro"}
@@ -546,7 +546,7 @@ function PatientMobileCard({ row }: { row: AdminOperationRow }) {
       </div>
 
       <dl className="mt-5 grid gap-3 sm:grid-cols-2">
-        {["Reservas", "Tickets", "Última atividade", "Criado"].map((label) => (
+        {["Reservas", "Chamados", "Última atividade", "Criado"].map((label) => (
           <div
             className="rounded-[18px] border border-brand-lavender/70 bg-surface-soft p-3"
             key={label}
@@ -708,7 +708,7 @@ function buildPatientMetrics(
     ),
     unavailableMetric(
       "average-ticket-per-patient",
-      "Ticket médio",
+      "Média por cliente",
       "Métrica financeira consolidada ainda não disponível nesta visão.",
       "ticket",
     ),

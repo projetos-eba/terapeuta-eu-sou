@@ -1,32 +1,35 @@
 import Link from "next/link";
 import {
-  AlertTriangle,
+  AlertCircle,
+  ArrowRight,
   CalendarDays,
+  Check,
   CheckCircle2,
+  CircleHelp,
   Clock3,
-  CreditCard,
+  FileText,
+  Send,
   Sparkles,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
 
-import {
-  AppPageContainer,
-  AppPageHeader,
-  AppPageSection,
-} from "@/components/app-page";
+import { AppPageContainer } from "@/components/app-page";
+import { TESButton } from "@/components/tes";
 import { getTherapistPlanDefinition } from "@/domain/tes";
 import type { AuthenticatedTherapistSession } from "@/lib/auth/therapist-session";
+import { routes } from "@/lib/routes";
 
 import { therapistStatusLabel } from "./therapist-home-readiness.mappers";
 import type {
   TherapistHomeChecklistItem,
+  TherapistHomeDocument,
   TherapistHomeReadiness,
 } from "./therapist-home-readiness.types";
 
 const checklistIcons: Record<TherapistHomeChecklistItem["id"], LucideIcon> = {
   agenda: CalendarDays,
-  connect: CreditCard,
+  connect: CircleHelp,
   profile: UserRound,
   services: Sparkles,
 };
@@ -39,160 +42,505 @@ export function TherapistGettingStartedPage({
   readiness: TherapistHomeReadiness;
 }) {
   const plan = getTherapistPlanDefinition(session.plan);
+  const requiredChecklist = readiness.checklist.filter((item) => item.required);
+  const onboardingSteps = [...requiredChecklist, ...readiness.documents];
+  const completedSteps = onboardingSteps.filter((item) => item.complete).length;
   const progressPercent = Math.round(
-    readiness.requiredCount > 0
-      ? (readiness.completedRequiredCount / readiness.requiredCount) * 100
+    onboardingSteps.length > 0
+      ? (completedSteps / onboardingSteps.length) * 100
       : 100,
   );
+  const pendingChecklist = readiness.checklist.filter((item) => !item.complete);
+  const pendingDocuments = readiness.documents.filter((item) => !item.complete);
+  const primaryAction = pendingChecklist[0] ?? {
+    actionLabel: "Abrir cadastro",
+    href: routes.therapist.profile,
+  };
 
   return (
-    <AppPageContainer className="max-w-[1120px] gap-5">
-      <AppPageHeader
-        eyebrow={plan.name}
-        title={`Olá, ${firstName(session.name)}.`}
-      >
-        Sua área profissional está pronta para os primeiros ajustes. Complete os
-        passos essenciais para publicar seu trabalho, receber reservas online e
-        acompanhar sua operação com clareza.
-      </AppPageHeader>
+    <AppPageContainer className="max-w-[1210px] gap-7 pb-12 pt-1 lg:gap-8">
+      <header className="max-w-3xl pt-2 sm:pt-5">
+        <p className="text-sm font-extrabold uppercase tracking-[0.2em] text-brand-primary">
+          {plan.name} · Cadastro profissional
+        </p>
+        <h1 className="mt-3 font-display text-[42px] font-light italic leading-[0.96] text-brand-deep sm:text-[56px]">
+          Complete seu cadastro
+        </h1>
+        <p className="mt-4 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
+          Organize as informações, envie os documentos obrigatórios e acompanhe
+          cada etapa antes de encaminhar seu perfil para análise.
+        </p>
+      </header>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <AppPageSection className="grid gap-4">
-          <div>
-            <h2 className="text-xl font-extrabold text-brand-deep">
-              Checklist de primeiros passos
-            </h2>
-            <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              Complete estes pontos para trocar esta tela por uma visão geral
-              operacional com seus indicadores reais.
-            </p>
-            <div
-              aria-label={`${readiness.completedRequiredCount} de ${readiness.requiredCount} passos concluídos`}
-              className="mt-4"
-            >
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-sm font-extrabold text-brand-deep">
-                  {readiness.completedRequiredCount} de{" "}
-                  {readiness.requiredCount} concluídos
-                </span>
-                <span className="text-sm font-extrabold text-brand-primary">
-                  {progressPercent}%
-                </span>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_292px] xl:items-start">
+        <div className="grid gap-6">
+          <section className="rounded-[28px] border border-brand-lavender/70 bg-white p-5 shadow-card sm:p-7">
+            <div className="grid gap-7 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-center">
+              <div className="border-b border-border pb-7 text-center lg:border-b-0 lg:border-r lg:pb-0 lg:pr-7">
+                <p className="text-sm font-extrabold text-brand-deep">
+                  Seu progresso de cadastro
+                </p>
+                <ProgressRing value={progressPercent} />
+                <p className="mx-auto mt-4 max-w-[220px] text-sm font-semibold leading-6 text-tesText-secondary">
+                  {progressSummary({
+                    pendingDocuments,
+                    pendingSteps: pendingChecklist,
+                  })}
+                </p>
               </div>
-              <div className="mt-2 h-3 overflow-hidden rounded-full bg-brand-lavenderSoft">
-                <div
-                  className="h-full rounded-full bg-brand-primary transition-[width]"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-            </div>
-          </div>
 
-          <ul className="grid gap-3">
-            {readiness.checklist.map((item) => {
-              const Icon = checklistIcons[item.id];
-              const StatusIcon = statusIcon(item.state);
-
-              return (
-                <li
-                  className="grid gap-4 rounded-card border border-brand-lavender bg-white p-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center"
-                  key={item.id}
-                >
-                  <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-                    <Icon aria-hidden="true" size={21} />
-                  </span>
+              <div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="text-base font-extrabold text-brand-deep">
-                        {item.title}
-                      </h3>
-                      {!item.required ? (
-                        <span className="inline-flex min-h-7 items-center rounded-full bg-surface-soft px-3 text-xs font-extrabold text-tesText-secondary">
-                          Recomendado
-                        </span>
-                      ) : null}
-                      <span
-                        className={`inline-flex min-h-7 items-center gap-1 rounded-full px-3 text-xs font-extrabold ${statusClass(
-                          item.state,
-                        )}`}
-                      >
-                        <StatusIcon aria-hidden="true" size={14} />
-                        {statusLabel(item.state)}
-                      </span>
-                    </div>
+                    <h2 className="text-xl font-extrabold text-brand-deep">
+                      Etapas do cadastro
+                    </h2>
                     <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                      {item.description}
+                      Conclua os itens abaixo para avançar com clareza.
                     </p>
                   </div>
-                  <Link
-                    className="inline-flex min-h-11 items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                    href={item.href}
-                  >
-                    {item.actionLabel}
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </AppPageSection>
+                  <span className="rounded-full bg-brand-lavenderSoft px-3 py-1.5 text-xs font-extrabold text-brand-primary">
+                    {completedSteps} de {onboardingSteps.length} concluídas
+                  </span>
+                </div>
 
-        <AppPageSection className="grid gap-4 self-start">
-          <div>
-            <h2 className="text-xl font-extrabold text-brand-deep">
-              Status atual
+                <ul className="mt-5 divide-y divide-border">
+                  {requiredChecklist.map((item) => (
+                    <ChecklistRow item={item} key={item.id} />
+                  ))}
+                  {readiness.documents.map((item) => (
+                    <DocumentStepRow item={item} key={item.id} />
+                  ))}
+                  <ReviewStep status={readiness.verificationStatus} />
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 border-t border-border pt-5 sm:flex-row sm:items-center">
+              <TESButton
+                className="min-h-11 rounded-lg sm:min-w-[210px]"
+                href={primaryAction.href}
+              >
+                Continuar cadastro
+                <ArrowRight aria-hidden="true" className="size-4" />
+              </TESButton>
+              <a
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                href="#pendencias"
+              >
+                Ver pendências
+              </a>
+            </div>
+          </section>
+
+          <section
+            className="rounded-[28px] border border-brand-lavender/70 bg-white p-5 shadow-card sm:p-7"
+            id="pendencias"
+          >
+            <SectionHeading
+              description="Envie os documentos necessários para que sua análise possa começar."
+              title="Pendências para análise"
+            />
+            {pendingDocuments.length > 0 ? (
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {pendingDocuments.map((document) => (
+                  <DocumentPendingCard document={document} key={document.id} />
+                ))}
+              </div>
+            ) : (
+              <div className="mt-5 flex items-start gap-3 rounded-[20px] bg-status-successBg p-4 text-sm font-semibold leading-6 text-tesText-secondary">
+                <CheckCircle2
+                  aria-hidden="true"
+                  className="mt-0.5 size-5 shrink-0 text-status-success"
+                />
+                <p>
+                  Seus documentos obrigatórios foram enviados. Acompanhe o
+                  andamento da análise no status ao lado.
+                </p>
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-[28px] border border-brand-lavender/70 bg-white p-5 shadow-card sm:p-7">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <SectionHeading
+                description="Uma prévia das informações que serão usadas na sua apresentação."
+                title="Resumo do seu perfil"
+              />
+              <TESButton
+                className="min-h-11 shrink-0 rounded-lg"
+                href={routes.therapist.profileEdit}
+                variant="secondary"
+              >
+                Editar perfil
+              </TESButton>
+            </div>
+            <ProfileSummary readiness={readiness} />
+          </section>
+        </div>
+
+        <aside className="grid gap-5 md:grid-cols-2 xl:grid-cols-1">
+          <section className="rounded-[28px] border border-brand-lavender/70 bg-white p-5 shadow-card sm:p-6">
+            <div className="flex items-start gap-3">
+              <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+                <Clock3 aria-hidden="true" className="size-5" />
+              </span>
+              <div>
+                <h2 className="text-lg font-extrabold leading-6 text-brand-deep">
+                  {verificationTitle(readiness.verificationStatus)}
+                </h2>
+                <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+                  {verificationDescription(readiness.verificationStatus)}
+                </p>
+              </div>
+            </div>
+
+            {pendingDocuments.length > 0 ? (
+              <div className="mt-5 border-t border-border pt-4">
+                <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-tesText-muted">
+                  Falta enviar
+                </p>
+                <ul className="mt-3 grid gap-2">
+                  {pendingDocuments.map((document) => (
+                    <li
+                      className="flex items-center gap-2 text-sm font-semibold text-tesText-secondary"
+                      key={document.id}
+                    >
+                      <span className="size-1.5 rounded-full bg-status-warning" />
+                      {document.title}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="rounded-[28px] border border-brand-lavender/70 bg-white p-5 shadow-card sm:p-6">
+            <h2 className="text-lg font-extrabold text-brand-deep">
+              Como funciona
+            </h2>
+            <ol className="mt-5 grid gap-5">
+              {[
+                [
+                  "Complete seu perfil",
+                  "Inclua sua apresentação, terapias e horários.",
+                ],
+                [
+                  "Envie os documentos",
+                  "Anexe os documentos obrigatórios com segurança.",
+                ],
+                [
+                  "Acompanhe a análise",
+                  "Nossa equipe revisa o cadastro e informa os próximos passos.",
+                ],
+              ].map(([title, description], index) => (
+                <li className="flex gap-3" key={title}>
+                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-sm font-extrabold text-brand-primary">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <p className="text-sm font-extrabold text-brand-deep">
+                      {title}
+                    </p>
+                    <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                      {description}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+
+          <section className="rounded-[28px] border border-brand-lavender/70 bg-brand-lavenderSoft/60 p-5 sm:p-6">
+            <h2 className="text-lg font-extrabold text-brand-deep">
+              Precisa de ajuda?
             </h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              O plano pago libera os recursos do shell, mas a publicação do
-              perfil e a operação diária ainda dependem dos seus dados.
+              Se surgir uma dúvida sobre seu cadastro, nossa equipe pode orientar você.
             </p>
-          </div>
-          <dl className="grid gap-3">
-            <StatusRow label="Plano" value={plan.name} />
-            <StatusRow
-              label="Checklist"
-              value={`${readiness.completedRequiredCount}/${readiness.requiredCount}`}
-            />
-            <StatusRow
-              label="Perfil"
-              value={therapistStatusLabel(session.status)}
-            />
-          </dl>
-        </AppPageSection>
+            <TESButton
+              className="mt-5 min-h-11 w-full rounded-lg"
+              href={routes.therapist.support}
+              variant="secondary"
+            >
+              Falar com o suporte
+            </TESButton>
+          </section>
+        </aside>
       </div>
     </AppPageContainer>
   );
 }
 
-function StatusRow({ label, value }: { label: string; value: string }) {
+function ProgressRing({ value }: { value: number }) {
+  const safeValue = Math.min(100, Math.max(0, value));
+
   return (
-    <div className="rounded-card border border-brand-lavender bg-surface-soft p-4">
-      <dt className="text-sm font-bold text-tesText-secondary">{label}</dt>
-      <dd className="mt-1 text-base font-extrabold text-brand-deep">{value}</dd>
+    <div
+      aria-label={`${safeValue}% do cadastro concluído`}
+      className="mx-auto mt-5 grid size-44 place-items-center rounded-full p-2"
+      role="img"
+      style={{
+        background: `conic-gradient(var(--tes-color-brand-primary) ${safeValue}%, var(--tes-color-brand-lavender-soft) ${safeValue}% 100%)`,
+      }}
+    >
+      <div className="grid size-full place-items-center rounded-full bg-white">
+        <div>
+          <p className="text-4xl font-extrabold leading-none text-brand-deep">
+            {safeValue}%
+          </p>
+          <p className="mt-1 text-xs font-bold text-tesText-secondary">
+            concluído
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
 
-function firstName(name: string) {
-  return name.trim().split(/\s+/)[0] || "terapeuta";
+function ChecklistRow({ item }: { item: TherapistHomeChecklistItem }) {
+  const Icon = checklistIcons[item.id];
+
+  return (
+    <li className="flex items-start gap-3 py-3 first:pt-0">
+      <StepState state={item.state} />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-extrabold text-brand-deep">{item.title}</p>
+        <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
+          {item.description}
+        </p>
+      </div>
+      <Link
+        aria-label={`${item.actionLabel}: ${item.title}`}
+        className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        href={item.href}
+      >
+        <Icon aria-hidden="true" className="size-4" />
+      </Link>
+    </li>
+  );
 }
 
-function statusIcon(state: TherapistHomeChecklistItem["state"]) {
-  if (state === "complete") return CheckCircle2;
-  if (state === "in_review") return Clock3;
-  if (state === "attention") return AlertTriangle;
-  return Clock3;
+function DocumentStepRow({ item }: { item: TherapistHomeDocument }) {
+  return (
+    <li className="flex items-start gap-3 py-3">
+      <StepState state={item.state} />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-extrabold text-brand-deep">{item.title}</p>
+        <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
+          {item.description}
+        </p>
+      </div>
+      <Link
+        aria-label={`Enviar ${item.title}`}
+        className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        href={routes.therapist.profile}
+      >
+        <FileText aria-hidden="true" className="size-4" />
+      </Link>
+    </li>
+  );
 }
 
-function statusLabel(state: TherapistHomeChecklistItem["state"]) {
-  if (state === "complete") return "Concluído";
-  if (state === "in_review") return "Em análise";
-  if (state === "attention") return "Atenção";
-  return "Pendente";
+function ReviewStep({ status }: { status: string }) {
+  const complete =
+    status === "approved" || status === "submitted" || status === "in_review";
+  const attention = status === "changes_requested" || status === "rejected";
+
+  return (
+    <li className="flex items-start gap-3 py-3 pb-0">
+      <StepState
+        state={complete ? "complete" : attention ? "attention" : "pending"}
+      />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-extrabold text-brand-deep">Revisar e enviar</p>
+        <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
+          {complete
+            ? "Cadastro encaminhado para análise."
+            : "Revise os dados e envie seu cadastro quando estiver pronto."}
+        </p>
+      </div>
+      <Link
+        aria-label="Abrir cadastro para revisão"
+        className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        href={routes.therapist.profile}
+      >
+        <Send aria-hidden="true" className="size-4" />
+      </Link>
+    </li>
+  );
 }
 
-function statusClass(state: TherapistHomeChecklistItem["state"]) {
-  if (state === "complete") return "bg-status-successBg text-status-success";
-  if (state === "attention") return "bg-status-warningBg text-status-warning";
-  if (state === "in_review") return "bg-brand-lavenderSoft text-brand-primary";
-  return "bg-surface-soft text-tesText-secondary";
+function DocumentPendingCard({ document }: { document: TherapistHomeDocument }) {
+  const needsAttention = document.state === "attention";
+
+  return (
+    <article className="flex flex-col justify-between gap-5 rounded-[22px] border border-status-warning/30 bg-status-warningBg/40 p-5">
+      <div className="flex items-start gap-3">
+        <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white text-status-warning">
+          {needsAttention ? (
+            <AlertCircle aria-hidden="true" className="size-5" />
+          ) : (
+            <FileText aria-hidden="true" className="size-5" />
+          )}
+        </span>
+        <div>
+          <h3 className="text-base font-extrabold text-brand-deep">
+            {document.title}
+          </h3>
+          <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+            {needsAttention
+              ? "Este documento precisa ser enviado novamente."
+              : document.description}
+          </p>
+        </div>
+      </div>
+      <TESButton
+        className="min-h-11 self-start rounded-lg"
+        href={routes.therapist.profile}
+        variant="secondary"
+      >
+        {needsAttention ? "Enviar novamente" : "Enviar documento"}
+      </TESButton>
+    </article>
+  );
+}
+
+function ProfileSummary({ readiness }: { readiness: TherapistHomeReadiness }) {
+  const profile = readiness.profileSummary;
+  const location = [profile.city, profile.state].filter(Boolean).join(" / ");
+
+  return (
+    <div className="mt-5 grid gap-5 border-t border-border pt-5 sm:grid-cols-[auto_minmax(0,1fr)]">
+      <span className="grid size-16 place-items-center rounded-full bg-brand-lavenderSoft text-lg font-extrabold text-brand-deep">
+        {initials(profile.publicName)}
+      </span>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <SummaryDatum
+          label="Nome público"
+          value={profile.publicName || "Ainda não informado"}
+        />
+        <SummaryDatum
+          label="Localização"
+          value={location || "Ainda não informada"}
+        />
+        <SummaryDatum
+          label="Situação do cadastro"
+          value={therapistStatusLabel(readiness.therapistStatus)}
+        />
+        <div className="sm:col-span-2 lg:col-span-3">
+          <SummaryDatum
+            label="Apresentação"
+            value={
+              profile.headline ||
+              "Adicione uma breve apresentação ao seu perfil."
+            }
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SummaryDatum({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-tesText-muted">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-extrabold leading-6 text-brand-deep">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function SectionHeading({
+  description,
+  title,
+}: {
+  description: string;
+  title: string;
+}) {
+  return (
+    <div>
+      <h2 className="text-xl font-extrabold text-brand-deep">{title}</h2>
+      <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function StepState({
+  state,
+}: {
+  state: "attention" | "complete" | "in_review" | "pending";
+}) {
+  const Icon =
+    state === "complete" ? Check : state === "attention" ? AlertCircle : Clock3;
+  const className =
+    state === "complete"
+      ? "bg-status-successBg text-status-success"
+      : state === "attention"
+        ? "bg-status-warningBg text-status-warning"
+        : "bg-brand-lavenderSoft text-brand-primary";
+
+  return (
+    <span
+      className={`mt-0.5 grid size-8 shrink-0 place-items-center rounded-full ${className}`}
+    >
+      <Icon aria-hidden="true" className="size-4" />
+    </span>
+  );
+}
+
+function progressSummary({
+  pendingDocuments,
+  pendingSteps,
+}: {
+  pendingDocuments: TherapistHomeDocument[];
+  pendingSteps: TherapistHomeChecklistItem[];
+}) {
+  const totalPending = pendingDocuments.length + pendingSteps.length;
+  if (totalPending === 0) {
+    return "Seu cadastro está completo. Acompanhe a análise no status ao lado.";
+  }
+  if (totalPending === 1) {
+    return "Falta apenas uma etapa para você concluir o cadastro.";
+  }
+  return `Faltam ${totalPending} etapas para você concluir o cadastro.`;
+}
+
+function verificationTitle(status: string) {
+  if (status === "approved") return "Cadastro aprovado";
+  if (status === "in_review") return "Cadastro em análise";
+  if (status === "submitted") return "Cadastro enviado para análise";
+  if (status === "changes_requested") return "Ajustes solicitados";
+  if (status === "rejected") return "Cadastro precisa de revisão";
+  return "Cadastro ainda não enviado para análise";
+}
+
+function verificationDescription(status: string) {
+  if (status === "approved") {
+    return "Sua análise foi concluída. Acompanhe a situação do perfil na Visão geral.";
+  }
+  if (status === "in_review") {
+    return "Nossa equipe está analisando as informações enviadas.";
+  }
+  if (status === "submitted") {
+    return "Seu cadastro foi recebido e aguarda o início da análise.";
+  }
+  if (status === "changes_requested") {
+    return "Revise os itens sinalizados e envie novamente quando estiver pronto.";
+  }
+  if (status === "rejected") {
+    return "Revise as informações necessárias antes de encaminhar uma nova solicitação.";
+  }
+  return "Complete as etapas obrigatórias para enviar seu cadastro para análise.";
+}
+
+function initials(name: string) {
+  const letters = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
+  return letters.map((letter) => letter[0]).join("").toUpperCase() || "TE";
 }

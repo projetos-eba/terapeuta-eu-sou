@@ -6,6 +6,7 @@ import { routes } from "@/lib/routes";
 
 import type {
   TherapistHomeChecklistItem,
+  TherapistHomeDocument,
   TherapistHomeReadiness,
 } from "./therapist-home-readiness.types";
 
@@ -39,13 +40,68 @@ export function mapTherapistHomeReadiness({
   return {
     checklist,
     completedRequiredCount,
+    documents: documentItems(editor),
     isOperationallyReady: completedRequiredCount === requiredCount,
     plan: session.plan,
     profileCompleteness: editor.completeness.percent,
+    profileSummary: {
+      city: editor.draft?.fields.city ?? editor.published.fields.city,
+      headline: editor.draft?.fields.headline ?? editor.published.fields.headline,
+      publicName:
+        editor.draft?.fields.publicName ?? editor.published.fields.publicName,
+      state: editor.draft?.fields.state ?? editor.published.fields.state,
+    },
     profilePublicStatus: editor.derived.publicStatus,
     requiredCount,
     therapistStatus: session.status,
+    verificationStatus:
+      editor.verificationSummary?.status ?? editor.derived.verificationStatus,
   };
+}
+
+function documentItems(
+  editor: TherapistProfileEditorData,
+): TherapistHomeDocument[] {
+  const documents = new Map(
+    editor.privateDocuments.map((document) => [document.kind, document]),
+  );
+
+  return [
+    documentItem({
+      description: "Envie um documento oficial com foto.",
+      document: documents.get("identity_document"),
+      id: "identity_document",
+      title: "Documento de identidade",
+    }),
+    documentItem({
+      description: "Envie um comprovante emitido nos últimos 90 dias.",
+      document: documents.get("address_proof"),
+      id: "address_proof",
+      title: "Comprovante de endereço",
+    }),
+  ];
+}
+
+function documentItem({
+  description,
+  document,
+  id,
+  title,
+}: {
+  description: string;
+  document: TherapistProfileEditorData["privateDocuments"][number] | undefined;
+  id: TherapistHomeDocument["id"];
+  title: string;
+}): TherapistHomeDocument {
+  if (document?.status === "rejected") {
+    return { complete: false, description, id, state: "attention", title };
+  }
+
+  if (document) {
+    return { complete: true, description, id, state: "complete", title };
+  }
+
+  return { complete: false, description, id, state: "pending", title };
 }
 
 function profileItem(
@@ -113,7 +169,7 @@ function connectItem(
       actionLabel: "Conectar conta",
       complete: false,
       description:
-        "Conecte sua conta Stripe para preparar os repasses das sessões.",
+        "Conecte sua conta de recebimento para preparar os repasses das sessões.",
       href: `${routes.therapist.finance}?tab=conta`,
       id: "connect",
       required: false,
@@ -131,7 +187,7 @@ function connectItem(
       actionLabel: "Atualizar dados",
       complete: false,
       description:
-        "A Stripe precisa de informações adicionais antes de liberar repasses.",
+        "Precisamos de algumas informações adicionais antes de liberar repasses.",
       href: `${routes.therapist.finance}?tab=conta`,
       id: "connect",
       required: false,
@@ -160,7 +216,7 @@ function connectItem(
     actionLabel: "Sincronizar status",
     complete: true,
     description:
-      "Dados enviados para a Stripe. A análise pode continuar em andamento.",
+      "Dados enviados. A análise pode continuar em andamento.",
     href: `${routes.therapist.finance}?tab=conta`,
     id: "connect",
     required: false,

@@ -19,7 +19,7 @@ describe("AdminSecurityPage", () => {
     );
 
     expect(
-      screen.getByText(/Auditoria central indisponível/i),
+      screen.getByText(/Os registros de auditoria estão indisponíveis/i),
     ).toBeInTheDocument();
     expect(
       screen.queryByText(/Sem eventos administrativos recentes acessíveis/i),
@@ -67,9 +67,9 @@ function makeData(
       {
         description: "Validar findings reais antes de homologar.",
         key: "advisor",
-        label: "Supabase Advisor",
+        label: "Revisão de segurança",
         severity: "warning",
-        source: "Supabase HML",
+        source: "Revisão de segurança",
         status: "manual_review",
       },
     ],

@@ -164,7 +164,7 @@ export function SubscriptionCheckoutReturnStatus({
               variant="secondary"
               className="min-h-12 w-full rounded-2xl text-sm"
             >
-              Ir para minha area
+              Ir para minha área
             </TESButton>
           </div>
         </div>
@@ -186,7 +186,7 @@ function parseStatusPayload(text: string): StatusPayload | null {
 function getStatusCopy(status: CheckoutStatus, error: string | null) {
   if (error) {
     return {
-      title: "Confirmacao temporariamente indisponivel",
+      title: "Confirmação temporariamente indisponível",
       description:
         "Não conseguimos consultar a confirmação neste instante. Seu plano continua protegido e você pode verificar novamente.",
     };
@@ -201,25 +201,25 @@ function getStatusCopy(status: CheckoutStatus, error: string | null) {
       };
     case "failed":
       return {
-        title: "Pagamento nao confirmado",
+        title: "Pagamento não confirmado",
         description:
           "Esta assinatura não foi confirmada. Seu plano continua Free e você pode iniciar uma nova tentativa.",
       };
     case "canceled":
       return {
-        title: "Checkout cancelado",
+        title: "Pagamento cancelado",
         description:
           "Esta tentativa foi cancelada. Nenhum plano pago foi liberado por este retorno.",
       };
     case "expired":
       return {
-        title: "Sessao expirada",
+        title: "Sessão expirada",
         description:
-          "Esta sessao de checkout expirou. Seu plano continua Free e uma nova tentativa pode ser iniciada.",
+          "Esta sessão de pagamento expirou. Seu plano continua Free e uma nova tentativa pode ser iniciada.",
       };
     case "requires_action":
       return {
-        title: "Pagamento exige acao",
+        title: "Pagamento exige ação",
         description:
           "A assinatura ainda precisa de uma ação antes de liberar o plano.",
       };

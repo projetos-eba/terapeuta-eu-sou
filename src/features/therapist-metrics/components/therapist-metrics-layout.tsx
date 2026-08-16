@@ -70,7 +70,7 @@ export function TherapistMetricsLayout({
                 href={`/api/therapist/metrics/export?tab=${tab}&period=${meta.periodDays}`}
               >
                 <Download aria-hidden="true" size={18} />
-                Exportar CSV
+                Baixar relatório
               </a>
             </div>
           </form>

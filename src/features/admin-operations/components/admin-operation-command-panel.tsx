@@ -282,7 +282,7 @@ export function getCommandOptions(
       return [
         {
           action: "support.reopen",
-          label: "Reabrir ticket",
+          label: "Reabrir chamado",
           tone: "neutral",
         },
       ];
@@ -291,7 +291,7 @@ export function getCommandOptions(
     return [
       {
         action: "support.resolve",
-        label: "Resolver ticket",
+          label: "Resolver chamado",
         tone: "success",
       },
     ];

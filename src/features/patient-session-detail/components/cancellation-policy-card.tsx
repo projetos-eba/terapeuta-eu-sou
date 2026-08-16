@@ -41,8 +41,7 @@ export function CancellationPolicyCard({
         </div>
 
         <p className="mt-5 border-t border-border pt-4 text-[11px] font-semibold leading-5 text-tesText-secondary sm:text-xs">
-          O cálculo final sempre é confirmado pelo backend no momento da
-          solicitação.
+          O valor final será confirmado no momento da solicitação.
         </p>
       </div>
     </section>
