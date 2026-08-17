@@ -31,17 +31,23 @@ import {
 import {
   formatSessionDateTime,
   formatSessionMoney,
-  getZoomAccessLabel,
   mapSessionPresentation,
   type SessionPresentation,
   type SessionReadModelItem,
 } from "@/features/bookings";
+import {
+  AppPageAside,
+  AppPageContainer,
+  AppPageGrid,
+  AppPageMain,
+} from "@/components/app-page/app-page";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import {
   buildNextSessionsHref,
   getTherapistSessionsPage,
   parseTherapistSessionFilters,
 } from "@/features/therapist-sessions";
+import { getSessionTimingBadge } from "@/features/therapist-sessions/session-timing-badge";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 import { routes } from "@/lib/routes";
 
@@ -79,84 +85,100 @@ export default async function TherapistSessionsPage({
   const hasActiveFilters = hasFilterState(parsedFilters.filters, searchQuery);
 
   return (
-    <main className="pb-10 text-tesText-primary">
-      <section className="relative overflow-hidden rounded-[18px] border border-brand-lavender/60 bg-[linear-gradient(180deg,#FFFFFF_0%,#FBF8FF_100%)] p-5 shadow-card sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h1 className="font-display text-[36px] font-light italic leading-tight text-brand-deep sm:text-[42px]">
-              Sessões
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-              Gerencie seus atendimentos e acompanhe cada sessão com praticidade
-              e organização.
-            </p>
-          </div>
-          <a
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary shadow-sm transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            download="sessoes-tes.csv"
-            href={csvHref}
-          >
-            <Download aria-hidden="true" size={18} />
-            Exportar
-          </a>
-        </div>
-      </section>
-
-      {result.status === "error" ? (
-        <SessionsErrorState
-          correlationId={result.error.correlationId}
-          message={result.error.message}
-        />
-      ) : result.status === "empty" ? (
-        <SessionsEmptyState />
-      ) : (
-        <>
-          {metrics ? <SessionMetricsGrid metrics={metrics} /> : null}
-          {metrics ? <SessionSummaryStrip metrics={metrics} /> : null}
-          <SessionsFilterBar
-            bookingStatus={parsedFilters.filters.bookingStatus}
-            financialStatus={parsedFilters.filters.financialStatus}
-            hasActiveFilters={hasActiveFilters}
-            searchQuery={searchQuery}
-          />
-
-          {filteredData && filteredData.items.length > 0 ? (
-            <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
-              <section aria-label="Lista de sessões" className="min-w-0">
-                <SessionsMobileList items={filteredData.items} />
-                <SessionsTable items={filteredData.items} />
-                <p className="mt-4 text-xs font-semibold text-tesText-muted">
-                  Mostrando {filteredData.items.length} de{" "}
-                  {result.data.items.length} sessões carregadas.
-                </p>
-              </section>
-              <SessionsRightRail items={filteredData.items} />
+    <AppPageContainer className="gap-6">
+      <AppPageGrid className="xl:grid-cols-[minmax(0,1fr)_320px]">
+        <AppPageMain className="gap-6">
+          <header className="flex items-start justify-between gap-4 pt-1 sm:pt-3">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
+                Rotina de atendimento
+              </p>
+              <h1 className="mt-2 font-display text-[40px] font-light italic leading-[1.04] text-brand-deep sm:text-[52px]">
+                Sessões
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-tesText-secondary sm:text-base">
+                Acompanhe suas sessões, priorize o que pede atenção e mantenha a
+                rotina organizada em um só lugar.
+              </p>
             </div>
+            <a
+              aria-label="Exportar sessões"
+              className="inline-flex size-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-brand-lavender bg-white text-brand-primary shadow-card transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto sm:px-4"
+              download="sessoes-tes.csv"
+              href={csvHref}
+            >
+              <Download aria-hidden="true" size={18} />
+              <span className="hidden text-sm font-extrabold sm:inline">Exportar</span>
+            </a>
+          </header>
+
+          {result.status === "error" ? (
+            <SessionsErrorState
+              correlationId={result.error.correlationId}
+              message={result.error.message}
+            />
+          ) : result.status === "empty" ? (
+            <SessionsEmptyState />
           ) : (
-            <SessionsNoFilterResults />
-          )}
+            <>
+              {metrics ? <SessionMetricsGrid metrics={metrics} /> : null}
+              {metrics ? <SessionSummaryStrip metrics={metrics} /> : null}
 
-          {result.data.page.hasMore && result.data.page.nextCursor ? (
-            <div className="mt-6 flex justify-center">
-              <Link
-                className="inline-flex min-h-11 items-center justify-center rounded-lg border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft"
-                href={
-                  withSearchQuery(
-                    buildNextSessionsHref(
-                      parsedFilters.filters,
-                      result.data.page.nextCursor,
-                    ),
-                    searchQuery,
-                  ) as Route
-                }
-              >
-                Carregar próximas
-              </Link>
-            </div>
-          ) : null}
-        </>
-      )}
-    </main>
+              {filteredData && filteredData.items.length > 0 ? (
+                <section
+                  aria-label="Lista de sessões"
+                  className="min-w-0 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card"
+                >
+                  <SessionsFilterBar
+                    bookingStatus={parsedFilters.filters.bookingStatus}
+                    financialStatus={parsedFilters.filters.financialStatus}
+                    hasActiveFilters={hasActiveFilters}
+                    itemCount={filteredData.items.length}
+                    searchQuery={searchQuery}
+                  />
+                  <SessionsMobileList items={filteredData.items} />
+                  <SessionsTable items={filteredData.items} />
+                  <footer className="flex flex-col gap-2 border-t border-brand-lavender/60 px-5 py-5 text-xs font-semibold text-tesText-muted sm:flex-row sm:items-center sm:justify-between">
+                    <span>
+                      Mostrando {filteredData.items.length} de{" "}
+                      {result.data.items.length} sessões carregadas.
+                    </span>
+                    <span>Os estados são atualizados conforme cada reserva.</span>
+                  </footer>
+                </section>
+              ) : (
+                <SessionsNoFilterResults />
+              )}
+
+              {result.data.page.hasMore && result.data.page.nextCursor ? (
+                <div className="flex justify-center">
+                  <Link
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                    href={
+                      withSearchQuery(
+                        buildNextSessionsHref(
+                          parsedFilters.filters,
+                          result.data.page.nextCursor,
+                        ),
+                        searchQuery,
+                      ) as Route
+                    }
+                  >
+                    Carregar próximas
+                  </Link>
+                </div>
+              ) : null}
+            </>
+          )}
+        </AppPageMain>
+
+        {result.status === "success" && filteredData ? (
+          <AppPageAside className="auto-rows-min self-start content-start grid-cols-2 gap-5 md:grid-cols-2 xl:!block">
+            <SessionsRightRail items={filteredData.items} />
+          </AppPageAside>
+        ) : null}
+      </AppPageGrid>
+    </AppPageContainer>
   );
 }
 
@@ -164,7 +186,7 @@ function SessionMetricsGrid({ metrics }: { metrics: SessionMetrics }) {
   return (
     <section
       aria-label="Indicadores de sessões"
-      className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4"
     >
       <MetricCard
         description="na semana atual"
@@ -219,21 +241,21 @@ function MetricCard({
   };
 
   return (
-    <article className="min-h-[172px] rounded-[16px] border border-brand-lavender/45 bg-white p-5 shadow-card">
-      <div className="flex items-center gap-3">
+    <article className="min-h-[190px] min-w-0 overflow-hidden rounded-card border border-brand-lavender/60 bg-white p-5 shadow-card">
+      <div className="grid grid-cols-[40px_minmax(0,1fr)] items-start gap-2.5">
         <span
-          className={`grid size-12 shrink-0 place-items-center rounded-full ${toneClasses[tone]}`}
+          className={`grid size-10 shrink-0 place-items-center rounded-full ${toneClasses[tone]}`}
         >
           {icon}
         </span>
-        <h2 className="text-xs font-extrabold leading-5 text-brand-primary">
+        <h2 className="min-w-0 break-words text-sm font-extrabold leading-5 text-brand-primary">
           {label}
         </h2>
       </div>
-      <p className="mt-6 text-4xl font-extrabold leading-none text-brand-deep">
+      <p className="mt-7 text-[30px] font-extrabold leading-none text-brand-deep sm:text-[34px]">
         {value}
       </p>
-      <p className="mt-2 text-xs font-semibold text-tesText-secondary">
+      <p className="mt-2 text-xs font-semibold leading-5 text-tesText-secondary">
         {description}
       </p>
     </article>
@@ -260,10 +282,10 @@ function SessionSummaryStrip({ metrics }: { metrics: SessionMetrics }) {
   ];
 
   return (
-    <section className="mt-5 grid gap-4 rounded-[16px] border border-brand-lavender/35 bg-white p-4 shadow-card md:grid-cols-3">
+    <section className="grid rounded-panel border border-brand-lavender/60 bg-white shadow-card md:grid-cols-3">
       {items.map((item) => (
         <div
-          className="flex min-w-0 gap-3 border-brand-lavender/60 md:border-r md:last:border-r-0"
+          className="flex min-w-0 gap-3 border-brand-lavender/60 p-5 md:border-r md:last:border-r-0"
           key={item.label}
         >
           <span className="mt-1 shrink-0 text-brand-primary">{item.icon}</span>
@@ -285,20 +307,33 @@ function SessionsFilterBar({
   bookingStatus,
   financialStatus,
   hasActiveFilters,
+  itemCount,
   searchQuery,
 }: {
   bookingStatus?: BookingStatusValue;
   financialStatus?: SessionFinancialStatusValue;
   hasActiveFilters: boolean;
+  itemCount: number;
   searchQuery: string;
 }) {
   return (
     <form
       action={routes.therapist.sessions}
-      className="mt-5 grid gap-3 rounded-[16px] border border-brand-lavender/40 bg-white p-4 shadow-card lg:grid-cols-[minmax(220px,1fr)_160px_160px_auto]"
+      className="grid grid-cols-2 gap-3 border-b border-brand-lavender/60 p-4 sm:p-5 xl:grid-cols-[minmax(220px,1fr)_minmax(132px,0.58fr)_minmax(150px,0.68fr)_112px]"
     >
-      <label className="relative block min-w-0">
-        <span className="sr-only">Buscar por cliente ou terapia</span>
+      <div className="col-span-2 flex items-center justify-between gap-3 xl:col-span-4">
+        <div>
+          <h2 className="text-base font-extrabold text-brand-deep">
+            Sessões agendadas
+          </h2>
+          <p className="mt-1 text-xs font-semibold text-tesText-secondary">
+            {itemCount} {itemCount === 1 ? "sessão carregada" : "sessões carregadas"}
+          </p>
+        </div>
+        <Filter aria-hidden="true" className="shrink-0 text-brand-primary" size={20} />
+      </div>
+      <label className="relative col-span-2 block min-w-0 xl:col-span-1">
+        <span className="sr-only">Buscar por pessoa ou terapia</span>
         <Search
           aria-hidden="true"
           className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-brand-primary"
@@ -309,7 +344,7 @@ function SessionsFilterBar({
           defaultValue={searchQuery}
           maxLength={80}
           name="q"
-          placeholder="Buscar por cliente ou terapia..."
+          placeholder="Buscar por pessoa ou terapia..."
         />
       </label>
       <SelectField
@@ -325,9 +360,9 @@ function SessionsFilterBar({
         options={financialStatusOptions}
         value={financialStatus}
       />
-      <div className="flex gap-2">
+      <div className="col-span-2 flex gap-2 xl:col-span-1">
         <button
-          className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary lg:flex-none"
+          className="inline-flex min-h-12 flex-1 items-center justify-center rounded-xl bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary xl:flex-none"
           type="submit"
         >
           Filtrar
@@ -359,7 +394,7 @@ function SelectField({
   value?: string;
 }) {
   return (
-    <label className="relative block">
+    <label className="relative block min-w-0">
       <span className="sr-only">{label}</span>
       {icon ? (
         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-brand-primary">
@@ -391,17 +426,19 @@ function SelectField({
 
 function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
   return (
-    <div className="hidden overflow-hidden rounded-[16px] border border-brand-lavender bg-white shadow-card lg:block">
+    <div className="hidden xl:block">
       <table className="w-full table-fixed border-collapse text-left">
+        <caption className="sr-only">
+          Sessões carregadas para acompanhamento operacional
+        </caption>
         <thead>
-          <tr className="border-b border-brand-lavender/70 text-[11px] font-extrabold text-brand-primary">
-            <th className="w-[20%] px-4 py-4">Cliente</th>
-            <th className="w-[16%] px-3 py-4">Terapia</th>
-            <th className="w-[17%] px-3 py-4">Data e horário</th>
-            <th className="w-[15%] px-3 py-4">Status</th>
-            <th className="w-[12%] px-3 py-4">Link Zoom</th>
-            <th className="w-[12%] px-3 py-4">Valor</th>
-            <th className="w-[8%] px-2 py-4 text-center">Ações</th>
+          <tr className="border-b border-brand-lavender/60 text-[11px] font-extrabold uppercase tracking-[0.08em] text-brand-primary">
+            <th className="w-[24%] px-5 py-5">Pessoa</th>
+            <th className="w-[19%] px-2.5 py-5">Terapia</th>
+            <th className="w-[18%] px-2.5 py-5">Data e horário</th>
+            <th className="w-[16%] px-2.5 py-5">Status</th>
+            <th className="w-[13%] px-2.5 py-5 text-right">Valor</th>
+            <th className="w-[10%] px-3 py-5 text-right">Ações</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-brand-lavender/50">
@@ -416,17 +453,21 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
                 className="text-xs font-semibold text-tesText-secondary transition hover:bg-surface-soft/70"
                 key={booking.bookingId}
               >
-                <td className="px-4 py-4">
+                <td className="px-5 py-4">
                   <div className="flex min-w-0 items-center gap-3">
                     <AvatarInitials name={booking.patientName} />
                     <span className="min-w-0">
-                      <span className="block truncate font-extrabold text-brand-deep">
+                      <Link
+                        className="block truncate text-sm font-extrabold text-brand-deep hover:text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+                        href={detailHref}
+                      >
                         {booking.patientName}
-                      </span>
+                      </Link>
+                      <SessionTimingBadge presentation={presentation} />
                     </span>
                   </div>
                 </td>
-                <td className="px-3 py-4">
+                <td className="px-2.5 py-4">
                   <span className="block truncate font-extrabold text-brand-primary">
                     {booking.serviceTitle}
                   </span>
@@ -434,31 +475,22 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
                     <span className="truncate">Online</span>
                   </span>
                 </td>
-                <td className="px-3 py-4 text-brand-deep">
+                <td className="px-2.5 py-4 text-brand-deep">
                   {formatCompactSessionDateTime(
                     booking.startsAt,
                     booking.timezone,
                   )}
                 </td>
-                <td className="px-3 py-4">
+                <td className="px-2.5 py-4">
                   <StatusBadge presentation={presentation} />
                 </td>
-                <td className="px-3 py-4">
-                  <Link
-                    className="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-brand-lavender px-3 text-[11px] font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
-                    href={detailHref}
-                  >
-                    <Video aria-hidden="true" size={14} />
-                    {presentation.actions.canAccessZoom ? "Entrar" : "Ver"}
-                  </Link>
-                </td>
-                <td className="px-3 py-4 font-extrabold text-brand-deep">
+                <td className="px-2.5 py-4 text-right font-extrabold text-brand-deep">
                   {formatSessionMoney(booking.priceCents, booking.currency)}
                 </td>
-                <td className="px-2 py-4 text-center">
+                <td className="px-3 py-4 text-right">
                   <Link
                     aria-label={`Abrir detalhes da sessão com ${booking.patientName}`}
-                    className="inline-grid size-9 place-items-center rounded-lg border border-brand-lavender text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+                    className="inline-grid size-10 place-items-center rounded-xl border border-brand-lavender text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
                     href={detailHref}
                   >
                     <MoreVertical aria-hidden="true" size={17} />
@@ -475,12 +507,12 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
 
 function SessionsMobileList({ items }: { items: SessionReadModelItem[] }) {
   return (
-    <div className="grid gap-3 lg:hidden">
+    <div className="grid grid-cols-2 gap-3 p-3 sm:gap-4 sm:p-5 xl:hidden">
       {items.map((booking) => {
         const presentation = mapSessionPresentation(booking);
         return (
           <Link
-            className="grid gap-4 rounded-[16px] border border-brand-lavender bg-white p-4 shadow-card transition hover:border-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            className="grid min-w-0 content-start gap-4 rounded-card border border-brand-lavender/60 bg-white p-4 shadow-card transition hover:border-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
             href={routes.therapist.sessionDetail(booking.bookingId) as Route}
             key={booking.bookingId}
           >
@@ -490,17 +522,19 @@ function SessionsMobileList({ items }: { items: SessionReadModelItem[] }) {
                 <span className="block truncate text-base font-extrabold text-brand-deep">
                   {booking.patientName}
                 </span>
+                <SessionTimingBadge presentation={presentation} />
                 <span className="mt-1 block truncate text-sm font-semibold text-brand-primary">
                   {booking.serviceTitle}
                 </span>
-                <span className="mt-1 block text-xs font-semibold text-tesText-secondary">
+                <span className="mt-2 flex items-start gap-2 text-xs font-semibold leading-5 text-tesText-secondary">
+                  <CalendarDays aria-hidden="true" className="mt-0.5 shrink-0 text-brand-primary" size={15} />
                   {formatSessionDateTime(booking.startsAt, booking.timezone)}
                 </span>
               </span>
               <StatusBadge presentation={presentation} />
             </span>
             <span className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-tesText-secondary">
-              <span>{getZoomAccessLabel(booking.zoomAccess)}</span>
+              <span>Atendimento online</span>
               <span className="font-extrabold text-brand-deep">
                 {formatSessionMoney(booking.priceCents, booking.currency)}
               </span>
@@ -514,40 +548,47 @@ function SessionsMobileList({ items }: { items: SessionReadModelItem[] }) {
 
 function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
   const nextSession = getNextSession(items);
+  const nextSessionPresentation = nextSession
+    ? mapSessionPresentation(nextSession)
+    : null;
 
   return (
-    <aside className="grid gap-5 xl:sticky xl:top-28 xl:self-start">
-      <section className="rounded-[16px] border border-brand-lavender/40 bg-white p-5 shadow-card">
-        <h2 className="font-display text-xl font-light italic text-brand-deep">
+    <>
+      <section className="h-auto self-start rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card xl:mb-5">
+        <h2 className="font-display text-[28px] font-light italic leading-tight text-brand-deep">
           Próxima sessão
         </h2>
         {nextSession ? (
-          <div className="mt-4 rounded-[14px] border border-brand-lavender/40 bg-white p-4">
+          <div className="mt-5 rounded-card bg-brand-lavenderSoft/45 p-4">
             <div className="flex items-start gap-3">
               <AvatarInitials name={nextSession.patientName} />
               <div className="min-w-0">
                 <p className="truncate text-sm font-extrabold text-brand-deep">
                   {nextSession.patientName}
                 </p>
+                {nextSessionPresentation ? (
+                  <SessionTimingBadge presentation={nextSessionPresentation} />
+                ) : null}
                 <p className="mt-1 truncate text-xs font-semibold text-brand-primary">
                   {nextSession.serviceTitle}
                 </p>
               </div>
             </div>
-            <p className="mt-4 text-xs font-semibold leading-5 text-tesText-secondary">
+            <p className="mt-4 flex items-start gap-2 text-xs font-semibold leading-5 text-tesText-secondary">
+              <CalendarDays aria-hidden="true" className="mt-0.5 shrink-0 text-brand-primary" size={16} />
               {formatSessionDateTime(
                 nextSession.startsAt,
                 nextSession.timezone,
               )}
             </p>
             <Link
-              className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-xs font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
               href={
                 routes.therapist.sessionDetail(nextSession.bookingId) as Route
               }
             >
               <Video aria-hidden="true" size={16} />
-              {mapSessionPresentation(nextSession).actions.primary.label}
+              {nextSessionPresentation?.actions.primary.label ?? "Ver detalhes"}
             </Link>
           </div>
         ) : (
@@ -556,15 +597,15 @@ function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
           </p>
         )}
         <Link
-          className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-brand-lavender text-xs font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
+          className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-brand-lavender text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
           href={routes.therapist.agenda as Route}
         >
           Ver agenda completa
         </Link>
       </section>
 
-      <section className="rounded-[16px] border border-brand-lavender/40 bg-white p-5 shadow-card">
-        <h2 className="font-display text-xl font-light italic text-brand-deep">
+      <section className="h-auto self-start rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card xl:mb-5">
+        <h2 className="font-display text-[28px] font-light italic leading-tight text-brand-deep">
           Atalhos rápidos
         </h2>
         <div className="mt-4 grid gap-3">
@@ -583,9 +624,9 @@ function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
         </div>
       </section>
 
-      <section className="rounded-[16px] border border-brand-lavender/40 bg-white p-5 shadow-card">
-        <h2 className="font-display text-xl font-light italic text-brand-deep">
-          Dicas para uma ótima sessão
+      <section className="h-auto self-start rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card xl:mb-5">
+        <h2 className="font-display text-[28px] font-light italic leading-tight text-brand-deep">
+          Antes da sessão
         </h2>
         <RailTip
           description="Verifique internet, câmera e microfone antes do encontro."
@@ -604,8 +645,8 @@ function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
         />
       </section>
 
-      <section className="rounded-[16px] border border-brand-lavender/40 bg-white p-5 shadow-card">
-        <h2 className="font-display text-xl font-light italic text-brand-deep">
+      <section className="h-auto self-start rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card xl:last:mb-0">
+        <h2 className="font-display text-[28px] font-light italic leading-tight text-brand-deep">
           Política de reagendamento
         </h2>
         <ul className="mt-4 grid gap-4 text-xs font-semibold leading-5 text-tesText-secondary">
@@ -629,13 +670,13 @@ function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
           </li>
         </ul>
         <Link
-          className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-brand-lavender text-xs font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
+          className="mt-5 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-brand-lavender text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
           href={routes.public.terms as Route}
         >
           Ver política completa
         </Link>
       </section>
-    </aside>
+    </>
   );
 }
 
@@ -659,10 +700,10 @@ function RailLink({
         {icon}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-xs font-extrabold text-brand-primary">
+        <span className="block text-sm font-extrabold text-brand-primary">
           {label}
         </span>
-        <span className="mt-1 block truncate text-[10px] font-semibold text-tesText-secondary">
+        <span className="mt-1 block truncate text-[11px] font-semibold text-tesText-secondary">
           {description}
         </span>
       </span>
@@ -690,7 +731,7 @@ function RailTip({
         {icon}
       </span>
       <span>
-        <span className="block text-xs font-extrabold text-brand-primary">
+        <span className="block text-sm font-extrabold text-brand-primary">
           {label}
         </span>
         <span className="mt-1 block text-xs font-semibold leading-5 text-tesText-secondary">
@@ -698,6 +739,29 @@ function RailTip({
         </span>
       </span>
     </div>
+  );
+}
+
+function SessionTimingBadge({
+  presentation,
+}: {
+  presentation: SessionPresentation;
+}) {
+  const badge = getSessionTimingBadge(presentation);
+  if (!badge) return null;
+
+  const toneClasses = {
+    info: "bg-brand-cyanSoft text-status-info",
+    success: "bg-status-successBg text-status-success",
+    warning: "bg-status-warningBg text-status-warning",
+  };
+
+  return (
+    <span
+      className={`mt-1.5 inline-flex max-w-full items-center rounded-lg px-2 py-1 text-[10px] font-extrabold ${toneClasses[badge.tone]}`}
+    >
+      <span className="truncate">{badge.label}</span>
+    </span>
   );
 }
 

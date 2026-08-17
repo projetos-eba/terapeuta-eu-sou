@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   CreditCard,
   ExternalLink,
-  HelpCircle,
   Loader2,
   LockKeyhole,
   Mail,
@@ -87,14 +86,6 @@ export function TherapistSettingsPage({
       <AppPageHeader
         actions={
           <AppPageActions>
-            <TESButton
-              className="rounded-lg"
-              href={routes.therapist.support}
-              variant="secondary"
-            >
-              <HelpCircle aria-hidden="true" size={18} />
-              Ajuda
-            </TESButton>
             <TESButton
               className="rounded-lg"
               disabled={!hasChanges || pending}

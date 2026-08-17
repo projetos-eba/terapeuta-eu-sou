@@ -19,7 +19,74 @@ export function renderEmailTemplate(
     return renderPasswordReset(data);
   }
 
+  if (actionKey === "therapy_catalog_request_submitted") {
+    return renderTherapyCatalogRequestSubmitted(data);
+  }
+
+  if (actionKey === "therapy_catalog_request_updated") {
+    return renderTherapyCatalogRequestUpdated(data);
+  }
+
   throw new Error("unsupported_email_action");
+}
+
+function renderTherapyCatalogRequestSubmitted(data: Record<string, unknown>) {
+  const name = safeDisplayName(data.name);
+  const requestName = safeDisplayName(data.requestName);
+  const requestUrl = safeUrl(data.url);
+  const subject = "Recebemos sua sugestão de terapia — Terapeuta Eu Sou";
+
+  return {
+    subject,
+    html: baseHtml({
+      body: [
+        `Olá${name ? `, ${escapeHtml(name)}` : ""}.`,
+        `Recebemos sua sugestão${requestName ? ` de ${escapeHtml(requestName)}` : ""}.`,
+        "Nossa equipe avaliará as informações compartilhadas. Você receberá atualizações pela Central de Mensagens e por e-mail.",
+      ],
+      buttonLabel: "Acompanhar solicitação",
+      buttonUrl: requestUrl,
+      title: "Solicitação recebida",
+    }),
+    text: [
+      `Olá${name ? `, ${name}` : ""}.`,
+      `Recebemos sua sugestão${requestName ? ` de ${requestName}` : ""}.`,
+      "Você receberá atualizações pela Central de Mensagens e por e-mail.",
+      requestUrl,
+    ].join("\n\n"),
+  };
+}
+
+function renderTherapyCatalogRequestUpdated(data: Record<string, unknown>) {
+  const name = safeDisplayName(data.name);
+  const requestName = safeDisplayName(data.requestName);
+  const status = safeRequestStatus(data.status);
+  const decision = safeText(data.decision, 800);
+  const requestUrl = safeUrl(data.url);
+  const subject = "Atualização da sua sugestão de terapia — Terapeuta Eu Sou";
+  const statusMessage = requestStatusMessage(status);
+
+  return {
+    subject,
+    html: baseHtml({
+      body: [
+        `Olá${name ? `, ${escapeHtml(name)}` : ""}.`,
+        `Há uma atualização na sua sugestão${requestName ? ` de ${escapeHtml(requestName)}` : ""}.`,
+        statusMessage,
+        ...(decision ? ["Mensagem da equipe: " + escapeHtml(decision)] : []),
+      ],
+      buttonLabel: "Ver atualização",
+      buttonUrl: requestUrl,
+      title: "Sua solicitação foi atualizada",
+    }),
+    text: [
+      `Olá${name ? `, ${name}` : ""}.`,
+      `Há uma atualização na sua sugestão${requestName ? ` de ${requestName}` : ""}.`,
+      statusMessage,
+      ...(decision ? [`Mensagem da equipe: ${decision}`] : []),
+      requestUrl,
+    ].join("\n\n"),
+  };
 }
 
 function renderEmailVerification(data: Record<string, unknown>) {
@@ -140,6 +207,36 @@ function safeUrl(value: unknown) {
   }
 
   return url;
+}
+
+function safeText(value: unknown, maxLength: number) {
+  return safeString(value).replace(/[\r\n]+/g, " ").trim().slice(0, maxLength);
+}
+
+function safeRequestStatus(value: unknown) {
+  return value === "under_review" ||
+    value === "needs_information" ||
+    value === "approved" ||
+    value === "merged" ||
+    value === "rejected"
+    ? value
+    : "under_review";
+}
+
+function requestStatusMessage(status: ReturnType<typeof safeRequestStatus>) {
+  if (status === "needs_information") {
+    return "Nossa equipe precisa de mais informações para continuar a análise.";
+  }
+  if (status === "approved") {
+    return "Sua solicitação foi aprovada para a próxima etapa administrativa.";
+  }
+  if (status === "merged") {
+    return "Sua solicitação foi vinculada a uma terapia já existente.";
+  }
+  if (status === "rejected") {
+    return "A análise da sua solicitação foi concluída.";
+  }
+  return "Sua solicitação está em análise pela equipe da plataforma.";
 }
 
 function escapeHtml(value: string) {

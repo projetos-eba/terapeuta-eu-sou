@@ -352,7 +352,7 @@ export function TherapistProfileRegistrationSurface({
             {pageMode.supportCta ? (
               <TESButton
                 className="mt-5 min-h-11 w-full rounded-lg"
-                href={routes.therapist.support}
+                href={`${routes.therapist.messages}?context=suporte`}
                 variant="secondary"
               >
                 Falar com o suporte

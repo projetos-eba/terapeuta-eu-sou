@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   AlertCircle,
   ArrowRight,
+  BarChart3,
   CalendarDays,
   Check,
   Clock3,
@@ -33,23 +34,20 @@ import {
   findDefaultScheduleScope,
   formatDuration,
   getRulesForScope,
+  hasOverlappingAvailabilityRules,
   normalizeClock,
   scheduleWeekDays,
   type ScheduleScope,
 } from "@/features/therapist-schedule/therapist-schedule-view-model";
 import { routes } from "@/lib/routes";
 
+import { TherapistAgendaHeader } from "@/features/therapist-agenda/components/therapist-agenda-chrome";
+
 type EditableRule = Omit<TherapistScheduleRule, "id"> & {
   id: string | null;
 };
 
 type SaveFeedback = { message: string; tone: "error" | "success" } | null;
-
-const agendaTabs = [
-  { href: `${routes.therapist.agenda}?aba=calendario`, label: "Calendário" },
-  { href: `${routes.therapist.agenda}?aba=horarios`, label: "Horários" },
-  { href: `${routes.therapist.agenda}?aba=bloqueios`, label: "Bloqueios" },
-] as const;
 
 export function TherapistScheduleHours({
   agenda,
@@ -137,11 +135,16 @@ export function TherapistScheduleHours({
     field: "endTime" | "startTime",
     value: string,
   ) {
-    setRules((current) =>
-      current.map((rule) =>
-        rule === target ? { ...rule, [field]: value } : rule,
-      ),
+    const nextRules = rules.map((rule) =>
+      rule === target ? { ...rule, [field]: value } : rule,
     );
+
+    if (hasOverlappingAvailabilityRules(nextRules)) {
+      showOverlapFeedback();
+      return;
+    }
+
+    setRules(nextRules);
     markChanged();
   }
 
@@ -149,35 +152,37 @@ export function TherapistScheduleHours({
     const dayRules = scopeRules.filter((rule) => rule.dayOfWeek === dayOfWeek);
     const shouldActivate = !dayRules.some((rule) => rule.isActive);
 
-    if (dayRules.length === 0) {
-      setRules((current) => [
-        ...current,
-        createRule(scope, dayOfWeek, "09:00", "17:00"),
-      ]);
-    } else {
-      setRules((current) =>
-        current.map((rule) =>
-          rule.serviceId === toServiceId(scope) && rule.dayOfWeek === dayOfWeek
-            ? { ...rule, isActive: shouldActivate }
-            : rule,
-        ),
-      );
+    const nextRules =
+      dayRules.length === 0
+        ? [...rules, createRule(scope, dayOfWeek, "09:00", "17:00")]
+        : rules.map((rule) =>
+            rule.serviceId === toServiceId(scope) &&
+            rule.dayOfWeek === dayOfWeek
+              ? { ...rule, isActive: shouldActivate }
+              : rule,
+          );
+
+    if (hasOverlappingAvailabilityRules(nextRules)) {
+      showOverlapFeedback();
+      return;
     }
+
+    setRules(nextRules);
     markChanged();
   }
 
   function addRange(dayOfWeek: number) {
-    const activeRanges = scopeRules
-      .filter((rule) => rule.dayOfWeek === dayOfWeek && rule.isActive)
-      .sort((left, right) => left.endTime.localeCompare(right.endTime));
-    const lastEnd = normalizeClock(activeRanges.at(-1)?.endTime ?? "08:00");
-    const startTime = lastEnd < "22:00" ? lastEnd : "09:00";
-    const endTime = addMinutesToClock(startTime, 60);
+    const range = findNextAvailableRange({ dayOfWeek, rules, scope });
+    if (!range) {
+      setFeedback({
+        message:
+          "Não há uma nova faixa livre neste dia. Ajuste ou remova uma faixa existente antes de continuar.",
+        tone: "error",
+      });
+      return;
+    }
 
-    setRules((current) => [
-      ...current,
-      createRule(scope, dayOfWeek, startTime, endTime),
-    ]);
+    setRules([...rules, range]);
     markChanged();
   }
 
@@ -210,8 +215,8 @@ export function TherapistScheduleHours({
       (rule) => rule.dayOfWeek === copySourceDay,
     );
 
-    setRules((current) => [
-      ...current.filter(
+    const nextRules = [
+      ...rules.filter(
         (rule) =>
           rule.serviceId !== toServiceId(scope) ||
           !copyTargetDays.includes(rule.dayOfWeek),
@@ -223,7 +228,14 @@ export function TherapistScheduleHours({
           id: null,
         })),
       ),
-    ]);
+    ];
+
+    if (hasOverlappingAvailabilityRules(nextRules)) {
+      showOverlapFeedback();
+      return;
+    }
+
+    setRules(nextRules);
     markChanged();
     setDialog(null);
     setCopyTargetDays([]);
@@ -241,6 +253,11 @@ export function TherapistScheduleHours({
         message: "O horário final deve ser posterior ao horário inicial.",
         tone: "error",
       });
+      return;
+    }
+
+    if (hasOverlappingAvailabilityRules(rules)) {
+      showOverlapFeedback();
       return;
     }
 
@@ -318,57 +335,40 @@ export function TherapistScheduleHours({
     }
   }
 
-  return (
-    <main className="mx-auto w-full max-w-[1180px] pb-12 text-tesText-primary">
-      <form id="therapist-schedule-form" onSubmit={saveSchedule}>
-        <header className="flex flex-col gap-5 border-b border-brand-lavender pb-5 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h1 className="font-display text-[34px] font-light text-brand-deep sm:text-[40px]">
-              Minha agenda
-            </h1>
-            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Organize seus horários e acompanhe sua disponibilidade.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-not-allowed disabled:opacity-55"
-              disabled={!isDirty || isSaving}
-              type="submit"
-            >
-              <Save aria-hidden="true" size={17} />
-              {isSaving ? "Salvando..." : "Salvar alterações"}
-            </button>
-            <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-primary bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-              onClick={() => setDialog("add")}
-              type="button"
-            >
-              <Plus aria-hidden="true" size={17} />
-              Adicionar faixa
-            </button>
-          </div>
-        </header>
+  function showOverlapFeedback() {
+    setFeedback({
+      message:
+        "Essa faixa se sobrepõe a outro horário disponível no mesmo dia. Ajuste os horários antes de continuar.",
+      tone: "error",
+    });
+  }
 
-        <nav
-          aria-label="Seções da agenda"
-          className="mt-5 grid grid-cols-3 border-b border-brand-lavender"
-        >
-          {agendaTabs.map((tab) => (
-            <Link
-              aria-current={tab.label === "Horários" ? "page" : undefined}
-              className={`flex min-h-12 items-center justify-center border-b-2 px-5 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-primary ${
-                tab.label === "Horários"
-                  ? "border-brand-primary text-brand-primary"
-                  : "border-transparent text-tesText-secondary hover:text-brand-primary"
-              }`}
-              href={tab.href}
-              key={tab.label}
-            >
-              {tab.label}
-            </Link>
-          ))}
-        </nav>
+  return (
+    <main className="mx-auto w-full max-w-[1210px] pb-14 text-tesText-primary">
+      <form id="therapist-schedule-form" onSubmit={saveSchedule}>
+        <TherapistAgendaHeader
+          activeTab="horarios"
+          actions={
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-deep transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-not-allowed disabled:opacity-55"
+                disabled={!isDirty || isSaving}
+                type="submit"
+              >
+                <Save aria-hidden="true" size={17} />
+                {isSaving ? "Salvando..." : "Salvar alterações"}
+              </button>
+              <button
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                onClick={() => setDialog("add")}
+                type="button"
+              >
+                <Plus aria-hidden="true" size={17} />
+                Adicionar faixa
+              </button>
+            </div>
+          }
+        />
 
         {feedback ? (
           <div
@@ -392,8 +392,8 @@ export function TherapistScheduleHours({
           </div>
         ) : null}
 
-        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_292px]">
-          <div className="grid min-w-0 gap-6">
+        <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="grid min-w-0 gap-5">
             <section className="rounded-[14px] border border-brand-lavender bg-white shadow-card">
               <div className="flex flex-col gap-4 border-b border-brand-lavender p-5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
@@ -582,9 +582,11 @@ export function TherapistScheduleHours({
             />
             <article className="rounded-[14px] border border-brand-lavender bg-brand-lavenderSoft/75 p-5">
               <div className="flex items-start gap-3">
-                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-brand-primary">
-                  <Sparkles aria-hidden="true" size={18} />
-                </span>
+                <Sparkles
+                  aria-hidden="true"
+                  className="mt-0.5 shrink-0 text-brand-primary"
+                  size={18}
+                />
                 <div>
                   <h2 className="text-sm font-extrabold text-brand-deep">
                     Dica TES
@@ -852,16 +854,41 @@ function AvailabilitySummaryCard({
 }) {
   const circumference = 2 * Math.PI * 42;
   const progress = configuredDays / 7;
+  const progressPercent = Math.round(progress * 100);
+  const averageDailyMinutes =
+    configuredDays > 0
+      ? Math.round(weeklyAvailableMinutes / configuredDays)
+      : 0;
 
   return (
-    <article className="rounded-[14px] border border-brand-lavender bg-white p-5 shadow-card">
-      <h2 className="text-base font-extrabold text-brand-deep">
-        Resumo da disponibilidade
-      </h2>
-      <div className="mt-5 flex items-center justify-center">
+    <article className="rounded-[20px] border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
+      <div className="flex items-center gap-3">
+        <CalendarDays
+          aria-hidden="true"
+          className="shrink-0 text-brand-primary"
+          size={19}
+        />
+        <h2 className="font-display text-[22px] font-light italic leading-tight text-brand-deep">
+          Resumo da disponibilidade
+        </h2>
+      </div>
+      <div className="mt-6">
+        <p className="text-sm font-bold text-tesText-secondary">
+          Disponibilidade configurada
+        </p>
+        <p className="mt-1 text-[42px] font-extrabold leading-none tracking-tight text-brand-deep">
+          {formatDuration(weeklyAvailableMinutes)}
+        </p>
+        <p className="mt-2 text-sm font-semibold text-tesText-secondary">
+          {configuredDays > 0
+            ? `Média de ${formatDuration(averageDailyMinutes)} por dia disponível`
+            : "Defina uma faixa para começar a receber reservas."}
+        </p>
+      </div>
+      <div className="mt-6 flex items-center justify-center">
         <div className="relative h-32 w-32">
           <svg
-            aria-label={`${configuredDays} de 7 dias configurados`}
+            aria-label={`${configuredDays} de 7 dias configurados (${progressPercent}%)`}
             className="-rotate-90"
             height="128"
             role="img"
@@ -890,10 +917,10 @@ function AvailabilitySummaryCard({
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <strong className="text-2xl font-extrabold text-brand-deep">
-              {formatDuration(weeklyAvailableMinutes)}
+              {configuredDays}/7
             </strong>
             <span className="text-xs font-bold text-tesText-muted">
-              por semana
+              dias
             </span>
           </div>
         </div>
@@ -902,16 +929,20 @@ function AvailabilitySummaryCard({
         <div className="flex items-center justify-between gap-4">
           <dt className="flex items-center gap-2 font-semibold text-tesText-secondary">
             <span className="h-2.5 w-2.5 rounded-full bg-brand-primary" />
-            Dias configurados
+            Disponível
           </dt>
-          <dd className="font-extrabold text-brand-deep">{configuredDays}</dd>
+          <dd className="font-extrabold text-brand-deep">
+            {configuredDays} dias ({progressPercent}%)
+          </dd>
         </div>
         <div className="flex items-center justify-between gap-4">
           <dt className="flex items-center gap-2 font-semibold text-tesText-secondary">
             <span className="h-2.5 w-2.5 rounded-full bg-brand-lavender" />
             Sem faixas
           </dt>
-          <dd className="font-extrabold text-brand-deep">{unconfiguredDays}</dd>
+          <dd className="font-extrabold text-brand-deep">
+            {unconfiguredDays} dias ({100 - progressPercent}%)
+          </dd>
         </div>
       </dl>
       <Link
@@ -933,8 +964,13 @@ function PopularTimesCard({
   popularTimes: Array<{ count: number; label: string }>;
 }) {
   return (
-    <article className="rounded-[14px] border border-brand-lavender bg-white p-5 shadow-card">
-      <h2 className="text-base font-extrabold text-brand-deep">
+    <article className="rounded-[20px] border border-brand-lavender bg-white p-5 shadow-card">
+      <h2 className="flex items-center gap-3 text-lg font-extrabold text-brand-deep">
+        <BarChart3
+          aria-hidden="true"
+          className="shrink-0 text-brand-primary"
+          size={19}
+        />
         Horários mais procurados
       </h2>
       <p className="mt-1 text-xs font-semibold text-tesText-muted">
@@ -983,8 +1019,13 @@ function UpcomingExceptionsCard({
   hasAgendaData: boolean;
 }) {
   return (
-    <article className="rounded-[14px] border border-brand-lavender bg-white p-5 shadow-card">
-      <h2 className="text-base font-extrabold text-brand-deep">
+    <article className="rounded-[20px] border border-brand-lavender bg-white p-5 shadow-card">
+      <h2 className="flex items-center gap-3 text-lg font-extrabold text-brand-deep">
+        <CalendarDays
+          aria-hidden="true"
+          className="shrink-0 text-brand-primary"
+          size={19}
+        />
         Próximas exceções
       </h2>
       {exceptions.length > 0 ? (
@@ -1100,14 +1141,54 @@ function toServiceId(scope: ScheduleScope) {
   return scope === "all" ? null : scope;
 }
 
-function addMinutesToClock(value: string, minutesToAdd: number) {
-  const [hours = "0", minutes = "0"] = value.split(":");
-  const total = Math.min(
-    Number(hours) * 60 + Number(minutes) + minutesToAdd,
-    23 * 60 + 59,
-  );
-  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(
-    total % 60,
+function findNextAvailableRange({
+  dayOfWeek,
+  rules,
+  scope,
+}: {
+  dayOfWeek: number;
+  rules: EditableRule[];
+  scope: ScheduleScope;
+}) {
+  const durationMinutes = 60;
+  const scopedRangeEnds = rules
+    .filter(
+      (rule) =>
+        rule.serviceId === toServiceId(scope) &&
+        rule.dayOfWeek === dayOfWeek &&
+        rule.isActive,
+    )
+    .map((rule) => clockToMinutes(rule.endTime));
+  const firstStartMinute = Math.max(8 * 60, ...scopedRangeEnds);
+
+  for (
+    let startMinutes = firstStartMinute;
+    startMinutes + durationMinutes < 24 * 60;
+    startMinutes += 15
+  ) {
+    const candidate = createRule(
+      scope,
+      dayOfWeek,
+      minutesToClock(startMinutes),
+      minutesToClock(startMinutes + durationMinutes),
+    );
+
+    if (!hasOverlappingAvailabilityRules([...rules, candidate])) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function clockToMinutes(value: string) {
+  const [hours = "0", minutes = "0"] = normalizeClock(value).split(":");
+  return Number(hours) * 60 + Number(minutes);
+}
+
+function minutesToClock(totalMinutes: number) {
+  return `${String(Math.floor(totalMinutes / 60)).padStart(2, "0")}:${String(
+    totalMinutes % 60,
   ).padStart(2, "0")}`;
 }
 

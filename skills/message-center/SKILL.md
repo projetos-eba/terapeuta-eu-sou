@@ -20,6 +20,9 @@ description: Implementar e manter a Central de Mensagens do paciente e do terape
 
 - Paciente: `/app/mensagens`.
 - Terapeuta: `/terapeuta/mensagens`.
+- A subrota autenticada `/terapeuta/mensagens/solicitar-terapia` é um fluxo
+  estruturado de sugestão de catálogo; ela não é chat nem permite mensagens
+  livres entre pacientes e terapeutas.
 - Aliases `/basico/mensagens`, `/pro/mensagens` e `/plus/mensagens` continuam
   redirects para `/terapeuta/mensagens`.
 

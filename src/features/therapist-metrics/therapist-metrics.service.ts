@@ -2,6 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 
+import { mapTherapistMetricsDashboard } from "./therapist-metrics.dashboard-mappers";
 import {
   mapTherapistInterestMetrics,
   mapTherapistSessionMetrics,
@@ -13,11 +14,13 @@ import {
 import { mapTherapistMetricsOverview } from "./therapist-metrics.mappers";
 import {
   queryTherapistInterestMetrics,
+  queryTherapistMetricsDashboard,
   queryTherapistMetricsOverview,
   queryTherapistSessionMetrics,
 } from "./therapist-metrics.queries";
 import type {
   TherapistInterestMetrics,
+  TherapistMetricsDashboard,
   TherapistMetricsOverview,
   TherapistMetricsPeriodDays,
   TherapistMetricsTab,
@@ -73,7 +76,7 @@ export const getTherapistMetricsPage = cache(
 
 export type TherapistMetricsViewResult =
   | {
-      data: TherapistMetricsOverview;
+      data: TherapistMetricsDashboard;
       status: "success";
       tab: "overview";
     }
@@ -122,8 +125,8 @@ export const getTherapistMetricsView = cache(
         return { data, status: "success", tab };
       }
 
-      const data = mapTherapistMetricsOverview(
-        await queryTherapistMetricsOverview(accessToken, periodDays),
+      const data = mapTherapistMetricsDashboard(
+        await queryTherapistMetricsDashboard(accessToken, periodDays),
       );
       enforceProfile(data.therapist.profileId, profileId);
       return { data, status: "success", tab };

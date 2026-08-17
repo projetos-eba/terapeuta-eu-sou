@@ -31,6 +31,7 @@ import {
   type TherapistBlocksReadModel,
   type TherapistScheduleService,
 } from "@/domain/tes";
+import { TherapistAgendaHeader } from "@/features/therapist-agenda/components/therapist-agenda-chrome";
 import { routes } from "@/lib/routes";
 
 type CommandState =
@@ -168,19 +169,30 @@ export function TherapistBlocksPanel({
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1100px] pb-14 text-tesText-primary">
-      <AgendaHeader
-        onCreate={() => {
-          setCommand({ status: "idle" });
-          setCreateOpen(true);
-        }}
+    <main className="mx-auto w-full max-w-[1210px] pb-14 text-tesText-primary">
+      <TherapistAgendaHeader
+        activeTab="bloqueios"
+        actions={
+          <button
+            aria-label="Novo bloqueio"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-primary px-6 text-sm font-extrabold text-white shadow-float transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            onClick={() => {
+              setCommand({ status: "idle" });
+              setCreateOpen(true);
+            }}
+            type="button"
+          >
+            <Plus aria-hidden="true" size={18} />
+            Criar bloqueio
+          </button>
+        }
       />
 
       {command.status === "error" || command.status === "success" ? (
         <FeedbackMessage command={command} />
       ) : null}
 
-      <div className="mt-6 grid items-start gap-5 xl:grid-cols-[minmax(0,760px)_300px]">
+      <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="grid gap-5">
           <section className="overflow-hidden rounded-[16px] border border-brand-lavender/80 bg-white shadow-card">
             <header className="px-5 pb-4 pt-5 sm:px-6">
@@ -301,58 +313,6 @@ export function TherapistBlocksPanel({
         />
       ) : null}
     </main>
-  );
-}
-
-function AgendaHeader({ onCreate }: { onCreate: () => void }) {
-  const tabs = [
-    { href: "?aba=calendario", id: "calendario", label: "Calendário" },
-    { href: "?aba=horarios", id: "horarios", label: "Horários" },
-    { href: "?aba=bloqueios", id: "bloqueios", label: "Bloqueios" },
-  ];
-
-  return (
-    <>
-      <header className="flex flex-col gap-5 border-b border-brand-lavender pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="font-display text-[36px] font-light leading-tight text-brand-deep sm:text-[42px]">
-            Minha agenda
-          </h1>
-          <p className="mt-1 max-w-[540px] text-sm font-semibold leading-6 text-tesText-secondary">
-            Organize seus horários, acompanhe seus encontros e ofereça mais
-            momentos de acolhimento.
-          </p>
-        </div>
-        <button
-          aria-label="Novo bloqueio"
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-primary px-6 text-sm font-extrabold text-white shadow-float transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-          onClick={onCreate}
-          type="button"
-        >
-          <Plus aria-hidden="true" size={18} />
-          Criar bloqueio
-        </button>
-      </header>
-      <nav
-        aria-label="Seções da agenda"
-        className="mt-5 grid max-w-[520px] grid-cols-3 overflow-hidden rounded-xl border border-brand-lavender bg-white"
-      >
-        {tabs.map((tab) => (
-          <Link
-            aria-current={tab.id === "bloqueios" ? "page" : undefined}
-            className={`relative flex min-h-14 items-center justify-center px-3 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-primary ${
-              tab.id === "bloqueios"
-                ? "text-brand-deep after:absolute after:inset-x-1 after:bottom-0 after:h-1 after:rounded-full after:bg-brand-primary"
-                : "text-tesText-secondary hover:text-brand-primary"
-            }`}
-            href={tab.href as Route}
-            key={tab.id}
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
-    </>
   );
 }
 

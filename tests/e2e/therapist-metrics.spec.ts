@@ -18,20 +18,24 @@ test.describe("therapist metrics and reports", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Métricas & Relatórios",
+        name: "Métricas e insights",
       }),
     ).toBeVisible();
-    await expect(page.getByText("Pessoas atendidas")).toBeVisible();
-    await expect(page.getByText("Sessões realizadas")).toBeVisible();
-    await expect(page.getByText("Tempo de atendimento")).toBeVisible();
     await expect(
-      page.getByText("Sinais de descoberta ainda não ativados"),
+      page.getByRole("heading", { name: "Pessoas acompanhadas" }),
     ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Sessões realizadas" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Tempo de atendimento" }),
+    ).toBeVisible();
+    await expect(page.getByText("Coleta pública desativada")).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Ocupação da agenda" }),
     ).toBeVisible();
 
-    await page.getByLabel("Período", { exact: true }).selectOption("90");
+    await page.getByLabel("Período das métricas").selectOption("90");
     await page.getByRole("button", { name: "Atualizar" }).click();
 
     await expect(page).toHaveURL(
@@ -83,7 +87,7 @@ test.describe("therapist metrics and reports", () => {
     await page.goto("/terapeuta/insights?tab=sessions&period=30");
 
     const downloadPromise = page.waitForEvent("download");
-    await page.getByRole("link", { name: "Exportar CSV" }).click();
+    await page.getByRole("link", { name: "Baixar relatório em CSV" }).click();
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toBe("tes-metricas-sessions-30d.csv");
@@ -99,13 +103,13 @@ test.describe("therapist metrics and reports", () => {
       await expect(
         page.getByRole("heading", {
           level: 1,
-          name: "Métricas & Relatórios",
+          name: "Métricas e insights",
         }),
       ).toBeVisible();
-      await expect(page.getByLabel("Período", { exact: true })).toBeVisible();
+      await expect(page.getByLabel("Período das métricas")).toBeVisible();
       await expect(
         page.getByRole("heading", {
-          name: "Sessões concluídas ao longo do período",
+          name: "Evolução das sessões",
         }),
       ).toBeVisible();
 

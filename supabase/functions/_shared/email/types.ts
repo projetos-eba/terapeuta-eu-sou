@@ -1,6 +1,10 @@
 export type UserRole = "patient" | "therapist" | "admin";
 
-export type EmailActionKey = "email_verification" | "password_reset";
+export type EmailActionKey =
+  | "email_verification"
+  | "password_reset"
+  | "therapy_catalog_request_submitted"
+  | "therapy_catalog_request_updated";
 
 export type EmailDeliveryStatus = "success" | "error" | "skipped";
 

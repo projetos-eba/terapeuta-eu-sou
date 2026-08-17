@@ -2,19 +2,32 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import {
+  ArrowLeft,
   CalendarClock,
+  CalendarDays,
   Check,
   ChevronDown,
+  Clock3,
   Clock4,
   Download,
   Filter,
+  HeartHandshake,
+  MessageCircle,
   MoreVertical,
+  NotebookText,
   Route,
   Search,
   Sparkles,
+  UserRound,
   UsersRound,
 } from "lucide-react";
 
+import {
+  AppPageAside,
+  AppPageContainer,
+  AppPageGrid,
+  AppPageMain,
+} from "@/components/app-page/app-page";
 import { routes } from "@/lib/routes";
 
 import type {
@@ -40,68 +53,74 @@ export function TherapistJourneyHistoryPage({
   const exportHref = buildJourneyCsvHref(visibleClients);
 
   return (
-    <main className="pb-10 text-tesText-primary">
-      <section className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="font-display text-[38px] font-light italic leading-tight text-brand-deep sm:text-[44px]">
-            Clientes
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm font-semibold leading-7 text-brand-primary">
-            Gerencie sua carteira, acompanhe a jornada de cada cliente e
-            identifique oportunidades de cuidado com mais clareza.
-          </p>
-        </div>
-        <a
-          className="inline-flex min-h-11 w-fit items-center justify-center gap-2 rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary shadow-card transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-          download="historico-da-jornada-tes.csv"
-          href={exportHref}
-        >
-          <Download aria-hidden="true" size={17} />
-          Exportar
-        </a>
-      </section>
+    <AppPageContainer className="gap-6">
+      <AppPageGrid className="xl:grid-cols-[minmax(0,1fr)_320px]">
+        <AppPageMain className="gap-6">
+          <header className="flex items-start justify-between gap-4 pt-1 sm:pt-3">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
+                Histórico da jornada
+              </p>
+              <h1 className="mt-2 max-w-4xl font-display text-[38px] font-light italic leading-[1.04] text-brand-deep sm:text-[48px]">
+                Pessoas que caminham com você
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm font-semibold leading-7 text-tesText-secondary sm:text-base">
+                Acompanhe os encontros compartilhados e identifique, com mais
+                clareza, os próximos passos para dar continuidade ao cuidado.
+              </p>
+            </div>
+            <a
+              aria-label="Exportar histórico da jornada"
+              className="inline-flex size-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-brand-lavender bg-white text-brand-primary shadow-card transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto sm:px-4"
+              download="historico-da-jornada-tes.csv"
+              href={exportHref}
+            >
+              <Download aria-hidden="true" size={18} />
+              <span className="hidden text-sm font-extrabold sm:inline">Exportar</span>
+            </a>
+          </header>
 
-      <section
-        aria-label="Indicadores da carteira"
-        className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-      >
-        {data.metrics.map((metric) => (
-          <MetricCard key={metric.id} metric={metric} />
-        ))}
-      </section>
+          <section
+            aria-label="Indicadores das pessoas acompanhadas"
+            className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4"
+          >
+            {data.metrics.map((metric) => (
+              <MetricCard key={metric.id} metric={metric} />
+            ))}
+          </section>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <section className="min-w-0 rounded-panel border border-brand-lavender/60 bg-white shadow-card">
-          <JourneyFilters
-            filters={filters}
-            segments={data.segments}
-            statusSummary={data.summary}
-          />
+          <section className="min-w-0 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card">
+            <JourneyFilters
+              filters={filters}
+              segments={data.segments}
+              statusSummary={data.summary}
+            />
 
-          {visibleClients.length > 0 ? (
-            <>
-              <JourneyDesktopTable clients={visibleClients} />
-              <JourneyMobileList clients={visibleClients} />
-              <footer className="flex flex-col gap-2 border-t border-brand-lavender/60 px-5 py-5 text-xs font-semibold text-tesText-muted sm:flex-row sm:items-center sm:justify-between">
-                <span>
-                  Mostrando {visibleClients.length} de {data.clients.length}{" "}
-                  clientes
-                </span>
-                <span>Dados privados do terapeuta autenticado.</span>
-              </footer>
-            </>
-          ) : (
-            <EmptyFilteredState />
-          )}
-        </section>
+            {visibleClients.length > 0 ? (
+              <>
+                <JourneyDesktopTable clients={visibleClients} />
+                <JourneyMobileList clients={visibleClients} />
+                <footer className="flex flex-col gap-2 border-t border-brand-lavender/60 px-5 py-5 text-xs font-semibold text-tesText-muted sm:flex-row sm:items-center sm:justify-between">
+                  <span>
+                    Mostrando {visibleClients.length} de {data.clients.length}{" "}
+                    pessoas
+                  </span>
+                  <span>Use os filtros para ajustar esta lista.</span>
+                </footer>
+              </>
+            ) : (
+              <EmptyFilteredState />
+            )}
+          </section>
+        </AppPageMain>
 
-        <aside className="grid content-start gap-5">
+        <AppPageAside className="auto-rows-min self-start content-start grid-cols-2 gap-5 md:grid-cols-2 xl:!block">
           <PortfolioSummary summary={data.summary} />
           <SegmentsCard segments={data.segments} />
           <RemindersCard reminders={data.reminders} />
-        </aside>
-      </div>
-    </main>
+        </AppPageAside>
+      </AppPageGrid>
+    </AppPageContainer>
   );
 }
 
@@ -110,105 +129,426 @@ export function TherapistJourneyDetailPage({
 }: {
   data: JourneyHistoryDetailData;
 }) {
+  const { client, timeline } = data;
+
   return (
-    <main className="pb-10 text-tesText-primary">
+    <main className="mx-auto w-full max-w-[1210px] pb-10 text-tesText-primary">
       <Link
-        className="mb-5 inline-flex text-sm font-extrabold text-brand-primary hover:text-brand-primaryHover"
+        className="mb-5 inline-flex min-h-10 items-center gap-2 text-sm font-extrabold text-brand-primary hover:text-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
         href={routes.therapist.patients}
       >
+        <ArrowLeft aria-hidden="true" size={17} />
         Voltar para clientes
       </Link>
-      <section className="rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card sm:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
-            <JourneyAvatar client={data.client} size={64} />
+
+      <section className="relative overflow-hidden rounded-panel border border-brand-lavender/60 bg-gradient-to-r from-brand-lavenderSoft via-white to-brand-cyanSoft shadow-card">
+        <div
+          aria-hidden="true"
+          className="absolute -right-20 -top-24 size-72 rounded-full border-[24px] border-white/60"
+        />
+        <div className="relative grid gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:p-9">
+          <div className="flex min-w-0 items-center gap-4 sm:gap-5">
+            <span className="shrink-0 rounded-full border-4 border-white p-1 shadow-card">
+              <JourneyAvatar client={client} size={64} />
+            </span>
             <div className="min-w-0">
-              <h1 className="font-display text-[34px] font-light italic leading-tight text-brand-deep sm:text-[42px]">
-                {data.client.name}
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
+                  Histórico da jornada
+                </p>
+                <StatusBadge status={client.status} />
+              </div>
+              <h1 className="mt-2 truncate font-display text-[38px] font-light italic leading-tight text-brand-deep sm:text-[52px]">
+                {client.name}
               </h1>
-              <p className="mt-1 text-sm font-semibold text-tesText-secondary">
-                {data.client.totalEncounters} encontros registrados na jornada
+              <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
+                Acompanhe os encontros compartilhados, os temas identificados e
+                os próximos passos operacionais desta jornada.
               </p>
+              <div className="mt-4">
+                <ChipList items={client.therapyLabels} />
+              </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="relative flex flex-wrap gap-2 lg:justify-end">
             <Link
-              className="inline-flex min-h-10 items-center justify-center rounded-xl border border-brand-lavender bg-white px-4 text-xs font-extrabold text-brand-primary hover:bg-brand-lavenderSoft"
-              href={data.client.sessionsHref}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-brand-lavender bg-white/90 px-4 text-sm font-extrabold text-brand-primary transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              href={client.sessionsHref}
             >
+              <CalendarDays aria-hidden="true" size={17} />
               Ver sessões
             </Link>
             <Link
-              className="inline-flex min-h-10 items-center justify-center rounded-xl bg-brand-primary px-4 text-xs font-extrabold text-white hover:bg-brand-primaryHover"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
               href={routes.therapist.messages}
             >
-              Enviar template
+              <MessageCircle aria-hidden="true" size={17} />
+              Usar template
             </Link>
           </div>
         </div>
       </section>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <section className="rounded-panel border border-brand-lavender/60 bg-white shadow-card">
-          <header className="border-b border-brand-lavender/60 px-5 py-5">
-            <h2 className="font-display text-2xl font-light italic text-brand-deep">
-              Linha do tempo
-            </h2>
-            <p className="mt-1 text-xs font-semibold leading-5 text-tesText-secondary">
-              Registros operacionais compartilhados por sessão. Esta área não
-              substitui prontuário clínico e não exibe chat livre.
-            </p>
-          </header>
-          <div className="divide-y divide-brand-lavender/60">
-            {data.timeline.length > 0 ? (
-              data.timeline.map((item) => (
-                <article
-                  className="grid gap-3 px-5 py-4 sm:grid-cols-[140px_minmax(0,1fr)_120px] sm:items-start"
-                  key={item.id}
-                >
-                  <time className="text-xs font-extrabold text-brand-primary">
-                    {formatDateTime(item.date)}
-                  </time>
-                  <div>
-                    <h3 className="text-sm font-extrabold text-brand-deep">
-                      {item.title}
-                    </h3>
-                    <p className="mt-1 text-xs font-semibold leading-5 text-tesText-secondary">
-                      {item.description}
-                    </p>
-                  </div>
-                  <Link
-                    className="inline-flex min-h-9 items-center justify-center rounded-lg border border-brand-lavender px-3 text-xs font-extrabold text-brand-primary hover:bg-brand-lavenderSoft"
-                    href={item.href}
-                  >
-                    Abrir sessão
-                  </Link>
-                </article>
-              ))
-            ) : (
-              <p className="px-5 py-8 text-sm font-semibold text-tesText-secondary">
-                Nenhum encontro registrado para esta jornada.
-              </p>
-            )}
-          </div>
-        </section>
+      <JourneyDetailMetrics client={client} />
+      <JourneyTopics client={client} />
+      <JourneyMemory timeline={timeline} />
 
-        <aside className="grid content-start gap-5">
-          <SideCard title="Terapias">
-            <ChipList items={data.client.therapyLabels} />
-          </SideCard>
-          <SideCard title="Temas recorrentes">
-            <ChipList items={data.client.topicLabels} />
-          </SideCard>
-          <SideCard title="Próximos passos">
-            <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-              Use templates aprovados para comunicação e mantenha os registros
-              de sessão dentro das superfícies transacionais do TES.
-            </p>
-          </SideCard>
-        </aside>
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <CarePreferencesCard />
+        <UpcomingEncounterCard client={client} />
       </div>
     </main>
+  );
+}
+
+function JourneyDetailMetrics({ client }: { client: JourneyHistoryClient }) {
+  const metrics = [
+    {
+      description: client.firstSessionAt
+        ? `Desde ${formatDateOnly(client.firstSessionAt)}`
+        : "Data de início não registrada",
+      icon: <HeartHandshake aria-hidden="true" size={22} />,
+      label: "Jornada iniciada há",
+      tone: "bg-status-dangerBg text-status-danger",
+      value: formatJourneyDuration(client.firstSessionAt),
+    },
+    {
+      description:
+        client.totalEncounters === 1
+          ? "encontro registrado"
+          : "encontros registrados",
+      icon: <UsersRound aria-hidden="true" size={22} />,
+      label: "Encontros compartilhados",
+      tone: "bg-brand-lavenderSoft text-brand-primary",
+      value: String(client.totalEncounters),
+    },
+    {
+      description: client.nextSessionAt
+        ? formatSessionMeta(client.nextSessionAt, client.nextSessionServiceTitle)
+        : "Nenhum encontro agendado",
+      icon: <CalendarDays aria-hidden="true" size={22} />,
+      label: "Próximo encontro",
+      tone: "bg-status-successBg text-status-success",
+      value: client.nextSessionAt ? formatCompactDate(client.nextSessionAt) : "-",
+    },
+    {
+      description: client.lastSessionAt
+        ? formatSessionMeta(client.lastSessionAt, client.lastSessionServiceTitle)
+        : "Ainda sem encontro registrado",
+      icon: <Clock3 aria-hidden="true" size={22} />,
+      label: "Último encontro",
+      tone: "bg-brand-cyanSoft text-status-info",
+      value: client.lastSessionAt ? formatCompactDate(client.lastSessionAt) : "-",
+    },
+  ];
+
+  return (
+    <section
+      aria-label="Resumo da jornada"
+      className="mt-6 grid overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card sm:grid-cols-2 xl:grid-cols-4"
+    >
+      {metrics.map((metric, index) => (
+        <article
+          className={`flex min-h-40 gap-4 p-5 ${
+            index === 1
+              ? "border-t border-brand-lavender/60 sm:border-l sm:border-t-0 xl:border-l"
+              : index === 2
+                ? "border-t border-brand-lavender/60 xl:border-l xl:border-t-0"
+                : index === 3
+                  ? "border-t border-brand-lavender/60 sm:border-l xl:border-t-0"
+                  : ""
+          }`}
+          key={metric.label}
+        >
+          <span
+            className={`grid size-12 shrink-0 place-items-center rounded-full ${metric.tone}`}
+          >
+            {metric.icon}
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-extrabold leading-5 text-tesText-secondary">
+              {metric.label}
+            </p>
+            <strong className="mt-2 block text-[30px] font-extrabold leading-none text-brand-deep">
+              {metric.value}
+            </strong>
+            <p className="mt-2 text-xs font-semibold leading-5 text-tesText-secondary">
+              {metric.description}
+            </p>
+          </div>
+        </article>
+      ))}
+    </section>
+  );
+}
+
+function JourneyTopics({ client }: { client: JourneyHistoryClient }) {
+  const tones = [
+    "bg-status-dangerBg text-status-danger",
+    "bg-brand-lavenderSoft text-brand-primary",
+    "bg-status-warningBg text-status-warning",
+    "bg-status-successBg text-status-success",
+    "bg-brand-cyanSoft text-status-info",
+  ];
+
+  return (
+    <section className="mt-6 rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card sm:p-7">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brand-primary">
+            Visão da jornada
+          </p>
+          <h2 className="mt-2 font-display text-[30px] font-light italic leading-tight text-brand-deep sm:text-[36px]">
+            Temas identificados nos registros
+          </h2>
+        </div>
+        <p className="max-w-xl text-sm font-semibold leading-6 text-tesText-secondary">
+          Identificados a partir de títulos, terapias e resumos compartilhados.
+        </p>
+      </div>
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {client.topicLabels.map((topic, index) => (
+          <article
+            className="flex min-h-28 items-center gap-3 rounded-card border border-brand-lavender/60 p-4"
+            key={topic}
+          >
+            <span
+              className={`grid size-10 shrink-0 place-items-center rounded-full ${tones[index % tones.length]}`}
+            >
+              <Sparkles aria-hidden="true" size={18} />
+            </span>
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-tesText-muted">
+                Tema
+              </p>
+              <h3 className="mt-1 text-sm font-extrabold text-brand-deep">{topic}</h3>
+              <p className="mt-1 text-xs font-semibold text-tesText-secondary">
+                Registrado na jornada
+              </p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function JourneyMemory({
+  timeline,
+}: {
+  timeline: JourneyHistoryDetailData["timeline"];
+}) {
+  return (
+    <section className="mt-6 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card">
+      <header className="border-b border-brand-lavender/60 p-5 sm:p-7">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex gap-3">
+            <NotebookText aria-hidden="true" className="mt-1 shrink-0 text-brand-primary" size={24} />
+            <div>
+              <h2 className="font-display text-[30px] font-light italic leading-tight text-brand-deep sm:text-[36px]">
+                Memória dos encontros
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
+                Consulte os principais registros compartilhados em cada encontro
+                e abra a sessão quando precisar de mais contexto.
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex min-h-9 w-fit items-center rounded-lg bg-brand-lavenderSoft px-3 text-xs font-extrabold text-brand-primary">
+            {timeline.length} {timeline.length === 1 ? "registro" : "registros"}
+          </span>
+        </div>
+        <p className="mt-5 rounded-xl border border-brand-lavender/60 bg-brand-lavenderSoft/40 px-4 py-3 text-xs font-semibold leading-5 text-tesText-secondary">
+          Esta memória reúne registros operacionais compartilhados e não
+          substitui o prontuário clínico.
+        </p>
+      </header>
+
+      {timeline.length > 0 ? (
+        <>
+          <div className="hidden overflow-x-auto xl:block">
+            <table className="min-w-[940px] table-fixed text-left">
+              <thead>
+                <tr className="border-b border-brand-lavender/60 text-[11px] font-extrabold uppercase tracking-[0.08em] text-tesText-muted">
+                  <th className="w-[145px] px-5 py-4">Data e hora</th>
+                  <th className="w-[150px] px-4 py-4">Terapia</th>
+                  <th className="w-[170px] px-4 py-4">Temas identificados</th>
+                  <th className="px-4 py-4">Registro compartilhado</th>
+                  <th className="w-[130px] px-5 py-4 text-right">Ação</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-brand-lavender/60">
+                {timeline.map((item) => (
+                  <tr className="align-top" key={item.id}>
+                    <td className="px-5 py-5 text-sm font-extrabold text-brand-deep">
+                      {formatDateTime(item.date)}
+                    </td>
+                    <td className="px-4 py-5 text-sm font-extrabold text-brand-deep">
+                      {item.serviceTitle}
+                    </td>
+                    <td className="px-4 py-5">
+                      <ChipList items={item.topicLabels} size="sm" />
+                    </td>
+                    <td className="px-4 py-5">
+                      <strong className="block text-sm font-extrabold text-brand-deep">
+                        {item.title}
+                      </strong>
+                      <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                        {item.description}
+                      </p>
+                    </td>
+                    <td className="px-5 py-5 text-right">
+                      <Link
+                        className="inline-flex min-h-10 items-center justify-center rounded-xl border border-brand-lavender px-3 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
+                        href={item.href}
+                      >
+                        Abrir sessão
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="divide-y divide-brand-lavender/60 xl:hidden">
+            {timeline.map((item) => (
+              <article className="grid gap-4 p-5" key={item.id}>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-tesText-muted">
+                      {formatDateTime(item.date)}
+                    </p>
+                    <h3 className="mt-2 text-base font-extrabold text-brand-deep">
+                      {item.serviceTitle}
+                    </h3>
+                  </div>
+                  <Link
+                    className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-brand-lavender px-3 text-sm font-extrabold text-brand-primary"
+                    href={item.href}
+                  >
+                    Abrir
+                  </Link>
+                </div>
+                <ChipList items={item.topicLabels} size="sm" />
+                <div>
+                  <strong className="text-sm font-extrabold text-brand-deep">
+                    {item.title}
+                  </strong>
+                  <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                    {item.description}
+                  </p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="p-8 text-center">
+          <NotebookText aria-hidden="true" className="mx-auto text-brand-primary" size={28} />
+          <h3 className="mt-3 text-base font-extrabold text-brand-deep">
+            Nenhum encontro registrado ainda
+          </h3>
+          <p className="mx-auto mt-2 max-w-md text-sm font-semibold leading-6 text-tesText-secondary">
+            Os registros compartilhados aparecerão aqui conforme os encontros
+            forem concluídos.
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function CarePreferencesCard() {
+  return (
+    <section className="rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card sm:p-7">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex gap-3">
+          <HeartHandshake aria-hidden="true" className="mt-1 shrink-0 text-brand-primary" size={24} />
+          <div>
+            <h2 className="font-display text-[29px] font-light italic leading-tight text-brand-deep">
+              Como esta pessoa gosta de ser acolhida
+            </h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+              Preferências compartilhadas para orientar uma comunicação mais
+              respeitosa entre os encontros.
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="mt-6 rounded-card border border-dashed border-brand-lavender bg-brand-lavenderSoft/40 p-5">
+        <UserRound aria-hidden="true" className="text-brand-primary" size={22} />
+        <p className="mt-3 text-sm font-extrabold text-brand-deep">
+          Nenhuma preferência compartilhada nesta superfície
+        </p>
+        <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+          Use os canais apropriados para convidar a pessoa a compartilhar o que
+          for relevante para a comunicação.
+        </p>
+      </div>
+      <Link
+        className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
+        href={routes.therapist.messages}
+      >
+        <MessageCircle aria-hidden="true" size={17} />
+        Usar template de comunicação
+      </Link>
+    </section>
+  );
+}
+
+function UpcomingEncounterCard({ client }: { client: JourneyHistoryClient }) {
+  return (
+    <section className="rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card sm:p-7">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex gap-3">
+          <CalendarDays aria-hidden="true" className="mt-1 shrink-0 text-brand-primary" size={24} />
+          <div>
+            <h2 className="font-display text-[29px] font-light italic leading-tight text-brand-deep">
+              Próximo encontro
+            </h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+              Acompanhe o próximo compromisso confirmado desta jornada.
+            </p>
+          </div>
+        </div>
+        <Link
+          className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-xl border border-brand-lavender px-3 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
+          href={client.sessionsHref}
+        >
+          Ver sessões
+        </Link>
+      </div>
+      {client.nextSessionAt ? (
+        <div className="mt-6 grid gap-4 rounded-card border border-brand-lavender/60 bg-brand-lavenderSoft/40 p-5 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
+          <span className="grid size-14 place-items-center rounded-xl bg-white text-center shadow-card">
+            <span className="text-sm font-extrabold leading-4 text-brand-deep">
+              {formatCompactDate(client.nextSessionAt)}
+            </span>
+          </span>
+          <div>
+            <p className="text-base font-extrabold text-brand-deep">
+              {client.nextSessionServiceTitle ?? "Sessão TES"}
+            </p>
+            <p className="mt-1 text-sm font-semibold text-tesText-secondary">
+              {formatDateTime(client.nextSessionAt)}
+            </p>
+            <span className="mt-3 inline-flex min-h-6 items-center rounded-lg bg-status-successBg px-3 text-xs font-extrabold text-status-success">
+              Encontro confirmado
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-6 rounded-card border border-dashed border-brand-lavender bg-brand-lavenderSoft/40 p-5">
+          <p className="text-sm font-extrabold text-brand-deep">
+            Nenhum encontro agendado
+          </p>
+          <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+            Quando houver uma sessão confirmada, ela aparecerá aqui.
+          </p>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -248,15 +588,26 @@ function JourneyFilters({
   return (
     <form
       action={routes.therapist.patients}
-      className="grid gap-3 border-b border-brand-lavender/60 p-4 lg:grid-cols-[minmax(240px,1fr)_150px_180px_150px_96px]"
+      className="grid grid-cols-2 gap-3 border-b border-brand-lavender/60 p-4 sm:p-5 xl:grid-cols-[minmax(220px,1fr)_minmax(132px,0.58fr)_minmax(150px,0.68fr)_minmax(146px,0.62fr)_112px]"
     >
-      <label className="relative block">
-        <span className="sr-only">Buscar por cliente ou terapia</span>
+      <div className="col-span-2 flex items-center justify-between gap-3 xl:col-span-5">
+        <div>
+          <h2 className="text-base font-extrabold text-brand-deep">
+            Pessoas acompanhadas
+          </h2>
+          <p className="mt-1 text-xs font-semibold text-tesText-secondary">
+            Busque, filtre e organize a sua jornada.
+          </p>
+        </div>
+        <Filter aria-hidden="true" className="shrink-0 text-brand-primary" size={20} />
+      </div>
+      <label className="relative col-span-2 block min-w-0 xl:col-span-1">
+        <span className="sr-only">Buscar por pessoa, terapia ou tema</span>
         <input
           className="h-12 w-full rounded-[18px] border border-brand-lavender/70 bg-white px-4 pr-11 text-sm font-semibold text-brand-deep shadow-card outline-none placeholder:text-tesText-muted focus:border-brand-primary focus:ring-4 focus:ring-brand-lavenderSoft"
           defaultValue={filters.q}
           name="q"
-          placeholder="Buscar por cliente ou terapia..."
+          placeholder="Buscar por pessoa, terapia ou tema..."
           type="search"
         />
         <Search
@@ -289,7 +640,7 @@ function JourneyFilters({
         <option value="next_session">Próxima sessão</option>
         <option value="sessions">Encontros</option>
       </SelectControl>
-      <button className="inline-flex h-12 items-center justify-center rounded-[18px] bg-brand-primary px-4 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary">
+      <button className="col-span-2 inline-flex h-12 items-center justify-center rounded-[18px] bg-brand-primary px-4 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary xl:col-span-1">
         Filtrar
       </button>
     </form>
@@ -308,7 +659,7 @@ function SelectControl({
   name: string;
 }) {
   return (
-    <label className="relative block">
+    <label className="relative block min-w-0">
       <span className="sr-only">{name}</span>
       {icon ? (
         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-primary">
@@ -333,18 +684,17 @@ function SelectControl({
 
 function JourneyDesktopTable({ clients }: { clients: JourneyHistoryClient[] }) {
   return (
-    <div className="hidden overflow-x-auto xl:block">
-      <table className="min-w-[900px] table-fixed text-left">
+    <div className="hidden xl:block">
+      <table className="w-full table-fixed text-left">
         <thead>
-          <tr className="border-b border-brand-lavender/60 text-[11px] font-extrabold text-[#4d2861]">
-            <th className="w-[210px] px-5 py-5">Cliente</th>
-            <th className="w-[94px] px-3 py-5">Status</th>
-            <th className="w-[150px] px-3 py-5">Terapias</th>
-            <th className="w-[100px] px-3 py-5">Última sessão</th>
-            <th className="w-[110px] px-3 py-5">Próxima sessão</th>
-            <th className="w-[78px] px-3 py-5 text-center">Encontros</th>
-            <th className="w-[170px] px-3 py-5">Temas recorrentes</th>
-            <th className="w-[86px] px-5 py-5 text-right">Ações</th>
+          <tr className="border-b border-brand-lavender/60 text-[11px] font-extrabold uppercase tracking-[0.08em] text-brand-primary">
+            <th className="w-[23%] px-5 py-5">Pessoa</th>
+            <th className="w-[10%] px-2.5 py-5">Status</th>
+            <th className="w-[15%] px-2.5 py-5">Terapias</th>
+            <th className="w-[12%] px-2.5 py-5">Último encontro</th>
+            <th className="w-[12%] px-2.5 py-5">Próximo encontro</th>
+            <th className="w-[19%] px-2.5 py-5">Temas identificados</th>
+            <th className="w-[9%] px-3 py-5 text-right">Ações</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-brand-lavender/60">
@@ -353,21 +703,18 @@ function JourneyDesktopTable({ clients }: { clients: JourneyHistoryClient[] }) {
               <td className="px-5 py-4">
                 <ClientIdentity client={client} />
               </td>
-              <td className="px-3 py-4">
+              <td className="px-2.5 py-4">
                 <StatusBadge status={client.status} />
               </td>
-              <td className="px-3 py-4">
+              <td className="px-2.5 py-4">
                 <ChipList items={client.therapyLabels.slice(0, 2)} size="sm" />
               </td>
-              <td className="px-3 py-4">{formatShortDateTime(client.lastSessionAt)}</td>
-              <td className="px-3 py-4">{formatShortDateTime(client.nextSessionAt)}</td>
-              <td className="px-3 py-4 text-center text-base font-extrabold text-brand-deep">
-                {client.totalEncounters}
-              </td>
-              <td className="px-3 py-4">
+              <td className="px-2.5 py-4">{formatShortDateTime(client.lastSessionAt)}</td>
+              <td className="px-2.5 py-4">{formatShortDateTime(client.nextSessionAt)}</td>
+              <td className="px-2.5 py-4">
                 <ChipList items={client.topicLabels.slice(0, 2)} size="sm" />
               </td>
-              <td className="px-5 py-4 text-right">
+              <td className="px-3 py-4 text-right">
                 <Link
                   aria-label={`Ver jornada de ${client.name}`}
                   className="inline-grid size-10 place-items-center rounded-xl border border-brand-lavender text-brand-primary hover:bg-brand-lavenderSoft"
@@ -386,34 +733,39 @@ function JourneyDesktopTable({ clients }: { clients: JourneyHistoryClient[] }) {
 
 function JourneyMobileList({ clients }: { clients: JourneyHistoryClient[] }) {
   return (
-    <div className="grid divide-y divide-brand-lavender/60 xl:hidden">
+    <div className="grid grid-cols-2 gap-3 p-3 sm:gap-4 sm:p-5 xl:hidden">
       {clients.map((client) => (
-        <article className="grid gap-4 px-5 py-5" key={client.id}>
+        <article
+          className="grid min-w-0 content-start gap-3 rounded-card border border-brand-lavender/60 bg-white p-3 shadow-card sm:p-4"
+          key={client.id}
+        >
           <div className="flex items-start justify-between gap-4">
             <ClientIdentity client={client} />
-            <StatusBadge status={client.status} />
+            <StatusBadge compact status={client.status} />
           </div>
-          <div className="grid grid-cols-2 gap-3 text-xs font-semibold text-tesText-secondary">
-            <MiniFact label="Última" value={formatShortDateTime(client.lastSessionAt)} />
-            <MiniFact label="Próxima" value={formatShortDateTime(client.nextSessionAt)} />
-            <MiniFact label="Encontros" value={String(client.totalEncounters)} />
-            <MiniFact label="Início" value={formatShortDateTime(client.firstSessionAt)} />
+          <div className="grid gap-2 text-xs font-semibold text-tesText-secondary">
+            <MiniFact label="Último encontro" value={formatShortDateTime(client.lastSessionAt)} />
+            <MiniFact label="Próximo" value={formatShortDateTime(client.nextSessionAt)} />
           </div>
-          <div className="grid gap-2">
-            <ChipList items={[...client.therapyLabels, ...client.topicLabels].slice(0, 4)} />
+          <div className="flex items-center justify-between gap-2">
+            <ChipList items={client.therapyLabels.slice(0, 1)} size="sm" />
+            <span className="text-xs font-extrabold text-brand-deep">
+              {client.totalEncounters} {client.totalEncounters === 1 ? "encontro" : "encontros"}
+            </span>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2">
             <Link
-              className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl bg-brand-primary px-4 text-xs font-extrabold text-white"
+              className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center rounded-xl bg-brand-primary px-3 text-sm font-extrabold text-white"
               href={client.timelineHref}
             >
               Ver jornada
             </Link>
             <Link
-              className="inline-flex min-h-10 flex-1 items-center justify-center rounded-xl border border-brand-lavender px-4 text-xs font-extrabold text-brand-primary"
+              aria-label={`Ver sessões de ${client.name}`}
+              className="inline-grid size-11 shrink-0 place-items-center rounded-xl border border-brand-lavender text-brand-primary"
               href={client.sessionsHref}
             >
-              Sessões
+              <CalendarDays aria-hidden="true" size={18} />
             </Link>
           </div>
         </article>
@@ -437,23 +789,23 @@ function MetricCard({ metric }: { metric: JourneyHistoryMetric }) {
   };
 
   return (
-    <article className="min-h-[190px] rounded-card border border-brand-lavender/60 bg-white p-5 shadow-card">
-      <div className="flex items-start gap-3">
-        <span className={`grid size-12 shrink-0 place-items-center rounded-full ${toneClasses[metric.tone]}`}>
+    <article className="min-h-[190px] min-w-0 overflow-hidden rounded-card border border-brand-lavender/60 bg-white p-5 shadow-card">
+      <div className="grid grid-cols-[40px_minmax(0,1fr)] items-start gap-2.5">
+        <span className={`grid size-10 shrink-0 place-items-center rounded-full ${toneClasses[metric.tone]}`}>
           {icons[metric.tone]}
         </span>
-        <h2 className="text-xs font-extrabold leading-5 text-brand-primary">
+        <h2 className="min-w-0 break-words text-sm font-extrabold leading-5 text-brand-primary">
           {metric.label}
         </h2>
       </div>
-      <strong className="mt-7 block text-[34px] font-extrabold leading-none text-brand-deep">
+      <strong className="mt-7 block text-[30px] font-extrabold leading-none text-brand-deep sm:text-[34px]">
         {metric.value}
       </strong>
-      <p className="mt-2 text-xs font-semibold text-tesText-secondary">
+      <p className="mt-2 text-xs font-semibold leading-5 text-tesText-secondary">
         {metric.description}
       </p>
       {metric.trendLabel ? (
-        <p className="mt-4 inline-flex rounded-full bg-brand-lavenderSoft px-3 py-1 text-[11px] font-extrabold text-brand-primary">
+        <p className="mt-4 inline-flex max-w-full break-words rounded-full bg-brand-lavenderSoft px-3 py-1 text-[11px] font-extrabold text-brand-primary">
           {metric.trendLabel}
         </p>
       ) : null}
@@ -463,9 +815,9 @@ function MetricCard({ metric }: { metric: JourneyHistoryMetric }) {
 
 function PortfolioSummary({ summary }: { summary: JourneyHistorySummary }) {
   const items = [
-    { color: "bg-status-success", label: "Ativos", value: summary.active },
-    { color: "bg-status-warning", label: "Pausados", value: summary.paused },
-    { color: "bg-status-danger", label: "Sem retorno recente", value: summary.stale },
+    { color: "bg-status-success", label: "Em acompanhamento", value: summary.active },
+    { color: "bg-status-danger", label: "Sem encontro recente", value: summary.stale },
+    { color: "bg-status-warning", label: "Pausadas", value: summary.paused },
   ];
   const activePercent = summary.total ? Math.round((summary.active / summary.total) * 100) : 0;
   const stalePercent = summary.total ? Math.round((summary.stale / summary.total) * 100) : 0;
@@ -475,7 +827,7 @@ function PortfolioSummary({ summary }: { summary: JourneyHistorySummary }) {
   } as CSSProperties;
 
   return (
-    <SideCard title="Resumo da carteira">
+    <SideCard className="col-span-2 xl:col-span-1" title="Resumo das pessoas acompanhadas">
       <div
         className="mx-auto grid size-36 place-items-center rounded-full bg-[conic-gradient(var(--tes-color-brand-mint)_0_var(--active),var(--tes-color-status-danger)_var(--active)_var(--stale),var(--tes-color-status-warning)_0)]"
         style={chartStyle}
@@ -485,7 +837,7 @@ function PortfolioSummary({ summary }: { summary: JourneyHistorySummary }) {
             {summary.total}
           </strong>
           <span className="text-[11px] font-semibold text-tesText-secondary">
-            clientes
+            pessoas
           </span>
         </div>
       </div>
@@ -501,7 +853,7 @@ function PortfolioSummary({ summary }: { summary: JourneyHistorySummary }) {
         ))}
       </div>
       <p className="mt-4 text-[11px] font-semibold text-tesText-muted">
-        {activePercent}% da carteira com atividade recente.
+        {activePercent}% das pessoas com atividade recente.
       </p>
     </SideCard>
   );
@@ -509,7 +861,7 @@ function PortfolioSummary({ summary }: { summary: JourneyHistorySummary }) {
 
 function SegmentsCard({ segments }: { segments: JourneyHistorySegment[] }) {
   return (
-    <SideCard title="Segmentos">
+    <SideCard title="Temas recorrentes">
       {segments.length > 0 ? (
         <div className="grid gap-3">
           {segments.map((segment) => (
@@ -532,7 +884,7 @@ function SegmentsCard({ segments }: { segments: JourneyHistorySegment[] }) {
 
 function RemindersCard({ reminders }: { reminders: JourneyHistoryReminder[] }) {
   return (
-    <SideCard title="Lembretes">
+    <SideCard className="col-span-2 xl:col-span-1" title="Lembretes">
       {reminders.length > 0 ? (
         <div className="grid gap-4">
           {reminders.map((reminder) => (
@@ -566,14 +918,16 @@ function RemindersCard({ reminders }: { reminders: JourneyHistoryReminder[] }) {
 
 function SideCard({
   children,
+  className,
   title,
 }: {
   children: ReactNode;
+  className?: string;
   title: string;
 }) {
   return (
-    <section className="rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card">
-      <h2 className="font-display text-2xl font-light italic text-brand-deep">
+    <section className={`h-auto self-start rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card xl:mb-5 xl:last:mb-0 ${className ?? ""}`}>
+      <h2 className="font-display text-[28px] font-light italic leading-tight text-brand-deep">
         {title}
       </h2>
       <div className="mt-5">{children}</div>
@@ -593,7 +947,7 @@ function ClientIdentity({ client }: { client: JourneyHistoryClient }) {
           {client.name}
         </Link>
         <p className="truncate text-[11px] font-semibold text-tesText-muted">
-          {client.emailLabel}
+          Jornada acompanhada
         </p>
       </div>
     </div>
@@ -631,7 +985,13 @@ function JourneyAvatar({
   );
 }
 
-function StatusBadge({ status }: { status: JourneyClientStatus }) {
+function StatusBadge({
+  compact = false,
+  status,
+}: {
+  compact?: boolean;
+  status: JourneyClientStatus;
+}) {
   const labels = {
     active: "Ativo",
     paused: "Pausado",
@@ -644,7 +1004,7 @@ function StatusBadge({ status }: { status: JourneyClientStatus }) {
   };
 
   return (
-    <span className={`inline-flex min-h-6 items-center rounded-lg px-3 text-[10px] font-extrabold ${classes[status]}`}>
+    <span className={`inline-flex min-h-6 items-center rounded-lg ${compact ? "px-2" : "px-3"} text-[10px] font-extrabold ${classes[status]}`}>
       {labels[status]}
     </span>
   );
@@ -689,7 +1049,7 @@ function SegmentBadge({ segment }: { segment: JourneyHistorySegment }) {
 
 function MiniFact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-brand-lavenderSoft/50 p-3">
+    <div className="rounded-xl bg-brand-lavenderSoft/50 p-2.5 sm:p-3">
       <span className="block text-[10px] font-extrabold uppercase text-brand-primary">
         {label}
       </span>
@@ -822,6 +1182,63 @@ function formatShortDateTime(value: string | null) {
   }).format(date);
 
   return `${dayMonth.replace(".", "")} · ${hour}`;
+}
+
+function formatJourneyDuration(value: string | null) {
+  if (!value) return "-";
+  const startedAt = new Date(value);
+  if (!Number.isFinite(startedAt.getTime())) return "-";
+
+  const now = new Date();
+  const monthDifference = Math.max(
+    0,
+    (now.getFullYear() - startedAt.getFullYear()) * 12 +
+      now.getMonth() -
+      startedAt.getMonth(),
+  );
+  if (monthDifference >= 12) {
+    const years = Math.floor(monthDifference / 12);
+    return `${years} ${years === 1 ? "ano" : "anos"}`;
+  }
+  if (monthDifference >= 1) {
+    return `${monthDifference} ${monthDifference === 1 ? "mês" : "meses"}`;
+  }
+
+  const days = Math.max(
+    0,
+    Math.floor((now.getTime() - startedAt.getTime()) / 86_400_000),
+  );
+  return `${days} ${days === 1 ? "dia" : "dias"}`;
+}
+
+function formatCompactDate(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "-";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+  }).format(date);
+}
+
+function formatDateOnly(value: string) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "-";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "medium",
+  }).format(date);
+}
+
+function formatSessionMeta(value: string, serviceTitle: string | null) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return serviceTitle ?? "Sessão TES";
+
+  const time = new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+  return `${time} · ${serviceTitle ?? "Sessão TES"}`;
 }
 
 function formatDateTime(value: string) {

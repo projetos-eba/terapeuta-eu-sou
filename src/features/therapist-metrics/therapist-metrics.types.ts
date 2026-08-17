@@ -303,3 +303,56 @@ export type TherapistInterestMetricsReady = Extract<
   TherapistInterestMetrics,
   { access: { status: "ready" } }
 >;
+
+export type TherapistOccupancyPoint = {
+  date: string;
+  occupiedMinutes: number;
+  offeredMinutes: number;
+  percentage: number | null;
+};
+
+export type TherapistOccupancyHeatmapPoint = {
+  dayOfWeek: number;
+  occupiedMinutes: number;
+  offeredMinutes: number;
+  hourBucketStart: number;
+  percentage: number | null;
+};
+
+export type TherapistMetricsOccupancy =
+  | {
+      coverageDays: number;
+      coverageStart: string | null;
+      reason: "history_in_formation";
+      requiredCoverageDays: 30 | 90;
+      status: "forming";
+    }
+  | {
+      coverageDays: number;
+      coverageStart: string;
+      current: {
+        occupiedMinutes: number;
+        offeredMinutes: number;
+        percentage: number | null;
+      };
+      heatmap: TherapistOccupancyHeatmapPoint[];
+      previous: {
+        occupiedMinutes: number;
+        offeredMinutes: number;
+        percentage: number | null;
+      };
+      requiredCoverageDays: 30 | 90;
+      series: TherapistOccupancyPoint[];
+      status: "empty" | "ready";
+    };
+
+export type TherapistMetricsDashboard = {
+  contractVersion: 2;
+  interest: TherapistInterestMetrics;
+  meta: TherapistMetricsCommonMeta;
+  metricDefinitionVersion: 2;
+  occupancy: TherapistMetricsOccupancy;
+  overview: TherapistMetricsOverview;
+  sessions: TherapistSessionMetrics;
+  therapist: TherapistMetricsFoundation["therapist"];
+};

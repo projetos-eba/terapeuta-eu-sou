@@ -17,8 +17,10 @@ export type JourneyHistoryClient = {
   firstSessionAt: string | null;
   id: string;
   lastSessionAt: string | null;
+  lastSessionServiceTitle: string | null;
   name: string;
   nextSessionAt: string | null;
+  nextSessionServiceTitle: string | null;
   sessionsHref: string;
   status: JourneyClientStatus;
   therapyLabels: string[];
@@ -71,7 +73,9 @@ export type JourneyHistoryDetailData = {
     href: string;
     id: string;
     status: string;
+    serviceTitle: string;
     title: string;
+    topicLabels: string[];
   }>;
 };
 

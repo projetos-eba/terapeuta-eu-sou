@@ -55,6 +55,23 @@ Avaliações exibidas ao terapeuta e ao público devem derivar de:
 - Grid compartilhado `AppPage*`.
 - Dialog sempre via `TESDialog`.
 
+## Composição visual
+
+- Densidade dominante `Balanced`: hero editorial, faixa de quatro indicadores
+  verificáveis, lista filtrável e `ContextRail` de resumo.
+- O hero usa `IvyPresto Display` em `text-brand-deep`; a imagem é decorativa e
+  não carrega informação essencial. Não transformar o hero em uma grade de
+  cards.
+- O `MetricStrip` consome `metricCards`; tendências aparecem apenas quando o
+  read model as fornece. Nunca sintetizar variação para preencher a composição.
+- Tabs `Todas`, `Recentes`, `Por nota` e `Pendentes de resposta` permanecem
+  próximas dos resultados. Cada item expõe identidade limitada, terapia ou
+  serviço, nota, data, comentário, estado e a próxima ação.
+- O rail mostra distribuição por nota e contexto sobre avaliações. No tablet,
+  ocupa a faixa de duas colunas; no mobile, segue a lista principal.
+- Ícones são semânticos e usam tokens TES. Texto funcional é `14px` ou maior;
+  apenas metadados secundários podem chegar a `11px` no desktop.
+
 ## Fallback E Erros
 
 - Produção não usa mock silencioso.

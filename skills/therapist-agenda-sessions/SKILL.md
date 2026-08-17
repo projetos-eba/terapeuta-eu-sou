@@ -75,6 +75,10 @@ Não criar enums equivalentes dentro de features.
   financeiras.
 - Métricas, faixa de resumo, busca textual e exportação CSV são derivados dos
   itens carregados no read model da página.
+- A composição de Sessões usa o grid compartilhado `AppPage*`: cabeçalho aberto
+  com título em IvyPresto, região principal operacional e ContextRail de 320px
+  no desktop. Os indicadores possuem ícone semântico e usam duas colunas em
+  mobile quando a leitura permanecer suficiente.
 - Filtros por status de booking e status financeiro permanecem na URL. O
   parâmetro legado `modality` só pode ser `online` ou ausente; a UI não oferece
   escolha de formato porque o TES é online-only.
@@ -83,9 +87,30 @@ Não criar enums equivalentes dentro de features.
 - Ações de sala apontam primeiro para `/terapeuta/sessoes/:bookingId`; o
   detalhe direciona para `/terapeuta/sessoes/:bookingId/video`, onde a
   autorização final continua por `zoom-video-session-access`.
+- A tabela desktop não possui coluna de Zoom ou link de sala. Quando o mapper
+  autoritativo indicar `ready`, `in_progress` ou `room_preparing`, a identidade
+  da pessoa recebe um único badge contextual. O badge não concede acesso nem
+  antecipa uma janela de reunião; a autorização final continua no detalhe.
 - Desktop usa tabela operacional com right rail. Tablet e mobile usam cards
-  cronológicos empilhados, filtros em largura total e os mesmos links de
-  detalhe.
+  cronológicos em duas colunas quando houver largura, filtros em largura total
+  e os mesmos links de detalhe. No rail, cards mantêm altura de conteúdo e são
+  empilhados em fluxo de bloco no desktop.
+- O detalhe `/terapeuta/sessoes/:bookingId` preserva o mesmo grid `AppPage*`:
+  breadcrumb, título IvyPresto, resumo de identidade/estado, superfícies de
+  pagamento e sala, preparação e ContextRail compacto. A referência raster da
+  rotina de atendimento serve à composição, não para inventar dados ou ações.
+- O detalhe só renderiza o DTO de `get_therapist_session_detail_v1`. Não exibir
+  objetivo clínico, observações, prontuário, URL da sala, credenciais ou
+  supostos resultados de teste técnico. A preparação pode orientar a pessoa
+  terapeuta, mas não pode afirmar que câmera, microfone ou conexão já foram
+  validados.
+- Abrir a sala usa exclusivamente `/terapeuta/sessoes/:bookingId/video`; a
+  janela, pagamento, perfil responsável e elegibilidade são revalidados no
+  backend a cada acesso. Reagendar e cancelar reutilizam
+  `SessionOperationActions`, sem atalhos paralelos.
+- No detalhe, o ContextRail mantém somente sua altura de conteúdo. Em tablet e
+  mobile, as superfícies de apoio podem ocupar duas colunas quando houver
+  espaço legível; o conteúdo principal permanece em uma sequência vertical.
 
 ## Disponibilidade
 
@@ -111,8 +136,8 @@ Não criar enums equivalentes dentro de features.
   operacional para depois da grade ou do right rail.
 - No cabeçalho semanal, aplicar padding vertical explícito e uniforme nos dias.
   A separação da grade deve ocorrer pelo respiro, não por uma linha horizontal;
-  o primeiro marcador de hora começa abaixo do topo da grade e nunca toca uma
-  borda ou divisória.
+  o primeiro marcador de hora deve compartilhar o centro da borda superior da
+  primeira faixa, usando o mesmo eixo vertical dos demais marcadores.
 - Os limites da grade de Dia e Semana devem ser derivados das regras ativas de
   `get_therapist_schedule_v1()` nos dias visíveis, incluindo bookings, holds e
   bloqueios para que nenhum evento fique cortado. `08:00–22:00` é somente o
@@ -144,6 +169,21 @@ Não criar enums equivalentes dentro de features.
   `get_therapist_calendar_v1`.
 - A UI edita faixas em escopo geral ou por terapia e preserva regras dos
   outros escopos no comando atômico.
+- Na aba Horários, a navegação entre Calendário / Horários / Bloqueios segue o
+  padrão de controle segmentado. O resumo de disponibilidade usa os dados
+  reais de horas e dias configurados, com ícone contextual e sem estimar horas
+  indisponíveis.
+- Ícones de título nos cards do right rail permanecem lineares, sem superfícies
+  decorativas próprias. Datas de exceções usam o formato numérico `dd/MM`.
+- As três abas compartilham o mesmo chrome da Agenda: largura máxima de
+  `1210px`, cabeçalho aberto, título em `font-display` IvyPresto itálico,
+  supporting copy canônica, tabs de base aberta e grid principal + ContextRail
+  em desktop. Horários e Bloqueios não podem introduzir cabeçalho, tab bar ou
+  largura paralelos ao Calendário.
+- O editor bloqueia imediatamente uma faixa sobreposta no mesmo dia, inclusive
+  quando uma faixa geral conflita com a faixa específica de uma terapia. O
+  comando transacional e o banco continuam sendo a autoridade final contra
+  concorrência, replay e escrita fora da interface.
 - O payload de Horários só pode reenviar regras e settings de terapias presentes
   no read model editável. Regras órfãs de terapia arquivada não devem transformar
   um ajuste válido em `schedule_service_forbidden`; a validação autoritativa
@@ -241,6 +281,8 @@ Não criar enums equivalentes dentro de features.
 - O pgTAP A5 deve cobrir privacidade pública, slots, bloqueios, bookings, holds,
   RLS, identidade, terapeuta suspenso e calendário versionado.
 - Testar conflito entre serviços, buffers, exceções e período vazio.
+- Testar a prevenção local de faixa sobreposta, incluindo intervalos contíguos,
+  escopo geral e escopos de terapias distintas.
 - Testar transições permitidas e proibidas.
 - Testar paciente e terapeuta com o mesmo horário e serviço.
 - Testar RLS entre terapeutas.

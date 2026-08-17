@@ -54,6 +54,11 @@ public = false
 file_size_limit = "10MiB"
 allowed_mime_types = ["application/pdf", "image/jpeg", "image/png", "image/webp"]
 
+[storage.buckets.therapy-catalog-request-materials]
+public = false
+file_size_limit = "10MiB"
+allowed_mime_types = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "image/jpeg", "image/png", "image/webp"]
+
 [storage.buckets.admin-public-media]
 public = true
 file_size_limit = "5MiB"
@@ -214,3 +219,6 @@ verify_jwt = false
 
 [functions.therapist-reviews-command]
 verify_jwt = false
+
+[functions.therapy-catalog-request-command]
+verify_jwt = true

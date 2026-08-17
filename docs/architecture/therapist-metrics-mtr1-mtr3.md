@@ -84,7 +84,7 @@ Read models:
 
 ## Limitações Honestas
 
-### Ocupação
+### Ocupação no contrato v1
 
 Ocupação depende de minutos reserváveis oferecidos. As regras de
 disponibilidade atuais não preservam histórico suficiente para reproduzir
@@ -97,7 +97,29 @@ mudanças de horário, bloqueios e buffers. Por isso o contrato retorna:
 }
 ```
 
-Não é usado `0%`, estimativa atual aplicada ao passado ou dado do Figma.
+Não é usado `0%`, estimativa atual aplicada ao passado ou dado do Figma. Esse
+comportamento permanece congelado no contrato `v1`.
+
+### Ocupação e dashboard v2
+
+A migration `20260817044010_therapist_metrics_dashboard_v2.sql` inicia, sem
+backfill retroativo, o histórico append-only de regras e exceções da agenda.
+Cada inserção, edição ou remoção acrescenta um evento; clientes autenticados não
+recebem leitura direta dessas tabelas.
+
+`get_therapist_metrics_dashboard_v2(30|90)` agrega os três read models `v1` e
+acrescenta ocupação histórica. A capacidade é normalizada em buckets de 15
+minutos:
+
+- ofertado: bucket coberto por regra vigente e não bloqueado por exceção;
+- ocupado: bucket ofertado sobreposto por reserva confirmada, concluída ou com
+  ausência registrada;
+- ocupação: minutos ocupados divididos pelos minutos ofertados.
+
+O estado `forming` informa cobertura e período exigido. A leitura de 30 dias é
+liberada antes da de 90 dias; alterar a agenda hoje não reescreve métricas de
+dias já encerrados. Quando não existe capacidade ofertada sob cobertura
+completa, o estado é `empty`, nunca um sucesso fictício.
 
 ### Descoberta
 
@@ -114,24 +136,24 @@ Valores abaixo de 10 não são expostos. O contrato retorna somente
 `minimumSample` e `observedSample`. Favoritos nunca são quebrados por serviço,
 terapia ou técnica.
 
-## MTR-3
+## MTR-3 e composição visual MTR-8
 
 `/terapeuta/insights` usa leitura inicial server-side e oferece:
 
 - hero e hierarquia baseados no Figma `13366:3628`;
 - períodos compartilháveis de 30 e 90 dias;
-- três KPIs operacionais;
-- ritmo de sessões em barras responsivas;
+- seis indicadores com sparklines responsivas;
+- evolução de sessões, rankings, roscas e mapas de calor;
 - funil quando a coleta estiver autorizada e houver amostra;
 - ranking das próprias terapias;
 - favoritos do perfil;
-- explicação explícita para ocupação indisponível;
+- ocupação pronta ou `Histórico em formação`, conforme cobertura;
 - estados de loading, erro, zero, processamento, amostra insuficiente e
   indisponibilidade.
 
-As abas Sessões (`13366:4259`) e Interesse (`13366:4896`) permanecem
-desabilitadas até MTR-4 e MTR-5. Não são preenchidas com números do Figma.
-Aura continua fora deste corte.
+As abas Sessões (`13366:4259`) e Interesse (`13366:4896`) usam seus read models
+funcionais MTR-4 e MTR-5. Não são preenchidas com números do Figma. Aura
+continua fora deste corte.
 
 O E2E autenticado `tests/e2e/therapist-metrics.spec.ts` valida dados reais,
 troca entre 30/90 dias e ausência de overflow horizontal em 320px, 375px,
@@ -151,7 +173,6 @@ Figma; a composição usa o grid real do shell em vez de coordenadas fixas.
 ## Próximos Gates
 
 1. Aprovar base legal, aviso e retenção antes de ativar telemetria pública.
-2. Versionar a oferta histórica da agenda antes de calcular ocupação.
-3. Implementar MTR-4 para sessões.
-4. Implementar MTR-5 para continuidade, sentimento fechado e lacuna.
-5. Implementar Aura somente em MTR-6, consumindo métricas validadas.
+2. Aguardar cobertura de 30 e 90 dias antes de liberar cada leitura de ocupação.
+3. Implementar taxonomias estruturadas antes de novas análises qualitativas.
+4. Implementar Aura somente em MTR-6, consumindo métricas validadas.

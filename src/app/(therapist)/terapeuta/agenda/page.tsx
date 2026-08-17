@@ -7,6 +7,7 @@ import {
   getTherapistCalendar,
   type TherapistCalendarView,
 } from "@/features/therapist-agenda";
+import { TherapistAgendaHeader } from "@/features/therapist-agenda/components/therapist-agenda-chrome";
 import { TherapistCalendar } from "@/features/therapist-agenda/components/therapist-calendar";
 import { getTherapistBlocks } from "@/features/therapist-blocks";
 import { TherapistBlocksPanel } from "@/features/therapist-blocks/components/therapist-blocks-panel";
@@ -248,53 +249,9 @@ function AgendaFrame({
   activeTab: AgendaTab;
   children: React.ReactNode;
 }) {
-  const tabs: Array<{ href: Route; id: AgendaTab; label: string }> = [
-    {
-      href: `${routes.therapist.agenda}?aba=calendario` as Route,
-      id: "calendario",
-      label: "Calendário",
-    },
-    {
-      href: `${routes.therapist.agenda}?aba=horarios` as Route,
-      id: "horarios",
-      label: "Horários",
-    },
-    {
-      href: `${routes.therapist.agenda}?aba=bloqueios` as Route,
-      id: "bloqueios",
-      label: "Bloqueios",
-    },
-  ];
-
   return (
-    <main className="mx-auto w-full max-w-[1180px] pb-12 text-tesText-primary">
-      <header className="border-b border-brand-lavender pb-5">
-        <h1 className="font-display text-[34px] font-light text-brand-deep sm:text-[40px]">
-          Minha agenda
-        </h1>
-        <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-          Organize seus horários e acompanhe sua disponibilidade.
-        </p>
-      </header>
-      <nav
-        aria-label="Seções da agenda"
-        className="mt-5 grid grid-cols-3 border-b border-brand-lavender"
-      >
-        {tabs.map((tab) => (
-          <Link
-            aria-current={activeTab === tab.id ? "page" : undefined}
-            className={`flex min-h-12 items-center justify-center border-b-2 px-5 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-primary ${
-              activeTab === tab.id
-                ? "border-brand-primary text-brand-primary"
-                : "border-transparent text-tesText-secondary hover:text-brand-primary"
-            }`}
-            href={tab.href}
-            key={tab.id}
-          >
-            {tab.label}
-          </Link>
-        ))}
-      </nav>
+    <main className="mx-auto w-full max-w-[1210px] pb-14 text-tesText-primary">
+      <TherapistAgendaHeader activeTab={activeTab} />
       {children}
     </main>
   );

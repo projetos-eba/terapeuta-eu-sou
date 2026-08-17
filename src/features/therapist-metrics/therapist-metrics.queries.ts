@@ -67,6 +67,37 @@ export async function queryTherapistMetricsOverview(
   return (await response.json()) as unknown;
 }
 
+export async function queryTherapistMetricsDashboard(
+  accessToken: string,
+  periodDays: 30 | 90,
+) {
+  const config = getSupabasePublicConfig();
+  if (!config) throw new TherapistMetricsError("unavailable");
+
+  const response = await fetch(
+    `${config.url}/rest/v1/rpc/get_therapist_metrics_dashboard_v2`,
+    {
+      body: JSON.stringify({ p_period_days: periodDays }),
+      cache: "no-store",
+      headers: {
+        apikey: config.apiKey,
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+
+  if (response.status === 401)
+    throw new TherapistMetricsError("session_expired");
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as unknown;
+    throw mapRpcError(response.status, payload);
+  }
+
+  return (await response.json()) as unknown;
+}
+
 export function queryTherapistSessionMetrics(
   accessToken: string,
   periodDays: 30 | 90,

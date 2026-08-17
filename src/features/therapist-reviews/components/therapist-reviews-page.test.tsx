@@ -31,6 +31,18 @@ describe("TherapistReviewsPage", () => {
       screen.getByRole("heading", { level: 1, name: "Avaliações" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Nota média")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Avaliações recebidas",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Resumo das avaliações",
+      }),
+    ).toBeInTheDocument();
 
     fireEvent.click(
       screen.getByRole("tab", { name: /Pendentes de resposta/i }),

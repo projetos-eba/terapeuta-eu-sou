@@ -23,18 +23,19 @@ Use esta skill ao alterar Métricas & Relatórios no shell do terapeuta.
 
 ## Estado Atual
 
-| Corte                            | Status                           |
-| -------------------------------- | -------------------------------- |
-| MTR-0 — contratos                | `accepted`                       |
-| MTR-0.1 — read model fundamental | `functional`                     |
-| MTR-0.2 — aba Visão geral        | `functional`                     |
-| MTR-1 — telemetria               | `functional`, ativação bloqueada |
-| MTR-2 — agregados e read model   | `functional`                     |
-| MTR-3 — Visão geral completa     | `functional`                     |
-| MTR-4 — Sessões                  | `functional`                     |
-| MTR-5 — Interesse                | `functional`, Premium Plus       |
-| MTR-6 — Aura                     | `planned`                        |
-| MTR-7 — Relatórios               | `functional` no corte CSV        |
+| Corte                            | Status                              |
+| -------------------------------- | ----------------------------------- |
+| MTR-0 — contratos                | `accepted`                          |
+| MTR-0.1 — read model fundamental | `functional`                        |
+| MTR-0.2 — aba Visão geral        | `functional`                        |
+| MTR-1 — telemetria               | `functional`, ativação bloqueada    |
+| MTR-2 — agregados e read model   | `functional`                        |
+| MTR-3 — Visão geral completa     | `functional`                        |
+| MTR-4 — Sessões                  | `functional`                        |
+| MTR-5 — Interesse                | `functional`, Premium Plus          |
+| MTR-6 — Aura                     | `planned`                           |
+| MTR-7 — Relatórios               | `functional` no corte CSV           |
+| MTR-8 — dashboard e ocupação     | `functional`, histórico em formação |
 
 ## Autoridade MTR-0.1
 
@@ -63,7 +64,24 @@ Use esta skill ao alterar Métricas & Relatórios no shell do terapeuta.
 - Eventos de navegador: impressão de busca, abertura do perfil e início do
   agendamento, preservando a superfície real de origem.
 - Evento autoritativo: favorito adicionado ao perfil.
-- Ocupação: `unavailable` até existir histórico versionado de oferta.
+- O contrato `v1` preserva ocupação como `unavailable`; o dashboard `v2`
+  expõe `forming`, `empty` ou `ready` conforme a cobertura histórica real.
+
+## Autoridade MTR-8
+
+- Migration: `20260817044010_therapist_metrics_dashboard_v2.sql`.
+- Read model agregado: `get_therapist_metrics_dashboard_v2`.
+- Contratos `v1` continuam disponíveis e sem alteração.
+- Histórico append-only: `availability_rule_history` e
+  `availability_exception_history`, sem leitura direta por cliente.
+- Cobertura: `therapist_availability_history_coverage`; começa na migration ou
+  na primeira escrita observada, nunca é reconstruída com a configuração atual.
+- Capacidade ofertada: buckets de 15 minutos cobertos por regra histórica ativa,
+  menos exceções históricas indisponíveis.
+- Capacidade ocupada: buckets ofertados sobrepostos por reservas confirmadas,
+  concluídas ou com ausência registrada.
+- 30 e 90 dias só saem de `Histórico em formação` após cobertura integral do
+  período solicitado.
 
 ## Autoridades MTR-4, MTR-5 E MTR-7
 
@@ -101,6 +119,19 @@ Use esta skill ao alterar Métricas & Relatórios no shell do terapeuta.
 - Reutilizar `AppPageContainer`, `AppPageSection`, `TESCard` e tokens TES.
 - Hero usa o asset local
   `/therapist/dashboard/therapist-hero.png`.
+- Referências visuais confirmadas no Figma: Visão geral `13366:3628`, Sessões
+  `13366:4259` e Interesse `13366:4896`, complementadas pela captura fornecida
+  em 17/08/2026.
+- A primeira dobra combina hero editorial, abas, período, exportação CSV e
+  seis indicadores em grid responsivo. A Visão geral usa cards abertos em duas
+  colunas no desktop e uma coluna para gráficos complexos no mobile.
+- Recharts é a biblioteca canônica deste dashboard para sparklines, séries,
+  barras e roscas. Mapas de calor usam tabela semântica e tokens TES.
+- Todo gráfico deriva apenas do DTO autenticado, usa `ResponsiveContainer`,
+  tooltip, foco por teclado, nome acessível e resumo textual.
+- Em mobile, KPIs usam duas colunas quando o espaço permitir; o exportador
+  vira botão de ícone com nome acessível, e tabelas/grades preservam região
+  rolável nomeada em vez de reduzir texto funcional.
 - A Visão geral inclui série de atividade, descoberta discriminada, ranking
   das próprias terapias, favoritos do perfil e aviso de ocupação.
 - O filtro de período usa URL e aceita somente 30/90 dias.
