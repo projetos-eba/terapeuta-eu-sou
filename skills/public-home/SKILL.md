@@ -81,6 +81,9 @@ The page should preserve these sections from Figma `13273:1844`:
 - Mobile public header with logo, icon menu button, navigation links, and profile-specific login links. Do not show the large "Começar minha jornada" CTA in the header on mobile.
 - Hero with human image
 - `O que é o TES?` with the Figma-style supporting purple shape behind the trust cards
+  - On large layouts the shape is capped at 50% of the viewport width; the trust
+    cards use two columns until the extra-wide breakpoint so this composition
+    does not overflow on smaller desktop/tablet widths.
 - `Como funciona` with large editorial step images
 - Therapy marquee
 - Motivations / online session section

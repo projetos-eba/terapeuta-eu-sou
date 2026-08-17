@@ -10,48 +10,55 @@ export function TherapistMetricsTherapyRanking({
 }: {
   ranking: TherapistMetricsOverview["therapyRanking"];
 }) {
+  const maximum = Math.max(
+    1,
+    ...ranking.items.map((item) => item.counter.value),
+  );
+
   return (
     <AppPageSection aria-labelledby="therapy-ranking-title">
-      <BarChartHorizontal
-        aria-hidden="true"
-        className="text-brand-primary"
-        size={24}
-      />
-      <h2
-        className="mt-4 text-lg font-extrabold text-brand-deep"
-        id="therapy-ranking-title"
-      >
-        Terapias mais agendadas
-      </h2>
-      <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Ordem baseada somente nas suas sessões concluídas.
-      </p>
+      <div className="flex items-start gap-3">
+        <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+          <BarChartHorizontal aria-hidden="true" size={21} />
+        </span>
+        <div>
+          <h2
+            className="text-lg font-extrabold text-brand-deep"
+            id="therapy-ranking-title"
+          >
+            Terapias mais agendadas
+          </h2>
+          <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+            Ordem baseada somente nas suas sessões concluídas.
+          </p>
+        </div>
+      </div>
 
       {ranking.status === "ready" ? (
         <ol className="mt-5 grid gap-4">
           {ranking.items.map((item, index) => (
-            <li
-              className="border-t border-brand-lavender pt-4 first:border-0 first:pt-0"
-              key={item.therapyId}
-            >
+            <li className="grid gap-2" key={item.therapyId}>
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-sm font-extrabold text-brand-deep">
                     {index + 1}. {item.therapyName}
                   </p>
-                  <p className="mt-1 text-xs font-bold text-brand-primary">
-                    {item.counter.value} sessões concluídas
-                  </p>
                 </div>
-                <span className="text-xs font-extrabold text-tesText-muted">
-                  {item.counter.direction === "up"
-                    ? "Subiu"
-                    : item.counter.direction === "down"
-                      ? "Caiu"
-                      : "Estável"}
+                <span className="shrink-0 text-sm font-extrabold text-brand-deep">
+                  {item.counter.value}
                 </span>
               </div>
-              <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+              <span className="block h-2 overflow-hidden rounded-full bg-brand-lavenderSoft">
+                <span
+                  aria-hidden="true"
+                  className="block h-full rounded-full bg-brand-primary"
+                  style={{
+                    width:
+                      Math.max(8, (item.counter.value / maximum) * 100) + "%",
+                  }}
+                />
+              </span>
+              <p className="text-sm font-semibold leading-6 text-tesText-secondary">
                 {getTherapistMetricCopy(item.counter.directionCopyKey)}
               </p>
             </li>

@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import type { TherapistMetricsOverview } from "../therapist-metrics.types";
+import type { TherapistMetricsDashboard } from "../therapist-metrics.types";
 import {
   TherapistMetricsErrorState,
   TherapistMetricsPage,
@@ -10,221 +10,178 @@ import {
 afterEach(cleanup);
 
 describe("TherapistMetricsPage", () => {
-  it("renders the approved overview with own-history context", () => {
-    render(<TherapistMetricsPage data={overviewFixture()} />);
+  it("renders the six real-data indicators and canonical tabs", () => {
+    render(<TherapistMetricsPage data={dashboardFixture()} />);
 
     expect(
-      screen.getByRole("heading", {
-        level: 1,
-        name: "Métricas & Relatórios",
-      }),
+      screen.getByRole("heading", { level: 1, name: "Métricas e insights" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Pessoas atendidas")).toBeInTheDocument();
+    expect(screen.getByText("Pessoas acompanhadas")).toBeInTheDocument();
     expect(screen.getByText("Sessões realizadas")).toBeInTheDocument();
     expect(screen.getByText("Tempo de atendimento")).toBeInTheDocument();
-    expect(
-      screen.getByText("Você atendeu mais pessoas do que no período anterior."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /comparações feitas apenas com o seu próprio histórico/i,
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /não há comparação com outros profissionais nem tendência agregada do portal/i,
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it("formats service minutes and renders the real activity series", () => {
-    render(<TherapistMetricsPage data={overviewFixture()} />);
-
-    expect(screen.getByText("6 h 30 min")).toBeInTheDocument();
-    expect(screen.getByText("Período anterior: 7 h")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", {
-        name: "Sessões concluídas ao longo do período",
-      }),
-    ).toBeInTheDocument();
-  });
-
-  it("exposes the three shareable metric views", () => {
-    render(<TherapistMetricsPage data={overviewFixture()} />);
-
-    expect(screen.getByRole("link", { name: "Visão geral" })).toHaveAttribute(
-      "aria-current",
-      "page",
-    );
+    expect(screen.getByText("Pessoas que retornaram")).toBeInTheDocument();
+    expect(screen.getByText("Ocupação da agenda")).toBeInTheDocument();
+    expect(screen.getByText("Terapia mais realizada")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Sessões" })).toHaveAttribute(
       "href",
       "/terapeuta/insights?tab=sessions&period=30",
     );
-    expect(screen.getByRole("link", { name: "Interesse" })).toHaveAttribute(
-      "href",
-      "/terapeuta/insights?tab=interest&period=30",
+  });
+
+  it("keeps discovery honest and occupancy in formation", () => {
+    render(<TherapistMetricsPage data={dashboardFixture()} />);
+
+    expect(screen.getByText("Coleta pública desativada")).toBeInTheDocument();
+    expect(screen.getAllByText("Histórico em formação").length).toBeGreaterThan(
+      0,
     );
-    expect(screen.getByRole("link", { name: "Baixar relatório" })).toHaveAttribute(
-      "href",
-      "/api/therapist/metrics/export?tab=overview&period=30",
+    expect(screen.queryByText("2.842")).not.toBeInTheDocument();
+  });
+
+  it("uses a two-column indicator grid on mobile", () => {
+    const { container } = render(
+      <TherapistMetricsPage data={dashboardFixture()} />,
     );
+    expect(container.querySelector(".grid-cols-2")).toBeInTheDocument();
   });
 
-  it("does not simulate discovery while privacy activation is pending", () => {
-    render(<TherapistMetricsPage data={overviewFixture()} />);
-
-    expect(
-      screen.getByText("Sinais de descoberta ainda não ativados"),
-    ).toBeInTheDocument();
-    expect(screen.queryByText("Aparições na busca")).not.toBeInTheDocument();
-  });
-
-  it("protects favorites and ranking with the approved sample of ten", () => {
-    render(<TherapistMetricsPage data={overviewFixture()} />);
-
-    expect(
-      screen.getByText(/esta métrica aparece a partir de 10 novos favoritos/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/disponível após 10 sessões concluídas/i),
-    ).toBeInTheDocument();
-  });
-
-  it("distinguishes legitimate zero data from infrastructure failure", () => {
-    const empty = overviewFixture();
-    empty.counters.peopleServed = {
-      direction: "stable",
-      directionCopyKey: "therapist_metrics.people_served.stable",
-      previousValue: 0,
-      status: "empty",
-      unit: "people",
-      value: 0,
-    };
-
-    const { rerender } = render(<TherapistMetricsPage data={empty} />);
-    expect(
-      screen.getByText("Ainda sem registros concluídos neste período."),
-    ).toBeInTheDocument();
-
-    rerender(
+  it("distinguishes an infrastructure error", () => {
+    render(
       <TherapistMetricsErrorState message="Não foi possível consultar suas métricas agora." />,
     );
     expect(
-      screen.getByRole("heading", {
-        level: 1,
-        name: "Métricas indisponíveis",
-      }),
+      screen.getByRole("heading", { level: 1, name: "Métricas indisponíveis" }),
     ).toBeInTheDocument();
   });
 });
 
-function overviewFixture(): TherapistMetricsOverview {
-  return {
+function dashboardFixture(): TherapistMetricsDashboard {
+  const meta = {
+    computedAt: "2026-07-28T16:00:00.000Z",
+    freshThrough: "2026-07-28T03:00:00.000Z",
+    periodDays: 30 as const,
+    periodEnd: "2026-07-28T03:00:00.000Z",
+    periodStart: "2026-06-28T03:00:00.000Z",
+    previousPeriodEnd: "2026-06-28T03:00:00.000Z",
+    previousPeriodStart: "2026-05-29T03:00:00.000Z",
+    timezone: "America/Sao_Paulo",
+  };
+  const therapist = {
+    plan: "premium" as const,
+    profileId: "c1000000-0000-4000-8000-000000000001",
+  };
+  const sessionsCompleted = counter("sessions_completed", "sessions", 10, 8);
+  const overview = {
     activity: {
-      freshThrough: "2026-07-28T03:00:00.000Z",
+      freshThrough: meta.freshThrough,
       points: [
         { date: "2026-07-26", sessionsCompleted: 1 },
         { date: "2026-07-27", sessionsCompleted: 2 },
       ],
-      status: "ready",
+      status: "ready" as const,
     },
-    contractVersion: 1,
+    contractVersion: 1 as const,
     counters: {
-      peopleServed: {
-        direction: "up",
-        directionCopyKey: "therapist_metrics.people_served.up",
-        previousValue: 6,
-        status: "ready",
-        unit: "people",
-        value: 8,
-      },
-      serviceMinutes: {
-        direction: "down",
-        directionCopyKey: "therapist_metrics.service_minutes.down",
-        previousValue: 420,
-        status: "ready",
-        unit: "minutes",
-        value: 390,
-      },
-      sessionsCompleted: {
-        direction: "stable",
-        directionCopyKey: "therapist_metrics.sessions_completed.stable",
-        previousValue: 10,
-        status: "ready",
-        unit: "sessions",
-        value: 10,
-      },
+      peopleServed: counter("people_served", "people", 8, 6),
+      serviceMinutes: counter("service_minutes", "minutes", 390, 420),
+      sessionsCompleted,
     },
     discovery: {
       freshThrough: null,
       funnel: {
-        profileToBooking: {
-          direction: null,
-          directionCopyKey: null,
-          minimumSample: 10,
-          observedSample: 0,
-          previousValue: null,
-          status: "insufficient_sample",
-          unit: "percent",
-          value: null,
-        },
-        searchToProfile: {
-          direction: null,
-          directionCopyKey: null,
-          minimumSample: 10,
-          observedSample: 0,
-          previousValue: null,
-          status: "insufficient_sample",
-          unit: "percent",
-          value: null,
-        },
+        profileToBooking: locked("percent"),
+        searchToProfile: locked("percent"),
       },
-      reason: "privacy_activation_pending",
+      reason: "privacy_activation_pending" as const,
       stages: {
         bookingFlowStarts: eventCounter("booking_flow_starts"),
         profileViews: eventCounter("profile_views"),
         searchImpressions: eventCounter("search_impressions"),
       },
-      status: "unavailable",
+      status: "unavailable" as const,
     },
-    meta: {
-      computedAt: "2026-07-28T16:00:00.000Z",
-      freshThrough: "2026-07-28T03:00:00.000Z",
-      periodDays: 30,
-      periodEnd: "2026-07-28T03:00:00.000Z",
-      periodStart: "2026-06-28T03:00:00.000Z",
-      previousPeriodEnd: "2026-06-28T03:00:00.000Z",
-      previousPeriodStart: "2026-05-29T03:00:00.000Z",
-      timezone: "America/Sao_Paulo",
-    },
-    metricDefinitionVersion: 1,
+    meta,
+    metricDefinitionVersion: 1 as const,
     occupancy: {
-      reason: "historical_availability_not_versioned",
-      status: "unavailable",
+      reason: "historical_availability_not_versioned" as const,
+      status: "unavailable" as const,
     },
-    profileFavorites: {
-      direction: null,
-      directionCopyKey: null,
-      minimumSample: 10,
-      observedSample: 3,
-      previousValue: null,
-      status: "insufficient_sample",
-      unit: "favorites",
-      value: null,
-    },
-    therapist: {
-      plan: "premium_plus",
-      profileId: "c1000000-0000-4000-8000-000000000001",
-    },
+    profileFavorites: locked("favorites"),
+    therapist,
     therapyRanking: {
       items: [],
-      minimumSample: 10,
+      minimumSample: 10 as const,
       observedSample: 3,
-      status: "insufficient_sample",
+      status: "insufficient_sample" as const,
     },
+  };
+
+  return {
+    contractVersion: 2,
+    interest: {
+      access: { requiredPlan: "premium_plus", status: "capability_locked" },
+      contractVersion: 1,
+      meta,
+      metricDefinitionVersion: 1,
+      therapist,
+    },
+    meta,
+    metricDefinitionVersion: 2,
+    occupancy: {
+      coverageDays: 4,
+      coverageStart: "2026-07-24",
+      reason: "history_in_formation",
+      requiredCoverageDays: 30,
+      status: "forming",
+    },
+    overview,
+    sessions: {
+      cancellationReasons: {
+        reason: "cancellation_taxonomy_not_versioned",
+        status: "unavailable",
+      },
+      contractVersion: 1,
+      evolution: { points: [], status: "empty" },
+      heatmap: collection([]),
+      meta,
+      metricDefinitionVersion: 1,
+      outcomeDistribution: collection([]),
+      presenceByDay: collection([]),
+      presenceByHour: collection([]),
+      summary: {
+        operationalPresence: locked("percent"),
+        reservedDurationAverage: counter(
+          "reserved_duration_average",
+          "minutes",
+          0,
+          0,
+        ),
+        sessionsCancelled: counter("sessions_cancelled", "sessions", 0, 0),
+        sessionsCompleted,
+        sessionsRescheduled: counter("sessions_rescheduled", "sessions", 0, 0),
+      },
+      therapist,
+      therapyDistribution: collection([]),
+    },
+    therapist,
   };
 }
 
+function counter<TUnit extends "minutes" | "people" | "sessions">(
+  key: string,
+  unit: TUnit,
+  value: number,
+  previousValue: number,
+) {
+  return {
+    direction: "up" as const,
+    directionCopyKey: `therapist_metrics.${key}.up` as never,
+    previousValue,
+    status: value === 0 ? ("empty" as const) : ("ready" as const),
+    unit,
+    value,
+  };
+}
 function eventCounter(
   key: "booking_flow_starts" | "profile_views" | "search_impressions",
 ) {
@@ -235,5 +192,25 @@ function eventCounter(
     status: "empty" as const,
     unit: "events" as const,
     value: 0,
+  };
+}
+function locked<TUnit extends "favorites" | "percent">(unit: TUnit) {
+  return {
+    direction: null,
+    directionCopyKey: null,
+    minimumSample: 10,
+    observedSample: 0,
+    previousValue: null,
+    status: "insufficient_sample" as const,
+    unit,
+    value: null,
+  };
+}
+function collection<T>(items: T[]) {
+  return {
+    items,
+    minimumSample: 10 as const,
+    observedSample: 0,
+    status: "empty" as const,
   };
 }

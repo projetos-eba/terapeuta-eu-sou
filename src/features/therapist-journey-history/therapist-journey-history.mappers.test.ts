@@ -64,6 +64,12 @@ describe("therapist journey history", () => {
     expect(detail?.timeline.some((item) => item.title === "Clareza")).toBe(
       true,
     );
+    expect(detail?.timeline[0]).toMatchObject({
+      serviceTitle: "Reiki",
+      topicLabels: ["Espiritualidade"],
+    });
+    expect(detail?.client.nextSessionServiceTitle).toBe("Reiki");
+    expect(detail?.client.lastSessionServiceTitle).toBe("Reiki");
     expect(detail?.timeline[0].href).toContain("/terapeuta/sessoes/");
   });
 });

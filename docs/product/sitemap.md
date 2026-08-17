@@ -89,6 +89,8 @@ podem estar habilitados, bloqueados ou ocultos conforme plano e capability.
 - `/terapeuta/sessoes/:bookingId`: detalhe da sessão.
 - `/terapeuta/sessoes/:bookingId/video`: sala dedicada da videochamada.
 - `/terapeuta/mensagens`: mensagens.
+- `/terapeuta/mensagens/solicitar-terapia`: solicitação estruturada para
+  análise de uma terapia ausente no catálogo; não cria terapia automaticamente.
 - `/terapeuta/servicos`: serviços.
 - `/terapeuta/servicos/meus`: meus serviços.
 - `/terapeuta/financeiro`: financeiro operacional por `operation_essentials`.
@@ -101,7 +103,8 @@ podem estar habilitados, bloqueados ou ocultos conforme plano e capability.
 - `/terapeuta/configuracoes`: configurações, incluindo downgrade agendado,
   cancelamento ao fim do período e reversão do cancelamento em `Plano e
 assinatura`.
-- `/terapeuta/suporte`: suporte conforme plano.
+- `/terapeuta/suporte` e os aliases legados `.../suporte`: redirecionam para
+  `/terapeuta/mensagens`; não há tela dedicada de Ajuda.
 
 As seções por plano abaixo registram capabilities e destinos legados mantidos
 por redirect; elas não definem shells independentes.
@@ -168,12 +171,12 @@ Operação essencial com limites claros e convites contextuais para evolução.
 - `/basico/perfil`: perfil público.
 - `/basico/upgrade`: evolução para Premium ou Premium Plus.
 - `/basico/configuracoes`: configurações.
-- `/basico/suporte`: suporte.
+- `/basico/suporte`: redirect legado para Mensagens.
 
 ### Permissões
 
-- Acessa agenda, pacientes, sessões, mensagens, serviços limitados, perfil, financeiro operacional e suporte.
-- Não acessa avaliações, métricas intermediárias, IA, insights avançados ou suporte prioritário.
+- Acessa agenda, pacientes, sessões, mensagens, serviços limitados, perfil e financeiro operacional.
+- Não acessa avaliações, métricas intermediárias, IA ou insights avançados.
 - Limites usam microcopy acolhedora, sem tom punitivo.
 
 ## Terapeuta Premium - aliases de transição
@@ -194,7 +197,7 @@ Operação profissional com financeiro, avaliações e métricas intermediárias
 - `/pro/plano`: plano atual e evolução para Premium Plus.
 - `/pro/perfil`: perfil público.
 - `/pro/configuracoes`: configurações.
-- `/pro/suporte`: suporte.
+- `/pro/suporte`: redirect legado para Mensagens.
 
 ### Permissões
 
@@ -223,13 +226,13 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 - `/plus/assessor-ia`: Assessor IA.
 - `/plus/perfil`: perfil público.
 - `/plus/configuracoes`: configurações.
-- `/plus/suporte`: suporte prioritário.
+- `/plus/suporte`: redirect legado para Mensagens.
 
 ### Permissões
 
 - Inclui recursos do Premium.
 - Não exibe área de upgrade.
-- Acessa IA, insights, histórico operacional do paciente e suporte prioritário.
+- Acessa IA, insights e histórico operacional do paciente.
 - Dados usam linguagem humana: “Pessoas que viram seu perfil”, “Pessoas que quiseram conhecer melhor seu trabalho”, “Pessoas que seguiram para agendar”.
 
 ## Admin

@@ -19,6 +19,10 @@ autoriza microtexto, excesso de bordas ou perda de identidade.
 - Texto funcional permanece em `14px` ou mais.
 - Somente metadata secundária pode chegar a `11px` no desktop e `10px` no mobile.
 - Controles touch preservam alvo mínimo de `44px`.
+- Para coleções de cards compactos e independentes, preferir duas colunas no
+  mobile quando cada item continuar com largura de leitura suficiente. Não
+  aplicar essa regra a formulários longos, tabelas convertidas em registros
+  complexos, alertas ou conteúdo que exigir uma coluna para permanecer legível.
 - Densidade deve vir de melhor arquitetura, não de redução indiscriminada.
 - Cada bloco mantém padding suficiente para que primeiro e último elementos não toquem o limite.
 - Se mais de três ações competirem no mesmo nível, agrupar, priorizar ou revelar progressivamente.

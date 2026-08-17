@@ -39,6 +39,11 @@ agenda e métricas usando as mesmas fontes de verdade.
 8. Arquivamento é bloqueado quando houver serviços vinculados.
 9. Solicitações de nova terapia são decididas pelo admin e podem ser vinculadas
    a uma terapia canônica; aprovação não publica automaticamente o texto livre.
+10. A solicitação estruturada do terapeuta usa o contrato versionado v2,
+    idempotência, materiais em bucket privado e estados `submitted`,
+    `under_review`, `needs_information`, `approved`, `merged` e `rejected`.
+    Toda decisão exige motivo, gera auditoria, notificação interna e tentativa
+    de e-mail, sem reverter uma decisão confirmada em caso de falha de entrega.
 
 ## Matriz de Estados
 

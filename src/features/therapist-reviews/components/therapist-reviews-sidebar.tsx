@@ -18,38 +18,36 @@ export function TherapistReviewsSidebar({
 
   return (
     <div className="grid gap-5">
-      <AppPageSection className="grid gap-5">
+      <AppPageSection className="grid gap-6">
         <div>
-          <p className="text-sm font-extrabold uppercase tracking-[0.14em] text-brand-primary">
-            Resumo
-          </p>
-          <h2 className="mt-2 text-xl font-extrabold text-brand-deep">
+          <h2 className="font-display text-[32px] font-light italic leading-tight text-brand-deep">
             Resumo das avaliações
           </h2>
+          <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+            Distribuição das avaliações publicadas.
+          </p>
         </div>
 
-        <div className="grid gap-3">
+        <div className="grid gap-4">
           {data.distribution.map((item) => {
             const percent =
               total > 0 ? Math.round((item.count / total) * 100) : 0;
 
             return (
-              <div className="grid gap-2" key={item.rating}>
-                <div className="flex items-center justify-between gap-3">
-                  <span className="inline-flex items-center gap-1 text-sm font-extrabold text-brand-deep">
-                    {item.rating}
-                    <Star
-                      aria-hidden="true"
-                      className="size-4 fill-current text-status-warning"
-                    />
-                  </span>
-                  <span className="text-sm font-semibold text-tesText-muted">
-                    {item.count} avaliação{item.count === 1 ? "" : "ões"}
-                  </span>
-                </div>
+              <div
+                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3"
+                key={item.rating}
+              >
+                <span className="inline-flex items-center gap-1 whitespace-nowrap text-sm font-extrabold text-brand-deep">
+                  {item.rating} estrela{item.rating === 1 ? "" : "s"}
+                  <Star
+                    aria-hidden="true"
+                    className="size-3.5 fill-current text-status-warning"
+                  />
+                </span>
                 <div
                   aria-label={`${percent}% das avaliações têm ${item.rating} estrelas`}
-                  className="h-3 overflow-hidden rounded-full bg-brand-lavenderSoft"
+                  className="h-2.5 overflow-hidden rounded-full bg-brand-lavenderSoft"
                   role="img"
                 >
                   <div
@@ -57,6 +55,9 @@ export function TherapistReviewsSidebar({
                     style={{ width: `${percent}%` }}
                   />
                 </div>
+                <span className="whitespace-nowrap text-right text-sm font-bold text-tesText-muted">
+                  {item.count}
+                </span>
               </div>
             );
           })}
@@ -72,11 +73,8 @@ export function TherapistReviewsSidebar({
 
       <AppPageSection className="grid gap-5">
         <div>
-          <p className="text-sm font-extrabold uppercase tracking-[0.14em] text-brand-primary">
-            Boas práticas
-          </p>
-          <h2 className="mt-2 text-xl font-extrabold text-brand-deep">
-            A importância das avaliações
+          <h2 className="text-xl font-extrabold text-brand-deep">
+            Como as avaliações ajudam seu perfil
           </h2>
         </div>
 
@@ -104,18 +102,18 @@ export function TherapistReviewsSidebar({
 
 const tips = [
   {
-    body: "Respostas breves e respeitosas ajudam a pessoa a se sentir escutada.",
+    body: "Ajudam novas pessoas a conhecerem seu trabalho.",
     icon: MessageCircleHeart,
-    title: "Responda com cuidado",
+    title: "Fortalecem a confiança",
   },
   {
-    body: "Evite dados privados e mantenha uma linguagem responsável, sem prometer resultados.",
+    body: "Facilitam a decisão de quem está buscando acolhimento.",
     icon: HeartHandshake,
-    title: "Proteja a privacidade",
+    title: "Tornam sua apresentação mais clara",
   },
   {
-    body: "Use os retornos publicados para aprimorar sua apresentação e sua rotina de atendimento online.",
+    body: "Mostram como sua prática é percebida ao longo da jornada.",
     icon: UserRoundCheck,
-    title: "Aprenda com os retornos",
+    title: "Oferecem contexto para aprimorar",
   },
 ];

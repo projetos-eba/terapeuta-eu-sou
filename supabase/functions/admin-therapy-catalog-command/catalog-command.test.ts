@@ -80,16 +80,18 @@ Deno.test("rejects unknown admin catalog actions", () => {
   );
 });
 
-Deno.test("accepts therapist catalog request foundation payload", () => {
-  const command = validateAdminTherapyCatalogCommand({
-    action: "submitRequest",
-    payload: {
-      informedName: "Terapia solicitada",
-      justification: "Ainda nao encontrei essa abordagem no catalogo.",
-    },
-  });
-
-  assertEquals(command.action, "submitRequest");
+Deno.test("accepts private request review reads for admins", () => {
+  assertEquals(
+    validateAdminTherapyCatalogCommand({ action: "requestList" }),
+    { action: "requestList" },
+  );
+  assertEquals(
+    validateAdminTherapyCatalogCommand({
+      action: "requestSign",
+      materialId: therapyId,
+    }),
+    { action: "requestSign", materialId: therapyId },
+  );
 });
 
 Deno.test("maps admin catalog commands to stable permissions", () => {
@@ -111,19 +113,14 @@ Deno.test("maps admin catalog commands to stable permissions", () => {
   );
   assertEquals(
     permissionForAdminTherapyCatalogCommand(
-      validateAdminTherapyCatalogCommand({
-        action: "submitRequest",
-        payload: { informedName: "Terapia solicitada" },
-      }),
+      validateAdminTherapyCatalogCommand({ action: "requestList" }),
     ),
-    null,
+    "admin.therapies.read",
   );
 });
 
 Deno.test("admin catalog permission gate rejects non-admin roles", () => {
   assertAdminCatalogPermission("admin", "admin.therapies.manage");
-  assertAdminCatalogPermission("therapist", null);
-
   assertThrows(
     () =>
       assertAdminCatalogPermission("therapist", "admin.therapies.manage"),

@@ -26,8 +26,6 @@ export async function TherapistAreaLayout({
 
   return (
     <AuthenticatedShell
-      helpCardVariant={config.helpCardVariant}
-      helpHref={config.helpHref}
       logoutAction={logoutAction}
       navigation={config.navigation}
       notificationCount={counters.unreadNotifications}

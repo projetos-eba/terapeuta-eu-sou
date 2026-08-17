@@ -29,7 +29,6 @@ describe("buildTherapistNavigation", () => {
       routes.therapist.assessorIa,
       routes.therapist.finance,
       routes.therapist.settings,
-      routes.therapist.support,
     ]);
     expect(navigation.every((item) => item.accessState === "enabled")).toBe(
       false,
@@ -63,6 +62,7 @@ describe("buildTherapistNavigation", () => {
       href: routes.therapist.plan,
       tone: "upgrade",
     });
+    expect(navigation.find((item) => item.label === "Ajuda")).toBeUndefined();
   });
 
   it("keeps essential Free features enabled", () => {

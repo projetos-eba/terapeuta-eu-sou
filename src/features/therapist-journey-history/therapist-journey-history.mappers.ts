@@ -115,33 +115,33 @@ export function mapJourneyHistoryPage(
     clients,
     metrics: [
       {
-        description: "Todos os registros",
+        description: "Todas as pessoas registradas",
         id: "total",
-        label: "Total de clientes",
+        label: "Pessoas acompanhadas",
         tone: "brand",
-        trendLabel: "carteira atual",
+        trendLabel: "visão atual",
         value: summary.total,
       },
       {
-        description: "Ativos na jornada",
+        description: "Com retorno nos últimos 30 dias",
         id: "active",
-        label: "Ativos (últimos 30 dias)",
+        label: "Em acompanhamento",
         tone: "success",
         trendLabel: "com retorno recente",
         value: summary.active,
       },
       {
-        description: "Novos cadastros",
+        description: "Relações iniciadas neste mês",
         id: "new",
-        label: "Novos no mês",
+        label: "Novas pessoas",
         tone: "warning",
         trendLabel: "relações iniciadas",
         value: countNewRelationships(input.relationships, now),
       },
       {
-        description: "Ha mais de 60 dias",
+        description: "Há mais de 60 dias",
         id: "stale",
-        label: "Sem sessão recente",
+        label: "Sem encontro recente",
         tone: "danger",
         trendLabel: "precisam de revisão",
         value: summary.stale,
@@ -172,6 +172,13 @@ export function mapJourneyHistoryDetail(
     .map((booking) => {
       const service = serviceById.get(booking.service_id);
       const summary = summaryByBooking.get(booking.id);
+      const serviceTitle = service?.title ?? "Sessão TES";
+      const topicLabels = inferTopics([
+        serviceTitle,
+        summary?.title ?? "",
+        summary?.summary ?? "",
+      ]);
+
       return {
         bookingId: booking.id,
         date: booking.starts_at,
@@ -181,7 +188,9 @@ export function mapJourneyHistoryDetail(
         href: routes.therapist.sessionDetail(booking.id),
         id: booking.id,
         status: booking.status,
-        title: summary?.title ?? service?.title ?? "Sessão TES",
+        serviceTitle,
+        title: summary?.title ?? serviceTitle,
+        topicLabels: topicLabels.length ? topicLabels : ["Continuidade"],
       };
     });
 
@@ -251,8 +260,14 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
         firstSessionAt: countedBookings[0]?.starts_at ?? relationship?.started_at ?? null,
         id: patient.id,
         lastSessionAt: lastSession?.starts_at ?? null,
+        lastSessionServiceTitle: lastSession
+          ? (serviceById.get(lastSession.service_id)?.title ?? "Sessão TES")
+          : null,
         name: patient.display_name,
         nextSessionAt: nextSession?.starts_at ?? null,
+        nextSessionServiceTitle: nextSession
+          ? (serviceById.get(nextSession.service_id)?.title ?? "Sessão TES")
+          : null,
         sessionsHref: `${routes.therapist.sessions}?patient=${patient.id}`,
         status: getClientStatus(relationship?.status, lastSession?.starts_at, now),
         therapyLabels: therapyLabels.length ? therapyLabels : ["Jornada TES"],

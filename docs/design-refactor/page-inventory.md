@@ -86,13 +86,12 @@ rota é uma página existente hoje.
 | 13 | Suas terapias | `/terapeuta/servicos` | configuração/operação | PARTIAL | PageHeader balanced, EntityList, TESDialog, CTA contextual | Alta | Função real, mas ainda baseada em `TESCard`. |
 | 14 | Financeiro | `/terapeuta/financeiro` | financeiro | LEGACY | FilterBar, StatusCluster, MetricStrip local, OperationalTable | Alta | Alta densidade e risco; refactor só com owner financeiro. |
 | 15 | Avaliações | `/terapeuta/avaliacoes` | acompanhamento | PARTIAL | PageHeader balanced, EntityList, Status Anatomy | Média | Real e ainda card-heavy. |
-| 16 | Insights | `/terapeuta/insights` | análise | LEGACY | MetricStrip local, seção leve, StatusCluster | Média | Densidade analítica e composição antiga. |
+| 16 | Métricas e insights | `/terapeuta/insights` | análise | PARTIAL | Hero editorial, MetricStrip local, série SVG acessível, StatusCluster e rail analítico | Média | Refatorada em 17/08/2026; falta validação visual nos viewports. |
 | 17 | Assessor IA | `/terapeuta/assessor-ia` | orientação | PARTIAL | AccentSemanticSurface, CTA contextual | Média | Não passou por calibração própria. |
 | 18 | Meu perfil | `/terapeuta/perfil` | preview | PARTIAL | EntitySummary, seção leve, CTA contextual | Média | Preview-first funcional. |
 | 19 | Editar perfil | `/terapeuta/perfil/editar` | configuração | PARTIAL | PageHeader balanced, seção leve, AppStickySaveBar | Média | Base funcional boa, visual intermediário. |
-| 20 | Plano | `/terapeuta/plano` | assinatura | PARTIAL | PageHeader balanced, seção leve, CTA contextual | Média | Não benchmarkado. |
+| 20 | Meu plano | `/terapeuta/plano` | assinatura | PARTIAL | Hero editorial, resumo do plano, CTA contextual e comparação agrupada | Média | Refatorado em 17/08/2026; falta validação visual nos três viewports. |
 | 21 | Configurações | `/terapeuta/configuracoes` | configuração | LEGACY | PageHeader legacy, seção leve, StatusCluster | Alta | Muitas sections framed e defaults anteriores. |
-| 22 | Ajuda | `/terapeuta/suporte` | suporte | CRITICAL | EmptyState local | Baixa | Hoje é uma construction page, não experiência madura. |
 
 ### Terapeuta: não contar como páginas reais
 
@@ -163,7 +162,8 @@ fica em `LEGACY`/`PARTIAL`, não em `CRITICAL`.
   página implementada.
 - **Terapeuta:** aquisição/onboarding; orientação; agenda e sessões; pacientes;
   oferta e perfil; financeiro e inteligência; comunicação; assinatura e
-  configurações; suporte.
+  configurações. `/terapeuta/suporte` e aliases antigos redirecionam para
+  Mensagens e não contam como página própria.
 - **Admin:** visão geral; pessoas e verificações; operação diária (sessões,
   suporte e avaliações); financeiro; catálogo e Matching; governança.
 
