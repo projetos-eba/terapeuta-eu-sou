@@ -149,7 +149,7 @@ function HeroSection() {
 function IntroSection() {
   return (
     <section className="relative overflow-hidden py-12 lg:py-16">
-      <div className="pointer-events-none absolute right-0 top-[90px] hidden h-[286px] rounded-l-[38px] bg-brand-primary lg:left-[735px] lg:block" />
+      <div className="pointer-events-none absolute right-0 top-[90px] hidden h-[286px] w-1/2 rounded-l-[38px] bg-brand-primary lg:block" />
       <div className="relative mx-auto grid max-w-[1680px] gap-9 px-5 sm:px-8 lg:grid-cols-[minmax(0,610px)_minmax(0,1fr)] lg:items-start lg:px-12">
         <div className="relative z-10 lg:pt-4">
           <SectionHeading
@@ -178,7 +178,7 @@ function IntroSection() {
           />
         </div>
         <div className="relative min-h-[312px] lg:min-h-[292px]">
-          <div className="relative z-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:pl-[106px] lg:pr-4 xl:gap-5">
+          <div className="relative z-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-2 lg:pr-4 xl:grid-cols-4 xl:gap-5 xl:pl-[54px]">
             {homeIntroCards.map((card, index) => {
               const Icon = introIcons[index] ?? Heart;
 

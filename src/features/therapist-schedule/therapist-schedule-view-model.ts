@@ -45,6 +45,46 @@ export function getApplicableRules<Rule extends ScheduleRuleView>(
   );
 }
 
+export function hasOverlappingAvailabilityRules<Rule extends ScheduleRuleView>(
+  rules: Rule[],
+) {
+  return rules.some((leftRule, index) =>
+    rules.slice(index + 1).some((rightRule) =>
+      availabilityRulesOverlap(leftRule, rightRule),
+    ),
+  );
+}
+
+export function availabilityRulesOverlap(
+  leftRule: ScheduleRuleView,
+  rightRule: ScheduleRuleView,
+) {
+  if (
+    !leftRule.isActive ||
+    !rightRule.isActive ||
+    leftRule.dayOfWeek !== rightRule.dayOfWeek ||
+    !rangesAreValid(leftRule) ||
+    !rangesAreValid(rightRule)
+  ) {
+    return false;
+  }
+
+  const scopesConflict =
+    leftRule.serviceId === null ||
+    rightRule.serviceId === null ||
+    leftRule.serviceId === rightRule.serviceId;
+  const leftStart = normalizeClock(leftRule.startTime);
+  const leftEnd = normalizeClock(leftRule.endTime);
+  const rightStart = normalizeClock(rightRule.startTime);
+  const rightEnd = normalizeClock(rightRule.endTime);
+
+  return (
+    scopesConflict &&
+    leftStart < rightEnd &&
+    rightStart < leftEnd
+  );
+}
+
 export function calculateWeeklyAvailability(
   rules: ScheduleRuleView[],
   scope: ScheduleScope,
@@ -139,11 +179,9 @@ export function buildUpcomingExceptions(input: {
     .map((exception) => ({
       dateLabel: new Intl.DateTimeFormat("pt-BR", {
         day: "2-digit",
-        month: "short",
+        month: "2-digit",
         timeZone: input.timezone,
-      })
-        .format(new Date(exception.startsAt))
-        .replace(".", ""),
+      }).format(new Date(exception.startsAt)),
       id: exception.id,
       label: exception.isAvailable
         ? "Disponibilidade extra"
@@ -172,6 +210,15 @@ export function findDefaultScheduleScope(
 function clockToMinutes(value: string) {
   const [hours = "0", minutes = "0"] = normalizeClock(value).split(":");
   return Number(hours) * 60 + Number(minutes);
+}
+
+function rangesAreValid(rule: ScheduleRuleView) {
+  const start = normalizeClock(rule.startTime);
+  const end = normalizeClock(rule.endTime);
+
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(start) &&
+    /^([01]\d|2[0-3]):[0-5]\d$/.test(end) &&
+    start < end;
 }
 
 function formatTimeRange(startsAt: string, endsAt: string, timezone: string) {

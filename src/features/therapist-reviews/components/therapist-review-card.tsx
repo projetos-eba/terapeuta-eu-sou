@@ -14,7 +14,7 @@ export function TherapistReviewCard({
   const responded = review.responseStatus === "responded";
 
   return (
-    <article className="rounded-card border border-brand-lavender/60 bg-white p-4 shadow-card sm:p-5">
+    <article className="rounded-card border border-brand-lavender/60 bg-white p-5 sm:p-6">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_150px]">
         <div className="min-w-0">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
@@ -24,7 +24,7 @@ export function TherapistReviewCard({
             <div className="min-w-0 flex-1">
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <h2 className="text-xl font-extrabold leading-tight text-brand-deep">
+                  <h2 className="text-xl font-extrabold leading-tight text-brand-deep sm:text-2xl">
                     {review.patientName}
                   </h2>
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -40,7 +40,7 @@ export function TherapistReviewCard({
                     ) : null}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                   <RatingStars rating={review.rating} />
                   <time className="text-sm font-semibold text-tesText-muted">
                     {review.publishedLabel}
@@ -48,7 +48,7 @@ export function TherapistReviewCard({
                 </div>
               </div>
 
-              <p className="mt-5 text-sm font-semibold leading-6 text-tesText-secondary">
+              <p className="mt-5 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
                 {review.comment}
               </p>
 
@@ -66,7 +66,7 @@ export function TherapistReviewCard({
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 lg:items-end lg:justify-center">
+        <div className="flex flex-row flex-wrap gap-3 border-t border-brand-lavender pt-4 lg:flex-col lg:items-end lg:justify-center lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
           <span
             className={`inline-flex min-h-9 items-center justify-center rounded-lg px-3 text-sm font-extrabold ${
               responded

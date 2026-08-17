@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -71,6 +72,26 @@ describe("TherapistScheduleHours", () => {
       "O horário final deve ser posterior ao horário inicial.",
     );
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("prevents a new range from overlapping another range on the same day", async () => {
+    renderSchedule();
+
+    fireEvent.click(screen.getByRole("button", { name: "Adicionar faixa" }));
+    const dialog = await screen.findByRole("dialog", {
+      name: "Adicionar faixa de horário",
+    });
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: "Adicionar faixa" }),
+    );
+
+    const starts = screen.getAllByLabelText("Início de Segunda-feira");
+    fireEvent.change(starts[1]!, { target: { value: "08:00" } });
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Essa faixa se sobrepõe a outro horário disponível no mesmo dia.",
+    );
+    expect(starts[1]).toHaveValue("12:00");
   });
 
   it("sends the versioned command and confirms a successful save", async () => {

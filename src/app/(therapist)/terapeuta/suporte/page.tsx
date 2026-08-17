@@ -1,13 +1,7 @@
-import {
-  TherapistFeaturePage,
-  therapistRoutePolicies,
-} from "@/features/therapist-shell";
+import { redirect } from "next/navigation";
 
-export default function TherapistSupportPage() {
-  return (
-    <TherapistFeaturePage
-      policy={therapistRoutePolicies.support}
-      title="Ajuda"
-    />
-  );
+import { routes } from "@/lib/routes";
+
+export default function TherapistSupportRedirectPage() {
+  redirect(routes.therapist.messages);
 }

@@ -1,4 +1,4 @@
-import { BarChart3 } from "lucide-react";
+import { ChartNoAxesCombined } from "lucide-react";
 
 import { AppPageSection } from "@/components/app-page";
 
@@ -15,35 +15,34 @@ export function TherapistMetricsActivity({
   status: "empty" | "ready";
   timezone: string;
 }) {
-  const buckets = bucketActivity(points, periodDays === 90 ? 7 : 3);
-  const maximum = Math.max(1, ...buckets.map((bucket) => bucket.value));
+  const chart = createLineChart(points);
 
   return (
     <AppPageSection aria-labelledby="metrics-activity-title">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-extrabold text-brand-primary">
+          <p className="text-sm font-extrabold uppercase tracking-[0.15em] text-brand-primary">
             Ritmo de atendimentos
           </p>
           <h2
-            className="mt-1 text-xl font-extrabold text-brand-deep"
+            className="mt-2 text-2xl font-extrabold text-brand-deep"
             id="metrics-activity-title"
           >
             Sessões concluídas ao longo do período
           </h2>
-          <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            Cada barra reúne {periodDays === 90 ? "sete" : "três"} dias
+          <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
+            A linha mostra o movimento diário dos últimos {periodDays} dias
             completos no seu fuso horário.
           </p>
         </div>
-        <span className="grid size-11 place-items-center rounded-lg bg-brand-cyanSoft text-status-info">
-          <BarChart3 aria-hidden="true" size={22} />
+        <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+          <ChartNoAxesCombined aria-hidden="true" size={22} />
         </span>
       </div>
 
       {status === "empty" ? (
-        <div className="mt-6 rounded-lg bg-surface-soft p-5">
-          <p className="text-sm font-bold text-brand-deep">
+        <div className="mt-6 rounded-lg border border-brand-lavender bg-surface-soft p-5">
+          <p className="text-sm font-extrabold text-brand-deep">
             Ainda sem sessões concluídas neste período.
           </p>
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
@@ -52,40 +51,55 @@ export function TherapistMetricsActivity({
         </div>
       ) : (
         <>
-          <div
-            aria-hidden="true"
-            className="mt-7 grid h-48 items-end gap-1.5 rounded-lg bg-surface-soft px-3 pb-3 pt-5 sm:gap-2 sm:px-5"
-            style={{
-              gridTemplateColumns: `repeat(${buckets.length}, minmax(0, 1fr))`,
-            }}
-          >
-            {buckets.map((bucket) => (
-              <div
-                className="group relative flex h-full items-end"
-                key={bucket.startDate}
-                title={`${formatDate(bucket.startDate, timezone)}: ${bucket.value} sessões concluídas`}
-              >
-                <span
-                  className="block min-h-1 w-full rounded-t-sm bg-brand-primary transition group-hover:bg-brand-primaryHover"
-                  style={{
-                    height: `${Math.max(3, (bucket.value / maximum) * 100)}%`,
-                  }}
+          <div className="mt-6 overflow-hidden rounded-lg border border-brand-lavender bg-surface-soft px-3 pb-3 pt-4 sm:px-5 sm:pb-4">
+            <svg
+              aria-hidden="true"
+              className="h-56 w-full overflow-visible sm:h-64"
+              preserveAspectRatio="none"
+              viewBox="0 0 720 240"
+            >
+              {[40, 90, 140, 190].map((position) => (
+                <line
+                  className="stroke-brand-lavender"
+                  key={position}
+                  strokeWidth="1"
+                  x1="36"
+                  x2="700"
+                  y1={position}
+                  y2={position}
                 />
-              </div>
-            ))}
-          </div>
-          <div className="mt-2 flex justify-between gap-4 text-xs font-bold text-tesText-muted">
-            <span>{formatDate(buckets[0]?.startDate, timezone)}</span>
-            <span>
-              {formatDate(buckets[buckets.length - 1]?.endDate, timezone)}
-            </span>
+              ))}
+              <path className="fill-brand-primary/10" d={chart.area} />
+              <polyline
+                className="fill-none stroke-brand-primary"
+                points={chart.points}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="4"
+              />
+              {chart.coordinates.map((point) => (
+                <circle
+                  className="fill-white stroke-brand-primary"
+                  cx={point.x}
+                  cy={point.y}
+                  key={point.date}
+                  r="4"
+                  strokeWidth="3"
+                />
+              ))}
+            </svg>
+            <div className="mt-1 flex justify-between gap-4 text-xs font-bold text-tesText-muted">
+              <span>{formatDate(points[0]?.date, timezone)}</span>
+              <span>
+                {formatDate(points[points.length - 1]?.date, timezone)}
+              </span>
+            </div>
           </div>
           <ul className="sr-only">
-            {buckets.map((bucket) => (
-              <li key={bucket.startDate}>
-                De {formatDate(bucket.startDate, timezone)} a{" "}
-                {formatDate(bucket.endDate, timezone)}: {bucket.value} sessões
-                concluídas.
+            {points.map((point) => (
+              <li key={point.date}>
+                {formatDate(point.date, timezone)}: {point.sessionsCompleted}{" "}
+                sessões concluídas.
               </li>
             ))}
           </ul>
@@ -95,27 +109,40 @@ export function TherapistMetricsActivity({
   );
 }
 
-function bucketActivity(
-  points: TherapistMetricActivityPoint[],
-  bucketSize: number,
-) {
-  const buckets: Array<{
-    endDate: string;
-    startDate: string;
-    value: number;
-  }> = [];
+function createLineChart(points: TherapistMetricActivityPoint[]) {
+  const chartWidth = 664;
+  const chartHeight = 170;
+  const left = 36;
+  const bottom = 210;
+  const maximum = Math.max(
+    1,
+    ...points.map((point) => point.sessionsCompleted),
+  );
+  const coordinates = points.map((point, index) => {
+    const x =
+      points.length <= 1
+        ? left + chartWidth / 2
+        : left + (index / (points.length - 1)) * chartWidth;
+    const y = bottom - (point.sessionsCompleted / maximum) * chartHeight;
 
-  for (let index = 0; index < points.length; index += bucketSize) {
-    const group = points.slice(index, index + bucketSize);
-    if (group.length === 0) continue;
-    buckets.push({
-      endDate: group[group.length - 1].date,
-      startDate: group[0].date,
-      value: group.reduce((sum, point) => sum + point.sessionsCompleted, 0),
-    });
-  }
+    return { date: point.date, x, y };
+  });
+  const line = coordinates.map((point) => point.x + "," + point.y).join(" ");
+  const area = coordinates.length
+    ? "M " +
+      coordinates[0].x +
+      " " +
+      bottom +
+      " L " +
+      coordinates.map((point) => point.x + " " + point.y).join(" L ") +
+      " L " +
+      coordinates[coordinates.length - 1].x +
+      " " +
+      bottom +
+      " Z"
+    : "";
 
-  return buckets;
+  return { area, coordinates, points: line };
 }
 
 function formatDate(value: string | undefined, timezone: string) {
@@ -124,5 +151,5 @@ function formatDate(value: string | undefined, timezone: string) {
     day: "2-digit",
     month: "short",
     timeZone: timezone,
-  }).format(new Date(`${value}T12:00:00Z`));
+  }).format(new Date(value + "T12:00:00Z"));
 }

@@ -26,6 +26,8 @@ import { TESDialog } from "@/components/tes/tes-dialog";
 import type { TherapistScheduleRule } from "@/domain/tes";
 import { routes } from "@/lib/routes";
 
+import { TherapistAgendaHeader } from "./therapist-agenda-chrome";
+
 import type {
   TherapyCalendarColorKey,
   TherapistCalendarAttentionItem,
@@ -156,35 +158,27 @@ export function TherapistCalendar({
 
   return (
     <main className="mx-auto w-full max-w-[1210px] pb-14 text-tesText-primary">
-      <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <h1 className="font-display text-[36px] font-light italic leading-[0.98] text-brand-deep sm:text-[42px] lg:text-[52px]">
-            Minha agenda
-          </h1>
-          <p className="mt-3 max-w-[560px] text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
-            Organize seus horários, acompanhe seus encontros e mantenha sua
-            agenda sempre atualizada.
-          </p>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:shrink-0">
-          <Link
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-deep transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            href={`${routes.therapist.agenda}?aba=bloqueios` as Route}
-          >
-            <Construction aria-hidden="true" size={18} />
-            Bloquear horário
-          </Link>
-          <Link
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            href={`${routes.therapist.agenda}?aba=horarios` as Route}
-          >
-            <Plus aria-hidden="true" size={18} />
-            Adicionar horários
-          </Link>
-        </div>
-      </header>
-
-      <AgendaTabs />
+      <TherapistAgendaHeader
+        activeTab="calendario"
+        actions={
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Link
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-deep transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              href={`${routes.therapist.agenda}?aba=bloqueios` as Route}
+            >
+              <Construction aria-hidden="true" size={18} />
+              Bloquear horário
+            </Link>
+            <Link
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 text-sm font-extrabold text-white shadow-sm transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              href={`${routes.therapist.agenda}?aba=horarios` as Route}
+            >
+              <Plus aria-hidden="true" size={18} />
+              Adicionar horários
+            </Link>
+          </div>
+        }
+      />
 
       <section
         aria-label="Controles do calendário"
@@ -329,36 +323,6 @@ export function TherapistCalendar({
         />
       ) : null}
     </main>
-  );
-}
-
-function AgendaTabs() {
-  const tabs = [
-    { href: "?aba=calendario", id: "calendario", label: "Calendário" },
-    { href: "?aba=horarios", id: "horarios", label: "Horários" },
-    { href: "?aba=bloqueios", id: "bloqueios", label: "Bloqueios" },
-  ];
-
-  return (
-    <nav
-      aria-label="Seções da agenda"
-      className="mt-6 grid max-w-[520px] grid-cols-3 border-b border-brand-lavender/70"
-    >
-      {tabs.map((tab) => (
-        <Link
-          aria-current={tab.id === "calendario" ? "page" : undefined}
-          className={`relative flex min-h-12 items-center justify-center px-3 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-primary ${
-            tab.id === "calendario"
-              ? "text-brand-deep after:absolute after:inset-x-3 after:bottom-[-1px] after:h-0.5 after:rounded-full after:bg-brand-primary"
-              : "text-tesText-secondary hover:text-brand-primary"
-          }`}
-          href={tab.href as Route}
-          key={tab.id}
-        >
-          {tab.label}
-        </Link>
-      ))}
-    </nav>
   );
 }
 
@@ -605,17 +569,9 @@ function TimelineCalendar({
                 (_, index) => timelineRange.startHour + index,
               ).map((hour) => (
                 <span
-                  className={`absolute right-4 text-[10px] font-bold text-tesText-muted md:text-[11px] ${
-                    hour === timelineRange.startHour
-                      ? "top-3"
-                      : "-translate-y-1/2"
-                  }`}
+                  className="absolute right-4 -translate-y-1/2 text-[10px] font-bold text-tesText-muted md:text-[11px]"
                   key={hour}
-                  style={
-                    hour === timelineRange.startHour
-                      ? undefined
-                      : { top: (hour - timelineRange.startHour) * hourHeight }
-                  }
+                  style={{ top: (hour - timelineRange.startHour) * hourHeight }}
                 >
                   {String(hour).padStart(2, "0")}:00
                 </span>

@@ -32,11 +32,11 @@ describe("TherapistCalendar", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Horários" })).toHaveAttribute(
       "href",
-      "?aba=horarios",
+      "/terapeuta/agenda?aba=horarios",
     );
     expect(screen.getByRole("link", { name: "Bloqueios" })).toHaveAttribute(
       "href",
-      "?aba=bloqueios",
+      "/terapeuta/agenda?aba=bloqueios",
     );
     expect(screen.getByRole("link", { name: "Semana" })).toHaveAttribute(
       "aria-current",
@@ -118,7 +118,10 @@ describe("TherapistCalendar", () => {
       />,
     );
 
-    expect(screen.getByText("00:00")).toBeInTheDocument();
+    const firstHour = screen.getByText("00:00");
+    expect(firstHour).toBeInTheDocument();
+    expect(firstHour).toHaveStyle({ top: "0px" });
+    expect(firstHour).toHaveClass("-translate-y-1/2");
     expect(screen.queryByText("08:00")).not.toBeInTheDocument();
   });
 

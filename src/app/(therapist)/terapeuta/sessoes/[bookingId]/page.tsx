@@ -1,13 +1,33 @@
-import { notFound } from "next/navigation";
-import { ShieldCheck, Video } from "lucide-react";
 import Link from "next/link";
-import type { Route } from "next";
+import { notFound } from "next/navigation";
+import {
+  ArrowLeft,
+  CalendarDays,
+  Check,
+  CheckCheck,
+  CircleHelp,
+  Clock3,
+  CreditCard,
+  ExternalLink,
+  Info,
+  Laptop,
+  ShieldCheck,
+  Video,
+} from "lucide-react";
 
+import {
+  AppPageAside,
+  AppPageContainer,
+  AppPageGrid,
+  AppPageMain,
+} from "@/components/app-page/app-page";
 import {
   formatSessionDateTime,
   formatSessionMoney,
   getZoomAccessLabel,
   mapSessionPresentation,
+  type SessionPresentation,
+  type TherapistSessionDetailReadModel,
 } from "@/features/bookings";
 import { SessionOperationActions } from "@/features/session-actions/session-operation-actions";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
@@ -18,103 +38,69 @@ import {
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 import { routes } from "@/lib/routes";
 
+type SessionDetailPageProps = {
+  params: Promise<{ bookingId: string }>;
+};
+
 export default async function TherapistSessionDetailPage({
   params,
-}: {
-  params: Promise<{ bookingId: string }>;
-}) {
+}: SessionDetailPageProps) {
   const { bookingId } = await params;
-  const session = await requireTherapistSession(
-    therapistRoutePolicies.sessions,
-  );
+  const therapist = await requireTherapistSession(therapistRoutePolicies.sessions);
   const result = await getTherapistSessionDetail({
-    accessToken: session.accessToken,
+    accessToken: therapist.accessToken,
     bookingId,
-    profileId: session.profileId,
+    profileId: therapist.profileId,
   });
 
-  if (result.status === "empty") notFound();
+  if (result.status === "empty") {
+    notFound();
+  }
 
   if (result.status === "error") {
-    return (
-      <section
-        className="rounded-card border border-status-error/30 bg-white p-8 text-center shadow-card"
-        role="alert"
-      >
-        <h1 className="font-display text-4xl font-light italic text-brand-deep">
-          Não foi possível abrir esta sessão
-        </h1>
-        <p className="mt-4 text-sm font-semibold leading-6 text-tesText-secondary">
-          {result.error.message}
-        </p>
-        <p className="mt-2 text-xs font-semibold text-tesText-muted">
-          Referência: {result.error.correlationId.slice(0, 8)}
-        </p>
-      </section>
-    );
+    return <SessionDetailErrorState error={result.error} />;
   }
 
   const booking = result.data;
   const presentation = mapSessionPresentation(booking);
   const pendingReschedule = await getTherapistSessionPendingReschedule({
-    accessToken: session.accessToken,
-    bookingId,
-    userId: session.userId,
+    accessToken: therapist.accessToken,
+    bookingId: booking.bookingId,
+    userId: therapist.userId,
   });
 
   return (
-    <main className="grid gap-6 pb-10 text-tesText-primary xl:grid-cols-[minmax(0,760px)_320px]">
-      <section className="rounded-card border border-brand-lavender bg-white p-6 shadow-card">
-        <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-brand-primary">
-          Operação da sessão
-        </p>
-        <h1 className="mt-2 font-display text-4xl font-light italic text-brand-deep">
-          {booking.serviceTitle}
-        </h1>
-        <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-          {presentation.description}
-        </p>
+    <AppPageContainer className="gap-6 lg:gap-8">
+      <Link
+        className="inline-flex w-fit items-center gap-2 text-sm font-semibold text-brand-primary transition-colors hover:text-brand-deep"
+        href={routes.therapist.sessions}
+      >
+        <ArrowLeft aria-hidden="true" className="size-4" />
+        Sessões
+      </Link>
 
-        <dl className="mt-6 grid gap-4 rounded-lg bg-surface-soft p-5 text-sm font-semibold text-tesText-secondary sm:grid-cols-2">
-          <div>
-            <dt className="font-extrabold text-brand-deep">Paciente</dt>
-            <dd>{booking.patientName}</dd>
-          </div>
-          <div>
-            <dt className="font-extrabold text-brand-deep">Horário</dt>
-            <dd>{formatSessionDateTime(booking.startsAt, booking.timezone)}</dd>
-          </div>
-          <div>
-            <dt className="font-extrabold text-brand-deep">Pagamento</dt>
-            <dd>{formatFinancialStatus(booking.financialStatus)}</dd>
-          </div>
-          <div>
-            <dt className="font-extrabold text-brand-deep">
-              Estado operacional
-            </dt>
-            <dd>{presentation.label}</dd>
-          </div>
-          <div>
-            <dt className="font-extrabold text-brand-deep">Valor reservado</dt>
-            <dd>{formatSessionMoney(booking.priceCents, booking.currency)}</dd>
-          </div>
-          <div>
-            <dt className="font-extrabold text-brand-deep">Sala online</dt>
-            <dd>{getZoomAccessLabel(booking.zoomAccess)}</dd>
-          </div>
-        </dl>
+      <AppPageGrid className="xl:grid-cols-[minmax(0,1fr)_320px]">
+        <AppPageMain className="gap-6">
+          <header className="space-y-3">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-primary">
+              Rotina de atendimento
+            </p>
+            <h1 className="font-display text-4xl leading-[0.98] text-brand-deep sm:text-5xl">
+              Detalhes da sessão
+            </h1>
+            <p className="max-w-2xl text-sm leading-6 text-tesText-secondary sm:text-base">
+              Acompanhe o status, prepare a sala e gerencie esta sessão com clareza.
+            </p>
+          </header>
 
-        <Link
-          className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand-primary px-6 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-          href={
-            routes.therapist.sessionVideo(booking.bookingId) as Route<string>
-          }
-        >
-          <Video aria-hidden="true" size={20} />
-          Abrir sala da sessão
-        </Link>
+          <SessionOverview booking={booking} presentation={presentation} />
+          <SessionReadiness booking={booking} presentation={presentation} />
 
-        <div className="mt-6">
+          <div className="grid gap-5 lg:grid-cols-2">
+            <SessionAbout booking={booking} presentation={presentation} />
+            <SessionPreparation />
+          </div>
+
           <SessionOperationActions
             actorRole="therapist"
             bookingId={booking.bookingId}
@@ -134,40 +120,471 @@ export default async function TherapistSessionDetailPage({
                 : "Esta sessão não está elegível para reagendamento operacional."
             }
           />
-        </div>
-      </section>
 
-      <aside className="rounded-card border border-brand-lavender bg-white p-6 shadow-card xl:sticky xl:top-28">
-        <div className="flex size-12 items-center justify-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-          <ShieldCheck aria-hidden="true" size={22} />
-        </div>
-        <h2 className="mt-4 text-lg font-extrabold text-brand-deep">
-          Segurança da sala
-        </h2>
-        <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-          O acesso é individual e confirmado novamente ao entrar na sala.
-        </p>
-        <p className="mt-4 flex gap-2 text-xs font-semibold leading-5 text-tesText-secondary">
-          <Video aria-hidden="true" className="mt-0.5" size={16} />
-          Pagamento, horário, responsável e janela de acesso precisam estar
-          válidos para iniciar a sessão.
-        </p>
-      </aside>
-    </main>
+          <SessionAdditionalLinks booking={booking} />
+        </AppPageMain>
+
+        <AppPageAside className="auto-rows-min self-start content-start grid-cols-2 gap-5 md:grid-cols-2 xl:!block">
+          <SessionActionRail booking={booking} presentation={presentation} />
+        </AppPageAside>
+      </AppPageGrid>
+    </AppPageContainer>
   );
 }
 
-function formatFinancialStatus(value: string | null) {
-  const labels: Record<string, string> = {
-    canceled: "Cancelado",
-    disputed: "Em contestação",
-    failed: "Falhou",
-    paid: "Confirmado",
-    partially_refunded: "Reembolso parcial",
-    pending: "Pendente",
-    processing: "Processando",
-    refunded: "Reembolsado",
+function SessionOverview({
+  booking,
+  presentation,
+}: {
+  booking: TherapistSessionDetailReadModel;
+  presentation: SessionPresentation;
+}) {
+  const patientJourneyRoute = routes.therapist.patientJourney(booking.patientProfileId);
+
+  return (
+    <section className="overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card">
+      <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="min-w-0 space-y-6">
+          <div className="flex flex-wrap items-center gap-4">
+            <AvatarInitials name={booking.patientName} size="lg" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xl font-semibold text-brand-deep sm:text-2xl">
+                {booking.patientName}
+              </p>
+              <p className="mt-1 text-sm text-tesText-secondary">
+                {booking.serviceTitle} · Atendimento online
+              </p>
+            </div>
+            <SessionStatusBadge presentation={presentation} />
+          </div>
+
+          <dl className="grid gap-x-5 gap-y-4 border-t border-brand-lavender/50 pt-5 sm:grid-cols-2 xl:grid-cols-4">
+            <SessionFact icon={CalendarDays} label="Data" value={formatSessionDate(booking)} />
+            <SessionFact icon={Clock3} label="Horário" value={formatSessionTimeRange(booking)} />
+            <SessionFact icon={Clock3} label="Duração" value={formatDuration(booking.durationMinutes)} />
+            <SessionFact icon={CheckCheck} label="Terapia" value={booking.serviceTitle} />
+          </dl>
+        </div>
+
+        <div className="rounded-card bg-brand-lavenderSoft/55 p-5">
+          <div className="flex items-center gap-2 text-brand-primary">
+            <ShieldCheck aria-hidden="true" className="size-5" />
+            <h2 className="text-base font-semibold text-brand-deep">O que precisa agora</h2>
+          </div>
+          <ul className="mt-4 space-y-3 text-sm leading-5 text-tesText-secondary">
+            <li className="flex gap-2">
+              <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-state-success" />
+              {presentation.description}
+            </li>
+            <li className="flex gap-2">
+              <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-state-success" />
+              Confirme se o seu ambiente está confortável e reservado antes do horário.
+            </li>
+            <li className="flex gap-2">
+              <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-state-success" />
+              A entrada na sala será revalidada quando você a abrir.
+            </li>
+          </ul>
+          <Link
+            className="mt-5 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-control border border-brand-lavender bg-white px-3 text-sm font-semibold text-brand-primary transition-colors hover:border-brand-primary hover:text-brand-deep"
+            href={patientJourneyRoute}
+          >
+            Ver jornada da pessoa
+            <ExternalLink aria-hidden="true" className="size-4" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function SessionReadiness({
+  booking,
+  presentation,
+}: {
+  booking: TherapistSessionDetailReadModel;
+  presentation: SessionPresentation;
+}) {
+  const canOpenRoom = presentation.actions.canAccessZoom;
+
+  return (
+    <section className="grid gap-5 md:grid-cols-2" aria-label="Status operacional da sessão">
+      <StatusSurface
+        description={getFinancialStatusDescription(booking.financialStatus)}
+        icon={CreditCard}
+        label="Pagamento"
+        tone={booking.financialStatus === "paid" ? "success" : "warning"}
+        value={formatFinancialStatus(booking.financialStatus)}
+      />
+      <StatusSurface
+        action={
+          <Link
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-control border border-brand-lavender px-3 text-sm font-semibold text-brand-primary transition-colors hover:border-brand-primary hover:text-brand-deep"
+            href={routes.therapist.sessionVideo(booking.bookingId)}
+          >
+            <Video aria-hidden="true" className="size-4" />
+            {canOpenRoom ? "Abrir sala" : "Ver status da sala"}
+          </Link>
+        }
+        description="O acesso é avaliado novamente ao abrir a sala."
+        icon={Video}
+        label="Sala de atendimento"
+        tone={canOpenRoom ? "success" : "brand"}
+        value={getZoomAccessLabel(booking.zoomAccess)}
+      />
+    </section>
+  );
+}
+
+function SessionAbout({
+  booking,
+  presentation,
+}: {
+  booking: TherapistSessionDetailReadModel;
+  presentation: SessionPresentation;
+}) {
+  return (
+    <section className="rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card sm:p-6">
+      <div className="flex items-center gap-3">
+        <span className="grid size-10 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+          <Info aria-hidden="true" className="size-5" />
+        </span>
+        <h2 className="font-display text-3xl leading-none text-brand-deep">Sobre esta sessão</h2>
+      </div>
+      <p className="mt-5 text-sm leading-6 text-tesText-secondary">
+        Esta sessão faz parte do acompanhamento com {booking.patientName}. As informações abaixo ajudam a organizar o atendimento, sem expor registros privados da pessoa.
+      </p>
+      <dl className="mt-5 divide-y divide-brand-lavender/50 border-y border-brand-lavender/50">
+        <SummaryRow label="Estado atual" value={presentation.label} />
+        <SummaryRow label="Valor reservado" value={formatSessionMoney(booking.priceCents, booking.currency)} />
+        <SummaryRow label="Formato" value="Atendimento online" />
+      </dl>
+    </section>
+  );
+}
+
+function SessionPreparation() {
+  const items = [
+    "Escolha um ambiente tranquilo e reservado.",
+    "Tenha água e os materiais de apoio por perto.",
+    "Verifique câmera, microfone e conexão com antecedência.",
+    "Chegue alguns minutos antes para acolher a pessoa com calma.",
+  ];
+
+  return (
+    <section className="rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card sm:p-6">
+      <div className="flex items-center gap-3">
+        <span className="grid size-10 place-items-center rounded-full bg-state-successSoft text-state-success">
+          <Check aria-hidden="true" className="size-5" />
+        </span>
+        <h2 className="font-display text-3xl leading-none text-brand-deep">Preparação antes do encontro</h2>
+      </div>
+      <ul className="mt-5 space-y-4">
+        {items.map((item) => (
+          <li className="flex gap-3 text-sm leading-5 text-tesText-secondary" key={item}>
+            <Check aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-state-success" />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+function SessionAdditionalLinks({ booking }: { booking: TherapistSessionDetailReadModel }) {
+  return (
+    <section className="overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card">
+      <Link
+        className="flex min-h-16 items-center gap-4 border-b border-brand-lavender/50 px-5 py-4 transition-colors hover:bg-brand-lavenderSoft/35 sm:px-6"
+        href={routes.therapist.patientJourney(booking.patientProfileId)}
+      >
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+          <Info aria-hidden="true" className="size-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-brand-deep">Jornada da pessoa</span>
+          <span className="mt-0.5 block text-xs leading-5 text-tesText-secondary">Consulte informações compartilhadas e permitidas para o acompanhamento.</span>
+        </span>
+        <ExternalLink aria-hidden="true" className="size-4 shrink-0 text-brand-primary" />
+      </Link>
+      <Link
+        className="flex min-h-16 items-center gap-4 px-5 py-4 transition-colors hover:bg-brand-lavenderSoft/35 sm:px-6"
+        href={routes.public.terms}
+      >
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+          <ShieldCheck aria-hidden="true" className="size-5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-semibold text-brand-deep">Política de cancelamento e reagendamento</span>
+          <span className="mt-0.5 block text-xs leading-5 text-tesText-secondary">Consulte as regras aplicáveis à sessão contratada.</span>
+        </span>
+        <ExternalLink aria-hidden="true" className="size-4 shrink-0 text-brand-primary" />
+      </Link>
+    </section>
+  );
+}
+
+function SessionActionRail({
+  booking,
+  presentation,
+}: {
+  booking: TherapistSessionDetailReadModel;
+  presentation: SessionPresentation;
+}) {
+  const canOpenRoom = presentation.actions.canAccessZoom;
+
+  return (
+    <>
+      <section className="h-auto self-start rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card xl:mb-5 sm:p-6">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+            <Clock3 aria-hidden="true" className="size-5" />
+          </span>
+          <h2 className="font-display text-3xl leading-none text-brand-deep">Próximas ações</h2>
+        </div>
+        <p className="mt-5 text-sm font-semibold text-brand-deep">{presentation.label}</p>
+        <p className="mt-1 text-sm leading-5 text-tesText-secondary">{presentation.description}</p>
+        <p className="mt-4 flex items-center gap-2 text-sm font-medium text-brand-deep">
+          <CalendarDays aria-hidden="true" className="size-4 text-brand-primary" />
+          {formatSessionDateTime(booking.startsAt, booking.timezone)}
+        </p>
+        <Link
+          className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-control bg-brand-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-deep"
+          href={routes.therapist.sessionVideo(booking.bookingId)}
+        >
+          <Video aria-hidden="true" className="size-4" />
+          {canOpenRoom ? "Abrir sala" : "Acompanhar a sala"}
+        </Link>
+        <Link
+          className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-control border border-brand-lavender px-3 text-sm font-semibold text-brand-primary transition-colors hover:border-brand-primary hover:text-brand-deep"
+          href={routes.therapist.agenda}
+        >
+          Ver agenda completa
+        </Link>
+      </section>
+
+      <section className="h-auto self-start rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card xl:mb-5 sm:p-6">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+            <CircleHelp aria-hidden="true" className="size-5" />
+          </span>
+          <h2 className="font-display text-3xl leading-none text-brand-deep">Suporte rápido</h2>
+        </div>
+        <p className="mt-4 text-sm leading-6 text-tesText-secondary">
+          Se algo não sair como o esperado, envie uma mensagem para o suporte.
+        </p>
+        <Link
+          className="mt-5 inline-flex min-h-10 w-full items-center justify-center rounded-control border border-brand-lavender px-3 text-sm font-semibold text-brand-primary transition-colors hover:border-brand-primary hover:text-brand-deep"
+          href={`${routes.therapist.messages}?context=suporte`}
+        >
+          Abrir Mensagens
+        </Link>
+      </section>
+
+      <section className="h-auto self-start rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card xl:last:mb-0 sm:p-6">
+        <div className="flex items-center gap-3">
+          <span className="grid size-10 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+            <Laptop aria-hidden="true" className="size-5" />
+          </span>
+          <h2 className="font-display text-3xl leading-none text-brand-deep">Orientações rápidas</h2>
+        </div>
+        <ul className="mt-5 space-y-3 text-sm leading-5 text-tesText-secondary">
+          <li>O acesso à sala é revalidado sempre que ela é aberta.</li>
+          <li>Reagendamentos e cancelamentos seguem as regras desta sessão.</li>
+          <li>Envie uma mensagem ao suporte se precisar de orientação adicional.</li>
+        </ul>
+        <Link
+          className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-brand-primary hover:text-brand-deep"
+          href={routes.public.zoomHelp}
+        >
+          Como funciona a sala online
+          <ExternalLink aria-hidden="true" className="size-4" />
+        </Link>
+      </section>
+    </>
+  );
+}
+
+function StatusSurface({
+  action,
+  description,
+  icon: Icon,
+  label,
+  tone,
+  value,
+}: {
+  action?: React.ReactNode;
+  description: string;
+  icon: typeof CreditCard;
+  label: string;
+  tone: "brand" | "success" | "warning";
+  value: string;
+}) {
+  const tones = {
+    brand: "bg-brand-lavenderSoft text-brand-primary",
+    success: "bg-state-successSoft text-state-success",
+    warning: "bg-state-warningSoft text-state-warning",
   };
 
-  return value ? (labels[value] ?? "Em análise") : "Não iniciado";
+  return (
+    <section className="rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card sm:p-6">
+      <div className="flex items-start gap-3">
+        <span className={`grid size-10 shrink-0 place-items-center rounded-full ${tones[tone]}`}>
+          <Icon aria-hidden="true" className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-brand-deep">{label}</p>
+          <p className="mt-1 text-lg font-semibold text-brand-deep">{value}</p>
+          <p className="mt-1 text-sm leading-5 text-tesText-secondary">{description}</p>
+        </div>
+      </div>
+      {action ? <div className="mt-5">{action}</div> : null}
+    </section>
+  );
+}
+
+function SessionFact({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof CalendarDays;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="min-w-0">
+      <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-tesText-secondary">
+        <Icon aria-hidden="true" className="size-3.5 text-brand-primary" />
+        {label}
+      </dt>
+      <dd className="mt-1.5 truncate text-sm font-semibold text-brand-deep" title={value}>
+        {value}
+      </dd>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-3">
+      <dt className="text-sm text-tesText-secondary">{label}</dt>
+      <dd className="text-right text-sm font-semibold text-brand-deep">{value}</dd>
+    </div>
+  );
+}
+
+function SessionStatusBadge({ presentation }: { presentation: SessionPresentation }) {
+  const toneClasses = {
+    brand: "bg-brand-lavenderSoft text-brand-primary",
+    danger: "bg-state-dangerSoft text-state-danger",
+    info: "bg-brand-lavenderSoft text-brand-primary",
+    neutral: "bg-tesSurface-subtle text-tesText-secondary",
+    success: "bg-state-successSoft text-state-success",
+    warning: "bg-state-warningSoft text-state-warning",
+  };
+
+  return (
+    <span className={`inline-flex min-h-8 items-center rounded-full px-3 text-xs font-semibold ${toneClasses[presentation.tone]}`}>
+      {presentation.label}
+    </span>
+  );
+}
+
+function AvatarInitials({ name, size }: { name: string; size: "lg" | "md" }) {
+  const initials = name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase();
+  const sizeClass = size === "lg" ? "size-16 text-xl" : "size-11 text-base";
+
+  return (
+    <span className={`grid shrink-0 place-items-center rounded-full bg-brand-lavenderSoft font-semibold text-brand-primary ${sizeClass}`}>
+      {initials || "P"}
+    </span>
+  );
+}
+
+function SessionDetailErrorState({ error }: { error: { correlationId: string } }) {
+  return (
+    <AppPageContainer>
+      <section className="max-w-2xl rounded-panel border border-state-danger/30 bg-white p-6 shadow-card">
+        <h1 className="font-display text-4xl text-brand-deep">Não foi possível carregar esta sessão</h1>
+        <p className="mt-3 text-sm leading-6 text-tesText-secondary">
+          Tente novamente em instantes. Se o problema continuar, entre em contato com o suporte.
+        </p>
+        <p className="mt-4 text-xs text-tesText-secondary">Referência: {error.correlationId}</p>
+        <Link
+          className="mt-5 inline-flex min-h-10 items-center justify-center rounded-control bg-brand-primary px-4 text-sm font-semibold text-white hover:bg-brand-deep"
+          href={routes.therapist.sessions}
+        >
+          Voltar para sessões
+        </Link>
+      </section>
+    </AppPageContainer>
+  );
+}
+
+function formatFinancialStatus(status: string | null) {
+  const labels: Record<string, string> = {
+    canceled: "Cancelado",
+    paid: "Confirmado",
+    pending: "Aguardando confirmação",
+    processing: "Em processamento",
+    failed: "Não confirmado",
+    refunded: "Reembolsado",
+    partially_refunded: "Reembolso parcial",
+    disputed: "Em análise",
+  };
+
+  return status ? labels[status] : "Aguardando confirmação";
+}
+
+function getFinancialStatusDescription(status: string | null) {
+  const descriptions: Record<string, string> = {
+    canceled: "Esta sessão foi cancelada.",
+    paid: "O pagamento desta sessão foi confirmado.",
+    pending: "A confirmação do pagamento ainda está em andamento.",
+    processing: "A confirmação do pagamento ainda está em andamento.",
+    failed: "Há uma pendência de pagamento para esta sessão.",
+    refunded: "Um reembolso foi registrado para esta sessão.",
+    partially_refunded: "Há um reembolso parcial registrado para esta sessão.",
+    disputed: "Há uma ocorrência de pagamento em análise.",
+  };
+
+  return status ? descriptions[status] ?? "A confirmação de pagamento ainda não está disponível." : "A confirmação de pagamento ainda não está disponível.";
+}
+
+function formatSessionDate(booking: TherapistSessionDetailReadModel) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: booking.timezone,
+  })
+    .format(new Date(booking.startsAt))
+    .replace(".", "");
+}
+
+function formatSessionTimeRange(booking: TherapistSessionDetailReadModel) {
+  const formatter = new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: booking.timezone,
+  });
+
+  return `${formatter.format(new Date(booking.startsAt))} – ${formatter.format(new Date(booking.endsAt))}`;
+}
+
+function formatDuration(durationMinutes: number) {
+  if (durationMinutes % 60 === 0) {
+    return `${durationMinutes / 60}h`;
+  }
+
+  const hours = Math.floor(durationMinutes / 60);
+  const minutes = durationMinutes % 60;
+  return hours > 0 ? `${hours}h${String(minutes).padStart(2, "0")}` : `${minutes} min`;
 }

@@ -17,6 +17,7 @@ describe("getCanonicalTherapistPath", () => {
     ["/basico/upgrade", routes.therapist.plan],
     ["/pro/metricas", routes.therapist.insights],
     ["/pro/plano", routes.therapist.plan],
+    ["/plus/suporte", "/terapeuta/suporte"],
   ])("maps %s to %s", (legacy, canonical) => {
     expect(getCanonicalTherapistPath(legacy)).toBe(canonical);
   });

@@ -4,13 +4,16 @@ import type {
   TherapistScheduleRule,
   TherapistScheduleService,
 } from "@/domain/tes";
+import type { TherapistAgendaReadModel } from "@/features/bookings";
 
 import {
+  buildUpcomingExceptions,
   calculateWeeklyAvailability,
   findDefaultScheduleScope,
   formatDuration,
   getApplicableRules,
   getRulesForScope,
+  hasOverlappingAvailabilityRules,
 } from "./therapist-schedule-view-model";
 
 const serviceId = "d1000000-0000-4000-8000-000000000001";
@@ -95,6 +98,61 @@ describe("therapist schedule view model", () => {
     expect(formatDuration(60)).toBe("1h");
     expect(formatDuration(150)).toBe("2h 30min");
   });
+
+  it("formats upcoming exception dates numerically", () => {
+    const exceptions = buildUpcomingExceptions({
+      agenda: agendaFixture(),
+      referenceNow: "2026-08-15T12:00:00.000Z",
+      scope: "all",
+      timezone: "America/Sao_Paulo",
+    });
+
+    expect(exceptions).toEqual([
+      expect.objectContaining({ dateLabel: "16/08" }),
+    ]);
+  });
+
+  it("detects overlapping active ranges in the same effective availability", () => {
+    expect(
+      hasOverlappingAvailabilityRules([
+        ruleFixture({ endTime: "18:00", startTime: "08:00" }),
+        ruleFixture({
+          endTime: "19:00",
+          id: "a1000000-0000-4000-8000-000000000004",
+          startTime: "07:00",
+        }),
+      ]),
+    ).toBe(true);
+
+    expect(
+      hasOverlappingAvailabilityRules([
+        ruleFixture({ serviceId: null }),
+        ruleFixture({
+          endTime: "12:00",
+          id: "a1000000-0000-4000-8000-000000000005",
+          serviceId: secondServiceId,
+          startTime: "10:00",
+        }),
+      ]),
+    ).toBe(true);
+
+    expect(
+      hasOverlappingAvailabilityRules([
+        ruleFixture({ endTime: "12:00", startTime: "09:00" }),
+        ruleFixture({
+          endTime: "15:00",
+          id: "a1000000-0000-4000-8000-000000000006",
+          startTime: "12:00",
+        }),
+        ruleFixture({
+          endTime: "12:00",
+          id: "a1000000-0000-4000-8000-000000000007",
+          serviceId: secondServiceId,
+          startTime: "09:00",
+        }),
+      ]),
+    ).toBe(false);
+  });
 });
 
 function ruleFixture(
@@ -125,5 +183,37 @@ function serviceFixture(id: string, title: string): TherapistScheduleService {
     status: "active",
     title,
     weeklyAvailableMinutes: 0,
+  };
+}
+
+function agendaFixture(): TherapistAgendaReadModel {
+  return {
+    availability: {
+      exceptions: [
+        {
+          endsAt: "2026-08-16T14:00:00.000Z",
+          id: "f1000000-0000-4000-8000-000000000001",
+          isAvailable: false,
+          serviceId: null,
+          startsAt: "2026-08-16T12:00:00.000Z",
+        },
+      ],
+      rules: [],
+    },
+    bookings: [],
+    holds: [],
+    range: {
+      end: "2026-08-30T00:00:00.000Z",
+      endExclusive: true,
+      start: "2026-08-15T00:00:00.000Z",
+    },
+    summary: {
+      activeHolds: 0,
+      bookings: 0,
+      pendingReschedules: 0,
+    },
+    therapistProfileId: "c1000000-0000-4000-8000-000000000001",
+    timezone: "America/Sao_Paulo",
+    version: 1,
   };
 }

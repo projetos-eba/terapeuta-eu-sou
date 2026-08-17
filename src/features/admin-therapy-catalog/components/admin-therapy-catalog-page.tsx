@@ -10,18 +10,21 @@ import {
   Search,
   Send,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { TESButton, TESDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 import {
   createStableRequestId,
+  fetchAdminTherapyCatalogRequests,
+  getAdminCatalogRequestMaterialUrl,
   sendAdminTherapyCatalogCommand,
 } from "../admin-therapy-catalog.commands";
 import type {
   AdminTherapy,
   AdminTherapyCatalogContract,
+  AdminTherapyCatalogRequestDetail,
   AdminTherapyDraftCommand,
   AdminTherapyTransition,
 } from "../admin-therapy-catalog.types";
@@ -72,6 +75,15 @@ export function AdminTherapyCatalogPage({
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [isMutating, setIsMutating] = useState(false);
+  const [requestDetails, setRequestDetails] = useState<
+    AdminTherapyCatalogRequestDetail[]
+  >([]);
+  const [inspectedRequest, setInspectedRequest] =
+    useState<AdminTherapyCatalogRequestDetail | null>(null);
+
+  useEffect(() => {
+    void fetchAdminTherapyCatalogRequests().then(setRequestDetails);
+  }, []);
 
   const filtered = useMemo(() => {
     const query = normalize(filters.query);
@@ -190,6 +202,41 @@ export function AdminTherapyCatalogPage({
     setMessage("Ação administrativa registrada.");
   }
 
+  async function decideRequest(
+    request: AdminTherapyCatalogRequestDetail,
+    status: "approved" | "merged" | "needs_information" | "rejected" | "under_review",
+    decision: string,
+    relatedTherapyId: string | null,
+  ) {
+    setIsMutating(true);
+    setMessage(null);
+    const result = await sendAdminTherapyCatalogCommand({
+      action: "decideRequest",
+      catalogRequestId: request.id,
+      decision,
+      relatedTherapyId,
+      requestId: createStableRequestId(),
+      status,
+    });
+    setIsMutating(false);
+    if (result.status === "error") {
+      setMessage("Não foi possível registrar a decisão agora. Tente novamente.");
+      return;
+    }
+    setCatalog(result.catalog);
+    setRequestDetails((items) =>
+      items.map((item) =>
+        item.id === request.id ? { ...item, decision, relatedTherapyId, status } : item,
+      ),
+    );
+    setInspectedRequest((current) =>
+      current?.id === request.id
+        ? { ...current, decision, relatedTherapyId, status }
+        : current,
+    );
+    setMessage("Decisão registrada e pessoa solicitante avisada.");
+  }
+
   return (
     <div className="mx-auto w-full max-w-[1166px] space-y-6 py-1">
       <header className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
@@ -269,13 +316,13 @@ export function AdminTherapyCatalogPage({
 
         <aside className="space-y-4">
           <Panel title="Solicitações de terapeutas">
-            {catalog.requests.length === 0 ? (
+            {requestDetails.length === 0 && catalog.requests.length === 0 ? (
               <p className="text-sm font-semibold text-tesText-secondary">
                 Nenhuma solicitação pendente.
               </p>
             ) : (
               <div className="space-y-3">
-                {catalog.requests.slice(0, 6).map((request) => (
+                {(requestDetails.length > 0 ? requestDetails : catalog.requests).slice(0, 6).map((request) => (
                   <div
                     className="rounded-xl border border-brand-lavender bg-surface-soft p-3"
                     key={request.id}
@@ -290,6 +337,15 @@ export function AdminTherapyCatalogPage({
                       <p className="mt-2 line-clamp-3 text-xs font-semibold leading-5 text-tesText-secondary">
                         {request.justification}
                       </p>
+                    ) : null}
+                    {isDetailedRequest(request) ? (
+                      <button
+                        className="mt-3 text-sm font-extrabold text-brand-primary"
+                        onClick={() => setInspectedRequest(request)}
+                        type="button"
+                      >
+                        Abrir análise
+                      </button>
                     ) : null}
                   </div>
                 ))}
@@ -307,6 +363,19 @@ export function AdminTherapyCatalogPage({
           </Panel>
         </aside>
       </div>
+
+      <RequestInspectionDialog
+        isMutating={isMutating}
+        onClose={() => setInspectedRequest(null)}
+        onDecide={decideRequest}
+        onOpenMaterial={async (materialId) => {
+          const url = await getAdminCatalogRequestMaterialUrl(materialId);
+          if (url) window.open(url, "_blank", "noopener,noreferrer");
+          else setMessage("Não foi possível abrir o material agora. Tente novamente.");
+        }}
+        request={inspectedRequest}
+        therapies={catalog.items}
+      />
 
       {editingTherapy ? (
         <TESDialog
@@ -661,6 +730,95 @@ function ImpactSummary({ therapy }: { therapy: AdminTherapy }) {
       ))}
     </dl>
   );
+}
+
+function RequestInspectionDialog({
+  isMutating,
+  onClose,
+  onDecide,
+  onOpenMaterial,
+  request,
+  therapies,
+}: {
+  isMutating: boolean;
+  onClose: () => void;
+  onDecide: (
+    request: AdminTherapyCatalogRequestDetail,
+    status: "approved" | "merged" | "needs_information" | "rejected" | "under_review",
+    decision: string,
+    relatedTherapyId: string | null,
+  ) => Promise<void>;
+  onOpenMaterial: (materialId: string) => Promise<void>;
+  request: AdminTherapyCatalogRequestDetail | null;
+  therapies: AdminTherapy[];
+}) {
+  const [decision, setDecision] = useState("");
+  const [status, setStatus] = useState<
+    "approved" | "merged" | "needs_information" | "rejected" | "under_review"
+  >("under_review");
+  const [relatedTherapyId, setRelatedTherapyId] = useState("");
+
+  useEffect(() => {
+    if (!request) return;
+    setDecision(request.decision ?? "");
+    setStatus(request.status === "submitted" ? "under_review" : request.status);
+    setRelatedTherapyId(request.relatedTherapyId ?? "");
+  }, [request]);
+
+  if (!request) return null;
+  const rawFields: Array<[string, unknown]> = [
+    ["Descrição", request.submission.description ?? request.description],
+    ["Objetivo", request.submission.objective ?? request.justification],
+    ["Situações relatadas", request.submission.useCases],
+    ["Como ocorre o atendimento", request.submission.sessionProcess],
+    ["Experiência", request.submission.experienceLevel],
+    ["Formação", request.submission.trainingDescription],
+    ["Cuidados e limites", request.submission.safetyNotes],
+    ["Referência", request.submission.referenceUrl],
+    ["Informações adicionais", request.submission.additionalInformation],
+  ];
+  const fields = rawFields.filter(
+    ([, value]) => typeof value === "string" && value.trim(),
+  );
+
+  return (
+    <TESDialog
+      className="max-w-4xl"
+      description="Revise informações e materiais privados. Toda decisão exige motivo e não publica uma terapia automaticamente."
+      onClose={onClose}
+      title={`Análise: ${request.informedName}`}
+    >
+      <div className="space-y-6">
+        <div className="grid gap-3 rounded-card bg-surface-soft p-4 sm:grid-cols-3">
+          <InfoItem label="Estado" value={requestStatusLabel(request.status)} />
+          <InfoItem label="Enviada em" value={formatDate(request.createdAt)} />
+          <InfoItem label="Atualizada em" value={formatDate(request.updatedAt)} />
+        </div>
+        <section><h3 className="text-lg font-extrabold text-brand-deep">Informações compartilhadas</h3><dl className="mt-3 grid gap-3 sm:grid-cols-2">{fields.length ? fields.map(([label, value]) => <div className="rounded-card border border-brand-lavender p-4" key={label}><dt className="text-xs font-extrabold uppercase tracking-[0.12em] text-tesText-secondary">{label}</dt><dd className="mt-2 whitespace-pre-line text-sm leading-6 text-brand-deep">{String(value)}</dd></div>) : <p className="text-sm text-tesText-secondary">Esta solicitação foi enviada em um formato anterior.</p>}</dl></section>
+        <section><h3 className="text-lg font-extrabold text-brand-deep">Materiais privados</h3>{request.materials.length ? <div className="mt-3 space-y-2">{request.materials.map((material) => <button className="flex min-h-11 w-full items-center justify-between rounded-control border border-brand-lavender px-4 text-left text-sm font-semibold text-brand-primary hover:bg-brand-lavenderSoft" key={material.id} onClick={() => void onOpenMaterial(material.id)} type="button"><span className="truncate">{material.fileName}</span><span className="ml-3 shrink-0 text-tesText-secondary">Abrir</span></button>)}</div> : <p className="mt-2 text-sm text-tesText-secondary">Nenhum material foi anexado.</p>}</section>
+        <section className="rounded-card border border-brand-lavender p-4"><h3 className="text-lg font-extrabold text-brand-deep">Decisão administrativa</h3><p className="mt-1 text-sm leading-6 text-tesText-secondary">O motivo será registrado e enviado à pessoa solicitante pela Central de Mensagens e por e-mail quando disponível.</p><div className="mt-4 grid gap-4 sm:grid-cols-2"><label className="text-sm font-semibold text-brand-deep"><span>Estado</span><select className="mt-2 min-h-11 w-full rounded-control border border-brand-lavender bg-white px-3 text-sm" onChange={(event) => setStatus(event.target.value as typeof status)} value={status}><option value="under_review">Em análise</option><option value="needs_information">Precisa de informações</option><option value="approved">Aprovar para próxima etapa</option><option value="merged">Mesclar com terapia existente</option><option value="rejected">Rejeitar</option></select></label><label className="text-sm font-semibold text-brand-deep"><span>Vincular à terapia existente</span><select className="mt-2 min-h-11 w-full rounded-control border border-brand-lavender bg-white px-3 text-sm" onChange={(event) => setRelatedTherapyId(event.target.value)} value={relatedTherapyId}><option value="">Sem vínculo</option>{therapies.map((therapy) => <option key={therapy.id} value={therapy.id}>{therapy.name}</option>)}</select></label></div><label className="mt-4 block text-sm font-semibold text-brand-deep"><span>Motivo</span><textarea className="mt-2 min-h-28 w-full rounded-control border border-brand-lavender bg-white p-3 text-sm outline-none focus:ring-4 focus:ring-brand-lavenderSoft" onChange={(event) => setDecision(event.target.value)} value={decision} /></label><div className="mt-4 flex justify-end"><TESButton disabled={isMutating || decision.trim().length < 4 || (status === "merged" && !relatedTherapyId)} onClick={() => void onDecide(request, status, decision.trim(), relatedTherapyId || null)} type="button" variant="gradient">{isMutating ? "Registrando…" : "Registrar decisão"}</TESButton></div></section>
+      </div>
+    </TESDialog>
+  );
+}
+
+function InfoItem({ label, value }: { label: string; value: string }) {
+  return <div><dt className="text-xs font-extrabold uppercase tracking-[0.12em] text-tesText-secondary">{label}</dt><dd className="mt-1 text-sm font-bold text-brand-deep">{value}</dd></div>;
+}
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("pt-BR");
+}
+
+function requestStatusLabel(status: string) {
+  return ({ approved: "Aprovada", merged: "Mesclada", needs_information: "Precisa de informações", rejected: "Rejeitada", submitted: "Enviada", under_review: "Em análise" } as Record<string, string>)[status] ?? "Em análise";
+}
+
+function isDetailedRequest(
+  value: AdminTherapyCatalogContract["requests"][number] | AdminTherapyCatalogRequestDetail,
+): value is AdminTherapyCatalogRequestDetail {
+  return "submission" in value && "materials" in value && "updatedAt" in value;
 }
 
 function Panel({

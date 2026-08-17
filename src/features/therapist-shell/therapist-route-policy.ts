@@ -42,9 +42,6 @@ export const therapistRoutePolicies = {
   settings: {
     capability: "operation_essentials",
   },
-  support: {
-    capability: "operation_essentials",
-  },
 } satisfies Record<string, TherapistRoutePolicy>;
 
 const legacySpecialCases: Record<string, string> = {

@@ -382,8 +382,7 @@ function UnavailableSignals() {
     },
     {
       label: "Sentimento pós-sessão",
-      reason:
-        "Ainda não há dados suficientes para esta leitura.",
+      reason: "Ainda não há dados suficientes para esta leitura.",
     },
     {
       label: "Lacuna da agenda",

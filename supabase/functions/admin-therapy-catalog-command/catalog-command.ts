@@ -28,6 +28,8 @@ export type AdminCatalogPermission =
 
 export type AdminTherapyCatalogCommandBody =
   | { action?: "list" }
+  | { action?: "requestList" }
+  | { action?: "requestSign"; materialId?: string }
   | { action?: "matchingList" }
   | {
       action?: "matchingSaveTheme";
@@ -69,13 +71,11 @@ export type AdminTherapyCatalogCommandBody =
       requestId?: string;
       status?: string;
     }
-  | {
-      action?: "submitRequest";
-      payload?: unknown;
-    };
 
 export type ValidAdminTherapyCatalogCommand =
   | { action: "list" }
+  | { action: "requestList" }
+  | { action: "requestSign"; materialId: string }
   | { action: "matchingList" }
   | {
       action: "matchingSaveTheme";
@@ -113,12 +113,16 @@ export type ValidAdminTherapyCatalogCommand =
       requestId: string;
       status: string;
     }
-  | { action: "submitRequest"; payload: Record<string, unknown> };
 
 export function validateAdminTherapyCatalogCommand(
   body: AdminTherapyCatalogCommandBody,
 ): ValidAdminTherapyCatalogCommand {
   if (body.action === "list") return { action: "list" };
+  if (body.action === "requestList") return { action: "requestList" };
+  if (body.action === "requestSign") {
+    if (!isUuid(body.materialId)) invalid();
+    return { action: "requestSign", materialId: body.materialId };
+  }
   if (body.action === "matchingList") return { action: "matchingList" };
 
   if (body.action === "matchingSaveTheme") {
@@ -224,18 +228,12 @@ export function validateAdminTherapyCatalogCommand(
     };
   }
 
-  if (body.action === "submitRequest") {
-    if (!isRecord(body.payload)) invalid();
-    return { action: "submitRequest", payload: body.payload };
-  }
-
   invalid();
 }
 
 export function permissionForAdminTherapyCatalogCommand(
   command: ValidAdminTherapyCatalogCommand,
 ): AdminCatalogPermission | null {
-  if (command.action === "submitRequest") return null;
   if (command.action === "matchingList") return "admin.matching.read";
   if (
     command.action === "matchingSaveTheme" ||
@@ -244,7 +242,12 @@ export function permissionForAdminTherapyCatalogCommand(
   ) {
     return "admin.matching.manage";
   }
-  if (command.action === "list" || command.action === "impact") {
+  if (
+    command.action === "list" ||
+    command.action === "impact" ||
+    command.action === "requestList" ||
+    command.action === "requestSign"
+  ) {
     return "admin.therapies.read";
   }
   return "admin.therapies.manage";

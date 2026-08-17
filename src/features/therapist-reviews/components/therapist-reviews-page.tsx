@@ -19,7 +19,6 @@ import {
 import type {
   TherapistReviewFilter,
   TherapistReviewItem,
-  TherapistReviewsMetric,
   TherapistReviewsPageData,
 } from "../therapist-reviews.types";
 import { ReviewReplyDialog } from "./therapist-reviews-reply-dialog";
@@ -106,7 +105,16 @@ export function TherapistReviewsPage({
         {inlineMessage}
       </div>
 
-      <ReviewsHero metrics={data.metricCards} />
+      <ReviewsHero />
+
+      <section
+        aria-label="Indicadores das avaliações"
+        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+      >
+        {data.metricCards.map((metric) => (
+          <TherapistReviewMetricCard key={metric.key} metric={metric} />
+        ))}
+      </section>
 
       {inlineMessage ? (
         <div
@@ -119,8 +127,28 @@ export function TherapistReviewsPage({
 
       <AppPageGrid>
         <AppPageMain>
-          <AppPageSection className="grid gap-5">
-            <div className="flex flex-wrap gap-3" role="tablist">
+          <AppPageSection className="overflow-hidden p-0">
+            <div className="border-b border-brand-lavender px-5 py-5 sm:px-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <h2 className="text-xl font-extrabold text-brand-deep sm:text-2xl">
+                    Avaliações recebidas
+                  </h2>
+                  <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                    Leia os retornos publicados e responda quando fizer sentido.
+                  </p>
+                </div>
+                <p className="text-sm font-bold text-tesText-muted">
+                  {filteredReviews.length} avaliaç
+                  {filteredReviews.length === 1 ? "ão" : "ões"}
+                </p>
+              </div>
+            </div>
+
+            <div
+              className="flex gap-2 overflow-x-auto border-b border-brand-lavender px-5 py-3 sm:px-6"
+              role="tablist"
+            >
               {Object.entries(filterLabels).map(([key, label]) => {
                 const value = key as TherapistReviewFilter;
                 const count =
@@ -129,7 +157,7 @@ export function TherapistReviewsPage({
                 return (
                   <button
                     aria-selected={filter === value}
-                    className={`inline-flex min-h-11 items-center gap-2 rounded-lg px-4 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary ${
+                    className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-4 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary ${
                       filter === value
                         ? "bg-brand-primary text-white"
                         : "text-brand-primary hover:bg-brand-lavenderSoft"
@@ -159,29 +187,31 @@ export function TherapistReviewsPage({
               })}
             </div>
 
-            {visibleReviews.length ? (
-              <div className="grid gap-5">
-                {visibleReviews.map((review) => (
-                  <TherapistReviewCard
-                    key={review.id}
-                    onReply={() => setSelectedReview(review)}
-                    review={review}
-                  />
-                ))}
-              </div>
-            ) : (
-              <ReviewsEmptyState filter={filter} />
-            )}
+            <div className="grid gap-4 p-5 sm:p-6">
+              {visibleReviews.length ? (
+                <div className="grid gap-4">
+                  {visibleReviews.map((review) => (
+                    <TherapistReviewCard
+                      key={review.id}
+                      onReply={() => setSelectedReview(review)}
+                      review={review}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <ReviewsEmptyState filter={filter} />
+              )}
 
-            {hasMore ? (
-              <button
-                className="mx-auto inline-flex min-h-11 min-w-[260px] items-center justify-center rounded-lg border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary shadow-card transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                onClick={() => setVisibleCount((current) => current + 5)}
-                type="button"
-              >
-                Carregar mais avaliações
-              </button>
-            ) : null}
+              {hasMore ? (
+                <button
+                  className="mx-auto inline-flex min-h-11 min-w-[260px] items-center justify-center rounded-lg border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                  onClick={() => setVisibleCount((current) => current + 5)}
+                  type="button"
+                >
+                  Carregar mais avaliações
+                </button>
+              ) : null}
+            </div>
           </AppPageSection>
         </AppPageMain>
 
@@ -232,36 +262,35 @@ export function TherapistReviewsErrorState({
   );
 }
 
-function ReviewsHero({ metrics }: { metrics: TherapistReviewsMetric[] }) {
+function ReviewsHero() {
   return (
-    <section className="overflow-hidden rounded-card border border-brand-lavender bg-white shadow-card">
-      <div className="grid gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
-        <div className="grid gap-6">
+    <section className="overflow-hidden rounded-card border border-brand-lavender bg-white">
+      <div className="grid min-h-[236px] lg:grid-cols-[minmax(0,1fr)_minmax(360px,44%)]">
+        <div className="flex items-center px-5 py-8 sm:px-8 lg:px-10">
           <div>
-            <h1 className="font-display text-[38px] font-light italic leading-tight text-brand-deep sm:text-[52px]">
+            <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-brand-primary">
+              Reputação profissional
+            </p>
+            <h1 className="mt-3 font-display text-[42px] font-light italic leading-[0.95] text-brand-deep sm:text-[58px]">
               Avaliações
             </h1>
-            <p className="mt-3 max-w-[420px] text-sm font-semibold leading-6 text-brand-primary sm:text-base">
-              Acompanhe o que seus pacientes dizem sobre seus atendimentos.
+            <p className="mt-4 max-w-[540px] text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
+              Acompanhe as avaliações das pessoas sobre os encontros realizados
+              e fortaleça a confiança no seu trabalho.
             </p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {metrics.map((metric) => (
-              <TherapistReviewMetricCard key={metric.key} metric={metric} />
-            ))}
           </div>
         </div>
 
-        <div className="relative min-h-[180px] overflow-hidden rounded-card bg-brand-lavenderSoft lg:min-h-[218px]">
+        <div className="relative min-h-[180px] overflow-hidden bg-brand-lavenderSoft sm:min-h-[220px]">
           <Image
             alt=""
-            className="object-cover"
+            className="object-cover object-center opacity-90"
             fill
             priority
-            sizes="(min-width: 1024px) 420px, 100vw"
+            sizes="(min-width: 1024px) 44vw, 100vw"
             src="/home/step-crystal.png"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-white/70 via-white/25 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/30 to-transparent lg:from-white/45" />
         </div>
       </div>
     </section>

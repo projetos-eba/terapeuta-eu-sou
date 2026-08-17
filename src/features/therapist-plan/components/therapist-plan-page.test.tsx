@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { TherapistPlan } from "@/domain/tes";
@@ -16,20 +16,34 @@ describe("TherapistPlanPage", () => {
   it("offers both paid plans to a Free therapist using real catalog prices", () => {
     render(<TherapistPlanPage data={fixture("free")} />);
 
-    expect(screen.getByText("Seu plano atual:")).toHaveTextContent("TES Free");
-    expect(screen.getByText("R$ 60,00")).toBeInTheDocument();
-    expect(screen.getByText("R$ 120,00")).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Fazer upgrade" })).toHaveLength(
-      2,
+    expect(
+      screen.getByRole("heading", { name: "Meu plano" }),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText("Resumo do plano atual")).getByText("Free"),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("R$ 60,00").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("R$ 120,00").length).toBeGreaterThan(0);
+    expect(
+      screen
+        .getAllByRole("link", { name: /Fazer upgrade/ })
+        .map((link) => link.getAttribute("href")),
+    ).toEqual(
+      expect.arrayContaining([
+        "/terapeuta/checkout?plan=premium",
+        "/terapeuta/checkout?plan=premium_plus",
+      ]),
     );
   });
 
   it("offers only Premium Plus to a Premium therapist", () => {
     render(<TherapistPlanPage data={fixture("premium")} />);
 
-    expect(screen.getByText("Seu plano atual:")).toHaveTextContent(
-      "TES Premium",
-    );
+    expect(
+      within(screen.getByLabelText("Resumo do plano atual")).getByText(
+        "Premium",
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
         name: "Fazer upgrade para Premium Plus",
@@ -41,10 +55,12 @@ describe("TherapistPlanPage", () => {
   it("does not offer downgrade or upgrade to a Premium Plus therapist", () => {
     render(<TherapistPlanPage data={fixture("premium_plus")} />);
 
-    expect(screen.getByText("Seu plano atual:")).toHaveTextContent(
-      "TES Premium Plus",
-    );
-    expect(screen.getByText("Mais completo")).toBeInTheDocument();
+    expect(
+      within(screen.getByLabelText("Resumo do plano atual")).getByText(
+        "Premium Plus",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Seu plano mais completo")).toBeInTheDocument();
     expect(screen.queryByText(/Fazer upgrade/)).toBeNull();
     expect(screen.queryByText(/Mudar para Premium/)).toBeNull();
   });

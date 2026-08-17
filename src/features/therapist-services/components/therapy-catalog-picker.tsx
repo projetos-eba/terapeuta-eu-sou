@@ -1,9 +1,11 @@
 "use client";
 
 import { Search } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { TESInput } from "@/components/tes";
+import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 import type { TherapyCatalogOption } from "../therapist-services.types";
@@ -122,15 +124,15 @@ export function TherapyCatalogPicker({
         )}
       </div>
 
-      <button
+      <Link
         className="mt-4 min-h-11 rounded-lg px-3 text-left text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
-        type="button"
+        href={routes.therapist.therapyCatalogRequest}
       >
         Não encontrou sua terapia?
         <span className="ml-2 text-xs font-bold text-tesText-muted">
-          Solicitação futura, sem criação automática.
+          Envie uma sugestão para análise da plataforma.
         </span>
-      </button>
+      </Link>
     </div>
   );
 }

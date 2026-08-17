@@ -104,12 +104,6 @@ const definitions: NavigationDefinition[] = [
     icon: "settings",
     label: "Configurações",
   },
-  {
-    capability: "operation_essentials",
-    href: routes.therapist.support,
-    icon: "help",
-    label: "Ajuda",
-  },
 ];
 
 export function buildTherapistNavigation({

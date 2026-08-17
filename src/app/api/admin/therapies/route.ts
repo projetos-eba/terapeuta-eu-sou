@@ -81,7 +81,12 @@ function permissionForCommand(value: unknown): AdminPermission {
 
   const action = (value as Record<string, unknown>).action;
 
-  if (action === "list" || action === "impact") {
+  if (
+    action === "list" ||
+    action === "impact" ||
+    action === "requestList" ||
+    action === "requestSign"
+  ) {
     return "admin.therapies.read";
   }
 
@@ -110,7 +115,7 @@ function failure(message: string, status: number) {
 function isMutatingAction(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const action = (value as Record<string, unknown>).action;
-  return action !== "list" && action !== "matchingList" && action !== "impact";
+  return action !== "list" && action !== "matchingList" && action !== "impact" && action !== "requestList" && action !== "requestSign";
 }
 
 function revalidateTherapyCatalogSurfaces() {

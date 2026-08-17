@@ -117,6 +117,19 @@ export type AdminTherapyCatalogRequest = {
     | "under_review";
 };
 
+export type AdminTherapyCatalogRequestDetail = AdminTherapyCatalogRequest & {
+  materials: Array<{
+    createdAt: string;
+    fileName: string;
+    fileSizeBytes: number;
+    id: string;
+    mimeType: string;
+  }>;
+  submission: Record<string, unknown>;
+  suggestedCategoryId: string | null;
+  updatedAt: string;
+};
+
 export type AdminTherapyCatalogContract = {
   categories: AdminTherapyCategory[];
   contractVersion: 1;

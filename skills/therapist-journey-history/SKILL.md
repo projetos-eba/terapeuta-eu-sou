@@ -32,9 +32,24 @@ O node Figma `13366:8765` define:
 
 - Título visual `Clientes` dentro da navegação `Histórico da Jornada`.
 - Métricas no topo: total de clientes, ativos, novos no mês, sem sessão recente.
-- Lista de clientes com busca, filtros, ordenação, status, terapias, última/próxima sessão, encontros e temas recorrentes.
+- Lista de clientes com busca, filtros, ordenação, status, terapias, última/próxima sessão e temas recorrentes. A contagem de encontros fica disponível somente nos cartões compactos e no detalhe da jornada, não como coluna da tabela.
 - Rail lateral com resumo da carteira, segmentos e lembretes.
 - Visual claro, premium, bordas lavanda, sombra suave, tipografia display IvyPresto para títulos.
+
+No detalhe `/terapeuta/pacientes/[patientId]`, a composição segue a leitura
+operacional da jornada:
+
+- hero de identidade com nome, status, terapias vinculadas e atalhos para
+  sessões e templates aprovados;
+- faixa de resumo com início da jornada, encontros registrados, próximo e último
+  encontro;
+- temas identificados nos registros, sem afirmar diagnóstico ou frequência que
+  não exista na fonte;
+- memória dos encontros em tabela no desktop e cartões cronológicos no mobile,
+  com link canônico para a sessão;
+- cards finais para preferências de acolhimento e próximo encontro. Quando não
+  houver preferência compartilhada, usar estado vazio explícito — nunca criar
+  texto atribuído ao paciente.
 
 ## Dados
 
@@ -53,11 +68,21 @@ Regras:
 - Links de comunicação devem apontar para `/terapeuta/mensagens`, que usa templates.
 - Links de sessões devem usar `/terapeuta/sessoes?patient=<patientProfileId>`.
 - Detalhes de sessão devem usar `/terapeuta/sessoes/[bookingId]`.
+- Os títulos de serviço e temas por encontro podem ser derivados dos mesmos
+  `bookings`, `therapist_services` e `booking_session_summaries` já autorizados
+  pela feature; não adicionar uma fonte paralela para enriquecer a tela.
 
 ## Responsividade
 
-- Desktop: tabela larga com rail lateral.
-- Tablet/mobile: lista cronológica em cards, filtros empilhados e ações grandes.
+- Desktop: lista com título editorial, métricas, tabela larga e rail de resumo,
+  temas e lembretes.
+- Tablet/mobile: métricas e cartões compactos de pessoas em duas colunas; tabela
+  vira cards estruturados e o exportador conserva somente o ícone ao lado do
+  título no mobile.
+- No desktop, o rail deve empilhar seus cards em fluxo de bloco; em tablet e
+  mobile, pode usar duas colunas. O rail e seus cards usam altura de conteúdo
+  (`auto-rows-min`, `h-auto`, `self-start` e `content-start`), sem esticar os
+  cards para acompanhar a altura da lista principal.
 - Evitar texto sobreposto, largura fixa frágil e cards aninhados.
 
 ## Copy Responsável
