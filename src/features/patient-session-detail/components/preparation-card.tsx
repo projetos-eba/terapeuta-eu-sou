@@ -10,17 +10,14 @@ export function PreparationCard({
   const { preparation } = data.encounterState;
 
   return (
-    <section className="grid gap-6 border-t border-border pt-8">
+    <section className="rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
       <div>
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-brand-primary sm:text-xs">
+        <h2 className="font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]">
           Antes do encontro
-        </p>
-        <h2 className="mt-3 font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]">
-          {preparation.title}
         </h2>
       </div>
 
-      <div className="rounded-[28px] border border-border bg-white/80 p-5 sm:p-6">
+      <div className="rounded-[24px] bg-surface-soft p-5 sm:p-6">
         <p className="text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
           Use este tempo para chegar ao encontro com mais calma, privacidade e
           estabilidade.

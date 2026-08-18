@@ -14,6 +14,7 @@ vi.mock("@/lib/supabase/public-config", () => ({
 }));
 
 import {
+  deriveProfileDecisionVerificationSummary,
   getAdminOperationDetailPage,
   getAdminOperationPage,
 } from "./admin-operations.queries";
@@ -86,11 +87,22 @@ describe("admin operation queries", () => {
     }
   });
 
+  it("uses an approved profile decision only as a read-only verification fallback", () => {
+    expect(deriveProfileDecisionVerificationSummary("approved")).toEqual({
+      reviewedAt: null,
+      source: "profile_status",
+      status: "approved",
+      submittedAt: null,
+    });
+    expect(deriveProfileDecisionVerificationSummary("submitted")).toBeNull();
+  });
+
   it("loads only the safe published profile projection for a professional detail", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(
-        jsonResponse({
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+
+      if (url.includes("admin_get_operation_detail_v1")) {
+        return jsonResponse({
           auditEvents: [],
           generatedAt: "2026-08-14T12:00:00.000Z",
           module: "professionals",
@@ -100,10 +112,11 @@ describe("admin operation queries", () => {
             slug: "ana-oliveira",
             status: "approved",
           },
-        }),
-      )
-      .mockResolvedValueOnce(
-        jsonResponse([
+        });
+      }
+
+      if (url.includes("public_therapist_profile_content_v")) {
+        return jsonResponse([
           {
             essence_body: "Escuta responsável.",
             experience_years: 8,
@@ -111,10 +124,11 @@ describe("admin operation queries", () => {
             invitation_body: "Conheça esta abordagem.",
             short_intro: "Presença para o seu momento.",
           },
-        ]),
-      )
-      .mockResolvedValueOnce(
-        jsonResponse([
+        ]);
+      }
+
+      if (url.includes("public_therapist_profile_services_v")) {
+        return jsonResponse([
           {
             description: "Atendimento online.",
             duration_minutes: 60,
@@ -122,8 +136,12 @@ describe("admin operation queries", () => {
             service_title: "Encontro de Reiki",
             therapy_name: "Reiki",
           },
-        ]),
-      );
+        ]);
+      }
+
+      if (url.includes("therapist_verifications")) return jsonResponse([]);
+      return jsonResponse({ ok: false }, { status: 503 });
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await getAdminOperationDetailPage({
@@ -133,12 +151,20 @@ describe("admin operation queries", () => {
     });
 
     expect(result.status).toBe("success");
-    expect(fetchMock.mock.calls[1]?.[0]).toContain(
-      "/rest/v1/public_therapist_profile_content_v?therapist_profile_id=eq.00000000-0000-4000-8000-000000000001",
-    );
-    expect(fetchMock.mock.calls[2]?.[0]).toContain(
-      "/rest/v1/public_therapist_profile_services_v?therapist_slug=eq.ana-oliveira",
-    );
+    expect(
+      fetchMock.mock.calls.some(([url]) =>
+        String(url).includes(
+          "/rest/v1/public_therapist_profile_content_v?therapist_profile_id=eq.00000000-0000-4000-8000-000000000001",
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      fetchMock.mock.calls.some(([url]) =>
+        String(url).includes(
+          "/rest/v1/public_therapist_profile_services_v?therapist_slug=eq.ana-oliveira",
+        ),
+      ),
+    ).toBe(true);
     if (result.status === "success") {
       expect(result.data.publicProfile).toEqual({
         content: {

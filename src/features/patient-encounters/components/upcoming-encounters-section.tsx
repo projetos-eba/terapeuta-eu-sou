@@ -13,11 +13,10 @@ export function UpcomingEncountersSection({
           className="font-display text-[1.9rem] font-light italic leading-tight text-brand-deep sm:text-[2.2rem]"
           id="patient-upcoming-encounters-title"
         >
-          Depois do próximo encontro
+          Próximos encontros
         </h2>
         <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-          Os horários seguintes permanecem organizados para você acompanhar com
-          tranquilidade.
+          Seus próximos passos na jornada.
         </p>
       </div>
 

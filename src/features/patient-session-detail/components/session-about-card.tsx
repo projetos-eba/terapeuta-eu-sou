@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Leaf } from "lucide-react";
 
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
@@ -8,7 +9,7 @@ export function SessionAboutCard({
   data: PatientSessionDetailPageData;
 }) {
   return (
-    <section className="grid gap-6 border-t border-border pt-8">
+    <section className="relative overflow-hidden rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
       <div className="flex items-center gap-3">
         <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
           <Leaf aria-hidden="true" size={20} />
@@ -18,7 +19,7 @@ export function SessionAboutCard({
         </h2>
       </div>
 
-      <div className="grid gap-6 rounded-[28px] border border-border bg-white/80 p-5 sm:p-6">
+      <div className="relative z-10 mt-6 grid max-w-[calc(100%-1rem)] gap-6 sm:max-w-[78%]">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-tesText-muted sm:text-xs">
             Contexto principal
@@ -62,6 +63,14 @@ export function SessionAboutCard({
           </div>
         </div>
       </div>
+      <Image
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-10 -right-12 hidden w-52 opacity-85 sm:block lg:w-60"
+        height={1254}
+        src="/patient/encounters/lotus-detail.png"
+        width={1254}
+      />
     </section>
   );
 }

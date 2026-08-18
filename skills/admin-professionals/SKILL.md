@@ -24,6 +24,10 @@ description: Operação de aprovação, publicação e suspensão de profissiona
   `Cadastro criado → Enviado → Em análise → Aprovado → Disponível para
   agendamento`, separando claramente aprovação administrativa, publicação e
   recebimento de reservas.
+- Perfis aprovados ou suspensos sem registro histórico em
+  `therapist_verifications` usam a decisão autoritativa já presente no cadastro
+  somente para leitura dos marcos. A interface não cria, reabre nem altera uma
+  verificação retroativamente.
 - A aba `Perfil` substitui qualquer referência a formulário. Ela mostra apenas
   a projeção publicada de Meu perfil (`public_therapist_profile_content_v`) e
   os serviços elegíveis (`public_therapist_profile_services_v`). Rascunhos,
@@ -32,6 +36,9 @@ description: Operação de aprovação, publicação e suspensão de profissiona
 - A aba `Documentos` existe apenas para revisão privada/autorizada, usando o
   fluxo canônico `therapist-private-documents`; a primeira dobra não deve
   transformar anexos em conteúdo editorial.
+- A revisão de um documento confirma apenas aquele arquivo e atualiza as
+  superfícies administrativas. A aprovação final do cadastro permanece uma
+  decisão administrativa explícita e auditada.
 - A abertura/baixar de documentos no detalhe deve passar por URLs assinadas e
   temporárias geradas para a sessão administrativa atual; nunca expor bucket,
   path interno ou anexos via read model público.

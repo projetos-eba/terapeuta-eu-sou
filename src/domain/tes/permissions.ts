@@ -1,5 +1,8 @@
 import { TherapistPlan } from "./enums";
-import { therapistPlanDefinitions, therapistPlanFeatureDefinitions } from "./plan-definitions";
+import {
+  therapistPlanDefinitions,
+  therapistPlanFeatureDefinitions,
+} from "./plan-definitions";
 import { isTherapistPlanAtLeast } from "./plans";
 
 export type AuraAccessLevel = "limited" | "full";
@@ -13,7 +16,8 @@ export type TherapistCapability =
   | "strategic_reviews"
   | "advanced_financials"
   | "agenda_insights"
-  | "request_new_therapy";
+  | "request_new_therapy"
+  | "custom_profile_slug";
 
 export const therapistPlanCapabilities: Record<
   TherapistPlan,
@@ -21,12 +25,15 @@ export const therapistPlanCapabilities: Record<
 > = Object.fromEntries(
   therapistPlanDefinitions.map((plan) => {
     const capabilities = plan.features
-      .map((featureCode) =>
-        therapistPlanFeatureDefinitions.find(
-          (feature) => feature.code === featureCode,
-        )?.capability,
+      .map(
+        (featureCode) =>
+          therapistPlanFeatureDefinitions.find(
+            (feature) => feature.code === featureCode,
+          )?.capability,
       )
-      .filter((capability): capability is TherapistCapability => Boolean(capability));
+      .filter((capability): capability is TherapistCapability =>
+        Boolean(capability),
+      );
 
     return [plan.code, Array.from(new Set(capabilities))];
   }),

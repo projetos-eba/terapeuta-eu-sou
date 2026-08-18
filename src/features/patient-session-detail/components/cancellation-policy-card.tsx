@@ -8,17 +8,17 @@ export function CancellationPolicyCard({
   policy: PatientSessionDetailPageData["cancellationPolicy"];
 }) {
   return (
-    <section className="grid gap-6 border-t border-border pt-8">
-      <div>
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-brand-primary sm:text-xs">
-          Regras importantes
-        </p>
-        <h2 className="mt-3 font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]">
+    <section className="rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
+      <div className="flex items-center gap-3">
+        <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+          <Info aria-hidden="true" size={20} />
+        </span>
+        <h2 className="font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]">
           Política de cancelamento
         </h2>
       </div>
 
-      <div className="rounded-[28px] border border-border bg-white/80 p-5 sm:p-6">
+      <div className="mt-6 rounded-[24px] bg-surface-soft p-5 sm:p-6">
         <div className="space-y-5">
           <PolicyLine
             icon={CheckCircle2}

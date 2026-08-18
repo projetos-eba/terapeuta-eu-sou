@@ -36,7 +36,13 @@ describe("PatientEncountersPage", () => {
     );
 
     expect(html).toContain("Próximo encontro");
-    expect(html).toContain("Depois do próximo encontro");
+    expect(html).toContain("Seu espaço de acompanhamento");
+    expect(html).toContain(
+      "Tudo o que faz parte da sua jornada reunido em um único lugar.",
+    );
+    expect(html).toContain("hero-acompanhamento.png");
+    expect(html).toContain("Próximos encontros");
+    expect(html).toContain("Histórico de encontros");
     expect(html).toContain("Sofia Mendes");
     expect(html.match(/Ana Oliveira/g)).toHaveLength(1);
     expect(html).not.toContain("Sua jornada");

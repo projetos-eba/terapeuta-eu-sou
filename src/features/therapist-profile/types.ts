@@ -1,3 +1,11 @@
+export type PublicProfileThemeId = "essential" | "natural" | "serene" | "warm";
+
+export type BioIllustrationId =
+  | "essential_lines"
+  | "gentle_horizon"
+  | "organic_flow"
+  | "warm_layers";
+
 export type PublicTherapistProfile = {
   acceptsOnlineSessions: boolean;
   badges: string[];
@@ -12,6 +20,7 @@ export type PublicTherapistProfile = {
   name: string;
   plan: "free" | "premium" | "premium_plus";
   profileUrl: string;
+  publicProfileTheme: PublicProfileThemeId;
   rating: {
     average: number | null;
     count: number;
@@ -29,6 +38,7 @@ export type PublicTherapistProfile = {
 };
 
 export type TherapistProfileContent = {
+  bioIllustrationId: BioIllustrationId | null;
   essenceBody: string;
   experienceYears: number | null;
   guideItems: Array<{
@@ -43,6 +53,7 @@ export type TherapistProfileContent = {
     title: string;
   }>;
   shortIntro: string;
+  publicProfileTheme: PublicProfileThemeId;
 };
 
 export type TherapistProfileService = {

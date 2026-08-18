@@ -16,10 +16,10 @@ export function EncounterHistorySection({
           className="font-display text-[1.8rem] font-light italic leading-tight text-brand-deep sm:text-[2.1rem]"
           id="patient-history-encounters-title"
         >
-          Encontros anteriores
+          Histórico de encontros
         </h2>
         <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-          Retome detalhes, resumos e ações disponíveis sem perder o contexto.
+          Revisite suas experiências anteriores.
         </p>
       </div>
 

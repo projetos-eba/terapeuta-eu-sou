@@ -90,5 +90,7 @@ function failure(
 }
 
 function isPublicInvalidatingAction(action: string) {
-  return action === "publish" || action === "unpublish";
+  return (
+    action === "publish" || action === "unpublish" || action === "update_slug"
+  );
 }

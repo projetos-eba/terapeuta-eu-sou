@@ -30,6 +30,11 @@ dependente de cache e ambiente.
 `/api/therapist/profile` valida o payload e encaminha para
 `therapist-profile-command`.
 
+O mesmo comando também executa `check_slug_availability` e `update_slug`.
+Essas ações não criam API paralela: o PostgreSQL normaliza, valida capability,
+consulta o namespace atual/histórico e serializa a troca. Tema e ilustração
+continuam dentro de `save_draft`/`publish`; slug é imediato e independente.
+
 `/api/therapist/profile/media` valida sessão, tipo, tamanho e capabilities,
 envia mídia pública para `therapist-public-media` com o token autenticado do
 terapeuta e retorna somente URL pública. Não usa `service_role` no navegador.

@@ -240,6 +240,44 @@ describe("admin operation detail pages", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the completed administrative path for an approved legacy profile", () => {
+    const html = renderToStaticMarkup(
+      <AdminProfessionalDetailPage
+        data={detailData({
+          backHref: "/admin/profissionais",
+          module: "professionals",
+          sections: [
+            { fields: [], title: "Identidade operacional" },
+            {
+              fields: [
+                { label: "Publicado", value: "Sim" },
+                { label: "Recebe reservas", value: "Sim" },
+                { label: "Perfil público", value: "published" },
+              ],
+              title: "Estado do perfil",
+            },
+            { fields: [], title: "Operação" },
+            {
+              fields: [{ label: "Criado em", value: "11/08/2026, 08:36" }],
+              title: "Rastreabilidade",
+            },
+          ],
+          statusLabel: "approved",
+          title: "Ana Oliveira",
+          verificationSummary: {
+            reviewedAt: null,
+            source: "profile_status",
+            status: "approved",
+            submittedAt: null,
+          },
+        })}
+      />,
+    );
+
+    expect(html).toContain("A situação atual do cadastro confirma a aprovação administrativa.");
+    expect(html).not.toContain("Ainda não existe envio confirmado para análise.");
+  });
+
   it("reveals the private documents review through the Documents tab", () => {
     render(
       <AdminProfessionalDetailPage

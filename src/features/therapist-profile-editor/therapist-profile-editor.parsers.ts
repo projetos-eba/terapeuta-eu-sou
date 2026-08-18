@@ -22,6 +22,19 @@ export function parseTherapistProfileCommand(
 
   if (action === "read") return { action };
 
+  if (action === "check_slug_availability") {
+    return { action, slug: boundedString(value.slug, 1, 120) };
+  }
+
+  if (action === "update_slug") {
+    return {
+      action,
+      expectedVersion: integer(value.expectedVersion, 1, 999999999),
+      requestId: uuid(value.requestId),
+      slug: boundedString(value.slug, 1, 120),
+    };
+  }
+
   if (action === "save_draft") {
     return {
       action,
@@ -52,6 +65,7 @@ export function parseEditorPayload(
   const value = object(input);
 
   return {
+    bioIllustrationId: bioIllustrationId(value.bioIllustrationId),
     bio: optionalString(value.bio, 1600),
     city: optionalString(value.city, 80),
     essenceBody: optionalString(value.essenceBody, 1600),
@@ -67,6 +81,7 @@ export function parseEditorPayload(
     invitationBody: optionalString(value.invitationBody, 600),
     photoUrl: optionalString(value.photoUrl, 500),
     publicName: boundedString(value.publicName, 2, 120),
+    publicProfileTheme: publicProfileTheme(value.publicProfileTheme),
     reflections: optionalArray(value.reflections, 6).map((item) => ({
       excerpt: optionalString(item.excerpt, 240),
       href: optionalString(item.href, 500),
@@ -88,6 +103,7 @@ export function parseEditorPayload(
 
 export function createEmptyEditorFields(): TherapistProfileEditableFields {
   return {
+    bioIllustrationId: null,
     bio: "",
     city: "",
     essenceBody: "",
@@ -97,6 +113,7 @@ export function createEmptyEditorFields(): TherapistProfileEditableFields {
     invitationBody: "",
     photoUrl: "",
     publicName: "",
+    publicProfileTheme: "serene",
     reflections: [],
     shortIntro: "",
     state: "",
@@ -105,6 +122,30 @@ export function createEmptyEditorFields(): TherapistProfileEditableFields {
     videoTitle: "",
     videoUrl: "",
   };
+}
+
+function publicProfileTheme(value: unknown) {
+  if (value === undefined || value === null || value === "") return "serene";
+  if (
+    value === "serene" ||
+    value === "natural" ||
+    value === "warm" ||
+    value === "essential"
+  )
+    return value;
+  throw invalid("public_profile_theme");
+}
+
+function bioIllustrationId(value: unknown) {
+  if (value === undefined || value === null || value === "") return null;
+  if (
+    value === "organic_flow" ||
+    value === "gentle_horizon" ||
+    value === "warm_layers" ||
+    value === "essential_lines"
+  )
+    return value;
+  throw invalid("bio_illustration_id");
 }
 
 function boundedString(value: unknown, min: number, max: number) {

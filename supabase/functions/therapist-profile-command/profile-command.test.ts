@@ -20,6 +20,8 @@ Deno.test("validates therapist profile draft payloads", () => {
       bio: "Atendimento online com escuta responsavel.",
       essenceBody: "Minha pratica combina presenca, clareza e cuidado.",
       guideItems: [{ icon: "sparkles", label: "Clareza emocional" }],
+      bioIllustrationId: "organic_flow",
+      publicProfileTheme: "natural",
       publicName: "Ana Oliveira",
       reflections: [{ minutesToRead: 3, title: "Presenca no cotidiano" }],
       shortIntro: "Acolhimento online com linguagem clara.",
@@ -30,8 +32,43 @@ Deno.test("validates therapist profile draft payloads", () => {
   assertEquals(result.action, "save_draft");
   if (result.action === "save_draft") {
     assertEquals(result.payload.publicName, "Ana Oliveira");
+    assertEquals(result.payload.publicProfileTheme, "natural");
+    assertEquals(result.payload.bioIllustrationId, "organic_flow");
     assertEquals(result.payload.videoProvider, "external");
   }
+});
+
+Deno.test("validates slug availability and update commands", () => {
+  assertEquals(
+    validateTherapistProfileCommand({
+      action: "check_slug_availability",
+      slug: "Ana Presença",
+    }),
+    { action: "check_slug_availability", slug: "Ana Presença" },
+  );
+  assertEquals(
+    validateTherapistProfileCommand({
+      action: "update_slug",
+      expectedVersion: 4,
+      requestId,
+      slug: "Ana Presença",
+    }),
+    {
+      action: "update_slug",
+      expectedVersion: 4,
+      requestId,
+      slug: "Ana Presença",
+    },
+  );
+});
+
+Deno.test("maps slug collisions without exposing another therapist", () => {
+  const result = mapTherapistProfileDatabaseError(
+    new SupabaseHttpError(400, "SLUG_TAKEN"),
+  );
+  assertEquals(result instanceof DomainError, true);
+  assertEquals((result as DomainError).code, "SLUG_TAKEN");
+  assertEquals((result as DomainError).status, 409);
 });
 
 Deno.test("rejects invalid therapist profile mutations", () => {

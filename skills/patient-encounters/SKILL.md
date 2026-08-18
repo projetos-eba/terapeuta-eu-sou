@@ -64,6 +64,14 @@ Session summaries are stored in `booking_session_summaries`, linked to `bookings
 
 - Reuse the authenticated shell.
 - Sidebar item "Encontros" points to `routes.patient.encounters`.
+- The open PageHeader uses the local Figma asset
+  `public/patient/encounters/hero-acompanhamento.png` (source node
+  `13366:3444`) with the editorial copy `Seu espaço de acompanhamento` and
+  `Tudo o que faz parte da sua jornada reunido em um único lugar.`. The image
+  is decorative; it must not replace the semantic page heading or hide the
+  orientation copy on narrow viewports.
+- The temporal groups retain their real data and actions while using the
+  patient-facing labels `Próximos encontros` and `Histórico de encontros`.
 - Experience density: `Balanced`, with a `Comfortable` empty state when useful.
 - Information order is: page orientation → next encounter/next action → other
   future encounters → history.

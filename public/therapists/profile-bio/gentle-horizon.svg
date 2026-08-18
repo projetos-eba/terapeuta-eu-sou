@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-labelledby="title description">
+  <title id="title">Horizonte suave</title>
+  <desc id="description">Horizonte abstrato em camadas claras de mint, ciano e lavanda.</desc>
+  <rect width="640" height="420" rx="36" fill="#FFFFFF"/>
+  <circle cx="470" cy="132" r="68" fill="#E2D1EC"/>
+  <path d="M0 246C112 194 208 222 314 260s220 34 326-18v178H0Z" fill="#D7ECF8"/>
+  <path d="M0 306c118-48 216-18 322 22s212 34 318-8v100H0Z" fill="#BEEBD8"/>
+</svg>

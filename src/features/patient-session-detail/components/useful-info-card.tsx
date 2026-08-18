@@ -27,9 +27,6 @@ export function UsefulInfoCard({ compact = false }: { compact?: boolean }) {
           : "grid gap-3 border-t border-border pt-8"
       }
     >
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-tesText-muted sm:text-xs">
-        Orientações rápidas
-      </p>
       <h2 className="font-display text-[1.75rem] font-light italic leading-none text-brand-deep">
         Informações úteis
       </h2>

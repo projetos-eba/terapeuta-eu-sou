@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-labelledby="title description">
+  <title id="title">Fluxo orgânico</title>
+  <desc id="description">Formas fluidas em lavanda e ciano que se encontram suavemente.</desc>
+  <rect width="640" height="420" rx="36" fill="#F6FBFE"/>
+  <path d="M-30 292C96 170 178 364 303 236S503 92 690 194V460H-30Z" fill="#E2D1EC"/>
+  <path d="M-20 338C135 236 214 405 360 280S548 182 680 250V460H-20Z" fill="#81BAE0" fill-opacity=".72"/>
+  <circle cx="480" cy="112" r="64" fill="#F1E8F6"/>
+</svg>

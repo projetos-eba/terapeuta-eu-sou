@@ -21,6 +21,9 @@ const fallbackMessages: Record<TherapistProfileErrorCode, string> = {
   FORBIDDEN: "Use uma conta de terapeuta para continuar.",
   PROFILE_LOCKED: "Este perfil não pode ser alterado agora.",
   PROFILE_NOT_FOUND: "Perfil profissional não encontrado.",
+  SLUG_INVALID: "Use de 3 a 40 caracteres para criar seu link.",
+  SLUG_RESERVED: "Este endereço é reservado pela plataforma.",
+  SLUG_TAKEN: "Este link acabou de ser escolhido. Tente outra opção.",
   UNAVAILABLE: "Não foi possível acessar o perfil agora.",
   VALIDATION_ERROR: "Revise os dados do perfil antes de continuar.",
   VERSION_CONFLICT:
@@ -57,6 +60,9 @@ function normalizeCode(value: string | undefined): TherapistProfileErrorCode {
     value === "FORBIDDEN" ||
     value === "PROFILE_LOCKED" ||
     value === "PROFILE_NOT_FOUND" ||
+    value === "SLUG_INVALID" ||
+    value === "SLUG_RESERVED" ||
+    value === "SLUG_TAKEN" ||
     value === "UNAVAILABLE" ||
     value === "VALIDATION_ERROR" ||
     value === "VERSION_CONFLICT"

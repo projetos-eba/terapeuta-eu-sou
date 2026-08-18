@@ -15,7 +15,7 @@ export function PatientEncountersPage({
 
   return (
     <AppPageContainer className="max-w-[1080px] gap-9 pb-12 sm:gap-11">
-      <PatientEncountersHero patient={data.patient} />
+      <PatientEncountersHero />
       <NextEncounterSpotlight encounter={data.nextEncounter} />
 
       {followingEncounters.length > 0 ? (

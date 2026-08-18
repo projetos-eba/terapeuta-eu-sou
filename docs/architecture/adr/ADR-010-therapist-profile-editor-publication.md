@@ -1,6 +1,6 @@
 # ADR-010 — Meu Perfil: rascunho privado e publicação pelo terapeuta
 
-Status: aceito em 2026-07-28.
+Status: aceito em 2026-07-28; ampliado em 2026-08-18.
 
 ## Contexto
 
@@ -22,6 +22,19 @@ público existente já derivava de `therapist_profiles` e de
 - Mutações passam por Edge Function autenticada com `service_role`; a identidade
   do terapeuta é derivada de `auth.users`, nunca de `therapist_profile_id`
   enviado pelo navegador.
+- Os temas oficiais `serene`, `natural`, `warm` e `essential` e a ilustração
+  opcional da bio pertencem ao mesmo fluxo de rascunho/publicação. Todos os
+  planos podem usá-los; o tema afeta somente o hero público.
+- O slug é uma identidade operacional separada do rascunho: entra em vigor
+  imediatamente, usa histórico sem cadeias de redirect e é alterado pelo mesmo
+  `therapist-profile-command`.
+- Todo terapeuta possui `free_public_slug` numérico estável de sete dígitos.
+  Free usa esse identificador; Premium e Premium Plus podem escolher slug
+  personalizado. Downgrade restaura o identificador e upgrade o preserva até
+  uma escolha explícita.
+- Normalização, nomes reservados, entitlement, unicidade, idempotência e locks
+  de concorrência permanecem no PostgreSQL. O cliente não recebe escrita direta
+  nas tabelas nem identidade interna de outro profissional.
 
 ## Consequências
 
@@ -34,3 +47,6 @@ público existente já derivava de `therapist_profiles` e de
   `TherapistProfileEditorData`, `TherapistSearchCard`,
   `TherapistProfilePublicDetail`, `TherapistProfileAdminDetail`,
   `TherapistProfileCompleteness` e `TherapistProfileCapabilities`.
+- O rollout de slug exige a auditoria read-only
+  `supabase/audits/therapist_public_slug_preflight.sql`; colisão entre slug
+  vigente e histórico de profissionais diferentes interrompe a migration.

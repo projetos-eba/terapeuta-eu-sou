@@ -10,7 +10,7 @@ export function SharedIntakeCard({
   const visibilityCopy = getVisibilityCopy(intake.visibility);
 
   return (
-    <section className="grid gap-6 border-t border-border pt-8">
+    <section className="rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
       <div className="flex items-center gap-3">
         <span className="grid size-11 place-items-center rounded-full bg-status-dangerBg text-status-danger">
           <Heart aria-hidden="true" size={20} />
@@ -20,7 +20,7 @@ export function SharedIntakeCard({
         </h2>
       </div>
 
-      <div className="rounded-[28px] border border-border bg-white/80 p-5 sm:p-6">
+      <div className="mt-6 rounded-[24px] bg-surface-soft p-5 sm:p-6">
         <p className="text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
           {visibilityCopy.intro}
         </p>
