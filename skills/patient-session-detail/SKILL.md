@@ -54,8 +54,10 @@ Use these support tables when needed:
 - Reuse authenticated shell.
 - Density: `Balanced`, with `Comfortable` only in the primary context region.
 - First fold must answer: therapist, date/time, booking state and next authorized step.
-- Main layout: open editorial header + dominant encounter context + optional contextual aside on desktop; linear priority flow on mobile.
-- Prefer `AccentSemanticSurface` once for the dominant encounter context; use open sections + `border-border` hairlines elsewhere.
+- Main layout: editorial header + dominant three-column encounter context + optional contextual aside on desktop; linear priority flow on mobile.
+- The content order is: identity/status, about and shared context, secure online access, management actions, `Sua jornada com {therapist.name}`, preparation and cancellation policy.
+- The journey heading may only use the canonical therapist name and existing journey data; do not create a fictional timeline, milestones or therapeutic claims.
+- Prefer one dominant encounter context, then `rounded-card`, `border-border`, `shadow-card` and restrained `surface-soft` interiors for supporting sections.
 - Do not replicate a right rail only to fill width. Support and reminder are contextual, not mandatory.
 - Use TES Tailwind tokens: `brand`, `surface`, `tesText`, `status`, `shadow-card`, `rounded-card`, `font-display`, `font-sans`.
 - Therapist avatars shown in patient session cards/details must come from the same stable `public/therapists/*.png` assets used by public therapist pages and seed data.
@@ -65,7 +67,7 @@ Use these support tables when needed:
 - Do not expose or render raw Zoom/meeting URLs, copy-link controls, tokens, host data or technical roles in patient UI.
 - Video session entry must be a client component with visible or aria-live feedback.
 - Zoom join must be a client component that dynamic-imports `@zoom/videosdk` and never trusts a browser-provided role.
-- Use local assets or token-based placeholders only; do not commit temporary Figma asset URLs.
+- Use local assets or token-based placeholders only; do not commit temporary Figma asset URLs. The approved decorative lotus asset is `public/patient/encounters/lotus-detail.png`, exported from the Figma node above; it is permitted as a low-opacity, empty-alt decoration in the "Sobre este encontro" and contextual reminder cards only.
 - Do not invent testimonials, therapeutic journey claims, images or summaries that are not present in the canonical detail data.
 
 ## QA

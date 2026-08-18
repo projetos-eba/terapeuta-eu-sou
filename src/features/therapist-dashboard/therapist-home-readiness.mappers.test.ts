@@ -156,6 +156,7 @@ function editorFixture(
 ): TherapistProfileEditorData {
   return {
     capabilities: {
+      canCustomizePublicSlug: false,
       canPublishAdditionalServices: true,
       canPublishProfile: true,
       canUploadVideo: true,
@@ -186,10 +187,13 @@ function editorFixture(
     privateDocuments: overrides.privateDocuments ?? [],
     propagationNotice: "",
     publicProfileHref: "/terapeutas/teste",
+    publicProfileSlug: "teste",
+    publicProfileTheme: "serene",
     published: {
       baseProfileVersion: null,
       contentVersionId: null,
       fields: {
+        bioIllustrationId: null,
         bio: "",
         city: "",
         essenceBody: "",
@@ -199,6 +203,7 @@ function editorFixture(
         invitationBody: "",
         photoUrl: "",
         publicName: "Codex Terapeuta",
+        publicProfileTheme: "serene",
         reflections: [],
         shortIntro: "",
         state: "",

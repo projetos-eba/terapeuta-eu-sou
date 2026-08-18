@@ -84,10 +84,15 @@ export async function getPublicTherapistProfileResult(
       fetchView<ProfileRow>(
         "public_therapist_profiles_v",
         `select=*&slug=eq.${slugFilter(slug)}&limit=1`,
+        // Identity is mutable independently from editorial publication. A
+        // stale positive match would prevent an old slug from reaching the
+        // redirect resolver after a rename.
+        { fresh: true },
       ),
       fetchView<ContentRow>(
         "public_therapist_profile_content_v",
         `select=*&slug=eq.${slugFilter(slug)}&limit=1`,
+        { fresh: true },
       ),
       fetchView<ServiceRow>(
         "public_therapist_profile_services_v",
@@ -152,6 +157,7 @@ export async function resolvePublicTherapistSlug(slug: string) {
     const rows = await fetchView<{ current_slug: string }>(
       "public_therapist_slug_redirects_v",
       `select=current_slug&old_slug=eq.${slugFilter(slug)}&limit=1`,
+      { fresh: true },
     );
 
     return rows[0]?.current_slug ?? null;

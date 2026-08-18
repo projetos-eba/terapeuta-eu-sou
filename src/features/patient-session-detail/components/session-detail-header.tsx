@@ -14,15 +14,11 @@ export function SessionDetailHeader() {
         <ChevronLeft aria-hidden="true" size={18} />
         Meus encontros
       </Link>
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-brand-primary sm:text-xs">
-        Encontro agendado
-      </p>
       <h1 className="max-w-[760px] font-display text-[2.35rem] font-light italic leading-none text-brand-deep sm:text-[2.8rem] lg:text-[3.2rem]">
         Detalhe do encontro
       </h1>
       <p className="max-w-[720px] text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
-        Confirme com quem será seu encontro, qual é o estado atual do acesso e o
-        que faz sentido resolver agora, sem sair do fluxo seguro da plataforma.
+        Confira todas as informações sobre seu encontro agendado.
       </p>
     </header>
   );

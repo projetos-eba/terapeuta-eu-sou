@@ -73,6 +73,18 @@ describe("therapist profile editor mappers", () => {
     expect(editor.completeness.percent).toBe(80);
   });
 
+  it("keeps an approved legacy profile approved when its verification history is absent", () => {
+    const editor = mapTherapistProfileEditorContract({
+      ...contract,
+      derived: {
+        ...contract.derived,
+        verificationStatus: "none",
+      },
+    });
+
+    expect(editor.derived.verificationStatus).toBe("approved");
+  });
+
   it("prefers draft fields for the editor form without replacing published data", () => {
     const editor = mapTherapistProfileEditorContract(contract);
 

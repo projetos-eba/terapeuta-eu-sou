@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-labelledby="title description">
+  <title id="title">Camadas acolhedoras</title>
+  <desc id="description">Camadas curvas em tons quentes suaves e lavanda.</desc>
+  <rect width="640" height="420" rx="36" fill="#FFF3E8"/>
+  <path d="M82 420c20-184 130-302 308-364 70-24 150-20 250 12v352Z" fill="#F1E8F6"/>
+  <path d="M198 420c18-130 98-222 226-278 70-30 142-34 216-12v290Z" fill="#E2D1EC"/>
+  <path d="M344 420c16-82 64-142 144-180 50-24 100-30 152-18v198Z" fill="#F4B84A" fill-opacity=".45"/>
+</svg>

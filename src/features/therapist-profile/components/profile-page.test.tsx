@@ -17,6 +17,7 @@ const baseProfile: PublicTherapistProfile = {
   bio: "Acolhimento responsável.",
   cityState: "São Paulo, SP",
   content: {
+    bioIllustrationId: null,
     essenceBody: "Atendo com presença, escuta e combinados claros.",
     experienceYears: 8,
     guideItems: [{ icon: "heart", label: "Clareza emocional" }],
@@ -24,6 +25,7 @@ const baseProfile: PublicTherapistProfile = {
       "Conheça minha abordagem com calma, sem promessa de resultado.",
     reflections: [],
     shortIntro: "Escuta responsável para seu momento.",
+    publicProfileTheme: "serene",
   },
   heroImage: "/therapists/ana-oliveira.png",
   headline: "Escuta responsável para seu momento.",
@@ -33,6 +35,7 @@ const baseProfile: PublicTherapistProfile = {
   name: "Ana Oliveira",
   plan: "premium_plus",
   profileUrl: "/terapeutas/ana-oliveira",
+  publicProfileTheme: "serene",
   rating: {
     average: null,
     count: 0,
@@ -74,6 +77,50 @@ describe("TherapistProfilePage video block", () => {
     expect(
       screen.getByRole("button", { name: "Compartilhar perfil" }),
     ).toHaveClass("size-[52px]");
+  });
+
+  it("applies the selected theme only to the hero", () => {
+    render(
+      <TherapistProfilePage
+        profile={{ ...baseProfile, publicProfileTheme: "natural" }}
+        reviews={[]}
+      />,
+    );
+
+    expect(
+      document.querySelector('[data-profile-theme="natural"]'),
+    ).toBeInTheDocument();
+    expect(document.querySelectorAll("[data-profile-theme]")).toHaveLength(1);
+  });
+
+  it("opens the selected bio illustration in TESDialog", async () => {
+    render(
+      <TherapistProfilePage
+        profile={{
+          ...baseProfile,
+          content: {
+            ...baseProfile.content,
+            bioIllustrationId: "organic_flow",
+          },
+        }}
+        reviews={[]}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ampliar ilustração Fluxo orgânico" }),
+    );
+
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(
+      screen.getByAltText(
+        "Formas fluidas em lavanda e ciano que se encontram suavemente.",
+      ),
+    ).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
   });
 
   it("posts favorite changes from the public profile", async () => {

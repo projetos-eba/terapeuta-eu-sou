@@ -13,8 +13,10 @@ import {
 
 import { PublicFooter, PublicHeader } from "@/components/tes";
 import { TrackedBookingLink } from "@/features/public-metrics";
+import { publicProfileThemeById } from "@/features/therapist-profile/personalization";
 
 import { AvailabilitySelector } from "./availability-selector";
+import { BioIllustrationDialog } from "./bio-illustration-dialog";
 import { FavoriteTherapistButton } from "./favorite-therapist-button";
 import { ReviewsCarousel } from "./reviews-carousel";
 import type { PublicTherapistProfile, TherapistProfileReview } from "../types";
@@ -30,10 +32,16 @@ function IconByName({ name }: { name: string }) {
 
 function Hero({ profile }: { profile: PublicTherapistProfile }) {
   const primaryService = profile.services[0];
+  const theme = publicProfileThemeById[profile.publicProfileTheme];
 
   return (
-    <section className="relative overflow-hidden bg-[linear-gradient(90deg,var(--tes-color-surface-default)_0%,var(--tes-color-surface-default)_62%,var(--tes-color-status-info-bg)_100%)]">
-      <div className="mx-auto grid max-w-[1440px] gap-8 px-5 pb-8 pt-6 sm:px-8 lg:grid-cols-[520px_1fr] lg:px-[56px]">
+    <section
+      className="relative overflow-hidden bg-[var(--profile-hero-background)]"
+      data-profile-theme={theme.id}
+      style={theme.style}
+    >
+      <div className="pointer-events-none absolute -right-24 -top-40 size-[420px] rounded-full bg-[var(--profile-shape)] opacity-60" />
+      <div className="relative mx-auto grid max-w-[1440px] gap-8 px-5 pb-8 pt-6 sm:px-8 lg:grid-cols-[520px_1fr] lg:px-[56px]">
         <div className="relative min-h-[360px] overflow-hidden rounded-b-[46%] rounded-t-[46%] lg:min-h-[410px]">
           <Image
             src={profile.heroImage}
@@ -68,7 +76,7 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
             {profile.tags.map((tag) => (
               <span
                 key={tag}
-                className="font-display text-[20px] font-light italic text-status-info"
+                className="font-display text-[20px] font-light italic text-[var(--profile-accent)]"
               >
                 {tag}
               </span>
@@ -143,6 +151,11 @@ function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
         <p className="mt-8 text-sm font-medium leading-[1.55] text-tesText-primary">
           {profile.content.essenceBody}
         </p>
+        {profile.content.bioIllustrationId ? (
+          <BioIllustrationDialog
+            illustrationId={profile.content.bioIllustrationId}
+          />
+        ) : null}
         <div className="mt-8 grid grid-cols-2 gap-6">
           {profile.content.experienceYears ? (
             <div className="rounded-[9px] border border-brand-cyan/30 p-3 text-center">

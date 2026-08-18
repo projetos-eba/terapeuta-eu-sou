@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-labelledby="title description">
+  <title id="title">Linhas essenciais</title>
+  <desc id="description">Linhas essenciais em roxo formando uma composição editorial abstrata.</desc>
+  <rect width="640" height="420" rx="36" fill="#F1EFFA"/>
+  <g fill="none" stroke="#6C3D91" stroke-width="7" stroke-linecap="round">
+    <path d="M116 316C164 122 286 74 526 104"/>
+    <path d="M118 350c90-130 220-180 390-148" opacity=".62"/>
+    <path d="M214 362c76-72 168-102 278-86" opacity=".36"/>
+  </g>
+  <circle cx="116" cy="316" r="18" fill="#81BAE0"/>
+  <circle cx="526" cy="104" r="13" fill="#E2D1EC"/>
+</svg>

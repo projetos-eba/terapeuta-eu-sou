@@ -1,3 +1,8 @@
+import type {
+  BioIllustrationId,
+  PublicProfileThemeId,
+} from "@/features/therapist-profile/types";
+
 export const therapistProfilePublicStatuses = [
   "archived",
   "draft",
@@ -69,6 +74,7 @@ export type TherapistProfileVerificationSummary = {
 export type TherapistProfilePlan = "free" | "premium" | "premium_plus";
 
 export type TherapistProfileEditableFields = {
+  bioIllustrationId: BioIllustrationId | null;
   bio: string;
   city: string;
   essenceBody: string;
@@ -78,6 +84,7 @@ export type TherapistProfileEditableFields = {
   invitationBody: string;
   photoUrl: string;
   publicName: string;
+  publicProfileTheme: PublicProfileThemeId;
   reflections: TherapistProfileReflection[];
   shortIntro: string;
   state: string;
@@ -121,6 +128,7 @@ export type TherapistProfileCompleteness = {
 };
 
 export type TherapistProfileCapabilities = {
+  canCustomizePublicSlug: boolean;
   canPublishAdditionalServices: boolean;
   canPublishProfile: boolean;
   canUploadVideo: boolean;
@@ -151,6 +159,8 @@ export type TherapistProfileEditorData = {
   privateDocuments: TherapistPrivateDocumentSummary[];
   propagationNotice: string;
   publicProfileHref: string;
+  publicProfileSlug: string;
+  publicProfileTheme: PublicProfileThemeId;
   published: TherapistProfileVersionedContent;
   therapistProfileId: string;
   updatedAt: string;
@@ -197,6 +207,18 @@ export type ReadTherapistProfileCommand = {
   action: "read";
 };
 
+export type CheckTherapistProfileSlugCommand = {
+  action: "check_slug_availability";
+  slug: string;
+};
+
+export type UpdateTherapistProfileSlugCommand = {
+  action: "update_slug";
+  expectedVersion: number;
+  requestId: string;
+  slug: string;
+};
+
 export type SaveTherapistProfileDraftCommand = {
   action: "save_draft";
   expectedVersion: number;
@@ -212,8 +234,22 @@ export type SimpleTherapistProfileMutationCommand = {
 
 export type TherapistProfileCommand =
   | ReadTherapistProfileCommand
+  | CheckTherapistProfileSlugCommand
   | SaveTherapistProfileDraftCommand
-  | SimpleTherapistProfileMutationCommand;
+  | SimpleTherapistProfileMutationCommand
+  | UpdateTherapistProfileSlugCommand;
+
+export type TherapistProfileSlugAvailabilityStatus =
+  | "available"
+  | "current"
+  | "invalid"
+  | "reserved"
+  | "taken";
+
+export type TherapistProfileSlugAvailabilityResult = {
+  normalizedSlug: string;
+  status: TherapistProfileSlugAvailabilityStatus;
+};
 
 export type TherapistProfileMutationResult = {
   editor: TherapistProfileEditorData;
@@ -225,6 +261,9 @@ export type TherapistProfileErrorCode =
   | "FORBIDDEN"
   | "PROFILE_LOCKED"
   | "PROFILE_NOT_FOUND"
+  | "SLUG_INVALID"
+  | "SLUG_RESERVED"
+  | "SLUG_TAKEN"
   | "UNAVAILABLE"
   | "VALIDATION_ERROR"
   | "VERSION_CONFLICT"

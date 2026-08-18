@@ -28,14 +28,16 @@ test.describe("therapist profile editor", () => {
     await page.getByRole("link", { name: "Editar perfil" }).click();
     await expect(page).toHaveURL(/\/terapeuta\/perfil\/editar(?:\?.*)?$/);
 
-    await page.getByLabel("Texto curto").fill(intro);
-
     const publicCheckPage = await page.context().newPage();
     await gotoShellRoute(publicCheckPage, "/terapeutas/ana-oliveira");
     await expect(publicCheckPage.getByText(intro)).toHaveCount(0);
     await expect(publicCheckPage.getByText(/documento/i)).toHaveCount(0);
     await publicCheckPage.close();
     await page.bringToFront();
+
+    await page.getByLabel("Texto curto").fill(intro);
+    await page.getByText("Acolhedor", { exact: true }).click();
+    await page.getByText("Camadas acolhedoras", { exact: true }).click();
 
     await expect(page.getByLabel("Texto curto")).toHaveValue(intro);
     const saveButton = page.getByRole("button", {
@@ -72,7 +74,34 @@ test.describe("therapist profile editor", () => {
     await gotoShellRoute(page, "/terapeutas/ana-oliveira");
     await expect(page.getByText(intro)).toBeVisible();
     await expect(page.getByText("Atendimento online")).toBeVisible();
+    await expect(page.locator('[data-profile-theme="warm"]')).toBeVisible();
+    await page
+      .getByRole("button", { name: "Ampliar ilustração Camadas acolhedoras" })
+      .click();
+    await expect(
+      page.getByRole("dialog", { name: "Camadas acolhedoras" }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
     await expect(page.getByText(/documento/i)).toHaveCount(0);
+  });
+
+  test("updates a Premium slug and keeps the previous URL redirecting", async ({
+    page,
+  }) => {
+    const nextSlug = `ana-presenca-${Date.now()}`;
+    await gotoShellRoute(page, "/terapeuta/perfil/editar");
+    const slugInput = page.getByRole("textbox", { name: /Endereço público/ });
+    await slugInput.fill(nextSlug);
+    await expect(page.getByText("Este link está disponível.")).toBeVisible();
+    await page.getByRole("button", { name: "Salvar link" }).click();
+    await expect(
+      page.getByText("Este é o link atual do seu perfil."),
+    ).toBeVisible();
+
+    await gotoShellRoute(page, `/terapeutas/${nextSlug}`);
+    await expect(page).toHaveURL(new RegExp(`/terapeutas/${nextSlug}$`));
+    await gotoShellRoute(page, "/terapeutas/ana-oliveira");
+    await expect(page).toHaveURL(new RegExp(`/terapeutas/${nextSlug}$`));
   });
 
   test("keeps the profile editor usable across responsive widths", async ({

@@ -29,6 +29,7 @@ import { ProfileCompleteness } from "./profile-completeness";
 import { ProfileEditorForm } from "./profile-editor-form";
 import { ProfilePageHeader } from "./profile-page-header";
 import { ProfileManagedElsewhere } from "./profile-managed-panels";
+import { ProfilePersonalizationPanel } from "./profile-personalization-panel";
 import {
   ProfilePhotoUploader,
   ProfileVideoUploader,
@@ -168,7 +169,9 @@ export function TherapistProfileEditorPage({
     sourceEditor: TherapistProfileEditorData,
     sourceFields: TherapistProfileEditableFields,
   ) {
-    const command: SaveTherapistProfileDraftCommand | SimpleTherapistProfileMutationCommand =
+    const command:
+      | SaveTherapistProfileDraftCommand
+      | SimpleTherapistProfileMutationCommand =
       action === "save_draft"
         ? {
             action,
@@ -224,9 +227,7 @@ export function TherapistProfileEditorPage({
         }
         primaryDisabled={
           pendingAction !== null ||
-          (isFirstConfiguration
-            ? false
-            : !hasUnsavedChanges)
+          (isFirstConfiguration ? false : !hasUnsavedChanges)
         }
         primaryLabel={
           isFirstConfiguration ? "Publicar alterações" : "Salvar alterações"
@@ -252,6 +253,14 @@ export function TherapistProfileEditorPage({
 
       <AppPageGrid>
         <AppPageMain>
+          <ProfilePersonalizationPanel
+            editor={editor}
+            fields={fields}
+            onEditorChange={setEditor}
+            onError={setInlineError}
+            onMessage={setLiveMessage}
+            updateField={updateField}
+          />
           <ProfileEditorForm
             editor={editor}
             fields={fields}
@@ -455,7 +464,12 @@ function validateDraftFields(
       message: "Mantenha no máximo 6 itens em Como posso te guiar.",
     };
   }
-  if (hasInvalidListItem(fields.guideItems.map((item) => item.label), 80)) {
+  if (
+    hasInvalidListItem(
+      fields.guideItems.map((item) => item.label),
+      80,
+    )
+  ) {
     return {
       focusId: "guideItems",
       message: "Cada item de Como posso te guiar deve ter até 80 caracteres.",
@@ -467,7 +481,12 @@ function validateDraftFields(
       message: "Mantenha no máximo 6 conteúdos/reflexões.",
     };
   }
-  if (hasInvalidListItem(fields.reflections.map((item) => item.title), 120)) {
+  if (
+    hasInvalidListItem(
+      fields.reflections.map((item) => item.title),
+      120,
+    )
+  ) {
     return {
       focusId: "reflections",
       message: "Cada conteúdo/reflexão deve ter até 120 caracteres.",
@@ -563,9 +582,7 @@ function hasInvalidMediaUrl(value: string, mode: "https" | "public") {
   if (!normalized) return false;
   if (/\s/.test(normalized)) return true;
   if (mode === "https") return !normalized.startsWith("https://");
-  return !(
-    normalized.startsWith("https://") || normalized.startsWith("/")
-  );
+  return !(normalized.startsWith("https://") || normalized.startsWith("/"));
 }
 
 function getSuccessMessage(action: PendingAction, replay: boolean) {

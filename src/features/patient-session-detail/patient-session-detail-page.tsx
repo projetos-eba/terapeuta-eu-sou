@@ -9,6 +9,7 @@ import { CancellationPolicyCard } from "./components/cancellation-policy-card";
 import { OnlineSessionCard } from "./components/online-session-card";
 import { PreparationCard } from "./components/preparation-card";
 import { QuickSupportCard } from "./components/quick-support-card";
+import { ReminderCard } from "./components/reminder-card";
 import { SessionAboutCard } from "./components/session-about-card";
 import { SessionActionCards } from "./components/session-action-cards";
 import { SessionDetailHeader } from "./components/session-detail-header";
@@ -36,26 +37,33 @@ export function PatientSessionDetailPage({
       >
         <AppPageMain className="gap-10">
           <SessionOverviewCard data={data} />
-          <OnlineSessionCard data={data} />
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
             <SessionAboutCard data={data} />
             <SharedIntakeCard intake={data.intake} />
           </div>
+          <OnlineSessionCard data={data} />
+          <SessionActionCards data={data} />
+          <section aria-labelledby="journey-with-therapist-heading">
+            <h2
+              className="font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]"
+              id="journey-with-therapist-heading"
+            >
+              Sua jornada com {data.therapist.name}
+            </h2>
+          </section>
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <PreparationCard data={data} />
             <CancellationPolicyCard policy={data.cancellationPolicy} />
           </div>
-          <SessionActionCards data={data} />
           {!showContextAside ? <UsefulInfoCard /> : null}
         </AppPageMain>
         {showContextAside ? (
           <AppPageAside className="gap-6 xl:sticky xl:top-28 xl:grid-cols-1 xl:self-start">
-            <QuickSupportCard
-              booking={data.booking}
-              bookingId={data.booking.id}
-              encounterState={data.encounterState}
-            />
+            <QuickSupportCard bookingId={data.booking.id} />
             <UsefulInfoCard compact />
+            {typeof data.booking.minutesUntilStart === "number" ? (
+              <ReminderCard booking={data.booking} />
+            ) : null}
           </AppPageAside>
         ) : null}
       </AppPageGrid>

@@ -38,6 +38,29 @@ describe("therapist profile editor parsers", () => {
     ).toThrow(TherapistProfileContractError);
   });
 
+  it("parses slug availability and update commands", () => {
+    expect(
+      parseTherapistProfileCommand({
+        action: "check_slug_availability",
+        slug: "Ana Presença",
+      }),
+    ).toEqual({ action: "check_slug_availability", slug: "Ana Presença" });
+
+    expect(
+      parseTherapistProfileCommand({
+        action: "update_slug",
+        expectedVersion: 3,
+        requestId,
+        slug: "Ana Presença",
+      }),
+    ).toEqual({
+      action: "update_slug",
+      expectedVersion: 3,
+      requestId,
+      slug: "Ana Presença",
+    });
+  });
+
   it("normalizes optional editable fields", () => {
     expect(
       parseEditorPayload({
@@ -50,6 +73,8 @@ describe("therapist profile editor parsers", () => {
       publicName: "Ana Oliveira",
       shortIntro: "",
       videoProvider: "external",
+      publicProfileTheme: "serene",
+      bioIllustrationId: null,
     });
   });
 

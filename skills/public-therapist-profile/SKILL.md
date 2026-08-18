@@ -40,6 +40,11 @@ Consultar antes de alterar:
   - `public_therapist_profile_content_v`
   - `public_therapist_slug_redirects_v`
 - Conteúdo editorial publicado vem de `therapist_profile_content_versions` e tabelas filhas.
+- `public_profile_theme` aplica um dos quatro temas oficiais somente ao hero.
+  `bio_illustration_id` referencia uma das quatro artes versionadas em
+  `public/therapists/profile-bio/`; null omite completamente o controle.
+- Slugs antigos resolvem por `public_therapist_slug_redirects_v`. A projeção
+  nunca expõe `free_public_slug`, IDs de histórico ou proprietário de slug.
 - Terapias e serviços são gerenciados pela plataforma/Admin, não pela copy livre do terapeuta.
 - Avaliações públicas devem estar vinculadas a booking `completed` e `paid`.
 - Disponibilidade deve vir do RPC autoritativo `get_service_available_slots_v1`, que deriva regras semanais, exceções, bookings existentes, buffers, antecedência mínima, duração e timezone do serviço. Não recalcular slots públicos no runtime Next.
@@ -54,6 +59,10 @@ Preservar o padrão do node:
 
 - Hero com foto grande, badges, tags, avaliação, CTA e ações favoritar/compartilhar.
 - Cards `Minha essência`, `Como posso te guiar` e `Um convite para você`.
+- A ilustração opcional de `Minha essência` abre em `TESDialog`, com alt,
+  Escape, foco confinado e retorno de foco.
+- O registro compartilhado de temas alimenta editor e hero; não duplicar quatro
+  componentes de perfil.
 - Seção `Vivências e terapias` com serviços, duração, preço e CTA.
 - A seção `Vivências e terapias` usa a terapia canônica como identidade
   pública. Não exibir títulos operacionais de serviço como chip/aba, por

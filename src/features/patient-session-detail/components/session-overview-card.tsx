@@ -32,9 +32,9 @@ export function SessionOverviewCard({
   const statusTone = getStatusTone(data.booking.status, data.booking.canJoin);
 
   return (
-    <section className="overflow-hidden rounded-[30px] border border-brand-lavender/45 bg-surface-soft px-5 py-6 sm:px-7 sm:py-7">
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1.22fr)_minmax(260px,0.78fr)] xl:items-start">
-        <div className="min-w-0">
+    <section className="overflow-hidden rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
+      <div className="grid gap-7 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.25fr)_minmax(220px,0.7fr)] lg:gap-0">
+        <div className="min-w-0 lg:border-r lg:border-border lg:pr-7">
           <div className="flex items-start gap-4 sm:gap-5">
             <Avatar
               name={data.therapist.name}
@@ -42,9 +42,6 @@ export function SessionOverviewCard({
               src={data.therapist.avatarUrl}
             />
             <div className="min-w-0">
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-brand-primary sm:text-xs">
-                Terapeuta do encontro
-              </p>
               <h2 className="mt-2 truncate text-[1.55rem] font-extrabold leading-tight text-brand-deep sm:text-[1.75rem]">
                 {data.therapist.name}
               </h2>
@@ -63,11 +60,13 @@ export function SessionOverviewCard({
               </div>
             </div>
           </div>
+        </div>
 
-          <dl className="mt-7 grid gap-4 border-t border-border pt-5 sm:grid-cols-3 sm:gap-5">
+        <div className="min-w-0 border-t border-border pt-6 lg:border-t-0 lg:px-7 lg:pt-1">
+          <dl className="grid gap-5 sm:grid-cols-3 lg:grid-cols-1 lg:gap-6">
             <OverviewFact
               icon={CalendarDays}
-              label="Quando"
+              label="Data"
               value={data.booking.dateLabel}
             />
             <OverviewFact
@@ -83,50 +82,19 @@ export function SessionOverviewCard({
               supporting={data.service.therapyName}
             />
           </dl>
-
-          <div className="mt-7 flex flex-wrap items-center gap-4 border-t border-border pt-5">
-            <div className="min-w-0 flex-1">
-              <StatusPill tone={statusTone}>
-                {data.booking.statusLabel}
-              </StatusPill>
-              <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
-                {guidance}
-              </p>
-            </div>
-
-            {primaryAction.disabled ? (
-              <button
-                className="inline-flex min-h-12 min-w-[220px] cursor-not-allowed items-center justify-center rounded-full bg-white/80 px-6 text-sm font-extrabold text-tesText-secondary"
-                disabled
-                title={primaryAction.reason}
-                type="button"
-              >
-                <Video aria-hidden="true" size={18} />
-                {primaryAction.label}
-              </button>
-            ) : (
-              <TESButton
-                className="min-w-[220px]"
-                href={primaryAction.href}
-                size="lg"
-                variant={primaryAction.variant ?? "primary"}
-              >
-                <Video aria-hidden="true" size={18} />
-                {primaryAction.label}
-              </TESButton>
-            )}
-          </div>
         </div>
 
-        <div className="rounded-[24px] bg-white/80 px-5 py-5 xl:min-h-full xl:px-6">
+        <div className="min-w-0 border-t border-border pt-6 lg:border-l lg:border-t-0 lg:border-border lg:pl-7 lg:pt-1">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-tesText-muted sm:text-xs">
-            O que muda agora
+            Status
           </p>
-          <h3 className="mt-2 text-lg font-extrabold text-brand-deep sm:text-xl">
-            {data.encounterState.waitingRoom.title}
-          </h3>
-          <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
-            {data.encounterState.waitingRoom.message}
+          <div className="mt-3">
+            <StatusPill tone={statusTone}>
+              {data.booking.statusLabel}
+            </StatusPill>
+          </div>
+          <p className="mt-4 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
+            {guidance}
           </p>
 
           <div className="mt-5 grid gap-4 border-t border-border pt-5">
@@ -142,8 +110,29 @@ export function SessionOverviewCard({
             />
           </div>
 
+          {primaryAction.disabled ? (
+            <button
+              className="mt-5 inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-full bg-surface-soft px-6 text-sm font-extrabold text-tesText-secondary"
+              disabled
+              title={primaryAction.reason}
+              type="button"
+            >
+              <Video aria-hidden="true" size={18} />
+              {primaryAction.label}
+            </button>
+          ) : (
+            <TESButton
+              className="mt-5 w-full"
+              href={primaryAction.href}
+              size="lg"
+              variant={primaryAction.variant ?? "primary"}
+            >
+              <Video aria-hidden="true" size={18} />
+              {primaryAction.label}
+            </TESButton>
+          )}
           <Link
-            className="mt-5 inline-flex min-h-11 items-center text-sm font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            className="mt-4 inline-flex min-h-11 items-center text-sm font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
             href={data.therapist.profileHref as Route<string>}
           >
             Ver perfil profissional
