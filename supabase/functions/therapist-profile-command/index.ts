@@ -25,6 +25,11 @@ type PublishCommandResult = {
   idempotentReplay?: boolean;
 };
 
+type SlugAvailabilityResult = {
+  normalizedSlug: string;
+  status: "available" | "current" | "invalid" | "reserved" | "taken";
+};
+
 type EditorReadResult = {
   therapistProfileId?: string;
 } & Record<string, unknown>;
@@ -124,6 +129,32 @@ runtime.serve(async (request) => {
         return success(await readEnrichedEditor(client, user.id));
       }
 
+      if (command.action === "check_slug_availability") {
+        return success(
+          await client.rpc<SlugAvailabilityResult>(
+            "check_therapist_public_slug_availability_v1",
+            { p_actor_user_id: user.id, p_slug: command.slug },
+          ),
+        );
+      }
+
+      if (command.action === "update_slug") {
+        const result = await client.rpc<PublishCommandResult>(
+          "update_therapist_public_slug_v1",
+          {
+            p_actor_user_id: user.id,
+            p_expected_version: command.expectedVersion,
+            p_request_id: command.requestId,
+            p_slug: command.slug,
+          },
+        );
+        return success({
+          contractVersion: result.contractVersion ?? 2,
+          editor: await readEnrichedEditor(client, user.id),
+          idempotentReplay: Boolean(result.idempotentReplay),
+        });
+      }
+
       if (command.action === "save_draft") {
         const result = await client.rpc<PublishCommandResult>(
           "save_therapist_profile_draft_v1",
@@ -213,10 +244,7 @@ runtime.serve(async (request) => {
   }
 });
 
-async function readEnrichedEditor(
-  client: SupabaseRestClient,
-  userId: string,
-) {
+async function readEnrichedEditor(client: SupabaseRestClient, userId: string) {
   let editor: EditorReadResult;
 
   try {
@@ -289,7 +317,11 @@ async function handlePrivateDocumentUpload({
     !isDocumentKind(kind) ||
     !isFileUpload(file)
   ) {
-    throw new DomainError("VALIDATION_ERROR", 422, "Envie um documento válido.");
+    throw new DomainError(
+      "VALIDATION_ERROR",
+      422,
+      "Envie um documento válido.",
+    );
   }
 
   await validatePrivateDocument(file);
@@ -305,7 +337,10 @@ async function handlePrivateDocumentUpload({
     );
   }
 
-  const existingDocuments = await readPrivateDocuments(client, therapistProfileId);
+  const existingDocuments = await readPrivateDocuments(
+    client,
+    therapistProfileId,
+  );
   const activeDocuments = existingDocuments.filter(
     (document) => document.kind === kind && document.status !== "archived",
   );
@@ -373,7 +408,10 @@ async function handlePrivateDocumentUpload({
   return {
     document: mapPrivateDocumentRecord(inserted),
     documents: await readPrivateDocuments(client, therapistProfileId),
-    verificationSummary: await readVerificationSummary(client, therapistProfileId),
+    verificationSummary: await readVerificationSummary(
+      client,
+      therapistProfileId,
+    ),
   };
 }
 
@@ -391,7 +429,9 @@ function logFailure(error: unknown, correlationId: string, durationMs: number) {
       failure_stage:
         error instanceof EnrichedEditorReadError ? error.stage : undefined,
       source_http_status:
-        sourceError instanceof SupabaseHttpError ? sourceError.status : undefined,
+        sourceError instanceof SupabaseHttpError
+          ? sourceError.status
+          : undefined,
       operation: "therapist_profile_command",
     }),
   );
@@ -470,7 +510,10 @@ async function readPrivateDocuments(
     )}&status=neq.archived&select=id,document_kind,file_name,mime_type,file_size_bytes,status,validation_state,review_note,reviewed_at,created_at,updated_at&order=created_at.desc`,
   );
 
-  const latestByKind = new Map<string, ReturnType<typeof mapPrivateDocumentRecord>>();
+  const latestByKind = new Map<
+    string,
+    ReturnType<typeof mapPrivateDocumentRecord>
+  >();
 
   for (const row of Array.isArray(rows) ? rows : []) {
     if (!latestByKind.has(row.document_kind)) {

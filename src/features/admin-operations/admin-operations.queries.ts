@@ -508,7 +508,9 @@ export const getAdminOperationDetailPage = cache(
       detail.publicProfile = publicProfile;
       detail.privateDocuments =
         privateDocuments.status === "success" ? privateDocuments.data : null;
-      detail.verificationSummary = verificationSummary;
+      detail.verificationSummary =
+        verificationSummary ??
+        deriveProfileDecisionVerificationSummary(detail.statusLabel);
     }
 
     if (module === "verifications" && detail.relatedProfessionalId) {
@@ -616,12 +618,34 @@ async function fetchAdminProfessionalVerificationSummary({
 
     return {
       reviewedAt: asString(row.reviewed_at) ?? null,
+      source: "verification",
       status: normalizeVerificationStatus(asString(row.status)),
       submittedAt: asString(row.submitted_at) ?? null,
     };
   } catch {
     return null;
   }
+}
+
+/**
+ * Perfis aprovados ou suspensos antes da fila de verificações não possuem,
+ * necessariamente, um registro em therapist_verifications. A decisão do
+ * perfil já é autoritativa, mas não deve criar ou alterar uma verificação
+ * retroativamente. Este resumo serve apenas para a leitura da linha do tempo.
+ */
+export function deriveProfileDecisionVerificationSummary(
+  profileStatus?: string | null,
+): AdminProfessionalVerificationSummary | null {
+  if (profileStatus !== "approved" && profileStatus !== "suspended") {
+    return null;
+  }
+
+  return {
+    reviewedAt: null,
+    source: "profile_status",
+    status: profileStatus,
+    submittedAt: null,
+  };
 }
 
 async function fetchAdminProfessionalPublishedServices({

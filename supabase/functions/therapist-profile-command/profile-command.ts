@@ -16,6 +16,16 @@ export type TherapistProfileCommandBody =
       action?: "discard_draft" | "publish" | "unpublish";
       expectedVersion?: number;
       requestId?: string;
+    }
+  | {
+      action?: "check_slug_availability";
+      slug?: string;
+    }
+  | {
+      action?: "update_slug";
+      expectedVersion?: number;
+      requestId?: string;
+      slug?: string;
     };
 
 export type TherapistProfileEditorPayload = {
@@ -41,6 +51,13 @@ export type TherapistProfileEditorPayload = {
   videoThumbnailUrl: string | null;
   videoTitle: string | null;
   videoUrl: string | null;
+  publicProfileTheme: "essential" | "natural" | "serene" | "warm";
+  bioIllustrationId:
+    | "essential_lines"
+    | "gentle_horizon"
+    | "organic_flow"
+    | "warm_layers"
+    | null;
 };
 
 export type ValidTherapistProfileCommand =
@@ -55,6 +72,13 @@ export type ValidTherapistProfileCommand =
       action: "discard_draft" | "publish" | "unpublish";
       expectedVersion: number;
       requestId: string;
+    }
+  | { action: "check_slug_availability"; slug: string }
+  | {
+      action: "update_slug";
+      expectedVersion: number;
+      requestId: string;
+      slug: string;
     };
 
 export function validateTherapistProfileCommand(
@@ -75,6 +99,28 @@ export function validateTherapistProfileCommand(
       expectedVersion: body.expectedVersion,
       payload: validatePayload(body.payload),
       requestId: body.requestId,
+    };
+  }
+
+  if (body.action === "check_slug_availability") {
+    return {
+      action: body.action,
+      slug: boundedString(body.slug, 1, 120),
+    };
+  }
+
+  if (body.action === "update_slug") {
+    if (
+      !isUuid(body.requestId) ||
+      !isInteger(body.expectedVersion, 1, 999999999)
+    ) {
+      invalid();
+    }
+    return {
+      action: body.action,
+      expectedVersion: body.expectedVersion,
+      requestId: body.requestId,
+      slug: boundedString(body.slug, 1, 120),
     };
   }
 
@@ -139,6 +185,27 @@ export function mapTherapistProfileDatabaseError(error: unknown) {
       "Seu plano atual não permite este recurso.",
     );
   }
+  if (details.includes("SLUG_TAKEN")) {
+    return new DomainError(
+      "SLUG_TAKEN",
+      409,
+      "Este link acabou de ser escolhido. Tente outra opção.",
+    );
+  }
+  if (details.includes("SLUG_RESERVED")) {
+    return new DomainError(
+      "SLUG_RESERVED",
+      422,
+      "Este endereço é reservado pela plataforma.",
+    );
+  }
+  if (details.includes("SLUG_INVALID")) {
+    return new DomainError(
+      "SLUG_INVALID",
+      422,
+      "Use de 3 a 40 caracteres para criar seu link.",
+    );
+  }
   if (details.includes("VALIDATION_ERROR")) {
     return new DomainError(
       "VALIDATION_ERROR",
@@ -180,6 +247,8 @@ function validatePayload(input: unknown): TherapistProfileEditorPayload {
     headline: nullableString(value.headline, 180),
     invitationBody: nullableString(value.invitationBody, 600),
     photoUrl: nullableString(value.photoUrl, 500),
+    publicProfileTheme: publicProfileTheme(value.publicProfileTheme),
+    bioIllustrationId: bioIllustrationId(value.bioIllustrationId),
     publicName,
     reflections: array(value.reflections, 6).map((item) => ({
       excerpt: nullableString(item.excerpt, 240),
@@ -198,6 +267,30 @@ function validatePayload(input: unknown): TherapistProfileEditorPayload {
     videoTitle: nullableString(value.videoTitle, 120),
     videoUrl: nullableString(value.videoUrl, 500),
   };
+}
+
+function publicProfileTheme(value: unknown) {
+  if (value === undefined || value === null || value === "") return "serene";
+  if (
+    value === "serene" ||
+    value === "natural" ||
+    value === "warm" ||
+    value === "essential"
+  )
+    return value;
+  invalid();
+}
+
+function bioIllustrationId(value: unknown) {
+  if (value === undefined || value === null || value === "") return null;
+  if (
+    value === "organic_flow" ||
+    value === "gentle_horizon" ||
+    value === "warm_layers" ||
+    value === "essential_lines"
+  )
+    return value;
+  invalid();
 }
 
 function array(

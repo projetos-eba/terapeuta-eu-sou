@@ -45,6 +45,8 @@ Não passar linhas cruas do Supabase para React.
 - Rascunho/publicado: `therapist_profile_content_versions`
 - Idempotência: `therapist_profile_mutation_requests`
 - Auditoria: `therapist_profile_events`
+- Slug estável Free: `therapist_profiles.free_public_slug`
+- Redirects sem cadeia: `therapist_profile_slug_history`
 - Documentos privados: `therapist_private_documents`
 - Buckets: `therapist-public-media`, `therapist-private-documents`
 
@@ -67,6 +69,10 @@ Não passar linhas cruas do Supabase para React.
   `submitted`, sem aprovação automática. Falha na fila deve abortar a
   publicação em vez de produzir sucesso parcial.
 - Perfis já aprovados ou suspensos não podem ser rebaixados por republicação.
+- Em cadastros antigos sem item em `therapist_verifications`, uma aprovação ou
+  suspensão autoritativa em `therapist_profiles` preserva o estado terminal na
+  experiência da terapeuta. A UI não cria nem altera histórico de verificação
+  retroativamente.
 - Dados derivados são somente leitura.
 - Documentos privados nunca entram em HTML público, DTO público, busca pública
   ou preview público.
@@ -78,6 +84,15 @@ Não passar linhas cruas do Supabase para React.
   O navegador nunca recebe bucket, path interno ou URL assinada; outro
   terapeuta não pode abrir documentos alheios.
 - Capabilities são validadas no frontend e no backend.
+- Temas `serene`, `natural`, `warm` e `essential` e a galeria de ilustrações
+  são universais e seguem rascunho/publicação. Não criar gate de plano.
+- Slug é salvo separadamente e entra em vigor imediatamente. Free mantém o
+  identificador numérico de sete dígitos; `custom_profile_slug` libera Premium
+  e Premium Plus. O banco é autoridade de normalização, disponibilidade,
+  histórico, idempotência e advisory lock.
+- Antes do rollout, executar
+  `supabase/audits/therapist_public_slug_preflight.sql`; colisão entre
+  profissionais interrompe a aplicação.
 - Sem mocks silenciosos em produção.
 
 ## UI
@@ -90,7 +105,8 @@ Não passar linhas cruas do Supabase para React.
   progresso/envio honesta, com etapas, pendências e orientação do próximo
   passo.
 - `/terapeuta/perfil/editar` deve conter header, progresso, formulário
-  numerado, upload/mídia, módulos gerenciados, aviso importante e save bar.
+  numerado, temas, link público, galeria de bio, upload/mídia, módulos
+  gerenciados, aviso importante e save bar.
 - Evitar CTAs conflitantes na primeira configuração: não mostrar `Salvar
 rascunho` como ação concorrente quando o perfil ainda não tem versão
   publicada.
@@ -113,7 +129,7 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
 ## Cache
 
 - Draft/discard: não invalidar público.
-- Publish/unpublish: revalidar `therapist-profile`, `therapist-search`, `/`,
+- Publish/unpublish/update_slug: revalidar `therapist-profile`, `therapist-search`, `/`,
   `/terapeutas` e `/terapeutas/:slug`.
 
 ## QA
@@ -127,7 +143,8 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
   autenticado, falha sanitizada e ausência de vazamento de metadados
   sensíveis.
 - Deno para Edge command.
-- pgTAP para RLS, publicação, rascunho, fila administrativa e privacidade.
+- pgTAP para RLS, publicação, rascunho, fila administrativa, privacidade,
+  slug, histórico, entitlement, downgrade e concorrência.
 - Validar que view pública não expõe campos administrativos.
 - E2E `tests/e2e/therapist-profile.spec.ts`: login do terapeuta, preview-first,
   navegação para edição, rascunho, publicação, perfil público, ausência de

@@ -32,6 +32,7 @@ function makeEditor(
 ): TherapistProfileEditorData {
   const editor: TherapistProfileEditorData = {
     capabilities: {
+      canCustomizePublicSlug: true,
       canPublishAdditionalServices: true,
       canPublishProfile: true,
       canUploadVideo: true,
@@ -63,10 +64,13 @@ function makeEditor(
     propagationNotice:
       "As alterações publicadas podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
     publicProfileHref: "/terapeutas/ana-oliveira",
+    publicProfileSlug: "ana-oliveira",
+    publicProfileTheme: "serene",
     published: {
       baseProfileVersion: null,
       contentVersionId: "published-version",
       fields: {
+        bioIllustrationId: null,
         bio: "Atendimento online com escuta responsável.",
         city: "",
         essenceBody: "Presença e cuidado.",
@@ -76,6 +80,7 @@ function makeEditor(
         invitationBody: "",
         photoUrl: "/therapists/ana-oliveira.png",
         publicName: "Ana Oliveira",
+        publicProfileTheme: "serene",
         reflections: [],
         shortIntro: "Acolhimento online.",
         state: "",
@@ -133,14 +138,12 @@ function makeFirstConfigurationEditor(
       ...overrides.derived,
     },
     draft: overrides.draft ?? null,
-    published:
-      overrides.published ??
-      {
-        ...base.published,
-        fields: firstFields,
-        publishedAt: null,
-        status: "draft",
-      },
+    published: overrides.published ?? {
+      ...base.published,
+      fields: firstFields,
+      publishedAt: null,
+      status: "draft",
+    },
     version: overrides.version ?? 1,
   });
 }
@@ -183,6 +186,89 @@ describe("TherapistProfileEditorPage", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText("Dados derivados")).not.toBeInTheDocument();
+  });
+
+  it("offers all themes and keeps theme selection in the draft state", () => {
+    render(<TherapistProfileEditorPage editor={makeEditor()} />);
+
+    expect(screen.getByLabelText(/Sereno/)).toBeChecked();
+    fireEvent.click(screen.getByLabelText(/Natural/));
+    expect(screen.getByLabelText(/Natural/)).toBeChecked();
+    expect(screen.getByText("Tema atual")).toBeInTheDocument();
+  });
+
+  it("keeps the stable link visible and blocks custom slug editing for Free", () => {
+    render(
+      <TherapistProfileEditorPage
+        editor={makeEditor({
+          capabilities: { canCustomizePublicSlug: false },
+          derived: { plan: "free" },
+          publicProfileHref: "/terapeutas/1100001",
+          publicProfileSlug: "1100001",
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByRole("textbox", { name: /Endereço público/ }),
+    ).toHaveValue("1100001");
+    expect(
+      screen.getByRole("textbox", { name: /Endereço público/ }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText(/identificador numérico continua estável/i),
+    ).toBeInTheDocument();
+  });
+
+  it("saves a paid slug without discarding unsaved profile fields", async () => {
+    const updatedEditor = makeEditor({
+      publicProfileHref: "/terapeutas/ana-presenca",
+      publicProfileSlug: "ana-presenca",
+      version: 5,
+    });
+    commandMocks.sendTherapistProfileCommand
+      .mockResolvedValueOnce({
+        data: { normalizedSlug: "ana-presenca", status: "available" },
+        status: "success",
+      })
+      .mockResolvedValueOnce({
+        data: { editor: updatedEditor, idempotentReplay: false },
+        status: "success",
+      });
+
+    render(<TherapistProfileEditorPage editor={makeEditor()} />);
+    fireEvent.change(screen.getByLabelText("Nome do perfil"), {
+      target: { value: "Ana ainda não salva" },
+    });
+    fireEvent.change(
+      screen.getByRole("textbox", { name: /Endereço público/ }),
+      {
+        target: { value: "Ana Presença" },
+      },
+    );
+
+    await waitFor(() =>
+      expect(commandMocks.sendTherapistProfileCommand).toHaveBeenCalledWith({
+        action: "check_slug_availability",
+        slug: "Ana Presença",
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Salvar link" })).toBeEnabled(),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Salvar link" }));
+
+    await waitFor(() =>
+      expect(commandMocks.sendTherapistProfileCommand).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          action: "update_slug",
+          slug: "Ana Presença",
+        }),
+      ),
+    );
+    expect(screen.getByLabelText("Nome do perfil")).toHaveValue(
+      "Ana ainda não salva",
+    );
   });
 
   it("keeps private draft fields in the editor without rendering the public preview", () => {

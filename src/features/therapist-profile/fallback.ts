@@ -133,6 +133,7 @@ export const fallbackTherapistProfile: TherapistProfileData = {
     bio: "Sou terapeuta integrativa há mais de 8 anos. Minha missão é oferecer acolhimento, escuta e orientação para você se conectar com sua essência, leveza e verdade.",
     cityState: "São Paulo, SP",
     content: {
+      bioIllustrationId: "organic_flow",
       essenceBody:
         "Sou terapeuta integrativa há mais de 8 anos. Minha missão é oferecer acolhimento, escuta e orientação para você se conectar com sua essência, leveza e verdade.",
       experienceYears: 8,
@@ -156,6 +157,7 @@ export const fallbackTherapistProfile: TherapistProfileData = {
       ],
       shortIntro:
         "Bem-vinda, alma bonita. Intuição que acolhe, energia que cuida e orientação que ilumina seu caminho de volta para você.",
+      publicProfileTheme: "serene",
     },
     headline:
       "Bem-vinda, alma bonita. Intuição que acolhe, energia que cuida e orientação que ilumina seu caminho de volta para você.",
@@ -166,6 +168,7 @@ export const fallbackTherapistProfile: TherapistProfileData = {
     name: "Ana Oliveira",
     plan: "premium_plus",
     profileUrl: routes.public.therapistProfile("ana-oliveira"),
+    publicProfileTheme: "serene",
     rating: {
       average: 4.9,
       count: 3,
@@ -248,6 +251,7 @@ export const fallbackTherapistProfilesBySlug: Record<
       bio: "Rafael acompanha pessoas em fases de mudança com escuta integrativa e combinados claros de sessão.",
       cityState: "Rio de Janeiro, RJ",
       content: {
+        bioIllustrationId: null,
         essenceBody:
           "Rafael acompanha pessoas em fases de mudança com escuta integrativa e combinados claros de sessão.",
         experienceYears: 6,
@@ -261,6 +265,7 @@ export const fallbackTherapistProfilesBySlug: Record<
         reflections: [],
         shortIntro:
           "Sessões para mudanças de vida, propósito e reorganização de caminhos.",
+        publicProfileTheme: "serene",
       },
       headline:
         "Sessões para mudanças de vida, propósito e reorganização de caminhos.",
@@ -271,6 +276,7 @@ export const fallbackTherapistProfilesBySlug: Record<
       name: "Rafael Santos",
       plan: "premium",
       profileUrl: routes.public.therapistProfile("rafael-santos"),
+      publicProfileTheme: "serene",
       rating: {
         average: 4.8,
         count: 74,

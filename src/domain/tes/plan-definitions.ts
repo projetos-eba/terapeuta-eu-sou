@@ -109,13 +109,14 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
     description: "URL personalizada com o nome público do terapeuta.",
     label: "URL com o seu nome (/seunome)",
     minimumPlan: TherapistPlan.Premium,
+    capability: "custom_profile_slug",
   },
   {
-    category: "premium",
+    category: "base",
     code: "visual_identity_customization",
-    description: "Personalização visual da presença pública.",
-    label: "Personalização visual (identidade própria)",
-    minimumPlan: TherapistPlan.Premium,
+    description: "Tema oficial e ilustração TES para a presença pública.",
+    label: "Tema e ilustração do perfil público",
+    minimumPlan: TherapistPlan.Free,
   },
   {
     category: "premium",

@@ -70,6 +70,12 @@ function normalizeVideo(input: {
 }
 
 export type ContentRow = {
+  bio_illustration_id:
+    | "essential_lines"
+    | "gentle_horizon"
+    | "organic_flow"
+    | "warm_layers"
+    | null;
   essence_body: string | null;
   experience_years: number | null;
   guide_items: Array<{
@@ -77,6 +83,7 @@ export type ContentRow = {
     label: string;
   }> | null;
   invitation_body: string | null;
+  public_profile_theme: "essential" | "natural" | "serene" | "warm";
   reflections: Array<{
     href: string;
     imageUrl: string;
@@ -84,7 +91,6 @@ export type ContentRow = {
     title: string;
   }> | null;
   short_intro: string | null;
-  therapist_profile_id: string;
 };
 
 export type ServiceRow = {
@@ -146,6 +152,7 @@ function formatCurrency(cents: number) {
 
 export function mapContentRow(row: ContentRow | null): TherapistProfileContent {
   return {
+    bioIllustrationId: row?.bio_illustration_id ?? null,
     essenceBody:
       row?.essence_body ??
       "Acolhimento, escuta e presença para apoiar sua jornada com responsabilidade.",
@@ -156,6 +163,7 @@ export function mapContentRow(row: ContentRow | null): TherapistProfileContent {
       "Assista ao vídeo para conhecer melhor a abordagem deste perfil.",
     reflections: row?.reflections ?? [],
     shortIntro: row?.short_intro ?? "",
+    publicProfileTheme: row?.public_profile_theme ?? "serene",
   };
 }
 
@@ -225,6 +233,7 @@ export function mapProfileRow(
     name: row.public_name,
     plan: row.plan,
     profileUrl: `/terapeutas/${row.slug}`,
+    publicProfileTheme: content.publicProfileTheme,
     rating: {
       average: row.average_rating,
       count: row.review_count ?? 0,

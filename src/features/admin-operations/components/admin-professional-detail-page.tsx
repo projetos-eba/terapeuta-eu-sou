@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { useState } from "react";
 import {
@@ -644,10 +645,12 @@ function DocumentReviewActions({
   professionalId: string;
   status: "accepted" | "missing" | "rejected" | "uploaded";
 }) {
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showReason, setShowReason] = useState(false);
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   async function submit(decision: "accepted" | "resubmission_requested") {
     if (decision === "resubmission_requested" && reason.trim().length < 3) {
@@ -657,6 +660,7 @@ function DocumentReviewActions({
 
     setIsSubmitting(true);
     setMessage(null);
+    setSuccessMessage(null);
 
     try {
       const response = await fetch(
@@ -676,7 +680,14 @@ function DocumentReviewActions({
         return;
       }
 
-      window.location.reload();
+      setSuccessMessage(
+        decision === "accepted"
+          ? "Documento confirmado. A aprovação final do cadastro continua sendo registrada na análise administrativa."
+          : "Solicitação de reenvio registrada para o profissional.",
+      );
+      setShowReason(false);
+      setReason("");
+      router.refresh();
     } catch {
       setMessage("Não foi possível registrar a decisão agora.");
     } finally {
@@ -740,6 +751,15 @@ function DocumentReviewActions({
       {message ? (
         <p className="basis-full text-sm font-semibold leading-6 text-status-danger" role="alert">
           {message}
+        </p>
+      ) : null}
+      {successMessage ? (
+        <p
+          aria-live="polite"
+          className="basis-full text-sm font-semibold leading-6 text-status-success"
+          role="status"
+        >
+          {successMessage}
         </p>
       ) : null}
     </div>
@@ -985,6 +1005,9 @@ function buildProfessionalProgressStages({
 }) {
   const traceabilityMap = fieldMap(traceability);
   const verificationStatus = verificationSummary?.status ?? "none";
+  const reflectsProfileDecision =
+    verificationSummary?.source === "profile_status" &&
+    (verificationStatus === "approved" || verificationStatus === "suspended");
   const createdAt = traceabilityMap.get("Criado em");
   const submittedAt = verificationSummary?.submittedAt;
   const reviewedAt = verificationSummary?.reviewedAt;
@@ -1005,11 +1028,15 @@ function buildProfessionalProgressStages({
     {
       detail: submittedAt
         ? `Enviado para revisão em ${formatDateTime(submittedAt)}.`
+        : reflectsProfileDecision
+          ? "A situação atual do cadastro confirma o encaminhamento para análise."
         : verificationStatus === "none" || verificationStatus === "draft"
           ? "Ainda não existe envio confirmado para análise."
           : "Cadastro já encaminhado para a fila administrativa.",
       eyebrow: progressEyebrow(
-        Boolean(submittedAt) || reachedReviewQueue(verificationStatus),
+        reflectsProfileDecision ||
+          Boolean(submittedAt) ||
+          reachedReviewQueue(verificationStatus),
         verificationStatus === "submitted",
       ),
       key: "submitted",
@@ -1017,7 +1044,9 @@ function buildProfessionalProgressStages({
       state:
         verificationStatus === "submitted"
           ? ("current" as const)
-          : Boolean(submittedAt) || reachedReviewQueue(verificationStatus)
+          : reflectsProfileDecision ||
+              Boolean(submittedAt) ||
+              reachedReviewQueue(verificationStatus)
             ? ("complete" as const)
             : ("pending" as const),
     },
@@ -1025,13 +1054,15 @@ function buildProfessionalProgressStages({
       detail:
         verificationStatus === "in_review"
           ? "Equipe administrativa analisando perfil e documentos agora."
-          : reviewedAt
-            ? `Análise registrada em ${formatDateTime(reviewedAt)}.`
-            : reachedPostReview(verificationStatus)
+        : reviewedAt
+          ? `Análise registrada em ${formatDateTime(reviewedAt)}.`
+          : reflectsProfileDecision
+            ? "A situação atual do cadastro confirma que a análise administrativa foi concluída."
+          : reachedPostReview(verificationStatus)
               ? "Análise concluída com decisão administrativa."
               : "A revisão começa depois do envio para a fila.",
       eyebrow: progressEyebrow(
-        reachedPostReview(verificationStatus),
+        reflectsProfileDecision || reachedPostReview(verificationStatus),
         verificationStatus === "in_review",
       ),
       key: "review",
@@ -1039,14 +1070,16 @@ function buildProfessionalProgressStages({
       state:
         verificationStatus === "in_review"
           ? ("current" as const)
-          : reachedPostReview(verificationStatus)
+          : reflectsProfileDecision || reachedPostReview(verificationStatus)
             ? ("complete" as const)
             : ("pending" as const),
     },
     {
       detail:
         verificationStatus === "approved"
-          ? "Verificação concluída com aprovação."
+          ? reflectsProfileDecision
+            ? "A situação atual do cadastro confirma a aprovação administrativa."
+            : "Verificação concluída com aprovação."
           : verificationStatus === "changes_requested"
             ? "Ajustes solicitados antes de aprovar a publicação."
             : verificationStatus === "rejected"

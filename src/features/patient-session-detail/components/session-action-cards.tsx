@@ -17,12 +17,9 @@ export function SessionActionCards({
   const hasReceipt = Boolean(data.receipt.receiptUrl);
 
   return (
-    <section className="grid gap-6 border-t border-border pt-8">
+    <section className="grid gap-6 rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
       <div>
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-brand-primary sm:text-xs">
-          Ajustes e comprovantes
-        </p>
-        <h2 className="mt-3 font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]">
+        <h2 className="font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]">
           Gerencie este encontro
         </h2>
         <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
@@ -43,7 +40,7 @@ export function SessionActionCards({
         reschedule={data.reschedule}
       />
 
-      <section className="rounded-[28px] border border-border bg-white/80 p-5 sm:p-6">
+      <section className="rounded-[24px] bg-surface-soft p-5 sm:p-6">
         <div className="flex items-start gap-3">
           <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
             <ReceiptText aria-hidden="true" size={18} />
@@ -63,7 +60,7 @@ export function SessionActionCards({
 
       <section
         aria-label="Ações complementares do encontro"
-        className="grid gap-4"
+        className="grid gap-4 sm:grid-cols-2"
       >
         {data.receipt.receiptUrl ? (
           <ActionLink
@@ -105,13 +102,13 @@ function ActionLink({
 }) {
   return (
     <Link
-      className="flex min-h-16 items-center justify-between gap-4 rounded-card border border-border bg-white px-5 py-4 transition hover:border-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:px-6"
+      className="flex min-h-36 flex-col items-start justify-between gap-4 rounded-card border border-border bg-white px-5 py-5 transition hover:border-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:px-6"
       href={href as Route<string>}
     >
       <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
         <Icon aria-hidden="true" size={18} />
       </span>
-      <span className="min-w-0 flex-1">
+      <span className="min-w-0">
         <span className="block text-sm font-extrabold text-brand-deep sm:text-base">
           {title}
         </span>
@@ -140,14 +137,14 @@ function ActionButton({
 }) {
   return (
     <button
-      className="flex min-h-16 w-full cursor-not-allowed items-center justify-between gap-4 rounded-card border border-border bg-white px-5 py-4 opacity-70 sm:px-6"
+      className="flex min-h-36 w-full cursor-not-allowed flex-col items-start justify-between gap-4 rounded-card border border-border bg-white px-5 py-5 opacity-70 sm:px-6"
       disabled
       type="button"
     >
       <span className="grid size-11 shrink-0 place-items-center rounded-full bg-surface-soft text-tesText-muted">
         <Icon aria-hidden="true" size={18} />
       </span>
-      <span className="min-w-0 flex-1 text-left">
+      <span className="min-w-0 text-left">
         <span className="block text-sm font-extrabold text-brand-deep sm:text-base">
           {title}
         </span>

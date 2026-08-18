@@ -103,6 +103,11 @@ export type AdminProfessionalPublishedProfile = {
 
 export type AdminProfessionalVerificationSummary = {
   reviewedAt: string | null;
+  /**
+   * Usada somente para explicar a linha do tempo sem inventar registros de
+   * verificação ausentes em cadastros anteriores.
+   */
+  source?: "profile_status" | "verification";
   status:
     | "approved"
     | "changes_requested"

@@ -305,6 +305,7 @@ insert into public.therapist_profiles (
   plan,
   status,
   slug,
+  free_public_slug,
   public_name,
   legal_name,
   headline,
@@ -325,6 +326,7 @@ values
     'premium_plus',
     'approved',
     'ana-oliveira',
+    '1100001',
     'Ana Oliveira',
     'Ana Clara Oliveira',
     'Acolhimento integrativo para ansiedade, autoestima e escolhas com mais presença.',
@@ -344,6 +346,7 @@ values
     'premium',
     'approved',
     'rafael-santos',
+    '1100002',
     'Rafael Santos',
     'Rafael Santos',
     'Sessões para mudanças de vida, propósito e reorganização de caminhos.',
@@ -363,6 +366,7 @@ values
     'premium',
     'approved',
     'celia-martins',
+    '1100003',
     'Celia Martins',
     'Celia Martins',
     'Escuta cuidadosa para relações, luto e processos de transformação.',
@@ -382,6 +386,7 @@ values
     'free',
     'approved',
     'juliana-costa',
+    '1100004',
     'Juliana Costa',
     'Juliana Costa',
     'Apoio para famílias construírem diálogos mais leves e seguros.',
@@ -401,6 +406,7 @@ values
     'premium_plus',
     'approved',
     'lucas-pereira',
+    '1100005',
     'Lucas Pereira',
     'Lucas Pereira',
     'Cuidado para autoconhecimento, escolhas e transições de vida.',
@@ -667,6 +673,78 @@ set
   archived_at = excluded.archived_at,
   updated_at = now();
 
+-- Approved local fixtures keep the profile preview E2E independent from the
+-- private-document onboarding surface. Paths are inert test metadata only.
+insert into public.therapist_private_documents (
+  id,
+  therapist_profile_id,
+  uploaded_by,
+  storage_object_path,
+  document_kind,
+  file_name,
+  mime_type,
+  file_size_bytes,
+  status,
+  validation_state
+)
+values
+  (
+    'e1000000-0000-4000-8000-000000000001',
+    'c1000000-0000-4000-8000-000000000001',
+    'aaaaaaaa-0000-4000-8000-000000000001',
+    'fixtures/ana-oliveira/identity-document.pdf',
+    'identity_document',
+    'identity-document.pdf',
+    'application/pdf',
+    1024,
+    'accepted',
+    'passed'
+  ),
+  (
+    'e1000000-0000-4000-8000-000000000002',
+    'c1000000-0000-4000-8000-000000000001',
+    'aaaaaaaa-0000-4000-8000-000000000001',
+    'fixtures/ana-oliveira/address-proof.pdf',
+    'address_proof',
+    'address-proof.pdf',
+    'application/pdf',
+    1024,
+    'accepted',
+    'passed'
+  )
+on conflict (id) do update
+set
+  document_kind = excluded.document_kind,
+  file_name = excluded.file_name,
+  file_size_bytes = excluded.file_size_bytes,
+  mime_type = excluded.mime_type,
+  status = excluded.status,
+  storage_object_path = excluded.storage_object_path,
+  updated_at = now(),
+  uploaded_by = excluded.uploaded_by,
+  validation_state = excluded.validation_state;
+
+insert into public.therapist_verifications (
+  id,
+  therapist_profile_id,
+  status,
+  reviewed_at,
+  submitted_at
+)
+values (
+  'e1000000-0000-4000-8000-000000000003',
+  'c1000000-0000-4000-8000-000000000001',
+  'approved',
+  now(),
+  now() - interval '1 day'
+)
+on conflict (id) do update
+set
+  status = excluded.status,
+  reviewed_at = excluded.reviewed_at,
+  submitted_at = excluded.submitted_at,
+  updated_at = now();
+
 insert into public.therapist_profile_content_versions (
   id,
   therapist_profile_id,
@@ -679,6 +757,8 @@ insert into public.therapist_profile_content_versions (
   video_thumbnail_url,
   video_title,
   experience_years,
+  public_profile_theme,
+  bio_illustration_id,
   published_at
 )
 values (
@@ -693,6 +773,8 @@ values (
   '/home/tablet-video-session.png',
   'Um convite para você',
   8,
+  'serene',
+  'organic_flow',
   now() - interval '7 days'
 )
 on conflict (id) do update
@@ -706,6 +788,8 @@ set
   video_thumbnail_url = excluded.video_thumbnail_url,
   video_title = excluded.video_title,
   experience_years = excluded.experience_years,
+  public_profile_theme = excluded.public_profile_theme,
+  bio_illustration_id = excluded.bio_illustration_id,
   published_at = excluded.published_at,
   updated_at = now();
 
@@ -2050,6 +2134,7 @@ insert into public.therapist_profiles (
   plan,
   status,
   slug,
+  free_public_slug,
   public_name,
   legal_name,
   headline,
@@ -2068,6 +2153,7 @@ values (
   'free',
   'approved',
   'marina-sem-servicos',
+  '1100006',
   'Marina Sem Serviços',
   'Marina Sem Serviços',
   'Perfil de fixture sem serviços publicados.',

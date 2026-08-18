@@ -9,6 +9,7 @@ function makeEditor(
 ): TherapistProfileEditorData {
   const editor: TherapistProfileEditorData = {
     capabilities: {
+      canCustomizePublicSlug: true,
       canPublishAdditionalServices: true,
       canPublishProfile: true,
       canUploadVideo: true,
@@ -66,10 +67,13 @@ function makeEditor(
     propagationNotice:
       "As alterações publicadas podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
     publicProfileHref: "/terapeutas/ana-oliveira",
+    publicProfileSlug: "ana-oliveira",
+    publicProfileTheme: "serene",
     published: {
       baseProfileVersion: null,
       contentVersionId: "published-version",
       fields: {
+        bioIllustrationId: null,
         bio: "Atendimento online com escuta responsável.",
         city: "",
         essenceBody: "Presença e cuidado publicado.",
@@ -79,6 +83,7 @@ function makeEditor(
         invitationBody: "",
         photoUrl: "/therapists/ana-oliveira.png",
         publicName: "Ana Oliveira",
+        publicProfileTheme: "serene",
         reflections: [],
         shortIntro: "Acolhimento online publicado.",
         state: "",

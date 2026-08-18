@@ -1,6 +1,8 @@
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { routes } from "@/lib/routes";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 export async function GET(
@@ -159,10 +161,26 @@ export async function POST(
   );
 
   const payload = await response.json().catch(() => null);
+
+  if (response.ok && isSuccessPayload(payload)) {
+    revalidatePath(routes.admin.professionals);
+    revalidatePath(routes.admin.professionalDetail(professionalId));
+    revalidatePath(routes.admin.verifications);
+  }
+
   return NextResponse.json(payload ?? { ok: false }, {
     headers: { "Cache-Control": "no-store" },
     status: response.status,
   });
+}
+
+function isSuccessPayload(payload: unknown): payload is { ok: true } {
+  return Boolean(
+    payload &&
+      typeof payload === "object" &&
+      "ok" in payload &&
+      payload.ok === true,
+  );
 }
 
 function isFailurePayload(

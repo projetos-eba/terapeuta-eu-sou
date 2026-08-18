@@ -12,6 +12,7 @@ import type {
   TherapistProfileCommand,
   TherapistProfileEditorData,
   TherapistProfileMutationResult,
+  TherapistProfileSlugAvailabilityResult,
   TherapistPrivateDocumentSummary,
   TherapistProfileVerificationStatus,
 } from "./therapist-profile-editor.types";
@@ -52,7 +53,9 @@ export async function sendTherapistProfileCommand(
   command: TherapistProfileCommand,
 ): Promise<
   TherapistProfileCommandResult<
-    TherapistProfileEditorData | TherapistProfileMutationResult
+    | TherapistProfileEditorData
+    | TherapistProfileMutationResult
+    | TherapistProfileSlugAvailabilityResult
   >
 > {
   try {
@@ -82,7 +85,9 @@ export async function sendTherapistProfileCommand(
       data:
         command.action === "read"
           ? mapTherapistProfileEditorContract(payload.data)
-          : mapTherapistProfileMutationResult(payload.data),
+          : command.action === "check_slug_availability"
+            ? mapSlugAvailability(payload.data)
+            : mapTherapistProfileMutationResult(payload.data),
       status: "success",
     };
   } catch {
@@ -94,6 +99,29 @@ export async function sendTherapistProfileCommand(
       status: "error",
     };
   }
+}
+
+function mapSlugAvailability(
+  input: unknown,
+): TherapistProfileSlugAvailabilityResult {
+  if (!input || typeof input !== "object") {
+    throw new Error("INVALID_SLUG_AVAILABILITY_RESULT");
+  }
+  const value = input as Record<string, unknown>;
+  if (
+    typeof value.normalizedSlug !== "string" ||
+    (value.status !== "available" &&
+      value.status !== "current" &&
+      value.status !== "invalid" &&
+      value.status !== "reserved" &&
+      value.status !== "taken")
+  ) {
+    throw new Error("INVALID_SLUG_AVAILABILITY_RESULT");
+  }
+  return {
+    normalizedSlug: value.normalizedSlug,
+    status: value.status,
+  };
 }
 
 export function createStableRequestId() {

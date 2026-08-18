@@ -39,6 +39,14 @@ export function mapTherapistProfileEditorContract(
       "As alterações publicadas podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
     ),
     publicProfileHref: stringOr(value.publicProfileHref, "/terapeutas"),
+    publicProfileSlug: stringOr(
+      value.publicProfileSlug,
+      stringOr(value.publicProfileHref, "/terapeutas")
+        .split("/")
+        .filter(Boolean)
+        .at(-1) ?? "",
+    ),
+    publicProfileTheme: publicProfileTheme(value.publicProfileTheme),
     published: mapVersionedContent(published, "published"),
     therapistProfileId: requiredString(value.therapistProfileId),
     updatedAt: requiredString(value.updatedAt),
@@ -112,6 +120,7 @@ export function mapEditorFieldsToPublicPreview({
     bio: fields.bio || fields.essenceBody || fields.shortIntro,
     cityState: [fields.city, fields.state].filter(Boolean).join(", "),
     content: {
+      bioIllustrationId: fields.bioIllustrationId,
       essenceBody:
         fields.essenceBody ||
         "Conte sua essência para que as pessoas entendam sua abordagem.",
@@ -122,6 +131,7 @@ export function mapEditorFieldsToPublicPreview({
         "Use este espaço para convidar a pessoa a conhecer seu trabalho.",
       reflections: fields.reflections,
       shortIntro: fields.shortIntro,
+      publicProfileTheme: fields.publicProfileTheme,
     },
     headline: fields.shortIntro || fields.headline || fields.bio,
     heroImage: fields.photoUrl || "/icon.svg",
@@ -131,6 +141,7 @@ export function mapEditorFieldsToPublicPreview({
     name: fields.publicName || "Seu nome público",
     plan: editor.derived.plan,
     profileUrl: editor.publicProfileHref,
+    publicProfileTheme: fields.publicProfileTheme,
     rating: {
       average: editor.derived.averageRating,
       count: editor.derived.reviewCount,
@@ -154,12 +165,19 @@ export function mapEditorFieldsToPublicPreview({
 function mapCapabilities(input: unknown): TherapistProfileCapabilities {
   const value = asObject(input);
   return {
+    canCustomizePublicSlug: Boolean(value.canCustomizePublicSlug),
     canPublishAdditionalServices: Boolean(value.canPublishAdditionalServices),
     canPublishProfile: Boolean(value.canPublishProfile),
     canUploadVideo: Boolean(value.canUploadVideo),
     canUseAdvancedSections: Boolean(value.canUseAdvancedSections),
     canUseFeaturedMedia: Boolean(value.canUseFeaturedMedia),
   };
+}
+
+function publicProfileTheme(value: unknown) {
+  return value === "natural" || value === "warm" || value === "essential"
+    ? value
+    : "serene";
 }
 
 function mapCompleteness(input: unknown): TherapistProfileCompleteness {
@@ -181,8 +199,11 @@ function mapCompleteness(input: unknown): TherapistProfileCompleteness {
 
 function mapDerived(input: unknown): TherapistProfileDerivedData {
   const value = asObject(input);
+  const mappedAccountStatus = accountStatus(value.accountStatus);
+  const mappedVerificationStatus = verificationStatus(value.verificationStatus);
+
   return {
-    accountStatus: accountStatus(value.accountStatus),
+    accountStatus: mappedAccountStatus,
     activeServiceCount: numberOr(value.activeServiceCount, 0),
     availabilityRuleCount: numberOr(value.availabilityRuleCount, 0),
     averageRating:
@@ -200,8 +221,33 @@ function mapDerived(input: unknown): TherapistProfileDerivedData {
       value.startingPriceCents === undefined
         ? null
         : numberOr(value.startingPriceCents, 0),
-    verificationStatus: verificationStatus(value.verificationStatus),
+    verificationStatus: resolveVerificationStatus({
+      accountStatus: mappedAccountStatus,
+      verificationStatus: mappedVerificationStatus,
+    }),
   };
+}
+
+/**
+ * Perfis antigos podem ter uma decisão administrativa terminal sem um item
+ * correspondente na fila de verificações. A ausência desse histórico não pode
+ * rebaixar uma aprovação ou suspensão já autoritativa para "pendente".
+ */
+function resolveVerificationStatus({
+  accountStatus,
+  verificationStatus,
+}: {
+  accountStatus: TherapistProfileAccountStatus;
+  verificationStatus: TherapistProfileVerificationStatus;
+}): TherapistProfileVerificationStatus {
+  if (
+    verificationStatus === "none" &&
+    (accountStatus === "approved" || accountStatus === "suspended")
+  ) {
+    return accountStatus;
+  }
+
+  return verificationStatus;
 }
 
 function mapPrivateDocument(input: unknown) {
@@ -241,6 +287,13 @@ function mapEditableFields(input: unknown): TherapistProfileEditableFields {
   const fallback = createEmptyEditorFields();
 
   return {
+    bioIllustrationId:
+      value.bioIllustrationId === "organic_flow" ||
+      value.bioIllustrationId === "gentle_horizon" ||
+      value.bioIllustrationId === "warm_layers" ||
+      value.bioIllustrationId === "essential_lines"
+        ? value.bioIllustrationId
+        : fallback.bioIllustrationId,
     bio: stringOr(value.bio, fallback.bio),
     city: stringOr(value.city, fallback.city),
     essenceBody: stringOr(value.essenceBody, fallback.essenceBody),
@@ -259,6 +312,7 @@ function mapEditableFields(input: unknown): TherapistProfileEditableFields {
     invitationBody: stringOr(value.invitationBody, fallback.invitationBody),
     photoUrl: stringOr(value.photoUrl, fallback.photoUrl),
     publicName: stringOr(value.publicName, fallback.publicName),
+    publicProfileTheme: publicProfileTheme(value.publicProfileTheme),
     reflections: array(value.reflections).map((item) => {
       const object = asObject(item);
       return {
@@ -383,9 +437,7 @@ function privateDocumentKind(value: unknown): TherapistPrivateDocumentKind {
   throw new Error("therapist_profile_invalid_private_document_kind");
 }
 
-function privateDocumentStatus(
-  value: unknown,
-): TherapistPrivateDocumentStatus {
+function privateDocumentStatus(value: unknown): TherapistPrivateDocumentStatus {
   if (
     value === "accepted" ||
     value === "archived" ||

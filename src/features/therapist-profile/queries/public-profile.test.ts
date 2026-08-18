@@ -24,7 +24,7 @@ describe("public therapist profile query", () => {
     vi.unstubAllGlobals();
   });
 
-  it("does not cache availability and booking conflicts with profile content", async () => {
+  it("does not cache mutable identity, content, availability, or booking conflicts", async () => {
     const fetchMock = vi.fn(
       async (_input: RequestInfo | URL, _init?: RequestInit) =>
         new Response(JSON.stringify([]), {
@@ -48,10 +48,9 @@ describe("public therapist profile query", () => {
     );
     expect(serviceCall?.[1]).not.toHaveProperty("next");
     expect(profileCall?.[1]).toEqual(
-      expect.objectContaining({
-        next: { revalidate: 900, tags: ["therapist-profile"] },
-      }),
+      expect.objectContaining({ cache: "no-store" }),
     );
+    expect(profileCall?.[1]).not.toHaveProperty("next");
   });
 
   it("uses the authoritative timezone-aware slots for every public service", async () => {

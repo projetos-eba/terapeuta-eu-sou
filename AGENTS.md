@@ -325,6 +325,12 @@ Stack real identificada:
   público via `/api/therapist/profile/media`, grid `AppPage*` e dados derivados
   somente leitura. Publicação pode levar 2 a 3 horas para refletir em todas as
   superfícies públicas.
+  A identidade pública oferece `serene`, `natural`, `warm` e `essential`, além
+  de quatro ilustrações TES opcionais, para todos os planos no fluxo de
+  rascunho/publicação. Slug é uma mutação imediata separada: Free usa
+  `free_public_slug` numérico estável de sete dígitos; Premium e Premium Plus
+  usam a capability `custom_profile_slug`. Normalização, reservas, histórico,
+  idempotência, downgrade e concorrência são autoridade do PostgreSQL.
 - Métricas MTR-1 a MTR-5 e MTR-7 CSV: `/terapeuta/insights` usa
   `get_therapist_metrics_overview_v1` com períodos de 30/90 dias locais
   completos, além dos read models privados

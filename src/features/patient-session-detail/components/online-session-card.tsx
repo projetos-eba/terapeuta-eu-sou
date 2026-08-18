@@ -21,7 +21,7 @@ export function OnlineSessionCard({
 }) {
   if (data.booking.status === "completed") {
     return (
-      <section className="grid gap-3 border-t border-border pt-8">
+      <section className="grid gap-3 rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
         <h2 className="font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]">
           Encontro realizado
         </h2>
@@ -44,18 +44,14 @@ export function OnlineSessionCard({
     data.encounterState.payment.retryAllowed;
 
   return (
-    <section className="grid gap-6 border-t border-border pt-8">
+    <section className="grid gap-6 rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
       <div className="grid gap-3">
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-brand-primary sm:text-xs">
-          Acesso online
-        </p>
         <h2 className="font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]">
-          Como este encontro acontece
+          Seu encontro online
         </h2>
         <p className="max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
-          O acesso ao encontro depende do estado financeiro e da janela segura
-          da sala. Você não precisa copiar links técnicos nem confirmar nada por
-          fora da plataforma.
+          Entre na sala de videochamada com segurança quando o acesso estiver
+          liberado para o seu encontro.
         </p>
       </div>
 
@@ -74,7 +70,7 @@ export function OnlineSessionCard({
         />
       </div>
 
-      <div className="rounded-[28px] border border-border bg-white/80 p-5 sm:p-6">
+      <div className="rounded-[24px] bg-surface-soft p-5 sm:p-6">
         <p className="flex gap-2 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
           <ShieldCheck
             aria-hidden="true"
