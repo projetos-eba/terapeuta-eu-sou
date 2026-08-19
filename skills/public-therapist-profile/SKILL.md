@@ -41,11 +41,9 @@ Consultar antes de alterar:
   - `public_therapist_slug_redirects_v`
 - Conteúdo editorial publicado vem de `therapist_profile_content_versions` e tabelas filhas.
 - `public_profile_theme` aplica um dos quatro temas oficiais somente ao hero.
-  `bio_illustration_id` referencia uma das quatro artes versionadas em
-  `public/therapists/profile-bio/`; `organic_flow` aponta para Planta serena,
-  `gentle_horizon` para Planta natural, `warm_layers` para Canto acolhedor e
-  `essential_lines` para Folhas essenciais. Os IDs são de persistência e não
-  devem ser renomeados ao trocar a arte. `null` omite completamente o controle.
+  `bio_illustration_id` permanece compatível nos dados publicados, mas não é
+  renderizado na página pública. Não limpar, renomear ou criar consumidor do
+  campo fora de uma mudança de domínio planejada.
 - Slugs antigos resolvem por `public_therapist_slug_redirects_v`. A projeção
   nunca expõe `free_public_slug`, IDs de histórico ou proprietário de slug.
 - Terapias e serviços são gerenciados pela plataforma/Admin, não pela copy livre do terapeuta.
@@ -61,15 +59,18 @@ Consultar antes de alterar:
 Preservar o padrão do node:
 
 - Hero com foto grande, badges, tags, avaliação, CTA e ações favoritar/compartilhar.
+  Favoritos são exclusivos de paciente autenticado, persistem em
+  `favorite_therapists` e sincronizam com `/app/favoritos/terapeutas`; sem
+  sessão, a ação encaminha ao login de cliente e retorna ao mesmo perfil.
+  Compartilhar usa apenas a URL canônica `/terapeutas/:slug`, sem parâmetros,
+  dados privados ou textos promocionais.
 - O hero consome a camada visual oficial em
   `public/therapists/profile-themes/`: `serene` combina fundo e botânica
   lilás, `natural` usa sálvia e botânica verde, `warm` usa terracota e a
   composição de poltrona. `essential` preserva a composição editorial clara
-  sem ilustração dominante. Fundo e arte são decorativos (`alt=""`), aparecem
-  somente no hero e nunca substituem a ilustração opcional de `Minha essência`.
+  sem ilustração dominante. Fundo e arte são decorativos (`alt=""`) e aparecem
+  somente no hero.
 - Cards `Minha essência`, `Como posso te guiar` e `Um convite para você`.
-- A ilustração opcional de `Minha essência` abre em `TESDialog`, com alt,
-  Escape, foco confinado e retorno de foco.
 - O registro compartilhado de temas alimenta editor e hero; não duplicar quatro
   componentes de perfil.
 - Seção `Vivências e terapias` com serviços, duração, preço e CTA.
@@ -89,3 +90,6 @@ Preservar o padrão do node:
 - `npx supabase db lint`
 - Se Docker estiver disponível: `npx supabase db reset`
 - Validar `/terapeutas/ana-oliveira`, `/terapeuta/ana-oliveira`, perfil inexistente, sem avaliações, agenda indisponível e slots diferentes para 50min vs 60min.
+- Validar favorito sem sessão, favorito/remover com paciente autenticado e
+  sincronização com o painel de Favoritos. Validar Web Share e fallback de
+  cópia com a URL canônica sem query string.

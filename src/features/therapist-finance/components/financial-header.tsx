@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { CalendarDays, CreditCard, Landmark, ReceiptText } from "lucide-react";
 
-import { AppPageSection } from "@/components/app-page";
+import { TESDecorativeMedia } from "@/components/tes";
+import { platformAssets } from "@/lib/platform-assets";
 
 import type {
   TherapistFinanceDateRange,
@@ -32,9 +33,18 @@ export function FinancialHeader({
   tab: TherapistFinanceTab;
 }) {
   return (
-    <section className="overflow-hidden rounded-card border border-brand-lavender bg-white shadow-card">
-      <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:p-8">
-        <div>
+    <section className="relative isolate overflow-hidden rounded-card bg-surface-soft">
+      <TESDecorativeMedia
+        className="absolute inset-y-0 right-0 hidden w-[54%] lg:block"
+        fade="left"
+        fadeTone="soft"
+        objectPosition="right center"
+        priority
+        sizes="(min-width: 1024px) 54vw, 0px"
+        src={platformAssets.therapistFinanceHero.src}
+      />
+      <div className="relative z-10 grid gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:p-8">
+        <div className="max-w-2xl">
           <h1 className="font-display text-[38px] font-light italic leading-tight text-brand-deep sm:text-[52px]">
             Financeiro completo
           </h1>
@@ -71,7 +81,7 @@ export function FinancialHeader({
         </form>
       </div>
 
-      <AppPageSection className="rounded-none border-x-0 border-b-0 shadow-none">
+      <div className="relative z-10 border-t border-border/70 px-5 py-5 sm:px-7 lg:px-8">
         <div className="flex flex-col gap-4">
           <nav
             aria-label="Abas do financeiro"
@@ -109,7 +119,7 @@ export function FinancialHeader({
             </span>
           </div>
         </div>
-      </AppPageSection>
+      </div>
     </section>
   );
 }

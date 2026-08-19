@@ -50,6 +50,11 @@ description: Implementar e manter a visão geral autenticada do paciente TES.
 
 ## Pendências conhecidas
 
-- A imagem exata do hero do Figma não está versionada localmente; usa-se o asset existente `/public/home/hero-section-realistic-fade.png` como adaptação temporária.
+- O hero usa `platformAssets.patientOverviewHero` com fade à esquerda e sem borda decorativa.
 - As páginas de destino de algumas ações do shell serão implementadas nas próximas etapas autenticadas.
 - Enquanto `/app/configuracoes/perfil` e `/app/configuracoes/notificacoes` não tiverem páginas, `Perfil` permanece fora da navegação e o card `Notificações` é somente informativo.
+
+## Assets da plataforma
+
+- Consulte `docs/design-system/platform-assets.md` antes de alterar a composição
+  ou o asset do hero.

@@ -156,3 +156,8 @@ Backend:
 - Validar que login com e-mail nao confirmado mostra mensagem de confirmacao pendente para cliente e terapeuta.
 - Validar que reset de senha confirma e-mail no Auth e no profile antes de redirecionar para login.
 - Em validacao visual com navegador, cobrir cliques reais em login normal/master, cadastro normal com envio de e-mail, confirmacao por link, polling/status, reset valido/invalido, role mismatch e cadastro com confirmacao automatica.
+
+## Assets da plataforma
+
+- A coluna contextual de login e cadastro usa `therapistLoginIcon` como mídia
+  decorativa sem fade. Consulte `docs/design-system/platform-assets.md`.

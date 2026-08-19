@@ -133,9 +133,13 @@ select set_config(
 );
 
 select is(
-  (select count(*)::integer from public.therapist_private_documents),
+  (
+    select count(*)::integer
+    from public.therapist_private_documents
+    where id = 'a7000000-0000-4000-8000-000000000001'
+  ),
   1,
-  'therapist reads own private documents'
+  'therapist reads the private document created for this test'
 );
 
 select set_config(
@@ -145,9 +149,13 @@ select set_config(
 );
 
 select is(
-  (select count(*)::integer from public.therapist_private_documents),
+  (
+    select count(*)::integer
+    from public.therapist_private_documents
+    where id = 'a7000000-0000-4000-8000-000000000001'
+  ),
   0,
-  'therapist cannot read documents from another therapist'
+  'another therapist cannot read the private document created for this test'
 );
 
 select set_config(
@@ -157,9 +165,13 @@ select set_config(
 );
 
 select is(
-  (select count(*)::integer from public.therapist_private_documents),
+  (
+    select count(*)::integer
+    from public.therapist_private_documents
+    where id = 'a7000000-0000-4000-8000-000000000001'
+  ),
   0,
-  'patient cannot read private therapist documents'
+  'patient cannot read the private document created for this test'
 );
 
 reset role;

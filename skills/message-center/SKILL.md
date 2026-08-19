@@ -99,3 +99,9 @@ e usar `requestId` idempotente. Não aceitar texto livre vindo do navegador.
   quando houver decisão de banco para hardening definitivo.
 - Publicar SLAs e canais oficiais antes de expor `/ajuda` como superfície
   pública.
+
+## Assets da plataforma
+
+- O hero seleciona `patientMessagesHero` ou `therapistMessagesHero` conforme
+  `actorRole`, sem alterar os contratos de leitura ou envio.
+- Consulte `docs/design-system/platform-assets.md`.

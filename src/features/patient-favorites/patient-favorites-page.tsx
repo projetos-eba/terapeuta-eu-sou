@@ -3,7 +3,9 @@ import Link from "next/link";
 import type { Route } from "next";
 import { Heart, Search, Trash2 } from "lucide-react";
 
+import { TESDecorativeMedia } from "@/components/tes";
 import { routes } from "@/lib/routes";
+import { platformAssets } from "@/lib/platform-assets";
 
 import type {
   PatientFavoriteTherapist,
@@ -21,12 +23,21 @@ export function PatientFavoriteTherapistsPage({
 }: PatientFavoriteTherapistsPageProps) {
   return (
     <main className="pb-10 text-tesText-primary">
-      <header className="rounded-card border border-brand-lavender bg-white p-6 shadow-card md:p-8">
-        <span className="inline-flex min-h-8 items-center gap-2 rounded-full bg-brand-lavenderSoft px-3 text-xs font-extrabold uppercase tracking-[0.14em] text-brand-primary">
+      <header className="relative isolate overflow-hidden rounded-card bg-surface-soft p-6 md:p-8">
+        <TESDecorativeMedia
+          className="absolute inset-y-0 right-0 hidden w-[56%] md:block"
+          fade="left"
+          fadeTone="soft"
+          objectPosition="right center"
+          priority
+          sizes="(min-width: 768px) 52vw, 100vw"
+          src={platformAssets.patientFavoritesHero.src}
+        />
+        <span className="relative z-10 inline-flex min-h-8 items-center gap-2 rounded-full bg-brand-lavenderSoft px-3 text-xs font-extrabold uppercase tracking-[0.14em] text-brand-primary">
           <Heart aria-hidden="true" size={16} />
           Favoritos
         </span>
-        <div className="mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+        <div className="relative z-10 mt-6 grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
           <div>
             <h1 className="font-display text-4xl font-light italic leading-tight text-brand-deep md:text-5xl">
               Terapeutas favoritos

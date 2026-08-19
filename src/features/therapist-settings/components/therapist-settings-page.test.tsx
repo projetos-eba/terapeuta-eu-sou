@@ -52,9 +52,7 @@ describe("TherapistSettingsPage", () => {
     expect(
       screen.getByRole("heading", { name: "Configurações" }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Nome de uso interno")).toHaveValue(
-      "Ana Oliveira",
-    );
+    expect(screen.getByLabelText("Nome de acesso")).toHaveValue("Ana Oliveira");
     expect(screen.getByLabelText("E-mail de acesso")).toHaveValue(
       "ana@example.test",
     );

@@ -4,43 +4,81 @@ const patientEmail =
   process.env.PATIENT_RELATIONSHIP_E2E_EMAIL ?? "carlos.paciente@example.test";
 const patientPassword =
   process.env.PATIENT_RELATIONSHIP_E2E_PASSWORD ?? "tes-mock-password";
+const therapistSlug =
+  process.env.PATIENT_RELATIONSHIP_E2E_THERAPIST_SLUG ?? "ana-oliveira";
 
 test.use({ screenshot: "on", trace: "on", video: "on" });
 
 test.describe("patient relationship flows", () => {
-  test.beforeEach(async ({ page }) => {
-    await loginAsPatient(page);
-  });
-
-  test("favorites a public therapist profile with a real click", async ({
+  test("requires a patient login before a public profile can be favorited", async ({
     page,
   }) => {
-    const favoriteRequests: unknown[] = [];
+    await page.goto(`/terapeutas/${therapistSlug}`);
+    await page
+      .getByRole("button", { name: /Adicionar aos favoritos de/i })
+      .click();
 
-    await page.route("**/api/patient/favorite-therapists", async (route) => {
-      favoriteRequests.push(route.request().postDataJSON());
-      await route.fulfill({
-        body: JSON.stringify({ ok: true }),
-        contentType: "application/json",
-        status: 200,
+    await expect(page).toHaveURL(
+      new RegExp(
+        `/cliente/login\\?next=%2Fterapeutas%2F${therapistSlug}(?:%3F[^&]+)?$`,
+      ),
+    );
+  });
+
+  test("favorites a public therapist, syncs the patient panel and removes it", async ({
+    page,
+  }) => {
+    await loginAsPatient(page);
+    await page.goto(`/terapeutas/${therapistSlug}`);
+
+    const therapistName = await page
+      .getByRole("heading", { level: 1 })
+      .innerText();
+    const favoriteButton = page.getByRole("button", {
+      name: new RegExp(
+        `(?:Adicionar aos|Remover dos) favoritos de ${escapeRegExp(therapistName)}`,
+        "i",
+      ),
+    });
+
+    if ((await favoriteButton.getAttribute("aria-pressed")) === "true") {
+      await favoriteButton.click();
+      await expect(favoriteButton).toHaveAttribute("aria-pressed", "false");
+    }
+
+    await favoriteButton.click();
+    await expect(favoriteButton).toHaveAttribute("aria-pressed", "true");
+
+    await page.goto("/app/favoritos/terapeutas");
+    const favoriteCard = page
+      .getByRole("heading", { level: 2, name: therapistName })
+      .locator("xpath=ancestor::article");
+    await expect(favoriteCard).toBeVisible();
+
+    await favoriteCard
+      .getByRole("button", { name: "Remover favorito" })
+      .click();
+    await expect(favoriteCard).toHaveCount(0);
+  });
+
+  test("shares only the canonical public profile URL", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "share", {
+        configurable: true,
+        value: async ({ url }: { url: string }) => {
+          Reflect.set(window, "__tesSharedProfileUrl", url);
+        },
       });
     });
+    await page.goto(`/terapeutas/${therapistSlug}?source=e2e`);
+    await page.getByRole("button", { name: "Compartilhar perfil" }).click();
 
-    await page.goto("/terapeutas/ana-oliveira");
-
-    const favoriteButton = page.getByRole("button", {
-      name: /Adicionar aos favoritos de/i,
-    });
-    await expect(favoriteButton).toBeVisible();
-    await favoriteButton.click();
-
-    await expect.poll(() => favoriteRequests.length).toBeGreaterThanOrEqual(1);
-    expect(favoriteRequests[0]).toMatchObject({
-      therapistProfileId: expect.any(String),
-    });
-    await expect(
-      page.getByRole("button", { name: /Remover dos favoritos de/i }),
-    ).toHaveAttribute("aria-pressed", "true");
+    const sharedUrl = await page.evaluate(() =>
+      Reflect.get(window, "__tesSharedProfileUrl"),
+    );
+    expect(sharedUrl).toBe(
+      new URL(`/terapeutas/${therapistSlug}`, page.url()).toString(),
+    );
   });
 
   test("opens notifications from shell and marks platform notices as read", async ({
@@ -48,6 +86,7 @@ test.describe("patient relationship flows", () => {
   }) => {
     const markReadRequests: unknown[] = [];
 
+    await loginAsPatient(page);
     await page.route("**/api/notifications/mark-read", async (route) => {
       markReadRequests.push(route.request().postDataJSON());
       await route.fulfill({
@@ -81,4 +120,8 @@ async function loginAsPatient(page: import("@playwright/test").Page) {
   await page.getByLabel("Senha").fill(patientPassword);
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/app(?:\?.*)?$/);
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

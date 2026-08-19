@@ -79,7 +79,7 @@ As regras ficam em `financial_policy_versions`. A versao inicial e `tes-payments
 - `therapist_connect_accounts`: conta conectada e status operacional.
 - `session_payments`: fonte financeira canonica das sessoes.
 - `session_payment_attempts`: tentativas idempotentes de cobranca.
-- `session_refunds`, `session_cancellation_decisions` e `session_disputes`: eventos compensatorios, decisoes de politica e bloqueios.
+- `session_refunds`, `session_cancellation_decisions` e `session_disputes`: eventos compensatorios, decisoes de politica e bloqueios. Cancelamento usa `request_id` único e o RPC `claim_session_cancellation_decision_v1` (somente `service_role`) para registrar uma única decisão antes de chamar Stripe; retries reutilizam a decisão, a chave de idempotência do refund e a transição do booking.
 - `session_service_confirmations`: prova de realizacao da sessao.
 - `payout_batches`, `payout_batch_therapists`, `payout_batch_items`: lote semanal.
 - `stripe_transfers` e `stripe_transfer_reversals`: repasses e compensacoes.

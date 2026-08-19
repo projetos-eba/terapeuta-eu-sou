@@ -125,3 +125,9 @@ Rodar:
   verificacao do perfil publico e pausa.
 - Possivel indice unico parcial para terapeuta/terapia depois de limpar
   fixtures historicas duplicadas.
+
+## Assets da plataforma
+
+- O hero de `/terapeuta/servicos` usa `therapistServicesHero` com fade à
+  esquerda. A imagem dos cards de serviço continua vindo da terapia do catálogo.
+- Consulte `docs/design-system/platform-assets.md`.

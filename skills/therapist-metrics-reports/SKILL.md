@@ -166,3 +166,9 @@ tests/e2e/therapist-metrics.spec.ts --project=chromium`.
 
 Para mudanças visuais, validar 320px, 375px, 768px, 1024px e 1440px, teclado e
 zoom de 200%.
+
+## Assets da plataforma
+
+- O hero compartilhado das abas de insights usa `therapistMetricsHero` com fade
+  à esquerda e sem alterar dados, capability ou período. Consulte
+  `docs/design-system/platform-assets.md`.

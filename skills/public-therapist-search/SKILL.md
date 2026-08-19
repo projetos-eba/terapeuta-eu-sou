@@ -91,3 +91,11 @@ Não substituir esses padrões por cards editoriais grandes, hero alternativo, c
 - Conectar reserva real ao serviço/horário escolhido.
 - Evoluir disponibilidade para exceções, conflitos, reservas já ocupadas e slots reais.
 - Validar migration/seeds em Supabase local quando Docker estiver disponível.
+
+## Assets da plataforma
+
+- O hero e o CTA inferior usam `publicTherapistsHero` e
+  `publicTherapistsLowerBanner`, ancorados à direita e com fade curto na borda
+  de leitura; o banner mantém copy HTML e não usa a exportação Figma que já
+  contém texto.
+- Consulte `docs/design-system/platform-assets.md`.

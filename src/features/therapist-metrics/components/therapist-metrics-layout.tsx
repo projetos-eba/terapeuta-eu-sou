@@ -1,9 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 import { CalendarDays, Download } from "lucide-react";
 
 import { AppPageContainer } from "@/components/app-page";
+import { TESDecorativeMedia } from "@/components/tes";
 import { routes } from "@/lib/routes";
+import { platformAssets } from "@/lib/platform-assets";
 
 import type {
   TherapistMetricsCommonMeta,
@@ -41,7 +42,7 @@ function MetricsHero({
   ];
 
   return (
-    <section className="overflow-hidden rounded-panel border border-brand-lavender bg-white shadow-card">
+    <section className="overflow-hidden rounded-panel bg-white">
       <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.82fr)]">
         <div className="grid content-between gap-8 p-5 sm:p-8 lg:p-10">
           <div>
@@ -83,13 +84,13 @@ function MetricsHero({
         </div>
 
         <div className="relative min-h-[250px] bg-brand-lavenderSoft sm:min-h-[310px] lg:min-h-full">
-          <Image
-            alt=""
-            className="object-cover"
-            fill
+          <TESDecorativeMedia
+            className="absolute inset-0"
+            fade="left"
+            objectPosition="right center"
             priority
             sizes="(min-width: 1024px) 42vw, 100vw"
-            src="/therapist/dashboard/therapist-hero.png"
+            src={platformAssets.therapistMetricsHero.src}
           />
         </div>
       </div>

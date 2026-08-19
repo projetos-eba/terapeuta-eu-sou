@@ -1,25 +1,20 @@
-import Image from "next/image";
+import { TESDecorativeMedia } from "@/components/tes";
+import { platformAssets } from "@/lib/platform-assets";
 
 export function PatientEncountersHero() {
   return (
     <header
       aria-labelledby="patient-encounters-page-title"
-      className="relative isolate overflow-hidden rounded-panel border border-border bg-white px-5 py-8 sm:min-h-[270px] sm:px-11 sm:py-11"
+      className="relative isolate overflow-hidden rounded-panel bg-white px-5 py-8 sm:min-h-[270px] sm:px-11 sm:py-11"
     >
-      <div
-        aria-hidden="true"
+      <TESDecorativeMedia
         className="absolute inset-y-0 right-0 w-[68%] sm:w-[64%]"
-      >
-        <Image
-          alt=""
-          className="object-cover object-[58%_center]"
-          fill
-          priority
-          sizes="(max-width: 639px) 68vw, (max-width: 1080px) 64vw, 690px"
-          src="/patient/encounters/hero-acompanhamento.png"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-white via-white/95 via-50% to-transparent sm:via-white/90" />
-      </div>
+        fade="left"
+        objectPosition="right center"
+        priority
+        sizes="(max-width: 639px) 68vw, (max-width: 1080px) 64vw, 690px"
+        src={platformAssets.patientEncountersHero.src}
+      />
 
       <div className="relative z-10 max-w-[17ch] sm:max-w-[450px]">
         <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-brand-primary sm:text-xs">

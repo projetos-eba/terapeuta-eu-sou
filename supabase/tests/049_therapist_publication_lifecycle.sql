@@ -35,18 +35,23 @@ select lives_ok(
   'submitted verification enters review through the command'
 );
 
+reset role;
+
 select is((select status::text from public.therapist_verifications where id = 'a9000000-0000-4000-8000-000000000490'), 'in_review', 'submitted transitions to in_review');
+
+set local role authenticated;
+select set_config('request.jwt.claims', '{"sub":"aaaaaaaa-0000-4000-8000-000000000090","role":"authenticated"}', true);
 
 select lives_ok(
   $$ select public.admin_execute_operation_command_v1('verification.approve', 'a9000000-0000-4000-8000-000000000490', 'Documentacao revisada e aprovada', 'publication-approve') $$,
   'in_review verification can be approved'
 );
 
+reset role;
+
 select is((select status::text from public.therapist_profiles where id = 'c1000000-0000-4000-8000-000000000001'), 'approved', 'approval updates the administrative profile state');
 
 select is((select count(*)::integer from public.admin_audit_events where request_id = 'publication-approve'), 1, 'approval writes one audit event');
-
-reset role;
 
 select ok((public.get_therapist_publication_eligibility_v1('c1000000-0000-4000-8000-000000000001')->>'eligible')::boolean, 'approved profile with eligible service is publishable');
 select ok(exists (select 1 from public.public_therapist_search where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'), 'eligible approved professional appears in public search');

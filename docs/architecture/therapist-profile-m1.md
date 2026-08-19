@@ -32,27 +32,19 @@ dependente de cache e ambiente.
 
 O mesmo comando também executa `check_slug_availability` e `update_slug`.
 Essas ações não criam API paralela: o PostgreSQL normaliza, valida capability,
-consulta o namespace atual/histórico e serializa a troca. Tema e ilustração
-continuam dentro de `save_draft`/`publish`; slug é imediato e independente.
+consulta o namespace atual/histórico e serializa a troca. Tema continua dentro
+de `save_draft`/`publish`; slug é imediato e independente.
 
 ### Identidade visual pública
 
 O registro central em `src/features/therapist-profile/personalization.ts`
-mantém temas e ilustrações em uma única fonte para editor e perfil público. Os
-IDs persistidos não identificam o arquivo visual; eles permanecem estáveis para
-que perfis já publicados renderizem a arte oficial atual.
-
-| ID persistido     | Arte oficial      | Arquivo versionado                 |
-| ----------------- | ----------------- | ---------------------------------- |
-| `organic_flow`    | Planta serena     | `profile-bio/serene-plant.png`     |
-| `gentle_horizon`  | Planta natural    | `profile-bio/natural-plant.png`    |
-| `warm_layers`     | Canto acolhedor   | `profile-bio/warm-chair.png`       |
-| `essential_lines` | Folhas essenciais | `profile-bio/essential-leaves.png` |
-
-`null` continua representando `Sem ilustração`. Os SVGs históricos permanecem
-versionados apenas para compatibilidade de assets; nenhuma superfície ativa os
-referencia. As prévias dos temas usam a mesma camada de fundo e composição do
-hero. `essential` preserva a composição editorial, sem arte dominante.
+mantém somente os temas do hero. `bio_illustration_id` continua em banco,
+DTOs, parser e publicação por compatibilidade, porém não possui consumidor em
+runtime: não aparece no editor nem no perfil público. Os PNGs e SVGs históricos
+em `public/therapists/profile-bio/` permanecem versionados para rollback/cache
+até uma retirada de domínio planejada. As prévias dos temas usam a mesma camada
+de fundo e composição do hero. `essential` preserva a composição editorial,
+sem arte dominante.
 
 `/api/therapist/profile/media` valida sessão, tipo, tamanho e capabilities,
 envia mídia pública para `therapist-public-media` com o token autenticado do

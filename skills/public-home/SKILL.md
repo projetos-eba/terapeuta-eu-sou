@@ -121,3 +121,9 @@ Use TES tokens through Tailwind classes and CSS variables. Do not change global 
 - Run `npm run typecheck`, `npm run lint`, and `npm run build`.
 - For migration changes, run `npx supabase db lint`; run `npx supabase db reset` only when local data reset is acceptable for the task.
 - Report commands actually run and any validation not performed.
+
+## Assets da plataforma
+
+- O CTA de jornada usa `platformAssets.publicJourneyCta` ancorado à direita,
+  com fade curto apenas na borda esquerda de transição para a copy.
+- Consulte `docs/design-system/platform-assets.md` antes de substituir esse asset.

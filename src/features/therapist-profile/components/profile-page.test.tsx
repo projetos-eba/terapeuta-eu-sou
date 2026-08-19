@@ -9,6 +9,8 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { TherapistProfilePage } from "./profile-page";
+import { getFavoriteLoginHref } from "./favorite-therapist-button";
+import { getCanonicalProfileShareUrl } from "./profile-share-button";
 import type { PublicTherapistProfile } from "../types";
 
 const baseProfile: PublicTherapistProfile = {
@@ -48,7 +50,12 @@ const baseProfile: PublicTherapistProfile = {
 };
 
 describe("TherapistProfilePage video block", () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    Reflect.deleteProperty(navigator, "clipboard");
+    Reflect.deleteProperty(navigator, "share");
+    vi.unstubAllGlobals();
+  });
 
   it("does not render a clickable video link when the profile has no valid video", () => {
     render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
@@ -77,6 +84,87 @@ describe("TherapistProfilePage video block", () => {
     expect(
       screen.getByRole("button", { name: "Compartilhar perfil" }),
     ).toHaveClass("size-[52px]");
+  });
+
+  it("reads the current favorite state for an authenticated patient", async () => {
+    const fetchMock = vi.fn(async () =>
+      Response.json({ isFavorite: true, ok: true }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", {
+          name: "Remover dos favoritos de Ana Oliveira",
+        }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/patient/favorite-therapists?therapistProfileId=profile-1",
+      { cache: "no-store" },
+    );
+  });
+
+  it("builds the client login return URL from the current public profile", () => {
+    expect(
+      getFavoriteLoginHref("/terapeutas/ana-oliveira", "?source=home"),
+    ).toBe("/cliente/login?next=%2Fterapeutas%2Fana-oliveira%3Fsource%3Dhome");
+  });
+
+  it("shares only the canonical public profile URL", async () => {
+    const share = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: share,
+    });
+    window.history.replaceState({}, "", "/terapeutas/ana-oliveira?source=home");
+
+    render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Compartilhar perfil" }),
+    );
+
+    await waitFor(() =>
+      expect(share).toHaveBeenCalledWith({
+        url: getCanonicalProfileShareUrl(
+          "/terapeutas/ana-oliveira",
+          window.location.origin,
+        ),
+      }),
+    );
+    expect(screen.getByText("Link do perfil compartilhado.")).toHaveAttribute(
+      "role",
+      "status",
+    );
+  });
+
+  it("copies the canonical profile URL when Web Share is unavailable", async () => {
+    const writeText = vi.fn(async () => undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+    Reflect.deleteProperty(navigator, "share");
+
+    render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Compartilhar perfil" }),
+    );
+
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(
+        getCanonicalProfileShareUrl(
+          "/terapeutas/ana-oliveira",
+          window.location.origin,
+        ),
+      ),
+    );
+    expect(screen.getByText("Link do perfil copiado.")).toHaveAttribute(
+      "role",
+      "status",
+    );
   });
 
   it("applies the selected theme only to the hero", () => {
@@ -125,7 +213,7 @@ describe("TherapistProfilePage video block", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("opens the selected bio illustration in TESDialog", async () => {
+  it("keeps a legacy bio illustration value silent on the public profile", () => {
     render(
       <TherapistProfilePage
         profile={{
@@ -139,50 +227,135 @@ describe("TherapistProfilePage video block", () => {
       />,
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Ampliar ilustração Planta serena" }),
-    );
-
-    expect(await screen.findByRole("dialog")).toBeInTheDocument();
     expect(
-      screen.getByAltText(
-        "Ilustração botânica em tons lilás para acompanhar uma apresentação sensível.",
-      ),
-    ).toBeInTheDocument();
-    fireEvent.keyDown(document, { key: "Escape" });
-    await waitFor(() =>
-      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
-    );
+      screen.queryByRole("button", {
+        name: /Ampliar ilustração/i,
+      }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByText(baseProfile.content.essenceBody)).toBeVisible();
   });
 
   it("posts favorite changes from the public profile", async () => {
-    const originalFetch = global.fetch;
-    const fetchMock = vi.fn(async () => Response.json({ ok: true }));
-    global.fetch = fetchMock as unknown as typeof fetch;
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === "POST") return Response.json({ ok: true });
+        return Response.json({ isFavorite: false, ok: true });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
 
-    try {
-      render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
+    render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
 
-      fireEvent.click(
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Adicionar aos favoritos de Ana Oliveira",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", {
+          name: "Remover dos favoritos de Ana Oliveira",
+        }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/patient/favorite-therapists",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("does not let a stale state read overwrite a completed favorite change", async () => {
+    const pendingStateRead: {
+      resolve?: (response: Response) => void;
+    } = {};
+    const stateRead = new Promise<Response>((resolve) => {
+      pendingStateRead.resolve = resolve;
+    });
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === "POST") return Response.json({ ok: true });
+        if (String(_input).includes("/api/patient/favorite-therapists")) {
+          return stateRead;
+        }
+        return Response.json({ ok: true });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([input]) =>
+          String(input).includes("/api/patient/favorite-therapists"),
+        ),
+      ).toHaveLength(1),
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Adicionar aos favoritos de Ana Oliveira",
+      }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", {
+          name: "Remover dos favoritos de Ana Oliveira",
+        }),
+      ).toHaveAttribute("aria-pressed", "true"),
+    );
+
+    expect(pendingStateRead.resolve).toBeTypeOf("function");
+    pendingStateRead.resolve?.(Response.json({ isFavorite: false, ok: true }));
+    await waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(([input]) =>
+          String(input).includes("/api/patient/favorite-therapists"),
+        ),
+      ).toHaveLength(2),
+    );
+    expect(
+      screen.getByRole("button", {
+        name: "Remover dos favoritos de Ana Oliveira",
+      }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("rolls back the optimistic favorite state when the mutation fails", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === "POST") {
+          return Response.json(
+            {
+              error: { message: "Não foi possível salvar favorito." },
+              ok: false,
+            },
+            { status: 403 },
+          );
+        }
+        return Response.json({ isFavorite: false, ok: true });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Adicionar aos favoritos de Ana Oliveira",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(
         screen.getByRole("button", {
           name: "Adicionar aos favoritos de Ana Oliveira",
         }),
-      );
-
-      await waitFor(() =>
-        expect(
-          screen.getByRole("button", {
-            name: "Remover dos favoritos de Ana Oliveira",
-          }),
-        ).toHaveAttribute("aria-pressed", "true"),
-      );
-      expect(fetchMock).toHaveBeenCalledWith(
-        "/api/patient/favorite-therapists",
-        expect.objectContaining({ method: "POST" }),
-      );
-    } finally {
-      global.fetch = originalFetch;
-    }
+      ).toHaveAttribute("aria-pressed", "false"),
+    );
+    expect(
+      screen.getByText("Não foi possível salvar favorito."),
+    ).toHaveAttribute("role", "status");
   });
 
   it("shows public services by canonical therapy name without operational labels", () => {

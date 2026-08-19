@@ -37,7 +37,8 @@ test.describe("therapist profile editor", () => {
 
     await page.getByLabel("Texto curto").fill(intro);
     await page.getByText("Acolhedor", { exact: true }).click();
-    await page.getByText("Canto acolhedor", { exact: true }).click();
+    await expect(page.getByText("Ilustração da bio")).toHaveCount(0);
+    await expect(page.getByText("Sem ilustração")).toHaveCount(0);
 
     await expect(page.getByLabel("Texto curto")).toHaveValue(intro);
     const saveButton = page.getByRole("button", {
@@ -75,13 +76,9 @@ test.describe("therapist profile editor", () => {
     await expect(page.getByText(intro)).toBeVisible();
     await expect(page.getByText("Atendimento online")).toBeVisible();
     await expect(page.locator('[data-profile-theme="warm"]')).toBeVisible();
-    await page
-      .getByRole("button", { name: "Ampliar ilustração Canto acolhedor" })
-      .click();
     await expect(
-      page.getByRole("dialog", { name: "Canto acolhedor" }),
-    ).toBeVisible();
-    await page.keyboard.press("Escape");
+      page.getByRole("button", { name: /Ampliar ilustração/i }),
+    ).toHaveCount(0);
     await expect(page.getByText(/documento/i)).toHaveCount(0);
   });
 
