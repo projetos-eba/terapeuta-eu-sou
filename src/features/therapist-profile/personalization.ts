@@ -10,6 +10,9 @@ type ThemeStyle = CSSProperties & {
 
 export type PublicProfileThemeDefinition = {
   description: string;
+  heroBackgroundSrc?: string;
+  heroIllustrationClassName?: string;
+  heroIllustrationSrc?: string;
   id: PublicProfileThemeId;
   label: string;
   palette: string[];
@@ -19,6 +22,10 @@ export type PublicProfileThemeDefinition = {
 export const publicProfileThemes: PublicProfileThemeDefinition[] = [
   {
     description: "Lavanda e ciano em uma composição leve e acolhedora.",
+    heroBackgroundSrc: "/therapists/profile-themes/serene/hero-background.png",
+    heroIllustrationClassName: "bottom-[-18%] right-[-1%] w-[min(33vw,430px)]",
+    heroIllustrationSrc:
+      "/therapists/profile-themes/serene/hero-illustration.png",
     id: "serene",
     label: "Sereno",
     palette: ["bg-brand-lavenderSoft", "bg-brand-cyan", "bg-white"],
@@ -31,6 +38,10 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
   },
   {
     description: "Mint e superfícies claras com presença orgânica.",
+    heroBackgroundSrc: "/therapists/profile-themes/natural/hero-background.png",
+    heroIllustrationClassName: "bottom-[-18%] right-[-1%] w-[min(33vw,430px)]",
+    heroIllustrationSrc:
+      "/therapists/profile-themes/natural/hero-illustration.png",
     id: "natural",
     label: "Natural",
     palette: ["bg-brand-mint", "bg-status-successBg", "bg-white"],
@@ -43,6 +54,10 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
   },
   {
     description: "Neutros quentes suaves e curvas delicadas.",
+    heroBackgroundSrc: "/therapists/profile-themes/warm/hero-background.png",
+    heroIllustrationClassName: "bottom-[-19%] right-[-2%] w-[min(36vw,470px)]",
+    heroIllustrationSrc:
+      "/therapists/profile-themes/warm/hero-illustration.png",
     id: "warm",
     label: "Acolhedor",
     palette: ["bg-status-warningBg", "bg-brand-lavender", "bg-white"],

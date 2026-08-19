@@ -58,6 +58,12 @@ Consultar antes de alterar:
 Preservar o padrão do node:
 
 - Hero com foto grande, badges, tags, avaliação, CTA e ações favoritar/compartilhar.
+- O hero consome a camada visual oficial em
+  `public/therapists/profile-themes/`: `serene` combina fundo e botânica
+  lilás, `natural` usa sálvia e botânica verde, `warm` usa terracota e a
+  composição de poltrona. `essential` preserva a composição editorial clara
+  sem ilustração dominante. Fundo e arte são decorativos (`alt=""`), aparecem
+  somente no hero e nunca substituem a ilustração opcional de `Minha essência`.
 - Cards `Minha essência`, `Como posso te guiar` e `Um convite para você`.
 - A ilustração opcional de `Minha essência` abre em `TESDialog`, com alt,
   Escape, foco confinado e retorno de foco.

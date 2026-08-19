@@ -40,8 +40,33 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
       data-profile-theme={theme.id}
       style={theme.style}
     >
-      <div className="pointer-events-none absolute -right-24 -top-40 size-[420px] rounded-full bg-[var(--profile-shape)] opacity-60" />
-      <div className="relative mx-auto grid max-w-[1440px] gap-8 px-5 pb-8 pt-6 sm:px-8 lg:grid-cols-[520px_1fr] lg:px-[56px]">
+      {theme.heroBackgroundSrc ? (
+        <Image
+          aria-hidden="true"
+          alt=""
+          className="pointer-events-none object-cover object-center"
+          data-theme-hero-background={theme.id}
+          fill
+          priority
+          sizes="100vw"
+          src={theme.heroBackgroundSrc}
+        />
+      ) : (
+        <div className="pointer-events-none absolute -right-24 -top-40 size-[420px] rounded-full bg-[var(--profile-shape)] opacity-60" />
+      )}
+      {theme.heroIllustrationSrc ? (
+        <Image
+          aria-hidden="true"
+          alt=""
+          className={`pointer-events-none absolute z-10 hidden object-contain opacity-45 xl:block ${theme.heroIllustrationClassName ?? ""}`}
+          data-theme-hero-illustration={theme.id}
+          height={1402}
+          sizes="(min-width: 1280px) 33vw, 0px"
+          src={theme.heroIllustrationSrc}
+          width={1122}
+        />
+      ) : null}
+      <div className="relative z-20 mx-auto grid max-w-[1440px] gap-8 px-5 pb-8 pt-6 sm:px-8 lg:grid-cols-[520px_1fr] lg:px-[56px]">
         <div className="relative min-h-[360px] overflow-hidden rounded-b-[46%] rounded-t-[46%] lg:min-h-[410px]">
           <Image
             src={profile.heroImage}
