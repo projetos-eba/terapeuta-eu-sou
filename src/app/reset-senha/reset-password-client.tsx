@@ -34,8 +34,8 @@ export function ResetPasswordClient({ token }: { token: string }) {
       const data = (await response.json()) as ApiResponse;
       setMessage(
         data.ok
-          ? data.message ??
-              "Se o e-mail estiver cadastrado, enviaremos as instrucoes de recuperacao."
+          ? (data.message ??
+              "Se o e-mail estiver cadastrado, enviaremos as instrucoes de recuperacao.")
           : data.message,
       );
     } catch {
@@ -124,9 +124,16 @@ export function ResetPasswordClient({ token }: { token: string }) {
           ) : null}
 
           {hasToken ? (
-            <form onSubmit={handleReset} className="mt-8 space-y-5">
+            <form
+              method="post"
+              onSubmit={handleReset}
+              className="mt-8 space-y-5"
+            >
               <PasswordField name="password" label="Nova senha" />
-              <PasswordField name="confirmPassword" label="Confirmar nova senha" />
+              <PasswordField
+                name="confirmPassword"
+                label="Confirmar nova senha"
+              />
               <TESButton
                 type="submit"
                 variant="gradient"
@@ -138,7 +145,11 @@ export function ResetPasswordClient({ token }: { token: string }) {
               </TESButton>
             </form>
           ) : (
-            <form onSubmit={handleRequest} className="mt-8 space-y-5">
+            <form
+              method="post"
+              onSubmit={handleRequest}
+              className="mt-8 space-y-5"
+            >
               <div>
                 <label
                   htmlFor="email"

@@ -93,7 +93,12 @@ export function ClientLoginForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="relative space-y-5">
+    <form
+      method="post"
+      onSubmit={handleSubmit}
+      noValidate
+      className="relative space-y-5"
+    >
       <div>
         <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
           Acesso cliente
