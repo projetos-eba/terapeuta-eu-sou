@@ -5,10 +5,7 @@ import { Check, Link2, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { TESButton } from "@/components/tes";
-import {
-  bioIllustrations,
-  publicProfileThemes,
-} from "@/features/therapist-profile/personalization";
+import { publicProfileThemes } from "@/features/therapist-profile/personalization";
 import { cn } from "@/lib/utils";
 
 import {
@@ -320,90 +317,4 @@ function slugStatusMessage(
   if (status === "reserved")
     return "Este endereço é reservado pela plataforma.";
   return "Use de 3 a 40 caracteres para criar seu link.";
-}
-
-export function BioIllustrationGallery({
-  fields,
-  updateField,
-}: {
-  fields: TherapistProfileEditableFields;
-  updateField: <K extends keyof TherapistProfileEditableFields>(
-    key: K,
-    value: TherapistProfileEditableFields[K],
-  ) => void;
-}) {
-  return (
-    <fieldset className="mt-5">
-      <legend className="text-sm font-extrabold text-brand-deep">
-        Ilustração da bio
-      </legend>
-      <p className="mt-1 text-sm leading-6 text-tesText-secondary">
-        Escolha uma arte TES para complementar sua essência. Ela é independente
-        do tema.
-      </p>
-      <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <IllustrationChoice
-          checked={fields.bioIllustrationId === null}
-          label="Sem ilustração"
-          onChange={() => updateField("bioIllustrationId", null)}
-        />
-        {bioIllustrations.map((illustration) => (
-          <IllustrationChoice
-            checked={fields.bioIllustrationId === illustration.id}
-            image={illustration.src}
-            key={illustration.id}
-            label={illustration.label}
-            onChange={() => updateField("bioIllustrationId", illustration.id)}
-          />
-        ))}
-      </div>
-    </fieldset>
-  );
-}
-
-function IllustrationChoice({
-  checked,
-  image,
-  label,
-  onChange,
-}: {
-  checked: boolean;
-  image?: string;
-  label: string;
-  onChange: () => void;
-}) {
-  return (
-    <label
-      className={cn(
-        "cursor-pointer rounded-lg border bg-white p-2 text-center focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand-primary",
-        checked ? "border-brand-primary shadow-card" : "border-border",
-      )}
-    >
-      <input
-        checked={checked}
-        className="sr-only"
-        name="bio-illustration"
-        onChange={onChange}
-        type="radio"
-      />
-      <div className="relative grid aspect-[4/3] place-items-center overflow-hidden rounded-md bg-surface-mist">
-        {image ? (
-          <Image
-            alt=""
-            className="object-cover"
-            fill
-            sizes="160px"
-            src={image}
-          />
-        ) : (
-          <span className="text-xs font-bold text-tesText-secondary">
-            Nenhuma arte
-          </span>
-        )}
-      </div>
-      <span className="mt-2 block text-xs font-bold leading-4 text-brand-deep">
-        {label}
-      </span>
-    </label>
-  );
 }

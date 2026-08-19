@@ -84,13 +84,13 @@ Não passar linhas cruas do Supabase para React.
   O navegador nunca recebe bucket, path interno ou URL assinada; outro
   terapeuta não pode abrir documentos alheios.
 - Capabilities são validadas no frontend e no backend.
-- Temas `serene`, `natural`, `warm` e `essential` e a galeria de ilustrações
-  são universais e seguem rascunho/publicação. Não criar gate de plano.
-- A galeria preserva os IDs de banco: `organic_flow` é `Planta serena`,
-  `gentle_horizon` é `Planta natural`, `warm_layers` é `Canto acolhedor` e
-  `essential_lines` é `Folhas essenciais`. Os PNGs oficiais ficam em
-  `public/therapists/profile-bio/`; o registro central serve editor, hero e
-  diálogo. `null` significa `Sem ilustração`.
+- Temas `serene`, `natural`, `warm` e `essential` são universais e seguem
+  rascunho/publicação. Não criar gate de plano.
+- `bioIllustrationId` permanece apenas como dado legado compatível em banco e
+  contratos. A galeria e a renderização pública foram descontinuadas; não criar
+  novo consumidor. Os assets históricos em `public/therapists/profile-bio/`
+  permanecem versionados para rollback/cache até uma retirada de domínio
+  planejada.
 - Slug é salvo separadamente e entra em vigor imediatamente. Free mantém o
   identificador numérico de sete dígitos; `custom_profile_slug` libera Premium
   e Premium Plus. O banco é autoridade de normalização, disponibilidade,
@@ -110,7 +110,7 @@ Não passar linhas cruas do Supabase para React.
   progresso/envio honesta, com etapas, pendências e orientação do próximo
   passo.
 - `/terapeuta/perfil/editar` deve conter header, progresso, formulário
-  numerado, temas, link público, galeria de bio, upload/mídia, módulos
+  numerado, temas, link público, upload/mídia, módulos
   gerenciados, aviso importante e save bar.
 - Evitar CTAs conflitantes na primeira configuração: não mostrar `Salvar
 rascunho` como ação concorrente quando o perfil ainda não tem versão

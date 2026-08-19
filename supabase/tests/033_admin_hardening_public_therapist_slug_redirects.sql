@@ -15,23 +15,23 @@ select is(
 );
 
 select ok(
-  has_column_privilege(
+  not has_column_privilege(
     'anon',
     'public.therapist_profile_slug_history',
     'old_slug',
     'SELECT'
   ),
-  'anon can select old_slug from therapist_profile_slug_history'
+  'anon cannot select old_slug from therapist_profile_slug_history'
 );
 
 select ok(
-  has_column_privilege(
+  not has_column_privilege(
     'anon',
     'public.therapist_profile_slug_history',
     'current_slug',
     'SELECT'
   ),
-  'anon can select current_slug from therapist_profile_slug_history'
+  'anon cannot select current_slug from therapist_profile_slug_history'
 );
 
 select ok(
@@ -123,14 +123,15 @@ select results_eq(
   'anon can read an approved public therapist redirect through the view'
 );
 
-select results_eq(
+select throws_ok(
   $$
     select old_slug, current_slug
     from public.therapist_profile_slug_history
     where old_slug = 'hardening-old-therapist-slug'
   $$,
-  $$ values ('hardening-old-therapist-slug'::text, 'ana-oliveira'::text) $$,
-  'anon can read the same redirect through explicit base-table RLS'
+  '42501',
+  null,
+  'anon cannot read a redirect through the private base table'
 );
 
 select throws_ok(
@@ -208,13 +209,13 @@ select ok(
 );
 
 select ok(
-  has_column_privilege(
+  not has_column_privilege(
     'authenticated',
     'public.therapist_profile_slug_history',
     'current_slug',
     'SELECT'
   ),
-  'authenticated can select current_slug from therapist_profile_slug_history'
+  'authenticated cannot select current_slug from therapist_profile_slug_history'
 );
 
 select * from finish();

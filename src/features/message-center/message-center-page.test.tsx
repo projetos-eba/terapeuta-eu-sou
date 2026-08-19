@@ -57,6 +57,22 @@ describe("MessageCenterPage", () => {
     }
   });
 
+  it("selects the hero asset for the active profile", () => {
+    const therapist = render(<MessageCenterPage data={createData()} />);
+
+    expect(therapist.container.innerHTML).toContain(
+      "therapist-messages-hero.png",
+    );
+
+    therapist.unmount();
+
+    const patient = render(
+      <MessageCenterPage data={createData({ actorRole: "patient" })} />,
+    );
+
+    expect(patient.container.innerHTML).toContain("patient-messages-hero.png");
+  });
+
   it("opens a real support ticket through an approved support template", async () => {
     const originalFetch = global.fetch;
     const fetchMock = vi.fn(async () =>
@@ -99,10 +115,10 @@ describe("MessageCenterPage", () => {
 });
 
 function createData(
-  overrides: Partial<Pick<MessageCenterPageData, "source">> = {},
+  overrides: Partial<Pick<MessageCenterPageData, "actorRole" | "source">> = {},
 ): MessageCenterPageData {
   return {
-    actorRole: "therapist",
+    actorRole: overrides.actorRole ?? "therapist",
     hero: {
       description:
         "Acompanhe mensagens automatizadas dos clientes, avisos da plataforma e suporte em um só lugar.",

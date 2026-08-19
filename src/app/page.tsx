@@ -19,6 +19,7 @@ import {
   TESBadge,
   TESButton,
   TESCard,
+  TESDecorativeMedia,
 } from "@/components/tes";
 import {
   getPublicHomeData,
@@ -36,6 +37,7 @@ import type {
   PublicHomeTherapy,
 } from "@/features/public-home";
 import { routes } from "@/lib/routes";
+import { platformAssets } from "@/lib/platform-assets";
 
 export const revalidate = 900;
 
@@ -171,7 +173,8 @@ function IntroSection() {
                   O TES foi criado para acolher você e conectar a terapeutas,
                 </span>
                 <span className="block">
-                  práticas e experiências que podem apoiar diferentes momentos da vida.
+                  práticas e experiências que podem apoiar diferentes momentos
+                  da vida.
                 </span>
               </>
             }
@@ -463,15 +466,16 @@ function FaqSection() {
 function JourneyCta() {
   return (
     <section className="mx-auto max-w-[1680px] px-5 py-10 sm:px-8 lg:px-12">
-      <div className="relative overflow-hidden rounded-hero border border-border bg-brand-primary p-8 text-white shadow-soft md:min-h-[310px] md:p-12">
-        <Image
-          src="/home/match-journey-banner.png"
-          alt=""
-          fill
+      <div className="relative isolate overflow-hidden rounded-hero bg-brand-primary p-8 text-white md:min-h-[310px] md:p-12">
+        <TESDecorativeMedia
+          className="absolute inset-0"
+          fade="left"
+          fadeTone="brand"
+          imageClassName="object-[62%_center]"
+          objectPosition="right center"
           sizes="(min-width: 1024px) 90vw, 100vw"
-          className="object-cover object-[62%_center]"
+          src={platformAssets.publicJourneyCta.src}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-primary via-brand-primary/82 to-brand-primary/10" />
         <div className="relative max-w-2xl">
           <h2 className="font-display text-4xl font-light italic leading-tight md:text-5xl">
             Comece pela sua jornada

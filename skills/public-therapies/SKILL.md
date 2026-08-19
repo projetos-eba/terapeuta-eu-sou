@@ -139,3 +139,11 @@ Rodar:
 - Drawer/bottom sheet mobile completo caso a lista de categorias cresça muito.
 - Auditar `/admin/terapias` para editar `therapy_public_content`, highlights, benefícios e FAQs sem alterar pesos do Match.
 - Criar interface admin para `approach_label`, `approach_icon_key`, `visual_theme_key` e `hero_focal_point`.
+
+## Assets da plataforma
+
+- O hero usa `publicTherapiesHero` ancorado à direita. Os cards da listagem
+  preservam as imagens editoriais oficiais de cada terapia (`imageUrl`); a
+  ilustração `publicTherapiesCard` fica somente no quadro “Não encontrou o que
+  procura?”, sem alterar o contrato do catálogo.
+- Consulte `docs/design-system/platform-assets.md`.

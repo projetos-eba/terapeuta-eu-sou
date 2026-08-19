@@ -13,13 +13,14 @@ import {
   getPaymentsRuntime,
 } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
+import {
+  mapCancellationDatabaseError,
+  resolveCancellationReason,
+  validateCancellationCommand,
+  type CancellationCommandBody,
+} from "./cancellation-command.ts";
 
-type Body = {
-  bookingId?: string;
-  reason?: string;
-};
-
-type CancellationDecision = {
+type CalculatedCancellationDecision = {
   booking_id: string;
   decision: string;
   platform_retained_cents: number;
@@ -29,6 +30,24 @@ type CancellationDecision = {
   retained_amount_cents: number;
   review_due_at: string | null;
   session_payment_id: string;
+  therapist_retained_cents: number;
+};
+
+type CancellationDecisionRecord = {
+  booking_id: string;
+  decision: string;
+  id: string;
+  platform_retained_cents: number;
+  policy_version_id: string;
+  reason: string;
+  refund_amount_cents: number;
+  request_id: string;
+  requested_by_profile_id: string | null;
+  requested_by_role: "admin" | "patient" | "therapist";
+  requires_manual_review: boolean;
+  retained_amount_cents: number;
+  review_due_at: string | null;
+  session_payment_id: string | null;
   therapist_retained_cents: number;
 };
 
@@ -49,7 +68,7 @@ runtime.serve(async (request) => {
   const optionsResponse = handleOptions(request);
   if (optionsResponse) return optionsResponse;
 
-  const requestId = crypto.randomUUID();
+  const correlationId = crypto.randomUUID();
 
   try {
     if (request.method !== "POST") {
@@ -63,12 +82,13 @@ runtime.serve(async (request) => {
     );
     const stripe = createStripeClient(config.stripeApiKey);
     const user = await requireUser(client, request);
-    const body = await parseJsonBody<Body>(request);
-    const bookingId = requireUuid(body.bookingId, "invalid_booking_id");
-    const reason = normalizeReason(body.reason);
+    const command = validateCancellationCommand(
+      await parseJsonBody<CancellationCommandBody>(request),
+    );
+    const reason = resolveCancellationReason(command.reason, user.role);
     const [payment] = await client.get<SessionPaymentRow[]>(
       `/rest/v1/session_payments?select=id,booking_id,patient_profile_id,therapist_profile_id,gross_amount_cents,financial_status,transfer_status,stripe_payment_intent_id&booking_id=eq.${encodeURIComponent(
-        bookingId,
+        command.bookingId,
       )}&limit=1`,
     );
 
@@ -82,14 +102,13 @@ runtime.serve(async (request) => {
 
     await assertCanCancel(client, payment, user);
 
-    const [calculatedDecision] = await client.rpc<CancellationDecision[]>(
-      "calculate_session_cancellation_policy",
-      {
-        p_booking_id: bookingId,
-        p_now: new Date().toISOString(),
-        p_reason: reason,
-      },
-    );
+    const [calculatedDecision] = await client.rpc<
+      CalculatedCancellationDecision[]
+    >("calculate_session_cancellation_policy", {
+      p_booking_id: command.bookingId,
+      p_now: new Date().toISOString(),
+      p_reason: reason,
+    });
     const decision =
       reason === "therapist_cancellation" && calculatedDecision
         ? applyTherapistCancellationPolicy(calculatedDecision, payment)
@@ -103,36 +122,45 @@ runtime.serve(async (request) => {
       );
     }
 
-    const [record] = await client.post<Array<{ id: string }>>(
-      "/rest/v1/session_cancellation_decisions?select=id",
+    const [record] = await client.rpc<CancellationDecisionRecord[]>(
+      "claim_session_cancellation_decision_v1",
       {
-        booking_id: bookingId,
-        decision: decision.decision,
-        metadata: { stripeMode: config.stripeMode },
-        platform_retained_cents: decision.platform_retained_cents,
-        policy_version_id: decision.policy_version_id,
-        reason,
-        refund_amount_cents: decision.refund_amount_cents,
-        requested_by_profile_id: user.id,
-        requires_manual_review: decision.requires_manual_review,
-        retained_amount_cents: decision.retained_amount_cents,
-        review_due_at: decision.review_due_at,
-        session_payment_id: decision.session_payment_id,
-        therapist_retained_cents: decision.therapist_retained_cents,
+        p_booking_id: command.bookingId,
+        p_decision: decision.decision,
+        p_metadata: { stripeMode: config.stripeMode },
+        p_platform_retained_cents: decision.platform_retained_cents,
+        p_policy_version_id: decision.policy_version_id,
+        p_reason: reason,
+        p_refund_amount_cents: decision.refund_amount_cents,
+        p_request_id: command.requestId,
+        p_requested_by_profile_id: user.id,
+        p_requested_by_role: user.role,
+        p_requires_manual_review: decision.requires_manual_review,
+        p_retained_amount_cents: decision.retained_amount_cents,
+        p_review_due_at: decision.review_due_at,
+        p_session_payment_id: decision.session_payment_id,
+        p_therapist_retained_cents: decision.therapist_retained_cents,
       },
-      "return=representation",
     );
 
-    if (decision.requires_manual_review || decision.refund_amount_cents <= 0) {
+    if (!record) {
+      throw new DomainError(
+        "cancellation_decision_not_created",
+        503,
+        "Nao foi possivel registrar o cancelamento agora.",
+      );
+    }
+
+    if (record.requires_manual_review || record.refund_amount_cents <= 0) {
       await blockTransferForReview(client, payment.id);
-      await markBookingCanceled(client, bookingId, user.role, reason);
-      await cancelVideoSession(client, bookingId);
+      await transitionBookingCancellation(client, record);
+      await markCancellationDecisionProcessed(client, record.id);
 
       return success({
-        decision: decision.decision,
-        decisionId: record?.id,
-        refundAmountCents: decision.refund_amount_cents,
-        requiresManualReview: decision.requires_manual_review,
+        decision: record.decision,
+        decisionId: record.id,
+        refundAmountCents: record.refund_amount_cents,
+        requiresManualReview: record.requires_manual_review,
       });
     }
 
@@ -148,17 +176,16 @@ runtime.serve(async (request) => {
       "tes",
       config.stripeMode,
       "session_refund",
-      bookingId,
-      reason,
+      record.request_id,
     ]);
     const refund = await stripe.refunds.create(
       {
-        amount: decision.refund_amount_cents,
+        amount: record.refund_amount_cents,
         metadata: {
-          cancellation_decision_id: record?.id ?? "",
-          decision: decision.decision,
+          cancellation_decision_id: record.id,
+          decision: record.decision,
           system: "tes",
-          tes_session_id: bookingId,
+          tes_session_id: record.booking_id,
           tes_session_payment_id: payment.id,
         },
         payment_intent: payment.stripe_payment_intent_id,
@@ -170,15 +197,15 @@ runtime.serve(async (request) => {
     await client.post(
       "/rest/v1/session_refunds?on_conflict=stripe_refund_id",
       {
-        amount_cents: decision.refund_amount_cents,
+        amount_cents: record.refund_amount_cents,
         currency: "BRL",
         metadata: {
-          cancellationDecisionId: record?.id,
-          decision: decision.decision,
-          retainedAmountCents: decision.retained_amount_cents,
+          cancellationDecisionId: record.id,
+          decision: record.decision,
+          retainedAmountCents: record.retained_amount_cents,
         },
         processed_at: new Date().toISOString(),
-        reason,
+        reason: record.reason,
         requested_by: user.id,
         session_payment_id: payment.id,
         status: refund.status,
@@ -190,7 +217,7 @@ runtime.serve(async (request) => {
       `/rest/v1/session_payments?id=eq.${encodeURIComponent(payment.id)}`,
       {
         financial_status:
-          decision.refund_amount_cents >= payment.gross_amount_cents
+          record.refund_amount_cents >= payment.gross_amount_cents
             ? "refunded"
             : "partially_refunded",
         refund_pending: true,
@@ -199,18 +226,18 @@ runtime.serve(async (request) => {
       },
       "return=minimal",
     );
-    await markBookingCanceled(client, bookingId, user.role, reason);
-    await cancelVideoSession(client, bookingId);
+    await transitionBookingCancellation(client, record);
+    await markCancellationDecisionProcessed(client, record.id);
 
     return success({
-      decision: decision.decision,
-      decisionId: record?.id,
-      refundAmountCents: decision.refund_amount_cents,
+      decision: record.decision,
+      decisionId: record.id,
+      refundAmountCents: record.refund_amount_cents,
       refundId: refund.id,
       requiresManualReview: false,
     });
   } catch (error) {
-    return failure(error, requestId);
+    return failure(mapCancellationDatabaseError(error), correlationId);
   }
 });
 
@@ -281,16 +308,10 @@ async function markBookingCanceled(
   );
 }
 
-function normalizeReason(value: unknown) {
-  if (value === "no_show") return "no_show";
-  if (value === "therapist_cancellation") return "therapist_cancellation";
-  return "patient_cancellation";
-}
-
 function applyTherapistCancellationPolicy(
-  decision: CancellationDecision,
+  decision: CalculatedCancellationDecision,
   payment: SessionPaymentRow,
-): CancellationDecision {
+): CalculatedCancellationDecision {
   return {
     ...decision,
     decision: "therapist_cancellation_full_refund",
@@ -305,32 +326,42 @@ function applyTherapistCancellationPolicy(
   };
 }
 
-function requireUuid(value: unknown, code: string) {
-  if (typeof value !== "string" || !/^[0-9a-f-]{36}$/i.test(value)) {
-    throw new DomainError(code, 422, "Identificador invalido.");
-  }
-
-  return value;
+async function transitionBookingCancellation(
+  client: SupabaseRestClient,
+  decision: CancellationDecisionRecord,
+) {
+  await client.rpc("transition_booking_status_v1", {
+    p_actor_profile_id:
+      decision.requested_by_role === "admin"
+        ? null
+        : decision.requested_by_profile_id,
+    p_booking_id: decision.booking_id,
+    p_expected_version: null,
+    p_reason: decision.reason,
+    p_request_id: decision.request_id,
+    p_source:
+      decision.requested_by_role === "admin"
+        ? "admin"
+        : "request_session_cancellation",
+    p_target_status:
+      decision.requested_by_role === "therapist" ||
+      decision.reason === "no_show"
+        ? "cancelled_by_therapist"
+        : "cancelled_by_patient",
+  });
 }
 
-async function cancelVideoSession(
+async function markCancellationDecisionProcessed(
   client: SupabaseRestClient,
-  bookingId: string,
+  decisionId: string,
 ) {
-  try {
-    await client.rpc("cancel_video_session_for_booking_v1", {
-      p_booking_id: bookingId,
-      p_source: "request-session-cancellation",
-    });
-  } catch (error) {
-    console.warn(
-      JSON.stringify({
-        code: "VIDEO_SESSION_CANCEL_NOT_APPLIED",
-        message: error instanceof Error ? error.message : "UNKNOWN",
-        bookingId,
-      }),
-    );
-  }
+  await client.patch(
+    `/rest/v1/session_cancellation_decisions?id=eq.${encodeURIComponent(
+      decisionId,
+    )}`,
+    { processed_at: new Date().toISOString() },
+    "return=minimal",
+  );
 }
 
 export {};

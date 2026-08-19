@@ -15,6 +15,7 @@ import {
   PublicHeader,
   TESButton,
   TESCard,
+  TESDecorativeMedia,
 } from "@/components/tes";
 import {
   availabilityOptions,
@@ -35,6 +36,7 @@ import {
 } from "@/features/public-metrics";
 import { buildPublicTherapistTherapyChips } from "@/features/public-therapists/therapy-presentation";
 import { routes } from "@/lib/routes";
+import { platformAssets } from "@/lib/platform-assets";
 
 export const revalidate = 900;
 
@@ -45,13 +47,14 @@ type TherapistsPageProps = {
 function HeroIllustration() {
   return (
     <div className="pointer-events-none absolute right-[-74px] top-[-27px] hidden h-[351px] w-[765px] overflow-hidden lg:block">
-      <Image
-        src="/therapists/hero-therapists.png"
-        alt=""
-        fill
-        sizes="765px"
-        className="object-cover object-center"
+      <TESDecorativeMedia
+        className="absolute inset-0"
+        fade="left"
+        imageClassName="object-right"
+        objectPosition="right center"
         priority
+        sizes="765px"
+        src={platformAssets.publicTherapistsHero.src}
       />
     </div>
   );
@@ -179,7 +182,8 @@ function ResultsHeader({
         <p className="mt-1 max-w-[600px] text-[15px] font-semibold leading-6 text-tesText-secondary">
           Conheça diferentes terapeutras, suas histórias e formas de cuidado.
           <br />
-          Escolha com tranquiilidade quem faz sentido para o momento que você está vivendo.
+          Escolha com tranquiilidade quem faz sentido para o momento que você
+          está vivendo.
         </p>
         {activeFilterCount > 0 ? (
           <p className="mt-2 text-xs font-bold text-brand-primary">
@@ -569,10 +573,28 @@ export default async function TherapistsPage({
       </section>
 
       <section className="mx-auto max-w-[1440px] px-5 pb-[62px] sm:px-8 lg:px-[68px]">
-        <div className="flex h-[178px] items-center justify-center rounded-[18px] border border-[rgba(226,209,236,0.4)] bg-[rgba(241,232,246,0.7)] shadow-[0_8px_10px_rgba(38,20,51,0.04)]">
-          <p className="text-center text-[26px] font-extrabold leading-8 text-brand-deep">
-            Fazer banner novo
-          </p>
+        <div className="relative isolate overflow-hidden rounded-[18px] bg-surface-soft px-6 py-8 sm:px-10 lg:min-h-[178px] lg:px-12">
+          <TESDecorativeMedia
+            className="absolute inset-0"
+            fade="left"
+            fadeTone="soft"
+            imageClassName="object-right"
+            objectPosition="right center"
+            sizes="(min-width: 1024px) 90vw, 100vw"
+            src={platformAssets.publicTherapistsLowerBanner.src}
+          />
+          <div className="relative z-10 max-w-xl">
+            <h2 className="font-display text-3xl font-light italic leading-tight text-brand-deep sm:text-4xl">
+              Encontre um caminho que faça sentido para você
+            </h2>
+            <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
+              Explore perfis, conheça abordagens e escolha com calma quem pode
+              acompanhar o seu momento.
+            </p>
+            <TESButton className="mt-5" href={routes.public.therapists}>
+              Ver terapeutas
+            </TESButton>
+          </div>
         </div>
       </section>
 

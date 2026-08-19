@@ -16,7 +16,6 @@ import {
   ProfileTextField,
 } from "./profile-field-group";
 import { ProfileSection } from "./profile-section";
-import { BioIllustrationGallery } from "./profile-personalization-panel";
 
 export function ProfileEditorForm({
   editor,
@@ -93,7 +92,6 @@ export function ProfileEditorForm({
           rows={5}
           value={fields.essenceBody}
         />
-        <BioIllustrationGallery fields={fields} updateField={updateField} />
       </ProfileFieldGroup>
 
       <ProfileFieldGroup

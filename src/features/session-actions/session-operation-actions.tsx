@@ -9,7 +9,7 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 
 import { TESDialog } from "@/components/tes/tes-dialog";
 
@@ -71,6 +71,7 @@ export function SessionOperationActions({
   const [dialog, setDialog] = useState<DialogState>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const cancellationRequestId = useRef<string | null>(null);
   const pendingReschedule =
     reschedule?.status === "pending" ? reschedule : null;
   const canResolvePending =
@@ -80,36 +81,47 @@ export function SessionOperationActions({
     Boolean(pendingReschedule?.requestedByCurrentUser);
 
   async function submitCancel(reason: string) {
+    const requestId = cancellationRequestId.current ?? crypto.randomUUID();
+    cancellationRequestId.current = requestId;
     setIsSubmitting(true);
     setError(null);
 
-    const response = await fetch("/api/session/cancel", {
-      body: JSON.stringify({
-        actorRole,
-        bookingId,
-        reason: reason || undefined,
-      }),
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-    });
-    const payload = (await response.json().catch(() => null)) as
-      | ApiFailure
-      | { ok: true }
-      | null;
+    try {
+      const response = await fetch("/api/session/cancel", {
+        body: JSON.stringify({
+          actorRole,
+          bookingId,
+          reason: reason || undefined,
+          requestId,
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | ApiFailure
+        | { ok: true }
+        | null;
 
-    if (!response.ok || payload?.ok !== true) {
+      if (!response.ok || payload?.ok !== true) {
+        setError(
+          payload?.ok === false && payload.error?.message
+            ? payload.error.message
+            : `Não foi possível cancelar ${userFacingSubjectWithArticle} agora.`,
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      cancellationRequestId.current = null;
+      setIsSubmitting(false);
+      setDialog(null);
+      router.refresh();
+    } catch {
       setError(
-        payload?.ok === false && payload.error?.message
-          ? payload.error.message
-          : `Não foi possível cancelar ${userFacingSubjectWithArticle} agora.`,
+        `Não foi possível cancelar ${userFacingSubjectWithArticle} agora.`,
       );
       setIsSubmitting(false);
-      return;
     }
-
-    setIsSubmitting(false);
-    setDialog(null);
-    router.refresh();
   }
 
   async function submitReschedule(input: {
@@ -248,6 +260,7 @@ export function SessionOperationActions({
           className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-status-danger/30 bg-white px-4 text-sm font-extrabold text-status-danger transition hover:bg-status-dangerBg disabled:cursor-not-allowed disabled:opacity-50"
           disabled={!canCancel}
           onClick={() => {
+            cancellationRequestId.current = crypto.randomUUID();
             setError(null);
             setDialog("cancel");
           }}
@@ -273,7 +286,10 @@ export function SessionOperationActions({
         <CancelDialog
           impactLabel={cancellationImpactLabel}
           isSubmitting={isSubmitting}
-          onClose={() => setDialog(null)}
+          onClose={() => {
+            cancellationRequestId.current = null;
+            setDialog(null);
+          }}
           onSubmit={submitCancel}
           title={`Cancelar ${userFacingSubject}`}
         />

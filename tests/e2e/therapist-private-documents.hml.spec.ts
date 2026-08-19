@@ -162,7 +162,7 @@ test.describe("therapist private documents in HML", () => {
     }
   });
 
-  test("captures the approved artwork in the editor, public profile and dialog", async ({
+  test("captures the themed editor and public profile without bio illustration controls", async ({
     browser,
   }, testInfo) => {
     const fixtures = readFixtures();
@@ -179,19 +179,16 @@ test.describe("therapist private documents in HML", () => {
         "/terapeuta/perfil/editar",
       );
 
-      await expect(page.getByLabel("Planta serena")).toBeVisible();
-      await expect(page.getByLabel("Planta natural")).toBeVisible();
-      await expect(page.getByLabel("Canto acolhedor")).toBeVisible();
-      await expect(page.getByLabel("Folhas essenciais")).toBeVisible();
-      await expect(
-        page.getByText("Fluxo orgânico", { exact: true }),
-      ).toHaveCount(0);
+      await expect(page.getByText("Minha essência")).toBeVisible();
+      await expect(page.getByText("Ilustração da bio")).toHaveCount(0);
+      await expect(page.getByText("Sem ilustração")).toHaveCount(0);
       await page.screenshot({
         fullPage: true,
-        path: testInfo.outputPath("profile-editor-official-art-desktop.png"),
+        path: testInfo.outputPath(
+          "profile-editor-no-bio-illustration-desktop.png",
+        ),
       });
 
-      await page.getByLabel("Planta serena").check();
       const saveButton = page
         .getByRole("button", { name: "Salvar alterações" })
         .first();
@@ -215,21 +212,15 @@ test.describe("therapist private documents in HML", () => {
         .inputValue();
       await gotoShared(page, fixtures.sharedBaseUrl, `/terapeutas/${slug}`);
       await expect(
-        page.getByRole("button", { name: "Ampliar ilustração Planta serena" }),
-      ).toBeVisible();
+        page.getByRole("button", { name: /Ampliar ilustração/i }),
+      ).toHaveCount(0);
       await page.setViewportSize({ height: 820, width: 375 });
       await page.screenshot({
         fullPage: true,
-        path: testInfo.outputPath("public-profile-official-art-mobile.png"),
+        path: testInfo.outputPath(
+          "public-profile-no-bio-illustration-mobile.png",
+        ),
       });
-      await page
-        .getByRole("button", { name: "Ampliar ilustração Planta serena" })
-        .click();
-      await expect(
-        page.getByRole("dialog", { name: "Planta serena" }),
-      ).toBeVisible();
-      await page.keyboard.press("Escape");
-      await expect(page.getByRole("dialog")).toHaveCount(0);
     } finally {
       await context.close();
     }
@@ -319,7 +310,7 @@ async function loginAsAdmin(
   page: import("@playwright/test").Page,
   fixtures: HmlFixtures,
 ) {
-  for (const attempt of [1, 2]) {
+  for (let retriesRemaining = 2; retriesRemaining > 0; retriesRemaining -= 1) {
     await gotoShared(page, fixtures.sharedBaseUrl, "/admin-login");
     await page.getByLabel("E-mail").fill(fixtures.adminEmail);
     await page.getByLabel("Senha").fill(fixtures.adminPassword);
@@ -340,8 +331,6 @@ async function loginAsAdmin(
       });
       return;
     }
-
-    if (attempt === 1) await page.waitForTimeout(250);
   }
 
   throw new Error("hml_private_documents_admin_login_not_started");
@@ -402,7 +391,6 @@ async function selectDocumentFile(
 
     if (attempt === 1) {
       await input.setInputFiles([]);
-      await page.waitForTimeout(250);
     }
   }
 

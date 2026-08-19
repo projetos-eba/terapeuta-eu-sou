@@ -32,10 +32,18 @@ Zerar risco de autorizacao nao compreendido nas superficies:
   Stripe internos, `legal_name`, caminhos de storage ou metadados
   administrativos.
 - As unicas RPCs `SECURITY DEFINER` intencionalmente executaveis por `anon`
-  nesta fase sao:
+  nesta fase sao as projeções públicas e seus predicados de elegibilidade:
   - `get_public_therapy_therapists_v1(text, uuid[], uuid[], integer)`;
   - `get_service_available_slots_v1(uuid, timestamptz, timestamptz, integer)`;
-  - `record_public_therapist_metric_events_v1(uuid, jsonb)`.
+  - `record_public_therapist_metric_events_v1(uuid, jsonb)`;
+  - `is_therapist_publication_eligible_v1(uuid)`;
+  - `is_public_service_booking_eligible_v1(uuid)`;
+  - `public_therapist_slug_redirect_rows_v1()`.
+- `reserve_booking_hold_v1` e seu RPC interno de disponibilidade são somente
+  `service_role`; o navegador usa a Edge Function
+  `session-booking-checkout`.
+- Views do schema `public` são read models: `anon` e `authenticated` não têm
+  privilégios de escrita, DDL ou referência nelas.
 
 ## Testes De Ataque
 
@@ -55,6 +63,23 @@ Cenarios cobertos:
 - `admin -> read models Admin`: permitido.
 - `admin -> comando de verificacao`: permitido com auditoria append-only,
   `actor`, `reason` e `requestId`.
+- `authenticated -> reserve_booking_hold_v1`: negado; somente a Edge Function
+  transacional pode criar hold.
+- `anon/authenticated -> views`: sem `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`,
+  `REFERENCES` ou `TRIGGER`.
+
+## Hardening De 2026-08-19
+
+As migrations `20260819161000_restore_booking_rpc_privilege_boundary.sql` e
+`20260819162000_harden_view_privilege_boundaries.sql` corrigem permissões que
+o PostgreSQL havia restaurado ao recriar funções e views. A segunda migration
+também remove os grants padrão permissivos do owner `postgres` no schema
+`public`, portanto novos objetos devem declarar o menor privilégio necessário
+explicitamente.
+
+`supabase/tests/044_security_authorization_surface.sql` verifica agora a
+allowlist de `SECURITY DEFINER`, o bloqueio do comando de hold e que toda view
+do schema público é somente leitura para os papéis de API.
 
 ## Leaked Password Protection
 
@@ -72,15 +97,17 @@ Checklist de ativacao futura no Supabase Auth:
 
 ## Achados Classificados
 
-| Finding | Severidade | Estado | Prova |
-|---|---:|---|---|
-| Views publicas de perfil sem `security_invoker` | P2 | INTENTIONAL | migration `20260809183000_security_authorization_surface_hardening.sql` + pgTAP `044`: DTO selecionavel por anon e sem colunas privadas |
-| Views privadas/internas sem `security_invoker` | P1 | FIXED | migration `20260809183000_security_authorization_surface_hardening.sql` + pgTAP `044` |
-| RPC Admin executavel por papel indevido | P1 | FIXED | pgTAP `044`: `anon` sem execute; paciente/terapeuta recebem `42501` |
-| RPC financeira privada executavel por `anon` | P1 | FIXED | pgTAP `044`: `anon` sem execute e chamada negada |
-| DTO publico expondo documento/Stripe/admin | P1 | FIXED | pgTAP `044`: inventario de colunas proibidas |
-| Funcoes antigas com `search_path=public` | P2 | DEFERRED | catalogo local; requer recriacao qualificada dos corpos antes de alterar para `search_path=''` |
-| Leaked Password Protection | P2 | PREPARED | checklist acima; ativacao operacional fora desta fase |
+| Finding                                         | Severidade | Estado      | Prova                                                                                                                                   |
+| ----------------------------------------------- | ---------: | ----------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Views publicas de perfil sem `security_invoker` |         P2 | INTENTIONAL | migration `20260809183000_security_authorization_surface_hardening.sql` + pgTAP `044`: DTO selecionavel por anon e sem colunas privadas |
+| Views privadas/internas sem `security_invoker`  |         P1 | FIXED       | migration `20260809183000_security_authorization_surface_hardening.sql` + pgTAP `044`                                                   |
+| RPC Admin executavel por papel indevido         |         P1 | FIXED       | pgTAP `044`: `anon` sem execute; paciente/terapeuta recebem `42501`                                                                     |
+| RPC financeira privada executavel por `anon`    |         P1 | FIXED       | pgTAP `044`: `anon` sem execute e chamada negada                                                                                        |
+| DTO publico expondo documento/Stripe/admin      |         P1 | FIXED       | pgTAP `044`: inventario de colunas proibidas                                                                                            |
+| Hold transacional executável pelo browser       |         P0 | FIXED       | migration `20260819161000` + pgTAP `003` e `044`                                                                                        |
+| Views com DML/DDL para papéis de API            |         P1 | FIXED       | migration `20260819162000` + pgTAP `044`                                                                                                |
+| Funcoes antigas com `search_path=public`        |         P2 | DEFERRED    | catalogo local; requer recriacao qualificada dos corpos antes de alterar para `search_path=''`                                          |
+| Leaked Password Protection                      |         P2 | PREPARED    | checklist acima; ativacao operacional fora desta fase                                                                                   |
 
 ## Observacao Sobre `search_path`
 

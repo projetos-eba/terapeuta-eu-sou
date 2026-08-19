@@ -39,9 +39,17 @@ select is(
   'Free profiles use the stable numeric slug'
 );
 select is(
-  (select count(*)::integer from public.therapist_profiles where public_profile_theme <> 'serene'),
-  0,
-  'existing profiles start with the serene theme'
+  (
+    select pg_get_expr(d.adbin, d.adrelid)
+    from pg_attrdef d
+    join pg_attribute a
+      on a.attrelid = d.adrelid
+      and a.attnum = d.adnum
+    where d.adrelid = 'public.therapist_profiles'::regclass
+      and a.attname = 'public_profile_theme'
+  ),
+  '''serene''::text',
+  'new profiles default to the serene theme without overriding a therapist choice'
 );
 
 select is(

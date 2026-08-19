@@ -89,3 +89,8 @@ Executar quando alterar a página:
 - `npx supabase test db`.
 
 Validar responsividade em 320px, 375px, 768px, 1024px e 1440px quando houver alteração visual.
+
+## Assets da plataforma
+
+- O hero de avaliações usa `therapistReviewsHero` com fade à esquerda e sem
+  borda decorativa. Consulte `docs/design-system/platform-assets.md`.

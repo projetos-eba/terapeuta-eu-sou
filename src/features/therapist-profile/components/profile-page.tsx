@@ -6,7 +6,6 @@ import {
   Heart,
   Leaf,
   Play,
-  Share2,
   Sparkles,
   Star,
 } from "lucide-react";
@@ -16,8 +15,8 @@ import { TrackedBookingLink } from "@/features/public-metrics";
 import { publicProfileThemeById } from "@/features/therapist-profile/personalization";
 
 import { AvailabilitySelector } from "./availability-selector";
-import { BioIllustrationDialog } from "./bio-illustration-dialog";
 import { FavoriteTherapistButton } from "./favorite-therapist-button";
+import { ProfileShareButton } from "./profile-share-button";
 import { ReviewsCarousel } from "./reviews-carousel";
 import type { PublicTherapistProfile, TherapistProfileReview } from "../types";
 
@@ -152,13 +151,7 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
               therapistName={profile.name}
               therapistProfileId={profile.id}
             />
-            <button
-              type="button"
-              aria-label="Compartilhar perfil"
-              className="grid size-[52px] place-items-center rounded-full border border-border bg-white text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            >
-              <Share2 className="size-5" />
-            </button>
+            <ProfileShareButton profilePath={profile.profileUrl} />
           </div>
         </div>
       </div>
@@ -176,11 +169,6 @@ function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
         <p className="mt-8 text-sm font-medium leading-[1.55] text-tesText-primary">
           {profile.content.essenceBody}
         </p>
-        {profile.content.bioIllustrationId ? (
-          <BioIllustrationDialog
-            illustrationId={profile.content.bioIllustrationId}
-          />
-        ) : null}
         <div className="mt-8 grid grid-cols-2 gap-6">
           {profile.content.experienceYears ? (
             <div className="rounded-[9px] border border-brand-cyan/30 p-3 text-center">

@@ -40,7 +40,7 @@ describe("PatientEncountersPage", () => {
     expect(html).toContain(
       "Tudo o que faz parte da sua jornada reunido em um único lugar.",
     );
-    expect(html).toContain("hero-acompanhamento.png");
+    expect(html).toContain("patient-encounters-hero.png");
     expect(html).toContain("Próximos encontros");
     expect(html).toContain("Histórico de encontros");
     expect(html).toContain("Sofia Mendes");

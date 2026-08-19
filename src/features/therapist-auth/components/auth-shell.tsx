@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import { CreditCard, FileCheck2, UserRoundCheck } from "lucide-react";
 
-import { PublicLogo } from "@/components/tes";
+import { PublicLogo, TESDecorativeMedia } from "@/components/tes";
+import { platformAssets } from "@/lib/platform-assets";
 import { cn } from "@/lib/utils";
 
 const checklist = [
@@ -41,8 +42,8 @@ export function TherapistAuthShell({
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col items-center justify-center gap-8">
         <PublicLogo />
         <section className="grid w-full overflow-hidden rounded-hero border border-border bg-surface-default shadow-float lg:grid-cols-[0.92fr_1.08fr]">
-          <aside className="pointer-events-none order-2 flex flex-col justify-between gap-10 bg-brand-primary px-7 py-8 text-white sm:px-10 lg:order-1 lg:min-h-[760px] lg:px-12 lg:py-12">
-            <div>
+          <aside className="pointer-events-none relative isolate order-2 flex flex-col justify-between gap-10 overflow-hidden bg-brand-primary px-7 py-8 text-white sm:px-10 lg:order-1 lg:min-h-[760px] lg:px-12 lg:py-12">
+            <div className="relative z-10">
               <p className="text-xs font-extrabold uppercase tracking-[0.28em] text-white/75">
                 {eyebrow}
               </p>
@@ -54,7 +55,7 @@ export function TherapistAuthShell({
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="relative z-10 space-y-4">
               {checklist.map((item) => {
                 const Icon = item.icon;
 
@@ -75,6 +76,16 @@ export function TherapistAuthShell({
                   </div>
                 );
               })}
+            </div>
+            <div className="absolute bottom-0 right-0 h-[210px] w-[270px] opacity-55 sm:h-[260px] sm:w-[340px]">
+              <TESDecorativeMedia
+                className="absolute inset-0"
+                fade="none"
+                objectPosition="right bottom"
+                priority
+                sizes="340px"
+                src={platformAssets.therapistLoginIcon.src}
+              />
             </div>
           </aside>
 

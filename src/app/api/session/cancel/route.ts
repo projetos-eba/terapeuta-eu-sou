@@ -33,6 +33,7 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           bookingId: parsed.bookingId,
           reason: parsed.reason,
+          requestId: parsed.requestId,
         }),
         cache: "no-store",
         headers: {
@@ -69,10 +70,13 @@ function parseActionBody(value: unknown) {
   const bookingId = Reflect.get(value, "bookingId");
   const actorRole = Reflect.get(value, "actorRole");
   const reason = Reflect.get(value, "reason");
+  const requestId = Reflect.get(value, "requestId");
 
   if (
     typeof bookingId !== "string" ||
     !/^[0-9a-f-]{36}$/i.test(bookingId) ||
+    typeof requestId !== "string" ||
+    !/^[0-9a-f-]{36}$/i.test(requestId) ||
     (actorRole !== "patient" && actorRole !== "therapist") ||
     (reason !== undefined && typeof reason !== "string")
   ) {
@@ -83,6 +87,7 @@ function parseActionBody(value: unknown) {
     actorRole,
     bookingId,
     reason: reason || undefined,
+    requestId,
   };
 }
 
