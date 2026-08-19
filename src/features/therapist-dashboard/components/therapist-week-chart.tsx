@@ -71,7 +71,7 @@ export function TherapistWeekChart({
                 x={x}
                 y="190"
               >
-                {day.label}
+                {formatWeekdayLabel(day.date)}
               </text>
               <text
                 fill="#a9a4c6"
@@ -118,4 +118,15 @@ function formatShortDate(value: string) {
     day: "2-digit",
     month: "2-digit",
   }).format(date);
+}
+
+export function formatWeekdayLabel(value: string) {
+  const date = new Date(`${value}T12:00:00`);
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    weekday: "short",
+  })
+    .format(date)
+    .replace(".", "")
+    .toUpperCase();
 }

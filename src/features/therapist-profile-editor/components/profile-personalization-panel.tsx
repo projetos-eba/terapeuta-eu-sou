@@ -76,10 +76,35 @@ export function ProfilePersonalizationPanel({
                 />
                 <div
                   className="relative h-24 overflow-hidden rounded-lg border border-border"
+                  data-theme-preview={theme.id}
                   style={theme.style}
                 >
-                  <div className="absolute inset-0 bg-[var(--profile-hero-background)]" />
-                  <div className="absolute -right-5 -top-7 size-24 rounded-full bg-[var(--profile-shape)] opacity-70" />
+                  {theme.heroBackgroundSrc ? (
+                    <Image
+                      alt=""
+                      aria-hidden="true"
+                      className="object-cover object-center"
+                      data-theme-preview-background={theme.id}
+                      fill
+                      sizes="(min-width: 640px) 50vw, 100vw"
+                      src={theme.heroBackgroundSrc}
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-[var(--profile-hero-background)]" />
+                  )}
+                  {theme.heroIllustrationSrc ? (
+                    <Image
+                      alt=""
+                      aria-hidden="true"
+                      className="pointer-events-none absolute -bottom-7 -right-2 object-contain opacity-50"
+                      data-theme-preview-illustration={theme.id}
+                      fill
+                      sizes="180px"
+                      src={theme.heroIllustrationSrc}
+                    />
+                  ) : (
+                    <div className="absolute -right-5 -top-7 size-24 rounded-full bg-[var(--profile-shape)] opacity-70" />
+                  )}
                   <div className="absolute bottom-4 left-4 h-2 w-24 rounded-full bg-brand-deep" />
                   <div className="absolute bottom-8 left-4 h-1.5 w-16 rounded-full bg-[var(--profile-accent)]" />
                 </div>

@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 const therapistEmail =
-  process.env.THERAPIST_E2E_EMAIL ?? "ana.oliveira@example.test";
+  process.env.THERAPIST_DOCUMENTS_E2E_EMAIL ?? "rafael.santos@example.test";
 const therapistPassword =
-  process.env.THERAPIST_E2E_PASSWORD ?? "tes-mock-password";
+  process.env.THERAPIST_DOCUMENTS_E2E_PASSWORD ?? "tes-mock-password";
 const otherTherapistEmail =
   process.env.THERAPIST_DOCUMENTS_OTHER_E2E_EMAIL ??
-  "rafael.santos@example.test";
+  "ana.oliveira@example.test";
 const adminEmail = process.env.ADMIN_E2E_EMAIL ?? "admin.tes@example.test";
 const adminPassword = process.env.ADMIN_E2E_PASSWORD ?? "tes-mock-password";
 
@@ -22,7 +22,9 @@ type DocumentCenter = {
 };
 
 test.describe("therapist private documents", () => {
-  test.setTimeout(180_000);
+  // The end-to-end check intentionally waits for the 60 s signed-preview TTL
+  // after exercising uploads and administrative review through local Storage.
+  test.setTimeout(300_000);
 
   test("stores, protects, reviews and re-requests documents through the real local Storage flow", async ({
     browser,
@@ -78,15 +80,6 @@ test.describe("therapist private documents", () => {
         documentCenterPayloadHasPrivateStorageDetails(documentCenter),
       ).toBe(false);
 
-      await therapistPage.reload({ waitUntil: "domcontentloaded" });
-      documentCenter = await readDocumentCenter(therapistPage);
-      expect(documentByKind(documentCenter, "identity_document").id).toBe(
-        initialIdentity.id,
-      );
-      expect(documentByKind(documentCenter, "address_proof").id).toBe(
-        initialAddress.id,
-      );
-
       await uploadFromCard(
         therapistPage,
         "Documento de identidade",
@@ -118,6 +111,15 @@ test.describe("therapist private documents", () => {
       documentCenter = await readDocumentCenter(therapistPage);
       expect(documentByKind(documentCenter, "identity_document").id).toBe(
         replacementIdentity.id,
+      );
+
+      await therapistPage.reload({ waitUntil: "domcontentloaded" });
+      documentCenter = await readDocumentCenter(therapistPage);
+      expect(documentByKind(documentCenter, "identity_document").id).toBe(
+        replacementIdentity.id,
+      );
+      expect(documentByKind(documentCenter, "address_proof").id).toBe(
+        initialAddress.id,
       );
 
       const verificationBeforeDocumentReview =
@@ -262,13 +264,32 @@ async function loginAsTherapist(
 }
 
 async function loginAsAdmin(page: import("@playwright/test").Page) {
-  await page.goto("/admin-login", { waitUntil: "domcontentloaded" });
-  await page.getByLabel("E-mail").fill(adminEmail);
-  await page.getByLabel("Senha").fill(adminPassword);
-  await page.getByRole("button", { name: "Entrar no Admin" }).click();
-  await expect(page).toHaveURL(/\/admin(?:\/terapias)?(?:\?.*)?$/, {
-    timeout: 30_000,
-  });
+  for (const attempt of [1, 2]) {
+    await page.goto("/admin-login", { waitUntil: "domcontentloaded" });
+    await page.getByLabel("E-mail").fill(adminEmail);
+    await page.getByLabel("Senha").fill(adminPassword);
+    const loginResponse = page
+      .waitForResponse(
+        (response) =>
+          response.url().includes("/api/auth/admin/login") &&
+          response.request().method() === "POST",
+        { timeout: 3_000 },
+      )
+      .catch(() => null);
+    await page.getByRole("button", { name: "Entrar no Admin" }).click();
+    const response = await loginResponse;
+
+    if (response?.ok()) {
+      await expect(page).toHaveURL(/\/admin(?:\/terapias)?(?:\?.*)?$/, {
+        timeout: 30_000,
+      });
+      return;
+    }
+
+    if (attempt === 1) await page.waitForTimeout(250);
+  }
+
+  throw new Error("Admin login did not reach the authenticated endpoint.");
 }
 
 async function assertTherapistProfileRead(
@@ -315,9 +336,22 @@ async function uploadFromCard(
     );
   }
   await expect(inputs).toHaveCount(2);
-  const input = inputs.nth(title === "Documento de identidade" ? 0 : 1);
-  await input.setInputFiles(file);
+  const documentIndex = title === "Documento de identidade" ? 0 : 1;
+  const response = await selectDocumentFile(
+    page,
+    inputs.nth(documentIndex),
+    file,
+  );
   if (!waitForUpload) return;
+  const payload = (await response.json().catch(() => null)) as {
+    error?: { message?: unknown };
+    ok?: boolean;
+  } | null;
+  if (!response.ok() || !payload?.ok) {
+    throw new Error(
+      `Document upload failed with ${response.status()}: ${typeof payload?.error?.message === "string" ? payload.error.message : "no safe message"}`,
+    );
+  }
   await expect
     .poll(async () => {
       const document = documentByKind(
@@ -327,6 +361,33 @@ async function uploadFromCard(
       return document.id && document.fileName === file.name;
     })
     .toBe(true);
+}
+
+async function selectDocumentFile(
+  page: import("@playwright/test").Page,
+  input: import("@playwright/test").Locator,
+  file: { buffer: Buffer; mimeType: string; name: string },
+) {
+  for (const attempt of [1, 2]) {
+    const uploadResponse = page
+      .waitForResponse(
+        (response) =>
+          response.url().includes("/api/therapist/profile/documents") &&
+          response.request().method() === "POST",
+        { timeout: 3_000 },
+      )
+      .catch(() => null);
+    await input.setInputFiles(file);
+    const response = await uploadResponse;
+    if (response) return response;
+
+    if (attempt === 1) {
+      await input.setInputFiles([]);
+      await page.waitForTimeout(250);
+    }
+  }
+
+  throw new Error("Document upload was not started by the profile interface.");
 }
 
 async function readDocumentCenter(page: import("@playwright/test").Page) {
@@ -372,9 +433,9 @@ async function assertProxiedDocumentAccess({
         `/api/admin/profissionais/${professionalId}/documents/${documentId}`,
         { redirect: "manual" },
       );
-      const payload = (await response.json().catch(() => null)) as
-        | { error?: { message?: unknown } }
-        | null;
+      const payload = (await response.json().catch(() => null)) as {
+        error?: { message?: unknown };
+      } | null;
       return {
         cacheControl: response.headers.get("cache-control"),
         contentType: response.headers.get("content-type"),
@@ -390,9 +451,10 @@ async function assertProxiedDocumentAccess({
     { documentId, professionalId },
   );
 
-  expect(response.status, response.errorMessage ?? "no safe error message").toBe(
-    200,
-  );
+  expect(
+    response.status,
+    response.errorMessage ?? "no safe error message",
+  ).toBe(200);
   expect(response.contentType).toMatch(/application\/pdf/i);
   expect(response.cacheControl).toMatch(/no-store/i);
   expect(response.location).toBeNull();

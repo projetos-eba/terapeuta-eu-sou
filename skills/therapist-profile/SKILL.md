@@ -86,6 +86,11 @@ Não passar linhas cruas do Supabase para React.
 - Capabilities são validadas no frontend e no backend.
 - Temas `serene`, `natural`, `warm` e `essential` e a galeria de ilustrações
   são universais e seguem rascunho/publicação. Não criar gate de plano.
+- A galeria preserva os IDs de banco: `organic_flow` é `Planta serena`,
+  `gentle_horizon` é `Planta natural`, `warm_layers` é `Canto acolhedor` e
+  `essential_lines` é `Folhas essenciais`. Os PNGs oficiais ficam em
+  `public/therapists/profile-bio/`; o registro central serve editor, hero e
+  diálogo. `null` significa `Sem ilustração`.
 - Slug é salvo separadamente e entra em vigor imediatamente. Free mantém o
   identificador numérico de sete dígitos; `custom_profile_slug` libera Premium
   e Premium Plus. O banco é autoridade de normalização, disponibilidade,
@@ -116,8 +121,8 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
   do preview.
 - Upload privado deve usar `therapist-private-documents`, com os tipos
   obrigatórios `identity_document` e `address_proof`, validação de assinatura
-  de arquivo, tamanho máximo de 10 MB e linguagem de produto sem expor buckets
-  ou detalhes técnicos.
+  de arquivo, tamanho máximo de 10 MB, tipos PDF/JPG/PNG e linguagem de
+  produto sem expor buckets ou detalhes técnicos.
 - A UI deve deixar claro que os documentos são privados, usados apenas para
   validação administrativa e podem ser substituídos pelo terapeuta via nova
   anexação do mesmo tipo.
@@ -149,3 +154,10 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
 - E2E `tests/e2e/therapist-profile.spec.ts`: login do terapeuta, preview-first,
   navegação para edição, rascunho, publicação, perfil público, ausência de
   documentos públicos e responsividade.
+- E2E local `tests/e2e/therapist-private-documents.spec.ts`: ciclo completo de
+  documentos privados. Para HML, usar exclusivamente
+  `tests/e2e/therapist-private-documents.hml.spec.ts` com
+  `HML_PRIVATE_DOCUMENTS_E2E=true`, URL HTTPS compartilhada em
+  `HML_PRIVATE_DOCUMENTS_E2E_BASE_URL` e fixtures dedicadas. Não usar contas
+  desconhecidas, não registrar o token de compartilhamento e não fornecer
+  defaults locais nesse cenário.

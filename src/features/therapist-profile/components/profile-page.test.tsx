@@ -140,13 +140,13 @@ describe("TherapistProfilePage video block", () => {
     );
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Ampliar ilustração Fluxo orgânico" }),
+      screen.getByRole("button", { name: "Ampliar ilustração Planta serena" }),
     );
 
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
     expect(
       screen.getByAltText(
-        "Formas fluidas em lavanda e ciano que se encontram suavemente.",
+        "Ilustração botânica em tons lilás para acompanhar uma apresentação sensível.",
       ),
     ).toBeInTheDocument();
     fireEvent.keyDown(document, { key: "Escape" });
