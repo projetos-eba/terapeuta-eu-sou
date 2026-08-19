@@ -35,6 +35,25 @@ Essas ações não criam API paralela: o PostgreSQL normaliza, valida capability
 consulta o namespace atual/histórico e serializa a troca. Tema e ilustração
 continuam dentro de `save_draft`/`publish`; slug é imediato e independente.
 
+### Identidade visual pública
+
+O registro central em `src/features/therapist-profile/personalization.ts`
+mantém temas e ilustrações em uma única fonte para editor e perfil público. Os
+IDs persistidos não identificam o arquivo visual; eles permanecem estáveis para
+que perfis já publicados renderizem a arte oficial atual.
+
+| ID persistido     | Arte oficial      | Arquivo versionado                 |
+| ----------------- | ----------------- | ---------------------------------- |
+| `organic_flow`    | Planta serena     | `profile-bio/serene-plant.png`     |
+| `gentle_horizon`  | Planta natural    | `profile-bio/natural-plant.png`    |
+| `warm_layers`     | Canto acolhedor   | `profile-bio/warm-chair.png`       |
+| `essential_lines` | Folhas essenciais | `profile-bio/essential-leaves.png` |
+
+`null` continua representando `Sem ilustração`. Os SVGs históricos permanecem
+versionados apenas para compatibilidade de assets; nenhuma superfície ativa os
+referencia. As prévias dos temas usam a mesma camada de fundo e composição do
+hero. `essential` preserva a composição editorial, sem arte dominante.
+
 `/api/therapist/profile/media` valida sessão, tipo, tamanho e capabilities,
 envia mídia pública para `therapist-public-media` com o token autenticado do
 terapeuta e retorna somente URL pública. Não usa `service_role` no navegador.
@@ -57,7 +76,7 @@ transformar o fluxo em uma confirmação automática.
 - `POST /api/therapist/profile/documents` encaminha o upload autenticado para
   a Edge Function `therapist-private-documents`;
 - o backend valida assinatura, MIME e limite de 10 MB antes de gravar no bucket
-  privado; a interface aceita PDF, JPG, PNG e WebP;
+  privado; a interface e todos os adaptadores aceitam PDF, JPG e PNG;
 - uma substituição cria o novo registro antes de arquivar a versão anterior do
   mesmo tipo, preservando o documento anterior caso o novo upload falhe;
 - visualização ocorre por URL assinada temporária, emitida somente depois de
@@ -74,6 +93,19 @@ transformar o fluxo em uma confirmação automática.
 
 O envio deixa o documento em estado pendente de conferência. Ele não aprova o
 perfil, não publica o profissional e não confirma elegibilidade por si só.
+
+### Homologação privada de documentos
+
+`tests/e2e/therapist-private-documents.spec.ts` cobre o ciclo completo local.
+O cenário integrado usa
+`tests/e2e/therapist-private-documents.hml.spec.ts` e só executa quando
+`HML_PRIVATE_DOCUMENTS_E2E=true`. Ele exige URL HTTPS compartilhada em
+`HML_PRIVATE_DOCUMENTS_E2E_BASE_URL` e credenciais externas das fixtures
+dedicadas de terapeuta, segundo terapeuta e Admin. Cada navegação direta compõe
+a URL preservando o parâmetro de compartilhamento; traces, vídeos e screenshots
+automáticos ficam desativados para não registrar credenciais, cookies ou o
+token. O fluxo substitui os documentos de teste pelo caminho real, confirma a
+leitura no Admin, aceita uma versão e confirma isolamento do segundo terapeuta.
 
 RPCs:
 

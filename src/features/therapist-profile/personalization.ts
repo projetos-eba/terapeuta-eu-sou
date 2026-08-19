@@ -96,32 +96,35 @@ export type BioIllustrationDefinition = {
 
 export const bioIllustrations: BioIllustrationDefinition[] = [
   {
-    alt: "Formas fluidas em lavanda e ciano que se encontram suavemente.",
-    description: "Movimento leve para acompanhar uma apresentação sensível.",
+    alt: "Ilustração botânica em tons lilás para acompanhar uma apresentação sensível.",
+    description:
+      "Uma composição botânica em tons lilás para acompanhar uma apresentação sensível.",
     id: "organic_flow",
-    label: "Fluxo orgânico",
-    src: "/therapists/profile-bio/organic-flow.svg",
+    label: "Planta serena",
+    src: "/therapists/profile-bio/serene-plant.png",
   },
   {
-    alt: "Horizonte abstrato em camadas claras de mint, ciano e lavanda.",
-    description: "Uma paisagem abstrata de calma e abertura.",
+    alt: "Ilustração botânica em tons de verde e sálvia.",
+    description:
+      "Uma composição botânica em verde e sálvia para uma presença natural.",
     id: "gentle_horizon",
-    label: "Horizonte suave",
-    src: "/therapists/profile-bio/gentle-horizon.svg",
+    label: "Planta natural",
+    src: "/therapists/profile-bio/natural-plant.png",
   },
   {
-    alt: "Camadas curvas em tons quentes suaves e lavanda.",
-    description: "Curvas acolhedoras para uma presença mais calorosa.",
+    alt: "Poltrona terracota com mesa, vela e plantas em uma composição acolhedora.",
+    description:
+      "Uma poltrona terracota com elementos naturais para uma presença mais acolhedora.",
     id: "warm_layers",
-    label: "Camadas acolhedoras",
-    src: "/therapists/profile-bio/warm-layers.svg",
+    label: "Canto acolhedor",
+    src: "/therapists/profile-bio/warm-chair.png",
   },
   {
-    alt: "Linhas essenciais em roxo formando uma composição editorial abstrata.",
-    description: "Traços precisos para uma apresentação essencial.",
+    alt: "Folhas em tons lilás formando uma composição leve e editorial.",
+    description: "Folhas em tons lilás para uma apresentação leve e editorial.",
     id: "essential_lines",
-    label: "Linhas essenciais",
-    src: "/therapists/profile-bio/essential-lines.svg",
+    label: "Folhas essenciais",
+    src: "/therapists/profile-bio/essential-leaves.png",
   },
 ];
 

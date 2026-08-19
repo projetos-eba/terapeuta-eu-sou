@@ -192,9 +192,25 @@ describe("TherapistProfileEditorPage", () => {
     render(<TherapistProfileEditorPage editor={makeEditor()} />);
 
     expect(screen.getByLabelText(/Sereno/)).toBeChecked();
+    expect(
+      document.querySelector('[data-theme-preview-background="serene"]'),
+    ).toHaveAttribute("alt", "");
+    expect(
+      document.querySelector('[data-theme-preview-illustration="natural"]'),
+    ).toHaveAttribute("alt", "");
     fireEvent.click(screen.getByLabelText(/Natural/));
     expect(screen.getByLabelText(/Natural/)).toBeChecked();
     expect(screen.getByText("Tema atual")).toBeInTheDocument();
+  });
+
+  it("uses the official bio art while preserving persisted illustration IDs", () => {
+    render(<TherapistProfileEditorPage editor={makeEditor()} />);
+
+    expect(screen.getByLabelText("Planta serena")).toBeInTheDocument();
+    expect(screen.getByLabelText("Planta natural")).toBeInTheDocument();
+    expect(screen.getByLabelText("Canto acolhedor")).toBeInTheDocument();
+    expect(screen.getByLabelText("Folhas essenciais")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Fluxo orgânico")).not.toBeInTheDocument();
   });
 
   it("keeps the stable link visible and blocks custom slug editing for Free", () => {

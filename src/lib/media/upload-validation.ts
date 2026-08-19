@@ -1,10 +1,5 @@
 const imageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
-const documentTypes = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]);
+const documentTypes = new Set(["application/pdf", "image/jpeg", "image/png"]);
 const videoTypes = new Set(["video/mp4", "video/quicktime", "video/webm"]);
 
 export type SupportedUploadMimeType =
@@ -16,11 +11,14 @@ export type SupportedUploadMimeType =
   | "video/quicktime"
   | "video/webm";
 
+export type SupportedDocumentMimeType =
+  | "application/pdf"
+  | "image/jpeg"
+  | "image/png";
+
 export function isSupportedDocumentType(
   contentType: string,
-): contentType is
-  | "application/pdf"
-  | Extract<SupportedUploadMimeType, `image/${string}`> {
+): contentType is SupportedDocumentMimeType {
   return documentTypes.has(contentType);
 }
 

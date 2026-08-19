@@ -62,9 +62,24 @@ describe("therapist profile documents route", () => {
     const payload = await response.json();
 
     expect(response.status).toBe(422);
-    expect(payload.error.message).toBe(
-      "Envie um arquivo em PDF, JPG, PNG ou WebP.",
+    expect(payload.error.message).toBe("Envie um arquivo em PDF, JPG ou PNG.");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects WebP documents before forwarding to Supabase", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      makeRequest({
+        file: new File(["RIFFxxxxWEBP"], "rg.webp", { type: "image/webp" }),
+        kind: "identity_document",
+      }),
     );
+    const payload = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(payload.error.message).toBe("Envie um arquivo em PDF, JPG ou PNG.");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
