@@ -93,6 +93,38 @@ describe("TherapistProfilePage video block", () => {
     expect(document.querySelectorAll("[data-profile-theme]")).toHaveLength(1);
   });
 
+  it.each([["serene"], ["natural"], ["warm"]] as const)(
+    "uses the official %s hero assets as decorative layers",
+    (theme) => {
+      render(
+        <TherapistProfilePage
+          profile={{ ...baseProfile, publicProfileTheme: theme }}
+          reviews={[]}
+        />,
+      );
+
+      expect(
+        document.querySelector(`[data-theme-hero-background="${theme}"]`),
+      ).toHaveAttribute("alt", "");
+      expect(
+        document.querySelector(`[data-theme-hero-illustration="${theme}"]`),
+      ).toHaveAttribute("alt", "");
+    },
+  );
+
+  it("keeps the essential hero free from a dominant illustration", () => {
+    render(
+      <TherapistProfilePage
+        profile={{ ...baseProfile, publicProfileTheme: "essential" }}
+        reviews={[]}
+      />,
+    );
+
+    expect(
+      document.querySelector("[data-theme-hero-illustration]"),
+    ).not.toBeInTheDocument();
+  });
+
   it("opens the selected bio illustration in TESDialog", async () => {
     render(
       <TherapistProfilePage
