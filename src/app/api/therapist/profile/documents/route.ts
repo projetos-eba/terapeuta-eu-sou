@@ -109,7 +109,7 @@ function failure(message: string, status: number) {
 
 async function validateFile(file: File) {
   if (!isSupportedDocumentType(file.type)) {
-    return "Envie um arquivo em PDF, JPG, PNG ou WebP.";
+    return "Envie um arquivo em PDF, JPG ou PNG.";
   }
   if (file.size < 1 || file.size > maxDocumentBytes) {
     return "O documento deve ter no máximo 10 MB.";

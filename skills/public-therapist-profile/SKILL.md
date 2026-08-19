@@ -42,7 +42,10 @@ Consultar antes de alterar:
 - Conteúdo editorial publicado vem de `therapist_profile_content_versions` e tabelas filhas.
 - `public_profile_theme` aplica um dos quatro temas oficiais somente ao hero.
   `bio_illustration_id` referencia uma das quatro artes versionadas em
-  `public/therapists/profile-bio/`; null omite completamente o controle.
+  `public/therapists/profile-bio/`; `organic_flow` aponta para Planta serena,
+  `gentle_horizon` para Planta natural, `warm_layers` para Canto acolhedor e
+  `essential_lines` para Folhas essenciais. Os IDs são de persistência e não
+  devem ser renomeados ao trocar a arte. `null` omite completamente o controle.
 - Slugs antigos resolvem por `public_therapist_slug_redirects_v`. A projeção
   nunca expõe `free_public_slug`, IDs de histórico ou proprietário de slug.
 - Terapias e serviços são gerenciados pela plataforma/Admin, não pela copy livre do terapeuta.
