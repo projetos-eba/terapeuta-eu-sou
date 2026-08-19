@@ -1,8 +1,48 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  poweredByHeader: false,
   reactStrictMode: true,
   experimental: {
     optimizePackageImports: ["lucide-react"],
+  },
+  async headers() {
+    const headers = [
+      {
+        key: "Content-Security-Policy",
+        value: "base-uri 'self'; object-src 'none'; frame-ancestors 'none'",
+      },
+      {
+        key: "Permissions-Policy",
+        value:
+          "camera=(self), geolocation=(), microphone=(self), payment=(self)",
+      },
+      {
+        key: "Referrer-Policy",
+        value: "strict-origin-when-cross-origin",
+      },
+      {
+        key: "X-Content-Type-Options",
+        value: "nosniff",
+      },
+      {
+        key: "X-Frame-Options",
+        value: "DENY",
+      },
+    ];
+
+    if (process.env.NODE_ENV === "production") {
+      headers.push({
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains; preload",
+      });
+    }
+
+    return [
+      {
+        source: "/:path*",
+        headers,
+      },
+    ];
   },
   async redirects() {
     return [

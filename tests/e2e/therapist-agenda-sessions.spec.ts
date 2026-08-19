@@ -140,13 +140,17 @@ test.describe("therapist Agenda and Sessions foundation", () => {
       path: testInfo.outputPath("agenda-horarios-desktop.png"),
     });
     await page.setViewportSize({ height: 1180, width: 820 });
-    await page.waitForTimeout(300);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Minha agenda" }),
+    ).toBeVisible();
     await page.screenshot({
       fullPage: true,
       path: testInfo.outputPath("agenda-horarios-tablet.png"),
     });
     await page.setViewportSize({ height: 844, width: 390 });
-    await page.waitForTimeout(300);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Minha agenda" }),
+    ).toBeVisible();
     await page.screenshot({
       fullPage: true,
       path: testInfo.outputPath("agenda-horarios-mobile.png"),
@@ -209,13 +213,13 @@ test.describe("therapist Agenda and Sessions foundation", () => {
       path: testInfo.outputPath("agenda-bloqueios-desktop.png"),
     });
     await page.setViewportSize({ height: 1180, width: 820 });
-    await page.waitForTimeout(300);
+    await expect(blockCard).toBeVisible();
     await page.screenshot({
       fullPage: true,
       path: testInfo.outputPath("agenda-bloqueios-tablet.png"),
     });
     await page.setViewportSize({ height: 844, width: 390 });
-    await page.waitForTimeout(300);
+    await expect(blockCard).toBeVisible();
     await page.screenshot({
       fullPage: true,
       path: testInfo.outputPath("agenda-bloqueios-mobile.png"),

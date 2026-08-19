@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import { ArrowRight, Check, Compass, Loader2 } from "lucide-react";
+import { ArrowRight, Check, Loader2 } from "lucide-react";
 
-import { TESButton } from "@/components/tes";
+import { TESButton, TESDecorativeMedia } from "@/components/tes";
+import { platformAssets } from "@/lib/platform-assets";
 import { routes } from "@/lib/routes";
 
 import type { MatchingConfig, MatchingTheme } from "../types";
@@ -83,7 +84,7 @@ const DETAIL_COPY: Record<string, { badge: string; subtitle: string }> = {
     badge: "Ansiedade",
     subtitle: "Selecione o que está mais presente para você neste momento.",
   },
-  "espiritualidade": {
+  espiritualidade: {
     badge: "Conexão",
     subtitle: "Escolha interesses que expressem sua busca interior.",
   },
@@ -124,7 +125,9 @@ export function JourneyMatchClient({
     () => new Set(selectedThemeIds),
     [selectedThemeIds],
   );
-  const selectedThemes = themes.filter((theme) => selectedThemeSet.has(theme.id));
+  const selectedThemes = themes.filter((theme) =>
+    selectedThemeSet.has(theme.id),
+  );
   const selectedInterestCount = selectedInterestIds.length;
 
   function toggleTheme(themeId: string) {
@@ -157,7 +160,9 @@ export function JourneyMatchClient({
 
     setSelectedInterestIds((current) => {
       if (current.includes(interestId)) {
-        return current.filter((currentInterestId) => currentInterestId !== interestId);
+        return current.filter(
+          (currentInterestId) => currentInterestId !== interestId,
+        );
       }
 
       const themeInterestCount = current.filter((currentInterestId) => {
@@ -271,7 +276,8 @@ export function JourneyMatchClient({
               Selecione ao menos uma área acima.
             </p>
             <p className="mt-2 text-sm font-semibold text-tesText-muted">
-              O botão “Ver caminhos” fica ativo assim que uma área for escolhida.
+              O botão “Ver caminhos” fica ativo assim que uma área for
+              escolhida.
             </p>
           </div>
         )}
@@ -279,9 +285,15 @@ export function JourneyMatchClient({
 
       <section className="sticky bottom-0 z-30 -mx-5 mt-8 border-t border-[#eadff6] bg-white/95 px-5 py-4 shadow-[0_-18px_38px_rgba(74,36,111,0.10)] backdrop-blur sm:-mx-8 sm:px-8 lg:static lg:mx-0 lg:mt-[22px] lg:rounded-[32px] lg:border lg:bg-white lg:px-[124px] lg:py-[29px] lg:shadow-[0_24px_70px_rgba(74,36,111,0.12)]">
         <div className="grid items-center gap-5 lg:grid-cols-[1fr_413px]">
-            <div className="flex items-center gap-5">
-              <div className="hidden h-[83px] w-[112px] shrink-0 rounded-[18px] bg-[#f5eefc] text-brand-primary lg:grid lg:place-items-center">
-              <Compass className="size-9" aria-hidden="true" />
+          <div className="flex items-center gap-5">
+            <div className="relative hidden h-[96px] w-[128px] shrink-0 overflow-hidden rounded-[18px] bg-[#f5eefc] lg:block">
+              <TESDecorativeMedia
+                className="absolute inset-0"
+                fade="none"
+                imageClassName="scale-110 object-cover"
+                sizes="128px"
+                src={platformAssets.publicJourneyPathsCard.src}
+              />
             </div>
             <div>
               <p className="text-2xl font-extrabold leading-tight text-brand-deep lg:text-[1.72rem]">

@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 
-import type { BioIllustrationId, PublicProfileThemeId } from "./types";
+import type { PublicProfileThemeId } from "./types";
 
 type ThemeStyle = CSSProperties & {
   "--profile-accent": string;
@@ -85,49 +85,3 @@ export const publicProfileThemes: PublicProfileThemeDefinition[] = [
 export const publicProfileThemeById = Object.fromEntries(
   publicProfileThemes.map((theme) => [theme.id, theme]),
 ) as Record<PublicProfileThemeId, PublicProfileThemeDefinition>;
-
-export type BioIllustrationDefinition = {
-  alt: string;
-  description: string;
-  id: BioIllustrationId;
-  label: string;
-  src: string;
-};
-
-export const bioIllustrations: BioIllustrationDefinition[] = [
-  {
-    alt: "Ilustração botânica em tons lilás para acompanhar uma apresentação sensível.",
-    description:
-      "Uma composição botânica em tons lilás para acompanhar uma apresentação sensível.",
-    id: "organic_flow",
-    label: "Planta serena",
-    src: "/therapists/profile-bio/serene-plant.png",
-  },
-  {
-    alt: "Ilustração botânica em tons de verde e sálvia.",
-    description:
-      "Uma composição botânica em verde e sálvia para uma presença natural.",
-    id: "gentle_horizon",
-    label: "Planta natural",
-    src: "/therapists/profile-bio/natural-plant.png",
-  },
-  {
-    alt: "Poltrona terracota com mesa, vela e plantas em uma composição acolhedora.",
-    description:
-      "Uma poltrona terracota com elementos naturais para uma presença mais acolhedora.",
-    id: "warm_layers",
-    label: "Canto acolhedor",
-    src: "/therapists/profile-bio/warm-chair.png",
-  },
-  {
-    alt: "Folhas em tons lilás formando uma composição leve e editorial.",
-    description: "Folhas em tons lilás para uma apresentação leve e editorial.",
-    id: "essential_lines",
-    label: "Folhas essenciais",
-    src: "/therapists/profile-bio/essential-leaves.png",
-  },
-];
-
-export const bioIllustrationById = Object.fromEntries(
-  bioIllustrations.map((illustration) => [illustration.id, illustration]),
-) as Record<BioIllustrationId, BioIllustrationDefinition>;

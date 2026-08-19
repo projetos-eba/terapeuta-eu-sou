@@ -7,6 +7,9 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+import { TESDecorativeMedia } from "@/components/tes";
+import { platformAssets } from "@/lib/platform-assets";
+
 import { MessageCenterActions } from "./components/message-center-actions";
 import { MarkNotificationsReadButton } from "./components/mark-notifications-read-button";
 import type {
@@ -17,9 +20,14 @@ import type {
 } from "./message-center.types";
 
 export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
+  const heroAsset =
+    data.actorRole === "patient"
+      ? platformAssets.patientMessagesHero
+      : platformAssets.therapistMessagesHero;
+
   return (
     <main className="mx-auto grid w-full max-w-[1210px] gap-5 pb-10 text-tesText-primary">
-      <section className="relative isolate overflow-hidden rounded-card border border-brand-lavender bg-white shadow-card">
+      <section className="relative isolate overflow-hidden rounded-card bg-white">
         <div className="grid min-h-[230px] lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.82fr)]">
           <div className="relative z-10 px-6 py-8 sm:px-8 lg:py-10">
             <h1 className="font-display text-4xl font-light italic leading-tight text-brand-deep sm:text-5xl">
@@ -44,15 +52,14 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
             </div>
           </div>
           <div className="relative hidden min-h-[230px] overflow-hidden lg:block">
-            <Image
-              alt=""
-              className="object-cover object-center"
-              fill
+            <TESDecorativeMedia
+              className="absolute inset-0"
+              fade="left"
+              objectPosition="right center"
               priority
               sizes="480px"
-              src="/for-therapists/hero-therapist-laptop.png"
+              src={heroAsset.src}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-white via-white/45 to-transparent" />
           </div>
         </div>
       </section>

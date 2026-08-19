@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { ArrowRight, Search } from "lucide-react";
 
-import { PublicFooter, PublicHeader, TESButton } from "@/components/tes";
+import {
+  PublicFooter,
+  PublicHeader,
+  TESButton,
+  TESDecorativeMedia,
+} from "@/components/tes";
 import {
   CategoryFilter,
   TherapyFilters,
@@ -10,6 +14,7 @@ import {
   getPublicTherapiesFromSearchParams,
 } from "@/features/therapies";
 import { routes } from "@/lib/routes";
+import { platformAssets } from "@/lib/platform-assets";
 
 export const revalidate = 900;
 
@@ -51,7 +56,8 @@ export default async function TherapiesPage({
               Conheça os caminhos terapêuticos disponíveis
             </h1>
             <p className="mt-5 max-w-[625px] text-lg font-bold leading-8 text-tesText-secondary sm:text-xl">
-              Connheça diferentes práticas e descubra quais fazem sentido para o momento que você está vivendo.
+              Connheça diferentes práticas e descubra quais fazem sentido para o
+              momento que você está vivendo.
             </p>
 
             <form
@@ -82,16 +88,15 @@ export default async function TherapiesPage({
           </div>
 
           <div className="relative hidden min-h-[430px] lg:block">
-            <Image
-              src="/therapies/hero-therapies.png"
-              alt=""
-              fill
+            <TESDecorativeMedia
+              className="absolute inset-0"
+              fade="left"
+              imageClassName="object-right"
+              objectPosition="right center"
               priority
               sizes="(min-width: 1024px) 765px, 100vw"
-              className="object-cover object-right"
+              src={platformAssets.publicTherapiesHero.src}
             />
-            <div className="absolute inset-y-0 left-0 w-[240px] bg-gradient-to-r from-white to-white/0" />
-            <div className="absolute inset-y-0 right-0 w-[120px] bg-gradient-to-l from-white to-white/0" />
           </div>
         </div>
       </section>
@@ -126,12 +131,12 @@ export default async function TherapiesPage({
                 </TESButton>
               </div>
               <div className="relative mt-2 h-[128px]">
-                <Image
-                  src="/therapies/journey-side.png"
-                  alt=""
-                  fill
+                <TESDecorativeMedia
+                  className="absolute inset-0"
+                  fade="none"
+                  imageClassName="object-contain object-bottom"
                   sizes="285px"
-                  className="object-cover object-bottom"
+                  src={platformAssets.publicTherapiesCard.src}
                 />
               </div>
             </aside>

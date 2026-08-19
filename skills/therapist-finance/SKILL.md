@@ -122,3 +122,9 @@ features or bank-form fields.
 Run focused tests for `src/features/therapist-finance`, Connect Deno tests and
 pgTAP finance tests. For full delivery, run the standard project validation:
 format, lint, typecheck, unit tests, Deno, build, Supabase reset/lint/test db.
+
+## Assets da plataforma
+
+- O cabeçalho usa `therapistFinanceHero` com fade à esquerda; o asset é
+  decorativo e não altera valores, abas, read models ou a operação Stripe.
+- Consulte `docs/design-system/platform-assets.md`.

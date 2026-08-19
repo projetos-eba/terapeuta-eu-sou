@@ -117,3 +117,10 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
 - E2E completo selecao -> resultado -> terapia -> perfil -> reserva ainda deve
   ser ampliado para cobrir contexto expirado e correspondencia zero.
 - Metricas futuras somente agregadas por dia, sem armazenar combinacao individual.
+
+## Assets da plataforma
+
+- A ilustração decorativa do CTA “Ver caminhos para mim” usa
+  `publicJourneyPathsCard` com fade `none`, enquadrada como thumbnail maior e
+  sem recorte agressivo; ela não altera temas, interesses ou o cálculo do Match.
+- Consulte `docs/design-system/platform-assets.md`.

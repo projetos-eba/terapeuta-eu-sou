@@ -117,3 +117,9 @@ Não distribuir queries pelos componentes. A entrada única da página é
   contratos funcionais serem implementados.
 - Premium e Free usam wrappers compartilhados e serão aprofundados sem duplicar
   o dashboard.
+
+## Assets da plataforma
+
+- O hero operacional usa `therapistDashboardHero` alinhado à direita, com fade
+  curto à esquerda e sem borda decorativa. Consulte
+  `docs/design-system/platform-assets.md`.

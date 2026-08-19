@@ -203,14 +203,21 @@ describe("TherapistProfileEditorPage", () => {
     expect(screen.getByText("Tema atual")).toBeInTheDocument();
   });
 
-  it("uses the official bio art while preserving persisted illustration IDs", () => {
+  it("keeps Minha essência editable without exposing the retired bio illustration gallery", () => {
     render(<TherapistProfileEditorPage editor={makeEditor()} />);
 
-    expect(screen.getByLabelText("Planta serena")).toBeInTheDocument();
-    expect(screen.getByLabelText("Planta natural")).toBeInTheDocument();
-    expect(screen.getByLabelText("Canto acolhedor")).toBeInTheDocument();
-    expect(screen.getByLabelText("Folhas essenciais")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Fluxo orgânico")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Minha essência")).toHaveValue(
+      "Presença e cuidado.",
+    );
+    fireEvent.change(screen.getByLabelText("Minha essência"), {
+      target: { value: "Presença, cuidado e escuta." },
+    });
+    expect(screen.getByLabelText("Minha essência")).toHaveValue(
+      "Presença, cuidado e escuta.",
+    );
+    expect(screen.queryByText("Ilustração da bio")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sem ilustração")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Planta serena")).not.toBeInTheDocument();
   });
 
   it("keeps the stable link visible and blocks custom slug editing for Free", () => {

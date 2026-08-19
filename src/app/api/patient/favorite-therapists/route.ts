@@ -15,6 +15,58 @@ type SupabaseUser = {
   id: string;
 };
 
+type FavoriteRow = {
+  id: string;
+};
+
+export async function GET(request: Request) {
+  const parsed = parseTherapistProfileId(
+    new URL(request.url).searchParams.get("therapistProfileId"),
+  );
+  if (!parsed.ok) return failure(parsed.message, parsed.status);
+
+  const accessToken = await getPatientAccessToken();
+  const config = getSupabasePublicConfig();
+
+  if (!config || !accessToken) return failure("Entre na sua conta.", 401);
+
+  try {
+    const user = await supabaseRequest<SupabaseUser>(
+      config,
+      accessToken,
+      "/auth/v1/user",
+    );
+    const patientProfile = await getPatientProfile(
+      config,
+      accessToken,
+      user.id,
+    );
+    if (!patientProfile)
+      return failure("Perfil de paciente não encontrado.", 404);
+
+    const response = await fetch(
+      `${config.url}/rest/v1/favorite_therapists?select=id&patient_profile_id=eq.${patientProfile.id}&therapist_profile_id=eq.${encodeURIComponent(parsed.therapistProfileId)}&limit=1`,
+      {
+        cache: "no-store",
+        headers: {
+          apikey: config.apiKey,
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
+    );
+    if (!response.ok)
+      return failure("Não foi possível consultar favoritos agora.", 503);
+
+    const rows = (await response.json()) as FavoriteRow[];
+    return NextResponse.json(
+      { isFavorite: rows.length > 0, ok: true },
+      { headers: noStoreHeaders },
+    );
+  } catch {
+    return failure("Não foi possível consultar favoritos agora.", 503);
+  }
+}
+
 export async function POST(request: Request) {
   const parsed = await parseTherapistPayload(request);
   if (!parsed.ok) return failure(parsed.message, parsed.status);
@@ -149,7 +201,10 @@ async function parseTherapistPayload(request: Request) {
     return { ok: false as const, message: "Revise o favorito.", status: 422 };
   }
 
-  const therapistProfileId = Reflect.get(body, "therapistProfileId");
+  return parseTherapistProfileId(Reflect.get(body, "therapistProfileId"));
+}
+
+function parseTherapistProfileId(therapistProfileId: unknown) {
   if (
     typeof therapistProfileId !== "string" ||
     !UUID.test(therapistProfileId)

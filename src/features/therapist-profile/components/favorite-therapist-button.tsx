@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Heart, Loader2 } from "lucide-react";
+
+import { routes } from "@/lib/routes";
 
 type FavoriteTherapistButtonProps = {
   initialIsFavorite?: boolean;
@@ -16,6 +18,16 @@ type ApiFailure = {
   };
 };
 
+type FavoriteStateResponse =
+  | ApiFailure
+  | { isFavorite: boolean; ok: true }
+  | null;
+
+export function getFavoriteLoginHref(pathname: string, search: string) {
+  const next = `${pathname}${search}`;
+  return `${routes.public.clientSignIn}?next=${encodeURIComponent(next)}`;
+}
+
 export function FavoriteTherapistButton({
   initialIsFavorite = false,
   therapistName,
@@ -24,14 +36,51 @@ export function FavoriteTherapistButton({
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const favoriteStateVersion = useRef(0);
   const actionLabel = isFavorite
     ? "Remover dos favoritos"
     : "Adicionar aos favoritos";
+
+  useEffect(() => {
+    let active = true;
+    const stateVersion = favoriteStateVersion.current;
+
+    async function readFavoriteState() {
+      try {
+        const response = await fetch(
+          `/api/patient/favorite-therapists?therapistProfileId=${encodeURIComponent(therapistProfileId)}`,
+          { cache: "no-store" },
+        );
+        if (!response.ok) return;
+
+        const payload = (await response
+          .json()
+          .catch(() => null)) as FavoriteStateResponse;
+        if (
+          active &&
+          stateVersion === favoriteStateVersion.current &&
+          payload?.ok === true
+        ) {
+          setIsFavorite(payload.isFavorite);
+        }
+      } catch {
+        // The public profile remains available when the private favorite state
+        // cannot be read. Mutations still surface their own accessible feedback.
+      }
+    }
+
+    void readFavoriteState();
+
+    return () => {
+      active = false;
+    };
+  }, [therapistProfileId]);
 
   async function toggleFavorite() {
     if (isSubmitting) return;
 
     const nextFavorite = !isFavorite;
+    favoriteStateVersion.current += 1;
     setIsSubmitting(true);
     setIsFavorite(nextFavorite);
     setFeedback(null);
@@ -47,6 +96,13 @@ export function FavoriteTherapistButton({
       | null;
 
     setIsSubmitting(false);
+
+    if (response.status === 401) {
+      window.location.assign(
+        getFavoriteLoginHref(window.location.pathname, window.location.search),
+      );
+      return;
+    }
 
     if (!response.ok || payload?.ok !== true) {
       setIsFavorite(!nextFavorite);

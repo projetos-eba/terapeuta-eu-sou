@@ -1,6 +1,4 @@
 "use client";
-
-import Image from "next/image";
 import { useMemo, useState } from "react";
 import { AlertCircle, MessageCircle, Star } from "lucide-react";
 
@@ -11,6 +9,8 @@ import {
   AppPageMain,
   AppPageSection,
 } from "@/components/app-page";
+import { TESDecorativeMedia } from "@/components/tes";
+import { platformAssets } from "@/lib/platform-assets";
 
 import {
   createStableRequestId,
@@ -264,7 +264,7 @@ export function TherapistReviewsErrorState({
 
 function ReviewsHero() {
   return (
-    <section className="overflow-hidden rounded-card border border-brand-lavender bg-white">
+    <section className="relative isolate overflow-hidden rounded-card bg-white">
       <div className="grid min-h-[236px] lg:grid-cols-[minmax(0,1fr)_minmax(360px,44%)]">
         <div className="flex items-center px-5 py-8 sm:px-8 lg:px-10">
           <div>
@@ -282,15 +282,14 @@ function ReviewsHero() {
         </div>
 
         <div className="relative min-h-[180px] overflow-hidden bg-brand-lavenderSoft sm:min-h-[220px]">
-          <Image
-            alt=""
-            className="object-cover object-center opacity-90"
-            fill
+          <TESDecorativeMedia
+            className="absolute inset-0"
+            fade="left"
+            objectPosition="right center"
             priority
             sizes="(min-width: 1024px) 44vw, 100vw"
-            src="/home/step-crystal.png"
+            src={platformAssets.therapistReviewsHero.src}
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-white/80 via-white/30 to-transparent lg:from-white/45" />
         </div>
       </div>
     </section>

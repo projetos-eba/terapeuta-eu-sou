@@ -1,6 +1,6 @@
 begin;
 
-select plan(18);
+select plan(20);
 
 select ok(
   has_function_privilege(

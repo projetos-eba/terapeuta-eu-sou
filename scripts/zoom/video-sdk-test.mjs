@@ -16,7 +16,7 @@ const commands = [
 
 let failed = false;
 for (const [command, args] of commands) {
-  const result = spawnSync(command, args, { shell: true, stdio: "inherit" });
+  const result = spawnSync(command, args, { shell: false, stdio: "inherit" });
   if (result.status !== 0) failed = true;
 }
 

@@ -4590,7 +4590,9 @@ export type Database = {
           processed_at: string | null
           reason: string
           refund_amount_cents: number
+          request_id: string
           requested_by_profile_id: string | null
+          requested_by_role: string
           requires_manual_review: boolean
           retained_amount_cents: number
           review_due_at: string | null
@@ -4609,7 +4611,9 @@ export type Database = {
           processed_at?: string | null
           reason: string
           refund_amount_cents?: number
+          request_id: string
           requested_by_profile_id?: string | null
+          requested_by_role: string
           requires_manual_review?: boolean
           retained_amount_cents?: number
           review_due_at?: string | null
@@ -4628,7 +4632,9 @@ export type Database = {
           processed_at?: string | null
           reason?: string
           refund_amount_cents?: number
+          request_id?: string
           requested_by_profile_id?: string | null
+          requested_by_role?: string
           requires_manual_review?: boolean
           retained_amount_cents?: number
           review_due_at?: string | null
@@ -11142,14 +11148,6 @@ export type Database = {
           current_slug: string | null
           old_slug: string | null
         }
-        Insert: {
-          current_slug?: string | null
-          old_slug?: string | null
-        }
-        Update: {
-          current_slug?: string | null
-          old_slug?: string | null
-        }
         Relationships: []
       }
       public_therapist_slug_redirects_v_internal: {
@@ -12080,6 +12078,43 @@ export type Database = {
           user_id: string
         }[]
       }
+      claim_session_cancellation_decision_v1: {
+        Args: {
+          p_booking_id: string
+          p_decision: string
+          p_metadata?: Json
+          p_platform_retained_cents: number
+          p_policy_version_id: string
+          p_reason: string
+          p_refund_amount_cents: number
+          p_request_id: string
+          p_requested_by_profile_id: string
+          p_requested_by_role: string
+          p_requires_manual_review: boolean
+          p_retained_amount_cents: number
+          p_review_due_at: string
+          p_session_payment_id: string
+          p_therapist_retained_cents: number
+        }
+        Returns: {
+          booking_id: string
+          created_new: boolean
+          decision: string
+          id: string
+          platform_retained_cents: number
+          policy_version_id: string
+          reason: string
+          refund_amount_cents: number
+          request_id: string
+          requested_by_profile_id: string
+          requested_by_role: string
+          requires_manual_review: boolean
+          retained_amount_cents: number
+          review_due_at: string
+          session_payment_id: string
+          therapist_retained_cents: number
+        }[]
+      }
       complete_video_session_control_job_v1: {
         Args: {
           p_error_code?: string
@@ -12725,6 +12760,13 @@ export type Database = {
       private_therapist_finance_refunded_cents_v1: {
         Args: { p_session_payment_id: string }
         Returns: number
+      }
+      public_therapist_slug_redirect_rows_v1: {
+        Args: never
+        Returns: {
+          current_slug: string
+          old_slug: string
+        }[]
       }
       publish_therapist_profile_draft_content_base_v1: {
         Args: {

@@ -1,6 +1,6 @@
 begin;
 
-select plan(31);
+select plan(32);
 
 select ok(
   not exists (
@@ -52,7 +52,10 @@ select ok(
       and p.oid::regprocedure::text not in (
         'get_public_therapy_therapists_v1(text,uuid[],uuid[],integer)',
         'get_service_available_slots_v1(uuid,timestamp with time zone,timestamp with time zone,integer)',
-        'record_public_therapist_metric_events_v1(uuid,jsonb)'
+        'record_public_therapist_metric_events_v1(uuid,jsonb)',
+        'is_therapist_publication_eligible_v1(uuid)',
+        'is_public_service_booking_eligible_v1(uuid)',
+        'public_therapist_slug_redirect_rows_v1()'
       )
   ),
   'anon can execute only the public catalog/availability/telemetry allowlist'
@@ -116,6 +119,32 @@ select ok(
       )
   ),
   'SECURITY DEFINER functions do not keep implicit or explicit PUBLIC EXECUTE'
+);
+
+select ok(
+  not exists (
+    select 1
+    from pg_class as c
+    join pg_namespace as n
+      on n.oid = c.relnamespace
+    where n.nspname = 'public'
+      and c.relkind = 'v'
+      and (
+        has_table_privilege('anon', c.oid, 'INSERT')
+        or has_table_privilege('anon', c.oid, 'UPDATE')
+        or has_table_privilege('anon', c.oid, 'DELETE')
+        or has_table_privilege('anon', c.oid, 'TRUNCATE')
+        or has_table_privilege('anon', c.oid, 'REFERENCES')
+        or has_table_privilege('anon', c.oid, 'TRIGGER')
+        or has_table_privilege('authenticated', c.oid, 'INSERT')
+        or has_table_privilege('authenticated', c.oid, 'UPDATE')
+        or has_table_privilege('authenticated', c.oid, 'DELETE')
+        or has_table_privilege('authenticated', c.oid, 'TRUNCATE')
+        or has_table_privilege('authenticated', c.oid, 'REFERENCES')
+        or has_table_privilege('authenticated', c.oid, 'TRIGGER')
+      )
+  ),
+  'API roles have read-only access to every public-schema view'
 );
 
 select ok(
@@ -279,10 +308,10 @@ select is(
   (
     select count(*)::integer
     from public.therapist_private_documents
-    where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+    where id = 'a7000000-0000-4000-8000-000000000044'
   ),
   1,
-  'therapist_A reads own private documents'
+  'therapist_A reads the private document created for this test'
 );
 
 select is(

@@ -264,7 +264,7 @@ async function loginAsTherapist(
 }
 
 async function loginAsAdmin(page: import("@playwright/test").Page) {
-  for (const attempt of [1, 2]) {
+  for (let retriesRemaining = 2; retriesRemaining > 0; retriesRemaining -= 1) {
     await page.goto("/admin-login", { waitUntil: "domcontentloaded" });
     await page.getByLabel("E-mail").fill(adminEmail);
     await page.getByLabel("Senha").fill(adminPassword);
@@ -285,8 +285,6 @@ async function loginAsAdmin(page: import("@playwright/test").Page) {
       });
       return;
     }
-
-    if (attempt === 1) await page.waitForTimeout(250);
   }
 
   throw new Error("Admin login did not reach the authenticated endpoint.");
@@ -383,7 +381,6 @@ async function selectDocumentFile(
 
     if (attempt === 1) {
       await input.setInputFiles([]);
-      await page.waitForTimeout(250);
     }
   }
 
@@ -498,9 +495,12 @@ async function assertSignedUrlExpires({
 
   const active = await page.request.get(signedUrl);
   expect(active.status()).toBe(200);
-  await page.waitForTimeout(65_000);
-  const expired = await page.request.get(signedUrl);
-  expect(expired.status()).toBeGreaterThanOrEqual(400);
+  await expect
+    .poll(async () => (await page.request.get(signedUrl)).status(), {
+      intervals: [1_000, 2_000, 5_000],
+      timeout: 70_000,
+    })
+    .toBeGreaterThanOrEqual(400);
 }
 
 function documentByKind(

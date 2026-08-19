@@ -46,6 +46,11 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 - Separate transfers require the session Charge as `source_transaction`.
 - Ledger is append-only; use compensating entries.
 - Refunds, disputes, internal contests, and admin blocks prevent payout.
+- A session cancellation must claim exactly one local financial decision before
+  it calls Stripe. `session_cancellation_decisions.request_id` is the command
+  idempotency key and `claim_session_cancellation_decision_v1` is service-role
+  only; retries reuse the stored decision, Stripe refund key, and booking
+  transition request id.
 - TES does not collect bank, KYC, identity, or tax details for connected accounts; Stripe-hosted onboarding does.
 - Do not call Stripe invoices or receipts "nota fiscal".
 
@@ -106,6 +111,10 @@ Never expose, log, screenshot, or write real secret values.
   from subscription metadata and never changes entitlements before the
   effective date.
 - E2E must use real Supabase Auth users and RLS, no auth bypass.
+- For cancellation/refund flows, test duplicate command IDs, concurrent
+  command IDs for the same booking, divergent idempotency reuse, and retry
+  after a provider failure. Verify the booking transition and local decision
+  before treating a Stripe response as success.
 - Use Stripe test mode only and never real cards.
 - Do not persist passwords, tokens, card data, or secrets in screenshots, traces, or reports.
 
