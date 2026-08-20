@@ -59,6 +59,8 @@ Não há necessidade de React Email, MJML ou outro framework. A evolução deve 
 
 O shell poderá trocar gradualmente de `main`/layout atual por tabelas de apresentação apenas onde isso for necessário para compatibilidade entre clientes de e-mail. Não será feito redesign genérico nem alteração de tokens do produto. Toda primitive deve produzir texto alternativo coerente no campo `text`.
 
+Como clientes de e-mail não recebem os CSS Variables do app, os defaults HTML versionados podem usar valores literais de cor correspondentes à identidade TES. Essa é uma exceção restrita ao renderer server-side e não autoriza hex hardcoded nas interfaces web.
+
 ## Tokens e dados dinâmicos
 
 - Sintaxe oficial: `{{token}}`.

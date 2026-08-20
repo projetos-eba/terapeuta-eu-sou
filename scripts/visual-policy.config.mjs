@@ -30,6 +30,11 @@ export const visualPolicyConfig = {
         "Templates HTML de e-mail precisam de estilos inline; migração para helper de tokens fica rastreada.",
     },
     {
+      pathPattern: /^supabase\/functions\/_shared\/email\/registry\.ts$/,
+      reason:
+        "Defaults HTML de e-mail precisam de estilos inline compatíveis com clientes de e-mail e não recebem os CSS Variables do app.",
+    },
+    {
       pathPattern: /^src\/features\/therapist-dashboard\//,
       reason:
         "Dashboard operacional legado com gráficos e indicadores; saneamento dedicado pendente.",
