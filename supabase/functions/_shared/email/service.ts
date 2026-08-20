@@ -1,7 +1,7 @@
 import { EmailProviderError, EmailSkippedError } from "./errors.ts";
 import type { EmailProvider } from "./provider.ts";
 import { logEmailDelivery } from "./logging.ts";
-import { resolveSender } from "./sender-resolver.ts";
+import { resolveEmailActionSetting, resolveSender } from "./sender-resolver.ts";
 import { renderEmailTemplate } from "./templates.ts";
 import type {
   SendTransactionalEmailInput,
@@ -26,8 +26,12 @@ export async function sendTransactionalEmail(
   let sender = null;
 
   try {
-    sender = await resolveSender(client, input.actionKey);
-    const rendered = renderEmailTemplate(input.actionKey, input.templateData);
+    const setting = await resolveEmailActionSetting(client, input.actionKey);
+    if (input.dispatchMode !== "manual" && setting?.automatic_dispatch_enabled === false) {
+      throw new EmailSkippedError("automatic_dispatch_disabled");
+    }
+    sender = await resolveSender(client, input.actionKey, setting);
+    const rendered = renderEmailTemplate(input.actionKey, input.templateData, setting);
     subject = sanitizeHeaderText(rendered.subject);
     const result = await provider.send({
       correlationId,

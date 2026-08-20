@@ -12,19 +12,14 @@ type RestClient = {
 export async function resolveSender(
   client: RestClient,
   actionKey: EmailActionKey,
+  setting?: EmailActionSettingRow,
 ) {
-  const settings = await client.get<EmailActionSettingRow[]>(
-    `/rest/v1/email_action_settings?select=action_key,enabled,sender_profile_id,email_sender_profiles(*)&action_key=eq.${encodeURIComponent(
-      actionKey,
-    )}&limit=1`,
-  );
-  const setting = settings[0];
-
-  if (setting?.enabled === false) {
+  const resolvedSetting = setting ?? await resolveEmailActionSetting(client, actionKey);
+  if (resolvedSetting?.enabled === false) {
     throw new EmailSkippedError("action_disabled");
   }
 
-  const configuredSender = setting?.email_sender_profiles;
+  const configuredSender = resolvedSetting?.email_sender_profiles;
   if (isUsableSender(configuredSender)) {
     return configuredSender;
   }
@@ -39,6 +34,18 @@ export async function resolveSender(
   }
 
   throw new EmailConfigurationError("No active sender profile is configured.");
+}
+
+export async function resolveEmailActionSetting(
+  client: RestClient,
+  actionKey: EmailActionKey,
+) {
+  const settings = await client.get<EmailActionSettingRow[]>(
+    `/rest/v1/email_action_settings?select=action_key,enabled,automatic_dispatch_enabled,sender_profile_id,subject_override,preheader_override,text_override,html_override,email_sender_profiles(*)&action_key=eq.${encodeURIComponent(
+      actionKey,
+    )}&limit=1`,
+  );
+  return settings[0];
 }
 
 function isUsableSender(

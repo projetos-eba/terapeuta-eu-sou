@@ -31,6 +31,26 @@ Deno.test("password reset template rejects unsafe URLs", () => {
   }
 });
 
+Deno.test("catalog overrides use only the event allowlist and escape values", () => {
+  const rendered = renderEmailTemplate(
+    "therapy_catalog_request_submitted",
+    { name: "<Pessoa>", requestName: "Pedido", url: "https://example.test/request" },
+    { subject_override: "Atualização {{request_name}}", html_override: "<p>{{recipient_name}}</p><script>alert(1)</script>" },
+  );
+  assert(rendered.subject === "Atualização Pedido");
+  assert(rendered.html.includes("&lt;Pessoa&gt;"));
+  assert(!rendered.html.includes("script"));
+});
+
+Deno.test("catalog overrides fail closed for unknown tokens", () => {
+  try {
+    renderEmailTemplate("therapy_catalog_request_submitted", { url: "https://example.test" }, { text_override: "{{unknown}}" });
+    throw new Error("Expected template failure.");
+  } catch (error) {
+    assert(error instanceof Error && error.message === "email_template_token_not_allowed");
+  }
+});
+
 function assert(value: unknown) {
   if (!value) {
     throw new Error("Assertion failed.");

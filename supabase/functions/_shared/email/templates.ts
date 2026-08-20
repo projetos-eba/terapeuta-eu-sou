@@ -1,5 +1,7 @@
 import { sanitizeHeaderText, safeString } from "./validation.ts";
 import type { EmailActionKey, UserRole } from "./types.ts";
+import { getEmailActionRegistryEntry } from "./registry.ts";
+import { resolveEmailTemplate, sanitizeEmailHtml } from "./management.ts";
 
 type RenderedTemplate = {
   subject: string;
@@ -10,7 +12,14 @@ type RenderedTemplate = {
 export function renderEmailTemplate(
   actionKey: EmailActionKey,
   data: Record<string, unknown>,
+  overrides?: { subject_override?: string | null; preheader_override?: string | null; text_override?: string | null; html_override?: string | null },
 ): RenderedTemplate {
+  if (
+    (actionKey === "therapy_catalog_request_submitted" || actionKey === "therapy_catalog_request_updated") &&
+    overrides
+  ) {
+    return renderConfiguredCatalogTemplate(actionKey, data, overrides);
+  }
   if (actionKey === "email_verification") {
     return renderEmailVerification(data);
   }
@@ -28,6 +37,35 @@ export function renderEmailTemplate(
   }
 
   throw new Error("unsupported_email_action");
+}
+
+function renderConfiguredCatalogTemplate(
+  actionKey: "therapy_catalog_request_submitted" | "therapy_catalog_request_updated",
+  data: Record<string, unknown>,
+  overrides: { subject_override?: string | null; preheader_override?: string | null; text_override?: string | null; html_override?: string | null },
+): RenderedTemplate {
+  const entry = getEmailActionRegistryEntry(actionKey);
+  if (!entry) throw new Error("unsupported_email_action");
+  const template = resolveEmailTemplate(actionKey, overrides);
+  const values: Record<string, string> = {
+    recipient_name: safeDisplayName(data.name),
+    request_name: safeDisplayName(data.requestName),
+    request_url: safeUrl(data.url),
+    request_status: safeRequestStatus(data.status) ?? "",
+    decision_message: safeText(data.decision, 800),
+  };
+  const allowed = new Set(entry.allowedTokens.map((token) => token.key));
+  const replace = (value: string, html: boolean) => value.replace(/{{\s*([a-z_]+)\s*}}/g, (_, token: string) => {
+    if (!allowed.has(token)) throw new Error("email_template_token_not_allowed");
+    const resolved = values[token] ?? "";
+    return html ? escapeHtml(resolved) : resolved;
+  });
+  const preheader = replace(template.preheader, false);
+  return {
+    subject: replace(template.subject, false),
+    text: replace(template.text, false),
+    html: sanitizeEmailHtml(`<div style="display:none;max-height:0;overflow:hidden">${escapeHtml(preheader)}</div>${replace(template.html, true)}`),
+  };
 }
 
 function renderTherapyCatalogRequestSubmitted(data: Record<string, unknown>) {

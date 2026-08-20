@@ -99,6 +99,8 @@ export const routes = {
     security: "/admin/seguranca",
     reports: "/admin/relatorios",
     settings: "/admin/configuracoes",
+    emailManagement: "/admin/configuracoes/emails",
+    emailEvent: (actionKey: string) => `/admin/configuracoes/emails/eventos/${actionKey}`,
     support: "/admin/suporte",
     supportDetail: (ticketId: string) => `/admin/suporte/${ticketId}`,
   },
