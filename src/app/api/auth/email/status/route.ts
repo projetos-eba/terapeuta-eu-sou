@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   const config = getSupabasePublicConfig();
 
   if (!config) {
-    return safeError("Nao foi possivel verificar a confirmacao.", 503);
+    return safeError("Não foi possível verificar a confirmação.", 503);
   }
 
   let body: unknown;
@@ -18,13 +18,13 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return safeError("Envie os dados em formato valido.", 400);
+    return safeError("Envie os dados em formato válido.", 400);
   }
 
   const statusToken = getString(body, "statusToken").trim();
 
   if (!statusToken) {
-    return safeError("Nao foi possivel verificar a confirmacao.", 422);
+    return safeError("Não foi possível verificar a confirmação.", 422);
   }
 
   try {
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     });
 
     if (!result.ok) {
-      return safeError("Nao foi possivel verificar a confirmacao.", 200);
+      return safeError("Não foi possível verificar a confirmação.", 200);
     }
 
     return noStoreJson({
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return safeError(
-      "Nao foi possivel verificar a confirmacao.",
+      "Não foi possível verificar a confirmação.",
       error instanceof SupabaseFunctionError ? 200 : 500,
     );
   }

@@ -36,7 +36,7 @@ runtime.serve(async (request) => {
 
   if (!supabaseUrl || !serviceRoleKey) {
     return jsonResponse(
-      { ok: false, message: "Nao foi possivel verificar a confirmacao." },
+      { ok: false, message: "Não foi possível verificar a confirmação." },
       503,
     );
   }
@@ -48,7 +48,7 @@ runtime.serve(async (request) => {
 
   if (!isValidActionToken(statusToken)) {
     return jsonResponse(
-      { ok: false, message: "Nao foi possivel verificar a confirmacao." },
+      { ok: false, message: "Não foi possível verificar a confirmação." },
       400,
     );
   }
@@ -76,7 +76,7 @@ runtime.serve(async (request) => {
 
     if (!status) {
       return jsonResponse(
-        { ok: false, message: "Nao foi possivel verificar a confirmacao." },
+        { ok: false, message: "Não foi possível verificar a confirmação." },
         400,
       );
     }
@@ -89,7 +89,7 @@ runtime.serve(async (request) => {
       profile.role === "admin"
     ) {
       return jsonResponse(
-        { ok: false, message: "Nao foi possivel verificar a confirmacao." },
+        { ok: false, message: "Não foi possível verificar a confirmação." },
         400,
       );
     }
@@ -121,7 +121,7 @@ runtime.serve(async (request) => {
     });
   } catch {
     return jsonResponse(
-      { ok: false, message: "Nao foi possivel verificar a confirmacao." },
+      { ok: false, message: "Não foi possível verificar a confirmação." },
       500,
     );
   }

@@ -36,14 +36,14 @@ export function MatchingResultClient() {
         if (!response.ok) {
           if (response.status === 409) {
             setError(
-              "A jornada foi atualizada. Refaca suas escolhas para usar a versao publicada mais recente.",
+              "A jornada foi atualizada. Refaça suas escolhas para usar a versão publicada mais recente.",
             );
             return;
           }
 
           if (response.status === 503) {
             setError(
-              "O Match esta temporariamente indisponivel. Tente novamente em alguns instantes.",
+              "O Match está temporariamente indisponível. Tente novamente em alguns instantes.",
             );
             return;
           }

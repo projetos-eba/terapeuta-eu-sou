@@ -32,7 +32,7 @@ runtime.serve(async (request) => {
 
   if (!supabaseUrl || !serviceRoleKey) {
     return jsonResponse(
-      { ok: false, message: "Nao foi possivel confirmar o e-mail." },
+      { ok: false, message: "Não foi possível confirmar o e-mail." },
       503,
     );
   }
@@ -41,7 +41,7 @@ runtime.serve(async (request) => {
   const token = typeof body?.token === "string" ? body.token.trim() : "";
 
   if (!isValidActionToken(token)) {
-    return jsonResponse({ ok: false, message: "Link invalido ou expirado." }, 400);
+    return jsonResponse({ ok: false, message: "Link inválido ou expirado." }, 400);
   }
 
   const client = new SupabaseRestClient(supabaseUrl, serviceRoleKey);
@@ -51,7 +51,7 @@ runtime.serve(async (request) => {
   });
 
   if (!claimed) {
-    return jsonResponse({ ok: false, message: "Link invalido ou expirado." }, 400);
+    return jsonResponse({ ok: false, message: "Link inválido ou expirado." }, 400);
   }
 
   try {
@@ -63,7 +63,7 @@ runtime.serve(async (request) => {
     );
 
     if (!consumed) {
-      return jsonResponse({ ok: false, message: "Link invalido ou expirado." }, 400);
+      return jsonResponse({ ok: false, message: "Link inválido ou expirado." }, 400);
     }
 
     await revokeAuthActionTokens(
@@ -84,7 +84,7 @@ runtime.serve(async (request) => {
   } catch {
     await releaseAuthActionTokenClaim(client, claimed.claim.id, claimed.claimId);
     return jsonResponse(
-      { ok: false, message: "Nao foi possivel confirmar o e-mail agora." },
+      { ok: false, message: "Não foi possível confirmar o e-mail agora." },
       500,
     );
   }

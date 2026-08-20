@@ -74,7 +74,7 @@ export async function getPublicTherapies(
     return emptyResult(
       params,
       "unconfigured",
-      "Supabase publico nao configurado para consultar o catalogo.",
+      "Supabase público não configurado para consultar o catálogo.",
     );
   }
 
@@ -108,7 +108,7 @@ export async function getPublicTherapies(
     return emptyResult(
       params,
       "error",
-      "Nao foi possivel consultar public_therapies_v.",
+      "Não foi possível consultar public_therapies_v.",
     );
   }
 }

@@ -34,7 +34,7 @@ export const homeIntroCards = [
     body: "Diferentes abordagens e terapias para apoiar o momento que você está vivendo.",
   },
   {
-    title: "Seguranca e cuidado",
+    title: "Segurança e cuidado",
     body: "Um ambiente protegido, com perfis verificados e linguagem responsável.",
   },
   {
@@ -132,7 +132,7 @@ export const fallbackTherapists: PublicHomeTherapist[] = [
     name: "Ana Oliveira",
     slug: "ana-oliveira",
     headline: "Terapeuta Integrativa",
-    serviceTitle: "Sessao online individual",
+    serviceTitle: "Sessão online individual",
     therapyNames: ["Reiki", "Aromaterapia"],
     guideItems: [
       "Clareza emocional",
@@ -145,43 +145,43 @@ export const fallbackTherapists: PublicHomeTherapist[] = [
     photoUrl: "/therapists/ana-oliveira.png",
     priceLabel: "A partir de R$ 120",
     ratingLabel: "4,9",
-    reviewCountLabel: "98 avaliacoes",
+    reviewCountLabel: "98 avaliações",
     href: routes.public.therapistProfile("ana-oliveira"),
   },
   {
     name: "Rafael Santos",
     slug: "rafael-santos",
-    headline: "Terapeuta Holistico",
-    serviceTitle: "Acolhimento para mudancas de vida",
+    headline: "Terapeuta Holístico",
+    serviceTitle: "Acolhimento para mudanças de vida",
     therapyNames: ["Tarô"],
     photoUrl: "/therapists/rafael-santos-avatar.png",
     priceLabel: "A partir de R$ 120",
     ratingLabel: "4,8",
-    reviewCountLabel: "74 avaliacoes",
+    reviewCountLabel: "74 avaliações",
     href: routes.public.therapistProfile("rafael-santos"),
   },
   {
-    name: "Celia Martins",
+    name: "Célia Martins",
     slug: "celia-martins",
     headline: "Terapeuta Integrativa",
-    serviceTitle: "Escuta para relacoes e transformacoes",
+    serviceTitle: "Escuta para relações e transformações",
     therapyNames: ["Constelação Familiar"],
     photoUrl: "/therapists/celia-martins.png",
     priceLabel: "A partir de R$ 120",
     ratingLabel: "4,9",
-    reviewCountLabel: "112 avaliacoes",
+    reviewCountLabel: "112 avaliações",
     href: routes.public.therapistProfile("celia-martins"),
   },
   {
     name: "Juliana Costa",
     slug: "juliana-costa",
-    headline: "Terapeuta Holistica",
-    serviceTitle: "Apoio para dialogos mais leves",
+    headline: "Terapeuta Holística",
+    serviceTitle: "Apoio para diálogos mais leves",
     therapyNames: ["Constelação Familiar"],
     photoUrl: "/therapists/juliana-costa.png",
     priceLabel: "A partir de R$ 120",
     ratingLabel: "4,8",
-    reviewCountLabel: "88 avaliacoes",
+    reviewCountLabel: "88 avaliações",
     href: routes.public.therapistProfile("juliana-costa"),
   },
   {
@@ -193,28 +193,28 @@ export const fallbackTherapists: PublicHomeTherapist[] = [
     photoUrl: "/therapists/lucas-pereira-avatar.png",
     priceLabel: "A partir de R$ 170",
     ratingLabel: "5,0",
-    reviewCountLabel: "1 avaliacao",
+    reviewCountLabel: "1 avaliação",
     href: routes.public.therapistProfile("lucas-pereira"),
   },
 ];
 
 export const fallbackTestimonials: PublicHomeTestimonial[] = [
   {
-    body: "Encontrar a terapeuta certa mudou minha forma de me relacionar comigo mesma. A plataforma e pratica, segura e acolhedora.",
+    body: "Encontrar a terapeuta certa mudou minha forma de me relacionar comigo mesma. A plataforma é prática, segura e acolhedora.",
     author: "Carlos Almeida",
-    context: "Paciente ha 3 meses",
+    context: "Paciente há 3 meses",
     ratingLabel: "5,0",
   },
   {
-    body: "As sessoes online me deram o acolhimento que eu precisava, no meu tempo e no meu espaco.",
+    body: "As sessões online me deram o acolhimento que eu precisava, no meu tempo e no meu espaço.",
     author: "Roberto Firminio",
-    context: "Paciente ha 5 meses",
+    context: "Paciente há 5 meses",
     ratingLabel: "5,0",
   },
   {
-    body: "Consegui comparar perfis e escolher com calma. Isso fez diferenca para comecar.",
+    body: "Consegui comparar perfis e escolher com calma. Isso fez diferença para começar.",
     author: "Mariana Ribeiro",
-    context: "Paciente ha 2 meses",
+    context: "Paciente há 2 meses",
     ratingLabel: "5,0",
   },
 ];
@@ -223,31 +223,31 @@ export const homeFaqs: PublicHomeFaq[] = [
   {
     question: "Como funciona o TES?",
     answer:
-      "Voce explora caminhos terapeuticos, conhece perfis de terapeutas, escolhe um horario e segue para a reserva online quando fizer sentido.",
+      "Você explora caminhos terapêuticos, conhece perfis de terapeutas, escolhe um horário e segue para a reserva online quando fizer sentido.",
   },
   {
-    question: "A plataforma e segura?",
+    question: "A plataforma é segura?",
     answer:
-      "A experiencia publica mostra apenas informacoes necessarias para a escolha. Dados sensiveis e dados de sessao devem seguir as regras de RLS e privacidade do projeto.",
+      "A experiência pública mostra apenas informações necessárias para a escolha. Dados sensíveis e dados de sessão devem seguir as regras de RLS e privacidade do projeto.",
   },
   {
     question: "Como escolho a terapeuta ideal para mim?",
     answer:
-      "Voce pode iniciar pela jornada guiada, explorar terapias ou comparar perfis. A escolha deve acontecer com calma, sem promessa de resultado.",
+      "Você pode iniciar pela jornada guiada, explorar terapias ou comparar perfis. A escolha deve acontecer com calma, sem promessa de resultado.",
   },
   {
-    question: "A sessao e online?",
+    question: "A sessão é online?",
     answer:
-      "O fluxo publico apresenta sessoes online. O link da sessao so deve ser gerado apos pagamento confirmado pelas regras transacionais do projeto.",
+      "O fluxo público apresenta sessões online. O link da sessão só deve ser gerado após pagamento confirmado pelas regras transacionais do projeto.",
   },
   {
-    question: "Posso reagendar se necessario?",
+    question: "Posso reagendar se necessário?",
     answer:
-      "As regras de reagendamento devem aparecer no fluxo de reserva e na area logada, conforme politicas do produto.",
+      "As regras de reagendamento devem aparecer no fluxo de reserva e na área logada, conforme políticas do produto.",
   },
   {
-    question: "O TES substitui acompanhamento medico?",
+    question: "O TES substitui acompanhamento médico?",
     answer:
-      "Nao. O conteudo do TES e informativo e nao substitui acompanhamento medico, psicologico, diagnostico ou tratamento profissional.",
+      "Não. O conteúdo do TES é informativo e não substitui acompanhamento médico, psicológico, diagnóstico ou tratamento profissional.",
   },
 ];

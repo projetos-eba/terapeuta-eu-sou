@@ -107,7 +107,7 @@ export function validateMatchingSelection(
   }
 
   if (Array.from(interestsByTheme.values()).some((count) => count > 3)) {
-    return "Selecione ate 3 interesses por tema.";
+    return "Selecione até 3 interesses por tema.";
   }
 
   return null;

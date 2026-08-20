@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   const config = getSupabasePublicConfig();
 
   if (!config) {
-    return safeError("Nao foi possivel redefinir a senha agora.", 503);
+    return safeError("Não foi possível redefinir a senha agora.", 503);
   }
 
   let body: unknown;
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return safeError("Envie os dados em formato valido.", 400);
+    return safeError("Envie os dados em formato válido.", 400);
   }
 
   const token = getString(body, "token").trim();
@@ -39,15 +39,15 @@ export async function POST(request: Request) {
     });
 
     if (!result.ok) {
-      return safeError(result.message ?? "Link invalido ou expirado.", 400);
+      return safeError(result.message ?? "Link inválido ou expirado.", 400);
     }
 
     return noStoreJson({ ok: true, redirectTo: result.redirectTo });
   } catch (error) {
     return safeError(
       error instanceof SupabaseFunctionError && error.status < 500
-        ? "Link invalido ou expirado."
-        : "Nao foi possivel redefinir a senha agora.",
+        ? "Link inválido ou expirado."
+        : "Não foi possível redefinir a senha agora.",
       error instanceof SupabaseFunctionError ? error.status : 500,
     );
   }
