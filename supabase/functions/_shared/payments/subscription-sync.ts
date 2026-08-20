@@ -157,6 +157,7 @@ export async function recordStripeSubscriptionInvoice(
     {
       amount_due_cents: numberOrZero(invoice.amount_due),
       amount_paid_cents: numberOrZero(invoice.amount_paid),
+      billing_reason: stringOrNull(invoice.billing_reason),
       currency: String(invoice.currency ?? "brl").toUpperCase(),
       due_at: unixToIso(invoice.due_date),
       hosted_invoice_url: stringOrNull(invoice.hosted_invoice_url),

@@ -5,12 +5,16 @@ import {
 } from "../_shared/auth/tokens.ts";
 import { getRuntime, getServiceRoleKey } from "../_shared/auth/runtime.ts";
 import { handleOptions, jsonResponse } from "../_shared/auth/cors.ts";
-import { parseJson, SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
+import {
+  parseJson,
+  SupabaseRestClient,
+} from "../_shared/auth/supabase-rest.ts";
 import {
   confirmAuthUserEmail,
   redirectForRole,
   updateAuthUserPassword,
 } from "../_shared/auth/users.ts";
+import { requestEmailOutboxDispatch } from "../_shared/email/outbox-dispatch.ts";
 import { isValidActionToken } from "../_shared/email/validation.ts";
 
 type ResetPasswordBody = {
@@ -33,7 +37,10 @@ runtime.serve(async (request) => {
   const serviceRoleKey = getServiceRoleKey(runtime);
 
   if (!supabaseUrl || !serviceRoleKey) {
-    return jsonResponse({ ok: false, message: "Não foi possível redefinir a senha." }, 503);
+    return jsonResponse(
+      { ok: false, message: "Não foi possível redefinir a senha." },
+      503,
+    );
   }
 
   const body = await parseJson<ResetPasswordBody>(request);
@@ -42,7 +49,11 @@ runtime.serve(async (request) => {
   const confirmPassword =
     typeof body?.confirmPassword === "string" ? body.confirmPassword : "";
 
-  if (!isValidActionToken(token) || password.length < 8 || password !== confirmPassword) {
+  if (
+    !isValidActionToken(token) ||
+    password.length < 8 ||
+    password !== confirmPassword
+  ) {
     return jsonResponse(
       { ok: false, message: "Confira o link e a nova senha informada." },
       422,
@@ -78,12 +89,32 @@ runtime.serve(async (request) => {
       );
     }
 
+    // Password persistence is authoritative. Notification is enqueued only
+    // after the one-time token is consumed, and can never roll back a valid
+    // credential update if configuration or the dispatcher is unavailable.
+    await client
+      .rpc("enqueue_transactional_email_v1", {
+        p_action_key: "password_changed",
+        p_domain_event_id: claimed.claim.id,
+        p_payload: {},
+        p_recipient_key: `profile:${claimed.claim.user_id}`,
+        p_recipient_user_id: claimed.claim.user_id,
+        p_related_entity_id: claimed.claim.id,
+        p_related_entity_type: "auth_action_token",
+      })
+      .catch(() => undefined);
+    void requestEmailOutboxDispatch(runtime);
+
     return jsonResponse({
       ok: true,
       redirectTo: redirectForRole(claimed.claim.recipient_role, "?reset=1"),
     });
   } catch {
-    await releaseAuthActionTokenClaim(client, claimed.claim.id, claimed.claimId);
+    await releaseAuthActionTokenClaim(
+      client,
+      claimed.claim.id,
+      claimed.claimId,
+    );
     return jsonResponse(
       { ok: false, message: "Não foi possível redefinir a senha agora." },
       500,

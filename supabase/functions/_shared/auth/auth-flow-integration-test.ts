@@ -179,6 +179,13 @@ async function assertPasswordResetFlow(email: string, userId: string) {
   assertEquals(resetResult.ok, true);
   assertEquals(resetResult.redirectTo, "/cliente/login?reset=1");
   await assertUserEmailConfirmed(userId);
+  const passwordChangedOutbox = await restClient.get<
+    Array<{ action_key: string; recipient_user_id: string }>
+  >(
+    `/rest/v1/email_outbox?select=action_key,recipient_user_id&action_key=eq.password_changed&recipient_user_id=eq.${encodeURIComponent(userId)}&limit=1`,
+  );
+  assertEquals(passwordChangedOutbox.length, 1);
+  assertEquals(passwordChangedOutbox[0]?.action_key, "password_changed");
 
   await assertLogin({
     email,
@@ -195,9 +202,9 @@ async function assertUserEmailConfirmed(userId: string) {
       { method: "GET" },
     ),
     restClient.get<Array<{ email_confirmed_at: string | null }>>(
-      `/rest/v1/profiles?select=email_confirmed_at&id=eq.${
-        encodeURIComponent(userId)
-      }&limit=1`,
+      `/rest/v1/profiles?select=email_confirmed_at&id=eq.${encodeURIComponent(
+        userId,
+      )}&limit=1`,
     ),
   ]);
 
@@ -322,7 +329,7 @@ async function assertRejectedLogin(input: {
     headers: authHeaders(),
     method: "POST",
   });
-  const result = await response.json() as LoginResponse;
+  const result = (await response.json()) as LoginResponse;
 
   assertEquals(response.status, input.status);
   assertEquals(result.ok, false);
@@ -421,7 +428,7 @@ async function invokeFunction<T>(functionName: string, body: unknown) {
       headers: authHeaders(),
       method: "POST",
     });
-    const result = await response.json() as T;
+    const result = (await response.json()) as T;
     lastResult = result;
     lastStatus = response.status;
 
@@ -465,8 +472,11 @@ function isRetryableFunctionInvocation(
     return false;
   }
 
-  return !isRecord(result) ||
-    result.message === "An invalid response was received from the upstream server";
+  return (
+    !isRecord(result) ||
+    result.message ===
+      "An invalid response was received from the upstream server"
+  );
 }
 
 async function serviceJson<T>(
