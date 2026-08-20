@@ -7,7 +7,7 @@ import { TherapistAuthShell } from "./auth-shell";
 import { TherapistPlanSelection, TherapistSignupForm } from "./signup-form";
 
 describe("therapist authentication UI", () => {
-  it("uses the TES purple panel and concise contextual copy", () => {
+  it("uses the TES purple panel only as a larger decorative asset surface", () => {
     const { container } = render(
       <TherapistAuthShell
         eyebrow="Para terapeutas"
@@ -19,6 +19,14 @@ describe("therapist authentication UI", () => {
     );
 
     expect(container.querySelector("aside")).toHaveClass("bg-brand-primary");
+    expect(
+      container.querySelector('aside img[src*="therapist-login-icon"]'),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Conta profissional" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Perfil privado")).not.toBeInTheDocument();
+    expect(screen.queryByText("Plano seguro")).not.toBeInTheDocument();
     expect(screen.getByText(/Plano selecionado:/)).toBeInTheDocument();
     expect(
       screen.queryByText(

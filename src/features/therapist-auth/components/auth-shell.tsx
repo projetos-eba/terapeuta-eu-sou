@@ -1,34 +1,11 @@
 import type { ReactNode } from "react";
-import { CreditCard, FileCheck2, UserRoundCheck } from "lucide-react";
 
 import { PublicLogo, TESDecorativeMedia } from "@/components/tes";
 import { platformAssets } from "@/lib/platform-assets";
 import { cn } from "@/lib/utils";
 
-const checklist = [
-  {
-    description: "Um acesso separado para sua rotina como terapeuta.",
-    icon: UserRoundCheck,
-    title: "Conta profissional",
-  },
-  {
-    description: "Você decide quando seu perfil estará pronto para publicação.",
-    icon: FileCheck2,
-    title: "Perfil privado",
-  },
-  {
-    description:
-      "Recursos pagos só são liberados após a confirmação do pagamento.",
-    icon: CreditCard,
-    title: "Plano seguro",
-  },
-];
-
 export function TherapistAuthShell({
   children,
-  eyebrow,
-  title,
-  description,
   className,
 }: {
   children: ReactNode;
@@ -42,51 +19,16 @@ export function TherapistAuthShell({
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col items-center justify-center gap-8">
         <PublicLogo />
         <section className="grid w-full overflow-hidden rounded-hero border border-border bg-surface-default shadow-float lg:grid-cols-[0.92fr_1.08fr]">
-          <aside className="pointer-events-none relative isolate order-2 flex flex-col justify-between gap-10 overflow-hidden bg-brand-primary px-7 py-8 text-white sm:px-10 lg:order-1 lg:min-h-[760px] lg:px-12 lg:py-12">
-            <div className="relative z-10">
-              <p className="text-xs font-extrabold uppercase tracking-[0.28em] text-white/75">
-                {eyebrow}
-              </p>
-              <h1 className="mt-6 font-display text-5xl font-light italic leading-[0.98] sm:text-6xl">
-                {title}
-              </h1>
-              <p className="mt-6 max-w-md text-base font-semibold leading-7 text-white/76">
-                {description}
-              </p>
-            </div>
-
-            <div className="relative z-10 space-y-4">
-              {checklist.map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <div
-                    key={item.title}
-                    className="flex gap-4 rounded-2xl border border-white/25 bg-white/10 p-4"
-                  >
-                    <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-white/15 text-white">
-                      <Icon className="size-5" aria-hidden="true" />
-                    </span>
-                    <div>
-                      <h2 className="text-sm font-extrabold">{item.title}</h2>
-                      <p className="mt-1 text-sm font-semibold leading-6 text-white/70">
-                        {item.description}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="absolute bottom-0 right-0 h-[210px] w-[270px] opacity-55 sm:h-[260px] sm:w-[340px]">
-              <TESDecorativeMedia
-                className="absolute inset-0"
-                fade="none"
-                objectPosition="right bottom"
-                priority
-                sizes="340px"
-                src={platformAssets.therapistLoginIcon.src}
-              />
-            </div>
+          <aside className="pointer-events-none relative isolate order-2 min-h-[360px] overflow-hidden bg-brand-primary sm:min-h-[440px] lg:order-1 lg:min-h-[760px]">
+            <TESDecorativeMedia
+              className="inset-0 opacity-75"
+              fade="none"
+              imageClassName="scale-110 object-cover sm:scale-125 lg:scale-110"
+              objectPosition="center"
+              priority
+              sizes="(min-width: 1024px) 530px, 100vw"
+              src={platformAssets.therapistLoginIcon.src}
+            />
           </aside>
 
           <div
