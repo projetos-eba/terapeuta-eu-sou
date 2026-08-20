@@ -69,22 +69,67 @@ Os cenários 18 e 19 precisam de tabela/job de agenda persistente, não de `setT
 | 0 — Contrato comum                 | Preheader, shell incremental, tipos/registry escaláveis, generalização de outbox e enqueuers; sem todos os conteúdos | Unit/Deno/pgTAP para preheader, token allowlist, snapshot, dedupe multi-recipient/action, RLS e sanitização                   |
 | 1 — Auth e cadastro                | Cenários 2–7; manter verificação/reset seguros e adicionar conclusão/boas-vindas/senha alterada                      | Token hash, expiração, reenvio, enumeração, idempotência e não bloqueio indevido de criação de conta                          |
 | 2 — Ciclo do terapeuta             | Cenários 11–16                                                                                                       | Decisão administrativa persistida → outbox; nenhum documento/motivo sensível no e-mail                                        |
-| 3 — Encontros                      | Cenários 17, 20–22 e infraestrutura dos lembretes 18–19                                                              | Estado `booking`/pagamento autoritativo, timezone, cancelamento/reagendamento, supressão de reminder e testes de concorrência |
-| 4 — Financeiro                     | Cenários 23–28                                                                                                       | Webhook Stripe assinado/persistido, refund e payout reais, idempotência de webhook e conteúdo financeiro mínimo               |
-| 5 — Assinaturas                    | Cenários 29–32                                                                                                       | `therapist_subscriptions`, invoices e eventos Stripe sincronizados; distinguir atualização imediata de downgrade futuro       |
+| 3 — Encontros                      | Cenários 17, 20–21 e infraestrutura dos lembretes 18–19                                                              | Estado `booking`/pagamento autoritativo, timezone, cancelamento/reagendamento, supressão de reminder e testes de concorrência |
+| 4 — Financeiro                     | Cenários 23–26 e 28                                                                                                  | Webhook Stripe assinado/persistido, refund e payout reais, idempotência de webhook e conteúdo financeiro mínimo               |
+| 5 — Assinaturas                    | Cenários 29–32                                                                                                       | `therapist_subscriptions`, invoices e eventos Stripe sincronizados; distinguir ativação, renovação recorrente e downgrade futuro |
 | 6 — Produto e governança pendentes | Cenários 1, 8–10, 33–39                                                                                              | Decisões de produto abaixo; não implementar antes de estados/eventos legítimos                                                |
 | 7 — Extensões                      | Revisar `therapy_catalog_request_*` para o novo shell e, se aprovado, atualizar o Manual                             | Não remover os pilotos existentes; confirmar compatibilidade de snapshot e logs                                               |
 
+## Execução local
+
+### Gate A — Auth e cadastro
+
+Status: **IMPLEMENTED_LOCAL**.
+
+- Defaults do Manual implementados para `email_verification`, `password_reset` e `password_changed`, todos com subject, preheader, HTML, texto, allowlist e fixture fictícia.
+- `registration_completed`, `patient_welcome` e `therapist_welcome` estão definidos e configuráveis no Admin, mas sem enqueue automático por decisão preventiva contra duplicidade de onboarding.
+- `password_changed` é enfileirado somente depois do consumo do token de reset; a notificação é pós-compromisso e não interfere na alteração de credencial.
+- Gate A local: Deno focado, Edge Function check e pgTAP da fundação/outbox/auth aprovados. Não equivale a homologação HML.
+
+### Gate B — Ciclo do terapeuta
+
+Status: **IMPLEMENTED_LOCAL**.
+
+- As seis comunicações de lifecycle estão ligadas a transições persistidas de verificação ou perfil; a UI/rota administrativa não é gatilho de e-mail.
+- O dispatcher resolve somente nome e rota autenticada. Motivos administrativos, documentos e metadados de decisão não entram em template data nem payload.
+- Repetir uma publicação sem transição não duplica a outbox; ações desabilitadas são suprimidas no enqueue.
+
+### Gate C — Encontros sem lembretes
+
+Status: **IMPLEMENTED_LOCAL** para confirmação, cancelamento e reagendamento.
+
+- `booking_events` é a identidade imutável da entrega: cada action/pessoa recebe uma outbox própria, deduplicada por `action_key + domain_event_id + recipient_key`.
+- Confirmação depende da transição persistida para `confirmed`; cancelamento depende de status final de cancelamento; reagendamento depende exclusivamente da resolução com status `applied`.
+- A outbox não recebe motivo de cancelamento, URL de vídeo, dados de pagamento nem conteúdo clínico. O dispatcher resolve dados mínimos server-side e produz somente CTAs autenticados canônicos.
+- O convite de avaliação foi reclassificado para **NEEDS_PRODUCT**: não há rota ou comando de criação de avaliação para pessoa, portanto o Manual não autoriza inventar o CTA.
+
+### Gate D — Financeiro
+
+Status: **IMPLEMENTED_LOCAL** para pagamento aprovado, recusado, pendente, reembolso aprovado e repasse realizado.
+
+- O trigger financeiro só observa uma transição persistida por `apply_session_payment_state_v1` e só aceita o `stripe_event_id` que já foi reservado em `stripe_webhook_events`. Redirect de Checkout, polling e frontend não conseguem enfileirar a comunicação.
+- Reembolso aprovado exige `session_refunds.status=succeeded` e webhook de refund reservado/persistido. A dedupe usa a identidade lógica de `session_refunds`, evitando duplicação entre `refund.created` e `refund.updated`.
+- Repasse só é comunicado quando a transferência aceita já está em `stripe_transfers.status=transferred`; payloads de outbox são vazios e o dispatcher resolve o mínimo server-side.
+- `session_refund_rejected` foi reclassificado para **NEEDS_PRODUCT**. `refund.failed` é falha técnica de provider, não decisão persistida de política de reembolso, portanto não pode usar a copy do Manual.
+
+### Gate E — Assinaturas
+
+Status: **IMPLEMENTED_LOCAL** para assinatura criada, renovada, cancelada e alteração de plano.
+
+- Criação, cancelamento e mudança de plano dependem de `therapist_subscription_events` produzidos pela sincronização de evento Stripe previamente reservado. O comando que apenas agenda downgrade registra `downgrade_scheduled`, mas não cria uma outbox de alteração.
+- Renovação nasce apenas de `billing_invoices` com `status=paid`, `billing_reason=subscription_cycle` e `invoice.paid` reservado. Faturas `subscription_create` não disparam renovação, evitando duplicar a comunicação de ativação.
+- O dispatcher resolve dados mínimos da assinatura por referência server-side; a outbox preserva payload vazio, snapshot de template/remetente e a dedupe tripla.
+
 ## Mapeamento de ações propostas
 
-As chaves abaixo são propostas de registry, não entidades já criadas. Separar por persona quando subject/configuração/destino forem diferentes evita template híbrido e preserva dedupe multi-recipient.
+As chaves abaixo são propostas de registry, não entidades já criadas. Separar por persona quando subject/configuração/destino forem diferentes evita um template de estado misto e preserva dedupe multi-recipient.
 
 | Domínio            | Action keys propostas                                                                                                                                                                                                                                                                                                                                 |
 | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Cadastro/Auth      | `registration_started`, `email_verification` (existente), `registration_completed`, `patient_welcome`, `therapist_welcome`, `password_reset` (existente), `password_changed`, `account_new_login`, `account_email_changed_old`, `account_email_changed_new`, `account_phone_changed`                                                                  |
 | Verificação        | `therapist_profile_submitted_for_review`, `therapist_documents_requested`, `therapist_profile_approved`, `therapist_profile_rejected`, `therapist_profile_suspended`, `therapist_profile_reactivated`                                                                                                                                                 |
 | Encontros          | `booking_confirmed_patient`, `booking_confirmed_therapist`, `booking_reminder_24h_patient`, `booking_reminder_24h_therapist`, `booking_reminder_1h_patient`, `booking_reminder_1h_therapist`, `booking_cancelled_patient`, `booking_cancelled_therapist`, `booking_rescheduled_patient`, `booking_rescheduled_therapist`, `booking_review_invitation` |
-| Financeiro         | `session_payment_approved`, `session_payment_declined`, `session_payment_pending`, `session_refund_approved`, `session_refund_rejected`, `therapist_payout_completed`                                                                                                                                                                                 |
+| Financeiro         | `session_payment_approved`, `session_payment_declined`, `session_payment_pending`, `session_refund_approved`, `therapist_payout_completed`; `session_refund_rejected` permanece **NEEDS_PRODUCT**                                                                                                                                                       |
 | Assinaturas        | `therapist_subscription_created`, `therapist_subscription_renewed`, `therapist_subscription_cancelled`, `therapist_subscription_plan_changed`                                                                                                                                                                                                         |
 | Institucional/LGPD | `legal_terms_updated`, `legal_privacy_updated`, `planned_maintenance`, `institutional_announcement`, `lgpd_request_received`, `lgpd_request_completed`, `account_deletion_completed`                                                                                                                                                                  |
 
@@ -94,7 +139,7 @@ As chaves abaixo são propostas de registry, não entidades já criadas. Separar
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Auth                   | E-mail de verificação/reset mantém token de uso único hasheado, rate limit e resposta não enumerável. Não deixar indisponibilidade de e-mail criar conta inconsistente sem decisão explícita do owner Auth. |
 | Stripe/session payment | Enqueue somente após webhook assinado aplicar estado financeiro em `apply_session_payment_state_v1`; redirects e client polling são evidência de UX, não gatilho.                                           |
-| Refund                 | Enqueue somente depois de resultado financeiro autoritativo; “aprovado” não pode antecipar crédito efetivo. Distinguir falha Stripe de negativa de política antes da copy final.                            |
+| Refund                 | Enqueue somente depois de resultado financeiro autoritativo; “aprovado” não pode antecipar crédito efetivo. Falha Stripe não é negativa de política e não recebe a copy de recusa do Manual.                 |
 | Assinaturas            | Usar eventos Stripe persistidos e `therapist_subscriptions`/invoice; não enviar cancelamento em pedido de cancelamento futuro.                                                                              |
 | Booking                | Confirmar após estado persistido; cancelar/reagendar somente após RPC transacional; recipient e rotas por papel.                                                                                            |
 | Reminders              | Jobs persistidos, timezone correto, cancelamento/reagendamento e janela idempotente.                                                                                                                        |
@@ -114,7 +159,7 @@ As chaves abaixo são propostas de registry, não entidades já criadas. Separar
 2. Política de segurança e privacidade para detecção de novo acesso: quais sinais, retenção, falsa positividade e localidade aproximada são aceitáveis.
 3. Fluxo de alteração de e-mail (confirmação no endereço antigo/novo) e de telefone para cada persona, incluindo auditoria e tratamento de conta comprometida.
 4. Janela operacional exata dos lembretes 24h/1h, timezone de referência e comportamento quando o encontro for criado já dentro dessas janelas.
-5. Critério final do convite de avaliação: `booking.status=completed`, confirmação manual, telemetria Zoom ou combinação; e limite de reenvio.
+5. Criar a superfície de avaliação da pessoa: rota canônica, comando server-side, elegibilidade pós-conclusão, moderação e limite de reenvio. Só então definir o critério final do convite entre `booking.status=completed`, confirmação manual ou telemetria Zoom.
 6. Governança para publicar versões legais, manutenção e comunicados: owner, aprovação, audiência, agendamento e retenção de evidência.
 7. Modelo de solicitações LGPD e exclusão: protocolo, área autenticada, SLA, base legal, retenção e endereço seguro para confirmação após anonimização.
 

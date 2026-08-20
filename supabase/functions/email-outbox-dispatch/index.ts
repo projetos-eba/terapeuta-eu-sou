@@ -10,6 +10,7 @@ import { EmailProviderError } from "../_shared/email/errors.ts";
 import { HostingerMailApiProvider } from "../_shared/email/hostinger-mail-api-provider.ts";
 import { getEmailActionRegistryEntry } from "../_shared/email/registry.ts";
 import { sendTransactionalEmail } from "../_shared/email/service.ts";
+import type { EmailActionKey } from "../_shared/email/types.ts";
 import { isHmlProject, safeEqual, toDispatchLimit } from "./security.ts";
 
 const runtime = getRuntime("email-outbox-dispatch");
@@ -108,7 +109,6 @@ async function dispatchOne(
         "not_accepted",
       );
     }
-    const request = await loadRequest(client, row.related_entity_id);
     const recipient = await getProfileById(client, row.recipient_user_id);
     if (!recipient?.email)
       return finish(
@@ -118,6 +118,7 @@ async function dispatchOne(
         "skipped",
         "recipient_unavailable",
       );
+    const delivery = await resolveDelivery(client, row, recipient);
     const result = await sendTransactionalEmail(
       client,
       new HostingerMailApiProvider({ apiKey: mailApiKey }),
@@ -126,17 +127,11 @@ async function dispatchOne(
         correlationId: row.id,
         dispatchMode: "automatic",
         recipient: { email: recipient.email, name: recipient.display_name },
-        recipientRole: "therapist",
+        recipientRole: recipient.role,
         recipientUserId: recipient.id,
         relatedEntityId: row.related_entity_id,
-        relatedEntityType: "therapy_catalog_request",
-        templateData: {
-          name: recipient.display_name,
-          requestName: request.informed_name,
-          status: request.status,
-          decision: request.decision,
-          url: `${getSiteUrl(runtime)}/terapeuta/mensagens/solicitar-terapia?request=${encodeURIComponent(row.related_entity_id)}`,
-        },
+        relatedEntityType: row.related_entity_type,
+        templateData: delivery.templateData,
         deliverySnapshot: {
           senderProfileId: row.sender_profile_id,
           templateOverrides: row.template_overrides,
@@ -189,6 +184,275 @@ async function dispatchOne(
   }
 }
 
+async function resolveDelivery(
+  client: SupabaseRestClient,
+  row: OutboxRow,
+  recipient: NonNullable<Awaited<ReturnType<typeof getProfileById>>>,
+) {
+  if (row.related_entity_type === "therapy_catalog_request") {
+    const request = await loadRequest(client, row.related_entity_id);
+    return {
+      templateData: {
+        recipient_name: recipient.display_name ?? "Pessoa",
+        request_name: request.informed_name,
+        request_status: request.status,
+        decision_message: request.decision ?? "",
+        request_url: `${getSiteUrl(runtime)}/terapeuta/mensagens/solicitar-terapia?request=${encodeURIComponent(row.related_entity_id)}`,
+      },
+    };
+  }
+
+  if (
+    row.related_entity_type === "auth_action_token" &&
+    row.action_key === "password_changed"
+  ) {
+    return {
+      templateData: {
+        recipient_name: recipient.display_name ?? "Pessoa",
+        support_url: `${getSiteUrl(runtime)}/ajuda`,
+      },
+    };
+  }
+
+  if (
+    (row.related_entity_type === "therapist_profile" ||
+      row.related_entity_type === "therapist_verification") &&
+    isTherapistLifecycleAction(row.action_key)
+  ) {
+    const baseUrl = getSiteUrl(runtime);
+    return {
+      templateData: {
+        dashboard_url: `${baseUrl}/terapeuta`,
+        profile_edit_url: `${baseUrl}/terapeuta/perfil/editar`,
+        profile_url: `${baseUrl}/terapeuta/perfil`,
+        recipient_name: recipient.display_name ?? "Terapeuta",
+      },
+    };
+  }
+
+  if (row.related_entity_type === "booking" && isBookingAction(row.action_key)) {
+    const booking = await loadBooking(client, row.related_entity_id);
+    const isPatientAction = row.action_key.endsWith("_patient");
+    const expectedRecipient = isPatientAction
+      ? booking.patient
+      : booking.therapist;
+    const counterparty = isPatientAction ? booking.therapist : booking.patient;
+
+    if (
+      expectedRecipient.user_id !== recipient.id ||
+      recipient.role !== (isPatientAction ? "patient" : "therapist")
+    ) {
+      throw new Error("booking_recipient_mismatch");
+    }
+
+    const baseUrl = getSiteUrl(runtime);
+    return {
+      templateData: {
+        counterparty_name: counterparty.display_name,
+        encounter_url: isPatientAction
+          ? `${baseUrl}/app/encontros/${encodeURIComponent(row.related_entity_id)}`
+          : `${baseUrl}/terapeuta/sessoes/${encodeURIComponent(row.related_entity_id)}`,
+        meeting_date_time: formatBookingDateTime(
+          booking.starts_at,
+          booking.timezone,
+        ),
+        meeting_timezone: booking.timezone,
+        recipient_name: recipient.display_name ?? expectedRecipient.display_name,
+        service_title: booking.service_title_snapshot,
+      },
+    };
+  }
+
+  if (
+    row.related_entity_type === "session_payment" &&
+    isSessionPaymentAction(row.action_key)
+  ) {
+    const payment = await loadSessionPayment(client, row.related_entity_id);
+    if (payment.patient_user_id !== recipient.id || recipient.role !== "patient") {
+      throw new Error("payment_recipient_mismatch");
+    }
+    const baseUrl = getSiteUrl(runtime);
+    return {
+      templateData: {
+        amount: formatCurrency(payment.gross_amount_cents, payment.currency),
+        payment_url:
+          row.action_key === "session_payment_declined"
+            ? `${baseUrl}/app/encontros/${encodeURIComponent(payment.booking_id)}`
+            : `${baseUrl}/app/pagamentos`,
+        recipient_name: recipient.display_name ?? payment.patient_display_name,
+        service_title: payment.service_title,
+      },
+    };
+  }
+
+  if (
+    row.related_entity_type === "session_refund" &&
+    row.action_key === "session_refund_approved"
+  ) {
+    const refund = await loadSessionRefund(client, row.related_entity_id);
+    if (
+      refund.payment.patient_user_id !== recipient.id ||
+      recipient.role !== "patient"
+    ) {
+      throw new Error("refund_recipient_mismatch");
+    }
+    return {
+      templateData: {
+        amount: formatCurrency(refund.amount_cents, refund.currency),
+        recipient_name:
+          recipient.display_name ?? refund.payment.patient_display_name,
+        refund_url: `${getSiteUrl(runtime)}/app/pagamentos`,
+      },
+    };
+  }
+
+  if (
+    row.related_entity_type === "stripe_transfer" &&
+    row.action_key === "therapist_payout_completed"
+  ) {
+    const transfer = await loadStripeTransfer(client, row.related_entity_id);
+    if (
+      transfer.therapist_user_id !== recipient.id ||
+      recipient.role !== "therapist"
+    ) {
+      throw new Error("payout_recipient_mismatch");
+    }
+    return {
+      templateData: {
+        amount: formatCurrency(transfer.amount_cents, transfer.currency),
+        finance_url: `${getSiteUrl(runtime)}/terapeuta/financeiro`,
+        recipient_name:
+          recipient.display_name ?? transfer.therapist_display_name,
+      },
+    };
+  }
+
+  if (
+    row.related_entity_type === "therapist_subscription" &&
+    isSubscriptionLifecycleAction(row.action_key)
+  ) {
+    const subscription = await loadTherapistSubscription(
+      client,
+      row.related_entity_id,
+    );
+    if (
+      subscription.therapist_user_id !== recipient.id ||
+      recipient.role !== "therapist"
+    ) {
+      throw new Error("subscription_recipient_mismatch");
+    }
+    const event = await loadTherapistSubscriptionEvent(
+      client,
+      row.domain_event_id,
+    );
+    const subscriptionUrl = `${getSiteUrl(runtime)}/terapeuta/configuracoes#plano-assinatura`;
+
+    if (row.action_key === "therapist_subscription_created") {
+      return {
+        templateData: {
+          date: formatDate(subscription.current_period_start ?? event.created_at),
+          next_renewal_date: formatDate(subscription.current_period_end),
+          plan_name: formatPlanName(event.next_plan ?? subscription.plan_code),
+          recipient_name:
+            recipient.display_name ?? subscription.therapist_display_name,
+          subscription_url: subscriptionUrl,
+        },
+      };
+    }
+
+    if (row.action_key === "therapist_subscription_cancelled") {
+      return {
+        templateData: {
+          account_status: `Plano ${formatPlanName(subscription.current_plan)}`,
+          date: formatDate(subscription.ended_at ?? event.created_at),
+          plan_name: formatPlanName(event.previous_plan ?? subscription.plan_code),
+          recipient_name:
+            recipient.display_name ?? subscription.therapist_display_name,
+          subscription_url: subscriptionUrl,
+        },
+      };
+    }
+
+    return {
+      templateData: {
+        date: formatDate(event.created_at),
+        new_plan_name: formatPlanName(event.next_plan ?? subscription.plan_code),
+        next_renewal_date: formatDate(subscription.current_period_end),
+        recipient_name:
+          recipient.display_name ?? subscription.therapist_display_name,
+        subscription_url: subscriptionUrl,
+      },
+    };
+  }
+
+  if (
+    row.related_entity_type === "billing_invoice" &&
+    row.action_key === "therapist_subscription_renewed"
+  ) {
+    const invoice = await loadSubscriptionInvoice(client, row.related_entity_id);
+    const subscription = await loadTherapistSubscription(
+      client,
+      invoice.therapist_subscription_id,
+    );
+    if (
+      subscription.therapist_user_id !== recipient.id ||
+      recipient.role !== "therapist"
+    ) {
+      throw new Error("subscription_renewal_recipient_mismatch");
+    }
+    return {
+      templateData: {
+        date: formatDate(invoice.paid_at ?? invoice.created_at),
+        next_renewal_date: formatDate(subscription.current_period_end),
+        plan_name: formatPlanName(subscription.plan_code),
+        recipient_name:
+          recipient.display_name ?? subscription.therapist_display_name,
+        subscription_url: `${getSiteUrl(runtime)}/terapeuta/configuracoes#plano-assinatura`,
+      },
+    };
+  }
+
+  throw new Error("unsupported_outbox_delivery");
+}
+
+function isTherapistLifecycleAction(actionKey: EmailActionKey) {
+  return [
+    "therapist_profile_submitted_for_review",
+    "therapist_documents_requested",
+    "therapist_profile_approved",
+    "therapist_profile_rejected",
+    "therapist_profile_suspended",
+    "therapist_profile_reactivated",
+  ].includes(actionKey);
+}
+
+function isBookingAction(actionKey: EmailActionKey) {
+  return [
+    "booking_confirmed_patient",
+    "booking_confirmed_therapist",
+    "booking_cancelled_patient",
+    "booking_cancelled_therapist",
+    "booking_rescheduled_patient",
+    "booking_rescheduled_therapist",
+  ].includes(actionKey);
+}
+
+function isSessionPaymentAction(actionKey: EmailActionKey) {
+  return [
+    "session_payment_approved",
+    "session_payment_declined",
+    "session_payment_pending",
+  ].includes(actionKey);
+}
+
+function isSubscriptionLifecycleAction(actionKey: EmailActionKey) {
+  return [
+    "therapist_subscription_created",
+    "therapist_subscription_cancelled",
+    "therapist_subscription_plan_changed",
+  ].includes(actionKey);
+}
+
 async function finish(
   client: SupabaseRestClient,
   outboxId: string,
@@ -219,6 +483,207 @@ async function loadRequest(client: SupabaseRestClient, id: string) {
   return rows[0];
 }
 
+async function loadBooking(client: SupabaseRestClient, id: string) {
+  const [booking] = await client.get<
+    Array<{
+      patient_profile_id: string;
+      service_title_snapshot: string;
+      starts_at: string;
+      therapist_profile_id: string;
+      timezone: string;
+    }>
+  >(
+    `/rest/v1/bookings?select=patient_profile_id,service_title_snapshot,starts_at,therapist_profile_id,timezone&id=eq.${encodeURIComponent(id)}&limit=1`,
+  );
+  if (!booking) throw new Error("booking_not_found");
+
+  const [patient, therapist] = await Promise.all([
+    client.get<Array<{ display_name: string; user_id: string }>>(
+      `/rest/v1/patient_profiles?select=display_name,user_id&id=eq.${encodeURIComponent(booking.patient_profile_id)}&limit=1`,
+    ),
+    client.get<Array<{ public_name: string; user_id: string }>>(
+      `/rest/v1/therapist_profiles?select=public_name,user_id&id=eq.${encodeURIComponent(booking.therapist_profile_id)}&limit=1`,
+    ),
+  ]);
+  if (!patient[0] || !therapist[0]) throw new Error("booking_participant_missing");
+
+  return {
+    ...booking,
+    patient: {
+      display_name: patient[0].display_name,
+      user_id: patient[0].user_id,
+    },
+    therapist: {
+      display_name: therapist[0].public_name,
+      user_id: therapist[0].user_id,
+    },
+  };
+}
+
+async function loadSessionPayment(client: SupabaseRestClient, id: string) {
+  const [payment] = await client.get<
+    Array<{
+      booking_id: string;
+      currency: string;
+      gross_amount_cents: number;
+      patient_profile_id: string;
+    }>
+  >(
+    `/rest/v1/session_payments?select=booking_id,currency,gross_amount_cents,patient_profile_id&id=eq.${encodeURIComponent(id)}&limit=1`,
+  );
+  if (!payment) throw new Error("session_payment_not_found");
+
+  const [booking, patient] = await Promise.all([
+    client.get<Array<{ service_title_snapshot: string }>>(
+      `/rest/v1/bookings?select=service_title_snapshot&id=eq.${encodeURIComponent(payment.booking_id)}&limit=1`,
+    ),
+    client.get<Array<{ display_name: string; user_id: string }>>(
+      `/rest/v1/patient_profiles?select=display_name,user_id&id=eq.${encodeURIComponent(payment.patient_profile_id)}&limit=1`,
+    ),
+  ]);
+  if (!booking[0] || !patient[0]) throw new Error("session_payment_data_missing");
+
+  return {
+    ...payment,
+    patient_display_name: patient[0].display_name,
+    patient_user_id: patient[0].user_id,
+    service_title: booking[0].service_title_snapshot,
+  };
+}
+
+async function loadSessionRefund(client: SupabaseRestClient, id: string) {
+  const [refund] = await client.get<
+    Array<{
+      amount_cents: number;
+      currency: string;
+      session_payment_id: string;
+    }>
+  >(
+    `/rest/v1/session_refunds?select=amount_cents,currency,session_payment_id&id=eq.${encodeURIComponent(id)}&limit=1`,
+  );
+  if (!refund) throw new Error("session_refund_not_found");
+  return { ...refund, payment: await loadSessionPayment(client, refund.session_payment_id) };
+}
+
+async function loadStripeTransfer(client: SupabaseRestClient, id: string) {
+  const [transfer] = await client.get<
+    Array<{
+      amount_cents: number;
+      currency: string;
+      therapist_profile_id: string;
+    }>
+  >(
+    `/rest/v1/stripe_transfers?select=amount_cents,currency,therapist_profile_id&id=eq.${encodeURIComponent(id)}&limit=1`,
+  );
+  if (!transfer) throw new Error("stripe_transfer_not_found");
+  const [therapist] = await client.get<
+    Array<{ public_name: string; user_id: string }>
+  >(
+    `/rest/v1/therapist_profiles?select=public_name,user_id&id=eq.${encodeURIComponent(transfer.therapist_profile_id)}&limit=1`,
+  );
+  if (!therapist) throw new Error("stripe_transfer_therapist_missing");
+  return {
+    ...transfer,
+    therapist_display_name: therapist.public_name,
+    therapist_user_id: therapist.user_id,
+  };
+}
+
+async function loadTherapistSubscription(client: SupabaseRestClient, id: string) {
+  const [subscription] = await client.get<
+    Array<{
+      current_period_end: string | null;
+      current_period_start: string | null;
+      ended_at: string | null;
+      plan_code: string;
+      therapist_profile_id: string;
+    }>
+  >(
+    `/rest/v1/therapist_subscriptions?select=current_period_end,current_period_start,ended_at,plan_code,therapist_profile_id&id=eq.${encodeURIComponent(id)}&limit=1`,
+  );
+  if (!subscription) throw new Error("therapist_subscription_not_found");
+  const [therapist] = await client.get<
+    Array<{ plan: string; public_name: string; user_id: string }>
+  >(
+    `/rest/v1/therapist_profiles?select=plan,public_name,user_id&id=eq.${encodeURIComponent(subscription.therapist_profile_id)}&limit=1`,
+  );
+  if (!therapist) throw new Error("therapist_subscription_profile_missing");
+  return {
+    ...subscription,
+    current_plan: therapist.plan,
+    therapist_display_name: therapist.public_name,
+    therapist_user_id: therapist.user_id,
+  };
+}
+
+async function loadTherapistSubscriptionEvent(
+  client: SupabaseRestClient,
+  id: string,
+) {
+  const [event] = await client.get<
+    Array<{
+      created_at: string;
+      next_plan: string | null;
+      previous_plan: string | null;
+    }>
+  >(
+    `/rest/v1/therapist_subscription_events?select=created_at,next_plan,previous_plan&id=eq.${encodeURIComponent(id)}&limit=1`,
+  );
+  if (!event) throw new Error("therapist_subscription_event_not_found");
+  return event;
+}
+
+async function loadSubscriptionInvoice(client: SupabaseRestClient, id: string) {
+  const [invoice] = await client.get<
+    Array<{
+      created_at: string;
+      paid_at: string | null;
+      therapist_subscription_id: string | null;
+    }>
+  >(
+    `/rest/v1/billing_invoices?select=created_at,paid_at,therapist_subscription_id&id=eq.${encodeURIComponent(id)}&limit=1`,
+  );
+  if (!invoice?.therapist_subscription_id)
+    throw new Error("subscription_invoice_not_found");
+  return invoice as typeof invoice & { therapist_subscription_id: string };
+}
+
+function formatBookingDateTime(value: string, timezone: string) {
+  try {
+    return new Intl.DateTimeFormat("pt-BR", {
+      dateStyle: "long",
+      timeStyle: "short",
+      timeZone: timezone,
+    }).format(new Date(value));
+  } catch {
+    throw new Error("booking_timezone_invalid");
+  }
+}
+
+function formatCurrency(amountCents: number, currency: string) {
+  return new Intl.NumberFormat("pt-BR", {
+    currency,
+    style: "currency",
+  }).format(amountCents / 100);
+}
+
+function formatDate(value: string | null) {
+  if (!value) throw new Error("subscription_date_missing");
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) throw new Error("subscription_date_invalid");
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "long",
+    timeZone: "America/Sao_Paulo",
+  }).format(date);
+}
+
+function formatPlanName(value: string) {
+  if (value === "premium_plus") return "Premium Plus";
+  if (value === "premium") return "Premium";
+  if (value === "free") return "Free";
+  throw new Error("subscription_plan_invalid");
+}
+
 function response(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -231,10 +696,20 @@ function response(body: unknown, status = 200) {
 
 type OutboxRow = {
   id: string;
-  action_key:
-    | "therapy_catalog_request_submitted"
-    | "therapy_catalog_request_updated";
+  action_key: EmailActionKey;
+  domain_event_id: string;
   related_entity_id: string;
+  related_entity_type:
+    | "auth_action_token"
+    | "billing_invoice"
+    | "booking"
+    | "session_payment"
+    | "session_refund"
+    | "stripe_transfer"
+    | "therapist_subscription"
+    | "therapy_catalog_request"
+    | "therapist_profile"
+    | "therapist_verification";
   recipient_user_id: string;
   recipient_key: string;
   sender_profile_id: string | null;
