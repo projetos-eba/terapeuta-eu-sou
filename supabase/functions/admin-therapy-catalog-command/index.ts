@@ -1,5 +1,5 @@
 import { handleOptions } from "../_shared/auth/cors.ts";
-import { getRuntime, getServiceRoleKey, getSiteUrl } from "../_shared/auth/runtime.ts";
+import { getRuntime, getServiceRoleKey } from "../_shared/auth/runtime.ts";
 import {
   SupabaseHttpError,
   SupabaseRestClient,
@@ -11,9 +11,6 @@ import {
   requireUser,
   success,
 } from "../_shared/payments/http.ts";
-import { getProfileById } from "../_shared/auth/users.ts";
-import { HostingerMailApiProvider } from "../_shared/email/hostinger-mail-api-provider.ts";
-import { sendTransactionalEmail } from "../_shared/email/service.ts";
 import {
   assertAdminCatalogPermission,
   mapAdminTherapyCatalogDatabaseError,
@@ -155,7 +152,6 @@ runtime.serve(async (request) => {
             p_request_id: command.requestId,
             p_status: command.status,
           });
-        await sendDecisionEmail(client, correlationId, result, command.decision);
         return success(result);
       }
 
@@ -221,36 +217,6 @@ async function signCatalogRequestMaterial(
 
   const normalized = normalizeSignedStoragePath(path);
   return { fileName: material.file_name, url: new URL(normalized, supabaseUrl).toString() };
-}
-
-async function sendDecisionEmail(
-  client: SupabaseRestClient,
-  correlationId: string,
-  result: CatalogRequestDecisionResult,
-  decision: string,
-) {
-  const emailApiKey = runtime.env.get("EMAIL_SERVER_API_KEY");
-  if (!emailApiKey || !result.requesterUserId) return;
-
-  const profile = await getProfileById(client, result.requesterUserId);
-  if (!profile?.email) return;
-
-  await sendTransactionalEmail(client, new HostingerMailApiProvider({ apiKey: emailApiKey }), {
-    actionKey: "therapy_catalog_request_updated",
-    correlationId,
-    recipient: { email: profile.email, name: profile.display_name },
-    recipientRole: "therapist",
-    recipientUserId: profile.id,
-    relatedEntityId: result.requestId,
-    relatedEntityType: "therapy_catalog_request",
-    templateData: {
-      decision,
-      name: profile.display_name,
-      requestName: result.requestName,
-      status: result.requestStatus,
-      url: `${getSiteUrl(runtime)}/terapeuta/mensagens/solicitar-terapia?request=${encodeURIComponent(result.requestId)}`,
-    },
-  });
 }
 
 function normalizeSignedStoragePath(value: string) {

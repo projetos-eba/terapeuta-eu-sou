@@ -21,5 +21,13 @@ resolvidos pelo evento; o Admin não informa e-mail de destino.
 
 ## Limites
 
-Outbox, retries assíncronos, envio manual e novos gatilhos de domínio pertencem
-à Fase 2. A Fase 1 não envia e-mail real nem altera HML.
+## Evolução da Fase 2
+
+`email_outbox` recebe referências mínimas na mesma transação dos eventos de
+catálogo. `email-outbox-dispatch` faz claim com `SKIP LOCKED`, resolve o
+destinatário server-side, registra o resultado existente e aplica retry
+exponencial limitado a cinco tentativas. O fluxo de negócio não espera nem
+faz rollback por indisponibilidade do provider.
+
+Envio manual e novos gatilhos de domínio continuam fora do piloto. Nenhum
+e-mail real ou alteração HML ocorreu nesta etapa local.

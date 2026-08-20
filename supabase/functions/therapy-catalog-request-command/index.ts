@@ -1,9 +1,6 @@
 import { handleOptions } from "../_shared/auth/cors.ts";
-import { getRuntime, getServiceRoleKey, getSiteUrl } from "../_shared/auth/runtime.ts";
+import { getRuntime, getServiceRoleKey } from "../_shared/auth/runtime.ts";
 import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
-import { getProfileById } from "../_shared/auth/users.ts";
-import { HostingerMailApiProvider } from "../_shared/email/hostinger-mail-api-provider.ts";
-import { sendTransactionalEmail } from "../_shared/email/service.ts";
 import {
   DomainError,
   failure,
@@ -86,13 +83,6 @@ runtime.serve(async (request) => {
           p_request_id: action.requestId,
         },
       );
-      await sendRequestEmail({
-        client,
-        correlationId,
-        requestId: result.requestId,
-        requestName: requestName(action.payload),
-        userId: user.id,
-      });
       return success(result);
     }
 
@@ -106,13 +96,6 @@ runtime.serve(async (request) => {
           p_request_id: action.requestId,
         },
       );
-      await sendRequestEmail({
-        client,
-        correlationId,
-        requestId: result.requestId,
-        requestName: requestName(action.payload),
-        userId: user.id,
-      });
       return success(result);
     }
 
@@ -348,51 +331,6 @@ function decodeBase64(value: string) {
   return bytes;
 }
 
-async function sendRequestEmail({
-  client,
-  correlationId,
-  requestId,
-  requestName,
-  userId,
-}: {
-  client: SupabaseRestClient;
-  correlationId: string;
-  requestId: string;
-  requestName: string;
-  userId: string;
-}) {
-  const emailApiKey = runtime.env.get("EMAIL_SERVER_API_KEY");
-  const siteUrl = getSiteUrl(runtime);
-  if (!emailApiKey || !siteUrl) return;
-
-  const profile = await getProfileById(client, userId);
-  if (!profile?.email) return;
-
-  await sendTransactionalEmail(
-    client,
-    new HostingerMailApiProvider({ apiKey: emailApiKey }),
-    {
-      actionKey: "therapy_catalog_request_submitted",
-      correlationId,
-      recipient: { email: profile.email, name: profile.display_name },
-      recipientRole: "therapist",
-      recipientUserId: userId,
-      relatedEntityId: requestId,
-      relatedEntityType: "therapy_catalog_request",
-      templateData: {
-        name: profile.display_name,
-        requestName,
-        url: `${siteUrl}/terapeuta/mensagens/solicitar-terapia?request=${encodeURIComponent(requestId)}`,
-      },
-    },
-  );
-}
-
-function requestName(payload: Record<string, unknown>) {
-  return typeof payload.informedName === "string"
-    ? payload.informedName.trim().slice(0, 120)
-    : "";
-}
 
 function toMaterial(item: MaterialRow | undefined) {
   if (!item) throw new DomainError("unavailable", 503, "Não foi possível registrar o material.");
