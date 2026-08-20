@@ -12,14 +12,25 @@ type RenderedTemplate = {
 export function renderEmailTemplate(
   actionKey: EmailActionKey,
   data: Record<string, unknown>,
-  overrides?: { subject_override?: string | null; preheader_override?: string | null; text_override?: string | null; html_override?: string | null },
+  overrides?: {
+    subject_override?: string | null;
+    preheader_override?: string | null;
+    text_override?: string | null;
+    html_override?: string | null;
+  },
   templateVersion?: string,
 ): RenderedTemplate {
   if (
-    (actionKey === "therapy_catalog_request_submitted" || actionKey === "therapy_catalog_request_updated") &&
+    (actionKey === "therapy_catalog_request_submitted" ||
+      actionKey === "therapy_catalog_request_updated") &&
     overrides
   ) {
-    return renderConfiguredCatalogTemplate(actionKey, data, overrides, templateVersion);
+    return renderConfiguredCatalogTemplate(
+      actionKey,
+      data,
+      overrides,
+      templateVersion,
+    );
   }
   if (actionKey === "email_verification") {
     return renderEmailVerification(data);
@@ -41,9 +52,16 @@ export function renderEmailTemplate(
 }
 
 function renderConfiguredCatalogTemplate(
-  actionKey: "therapy_catalog_request_submitted" | "therapy_catalog_request_updated",
+  actionKey:
+    | "therapy_catalog_request_submitted"
+    | "therapy_catalog_request_updated",
   data: Record<string, unknown>,
-  overrides: { subject_override?: string | null; preheader_override?: string | null; text_override?: string | null; html_override?: string | null },
+  overrides: {
+    subject_override?: string | null;
+    preheader_override?: string | null;
+    text_override?: string | null;
+    html_override?: string | null;
+  },
   templateVersion?: string,
 ): RenderedTemplate {
   const entry = getEmailActionRegistryEntry(actionKey);
@@ -57,16 +75,20 @@ function renderConfiguredCatalogTemplate(
     decision_message: safeText(data.decision, 800),
   };
   const allowed = new Set(entry.allowedTokens.map((token) => token.key));
-  const replace = (value: string, html: boolean) => value.replace(/{{\s*([a-z_]+)\s*}}/g, (_, token: string) => {
-    if (!allowed.has(token)) throw new Error("email_template_token_not_allowed");
-    const resolved = values[token] ?? "";
-    return html ? escapeHtml(resolved) : resolved;
-  });
+  const replace = (value: string, html: boolean) =>
+    value.replace(/{{\s*([a-z_]+)\s*}}/g, (_, token: string) => {
+      if (!allowed.has(token))
+        throw new Error("email_template_token_not_allowed");
+      const resolved = values[token] ?? "";
+      return html ? escapeHtml(resolved) : resolved;
+    });
   const preheader = replace(template.preheader, false);
   return {
     subject: replace(template.subject, false),
     text: replace(template.text, false),
-    html: sanitizeEmailHtml(`<div style="display:none;max-height:0;overflow:hidden">${escapeHtml(preheader)}</div>${replace(template.html, true)}`),
+    html: sanitizeEmailHtml(
+      `<div style="display:none;max-height:0;overflow:hidden">${escapeHtml(preheader)}</div>${replace(template.html, true)}`,
+    ),
   };
 }
 
@@ -250,7 +272,10 @@ function safeUrl(value: unknown) {
 }
 
 function safeText(value: unknown, maxLength: number) {
-  return safeString(value).replace(/[\r\n]+/g, " ").trim().slice(0, maxLength);
+  return safeString(value)
+    .replace(/[\r\n]+/g, " ")
+    .trim()
+    .slice(0, maxLength);
 }
 
 function safeRequestStatus(value: unknown) {
