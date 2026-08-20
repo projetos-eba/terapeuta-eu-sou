@@ -164,6 +164,25 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
         >
           {saving ? "Salvando…" : "Salvar configuração"}
         </button>
+        <button
+          className="rounded-xl border border-brand-primary px-4 py-3 font-bold text-brand-primary disabled:opacity-60"
+          disabled={saving}
+          onClick={(event) => {
+            const form = event.currentTarget.form;
+            if (!form) return;
+            for (const field of form.querySelectorAll<
+              HTMLInputElement | HTMLTextAreaElement
+            >(
+              '[name="subject"], [name="preheader"], [name="text"], [name="html"]',
+            )) {
+              field.value = "";
+            }
+            void save(form);
+          }}
+          type="button"
+        >
+          Restaurar padrão
+        </button>
         {error ? <p className="text-sm text-status-danger">{error}</p> : null}
       </section>
       <section className="rounded-3xl border p-6">
