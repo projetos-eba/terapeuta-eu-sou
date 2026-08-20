@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Check, Loader2 } from "lucide-react";
 
 import { TESButton, TESDecorativeMedia } from "@/components/tes";
@@ -129,6 +129,18 @@ export function JourneyMatchClient({
     selectedThemeSet.has(theme.id),
   );
   const selectedInterestCount = selectedInterestIds.length;
+
+  useEffect(() => {
+    function resetSubmission() {
+      setIsSubmitting(false);
+    }
+
+    window.addEventListener("pageshow", resetSubmission);
+
+    return () => {
+      window.removeEventListener("pageshow", resetSubmission);
+    };
+  }, []);
 
   function toggleTheme(themeId: string) {
     setSelectedThemeIds((current) => {
