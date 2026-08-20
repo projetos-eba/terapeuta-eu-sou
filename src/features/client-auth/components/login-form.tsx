@@ -147,7 +147,7 @@ export function ClientLoginForm({
               onClick={handleResend}
               className="min-h-11 rounded-2xl"
             >
-              Reenviar confirmacao
+              Reenviar confirmação
             </TESButton>
           ) : null}
           {resendMessage ? (

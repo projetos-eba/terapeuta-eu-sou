@@ -40,7 +40,7 @@ export async function getRelatedTherapists({
   if (!hasSupabaseConfig()) {
     return {
       errorMessage:
-        "Supabase publico nao configurado para consultar profissionais.",
+        "Supabase público não configurado para consultar profissionais.",
       items: [],
     };
   }
@@ -82,7 +82,7 @@ export async function getRelatedTherapists({
     };
   } catch {
     return {
-      errorMessage: "Nao foi possivel consultar profissionais relacionados.",
+      errorMessage: "Não foi possível consultar profissionais relacionados.",
       items: [],
     };
   }

@@ -6,7 +6,7 @@ import {
 } from "@/lib/supabase/edge-functions";
 
 const PUBLIC_MESSAGE =
-  "Se houver uma conta pendente para este e-mail, enviaremos uma nova confirmacao.";
+  "Se houver uma conta pendente para este e-mail, enviaremos uma nova confirmação.";
 
 export async function POST(request: Request) {
   const config = getSupabasePublicConfig();

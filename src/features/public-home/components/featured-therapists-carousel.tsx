@@ -142,7 +142,7 @@ export function FeaturedTherapistsCarousel({
             Terapeutas em destaque
           </p>
           <h2 className="font-display text-4xl font-light italic leading-tight text-brand-deep md:text-5xl">
-            Profissionais verificados para voce conhecer com calma
+            Profissionais verificados para você conhecer com calma
           </h2>
         </div>
         <TESButton href={routes.public.therapists} variant="secondary">
@@ -172,7 +172,7 @@ export function FeaturedTherapistsCarousel({
             </div>
             <button
               type="button"
-              aria-label="Ver proximos terapeutas"
+              aria-label="Ver próximos terapeutas"
               onClick={() => scrollByCard("right")}
               className="absolute -right-6 top-1/2 z-20 hidden size-12 -translate-y-1/2 place-items-center rounded-full border border-brand-lavender/50 bg-white text-brand-primary shadow-card transition hover:translate-x-0.5 hover:border-brand-primary md:grid 2xl:-right-8"
             >

@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   const config = getSupabasePublicConfig();
 
   if (!config) {
-    return safeError("Nao foi possivel confirmar o e-mail agora.", 503);
+    return safeError("Não foi possível confirmar o e-mail agora.", 503);
   }
 
   let body: unknown;
@@ -18,13 +18,13 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return safeError("Envie os dados em formato valido.", 400);
+    return safeError("Envie os dados em formato válido.", 400);
   }
 
   const token = getString(body, "token").trim();
 
   if (!token) {
-    return safeError("Link invalido ou expirado.", 422);
+    return safeError("Link inválido ou expirado.", 422);
   }
 
   try {
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     }>(config, "verify-email", { body: { token } });
 
     if (!result.ok) {
-      return safeError(result.message ?? "Link invalido ou expirado.", 400);
+      return safeError(result.message ?? "Link inválido ou expirado.", 400);
     }
 
     return noStoreJson({
@@ -45,8 +45,8 @@ export async function POST(request: Request) {
   } catch (error) {
     return safeError(
       error instanceof SupabaseFunctionError && error.status < 500
-        ? "Link invalido ou expirado."
-        : "Nao foi possivel confirmar o e-mail agora.",
+        ? "Link inválido ou expirado."
+        : "Não foi possível confirmar o e-mail agora.",
       error instanceof SupabaseFunctionError ? error.status : 500,
     );
   }

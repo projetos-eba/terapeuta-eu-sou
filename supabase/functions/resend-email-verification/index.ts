@@ -32,7 +32,7 @@ type ResendBody = {
 
 const runtime = getRuntime("resend-email-verification");
 const PUBLIC_MESSAGE =
-  "Se houver uma conta pendente para este e-mail, enviaremos uma nova confirmacao.";
+  "Se houver uma conta pendente para este e-mail, enviaremos uma nova confirmação.";
 
 runtime.serve(async (request) => {
   const optionsResponse = handleOptions(request);

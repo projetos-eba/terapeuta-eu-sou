@@ -37,7 +37,7 @@ export function ConfirmEmailClient({
   const [mode, setMode] = useState<Mode>(statusToken ? "pending" : "checking");
   const [message, setMessage] = useState(
     statusToken
-      ? "Enviamos um link de confirmacao. Quando voce confirmar, esta pagina avanca sozinha."
+      ? "Enviamos um link de confirmação. Quando você confirmar, esta página avança sozinha."
       : "Confirmando seu e-mail...",
   );
   const [redirectTo, setRedirectTo] = useState<string | null>(null);
@@ -60,7 +60,7 @@ export function ConfirmEmailClient({
 
       if (!token) {
         setMode("error");
-        setMessage("Link invalido ou expirado.");
+        setMessage("Link inválido ou expirado.");
         return;
       }
 
@@ -81,7 +81,7 @@ export function ConfirmEmailClient({
         );
 
         setMode("success");
-        setMessage("E-mail confirmado com seguranca.");
+        setMessage("E-mail confirmado com segurança.");
         setRedirectTo(destination);
 
         window.setTimeout(() => {
@@ -90,7 +90,7 @@ export function ConfirmEmailClient({
       } catch {
         if (!active) return;
         setMode("error");
-        setMessage("Nao foi possivel confirmar o e-mail agora.");
+        setMessage("Não foi possível confirmar o e-mail agora.");
       }
     }
 
@@ -154,7 +154,7 @@ export function ConfirmEmailClient({
 
         redirectedRef.current = true;
         setMode("success");
-        setMessage("E-mail confirmado. Voce ja pode entrar com sua senha.");
+        setMessage("E-mail confirmado. Você já pode entrar com sua senha.");
         setRedirectTo(destination);
         window.location.assign(destination);
       } catch {
@@ -220,11 +220,11 @@ export function ConfirmEmailClient({
       setCooldown(RESEND_COOLDOWN_SECONDS);
       setResendMessage(
         data.message ??
-          "Se houver uma conta pendente, enviaremos uma nova confirmacao.",
+          "Se houver uma conta pendente, enviaremos uma nova confirmação.",
       );
     } catch {
       setResendMessage(
-        "Nao foi possivel solicitar o reenvio agora. Tente novamente em instantes.",
+        "Não foi possível solicitar o reenvio agora. Tente novamente em instantes.",
       );
     } finally {
       setIsResending(false);
@@ -249,7 +249,7 @@ export function ConfirmEmailClient({
           </div>
 
           <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
-            Confirmacao de e-mail
+            Confirmação de e-mail
           </p>
           <h1 className="mt-3 font-display text-4xl font-light italic leading-tight text-brand-deep sm:text-5xl">
             {mode === "success"
@@ -273,7 +273,7 @@ export function ConfirmEmailClient({
                   aria-hidden="true"
                 />
                 <p>
-                  A verificacao acontece em segundo plano. Mantenha esta aba
+                  A verificação acontece em segundo plano. Mantenha esta aba
                   aberta depois de clicar no link recebido.
                 </p>
               </div>
@@ -328,7 +328,7 @@ export function ConfirmEmailClient({
                   ? "Enviando..."
                   : cooldown > 0
                     ? `Reenviar em ${cooldown}s`
-                    : "Reenviar confirmacao"}
+                    : "Reenviar confirmação"}
               </TESButton>
             </form>
           ) : null}

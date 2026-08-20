@@ -6,7 +6,7 @@ import {
 } from "@/lib/supabase/edge-functions";
 
 const PUBLIC_MESSAGE =
-  "Se o e-mail estiver cadastrado, enviaremos as instrucoes de recuperacao.";
+  "Se o e-mail estiver cadastrado, enviaremos as instruções de recuperação.";
 
 export async function POST(request: Request) {
   const config = getSupabasePublicConfig();

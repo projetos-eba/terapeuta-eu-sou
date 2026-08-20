@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ConfirmEmailClient } from "./confirm-email-client";
 
 export const metadata: Metadata = {
-  description: "Confirmacao de e-mail do Terapeuta Eu Sou.",
+  description: "Confirmação de e-mail do Terapeuta Eu Sou.",
   other: {
     referrer: "no-referrer",
   },
