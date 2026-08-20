@@ -62,7 +62,12 @@ export function ClientSignupForm({ next }: { next?: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+    <form
+      method="post"
+      onSubmit={handleSubmit}
+      noValidate
+      className="space-y-5"
+    >
       <div>
         <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
           Sua jornada
@@ -148,10 +153,7 @@ export function ClientSignupForm({ next }: { next?: string }) {
             className="mt-1 size-5 shrink-0 rounded border-border text-brand-primary focus:ring-brand-primary"
           />
           <p id="client-terms-accepted-description">
-            <label
-              className="cursor-pointer"
-              htmlFor="client-terms-accepted"
-            >
+            <label className="cursor-pointer" htmlFor="client-terms-accepted">
               Li e concordo com os
             </label>{" "}
             <Link

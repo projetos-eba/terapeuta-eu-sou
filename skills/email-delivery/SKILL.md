@@ -61,6 +61,11 @@ habilitacao por acao continuam configuracao operacional do ambiente.
 - `EMAIL_SERVER_API_KEY`: somente Edge Functions.
 - `EMAIL_PUBLIC_SITE_URL`: base dos links enviados.
 - `EMAIL_RATE_LIMIT_SALT`: sal para hash de identificadores de rate limit.
+- `EMAIL_OUTBOX_DISPATCH_SECRET`: autentica exclusivamente dispatch interno e
+  recovery; também existe no Vault remoto como
+  `email_outbox_dispatch_secret`.
+- `EMAIL_OUTBOX_TEST_FAILURE_SECRET`: exclusivo de HML, para falha one-shot
+  na borda do provider; produção não deve configurá-lo.
 - `CONFIRMED_AUTOMATICALLY_EMAIL`: somente Edge Functions; ausente/vazio equivale a `false`; aceita apenas `true` ou `false`; valor invalido deve falhar fechado e nunca ativar bypass.
 - `ALLOW_REAL_EMAIL_TESTS`: opt-in local para `npm run test:email:real`.
 - `EMAIL_E2E_RECIPIENT`: deve ser exatamente `viniciusferrari.silva@gmail.com` para teste real.

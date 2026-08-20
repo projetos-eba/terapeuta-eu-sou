@@ -109,6 +109,9 @@ verify_jwt = false
 [functions.admin-therapy-catalog-command]
 verify_jwt = true
 
+[functions.email-outbox-dispatch]
+verify_jwt = false
+
 [functions.therapist-auth-signup]
 verify_jwt = false
 
