@@ -14,7 +14,8 @@ export async function resolveSender(
   actionKey: EmailActionKey,
   setting?: EmailActionSettingRow,
 ) {
-  const resolvedSetting = setting ?? await resolveEmailActionSetting(client, actionKey);
+  const resolvedSetting =
+    setting ?? (await resolveEmailActionSetting(client, actionKey));
   if (resolvedSetting?.enabled === false) {
     throw new EmailSkippedError("action_disabled");
   }
@@ -46,6 +47,27 @@ export async function resolveEmailActionSetting(
     )}&limit=1`,
   );
   return settings[0];
+}
+
+export async function resolveSnapshotSender(
+  client: RestClient,
+  senderProfileId: string | null,
+) {
+  if (!senderProfileId) {
+    throw new EmailConfigurationError(
+      "No sender profile was captured for this delivery.",
+    );
+  }
+
+  const rows = await client.get<SenderProfileRow[]>(
+    `/rest/v1/email_sender_profiles?select=*&id=eq.${encodeURIComponent(senderProfileId)}&limit=1`,
+  );
+  if (!isUsableSender(rows[0])) {
+    throw new EmailConfigurationError(
+      "The sender profile captured for this delivery is unavailable.",
+    );
+  }
+  return rows[0];
 }
 
 function isUsableSender(

@@ -5,6 +5,7 @@ export class EmailProviderError extends Error {
     readonly status?: number,
     readonly retryable = false,
     readonly attemptCount = 1,
+    readonly deliveryOutcome: "not_accepted" | "unknown" = "unknown",
   ) {
     super(message);
   }

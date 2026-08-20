@@ -1,7 +1,11 @@
 import { EmailProviderError, EmailSkippedError } from "./errors.ts";
 import type { EmailProvider } from "./provider.ts";
 import { logEmailDelivery } from "./logging.ts";
-import { resolveEmailActionSetting, resolveSender } from "./sender-resolver.ts";
+import {
+  resolveEmailActionSetting,
+  resolveSender,
+  resolveSnapshotSender,
+} from "./sender-resolver.ts";
 import { renderEmailTemplate } from "./templates.ts";
 import type {
   SendTransactionalEmailInput,
@@ -27,11 +31,27 @@ export async function sendTransactionalEmail(
 
   try {
     const setting = await resolveEmailActionSetting(client, input.actionKey);
-    if (input.dispatchMode !== "manual" && setting?.automatic_dispatch_enabled === false) {
+    if (setting?.enabled === false) {
+      throw new EmailSkippedError("action_disabled");
+    }
+    if (
+      input.dispatchMode !== "manual" &&
+      setting?.automatic_dispatch_enabled === false
+    ) {
       throw new EmailSkippedError("automatic_dispatch_disabled");
     }
-    sender = await resolveSender(client, input.actionKey, setting);
-    const rendered = renderEmailTemplate(input.actionKey, input.templateData, setting);
+    sender = input.deliverySnapshot
+      ? await resolveSnapshotSender(
+          client,
+          input.deliverySnapshot.senderProfileId,
+        )
+      : await resolveSender(client, input.actionKey, setting);
+    const rendered = renderEmailTemplate(
+      input.actionKey,
+      input.templateData,
+      input.deliverySnapshot?.templateOverrides ?? setting,
+      input.deliverySnapshot?.templateVersion,
+    );
     subject = sanitizeHeaderText(rendered.subject);
     const result = await provider.send({
       correlationId,
@@ -92,6 +112,7 @@ export async function sendTransactionalEmail(
       correlationId,
       ok: isSkipped,
       status: isSkipped ? "skipped" : "error",
+      deliveryOutcome: providerError?.deliveryOutcome ?? "unknown",
     };
   }
 }

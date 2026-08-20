@@ -289,6 +289,10 @@ Secrets das Edge Functions:
 - `EMAIL_SERVER_API_KEY`
 - `EMAIL_PUBLIC_SITE_URL` ou dominio publico equivalente; quando vier sem protocolo, o runtime normaliza para `https://`, exceto `localhost`/`127.0.0.1`, que usam `http://`.
 - `EMAIL_RATE_LIMIT_SALT`
+- `EMAIL_OUTBOX_DISPATCH_SECRET`: autentica chamadas internas do dispatcher e
+  do recovery agendado; nunca pertence ao browser.
+- `EMAIL_OUTBOX_TEST_FAILURE_SECRET`: exclusivo de HML para uma falha one-shot
+  controlada; não configurar em produção.
 - `CONFIRMED_AUTOMATICALLY_EMAIL`: aceita somente `true` ou `false`; ausente/vazio equivale a `false`. Quando `true`, as functions de cadastro confirmam o Auth via Admin API, nao geram token/e-mail e redirecionam ao login com `verified=1&automatic=1`.
 - `MASTER_PASSWORD`: senha master opcional para testes locais. Quando preenchida no runtime das Edge Functions, os logins `client-auth-login` e `therapist-auth-login` aceitam essa senha para gerar uma sessao do usuario informado sem expor o segredo ao app Next.js. A validacao de perfil e e-mail confirmado continua obrigatoria. Nunca configurar em producao.
 - `ADMIN_MASTER_PASSWORD_BYPASS_ENABLED`: aceita somente `true` ou `false`; ausente/vazio equivale a `false`. O login `admin-auth-login` so aceita `MASTER_PASSWORD` quando esta flag esta `true` e `SUPABASE_URL` aponta para `localhost` ou `127.0.0.1`; em ambientes remotos o bypass administrativo permanece desativado.

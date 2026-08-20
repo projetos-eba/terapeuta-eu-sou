@@ -13,12 +13,13 @@ export function renderEmailTemplate(
   actionKey: EmailActionKey,
   data: Record<string, unknown>,
   overrides?: { subject_override?: string | null; preheader_override?: string | null; text_override?: string | null; html_override?: string | null },
+  templateVersion?: string,
 ): RenderedTemplate {
   if (
     (actionKey === "therapy_catalog_request_submitted" || actionKey === "therapy_catalog_request_updated") &&
     overrides
   ) {
-    return renderConfiguredCatalogTemplate(actionKey, data, overrides);
+    return renderConfiguredCatalogTemplate(actionKey, data, overrides, templateVersion);
   }
   if (actionKey === "email_verification") {
     return renderEmailVerification(data);
@@ -43,10 +44,11 @@ function renderConfiguredCatalogTemplate(
   actionKey: "therapy_catalog_request_submitted" | "therapy_catalog_request_updated",
   data: Record<string, unknown>,
   overrides: { subject_override?: string | null; preheader_override?: string | null; text_override?: string | null; html_override?: string | null },
+  templateVersion?: string,
 ): RenderedTemplate {
   const entry = getEmailActionRegistryEntry(actionKey);
   if (!entry) throw new Error("unsupported_email_action");
-  const template = resolveEmailTemplate(actionKey, overrides);
+  const template = resolveEmailTemplate(actionKey, overrides, templateVersion);
   const values: Record<string, string> = {
     recipient_name: safeDisplayName(data.name),
     request_name: safeDisplayName(data.requestName),

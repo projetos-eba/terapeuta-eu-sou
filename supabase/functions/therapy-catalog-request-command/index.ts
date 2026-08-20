@@ -1,6 +1,7 @@
 import { handleOptions } from "../_shared/auth/cors.ts";
 import { getRuntime, getServiceRoleKey } from "../_shared/auth/runtime.ts";
 import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
+import { requestEmailOutboxDispatch } from "../_shared/email/outbox-dispatch.ts";
 import {
   DomainError,
   failure,
@@ -83,6 +84,7 @@ runtime.serve(async (request) => {
           p_request_id: action.requestId,
         },
       );
+      await requestEmailOutboxDispatch(runtime);
       return success(result);
     }
 
@@ -96,14 +98,23 @@ runtime.serve(async (request) => {
           p_request_id: action.requestId,
         },
       );
+      await requestEmailOutboxDispatch(runtime);
       return success(result);
     }
 
-    const ownedRequest = await requireOwnRequest(client, user.id, action.catalogRequestId);
+    const ownedRequest = await requireOwnRequest(
+      client,
+      user.id,
+      action.catalogRequestId,
+    );
 
     if (action.action === "upload") {
-      if (!['submitted', 'needs_information'].includes(ownedRequest.status)) {
-        throw new DomainError("not_editable", 409, "Esta solicitação não aceita novos materiais neste momento.");
+      if (!["submitted", "needs_information"].includes(ownedRequest.status)) {
+        throw new DomainError(
+          "not_editable",
+          409,
+          "Esta solicitação não aceita novos materiais neste momento.",
+        );
       }
       const material = await uploadMaterial({
         action,
@@ -121,10 +132,18 @@ runtime.serve(async (request) => {
       action.materialId,
     );
     if (!material.storage_object_path) {
-      throw new DomainError("unavailable", 503, "Não foi possível abrir o material agora.");
+      throw new DomainError(
+        "unavailable",
+        503,
+        "Não foi possível abrir o material agora.",
+      );
     }
     return success({
-      signedPath: await signMaterial(client, material.file_name, material.storage_object_path),
+      signedPath: await signMaterial(
+        client,
+        material.file_name,
+        material.storage_object_path,
+      ),
     });
   } catch (error) {
     console.error(
@@ -132,7 +151,10 @@ runtime.serve(async (request) => {
         actor_role: "therapist",
         correlation_id: correlationId,
         duration_ms: Math.max(0, Math.round(performance.now() - startedAt)),
-        error_code: error instanceof DomainError ? error.code : "therapy_catalog_request_failed",
+        error_code:
+          error instanceof DomainError
+            ? error.code
+            : "therapy_catalog_request_failed",
         operation: "therapy_catalog_request_command",
       }),
     );
@@ -142,9 +164,18 @@ runtime.serve(async (request) => {
 
 function validateAction(value: unknown): Action {
   if (!isRecord(value) || typeof value.action !== "string") invalid();
-  if (value.action === "categories" || value.action === "list") return { action: value.action };
-  if (value.action === "submit" && isRecord(value.payload) && isUuid(value.requestId)) {
-    return { action: "submit", payload: value.payload, requestId: value.requestId };
+  if (value.action === "categories" || value.action === "list")
+    return { action: value.action };
+  if (
+    value.action === "submit" &&
+    isRecord(value.payload) &&
+    isUuid(value.requestId)
+  ) {
+    return {
+      action: "submit",
+      payload: value.payload,
+      requestId: value.requestId,
+    };
   }
   if (
     value.action === "resubmit" &&
@@ -194,7 +225,11 @@ function validateAction(value: unknown): Action {
 }
 
 function invalid(): never {
-  throw new DomainError("invalid_payload", 422, "Revise as informações da solicitação.");
+  throw new DomainError(
+    "invalid_payload",
+    422,
+    "Revise as informações da solicitação.",
+  );
 }
 
 async function listCategories(client: SupabaseRestClient) {
@@ -223,7 +258,11 @@ async function listOwnRequests(client: SupabaseRestClient, userId: string) {
   );
 }
 
-async function requireOwnRequest(client: SupabaseRestClient, userId: string, requestId: string) {
+async function requireOwnRequest(
+  client: SupabaseRestClient,
+  userId: string,
+  requestId: string,
+) {
   const rows = await client.get<Array<RequestRow>>(
     `/rest/v1/therapy_catalog_requests?select=id,status&requester_profile_id=eq.${encodeURIComponent(userId)}&id=eq.${encodeURIComponent(requestId)}&limit=1`,
   );
@@ -256,12 +295,20 @@ async function uploadMaterial({
     file.name.trim().length < 1 ||
     file.name.length > 180
   ) {
-    throw new DomainError("invalid_file", 422, "Envie um arquivo permitido de até 10 MB.");
+    throw new DomainError(
+      "invalid_file",
+      422,
+      "Envie um arquivo permitido de até 10 MB.",
+    );
   }
 
   const bytes = decodeBase64(file.base64);
   if (bytes.byteLength !== file.size) {
-    throw new DomainError("invalid_file", 422, "Não foi possível validar este arquivo.");
+    throw new DomainError(
+      "invalid_file",
+      422,
+      "Não foi possível validar este arquivo.",
+    );
   }
 
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-").slice(-120);
@@ -280,7 +327,11 @@ async function uploadMaterial({
     },
   );
   if (!upload.ok) {
-    throw new DomainError("upload_failed", 503, "Não foi possível enviar o material agora.");
+    throw new DomainError(
+      "upload_failed",
+      503,
+      "Não foi possível enviar o material agora.",
+    );
   }
 
   const rows = await client.post<Array<MaterialRow>>(
@@ -304,36 +355,57 @@ async function listMaterials(client: SupabaseRestClient, requestId: string) {
   return rows.map(toMaterial);
 }
 
-async function requireOwnMaterial(client: SupabaseRestClient, requestId: string, materialId: string) {
+async function requireOwnMaterial(
+  client: SupabaseRestClient,
+  requestId: string,
+  materialId: string,
+) {
   const rows = await client.get<Array<MaterialRow>>(
     `/rest/v1/therapy_catalog_request_materials?select=id,file_name,file_size_bytes,mime_type,storage_object_path,created_at&therapy_catalog_request_id=eq.${encodeURIComponent(requestId)}&id=eq.${encodeURIComponent(materialId)}&limit=1`,
   );
-  if (!rows[0]) throw new DomainError("not_found", 404, "Material não encontrado.");
+  if (!rows[0])
+    throw new DomainError("not_found", 404, "Material não encontrado.");
   return rows[0];
 }
 
-async function signMaterial(client: SupabaseRestClient, fileName: string, objectPath: string) {
+async function signMaterial(
+  client: SupabaseRestClient,
+  fileName: string,
+  objectPath: string,
+) {
   const encodedPath = objectPath.split("/").map(encodeURIComponent).join("/");
   const signed = await client.post<{ signedURL?: string; signedUrl?: string }>(
     `/storage/v1/object/sign/${bucket}/${encodedPath}`,
     { expiresIn: 120 },
   );
   const path = signed.signedURL ?? signed.signedUrl;
-  if (!path) throw new DomainError("unavailable", 503, "Não foi possível abrir o material agora.");
+  if (!path)
+    throw new DomainError(
+      "unavailable",
+      503,
+      "Não foi possível abrir o material agora.",
+    );
   return { fileName, url: path };
 }
 
 function decodeBase64(value: string) {
-  const source = value.includes(",") ? value.slice(value.indexOf(",") + 1) : value;
+  const source = value.includes(",")
+    ? value.slice(value.indexOf(",") + 1)
+    : value;
   const binary = atob(source);
   const bytes = new Uint8Array(binary.length);
-  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  for (let index = 0; index < binary.length; index += 1)
+    bytes[index] = binary.charCodeAt(index);
   return bytes;
 }
 
-
 function toMaterial(item: MaterialRow | undefined) {
-  if (!item) throw new DomainError("unavailable", 503, "Não foi possível registrar o material.");
+  if (!item)
+    throw new DomainError(
+      "unavailable",
+      503,
+      "Não foi possível registrar o material.",
+    );
   return {
     createdAt: item.created_at,
     fileName: item.file_name,
@@ -375,5 +447,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isUuid(value: unknown): value is string {
-  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  );
 }

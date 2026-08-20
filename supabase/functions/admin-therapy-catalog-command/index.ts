@@ -4,6 +4,7 @@ import {
   SupabaseHttpError,
   SupabaseRestClient,
 } from "../_shared/auth/supabase-rest.ts";
+import { requestEmailOutboxDispatch } from "../_shared/email/outbox-dispatch.ts";
 import {
   DomainError,
   failure,
@@ -67,7 +68,13 @@ runtime.serve(async (request) => {
       }
 
       if (command.action === "requestSign") {
-        return success(await signCatalogRequestMaterial(client, supabaseUrl, command.materialId));
+        return success(
+          await signCatalogRequestMaterial(
+            client,
+            supabaseUrl,
+            command.materialId,
+          ),
+        );
       }
 
       if (command.action === "matchingList") {
@@ -144,14 +151,18 @@ runtime.serve(async (request) => {
       }
 
       if (command.action === "decideRequest") {
-        const result = await client.rpc<CatalogRequestDecisionResult>("admin_decide_therapy_catalog_request_v2", {
+        const result = await client.rpc<CatalogRequestDecisionResult>(
+          "admin_decide_therapy_catalog_request_v2",
+          {
             p_actor_user_id: user.id,
             p_catalog_request_id: command.catalogRequestId,
             p_decision: command.decision,
             p_related_therapy_id: command.relatedTherapyId,
             p_request_id: command.requestId,
             p_status: command.status,
-          });
+          },
+        );
+        await requestEmailOutboxDispatch(runtime);
         return success(result);
       }
 
@@ -202,7 +213,8 @@ async function signCatalogRequestMaterial(
     `/rest/v1/therapy_catalog_request_materials?select=id,file_name,storage_object_path&id=eq.${encodeURIComponent(materialId)}&limit=1`,
   );
   const material = rows[0];
-  if (!material) throw new DomainError("not_found", 404, "Material não encontrado.");
+  if (!material)
+    throw new DomainError("not_found", 404, "Material não encontrado.");
 
   const objectPath = material.storage_object_path
     .split("/")
@@ -213,10 +225,18 @@ async function signCatalogRequestMaterial(
     { expiresIn: 120 },
   );
   const path = signed.signedURL ?? signed.signedUrl;
-  if (!path) throw new DomainError("unavailable", 503, "Não foi possível abrir o material agora.");
+  if (!path)
+    throw new DomainError(
+      "unavailable",
+      503,
+      "Não foi possível abrir o material agora.",
+    );
 
   const normalized = normalizeSignedStoragePath(path);
-  return { fileName: material.file_name, url: new URL(normalized, supabaseUrl).toString() };
+  return {
+    fileName: material.file_name,
+    url: new URL(normalized, supabaseUrl).toString(),
+  };
 }
 
 function normalizeSignedStoragePath(value: string) {
@@ -228,7 +248,9 @@ function normalizeSignedStoragePath(value: string) {
     return `${pathname}${parsed.search}`;
   } catch {
     const normalized = value.startsWith("/") ? value : `/${value}`;
-    return normalized.startsWith("/storage/v1/") ? normalized : `/storage/v1${normalized}`;
+    return normalized.startsWith("/storage/v1/")
+      ? normalized
+      : `/storage/v1${normalized}`;
   }
 }
 

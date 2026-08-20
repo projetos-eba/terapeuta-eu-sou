@@ -2437,6 +2437,7 @@ export type Database = {
           active: boolean
           category: string
           created_at: string
+          default_template_version: string
           description: string | null
           label: string
         }
@@ -2445,6 +2446,7 @@ export type Database = {
           active?: boolean
           category: string
           created_at?: string
+          default_template_version?: string
           description?: string | null
           label: string
         }
@@ -2453,6 +2455,7 @@ export type Database = {
           active?: boolean
           category?: string
           created_at?: string
+          default_template_version?: string
           description?: string | null
           label?: string
         }
@@ -2461,23 +2464,38 @@ export type Database = {
       email_action_settings: {
         Row: {
           action_key: string
+          automatic_dispatch_enabled: boolean
           created_at: string
           enabled: boolean
+          html_override: string | null
+          preheader_override: string | null
           sender_profile_id: string | null
+          subject_override: string | null
+          text_override: string | null
           updated_at: string
         }
         Insert: {
           action_key: string
+          automatic_dispatch_enabled?: boolean
           created_at?: string
           enabled?: boolean
+          html_override?: string | null
+          preheader_override?: string | null
           sender_profile_id?: string | null
+          subject_override?: string | null
+          text_override?: string | null
           updated_at?: string
         }
         Update: {
           action_key?: string
+          automatic_dispatch_enabled?: boolean
           created_at?: string
           enabled?: boolean
+          html_override?: string | null
+          preheader_override?: string | null
           sender_profile_id?: string | null
+          subject_override?: string | null
+          text_override?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2576,6 +2594,141 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "email_sender_profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_outbox: {
+        Row: {
+          action_key: string
+          attempts: number
+          created_at: string
+          domain_event_id: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          locked_at: string | null
+          locked_by: string | null
+          next_attempt_at: string
+          payload: Json
+          processed_at: string | null
+          recipient_key: string
+          recipient_user_id: string
+          related_entity_id: string
+          related_entity_type: string
+          review_reason: string | null
+          review_required: boolean
+          sender_profile_id: string | null
+          status: Database["public"]["Enums"]["email_outbox_status"]
+          template_overrides: Json
+          template_version: string
+          updated_at: string
+        }
+        Insert: {
+          action_key: string
+          attempts?: number
+          created_at?: string
+          domain_event_id: string
+          id?: string
+          idempotency_key: string
+          last_error?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          next_attempt_at?: string
+          payload?: Json
+          processed_at?: string | null
+          recipient_key: string
+          recipient_user_id: string
+          related_entity_id: string
+          related_entity_type: string
+          review_reason?: string | null
+          review_required?: boolean
+          sender_profile_id?: string | null
+          status?: Database["public"]["Enums"]["email_outbox_status"]
+          template_overrides?: Json
+          template_version?: string
+          updated_at?: string
+        }
+        Update: {
+          action_key?: string
+          attempts?: number
+          created_at?: string
+          domain_event_id?: string
+          id?: string
+          idempotency_key?: string
+          last_error?: string | null
+          locked_at?: string | null
+          locked_by?: string | null
+          next_attempt_at?: string
+          payload?: Json
+          processed_at?: string | null
+          recipient_key?: string
+          recipient_user_id?: string
+          related_entity_id?: string
+          related_entity_type?: string
+          review_reason?: string | null
+          review_required?: boolean
+          sender_profile_id?: string | null
+          status?: Database["public"]["Enums"]["email_outbox_status"]
+          template_overrides?: Json
+          template_version?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_outbox_action_key_fkey"
+            columns: ["action_key"]
+            isOneToOne: false
+            referencedRelation: "email_action_definitions"
+            referencedColumns: ["action_key"]
+          },
+          {
+            foreignKeyName: "email_outbox_recipient_user_id_fkey"
+            columns: ["recipient_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_outbox_sender_profile_id_fkey"
+            columns: ["sender_profile_id"]
+            isOneToOne: false
+            referencedRelation: "email_sender_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_outbox_test_faults: {
+        Row: {
+          action_key: string
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          recipient_key: string
+        }
+        Insert: {
+          action_key: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          recipient_key: string
+        }
+        Update: {
+          action_key?: string
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          recipient_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_outbox_test_faults_action_key_fkey"
+            columns: ["action_key"]
+            isOneToOne: false
+            referencedRelation: "email_action_definitions"
+            referencedColumns: ["action_key"]
           },
         ]
       }
@@ -11969,6 +12122,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      arm_email_outbox_test_fault_v1: {
+        Args: {
+          p_action_key: string
+          p_expires_at: string
+          p_recipient_key: string
+        }
+        Returns: undefined
+      }
       auto_confirm_sessions: { Args: { p_now?: string }; Returns: number }
       build_video_session_access_state_v1: {
         Args: {
@@ -12078,6 +12239,40 @@ export type Database = {
           user_id: string
         }[]
       }
+      claim_email_outbox_v1: {
+        Args: { p_limit?: number; p_worker_id: string }
+        Returns: {
+          action_key: string
+          attempts: number
+          created_at: string
+          domain_event_id: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          locked_at: string | null
+          locked_by: string | null
+          next_attempt_at: string
+          payload: Json
+          processed_at: string | null
+          recipient_key: string
+          recipient_user_id: string
+          related_entity_id: string
+          related_entity_type: string
+          review_reason: string | null
+          review_required: boolean
+          sender_profile_id: string | null
+          status: Database["public"]["Enums"]["email_outbox_status"]
+          template_overrides: Json
+          template_version: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "email_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       claim_session_cancellation_decision_v1: {
         Args: {
           p_booking_id: string
@@ -12114,6 +12309,47 @@ export type Database = {
           session_payment_id: string
           therapist_retained_cents: number
         }[]
+      }
+      complete_email_outbox_v1: {
+        Args: {
+          p_last_error?: string
+          p_outbox_id: string
+          p_outcome: Database["public"]["Enums"]["email_outbox_status"]
+          p_review_reason?: string
+          p_review_required?: boolean
+          p_worker_id: string
+        }
+        Returns: {
+          action_key: string
+          attempts: number
+          created_at: string
+          domain_event_id: string
+          id: string
+          idempotency_key: string
+          last_error: string | null
+          locked_at: string | null
+          locked_by: string | null
+          next_attempt_at: string
+          payload: Json
+          processed_at: string | null
+          recipient_key: string
+          recipient_user_id: string
+          related_entity_id: string
+          related_entity_type: string
+          review_reason: string | null
+          review_required: boolean
+          sender_profile_id: string | null
+          status: Database["public"]["Enums"]["email_outbox_status"]
+          template_overrides: Json
+          template_version: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "email_outbox"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       complete_video_session_control_job_v1: {
         Args: {
@@ -12179,6 +12415,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      consume_email_outbox_test_fault_v1: {
+        Args: { p_action_key: string; p_recipient_key: string }
+        Returns: boolean
       }
       create_therapist_block_v1: {
         Args: {
@@ -12249,6 +12489,7 @@ export type Database = {
         }
         Returns: Json
       }
+      dispatch_email_outbox_recovery_v1: { Args: never; Returns: undefined }
       enqueue_due_video_session_control_jobs_v1: {
         Args: {
           p_environment: string
@@ -13497,6 +13738,13 @@ export type Database = {
         | "restricted"
         | "disabled"
       email_delivery_status: "success" | "error" | "skipped"
+      email_outbox_status:
+        | "pending"
+        | "processing"
+        | "retry_pending"
+        | "delivered"
+        | "skipped"
+        | "dead"
       email_provider_key: "hostinger_mail_api"
       financial_ledger_direction: "debit" | "credit"
       financial_ledger_entry_type:
@@ -13788,6 +14036,14 @@ export const Constants = {
         "disabled",
       ],
       email_delivery_status: ["success", "error", "skipped"],
+      email_outbox_status: [
+        "pending",
+        "processing",
+        "retry_pending",
+        "delivered",
+        "skipped",
+        "dead",
+      ],
       email_provider_key: ["hostinger_mail_api"],
       financial_ledger_direction: ["debit", "credit"],
       financial_ledger_entry_type: [

@@ -46,12 +46,18 @@ export type SendTransactionalEmailInput = {
   relatedEntityId?: string | null;
   correlationId?: string | null;
   dispatchMode?: "automatic" | "manual";
+  deliverySnapshot?: {
+    senderProfileId: string | null;
+    templateOverrides: Partial<EmailActionSettingRow>;
+    templateVersion: string;
+  };
 };
 
 export type SendTransactionalEmailResult = {
   ok: boolean;
   status: EmailDeliveryStatus;
   correlationId: string;
+  deliveryOutcome?: "not_accepted" | "unknown";
 };
 
 export type SenderProfileRow = {
