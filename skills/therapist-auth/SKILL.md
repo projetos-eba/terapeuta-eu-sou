@@ -113,11 +113,10 @@ Backend:
 ## UI e copy
 
 - Layout simples e centralizado.
-- Usar `PublicLogo`, fundo lavanda claro, card central, coluna contextual e formulário acessível.
-- No mobile, o formulário deve aparecer antes do container explicativo/checklist.
+- Usar `PublicLogo`, fundo lavanda claro, card central, painel visual decorativo e formulário acessível.
+- No mobile, o formulário deve aparecer antes do painel visual decorativo.
 - Labels reais, mensagens de erro por campo, foco visível e CTAs com mínimo de 44px.
-- Evitar repetir no formulário informações já explicadas pela coluna contextual.
-- A coluna contextual usa `brand-primary` (`#6C3D91`) e não o azul profundo.
+- O painel visual usa `brand-primary` (`#6C3D91`) e não o azul profundo.
 - Não usar linguagem interna de desenvolvimento na UI, como “hardening” ou “onboarding”, quando houver alternativa clara para a pessoa usuária.
 - Nunca prometer renda, aprovação automática, cura, diagnóstico ou resultado garantido.
 
@@ -159,5 +158,6 @@ Backend:
 
 ## Assets da plataforma
 
-- A coluna contextual de login e cadastro usa `therapistLoginIcon` como mídia
-  decorativa sem fade. Consulte `docs/design-system/platform-assets.md`.
+- O painel visual de login e cadastro usa `therapistLoginIcon` como mídia
+  decorativa ampliada, sem fade e sem copy ou checklist. Consulte
+  `docs/design-system/platform-assets.md`.

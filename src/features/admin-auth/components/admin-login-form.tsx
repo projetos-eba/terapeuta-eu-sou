@@ -58,6 +58,7 @@ export function AdminLoginForm() {
   return (
     <form
       className="relative z-10 space-y-5"
+      method="post"
       noValidate
       onSubmit={handleSubmit}
     >

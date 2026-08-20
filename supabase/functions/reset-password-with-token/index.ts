@@ -33,7 +33,7 @@ runtime.serve(async (request) => {
   const serviceRoleKey = getServiceRoleKey(runtime);
 
   if (!supabaseUrl || !serviceRoleKey) {
-    return jsonResponse({ ok: false, message: "Nao foi possivel redefinir a senha." }, 503);
+    return jsonResponse({ ok: false, message: "Não foi possível redefinir a senha." }, 503);
   }
 
   const body = await parseJson<ResetPasswordBody>(request);
@@ -57,7 +57,7 @@ runtime.serve(async (request) => {
 
   if (!claimed) {
     return jsonResponse(
-      { ok: false, message: "Link invalido ou expirado." },
+      { ok: false, message: "Link inválido ou expirado." },
       400,
     );
   }
@@ -73,7 +73,7 @@ runtime.serve(async (request) => {
 
     if (!consumed) {
       return jsonResponse(
-        { ok: false, message: "Link invalido ou expirado." },
+        { ok: false, message: "Link inválido ou expirado." },
         400,
       );
     }
@@ -85,7 +85,7 @@ runtime.serve(async (request) => {
   } catch {
     await releaseAuthActionTokenClaim(client, claimed.claim.id, claimed.claimId);
     return jsonResponse(
-      { ok: false, message: "Nao foi possivel redefinir a senha agora." },
+      { ok: false, message: "Não foi possível redefinir a senha agora." },
       500,
     );
   }

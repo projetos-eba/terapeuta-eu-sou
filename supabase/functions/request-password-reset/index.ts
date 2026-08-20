@@ -22,7 +22,7 @@ type RequestPasswordResetBody = {
 
 const runtime = getRuntime("request-password-reset");
 const PUBLIC_MESSAGE =
-  "Se o e-mail estiver cadastrado, enviaremos as instrucoes de recuperacao.";
+  "Se o e-mail estiver cadastrado, enviaremos as instruções de recuperação.";
 
 runtime.serve(async (request) => {
   const optionsResponse = handleOptions(request);

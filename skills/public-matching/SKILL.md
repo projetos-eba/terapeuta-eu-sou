@@ -83,6 +83,8 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
 - Ao remover um tema, remover tambem seus interesses.
 - CTA ativo com pelo menos um tema.
 - Ao atingir tres temas, cards restantes ficam desabilitados, mas visiveis.
+- Ao retornar para `/sua-jornada` pelo navegador, o CTA deve sair do estado de
+  envio e permanecer utilizável com a seleção atual.
 
 ## Copy responsavel
 

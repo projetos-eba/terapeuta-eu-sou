@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ResetPasswordClient } from "./reset-password-client";
 
 export const metadata: Metadata = {
-  description: "Recuperacao de senha do Terapeuta Eu Sou.",
+  description: "Recuperação de senha do Terapeuta Eu Sou.",
   other: {
     referrer: "no-referrer",
   },

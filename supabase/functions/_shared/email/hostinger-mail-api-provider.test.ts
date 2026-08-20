@@ -76,6 +76,43 @@ Deno.test("HostingerMailApiProvider retries transient responses", async () => {
 });
 
 Deno.test(
+  "HostingerMailApiProvider does not retry an ambiguous network failure",
+  async () => {
+    let calls = 0;
+    const provider = new HostingerMailApiProvider({
+      apiKey: "secret-test-key",
+      fetcher: () => {
+        calls += 1;
+        return Promise.reject(new TypeError("network unavailable"));
+      },
+    });
+
+    try {
+      await provider.send({
+        correlationId: "corr",
+        from: {
+          displayName: "TES",
+          mailboxAddress: "contato@example.test",
+          mailboxResourceId: "mailbox-1",
+        },
+        html: "<p>ok</p>",
+        subject: "Teste",
+        text: "ok",
+        to: { email: "pessoa@example.test" },
+      });
+      throw new Error("Expected provider failure.");
+    } catch (error) {
+      assert(error instanceof EmailProviderError);
+      if (error instanceof EmailProviderError) {
+        assertEquals(error.deliveryOutcome, "unknown");
+        assertEquals(error.retryable, false);
+      }
+      assertEquals(calls, 1);
+    }
+  },
+);
+
+Deno.test(
   "HostingerMailApiProvider parses current account mailboxes",
   async () => {
     const provider = new HostingerMailApiProvider({

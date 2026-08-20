@@ -99,6 +99,7 @@ export class HostingerMailApiProvider implements EmailProvider {
               response.status,
               retryable,
               attempt,
+              "not_accepted",
             );
 
             if (!retryable || attempt >= this.maxAttempts) {
@@ -123,8 +124,9 @@ export class HostingerMailApiProvider implements EmailProvider {
                   : "network_error",
                 "Email provider request failed.",
                 undefined,
-                true,
+                false,
                 attempt,
+                "unknown",
               );
 
         lastError = providerError;

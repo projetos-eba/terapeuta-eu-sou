@@ -188,7 +188,12 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+    <form
+      method="post"
+      onSubmit={handleSubmit}
+      noValidate
+      className="space-y-5"
+    >
       <div>
         <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
           Cadastro inicial

@@ -26,7 +26,7 @@ const therapistDirectory: Record<
   "celia-martins": {
     avatarUrl: "/therapists/celia-martins.png",
     headline: "Constelação Familiar",
-    name: "Celia Martins",
+    name: "Célia Martins",
   },
   "juliana-costa": {
     avatarUrl: "/therapists/juliana-costa.png",

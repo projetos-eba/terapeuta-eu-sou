@@ -115,10 +115,10 @@ function formatRating(rating: number | null) {
 
 function formatReviews(count: number | null) {
   if (!count) {
-    return "Sem avaliacoes publicadas";
+    return "Sem avaliações publicadas";
   }
 
-  return `${count} ${count === 1 ? "avaliacao" : "avaliacoes"}`;
+  return `${count} ${count === 1 ? "avaliação" : "avaliações"}`;
 }
 
 function normalizeGuideItems(
@@ -161,7 +161,7 @@ function mapTherapist(row: PublicHomeTherapistRow): PublicHomeTherapist {
     priceLabel: formatPrice(row.service_price_from_cents),
     ratingLabel: formatRating(row.average_rating),
     reviewCountLabel: formatReviews(row.review_count),
-    serviceTitle: row.service_title ?? "Sessao online",
+    serviceTitle: row.service_title ?? "Sessão online",
     slug: row.slug,
   };
 }

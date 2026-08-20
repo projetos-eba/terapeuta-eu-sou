@@ -34,13 +34,13 @@ export function ResetPasswordClient({ token }: { token: string }) {
       const data = (await response.json()) as ApiResponse;
       setMessage(
         data.ok
-          ? data.message ??
-              "Se o e-mail estiver cadastrado, enviaremos as instrucoes de recuperacao."
+          ? (data.message ??
+              "Se o e-mail estiver cadastrado, enviaremos as instruções de recuperação.")
           : data.message,
       );
     } catch {
       setMessage(
-        "Se o e-mail estiver cadastrado, enviaremos as instrucoes de recuperacao.",
+        "Se o e-mail estiver cadastrado, enviaremos as instruções de recuperação.",
       );
     } finally {
       setIsSubmitting(false);
@@ -72,12 +72,12 @@ export function ResetPasswordClient({ token }: { token: string }) {
         return;
       }
 
-      setMessage("Senha atualizada com seguranca.");
+      setMessage("Senha atualizada com segurança.");
       window.setTimeout(() => {
         window.location.assign(data.redirectTo ?? routes.public.clientSignIn);
       }, 1200);
     } catch {
-      setError("Nao foi possivel redefinir a senha agora.");
+      setError("Não foi possível redefinir a senha agora.");
     } finally {
       setIsSubmitting(false);
     }
@@ -95,7 +95,7 @@ export function ResetPasswordClient({ token }: { token: string }) {
             )}
           </div>
           <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
-            Recuperacao de senha
+            Recuperação de senha
           </p>
           <h1 className="mt-3 font-display text-4xl font-light italic leading-tight text-brand-deep sm:text-5xl">
             {hasToken ? "Crie uma nova senha" : "Recupere seu acesso"}
@@ -103,7 +103,7 @@ export function ResetPasswordClient({ token }: { token: string }) {
           <p className="mt-4 text-base font-semibold leading-7 text-tesText-secondary">
             {hasToken
               ? "Escolha uma senha com pelo menos 8 caracteres."
-              : "Informe seu e-mail e enviaremos as instrucoes quando houver uma conta elegivel."}
+              : "Informe seu e-mail e enviaremos as instruções quando houver uma conta elegível."}
           </p>
 
           {message ? (
@@ -124,9 +124,16 @@ export function ResetPasswordClient({ token }: { token: string }) {
           ) : null}
 
           {hasToken ? (
-            <form onSubmit={handleReset} className="mt-8 space-y-5">
+            <form
+              method="post"
+              onSubmit={handleReset}
+              className="mt-8 space-y-5"
+            >
               <PasswordField name="password" label="Nova senha" />
-              <PasswordField name="confirmPassword" label="Confirmar nova senha" />
+              <PasswordField
+                name="confirmPassword"
+                label="Confirmar nova senha"
+              />
               <TESButton
                 type="submit"
                 variant="gradient"
@@ -138,7 +145,11 @@ export function ResetPasswordClient({ token }: { token: string }) {
               </TESButton>
             </form>
           ) : (
-            <form onSubmit={handleRequest} className="mt-8 space-y-5">
+            <form
+              method="post"
+              onSubmit={handleRequest}
+              className="mt-8 space-y-5"
+            >
               <div>
                 <label
                   htmlFor="email"
@@ -162,7 +173,7 @@ export function ResetPasswordClient({ token }: { token: string }) {
                 disabled={isSubmitting}
                 className="min-h-12 w-full rounded-2xl"
               >
-                {isSubmitting ? "Enviando..." : "Enviar instrucoes"}
+                {isSubmitting ? "Enviando..." : "Enviar instruções"}
               </TESButton>
             </form>
           )}
@@ -203,7 +214,7 @@ function PasswordField({ label, name }: { label: string; name: string }) {
         type="password"
         autoComplete="new-password"
         className="min-h-12 w-full rounded-2xl border border-border bg-white px-4 text-sm font-bold text-brand-deep outline-none focus:ring-4 focus:ring-ring/20"
-        placeholder="Minimo de 8 caracteres"
+        placeholder="Mínimo de 8 caracteres"
       />
     </div>
   );
