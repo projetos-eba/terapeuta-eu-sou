@@ -34,6 +34,8 @@ server-side e aplica retry exponencial limitado a cinco tentativas apenas
 quando o provider respondeu que não aceitou a entrega. Falha de rede, timeout
 ou lease vencido vira revisão operacional, sem reenvio silencioso. O fluxo de
 negócio não espera nem faz rollback por indisponibilidade do provider.
+Entregas em processamento ou estado terminal não mantêm `next_attempt_at`;
+somente itens `pending` ou `retry_pending` possuem agendamento futuro.
 
 Os comandos piloto solicitam dispatch best-effort depois do commit. Um job
 Supabase Cron chama a mesma função a cada minuto via `pg_net`; URL e segredo
