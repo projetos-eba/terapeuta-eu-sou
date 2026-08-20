@@ -307,7 +307,7 @@ function ReasonsSection() {
         </div>
       </div>
 
-      <div className="mx-auto mt-6 max-w-xs">
+      <div className="mx-auto mt-6 w-full max-w-none lg:max-w-xs">
         <ReasonCard reason={homeReasons[4]} />
       </div>
     </section>
@@ -466,9 +466,9 @@ function FaqSection() {
 function JourneyCta() {
   return (
     <section className="mx-auto max-w-[1680px] px-5 py-10 sm:px-8 lg:px-12">
-      <div className="relative isolate overflow-hidden rounded-hero bg-brand-primary p-8 text-white md:min-h-[310px] md:p-12">
+      <div className="relative isolate min-h-[360px] overflow-hidden rounded-hero bg-brand-primary p-8 text-white md:min-h-[310px] md:p-12">
         <TESDecorativeMedia
-          className="absolute inset-0"
+          className="absolute inset-0 hidden md:block"
           fade="left"
           fadeTone="brand"
           imageClassName="object-[62%_center]"
@@ -476,7 +476,16 @@ function JourneyCta() {
           sizes="(min-width: 1024px) 90vw, 100vw"
           src={platformAssets.publicJourneyCta.src}
         />
-        <div className="relative max-w-2xl">
+        <TESDecorativeMedia
+          className="absolute inset-x-0 bottom-0 block h-[240px] md:hidden"
+          fade="none"
+          imageClassName="object-center object-bottom"
+          objectPosition="80% bottom"
+          sizes="100vw"
+          src={platformAssets.publicJourneyCta.src}
+        />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[240px] bg-gradient-to-b from-brand-primary via-brand-primary/80 to-transparent md:hidden" />
+        <div className="relative z-20 max-w-2xl">
           <h2 className="font-display text-4xl font-light italic leading-tight md:text-5xl">
             Comece pela sua jornada
           </h2>
