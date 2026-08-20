@@ -1,6 +1,6 @@
 begin;
 
-select plan(20);
+select plan(23);
 
 select has_table('public', 'email_outbox', 'transactional email outbox exists');
 select is(has_table_privilege('anon', 'public.email_outbox', 'SELECT'), false, 'anon cannot read outbox');
@@ -42,13 +42,27 @@ select throws_ok(
 );
 
 select is((select status::text from public.claim_email_outbox_v1('55100000-0000-4000-8000-000000000010', 1) limit 1), 'processing', 'dispatcher claim locks one pending row');
+select ok((select next_attempt_at is null from public.email_outbox where status = 'processing' limit 1), 'claimed work has no retry schedule while its delivery outcome is unknown');
 select is((select status::text from public.complete_email_outbox_v1((select id from public.email_outbox where status = 'processing' limit 1), '55100000-0000-4000-8000-000000000010', 'retry_pending', 'provider_unavailable')), 'retry_pending', 'explicit provider rejection schedules retry');
 select ok((select next_attempt_at > now() from public.email_outbox where status = 'retry_pending' limit 1), 'retry uses a future backoff time');
 
-update public.email_outbox set status = 'processing', locked_at = now() - interval '6 minutes', locked_by = '55100000-0000-4000-8000-000000000099' where status = 'pending';
+update public.email_outbox set status = 'processing', next_attempt_at = null, locked_at = now() - interval '6 minutes', locked_by = '55100000-0000-4000-8000-000000000099' where status = 'pending';
 update public.email_outbox set next_attempt_at = now() where status = 'retry_pending';
 select is((select count(*)::integer from public.claim_email_outbox_v1('55100000-0000-4000-8000-000000000011', 10) where status = 'processing'), 1, 'active retry work remains claimable while stale lease is finalized');
 select ok((select review_required from public.email_outbox where review_reason = 'delivery_outcome_unknown' limit 1), 'stale processing delivery requires review instead of automatic duplicate retry');
+select ok((select next_attempt_at is null from public.email_outbox where review_reason = 'delivery_outcome_unknown' limit 1), 'stale processing delivery has no schedule after manual-review finalization');
+select is(
+  (
+    select next_attempt_at
+    from public.complete_email_outbox_v1(
+      (select id from public.email_outbox where status = 'processing' limit 1),
+      '55100000-0000-4000-8000-000000000011',
+      'delivered'
+    )
+  ),
+  null,
+  'delivered work clears its retry schedule'
+);
 
 select * from finish();
 rollback;
