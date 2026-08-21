@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { LockKeyhole, Mail } from "lucide-react";
 
-import { TESButton } from "@/components/tes";
+import { PasswordVisibilityToggle, TESButton } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 import type { TherapistAuthApiError } from "../errors";
@@ -33,6 +33,7 @@ export function TherapistLoginForm({
   const [isClientReady, setIsClientReady] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   useEffect(() => {
     setIsClientReady(true);
@@ -179,7 +180,13 @@ export function TherapistLoginForm({
         label="Senha"
         name="password"
         placeholder="Digite sua senha"
-        type="password"
+        trailing={
+          <PasswordVisibilityToggle
+            isVisible={isPasswordVisible}
+            onToggle={() => setIsPasswordVisible((visible) => !visible)}
+          />
+        }
+        type={isPasswordVisible ? "text" : "password"}
       />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -219,6 +226,7 @@ function Field({
   icon,
   label,
   name,
+  trailing,
   type = "text",
   ...props
 }: {
@@ -228,6 +236,7 @@ function Field({
   label: string;
   name: string;
   placeholder?: string;
+  trailing?: ReactNode;
   type?: string;
 }) {
   const errorId = `${name}-error`;
@@ -250,8 +259,9 @@ function Field({
           suppressHydrationWarning
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
-          className="min-h-12 w-full bg-transparent text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-subtle"
+          className="min-h-12 min-w-0 flex-1 bg-transparent text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-subtle"
         />
+        {trailing}
       </div>
       {error ? (
         <p id={errorId} className="mt-2 text-xs font-bold text-status-danger">

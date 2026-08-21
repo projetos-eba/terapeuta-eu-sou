@@ -18,18 +18,22 @@ import { routes } from "@/lib/routes";
 import { PublicAuthMenu } from "./public-auth-menu";
 import { TESButton } from "./tes-button";
 
-function Logo() {
+function Logo({ header = false }: { header?: boolean }) {
   return (
     <Link
       href={routes.public.home as Route}
-      className="relative block h-12 w-[122px] shrink-0 sm:h-[56px] sm:w-[142px]"
+      className={
+        header
+          ? "relative block h-14 w-36 shrink-0 sm:h-16 sm:w-[168px]"
+          : "relative block h-12 w-[122px] shrink-0 sm:h-[56px] sm:w-[142px]"
+      }
       aria-label="Terapeuta Eu Sou"
     >
       <Image
         src="/logo-oficial-terapeuta-eu-sou.png"
         alt="Terapeuta Eu Sou"
         fill
-        sizes="142px"
+        sizes={header ? "(min-width: 640px) 168px, 144px" : "142px"}
         className="object-contain"
         priority
       />
@@ -50,7 +54,7 @@ export function PublicHeader() {
   return (
     <header className="relative z-50 mx-auto w-full max-w-[1680px] px-5 py-4 sm:px-8 lg:px-12">
       <div className="flex items-center justify-between gap-4">
-        <Logo />
+        <Logo header />
         <nav className="hidden items-center gap-11 text-sm font-bold text-tesText-secondary xl:flex">
           {nav.map(([label, href]) => (
             <Link

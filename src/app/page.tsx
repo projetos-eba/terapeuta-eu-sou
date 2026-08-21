@@ -105,7 +105,7 @@ function HeroSection() {
           </p>
           <h1 className="mt-4 max-w-[11ch] font-display text-[3.25rem] font-light italic leading-[0.98] text-brand-deep sm:max-w-[12ch] sm:text-6xl md:text-7xl lg:max-w-none">
             {homeHero.titleStart}
-            <span className="mt-2 block bg-[linear-gradient(90deg,#6C3D91_0%,#81BAE0_100%)] bg-clip-text font-normal text-transparent">
+            <span className="mt-2 block bg-[linear-gradient(90deg,#6C3D91_0%,#81BAE0_100%)] bg-clip-text font-semibold text-transparent">
               {homeHero.titleAccent}
             </span>
           </h1>
