@@ -22,6 +22,9 @@ Antes de producao:
   aceitar sessao real somente depois de evidenciar pagamento Stripe test por
   Checkout + webhook;
 - manter o rate limit distribuido de emissao de JWT ativo e validado por pgTAP;
+- homologar encontro de 75 a 90 minutos para paciente e terapeuta, comprovando
+  a rotação do login TES, refresh da página e reconexão após queda de rede sem
+  expor token em logs ou interface;
 - manter host-first ativo: paciente so recebe JWT apos `session.user_joined`
   confiavel do terapeuta;
 - ativar o cron de `zoom-video-session-maintenance` via Vault/pg_net sem segredo

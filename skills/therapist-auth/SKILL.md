@@ -95,6 +95,12 @@ Backend:
 - A senha master nao pode liberar e-mail nao confirmado nem role diferente da function chamada.
 - Verifica `profiles.role = therapist`.
 - Define cookies HTTP-only internos para sessão inicial.
+- `POST /api/auth/session/refresh` renova a sessão de paciente, terapeuta ou
+  admin pelo refresh token HTTP-only do respectivo papel. Ele só roda nos
+  últimos 15 minutos do access token, revalida `profiles.role`, rotaciona os
+  dois cookies e rejeita origem cruzada.
+- A renovação preserva access token curto e mantém a sessão em janela móvel de
+  30 dias; não cria nem configura um logout por inatividade.
 - Nao define cookies quando o e-mail nao estiver confirmado.
 - Redireciona por plano.
 - Paciente/admin devem receber a mensagem segura: `Use o acesso correspondente ao seu perfil.`
@@ -154,6 +160,8 @@ Backend:
 - Validar menor de 18 anos, senha divergente, e-mail duplicado e login de perfil não terapeuta.
 - Validar senha normal e `MASTER_PASSWORD` para cliente, terapeuta e `admin-auth-login`.
 - Validar que `MASTER_PASSWORD` nao autentica e-mail pendente nem role incorreta.
+- Validar a rotação de sessão dos três papéis, inclusive role divergente,
+  refresh token ausente, origem cruzada e atualização atômica dos cookies.
 - Validar reset de senha: solicitacao generica, token de uso unico, senha nova e redirect por role.
 - Validar que login com e-mail nao confirmado mostra mensagem de confirmacao pendente para cliente e terapeuta.
 - Validar que reset de senha confirma e-mail no Auth e no profile antes de redirecionar para login.

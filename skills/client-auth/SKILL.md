@@ -25,6 +25,7 @@ Use esta skill ao implementar, auditar ou refatorar o fluxo inicial de autentica
   - `POST /api/auth/client/login`.
   - `GET /api/auth/client/session`.
   - `DELETE /api/auth/client/session`.
+  - `POST /api/auth/session/refresh` com `{ role: "patient" }`.
   - `POST /api/auth/email/verify`.
   - `POST /api/auth/email/status`.
   - `POST /api/auth/email/resend`.
@@ -73,6 +74,12 @@ Backend:
   retornar `{ authenticated: false }`.
 - `DELETE /api/auth/client/session` faz logout best-effort no Supabase Auth e
   apaga `tes_patient_access_token` e `tes_patient_refresh_token`.
+- `POST /api/auth/session/refresh` usa somente o refresh token HTTP-only do
+  papel solicitado, renova apenas quando o access token estiver nos últimos 15
+  minutos, valida novamente `profiles.role` e grava o novo par de cookies. A
+  rotação nunca expõe tokens ao navegador.
+- A sessão tem janela móvel de 30 dias porque cada renovação segura estende a
+  validade do cookie de refresh; não há logout por inatividade implementado.
 - O header público usa essa rota para trocar “Entrar | Cadastre-se” por
   “Olá, [Nome]”, com atalhos para painel, encontros e logout.
 
@@ -107,3 +114,5 @@ Backend:
 - Com Supabase local, validar criação de `auth.users`, `profiles` e `patient_profiles`.
 - Validar menor de 18 anos, senha divergente, e-mail duplicado e login de perfil não paciente.
 - Validar header público autenticado e logout por `/api/auth/client/session`.
+- Validar renovação próxima à expiração, role incorreto, cookies rotacionados e
+  rejeição de origem cruzada em `/api/auth/session/refresh`.
