@@ -1,6 +1,6 @@
 begin;
 
-select plan(22);
+select plan(25);
 
 select has_table('public', 'support_ticket_messages', 'support ticket thread table exists');
 select has_column('public', 'support_tickets', 'last_activity_at', 'ticket activity is persisted');
@@ -162,6 +162,29 @@ select lives_ok(
     )
   $$,
   'authorized admin can send a public reply'
+);
+
+select is(
+  (select count(*) from public.admin_get_support_ticket_thread_v1(current_setting('test.support_ticket_id')::uuid)),
+  4::bigint,
+  'authorized admin reads the complete support thread including the internal note'
+);
+select is(
+  (
+    select count(*)
+    from public.admin_get_support_ticket_thread_v1(current_setting('test.support_ticket_id')::uuid)
+    where visibility = 'internal'
+  ),
+  1::bigint,
+  'admin thread contract preserves internal note visibility'
+);
+select throws_ok(
+  $$
+    select public.admin_get_support_ticket_thread_v1('00000000-0000-4000-8000-000000000099'::uuid)
+  $$,
+  'P0002',
+  'support ticket not found',
+  'admin thread read rejects an unknown ticket'
 );
 
 select lives_ok(

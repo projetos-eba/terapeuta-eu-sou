@@ -1,16 +1,17 @@
 # Contratos de Mensagens e Suporte — TES
 
 Data: 2026-08-21  
-Status: Fase 2 concluída localmente para terapeuta; a Inbox administrativa completa permanece para a Fase 3.
+Status: Fase 2 implementada para terapeuta e com leitura/resposta mínima no
+detalhe Admin; a Inbox administrativa completa permanece para a Fase 3.
 
 ## Estado real inventariado
 
-| Superfície    | Contrato atual                                                                       | Observação da Fase 1                                                                                                            |
-| ------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| Participante  | `conversations`, `messages`, `message_templates`, `POST /api/messages/send-template` | A escrita passa exclusivamente pela RPC autenticada `send_structured_participant_message_v1`.                                   |
-| Suporte       | `support_tickets`, `support_ticket_messages`, APIs `/api/support/tickets*`           | Ticket e thread plain text para terapeuta, com idempotência, RLS por solicitante e contexto opcional autorizado.                |
-| Administração | `/admin/suporte`, read models e comandos `support.resolve`/`support.reopen`          | Pode responder publicamente; nota interna existe somente como boundary de banco nesta fase.                                     |
-| Legado        | `structured_messages`                                                                | Não identificado consumidor no runtime analisado. A tabela permanece por compatibilidade e não deve ser fundida com `messages`. |
+| Superfície    | Contrato atual                                                                               | Observação da Fase 1                                                                                                            |
+| ------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Participante  | `conversations`, `messages`, `message_templates`, `POST /api/messages/send-template`         | A escrita passa exclusivamente pela RPC autenticada `send_structured_participant_message_v1`.                                   |
+| Suporte       | `support_tickets`, `support_ticket_messages`, APIs `/api/support/tickets*`                   | Ticket e thread plain text para terapeuta, com idempotência, RLS por solicitante e contexto opcional autorizado.                |
+| Administração | `/admin/suporte`, thread Admin, notas internas e comandos `support.resolve`/`support.reopen` | Pode ler a thread autorizada, responder publicamente e registrar nota interna sem expô-la ao solicitante.                       |
+| Legado        | `structured_messages`                                                                        | Não identificado consumidor no runtime analisado. A tabela permanece por compatibilidade e não deve ser fundida com `messages`. |
 
 O histórico de migrations local e de HML foi conferido em modo somente leitura e estava alinhado. O Supabase MCP não estava disponível nesta sessão.
 
@@ -68,7 +69,7 @@ Erros públicos: JSON inválido `400`, sessão ausente `401`, papel/conversa nã
 
 ### Criação de suporte vigente — Fase 2
 
-`POST /api/support/tickets` substituirá o payload template-only atual por:
+`POST /api/support/tickets` aceita:
 
 ```json
 {
@@ -91,8 +92,13 @@ Contratos de thread vigentes, todos fora da API de participante:
 
 - `GET /api/support/tickets`: tickets próprios paginados;
 - `GET /api/support/tickets/:ticketId`: detalhe próprio, sem notas internas;
-- `POST /api/support/tickets/:ticketId/messages`: mensagem pública própria;
-- `/api/admin/support/tickets/:ticketId/reply`: resposta pública sob `admin.support.manage`; resolver/reabrir reutiliza o command auditado existente.
+- `POST /api/support/tickets/:ticketId`: mensagem pública própria;
+- `GET /api/admin/support/tickets/:ticketId/thread`: thread completa somente
+  para Admin com `admin.support.read`, incluindo notas internas;
+- `POST /api/admin/support/tickets/:ticketId/reply`: resposta pública sob
+  `admin.support.manage`;
+- `POST /api/admin/support/tickets/:ticketId/notes`: nota interna sob
+  `admin.support.manage`; resolver/reabrir reutiliza o command auditado existente.
 
 ## Lifecycle de suporte vigente
 
@@ -117,7 +123,8 @@ RLS vigente:
 
 - solicitante lê somente o próprio ticket e mensagens com `visibility = requester`;
 - solicitante só cria mensagem pública em ticket próprio e estado permitido pela RPC;
-- Admin opera por boundary administrativo com permissão explícita;
+- Admin opera por RPC administrativo explícito; a leitura de thread usa
+  `admin_get_support_ticket_thread_v1` e nunca é reutilizada por requester;
 - nota interna não participa de DTO, view, query nem policy do solicitante.
 
 ## Riscos e decisões

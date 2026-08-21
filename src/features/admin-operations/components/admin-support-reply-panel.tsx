@@ -3,7 +3,13 @@
 import { useRef, useState } from "react";
 import { Loader2, Send } from "lucide-react";
 
-export function AdminSupportReplyPanel({ ticketId }: { ticketId: string }) {
+export function AdminSupportReplyPanel({
+  onSuccess,
+  ticketId,
+}: {
+  onSuccess?: () => void;
+  ticketId: string;
+}) {
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,6 +43,7 @@ export function AdminSupportReplyPanel({ ticketId }: { ticketId: string }) {
     setBody("");
     requestId.current = null;
     setSuccess(true);
+    onSuccess?.();
   }
   return (
     <div className="space-y-3">
