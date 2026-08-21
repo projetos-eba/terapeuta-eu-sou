@@ -55,6 +55,10 @@ revalidada no servidor antes do checkout.
 - `/reserva` deve hidratar terapeuta, serviço e disponibilidade a partir das
   mesmas views públicas usadas em `/terapeutas/:slug`. Não criar grade local de
   horários.
+- O slot é um instante UTC. Resumo, dia de referência e faixa de horário devem
+  ser formatados explicitamente no timezone retornado por
+  `get_service_available_slots_v1`; o timezone do servidor nunca é autoridade
+  de apresentação.
 - A API chama `session-booking-checkout` com `serviceId`, `startsAt`,
   `requestId`, `termsAccepted` e `holdTtlSeconds`. Sem aceite obrigatório, o
   endpoint deve falhar antes de criar hold, booking ou pagamento.
@@ -110,6 +114,8 @@ revalidada no servidor antes do checkout.
 - Cliente autenticado deve conseguir chamar `/api/public/reservation/checkout`
   somente com `termsAccepted: true`.
 - Slot inexistente/indisponível deve retornar erro seguro.
+- Um slot `2026-08-24T12:10:00.000Z` no timezone `America/Sao_Paulo` deve ser
+  exibido como `09:10`, inclusive no resumo antes do checkout.
 - Sem Supabase configurado, submit deve retornar erro controlado sem expor
   segredo.
 - Mobile deve empilhar formulário e resumo sem sobreposição.

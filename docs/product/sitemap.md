@@ -61,6 +61,10 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 - `/ajuda`: central pública de ajuda em revisão interna, bloqueada para
   publicação até canais e SLAs aprovados.
 
+Contrato de navegação pública: o label `Como funciona` aparece no cabeçalho e
+no rodapé e aponta para a rota canônica `/sobre-nos`. `/como-funciona` permanece
+somente como redirect de compatibilidade e não possui página própria.
+
 Observação: `/ajuda/zoom` e `/status` não possuem página pública nesta fase. A
 integração técnica Zoom Video SDK, runbooks e documentação operacional em
 `docs/zoom/` permanecem válidos.

@@ -1,27 +1,30 @@
-const fullDateFormatter = new Intl.DateTimeFormat("pt-BR", {
-  day: "2-digit",
-  month: "short",
-  weekday: "long",
-});
+import { normalizeTimeZone } from "@/features/bookings/session-formatters";
 
-const monthYearFormatter = new Intl.DateTimeFormat("pt-BR", {
-  month: "long",
-  year: "numeric",
-});
-
-const timeFormatter = new Intl.DateTimeFormat("pt-BR", {
-  hour: "2-digit",
-  minute: "2-digit",
-});
-
-export function formatSessionDate(value: string) {
-  return capitalize(fullDateFormatter.format(new Date(value)).replace(".", ""));
+export function formatSessionDate(value: string, timezone: string) {
+  return capitalize(
+    new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "short",
+      timeZone: normalizeTimeZone(timezone),
+      weekday: "long",
+    })
+      .format(new Date(value))
+      .replace(".", ""),
+  );
 }
 
-export function formatSessionTimeRange(startsAt: string, endsAt: string) {
-  return `${timeFormatter.format(new Date(startsAt))} - ${timeFormatter.format(
-    new Date(endsAt),
-  )}`;
+export function formatSessionTimeRange(
+  startsAt: string,
+  endsAt: string,
+  timezone: string,
+) {
+  const formatter = new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: normalizeTimeZone(timezone),
+  });
+
+  return `${formatter.format(new Date(startsAt))} - ${formatter.format(new Date(endsAt))}`;
 }
 
 export function formatSessionDuration(startsAt: string, endsAt: string) {
@@ -43,10 +46,14 @@ export function formatSessionDuration(startsAt: string, endsAt: string) {
     : `${hours}h de duração`;
 }
 
-export function formatJourneyStartedAt(value: string | null) {
+export function formatJourneyStartedAt(value: string | null, timezone: string) {
   if (!value) return "Em andamento";
 
-  const formatted = monthYearFormatter.format(new Date(value));
+  const formatted = new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    timeZone: normalizeTimeZone(timezone),
+    year: "numeric",
+  }).format(new Date(value));
 
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }

@@ -105,7 +105,7 @@ function HeroSection() {
           </p>
           <h1 className="mt-4 max-w-[11ch] font-display text-[3.25rem] font-light italic leading-[0.98] text-brand-deep sm:max-w-[12ch] sm:text-6xl md:text-7xl lg:max-w-none">
             {homeHero.titleStart}
-            <span className="mt-2 block bg-[linear-gradient(90deg,#6C3D91_0%,#81BAE0_100%)] bg-clip-text font-semibold text-transparent">
+            <span className="mt-2 block bg-[linear-gradient(90deg,#6C3D91_0%,#81BAE0_100%)] bg-clip-text font-normal text-transparent">
               {homeHero.titleAccent}
             </span>
           </h1>
@@ -138,6 +138,7 @@ function HeroSection() {
           alt="Cena acolhedora de conversa terapêutica em ambiente calmo"
           fill
           priority
+          quality={95}
           sizes="(min-width: 1024px) 66vw, 100vw"
           className="object-cover object-center"
         />
@@ -295,6 +296,7 @@ function ReasonsSection() {
             src="/home/tablet-video-session.png"
             alt="Sessão online em tablet"
             fill
+            quality={95}
             sizes="(min-width: 1024px) 52vw, 100vw"
             className="object-contain drop-shadow-2xl"
           />
@@ -466,7 +468,10 @@ function FaqSection() {
 function JourneyCta() {
   return (
     <section className="mx-auto max-w-[1680px] px-5 py-10 sm:px-8 lg:px-12">
-      <div className="relative isolate min-h-[360px] overflow-hidden rounded-hero bg-brand-primary p-8 text-white md:min-h-[310px] md:p-12">
+      <div
+        className="relative isolate min-h-[720px] overflow-hidden rounded-hero bg-brand-primary p-7 text-white sm:p-10 md:min-h-[310px] md:p-12"
+        data-testid="home-journey-cta"
+      >
         <TESDecorativeMedia
           className="absolute inset-0 hidden md:block"
           fade="left"
@@ -477,19 +482,19 @@ function JourneyCta() {
           src={platformAssets.publicJourneyCta.src}
         />
         <TESDecorativeMedia
-          className="absolute inset-x-0 bottom-0 block h-[240px] md:hidden"
+          className="absolute inset-x-0 bottom-0 top-[280px] block md:hidden"
           fade="none"
-          imageClassName="object-center object-bottom"
-          objectPosition="80% bottom"
+          imageClassName="object-[80%_center]"
+          objectPosition="80% center"
           sizes="100vw"
           src={platformAssets.publicJourneyCta.src}
         />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[240px] bg-gradient-to-b from-brand-primary via-brand-primary/80 to-transparent md:hidden" />
+        <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(to_bottom,var(--tes-color-brand-primary)_0%,var(--tes-color-brand-primary)_52%,transparent_78%)] md:hidden" />
         <div className="relative z-20 max-w-2xl">
-          <h2 className="font-display text-4xl font-light italic leading-tight md:text-5xl">
+          <h2 className="max-w-[9ch] font-display text-[clamp(3.1rem,15vw,4rem)] font-light italic leading-[0.96] md:max-w-none md:text-5xl md:leading-tight">
             Comece pela sua jornada
           </h2>
-          <p className="mt-4 max-w-xl text-base font-semibold leading-7 text-white/85">
+          <p className="mt-6 max-w-[18ch] text-[1.25rem] font-medium leading-8 text-white/90 md:mt-4 md:max-w-xl md:text-base md:font-semibold md:leading-7 md:text-white/85">
             Responda algumas perguntas com calma e veja caminhos terapêuticos
             que podem conversar com o seu momento.
           </p>
@@ -497,7 +502,7 @@ function JourneyCta() {
             href={routes.public.journey}
             size="lg"
             variant="secondary"
-            className="mt-7 bg-white"
+            className="mt-8 min-h-14 w-full justify-center rounded-full bg-white px-5 text-base sm:max-w-[360px] md:mt-7 md:w-auto md:justify-start"
           >
             Começar minha jornada
             <CalendarDays className="size-4" />

@@ -27,7 +27,7 @@ export function PatientEncountersMetrics({
         supportingText={nextEncounter?.therapist.name ?? "Sem encontro agendado"}
         value={
           nextEncounter
-            ? formatBookingMetricDate(nextEncounter.startsAt)
+            ? formatBookingMetricDate(nextEncounter.startsAt, nextEncounter.timezone)
             : "Sem data"
         }
       />

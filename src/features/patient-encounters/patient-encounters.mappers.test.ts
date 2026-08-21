@@ -191,6 +191,33 @@ describe("patient encounters mapper", () => {
       "Ver reembolso",
     );
   });
+
+  it("formats encounter times in the booking timezone instead of the server timezone", () => {
+    const booking = createBooking(
+      "95000000-0000-4000-8000-000000000006",
+      new Date("2026-08-24T12:10:00.000Z"),
+    );
+
+    const result = mapPatientEncountersPage({
+      bookings: [booking],
+      favoriteTherapistsCount: 0,
+      patient,
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map([
+        [booking.id, { booking_id: booking.id, financial_status: "paid" }],
+      ]),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(result.nextEncounter?.scheduleLabel).toContain("09:10");
+    expect(result.nextEncounter?.scheduleLabel).not.toContain("12:10");
+  });
 });
 
 function createBooking(id: string, startsAt: Date) {
@@ -206,5 +233,6 @@ function createBooking(id: string, startsAt: Date) {
     starts_at: startsAt.toISOString(),
     status: "confirmed",
     therapist_profile_id: therapist.id,
+    timezone: "America/Sao_Paulo",
   };
 }

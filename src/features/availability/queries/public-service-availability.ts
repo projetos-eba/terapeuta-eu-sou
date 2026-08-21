@@ -12,7 +12,10 @@ type AvailableSlotsContract = {
 };
 
 export type PublicServiceAvailabilityResult =
-  | { data: AvailabilityDay[]; status: "success" }
+  | {
+      data: { days: AvailabilityDay[]; timezone: string };
+      status: "success";
+    }
   | { data: null; status: "error" };
 
 export async function getPublicServiceAvailability(
@@ -47,7 +50,10 @@ export async function getPublicServiceAvailability(
     }
 
     return {
-      data: mapAvailableSlots(contract.slots, serviceId, timezone),
+      data: {
+        days: mapAvailableSlots(contract.slots, serviceId, timezone),
+        timezone,
+      },
       status: "success",
     };
   } catch {

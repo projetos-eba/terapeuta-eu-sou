@@ -69,6 +69,7 @@ export function TherapyHeroImage({ therapy }: { therapy: PublicTherapyDetail }) 
           alt=""
           fill
           priority
+          quality={95}
           sizes="(min-width: 1024px) 720px, 100vw"
           className={`object-cover ${focalPointClassName[therapy.heroFocalPoint]}`}
         />

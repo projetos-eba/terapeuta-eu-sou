@@ -189,7 +189,7 @@ Figma:
 
 - Variáveis atualizadas: `font/family/display` e `font/family/accent`.
 - Styles preparados: `TES/Display/IvyPresto/2XL`, `TES/Display/IvyPresto/XL`, `TES/Display/IvyPresto/LG` e `TES/Accent/IvyPresto`.
-- Observação operacional: IvyPresto Display precisa estar instalada/listada no Figma para aplicar os styles aos componentes sem gerar fonte ausente. Os arquivos locais de `IvyPresto Display` disponíveis no projeto são itálicos; para títulos retos, o código mapeia `IvyPresto Display` para os cortes `IvyPresto Headline` em `/public/fonts/ivy-presto`. Enquanto o Figma não listar a família, os styles legados `TES/Display/*` permanecem em `Cormorant Garamond` como fallback visual seguro.
+- Observação operacional: IvyPresto Display precisa estar instalada/listada no Figma para aplicar os styles aos componentes sem gerar fonte ausente. O CSS registra os cortes regulares locais `IvyPresto Headline` e `IvyPresto Display` no peso `400` em `/public/fonts/ivy-presto`, preservando respectivamente títulos retos e itálicos sem síntese de peso. Enquanto o Figma não listar a família, os styles legados `TES/Display/*` permanecem em `Cormorant Garamond` como fallback visual seguro.
 
 | Token                   | Tamanho | Line-height |  Peso | Uso               |
 | ----------------------- | ------: | ----------: | ----: | ----------------- |

@@ -1,0 +1,6 @@
+interface:
+  display_name: "Mobile Editorial Illustration"
+  short_description: "Keep editorial subjects visible on mobile."
+  default_prompt: "Use $mobile-editorial-illustration to refine this TES mobile banner so its illustration remains visible without compromising readable copy or the primary CTA."
+policy:
+  allow_implicit_invocation: true

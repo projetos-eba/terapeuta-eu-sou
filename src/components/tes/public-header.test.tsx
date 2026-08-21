@@ -39,6 +39,9 @@ describe("PublicHeader", () => {
     const mobileMenuQueries = within(mobileMenu!.parentElement!);
 
     expect(
+      mobileMenuQueries.getByRole("link", { name: /como funciona/i }),
+    ).toHaveAttribute("href", "/sobre-nos");
+    expect(
       mobileMenuQueries.getByRole("link", { name: /entrar como cliente/i }),
     ).toHaveAttribute("href", "/cliente/login");
     expect(
@@ -57,6 +60,9 @@ describe("PublicHeader", () => {
 
     render(<PublicHeader />);
 
+    expect(
+      screen.getAllByRole("link", { name: /^como funciona$/i })[0],
+    ).toHaveAttribute("href", "/sobre-nos");
     expect(
       screen.getByRole("link", { name: /^começar minha jornada$/i }),
     ).toHaveAttribute("href", "/sua-jornada");

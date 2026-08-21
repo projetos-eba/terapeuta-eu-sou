@@ -59,7 +59,7 @@ export default async function PublicReservationPage({
         : null;
       availabilityDays =
         availabilityResult?.status === "success"
-          ? availabilityResult.data
+          ? availabilityResult.data.days
           : [];
       context = mergeReservationContextWithPublicProfile(context, {
         avatarUrl: profile.heroImage,
@@ -76,6 +76,10 @@ export default async function PublicReservationPage({
             }
           : undefined,
         slug: profile.slug,
+        timezone:
+          availabilityResult?.status === "success"
+            ? availabilityResult.data.timezone
+            : undefined,
       });
       context = reconcileReservationContextWithAvailability(
         context,

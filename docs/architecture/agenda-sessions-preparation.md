@@ -199,7 +199,8 @@ lista de domínio vazia.
 
 - instantes persistidos e transportados em UTC;
 - timezone do terapeuta/booking acompanha o read model;
-- formatação acontece na borda com `Intl.DateTimeFormat`;
+- formatação acontece na borda com `Intl.DateTimeFormat` e o timezone explícito
+  do slot ou booking; nunca no timezone implícito do servidor;
 - timezone inválido cai para `America/Sao_Paulo`;
 - intervalos de consulta são semiabertos;
 - cursor descendente é o par estável `(startsAt, bookingId)`;

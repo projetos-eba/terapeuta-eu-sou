@@ -36,7 +36,7 @@ export function JourneyBanner() {
       <LeafCluster className="absolute -right-6 bottom-4 scale-x-[-1] opacity-40" />
       <div className="relative grid gap-9 lg:grid-cols-[340px_1fr] lg:items-center">
         <div>
-          <h2 className="font-display text-3xl font-semibold leading-tight text-brand-deep md:text-4xl">
+          <h2 className="font-display text-3xl font-light italic leading-tight text-brand-deep md:text-4xl">
             Ainda não sabe por onde começar?
           </h2>
           <p className="mt-4 max-w-xs text-sm font-semibold leading-6 text-tesText-secondary">

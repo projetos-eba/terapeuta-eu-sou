@@ -48,6 +48,7 @@ export type PatientEncounter = {
     name: string;
   };
   therapyLabel: string;
+  timezone: string;
 };
 
 export type PatientEncounterStatus =
