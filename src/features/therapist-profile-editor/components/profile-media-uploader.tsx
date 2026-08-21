@@ -1,7 +1,7 @@
 "use client";
 
 import { ImagePlus, Loader2, Play, Upload } from "lucide-react";
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { TESButton } from "@/components/tes";
 
@@ -27,19 +27,69 @@ export function ProfilePhotoUploader({
     value: TherapistProfileEditableFields[K],
   ) => void;
 }) {
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const previewUrl = localPreviewUrl ?? fields.photoUrl;
+
+  useEffect(() => {
+    return () => {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+    };
+  }, [localPreviewUrl]);
+
+  function showLocalPreview(file: File) {
+    if (!file.type.startsWith("image/")) return;
+
+    setLocalPreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return URL.createObjectURL(file);
+    });
+  }
+
+  function saveUploadedPhoto(url: string) {
+    setLocalPreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return null;
+    });
+    updateField("photoUrl", url);
+  }
+
   return (
     <ProfileSection
       description="Use JPG, PNG ou WebP de até 5 MB. A foto aparece publicamente após publicação."
       title="Foto de perfil"
     >
-      <MediaUploadControl
-        accept="image/jpeg,image/png,image/webp"
-        currentUrl={fields.photoUrl}
-        kind="photo"
-        label="Enviar foto de perfil"
-        maxBytes={maxImageBytes}
-        onUploaded={(url) => updateField("photoUrl", url)}
-      />
+      <div className="grid gap-4">
+        {previewUrl ? (
+          <div className="overflow-hidden rounded-card border border-border bg-surface-muted p-2">
+            {/* eslint-disable-next-line @next/next/no-img-element -- prévia imediata de arquivo local ou URL pública recém-enviada. */}
+            <img
+              alt="Prévia da foto de perfil"
+              className="aspect-square w-full rounded-lg object-cover"
+              src={previewUrl}
+            />
+          </div>
+        ) : (
+          <div className="grid aspect-square place-items-center rounded-card border border-dashed border-border bg-surface-muted p-6 text-center text-sm font-semibold leading-6 text-tesText-secondary">
+            A prévia da sua foto aparecerá aqui.
+          </div>
+        )}
+        {localPreviewUrl ? (
+          <p className="text-sm font-medium leading-6 text-tesText-secondary">
+            Prévia local. A foto será salva após o envio e aparecerá
+            publicamente somente depois da publicação.
+          </p>
+        ) : null}
+
+        <MediaUploadControl
+          accept="image/jpeg,image/png,image/webp"
+          currentUrl={fields.photoUrl}
+          kind="photo"
+          label="Enviar foto de perfil"
+          maxBytes={maxImageBytes}
+          onFileSelected={showLocalPreview}
+          onUploaded={saveUploadedPhoto}
+        />
+      </div>
     </ProfileSection>
   );
 }
@@ -137,6 +187,7 @@ function MediaUploadControl({
   kind,
   label,
   maxBytes,
+  onFileSelected,
   onUploaded,
 }: {
   accept: string;
@@ -144,6 +195,7 @@ function MediaUploadControl({
   kind: TherapistProfileMediaKind;
   label: string;
   maxBytes: number;
+  onFileSelected?: (file: File) => void;
   onUploaded: (url: string) => void;
 }) {
   const inputId = useId();
@@ -161,6 +213,8 @@ function MediaUploadControl({
       );
       return;
     }
+
+    onFileSelected?.(file);
 
     setUploading(true);
     const result = await uploadTherapistProfileMedia({ file, kind });

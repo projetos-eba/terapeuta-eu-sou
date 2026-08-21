@@ -110,7 +110,7 @@ async function getSupabasePatientEncountersPage(
     [
       supabaseRequest<BookingRecord[]>(
         config,
-        `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,status,cancellation_reason,cancelled_at,completed_at&patient_profile_id=eq.${patientProfile.id}&order=starts_at.asc`,
+        `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,timezone,status,cancellation_reason,cancelled_at,completed_at&patient_profile_id=eq.${patientProfile.id}&order=starts_at.asc`,
       ),
       supabaseRequest<FavoriteRow[]>(
         config,
@@ -462,6 +462,7 @@ function createBooking(
     starts_at: startsAt.toISOString(),
     status,
     therapist_profile_id: therapistProfileId,
+    timezone: "America/Sao_Paulo",
   };
 }
 

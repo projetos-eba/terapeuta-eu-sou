@@ -55,7 +55,10 @@ describe("public service availability", () => {
       "e2e10000-0000-4000-8000-000000000001",
     );
 
-    expect(result).toEqual({ data: [], status: "success" });
+    expect(result).toEqual({
+      data: { days: [], timezone: "America/Sao_Paulo" },
+      status: "success",
+    });
     expect(fetchMock.mock.calls[0]?.[1]).toEqual(
       expect.objectContaining({ cache: "no-store", method: "POST" }),
     );

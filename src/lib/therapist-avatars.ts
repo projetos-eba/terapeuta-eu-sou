@@ -25,6 +25,12 @@ export function getTherapistAvatarUrl(
   photoUrl?: string | null,
   identity: TherapistAvatarIdentity = {},
 ) {
+  if (photoUrl && versionedAvatarUrlByPath[photoUrl]) {
+    return versionedAvatarUrlByPath[photoUrl];
+  }
+
+  if (photoUrl) return photoUrl;
+
   if (identity.slug && avatarUrlBySlug[identity.slug]) {
     return avatarUrlBySlug[identity.slug];
   }
@@ -33,9 +39,5 @@ export function getTherapistAvatarUrl(
     return avatarUrlBySlug["andre-lima"];
   }
 
-  if (photoUrl && versionedAvatarUrlByPath[photoUrl]) {
-    return versionedAvatarUrlByPath[photoUrl];
-  }
-
-  return photoUrl ?? null;
+  return null;
 }

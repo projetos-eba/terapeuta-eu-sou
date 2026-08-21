@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveReservationContext } from "./reservation-data";
+import {
+  mergeReservationContextWithPublicProfile,
+  resolveReservationContext,
+} from "./reservation-data";
 
 describe("public reservation data contract", () => {
   it("accepts canonical UUIDs for service checkout context", () => {
@@ -29,5 +32,25 @@ describe("public reservation data contract", () => {
 
     expect(context.marketingConsent).toBe(true);
     expect(context.hasRequiredCheckoutData).toBe(true);
+  });
+
+  it("formats the reservation summary in the authoritative schedule timezone", () => {
+    const context = resolveReservationContext({
+      isPatientAuthenticated: true,
+      searchParams: {
+        duration: "60",
+        slot: "2026-08-24T12:10:00.000Z",
+      },
+    });
+    const hydrated = mergeReservationContextWithPublicProfile(context, {
+      avatarUrl: null,
+      headline: "Terapeuta",
+      isVerified: true,
+      name: "Brunna P",
+      slug: "brunna-p",
+      timezone: "America/Sao_Paulo",
+    });
+
+    expect(hydrated.time?.timeRangeLabel).toBe("09:10 - 10:10");
   });
 });

@@ -94,6 +94,7 @@ export default async function TherapiesPage({
               imageClassName="object-right"
               objectPosition="right center"
               priority
+              quality={95}
               sizes="(min-width: 1024px) 765px, 100vw"
               src={platformAssets.publicTherapiesHero.src}
             />
@@ -135,6 +136,7 @@ export default async function TherapiesPage({
                   className="absolute inset-0"
                   fade="none"
                   imageClassName="object-contain object-bottom"
+                  quality={95}
                   sizes="285px"
                   src={platformAssets.publicTherapiesCard.src}
                 />

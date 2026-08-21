@@ -213,7 +213,10 @@ export function mapBookingDetail(
     }),
     booking: {
       canJoin,
-      dateLabel: formatSessionDate(input.booking.starts_at),
+      dateLabel: formatSessionDate(
+        input.booking.starts_at,
+        input.booking.timezone,
+      ),
       durationLabel: formatSessionDuration(
         input.booking.starts_at,
         input.booking.ends_at,
@@ -229,6 +232,7 @@ export function mapBookingDetail(
       timeRangeLabel: formatSessionTimeRange(
         input.booking.starts_at,
         input.booking.ends_at,
+        input.booking.timezone,
       ),
       timezone: input.booking.timezone,
     },
@@ -258,6 +262,7 @@ export function mapBookingDetail(
       lastExploredTopic: input.intake?.focus_area ?? input.therapy.name,
       startedAtLabel: formatJourneyStartedAt(
         firstJourneyBooking?.starts_at ?? null,
+        firstJourneyBooking?.timezone ?? input.booking.timezone,
       ),
       therapistName: input.therapist.public_name,
     },

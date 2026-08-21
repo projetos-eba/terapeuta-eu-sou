@@ -53,6 +53,7 @@ function HeroIllustration() {
         imageClassName="object-right"
         objectPosition="right center"
         priority
+        quality={95}
         sizes="765px"
         src={platformAssets.publicTherapistsHero.src}
       />
@@ -296,6 +297,7 @@ function TherapistResultCard({
             src={therapist.image}
             alt={`Retrato de ${therapist.name}`}
             fill
+            quality={95}
             sizes="(min-width: 1280px) 180px, 100vw"
             className="object-cover object-center"
           />
@@ -525,7 +527,7 @@ export default async function TherapistsPage({
           <h1 className="max-w-[794px] font-display text-[44px] font-light italic leading-[1.08] text-brand-deep md:text-[54px]">
             <span className="block">Encontre alguém</span>
             <span>para </span>
-            <em className="inline font-display font-semibold text-brand-primary md:bg-[linear-gradient(90deg,var(--tes-color-brand-primary)_0%,var(--tes-color-brand-cyan)_100%)] md:bg-clip-text md:text-transparent">
+            <em className="inline font-display font-light italic text-brand-primary md:bg-[linear-gradient(90deg,var(--tes-color-brand-primary)_0%,var(--tes-color-brand-cyan)_100%)] md:bg-clip-text md:text-transparent">
               caminhar com você.
             </em>
           </h1>
@@ -580,6 +582,7 @@ export default async function TherapistsPage({
             fadeTone="soft"
             imageClassName="object-right"
             objectPosition="right center"
+            quality={95}
             sizes="(min-width: 1024px) 90vw, 100vw"
             src={platformAssets.publicTherapistsLowerBanner.src}
           />

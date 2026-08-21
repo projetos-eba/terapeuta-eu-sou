@@ -30,6 +30,7 @@ export type BookingRecord = {
   starts_at: string;
   status: string;
   therapist_profile_id: string;
+  timezone: string;
 };
 
 export type SessionPaymentRecord = {
@@ -174,7 +175,7 @@ function mapPatientEncounter(
         ? `Entrada liberada ${BOOKING_JOIN_WINDOW_BEFORE_MINUTES} min antes`
         : undefined,
     approachLabel: getApproachLabel(therapy.slug),
-    dateLabel: formatRelativeBookingDay(booking.starts_at),
+    dateLabel: formatRelativeBookingDay(booking.starts_at, booking.timezone),
     endsAt: booking.ends_at,
     id: booking.id,
     meetingUrl: null,
@@ -183,8 +184,8 @@ function mapPatientEncounter(
     rescheduleStatus: reschedule?.status ?? null,
     scheduleLabel:
       status === "completed"
-        ? formatBookingSchedule(booking.starts_at)
-        : formatBookingMetricDate(booking.starts_at),
+        ? formatBookingSchedule(booking.starts_at, booking.timezone)
+        : formatBookingMetricDate(booking.starts_at, booking.timezone),
     serviceLabel: service.title,
     startsAt: booking.starts_at,
     status,
@@ -198,6 +199,7 @@ function mapPatientEncounter(
       name: therapist.public_name,
     },
     therapyLabel: therapy.name,
+    timezone: booking.timezone,
   };
 }
 

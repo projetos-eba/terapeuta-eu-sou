@@ -22,6 +22,15 @@
 
 @font-face {
   font-family: "IvyPresto Display";
+  src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Headline-.otf")
+    format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IvyPresto Display";
   src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Headline-Semi-Bold.otf")
     format("opentype");
   font-weight: 600 700;
@@ -43,6 +52,15 @@
   src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Display-Light.otf")
     format("opentype");
   font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "IvyPresto Display";
+  src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Display-.otf")
+    format("opentype");
+  font-weight: 400;
   font-style: italic;
   font-display: swap;
 }
