@@ -260,7 +260,7 @@ function PlanCard({ plan }: { plan: PlanDefinition }) {
         </div>
       </details>
       <div className="mt-6 border-t border-border pt-6">
-        <p className="font-display text-3xl font-semibold italic text-brand-deep">
+        <p className="font-display text-3xl font-light italic text-brand-deep">
           {plan.priceLabel}
         </p>
         <p className="mt-2 text-xs font-bold leading-5 text-tesText-muted">
@@ -320,7 +320,7 @@ export function PlansPreviewSection() {
                       <span className="flex items-center gap-3">
                         <PlanHeaderIcon plan={plan.code} />
                         <span>
-                          <span className="block font-display text-lg font-semibold italic leading-5 text-brand-deep">
+                          <span className="block font-display text-lg font-light italic leading-5 text-brand-deep">
                             {plan.name}
                           </span>
                           <span className="mt-0.5 block text-[11px] font-extrabold leading-4 text-tesText-secondary">
@@ -402,7 +402,7 @@ export function PlansPreviewSection() {
                       key={`${plan.code}-signup`}
                       className="border-l border-border px-5 py-6 text-center align-top"
                     >
-                      <p className="font-display text-3xl font-semibold italic text-brand-deep">
+                      <p className="font-display text-3xl font-light italic text-brand-deep">
                         {plan.priceLabel}
                       </p>
                       <p className="mx-auto mt-2 min-h-10 max-w-[180px] text-[11px] font-bold leading-5 text-tesText-muted">

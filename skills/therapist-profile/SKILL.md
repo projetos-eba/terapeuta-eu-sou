@@ -119,6 +119,10 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
   publicada continua sendo a prévia renderizada.
 - Upload público deve usar `therapist-public-media`; documentos permanecem fora
   do preview.
+- Ao escolher uma foto de perfil, o editor deve mostrar imediatamente uma
+  prévia local antes da confirmação do upload. Essa prévia não equivale a
+  publicação: somente uma foto enviada com sucesso e publicada chega às
+  superfícies públicas.
 - Upload privado deve usar `therapist-private-documents`, com os tipos
   obrigatórios `identity_document` e `address_proof`, validação de assinatura
   de arquivo, tamanho máximo de 10 MB, tipos PDF/JPG/PNG e linguagem de

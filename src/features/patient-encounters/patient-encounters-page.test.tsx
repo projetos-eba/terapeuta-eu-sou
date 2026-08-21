@@ -162,6 +162,7 @@ function createEncounter(
       name: "Ana Oliveira",
     },
     therapyLabel: "Reiki",
+    timezone: "America/Sao_Paulo",
     ...overrides,
   };
 }

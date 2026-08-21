@@ -188,10 +188,13 @@ function GuestPopover({
   isLoading: boolean;
 }) {
   return (
-    <details className={cn("group relative z-[70]", className)}>
+    <details
+      aria-busy={isLoading}
+      className={cn("group relative z-[70]", className)}
+    >
       <summary className="inline-flex h-12 cursor-pointer list-none items-center justify-center gap-2 rounded-full border border-border bg-white px-6 text-sm font-extrabold text-brand-primary shadow-card transition hover:border-brand-lavender focus:outline-none focus:ring-4 focus:ring-ring/20 [&::-webkit-details-marker]:hidden">
         <LogIn className="size-4" aria-hidden="true" />
-        {isLoading ? "Carregando..." : "Entrar | Cadastre-se"}
+        <span aria-live="polite">Entrar | Cadastre-se</span>
       </summary>
 
       <div className="absolute right-0 top-[calc(100%+14px)] z-50 w-[360px] rounded-[24px] border-2 border-brand-lavender bg-white p-5 text-brand-deep shadow-float">

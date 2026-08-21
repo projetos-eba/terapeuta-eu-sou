@@ -90,7 +90,7 @@ The page should preserve these sections from Figma `13273:1844`:
 - Therapies preview
 - Featured therapists as a horizontal carousel on all viewports, with desktop navigation arrows and compact Figma-style cards. Cards should avoid long descriptions and prioritize therapist photo, name, public therapies/techniques, published guide-theme chips, rating/reviews and profile CTA. Do not show availability badges or verification icons over photos unless the public Home data contract exposes the corresponding real state.
 - Testimonials
-- Journey CTA using the local background asset `public/home/match-journey-banner.png`; keep the CTA below the text and do not add the old `Sessão online` hat
+- Journey CTA using `platformAssets.publicJourneyCta`; keep the CTA below the text and do not add the old `Sessão online` hat. On mobile, reserve a dedicated lower media region inside the banner so the editorial subject remains visible after the copy and CTA; do not reduce the image to a thin strip.
 - FAQ
 - Public footer
 

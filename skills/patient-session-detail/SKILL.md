@@ -69,6 +69,9 @@ Use these support tables when needed:
 - Zoom join must be a client component that dynamic-imports `@zoom/videosdk` and never trusts a browser-provided role.
 - Use local assets or token-based placeholders only; do not commit temporary Figma asset URLs. The approved decorative lotus asset is `public/patient/encounters/lotus-detail.png`, exported from the Figma node above; it is permitted as a low-opacity, empty-alt decoration in the "Sobre este encontro" and contextual reminder cards only.
 - Do not invent testimonials, therapeutic journey claims, images or summaries that are not present in the canonical detail data.
+- Datas e horários do encontro devem ser formatados no `booking.timezone` do
+  registro. Instantes persistidos continuam em UTC e não podem ser deslocados
+  para corrigir apresentação.
 
 ## QA
 

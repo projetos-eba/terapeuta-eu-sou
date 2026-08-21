@@ -35,6 +35,7 @@ export type ReservationContext = {
     slug: string | null;
   };
   therapySlug: string | null;
+  timezone: string;
   time: {
     dateLabel: string;
     dateLongLabel: string;

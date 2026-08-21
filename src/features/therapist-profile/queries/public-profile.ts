@@ -119,7 +119,12 @@ export async function getPublicTherapistProfileResult(
       throw new Error("Public service availability is unavailable.");
     }
     const services = serviceRows.map((service, index) =>
-      mapServiceRow(service, availabilityResults[index]?.data ?? []),
+      mapServiceRow(
+        service,
+        availabilityResults[index]?.status === "success"
+          ? availabilityResults[index].data.days
+          : [],
+      ),
     );
 
     return {

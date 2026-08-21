@@ -49,6 +49,7 @@ function FeaturedTherapistCard({
           src={therapist.photoUrl}
           alt={`Retrato de ${therapist.name}`}
           fill
+          quality={95}
           sizes="315px"
           className="object-cover"
         />

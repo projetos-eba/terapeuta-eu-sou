@@ -40,6 +40,7 @@ function Logo() {
 export function PublicHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const nav: Array<[string, Route]> = [
+    ["Como funciona", routes.public.about as Route],
     ["Terapias", routes.public.therapies as Route],
     ["Sua Jornada", routes.public.journey as Route],
     ["Terapeutas", routes.public.therapists as Route],
@@ -50,7 +51,7 @@ export function PublicHeader() {
     <header className="relative z-50 mx-auto w-full max-w-[1680px] px-5 py-4 sm:px-8 lg:px-12">
       <div className="flex items-center justify-between gap-4">
         <Logo />
-        <nav className="hidden items-center gap-11 text-sm font-bold text-tesText-secondary lg:flex">
+        <nav className="hidden items-center gap-11 text-sm font-bold text-tesText-secondary xl:flex">
           {nav.map(([label, href]) => (
             <Link
               key={href}
@@ -77,7 +78,7 @@ export function PublicHeader() {
           aria-controls="public-mobile-menu"
           aria-expanded={isMobileMenuOpen}
           aria-label={isMobileMenuOpen ? "Fechar menu" : "Abrir menu"}
-          className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-brand-lavender bg-white text-brand-primary shadow-card hover:border-brand-primary hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20 sm:hidden"
+          className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-brand-lavender bg-white text-brand-primary shadow-card hover:border-brand-primary hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20 xl:hidden"
           onClick={() => setIsMobileMenuOpen((current) => !current)}
         >
           {isMobileMenuOpen ? (
@@ -91,7 +92,7 @@ export function PublicHeader() {
       {isMobileMenuOpen ? (
         <div
           id="public-mobile-menu"
-          className="absolute left-5 right-5 top-[calc(100%+8px)] z-[80] overflow-hidden rounded-[24px] border border-brand-lavender bg-white shadow-float sm:hidden"
+          className="absolute left-5 right-5 top-[calc(100%+8px)] z-[80] overflow-hidden rounded-[24px] border border-brand-lavender bg-white shadow-float xl:hidden"
         >
           <div className="grid gap-2 p-4">
             <p className="px-2 text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">

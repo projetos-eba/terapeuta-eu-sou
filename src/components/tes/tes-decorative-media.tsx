@@ -39,6 +39,7 @@ export type TESDecorativeMediaProps = {
   imageClassName?: string;
   objectPosition?: string;
   priority?: boolean;
+  quality?: 75 | 95;
   sizes: string;
   src: string;
 };
@@ -51,6 +52,7 @@ export function TESDecorativeMedia({
   imageClassName,
   objectPosition = "center",
   priority = false,
+  quality = 75,
   sizes,
   src,
 }: TESDecorativeMediaProps) {
@@ -65,6 +67,7 @@ export function TESDecorativeMedia({
         className={cn("object-cover", imageClassName)}
         fill
         priority={priority}
+        quality={quality}
         sizes={sizes}
         src={src}
         style={{ objectPosition }}

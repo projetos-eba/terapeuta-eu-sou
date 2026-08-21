@@ -6,6 +6,7 @@ import type {
   ReservationStep,
 } from "./types";
 import type { AvailabilityDay } from "@/features/therapist-profile/types";
+import { normalizeTimeZone } from "@/features/bookings/session-formatters";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -55,6 +56,7 @@ export function resolveReservationContext(input: {
   isPatientAuthenticated: boolean;
   patient?: ReservationPatientSummary | null;
   searchParams?: Record<string, string | string[] | undefined>;
+  timezone?: string;
 }): ReservationContext {
   const params = toUrlSearchParams(input.searchParams);
   const step = parseStep(params.get("etapa") ?? params.get("step"));
@@ -66,6 +68,7 @@ export function resolveReservationContext(input: {
   const therapySlug = normalizeSlug(params.get("therapy"));
   const source = normalizeSource(params.get("source"));
   const therapist = therapistSlug ? therapistDirectory[therapistSlug] : null;
+  const timezone = normalizeTimeZone(input.timezone ?? "America/Sao_Paulo");
   const currentPath = `/reserva${params.toString() ? `?${params.toString()}` : ""}`;
 
   const serviceLabel =
@@ -74,7 +77,7 @@ export function resolveReservationContext(input: {
     "Encontro online TES";
 
   const time = selectedSlot
-    ? formatReservationTime(selectedSlot, durationMinutes ?? 50)
+    ? formatReservationTime(selectedSlot, durationMinutes ?? 50, timezone)
     : null;
 
   const prepareStepHref = buildReservationHref(params, { etapa: "preparar" });
@@ -110,6 +113,7 @@ export function resolveReservationContext(input: {
       slug: therapistSlug,
     },
     therapySlug,
+    timezone,
     time,
   };
 }
@@ -220,14 +224,16 @@ export function mergeReservationContextWithPublicProfile(
       therapySlug: string;
     };
     slug: string;
+    timezone?: string;
   },
 ): ReservationContext {
   const durationMinutes =
     context.durationMinutes ?? input.service?.durationMinutes ?? null;
   const priceCents = context.priceCents ?? input.service?.priceCents ?? null;
   const serviceLabel = input.service?.title ?? context.serviceLabel;
+  const timezone = normalizeTimeZone(input.timezone ?? context.timezone);
   const time = context.selectedSlot
-    ? formatReservationTime(context.selectedSlot, durationMinutes ?? 50)
+    ? formatReservationTime(context.selectedSlot, durationMinutes ?? 50, timezone)
     : null;
 
   return {
@@ -250,6 +256,7 @@ export function mergeReservationContextWithPublicProfile(
       slug: input.slug,
     },
     therapySlug: context.therapySlug ?? input.service?.therapySlug ?? null,
+    timezone,
     time,
   };
 }
@@ -346,27 +353,36 @@ function titleizeSlug(value: string | null) {
     .join(" ");
 }
 
-function formatReservationTime(startsAt: string, durationMinutes: number) {
+export function formatReservationTime(
+  startsAt: string,
+  durationMinutes: number,
+  timezone: string,
+) {
   const start = new Date(startsAt);
   const end = new Date(start.getTime() + durationMinutes * 60_000);
+  const timeZone = normalizeTimeZone(timezone);
 
   return {
     dateLabel: start.toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "short",
+      timeZone,
       year: "numeric",
     }),
     dateLongLabel: start.toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "long",
+      timeZone,
       weekday: "long",
     }),
     timeRangeLabel: `${start.toLocaleTimeString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone,
     })} - ${end.toLocaleTimeString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone,
     })}`,
   };
 }

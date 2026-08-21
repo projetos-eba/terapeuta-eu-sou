@@ -12,13 +12,14 @@ function Hero() {
   return (
     <section className="relative isolate overflow-hidden bg-[linear-gradient(180deg,#fff_0%,#faf7ff_54%,#fff_100%)] px-5 pb-14 pt-12 sm:px-8 lg:px-12 lg:pb-20">
       <div className="pointer-events-none absolute left-0 top-[430px] h-[180px] w-[180px] rounded-full border border-brand-lavender/50 opacity-40" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 -z-10 h-[680px] w-full opacity-45 sm:opacity-55 lg:w-[930px]">
+      <div className="pointer-events-none absolute inset-y-0 right-0 -z-10 h-[680px] w-full opacity-45 sm:opacity-55 lg:w-[min(62vw,1180px)]">
         <Image
           src="/for-therapists/hero-therapist-laptop.png"
           alt=""
           fill
           priority
-          sizes="(min-width: 1024px) 930px, 100vw"
+          quality={95}
+          sizes="(min-width: 1920px) 1180px, (min-width: 1024px) 62vw, 100vw"
           className="object-cover object-center"
         />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,#ffffff_0%,rgba(255,255,255,0.92)_28%,rgba(255,255,255,0.58)_58%,rgba(255,255,255,0.2)_100%)]" />
@@ -95,7 +96,7 @@ function ProfilePreview() {
       <p className="mt-5 text-xl font-extrabold text-brand-deep">
         Juliana Almeida
       </p>
-      <p className="font-display text-lg font-semibold italic text-[#534c99]">
+      <p className="font-display text-lg font-light italic text-[#534c99]">
         Terapeuta integrativa
       </p>
       <div className="mt-4 flex items-center justify-center gap-1 text-[#f4b84a]">
@@ -226,7 +227,7 @@ function BentoCard({ card }: { card: (typeof benefitCards)[number] }) {
       </div>
       <h3
         className={cn(
-          "mt-5 font-display text-2xl font-semibold italic leading-tight xl:text-[28px]",
+          "mt-5 font-display text-2xl font-light italic leading-tight xl:text-[28px]",
           isRemote ? "text-white xl:mt-auto xl:text-[40px]" : "text-brand-deep",
           isCompact ? "xl:text-[25px]" : "",
           isGrowth ? "xl:col-start-1 xl:row-start-2" : "",
@@ -284,6 +285,7 @@ function BentoCard({ card }: { card: (typeof benefitCards)[number] }) {
             src="/for-therapists/session-preview.png"
             alt="Atendimento online pela plataforma"
             fill
+            quality={95}
             sizes="320px"
             className="object-cover"
           />

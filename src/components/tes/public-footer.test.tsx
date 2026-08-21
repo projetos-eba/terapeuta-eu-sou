@@ -14,6 +14,9 @@ describe("PublicFooter", () => {
         "Onde terapeutas encontram espaço e pessoas encontram caminhos.",
       ),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Como funciona" }),
+    ).toHaveAttribute("href", "/sobre-nos");
 
     expect(screen.queryByRole("link", { name: "Recursos" })).toBeNull();
     expect(screen.queryByRole("link", { name: /Central de ajuda/i })).toBeNull();
