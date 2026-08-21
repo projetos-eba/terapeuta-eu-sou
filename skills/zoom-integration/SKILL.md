@@ -35,6 +35,10 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
 - Paciente so recebe JWT apos webhook confiavel de `session.user_joined` do
   terapeuta; token emitido para terapeuta nao e presenca.
 - `ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES` e obrigatorio no runtime real.
+- Enquanto a sala estiver `joined` ou `reconnecting`, o browser chama
+  `POST /api/auth/session/refresh` periodicamente para manter a sessão TES
+  autenticada. O endpoint só rotaciona tokens perto da expiração; uma falha de
+  rede não encerra a mídia local e uma reconexão volta a tentar a renovação.
 
 ## Seguranca
 
@@ -53,6 +57,8 @@ regressao pgTAP para as duas assinaturas.
 
 - Validar que os CTAs de detalhe apontam para a sala do mesmo booking.
 - Validar que a sala dedicada não renderiza sidebar nem topbar.
+- Validar encontro de 75 a 90 minutos para paciente e terapeuta, incluindo
+  renovação do access token, atualização de página e queda/retorno de rede.
 - Validar desktop e mobile, foco visível, nomes acessíveis e retorno ao detalhe.
 - `npm run zoom:video-sdk:env`
 - `npm run zoom:video-sdk:test`

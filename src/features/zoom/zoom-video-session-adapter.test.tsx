@@ -128,6 +128,38 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(document.body.textContent).not.toMatch(/jwt-token|secret|token/i);
   });
 
+  it("keeps the authenticated TES session active while the encounter is open", async () => {
+    const fetchMock = vi.fn((url: string) => {
+      if (url === "/api/auth/session/refresh") {
+        return Promise.resolve({ ok: true });
+      }
+
+      return accessResponse(0)();
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/voce entrou no encontro/i);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/auth/session/refresh",
+        expect.objectContaining({
+          body: JSON.stringify({ role: "patient" }),
+          method: "POST",
+        }),
+      );
+    });
+  });
+
   it("uses the authoritative access returned when joining", async () => {
     const serverNow = Date.now();
     vi.stubGlobal(

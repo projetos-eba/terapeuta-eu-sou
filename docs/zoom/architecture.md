@@ -22,6 +22,14 @@ continuam sob Stripe, `session_payments`, ledger e regras internas.
 11. Webhooks `session.*` atualizam inicio, fim, presenca e participacoes
     operacionais.
 
+Enquanto a sala estiver aberta ou reconectando, o browser solicita a renovação
+da sessão TES em `POST /api/auth/session/refresh`. O endpoint lê somente
+cookies HTTP-only, rotaciona o refresh token apenas nos últimos 15 minutos do
+access token e revalida o papel em `profiles`. Falha momentânea dessa renovação
+não encerra a mídia local; a próxima tentativa ou a reconexão volta a verificar
+o acesso. A renovação do login TES não altera a duração da sessão Zoom nem a
+validade do JWT curto emitido para o `join`.
+
 O proxy Next envia `actorRole` e seleciona explicitamente o cookie desse papel.
 A Edge Function rejeita mismatch para impedir token cruzado entre paciente e
 terapeuta.

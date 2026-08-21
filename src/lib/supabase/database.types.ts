@@ -3831,6 +3831,7 @@ export type Database = {
         Row: {
           body: string | null;
           created_at: string;
+          event_key: string | null;
           href: string | null;
           id: string;
           kind: string;
@@ -3841,6 +3842,7 @@ export type Database = {
         Insert: {
           body?: string | null;
           created_at?: string;
+          event_key?: string | null;
           href?: string | null;
           id?: string;
           kind: string;
@@ -3851,6 +3853,7 @@ export type Database = {
         Update: {
           body?: string | null;
           created_at?: string;
+          event_key?: string | null;
           href?: string | null;
           id?: string;
           kind?: string;

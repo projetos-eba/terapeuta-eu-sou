@@ -44,6 +44,7 @@ Fluxos permitidos:
 - Plataforma/suporte: `support_tickets` e `notifications`.
 - Envio de template entre participantes: `POST /api/messages/send-template`.
 - Abertura de chamado de suporte: `POST /api/support/tickets`.
+- Leitura segura do sino do shell: `GET /api/notifications`.
 - Marcação de avisos como lidos: `POST /api/notifications/mark-read`.
 - Templates permitidos ficam em
   `src/features/message-center/message-center.templates.ts`.
@@ -54,6 +55,10 @@ resolver o corpo da mensagem pelo `templateKey` server-side.
 `/api/notifications/mark-read` deve aceitar somente usuário autenticado, limitar
 marcação em massa ao `profile_id` do próprio usuário e nunca alterar avisos de
 outro perfil.
+
+`GET /api/notifications` lê somente itens do perfil autenticado por cookies
+HTTP-only. O shell consulta a cada três segundos enquanto a aba estiver visível;
+não expor token no navegador nem usar Realtime direto.
 
 `/api/support/tickets` deve aceitar somente templates aprovados de suporte,
 resolver assunto, categoria e descrição no servidor, validar autenticação por
@@ -85,9 +90,11 @@ e usar `requestId` idempotente. Não aceitar texto livre vindo do navegador.
 
 - Validar `/app/mensagens` e `/terapeuta/mensagens`.
 - Verificar que não existe input de texto livre.
-- Verificar que a ação de notificações da topbar abre `/app/mensagens` no
-  contexto de avisos.
+- Verificar que o sino da topbar abre o popover acessível, mantém a Central de
+  mensagens como destino completo e fecha por `Escape` ou clique externo.
 - Verificar marcação de notificações como lidas por clique real.
+- Verificar que aviso temporário aparece apenas para encontro confirmado e
+  respeita `prefers-reduced-motion`.
 - Verificar abertura/fechamento do `TESDialog`, foco e `Escape`.
 - Verificar abertura real de chamado por template de suporte e feedback com
   protocolo.
