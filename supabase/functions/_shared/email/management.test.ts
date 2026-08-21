@@ -42,3 +42,16 @@ Deno.test("email-safe table and button styling survives sanitization", () => {
   assertEquals(sanitized.includes("border-radius:999px"), true);
   assertEquals(sanitized.includes("javascript:"), false);
 });
+
+Deno.test("the TES logo keeps only its safe HTTPS image attributes", () => {
+  const sanitized = sanitizeEmailHtml(
+    '<img src="https://terapeutaeusou.com.br/logo-oficial-terapeuta-eu-sou.png" alt="Terapeuta Eu Sou" width="156" onerror="alert(1)" style="display:block;height:auto;max-width:156px;width:100%"><img src="data:image/png;base64,abc" alt="blocked">',
+  );
+  assertEquals(
+    sanitized.includes('src="https://terapeutaeusou.com.br/logo-oficial-terapeuta-eu-sou.png"'),
+    true,
+  );
+  assertEquals(sanitized.includes('alt="Terapeuta Eu Sou"'), true);
+  assertEquals(sanitized.includes("onerror"), false);
+  assertEquals(sanitized.includes("data:image"), false);
+});

@@ -35,6 +35,15 @@ export type MessageCenterPlatformItem = {
   title: string;
 };
 
+export type MessageCenterSupportTicket = {
+  category: string;
+  createdAt: string;
+  id: string;
+  lastActivityAt: string;
+  status: string;
+  subject: string;
+};
+
 export type MessageCenterTemplate = {
   body: string;
   category: MessageCenterCategory;
@@ -62,6 +71,7 @@ export type MessageCenterPageData = {
     title: string;
   };
   platformItems: MessageCenterPlatformItem[];
+  supportTickets: MessageCenterSupportTicket[];
   source: "demo" | "supabase";
   templates: {
     participant: MessageCenterTemplate[];

@@ -102,7 +102,7 @@ function defaultEmailHtml(input: {
               <tbody>
                 <tr>
                   <td style="padding:28px 32px 0">
-                    <p style="margin:0;color:#6c3d91;font-family:Arial,sans-serif;font-size:12px;font-weight:700;letter-spacing:1.4px;line-height:1.4;text-align:left">TERAPEUTA EU SOU</p>
+                    <img src="https://terapeutaeusou.com.br/logo-oficial-terapeuta-eu-sou.png" alt="Terapeuta Eu Sou" width="156" style="display:block;height:auto;max-width:156px;width:100%">
                   </td>
                 </tr>
                 <tr>
