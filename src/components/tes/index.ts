@@ -1,5 +1,6 @@
 export * from "./filter-button";
 export * from "./journey-banner";
+export * from "./password-visibility-toggle";
 export * from "./public-footer";
 export * from "./public-header";
 export * from "./tes-badge";

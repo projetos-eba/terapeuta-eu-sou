@@ -3,7 +3,7 @@
 import { LockKeyhole, Mail } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import { TESButton } from "@/components/tes";
+import { PasswordVisibilityToggle, TESButton } from "@/components/tes";
 
 import type { AdminAuthFieldErrors } from "../types";
 
@@ -19,6 +19,7 @@ export function AdminLoginForm() {
   const [fieldErrors, setFieldErrors] = useState<AdminAuthFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -100,7 +101,13 @@ export function AdminLoginForm() {
         label="Senha"
         name="password"
         placeholder="Digite sua senha"
-        type="password"
+        trailing={
+          <PasswordVisibilityToggle
+            isVisible={isPasswordVisible}
+            onToggle={() => setIsPasswordVisible((visible) => !visible)}
+          />
+        }
+        type={isPasswordVisible ? "text" : "password"}
       />
 
       <TESButton
@@ -121,6 +128,7 @@ function Field({
   icon,
   label,
   name,
+  trailing,
   type = "text",
   ...props
 }: {
@@ -130,6 +138,7 @@ function Field({
   label: string;
   name: string;
   placeholder?: string;
+  trailing?: ReactNode;
   type?: string;
 }) {
   const errorId = `${name}-error`;
@@ -151,6 +160,7 @@ function Field({
             name={name}
             type={type}
           />
+          {trailing}
         </div>
       </label>
       {error ? (
