@@ -4,7 +4,9 @@ import type {
 } from "@/features/admin-platform/admin-platform.types";
 
 export type AdminSettingsSignal = {
+  actionLabel?: string;
   description: string;
+  href?: string;
   key: string;
   label: string;
   source: string;

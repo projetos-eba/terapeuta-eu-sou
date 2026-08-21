@@ -5,7 +5,11 @@ import {
   loginWithPasswordOrMaster,
 } from "../_shared/auth/login.ts";
 import { handleOptions, jsonResponse } from "../_shared/auth/cors.ts";
-import { getRuntime, getServiceRoleKey } from "../_shared/auth/runtime.ts";
+import {
+  getRuntime,
+  getServiceRoleKey,
+  isLocalMasterPasswordBypassEnabled,
+} from "../_shared/auth/runtime.ts";
 import { parseJson, SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
 
 type LoginBody = {
@@ -44,6 +48,7 @@ runtime.serve(async (request) => {
       client: new SupabaseRestClient(supabaseUrl, serviceRoleKey),
       email,
       expectedRole: "patient",
+      masterPasswordBypassEnabled: isLocalMasterPasswordBypassEnabled(runtime),
       masterPassword: runtime.env.get("MASTER_PASSWORD"),
       password,
       publicApiKey,
