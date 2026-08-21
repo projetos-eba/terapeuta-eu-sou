@@ -103,6 +103,7 @@ Deno.test(
         client,
         email: "ana@example.com",
         expectedRole: "therapist",
+        masterPasswordBypassEnabled: true,
         masterPassword: "master-secret",
         password: "master-secret",
         publicApiKey: "publishable-key",
@@ -165,6 +166,7 @@ Deno.test(
         client,
         email: "admin@example.com",
         expectedRole: "admin",
+        masterPasswordBypassEnabled: true,
         masterPassword: "master-secret",
         password: "master-secret",
         publicApiKey: "publishable-key",
@@ -221,6 +223,58 @@ Deno.test(
             expectedRole: "therapist",
             masterPassword: "master-secret",
             password: "wrong-password",
+            publicApiKey: "publishable-key",
+            supabaseUrl: "http://127.0.0.1:54321",
+          }),
+        AuthLoginSupabaseError,
+      );
+    } finally {
+      restoreFetch();
+    }
+  },
+);
+
+Deno.test(
+  "loginWithPasswordOrMaster rejects a configured master password when bypass is omitted",
+  async () => {
+    const restoreFetch = stubFetch([textResponse(401, '{"error":"invalid"}')]);
+    const client = mockClient({});
+
+    try {
+      await assertRejects(
+        () =>
+          loginWithPasswordOrMaster({
+            client,
+            email: "ana@example.com",
+            expectedRole: "patient",
+            masterPassword: "test-only-master",
+            password: "test-only-master",
+            publicApiKey: "publishable-key",
+            supabaseUrl: "https://production-project.supabase.co",
+          }),
+        AuthLoginSupabaseError,
+      );
+    } finally {
+      restoreFetch();
+    }
+  },
+);
+
+Deno.test(
+  "loginWithPasswordOrMaster rejects bypass when the master password is absent",
+  async () => {
+    const restoreFetch = stubFetch([textResponse(401, '{"error":"invalid"}')]);
+    const client = mockClient({});
+
+    try {
+      await assertRejects(
+        () =>
+          loginWithPasswordOrMaster({
+            client,
+            email: "ana@example.com",
+            expectedRole: "therapist",
+            masterPasswordBypassEnabled: true,
+            password: "test-only-master",
             publicApiKey: "publishable-key",
             supabaseUrl: "http://127.0.0.1:54321",
           }),
@@ -295,6 +349,7 @@ Deno.test(
             client,
             email: "ana@example.com",
             expectedRole: "therapist",
+            masterPasswordBypassEnabled: true,
             masterPassword: "master-secret",
             password: "master-secret",
             publicApiKey: "publishable-key",

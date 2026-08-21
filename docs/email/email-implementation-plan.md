@@ -14,6 +14,25 @@ Implementar gradualmente os 39 cenários do Manual sobre a fundação existente,
 
 Não será criado um segundo sistema de e-mail, nem um scheduler baseado em processo web. Os dois e-mails de catálogo continuam como extensão de produto.
 
+## Superfície administrativa de e-mails
+
+A administração usa `/admin/configuracoes/emails` como central operacional e
+`/admin/configuracoes/emails/eventos/:actionKey` para o detalhe de um evento
+allowlisted. A entrada parte de `/admin/configuracoes`.
+
+- O provider é global: `hostinger_mail_api`. A UI pode selecionar somente
+  remetentes ativos já sincronizados; nunca expõe ou edita credenciais.
+- O registry em `supabase/functions/_shared/email/registry.ts` é a autoridade
+  de action keys, categorias, tokens permitidos, fixtures de preview e suporte
+  a automação. A rota não aceita action keys fora desse registry configurável.
+- Destinatários são resolvidos server-side pelo domínio. A UI não aceita
+  endereços livres e não cria envios manuais.
+- Templates padrão continuam no código; `email_action_settings` persiste
+  somente overrides sanitizados. O preview chama o renderer server-side com
+  fixture controlada e é isolado em iframe sandboxado.
+- `email_delivery_logs` é mostrado de forma sanitizada. Retry/recovery segue a
+  outbox e seus workers autorizados, sem botão de reenvio indiscriminado na UI.
+
 ## Mudanças fundacionais propostas
 
 ### 1. Registry e renderer
@@ -64,16 +83,16 @@ Os cenários 18 e 19 precisam de tabela/job de agenda persistente, não de `setT
 
 ## Lotes de implementação propostos
 
-| Lote                               | Escopo                                                                                                               | Dependências e provas de aceite                                                                                               |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| 0 — Contrato comum                 | Preheader, shell incremental, tipos/registry escaláveis, generalização de outbox e enqueuers; sem todos os conteúdos | Unit/Deno/pgTAP para preheader, token allowlist, snapshot, dedupe multi-recipient/action, RLS e sanitização                   |
-| 1 — Auth e cadastro                | Cenários 2–7; manter verificação/reset seguros e adicionar conclusão/boas-vindas/senha alterada                      | Token hash, expiração, reenvio, enumeração, idempotência e não bloqueio indevido de criação de conta                          |
-| 2 — Ciclo do terapeuta             | Cenários 11–16                                                                                                       | Decisão administrativa persistida → outbox; nenhum documento/motivo sensível no e-mail                                        |
-| 3 — Encontros                      | Cenários 17, 20–21 e infraestrutura dos lembretes 18–19                                                              | Estado `booking`/pagamento autoritativo, timezone, cancelamento/reagendamento, supressão de reminder e testes de concorrência |
-| 4 — Financeiro                     | Cenários 23–26 e 28                                                                                                  | Webhook Stripe assinado/persistido, refund e payout reais, idempotência de webhook e conteúdo financeiro mínimo               |
+| Lote                               | Escopo                                                                                                               | Dependências e provas de aceite                                                                                                  |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 0 — Contrato comum                 | Preheader, shell incremental, tipos/registry escaláveis, generalização de outbox e enqueuers; sem todos os conteúdos | Unit/Deno/pgTAP para preheader, token allowlist, snapshot, dedupe multi-recipient/action, RLS e sanitização                      |
+| 1 — Auth e cadastro                | Cenários 2–7; manter verificação/reset seguros e adicionar conclusão/boas-vindas/senha alterada                      | Token hash, expiração, reenvio, enumeração, idempotência e não bloqueio indevido de criação de conta                             |
+| 2 — Ciclo do terapeuta             | Cenários 11–16                                                                                                       | Decisão administrativa persistida → outbox; nenhum documento/motivo sensível no e-mail                                           |
+| 3 — Encontros                      | Cenários 17, 20–21 e infraestrutura dos lembretes 18–19                                                              | Estado `booking`/pagamento autoritativo, timezone, cancelamento/reagendamento, supressão de reminder e testes de concorrência    |
+| 4 — Financeiro                     | Cenários 23–26 e 28                                                                                                  | Webhook Stripe assinado/persistido, refund e payout reais, idempotência de webhook e conteúdo financeiro mínimo                  |
 | 5 — Assinaturas                    | Cenários 29–32                                                                                                       | `therapist_subscriptions`, invoices e eventos Stripe sincronizados; distinguir ativação, renovação recorrente e downgrade futuro |
-| 6 — Produto e governança pendentes | Cenários 1, 8–10, 33–39                                                                                              | Decisões de produto abaixo; não implementar antes de estados/eventos legítimos                                                |
-| 7 — Extensões                      | Revisar `therapy_catalog_request_*` para o novo shell e, se aprovado, atualizar o Manual                             | Não remover os pilotos existentes; confirmar compatibilidade de snapshot e logs                                               |
+| 6 — Produto e governança pendentes | Cenários 1, 8–10, 33–39                                                                                              | Decisões de produto abaixo; não implementar antes de estados/eventos legítimos                                                   |
+| 7 — Extensões                      | Revisar `therapy_catalog_request_*` para o novo shell e, se aprovado, atualizar o Manual                             | Não remover os pilotos existentes; confirmar compatibilidade de snapshot e logs                                                  |
 
 ## Execução local
 
@@ -129,7 +148,7 @@ As chaves abaixo são propostas de registry, não entidades já criadas. Separar
 | Cadastro/Auth      | `registration_started`, `email_verification` (existente), `registration_completed`, `patient_welcome`, `therapist_welcome`, `password_reset` (existente), `password_changed`, `account_new_login`, `account_email_changed_old`, `account_email_changed_new`, `account_phone_changed`                                                                  |
 | Verificação        | `therapist_profile_submitted_for_review`, `therapist_documents_requested`, `therapist_profile_approved`, `therapist_profile_rejected`, `therapist_profile_suspended`, `therapist_profile_reactivated`                                                                                                                                                 |
 | Encontros          | `booking_confirmed_patient`, `booking_confirmed_therapist`, `booking_reminder_24h_patient`, `booking_reminder_24h_therapist`, `booking_reminder_1h_patient`, `booking_reminder_1h_therapist`, `booking_cancelled_patient`, `booking_cancelled_therapist`, `booking_rescheduled_patient`, `booking_rescheduled_therapist`, `booking_review_invitation` |
-| Financeiro         | `session_payment_approved`, `session_payment_declined`, `session_payment_pending`, `session_refund_approved`, `therapist_payout_completed`; `session_refund_rejected` permanece **NEEDS_PRODUCT**                                                                                                                                                       |
+| Financeiro         | `session_payment_approved`, `session_payment_declined`, `session_payment_pending`, `session_refund_approved`, `therapist_payout_completed`; `session_refund_rejected` permanece **NEEDS_PRODUCT**                                                                                                                                                     |
 | Assinaturas        | `therapist_subscription_created`, `therapist_subscription_renewed`, `therapist_subscription_cancelled`, `therapist_subscription_plan_changed`                                                                                                                                                                                                         |
 | Institucional/LGPD | `legal_terms_updated`, `legal_privacy_updated`, `planned_maintenance`, `institutional_announcement`, `lgpd_request_received`, `lgpd_request_completed`, `account_deletion_completed`                                                                                                                                                                  |
 
@@ -139,7 +158,7 @@ As chaves abaixo são propostas de registry, não entidades já criadas. Separar
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Auth                   | E-mail de verificação/reset mantém token de uso único hasheado, rate limit e resposta não enumerável. Não deixar indisponibilidade de e-mail criar conta inconsistente sem decisão explícita do owner Auth. |
 | Stripe/session payment | Enqueue somente após webhook assinado aplicar estado financeiro em `apply_session_payment_state_v1`; redirects e client polling são evidência de UX, não gatilho.                                           |
-| Refund                 | Enqueue somente depois de resultado financeiro autoritativo; “aprovado” não pode antecipar crédito efetivo. Falha Stripe não é negativa de política e não recebe a copy de recusa do Manual.                 |
+| Refund                 | Enqueue somente depois de resultado financeiro autoritativo; “aprovado” não pode antecipar crédito efetivo. Falha Stripe não é negativa de política e não recebe a copy de recusa do Manual.                |
 | Assinaturas            | Usar eventos Stripe persistidos e `therapist_subscriptions`/invoice; não enviar cancelamento em pedido de cancelamento futuro.                                                                              |
 | Booking                | Confirmar após estado persistido; cancelar/reagendar somente após RPC transacional; recipient e rotas por papel.                                                                                            |
 | Reminders              | Jobs persistidos, timezone correto, cancelamento/reagendamento e janela idempotente.                                                                                                                        |

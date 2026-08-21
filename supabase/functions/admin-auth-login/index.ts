@@ -8,12 +8,9 @@ import { handleOptions, jsonResponse } from "../_shared/auth/cors.ts";
 import {
   getRuntime,
   getServiceRoleKey,
-  parseBooleanEnv,
+  isLocalMasterPasswordBypassEnabled,
 } from "../_shared/auth/runtime.ts";
-import {
-  parseJson,
-  SupabaseRestClient,
-} from "../_shared/auth/supabase-rest.ts";
+import { parseJson, SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
 
 type LoginBody = {
   email?: string;
@@ -51,8 +48,10 @@ runtime.serve(async (request) => {
       client: new SupabaseRestClient(supabaseUrl, serviceRoleKey),
       email,
       expectedRole: "admin",
-      masterPasswordBypassEnabled:
-        isAdminMasterPasswordBypassEnabled(supabaseUrl),
+      masterPasswordBypassEnabled: isLocalMasterPasswordBypassEnabled(
+        runtime,
+        "ADMIN_MASTER_PASSWORD_BYPASS_ENABLED",
+      ),
       masterPassword: runtime.env.get("MASTER_PASSWORD"),
       password,
       publicApiKey,
@@ -68,28 +67,10 @@ runtime.serve(async (request) => {
 function getPublicApiKey(request: Request) {
   return (
     request.headers.get("apikey") ??
-    runtime.env.get("SUPABASE_ANON_KEY") ??
-    runtime.env.get("SUPABASE_PUBLISHABLE_KEY") ??
-    ""
+      runtime.env.get("SUPABASE_ANON_KEY") ??
+      runtime.env.get("SUPABASE_PUBLISHABLE_KEY") ??
+      ""
   );
-}
-
-function isAdminMasterPasswordBypassEnabled(supabaseUrl: string) {
-  const flagEnabled = parseBooleanEnv(
-    runtime.env.get("ADMIN_MASTER_PASSWORD_BYPASS_ENABLED"),
-    false,
-  );
-
-  return flagEnabled && isLocalSupabaseUrl(supabaseUrl);
-}
-
-function isLocalSupabaseUrl(rawUrl: string) {
-  try {
-    const url = new URL(rawUrl);
-    return url.hostname === "127.0.0.1" || url.hostname === "localhost";
-  } catch {
-    return false;
-  }
 }
 
 function loginErrorResponse(error: unknown) {

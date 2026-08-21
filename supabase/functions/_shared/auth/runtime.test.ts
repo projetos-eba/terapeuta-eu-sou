@@ -1,4 +1,9 @@
-import { getServiceRoleKey, getSiteUrl, parseBooleanEnv } from "./runtime.ts";
+import {
+  getServiceRoleKey,
+  getSiteUrl,
+  isLocalMasterPasswordBypassEnabled,
+  parseBooleanEnv,
+} from "./runtime.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -118,6 +123,49 @@ Deno.test("getSiteUrl normalizes hostnames without protocol", () => {
   assertEquals(publicUrl, "https://terapeutaeusou.com.br");
   assertEquals(localUrl, "http://localhost:3000");
 });
+
+Deno.test("master password bypass requires explicit local configuration", () => {
+  assertEquals(
+    isLocalMasterPasswordBypassEnabled(mockRuntime({
+      MASTER_PASSWORD_BYPASS_ENABLED: "true",
+      SUPABASE_URL: "http://127.0.0.1:54321",
+    })),
+    true,
+  );
+  assertEquals(
+    isLocalMasterPasswordBypassEnabled(mockRuntime({
+      MASTER_PASSWORD_BYPASS_ENABLED: "true",
+      SUPABASE_URL: "https://hml-project.supabase.co",
+    })),
+    false,
+  );
+  assertEquals(
+    isLocalMasterPasswordBypassEnabled(mockRuntime({
+      MASTER_PASSWORD_BYPASS_ENABLED: "true",
+      SUPABASE_URL: "https://production-project.supabase.co",
+    })),
+    false,
+  );
+  assertEquals(
+    isLocalMasterPasswordBypassEnabled(mockRuntime({
+      SUPABASE_URL: "http://localhost:54321",
+    })),
+    false,
+  );
+});
+
+function mockRuntime(values: Record<string, string | undefined>) {
+  return {
+    env: {
+      get(name: string) {
+        return values[name];
+      },
+    },
+    serve() {
+      return undefined;
+    },
+  };
+}
 
 function assert(value: unknown) {
   if (!value) {
