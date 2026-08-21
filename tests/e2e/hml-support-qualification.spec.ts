@@ -113,6 +113,54 @@ test("HML: terapeuta e Admin mantêm uma thread de suporte isolada", async ({
     await expect(
       adminPage.getByText(therapistReply, { exact: true }),
     ).toBeVisible();
+    const internalNote = "QA interna: conferência administrativa concluída.";
+    await adminPage.getByLabel("Nota interna").fill(internalNote);
+    await adminPage
+      .getByRole("button", { name: "Salvar nota interna" })
+      .click();
+    await expect(adminPage.getByText("Nota interna salva.")).toBeVisible();
+    await expect(
+      adminPage.getByText(internalNote, { exact: true }),
+    ).toBeVisible();
+
+    await therapistPage.reload();
+    await expect(
+      therapistPage.getByText(internalNote, { exact: true }),
+    ).not.toBeVisible();
+    await assertTicket(therapistPage, hml, ticketId, "waiting_support", 3);
+
+    await adminPage.getByLabel("Motivo").fill("QA resolve chamado de suporte.");
+    await adminPage.getByRole("button", { name: "Resolver chamado" }).click();
+    await expect(
+      adminPage.getByText(/Chamado resolvido|Chamado marcado como resolvido/),
+    ).toBeVisible();
+
+    await therapistPage.reload();
+    await expect(
+      therapistPage.getByText("Resolvido", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      therapistPage.getByRole("button", { name: "Ainda preciso de ajuda" }),
+    ).toBeVisible();
+    await assertTicket(therapistPage, hml, ticketId, "resolved", 3);
+
+    await therapistPage
+      .getByRole("button", { name: "Ainda preciso de ajuda" })
+      .click();
+    const reopenReply = "QA HML: preciso retomar este atendimento.";
+    await therapistPage.getByLabel("Responder ao suporte").fill(reopenReply);
+    await therapistPage
+      .getByRole("button", { name: "Enviar resposta" })
+      .click();
+    await expect(
+      therapistPage.getByText("Aguardando TES", { exact: true }),
+    ).toBeVisible();
+    await assertTicket(therapistPage, hml, ticketId, "waiting_support", 4);
+
+    await adminPage.reload();
+    await expect(
+      adminPage.getByText(reopenReply, { exact: true }),
+    ).toBeVisible();
     await testInfo.attach("support-ticket-id", {
       body: Buffer.from(ticketId),
       contentType: "text/plain",
