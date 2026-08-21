@@ -13,8 +13,7 @@ import {
   loginClientWithPassword,
 } from "@/features/client-auth/supabase-rest";
 import { validateClientLogin } from "@/features/client-auth/validation";
-
-const SECURE_COOKIE = process.env.NODE_ENV === "production";
+import { setAuthSessionCookies } from "@/lib/auth/session-cookies";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -48,23 +47,11 @@ export async function POST(request: Request) {
     const session = await loginClientWithPassword(validation.value);
     const response = NextResponse.json({
       ok: true,
-      redirectTo: getSafeRedirect(toLoginInput(body).next) ?? session.redirectTo,
+      redirectTo:
+        getSafeRedirect(toLoginInput(body).next) ?? session.redirectTo,
     });
 
-    response.cookies.set("tes_patient_access_token", session.accessToken, {
-      httpOnly: true,
-      maxAge: session.expiresIn,
-      path: "/",
-      sameSite: "lax",
-      secure: SECURE_COOKIE,
-    });
-    response.cookies.set("tes_patient_refresh_token", session.refreshToken, {
-      httpOnly: true,
-      maxAge: 60 * 60 * 24 * 30,
-      path: "/",
-      sameSite: "lax",
-      secure: SECURE_COOKIE,
-    });
+    setAuthSessionCookies(response, "patient", session);
 
     return response;
   } catch (error) {

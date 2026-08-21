@@ -114,6 +114,7 @@ type CleanupFailure = {
 };
 
 const ACCESS_REQUEST_TIMEOUT_MS = 12_000;
+const AUTH_SESSION_REFRESH_INTERVAL_MS = 5 * 60_000;
 
 export function ZoomVideoSessionAdapter({
   access,
@@ -155,6 +156,8 @@ export function ZoomVideoSessionAdapter({
   );
   const previewAbortControllerRef = useRef<AbortController | null>(null);
   const joinAbortControllerRef = useRef<AbortController | null>(null);
+  const authRefreshAbortControllerRef = useRef<AbortController | null>(null);
+  const authRefreshInFlightRef = useRef(false);
   const leavingRef = useRef(false);
   const localVideoRef = useRef<HTMLElement | null>(null);
   const remoteVideoRef = useRef<HTMLElement | null>(null);
@@ -204,6 +207,7 @@ export function ZoomVideoSessionAdapter({
       mounted.current = false;
       previewAbortControllerRef.current?.abort();
       joinAbortControllerRef.current?.abort();
+      authRefreshAbortControllerRef.current?.abort();
       window.removeEventListener("pagehide", handlePageHide);
       void cleanupRef.current?.({ destroyClient: true, endSession: false });
     };
@@ -300,6 +304,48 @@ export function ZoomVideoSessionAdapter({
     },
     [actorRole, bookingId, updateCurrentAccess],
   );
+
+  const refreshAuthenticatedSession = useCallback(async () => {
+    if (!isOnlineRef.current || authRefreshInFlightRef.current) return;
+
+    const controller = new AbortController();
+    authRefreshAbortControllerRef.current = controller;
+    authRefreshInFlightRef.current = true;
+
+    try {
+      await fetch("/api/auth/session/refresh", {
+        body: JSON.stringify({ role: actorRole }),
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        signal: controller.signal,
+      });
+    } catch {
+      // A later interval or reconnection can retry without interrupting media.
+    } finally {
+      if (authRefreshAbortControllerRef.current === controller) {
+        authRefreshAbortControllerRef.current = null;
+      }
+      authRefreshInFlightRef.current = false;
+    }
+  }, [actorRole]);
+
+  useEffect(() => {
+    if ((state !== "joined" && state !== "reconnecting") || !isOnline) {
+      return undefined;
+    }
+
+    void refreshAuthenticatedSession();
+    const timer = window.setInterval(
+      () => void refreshAuthenticatedSession(),
+      AUTH_SESSION_REFRESH_INTERVAL_MS,
+    );
+
+    return () => {
+      window.clearInterval(timer);
+      authRefreshAbortControllerRef.current?.abort();
+    };
+  }, [isOnline, refreshAuthenticatedSession, state]);
 
   useEffect(() => {
     const handleOffline = () => {
