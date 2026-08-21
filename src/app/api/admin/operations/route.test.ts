@@ -245,7 +245,7 @@ describe("admin operation command route", () => {
         action: "support.resolve",
         entityId: "33333333-3333-4333-8333-333333333333",
         reason: "Ticket resolvido com retorno operacional.",
-        requestId: "support-request",
+        requestId: "33333333-3333-4333-8333-333333333334",
       }),
     );
 

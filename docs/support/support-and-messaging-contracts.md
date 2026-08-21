@@ -98,7 +98,27 @@ Contratos de thread vigentes, todos fora da API de participante:
 - `POST /api/admin/support/tickets/:ticketId/reply`: resposta pública sob
   `admin.support.manage`;
 - `POST /api/admin/support/tickets/:ticketId/notes`: nota interna sob
-  `admin.support.manage`; resolver/reabrir reutiliza o command auditado existente.
+  `admin.support.manage`;
+- `GET /api/admin/support/tickets/:ticketId/management`: metadados de triagem
+  exclusivamente administrativos;
+- `POST /api/admin/support/tickets/:ticketId/management`: ações allowlisted
+  `assign_self`, `unassign`, `set_priority`, `start`, `resolve` e `reopen`,
+  todas derivadas de `auth.uid()` e auditadas.
+
+### Inbox administrativa — Fase 3
+
+`/admin/suporte` usa exclusivamente `admin_get_support_inbox_v1(jsonb)`. O
+read model aceita busca limitada por protocolo, assunto, nome e e-mail do
+solicitante, filtros de status, prioridade, categoria, persona e atribuição
+(`me`/`unassigned`) e paginação de no máximo 50 itens. A busca por e-mail é
+executada somente dentro da RPC Admin-only e o e-mail não entra no DTO da
+listagem.
+
+A ordenação autoritativa evita starvation: `waiting_support` vem primeiro,
+seguido de `open`, `in_progress`, `waiting_requester` e `resolved`; dentro do
+trabalho pendente, prioridade vem antes e a atividade pendente mais antiga é
+atendida primeiro. `assigned_admin_id` é aditivo em `support_tickets`, tem uso
+operacional real e nunca entra em DTO/RLS do solicitante.
 
 ## Lifecycle de suporte vigente
 
@@ -111,13 +131,13 @@ Contratos de thread vigentes, todos fora da API de participante:
 | Admin resolve                         | `resolved`          | nulo         | Define `resolved_at` e atualiza atividade.             |
 | Admin reabre                          | `open`              | `support`    | Limpa `resolved_at` e atualiza atividade.              |
 
-Nota interna, alteração de prioridade e atribuição atualizam `last_activity_at`, mas não podem expor conteúdo ou autor administrativo ao solicitante.
+Nota interna, alteração de prioridade e atribuição atualizam `last_activity_at`, mas não podem expor conteúdo ou autor administrativo ao solicitante. Admin só pode iniciar atendimento a partir de `open` ou `waiting_support`; resposta pública só é aceita em `open`, `in_progress` ou `waiting_support`; resolução exige ticket ainda não resolvido; reabertura administrativa exige `resolved`.
 
 ## Dados, RLS e compatibilidade da Fase 2
 
 `support_ticket_messages` contém `id`, `ticket_id`, `author_profile_id` derivado, papel do autor, `body`, `visibility` (`requester` ou `internal`), `created_at` e `request_id`. A constraint `(ticket_id, author_profile_id, request_id)` bloqueia retries duplicados. A descrição inicial nova é materializada como primeira mensagem pública, portanto a thread é a fonte canônica da conversa. Tickets históricos sem thread retornam a descrição legada como primeira mensagem conceitual, sem backfill destrutivo.
 
-Campos de `support_tickets` só serão adicionados com uso: `assigned_admin_id`, `last_activity_at`, `resolved_at` e `waiting_on`. Antes de constraint de status, a migration da Fase 2 deve fazer preflight dos valores existentes. Registros atuais e os comandos Admin `support.resolve`/`support.reopen` devem permanecer compatíveis.
+Campos de `support_tickets` só serão adicionados com uso: `assigned_admin_id`, `last_activity_at` e `resolved_at`. `waiting_on` continua redundante com o estado e não existe. A migration da Fase 3 adiciona somente `assigned_admin_id`, índices de Inbox e boundaries Admin-only; registros atuais permanecem compatíveis. Os comandos legados `support.resolve`/`support.reopen` agora delegam à mesma state machine da Inbox.
 
 RLS vigente:
 

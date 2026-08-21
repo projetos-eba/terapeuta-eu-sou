@@ -64,11 +64,19 @@ export async function POST(
       method: "POST",
     },
   );
-  if (!response.ok)
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as {
+      code?: string;
+    } | null;
     return failure(
-      "Não foi possível enviar a resposta agora.",
-      response.status === 404 ? 404 : 503,
+      payload?.code === "P0002"
+        ? "Chamado não encontrado."
+        : payload?.code === "22023"
+          ? "Esta resposta não é permitida no estado atual do chamado."
+          : "Não foi possível enviar a resposta agora.",
+      payload?.code === "P0002" ? 404 : payload?.code === "22023" ? 422 : 503,
     );
+  }
   return NextResponse.json(
     { ok: true },
     { headers: { "Cache-Control": "no-store" }, status: 201 },

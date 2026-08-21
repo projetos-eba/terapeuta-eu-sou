@@ -193,7 +193,7 @@ select lives_ok(
       'support.resolve',
       current_setting('test.support_ticket_id')::uuid,
       'Chamado solucionado pela equipe TES.',
-      'support-ticket-resolve-test',
+      'f9000000-0000-4000-8000-000000000007',
       '{}'::jsonb,
       null
     )
