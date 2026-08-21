@@ -32,7 +32,12 @@ Status: implementação e validação local
 
 - A migration é aditiva; não altera tickets ou mensagens legadas.
 - As notificações de criação/atualização de ticket existentes permanecem. E-mail é notificação futura; o ticket autenticado é a fonte canônica.
-- As migrations Fase 1/2 foram aplicadas em HML em 2026-08-21, sem produção. A qualificação autenticada permanece bloqueada até a publicação do runtime compatível e a disponibilização de personas QA; ver `docs/homologation/phase-2.5-support-qualification.md`.
+- As migrations Fase 1/2 foram aplicadas em HML em 2026-08-21, sem produção.
+  A qualificação autenticada comprovou abertura, resposta Admin, visualização
+  pelo terapeuta e nova resposta do terapeuta. Ela permanece **PARTIAL**:
+  o detalhe Admin ainda não apresenta `support_ticket_messages`, portanto não
+  prova que Admin vê a resposta subsequente do solicitante. Ver
+  `docs/homologation/phase-2.5-support-qualification.md`.
 
 ## Validação executada
 
@@ -42,7 +47,10 @@ Status: implementação e validação local
 - Vitest focal: 5 arquivos, 16 testes passaram.
 - `npm run typecheck`, `npm run lint` e `npm run build`: passaram.
 - `supabase db lint`: executado; somente avisos legados fora do domínio de suporte.
-- Browser QA autenticado e E2E multi-persona ficam pendentes de uma fixture de terapeuta/Admin no ambiente local; nenhum teste usou HML, produção ou disparo de e-mail.
+- HML: BrowserContexts de paciente, terapeuta e Admin passaram; o E2E de
+  suporte atingiu `open → waiting_requester → waiting_support` no backend, mas
+  falhou na asserção visual da thread Admin. A rota HML de mensagens
+  participantes rejeitou `body` arbitrário com `422` antes de persistir.
 
 ## Próxima fase
 

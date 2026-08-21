@@ -32,6 +32,7 @@ export function TherapistSupportTicketPage({ ticketId }: { ticketId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [body, setBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReopening, setIsReopening] = useState(false);
   const requestId = useRef<string | null>(null);
 
   const load = useCallback(async () => {
@@ -147,64 +148,73 @@ export function TherapistSupportTicketPage({ ticketId }: { ticketId: string }) {
               </article>
             ))}
           </div>
-          {ticket.status === "resolved" ? (
+          {ticket.status === "resolved" && !isReopening ? (
             <div className="border-t border-brand-lavender/70 px-5 py-5 sm:px-7">
               <p className="text-sm font-semibold text-tesText-secondary">
-                Este chamado foi resolvido. Se ainda precisar de ajuda, envie
-                uma nova mensagem para reabrir o atendimento.
+                Este chamado foi resolvido. Se ainda precisar de ajuda, você
+                pode reabrir o atendimento com uma nova mensagem.
               </p>
-            </div>
-          ) : null}
-          <form
-            className="border-t border-brand-lavender/70 px-5 py-5 sm:px-7"
-            onSubmit={(event) => {
-              event.preventDefault();
-              void send();
-            }}
-          >
-            <label className="grid gap-2">
-              <span className="text-sm font-extrabold text-brand-deep">
-                Responder ao suporte
-              </span>
-              <textarea
-                className="min-h-32 w-full resize-y rounded-xl border border-brand-lavender px-4 py-3 text-sm font-semibold leading-6 text-brand-deep"
-                disabled={isSubmitting}
-                maxLength={supportTicketBodyLimit}
-                onChange={(event) => {
-                  setBody(event.target.value);
-                  requestId.current = null;
-                }}
-                placeholder="Conte o que precisa complementar…"
-                value={body}
-              />
-            </label>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-              <span className="text-xs font-semibold text-tesText-secondary">
-                {body.length}/{supportTicketBodyLimit}
-              </span>
               <button
-                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-primary px-5 text-sm font-extrabold text-white disabled:opacity-60"
-                disabled={isSubmitting || !body.trim()}
-                type="submit"
+                className="mt-4 inline-flex min-h-11 items-center rounded-full border border-brand-primary px-5 text-sm font-extrabold text-brand-primary"
+                onClick={() => setIsReopening(true)}
+                type="button"
               >
-                {isSubmitting ? (
-                  <Loader2
-                    aria-hidden="true"
-                    className="animate-spin"
-                    size={16}
-                  />
-                ) : (
-                  <Send aria-hidden="true" size={16} />
-                )}{" "}
-                Enviar resposta
+                Ainda preciso de ajuda
               </button>
             </div>
-            {error ? (
-              <p className="mt-3 rounded-lg bg-status-dangerBg px-4 py-3 text-sm font-bold text-status-danger">
-                {error}
-              </p>
-            ) : null}
-          </form>
+          ) : null}
+          {ticket.status !== "resolved" || isReopening ? (
+            <form
+              className="border-t border-brand-lavender/70 px-5 py-5 sm:px-7"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void send();
+              }}
+            >
+              <label className="grid gap-2">
+                <span className="text-sm font-extrabold text-brand-deep">
+                  Responder ao suporte
+                </span>
+                <textarea
+                  className="min-h-32 w-full resize-y rounded-xl border border-brand-lavender px-4 py-3 text-sm font-semibold leading-6 text-brand-deep"
+                  disabled={isSubmitting}
+                  maxLength={supportTicketBodyLimit}
+                  onChange={(event) => {
+                    setBody(event.target.value);
+                    requestId.current = null;
+                  }}
+                  placeholder="Conte o que precisa complementar…"
+                  value={body}
+                />
+              </label>
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <span className="text-xs font-semibold text-tesText-secondary">
+                  {body.length}/{supportTicketBodyLimit}
+                </span>
+                <button
+                  className="inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-primary px-5 text-sm font-extrabold text-white disabled:opacity-60"
+                  disabled={isSubmitting || !body.trim()}
+                  type="submit"
+                >
+                  {isSubmitting ? (
+                    <Loader2
+                      aria-hidden="true"
+                      className="animate-spin"
+                      size={16}
+                    />
+                  ) : (
+                    <Send aria-hidden="true" size={16} />
+                  )}{" "}
+                  Enviar resposta
+                </button>
+              </div>
+              {error ? (
+                <p className="mt-3 rounded-lg bg-status-dangerBg px-4 py-3 text-sm font-bold text-status-danger">
+                  {error}
+                </p>
+              ) : null}
+            </form>
+          ) : null}
         </section>
       ) : null}
     </main>
