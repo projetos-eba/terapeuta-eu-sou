@@ -92,8 +92,9 @@ Fonte consultada: documentacao oficial/SDK Hostinger Mail API em 2026-07-24.
 - O Manual de Comunicação Automatizada TES é fonte editorial; não cria action
   key, trigger, token ou dado de domínio.
 - O `emailActionRegistry` mantém os defaults oficiais e o shell HTML compartilhado
-  usa tabelas de apresentação, preheader oculto, CTA HTTPS descritivo e footer
-  institucional TES. Não usar scripts, imagens obrigatórias ou CSS do app.
+  usa tabelas de apresentação, preheader oculto, logo oficial TES por URL HTTPS
+  pública, CTA HTTPS descritivo e footer institucional. O logo deve ter `alt`,
+  dimensões controladas e nunca usar `data:`. Não usar scripts ou CSS do app.
 - O sanitizer de HTML permite somente estrutura e estilos seguros de e-mail
   (tabelas de apresentação, bordas, espaçamento, tipografia e CTA). Qualquer
   expansão deve preservar a remoção de scripts, handlers, `javascript:` e tags

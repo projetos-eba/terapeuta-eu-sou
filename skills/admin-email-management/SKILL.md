@@ -19,6 +19,11 @@ action keys, tokens e se automação existe. Sem gatilho automático, persistir 
 mostrar somente envio manual. Logs mascaram destinatário e erro; retry segue a
 outbox, não a interface administrativa.
 
+A leitura da Central pode sincronizar server-side as caixas do provider para
+manter o seletor de remetente atualizado. A sincronização nunca é feita no
+browser, não revela credenciais e não deve apagar o último remetente conhecido
+se a Hostinger estiver indisponível.
+
 Checklist de QA: entrada visível em `/admin/configuracoes`; central com estados
 loading/erro/vazio/provider indisponível; evento allowlisted; destinatário
 resolvido; preview sem execução de script; salvar/restaurar/reload; desktop,

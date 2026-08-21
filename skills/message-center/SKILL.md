@@ -20,6 +20,7 @@ description: Implementar e manter a Central de Mensagens do paciente e do terape
 
 - Paciente: `/app/mensagens`.
 - Terapeuta: `/terapeuta/mensagens`.
+- Detalhe de suporte do terapeuta: `/terapeuta/mensagens/suporte/:ticketId`.
 - A subrota autenticada `/terapeuta/mensagens/solicitar-terapia` é um fluxo
   estruturado de sugestão de catálogo; ela não é chat nem permite mensagens
   livres entre pacientes e terapeutas.
@@ -35,8 +36,8 @@ Fluxos permitidos:
 
 - cliente -> terapeuta: templates aprovados;
 - terapeuta -> cliente: templates aprovados;
-- cliente -> plataforma: categorias de suporte;
-- terapeuta -> plataforma: categorias de suporte.
+- cliente -> plataforma: ticket de suporte autorizado;
+- terapeuta -> plataforma: ticket de suporte autorizado.
 
 ## Contratos atuais
 
@@ -60,10 +61,12 @@ outro perfil.
 HTTP-only. O shell consulta a cada três segundos enquanto a aba estiver visível;
 não expor token no navegador nem usar Realtime direto.
 
-`/api/support/tickets` deve aceitar somente templates aprovados de suporte,
-resolver assunto, categoria e descrição no servidor, validar autenticação por
-papel (`patient` ou `therapist`), validar ownership do booking quando informado
-e usar `requestId` idempotente. Não aceitar texto livre vindo do navegador.
+`/api/support/tickets` aceita categoria controlada, assunto e descrição plain
+text em ticket autorizado. A identidade vem da sessão, o `bookingId` é
+validado contra o solicitante e `requestId` mantém idempotência. O detalhe e a
+resposta usam `/api/support/tickets/:ticketId`; a thread vive em
+`support_ticket_messages` e não compartilha tabelas, composer ou endpoint com
+participantes.
 
 ## UI
 
@@ -71,7 +74,8 @@ e usar `requestId` idempotente. Não aceitar texto livre vindo do navegador.
   tintadas, duas seções principais, lista de participantes e lista de
   plataforma/suporte.
 - Dentro do shell real, não recriar sidebar ou topbar do Figma.
-- Usar `TESDialog` para seleção de templates.
+- Usar `TESDialog` para o formulário de novo chamado; composer livre só existe
+  no detalhe de suporte, nunca na seção de participantes.
 - Responsivo: uma coluna no mobile/tablet e duas colunas no desktop largo.
 - Usar tokens TES (`text-brand-deep`, `text-tesText-secondary`,
   `border-brand-lavender`, `bg-brand-lavenderSoft`) e ícones `lucide-react`.
@@ -84,26 +88,31 @@ e usar `requestId` idempotente. Não aceitar texto livre vindo do navegador.
   pagamento ou uso indevido da plataforma.
 - Suporte deve ser gravado somente pelo endpoint autenticado
   `/api/support/tickets` e pelas policies de `support_tickets`; atalhos
-  client-side não podem simular protocolo em produção.
+  client-side não podem simular protocolo em produção. Thread, resposta pública
+  e nota interna usam o contrato separado de Support Ticketing; nota interna
+  nunca integra a leitura do solicitante.
 
 ## QA
 
 - Validar `/app/mensagens` e `/terapeuta/mensagens`.
-- Verificar que não existe input de texto livre.
+- Verificar que não existe input de texto livre entre participante e terapeuta.
+- Verificar criação, lista, detalhe e resposta do ticket de suporte do
+  terapeuta, inclusive estado resolvido e mobile.
 - Verificar que o sino da topbar abre o popover acessível, mantém a Central de
   mensagens como destino completo e fecha por `Escape` ou clique externo.
 - Verificar marcação de notificações como lidas por clique real.
 - Verificar que aviso temporário aparece apenas para encontro confirmado e
   respeita `prefers-reduced-motion`.
 - Verificar abertura/fechamento do `TESDialog`, foco e `Escape`.
-- Verificar abertura real de chamado por template de suporte e feedback com
+- Verificar abertura real de chamado plain text autorizado e feedback com
   protocolo.
 - Rodar `npm run typecheck`, `npm run lint`, `npm run test` e `npm run build`.
 
 ## Pendências conhecidas
 
-- Migrar ou desabilitar a policy legada que permite insert livre em `messages`
-  quando houver decisão de banco para hardening definitivo.
+- A Fase 1 fechou a escrita direta de `messages`: o envio participante usa a
+  RPC `send_structured_participant_message_v1`, que resolve template e sentido
+  no banco. A expansão do catálogo continua pendente para fase posterior.
 - Publicar SLAs e canais oficiais antes de expor `/ajuda` como superfície
   pública.
 

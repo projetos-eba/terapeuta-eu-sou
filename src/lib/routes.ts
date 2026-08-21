@@ -61,6 +61,8 @@ export const routes = {
     sessionVideo: (bookingId: string) =>
       `/terapeuta/sessoes/${bookingId}/video`,
     messages: "/terapeuta/mensagens",
+    supportTicketDetail: (ticketId: string) =>
+      `/terapeuta/mensagens/suporte/${ticketId}`,
     therapyCatalogRequest: "/terapeuta/mensagens/solicitar-terapia",
     services: "/terapeuta/servicos",
     ownServices: "/terapeuta/servicos/meus",
