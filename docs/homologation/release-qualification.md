@@ -43,15 +43,15 @@ Escopo: recriação responsiva da rota pública `/sobre-nos`, inclusão de
 da tipografia editorial leve, da proteção contra palavras viúvas e da mídia
 de alta qualidade nas superfícies públicas com assets editoriais.
 
-| Gate                         | Resultado | Evidência segura                                                                                                                        |
-| ---------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Calibration visual           | PASS      | Comparação local em 1920×1080, 1440×1000, 1024×900 e 390×844; hero inicia após o cabeçalho, não possui CTA e usa IvyPresto Display Light Italic. A sequência mobile foi revisada integralmente, sem critério eliminatório. |
+| Gate                         | Resultado | Evidência segura                                                                                                                                                                                                                                    |
+| ---------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Calibration visual           | PASS      | Comparação local em 1920×1080, 1440×1000, 1024×900 e 390×844; hero inicia após o cabeçalho, não possui CTA e usa IvyPresto Display Light Italic. A sequência mobile foi revisada integralmente, sem critério eliminatório.                          |
 | Responsividade e assets      | PASS      | `tests/e2e/public-about.spec.ts`: 6/6 cenários Chromium, sem overflow horizontal, sem imagem local quebrada; hero, cards e mídias editoriais públicas usam WebP em `q=95`, incluindo a versão restaurada de alta resolução do mockup de plataforma. |
-| Navegação pública            | PASS      | Teste E2E confirmou `/sobre-nos` no cabeçalho desktop, menu mobile e rodapé; testes unitários focais 6/6.                               |
-| TypeScript                   | PASS      | `npm run typecheck`.                                                                                                                    |
-| Lint                         | PASS      | `npm run lint`, incluindo políticas visual e online-only, sem warning ou erro.                                                          |
-| Build                        | PASS      | `npm run build`: 108 rotas geradas; `/sobre-nos` prerenderizada como página estática.                                                   |
-| Browser oficial do Codex/HML | BLOCKED   | O backend do Browser oficial continua ausente; a evidência desta rodada é local e headless via Chromium/Playwright.                     |
+| Navegação pública            | PASS      | Teste E2E confirmou `/sobre-nos` no cabeçalho desktop, menu mobile e rodapé; testes unitários focais 6/6.                                                                                                                                           |
+| TypeScript                   | PASS      | `npm run typecheck`.                                                                                                                                                                                                                                |
+| Lint                         | PASS      | `npm run lint`, incluindo políticas visual e online-only, sem warning ou erro.                                                                                                                                                                      |
+| Build                        | PASS      | `npm run build`: 108 rotas geradas; `/sobre-nos` prerenderizada como página estática.                                                                                                                                                               |
+| Browser oficial do Codex/HML | BLOCKED   | O backend do Browser oficial continua ausente; a evidência desta rodada é local e headless via Chromium/Playwright.                                                                                                                                 |
 
 Esta rodada não altera o gate global de release: Stripe, booking/webhook e
 Zoom reais em HML continuam pendentes.
@@ -108,3 +108,223 @@ cancelamento, os limites `service_role` dos RPCs, a matriz read-only das views
 e os novos gates de homologação. A evidência desta retomada também corrige o
 status do CI (somente worktree, não versionado) e registra o bloqueio externo
 do Playwright/HML sem incluir tokens, cookies ou credenciais.
+
+## Fase 0.5 — Unblock Golden Path
+
+Data: 2026-08-21
+
+| Gate                     | Resultado | Evidência segura                                                                                                                                                                                                                    |
+| ------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Auth bypass fail-closed  | PASS      | O fallback de `MASTER_PASSWORD` passou a exigir flag explícita e Supabase local; Deno 17/17 no foco e 156/156 na suíte. As três funções de login foram implantadas somente em HML.                                                  |
+| Stripe HML preflight     | PASS      | Preflight Admin-only HML, sem mutação: test mode, API, catálogo Billing, webhooks plataforma/Connect, functions, estado autoritativo de pagamento, fixture pública com slot, Connect e credencial operacional de repasses passaram. |
+| Multi-context Playwright | PASS      | 1/1 em Chromium: paciente, terapeuta e Admin chegaram simultaneamente às áreas privadas em BrowserContexts, cookie jars e storages independentes.                                                                                   |
+| HML migration alignment  | PASS      | Listagem vinculada local/remoto está alinhada inclusive para `20260821142516`; esta rodada não aplicou a migration.                                                                                                                 |
+| Known local tests        | PASS      | Vitest 142/555, Deno 156/156, pgTAP 68/1.484, typecheck, lint e build (110 rotas) passaram.                                                                                                                                         |
+
+O CI remoto foi observado, mas a execução mais recente falha no check de
+formatação de um arquivo alterado em outra frente; segue P1 para RC e não
+bloqueia a Fase 1. Não houve Checkout, cobrança, booking, Zoom ou transferência
+nesta etapa.
+
+Decisão: **PHASE 1 READY**. A aprovação é apenas para iniciar o Golden Path
+controlado em HML; não é aprovação de produção.
+
+## Fase 1 — execução interrompida com segurança
+
+Data: 2026-08-21
+Resultado: **PHASE 1 FAIL**
+
+| Checkpoint                                                   | Status     | Evidência                                                                                       |
+| ------------------------------------------------------------ | ---------- | ----------------------------------------------------------------------------------------------- |
+| Discovery público                                            | PASS       | Perfil, serviço e preço da fixture foram observados em HML.                                     |
+| Contextos isolados                                           | PASS       | Paciente, terapeuta e Admin foram autenticados em BrowserContexts independentes.                |
+| Fixture controlada T-15                                      | PASS       | Regra temporária e configuração foram liberadas pelo harness ao encerrar.                       |
+| Novo booking/Checkout                                        | BLOCKED    | Uma reserva pendente de uma execução interrompida ocupa o intervalo exclusivo da única fixture. |
+| Webhook, pagamento, Zoom, financeiro e Admin correlacionados | NOT_TESTED | Não há cenário novo pago e atribuído de forma autoritativa.                                     |
+
+Nenhum estado foi corrigido manualmente. A reserva pendente não foi cancelada,
+apagada, atualizada nem reutilizada. O próximo run deve aguardar sua expiração
+canônica ou usar uma janela nova que não conflite. A extensão Admin-only usada
+para fixture é limitada ao host HML e não deve ser implantada em produção.
+
+### Retry Fase 1
+
+O retry parou no precheck, antes de checkout: a função HML Admin-only retornou
+fixture_slot_not_clean. Não foram criados booking, hold, Checkout, pagamento
+ou sessão de vídeo nesta segunda tentativa. A reserva pendente anterior segue
+intacta e apenas observada.
+
+O retry expandiu a busca, em leitura autoritativa, de 24 a 72 horas e pelas
+fixtures públicas elegíveis. Resultado: **NO CLEAN HML FIXTURE AVAILABLE**.
+Não houve mutação de agenda ou criação de operação.
+
+## Fase 1A — Provisionamento da fixture oficial HML
+
+Data: 2026-08-21
+Resultado: **GOLDEN PATH FIXTURE READY**
+
+O bloqueio anterior era de qualificação: a janela casual consultada possuía uma
+reserva pendente que permanece intacta. A fixture oficial reutiliza a persona
+QA pública `antonio-ferrari-e2e` e o serviço QA público de 50 minutos por
+R$ 120,00. A localização futura é determinística e não depende de um horário
+fixo: executar o preflight HML Admin-only `find_clean`, selecionar `slot` e
+manter `fallbackSlots` como B/C.
+
+| Gate                                     | Resultado | Evidência sanitizada                                                                                         |
+| ---------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------ |
+| Terapeuta aprovado, publicável e visível | PASS      | Perfil público QA renderizado e elegível para reserva.                                                       |
+| Serviço/terapia online ativos            | PASS      | Serviço público QA com preço e duração canônicos.                                                            |
+| Agenda exclusiva de QA                   | PASS      | Faixa de sábado 09:00–17:00 criada pela tela autenticada e comando oficial de agenda.                        |
+| Slots A/B/C independentes                | PASS      | Precheck retornou 22/08/2026 às 14:00, 15:00 e 16:00 BRT, com espaçamento canônico.                          |
+| Paciente e Admin QA                      | PASS      | Playwright HML 1/1 confirmou as três personas isoladas.                                                      |
+| Stripe e webhook assinados prontos       | PASS      | Preflight HML 10/10: test mode, catálogo, webhooks e funções críticas.                                       |
+| Connect da fixture                       | PASS      | Transferências ativas e read model sincronizado pelo fluxo oficial Stripe Connect.                           |
+| Ausência de conflitos transacionais      | PASS      | Slot engine e precheck Admin-only confirmaram ausência de booking, hold, payment e video session para A/B/C. |
+
+Alterações HML: somente a regra semanal de sábado da conta QA, salva pelo fluxo
+de produto, e o deploy HML do precheck Admin-only que agora seleciona três
+slots independentes. Não houve SQL administrativo, alteração de produção,
+onboarding fictício de Connect, Checkout, cobrança, booking, pagamento ou Zoom.
+
+Validações: `deno check` do precheck, `npm run test:deno` (156/156),
+`npm run typecheck`, `npm run lint`, Playwright HML multi-context (1/1) e
+preflight Stripe HML (10/10). Nenhuma migration foi criada ou aplicada.
+
+Risco remanescente: a disponibilidade é uma regra semanal compartilhada pela
+fixture QA; a próxima execução deve chamar novamente o precheck imediatamente
+antes de iniciar um único booking e usar B/C apenas se A ainda não tiver sido
+iniciada. A reserva pendente histórica continua sob observação, sem mutação.
+Fase 1 pode começar diretamente pelo Golden Path, mas este resultado não é
+aprovação de produção.
+
+## Fase 1 — Golden Path transacional HML (tentativa 2026-08-21)
+
+Decisão: **PHASE 1 FAIL**
+
+O precheck selecionou um slot A limpo imediatamente antes da execução. As
+superfícies pública e autenticadas foram abertas em contexts independentes e a
+reserva criou somente uma operação pendente canônica. Não foi empregado SQL,
+mock, atualização manual de status, reuse de Checkout ou fallback B/C.
+
+| Checkpoint            | Resultado  |
+| --------------------- | ---------- |
+| Fixture precheck      | PASS       |
+| Public discovery      | PASS       |
+| Booking initiation    | PASS       |
+| Stripe Checkout       | FAIL       |
+| Signed webhook        | FAIL       |
+| Authoritative payment | FAIL       |
+| Booking confirmed     | FAIL       |
+| Cross-persona         | NOT_TESTED |
+| Video session ready   | NOT_TESTED |
+| Zoom access window    | NOT_TESTED |
+| Therapist join        | NOT_TESTED |
+| Patient join          | NOT_TESTED |
+| Session completion    | NOT_TESTED |
+| Therapist financial   | NOT_TESTED |
+| Admin consistency     | NOT_TESTED |
+| Database invariants   | NOT_TESTED |
+
+Evidência autoritativa sanitizada: a Stripe test reportou a Checkout Session
+como `open`/`unpaid`; o banco HML reportou booking `pending_payment`, payment
+`pending`, BRL/R$ 120,00, nenhuma `video_session` e nenhum evento processado
+`checkout.session.completed`. Isso explica os checkpoints seguintes sem inferir
+defeito em webhook, Zoom ou read models.
+
+O harness foi ajustado para não chamar um submit de “Checkout concluído” antes
+de receber o redirect de sucesso. Não houve nova tentativa: o booking desta
+execução já foi iniciado e permanece evidência HML; B/C não são fallback válido
+neste ponto. A reserva histórica anterior não sofreu mutação e sua avaliação
+formal continua na Fase 2.
+
+Próxima ação mínima: investigar por que o Embedded Checkout test não concluiu a
+interação (campos/validação/retorno), criar teste de regressão do harness ou do
+fluxo conforme a causa e iniciar outra tentativa apenas com nova fixture limpa.
+
+## Fase 1B — Qualificação do Embedded Checkout HML
+
+Data: 2026-08-21
+Resultado: **PHASE 1B PASS**
+
+| Checkpoint                  | Resultado | Estado autoritativo / evidência sanitizada                                               |
+| --------------------------- | --------- | ---------------------------------------------------------------------------------------- |
+| Checkout return config      | PASS      | Stripe test `embedded_page`; retorno HTTPS HML em `/reserva/sucesso`; redirect `always`. |
+| Embedded Checkout render    | PASS      | Iframe do Checkout anexado no browser visível.                                           |
+| Payment interaction         | PASS      | Formulário real Stripe test submetido após completar os campos suplementares exigidos.   |
+| Redirect `/reserva/sucesso` | PASS      | O harness só prossegue após observar a rota canônica.                                    |
+| Stripe Checkout final state | PASS      | `complete` e `paid`, em test mode.                                                       |
+| Signed webhook              | PASS      | Um `checkout.session.completed` correlacionado foi processado.                           |
+| Authoritative payment       | PASS      | Pagamento canônico `paid`, BRL/R$ 120,00.                                                |
+| Booking confirmation        | PASS      | Booking `confirmed`/`paid`; um pagamento para o booking.                                 |
+
+Root cause da falha anterior: **harness de qualificação incompleto**, não
+defeito comprovado do produto, webhook ou booking. O submit original preenchia
+somente cartão/validade/CVC e não completava os controles suplementares que a
+Stripe exibiu neste Checkout incorporado. O novo harness completa nome/CEP
+quando presentes, registra somente atributos e mensagens sanitizados e torna o
+redirect uma precondição explícita. Não houve mudança de UI, arquitetura de
+pagamento, Stripe mode, estados de banco ou regra de domínio.
+
+Estado das tentativas: a tentativa histórica e a Fase 1 interrompida permanecem
+somente como evidência HML, sem mutação. A nova operação foi confirmada pelo
+Stripe/webhook/banco; sua `video_session` canônica existe, mas Zoom não foi
+acessado nesta fase.
+
+Validações: `npm run test:deno` 156/156, `deno check` do preflight, `node
+--check` do harness, Prettier focal, deploy somente da Edge Function Admin-only
+em HML e inspeção pós-pagamento somente leitura. Nenhum segredo, cookie, token,
+URL assinada ou identificador Stripe foi persistido.
+
+A Fase 1 pode ser retomada a partir de **Cross-persona → Video Session → Zoom →
+conclusão → financeiro → Admin → invariantes**. Esta qualificação não declara
+produção pronta e não executa esses checkpoints.
+
+## Fase 1C — Continuação do Golden Path HML
+
+Data: 2026-08-21
+Resultado: **PHASE 1 FAIL**
+
+| Checkpoint                      | Resultado  |
+| ------------------------------- | ---------- |
+| Paid booking recheck            | PASS       |
+| Cross-persona consistency       | PASS       |
+| Video session ready             | PASS       |
+| Zoom access window              | BLOCKED    |
+| Therapist join                  | NOT_TESTED |
+| Patient join                    | NOT_TESTED |
+| Video session active            | NOT_TESTED |
+| Video session end               | NOT_TESTED |
+| Session completion              | NOT_TESTED |
+| Therapist financial consistency | NOT_TESTED |
+| Admin operational consistency   | NOT_TESTED |
+| Database invariants             | NOT_TESTED |
+
+Recheck autoritativo: booking `confirmed`/`paid`; `session_payments=paid` em
+BRL/R$ 120,00; uma payment, uma video session `ready`, webhook Stripe já
+processado e vínculos de booking/payment/video íntegros. O browser visível
+confirmou a consistência paciente/terapeuta/Admin em contexts independentes e
+o bloqueio correto antes de T-15.
+
+O bloqueio dentro da janela não é de produto: a booking canônica está marcada
+para 23/08/2026 às 10:15 BRT. O harness oficial aceita apenas uma booking entre
+15 e 20 minutos antes do início ou prepara uma nova fixture. Não existe um
+controle temporal HML versionado para a política Zoom que preserve esta booking
+já paga, e esta fase proíbe criar outra. Zoom, conclusão, financeiro e a
+consistência Admin pós-sessão não foram iniciados.
+
+Classificação: P1 de qualificação HML. A decisão é FAIL porque checkpoints
+obrigatórios não puderam ser demonstrados; isso não é uma declaração de defeito
+de Zoom, do produto, de webhook ou de financeiro. As tentativas históricas
+pendentes permanecem intactas para a Fase 2.
+
+## Fase 1D — Zoom + conclusão do Golden Path HML
+
+Data: 2026-08-21
+Resultado: **PHASE 1 BLOCKED — OUTSIDE ZOOM WINDOW**
+
+Precheck autoritativo somente leitura: booking ainda `confirmed`/`paid`,
+pagamento `paid` em BRL/R$ 120,00, uma payment e uma video session `ready`.
+O horário canônico permanece 23/08/2026 às 10:15 BRT e a consulta ocorreu antes
+de T-15. Não houve acesso a Zoom, entrada de host/paciente, alteração manual ou
+nova operação. A próxima execução deve começar às 10:00 BRT com o mesmo booking
+e novo precheck; não criar Checkout, pagamento, fixture ou video session.

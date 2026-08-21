@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AdminEmailEventEditor } from "./admin-email-event-editor";
 
 const detail = {
+  actionKey: "therapy_catalog_request_submitted",
   allowedTokens: [],
   description: "Confirma a recepção.",
   label: "Solicitação de terapia recebida",
@@ -23,6 +24,7 @@ const detail = {
     subject_override: "Assunto customizado",
     text_override: "Texto customizado",
   },
+  supportsAutomaticDispatch: true,
 };
 
 afterEach(() => {

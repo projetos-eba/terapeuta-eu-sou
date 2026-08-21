@@ -44,4 +44,29 @@ describe("AdminSettingsPage", () => {
     expect(html).not.toContain("internal_file_name");
     expect(html).not.toContain("Fonte:");
   });
+
+  it("renders an explicit entry when a governed area has a route", () => {
+    const html = renderToStaticMarkup(
+      <AdminSettingsPage
+        data={{
+          ...data,
+          groups: [
+            {
+              ...data.groups[0],
+              items: [
+                {
+                  ...data.groups[0].items[0],
+                  actionLabel: "Gerenciar e-mails",
+                  href: "/admin/configuracoes/emails",
+                },
+              ],
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(html).toContain("Gerenciar e-mails");
+    expect(html).toContain("/admin/configuracoes/emails");
+  });
 });

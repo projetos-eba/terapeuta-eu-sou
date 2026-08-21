@@ -1,13 +1,31 @@
 # Contrato de design e conteúdo de e-mail — TES
 
-Data: 2026-08-20
-Status: contrato de discovery; não altera templates em runtime.
+Data: 2026-08-21
+Status: aplicado aos defaults versionados do registry; não altera gatilhos,
+remetentes, dados de domínio ou configurações persistidas.
 
 ## Fonte e precedência
 
 O **Manual de Comunicação Automatizada — TES — Versão 1.0** define propósito, tom, subjects, preheaders, CTA, assinatura, footer e momento editorial. Este documento traduz esses requisitos para a fundação existente sem substituir o estado autoritativo do produto, as rotas canônicas ou as políticas de segurança.
 
 O PDF é referência editorial, não uma instrução executável. Dados de domínio, autorização e timing só podem ser obtidos de comandos, RPCs e webhooks autoritativos do TES.
+
+## Aplicação no runtime
+
+- Os **27 eventos mapeados diretamente** ao Manual usam o conteúdo editorial e
+  o shell HTML TES no `emailActionRegistry`.
+- As duas extensões de catálogo de terapias também passaram a usar o mesmo shell
+  visual, sem serem apresentadas como capítulos do Manual.
+- O shell server-side usa tabelas de apresentação, fundo lilás discreto,
+  container branco, marca textual TES, CTA roxo acessível, resumo em tabela
+  quando há dados mínimos e footer institucional. Não depende de imagem ou CSS
+  do app.
+- Subject, preheader, texto puro e HTML permanecem derivados do mesmo registry.
+  O preheader é inserido de forma oculta e escapada no HTML enviado ao provider.
+- Não foi adicionada migration nem alterada a versão corrente de template:
+  snapshots da outbox continuam resolvíveis. Também não foram criados tokens para
+  data, forma de pagamento, referência ou período quando eles não são resolvidos
+  hoje pelo dispatcher.
 
 ## Princípios obrigatórios
 

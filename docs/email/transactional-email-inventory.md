@@ -1,6 +1,7 @@
 # Inventário de comunicação transacional — Manual TES v1.0
 
 Data do discovery: 2026-08-20
+Última implementação editorial: 2026-08-21
 Escopo: análise do **Manual de Comunicação Automatizada — TES — Versão 1.0** e do código/migrations locais. O manual é fonte editorial; estados e gatilhos abaixo vêm exclusivamente do domínio TES. Nenhum envio, deploy, mutation remota, Stripe ou Zoom foi executado neste discovery.
 
 ## Resumo executivo
@@ -10,6 +11,20 @@ Escopo: análise do **Manual de Comunicação Automatizada — TES — Versão 1
 - Entrega atual: `sendTransactionalEmail()` em `supabase/functions/_shared/email/service.ts`, com o provider `hostinger_mail_api` em Edge Functions.
 - Os dois eventos de catálogo são **PRODUCT EXTENSION — MANUAL UPDATE RECOMMENDED**. Eles não correspondem a um capítulo do Manual v1.0 e permanecem suportados.
 - O TES já possui uma outbox para o piloto de catálogo, com snapshot de template/remetente, deduplicação por `action_key + domain_event_id + recipient_key`, claim com `SKIP LOCKED`, dispatch best-effort pós-commit e recovery por Supabase Cron/`pg_net`.
+
+### Defaults visuais e editoriais aplicados
+
+Em 2026-08-21, os 27 eventos alinhados diretamente ao Manual receberam o shell
+HTML TES e a redação editorial correspondente no registry. Os dois eventos de
+catálogo de terapias, que continuam extensões de produto, receberam somente o
+mesmo shell visual e a estrutura segura de CTA/footer. A alteração não criou
+gatilho, action key, token, migration ou configuração remota.
+
+Os resumos financeiros exibem apenas os campos já resolvidos pelo dispatcher:
+valor e referência do serviço para pagamento pendente/aprovado, valor para
+reembolso e valor para repasse. O Manual também ilustra data, forma de pagamento
+e período em alguns desses cenários, mas esses campos não compõem o contrato
+server-side atual; eles não foram simulados no template.
 
 ## Arquitetura existente auditada
 

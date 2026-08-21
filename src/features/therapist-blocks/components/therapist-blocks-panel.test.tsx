@@ -79,7 +79,7 @@ describe("TherapistBlocksPanel", () => {
       target: { value: "weekly" },
     });
     fireEvent.change(screen.getByLabelText("Repetir até"), {
-      target: { value: "2026-08-20" },
+      target: { value: oneWeekFromToday() },
     });
     fireEvent.click(screen.getByRole("button", { name: "Criar bloqueio" }));
 
@@ -161,6 +161,12 @@ describe("TherapistBlocksPanel", () => {
 
 const blockId = "a4100000-0000-4000-8000-000000000001";
 const impactId = "a4200000-0000-4000-8000-000000000001";
+
+function oneWeekFromToday() {
+  const date = new Date();
+  date.setDate(date.getDate() + 7);
+  return date.toISOString().slice(0, 10);
+}
 
 function renderPanel() {
   return render(

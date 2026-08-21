@@ -71,8 +71,11 @@ type Sender = {
   id: string;
   display_name: string;
   mailbox_address: string;
+  provider: "hostinger_mail_api";
   active: boolean;
   is_default: boolean;
+  last_test_at?: string | null;
+  last_test_status?: "success" | "error" | "skipped" | null;
 };
 type Setting = {
   action_key: string;
@@ -87,7 +90,7 @@ type Setting = {
 async function list(client: SupabaseRestClient) {
   const [senders, settings, logs] = await Promise.all([
     client.get<Sender[]>(
-      "/rest/v1/email_sender_profiles?select=id,display_name,mailbox_address,active,is_default&order=is_default.desc,display_name.asc",
+      "/rest/v1/email_sender_profiles?select=id,display_name,mailbox_address,provider,active,is_default,last_test_at,last_test_status&order=is_default.desc,display_name.asc",
     ),
     client.get<Setting[]>(
       "/rest/v1/email_action_settings?select=action_key,sender_profile_id,enabled,automatic_dispatch_enabled,subject_override,preheader_override,text_override,html_override",
@@ -100,9 +103,11 @@ async function list(client: SupabaseRestClient) {
         attempt_count: number;
         error_message: string | null;
         created_at: string;
+        correlation_id: string;
+        email_sender_profiles: { provider: "hostinger_mail_api" } | null;
       }>
     >(
-      "/rest/v1/email_delivery_logs?select=action_key,recipient_email,status,attempt_count,error_message,created_at&order=created_at.desc&limit=25",
+      "/rest/v1/email_delivery_logs?select=action_key,recipient_email,status,attempt_count,error_message,created_at,correlation_id,email_sender_profiles(provider)&order=created_at.desc&limit=25",
     ),
   ]);
   return {
@@ -115,6 +120,7 @@ async function list(client: SupabaseRestClient) {
     senders,
     logs: logs.map((log) => ({
       ...log,
+      correlation_id: log.correlation_id.slice(0, 16),
       recipient_email: maskEmail(log.recipient_email),
       error_message: log.error_message?.slice(0, 180) ?? null,
     })),
@@ -139,7 +145,10 @@ async function save(
 ) {
   const overrides = cleanOverrides(body.overrides);
   const enabled = body.enabled !== false;
-  const automatic = body.automaticDispatchEnabled !== false;
+  const entry = getEmailActionRegistryEntry(actionKey);
+  const automatic = Boolean(
+    entry?.supportsAutomaticDispatch && body.automaticDispatchEnabled !== false,
+  );
   const senderProfileId =
     typeof body.senderProfileId === "string" ? body.senderProfileId : null;
   if (senderProfileId) {
