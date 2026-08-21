@@ -205,6 +205,61 @@ test("HML: participant messaging rejeita body livre antes de persistir", async (
   }
 });
 
+test("HML: suporte do terapeuta preserva composer e scroll nos viewports principais", async ({
+  browser,
+}) => {
+  const hml = assertHmlShareUrl(baseUrl);
+  const context = await browser.newContext({
+    viewport: { height: 900, width: 1440 },
+  });
+  const page = await context.newPage();
+
+  try {
+    await login(page, context, hml, {
+      email: therapistEmail,
+      expectedPath: "/terapeuta",
+      loginPath: "/terapeuta/login",
+      password,
+      storageValue: "therapist",
+      submitLabel: "Entrar como terapeuta",
+    });
+
+    for (const viewport of [
+      { height: 900, width: 1440 },
+      { height: 1024, width: 768 },
+      { height: 844, width: 390 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto(withShare(hml, "/terapeuta/mensagens"));
+      await expect(
+        page.getByRole("heading", { name: "Suporte TES" }),
+      ).toBeVisible();
+      expect(
+        await page
+          .locator("html")
+          .evaluate((element) => element.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+
+      await page.getByRole("link", { name: "Acompanhar" }).first().click();
+      const reopen = page.getByRole("button", {
+        name: "Ainda preciso de ajuda",
+      });
+      if (await reopen.isVisible().catch(() => false)) await reopen.click();
+      const composer = page.getByLabel("Responder ao suporte");
+      await composer.scrollIntoViewIfNeeded();
+      await composer.focus();
+      await expect(composer).toBeFocused();
+      expect(
+        await page
+          .locator("html")
+          .evaluate((element) => element.scrollWidth <= window.innerWidth),
+      ).toBe(true);
+    }
+  } finally {
+    await context.close();
+  }
+});
+
 async function login(
   page: Page,
   context: BrowserContext,

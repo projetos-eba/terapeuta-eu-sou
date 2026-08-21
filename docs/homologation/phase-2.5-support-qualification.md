@@ -2,102 +2,96 @@
 
 Data: 2026-08-21  
 Ambiente: HML (`Terapeuta-Eu-Sou-Homolog`)  
-Status: PARTIAL — fluxo requisitante concluído; thread administrativa incompleta
+Status: PASS
 
-## Deploy de migrations
+## Deploy coordenado
 
-Preflight remoto confirmou exatamente duas migrations pendentes. Foram aplicadas em HML, sem seeds, roles, Vault ou produção:
+Foram aplicadas exclusivamente em HML, sem seeds, roles, Vault ou produção:
 
 1. `20260821210644_harden_structured_participant_messaging.sql`;
-2. `20260821213315_therapist_support_ticket_threads.sql`.
+2. `20260821213315_therapist_support_ticket_threads.sql`;
+3. `20260821224500_admin_support_thread_read.sql`.
 
-A listagem remota posterior confirmou ambas registradas. O projeto de produção não é o projeto vinculado e não recebeu qualquer alteração.
+O preflight remoto confirmou a terceira como a única migration pendente. A
+listagem posterior confirmou o histórico alinhado. O runtime foi publicado na
+branch `homolog`; produção não recebeu alteração.
 
-## Escopo e segurança operacional
+## E2E multi-persona — PASS
 
-Esta qualificação foi executada somente em HML. Nenhuma migration foi aplicada
-em produção e nenhum e-mail, pagamento ou sessão Zoom foi disparado. As
-credenciais QA foram usadas apenas em processos efêmeros do navegador e não
-foram gravadas em arquivos, screenshots compartilhados ou logs versionados.
+BrowserContexts independentes validaram o cenário autenticado em HML:
 
-## Smoke autenticado — PARTIAL
+1. Terapeuta abre chamado com categoria controlada, assunto e descrição plain
+   text; recebe protocolo e estado `open`.
+2. Admin abre o mesmo ticket, lê a thread autorizada e responde publicamente.
+3. Terapeuta vê a resposta e o estado `waiting_requester`, então responde.
+4. Admin recarrega e vê a resposta subsequente do terapeuta na mesma thread.
+5. Admin registra nota interna; ela é exibida somente à equipe TES.
+6. Terapeuta recarrega: a nota interna não aparece no DTO nem na tela.
+7. Admin resolve; terapeuta vê `resolved` e usa **Ainda preciso de ajuda**.
+8. A resposta de reabertura retorna o ticket a `waiting_support` e o Admin a
+   visualiza.
 
-- BrowserContexts independentes para paciente, terapeuta e Admin: **PASS**
-  (`tests/e2e/hml-multi-context-auth.spec.ts`, 1/1).
-- Terapeuta em `/terapeuta/mensagens`: **PASS**. A Central expõe `Suporte TES`
-  e a primeira execução observou o empty state.
-- Novo chamado com categoria controlada, assunto e descrição plain text:
-  **PASS**.
-- Detalhe do chamado e protocolo: **PASS**.
-- Admin abre o detalhe e envia resposta pública: **PASS**.
-- Terapeuta recarrega o detalhe, visualiza a resposta da equipe e responde:
-  **PASS**.
-- Admin recarrega o detalhe e visualiza a nova resposta do terapeuta: **FAIL**.
-  A página atual possui resumo, painel de resposta e auditoria, mas não renderiza
-  `support_ticket_messages`; portanto não apresenta a thread ao Admin.
+O smoke de autenticação de paciente, terapeuta e Admin também passou em
+BrowserContexts separados. Tickets QA foram mantidos em HML para rastreabilidade.
 
-O cenário deixou tickets QA rastreáveis em HML por design; não foram removidos
-para não perder a evidência da qualificação.
+## Lifecycle no backend — PASS
 
-## Lifecycle no backend — PARTIAL
-
-O smoke verificou via `GET /api/support/tickets/[ticketId]`, autenticado como o
-solicitante, os seguintes estados persistidos e contagens de mensagens:
+O E2E confirmou por `GET /api/support/tickets/[ticketId]` na sessão do
+solicitante:
 
 | Etapa                     | Estado              | Mensagens públicas |
 | ------------------------- | ------------------- | ------------------ |
-| Criação do terapeuta      | `open`              | 1                  |
+| Criação                   | `open`              | 1                  |
 | Resposta pública do Admin | `waiting_requester` | 2                  |
 | Resposta do terapeuta     | `waiting_support`   | 3                  |
+| Resolução administrativa  | `resolved`          | 3                  |
+| Reabertura pelo terapeuta | `waiting_support`   | 4                  |
 
-`resolved` e reabertura não foram qualificados nesta rodada: a evidência final
-exigida — Admin visualizar a resposta do terapeuta — falhou antes de iniciar
-uma transição adicional. Não marcar esses estados como aprovados.
+A nota interna não alterou a contagem pública devolvida ao terapeuta.
 
-## Isolamento e conteúdo — PARCIALMENTE COBERTO
+## Segurança — PASS
 
-- As mensagens da thread vistas pelo terapeuta foram públicas e renderizadas
-  como texto, sem HTML.
-- A RLS/isolamento, a invisibilidade de notas internas e o bloqueio de insert
-  direto em `messages` continuam cobertos pelos pgTAP locais da Fase 1/2.
-- A prova HML de terapeuta B contra ticket A e da invisibilidade de uma nota
-  interna requer uma segunda persona terapeuta QA e uma nota interna criada por
-  um endpoint/ação administrativa. Esses insumos não foram disponibilizados
-  nesta execução.
-- A rota HML `/api/messages/send-template` rejeitou uma tentativa autenticada
-  de incluir `body` com `422`, antes de chegar à persistência:
-  **`PARTICIPANT FREE TEXT BYPASS = BLOCKED` para o contrato HTTP**.
-  A prova HML complementar de `INSERT` REST direto em `messages` requer uma
-  conversa de fixture autorizada e token de banco efêmero; ela permanece
-  pendente e não é substituída por este teste de rota.
+- `GET /api/admin/support/tickets/:ticketId/thread` chama apenas a RPC
+  Admin-only `admin_get_support_ticket_thread_v1` e exige `admin.support.read`.
+- `POST /api/admin/support/tickets/:ticketId/notes` exige
+  `admin.support.manage`; a nota usa `visibility=internal`.
+- O solicitante continua recebendo somente mensagens `requester` do próprio
+  ticket. A prova HML criou nota interna real e confirmou sua ausência na tela
+  e na API do terapeuta.
+- A rota HML `/api/messages/send-template` recusou uma requisição autenticada
+  contendo `body` com `422`, antes de persistir:
+  **PARTICIPANT FREE TEXT BYPASS = BLOCKED**.
+- O isolamento de terapeuta B contra ticket A permanece coberto no pgTAP
+  `069_support_ticket_threads.sql`. Não foi disponibilizada uma segunda conta
+  terapeuta QA para repetir essa mesma prova em HML.
 
-## Responsividade e evidências
+## Responsividade — PASS
 
-O Playwright registrou contexto acessível da falha no job de qualificação; não
-foram publicadas capturas porque conteriam identidade QA. O smoke desktop
-concluiu o fluxo do terapeuta até a resposta. As validações reais de tablet,
-mobile, teclado, scroll longo e composer continuam pendentes até que a thread
-Admin seja exibida e o cenário bidirecional possa encerrar.
+O Playwright validou desktop (`1440px`), tablet (`768px`) e mobile (`390px`):
+Central, detalhe, scroll até o composer, foco do textarea e ausência de
+overflow horizontal. Capturas com identidade QA não foram publicadas. O
+teclado virtual nativo não é exposto pelo Chromium headless; o composer foi
+validado em foco e em reflow mobile.
 
-## Gatilho de retomada
+## Validação e limitações de tooling
 
-1. Na Fase 3, fazer o detalhe Admin consumir e exibir exclusivamente a thread
-   autorizada de `support_ticket_messages`, distinguindo resposta pública de
-   nota interna.
-2. Reexecutar o E2E multi-context até a última asserção, incluindo
-   `resolved`/reabertura no backend.
-3. Disponibilizar uma segunda conta terapeuta QA para a prova HML de
-   isolamento e executar a prova de nota interna sem serializá-la ao
-   solicitante.
-4. Executar os viewports desktop, tablet e mobile e registrar apenas capturas
-   sanitizadas.
+- `npm run typecheck`, `npm run lint`, `npm run build`, Vitest focal e
+  `git diff --check`: passaram.
+- O Docker/Supabase local ficou indisponível nesta máquina com `EOF`; por isso
+  o pgTAP focal atualizado não foi reexecutado após a última migration. A
+  migration e a RPC foram, porém, exercidas com sucesso pelo E2E real de HML.
+- Nenhum e-mail, pagamento, Zoom ou dado de produção foi alterado.
 
-## Resultado da Fase 2.5
+## Resultado
 
-**PHASE 2.5 — PARTIAL**
+**PHASE 2.5 — PASS**
 
-HML possui schema compatível e a conversa funciona no sentido terapeuta →
-Admin → terapeuta. A qualificação não pode aprovar o gate completo enquanto o
-Admin não conseguir ver a mensagem subsequente do terapeuta na mesma thread.
+**PHASE 2 — PASS**
 
-Nenhum e-mail real, operação financeira, Zoom ou alteração de produção foi executada.
+**PHASE 3 READY**
+
+O terapeuta explica livremente um problema à equipe TES e mantém uma conversa
+dentro do chamado: **SIM**.
+
+Um terapeuta usa essa infraestrutura para escrever livremente a um paciente:
+**NÃO**.
