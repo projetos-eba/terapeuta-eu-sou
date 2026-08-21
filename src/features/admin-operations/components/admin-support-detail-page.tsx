@@ -8,6 +8,7 @@ import { routes } from "@/lib/routes";
 
 import type { AdminOperationDetailPageData } from "../admin-operations.types";
 import { AdminOperationCommandPanel } from "./admin-operation-command-panel";
+import { AdminSupportConversationPanel } from "./admin-support-conversation-panel";
 import {
   AsideCard,
   DetailSectionCard,
@@ -140,6 +141,7 @@ export function AdminSupportDetailPage({
               fields={traceability?.fields ?? []}
               title="Rastreabilidade"
             />
+            <AdminSupportConversationPanel ticketId={data.id} />
           </AppPageMain>
 
           <AppPageAside className="space-y-5">

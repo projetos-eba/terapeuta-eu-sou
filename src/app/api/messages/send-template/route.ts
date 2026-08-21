@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { getParticipantTemplates } from "@/features/message-center/message-center.templates";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 const noStoreHeaders = { "Cache-Control": "no-store" };
@@ -10,6 +9,10 @@ const UUID =
 
 type SupabaseUser = {
   id: string;
+};
+
+type ProfileRow = {
+  role: "admin" | "patient" | "therapist";
 };
 
 export async function POST(request: Request) {
@@ -24,11 +27,6 @@ export async function POST(request: Request) {
   const parsed = parseBody(body);
   if (!parsed) return failure("Revise o template selecionado.", 422);
 
-  const template = getParticipantTemplates(parsed.actorRole).find(
-    (item) => item.key === parsed.templateKey,
-  );
-  if (!template) return failure("Template indisponível.", 422);
-
   const config = getSupabasePublicConfig();
   const accessToken = await getActorAccessToken(parsed.actorRole);
 
@@ -42,24 +40,43 @@ export async function POST(request: Request) {
       accessToken,
       "/auth/v1/user",
     );
-    const response = await fetch(`${config.url}/rest/v1/messages`, {
+    const profiles = await supabaseRequest<ProfileRow[]>(
+      config,
+      accessToken,
+      `/rest/v1/profiles?select=role&id=eq.${encodeURIComponent(user.id)}&limit=1`,
+    );
+    if (profiles[0]?.role !== parsed.actorRole) {
+      return failure("A sessão não corresponde ao perfil selecionado.", 403);
+    }
+
+    const response = await fetch(
+      `${config.url}/rest/v1/rpc/send_structured_participant_message_v1`,
+      {
       body: JSON.stringify({
-        body: template.body,
-        conversation_id: parsed.conversationId,
-        sender_profile_id: user.id,
+          p_conversation_id: parsed.conversationId,
+          p_template_key: parsed.templateKey,
       }),
       cache: "no-store",
       headers: {
         apikey: config.apiKey,
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
-        Prefer: "return=minimal",
       },
       method: "POST",
-    });
+      },
+    );
 
     if (!response.ok) {
-      return failure("Não foi possível enviar este template agora.", 403);
+      const error = (await response.json().catch(() => null)) as {
+        code?: string;
+      } | null;
+      if (error?.code === "22023") {
+        return failure("Template indisponível para esta conversa.", 422);
+      }
+      if (error?.code === "42501") {
+        return failure("Você não pode enviar para esta conversa.", 403);
+      }
+      return failure("Não foi possível enviar este template agora.", 503);
     }
 
     return NextResponse.json(
@@ -102,6 +119,10 @@ async function supabaseRequest<T>(
 
 function parseBody(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  for (const forbiddenKey of ["body", "description", "html", "message"]) {
+    if (Object.prototype.hasOwnProperty.call(value, forbiddenKey)) return null;
+  }
 
   const actorRole = Reflect.get(value, "actorRole");
   const conversationId = Reflect.get(value, "conversationId");

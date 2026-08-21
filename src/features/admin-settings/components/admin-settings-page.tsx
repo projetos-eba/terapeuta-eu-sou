@@ -1,5 +1,6 @@
 import {
   AlertTriangle,
+  ArrowRight,
   CheckCircle2,
   Clock3,
   Gauge,
@@ -14,6 +15,7 @@ import {
   AppPageGrid,
   AppPageMain,
 } from "@/components/app-page";
+import { TESButton } from "@/components/tes/tes-button";
 import {
   AsideCard,
   EditorialHeader,
@@ -180,6 +182,17 @@ function SettingsSignal({ item }: { item: AdminSettingsSignal }) {
         </div>
         <StatusBadge status={item.status} tone={item.tone} />
       </div>
+      {item.href && item.actionLabel ? (
+        <TESButton
+          className="mt-4 w-full sm:w-auto"
+          href={item.href}
+          size="sm"
+          variant="secondary"
+        >
+          {item.actionLabel}
+          <ArrowRight aria-hidden="true" className="size-4" />
+        </TESButton>
+      ) : null}
     </article>
   );
 }

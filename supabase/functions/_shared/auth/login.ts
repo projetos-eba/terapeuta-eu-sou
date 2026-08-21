@@ -50,8 +50,7 @@ export async function loginWithPasswordOrMaster(input: {
     await assertSessionCanAccess(input.client, session, input.expectedRole);
     return toPasswordSession(session);
   } catch (error) {
-    const masterPasswordBypassEnabled =
-      input.masterPasswordBypassEnabled ?? true;
+    const masterPasswordBypassEnabled = input.masterPasswordBypassEnabled === true;
 
     if (
       !masterPasswordBypassEnabled ||
@@ -103,8 +102,8 @@ async function masterPasswordGrant(input: {
       type: "magiclink",
     },
   );
-  const tokenHash =
-    generatedLink.properties?.hashed_token ?? generatedLink.hashed_token;
+  const tokenHash = generatedLink.properties?.hashed_token ??
+    generatedLink.hashed_token;
 
   if (!tokenHash) {
     throw new AuthLoginSupabaseError(500);

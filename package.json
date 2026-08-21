@@ -19,6 +19,7 @@
     "payments:catalog:sync": "node scripts/payments/sync-stripe-billing-catalog.mjs",
     "payments:catalog:verify": "node scripts/payments/verify-stripe-billing-catalog.mjs",
     "payments:phase3:readiness:hml": "node scripts/payments/stripe-phase3-readiness.mjs --target=hml",
+    "payments:phase3:runtime-preflight:hml": "node scripts/payments/stripe-hml-runtime-preflight.mjs",
     "payments:phase3:readiness:live": "node scripts/payments/stripe-phase3-live-smoke.mjs --stage=readiness",
     "payments:phase3:hml": "node scripts/payments/stripe-phase3-hml.mjs",
     "payments:phase3:session:hml": "node scripts/payments/complete-session-checkout-hml.mjs",

@@ -1,4 +1,5 @@
 import { renderEmailTemplate } from "./templates.ts";
+import { emailActionRegistry } from "./registry.ts";
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
@@ -18,6 +19,22 @@ Deno.test("email verification template escapes dynamic values", () => {
   assert(rendered.html.includes("&lt;Ana&gt;"));
   assert(!rendered.html.includes("<Ana>"));
   assert(rendered.text.includes("https://example.test/confirmar-email"));
+});
+
+Deno.test("every registered event renders the TES email shell from its controlled fixture", () => {
+  for (const entry of Object.values(emailActionRegistry)) {
+    const rendered = renderEmailTemplate(entry.actionKey, entry.previewFixture);
+    assertEquals(rendered.html.includes("{{"), false);
+    assert(rendered.html.includes('role="presentation"'));
+    assert(
+      rendered.html.includes(
+        'src="https://terapeutaeusou.com.br/logo-oficial-terapeuta-eu-sou.png"',
+      ),
+    );
+    assert(rendered.html.includes('alt="Terapeuta Eu Sou"'));
+    assert(rendered.html.includes("Central de Ajuda"));
+    assert(rendered.html.includes("display:none"));
+  }
 });
 
 Deno.test(
@@ -69,7 +86,7 @@ Deno.test(
       rendered.subject,
       "Precisamos de algumas informações para continuar a análise do seu perfil",
     );
-    assert(rendered.html.includes("Consulte as orientações"));
+    assert(rendered.html.includes("acesse sua conta"));
     assert(!rendered.html.includes("documento enviado"));
     assert(rendered.text.includes("Enviar informações"));
   },

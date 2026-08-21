@@ -25,8 +25,8 @@ export function getServiceRoleKey(runtime: EdgeRuntime) {
 
   return (
     getDefaultKey(runtime.env.get("SUPABASE_SECRET_KEYS")) ??
-    runtime.env.get("SUPABASE_SECRET_KEY") ??
-    serviceRoleKey
+      runtime.env.get("SUPABASE_SECRET_KEY") ??
+      serviceRoleKey
   );
 }
 
@@ -42,8 +42,8 @@ export function getSiteUrl(runtime: EdgeRuntime) {
 export function getRateLimitSalt(runtime: EdgeRuntime) {
   return (
     runtime.env.get("EMAIL_RATE_LIMIT_SALT") ??
-    runtime.env.get("SUPABASE_JWT_SECRET") ??
-    "local-rate-limit-salt"
+      runtime.env.get("SUPABASE_JWT_SECRET") ??
+      "local-rate-limit-salt"
   );
 }
 
@@ -69,6 +69,16 @@ export function isEmailAutomaticallyConfirmed(runtime: EdgeRuntime) {
   return parseBooleanEnv(
     runtime.env.get("CONFIRMED_AUTOMATICALLY_EMAIL"),
     false,
+  );
+}
+
+export function isLocalMasterPasswordBypassEnabled(
+  runtime: EdgeRuntime,
+  envName = "MASTER_PASSWORD_BYPASS_ENABLED",
+) {
+  return (
+    parseBooleanEnv(runtime.env.get(envName), false) &&
+    isLocalSupabaseUrl(runtime.env.get("SUPABASE_URL"))
   );
 }
 

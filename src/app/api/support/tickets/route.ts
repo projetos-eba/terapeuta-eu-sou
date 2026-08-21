@@ -1,92 +1,76 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { getSupportTemplateByKey } from "@/features/message-center/message-center.templates";
-import type { MessageCenterActorRole } from "@/features/message-center/message-center.types";
+import {
+  parseFutureSupportTicketCreate,
+  type SupportTicketCreateContract,
+} from "@/features/support/support-contracts";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 const noStoreHeaders = { "Cache-Control": "no-store" };
-const UUID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-type SupabaseUser = {
-  id: string;
-};
-
+type SupabaseUser = { id: string };
+type ProfileRow = { role: "admin" | "patient" | "therapist" };
 type SupportTicketRow = {
+  category: string;
+  created_at: string;
   id: string;
+  last_activity_at: string;
   status: string;
+  subject: string;
 };
 
-export async function POST(request: Request) {
-  const parsed = await parseBody(request);
-  if (!parsed.ok) return failure(parsed.message, parsed.status);
-
-  const config = getSupabasePublicConfig();
-  const accessToken = await getAccessToken(parsed.actorRole);
-  if (!config || !accessToken) return failure("Entre na sua conta.", 401);
-
-  const template = getSupportTemplateByKey(parsed.templateKey);
-  if (!template) return failure("Categoria de suporte inválida.", 422);
+export async function GET() {
+  const context = await getTherapistSupportContext();
+  if (!context.ok) return failure(context.message, context.status);
 
   try {
-    const user = await supabaseRequest<SupabaseUser>(
-      config,
-      accessToken,
-      "/auth/v1/user",
+    const tickets = await supabaseRequest<SupportTicketRow[]>(
+      context.config,
+      context.accessToken,
+      "/rest/v1/support_tickets?select=id,category,subject,status,created_at,last_activity_at&order=last_activity_at.desc",
     );
-    if (parsed.bookingId) {
-      const bookings = await supabaseRequest<Array<{ id: string }>>(
-        config,
-        accessToken,
-        `/rest/v1/bookings?select=id&id=eq.${encodeURIComponent(parsed.bookingId)}&limit=1`,
-      );
 
-      if (!bookings[0]) {
-        return failure("Não foi possível vincular este encontro.", 403);
-      }
-    }
-
-    const correlationId = crypto.randomUUID();
-    const response = await fetch(
-      `${config.url}/rest/v1/support_tickets?on_conflict=requester_profile_id,request_id`,
+    return NextResponse.json(
       {
-        body: JSON.stringify({
-          booking_id: parsed.bookingId,
-          category: template.category,
-          correlation_id: correlationId,
-          description: template.body,
-          diagnostic_context: {
-            actorRole: parsed.actorRole,
-            source: parsed.source,
-            templateKey: template.key,
-            userAgent: "not_stored",
-          },
-          priority: getPriority(template.key),
-          request_id: parsed.requestId,
-          requester_profile_id: user.id,
-          source: parsed.source,
-          subject: template.label,
-          urgency: getUrgency(template.key),
-        }),
-        cache: "no-store",
-        headers: {
-          apikey: config.apiKey,
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          Prefer: "resolution=merge-duplicates,return=representation",
-        },
-        method: "POST",
+        ok: true,
+        tickets: tickets.map((ticket) => ({
+          category: ticket.category,
+          createdAt: ticket.created_at,
+          id: ticket.id,
+          lastActivityAt: ticket.last_activity_at,
+          protocol: ticket.id.slice(0, 8).toUpperCase(),
+          status: ticket.status,
+          subject: ticket.subject,
+        })),
       },
+      { headers: noStoreHeaders },
     );
+  } catch {
+    return failure("Não foi possível carregar seus chamados agora.", 503);
+  }
+}
 
-    if (!response.ok) {
-      return failure("Não foi possível abrir o chamado agora.", 403);
-    }
+export async function POST(request: Request) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return failure("Envie os dados em formato válido.", 400);
+  }
 
-    const rows = (await response.json()) as SupportTicketRow[];
-    const ticket = rows[0];
-    if (!ticket) return failure("Não foi possível confirmar o protocolo.", 502);
+  const parsed = parseFutureSupportTicketCreate(body);
+  if (!parsed) return failure("Revise as informações do chamado.", 422);
+
+  const context = await getTherapistSupportContext();
+  if (!context.ok) return failure(context.message, context.status);
+
+  try {
+    const ticket = await callCreateTicket(
+      context.config,
+      context.accessToken,
+      parsed,
+    );
 
     return NextResponse.json(
       {
@@ -97,21 +81,73 @@ export async function POST(request: Request) {
           status: ticket.status,
         },
       },
-      { headers: noStoreHeaders },
+      { headers: noStoreHeaders, status: 201 },
     );
-  } catch {
-    return failure("Não foi possível abrir o chamado agora.", 503);
+  } catch (error) {
+    return rpcFailure(error, "Não foi possível abrir o chamado agora.");
   }
 }
 
-async function getAccessToken(actorRole: MessageCenterActorRole) {
+async function getTherapistSupportContext() {
   const cookieStore = await cookies();
-  const cookieName =
-    actorRole === "patient"
-      ? "tes_patient_access_token"
-      : "tes_therapist_access_token";
+  const accessToken = cookieStore.get("tes_therapist_access_token")?.value;
+  const config = getSupabasePublicConfig();
+  if (!config || !accessToken) {
+    return { ok: false as const, message: "Entre na sua conta.", status: 401 };
+  }
 
-  return cookieStore.get(cookieName)?.value ?? null;
+  try {
+    const user = await supabaseRequest<SupabaseUser>(
+      config,
+      accessToken,
+      "/auth/v1/user",
+    );
+    const profiles = await supabaseRequest<ProfileRow[]>(
+      config,
+      accessToken,
+      `/rest/v1/profiles?select=role&id=eq.${encodeURIComponent(user.id)}&limit=1`,
+    );
+    if (profiles[0]?.role !== "therapist") {
+      return {
+        ok: false as const,
+        message: "Acesso de terapeuta necessário.",
+        status: 403,
+      };
+    }
+
+    return { accessToken, config, ok: true as const };
+  } catch {
+    return { ok: false as const, message: "Entre na sua conta.", status: 401 };
+  }
+}
+
+async function callCreateTicket(
+  config: NonNullable<ReturnType<typeof getSupabasePublicConfig>>,
+  accessToken: string,
+  input: SupportTicketCreateContract,
+) {
+  const response = await fetch(
+    `${config.url}/rest/v1/rpc/create_support_ticket_v1`,
+    {
+      body: JSON.stringify({
+        p_booking_id: input.bookingId,
+        p_category: input.category,
+        p_description: input.description,
+        p_request_id: input.requestId,
+        p_source: input.source,
+        p_subject: input.subject,
+      }),
+      cache: "no-store",
+      headers: {
+        apikey: config.apiKey,
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+  if (!response.ok) throw await response.json().catch(() => null);
+  return (await response.json()) as { id: string; status: string };
 }
 
 async function supabaseRequest<T>(
@@ -121,85 +157,24 @@ async function supabaseRequest<T>(
 ) {
   const response = await fetch(`${config.url}${path}`, {
     cache: "no-store",
-    headers: {
-      apikey: config.apiKey,
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: { apikey: config.apiKey, Authorization: `Bearer ${accessToken}` },
   });
-
-  if (!response.ok) throw new Error("Supabase request failed.");
-
+  if (!response.ok) throw new Error("Support request failed");
   return (await response.json()) as T;
 }
 
-async function parseBody(request: Request) {
-  let body: unknown;
-
-  try {
-    body = await request.json();
-  } catch {
-    return { ok: false as const, message: "Envie JSON válido.", status: 400 };
-  }
-
-  if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return { ok: false as const, message: "Revise o chamado.", status: 422 };
-  }
-
-  const actorRole = Reflect.get(body, "actorRole");
-  const bookingId = Reflect.get(body, "bookingId");
-  const requestId = Reflect.get(body, "requestId");
-  const source = Reflect.get(body, "source");
-  const templateKey = Reflect.get(body, "templateKey");
-
-  if (actorRole !== "patient" && actorRole !== "therapist") {
-    return { ok: false as const, message: "Perfil inválido.", status: 422 };
-  }
-
-  if (typeof requestId !== "string" || !UUID.test(requestId)) {
-    return { ok: false as const, message: "Requisição inválida.", status: 422 };
-  }
-
-  if (typeof templateKey !== "string" || !templateKey) {
-    return { ok: false as const, message: "Categoria inválida.", status: 422 };
-  }
-
-  if (
-    bookingId !== null &&
-    bookingId !== undefined &&
-    (typeof bookingId !== "string" || !UUID.test(bookingId))
-  ) {
-    return { ok: false as const, message: "Encontro inválido.", status: 422 };
-  }
-
-  const safeSource =
-    source === "encounter_detail" ||
-    source === "waiting_room" ||
-    source === "public_help"
-      ? source
-      : "message_center";
-
-  return {
-    actorRole,
-    bookingId: typeof bookingId === "string" ? bookingId : null,
-    ok: true as const,
-    requestId,
-    source: safeSource,
-    templateKey,
-  };
-}
-
-function getPriority(templateKey: string) {
-  if (templateKey.includes("access")) return "high";
-  if (templateKey.includes("payment") || templateKey.includes("finance")) {
-    return "high";
-  }
-
-  return "normal";
-}
-
-function getUrgency(templateKey: string) {
-  if (templateKey.includes("access")) return "high";
-  return "normal";
+function rpcFailure(error: unknown, fallback: string) {
+  const code =
+    error && typeof error === "object" && "code" in error
+      ? (error as { code?: string }).code
+      : undefined;
+  if (code === "22023")
+    return failure("Revise as informações do chamado.", 422);
+  if (code === "42501")
+    return failure("Você não pode vincular esta sessão.", 403);
+  if (code === "P0001")
+    return failure("Aguarde um momento antes de enviar outro chamado.", 429);
+  return failure(fallback, 503);
 }
 
 function failure(message: string, status: number) {

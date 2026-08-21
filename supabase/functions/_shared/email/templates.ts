@@ -93,10 +93,12 @@ function safeText(value: unknown, maxLength: number) {
 }
 
 function injectPreheader(html: string, preheader: string) {
-  const hidden = `<div style="display:none;max-height:0;overflow:hidden">${escapeHtml(preheader)}</div>`;
-  return html.replace(/<body[^>]*>/i, (body) => `${body}${hidden}`) === html
-    ? `${hidden}${html}`
-    : html.replace(/<body[^>]*>/i, (body) => `${body}${hidden}`);
+  const hidden = `<div style="display:none;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all">${escapeHtml(preheader)}</div>`;
+  const withPreheader = html.replace(
+    /<body[^>]*>/i,
+    (body) => `${body}${hidden}`,
+  );
+  return withPreheader === html ? `${hidden}${html}` : withPreheader;
 }
 
 function escapeHtml(value: string) {

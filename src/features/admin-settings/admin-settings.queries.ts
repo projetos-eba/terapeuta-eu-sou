@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 
 import { adminModuleRegistry } from "@/features/admin-shell/admin-shell-config";
+import { routes } from "@/lib/routes";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 import type {
@@ -249,11 +250,15 @@ function buildIntegrationGroup({
       ),
       signal(
         "email-secrets",
-        "E-mail",
-        "O envio de e-mails usa credenciais protegidas fora desta área administrativa.",
+        "E-mails transacionais",
+        "Configure eventos, remetentes e acompanhe o histórico de envios sem expor credenciais privadas.",
         "Proteção de comunicações",
         "manual_review",
         "warning",
+        {
+          actionLabel: "Gerenciar e-mails",
+          href: routes.admin.emailManagement,
+        },
       ),
     ],
     key: "integrations",
@@ -268,8 +273,10 @@ function signal(
   source: string,
   status: AdminSettingsSignal["status"],
   tone: AdminSettingsSignal["tone"],
+  navigation?: Pick<AdminSettingsSignal, "actionLabel" | "href">,
 ): AdminSettingsSignal {
   return {
+    ...navigation,
     description,
     key,
     label,

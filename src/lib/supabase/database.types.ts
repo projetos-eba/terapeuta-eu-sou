@@ -3758,6 +3758,7 @@ export type Database = {
           id: string;
           read_at: string | null;
           sender_profile_id: string | null;
+          template_id: string | null;
         };
         Insert: {
           body: string;
@@ -3766,6 +3767,7 @@ export type Database = {
           id?: string;
           read_at?: string | null;
           sender_profile_id?: string | null;
+          template_id?: string | null;
         };
         Update: {
           body?: string;
@@ -3774,6 +3776,7 @@ export type Database = {
           id?: string;
           read_at?: string | null;
           sender_profile_id?: string | null;
+          template_id?: string | null;
         };
         Relationships: [
           {
@@ -3788,6 +3791,13 @@ export type Database = {
             columns: ["sender_profile_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "messages_template_id_fkey";
+            columns: ["template_id"];
+            isOneToOne: false;
+            referencedRelation: "message_templates";
             referencedColumns: ["id"];
           },
         ];
@@ -5852,6 +5862,54 @@ export type Database = {
           },
         ];
       };
+      support_ticket_messages: {
+        Row: {
+          author_profile_id: string;
+          author_role: Database["public"]["Enums"]["user_role"];
+          body: string;
+          created_at: string;
+          id: string;
+          request_id: string;
+          ticket_id: string;
+          visibility: string;
+        };
+        Insert: {
+          author_profile_id: string;
+          author_role: Database["public"]["Enums"]["user_role"];
+          body: string;
+          created_at?: string;
+          id?: string;
+          request_id: string;
+          ticket_id: string;
+          visibility?: string;
+        };
+        Update: {
+          author_profile_id?: string;
+          author_role?: Database["public"]["Enums"]["user_role"];
+          body?: string;
+          created_at?: string;
+          id?: string;
+          request_id?: string;
+          ticket_id?: string;
+          visibility?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_messages_author_profile_id_fkey";
+            columns: ["author_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "support_ticket_messages_ticket_id_fkey";
+            columns: ["ticket_id"];
+            isOneToOne: false;
+            referencedRelation: "support_tickets";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       support_tickets: {
         Row: {
           booking_id: string | null;
@@ -5861,10 +5919,12 @@ export type Database = {
           description: string | null;
           diagnostic_context: Json;
           id: string;
+          last_activity_at: string;
           priority: string;
           request_id: string | null;
           requester_profile_id: string | null;
           resolution_summary: string | null;
+          resolved_at: string | null;
           reviewed_at: string | null;
           source: string;
           status: string;
@@ -5880,10 +5940,12 @@ export type Database = {
           description?: string | null;
           diagnostic_context?: Json;
           id?: string;
+          last_activity_at?: string;
           priority?: string;
           request_id?: string | null;
           requester_profile_id?: string | null;
           resolution_summary?: string | null;
+          resolved_at?: string | null;
           reviewed_at?: string | null;
           source?: string;
           status?: string;
@@ -5899,10 +5961,12 @@ export type Database = {
           description?: string | null;
           diagnostic_context?: Json;
           id?: string;
+          last_activity_at?: string;
           priority?: string;
           request_id?: string | null;
           requester_profile_id?: string | null;
           resolution_summary?: string | null;
+          resolved_at?: string | null;
           reviewed_at?: string | null;
           source?: string;
           status?: string;
@@ -11842,6 +11906,25 @@ export type Database = {
       };
     };
     Functions: {
+      admin_add_support_ticket_note_v1: {
+        Args: { p_body: string; p_request_id: string; p_ticket_id: string };
+        Returns: {
+          author_profile_id: string;
+          author_role: Database["public"]["Enums"]["user_role"];
+          body: string;
+          created_at: string;
+          id: string;
+          request_id: string;
+          ticket_id: string;
+          visibility: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "support_ticket_messages";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       admin_assert_responsible_therapy_text_v1: {
         Args: { p_value: string };
         Returns: undefined;
@@ -12013,6 +12096,25 @@ export type Database = {
           p_therapy_id: string;
         };
         Returns: Json;
+      };
+      admin_reply_support_ticket_v1: {
+        Args: { p_body: string; p_request_id: string; p_ticket_id: string };
+        Returns: {
+          author_profile_id: string;
+          author_role: Database["public"]["Enums"]["user_role"];
+          body: string;
+          created_at: string;
+          id: string;
+          request_id: string;
+          ticket_id: string;
+          visibility: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "support_ticket_messages";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       admin_therapy_impact_v1: {
         Args: { p_actor_user_id: string; p_therapy_id: string };
@@ -12446,6 +12548,43 @@ export type Database = {
       consume_email_outbox_test_fault_v1: {
         Args: { p_action_key: string; p_recipient_key: string };
         Returns: boolean;
+      };
+      create_support_ticket_v1: {
+        Args: {
+          p_booking_id?: string;
+          p_category: string;
+          p_description: string;
+          p_request_id: string;
+          p_source?: string;
+          p_subject: string;
+        };
+        Returns: {
+          booking_id: string | null;
+          category: string;
+          correlation_id: string | null;
+          created_at: string;
+          description: string | null;
+          diagnostic_context: Json;
+          id: string;
+          last_activity_at: string;
+          priority: string;
+          request_id: string | null;
+          requester_profile_id: string | null;
+          resolution_summary: string | null;
+          resolved_at: string | null;
+          reviewed_at: string | null;
+          source: string;
+          status: string;
+          subject: string;
+          updated_at: string;
+          urgency: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "support_tickets";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
       };
       create_therapist_block_v1: {
         Args: {
@@ -13447,6 +13586,43 @@ export type Database = {
         };
         Returns: Json;
       };
+      send_structured_participant_message_v1: {
+        Args: { p_conversation_id: string; p_template_key: string };
+        Returns: {
+          body: string;
+          conversation_id: string;
+          created_at: string;
+          id: string;
+          read_at: string | null;
+          sender_profile_id: string | null;
+          template_id: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "messages";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      send_support_ticket_requester_message_v1: {
+        Args: { p_body: string; p_request_id: string; p_ticket_id: string };
+        Returns: {
+          author_profile_id: string;
+          author_role: Database["public"]["Enums"]["user_role"];
+          body: string;
+          created_at: string;
+          id: string;
+          request_id: string;
+          ticket_id: string;
+          visibility: string;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "support_ticket_messages";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       service_row_to_private_json_v1: {
         Args: { p_service_id: string };
         Returns: Json;
@@ -13473,6 +13649,19 @@ export type Database = {
           p_request_id: string;
         };
         Returns: Json;
+      };
+      support_current_requester_role_v1: {
+        Args: never;
+        Returns: Database["public"]["Enums"]["user_role"];
+      };
+      support_plain_text_v1: {
+        Args: {
+          p_field_name: string;
+          p_max_length: number;
+          p_min_length: number;
+          p_value: string;
+        };
+        Returns: string;
       };
       sync_booking_video_session_from_agenda_v1: {
         Args: {

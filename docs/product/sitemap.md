@@ -260,6 +260,9 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 - `/admin/seguranca`: segurança.
 - `/admin/relatorios`: relatórios.
 - `/admin/configuracoes`: configurações.
+- `/admin/configuracoes/emails`: central de e-mails transacionais.
+- `/admin/configuracoes/emails/eventos/:actionKey`: configuração de um evento
+  de e-mail allowlisted.
 - `/admin/suporte`: suporte.
 
 ### Fluxos
@@ -268,6 +271,8 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 - Sessões: `/admin/sessoes` -> filtrar status -> abrir caso -> suporte ou pagamento.
 - Financeiro: `/admin/pagamentos` -> transações, repasses e relatórios.
 - Catálogo: `/admin/terapias` -> categorias e tags -> `/admin/matching`.
+- E-mails: `/admin/configuracoes` -> E-mails -> evento transacional -> voltar
+  para a central.
 
 ## Relações
 

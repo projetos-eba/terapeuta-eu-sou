@@ -11,14 +11,16 @@ import { MessageCenterPage } from "./message-center-page";
 import type { MessageCenterPageData } from "./message-center.types";
 
 const refreshMock = vi.fn();
+const pushMock = vi.fn();
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: refreshMock }),
+  useRouter: () => ({ push: pushMock, refresh: refreshMock }),
 }));
 
 afterEach(() => {
   cleanup();
   refreshMock.mockClear();
+  pushMock.mockClear();
 });
 
 describe("MessageCenterPage", () => {
@@ -34,27 +36,15 @@ describe("MessageCenterPage", () => {
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
-  it("marks platform notifications as read through the API", async () => {
-    const originalFetch = global.fetch;
-    const fetchMock = vi.fn(async () => Response.json({ ok: true }));
-    global.fetch = fetchMock as unknown as typeof fetch;
+  it("keeps support visually separate from protected participant messaging", () => {
+    render(<MessageCenterPage data={createData()} />);
 
-    try {
-      render(<MessageCenterPage data={createData()} />);
-
-      fireEvent.click(
-        screen.getByRole("button", { name: "Marcar avisos como lidos" }),
-      );
-
-      await waitFor(() =>
-        expect(fetchMock).toHaveBeenCalledWith(
-          "/api/notifications/mark-read",
-          expect.objectContaining({ method: "POST" }),
-        ),
-      );
-    } finally {
-      global.fetch = originalFetch;
-    }
+    expect(
+      screen.getByRole("heading", { name: "Suporte TES" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Novo chamado" }),
+    ).toBeInTheDocument();
   });
 
   it("selects the hero asset for the active profile", () => {
@@ -73,7 +63,7 @@ describe("MessageCenterPage", () => {
     expect(patient.container.innerHTML).toContain("patient-messages-hero.png");
   });
 
-  it("opens a real support ticket through an approved support template", async () => {
+  it("opens a free-text support ticket without exposing a patient composer", async () => {
     const originalFetch = global.fetch;
     const fetchMock = vi.fn(async () =>
       Response.json({
@@ -90,24 +80,33 @@ describe("MessageCenterPage", () => {
     try {
       render(<MessageCenterPage data={createData({ source: "supabase" })} />);
 
-      fireEvent.click(screen.getByRole("button", { name: /novo suporte/i }));
-      fireEvent.click(screen.getByRole("radio", { name: /financeiro/i }));
-      fireEvent.click(
-        screen.getByRole("button", { name: /selecionar categoria/i }),
+      fireEvent.click(screen.getByRole("button", { name: /novo chamado/i }));
+      fireEvent.change(screen.getByLabelText(/categoria/i), {
+        target: { value: "financeiro_repasses" },
+      });
+      fireEvent.change(screen.getByLabelText(/assunto/i), {
+        target: { value: "Dúvida sobre repasse" },
+      });
+      fireEvent.change(
+        screen.getByLabelText(/conte mais sobre o que aconteceu/i),
+        {
+          target: { value: "Preciso entender meu próximo repasse." },
+        },
       );
+      fireEvent.click(screen.getByRole("button", { name: /abrir chamado/i }));
 
       await waitFor(() =>
         expect(fetchMock).toHaveBeenCalledWith(
           "/api/support/tickets",
           expect.objectContaining({
-            body: expect.stringContaining("therapist_support_finance"),
+            body: expect.stringContaining("financeiro_repasses"),
             method: "POST",
           }),
         ),
       );
-      expect(
-        await screen.findByText(/protocolo 30000000/i),
-      ).toBeInTheDocument();
+      expect(pushMock).toHaveBeenCalledWith(
+        "/terapeuta/mensagens/suporte/30000000-0000-4000-8000-000000000001",
+      );
     } finally {
       global.fetch = originalFetch;
     }
@@ -141,6 +140,7 @@ function createData(
         title: "Aviso importante",
       },
     ],
+    supportTickets: [],
     platformSection: {
       description: "Comunicados da plataforma.",
       title: "Plataforma e suporte TES",
