@@ -8,6 +8,7 @@ import { routes } from "@/lib/routes";
 
 import type { AdminOperationDetailPageData } from "../admin-operations.types";
 import { AdminOperationCommandPanel } from "./admin-operation-command-panel";
+import { AdminSupportReplyPanel } from "./admin-support-reply-panel";
 import {
   AsideCard,
   DetailSectionCard,
@@ -140,6 +141,18 @@ export function AdminSupportDetailPage({
               fields={traceability?.fields ?? []}
               title="Rastreabilidade"
             />
+            <section className="rounded-[28px] border border-brand-lavender/70 bg-white p-6 shadow-[0_22px_60px_rgba(20,16,90,0.09)]">
+              <h2 className="text-2xl font-extrabold text-brand-deep">
+                Responder ao solicitante
+              </h2>
+              <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+                A resposta é visível ao solicitante e atualiza o chamado para
+                aguardar retorno.
+              </p>
+              <div className="mt-5">
+                <AdminSupportReplyPanel ticketId={data.id} />
+              </div>
+            </section>
           </AppPageMain>
 
           <AppPageAside className="space-y-5">

@@ -64,6 +64,7 @@ type SupportTicketRow = {
   created_at: string;
   description: string | null;
   id: string;
+  last_activity_at: string | null;
   resolution_summary: string | null;
   status: string;
   subject: string;
@@ -84,31 +85,29 @@ export class MessageCenterDataError extends Error {
   }
 }
 
-export const getMessageCenterPage = cache(
-  async function getMessageCenterPage(
-    input: MessageCenterInput,
-  ): Promise<MessageCenterPageData> {
-    const config = getSupabaseServerConfig(input.accessToken);
+export const getMessageCenterPage = cache(async function getMessageCenterPage(
+  input: MessageCenterInput,
+): Promise<MessageCenterPageData> {
+  const config = getSupabaseServerConfig(input.accessToken);
 
-    if (!config) {
-      if (process.env.NODE_ENV === "development") {
-        return createDemoMessageCenter(input.actorRole);
-      }
-
-      throw new MessageCenterDataError();
+  if (!config) {
+    if (process.env.NODE_ENV === "development") {
+      return createDemoMessageCenter(input.actorRole);
     }
 
-    try {
-      return await getSupabaseMessageCenter(config, input);
-    } catch {
-      if (process.env.NODE_ENV === "development") {
-        return createDemoMessageCenter(input.actorRole);
-      }
+    throw new MessageCenterDataError();
+  }
 
-      throw new MessageCenterDataError();
+  try {
+    return await getSupabaseMessageCenter(config, input);
+  } catch {
+    if (process.env.NODE_ENV === "development") {
+      return createDemoMessageCenter(input.actorRole);
     }
-  },
-);
+
+    throw new MessageCenterDataError();
+  }
+});
 
 async function getSupabaseMessageCenter(
   config: SupabaseServerConfig,
@@ -135,7 +134,7 @@ async function getSupabaseMessageCenter(
       : Promise.resolve([]),
     supabaseRequest<SupportTicketRow[]>(
       config,
-      `/rest/v1/support_tickets?select=id,category,subject,description,status,resolution_summary,created_at&requester_profile_id=eq.${encodeURIComponent(input.profileId)}&order=created_at.desc&limit=4`,
+      `/rest/v1/support_tickets?select=id,category,subject,description,status,resolution_summary,created_at,last_activity_at&requester_profile_id=eq.${encodeURIComponent(input.profileId)}&order=last_activity_at.desc.nullslast&limit=8`,
     ),
     supabaseRequest<NotificationRow[]>(
       config,
@@ -152,9 +151,11 @@ async function getSupabaseMessageCenter(
   const unreadCount =
     messages.filter(
       (message) =>
-        message.read_at === null && message.sender_profile_id !== input.profileId,
+        message.read_at === null &&
+        message.sender_profile_id !== input.profileId,
     ).length +
-    notifications.filter((notification) => notification.read_at === null).length;
+    notifications.filter((notification) => notification.read_at === null)
+      .length;
 
   return {
     ...createMessageCenterShell(input.actorRole),
@@ -165,6 +166,14 @@ async function getSupabaseMessageCenter(
       unreadCount,
     },
     platformItems,
+    supportTickets: supportTickets.map((ticket) => ({
+      category: ticket.category,
+      createdAt: ticket.created_at,
+      id: ticket.id,
+      lastActivityAt: ticket.last_activity_at ?? ticket.created_at,
+      status: ticket.status,
+      subject: ticket.subject,
+    })),
     source: "supabase",
     threads,
   };
@@ -202,7 +211,9 @@ async function mapThreads(input: {
       input.config,
       "therapist_profiles",
       "id,public_name,photo_url",
-      input.conversations.map((conversation) => conversation.therapist_profile_id),
+      input.conversations.map(
+        (conversation) => conversation.therapist_profile_id,
+      ),
     );
     const therapistById = new Map(
       therapists.map((therapist) => [therapist.id, therapist]),
@@ -290,7 +301,8 @@ function mapPlatformItems(
   });
   const notificationItems = notifications.map<MessageCenterPlatformItem>(
     (notification) => {
-      const category = notification.kind === "payment" ? "financeiro" : "plataforma";
+      const category =
+        notification.kind === "payment" ? "financeiro" : "plataforma";
 
       return {
         body: notification.body ?? "Atualização operacional da plataforma.",
@@ -309,7 +321,10 @@ function mapPlatformItems(
 
 function createMessageCenterShell(
   actorRole: MessageCenterActorRole,
-): Omit<MessageCenterPageData, "metrics" | "platformItems" | "source" | "threads"> {
+): Omit<
+  MessageCenterPageData,
+  "metrics" | "platformItems" | "source" | "supportTickets" | "threads"
+> {
   const isTherapist = actorRole === "therapist";
 
   return {
@@ -318,17 +333,22 @@ function createMessageCenterShell(
       description: isTherapist
         ? "Acompanhe mensagens automatizadas dos clientes, avisos da plataforma e suporte em um só lugar."
         : "Acompanhe mensagens automatizadas dos terapeutas, avisos da plataforma e suporte em um só lugar.",
-      pendingLabel: isTherapist ? "Clientes aguardando" : "Terapeutas aguardando",
+      pendingLabel: isTherapist
+        ? "Clientes aguardando"
+        : "Terapeutas aguardando",
       title: "Central de mensagens",
     },
     participantSection: {
       description: isTherapist
         ? "Comunicações por templates relacionadas às sessões e ao acompanhamento."
         : "Comunicações por templates relacionadas aos seus encontros.",
-      title: isTherapist ? "Mensagens dos clientes" : "Mensagens dos terapeutas",
+      title: isTherapist
+        ? "Mensagens dos clientes"
+        : "Mensagens dos terapeutas",
     },
     platformSection: {
-      description: "Comunicados da plataforma, financeiro, suporte e avisos operacionais.",
+      description:
+        "Comunicados da plataforma, financeiro, suporte e avisos operacionais.",
       title: "Plataforma e suporte TES",
     },
     templates: {
@@ -344,8 +364,20 @@ function createDemoMessageCenter(
   const shell = createMessageCenterShell(actorRole);
   const isTherapist = actorRole === "therapist";
   const people = isTherapist
-    ? ["Beatriz Lima", "André Lima", "Sofia Mendes", "Mariana Alves", "Lucas Ferreira"]
-    : ["Ana Oliveira", "Juliana Costa", "André Lima", "Sofia Mendes", "Roberto Vaz"];
+    ? [
+        "Beatriz Lima",
+        "André Lima",
+        "Sofia Mendes",
+        "Mariana Alves",
+        "Lucas Ferreira",
+      ]
+    : [
+        "Ana Oliveira",
+        "Juliana Costa",
+        "André Lima",
+        "Sofia Mendes",
+        "Roberto Vaz",
+      ];
   const categories: MessageCenterCategory[] = [
     "duvida",
     "confirmacao",
@@ -388,20 +420,25 @@ function createDemoMessageCenter(
         title: "Nova funcionalidade: lembretes automáticos",
       },
     ],
+    supportTickets: [],
     source: "demo",
     threads: people.map((name, index) => {
       const category = categories[index] ?? "acompanhamento";
 
       return {
         avatarUrl: null,
-        body: shell.templates.participant[index % shell.templates.participant.length]?.body ?? "",
+        body:
+          shell.templates.participant[
+            index % shell.templates.participant.length
+          ]?.body ?? "",
         category,
         categoryLabel: getCategoryLabel(category),
         conversationId: `demo-conversation-${index + 1}`,
         id: `demo-thread-${index + 1}`,
         isUnread: index < 3,
         name,
-        timeLabel: index < 2 ? `Hoje · ${10 - index}:32` : `${16 + index} Jun · 14:10`,
+        timeLabel:
+          index < 2 ? `Hoje · ${10 - index}:32` : `${16 + index} Jun · 14:10`,
         title: getThreadTitle(category),
       };
     }),
@@ -521,7 +558,8 @@ function formatRelativeTime(value: string | null | undefined) {
   }).format(date);
 
   if (sameDay) return `Hoje · ${time}`;
-  if (date.toDateString() === yesterday.toDateString()) return `Ontem · ${time}`;
+  if (date.toDateString() === yesterday.toDateString())
+    return `Ontem · ${time}`;
 
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",

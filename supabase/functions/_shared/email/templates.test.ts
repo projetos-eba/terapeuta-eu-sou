@@ -26,7 +26,12 @@ Deno.test("every registered event renders the TES email shell from its controlle
     const rendered = renderEmailTemplate(entry.actionKey, entry.previewFixture);
     assertEquals(rendered.html.includes("{{"), false);
     assert(rendered.html.includes('role="presentation"'));
-    assert(rendered.html.includes("TERAPEUTA EU SOU"));
+    assert(
+      rendered.html.includes(
+        'src="https://terapeutaeusou.com.br/logo-oficial-terapeuta-eu-sou.png"',
+      ),
+    );
+    assert(rendered.html.includes('alt="Terapeuta Eu Sou"'));
     assert(rendered.html.includes("Central de Ajuda"));
     assert(rendered.html.includes("display:none"));
   }

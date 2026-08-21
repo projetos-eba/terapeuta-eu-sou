@@ -12,6 +12,8 @@ import {
   getAdminConfigurableEmailActions,
   getEmailActionRegistryEntry,
 } from "../_shared/email/registry.ts";
+import { HostingerMailApiProvider } from "../_shared/email/hostinger-mail-api-provider.ts";
+import type { SenderProfileRow } from "../_shared/email/types.ts";
 import {
   renderEmailManagementPreview,
   sanitizeEmailHtml,
@@ -88,6 +90,11 @@ type Setting = {
   html_override: string | null;
 };
 async function list(client: SupabaseRestClient) {
+  // The only sender source of truth is the Hostinger mailbox list. Refreshing
+  // it here keeps the Admin selector current without exposing credentials or
+  // requiring an administrator to copy mailbox data into the browser.
+  await syncSendersFromProvider(client);
+
   const [senders, settings, logs] = await Promise.all([
     client.get<Sender[]>(
       "/rest/v1/email_sender_profiles?select=id,display_name,mailbox_address,provider,active,is_default,last_test_at,last_test_status&order=is_default.desc,display_name.asc",
@@ -125,6 +132,58 @@ async function list(client: SupabaseRestClient) {
       error_message: log.error_message?.slice(0, 180) ?? null,
     })),
   };
+}
+
+async function syncSendersFromProvider(client: SupabaseRestClient) {
+  const apiKey = runtime.env.get("EMAIL_SERVER_API_KEY");
+  if (!apiKey) return;
+
+  try {
+    const provider = new HostingerMailApiProvider({ apiKey });
+    const providerSenders = await provider.listSenders();
+    const now = new Date().toISOString();
+
+    if (providerSenders.length > 0) {
+      await client.post<SenderProfileRow[]>(
+        "/rest/v1/email_sender_profiles?on_conflict=mailbox_resource_id",
+        providerSenders.map((sender) => ({
+          active: true,
+          display_name: sender.displayName,
+          last_synced_at: now,
+          mailbox_address: sender.mailboxAddress,
+          mailbox_resource_id: sender.mailboxResourceId,
+          provider: "hostinger_mail_api",
+          reply_to_email: sender.replyToEmail ?? null,
+        })),
+        "resolution=merge-duplicates,return=minimal",
+      );
+    }
+
+    const existing = await client.get<SenderProfileRow[]>(
+      "/rest/v1/email_sender_profiles?select=*&provider=eq.hostinger_mail_api",
+    );
+    const availableMailboxIds = new Set(
+      providerSenders.map((sender) => sender.mailboxResourceId),
+    );
+
+    await Promise.all(
+      existing
+        .filter(
+          (sender) => !availableMailboxIds.has(sender.mailbox_resource_id),
+        )
+        .map((sender) =>
+          client.patch(
+            `/rest/v1/email_sender_profiles?id=eq.${encodeURIComponent(sender.id)}`,
+            { active: false, last_synced_at: now },
+            "return=minimal",
+          ),
+        ),
+    );
+  } catch {
+    // Sender synchronization is an operational convenience. A provider read
+    // failure must preserve the last known safe sender configuration and must
+    // not make the administrative email catalogue disappear.
+  }
 }
 async function detail(client: SupabaseRestClient, actionKey: string) {
   const result = await list(client);

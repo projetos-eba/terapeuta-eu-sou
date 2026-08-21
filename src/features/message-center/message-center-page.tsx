@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 
 import { TESDecorativeMedia } from "@/components/tes";
+import { TherapistSupportSection } from "@/features/support/components/therapist-support-section";
 import { platformAssets } from "@/lib/platform-assets";
 
 import { MessageCenterActions } from "./components/message-center-actions";
@@ -81,27 +82,24 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
           title={data.participantSection.title}
         />
 
-        <PlatformCard
-          action={
-            <div className="flex flex-wrap gap-2">
-              <MarkNotificationsReadButton
-                unreadCount={
-                  data.platformItems.filter((item) => item.isUnread).length
-                }
-              />
-              <MessageCenterActions
-                actorRole={data.actorRole}
-                source={data.source}
-                templates={data.templates.support}
-                threads={data.threads}
-                variant="support"
-              />
-            </div>
-          }
-          description={data.platformSection.description}
-          items={data.platformItems}
-          title={data.platformSection.title}
-        />
+        {data.actorRole === "therapist" ? (
+          <TherapistSupportSection tickets={data.supportTickets} />
+        ) : (
+          <PlatformCard
+            action={
+              <div className="flex flex-wrap gap-2">
+                <MarkNotificationsReadButton
+                  unreadCount={
+                    data.platformItems.filter((item) => item.isUnread).length
+                  }
+                />
+              </div>
+            }
+            description={data.platformSection.description}
+            items={data.platformItems}
+            title={data.platformSection.title}
+          />
+        )}
       </section>
 
       <section className="rounded-card border border-brand-lavender bg-white p-5 shadow-card">
@@ -112,14 +110,13 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
             </h2>
             <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
               Esta central não possui chat livre. As interações entre cliente e
-              terapeuta usam modelos pré-aprovados, e suporte com a plataforma
-              segue categorias operacionais para reduzir fraude, exposição
-              indevida e mau uso.
+              terapeuta usam modelos pré-aprovados. Já o suporte TES acontece em
+              chamados próprios, com texto livre protegido e rastreável.
             </p>
           </div>
           <span className="inline-flex min-h-9 w-fit items-center gap-2 rounded-full bg-brand-lavenderSoft px-4 text-xs font-extrabold text-brand-primary">
             <ShieldCheck aria-hidden="true" size={15} />
-            Sem texto livre
+            Mensagens com pacientes protegidas
           </span>
         </div>
       </section>
