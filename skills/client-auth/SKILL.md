@@ -79,6 +79,9 @@ Backend:
 ## UI e copy
 
 - Usar fundo lavanda suave, card central, `PublicLogo`, formulário com labels reais e CTA com mínimo de 44px.
+- O campo de senha do login deve oferecer controle acessível para mostrar e
+  ocultar a senha, com rótulo de ação, estado `aria-pressed` e alvo mínimo de
+  44px; isso não altera o contrato de autenticação.
 - Usar imagem versionada em `public/client-auth/client-auth-journey-room.png`.
 - Desktop: formulário e imagem em composição lateral.
 - Mobile: formulário primeiro, imagem abaixo.
