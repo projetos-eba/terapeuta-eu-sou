@@ -39,6 +39,7 @@ import type {
   TherapistSettingsData,
   TherapistSettingsEditableFields,
 } from "../therapist-settings.types";
+import { TherapistPrivateDocumentsSection } from "./therapist-private-documents-section";
 
 export function TherapistSettingsPage({
   planData,
@@ -109,11 +110,11 @@ export function TherapistSettingsPage({
             </TESButton>
           </AppPageActions>
         }
-        eyebrow="Conta profissional"
+        eyebrow="Minha conta"
         title="Configurações"
       >
-        Ajuste dados da conta, segurança e caminhos operacionais sem misturar
-        informações públicas, financeiras ou administrativas.
+        Mantenha seus dados e documentos em dia para concluir a análise e
+        publicar seu perfil no TES.
       </AppPageHeader>
 
       {message ? (
@@ -129,6 +130,8 @@ export function TherapistSettingsPage({
         </div>
       ) : null}
 
+      <StatusGuideSection />
+
       <AppPageGrid>
         <AppPageMain>
           <SubscriptionManagementPanel data={planData} />
@@ -141,12 +144,18 @@ export function TherapistSettingsPage({
             onSubmit={() => void submit()}
             pending={pending}
           />
+          <TherapistPrivateDocumentsSection
+            initialDocuments={settings.documentCenter.documents}
+            initialVerificationStatus={
+              settings.documentCenter.verificationStatus
+            }
+          />
           <SettingsShortcutSection
-            description="Cada área mantém suas informações organizadas para facilitar sua rotina."
+            description="Acesse rapidamente as áreas que ajudam você a cuidar do seu trabalho no TES."
             items={[
               {
                 description:
-                  "Edite foto, apresentação e publicação do perfil público.",
+                  "Cuide da foto, da sua apresentação e da publicação do perfil.",
                 href: routes.therapist.profileEdit,
                 icon: UserRound,
                 label: "Meu perfil",
@@ -154,7 +163,7 @@ export function TherapistSettingsPage({
               },
               {
                 description:
-                  "Configure horários recorrentes, bloqueios e antecedência.",
+                  "Escolha seus horários e informe quando você pode atender.",
                 href: routes.therapist.agenda,
                 icon: CalendarDays,
                 label: "Abrir agenda",
@@ -162,7 +171,7 @@ export function TherapistSettingsPage({
               },
               {
                 description:
-                  "Revise sua conta de recebimento e o estado dos repasses.",
+                  "Acompanhe seus recebimentos e conecte sua conta para receber.",
                 href: `${routes.therapist.finance}?tab=account`,
                 icon: CreditCard,
                 label: "Conta de recebimento",
@@ -182,7 +191,7 @@ export function TherapistSettingsPage({
             compact
             items={[
               {
-                description: "Mensagens, avisos e suporte ficam centralizados.",
+                description: "Veja avisos e peça ajuda quando precisar.",
                 href: routes.therapist.messages,
                 icon: Bell,
                 label: "Abrir mensagens",
@@ -190,7 +199,7 @@ export function TherapistSettingsPage({
               },
               {
                 description:
-                  "Termos, privacidade e políticas públicas do Terapeuta Eu Sou.",
+                  "Leia como cuidamos dos seus dados e da sua segurança.",
                 href: routes.public.privacy,
                 icon: ShieldCheck,
                 label: "Ver políticas",
@@ -248,24 +257,19 @@ function AccountSection({
     <AppPageSection>
       <div className="grid gap-6">
         <SectionHeading
-          description="Estes dados identificam sua conta de acesso. Seu perfil público continua sendo editado em Meu perfil."
+          description="Esses dados são usados para identificar sua conta. O que aparece para o público é editado em Meu perfil."
           icon={UserRound}
           title="Dados da conta"
         />
         <div className="grid gap-4 md:grid-cols-2">
           <TextField
             id="displayName"
-            label="Nome de acesso"
+            label="Nome completo"
             onChange={(value) => onChange({ displayName: value })}
             required
             value={fields.displayName}
           />
-          <TextField
-            disabled
-            id="email"
-            label="E-mail de acesso"
-            value={email}
-          />
+          <TextField disabled id="email" label="E-mail" value={email} />
           <TextField
             id="phone"
             label="Telefone"
@@ -277,18 +281,18 @@ function AccountSection({
         <div className="grid gap-5 border-t border-border pt-6">
           <div>
             <h3 className="text-base font-extrabold text-brand-deep">
-              Dados para validação do cadastro
+              Dados necessários para aprovação
             </h3>
             <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
-              Informe seu endereço e um documento de identificação. Esses dados
-              ficam protegidos e são usados somente pela equipe TES durante a
-              análise do perfil.
+              Precisamos dessas informações para confirmar sua identidade e
+              analisar seu cadastro. Seus dados ficam protegidos e não aparecem
+              no seu perfil público.
             </p>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             <SelectField
               id="documentType"
-              label="Documento"
+              label="Tipo de documento"
               onChange={(value) =>
                 onChange({
                   identity: {
@@ -307,7 +311,7 @@ function AccountSection({
             />
             <TextField
               id="documentNumber"
-              label="Número do documento"
+              label="Número"
               onChange={(value) =>
                 onChange({
                   identity: {
@@ -400,7 +404,7 @@ function AccountSection({
           <div className="grid gap-4 md:grid-cols-[180px_1fr]">
             <TextField
               id="state"
-              label="UF"
+              label="Estado"
               maxLength={2}
               onChange={(value) =>
                 onChange({
@@ -411,8 +415,8 @@ function AccountSection({
               value={fields.identity.state}
             />
             <p className="self-end text-sm font-semibold leading-6 text-tesText-secondary">
-              O endereço precisa estar no Brasil neste momento. O passaporte não
-              tem uma máscara única; usamos apenas letras e números.
+              Informe um endereço no Brasil. Para passaporte, digite letras e
+              números como aparecem no documento.
             </p>
           </div>
         </div>
@@ -428,7 +432,7 @@ function AccountSection({
             ) : (
               <Save aria-hidden="true" size={18} />
             )}
-            Salvar dados da conta
+            Salvar meus dados
           </TESButton>
           <TESButton
             className="rounded-lg"
@@ -447,16 +451,16 @@ function SecuritySection({ email }: { email: string }) {
   return (
     <AppPageSection className="grid gap-6">
       <SectionHeading
-        description="A senha é trocada por fluxo seguro de recuperação. O TES não mostra nem armazena sua senha em texto aberto."
+        description="Você pode trocar sua senha sempre que precisar. O TES não mostra sua senha."
         icon={LockKeyhole}
         title="Segurança"
       />
       <div className="grid gap-4 md:grid-cols-2">
-        <ReadOnlyFact icon={Mail} label="E-mail de login" value={email} />
+        <ReadOnlyFact icon={Mail} label="E-mail da conta" value={email} />
         <ReadOnlyFact
           icon={ShieldCheck}
-          label="Acesso"
-          value="Conta de terapeuta autenticada"
+          label="Tipo de conta"
+          value="Terapeuta"
         />
       </div>
       <AppPageActions>
@@ -483,7 +487,7 @@ function PrivacySection({ settings }: { settings: TherapistSettingsData }) {
   return (
     <AppPageSection className="grid gap-6">
       <SectionHeading
-        description="Publicação, reservas e exibição pública dependem das áreas responsáveis para manter consistência em todo o sistema."
+        description="Aqui você acompanha o que já foi aprovado e o que as pessoas conseguem ver no TES."
         icon={ShieldCheck}
         title="Privacidade e publicação"
       />
@@ -491,20 +495,22 @@ function PrivacySection({ settings }: { settings: TherapistSettingsData }) {
         <ReadOnlyFact
           icon={CheckCircle2}
           label="Perfil público"
-          value={settings.profile.isPublic ? "Visível" : "Não publicado"}
+          value={
+            settings.profile.isPublic ? "Publicado" : "Ainda não publicado"
+          }
         />
         <ReadOnlyFact
           icon={CalendarDays}
           label="Reservas"
           value={
             settings.profile.isAcceptingBookings
-              ? "Recebendo reservas"
-              : "Não recebendo reservas"
+              ? "Recebendo novas sessões"
+              : "Ainda não recebendo sessões"
           }
         />
         <ReadOnlyFact
           icon={ExternalLink}
-          label="Status público"
+          label="Visibilidade do perfil"
           value={publicStatusLabel(settings.profile.publicStatus)}
         />
       </div>
@@ -521,7 +527,7 @@ function PrivacySection({ settings }: { settings: TherapistSettingsData }) {
           href={routes.therapist.profileEdit}
           variant="secondary"
         >
-          Ajustar publicação
+          Ver meu perfil
         </TESButton>
       </AppPageActions>
     </AppPageSection>
@@ -603,8 +609,24 @@ function StatusPanel({ settings }: { settings: TherapistSettingsData }) {
       <div className="grid gap-3">
         <ReadOnlyFact label="Plano" value={planLabel(settings.profile.plan)} />
         <ReadOnlyFact
-          label="Cadastro"
+          label="Aprovação"
           value={profileStatusLabel(settings.profile.status)}
+        />
+        <ReadOnlyFact
+          label="Perfil completo"
+          value={
+            settings.profile.status === "approved"
+              ? "Conteúdo e dados conferidos"
+              : "Ainda em preparação"
+          }
+        />
+        <ReadOnlyFact
+          label="Perfil público"
+          value={
+            settings.profile.isPublic
+              ? "Perfil publicado"
+              : "Ainda não publicado"
+          }
         />
         <ReadOnlyFact
           label="Nome público"
@@ -618,19 +640,61 @@ function StatusPanel({ settings }: { settings: TherapistSettingsData }) {
   );
 }
 
+function StatusGuideSection() {
+  const items = [
+    {
+      description:
+        "Seu nome, apresentação, terapias e disponibilidade estão preenchidos.",
+      title: "Perfil completo",
+    },
+    {
+      description: "A equipe TES conferiu seus dados e os documentos enviados.",
+      title: "Cadastro aprovado",
+    },
+    {
+      description:
+        "Seu perfil pode ser encontrado pelas pessoas e receber novas sessões.",
+      title: "Perfil publicado",
+    },
+  ];
+
+  return (
+    <AppPageSection className="grid gap-5">
+      <SectionHeading
+        description="Esses três momentos são diferentes, mas fazem parte do mesmo caminho."
+        icon={CheckCircle2}
+        title="Entenda cada etapa"
+      />
+      <div className="grid gap-4 md:grid-cols-3">
+        {items.map((item) => (
+          <div
+            className="rounded-lg border border-brand-lavender bg-brand-lavenderSoft/50 p-4"
+            key={item.title}
+          >
+            <h3 className="text-base font-extrabold text-brand-deep">
+              {item.title}
+            </h3>
+            <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+              {item.description}
+            </p>
+          </div>
+        ))}
+      </div>
+    </AppPageSection>
+  );
+}
+
 function ProtectedDataPanel() {
   return (
     <AppPageSection className="grid gap-4">
       <SectionHeading icon={ShieldCheck} title="Dados protegidos" />
       <ul className="grid gap-3 text-sm font-semibold leading-6 text-tesText-secondary">
         <li>
-          Upgrades ficam em Planos; cancelamentos e mudanças futuras ficam nesta
-          página.
+          Mudanças de plano começam em Meu plano; cancelamentos e mudanças
+          futuras ficam nesta área.
         </li>
-        <li>
-          Dados bancários completos ficam no ambiente seguro de pagamentos.
-        </li>
-        <li>Documentos privados não aparecem no perfil público.</li>
+        <li>Seus dados de recebimento são cuidados em uma página segura.</li>
+        <li>Seus documentos são privados e não aparecem no perfil público.</li>
       </ul>
     </AppPageSection>
   );
@@ -769,10 +833,10 @@ function validateSettingsFields(fields: TherapistSettingsEditableFields) {
   const phone = fields.phone.trim();
 
   if (displayName.length < 2) {
-    return "Informe um nome de uso interno com pelo menos 2 caracteres.";
+    return "Informe seu nome completo com pelo menos 2 caracteres.";
   }
   if (displayName.length > 120) {
-    return "O nome de uso interno deve ter até 120 caracteres.";
+    return "Seu nome completo deve ter até 120 caracteres.";
   }
   if (phone && (phone.length > 30 || !/^[+()0-9\s-]+$/.test(phone))) {
     return "Informe um telefone válido ou deixe o campo vazio.";
@@ -787,7 +851,7 @@ function validateSettingsFields(fields: TherapistSettingsEditableFields) {
     !identity.city ||
     identity.state.length !== 2
   ) {
-    return "Preencha seu documento e endereço para concluir a validação do cadastro.";
+    return "Preencha seus dados e endereço para continuarmos com a aprovação do seu perfil.";
   }
   return null;
 }
@@ -820,12 +884,12 @@ function profileStatusLabel(
   status: TherapistSettingsData["profile"]["status"],
 ) {
   const labels = {
-    approved: "Aprovado",
-    changes_requested: "Ajustes solicitados",
-    draft: "Rascunho",
-    in_review: "Em análise",
-    rejected: "Reprovado",
-    submitted: "Enviado",
+    approved: "Cadastro aprovado",
+    changes_requested: "Falta ajustar o cadastro",
+    draft: "Ainda não enviado",
+    in_review: "Cadastro em análise",
+    rejected: "Cadastro não aprovado",
+    submitted: "Cadastro recebido",
     suspended: "Suspenso",
   } satisfies Record<TherapistSettingsData["profile"]["status"], string>;
 

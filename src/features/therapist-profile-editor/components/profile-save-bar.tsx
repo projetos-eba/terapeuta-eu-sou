@@ -127,9 +127,9 @@ function getSaveBarMessage({
     if (hasUnsavedChanges) {
       return {
         description:
-          "A publicação salva os dados preenchidos e envia a primeira versão para revisão da equipe TES.",
+          "A publicação salva os dados preenchidos e envia a primeira versão para análise da equipe TES.",
         title:
-          "Envie sua primeira versão quando os campos essenciais estiverem completos.",
+          "Envie sua primeira versão quando o perfil, seus dados e documentos estiverem completos.",
       };
     }
 
@@ -142,8 +142,8 @@ function getSaveBarMessage({
 
     return {
       description:
-        "Ao publicar, o TES salva a versão atual e envia os dados para revisão. O perfil só volta a ficar público após a aprovação.",
-      title: "Revise as informações principais antes de enviar para análise.",
+        "Antes de publicar, complete seus dados e envie os documentos obrigatórios em Configurações. Depois, a equipe TES analisa o cadastro.",
+      title: "Seu perfil precisa estar completo para seguir.",
     };
   }
 
@@ -165,6 +165,6 @@ function getSaveBarMessage({
   return {
     description:
       "A versão enviada fica em análise antes de voltar a aparecer para pacientes.",
-    title: "A versão pública está aguardando a revisão da equipe TES.",
+    title: "Sua atualização está aguardando a revisão da equipe TES.",
   };
 }

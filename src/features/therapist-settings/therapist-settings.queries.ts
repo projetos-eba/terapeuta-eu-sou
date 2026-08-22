@@ -50,11 +50,14 @@ export async function queryTherapistSettings({
   const profile = Array.isArray(profileValue)
     ? (profileValue[0] as Record<string, unknown> | undefined)
     : (profileValue as Record<string, unknown> | undefined);
-  const identity = profile?.id
-    ? await fetchPrivateIdentity({ accessToken, config })
-    : {};
+  const [identity, documentCenter] = await Promise.all([
+    profile?.id ? fetchPrivateIdentity({ accessToken, config }) : {},
+    profile?.id
+      ? fetchPrivateDocumentCenter({ accessToken, config })
+      : { documents: [], verificationStatus: "draft" },
+  ]);
 
-  return { ...row, identity };
+  return { ...row, documentCenter, identity };
 }
 
 export async function updateTherapistAccountSettings({
@@ -183,4 +186,43 @@ async function fetchPrivateIdentity({
   }
 
   return (await response.json().catch(() => ({}))) as unknown;
+}
+
+async function fetchPrivateDocumentCenter({
+  accessToken,
+  config,
+}: {
+  accessToken: string;
+  config: { apiKey: string; url: string };
+}) {
+  const response = await fetch(
+    `${config.url}/functions/v1/therapist-private-documents`,
+    {
+      body: JSON.stringify({ action: "therapist.read" }),
+      cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+
+  if (response.status === 401 || response.status === 403) {
+    throw new TherapistSettingsQueryError("forbidden");
+  }
+  if (!response.ok) {
+    throw new TherapistSettingsQueryError("unavailable");
+  }
+
+  const payload = (await response.json().catch(() => null)) as {
+    data?: { documentCenter?: unknown };
+    ok?: boolean;
+  } | null;
+
+  if (!payload?.ok || !payload.data?.documentCenter) {
+    throw new TherapistSettingsQueryError("unavailable");
+  }
+
+  return payload.data.documentCenter;
 }

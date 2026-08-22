@@ -105,12 +105,12 @@ function ConnectReturnNotice({ notice }: { notice: "refresh" | "return" }) {
         <h2 className="text-base font-extrabold text-brand-deep">
           {notice === "refresh"
             ? "Link de recebimento expirado"
-            : "Retorno da conta recebido"}
+            : "Atualização da conta recebida"}
         </h2>
         <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
           {notice === "refresh"
-            ? "Gere um novo link para continuar o cadastro da conta de recebimento."
-            : "O retorno não confirma a conta automaticamente. Sincronize o status para buscar a atualização mais recente."}
+            ? "Abra um novo link para continuar o cadastro da conta de recebimento."
+            : "A atualização chegou, mas ainda precisamos confirmar a situação. Clique em Verificar situação para consultar a informação mais recente."}
         </p>
       </div>
     </AppPageSection>

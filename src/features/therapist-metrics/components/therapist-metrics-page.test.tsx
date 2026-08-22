@@ -14,7 +14,7 @@ describe("TherapistMetricsPage", () => {
     render(<TherapistMetricsPage data={dashboardFixture()} />);
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "Métricas e insights" }),
+      screen.getByRole("heading", { level: 1, name: "Acompanhe seu trabalho" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Pessoas acompanhadas")).toBeInTheDocument();
     expect(screen.getByText("Sessões realizadas")).toBeInTheDocument();
@@ -50,7 +50,10 @@ describe("TherapistMetricsPage", () => {
       <TherapistMetricsErrorState message="Não foi possível consultar suas métricas agora." />,
     );
     expect(
-      screen.getByRole("heading", { level: 1, name: "Métricas indisponíveis" }),
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Acompanhamento indisponível",
+      }),
     ).toBeInTheDocument();
   });
 });

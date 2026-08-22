@@ -110,6 +110,9 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - Paciente nao acessa a projecao privada.
 - Serviço pausado não aparece em views públicas reserváveis.
 - Motivos técnicos de bloqueio devem ser traduzidos para texto de produto na UI.
+- A UI fala em `Suas terapias`, `Adicionar terapia`, `Ativar terapia` e
+  `Terapias mais agendadas`. `serviço` permanece apenas como nome de domínio ou
+  contrato interno quando necessário.
 
 Rodar:
 

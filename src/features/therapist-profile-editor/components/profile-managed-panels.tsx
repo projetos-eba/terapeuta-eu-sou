@@ -23,8 +23,8 @@ export function ProfileDerivedMetrics({
 
   return (
     <ProfileSection
-      description="Estes valores vêm de serviços, agenda, avaliações e assinatura."
-      title="Dados derivados"
+      description="Um resumo das informações que já estão conectadas ao seu perfil."
+      title="Resumo do perfil"
     >
       <dl className="grid gap-3">
         <ProfileReadOnlyMetric
@@ -45,8 +45,12 @@ export function ProfileDerivedMetrics({
         />
         <ProfileReadOnlyMetric label="Plano" value={planLabel(derived.plan)} />
         <ProfileReadOnlyMetric
-          label="Reservas"
-          value={derived.canReceiveBookings ? "Pronto" : "Pendente"}
+          label="Agendamentos"
+          value={
+            derived.canReceiveBookings
+              ? "Pode receber"
+              : "Ainda não pode receber"
+          }
         />
       </dl>
     </ProfileSection>
@@ -56,15 +60,15 @@ export function ProfileDerivedMetrics({
 export function ProfileManagedElsewhere() {
   return (
     <ProfileSection
-      description="Edite estas seções em seus respectivos módulos."
-      title="Informações gerenciadas em outras páginas"
+      description="Cada parte fica no lugar certo para você encontrar e atualizar com facilidade."
+      title="Outras partes do seu perfil"
     >
       <div className="grid gap-3">
         <ManagedLink
           href={routes.therapist.services}
           icon={<WalletCards aria-hidden="true" size={18} />}
           label="Terapias e preços"
-          suffix="Editar em Terapias"
+          suffix="Editar em Suas terapias"
         />
         <ManagedLink
           href={routes.therapist.agenda}
@@ -76,12 +80,12 @@ export function ProfileManagedElsewhere() {
           href={routes.therapist.reviews}
           icon={<Star aria-hidden="true" size={18} />}
           label="Avaliações"
-          suffix="Editar em Avaliações"
+          suffix="Ver avaliações"
         />
         <ManagedLink
           href={routes.therapist.finance}
           icon={<CreditCard aria-hidden="true" size={18} />}
-          label="Pagamentos"
+          label="Recebimentos"
           suffix="Ver financeiro"
         />
       </div>

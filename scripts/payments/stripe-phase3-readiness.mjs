@@ -265,6 +265,7 @@ async function checkWebhookEndpoints(stripe, supabaseRef) {
     "checkout.session.completed",
     "customer.subscription.updated",
     "invoice.paid",
+    "payment_intent.requires_action",
     "payment_intent.succeeded",
     "charge.refunded",
     "transfer.updated",

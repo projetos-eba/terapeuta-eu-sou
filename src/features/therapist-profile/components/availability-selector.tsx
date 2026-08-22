@@ -104,7 +104,7 @@ export function AvailabilitySelector({
           ))
         ) : (
           <div className="rounded-[14px] bg-brand-primaryPressed px-5 py-4 text-sm font-medium">
-            Agenda temporariamente indisponível para este serviço.
+            Agenda temporariamente indisponível para esta terapia.
           </div>
         )}
       </div>

@@ -17,10 +17,7 @@ export function mapTherapistHomeReadiness({
 }: {
   connect: TherapistConnectAccount | null;
   editor: TherapistProfileEditorData;
-  session: Pick<
-    AuthenticatedTherapistSession,
-    "plan" | "profileId" | "status"
-  >;
+  session: Pick<AuthenticatedTherapistSession, "plan" | "profileId" | "status">;
 }): TherapistHomeReadiness {
   if (editor.therapistProfileId !== session.profileId) {
     throw new Error("therapist_home_profile_mismatch");
@@ -34,8 +31,9 @@ export function mapTherapistHomeReadiness({
   ];
   const requiredItems = checklist.filter((item) => item.required);
   const requiredCount = requiredItems.length;
-  const completedRequiredCount = requiredItems.filter((item) => item.complete)
-    .length;
+  const completedRequiredCount = requiredItems.filter(
+    (item) => item.complete,
+  ).length;
 
   return {
     checklist,
@@ -46,7 +44,8 @@ export function mapTherapistHomeReadiness({
     profileCompleteness: editor.completeness.percent,
     profileSummary: {
       city: editor.draft?.fields.city ?? editor.published.fields.city,
-      headline: editor.draft?.fields.headline ?? editor.published.fields.headline,
+      headline:
+        editor.draft?.fields.headline ?? editor.published.fields.headline,
       publicName:
         editor.draft?.fields.publicName ?? editor.published.fields.publicName,
       state: editor.draft?.fields.state ?? editor.published.fields.state,
@@ -113,8 +112,8 @@ function profileItem(
     actionLabel: complete ? "Ver perfil" : "Publicar perfil",
     complete,
     description: complete
-      ? "Seu perfil público já tem uma versão publicada."
-      : "Publique sua apresentação pública e sua essência.",
+      ? "Seu perfil público já está publicado e visível para as pessoas."
+      : "Complete sua apresentação e envie seus dados e documentos em Configurações.",
     href: complete ? routes.therapist.profile : routes.therapist.profileEdit,
     id: "profile",
     required: true,
@@ -151,7 +150,7 @@ function agendaItem(
     actionLabel: complete ? "Ver agenda" : "Abrir agenda",
     complete,
     description: complete
-      ? `${editor.derived.availabilityRuleCount} regra(s) de horário ativa(s).`
+      ? `${editor.derived.availabilityRuleCount} período(s) de atendimento configurado(s).`
       : "Configure horários recorrentes para que reservas possam aparecer.",
     href: routes.therapist.agenda,
     id: "agenda",
@@ -213,10 +212,10 @@ function connectItem(
   }
 
   return {
-    actionLabel: "Sincronizar status",
+    actionLabel: "Acompanhar análise",
     complete: true,
     description:
-      "Dados enviados. A análise pode continuar em andamento.",
+      "Seus dados foram enviados e a análise pode continuar em andamento.",
     href: `${routes.therapist.finance}?tab=conta`,
     id: "connect",
     required: false,

@@ -48,14 +48,14 @@ export function TherapistServiceMenu({
       {open ? (
         <TESDialog
           className="max-w-[420px]"
-          description="Escolha uma ação para este serviço."
+          description="Escolha uma ação para esta terapia."
           onClose={() => setOpen(false)}
-          title="Ações do serviço"
+          title="Ações da terapia"
         >
           <div className="grid gap-2">
             <MenuButton
               icon={<Edit3 aria-hidden="true" size={17} />}
-              label="Editar serviço"
+              label="Editar terapia"
               onClick={() => {
                 setOpen(false);
                 onAction("edit");

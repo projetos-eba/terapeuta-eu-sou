@@ -29,8 +29,8 @@ export function TherapistWeekSummary({
         </Link>
       </div>
       <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-[10px] text-tesText-muted">
-        <Legend color="#482861" label="Encontros agendados" />
-        <Legend color="#ae94c3" label="Encontros realizados" />
+        <Legend color="#482861" label="Sessões agendadas" />
+        <Legend color="#ae94c3" label="Sessões realizadas" />
         <Legend color="#ef5b7a" label="Cancelamentos" />
       </div>
       <div className="mt-4 grid items-center gap-6 xl:grid-cols-[minmax(0,1fr)_190px]">

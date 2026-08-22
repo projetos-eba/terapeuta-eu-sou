@@ -16,7 +16,7 @@ describe("dashboard empty states", () => {
     );
 
     expect(
-      screen.getByText("Nenhum encontro futuro está agendado."),
+      screen.getByText("Nenhuma sessão futura está agendada."),
     ).toBeInTheDocument();
     expect(
       screen.getByText("As avaliações publicadas aparecerão aqui."),

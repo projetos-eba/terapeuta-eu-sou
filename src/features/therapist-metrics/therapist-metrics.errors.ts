@@ -15,12 +15,12 @@ export function getTherapistMetricsErrorMessage(
 ) {
   const messages: Record<TherapistMetricsErrorCode, string> = {
     forbidden:
-      "Seu plano ou perfil não permite consultar estas métricas no momento.",
+      "Seu plano ou perfil não permite acessar este acompanhamento agora.",
     invalid_contract:
       "Os dados recebidos não puderam ser apresentados com segurança.",
     session_expired: "Sua sessão expirou. Entre novamente para continuar.",
     unavailable:
-      "Não foi possível consultar suas métricas agora. Tente novamente em instantes.",
+      "Não foi possível carregar seu acompanhamento agora. Tente novamente em instantes.",
   };
 
   return messages[code];

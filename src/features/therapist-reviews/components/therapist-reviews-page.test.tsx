@@ -92,9 +92,7 @@ describe("TherapistReviewsPage", () => {
       );
     });
     expect(
-      await screen.findAllByText(
-        "Resposta publicada e sincronizada com o perfil público.",
-      ),
+      await screen.findAllByText("Resposta publicada no seu perfil público."),
     ).toHaveLength(2);
     expect(screen.getByText("Sua resposta")).toBeInTheDocument();
   });

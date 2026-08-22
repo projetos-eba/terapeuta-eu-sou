@@ -37,7 +37,7 @@ export function FinancialConnectAccountActions({
       return;
     }
 
-    setMessage(result.data.message ?? "Dados sincronizados.");
+    setMessage(result.data.message ?? "Dados atualizados.");
     router.refresh();
   }
 
@@ -61,7 +61,7 @@ export function FinancialConnectAccountActions({
             type="button"
           >
             <RefreshCw aria-hidden="true" size={18} />
-            {pendingAction === "sync" ? "Sincronizando..." : "Sincronizar"}
+            {pendingAction === "sync" ? "Atualizando..." : "Verificar situação"}
           </button>
         ) : null}
       </div>

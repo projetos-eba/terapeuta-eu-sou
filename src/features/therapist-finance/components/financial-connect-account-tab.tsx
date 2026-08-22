@@ -35,14 +35,14 @@ export function FinancialConnectAccountTab({
             {state.description}
           </p>
           <p className="mt-4 rounded-lg bg-brand-lavenderSoft/70 p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-            Você será redirecionado para um ambiente seguro de pagamentos. O TES não
-            armazena seus dados bancários completos.
+            Você será levado a uma página segura para informar seus dados de
+            recebimento. O TES não guarda seus dados bancários completos.
           </p>
         </div>
 
         <div className="rounded-card border border-brand-lavender bg-surface-soft p-4">
           <h3 className="text-base font-extrabold text-brand-deep">
-            Estado da conta
+            Como está sua conta
           </h3>
           <dl className="mt-4 grid gap-3">
             <ConnectDetail
@@ -55,7 +55,7 @@ export function FinancialConnectAccountTab({
               value={translateCapability(account.transferCapabilityStatus)}
             />
             <ConnectDetail
-              label="Última sincronização"
+              label="Última atualização"
               value={formatDateTime(account.lastSyncedAt)}
             />
           </dl>
@@ -68,8 +68,8 @@ export function FinancialConnectAccountTab({
             Próxima ação
           </h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            A conclusão do cadastro, análise e liberação para repasses acontece
-            no ambiente seguro de pagamentos.
+            O cadastro, a análise e a liberação dos recebimentos acontecem nessa
+            página segura.
           </p>
           <div className="mt-5">
             <FinancialConnectAccountActions
@@ -87,12 +87,18 @@ export function FinancialConnectAccountTab({
               className="text-status-success"
               size={19}
             />
-            Checklist seguro
+            Para sua segurança
           </h3>
           <ul className="mt-4 grid gap-3 text-sm font-semibold leading-6 text-tesText-secondary">
-            <li>Dados bancários completos ficam somente no ambiente seguro.</li>
-            <li>O retorno não marca a conta como pronta sozinho.</li>
-            <li>O status exibido vem da última sincronização autorizada.</li>
+            <li>
+              Os dados bancários completos ficam somente na página segura.
+            </li>
+            <li>
+              Voltar para esta página não significa que o cadastro terminou.
+            </li>
+            <li>
+              Use Verificar situação para conferir a informação mais recente.
+            </li>
           </ul>
         </div>
       </AppPageSection>
@@ -123,12 +129,12 @@ function getConnectState(account: TherapistConnectAccount) {
   if (!account.accountExists) {
     return {
       description:
-        "Cadastre seus dados com segurança no ambiente de pagamentos para receber os valores das suas sessões.",
+        "Informe seus dados em uma página segura para receber os valores das suas sessões.",
       iconClass: "bg-brand-lavenderSoft text-brand-primary",
       notice: null,
       primaryAction: "create_or_continue" as const,
       primaryLabel: "Conectar conta de recebimento",
-      statusLabel: "Conta inexistente",
+      statusLabel: "Ainda não conectada",
       title: "Conecte sua conta de recebimento",
       tone: "neutral" as const,
     };
@@ -137,7 +143,7 @@ function getConnectState(account: TherapistConnectAccount) {
   if (account.onboardingStatus === "ready") {
     return {
       description:
-        "Sua conta está pronta para receber repasses quando houver valores elegíveis.",
+        "Sua conta está pronta para receber seus valores quando houver repasses.",
       iconClass: "bg-status-successBg text-status-success",
       notice: null,
       primaryAction: "login" as const,
@@ -151,12 +157,12 @@ function getConnectState(account: TherapistConnectAccount) {
   if (account.onboardingStatus === "requirements_due") {
     return {
       description:
-        "Precisamos de informações adicionais para continuar a análise da sua conta.",
+        "Precisamos de mais algumas informações para concluir a análise da sua conta.",
       iconClass: "bg-status-warningBg text-status-warning",
       notice: requirementNotice(account.currentlyDue.length),
       primaryAction: "create_or_continue" as const,
       primaryLabel: "Atualizar dados de recebimento",
-      statusLabel: "Requisitos pendentes",
+      statusLabel: "Faltam algumas informações",
       title: "Atualize seus dados de recebimento",
       tone: "warning" as const,
     };
@@ -168,7 +174,7 @@ function getConnectState(account: TherapistConnectAccount) {
   ) {
     return {
       description:
-        "As informações enviadas estão em análise. Você pode sincronizar para buscar uma atualização.",
+        "Recebemos suas informações e estamos analisando. Você pode verificar a situação para consultar novidades.",
       iconClass: "bg-brand-lavenderSoft text-brand-primary",
       notice: "Informações em análise.",
       primaryAction: "create_or_continue" as const,
@@ -185,7 +191,7 @@ function getConnectState(account: TherapistConnectAccount) {
   ) {
     return {
       description:
-        "A conta está restrita para repasses. Revise as informações solicitadas no ambiente seguro.",
+        "A conta está temporariamente impedida de receber repasses. Revise as informações solicitadas na página segura.",
       iconClass: "bg-status-dangerBg text-status-danger",
       notice: translateDisabledReason(account.disabledReason),
       primaryAction: "create_or_continue" as const,
@@ -198,12 +204,12 @@ function getConnectState(account: TherapistConnectAccount) {
 
   return {
     description:
-      "Continue o cadastro no ambiente seguro para liberar os repasses das suas sessões.",
+      "Continue o cadastro na página segura para liberar os recebimentos das suas sessões.",
     iconClass: "bg-brand-lavenderSoft text-brand-primary",
     notice: null,
     primaryAction: "create_or_continue" as const,
     primaryLabel: "Continuar cadastro",
-    statusLabel: "Onboarding incompleto",
+    statusLabel: "Cadastro incompleto",
     title: "Continue o cadastro da conta",
     tone: "neutral" as const,
   };
@@ -211,10 +217,10 @@ function getConnectState(account: TherapistConnectAccount) {
 
 function requirementNotice(count: number) {
   if (count <= 0) {
-    return "Abra o ambiente seguro para conferir se há informações pendentes.";
+    return "Abra a página segura para conferir se falta alguma informação.";
   }
 
-  return `${count} requisito(s) pendente(s). Abra o ambiente seguro para revisar com segurança.`;
+  return `${count} informação(ões) pendente(s). Abra a página segura para revisar.`;
 }
 
 function translateCapability(value: string) {
@@ -225,21 +231,21 @@ function translateCapability(value: string) {
     restricted: "Restritas",
   };
 
-  return labels[value] ?? "Não informado";
+  return labels[value] ?? "Ainda não informado";
 }
 
 function translateDisabledReason(value: string | null) {
   if (!value)
-    return "A conta foi restringida. Abra o ambiente seguro para revisar.";
+    return "A conta foi restringida. Abra a página segura para revisar.";
 
   const labels: Record<string, string> = {
     account_closed: "A conta foi encerrada.",
     requirements_past_due:
-      "Há informações obrigatórias vencidas no cadastro.",
+      "Há informações obrigatórias que precisam ser atualizadas.",
   };
 
   return (
     labels[value] ??
-    "A conta foi restringida. Abra o ambiente seguro para revisar."
+    "A conta foi restringida. Abra a página segura para revisar."
   );
 }

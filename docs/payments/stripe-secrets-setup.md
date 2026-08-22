@@ -58,6 +58,7 @@ Eventos obrigatorios:
 - `invoice.payment_action_required`
 - `invoice.finalization_failed`
 - `payment_intent.processing`
+- `payment_intent.requires_action`
 - `payment_intent.succeeded`
 - `payment_intent.payment_failed`
 - `payment_intent.canceled`
@@ -72,6 +73,21 @@ Eventos obrigatorios:
 - `transfer.reversed`
 
 Signing secret remoto: salvar como `STRIPE_PLATFORM_WEBHOOK_SECRET`.
+
+### Boleto e métodos dinâmicos
+
+O Checkout de sessões do TES não envia `payment_method_types`: os métodos são
+gerenciados no Dashboard Stripe. Para Boleto, ative o método separadamente em
+modo de teste e em modo live, na conta da plataforma, e mantenha os preços em
+BRL. A habilitação no Dashboard é necessária nos dois ambientes; não há um
+secret adicional de Boleto.
+
+Boleto é assíncrono. O pedido deve permanecer pendente até
+`payment_intent.succeeded` ou `checkout.session.async_payment_succeeded`. Em
+caso de vencimento, trate `payment_intent.payment_failed` ou
+`checkout.session.async_payment_failed`. O evento
+`payment_intent.requires_action` registra a criação da ação do boleto como
+estado de processamento; ele não confirma pagamento.
 
 ### Contas conectadas snapshot: `stripe-connect-webhook`
 

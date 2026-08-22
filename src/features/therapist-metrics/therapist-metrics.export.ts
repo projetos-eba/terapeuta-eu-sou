@@ -278,7 +278,7 @@ export function buildTherapistMetricsCsv({
     appendProtectedItems(rows, "cohorts", data.cohorts, (item) => ({
       detail: JSON.stringify(item.retention),
       key: item.cohortMonth,
-      label: "Coorte mensal",
+      label: "Grupo mensal",
       unit: "people",
       value: item.cohortSize,
     }));
@@ -297,7 +297,7 @@ export function buildTherapistMetricsCsv({
     [
       [
         "favorite_conversion",
-        "Favoritos que viraram encontro",
+        "Favoritos que viraram sessão",
         data.favoriteConversion,
       ],
       ["sentiment", "Sentimento pós-sessão", data.sentiment],

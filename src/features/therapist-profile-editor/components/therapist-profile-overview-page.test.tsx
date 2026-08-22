@@ -135,7 +135,7 @@ describe("TherapistProfileOverviewPage", () => {
     expect(screen.getByText("Ana Oliveira")).toBeInTheDocument();
     expect(screen.getByText("Atendimento online")).toBeInTheDocument();
     expect(screen.getByText("Status do perfil")).toBeInTheDocument();
-    expect(screen.getByText("Checklist de confiança")).toBeInTheDocument();
+    expect(screen.getByText("O que falta no seu perfil")).toBeInTheDocument();
   });
 
   it("shows only the published profile in the overview when a draft exists", () => {
@@ -207,7 +207,7 @@ describe("TherapistProfileOverviewPage", () => {
       screen.getByRole("heading", { level: 1, name: "Cadastro em análise" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Seu progresso de cadastro")).toBeInTheDocument();
-    expect(screen.getByText("Documentos enviados")).toBeInTheDocument();
+    expect(screen.getAllByText("Dados e documentos").length).toBeGreaterThan(0);
     expect(
       screen.queryByRole("heading", { name: "Preview do perfil" }),
     ).not.toBeInTheDocument();

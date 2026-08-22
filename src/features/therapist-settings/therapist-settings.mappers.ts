@@ -1,4 +1,11 @@
 import type { TherapistPlan, TherapistStatus } from "@/domain/tes";
+import type {
+  TherapistPrivateDocumentKind,
+  TherapistPrivateDocumentStatus,
+  TherapistPrivateDocumentSummary,
+  TherapistPrivateDocumentValidationState,
+  TherapistProfileVerificationStatus,
+} from "@/features/therapist-profile-editor/therapist-profile-editor.types";
 import { routes } from "@/lib/routes";
 
 import type {
@@ -26,6 +33,7 @@ export function mapTherapistSettingsData(
       userId: requiredString(value.id),
       identity: mapIdentity(value.identity),
     },
+    documentCenter: mapDocumentCenter(value.documentCenter),
     profile: {
       isAcceptingBookings: Boolean(profile.isAcceptingBookings),
       isPublic: Boolean(profile.isPublic),
@@ -38,6 +46,41 @@ export function mapTherapistSettingsData(
         : routes.therapist.profile,
       status: status(profile.status),
     },
+  };
+}
+
+function mapDocumentCenter(
+  value: unknown,
+): TherapistSettingsData["documentCenter"] {
+  const center = asObject(value);
+  return {
+    documents: Array.isArray(center.documents)
+      ? center.documents.flatMap((item) => {
+          try {
+            return [mapPrivateDocument(item)];
+          } catch {
+            return [];
+          }
+        })
+      : [],
+    verificationStatus: verificationStatus(center.verificationStatus),
+  };
+}
+
+function mapPrivateDocument(input: unknown): TherapistPrivateDocumentSummary {
+  const value = asObject(input);
+  return {
+    createdAt: requiredString(value.uploadedAt),
+    fileName: requiredString(value.fileName),
+    fileSizeBytes: numberOr(value.sizeBytes, 0),
+    id: requiredString(value.id),
+    kind: privateDocumentKind(value.kind),
+    mimeType: requiredString(value.mimeType),
+    reviewNote: stringOrNull(value.reviewNote),
+    reviewedAt: stringOrNull(value.reviewedAt),
+    status: privateDocumentStatus(value.status),
+    updatedAt: requiredString(value.uploadedAt),
+    validationState: privateDocumentValidationState(value.validationState),
   };
 }
 
@@ -93,6 +136,63 @@ function requiredString(value: unknown) {
 
 function stringOr(value: unknown, fallback: string) {
   return typeof value === "string" ? value : fallback;
+}
+
+function stringOrNull(value: unknown) {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+function numberOr(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function privateDocumentKind(value: unknown): TherapistPrivateDocumentKind {
+  if (value === "address_proof" || value === "identity_document") return value;
+  throw new Error("Invalid therapist private document kind.");
+}
+
+function privateDocumentStatus(value: unknown): TherapistPrivateDocumentStatus {
+  if (
+    value === "accepted" ||
+    value === "archived" ||
+    value === "rejected" ||
+    value === "uploaded"
+  ) {
+    return value;
+  }
+  throw new Error("Invalid therapist private document status.");
+}
+
+function privateDocumentValidationState(
+  value: unknown,
+): TherapistPrivateDocumentValidationState {
+  if (
+    value === "failed" ||
+    value === "not_scanned" ||
+    value === "passed" ||
+    value === "pending"
+  ) {
+    return value;
+  }
+  throw new Error("Invalid therapist private document validation state.");
+}
+
+function verificationStatus(
+  value: unknown,
+): TherapistProfileVerificationStatus {
+  if (
+    value === "approved" ||
+    value === "changes_requested" ||
+    value === "draft" ||
+    value === "in_review" ||
+    value === "none" ||
+    value === "rejected" ||
+    value === "submitted" ||
+    value === "suspended"
+  ) {
+    return value;
+  }
+  return "draft";
 }
 
 function plan(value: unknown): TherapistPlan {

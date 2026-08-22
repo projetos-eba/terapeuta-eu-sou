@@ -71,7 +71,7 @@ describe("TherapistCalendar", () => {
     render(<TherapistCalendar data={fixture} />);
 
     expect(
-      screen.getByText("Nenhum encontro agendado para hoje."),
+      screen.getByText("Nenhuma sessão agendada para hoje."),
     ).toBeInTheDocument();
     expect(
       screen.getByText("Nenhuma pendência operacional neste momento."),
@@ -90,7 +90,7 @@ describe("TherapistCalendar", () => {
     });
 
     expect(
-      screen.getByText("0 de 1 encontro(s) nesta visualização."),
+      screen.getByText("0 de 1 sessão(ões) nesta visualização."),
     ).toBeInTheDocument();
     expect(
       screen.getByText("Nenhum item encontrado com os filtros atuais."),

@@ -83,6 +83,55 @@ Expected convergence:
 - `expired`: `session_payments.financial_status = canceled`.
 - `refund`: `session_payments.financial_status = refunded` or `partially_refunded`.
 
+## Boleto no Checkout
+
+O Checkout de sessões já usa métodos de pagamento dinâmicos e todos os preços
+do TES são BRL. Para habilitar Boleto, ative-o no Dashboard Stripe em modo de
+teste; não adicione `payment_method_types` no código. O Checkout incorporado
+apresentará o método quando a conta, moeda, localização e valor forem elegíveis.
+
+No Dashboard Stripe, em modo de teste:
+
+1. Abra **Settings → Payments → Payment methods**.
+2. Ative **Boleto** para a conta da plataforma.
+3. Confira a validade padrão do boleto. O padrão da Stripe é 3 dias; a conta
+   pode definir outro prazo dentro do limite aceito pela Stripe.
+4. Em **Workbench → Webhooks/Event destinations**, confirme que o destino
+   `stripe-billing-webhook` contém os eventos abaixo:
+   `checkout.session.completed`,
+   `checkout.session.async_payment_succeeded`,
+   `checkout.session.async_payment_failed`,
+   `payment_intent.requires_action`, `payment_intent.processing`,
+   `payment_intent.succeeded` e `payment_intent.payment_failed`.
+
+Para o teste automático em HML, use um paciente de teste novo ou cujo Customer
+Stripe ainda não tenha sido criado, com um e-mail de teste compatível com o
+cenário da Stripe:
+
+```bash
+PAYMENTS_HML_PATIENT_EMAIL=cliente+succeed_immediately@exemplo.com.br \
+npm run payments:phase3:session:hml -- --scenario=boleto_approved
+
+PAYMENTS_HML_PATIENT_EMAIL=cliente+expire_immediately@exemplo.com.br \
+npm run payments:phase3:session:hml -- --scenario=boleto_expired
+```
+
+O teste abre o Checkout com navegador visível, seleciona Boleto, preenche os
+dados exigidos pelo Checkout e verifica a cadeia de eventos assinados. A
+evidência esperada é:
+
+- `boleto_approved`: `checkout.session.completed` → processamento pendente →
+  `payment_intent.succeeded`/`checkout.session.async_payment_succeeded` →
+  `session_payments.financial_status = paid`.
+- `boleto_expired`: `checkout.session.completed` → processamento pendente →
+  `payment_intent.payment_failed`/`checkout.session.async_payment_failed` →
+  `session_payments.financial_status = failed`.
+
+No ambiente real, o boleto pode ser confirmado somente no próximo dia útil após
+o pagamento. Nunca confirme a sessão pelo retorno visual do Checkout. Boleto
+não suporta reembolso pelo Stripe; a política de cancelamento precisa prever um
+procedimento operacional separado antes de liberar o método em produção.
+
 ## Subscription Evidence
 
 Existing scripts remain the canonical subscription harness:

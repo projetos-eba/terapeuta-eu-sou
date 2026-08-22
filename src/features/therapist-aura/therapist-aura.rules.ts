@@ -32,7 +32,7 @@ export const auraRules: RuleDefinition[] = [
     actionLabel: "Revisar agenda",
     actionRouteKey: "agenda",
     body: ({ signals }) =>
-      `Você tem ${signals.bookingReadiness.publicBookableServices} serviço(s) público(s) agendável(is), mas a Aura não encontrou horários livres nos próximos 14 dias.`,
+      `Você tem ${signals.bookingReadiness.publicBookableServices} terapia(s) disponível(is) para agendamento, mas o Assessor Aura não encontrou horários livres nos próximos 14 dias.`,
     evidenceLabel: () => "Janela analisada: próximos 14 dias.",
     priority: 95,
     ruleKey: "aura.booking_readiness.no_future_slots.v1",
@@ -63,7 +63,7 @@ export const auraRules: RuleDefinition[] = [
     body: ({ meta, signals }) =>
       `A taxa de cancelamentos subiu de ${formatPercent(signals.sessions.cancellationRate.previousValue)} para ${formatPercent(signals.sessions.cancellationRate.value)} nos últimos ${meta.periodDays} dias completos.`,
     evidenceLabel: ({ meta, signals }) =>
-      `Amostra: ${signals.sessions.cancellationRate.observedSample} sessões no período de ${meta.periodDays} dias completos.`,
+      `Dados considerados: ${signals.sessions.cancellationRate.observedSample} sessões nos últimos ${meta.periodDays} dias completos.`,
     priority: 80,
     ruleKey: "aura.sessions.cancellation_increased.v1",
     title: "Cancelamentos aumentaram no período",
@@ -77,7 +77,7 @@ export const auraRules: RuleDefinition[] = [
     body: ({ signals }) =>
       `A taxa operacional de ausência subiu de ${formatPercent(signals.sessions.noShowRate.previousValue)} para ${formatPercent(signals.sessions.noShowRate.value)}.`,
     evidenceLabel: ({ meta, signals }) =>
-      `Amostra: ${signals.sessions.noShowRate.observedSample} presenças/ausências no período de ${meta.periodDays} dias completos.`,
+      `Dados considerados: ${signals.sessions.noShowRate.observedSample} presenças ou ausências nos últimos ${meta.periodDays} dias completos.`,
     priority: 75,
     ruleKey: "aura.sessions.no_show_increased.v1",
     title: "Ausências operacionais pedem atenção",
@@ -90,7 +90,7 @@ export const auraRules: RuleDefinition[] = [
     body: ({ signals }) =>
       `A taxa de retorno caiu de ${formatPercent(signals.continuity.returnRate.previousValue)} para ${formatPercent(signals.continuity.returnRate.value)}.`,
     evidenceLabel: ({ meta, signals }) =>
-      `Amostra: ${signals.continuity.returnRate.observedSample} pessoas no período de ${meta.periodDays} dias completos.`,
+      `Dados considerados: ${signals.continuity.returnRate.observedSample} pessoas nos últimos ${meta.periodDays} dias completos.`,
     priority: 70,
     ruleKey: "aura.continuity.return_rate_decreased.v1",
     title: "Continuidade menor que no período anterior",

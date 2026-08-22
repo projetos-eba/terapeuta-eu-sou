@@ -27,7 +27,7 @@ export function TherapistServiceStatusBadge({
 }) {
   return (
     <TESBadge tone={tones[status]}>
-      <span className="sr-only">Estado do serviço: </span>
+      <span className="sr-only">Situação da terapia: </span>
       {labels[status]}
     </TESBadge>
   );

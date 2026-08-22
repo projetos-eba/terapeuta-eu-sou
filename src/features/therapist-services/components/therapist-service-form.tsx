@@ -124,12 +124,12 @@ export function TherapistServiceForm({
       }
 
       if ("service" in result.data) {
-        onSaved(result.data.service, "Serviço atualizado.");
+        onSaved(result.data.service, "Terapia atualizada.");
         onClose();
         return;
       }
 
-      setSubmitError("Resposta inesperada ao atualizar serviço.");
+      setSubmitError("Não foi possível atualizar esta terapia agora.");
       return;
     }
 
@@ -161,13 +161,13 @@ export function TherapistServiceForm({
 
     if (!("service" in createResult.data)) {
       setSubmitting(null);
-      setSubmitError("Resposta inesperada ao criar serviço.");
+      setSubmitError("Não foi possível criar esta terapia agora.");
       return;
     }
 
     if (nextStatus === "draft") {
       setSubmitting(null);
-      onSaved(createResult.data.service, "Serviço salvo como rascunho.");
+      onSaved(createResult.data.service, "Terapia salva como rascunho.");
       onClose();
       return;
     }
@@ -184,25 +184,25 @@ export function TherapistServiceForm({
     if (activateResult.status === "error") {
       onSaved(
         created,
-        `Rascunho salvo. Não foi possível ativar: ${activateResult.error.message}`,
+        `Rascunho salvo. Não foi possível ativar a terapia: ${activateResult.error.message}`,
       );
       return;
     }
 
     if ("service" in activateResult.data) {
-      onSaved(activateResult.data.service, "Serviço criado e ativado.");
+      onSaved(activateResult.data.service, "Terapia criada e ativada.");
       onClose();
       return;
     }
 
-    setSubmitError("Resposta inesperada ao ativar serviço.");
+    setSubmitError("Não foi possível ativar esta terapia agora.");
   }
 
-  const title = mode === "edit" ? "Editar serviço" : "Novo serviço";
+  const title = mode === "edit" ? "Editar terapia" : "Nova terapia";
   const description =
     mode === "edit"
-      ? "Atualize a oferta sem trocar a terapia canônica quando há histórico."
-      : "Crie uma oferta vinculada a uma terapia aprovada pela plataforma.";
+      ? "Atualize preço, duração e descrição sem perder o histórico desta terapia."
+      : "Escolha uma terapia disponível e informe como você trabalha.";
 
   return (
     <TESDialog
@@ -212,7 +212,7 @@ export function TherapistServiceForm({
       title={title}
     >
       <div aria-live="polite" className="sr-only">
-        {submitting ? "Salvando serviço." : (submitError ?? "")}
+        {submitting ? "Salvando terapia." : (submitError ?? "")}
       </div>
       <StepIndicator mode={mode} step={step} />
 
@@ -459,8 +459,8 @@ function OfferFields({
       </div>
       <div className="rounded-lg bg-brand-lavenderSoft/70 p-4 text-xs font-semibold leading-5 text-tesText-secondary">
         As regras detalhadas de reserva continuam centralizadas em Agenda /
-        Horários. Esta oferta só fica reservável após ativação válida pelo pelas
-        regras de segurança da plataforma.
+        Horários. Esta terapia só fica disponível para agendamento depois de ser
+        ativada e de você informar quando pode atender.
       </div>
     </div>
   );
@@ -522,7 +522,7 @@ function MatchingFields({
   return (
     <fieldset className="space-y-4">
       <legend className="text-sm font-extrabold text-brand-deep">
-        Temas e refinamentos deste serviço
+        Temas e detalhes desta terapia
       </legend>
       <p className="text-sm font-semibold leading-6 text-tesText-secondary">
         Escolha os temas desta terapia que você trabalha e até três refinamentos
@@ -593,7 +593,7 @@ function MatchingFields({
       {themes.length === 0 ? (
         <p className="rounded-lg bg-brand-lavenderSoft/70 p-4 text-sm font-semibold text-tesText-secondary">
           Esta terapia ainda não possui temas publicados para configuração de
-          serviço.
+          terapia.
         </p>
       ) : null}
     </fieldset>

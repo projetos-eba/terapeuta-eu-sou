@@ -42,8 +42,8 @@ export function TherapistSessionMetricsPage({
             Movimento das sessões
           </h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            Desfechos operacionais calculados pelos bookings no seu próprio
-            histórico. Pagamento continua sendo uma dimensão separada.
+            Resumo das sessões do seu próprio histórico. Os pagamentos são
+            acompanhados separadamente.
           </p>
         </div>
 
@@ -167,7 +167,7 @@ function SampledSummary({
             </p>
             <p className="mt-3 text-sm font-semibold leading-5 text-tesText-secondary">
               {metric.previousValue === null
-                ? "Este é o primeiro período com amostra suficiente para esta leitura."
+                ? "Este é o primeiro período com dados suficientes para esta leitura."
                 : getTherapistMetricCopy(metric.directionCopyKey)}
             </p>
           </>
@@ -202,11 +202,11 @@ function SessionEvolution({ data }: { data: TherapistSessionMetrics }) {
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
         Realizações, ausências, cancelamentos e reagendamentos permanecem
-        separados para não atribuir a mesma causa a desfechos diferentes.
+        separados para mostrar cada situação com clareza.
       </p>
 
       {data.evolution.status === "empty" ? (
-        <EmptyBlock text="Ainda não há desfechos de sessão neste período." />
+        <EmptyBlock text="Ainda não há resultados de sessão neste período." />
       ) : (
         <>
           <div
@@ -363,7 +363,7 @@ function OutcomeDistribution({ data }: { data: TherapistSessionMetrics }) {
   return (
     <AppPageSection>
       <h2 className="text-lg font-extrabold text-brand-deep">
-        Comparecimento e desfechos
+        Comparecimento e resultados
       </h2>
       {data.outcomeDistribution.status === "ready" ? (
         <div className="mt-5 grid gap-4">
@@ -390,7 +390,7 @@ function TherapyDistribution({ data }: { data: TherapistSessionMetrics }) {
         Sessões realizadas por terapia
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Esta leitura usa a terapia canônica vinculada ao serviço reservado.
+        Esta leitura considera a terapia escolhida na reserva.
       </p>
       {data.therapyDistribution.status === "ready" ? (
         <div className="mt-5 grid gap-4">
@@ -448,9 +448,8 @@ function UnavailableNotice() {
         Motivos de cancelamento
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Ainda não mostramos categorias de motivo porque o campo atual não possui
-        uma taxonomia versionada. Textos livres não são analisados nem
-        transformados em métricas.
+        Ainda não conseguimos mostrar essas categorias com segurança. Por isso,
+        os motivos escritos livremente permanecem ocultos nesta visão.
       </p>
     </AppPageSection>
   );
@@ -472,7 +471,7 @@ function ProtectedBlock({
       </p>
       <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
         Esta leitura aparece a partir de {collection.minimumSample} registros
-        elegíveis. A amostra atual ainda não atingiu essa trava.
+        elegíveis. Ainda não há dados suficientes para mostrar este resultado.
       </p>
     </div>
   );
@@ -482,10 +481,11 @@ function SampleLock({ observed }: { observed: number }) {
   return (
     <div className="mt-3">
       <p className="text-sm font-extrabold text-brand-primary">
-        Ainda sem amostra suficiente
+        Ainda sem dados suficientes
       </p>
       <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
-        A taxa aparece após 10 desfechos elegíveis. Amostra atual: {observed}.
+        A taxa aparece após 10 resultados elegíveis. Até agora, temos {observed}
+        .
       </p>
     </div>
   );

@@ -218,9 +218,9 @@ function getBlockingReasonLabel(reason: string) {
     therapist_profile_private:
       "Seu perfil público precisa estar publicado para receber agendamentos.",
     therapy_not_public:
-      "Esta terapia ainda não está disponível nas superfícies públicas.",
+      "Esta terapia ainda não está disponível no perfil público.",
     therapy_not_published:
-      "Esta terapia ainda não está publicada no catálogo da plataforma.",
+      "Esta terapia ainda não está disponível para as pessoas.",
   };
 
   return labels[reason] ?? "Esta terapia não está disponível para agendamento.";

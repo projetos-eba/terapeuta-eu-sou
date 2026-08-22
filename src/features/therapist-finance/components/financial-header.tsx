@@ -46,11 +46,11 @@ export function FinancialHeader({
       <div className="relative z-10 grid gap-6 p-5 sm:p-7 lg:grid-cols-[minmax(0,1fr)_auto] lg:p-8">
         <div className="max-w-2xl">
           <h1 className="font-display text-[38px] font-light italic leading-tight text-brand-deep sm:text-[52px]">
-            Financeiro completo
+            Acompanhe seus recebimentos
           </h1>
           <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
-            Acompanhe recebimentos, repasses e a conexão da sua conta de
-            recebimento com clareza operacional.
+            Veja o que você recebeu, o que está a caminho e cuide da sua conta
+            de recebimento em um só lugar.
           </p>
         </div>
 

@@ -104,7 +104,7 @@ export function TherapistMetricsPage({
             copy={
               returnRate?.status === "ready"
                 ? "Pessoas que realizaram mais de uma sessão"
-                : "Disponível no Premium Plus com amostra mínima"
+                : "Disponível no Premium Plus quando houver dados suficientes"
             }
             icon={RefreshCw}
             label="Pessoas que retornaram"
@@ -142,7 +142,7 @@ export function TherapistMetricsPage({
             copy={
               topTherapy
                 ? `${formatNumber(topTherapy.counter.value)} sessões no período`
-                : "Aparece após a amostra mínima de dez sessões"
+                : "Aparece quando houver pelo menos dez sessões"
             }
             icon={Sparkles}
             label="Terapia mais realizada"
@@ -263,14 +263,14 @@ export function TherapistMetricsPage({
                 label: segmentLabel(item.key),
                 value: item.value,
               }))}
-              label="Distribuição das pessoas por status"
+              label="Situação das pessoas acompanhadas"
             />
           ) : interestData ? (
             <ProtectedMetric status={interestData.segments.status} />
           ) : (
             <UnavailableMetric
               title="Recurso do Premium Plus"
-              message="A leitura de continuidade é liberada no Premium Plus e respeita a amostra mínima de dez pessoas."
+              message="A leitura de continuidade é liberada no Premium Plus quando houver dados de pelo menos dez pessoas."
             />
           )}
         </MetricPanel>
@@ -326,9 +326,9 @@ export function TherapistMetricsPage({
             Como estes números são calculados
           </h2>
           <p className="mt-2 max-w-4xl text-sm font-semibold leading-6 text-tesText-secondary">
-            O dia atual fica de fora para evitar comparações incompletas.
-            Métricas protegidas exigem ao menos dez registros, e a ocupação só
-            aparece com cobertura histórica integral da agenda.
+            O dia atual fica de fora para evitar comparações incompletas. Alguns
+            dados só aparecem quando há pelo menos dez registros, e a ocupação
+            só é mostrada quando o histórico da agenda está completo.
           </p>
         </div>
       </AppPageSection>
@@ -432,8 +432,8 @@ function ProtectedMetric({
     <EmptyMetric message="Ainda não há dados neste período." />
   ) : (
     <UnavailableMetric
-      title="Amostra insuficiente"
-      message="Este bloco será exibido quando houver ao menos dez registros elegíveis no período."
+      title="Ainda não há dados suficientes"
+      message="Este bloco será exibido quando houver pelo menos dez registros no período."
     />
   );
 }
@@ -484,7 +484,7 @@ export function TherapistMetricsErrorState({ message }: { message: string }) {
         <AlertCircle className="text-status-danger" size={28} />
         <div>
           <h1 className="font-display text-[34px] font-light italic leading-tight text-brand-deep sm:text-[46px]">
-            Métricas indisponíveis
+            Acompanhamento indisponível
           </h1>
           <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
             {message}

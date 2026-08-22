@@ -1,4 +1,7 @@
+import Link from "next/link";
 import { Star } from "lucide-react";
+
+import { routes } from "@/lib/routes";
 
 import type { TherapistProfileEditorData } from "../therapist-profile-editor.types";
 import { ProfileInfoBanner, ProfileSection } from "./profile-section";
@@ -13,15 +16,13 @@ export function ProfileCompleteness({
   return (
     <ProfileInfoBanner
       icon={<Star aria-hidden="true" className="size-6" />}
-      title="Perfis completos transmitem confiança e atraem mais pessoas."
+      title="Um perfil completo ajuda as pessoas a entenderem como você trabalha."
     >
-      Quanto mais informações você compartilha, maiores são as chances de novos
-      pacientes se conectarem com o seu trabalho.
+      Conte com clareza o que você oferece, como trabalha e o que a pessoa pode
+      esperar do primeiro contato.
       <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
         <div>
-          <p className="text-sm font-bold text-brand-deep">
-            Progresso do perfil
-          </p>
+          <p className="text-sm font-bold text-brand-deep">Perfil completo</p>
           <div
             aria-label={`Progresso do perfil: ${percent}% completo`}
             className="mt-2 h-3 overflow-hidden rounded-full bg-brand-lavenderSoft"
@@ -51,8 +52,8 @@ export function ProfileCompletenessChecklist({
 }) {
   return (
     <ProfileSection
-      description="Itens que ajudam a transmitir confiança e aumentam suas chances de ser escolhida."
-      title="Checklist de confiança"
+      description="Preencha estes pontos para deixar seu perfil claro e acolhedor."
+      title="O que falta no seu perfil"
     >
       <ul className="grid gap-4">
         {editor.completeness.items.map((item) => (
@@ -66,19 +67,19 @@ export function ProfileCompletenessChecklist({
               </p>
               <p className="text-sm font-semibold leading-6 text-tesText-secondary">
                 {item.complete
-                  ? "Item preenchido no perfil."
-                  : "Ainda precisa de atenção."}
+                  ? "Tudo certo por aqui."
+                  : "Falta preencher este item."}
               </p>
             </div>
           </li>
         ))}
       </ul>
-      <button
+      <Link
         className="mt-5 inline-flex min-h-11 items-center text-sm font-extrabold text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
-        type="button"
+        href={routes.therapist.assessorIa}
       >
-        Ver mais dicas para melhorar seu perfil →
-      </button>
+        Ver mais dicas com o Assessor Aura →
+      </Link>
     </ProfileSection>
   );
 }

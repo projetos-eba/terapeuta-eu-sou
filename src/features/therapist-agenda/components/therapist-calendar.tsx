@@ -399,7 +399,7 @@ function CalendarFilters({
             onChange={(event) =>
               onChange({ ...filters, query: event.target.value })
             }
-            placeholder="Paciente, terapia ou serviço"
+            placeholder="Paciente ou terapia"
             type="search"
             value={filters.query}
           />
@@ -462,7 +462,7 @@ function CalendarFilters({
           aria-live="polite"
           className="text-[11px] font-bold text-tesText-secondary lg:pb-3"
         >
-          {resultCount} de {totalCount} encontro(s) nesta visualização.
+          {resultCount} de {totalCount} sessão(ões) nesta visualização.
         </p>
       </div>
     </section>
@@ -663,7 +663,7 @@ function TimelineCalendar({
           className="border-t border-brand-lavender/60 px-4 py-3 text-center text-sm font-semibold text-tesText-secondary"
           role="status"
         >
-          A grade mostra os encontros registrados enquanto seus horários são
+          A agenda mostra as sessões registradas enquanto seus horários são
           carregados.
         </p>
       ) : null}
@@ -843,7 +843,7 @@ function MonthCalendar({
                     })}
                     {dayBookings.length > 3 ? (
                       <span className="text-[10px] font-bold text-tesText-muted md:text-[11px]">
-                        +{dayBookings.length - 3} encontro(s)
+                        +{dayBookings.length - 3} sessão(ões)
                       </span>
                     ) : null}
                   </div>
@@ -893,7 +893,7 @@ function MobileChronologicalList({
               const presentation = mapSessionPresentation(item.booking);
               return (
                 <button
-                  aria-label={`Encontro de ${item.booking.serviceTitle}: ${item.booking.patientName}, ${item.timeRange}`}
+                  aria-label={`Sessão de ${item.booking.serviceTitle}: ${item.booking.patientName}, ${item.timeRange}`}
                   className="grid min-h-[86px] w-full grid-cols-[52px_minmax(0,1fr)] items-center gap-3 px-4 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
                   key={item.id}
                   onClick={() => onSelect(item.booking)}
@@ -1047,13 +1047,13 @@ function TodayCard({
   return (
     <article className="rounded-xl bg-white p-5 xl:rounded-none xl:bg-transparent xl:px-0 xl:py-6">
       <h2 className="text-lg font-extrabold text-brand-deep">
-        Encontros de hoje
+        Sessões de hoje
       </h2>
       <p className="mt-1 text-xs font-bold text-tesText-secondary">
         {formatTodayLabel(timezone)}
       </p>
       <p className="mt-3 text-sm font-extrabold text-brand-primary">
-        {bookings.length} encontro(s)
+        {bookings.length} sessão(ões)
       </p>
       {bookings.length ? (
         <div className="mt-4 divide-y divide-brand-lavender/60">
@@ -1090,7 +1090,7 @@ function TodayCard({
         </div>
       ) : (
         <p className="mt-4 rounded-lg bg-surface-soft p-4 text-sm font-semibold leading-5 text-tesText-secondary">
-          Nenhum encontro agendado para hoje.
+          Nenhuma sessão agendada para hoje.
         </p>
       )}
       <Link
@@ -1186,7 +1186,7 @@ function DemandCard({ demand }: { demand: TherapistCalendarDemandItem[] }) {
   return (
     <article className="rounded-xl bg-white p-5 md:col-span-2 xl:col-span-1 xl:rounded-none xl:border-t xl:border-brand-lavender/60 xl:bg-transparent xl:px-0 xl:py-6">
       <h2 className="text-lg font-extrabold text-brand-deep">
-        Insights para sua agenda
+        Acompanhe sua agenda
       </h2>
       <p className="mt-1 text-[10px] font-bold text-tesText-muted md:text-[11px]">
         Com base nos últimos 90 dias
@@ -1240,7 +1240,7 @@ function DemandHeatmapContent({
               <span
                 className={`grid aspect-square min-h-6 place-items-center rounded text-[10px] font-extrabold md:text-[11px] ${heatmapStyle(count, maximum)}`}
                 key={`${day}-${hour}`}
-                title={`${count} encontro(s)`}
+                title={`${count} sessão(ões)`}
               >
                 {count}
               </span>
@@ -1280,19 +1280,19 @@ function TesScheduleTip({ demand }: { demand: TherapistCalendarDemandItem[] }) {
       <div className="inline-flex items-center gap-2">
         <Sparkles aria-hidden="true" className="text-brand-primary" size={19} />
         <h2 className="font-display text-[24px] font-light text-brand-deep">
-          Insight TES
+          Dica do TES
         </h2>
       </div>
       <p className="mt-3 max-w-[720px] text-sm font-semibold leading-6 text-tesText-secondary">
         {peak
-          ? `${fullDayLabel(peak.dayOfWeek)} entre ${String(peak.hourBlock).padStart(2, "0")}h e ${String(peak.hourBlock + 2).padStart(2, "0")}h concentrou mais encontros no período analisado.`
-          : "Conforme seus encontros forem acontecendo, este espaço mostrará os períodos mais procurados."}
+          ? `${fullDayLabel(peak.dayOfWeek)} entre ${String(peak.hourBlock).padStart(2, "0")}h e ${String(peak.hourBlock + 2).padStart(2, "0")}h concentrou mais sessões no período analisado.`
+          : "Conforme suas sessões forem acontecendo, este espaço mostrará os períodos mais procurados."}
       </p>
       <Link
         className="mt-4 inline-flex min-h-11 items-center gap-2 text-sm font-extrabold text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
         href={routes.therapist.insights as Route}
       >
-        Ver todos os insights da agenda
+        Ver todo o acompanhamento da agenda
         <ArrowRight aria-hidden="true" size={15} />
       </Link>
     </article>

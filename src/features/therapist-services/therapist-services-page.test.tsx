@@ -86,7 +86,7 @@ describe("TherapistServicesPage", () => {
     });
 
     const ranking = screen
-      .getByRole("heading", { name: "Serviços mais agendados" })
+      .getByRole("heading", { name: "Terapias mais agendadas" })
       .closest("section");
 
     expect(ranking).not.toBeNull();
@@ -157,7 +157,7 @@ describe("TherapistServicesPage", () => {
   it("does not allow creating a service from free text", () => {
     renderPage();
 
-    fireEvent.click(screen.getByRole("button", { name: /novo serviço/i }));
+    fireEvent.click(screen.getByRole("button", { name: /adicionar terapia/i }));
     fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
 
     expect(
@@ -184,7 +184,7 @@ describe("TherapistServicesPage", () => {
     });
     renderPage();
 
-    fireEvent.click(screen.getByRole("button", { name: /novo serviço/i }));
+    fireEvent.click(screen.getByRole("button", { name: /adicionar terapia/i }));
     fireEvent.click(screen.getByRole("option", { name: /Aromaterapia/i }));
     fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
     fireEvent.click(screen.getByLabelText(/Emoções e bem-estar/i));
@@ -232,7 +232,7 @@ describe("TherapistServicesPage", () => {
     fireEvent.click(
       screen.getByRole("button", { name: /Ativar Reiki inicial/i }),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Ativar serviço" }));
+    fireEvent.click(screen.getByRole("button", { name: "Ativar terapia" }));
 
     await waitFor(() => {
       expect(mockedCommand).toHaveBeenCalledWith(
@@ -243,7 +243,7 @@ describe("TherapistServicesPage", () => {
         }),
       );
     });
-    expect(await screen.findByText("Serviço ativado.")).toBeInTheDocument();
+    expect(await screen.findByText("Terapia ativada.")).toBeInTheDocument();
   });
 
   it("closes the edit dialog after a successful update", async () => {
@@ -295,7 +295,7 @@ describe("TherapistServicesPage", () => {
     await waitFor(() => {
       expect(onSaved).toHaveBeenCalledWith(
         updatedService,
-        "Serviço atualizado.",
+        "Terapia atualizada.",
       );
       expect(onClose).toHaveBeenCalledOnce();
     });

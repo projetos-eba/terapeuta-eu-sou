@@ -43,8 +43,8 @@ export function TherapistAgendaHeader({
             Minha agenda
           </h1>
           <p className="mt-3 max-w-[560px] text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
-            Organize seus horários, acompanhe seus encontros e mantenha sua
-            agenda sempre atualizada.
+            Organize seus horários, acompanhe suas sessões e mantenha sua agenda
+            sempre atualizada.
           </p>
           <p className="mt-2 text-sm font-extrabold leading-6 text-brand-primary">
             Todos os horários do TES seguem o fuso de São Paulo (Brasília).

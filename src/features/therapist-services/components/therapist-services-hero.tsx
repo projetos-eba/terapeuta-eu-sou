@@ -28,7 +28,7 @@ export function TherapistServicesHero({
             type="button"
           >
             <Plus aria-hidden="true" size={18} />
-            Novo serviço
+            Adicionar terapia
           </TESButton>
         </div>
         <div className="relative min-h-[210px] overflow-hidden bg-brand-lavenderSoft lg:min-h-[310px]">

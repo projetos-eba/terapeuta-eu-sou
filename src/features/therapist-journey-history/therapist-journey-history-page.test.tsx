@@ -18,18 +18,19 @@ describe("TherapistJourneyDetailPage", () => {
       screen.getByRole("heading", { name: "Ana Lima" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Temas identificados nos registros" }),
+      screen.getByRole("heading", {
+        name: "Temas identificados nos registros",
+      }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Memória dos encontros" }),
+      screen.getByRole("heading", { name: "Memória das sessões" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Nenhuma preferência compartilhada nesta superfície"),
+      screen.getByText("Nenhuma preferência compartilhada nesta área"),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Abrir sessão" })[0]).toHaveAttribute(
-      "href",
-      "/terapeuta/sessoes/booking-1",
-    );
+    expect(
+      screen.getAllByRole("link", { name: "Abrir sessão" })[0],
+    ).toHaveAttribute("href", "/terapeuta/sessoes/booking-1");
   });
 });
 
@@ -65,12 +66,11 @@ describe("TherapistJourneyHistoryPage", () => {
     expect(screen.getAllByText("Pessoas acompanhadas")).not.toHaveLength(0);
     expect(screen.queryByText("Pausadas")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Sobre sem encontro recente" }),
-    ).toHaveAttribute(
-      "title",
-      "Sem encontro registrado nos últimos 30 dias.",
-    );
-    expect(screen.queryByRole("columnheader", { name: "Encontros" })).not.toBeInTheDocument();
+      screen.getByRole("button", { name: "Sobre sem sessão recente" }),
+    ).toHaveAttribute("title", "Sem sessão registrada nos últimos 30 dias.");
+    expect(
+      screen.queryByRole("columnheader", { name: "Encontros" }),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -126,7 +126,7 @@ function pageFixture(): JourneyHistoryPageData {
         value: 1,
       },
       {
-        description: "Com encontro nos últimos 30 dias",
+        description: "Com sessão nos últimos 30 dias",
         id: "active",
         label: "Em acompanhamento",
         tone: "success",
@@ -140,9 +140,9 @@ function pageFixture(): JourneyHistoryPageData {
         value: 1,
       },
       {
-        description: "Sem encontro há mais de 30 dias",
+        description: "Sem sessão há mais de 30 dias",
         id: "stale",
-        label: "Sem encontro recente",
+        label: "Sem sessão recente",
         tone: "danger",
         value: 0,
       },
