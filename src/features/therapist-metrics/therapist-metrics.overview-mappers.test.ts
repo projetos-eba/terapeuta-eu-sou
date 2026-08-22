@@ -29,6 +29,13 @@ describe("therapist metrics overview mapper", () => {
     });
   });
 
+  it("accepts the extended approved periods", () => {
+    const input = rawOverview();
+    input.meta.periodDays = 120;
+
+    expect(mapTherapistMetricsOverview(input).meta.periodDays).toBe(120);
+  });
+
   it("maps a ready cohort rate with its directional copy key", () => {
     const input = rawOverview();
     input.discovery.status = "ready";

@@ -230,7 +230,7 @@ function commonMeta(input: unknown): TherapistMetricsCommonMeta {
   return {
     computedAt: dateTime(value.computedAt),
     freshThrough: dateTime(value.freshThrough),
-    periodDays: oneOf(value.periodDays, 30, 90),
+    periodDays: oneOf(value.periodDays, 30, 60, 90, 120),
     periodEnd: dateTime(value.periodEnd),
     periodStart: dateTime(value.periodStart),
     previousPeriodEnd: dateTime(value.previousPeriodEnd),

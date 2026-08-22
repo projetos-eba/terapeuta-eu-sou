@@ -239,7 +239,7 @@ Observação: componentes listados nas tabelas abaixo que não aparecem na lista
 - Dados usam linguagem TES.
 - Plus não mostra upgrade.
 - Básico mostra financeiro operacional e não mostra avaliações ou métricas intermediárias como navegação principal.
-- Assessor IA é Plus.
+- Assistente Aura é Premium Plus.
 - Subpáginas só existem quando simplificam o uso.
 
 ## Estados Obrigatórios

@@ -84,7 +84,7 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 
 - Tela principal deve ter hero, lista de servicos, filtros, ordenacao, limite de
   plano, lateral de dicas e ranking apenas com dados reais.
-- Estados obrigatorios: loading, erro com retry, vazio, lista, limite de plano,
+- Estados obrigatorios: loading, erro com retry, vazio, lista, aviso de serviços sem limite por plano,
   conflito de versao e terapia indisponivel.
 - Responsividade minima: 320, 375, 768, 1024 e 1440px. Mobile nao usa tabela
   horizontal; cards e metricas colapsam em uma coluna/grid compacto.

@@ -25,12 +25,14 @@ export type RequireTherapistSessionOptions = {
 };
 
 type SupabaseAuthUser = {
+  email?: string | null;
   id: string;
 };
 
 type ProfileRow = {
   avatar_url: string | null;
   display_name: string | null;
+  email: string | null;
   id: string;
   role: "admin" | "patient" | "therapist";
 };
@@ -47,6 +49,7 @@ type TherapistProfileRow = {
 export type AuthenticatedTherapistSession = {
   accessToken: string;
   avatarUrl: string | null;
+  email: string | null;
   name: string;
   plan: TherapistPlan;
   profileId: string;
@@ -74,7 +77,7 @@ export async function requireTherapistSession(
     const [profiles, therapistProfiles] = await Promise.all([
       requestSupabase<ProfileRow[]>(
         config,
-        `/rest/v1/profiles?select=id,display_name,avatar_url,role&id=eq.${encodeURIComponent(user.id)}&limit=1`,
+        `/rest/v1/profiles?select=id,display_name,email,avatar_url,role&id=eq.${encodeURIComponent(user.id)}&limit=1`,
         accessToken,
       ),
       requestSupabase<TherapistProfileRow[]>(
@@ -101,6 +104,7 @@ export async function requireTherapistSession(
     return {
       accessToken,
       avatarUrl: therapistProfile.photo_url ?? profile.avatar_url,
+      email: profile.email ?? user.email ?? null,
       name: therapistProfile.public_name || profile.display_name || "Terapeuta",
       plan: therapistProfile.plan,
       profileId: therapistProfile.id,

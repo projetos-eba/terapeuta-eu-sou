@@ -36,7 +36,7 @@ export async function queryTherapistMetricsFoundation(accessToken: string) {
 
 export async function queryTherapistMetricsOverview(
   accessToken: string,
-  periodDays: 30 | 90,
+  periodDays: 30 | 60 | 90 | 120,
 ) {
   const config = getSupabasePublicConfig();
   if (!config) throw new TherapistMetricsError("unavailable");
@@ -69,7 +69,7 @@ export async function queryTherapistMetricsOverview(
 
 export async function queryTherapistMetricsDashboard(
   accessToken: string,
-  periodDays: 30 | 90,
+  periodDays: 30 | 60 | 90 | 120,
 ) {
   const config = getSupabasePublicConfig();
   if (!config) throw new TherapistMetricsError("unavailable");
@@ -100,7 +100,7 @@ export async function queryTherapistMetricsDashboard(
 
 export function queryTherapistSessionMetrics(
   accessToken: string,
-  periodDays: 30 | 90,
+  periodDays: 30 | 60 | 90 | 120,
 ) {
   return queryTherapistMetricsDetail(
     accessToken,
@@ -111,7 +111,7 @@ export function queryTherapistSessionMetrics(
 
 export function queryTherapistInterestMetrics(
   accessToken: string,
-  periodDays: 30 | 90,
+  periodDays: 30 | 60 | 90 | 120,
 ) {
   return queryTherapistMetricsDetail(
     accessToken,
@@ -123,7 +123,7 @@ export function queryTherapistInterestMetrics(
 async function queryTherapistMetricsDetail(
   accessToken: string,
   rpc: "get_therapist_interest_metrics_v1" | "get_therapist_session_metrics_v1",
-  periodDays: 30 | 90,
+  periodDays: 30 | 60 | 90 | 120,
 ) {
   const config = getSupabasePublicConfig();
   if (!config) throw new TherapistMetricsError("unavailable");

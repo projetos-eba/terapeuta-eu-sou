@@ -24,6 +24,7 @@ test.use({ screenshot: "only-on-failure", trace: "retain-on-failure" });
 test("HML: terapeuta e Admin mantêm uma thread de suporte isolada", async ({
   browser,
 }, testInfo) => {
+  test.setTimeout(180_000);
   const hml = assertHmlShareUrl(baseUrl);
   const subject = `QA HML — repasse ${Date.now()}`;
   const therapistContext = await browser.newContext();
@@ -80,7 +81,42 @@ test("HML: terapeuta e Admin mantêm uma thread de suporte isolada", async ({
     ).toBeVisible();
     await assertTicket(therapistPage, hml, ticketId, "open", 1);
 
+    await adminPage.goto(
+      withShare(
+        hml,
+        `/admin/suporte?status=open&q=${encodeURIComponent(subject)}`,
+      ),
+    );
+    await expect(
+      adminPage.getByRole("heading", { name: "Inbox de atendimento" }),
+    ).toBeVisible();
+    await expect(
+      adminPage.getByRole("heading", { level: 3, name: subject }),
+    ).toBeVisible();
+    // A navegação direta mantém o acesso compartilhado de HML no cenário
+    // externo e evita depender de estado de navegação do browser.
     await adminPage.goto(withShare(hml, `/admin/suporte/${ticketId}`));
+    await expect(
+      adminPage.getByRole("button", { name: "Atribuir a mim" }),
+    ).toBeVisible();
+    await adminPage.getByRole("button", { name: "Atribuir a mim" }).click();
+    await expect(
+      adminPage.getByRole("button", { name: "Remover atribuição" }),
+    ).toBeVisible();
+    await adminPage.getByLabel("Prioridade").selectOption("high");
+    await expect
+      .poll(() => adminManagement(adminPage, hml, ticketId))
+      .toMatchObject({
+        priority: "high",
+      });
+    await adminPage
+      .getByRole("button", { name: "Iniciar atendimento" })
+      .click();
+    await expect
+      .poll(() => adminManagement(adminPage, hml, ticketId))
+      .toMatchObject({
+        status: "in_progress",
+      });
     await expect(
       adminPage.getByRole("heading", { name: "Responder ao solicitante" }),
     ).toBeVisible();
@@ -109,7 +145,16 @@ test("HML: terapeuta e Admin mantêm uma thread de suporte isolada", async ({
     ).toBeVisible();
     await assertTicket(therapistPage, hml, ticketId, "waiting_support", 3);
 
-    await adminPage.reload();
+    await adminPage.goto(
+      withShare(
+        hml,
+        `/admin/suporte?status=waiting_support&priority=high&q=${encodeURIComponent(subject)}`,
+      ),
+    );
+    await expect(
+      adminPage.getByRole("heading", { level: 3, name: subject }),
+    ).toBeVisible();
+    await adminPage.goto(withShare(hml, `/admin/suporte/${ticketId}`));
     await expect(
       adminPage.getByText(therapistReply, { exact: true }),
     ).toBeVisible();
@@ -129,12 +174,17 @@ test("HML: terapeuta e Admin mantêm uma thread de suporte isolada", async ({
     ).not.toBeVisible();
     await assertTicket(therapistPage, hml, ticketId, "waiting_support", 3);
 
-    await adminPage.getByLabel("Motivo").fill("QA resolve chamado de suporte.");
     await adminPage.getByRole("button", { name: "Resolver chamado" }).click();
-    await expect(
-      adminPage.getByText(/Chamado resolvido|Chamado marcado como resolvido/),
-    ).toBeVisible();
+    await expect
+      .poll(() => adminManagement(adminPage, hml, ticketId))
+      .toMatchObject({
+        status: "resolved",
+      });
 
+    await therapistPage.setViewportSize({ height: 1024, width: 768 });
+    await assertNoHorizontalOverflow(therapistPage);
+    await therapistPage.setViewportSize({ height: 844, width: 390 });
+    await assertNoHorizontalOverflow(therapistPage);
     await therapistPage.reload();
     await expect(
       therapistPage.getByText("Resolvido", { exact: true }),
@@ -148,7 +198,12 @@ test("HML: terapeuta e Admin mantêm uma thread de suporte isolada", async ({
       .getByRole("button", { name: "Ainda preciso de ajuda" })
       .click();
     const reopenReply = "QA HML: preciso retomar este atendimento.";
-    await therapistPage.getByLabel("Responder ao suporte").fill(reopenReply);
+    const composer = therapistPage.getByLabel("Responder ao suporte");
+    await composer.scrollIntoViewIfNeeded();
+    await composer.focus();
+    await expect(composer).toBeFocused();
+    await assertNoHorizontalOverflow(therapistPage);
+    await composer.fill(reopenReply);
     await therapistPage
       .getByRole("button", { name: "Enviar resposta" })
       .click();
@@ -170,7 +225,7 @@ test("HML: terapeuta e Admin mantêm uma thread de suporte isolada", async ({
   }
 });
 
-test("HML: participant messaging rejeita body livre antes de persistir", async ({
+test("HML: participant messaging rejeita conteúdo livre antes de persistir", async ({
   browser,
 }) => {
   const hml = assertHmlShareUrl(baseUrl);
@@ -187,27 +242,30 @@ test("HML: participant messaging rejeita body livre antes de persistir", async (
       submitLabel: "Entrar como terapeuta",
     });
 
-    const response = await page.request.post(
-      withShare(hml, "/api/messages/send-template"),
-      {
-        data: {
-          actorRole: "therapist",
-          body: "Tentativa de texto livre bloqueada.",
-          conversationId: "00000000-0000-4000-8000-000000000000",
-          templateKey: "session_confirmation",
+    for (const field of ["body", "message", "description", "html"]) {
+      const response = await page.request.post(
+        withShare(hml, "/api/messages/send-template"),
+        {
+          data: {
+            actorRole: "therapist",
+            [field]: "Tentativa de texto livre bloqueada.",
+            conversationId: "00000000-0000-4000-8000-000000000000",
+            templateKey: "session_confirmation",
+          },
         },
-      },
-    );
-    expect(response.status()).toBe(422);
-    await expect(response.json()).resolves.toMatchObject({ ok: false });
+      );
+      expect(response.status(), `campo ${field}`).toBe(422);
+      await expect(response.json()).resolves.toMatchObject({ ok: false });
+    }
   } finally {
     await context.close();
   }
 });
 
-test("HML: suporte do terapeuta preserva composer e scroll nos viewports principais", async ({
+test("HML: suporte do terapeuta preserva a central nos viewports principais", async ({
   browser,
 }) => {
+  test.setTimeout(90_000);
   const hml = assertHmlShareUrl(baseUrl);
   const context = await browser.newContext({
     viewport: { height: 900, width: 1440 },
@@ -234,31 +292,29 @@ test("HML: suporte do terapeuta preserva composer e scroll nos viewports princip
       await expect(
         page.getByRole("heading", { name: "Suporte TES" }),
       ).toBeVisible();
-      expect(
-        await page
-          .locator("html")
-          .evaluate((element) => element.scrollWidth <= window.innerWidth),
-      ).toBe(true);
-
-      await page.getByRole("link", { name: "Acompanhar" }).first().click();
-      const reopen = page.getByRole("button", {
-        name: "Ainda preciso de ajuda",
-      });
-      if (await reopen.isVisible().catch(() => false)) await reopen.click();
-      const composer = page.getByLabel("Responder ao suporte");
-      await composer.scrollIntoViewIfNeeded();
-      await composer.focus();
-      await expect(composer).toBeFocused();
-      expect(
-        await page
-          .locator("html")
-          .evaluate((element) => element.scrollWidth <= window.innerWidth),
-      ).toBe(true);
+      await assertNoHorizontalOverflow(page);
     }
   } finally {
     await context.close();
   }
 });
+
+async function adminManagement(page: Page, hml: URL, ticketId: string) {
+  const response = await page.request.get(
+    withShare(hml, `/api/admin/support/tickets/${ticketId}/management`),
+  );
+  expect(response.ok()).toBe(true);
+  const body = (await response.json()) as { data?: unknown };
+  return body.data;
+}
+
+async function assertNoHorizontalOverflow(page: Page) {
+  expect(
+    await page
+      .locator("html")
+      .evaluate((element) => element.scrollWidth <= window.innerWidth),
+  ).toBe(true);
+}
 
 async function login(
   page: Page,
@@ -322,6 +378,6 @@ function ticketIdFromUrl(raw: string) {
 
 function withShare(hml: URL, path: string) {
   const url = new URL(path, hml.origin);
-  url.search = hml.search;
+  hml.searchParams.forEach((value, key) => url.searchParams.set(key, value));
   return url.toString();
 }

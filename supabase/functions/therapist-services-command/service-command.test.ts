@@ -76,6 +76,21 @@ Deno.test("rejects free-text therapy creation payloads", () => {
   );
 });
 
+Deno.test("rejects service descriptions longer than 200 characters", () => {
+  assertDomainError(() =>
+    validateTherapistServicesCommand({
+      action: "create",
+      description: "x".repeat(201),
+      durationMinutes: 60,
+      priceCents: 12000,
+      requestId,
+      themeIds: [themeId],
+      therapyId,
+      title: "Reiki online",
+    }),
+  );
+});
+
 Deno.test("validates optimistic updates", () => {
   const result = validateTherapistServicesCommand({
     action: "update",

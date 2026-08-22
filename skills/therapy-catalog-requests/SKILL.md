@@ -19,6 +19,10 @@ no CTA “Não encontrou sua terapia?” do diálogo de Novo serviço.
 ## Dados e segurança
 
 - `therapy_catalog_requests` guarda o payload versionado e idempotente.
+- O payload v2 usa os temas ativos do Match como classificação principal da
+  prática, com seleção obrigatória de 1 a 3 temas em `submission.themeIds`.
+- `suggested_category_id` permanece apenas como compatibilidade histórica; não é
+  mais a classificação principal exigida na solicitação do terapeuta.
 - `therapy_catalog_request_materials` guarda somente metadados; arquivos ficam
   no bucket privado `therapy-catalog-request-materials`.
 - Aceitar somente PDF, JPG, PNG, WEBP, DOC e DOCX de até 10 MB por arquivo.
@@ -39,7 +43,7 @@ desfaz a decisão.
 
 - Verificar as cinco etapas em desktop, tablet e mobile; no mobile a coluna é
   única e o progresso e a ação principal permanecem acessíveis.
-- Validar dados obrigatórios, categoria ativa, duplicidade, idempotência,
-  reenvio e limites de arquivo.
+- Validar dados obrigatórios, temas ativos, compatibilidade de categoria legada,
+  duplicidade, idempotência, reenvio, 1 a 3 temas do Match e limites de arquivo.
 - Validar acesso cruzado entre terapeutas, URL temporária para admin e ausência
   de publicação automática após aprovação.

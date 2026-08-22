@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { LockKeyhole, Mail } from "lucide-react";
 
-import { TESButton } from "@/components/tes";
+import { PasswordVisibilityToggle, TESButton } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 type ApiResponse =
@@ -200,6 +200,8 @@ export function ResetPasswordClient({ token }: { token: string }) {
 }
 
 function PasswordField({ label, name }: { label: string; name: string }) {
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
   return (
     <div>
       <label
@@ -208,14 +210,20 @@ function PasswordField({ label, name }: { label: string; name: string }) {
       >
         {label}
       </label>
-      <input
-        id={name}
-        name={name}
-        type="password"
-        autoComplete="new-password"
-        className="min-h-12 w-full rounded-2xl border border-border bg-white px-4 text-sm font-bold text-brand-deep outline-none focus:ring-4 focus:ring-ring/20"
-        placeholder="Mínimo de 8 caracteres"
-      />
+      <div className="flex min-h-12 items-center gap-3 rounded-2xl border border-border bg-white px-4 focus-within:ring-4 focus-within:ring-ring/20">
+        <input
+          id={name}
+          name={name}
+          type={isPasswordVisible ? "text" : "password"}
+          autoComplete="new-password"
+          className="min-h-12 w-full bg-transparent text-sm font-bold text-brand-deep outline-none"
+          placeholder="Mínimo de 8 caracteres"
+        />
+        <PasswordVisibilityToggle
+          isVisible={isPasswordVisible}
+          onToggle={() => setIsPasswordVisible((current) => !current)}
+        />
+      </div>
     </div>
   );
 }

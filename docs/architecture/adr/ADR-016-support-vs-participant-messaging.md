@@ -14,6 +14,10 @@ A Central de Mensagens do TES reunia comunicação entre participante e avisos d
 
 - Paciente ↔ terapeuta usa exclusivamente mensagens estruturadas resolvidas no servidor a partir de template aprovado.
 - `messages` não aceita escrita direta de `authenticated`; a RPC autenticada deriva identidade, verifica conversa e direção e persiste a referência do template junto ao corpo resolvido.
+- A V2 adiciona prévia sem persistência, categorias e descrições de uso, booking
+  obrigatório quando aplicável, parâmetros de opções fechadas e CTAs allowlisted
+  resolvidos pelo banco. Nenhum corpo, URL ou texto final é escolhido pelo
+  browser; a V1 permanece como wrapper compatível.
 - Usuário ↔ TES usa `support_tickets` e `support_ticket_messages` para texto livre em thread autorizada, separada de `messages`.
 - Notas internas, auditoria e mensagens públicas de suporte são conceitos distintos; nota interna nunca será elegível ao DTO do solicitante.
 

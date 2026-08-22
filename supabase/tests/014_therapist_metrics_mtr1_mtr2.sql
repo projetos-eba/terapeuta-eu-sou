@@ -1,6 +1,6 @@
 begin;
 
-select plan(31);
+select plan(33);
 
 select ok(
   has_function_privilege(
@@ -300,9 +300,21 @@ select is(
 );
 
 select is(
+  public.get_therapist_metrics_overview_v1(60) #>> '{meta,periodDays}',
+  '60',
+  'overview accepts the approved 60-day complete period'
+);
+
+select is(
   public.get_therapist_metrics_overview_v1(90) #>> '{meta,periodDays}',
   '90',
   'overview accepts the approved 90-day complete period'
+);
+
+select is(
+  public.get_therapist_metrics_overview_v1(120) #>> '{meta,periodDays}',
+  '120',
+  'overview accepts the approved 120-day complete period'
 );
 
 select is(

@@ -21,7 +21,7 @@ export default async function AdminMatchingRoute() {
         </p>
         {result.requestId ? (
           <p className="mt-3 text-xs font-bold text-tesText-muted">
-            Request ID: {result.requestId}
+            Código de atendimento: {result.requestId}
           </p>
         ) : null}
       </section>

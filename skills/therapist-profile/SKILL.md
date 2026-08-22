@@ -64,10 +64,12 @@ Não passar linhas cruas do Supabase para React.
 - O terapeuta anexa documentos privados obrigatórios nesta superfície; a
   administração continua responsável por revisão, aprovação, suspensão, plano
   e bloqueios.
-- Publicar um perfil elegível também o envia atomicamente para a fila
-  administrativa: cria ou reenfileira `therapist_verifications` e usa o estado
-  `submitted`, sem aprovação automática. Falha na fila deve abortar a
-  publicação em vez de produzir sucesso parcial.
+- Toda publicação de uma nova versão, inclusive uma republicação de perfil já
+  aprovado, envia atomicamente o conteúdo para a fila administrativa: cria ou
+  reenfileira `therapist_verifications` em `submitted`, mantém a versão para a
+  leitura segura do Admin e remove visibilidade/recebimento de reservas até a
+  aprovação. Falha na fila deve abortar a publicação em vez de produzir
+  sucesso parcial.
 - Perfis já aprovados ou suspensos não podem ser rebaixados por republicação.
 - Em cadastros antigos sem item em `therapist_verifications`, uma aprovação ou
   suspensão autoritativa em `therapist_profiles` preserva o estado terminal na
@@ -99,6 +101,25 @@ Não passar linhas cruas do Supabase para React.
   `supabase/audits/therapist_public_slug_preflight.sql`; colisão entre
   profissionais interrompe a aplicação.
 - Sem mocks silenciosos em produção.
+- Links de vídeo externos são limitados a YouTube/Vimeo no contrato de edição;
+  o perfil público converte esses links para os hosts de embed allowlisted. Não
+  transformar URL arbitrária em `iframe`.
+
+## Dados privados de identidade
+
+- `therapist_private_identity` guarda, separadamente dos documentos privados,
+  CPF/RG/passaporte normalizado e endereço informado pelo próprio terapeuta.
+- A edição fica em `/terapeuta/configuracoes`, em `Dados da conta`, com
+  máscaras de CPF, RG e CEP. Passaporte aceita letras e números sem máscara
+  brasileira universal.
+- A tabela só é lida/escrita pela identidade autenticada do terapeuta via
+  `get_therapist_private_identity_v1` e
+  `save_therapist_private_identity_v1`; nenhum desses campos entra em DTO ou
+  view pública.
+- A projeção administrativa `admin_get_therapist_profile_review_v1` mostra
+  conteúdo editorial, serviços e os dados de identidade necessários para a
+  moderação Admin-only. Documentos privados continuam fora dessa projeção e
+  usam o fluxo privado de documentos.
 
 ## UI
 

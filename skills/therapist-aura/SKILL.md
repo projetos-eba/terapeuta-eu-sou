@@ -1,4 +1,4 @@
-# Assessor IA / Aura
+# Assistente Aura
 
 ## Rota
 
@@ -21,7 +21,7 @@
 
 ## Contrato
 
-- Aura IA e nome de produto. A implementacao MVP e deterministica, por regras versionadas.
+- Assistente Aura é o nome de produto. A implementação MVP é determinística, por regras versionadas.
 - Nao usar IA generativa, LLM, embeddings, modelos de sentimento, chat ou texto livre.
 - O terapeuta e derivado de `auth.uid()` em RPC privada.
 - Premium nao recebe feed, pagina ou API Aura. `aura_limited` fica apenas como compatibilidade tecnica.

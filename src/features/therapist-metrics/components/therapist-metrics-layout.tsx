@@ -125,7 +125,9 @@ function MetricsHero({
             name="period"
           >
             <option value="30">30 dias</option>
+            <option value="60">60 dias</option>
             <option value="90">90 dias</option>
+            <option value="120">120 dias</option>
           </select>
           <button
             className="min-h-11 rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"

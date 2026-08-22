@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { ReactNode } from "react";
 import {
   BellDot,
@@ -106,7 +107,7 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-base font-extrabold text-brand-deep">
-              Comunicação protegida por templates
+              Comunicação protegida pelo TES
             </h2>
             <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
               Esta central não possui chat livre. As interações entre cliente e
@@ -211,10 +212,26 @@ function ThreadRow({ item }: { item: MessageCenterThread }) {
         <h3 className="mt-1 truncate text-sm font-extrabold text-brand-deep">
           {item.title}
         </h3>
+        <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-tesText-secondary">
+          {item.body}
+        </p>
+        {item.sessionContext ? (
+          <p className="mt-1 text-xs font-bold text-brand-primary">
+            {item.sessionContext}
+          </p>
+        ) : null}
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <CategoryBadge category={item.category} label={item.categoryLabel} />
           {item.isUnread ? <UnreadDot /> : null}
         </div>
+        {item.cta ? (
+          <Link
+            className="mt-2 inline-flex text-xs font-extrabold text-brand-primary underline-offset-2 hover:underline"
+            href={item.cta.href}
+          >
+            {item.cta.label}
+          </Link>
+        ) : null}
       </div>
       <p className="col-start-2 text-xs font-semibold text-tesText-secondary sm:col-start-auto sm:text-right">
         {item.timeLabel}

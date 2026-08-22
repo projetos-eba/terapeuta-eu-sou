@@ -81,6 +81,17 @@ describe("therapist settings mappers", () => {
       account: {
         displayName: "Ana",
         phone: "",
+        identity: {
+          city: "",
+          complement: "",
+          documentNumber: "",
+          documentType: "cpf",
+          neighborhood: "",
+          postalCode: "",
+          state: "",
+          street: "",
+          streetNumber: "",
+        },
       },
     });
   });

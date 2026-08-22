@@ -5,6 +5,9 @@ import { ShellUserMenu } from "./shell-user-menu";
 import type { ShellUser } from "./authenticated-shell";
 
 export function ShellTopbar({
+  accountHref,
+  logoutAction,
+  logoutHref,
   notificationHref,
   notificationCount,
   onOpenNavigation,
@@ -12,6 +15,9 @@ export function ShellTopbar({
   user,
   variant,
 }: {
+  accountHref: string;
+  logoutAction?: () => void | Promise<void>;
+  logoutHref: string;
   notificationHref: string;
   notificationCount: number;
   onOpenNavigation: () => void;
@@ -33,7 +39,13 @@ export function ShellTopbar({
           count={notificationCount}
           href={notificationHref}
         />
-        <ShellUserMenu planLabel={planLabel} user={user} />
+        <ShellUserMenu
+          accountHref={accountHref}
+          logoutAction={logoutAction}
+          logoutHref={logoutHref}
+          planLabel={planLabel}
+          user={user}
+        />
       </div>
     </header>
   );

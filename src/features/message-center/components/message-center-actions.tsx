@@ -1,7 +1,13 @@
 "use client";
 
-import { FormEvent, useMemo, useRef, useState } from "react";
-import { Check, ChevronDown, Loader2, MessageSquarePlus } from "lucide-react";
+import { FormEvent, useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  Check,
+  ChevronDown,
+  Loader2,
+  MessageSquarePlus,
+} from "lucide-react";
 
 import { TESDialog } from "@/components/tes/tes-dialog";
 
@@ -19,33 +25,17 @@ type MessageCenterActionsProps = {
   variant: "participant" | "support";
 };
 
-type ApiFailure = {
-  ok: false;
-  error?: {
-    message?: string;
-  };
+type ApiFailure = { ok: false; error?: { message?: string } };
+type Preview = {
+  body: string;
+  category: string;
+  context: { bookingId: string } | null;
+  cta: { href: string; label: string } | null;
+  recipientName: string;
 };
 
-type SupportTicketResponse =
-  | ApiFailure
-  | {
-      ok: true;
-      ticket: {
-        id: string;
-        protocol: string;
-        status: string;
-      };
-    };
-
-export function MessageCenterActions({
-  actorRole,
-  source,
-  templates,
-  threads,
-  variant,
-}: MessageCenterActionsProps) {
+export function MessageCenterActions(props: MessageCenterActionsProps) {
   const [isOpen, setIsOpen] = useState(false);
-
   return (
     <>
       <button
@@ -54,107 +44,92 @@ export function MessageCenterActions({
         type="button"
       >
         <MessageSquarePlus aria-hidden="true" size={16} />
-        {variant === "support" ? "Novo suporte" : "Enviar template"}
+        {props.variant === "support" ? "Novo suporte" : "Escolher mensagem"}
       </button>
-
       {isOpen ? (
-        <TemplateDialog
-          actorRole={actorRole}
-          onClose={() => setIsOpen(false)}
-          source={source}
-          templates={templates}
-          threads={threads}
-          variant={variant}
-        />
+        <TemplateDialog {...props} onClose={() => setIsOpen(false)} />
       ) : null}
     </>
   );
 }
 
 function TemplateDialog({
-  actorRole,
   onClose,
-  source,
-  templates,
-  threads,
-  variant,
+  ...props
 }: MessageCenterActionsProps & { onClose: () => void }) {
   const firstThread = useMemo(
-    () => threads.find((thread) => Boolean(thread.conversationId)) ?? null,
-    [threads],
+    () =>
+      props.threads.find((thread) => Boolean(thread.conversationId)) ?? null,
+    [props.threads],
   );
   const [conversationId, setConversationId] = useState(
     firstThread?.conversationId ?? "",
   );
-  const [templateKey, setTemplateKey] = useState(templates[0]?.key ?? "");
-  const [status, setStatus] = useState<"idle" | "success">("idle");
+  const selectedThread =
+    props.threads.find((thread) => thread.conversationId === conversationId) ??
+    firstThread;
+  const [templateKey, setTemplateKey] = useState(props.templates[0]?.key ?? "");
+  const selectedTemplate = props.templates.find(
+    (template) => template.key === templateKey,
+  );
+  const [parameters, setParameters] = useState<Record<string, string>>({});
+  const [step, setStep] = useState<"choose" | "review" | "success">("choose");
+  const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [protocol, setProtocol] = useState<string | null>(null);
-  const supportRequestIdRef = useRef<string | null>(null);
-  const selectedTemplate = templates.find(
-    (template) => template.key === templateKey,
-  );
-  const canSubmit =
-    variant === "support" || (Boolean(conversationId) && Boolean(templateKey));
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const templateParameters = selectedTemplate?.parameters ?? [];
+  const canReview =
+    props.variant === "support" ||
+    Boolean(conversationId && templateKey && selectedThread);
+
+  async function previewTemplate() {
+    if (!selectedTemplate || !conversationId || props.source === "demo") {
+      setError("Conecte-se novamente para preparar uma mensagem real.");
+      return;
+    }
     setError(null);
-
-    if (!selectedTemplate || !canSubmit) return;
-
-    if (variant === "support") {
-      if (source === "demo") {
-        setError("Conecte-se novamente para abrir um chamado real.");
-        return;
-      }
-
-      setIsSubmitting(true);
-      supportRequestIdRef.current =
-        supportRequestIdRef.current ?? crypto.randomUUID();
-
-      const response = await fetch("/api/support/tickets", {
-        body: JSON.stringify({
-          actorRole,
-          requestId: supportRequestIdRef.current,
-          source: "message_center",
-          templateKey,
-        }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
-      const payload = (await response
-        .json()
-        .catch(() => null)) as SupportTicketResponse | null;
-
-      setIsSubmitting(false);
-
-      if (!response.ok || payload?.ok !== true) {
-        setError(
-          payload?.ok === false && payload.error?.message
-            ? payload.error.message
-            : "Não foi possível abrir o chamado agora.",
-        );
-        return;
-      }
-
-      setProtocol(payload.ticket.protocol);
-      setStatus("success");
+    setIsSubmitting(true);
+    const response = await fetch("/api/messages/preview-template", {
+      body: JSON.stringify({
+        actorRole: props.actorRole,
+        conversationId,
+        templateKey,
+        parameters,
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    });
+    const payload = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      preview?: Preview;
+      error?: { message?: string };
+    } | null;
+    setIsSubmitting(false);
+    if (!response.ok || payload?.ok !== true || !payload.preview) {
+      setError(
+        payload?.error?.message ?? "Não foi possível preparar a prévia agora.",
+      );
       return;
     }
+    setPreview(payload.preview);
+    setStep("review");
+  }
 
-    if (source === "demo") {
-      setError("Conecte-se novamente para enviar um template real.");
+  async function sendTemplate() {
+    if (!selectedTemplate || !conversationId || props.source === "demo") {
+      setError("Conecte-se novamente para enviar uma mensagem real.");
       return;
     }
-
+    setError(null);
     setIsSubmitting(true);
     const response = await fetch("/api/messages/send-template", {
       body: JSON.stringify({
-        actorRole,
+        actorRole: props.actorRole,
         conversationId,
         templateKey,
+        parameters,
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
@@ -163,124 +138,144 @@ function TemplateDialog({
       | ApiFailure
       | { ok: true }
       | null;
-
     setIsSubmitting(false);
-
     if (!response.ok || payload?.ok !== true) {
       setError(
-        payload?.ok === false && payload.error?.message
-          ? payload.error.message
-          : "Não foi possível enviar este template agora.",
+        payload?.ok === false
+          ? (payload.error?.message ??
+              "Não foi possível enviar esta mensagem agora.")
+          : "Não foi possível enviar esta mensagem agora.",
       );
       return;
     }
+    setStep("success");
+  }
 
-    setStatus("success");
+  async function createSupportTicket(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (props.source === "demo") {
+      setError("Conecte-se novamente para abrir um chamado real.");
+      return;
+    }
+    setIsSubmitting(true);
+    const response = await fetch("/api/support/tickets", {
+      body: JSON.stringify({
+        actorRole: props.actorRole,
+        requestId: crypto.randomUUID(),
+        source: "message_center",
+        templateKey,
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    });
+    const payload = (await response.json().catch(() => null)) as {
+      ok?: boolean;
+      ticket?: { protocol?: string };
+      error?: { message?: string };
+    } | null;
+    setIsSubmitting(false);
+    if (!response.ok || payload?.ok !== true) {
+      setError(
+        payload?.error?.message ?? "Não foi possível abrir o chamado agora.",
+      );
+      return;
+    }
+    setProtocol(payload.ticket?.protocol ?? "registrado");
+    setStep("success");
   }
 
   return (
     <TESDialog
       description={
-        variant === "support"
-          ? "Escolha uma categoria para acionar a plataforma sem texto livre."
-          : "Escolha uma pessoa e um modelo aprovado para enviar pela plataforma."
+        props.variant === "support"
+          ? "Escolha uma categoria para acionar a plataforma."
+          : "Escolha uma mensagem aprovada, revise o conteúdo resolvido pelo TES e envie."
       }
       onClose={onClose}
       title={
-        variant === "support" ? "Novo contato com suporte" : "Enviar template"
+        props.variant === "support"
+          ? "Novo contato com suporte"
+          : step === "review"
+            ? "Revisar mensagem"
+            : "Escolher mensagem"
       }
     >
-      {status === "success" ? (
+      {step === "success" ? (
         <div className="rounded-xl bg-status-successBg p-5 text-status-success">
           <Check aria-hidden="true" size={22} />
           <p className="mt-3 text-sm font-extrabold">
-            Template selecionado com segurança.
+            {props.variant === "support"
+              ? `Chamado aberto com protocolo ${protocol ?? "registrado"}.`
+              : "Mensagem enviada com segurança."}
           </p>
           <p className="mt-1 text-sm font-semibold leading-6">
-            {variant === "support"
-              ? `Chamado aberto com protocolo ${protocol ?? "registrado"}. Acompanhe a resposta por esta central.`
-              : "A mensagem enviada usa apenas o texto pré-aprovado."}
+            O texto enviado foi resolvido pelo TES a partir de um modelo
+            aprovado.
           </p>
         </div>
-      ) : (
-        <form className="grid gap-4" onSubmit={handleSubmit}>
-          {variant === "participant" ? (
-            <label className="grid gap-2">
-              <span className="text-sm font-extrabold text-brand-deep">
-                Destinatário
-              </span>
-              <span className="relative">
-                <select
-                  className="min-h-12 w-full appearance-none rounded-lg border border-brand-lavender bg-white px-4 pr-10 text-sm font-semibold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
-                  onChange={(event) => setConversationId(event.target.value)}
-                  value={conversationId}
-                >
-                  {threads.map((thread) => (
-                    <option
-                      disabled={!thread.conversationId}
-                      key={thread.id}
-                      value={thread.conversationId ?? ""}
-                    >
-                      {thread.name}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  aria-hidden="true"
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-brand-primary"
-                  size={17}
-                />
-              </span>
-            </label>
-          ) : null}
-
-          <fieldset className="grid gap-2">
-            <legend className="text-sm font-extrabold text-brand-deep">
-              Template
-            </legend>
-            <div className="grid gap-2">
-              {templates.map((template) => (
-                <label
-                  className="grid cursor-pointer gap-1 rounded-lg border border-brand-lavender bg-white p-4 transition has-[:checked]:border-brand-primary has-[:checked]:bg-brand-lavenderSoft"
-                  key={template.key}
-                >
-                  <span className="flex items-center gap-3">
-                    <input
-                      checked={templateKey === template.key}
-                      className="size-4 accent-brand-primary"
-                      onChange={() => setTemplateKey(template.key)}
-                      type="radio"
-                    />
-                    <span className="text-sm font-extrabold text-brand-deep">
-                      {template.label}
-                    </span>
-                  </span>
-                  <span className="pl-7 text-xs font-semibold leading-5 text-tesText-secondary">
-                    {template.body}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          {error ? (
-            <p className="rounded-lg bg-status-dangerBg px-4 py-3 text-sm font-bold text-status-danger">
-              {error}
+      ) : props.variant === "support" ? (
+        <form className="grid gap-4" onSubmit={createSupportTicket}>
+          <TemplateOptions
+            selectedKey={templateKey}
+            templates={props.templates}
+            onChange={setTemplateKey}
+          />
+          {error ? <ErrorMessage message={error} /> : null}
+          <Actions
+            disabled={!templateKey || isSubmitting}
+            onBack={onClose}
+            submitLabel="Abrir chamado"
+            submitting={isSubmitting}
+          />
+        </form>
+      ) : step === "review" && preview ? (
+        <div className="grid gap-4">
+          <div className="rounded-xl border border-brand-lavender bg-brand-lavenderSoft p-4">
+            <p className="text-xs font-extrabold uppercase tracking-wide text-brand-primary">
+              Destinatário
             </p>
+            <p className="mt-1 text-sm font-bold text-brand-deep">
+              {preview.recipientName}
+            </p>
+            {selectedThread?.sessionContext ? (
+              <p className="mt-2 text-xs font-semibold text-tesText-secondary">
+                {selectedThread.sessionContext}
+              </p>
+            ) : null}
+          </div>
+          <div className="rounded-xl border border-brand-lavender bg-white p-4">
+            <p className="text-xs font-extrabold uppercase tracking-wide text-brand-primary">
+              Mensagem final
+            </p>
+            <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-6 text-brand-deep">
+              {preview.body}
+            </p>
+          </div>
+          {preview.cta ? (
+            <div className="rounded-xl border border-brand-lavender bg-white p-4">
+              <p className="text-xs font-extrabold uppercase tracking-wide text-brand-primary">
+                Ação sugerida
+              </p>
+              <p className="mt-2 text-sm font-bold text-brand-deep">
+                {preview.cta.label}
+              </p>
+            </div>
           ) : null}
-
+          {error ? <ErrorMessage message={error} /> : null}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <button
-              className="inline-flex min-h-11 items-center justify-center rounded-lg border border-brand-lavender px-5 text-sm font-extrabold text-brand-primary"
-              onClick={onClose}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender px-5 text-sm font-extrabold text-brand-primary"
+              onClick={() => setStep("choose")}
               type="button"
             >
+              <ArrowLeft aria-hidden="true" size={16} />
               Voltar
             </button>
             <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
-              disabled={!canSubmit || isSubmitting}
-              type="submit"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white disabled:opacity-60"
+              disabled={isSubmitting}
+              onClick={() => void sendTemplate()}
+              type="button"
             >
               {isSubmitting ? (
                 <Loader2
@@ -289,13 +284,191 @@ function TemplateDialog({
                   size={17}
                 />
               ) : null}
-              {variant === "support"
-                ? "Selecionar categoria"
-                : "Enviar template"}
+              Enviar mensagem
             </button>
           </div>
-        </form>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          <label className="grid gap-2">
+            <span className="text-sm font-extrabold text-brand-deep">
+              Destinatário
+            </span>
+            <span className="relative">
+              <select
+                className="min-h-12 w-full appearance-none rounded-lg border border-brand-lavender bg-white px-4 pr-10 text-sm font-semibold text-brand-deep outline-none focus:border-brand-primary"
+                onChange={(event) => setConversationId(event.target.value)}
+                value={conversationId}
+              >
+                {props.threads.map((thread) => (
+                  <option
+                    disabled={!thread.conversationId}
+                    key={thread.id}
+                    value={thread.conversationId ?? ""}
+                  >
+                    {thread.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                aria-hidden="true"
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-brand-primary"
+                size={17}
+              />
+            </span>
+          </label>
+          <TemplateOptions
+            selectedKey={templateKey}
+            templates={props.templates}
+            onChange={(key) => {
+              setTemplateKey(key);
+              setParameters({});
+            }}
+          />
+          {templateParameters.map((parameter) => (
+            <label className="grid gap-2" key={parameter.key}>
+              <span className="text-sm font-extrabold text-brand-deep">
+                {parameter.label}
+              </span>
+              <select
+                className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-semibold text-brand-deep"
+                onChange={(event) =>
+                  setParameters((current) => ({
+                    ...current,
+                    [parameter.key]: event.target.value,
+                  }))
+                }
+                value={parameters[parameter.key] ?? ""}
+              >
+                <option value="">Selecione uma opção</option>
+                {parameter.options.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+          {error ? <ErrorMessage message={error} /> : null}
+          <Actions
+            disabled={
+              !canReview ||
+              templateParameters.some(
+                (parameter) => !parameters[parameter.key],
+              ) ||
+              isSubmitting
+            }
+            onBack={onClose}
+            onSubmit={() => void previewTemplate()}
+            submitLabel="Revisar mensagem"
+            submitting={isSubmitting}
+          />
+        </div>
       )}
     </TESDialog>
+  );
+}
+
+function TemplateOptions({
+  selectedKey,
+  templates,
+  onChange,
+}: {
+  selectedKey: string;
+  templates: MessageCenterTemplate[];
+  onChange: (key: string) => void;
+}) {
+  return (
+    <fieldset className="grid gap-2">
+      <legend className="text-sm font-extrabold text-brand-deep">
+        Mensagem aprovada
+      </legend>
+      <div className="grid max-h-[46vh] gap-2 overflow-y-auto pr-1">
+        {templates.map((template) => (
+          <label
+            className="grid cursor-pointer gap-1 rounded-lg border border-brand-lavender bg-white p-4 transition has-[:checked]:border-brand-primary has-[:checked]:bg-brand-lavenderSoft"
+            key={template.key}
+          >
+            <span className="flex items-center gap-3">
+              <input
+                checked={selectedKey === template.key}
+                className="size-4 accent-brand-primary"
+                onChange={() => onChange(template.key)}
+                type="radio"
+              />
+              <span className="text-sm font-extrabold text-brand-deep">
+                {template.label}
+              </span>
+              <span className="rounded-full bg-brand-lavenderSoft px-2 py-1 text-[11px] font-extrabold text-brand-primary">
+                {getCategoryLabel(template.category)}
+              </span>
+            </span>
+            <span className="pl-7 text-xs font-semibold leading-5 text-tesText-secondary">
+              {template.description || template.body}
+            </span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+function getCategoryLabel(category: MessageCenterTemplate["category"]) {
+  const labels: Partial<Record<MessageCenterTemplate["category"], string>> = {
+    acompanhamento: "Acompanhamento",
+    atendimento: "Atendimento",
+    atualizacao: "Atualização",
+    confirmacao: "Confirmação",
+    duvida: "Dúvida",
+    financeiro: "Financeiro",
+    plataforma: "Plataforma",
+    reagendamento: "Reagendamento",
+    suporte: "Suporte TES",
+  };
+  return labels[category] ?? category;
+}
+
+function Actions({
+  disabled,
+  onBack,
+  onSubmit,
+  submitLabel,
+  submitting,
+}: {
+  disabled: boolean;
+  onBack: () => void;
+  onSubmit?: () => void;
+  submitLabel: string;
+  submitting: boolean;
+}) {
+  return (
+    <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <button
+        className="inline-flex min-h-11 items-center justify-center rounded-lg border border-brand-lavender px-5 text-sm font-extrabold text-brand-primary"
+        onClick={onBack}
+        type="button"
+      >
+        Voltar
+      </button>
+      <button
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
+        disabled={disabled}
+        onClick={onSubmit}
+        type={onSubmit ? "button" : "submit"}
+      >
+        {submitting ? (
+          <Loader2 aria-hidden="true" className="animate-spin" size={17} />
+        ) : null}
+        {submitLabel}
+      </button>
+    </div>
+  );
+}
+
+function ErrorMessage({ message }: { message: string }) {
+  return (
+    <p className="rounded-lg bg-status-dangerBg px-4 py-3 text-sm font-bold text-status-danger">
+      {message}
+    </p>
   );
 }

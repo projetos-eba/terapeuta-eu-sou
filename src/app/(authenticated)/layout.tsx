@@ -49,6 +49,7 @@ export default async function AuthenticatedLayout({
       notificationCount={overview?.unreadNotificationsCount ?? 0}
       user={{
         avatarUrl: overview?.patient.avatarUrl,
+        email: session.email,
         name: overview?.patient.name ?? "Paciente",
         roleLabel: "Paciente",
       }}

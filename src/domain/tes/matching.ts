@@ -211,7 +211,7 @@ function buildMatchExplanation(
   }
 
   if (hasSubthemes) {
-    return "Essa terapia aparece como uma possibilidade alinhada aos interesses que você escolheu.";
+    return "Essa terapia aparece como uma possibilidade alinhada aos interesses relacionados aos temas que você escolheu.";
   }
 
   return "Essa terapia aparece como uma possibilidade alinhada às suas escolhas.";

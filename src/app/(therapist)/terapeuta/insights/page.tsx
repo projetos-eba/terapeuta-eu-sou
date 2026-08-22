@@ -14,7 +14,14 @@ export default async function TherapistInsightsPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const params = await searchParams;
-  const periodDays = params?.period === "90" ? 90 : 30;
+  const periodDays =
+    params?.period === "60"
+      ? 60
+      : params?.period === "90"
+        ? 90
+        : params?.period === "120"
+          ? 120
+          : 30;
   const tab =
     params?.tab === "sessions" || params?.tab === "interest"
       ? params.tab

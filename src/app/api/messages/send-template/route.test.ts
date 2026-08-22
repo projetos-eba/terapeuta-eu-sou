@@ -37,22 +37,26 @@ describe("structured participant message route", () => {
     });
   });
 
-  it("calls the RPC with a template reference only", async () => {
-    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = String(input);
-      if (url.includes("/auth/v1/user")) return Response.json({ id: userId });
-      if (url.includes("/rest/v1/profiles")) {
-        return Response.json([{ role: "patient" }]);
-      }
-      if (url.includes("send_structured_participant_message_v1")) {
-        expect(JSON.parse(String(init?.body))).toEqual({
-          p_conversation_id: conversationId,
-          p_template_key: "patient_confirm_session",
-        });
-        return Response.json({ id: "message-id" });
-      }
-      return new Response(null, { status: 404 });
-    });
+  it("calls the V2 RPC with references and closed parameters only", async () => {
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/auth/v1/user")) return Response.json({ id: userId });
+        if (url.includes("/rest/v1/profiles")) {
+          return Response.json([{ role: "patient" }]);
+        }
+        if (url.includes("send_structured_participant_message_v2")) {
+          expect(JSON.parse(String(init?.body))).toEqual({
+            p_booking_id: null,
+            p_conversation_id: conversationId,
+            p_parameters: {},
+            p_template_key: "patient_confirm_session",
+          });
+          return Response.json({ id: "message-id" });
+        }
+        return new Response(null, { status: 404 });
+      },
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await POST(
@@ -77,6 +81,40 @@ describe("structured participant message route", () => {
         body: "Mensagem livre proibida",
         conversationId,
         templateKey: "patient_confirm_session",
+      }),
+    );
+
+    expect(response.status).toBe(422);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects unknown content-like fields before authentication", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      request({
+        actorRole: "patient",
+        conversationId,
+        templateKey: "patient_confirm_session",
+        url: "https://example.test",
+      }),
+    );
+
+    expect(response.status).toBe(422);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("accepts only string parameter values", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      request({
+        actorRole: "patient",
+        conversationId,
+        parameters: { delay_window: { value: "up_to_5_minutes" } },
+        templateKey: "therapist_delay",
       }),
     );
 
@@ -114,7 +152,7 @@ describe("structured participant message route", () => {
       if (url.includes("/rest/v1/profiles")) {
         return Response.json([{ role: "patient" }]);
       }
-      if (url.includes("send_structured_participant_message_v1")) {
+      if (url.includes("send_structured_participant_message_v2")) {
         return Response.json({ code: "22023" }, { status: 400 });
       }
       return new Response(null, { status: 404 });

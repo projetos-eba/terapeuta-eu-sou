@@ -11,7 +11,7 @@ import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 const bucket = "therapist-public-media";
 const maxImageBytes = 5 * 1024 * 1024;
-const maxVideoBytes = 50 * 1024 * 1024;
+const maxVideoBytes = 5 * 1024 * 1024;
 const noStoreHeaders = { "Cache-Control": "no-store" };
 
 type MediaKind = "photo" | "video" | "video_thumbnail";
@@ -188,7 +188,7 @@ async function validateFile(file: File, kind: MediaKind) {
       return "Envie um vídeo em MP4, WebM ou MOV.";
     }
     if (file.size > maxVideoBytes) {
-      return "O vídeo deve ter no máximo 50 MB.";
+      return "O vídeo deve ter no máximo 5 MB. Para arquivos maiores, use um link do YouTube ou Vimeo.";
     }
     if (!(await hasValidUploadSignature(file))) {
       return "O conteúdo do arquivo não corresponde ao formato informado.";

@@ -15,7 +15,7 @@ import { ProfileTextField } from "./profile-field-group";
 import { ProfileSection } from "./profile-section";
 
 const maxImageBytes = 5 * 1024 * 1024;
-const maxVideoBytes = 50 * 1024 * 1024;
+const maxVideoBytes = 5 * 1024 * 1024;
 
 export function ProfilePhotoUploader({
   fields,
@@ -108,7 +108,7 @@ export function ProfileVideoUploader({
 }) {
   return (
     <ProfileSection
-      description="Apresente-se em um conteúdo curto e responsável. Documentos privados não aparecem aqui."
+      description="Apresente-se em um conteúdo curto e responsável. Você pode enviar um vídeo de até 5 MB ou usar um link do YouTube ou Vimeo. Documentos privados não aparecem aqui."
       title="Vídeo de apresentação"
     >
       <ProfileCapabilityGate
@@ -148,6 +148,11 @@ export function ProfileVideoUploader({
               updateField("videoProvider", "upload");
             }}
           />
+          <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+            Arquivos maiores que 5 MB precisam ser publicados no YouTube ou no
+            Vimeo. Depois, cole o link abaixo para que o vídeo seja analisado
+            pela equipe TES.
+          </p>
           <MediaUploadControl
             accept="image/jpeg,image/png,image/webp"
             currentUrl={fields.videoThumbnailUrl}
@@ -163,9 +168,9 @@ export function ProfileVideoUploader({
               label="Inserir link do vídeo"
               onChange={(value) => {
                 updateField("videoUrl", value);
-                updateField("videoProvider", "external");
+                updateField("videoProvider", videoProviderForUrl(value));
               }}
-              placeholder="Cole o link do seu vídeo"
+              placeholder="Cole um link do YouTube ou Vimeo"
               value={fields.videoUrl}
             />
             <ProfileTextField
@@ -208,7 +213,7 @@ function MediaUploadControl({
     if (file.size > maxBytes) {
       setError(
         kind === "video"
-          ? "O vídeo deve ter no máximo 50 MB."
+          ? "O vídeo deve ter no máximo 5 MB. Para arquivos maiores, use um link do YouTube ou Vimeo."
           : "A imagem deve ter no máximo 5 MB.",
       );
       return;
@@ -276,4 +281,21 @@ function MediaUploadControl({
       ) : null}
     </div>
   );
+}
+
+function videoProviderForUrl(value: string): "external" | "youtube" | "vimeo" {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return "external";
+
+  try {
+    const hostname = new URL(normalized).hostname.replace(/^www\./, "");
+    if (hostname === "youtube.com" || hostname === "youtu.be") {
+      return "youtube";
+    }
+    if (hostname === "vimeo.com") return "vimeo";
+  } catch {
+    return "external";
+  }
+
+  return "external";
 }

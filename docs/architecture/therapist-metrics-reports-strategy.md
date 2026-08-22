@@ -224,22 +224,22 @@ dados. A implementação futura deve ajustar:
 
 ### 4.5 Matriz de divergências
 
-| Tema                | Produto/Figma                                       | Documentação                                                | Código/banco                                                 | Decisão para o módulo                                                 |
-| ------------------- | --------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------- |
-| Namespace           | Figma apresenta uma única página com três abas      | Sitemap separa métricas intermediárias e insights avançados | `/terapeuta/metricas` redireciona para `/terapeuta/insights` | Uma implementação; confirmar e documentar a rota canônica antes da UI |
-| Planos              | Frames ainda usam referências históricas a Pro/Plus | Parte do inventário ainda usa Pro/Plus                      | Capabilities usam Premium/Premium Plus                       | Copy nova usa Premium e Premium Plus; enums permanecem técnicos       |
-| Aura                | Marca “Aura IA”                                     | Documentos a descrevem como inteligência por plano          | Schema declara regras sem IA generativa                      | Manter marca, mas explicar que as recomendações são determinísticas   |
-| Visualizações       | Figma exibe valores e tendências                    | Documentação promete métricas de perfil                     | Tabela existe, mas somente seeds foram identificados         | Bloquear KPI real até existir ingestão produtiva observável           |
-| Interesse           | Figma usa “Interessados em agendar”                 | Não há evento canônico definido                             | Não foi identificado evento de intenção no fluxo público     | Medir uma ação objetiva e renomear para “Iniciaram o agendamento”     |
-| Sessões             | Figma separa realizadas e concluídas                | Conceitos não estão formalmente separados                   | Booking possui `completed`, mas presença é limitada          | Não duplicar KPIs sem uma diferença verificável                       |
-| Financeiro          | Figma não explicita autoridade                      | ADR define pagamento canônico                               | Dashboard legado usa `payments`                              | Toda dimensão financeira usa `session_payments`                       |
-| Favoritos           | Figma sugere demanda por terapia                    | Serviço privado exibe favoritos                             | View replica favoritos do terapeuta em cada serviço          | Não usar como interesse por serviço ou terapia                        |
-| Status de pacientes | Figma usa ativos, novos, recorrentes e inativos     | Não há taxonomia analítica versionada                       | Relação possui apenas active, paused e closed                | Derivar segmentos exclusivos com precedência e versão                 |
-| Distribuição        | Um exemplo da Visão geral soma mais de 100%         | Não há regra de exclusividade                               | Não há read model canônico                                   | Corrigir fórmula; gráfico de partes deve totalizar 100%               |
-| Temas               | Figma propõe temas recorrentes                      | Privacidade restringe conteúdo sensível                     | Mapper atual usa regex em resumos livres                     | Não reutilizar; exigir taxonomia agregada e governança                |
-| Relatórios          | Nome da página inclui relatórios                    | Inventário menciona analytics                               | Figma não apresenta exportação e rota é scaffold             | Entregar CSV primeiro e homologar PDF depois                          |
-| Copy                | Figma usa “transformar mais vidas”                  | AGENTS proíbe promessas de resultado                        | Ainda não há página final                                    | Usar copy operacional, responsável e não causal                       |
-| Analytics           | Nomes de eventos não aparecem no Figma              | Estratégia de eventos não está documentada                  | Provider/pipeline produtivo não identificado                 | Criar contrato versionado antes de instrumentar                       |
+| Tema                | Produto/Figma                                       | Documentação                                                | Código/banco                                                 | Decisão para o módulo                                                                   |
+| ------------------- | --------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| Namespace           | Figma apresenta uma única página com três abas      | Sitemap separa métricas intermediárias e insights avançados | `/terapeuta/metricas` redireciona para `/terapeuta/insights` | Uma implementação; confirmar e documentar a rota canônica antes da UI                   |
+| Planos              | Frames ainda usam referências históricas a Pro/Plus | Parte do inventário ainda usa Pro/Plus                      | Capabilities usam Premium/Premium Plus                       | Copy nova usa Premium e Premium Plus; enums permanecem técnicos                         |
+| Aura                | Marca “Assistente Aura”                             | Documentos a descrevem como inteligência por plano          | Schema declara regras sem IA generativa                      | Usar “Assistente Aura” na interface e explicar que as recomendações são determinísticas |
+| Visualizações       | Figma exibe valores e tendências                    | Documentação promete métricas de perfil                     | Tabela existe, mas somente seeds foram identificados         | Bloquear KPI real até existir ingestão produtiva observável                             |
+| Interesse           | Figma usa “Interessados em agendar”                 | Não há evento canônico definido                             | Não foi identificado evento de intenção no fluxo público     | Medir uma ação objetiva e renomear para “Iniciaram o agendamento”                       |
+| Sessões             | Figma separa realizadas e concluídas                | Conceitos não estão formalmente separados                   | Booking possui `completed`, mas presença é limitada          | Não duplicar KPIs sem uma diferença verificável                                         |
+| Financeiro          | Figma não explicita autoridade                      | ADR define pagamento canônico                               | Dashboard legado usa `payments`                              | Toda dimensão financeira usa `session_payments`                                         |
+| Favoritos           | Figma sugere demanda por terapia                    | Serviço privado exibe favoritos                             | View replica favoritos do terapeuta em cada serviço          | Não usar como interesse por serviço ou terapia                                          |
+| Status de pacientes | Figma usa ativos, novos, recorrentes e inativos     | Não há taxonomia analítica versionada                       | Relação possui apenas active, paused e closed                | Derivar segmentos exclusivos com precedência e versão                                   |
+| Distribuição        | Um exemplo da Visão geral soma mais de 100%         | Não há regra de exclusividade                               | Não há read model canônico                                   | Corrigir fórmula; gráfico de partes deve totalizar 100%                                 |
+| Temas               | Figma propõe temas recorrentes                      | Privacidade restringe conteúdo sensível                     | Mapper atual usa regex em resumos livres                     | Não reutilizar; exigir taxonomia agregada e governança                                  |
+| Relatórios          | Nome da página inclui relatórios                    | Inventário menciona analytics                               | Figma não apresenta exportação e rota é scaffold             | Entregar CSV primeiro e homologar PDF depois                                            |
+| Copy                | Figma usa “transformar mais vidas”                  | AGENTS proíbe promessas de resultado                        | Ainda não há página final                                    | Usar copy operacional, responsável e não causal                                         |
+| Analytics           | Nomes de eventos não aparecem no Figma              | Estratégia de eventos não está documentada                  | Provider/pipeline produtivo não identificado                 | Criar contrato versionado antes de instrumentar                                         |
 
 ### 4.6 Estado real por camada
 
@@ -873,7 +873,7 @@ Assim:
 ### 9.1 Papel
 
 A Aura é uma camada de recomendação determinística baseada em regras
-versionadas. O nome comercial “Aura IA” não altera essa natureza técnica.
+versionadas. O nome comercial “Assistente Aura” não altera essa natureza técnica.
 
 A interface deve ser transparente, por exemplo:
 
@@ -1512,7 +1512,7 @@ Status: `functional`.
 - contrato distingue `ready`, `empty`, `insufficient_sample`, `processing` e
   `unavailable`;
 - types e mappers TypeScript não usam `any`;
-- período limitado a 30 ou 90 dias locais completos.
+- período limitado a 30, 60, 90 ou 120 dias locais completos.
 
 ### MTR-3 — Visão geral
 
@@ -1525,7 +1525,7 @@ Status: `functional`, respeitando gates de dados.
   versionada;
 - ranking das próprias terapias com trava de 10;
 - favoritos do perfil com trava de 10;
-- comparação de períodos de 30/90 dias;
+- comparação de períodos de 30/60/90/120 dias;
 - estados vazios, em processamento, insuficientes e indisponíveis;
 - composição responsiva com `AppPageGrid` e equivalente textual para o gráfico.
 

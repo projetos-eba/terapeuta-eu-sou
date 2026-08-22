@@ -87,6 +87,79 @@ describe("support ticket detail route", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("maps the server reply rate limit to a retryable 429", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/auth/v1/user")) {
+        return Response.json({ id: "10000000-0000-4000-8000-000000000001" });
+      }
+      if (url.includes("/rest/v1/profiles")) {
+        return Response.json([{ role: "therapist" }]);
+      }
+      if (url.includes("/rpc/send_support_ticket_requester_message_v1")) {
+        return Response.json({ code: "P0001" }, { status: 400 });
+      }
+      return new Response(null, { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      request({ body: "Resposta para o suporte.", requestId }),
+      context,
+    );
+
+    expect(response.status).toBe(429);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: { message: "Aguarde um momento antes de enviar outra resposta." },
+    });
+  });
+
+  it("renders a legacy description as the initial public message", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/auth/v1/user")) {
+        return Response.json({ id: "10000000-0000-4000-8000-000000000001" });
+      }
+      if (url.includes("/rest/v1/profiles")) {
+        return Response.json([{ role: "therapist" }]);
+      }
+      if (url.includes("/rest/v1/support_tickets")) {
+        return Response.json([
+          {
+            booking_id: null,
+            category: "atendimento",
+            created_at: "2026-08-21T12:00:00Z",
+            description: "Descrição histórica sem thread persistida.",
+            id: ticketId,
+            last_activity_at: "2026-08-21T12:00:00Z",
+            resolved_at: null,
+            status: "open",
+            subject: "Chamado histórico",
+          },
+        ]);
+      }
+      if (url.includes("/rest/v1/support_ticket_messages")) {
+        return Response.json([]);
+      }
+      return new Response(null, { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await GET(new Request("http://localhost"), context);
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.ticket.messages).toEqual([
+      {
+        author_role: "requester",
+        body: "Descrição histórica sem thread persistida.",
+        created_at: "2026-08-21T12:00:00Z",
+        id: `legacy-initial:${ticketId}`,
+      },
+    ]);
+  });
+
   it("posts a public reply through the requester RPC without browser identity", async () => {
     const fetchMock = vi.fn(
       async (input: RequestInfo | URL, init?: RequestInit) => {

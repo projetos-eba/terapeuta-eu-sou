@@ -331,7 +331,8 @@ function MomentStep({
               Agenda disponível
             </h2>
             <p className="mt-2 text-sm font-bold text-tesText-muted">
-              Horários no fuso America/Sao_Paulo. Escolha o melhor dia e horário que te atenda.
+              Os horários seguem o fuso de São Paulo (Brasília). Se você estiver
+              em outro lugar, confira a diferença local antes de reservar.
             </p>
           </div>
           <span className="rounded-full bg-brand-lavenderSoft px-4 py-2 text-sm font-extrabold text-brand-primary">
@@ -345,13 +346,13 @@ function MomentStep({
               href={schedule.previousHref as Route<string>}
               className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-white px-4 text-sm font-extrabold text-brand-primary shadow-card transition hover:border-brand-primary focus:outline-none focus:ring-4 focus:ring-ring/20"
             >
-              <ChevronLeft className="size-4" aria-hidden="true" />
-              2 dias anteriores
+              <ChevronLeft className="size-4" aria-hidden="true" />2 dias
+              anteriores
             </Link>
           ) : (
             <span className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface-muted px-4 text-sm font-extrabold text-tesText-muted">
-              <ChevronLeft className="size-4" aria-hidden="true" />
-              2 dias anteriores
+              <ChevronLeft className="size-4" aria-hidden="true" />2 dias
+              anteriores
             </span>
           )}
           <Link
@@ -633,7 +634,9 @@ function PatientConnectedCard({ context }: { context: ReservationContext }) {
     <div className="rounded-[20px] border border-status-success bg-status-successBg p-5 text-status-success">
       <ShieldCheck className="size-8" aria-hidden="true" />
       <p className="mt-3 text-base font-extrabold">
-        {patient ? `Olá, ${getFirstName(patient.displayName)}` : "Conta conectada"}
+        {patient
+          ? `Olá, ${getFirstName(patient.displayName)}`
+          : "Conta conectada"}
       </p>
       <p className="mt-1 text-sm font-bold">
         {patient?.email
@@ -746,7 +749,10 @@ function ReservationSummary({
   const loginHref = buildClientAuthHref("login", context.currentPath);
 
   return (
-    <TESCard as="section" className="overflow-hidden rounded-[28px] shadow-float">
+    <TESCard
+      as="section"
+      className="overflow-hidden rounded-[28px] shadow-float"
+    >
       <div className="border-b border-border/70 p-6 sm:p-7">
         <h2 className="text-2xl font-extrabold text-brand-deep">
           Resumo da reserva
@@ -932,7 +938,9 @@ function ReservationFooter() {
       <div className="mx-auto flex max-w-[1680px] flex-col gap-4 px-5 py-7 text-sm font-bold text-tesText-muted sm:px-8 md:flex-row md:items-center md:justify-between lg:px-12">
         <p>© 2026 Terapeuta Eu Sou. Todos os direitos reservados.</p>
         <div className="flex flex-wrap gap-5">
-          <Link href={routes.public.privacy as Route}>Política de privacidade</Link>
+          <Link href={routes.public.privacy as Route}>
+            Política de privacidade
+          </Link>
           <Link href={routes.public.terms as Route}>Termos de uso</Link>
         </div>
       </div>

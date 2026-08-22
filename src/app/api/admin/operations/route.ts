@@ -127,7 +127,11 @@ function parseCommandInput(value: unknown):
     }
   | { message: string; ok: false; status: number } {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return { message: "Envie os dados em formato valido.", ok: false, status: 400 };
+    return {
+      message: "Envie os dados em formato valido.",
+      ok: false,
+      status: 400,
+    };
   }
 
   const record = value as Record<string, unknown>;
@@ -137,14 +141,21 @@ function parseCommandInput(value: unknown):
   const requestId = asString(record.requestId).trim();
   const correlationId = asString(record.correlationId).trim() || null;
   if (!isAdminOperationCommandAction(action)) {
-    return { message: "Ação administrativa não suportada.", ok: false, status: 422 };
+    return {
+      message: "Ação administrativa não suportada.",
+      ok: false,
+      status: 422,
+    };
   }
 
   const permission = actionPermissions[action];
 
-
   if (!UUID_PATTERN.test(entityId)) {
-    return { message: "Registro administrativo inválido.", ok: false, status: 422 };
+    return {
+      message: "Registro administrativo inválido.",
+      ok: false,
+      status: 422,
+    };
   }
 
   if (reason.length < 8 || reason.length > 1000) {
@@ -156,6 +167,14 @@ function parseCommandInput(value: unknown):
   }
 
   if (requestId.length < 8 || requestId.length > 128) {
+    return {
+      message: "Identificador da ação inválido.",
+      ok: false,
+      status: 422,
+    };
+  }
+
+  if (action.startsWith("support.") && !UUID_PATTERN.test(requestId)) {
     return {
       message: "Identificador da ação inválido.",
       ok: false,
@@ -209,7 +228,10 @@ function revalidateAdminOperationSurfaces(action: string) {
   revalidatePath(routes.admin.support);
   revalidatePath(routes.admin.reviews);
 
-  if (action.startsWith("professional.") || action.startsWith("verification.")) {
+  if (
+    action.startsWith("professional.") ||
+    action.startsWith("verification.")
+  ) {
     revalidateTag("therapist-profile");
     revalidateTag("therapist-search");
     revalidatePath("/terapeutas");

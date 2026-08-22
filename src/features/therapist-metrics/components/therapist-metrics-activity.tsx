@@ -10,7 +10,7 @@ export function TherapistMetricsActivity({
   status,
   timezone,
 }: {
-  periodDays: 30 | 90;
+  periodDays: 30 | 60 | 90 | 120;
   points: TherapistMetricActivityPoint[];
   status: "empty" | "ready";
   timezone: string;

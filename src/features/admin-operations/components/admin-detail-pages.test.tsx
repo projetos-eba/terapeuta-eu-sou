@@ -507,7 +507,8 @@ describe("admin operation detail pages", () => {
 
     expect(html).toContain("Detalhes do suporte");
     expect(html).toContain("Prioridade Alta");
-    expect(html).toContain("Resolver chamado");
+    expect(html).toContain("Triagem");
+    expect(html).toContain("Nota interna");
     expect(html).not.toContain("Fonte segura");
   });
 

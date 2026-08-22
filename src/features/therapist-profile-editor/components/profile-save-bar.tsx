@@ -32,9 +32,7 @@ export function ProfileSaveBar({
 }) {
   const publishDisabled =
     pendingAction !== null ||
-    (firstConfiguration
-      ? false
-      : !hasDraft || hasUnsavedChanges);
+    (firstConfiguration ? false : !hasDraft || hasUnsavedChanges);
   const message = getSaveBarMessage({
     firstConfiguration,
     hasDraft,
@@ -129,8 +127,9 @@ function getSaveBarMessage({
     if (hasUnsavedChanges) {
       return {
         description:
-          "A publicação salva os dados preenchidos e envia a primeira versão para o seu perfil público.",
-        title: "Publique sua primeira versão quando os campos essenciais estiverem completos.",
+          "A publicação salva os dados preenchidos e envia a primeira versão para revisão da equipe TES.",
+        title:
+          "Envie sua primeira versão quando os campos essenciais estiverem completos.",
       };
     }
 
@@ -143,8 +142,8 @@ function getSaveBarMessage({
 
     return {
       description:
-        "Ao publicar, o TES salva a versão atual e envia os dados para o perfil público.",
-      title: "Revise as informações principais antes da primeira publicação.",
+        "Ao publicar, o TES salva a versão atual e envia os dados para revisão. O perfil só volta a ficar público após a aprovação.",
+      title: "Revise as informações principais antes de enviar para análise.",
     };
   }
 
@@ -164,7 +163,8 @@ function getSaveBarMessage({
   }
 
   return {
-    description: propagationNotice,
-    title: "A versão pública está sincronizada com o editor.",
+    description:
+      "A versão enviada fica em análise antes de voltar a aparecer para pacientes.",
+    title: "A versão pública está aguardando a revisão da equipe TES.",
   };
 }

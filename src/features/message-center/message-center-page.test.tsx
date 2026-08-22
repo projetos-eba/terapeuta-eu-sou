@@ -29,7 +29,7 @@ describe("MessageCenterPage", () => {
 
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /enviar template/i }));
+    fireEvent.click(screen.getByRole("button", { name: /escolher mensagem/i }));
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText("Confirmar sessão")).toBeInTheDocument();
@@ -45,6 +45,57 @@ describe("MessageCenterPage", () => {
     expect(
       screen.getByRole("button", { name: "Novo chamado" }),
     ).toBeInTheDocument();
+  });
+
+  it("reviews a server-resolved participant message before sending", async () => {
+    const originalFetch = global.fetch;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("preview-template")) {
+        return Response.json({
+          ok: true,
+          preview: {
+            body: "Mensagem resolvida pelo TES.",
+            category: "confirmacao",
+            context: { bookingId: "f2000000-0000-4000-8000-000000000001" },
+            cta: {
+              href: "/app/encontros/f2000000-0000-4000-8000-000000000001",
+              label: "Ver encontro",
+            },
+            recipientName: "Beatriz Lima",
+          },
+        });
+      }
+      return Response.json({ ok: true });
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      render(<MessageCenterPage data={createData({ source: "supabase" })} />);
+      fireEvent.click(
+        screen.getByRole("button", { name: /escolher mensagem/i }),
+      );
+      fireEvent.click(
+        screen.getByRole("button", { name: /revisar mensagem/i }),
+      );
+      await waitFor(() =>
+        expect(
+          screen.getByText("Mensagem resolvida pelo TES."),
+        ).toBeInTheDocument(),
+      );
+      expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: /enviar mensagem/i }));
+      await waitFor(() =>
+        expect(
+          screen.getByText("Mensagem enviada com segurança."),
+        ).toBeInTheDocument(),
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/messages/send-template",
+        expect.objectContaining({ method: "POST" }),
+      );
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 
   it("selects the hero asset for the active profile", () => {
@@ -151,16 +202,22 @@ function createData(
         {
           body: "Confirmo que nossa sessão está mantida no horário agendado.",
           category: "confirmacao",
+          description:
+            "Confirma ao paciente que a sessão permanece no horário combinado.",
           key: "therapist_confirm_session",
           label: "Confirmar sessão",
+          parameters: [],
         },
       ],
       support: [
         {
           body: "Preciso de apoio sobre repasse, financeiro ou assinatura.",
           category: "financeiro",
+          description:
+            "Abra um chamado para receber ajuda da equipe TES sobre este tema.",
           key: "therapist_support_finance",
           label: "Financeiro",
+          parameters: [],
         },
       ],
     },
@@ -168,6 +225,7 @@ function createData(
       {
         avatarUrl: null,
         body: "Mensagem automatizada.",
+        bookingId: null,
         category: "confirmacao",
         categoryLabel: "Confirmação",
         conversationId: "eb000000-0000-4000-8000-000000000001",
@@ -176,6 +234,8 @@ function createData(
         name: "Beatriz Lima",
         timeLabel: "Hoje · 10:32",
         title: "Confirmação de presença na sessão",
+        cta: null,
+        sessionContext: null,
       },
     ],
   };

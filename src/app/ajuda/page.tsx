@@ -29,9 +29,8 @@ export default function HelpPage() {
       <PublicInfoLayout eyebrow="Ajuda" title="Central de ajuda">
         <section className="rounded-card border border-brand-lavender bg-white p-6 shadow-card">
           <p className="text-sm font-semibold leading-7 text-tesText-secondary">
-            Esta visualização existe apenas para revisão interna. A central
-            pública fica bloqueada até canais, horários e prazos de atendimento
-            estarem aprovados no registry jurídico.
+            A central pública ficará disponível assim que os canais, horários e
+            prazos de atendimento forem confirmados.
           </p>
         </section>
       </PublicInfoLayout>
@@ -47,9 +46,9 @@ export default function HelpPage() {
               Canais oficiais de suporte
             </h2>
             <p className="mt-3 text-sm font-semibold leading-7 text-tesText-secondary">
-              O atendimento é registrado pelos canais autenticados da plataforma.
-              Entre na sua conta de cliente ou terapeuta para abrir um chamado
-              com protocolo.
+              O atendimento é registrado pelos canais autenticados da
+              plataforma. Entre na sua conta de cliente ou terapeuta para abrir
+              um chamado com protocolo.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-1">
@@ -67,38 +66,42 @@ export default function HelpPage() {
             </Link>
           </div>
         </div>
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
+        <div className="mt-8 grid gap-3">
           {supportMatrix.map((item) => (
-            <article
-              className="rounded-[18px] border border-brand-lavender bg-surface-muted p-4"
+            <details
+              className="group rounded-2xl border border-brand-lavender bg-surface-muted px-4 open:bg-white sm:px-5"
               key={item.categoryKey}
             >
-              <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brand-primary">
-                {item.priority}
-              </p>
-              <h2 className="mt-2 text-lg font-extrabold text-brand-deep">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-base font-extrabold text-brand-deep [&::-webkit-details-marker]:hidden">
                 {item.label}
-              </h2>
-              <dl className="mt-4 grid gap-3 text-sm font-semibold leading-6 text-tesText-secondary">
-                <SupportDetail label="Canal" value={item.channel} />
-                <SupportDetail
-                  label="Recebimento"
-                  value={item.supportHours}
-                />
-                <SupportDetail
-                  label="Protocolo"
-                  value={item.acknowledgement}
-                />
-                <SupportDetail
-                  label="Triagem"
-                  value={item.firstResponseTarget}
-                />
-                <SupportDetail
-                  label="Tratativa"
-                  value={item.resolutionTarget}
-                />
-              </dl>
-            </article>
+                <span aria-hidden="true" className="text-brand-primary">
+                  +
+                </span>
+              </summary>
+              <div className="border-t border-brand-lavender pb-5 pt-4">
+                <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+                  {item.channel}
+                </p>
+                <dl className="mt-4 grid gap-3 text-sm font-semibold leading-6 text-tesText-secondary sm:grid-cols-2">
+                  <SupportDetail
+                    label="Quando você recebe retorno"
+                    value={item.supportHours}
+                  />
+                  <SupportDetail
+                    label="Protocolo"
+                    value={item.acknowledgement}
+                  />
+                  <SupportDetail
+                    label="Primeiro retorno"
+                    value={item.firstResponseTarget}
+                  />
+                  <SupportDetail
+                    label="Acompanhamento"
+                    value={item.resolutionTarget}
+                  />
+                </dl>
+              </div>
+            </details>
           ))}
         </div>
       </section>
@@ -129,4 +132,3 @@ function isProductionRuntime() {
     process.env.VERCEL_ENV === "production"
   );
 }
-

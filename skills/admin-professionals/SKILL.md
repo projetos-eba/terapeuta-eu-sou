@@ -19,10 +19,10 @@ description: Operação de aprovação, publicação e suspensão de profissiona
   cadastro técnico em tela.
 - Densidade: `Operational`. A primeira dobra reúne identidade, estado,
   publicação, fluxo do perfil e ações autorizadas; detalhes ficam em `Visão
-  geral`, `Perfil`, `Serviços e terapias`, `Documentos` e `Histórico`.
+geral`, `Perfil`, `Serviços e terapias`, `Documentos` e `Histórico`.
 - O detalhe deve exibir uma linha de progresso do perfil com os marcos
   `Cadastro criado → Enviado → Em análise → Aprovado → Disponível para
-  agendamento`, separando claramente aprovação administrativa, publicação e
+agendamento`, separando claramente aprovação administrativa, publicação e
   recebimento de reservas.
 - Perfis aprovados ou suspensos sem registro histórico em
   `therapist_verifications` usam a decisão autoritativa já presente no cadastro
@@ -77,6 +77,15 @@ pendente” e impede a ação.
 - O detalhe de verificação pode usar `therapist-private-documents` para listar
   documentos autorizados e abrir cada arquivo por URL temporária, sem path de
   storage ou dados de conta.
+- O detalhe do profissional e o detalhe da verificação exibem a projeção
+  sanitizada `admin_get_therapist_profile_review_v1` quando houver uma nova
+  publicação em análise. Ela inclui os campos editoriais, serviços e link de
+  de vídeo enviados e os dados privados de identidade necessários à validação,
+  mas nunca inclui documentos privados, credenciais ou paths internos. A
+  projeção é Admin-only e não é reutilizada em views públicas.
+- Toda nova publicação entra em `submitted`, mesmo quando o perfil anterior já
+  estava aprovado. O Admin precisa aprovar a nova versão antes que ela volte a
+  ficar pública e a receber reservas.
 
 ## Estados
 
