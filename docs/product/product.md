@@ -261,11 +261,11 @@ Objetivos:
 
 ## Modelo de Planos
 
-| Plano        | Papel                 | Valor principal                | Recursos centrais                                                                                    | Não inclui                                                          |
-| ------------ | --------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Free         | Entrada profissional  | Presença e operação essencial. | Perfil, agenda, pacientes, sessões, mensagens, serviços sem limite por plano, financeiro operacional, suporte.  | Avaliações, métricas intermediárias, IA, insights avançados.        |
-| Premium      | Operação profissional | Gestão mais completa.          | Recursos do Free, agenda avançada, serviços completos, financeiro, avaliações, métricas, plano.      | Assistente Aura, insights Premium Plus, histórico operacional avançado. |
-| Premium Plus | Premium               | Inteligência e apoio avançado. | Recursos do Premium, insights, Assistente Aura, histórico operacional do paciente e suporte prioritário. | —                                                                   |
+| Plano        | Papel                 | Valor principal                | Recursos centrais                                                                                              | Não inclui                                                              |
+| ------------ | --------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Free         | Entrada profissional  | Presença e operação essencial. | Perfil, agenda, pacientes, sessões, mensagens, serviços sem limite por plano, financeiro operacional, suporte. | Avaliações, métricas intermediárias, IA, insights avançados.            |
+| Premium      | Operação profissional | Gestão mais completa.          | Recursos do Free, agenda avançada, serviços completos, financeiro, avaliações, métricas, plano.                | Assistente Aura, insights Premium Plus, histórico operacional avançado. |
+| Premium Plus | Premium               | Inteligência e apoio avançado. | Recursos do Premium, insights, Assistente Aura, histórico operacional do paciente e suporte prioritário.       | —                                                                       |
 
 ## Jornadas Principais
 

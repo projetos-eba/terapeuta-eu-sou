@@ -490,15 +490,15 @@ Usuario acessa /sua-jornada
 
 ### 8.3 Regras de selecao
 
-| Criterio                     | Regra atual                    | Observação                                    |
-| ---------------------------- | ------------------------------ | --------------------------------------------- |
-| Minimo de temas              | 1                              | Validado no frontend e backend.               |
-| Maximo de temas              | 3                              | Validado no frontend e backend.               |
-| Interesses na jornada publica| Associados aos temas           | Não há seleção pública separada.              |
-| Interesses na jornada publica| Associados aos temas           | Não há seletor público separado.              |
-| Botao de resultado           | liberado com pelo menos 1 tema | Sem tema não calcula.                         |
-| Multiplicador de interesses  | `1.4`                          | Interesse é mais específico que tema.         |
-| Tabelas especificas de match | `matching_*`                   | Substituem o uso público de `therapy_themes`. |
+| Criterio                      | Regra atual                    | Observação                                    |
+| ----------------------------- | ------------------------------ | --------------------------------------------- |
+| Minimo de temas               | 1                              | Validado no frontend e backend.               |
+| Maximo de temas               | 3                              | Validado no frontend e backend.               |
+| Interesses na jornada publica | Associados aos temas           | Não há seleção pública separada.              |
+| Interesses na jornada publica | Associados aos temas           | Não há seletor público separado.              |
+| Botao de resultado            | liberado com pelo menos 1 tema | Sem tema não calcula.                         |
+| Multiplicador de interesses   | `1.4`                          | Interesse é mais específico que tema.         |
+| Tabelas especificas de match  | `matching_*`                   | Substituem o uso público de `therapy_themes`. |
 
 Regra de linguagem: usar “Tema” e “Interesse” na UI; não usar “subtema”.
 

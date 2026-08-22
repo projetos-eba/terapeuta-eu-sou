@@ -14,7 +14,11 @@ describe("ShellUserMenu", () => {
           accountHref="/terapeuta/configuracoes"
           logoutHref="/terapeuta/login"
           planLabel={planLabel}
-          user={{ email: "ana@example.test", name: "Ana", roleLabel: "Terapeuta" }}
+          user={{
+            email: "ana@example.test",
+            name: "Ana",
+            roleLabel: "Terapeuta",
+          }}
         />,
       );
 

@@ -28,7 +28,11 @@ export async function PATCH(request: Request) {
   try {
     rawBody = await request.json();
   } catch {
-    return failure("Envie os dados em formato válido.", 400, "VALIDATION_ERROR");
+    return failure(
+      "Envie os dados em formato válido.",
+      400,
+      "VALIDATION_ERROR",
+    );
   }
 
   let payload: ReturnType<typeof parseTherapistSettingsUpdatePayload>;
@@ -69,7 +73,11 @@ export async function PATCH(request: Request) {
     });
 
     if (profile?.role !== "therapist") {
-      return failure("Use uma conta de terapeuta para continuar.", 403, "FORBIDDEN");
+      return failure(
+        "Use uma conta de terapeuta para continuar.",
+        403,
+        "FORBIDDEN",
+      );
     }
 
     const updated = await updateTherapistAccountSettings({
