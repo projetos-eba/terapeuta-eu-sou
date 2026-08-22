@@ -70,10 +70,10 @@ function EmptyState({
       </h2>
       <p className="mt-3 max-w-xl text-base font-semibold leading-7 text-text-secondary">
         {isUnavailable
-          ? "A fonte pública de terapias ainda não respondeu neste ambiente. Assim que a migration/view estiver aplicada, as terapias aparecem aqui."
+          ? "Não foi possível carregar o catálogo agora. Tente novamente em alguns instantes."
           : hasFilters
-          ? "Tente limpar os filtros ou fazer a jornada guiada para encontrar caminhos que conversem com o seu momento."
-          : "O catálogo público ainda não tem terapias publicadas. Assim que o admin publicar conteúdos, eles aparecem aqui."}
+            ? "Tente limpar os filtros ou fazer a jornada guiada para encontrar caminhos que conversem com o seu momento."
+            : "O catálogo público ainda não tem terapias publicadas. Assim que o admin publicar conteúdos, eles aparecem aqui."}
       </p>
       <div className="mt-7 flex flex-col gap-3 sm:flex-row">
         {hasFilters ? (
@@ -81,9 +81,7 @@ function EmptyState({
             Limpar filtros
           </TESButton>
         ) : null}
-        <TESButton href={routes.public.journey}>
-          Fazer jornada guiada
-        </TESButton>
+        <TESButton href={routes.public.journey}>Fazer jornada guiada</TESButton>
       </div>
       {hasFilters ? (
         <Link

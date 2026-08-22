@@ -180,11 +180,12 @@ function ForecastBreakdown({
         />
       </dl>
       <p className="rounded-lg bg-surface-soft p-3 text-sm font-semibold leading-6 text-tesText-secondary">
-        Confiança:{" "}
+        Esta leitura separa o que já aconteceu, o que está contratado e o que é
+        apenas uma estimativa. Confiança:{" "}
         <span className="font-extrabold text-brand-deep">
           {confidenceLabel(dashboard.forecast.confidence)}
         </span>
-        . Metodologia: {dashboard.forecast.methodologyVersion}.
+        .
       </p>
     </div>
   );

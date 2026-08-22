@@ -1,5 +1,10 @@
 # Fase 5 — Operação e QA de Mensagens + Suporte
 
+> Este relatório registra a qualificação HML do domínio de Mensagens e
+> Suporte realizada antes da Wave 4 de moderação de perfil. O fechamento local
+> completo e a promoção coordenada das Waves 1–4 estão registrados em
+> `docs/agent-work/wave-5-release-qualification-report.md`.
+
 Data: 2026-08-21  
 Ambiente de qualificação: HML (`Terapeuta-Eu-Sou-Homolog`)  
 Produção: não alterada  
