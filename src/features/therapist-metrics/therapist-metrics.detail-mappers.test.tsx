@@ -105,7 +105,7 @@ describe("therapist metric detail contracts", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/textos livres não são analisados/i),
+      screen.getByText(/motivos escritos livremente permanecem ocultos/i),
     ).toBeInTheDocument();
   });
 
@@ -137,7 +137,7 @@ describe("therapist metric detail contracts", () => {
       screen.getByText(/ainda não há dados neste período/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Favoritos que viraram encontro"),
+      screen.getByText("Favoritos que viraram sessão"),
     ).toBeInTheDocument();
   });
 });

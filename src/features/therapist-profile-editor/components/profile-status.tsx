@@ -49,14 +49,13 @@ function publicStatusCopy(status: string) {
   }
   if (status === "suspended") {
     return {
-      description:
-        "A administração pausou a visibilidade pública deste perfil.",
+      description: "A equipe TES pausou a visibilidade pública deste perfil.",
       title: "Perfil suspenso",
     };
   }
   if (status === "unpublished") {
     return {
-      description: "Seu perfil não está aparecendo nas superfícies públicas.",
+      description: "Seu perfil não está visível para as pessoas.",
       title: "Perfil despublicado",
     };
   }

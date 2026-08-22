@@ -36,7 +36,7 @@ export function mapTherapistProfileEditorContract(
     ),
     propagationNotice: stringOr(
       value.propagationNotice,
-      "Depois da aprovação, as alterações podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
+      "Depois da aprovação, as alterações podem levar até 2 a 3 horas para aparecer para todas as pessoas.",
     ),
     publicProfileHref: stringOr(value.publicProfileHref, "/terapeutas"),
     publicProfileSlug: stringOr(
@@ -188,13 +188,29 @@ function mapCompleteness(input: unknown): TherapistProfileCompleteness {
       return {
         complete: Boolean(object.complete),
         key: requiredString(object.key),
-        label: requiredString(object.label),
+        label: profileCompletenessLabel(
+          requiredString(object.key),
+          requiredString(object.label),
+        ),
       };
     }),
     percent: numberOr(value.percent, 0),
     score: numberOr(value.score, 0),
     total: numberOr(value.total, 0),
   };
+}
+
+function profileCompletenessLabel(key: string, fallback: string) {
+  const labels: Record<string, string> = {
+    availability: "Horários disponíveis",
+    bio: "Minha essência",
+    guide_items: "Especialidades",
+    photo: "Foto de perfil",
+    services: "Terapias ativas",
+    short_intro: "Sua apresentação",
+  };
+
+  return labels[key] ?? fallback;
 }
 
 function mapDerived(input: unknown): TherapistProfileDerivedData {

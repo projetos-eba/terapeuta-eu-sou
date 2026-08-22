@@ -9,7 +9,7 @@ export type TherapistServicesApiError = {
 
 export function normalizeTherapistServicesError(
   input: unknown,
-  fallback = "Não foi possível atualizar os serviços agora.",
+  fallback = "Não foi possível atualizar suas terapias agora.",
 ): TherapistServicesApiError {
   if (input && typeof input === "object" && "error" in input) {
     const error = (input as { error?: unknown }).error;

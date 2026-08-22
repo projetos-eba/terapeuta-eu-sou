@@ -52,10 +52,17 @@ export function TherapistGettingStartedPage({
   );
   const pendingChecklist = readiness.checklist.filter((item) => !item.complete);
   const pendingDocuments = readiness.documents.filter((item) => !item.complete);
-  const primaryAction = pendingChecklist[0] ?? {
-    actionLabel: "Abrir cadastro",
-    href: routes.therapist.profile,
-  };
+  const primaryAction =
+    pendingChecklist[0] ??
+    (pendingDocuments[0]
+      ? {
+          actionLabel: "Abrir Configurações",
+          href: routes.therapist.settings,
+        }
+      : {
+          actionLabel: "Ver cadastro",
+          href: routes.therapist.profile,
+        });
 
   return (
     <AppPageContainer className="max-w-[1210px] gap-7 pb-12 pt-1 lg:gap-8">
@@ -155,7 +162,7 @@ export function TherapistGettingStartedPage({
                 />
                 <p>
                   Seus documentos obrigatórios foram enviados. Acompanhe o
-                  andamento da análise no status ao lado.
+                  andamento da análise na situação ao lado.
                 </p>
               </div>
             )}
@@ -256,7 +263,8 @@ export function TherapistGettingStartedPage({
               Precisa de ajuda?
             </h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              Se surgir uma dúvida sobre seu cadastro, nossa equipe pode orientar você.
+              Se surgir uma dúvida sobre seu cadastro, nossa equipe pode
+              orientar você.
             </p>
             <TESButton
               className="mt-5 min-h-11 w-full rounded-lg"
@@ -332,9 +340,9 @@ function DocumentStepRow({ item }: { item: TherapistHomeDocument }) {
         </p>
       </div>
       <Link
-        aria-label={`Enviar ${item.title}`}
+        aria-label={`Abrir Configurações para enviar ${item.title}`}
         className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-        href={routes.therapist.profile}
+        href={routes.therapist.settings}
       >
         <FileText aria-hidden="true" className="size-4" />
       </Link>
@@ -353,7 +361,9 @@ function ReviewStep({ status }: { status: string }) {
         state={complete ? "complete" : attention ? "attention" : "pending"}
       />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-extrabold text-brand-deep">Revisar e enviar</p>
+        <p className="text-sm font-extrabold text-brand-deep">
+          Revisar e enviar
+        </p>
         <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
           {complete
             ? "Cadastro encaminhado para análise."
@@ -371,7 +381,11 @@ function ReviewStep({ status }: { status: string }) {
   );
 }
 
-function DocumentPendingCard({ document }: { document: TherapistHomeDocument }) {
+function DocumentPendingCard({
+  document,
+}: {
+  document: TherapistHomeDocument;
+}) {
   const needsAttention = document.state === "attention";
 
   return (
@@ -397,7 +411,7 @@ function DocumentPendingCard({ document }: { document: TherapistHomeDocument }) 
       </div>
       <TESButton
         className="min-h-11 self-start rounded-lg"
-        href={routes.therapist.profile}
+        href={routes.therapist.settings}
         variant="secondary"
       >
         {needsAttention ? "Enviar novamente" : "Enviar documento"}
@@ -504,7 +518,7 @@ function progressSummary({
 }) {
   const totalPending = pendingDocuments.length + pendingSteps.length;
   if (totalPending === 0) {
-    return "Seu cadastro está completo. Acompanhe a análise no status ao lado.";
+    return "Seu cadastro está completo. Acompanhe a análise na situação ao lado.";
   }
   if (totalPending === 1) {
     return "Falta apenas uma etapa para você concluir o cadastro.";
@@ -542,5 +556,10 @@ function verificationDescription(status: string) {
 
 function initials(name: string) {
   const letters = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
-  return letters.map((letter) => letter[0]).join("").toUpperCase() || "TE";
+  return (
+    letters
+      .map((letter) => letter[0])
+      .join("")
+      .toUpperCase() || "TE"
+  );
 }

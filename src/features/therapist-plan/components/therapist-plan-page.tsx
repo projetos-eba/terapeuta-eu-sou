@@ -43,7 +43,7 @@ const comparisonGroups: Array<{
   label: string;
 }> = [
   {
-    label: "Operação — base de todos",
+    label: "O que todos os planos têm",
     codes: [
       "agenda_days_blocks",
       "profile_focus_cover_bio",
@@ -53,7 +53,7 @@ const comparisonGroups: Array<{
     ],
   },
   {
-    label: "Identidade e presença — a partir do Premium",
+    label: "Mais presença — a partir do Premium",
     codes: [
       "username_url",
       "visual_identity_customization",
@@ -65,7 +65,7 @@ const comparisonGroups: Array<{
     ],
   },
   {
-    label: "Gestão e inteligência — exclusivo Premium Plus",
+    label: "Mais acompanhamento — exclusivo Premium Plus",
     codes: [
       "short_videos_presentation_video",
       "aura",
@@ -134,7 +134,7 @@ function PlanHero() {
         Meu plano
       </h1>
       <p className="mt-4 max-w-md text-base font-semibold leading-7 text-tesText-secondary sm:text-lg">
-        Gerencie sua assinatura e aproveite ao máximo sua experiência.
+        Escolha os recursos que combinam com o momento do seu trabalho.
       </p>
     </section>
   );
@@ -167,7 +167,7 @@ function CurrentPlanSection({ data }: { data: TherapistPlanPageData }) {
               Plano atual
             </h2>
             <p className="mt-0.5 text-sm font-medium text-tesText-secondary">
-              Consulte os recursos que acompanham sua assinatura.
+              Veja o que já está disponível para você.
             </p>
           </div>
         </div>
@@ -257,11 +257,10 @@ function UpgradeRecommendation({ data }: { data: TherapistPlanPageData }) {
           Seu plano mais completo
         </p>
         <h3 className="mt-2 text-2xl font-extrabold text-brand-deep">
-          Você já conta com todos os recursos disponíveis.
+          Você já está no plano mais completo.
         </h3>
         <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-          Continue usando os recursos do Premium Plus conforme eles estiverem
-          disponíveis para sua conta.
+          Continue usando todos os recursos disponíveis para sua conta.
         </p>
         <TESButton
           className="mt-6 w-full rounded-lg"
@@ -286,7 +285,7 @@ function UpgradeRecommendation({ data }: { data: TherapistPlanPageData }) {
   return (
     <section
       className="bg-brand-lavenderSoft/45 p-5 sm:p-7"
-      aria-label={`Evolua para ${definition.name}`}
+      aria-label={`Conheça o ${definition.name}`}
     >
       <div className="flex items-center justify-between gap-3">
         <span className="grid size-11 place-items-center rounded-full bg-white text-brand-primary shadow-card">
@@ -297,7 +296,7 @@ function UpgradeRecommendation({ data }: { data: TherapistPlanPageData }) {
         </span>
       </div>
       <h3 className="mt-5 text-2xl font-extrabold leading-tight text-brand-deep">
-        Evolua para o {definition.name}
+        Conheça o {definition.name}
       </h3>
       <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
         Tudo do {data.effectivePlan === TherapistPlan.Free ? "Free" : "Premium"}
@@ -327,7 +326,7 @@ function UpgradeRecommendation({ data }: { data: TherapistPlanPageData }) {
       </div>
       <p className="mt-3 text-center text-sm font-semibold text-tesText-secondary">
         {item.unitAmountCents > 0
-          ? `A partir de ${formatMoney(item.unitAmountCents, item.currency)} por mês`
+          ? `${formatMoney(item.unitAmountCents, item.currency)} por mês`
           : ""}
       </p>
     </section>
@@ -348,7 +347,7 @@ function UpgradeOptions({ data }: { data: TherapistPlanPageData }) {
     <section aria-labelledby="upgrade-options-title">
       <header className="px-1">
         <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-brand-primary">
-          Escolha como evoluir
+          Escolha o que faz sentido para você
         </p>
         <h2
           className="mt-2 font-display text-[34px] font-light italic leading-tight text-brand-deep sm:text-[44px]"
@@ -357,7 +356,7 @@ function UpgradeOptions({ data }: { data: TherapistPlanPageData }) {
           Mais possibilidades para sua prática
         </h2>
         <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
-          Compare os recursos de cada plano e escolha a opção que faz sentido
+          Compare o que cada plano oferece e escolha a opção que faz sentido
           para este momento.
         </p>
       </header>
@@ -451,7 +450,7 @@ function PlanAction({
         href={`${routes.public.therapistCheckout}?plan=${item.code}`}
         variant="gradient"
       >
-        Fazer upgrade <ArrowRight aria-hidden="true" size={18} />
+        Escolher plano <ArrowRight aria-hidden="true" size={18} />
       </TESButton>
     );
   }
@@ -463,7 +462,7 @@ function PlanAction({
         type="button"
         variant="secondary"
       >
-        Assinatura indisponível
+        Não foi possível carregar
       </TESButton>
     );
   }
@@ -474,7 +473,7 @@ function PlanAction({
         href={`${routes.therapist.settings}#plano-assinatura`}
         variant="secondary"
       >
-        Gerenciar mudança agendada
+        Ver mudança agendada
       </TESButton>
     );
   }
@@ -486,7 +485,7 @@ function PlanAction({
         type="button"
         variant="secondary"
       >
-        Assinatura requer atenção
+        Verificar pagamento
       </TESButton>
     );
   }
@@ -494,11 +493,11 @@ function PlanAction({
     <SubscriptionCommandButton
       action="change_plan"
       className="mt-5 w-full"
-      description="A mudança é imediata e a diferença do período atual será calculada antes da confirmação. Se o pagamento não for confirmado, seu plano atual será preservado."
+      description="Você verá o valor e confirmará a mudança antes que ela aconteça. Se o pagamento não for confirmado, seu plano atual continua ativo."
       targetPlan={item.code}
-      title={`Mudar para TES ${getTherapistPlanDefinition(item.code).name}`}
+      title={`Escolher ${getTherapistPlanDefinition(item.code).name}`}
     >
-      Fazer upgrade para Premium Plus
+      {`Escolher ${getTherapistPlanDefinition(item.code).name}`}
     </SubscriptionCommandButton>
   );
 }
@@ -512,7 +511,7 @@ function ComparisonTable({ data }: { data: TherapistPlanPageData }) {
     >
       <div className="border-b border-brand-lavender/80 px-5 py-5 sm:px-7">
         <p className="text-sm font-extrabold uppercase tracking-[0.14em] text-brand-primary">
-          Comparativo de recursos
+          Compare os planos
         </p>
         <h2
           className="mt-2 text-2xl font-extrabold text-brand-deep"
@@ -521,13 +520,13 @@ function ComparisonTable({ data }: { data: TherapistPlanPageData }) {
           Tudo o que cada plano oferece
         </h2>
         <p className="mt-2 max-w-2xl text-sm font-medium leading-6 text-tesText-secondary">
-          Compare os recursos disponíveis no Free, no Premium e no Premium Plus.
+          Veja o que está incluído no Free, no Premium e no Premium Plus.
         </p>
       </div>
       <div
         className="overflow-x-auto"
         role="region"
-        aria-label="Tabela comparativa de recursos dos planos"
+        aria-label="Tabela comparativa dos planos"
         tabIndex={0}
       >
         <table className="min-w-[860px] w-full border-collapse text-left">
@@ -638,7 +637,8 @@ function PaymentProtection() {
           </h2>
           <p className="mt-1 max-w-2xl text-sm font-medium leading-6 text-tesText-secondary">
             Qualquer mudança só é aplicada depois da confirmação necessária.
-            Downgrades e cancelamentos são gerenciados em Configurações.
+            Mudanças para um plano menor e cancelamentos são gerenciados em
+            Configurações.
           </p>
         </div>
       </div>
@@ -711,7 +711,7 @@ function PlanStatusBadge({
     status.badge === "Assinatura ativa"
       ? "bg-status-successBg text-status-success"
       : status.badge === "Pagamento pendente" ||
-          status.badge === "Assinatura indisponível"
+          status.badge === "Não foi possível carregar"
         ? "bg-status-dangerBg text-status-danger"
         : "bg-status-warningBg text-brand-deep";
   return (
@@ -755,14 +755,14 @@ function getSubscriptionSummary(data: TherapistPlanPageData) {
   const subscription = data.subscription;
   if (!subscription && data.effectivePlan !== TherapistPlan.Free)
     return {
-      badge: "Assinatura indisponível",
+      badge: "Não foi possível carregar",
       detail:
-        "Não foi possível confirmar os dados de cobrança. Tente novamente em instantes.",
+        "Não foi possível confirmar os dados da assinatura agora. Tente novamente em instantes.",
     };
   if (!subscription)
     return {
       badge: "Plano Free",
-      detail: "Você pode conhecer os recursos dos planos pagos quando quiser.",
+      detail: "Quando quiser, você pode conhecer as opções pagas.",
     };
   if (subscription.cancelAtPeriodEnd)
     return {
@@ -772,12 +772,12 @@ function getSubscriptionSummary(data: TherapistPlanPageData) {
   if (subscription.scheduledPlan)
     return {
       badge: "Mudança agendada",
-      detail: `Seu plano mudará para TES ${getTherapistPlanDefinition(subscription.scheduledPlan).name} em ${formatDate(subscription.scheduledChangeAt)}.`,
+      detail: `Seu plano mudará para ${getTherapistPlanDefinition(subscription.scheduledPlan).name} em ${formatDate(subscription.scheduledChangeAt)}.`,
     };
   if (subscription.status === "past_due" || subscription.status === "unpaid")
     return {
       badge: "Pagamento pendente",
-      detail: "Revise os dados de cobrança para manter a assinatura em dia.",
+      detail: "Revise a forma de pagamento para manter sua assinatura em dia.",
     };
   return {
     badge: "Assinatura ativa",

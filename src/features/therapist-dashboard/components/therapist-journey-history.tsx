@@ -37,9 +37,7 @@ export function TherapistJourneyHistory({
 
   return (
     <section className="flex min-h-[330px] flex-col rounded-panel border border-[var(--tes-color-border)]/70 bg-white p-6 shadow-card">
-      <h2 className="text-xl font-bold text-brand-deep">
-        Histórico da Jornada
-      </h2>
+      <h2 className="text-xl font-bold text-brand-deep">Histórico</h2>
       <div className="mt-7 grid gap-6 sm:grid-cols-2">
         {items.map(({ icon: Icon, label, value }) => (
           <div className="flex items-start gap-3" key={label}>
@@ -61,7 +59,7 @@ export function TherapistJourneyHistory({
         className="mt-auto pt-8 text-center text-xs font-bold text-brand-deep outline-none hover:text-brand-primary focus-visible:ring-4 focus-visible:ring-ring/20"
         href={routes.therapist.patients as Route<string>}
       >
-        Ver trajetória completa →
+        Ver histórico completo →
       </Link>
     </section>
   );

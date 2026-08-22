@@ -48,6 +48,16 @@ type PrivateDocumentRecord = {
   validation_state: string;
 };
 
+type PrivateIdentityRecord = {
+  city?: string | null;
+  document_number?: string | null;
+  neighborhood?: string | null;
+  postal_code?: string | null;
+  state?: string | null;
+  street?: string | null;
+  street_number?: string | null;
+};
+
 type TherapistProfileRecord = {
   id: string;
   is_public: boolean;
@@ -191,6 +201,8 @@ runtime.serve(async (request) => {
       }
 
       if (command.action === "publish") {
+        await assertPublicationRequirements(client, user.id);
+
         const publishResult = await client.rpc<PublishCommandResult>(
           "publish_therapist_profile_draft_v1",
           {
@@ -522,6 +534,57 @@ async function readPrivateDocuments(
   }
 
   return Array.from(latestByKind.values());
+}
+
+async function assertPublicationRequirements(
+  client: SupabaseRestClient,
+  userId: string,
+) {
+  const editor = (await client.rpc<EditorReadResult>(
+    "get_private_therapist_profile_editor_v1",
+    { p_actor_user_id: userId },
+  )) as EditorReadResult;
+  const therapistProfileId = String(editor.therapistProfileId ?? "");
+
+  if (!therapistProfileId) {
+    throw new DomainError(
+      "PROFILE_NOT_FOUND",
+      404,
+      "Perfil profissional não encontrado.",
+    );
+  }
+
+  const [identityRows, documents] = await Promise.all([
+    client.get<PrivateIdentityRecord[]>(
+      `/rest/v1/therapist_private_identity?therapist_profile_id=eq.${encodeURIComponent(therapistProfileId)}&select=city,document_number,neighborhood,postal_code,state,street,street_number&limit=1`,
+    ),
+    readPrivateDocuments(client, therapistProfileId),
+  ]);
+  const identity = identityRows[0];
+  const identityComplete = Boolean(
+    identity &&
+    identity.document_number?.trim() &&
+    identity.postal_code?.trim() &&
+    identity.street?.trim() &&
+    identity.street_number?.trim() &&
+    identity.neighborhood?.trim() &&
+    identity.city?.trim() &&
+    identity.state?.trim(),
+  );
+  const documentsComplete = ["identity_document", "address_proof"].every(
+    (kind) =>
+      documents.some(
+        (document) => document.kind === kind && document.status !== "rejected",
+      ),
+  );
+
+  if (!identityComplete || !documentsComplete) {
+    throw new DomainError(
+      "PROFILE_REQUIREMENTS_INCOMPLETE",
+      422,
+      "Complete seus dados e envie os documentos obrigatórios em Configurações antes de publicar seu perfil.",
+    );
+  }
 }
 
 async function readVerificationSummary(

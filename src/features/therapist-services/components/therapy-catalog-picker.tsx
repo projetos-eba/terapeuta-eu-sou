@@ -45,7 +45,7 @@ export function TherapyCatalogPicker({
         className="text-sm font-extrabold text-brand-deep"
         htmlFor="service-therapy-search"
       >
-        Buscar terapia da plataforma
+        Buscar terapia
       </label>
       <TESInput
         id="service-therapy-search"
@@ -59,7 +59,7 @@ export function TherapyCatalogPicker({
       />
 
       <div
-        aria-label="Catálogo permitido para novos serviços"
+        aria-label="Terapias disponíveis"
         className="mt-4 max-h-[42vh] space-y-5 overflow-y-auto pr-1"
         role="listbox"
       >
@@ -117,8 +117,8 @@ export function TherapyCatalogPicker({
               Nenhuma terapia encontrada
             </p>
             <p className="mt-1 text-xs font-semibold leading-5 text-tesText-secondary">
-              Você pode solicitar inclusão no futuro, mas esta ação não cria
-              terapia nova.
+              Você pode enviar uma sugestão, mas a terapia precisa estar
+              disponível no TES para ser adicionada.
             </p>
           </div>
         )}

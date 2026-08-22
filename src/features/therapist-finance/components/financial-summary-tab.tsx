@@ -57,13 +57,13 @@ export function FinancialSummaryTab({
       value: receivable,
     },
     {
-      description: "Sessões já elegíveis para entrar no próximo lote.",
+      description: "Sessões prontas para entrar no próximo repasse.",
       icon: Banknote,
       label: "Disponível para repasse",
       value: overview.eligibleForPayoutCents,
     },
     {
-      description: "Valores em lote ou em transferência.",
+      description: "Valores já separados para repasse ou transferência.",
       icon: Clock3,
       label: "Em processamento",
       value: overview.payoutProcessingCents,

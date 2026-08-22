@@ -26,7 +26,7 @@ describe("TherapistPlanPage", () => {
     expect(screen.getAllByText("R$ 120,00").length).toBeGreaterThan(0);
     expect(
       screen
-        .getAllByRole("link", { name: /Fazer upgrade/ })
+        .getAllByRole("link", { name: /Escolher/ })
         .map((link) => link.getAttribute("href")),
     ).toEqual(
       expect.arrayContaining([
@@ -46,10 +46,10 @@ describe("TherapistPlanPage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", {
-        name: "Fazer upgrade para Premium Plus",
+        name: "Escolher Premium Plus",
       }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Fazer upgrade" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Escolher plano" })).toBeNull();
   });
 
   it("does not offer downgrade or upgrade to a Premium Plus therapist", () => {
@@ -61,7 +61,7 @@ describe("TherapistPlanPage", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByText("Seu plano mais completo")).toBeInTheDocument();
-    expect(screen.queryByText(/Fazer upgrade/)).toBeNull();
+    expect(screen.queryByText(/Escolher plano/)).toBeNull();
     expect(screen.queryByText(/Mudar para Premium/)).toBeNull();
   });
 });

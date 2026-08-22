@@ -20,6 +20,9 @@ Use esta skill ao alterar Métricas & Relatórios no shell do terapeuta.
 - Canônica: `/terapeuta/insights`.
 - Compatibilidade: `/terapeuta/metricas` redireciona para a rota canônica.
 - Não criar uma segunda implementação para abas ou planos.
+- Nome mostrado no menu: `Resultados`. A interface deve falar em
+  acompanhamento e trabalho do terapeuta; `métricas` e `insights` ficam apenas
+  como termos internos de rota, contrato e documentação técnica.
 
 ## Estado Atual
 
@@ -169,6 +172,6 @@ zoom de 200%.
 
 ## Assets da plataforma
 
-- O hero compartilhado das abas de insights usa `therapistMetricsHero` com fade
+- O hero compartilhado das abas de Resultados usa `therapistMetricsHero` com fade
   à esquerda e sem alterar dados, capability ou período. Consulte
   `docs/design-system/platform-assets.md`.

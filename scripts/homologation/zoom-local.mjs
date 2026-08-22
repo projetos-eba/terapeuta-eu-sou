@@ -61,6 +61,7 @@ const stripeWebhookEvents = [
   "invoice.payment_failed",
   "invoice.payment_action_required",
   "payment_intent.processing",
+  "payment_intent.requires_action",
   "payment_intent.succeeded",
   "payment_intent.payment_failed",
   "payment_intent.canceled",

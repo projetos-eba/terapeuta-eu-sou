@@ -63,10 +63,8 @@ describe("TherapistSettingsPage", () => {
     expect(
       screen.getByRole("heading", { name: "Configurações" }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText("Nome de acesso")).toHaveValue("Ana Oliveira");
-    expect(screen.getByLabelText("E-mail de acesso")).toHaveValue(
-      "ana@example.test",
-    );
+    expect(screen.getByLabelText("Nome completo")).toHaveValue("Ana Oliveira");
+    expect(screen.getByLabelText("E-mail")).toHaveValue("ana@example.test");
     expect(
       screen.getByRole("link", { name: "Editar perfil público" }),
     ).toHaveAttribute("href", "/terapeuta/perfil/editar");
@@ -84,6 +82,17 @@ describe("TherapistSettingsPage", () => {
     expect(
       screen.getByRole("button", { name: "Mudar para Premium" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Documentos para aprovação" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "O preenchimento dos dados e o envio destes documentos são necessários para a aprovação e publicação do seu perfil.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: "Enviar documento" }),
+    ).toHaveLength(2);
   });
 
   it("saves edited account settings through the authenticated command", async () => {
@@ -192,9 +201,9 @@ describe("TherapistSettingsPage", () => {
       />,
     );
 
-    expect(
-      screen.getByText(/Seu plano mudará para TES Premium/),
-    ).toHaveTextContent("Até lá, seu plano atual permanece ativo.");
+    expect(screen.getByText(/Seu plano mudará para Premium/)).toHaveTextContent(
+      "Até lá, seu plano atual permanece ativo.",
+    );
     expect(
       screen.queryByRole("button", { name: "Mudar para Premium" }),
     ).toBeNull();
@@ -211,9 +220,9 @@ describe("TherapistSettingsPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Mudar para Premium" }));
 
     expect(
-      screen.getByRole("dialog", { name: "Mudar para TES Premium" }),
+      screen.getByRole("dialog", { name: "Mudar para Premium" }),
     ).toHaveTextContent(
-      "Até essa data, você continuará com todos os benefícios do TES Premium Plus.",
+      "Até essa data, você continuará com todos os benefícios do Premium Plus.",
     );
     expect(
       screen.getByRole("button", { name: "Confirmar alteração" }),
@@ -239,6 +248,10 @@ function settingsFixture(): TherapistSettingsData {
         street: "Rua dos Pinheiros",
         streetNumber: "100",
       },
+    },
+    documentCenter: {
+      documents: [],
+      verificationStatus: "draft",
     },
     profile: {
       isAcceptingBookings: false,

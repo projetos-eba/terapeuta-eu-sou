@@ -39,6 +39,13 @@ describe("TherapistGettingStartedPage", () => {
       screen.getByText("Cadastro ainda não enviado para análise"),
     ).toBeInTheDocument();
     expect(screen.getByText("Antonio Silva")).toBeInTheDocument();
+
+    const settingsLinks = screen
+      .getAllByRole("link")
+      .filter(
+        (link) => link.getAttribute("href") === "/terapeuta/configuracoes",
+      );
+    expect(settingsLinks).toHaveLength(4);
   });
 });
 

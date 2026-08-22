@@ -27,7 +27,7 @@ export function TherapistMetricsDiscovery({
           Da descoberta ao início da reserva
         </h2>
         <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
-          Estes sinais observam somente o caminho até o seu perfil. Não há
+          Estas informações mostram somente o caminho até o seu perfil. Não há
           comparação com outros profissionais nem tendência agregada do portal.
         </p>
       </div>
@@ -124,12 +124,12 @@ function DiscoveryState({
       title: "Ainda sem movimento registrado",
     },
     processing: {
-      body: "Os primeiros sinais aparecerão aqui após a coleta e a consolidação diária.",
+      body: "As primeiras informações aparecerão aqui assim que os dados forem reunidos.",
       title: "Preparando os primeiros dados",
     },
     unavailable: {
       body: "A coleta permanece desativada até a validação formal de privacidade e retenção. Seus dados operacionais continuam disponíveis normalmente.",
-      title: "Sinais de descoberta ainda não ativados",
+      title: "Dados de descoberta ainda não ativados",
     },
   } as const;
 
@@ -157,8 +157,8 @@ function FunnelRate({
       <article className="rounded-lg border border-brand-lavender bg-white p-4">
         <p className="text-sm font-extrabold text-brand-deep">{label}</p>
         <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-          Disponível após {value.minimumSample} sinais elegíveis. A amostra
-          atual ainda é pequena para uma taxa estável.
+          Disponível após {value.minimumSample} registros. Ainda estamos
+          reunindo dados suficientes para mostrar uma taxa confiável.
         </p>
       </article>
     );

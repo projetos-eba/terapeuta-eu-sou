@@ -19,7 +19,7 @@ export function TherapistKpiGrid({
         href={routes.therapist.agenda}
         icon={CalendarCheck2}
         kpi={kpis.monthlySessions}
-        label="Encontros este mês"
+        label="Sessões este mês"
         title="Sua agenda"
         value={formatNumber(kpis.monthlySessions.value)}
       />

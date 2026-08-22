@@ -69,6 +69,8 @@ Avaliações exibidas ao terapeuta e ao público devem derivar de:
   serviço, nota, data, comentário, estado e a próxima ação.
 - O rail mostra distribuição por nota e contexto sobre avaliações. No tablet,
   ocupa a faixa de duas colunas; no mobile, segue a lista principal.
+- Na comunicação, usar “Sessão” para a operação do terapeuta e “Terapia” para
+  a oferta apresentada; evitar “encontro” e “serviço” na interface.
 - Ícones são semânticos e usam tokens TES. Texto funcional é `14px` ou maior;
   apenas metadados secundários podem chegar a `11px` no desktop.
 

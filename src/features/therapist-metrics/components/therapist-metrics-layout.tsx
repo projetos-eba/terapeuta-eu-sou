@@ -50,7 +50,7 @@ function MetricsHero({
               Seu acompanhamento
             </p>
             <h1 className="mt-3 font-display text-[44px] font-light italic leading-none text-brand-deep sm:text-[58px]">
-              Métricas e insights
+              Acompanhe seu trabalho
             </h1>
             <p className="mt-5 max-w-[610px] text-base font-semibold leading-7 text-tesText-secondary sm:text-lg">
               Acompanhe como as pessoas encontram seu perfil, agendam sessões e
@@ -60,7 +60,7 @@ function MetricsHero({
           </div>
 
           <nav
-            aria-label="Visões de métricas"
+            aria-label="Seções de acompanhamento"
             className="flex min-h-12 w-full items-end gap-1 border-b border-brand-lavender"
           >
             {tabs.map((item) => {
@@ -116,7 +116,7 @@ function MetricsHero({
         >
           <input name="tab" type="hidden" value={tab} />
           <label className="sr-only" htmlFor="metrics-period">
-            Período das métricas
+            Período do acompanhamento
           </label>
           <select
             className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-extrabold text-brand-deep outline-none transition focus-visible:ring-2 focus-visible:ring-brand-primary"

@@ -36,7 +36,7 @@ export function FinancialAdvancedDashboard({
 
   return (
     <section
-      aria-label="Dashboard financeiro Premium Plus"
+      aria-label="Visão financeira do Premium Plus"
       className="grid gap-5"
     >
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -56,7 +56,7 @@ export function FinancialAdvancedDashboard({
           value={formatCurrency(dashboard.forecast.contractedMonthNetCents)}
         />
         <AdvancedMetricCard
-          description="Estimativa baseada na disponibilidade e nos valores atuais dos serviços. Não representa receita garantida."
+          description="Estimativa baseada nos horários disponíveis e nos valores atuais das suas terapias. Não representa receita garantida."
           label="Potencial disponível da agenda"
           muted={dashboard.agendaPotential.status !== "available"}
           value={formatCurrency(
@@ -93,11 +93,11 @@ function AdvancedLockedState() {
       </span>
       <div>
         <h2 className="text-lg font-extrabold text-brand-deep">
-          Dashboard financeiro Premium Plus
+          Visão financeira do Premium Plus
         </h2>
         <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
           Projeções, potencial da agenda, oportunidades, retenção avançada,
-          evolução financeira e insights acionáveis fazem parte do Premium Plus.
+          evolução financeira e dicas práticas fazem parte do Premium Plus.
           Recebimentos, repasses e conta de recebimento continuam disponíveis.
         </p>
       </div>
@@ -257,7 +257,7 @@ function AgendaPotentialCard({
           value={formatPercent(potential.occupancyRate)}
         />
         <MiniStat
-          label="Slots estimados"
+          label="Horários disponíveis estimados"
           value={formatInteger(potential.estimatedBookableSlots)}
         />
         <MiniStat
@@ -356,7 +356,8 @@ function OpportunityCard({
             Oportunidade do mês
           </h2>
           <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-            Gerada por regras determinísticas a partir dos seus próprios dados.
+            Esta sugestão usa os dados do seu trabalho e mostra o que levou a
+            ela.
           </p>
         </div>
       </div>
@@ -402,11 +403,9 @@ function InsightCard({
           <Sparkles aria-hidden="true" size={21} />
         </span>
         <div>
-          <h2 className="text-xl font-extrabold text-brand-deep">
-            Insight TES
-          </h2>
+          <h2 className="text-xl font-extrabold text-brand-deep">Dica TES</h2>
           <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-            Sem IA generativa: a explicação vem de regras e evidências exibidas.
+            A explicação mostra os dados que levaram a esta dica.
           </p>
         </div>
       </div>
@@ -422,7 +421,7 @@ function InsightCard({
           <OpportunityActionLink action={insight.action} />
         </div>
       ) : (
-        <EmptyAdvancedState message="Ainda não há insight financeiro com evidência suficiente." />
+        <EmptyAdvancedState message="Ainda não há uma dica financeira com dados suficientes." />
       )}
     </AppPageSection>
   );
@@ -497,10 +496,11 @@ function RetentionCard({
         </span>
         <div>
           <h2 className="text-xl font-extrabold text-brand-deep">
-            Retenção de pacientes
+            Retorno das pessoas atendidas
           </h2>
           <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-            Coortes por mês, com janela incompleta censurada.
+            Acompanhamos grupos por mês; períodos ainda recentes podem estar
+            incompletos.
           </p>
         </div>
       </div>
@@ -510,7 +510,7 @@ function RetentionCard({
           value={formatPercent(dashboard.retention.returnRate)}
         />
         <MiniStat
-          label="Elegíveis"
+          label="Pessoas acompanhadas"
           value={formatInteger(dashboard.retention.eligiblePatients)}
         />
         <MiniStat
@@ -528,7 +528,7 @@ function RetentionCard({
             <thead>
               <tr className="text-xs font-extrabold uppercase text-tesText-muted">
                 <th className="border-b border-brand-lavender py-3 pr-3">
-                  Coorte
+                  Grupo do mês
                 </th>
                 <th className="border-b border-brand-lavender py-3 pr-3">
                   Novos
@@ -540,7 +540,7 @@ function RetentionCard({
                   Sem retorno
                 </th>
                 <th className="border-b border-brand-lavender py-3">
-                  Censurados
+                  Período incompleto
                 </th>
               </tr>
             </thead>
@@ -571,7 +571,7 @@ function RetentionCard({
           </table>
         </div>
       ) : (
-        <EmptyAdvancedState message="Ainda não há coortes suficientes para análise avançada." />
+        <EmptyAdvancedState message="Ainda não há dados suficientes para mostrar este acompanhamento." />
       )}
     </AppPageSection>
   );

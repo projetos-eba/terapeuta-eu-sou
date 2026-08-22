@@ -401,8 +401,7 @@ export function TherapistScheduleHours({
                     Disponibilidade semanal
                   </h2>
                   <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
-                    Defina as faixas em que novos encontros podem ser
-                    oferecidos.
+                    Defina as faixas em que novas sessões podem ser oferecidos.
                   </p>
                 </div>
                 <button
@@ -428,7 +427,7 @@ export function TherapistScheduleHours({
                   onChange={(event) => setScope(event.target.value)}
                   value={scope}
                 >
-                  <option value="all">Todos os serviços</option>
+                  <option value="all">Todas as terapias</option>
                   {services.map((service) => (
                     <option key={service.id} value={service.id}>
                       {service.title}
@@ -813,7 +812,7 @@ function SessionRulesCard({
               size={18}
             />
             Selecione uma terapia para ajustar duração, oferta e antecedência.
-            As faixas gerais continuam disponíveis para todos os serviços.
+            As faixas gerais continuam disponíveis para todas as terapias.
           </p>
         </div>
       )}

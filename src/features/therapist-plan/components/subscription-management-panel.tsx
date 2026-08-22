@@ -37,7 +37,7 @@ export function SubscriptionManagementPanel({
             Plano e assinatura
           </h2>
           <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-            Consulte seu plano efetivo e gerencie mudanças futuras com clareza.
+            Veja seu plano atual e cuide das próximas mudanças com clareza.
           </p>
         </div>
       </div>
@@ -46,7 +46,7 @@ export function SubscriptionManagementPanel({
         <SubscriptionFact
           icon={CheckCircle2}
           label="Plano atual"
-          value={`TES ${definition.name}`}
+          value={definition.name}
         />
         <SubscriptionFact
           icon={CreditCard}
@@ -54,7 +54,7 @@ export function SubscriptionManagementPanel({
           value={
             catalogItem && catalogItem.unitAmountCents > 0
               ? `${formatMoney(catalogItem.unitAmountCents, catalogItem.currency)} por mês`
-              : "Sem cobrança ativa"
+              : "Sem cobrança"
           }
         />
         <SubscriptionFact
@@ -100,9 +100,9 @@ export function SubscriptionManagementPanel({
         !subscription?.scheduledPlan ? (
           <SubscriptionCommandButton
             action="change_plan"
-            description={`Seu plano será alterado para TES Premium em ${formatDate(subscription?.currentPeriodEnd ?? null)}. Até essa data, você continuará com todos os benefícios do TES Premium Plus.`}
+            description={`Seu plano será alterado para Premium em ${formatDate(subscription?.currentPeriodEnd ?? null)}. Até essa data, você continuará com todos os benefícios do Premium Plus.`}
             targetPlan={TherapistPlan.Premium}
-            title="Mudar para TES Premium"
+            title="Mudar para Premium"
             variant="secondary"
           >
             Mudar para Premium
@@ -125,7 +125,7 @@ export function SubscriptionManagementPanel({
         !subscription.cancelAtPeriodEnd ? (
           <SubscriptionCommandButton
             action="cancel"
-            description={`Você continuará com todos os benefícios do TES ${definition.name} até ${formatDate(subscription.currentPeriodEnd)}. Depois dessa data, seu plano será TES Free.`}
+            description={`Você continuará com todos os benefícios do ${definition.name} até ${formatDate(subscription.currentPeriodEnd)}. Depois dessa data, seu plano será Free.`}
             title="Cancelar assinatura"
             variant="ghost"
           >
@@ -153,7 +153,7 @@ function SubscriptionNotice({ data }: { data: TherapistPlanPageData }) {
     }
     return (
       <p className="rounded-lg border border-brand-lavender bg-brand-lavenderSoft/50 p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-        Seu plano Free não possui cobrança recorrente.
+        O plano Free não tem cobrança mensal.
       </p>
     );
   }
@@ -170,7 +170,7 @@ function SubscriptionNotice({ data }: { data: TherapistPlanPageData }) {
   if (subscription.scheduledPlan) {
     return (
       <p className="rounded-lg border border-brand-lavender bg-brand-lavenderSoft/50 p-4 text-sm font-bold leading-6 text-brand-deep">
-        Seu plano mudará para TES{" "}
+        Seu plano mudará para{" "}
         {getTherapistPlanDefinition(subscription.scheduledPlan).name} em{" "}
         {formatDate(subscription.scheduledChangeAt)}. Até lá, seu plano atual
         permanece ativo.
@@ -184,8 +184,8 @@ function SubscriptionNotice({ data }: { data: TherapistPlanPageData }) {
         className="rounded-lg border border-status-danger/30 bg-status-dangerBg p-4 text-sm font-bold leading-6 text-status-danger"
         role="alert"
       >
-        Há uma pendência na assinatura. Revise a forma de pagamento para evitar
-        interrupções futuras.
+        Há uma pendência na assinatura. Revise a forma de pagamento para manter
+        seu plano ativo.
       </p>
     );
   }

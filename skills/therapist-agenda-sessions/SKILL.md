@@ -124,13 +124,13 @@ Não criar enums equivalentes dentro de features.
 - O Calendário usa o frame Figma `13366:5342` e persiste estado navegável em
   `aba=calendario`, `visao=day|week|month` e `data=YYYY-MM-DD`.
 - A composição visual do Calendário segue o frame `13366:5342`: título em
-  `font-display` itálico, copy “Organize seus horários, acompanhe seus
-  encontros e mantenha sua agenda sempre atualizada.”, tabs Calendário /
+  `font-display` itálico, copy “Organize seus horários, acompanhe suas
+  sessões e mantenha sua agenda sempre atualizada.”, tabs Calendário /
   Horários / Bloqueios, alternância Dia / Semana / Mês, seletor de período,
   grade e right rail. Tratar a imagem de referência como fonte da copy apenas
   quando o node Figma não puder ser lido pelo MCP.
 - Reutilizar os tokens TES e os componentes existentes. Não criar uma grade,
-  sidebar, modal ou botão paralelo; detalhes de encontro usam `TESDialog`.
+  sidebar, modal ou botão paralelo; detalhes de sessão usam `TESDialog`.
 - Posicionar filtros de calendário imediatamente antes da área da agenda. Eles
   iniciam abertos em desktop e recolhidos em mobile, sem deslocar a descoberta
   operacional para depois da grade ou do right rail.
@@ -157,8 +157,8 @@ Não criar enums equivalentes dentro de features.
   de período anterior, próximo e Hoje. Filtros locais podem ser recolhidos
   abaixo do conteúdo principal, mas permanecem disponíveis e não alteram a
   URL nem o contrato do read model.
-- Copy operacional canônica: “Encontros de hoje”, “Pendências da agenda”,
-  “Insights para sua agenda”, “Insight TES” e “Clique em um horário para ver
+- Copy operacional canônica: “Sessões de hoje”, “Pendências da agenda”,
+  “Acompanhe sua agenda”, “Dica do TES” e “Clique em um horário para ver
   ou editar o agendamento.”
 - O fechamento A6/A7 fica em
   `docs/architecture/agenda-a6-a7-closure.md`.

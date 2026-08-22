@@ -33,7 +33,7 @@ Read `AGENTS.md`, `docs/product/sitemap.md`,
 - `/terapeuta/configuracoes#plano-assinatura` owns scheduled downgrade,
   cancellation and cancellation reversal.
 - Do not create `/upgrade` or plan-specific authenticated pages.
-- The Upgrade sidebar item is visible for Free and Premium and hidden for
+- The `Meu plano` sidebar item is visible for Free and Premium and hidden for
   Premium Plus.
 
 ## Sources Of Truth
@@ -74,6 +74,8 @@ Read `AGENTS.md`, `docs/product/sitemap.md`,
 - Unknown or incomplete catalog data fails closed and never invents a price.
 - Frontend copy must not mention tables, webhooks, read models, environment,
   secrets or internal failures.
+- User-facing actions use `Escolher plano`, `Ver Premium Plus` and
+  `Mudar para Premium`; technical billing terms stay out of the interface.
 
 ## Composition And Responsiveness
 

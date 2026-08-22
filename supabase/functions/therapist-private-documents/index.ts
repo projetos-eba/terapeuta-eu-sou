@@ -250,13 +250,16 @@ async function buildTherapistDocumentCenter(
   therapistProfileId: string,
   actorUserId: string,
 ) {
-  const [documents, editorRows] = await Promise.all([
+  const [documents, editorRows, identityRows] = await Promise.all([
     listLatestDocuments(client, therapistProfileId),
     client.rpc<TherapistEditorReadModel[] | TherapistEditorReadModel>(
       "get_private_therapist_profile_editor_v1",
       {
         p_actor_user_id: actorUserId,
       },
+    ),
+    client.get<Array<Record<string, unknown>>>(
+      `/rest/v1/therapist_private_identity?therapist_profile_id=eq.${encodeURIComponent(therapistProfileId)}&select=document_number,postal_code,street,street_number,neighborhood,city,state&limit=1`,
     ),
   ]);
 
@@ -275,13 +278,17 @@ async function buildTherapistDocumentCenter(
   const publicStatus = text(editor?.derived?.publicStatus) || "draft";
   const verificationStatus =
     text(editor?.derived?.verificationStatus) || "draft";
-  const identityReady = hasUploadedDocument(documents.identity_document);
+  const identityReady = isPrivateIdentityComplete(identityRows?.[0]);
+  const identityDocumentReady = hasUploadedDocument(
+    documents.identity_document,
+  );
   const addressReady = hasUploadedDocument(documents.address_proof);
   const allInputsReady =
     profileReady &&
     servicesReady &&
     availabilityReady &&
     identityReady &&
+    identityDocumentReady &&
     addressReady;
 
   const steps = [
@@ -293,9 +300,9 @@ async function buildTherapistDocumentCenter(
     ),
     onboardingStep(
       "services",
-      "Serviços e terapias",
+      "Terapias ativas",
       servicesReady,
-      "Especialidades e serviços publicados.",
+      "Especialidades e terapias publicadas.",
     ),
     onboardingStep(
       "availability",
@@ -304,9 +311,15 @@ async function buildTherapistDocumentCenter(
       "Horários e regras de atendimento.",
     ),
     onboardingStep(
+      "identity_data",
+      "Dados da conta",
+      identityReady,
+      "Documento e endereço para aprovação.",
+    ),
+    onboardingStep(
       "identity_document",
       "Documento de identidade",
-      identityReady,
+      identityDocumentReady,
       "RG, CNH ou passaporte com foto.",
     ),
     onboardingStep(
@@ -352,8 +365,9 @@ async function buildTherapistDocumentCenter(
     },
     summary: buildTherapistSummary({
       allInputsReady,
-      missingCount: [identityReady, addressReady].filter((item) => !item)
-        .length,
+      missingCount: [identityReady, identityDocumentReady, addressReady].filter(
+        (item) => !item,
+      ).length,
       publicStatus,
       verificationStatus,
     }),
@@ -685,8 +699,7 @@ async function reviewPrivateDocument({
   client: SupabaseRestClient;
   document: PrivateDocumentRow;
 }) {
-  const nextStatus =
-    action.decision === "accepted" ? "accepted" : "rejected";
+  const nextStatus = action.decision === "accepted" ? "accepted" : "rejected";
   const nextValidationState =
     action.decision === "accepted" ? "passed" : "failed";
   const reviewNote =
@@ -1049,6 +1062,21 @@ function text(value: unknown) {
 
 function hasText(value: unknown) {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function isPrivateIdentityComplete(value: unknown) {
+  const identity = asRecord(value);
+  if (!identity) return false;
+
+  return [
+    identity.document_number,
+    identity.postal_code,
+    identity.street,
+    identity.street_number,
+    identity.neighborhood,
+    identity.city,
+    identity.state,
+  ].every(hasText);
 }
 
 function asRecord(value: unknown) {

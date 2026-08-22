@@ -42,7 +42,7 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
           <div>
             <span className="inline-flex min-h-8 items-center gap-2 rounded-full bg-white/80 px-3 text-xs font-extrabold text-brand-primary ring-1 ring-brand-lavender">
               <Sparkles aria-hidden="true" size={15} />
-              Assistente Aura · Premium Plus
+              Assessor Aura · Premium Plus
             </span>
             <h1 className="mt-5 max-w-3xl font-display text-[38px] font-light italic leading-tight text-brand-deep sm:text-[52px]">
               Sinais objetivos para cuidar da sua presença.
@@ -74,7 +74,8 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
                   Recomendações do momento
                 </h2>
                 <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-                  Regras versionadas, com evidência resumida e ação sugerida.
+                  Cada sugestão mostra os dados que levaram a ela e um próximo
+                  passo.
                 </p>
               </div>
               <Link
@@ -106,7 +107,7 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
                         </span>
                         <div>
                           <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-brand-primary">
-                            Regra {recommendation.ruleVersion}
+                            Por que estamos sugerindo
                           </p>
                           <h3 className="mt-1 text-xl font-extrabold leading-tight text-brand-deep">
                             {recommendation.title}
@@ -177,16 +178,16 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
                     Nenhum sinal prioritário agora
                   </h3>
                   <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-                    A Aura não encontrou uma ação prioritária dentro das regras
-                    ativas e das amostras mínimas. Suas métricas seguem
-                    disponíveis para acompanhamento.
+                    O Assessor Aura não encontrou uma ação prioritária entre os
+                    dados disponíveis. Seus resultados continuam disponíveis
+                    para acompanhamento.
                   </p>
                 </div>
                 <Link
                   className="inline-flex min-h-11 w-fit items-center justify-center rounded-full bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
                   href={routes.therapist.insights as Route<string>}
                 >
-                  Ver métricas
+                  Ver resultados
                 </Link>
               </AppPageSection>
             )}
@@ -198,12 +199,12 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
           <AppPageSection>
             <Sparkles aria-hidden="true" className="text-brand-primary" />
             <h2 className="mt-4 text-base font-extrabold text-brand-deep">
-              Como a Aura decide
+              Como o Assessor Aura ajuda
             </h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              Cada recomendação nasce de uma regra fixa, com versão, período e
-              amostra mínima quando aplicável. A Aura não lê conversas,
-              comentários privados ou conteúdos clínicos.
+              O Assessor Aura olha indicadores do seu trabalho e explica de onde
+              cada sugestão veio. Ele não lê conversas, comentários privados ou
+              conteúdos clínicos.
             </p>
           </AppPageSection>
         </AppPageAside>
@@ -221,7 +222,7 @@ export function TherapistAuraErrorState({ message }: { message: string }) {
         </span>
         <div>
           <h1 className="font-display text-[34px] font-light italic leading-tight text-brand-deep sm:text-[46px]">
-            Assistente Aura indisponível
+            Assessor Aura indisponível
           </h1>
           <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
             {message}
@@ -245,7 +246,7 @@ function SignalSummary({ data }: { data: TherapistAuraPageData }) {
       label: "Agenda",
       value:
         data.signals.bookingReadiness.status === "empty"
-          ? "Sem serviço público agendável"
+          ? "Nenhuma terapia disponível"
           : `${data.signals.bookingReadiness.servicesWithFutureAvailability}/${data.signals.bookingReadiness.publicBookableServices} com horários`,
     },
     {
@@ -320,7 +321,7 @@ function summarizeRate(
   rate: TherapistAuraPageData["signals"]["sessions"]["cancellationRate"],
 ) {
   if (rate.status === "insufficient_sample") {
-    return `Amostra ${rate.observedSample}/${rate.minimumSample}`;
+    return `Dados disponíveis: ${rate.observedSample}/${rate.minimumSample}`;
   }
 
   return rate.value === null

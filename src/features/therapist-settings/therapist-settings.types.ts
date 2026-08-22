@@ -1,4 +1,8 @@
 import type { TherapistPlan, TherapistStatus } from "@/domain/tes";
+import type {
+  TherapistPrivateDocumentSummary,
+  TherapistProfileVerificationStatus,
+} from "@/features/therapist-profile-editor/therapist-profile-editor.types";
 
 export type TherapistSettingsEditableFields = {
   displayName: string;
@@ -24,6 +28,10 @@ export type TherapistSettingsData = {
   account: TherapistSettingsEditableFields & {
     email: string;
     userId: string;
+  };
+  documentCenter: {
+    documents: TherapistPrivateDocumentSummary[];
+    verificationStatus: TherapistProfileVerificationStatus;
   };
   profile: {
     isAcceptingBookings: boolean;

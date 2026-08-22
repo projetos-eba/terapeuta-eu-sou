@@ -190,7 +190,7 @@ export function PublicProfilePreview({
           />
           <ReadOnlyPublicItem
             icon={<Sparkles aria-hidden="true" size={18} />}
-            label="Serviços"
+            label="Terapias"
             value="Gerenciados em Suas terapias"
           />
         </div>

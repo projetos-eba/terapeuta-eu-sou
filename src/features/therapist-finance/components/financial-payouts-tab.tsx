@@ -44,7 +44,7 @@ export function FinancialPayoutsTab({
         className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
       >
         <PayoutMetricCard
-          description="Valores elegíveis para entrar no próximo lote."
+          description="Valores prontos para entrar no próximo repasse."
           icon={Landmark}
           label="Disponível para repasse"
           value={payouts.summary.eligibleForPayoutCents}
@@ -52,25 +52,25 @@ export function FinancialPayoutsTab({
         <PayoutMetricCard
           description={
             payouts.summary.nextBatchAt
-              ? `Próximo lote previsto para ${formatDateTime(
+              ? `Próximo repasse previsto para ${formatDateTime(
                   payouts.summary.nextBatchAt,
                   payouts.filters.timezone,
                 )}.`
-              : "Nenhum lote futuro identificado para este período."
+              : "Nenhum repasse futuro identificado para este período."
           }
           icon={CalendarClock}
-          label="Próximo lote"
+          label="Próximo repasse"
           valueText={
             payouts.summary.nextBatchAt
               ? formatDateTime(
                   payouts.summary.nextBatchAt,
                   payouts.filters.timezone,
                 )
-              : "Sem lote"
+              : "Sem previsão"
           }
         />
         <PayoutMetricCard
-          description="Valores já separados em lote ou transferência."
+          description="Valores já separados para repasse ou transferência."
           icon={Clock3}
           label="Em processamento"
           value={payouts.summary.payoutProcessingCents}
@@ -93,7 +93,7 @@ export function FinancialPayoutsTab({
           <input name="tab" type="hidden" value="repasses" />
           <input name="period" type="hidden" value={dateRange.key} />
           <label className="grid gap-1 text-sm font-extrabold text-brand-deep">
-            Status
+            Situação
             <select
               className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
               defaultValue={filters.payoutStatus ?? ""}
@@ -138,7 +138,7 @@ export function FinancialPayoutsTab({
             </p>
           </div>
           <p className="text-sm font-bold text-tesText-secondary">
-            {payouts.pagination.totalCount} lote(s)
+            {payouts.pagination.totalCount} repasse(s)
           </p>
         </div>
 
@@ -167,10 +167,10 @@ export function FinancialPayoutsTab({
                       Líquido
                     </th>
                     <th className="border-b border-brand-lavender py-3 pr-3">
-                      Status
+                      Situação
                     </th>
                     <th className="border-b border-brand-lavender py-3 pr-3">
-                      Conciliação
+                      Conferência
                     </th>
                     <th className="border-b border-brand-lavender py-3 pr-3">
                       Previsto
@@ -252,7 +252,8 @@ export function FinancialPayoutsTab({
                         {formatDate(item.periodEnd)}
                       </h3>
                       <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                        {item.sessionCount} sessão(ões)
+                        {item.sessionCount}{" "}
+                        {item.sessionCount === 1 ? "sessão" : "sessões"}
                       </p>
                     </div>
                     <FinancialStatusBadge
@@ -296,7 +297,7 @@ export function FinancialPayoutsTab({
                       )}
                     />
                     <PayoutDetail
-                      label="Conciliação"
+                      label="Conferência"
                       value={reconciliationLabel(item.reconciliationStatus)}
                     />
                   </dl>
@@ -313,8 +314,8 @@ export function FinancialPayoutsTab({
               Nenhum repasse encontrado
             </h3>
             <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              Quando houver valores elegíveis e lote processado, o histórico de
-              repasses aparecerá nesta lista.
+              Quando houver valores prontos e um repasse processado, o histórico
+              aparecerá nesta lista.
             </p>
           </div>
         )}
@@ -333,8 +334,8 @@ export function FinancialPayoutsTab({
             Como o valor é calculado
           </h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            O cálculo do repasse considera os registros financeiros confirmados.
-            Esta tela apresenta apenas a composição autorizada.
+            O cálculo do repasse considera os pagamentos confirmados. Aqui você
+            vê de onde vem cada valor.
           </p>
         </div>
         <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr]">
@@ -431,7 +432,7 @@ function PayoutReconciliation({
       ) : null}
       {item.stripeSourceChargeId ? (
         <span className="text-xs font-bold text-tesText-muted">
-          source_transaction registrado
+          Registro do pagamento confirmado
         </span>
       ) : null}
     </div>
@@ -442,10 +443,10 @@ function reconciliationLabel(
   status: TherapistPayoutsContract["items"][number]["reconciliationStatus"],
 ) {
   const labels = {
-    failed: "Falha na conciliação",
-    matched: "Conciliado",
-    needs_reconciliation: "Requer conciliação",
-    pending: "Aguardando conciliação",
+    failed: "Precisa de conferência",
+    matched: "Conferido",
+    needs_reconciliation: "Precisa de conferência",
+    pending: "Em conferência",
     reversed: "Repasse revertido",
   } satisfies Record<typeof status, string>;
 

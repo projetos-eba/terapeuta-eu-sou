@@ -166,7 +166,7 @@ export function TherapistServicesPage({
     if ("items" in result.data) {
       const nextServices = result.data as TherapistServicesContract;
       setServices(nextServices.items);
-      setLiveMessage("Ordem dos serviços atualizada.");
+      setLiveMessage("Ordem das terapias atualizada.");
     }
   }
 
@@ -201,10 +201,10 @@ export function TherapistServicesPage({
           <div className="flex flex-col gap-4 border-b border-brand-lavender pb-5 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 className="font-display text-3xl font-light italic text-brand-deep">
-                Seus serviços
+                Terapias cadastradas
               </h2>
               <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-                Gerencie seus atendimentos e mostre suas especialidades.
+                Organize o que você oferece e mostre como você trabalha.
               </p>
             </div>
             <PlanLimitNotice limit={limit} used={usedServices} />
@@ -213,11 +213,11 @@ export function TherapistServicesPage({
           {!canCreate ? (
             <div className="mt-5 rounded-lg border border-status-warning/30 bg-status-warningBg p-4">
               <p className="text-sm font-extrabold text-status-warning">
-                Limite de serviços atingido no plano atual.
+                Limite de terapias atingido no plano atual.
               </p>
               <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                Para criar novos serviços, revise serviços arquivados ou veja as
-                opções de plano.
+                Para adicionar outra terapia, revise terapias arquivadas ou veja
+                as opções de plano.
               </p>
               <TESButton
                 className="mt-4 min-h-11 rounded-lg"
@@ -268,10 +268,11 @@ export function TherapistServicesPage({
           ) : (
             <div className="mt-6 rounded-lg border border-brand-lavender bg-brand-lavenderSoft/50 p-6 text-center">
               <p className="text-sm font-extrabold text-brand-deep">
-                Nenhum serviço encontrado
+                Nenhuma terapia encontrada
               </p>
               <p className="mt-2 text-sm font-semibold text-tesText-secondary">
-                Ajuste busca, filtro ou ordenação para ver outros serviços.
+                Ajuste a busca, o filtro ou a ordenação para encontrar outra
+                terapia.
               </p>
             </div>
           )}
@@ -282,7 +283,7 @@ export function TherapistServicesPage({
               onClick={() => setVisibleCount((current) => current + 6)}
               type="button"
             >
-              Ver todos os serviços
+              Ver todas as terapias
             </button>
           ) : null}
         </TESCard>
@@ -344,7 +345,7 @@ export function TherapistServicesErrorState({
           size={30}
         />
         <h1 className="mt-4 font-display text-4xl font-light italic text-brand-deep">
-          Serviços temporariamente indisponíveis
+          Terapias temporariamente indisponíveis
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-sm font-semibold leading-6 text-tesText-secondary">
           {message}
@@ -385,7 +386,7 @@ function Toolbar({
   return (
     <div className="mt-5 grid gap-3 lg:grid-cols-[minmax(0,1fr)_190px_190px]">
       <label className="block">
-        <span className="sr-only">Buscar serviço</span>
+        <span className="sr-only">Buscar terapia</span>
         <TESInput
           leftIcon={
             <Search
@@ -395,7 +396,7 @@ function Toolbar({
             />
           }
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar por serviço, terapia ou categoria"
+          placeholder="Buscar por terapia ou categoria"
           value={query}
           wrapperClassName="h-12 rounded-lg shadow-none"
         />
@@ -424,7 +425,7 @@ function Toolbar({
         </select>
       </label>
       <label className="relative block">
-        <span className="sr-only">Ordenar serviços</span>
+        <span className="sr-only">Ordenar terapias</span>
         <ArrowDownAZ
           aria-hidden="true"
           className="pointer-events-none absolute left-4 top-3.5 text-brand-primary"
@@ -455,10 +456,10 @@ function PlanLimitNotice({
   return (
     <div className="rounded-lg bg-brand-lavenderSoft px-4 py-3 text-sm font-bold text-brand-primary">
       {limit === null ? (
-        "Você pode cadastrar quantos serviços precisar"
+        "Você pode cadastrar quantas terapias precisar"
       ) : (
         <>
-          {used}/{limit} serviços usados ·{" "}
+          {used}/{limit} terapias usadas ·{" "}
           <Link
             className="underline-offset-4 hover:underline"
             href={routes.therapist.plan as Route}
@@ -488,22 +489,22 @@ function ConfirmServiceActionDialog({
   const [submitting, setSubmitting] = useState(false);
   const actionCopy = {
     activate: {
-      body: "Vamos revalidar terapia, duplicidade, plano e configuração antes de ativar.",
-      button: "Ativar serviço",
-      success: "Serviço ativado.",
-      title: "Ativar serviço?",
+      body: "Vamos conferir esta terapia antes de deixá-la disponível para novos agendamentos.",
+      button: "Ativar terapia",
+      success: "Terapia ativada.",
+      title: "Ativar terapia?",
     },
     archive: {
-      body: "Serviços arquivados deixam de entrar na oferta atual. Registros históricos continuam preservados.",
-      button: "Arquivar serviço",
-      success: "Serviço arquivado.",
-      title: "Arquivar serviço?",
+      body: "Terapias arquivadas deixam de aparecer para novos agendamentos. O histórico continua guardado.",
+      button: "Arquivar terapia",
+      success: "Terapia arquivada.",
+      title: "Arquivar terapia?",
     },
     pause: {
-      body: "O serviço deixará de aparecer como reservável até ser reativado.",
-      button: "Pausar serviço",
-      success: "Serviço pausado.",
-      title: "Pausar serviço?",
+      body: "A terapia deixará de aparecer para novos agendamentos até ser reativada.",
+      button: "Pausar terapia",
+      success: "Terapia pausada.",
+      title: "Pausar terapia?",
     },
   }[action];
 
@@ -540,10 +541,10 @@ function ConfirmServiceActionDialog({
       title={actionCopy.title}
     >
       <div aria-live="polite" className="sr-only">
-        {submitting ? "Atualizando serviço." : (error ?? "")}
+        {submitting ? "Atualizando terapia." : (error ?? "")}
       </div>
       <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-        Serviço:{" "}
+        Terapia:{" "}
         <strong className="font-extrabold text-brand-deep">
           {service.title}
         </strong>

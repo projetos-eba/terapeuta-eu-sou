@@ -36,6 +36,9 @@ Legacy namespaces `/basico/configuracoes`, `/pro/configuracoes` and
 - Shared feature files: `src/features/therapist-settings/`.
 - Source of account settings: `profiles`.
 - Source of public profile state: `therapist_profiles`.
+- Source of private identity data: `therapist_private_identity`.
+- Source of private documents: `therapist_private_documents` via the
+  authenticated `therapist-private-documents` flow.
 - Source of plan catalog: `billing_plans` and active `billing_plan_prices`.
 - Source of paid subscription state: `therapist_subscriptions`.
 
@@ -44,9 +47,13 @@ access token and Supabase RLS.
 
 ## Rules
 
-- Editable fields in this page are internal account data only:
-  `display_name` and `phone`.
+- Editable fields in this page include account data (`display_name`, `phone`)
+  and the identity/address information needed for profile approval.
 - E-mail is read-only here.
+- Identity data and the required identity/address documents are mandatory for
+  approval and publication of the therapist profile. The document center lives
+  here, not in `Meu perfil`, and must explain privacy, required items and each
+  document's current state.
 - Public profile content belongs to `/terapeuta/perfil/editar`.
 - Availability belongs to `/terapeuta/agenda`.
 - Upgrades belong to `/terapeuta/plano`.
@@ -58,6 +65,9 @@ access token and Supabase RLS.
 - Never log cookies, Authorization headers, Supabase keys or personal secrets.
 - Validation errors must be specific enough for the therapist to correct the
   form, but must not expose internal database details.
+- The page must make the three states understandable: `Perfil completo` is the
+  editorial content, `Cadastro aprovado` is the administrative review, and
+  `Perfil publicado` is the public visibility.
 
 ## Database
 
@@ -78,6 +88,8 @@ Any broader profile update requires a new security review.
 - API PATCH sends only `display_name` and `phone`.
 - UI disables the main save action until there are changes.
 - UI shows success, local validation error and safe remote error states.
+- UI renders private document upload/replacement for `identity_document` and
+  `address_proof`, with no bucket/path details exposed to the therapist.
 - Links point to the canonical shell routes.
 - Free sees `Conhecer planos`; Premium can open Premium Plus and cancel;
   Premium Plus can schedule Premium or cancel; a scheduled cancellation can be

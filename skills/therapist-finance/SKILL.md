@@ -73,6 +73,9 @@ All derive the therapist from `auth.uid()`. Do not accept
 - Payment method and payment origin are separate.
 - No local form for bank, agency, account, Pix, CPF, CNPJ or documents.
 - Use hosted Stripe Connect CTAs and sync state after return.
+- User-facing copy should say `recebimentos`, `repasses` and `conta de
+  recebimento`; provider and reconciliation terminology stays in the service
+  boundary and is translated into a clear next step.
 - Connect Accounts v2 creation for the Brazilian TES platform must include
   `identity.country = br`, `identity.entity_type = individual`,
   recipient `stripe_balance.stripe_transfers` and merchant `card_payments`.
