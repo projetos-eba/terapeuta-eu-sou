@@ -57,6 +57,56 @@ describe("public therapist search fallback contract", () => {
     expect(result.therapists).toEqual([]);
   });
 
+  it("uses the therapist presentation instead of the service description", async () => {
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => [
+          {
+            average_rating: 4.8,
+            city: "São Paulo",
+            duration_minutes: 50,
+            has_video: false,
+            highlight: "Perfil Verificado",
+            highlight_tone: "verified",
+            next_slot_at: null,
+            photo_url: null,
+            public_name: "Ana Oliveira",
+            review_count: 0,
+            review_quote: null,
+            search_text: "Ana Oliveira apresentação Reiki",
+            service_description: "Descrição da oferta de Reiki.",
+            service_id: "service-1",
+            service_price_cents: 12000,
+            service_title: "Reiki online",
+            slug: "ana-oliveira",
+            state: "SP",
+            tags: ["Autoconhecimento"],
+            theme_names: ["Autoconhecimento"],
+            theme_slugs: ["autoconhecimento"],
+            therapist_headline: "Acolhimento online com escuta cuidadosa.",
+            therapy_id: "therapy-1",
+            therapy_name: "Reiki",
+            therapy_slug: "reiki",
+          },
+        ],
+        ok: true,
+      }),
+    );
+
+    const result = await getPublicTherapistSearchResult(filters);
+
+    expect(result.therapists[0]?.description).toBe(
+      "Acolhimento online com escuta cuidadosa.",
+    );
+    expect(result.therapists[0]?.description).not.toBe(
+      "Descrição da oferta de Reiki.",
+    );
+  });
+
   it("returns degraded state on query failure without leaking the raw error", async () => {
     vi.stubEnv("NODE_ENV", "test");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");

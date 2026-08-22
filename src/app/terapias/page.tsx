@@ -50,7 +50,7 @@ export default async function TherapiesPage({
       <PublicHeader />
 
       <section className="relative isolate overflow-hidden bg-[linear-gradient(90deg,#ffffff_0%,#ffffff_55%,#F1E8F6_100%)]">
-        <div className="mx-auto grid min-h-[410px] max-w-[1440px] items-center gap-8 px-5 py-14 sm:px-8 lg:grid-cols-[650px_minmax(0,1fr)] lg:px-16 lg:py-0">
+        <div className="mx-auto grid min-h-[410px] max-w-[1440px] items-center gap-8 px-5 py-14 sm:px-8 lg:grid-cols-[minmax(0,0.46fr)_minmax(0,0.54fr)] lg:px-[68px] lg:py-0">
           <div className="relative z-10 max-w-[650px]">
             <h1 className="font-display text-[3.15rem] font-light italic leading-[1.08] text-brand-deep sm:text-[3.5rem]">
               Conheça os caminhos terapêuticos disponíveis
@@ -105,7 +105,7 @@ export default async function TherapiesPage({
       <TherapyFilters params={params} totalCount={result.totalCount} />
 
       <section className="bg-[#FBF8FF] pb-16">
-        <div className="mx-auto grid max-w-[1320px] gap-6 px-5 sm:px-8 lg:grid-cols-[285px_1fr]">
+        <div className="mx-auto grid max-w-[1440px] gap-6 px-5 sm:px-8 lg:grid-cols-[285px_1fr] lg:px-[68px]">
           <div className="space-y-5">
             <CategoryFilter
               activeCategory={params.category}

@@ -55,7 +55,7 @@ Não passar linhas cruas do Supabase para React.
 - Salvar rascunho não altera views públicas.
 - Publicação é direta pelo terapeuta e pode levar 2 a 3 horas para propagar.
 - Na primeira configuração, a ação primária deve ser `Publicar alterações`.
-  Antes de enviar ao backend, validar nome do perfil, texto curto/headline e
+  Antes de enviar ao backend, validar nome do perfil, sua apresentação/headline e
   minha essência/bio. Se houver alterações locais válidas, a UI deve salvar o
   rascunho e publicar com a versão retornada pelo servidor no mesmo fluxo
   confirmado.

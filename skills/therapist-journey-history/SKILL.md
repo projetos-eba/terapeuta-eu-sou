@@ -31,7 +31,7 @@ Perfil/plano:
 O node Figma `13366:8765` define:
 
 - Título visual `Clientes` dentro da navegação `Histórico da Jornada`.
-- Métricas no topo: total de clientes, ativos, novos no mês, sem sessão recente.
+- Métricas no topo: total de clientes, ativos, novos no mês, sem encontro recente.
 - Lista de clientes com busca, filtros, ordenação, status, terapias, última/próxima sessão e temas recorrentes. A contagem de encontros fica disponível somente nos cartões compactos e no detalhe da jornada, não como coluna da tabela.
 - Rail lateral com resumo da carteira, segmentos e lembretes.
 - Visual claro, premium, bordas lavanda, sombra suave, tipografia display IvyPresto para títulos.
@@ -84,6 +84,17 @@ Regras:
   (`auto-rows-min`, `h-auto`, `self-start` e `content-start`), sem esticar os
   cards para acompanhar a altura da lista principal.
 - Evitar texto sobreposto, largura fixa frágil e cards aninhados.
+
+Regra de acompanhamento:
+
+- “Em acompanhamento” indica uma pessoa com encontro registrado nos últimos 30
+  dias.
+- “Sem encontro recente” indica uma pessoa sem encontro registrado há mais de
+  30 dias (ou sem encontro registrado).
+- O gráfico de resumo mostra somente esses dois estados; relações pausadas não
+  entram no gráfico.
+- O ícone de informação ao lado de “Sem encontro recente” explica essa janela
+  de forma breve e acessível.
 
 ## Copy Responsável
 

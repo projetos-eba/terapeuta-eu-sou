@@ -121,10 +121,12 @@ export function TherapistServiceCard({
             </div>
             <p
               className={cn(
-                "mt-4 text-sm font-semibold leading-6 text-tesText-secondary",
+                "mt-4 max-w-full break-words text-sm font-semibold leading-6 text-tesText-secondary [overflow-wrap:anywhere]",
                 canExpandDescription && !isDescriptionExpanded
                   ? "line-clamp-3"
-                  : undefined,
+                  : canExpandDescription
+                    ? "max-h-24 overflow-y-auto"
+                    : undefined,
               )}
               id={`service-description-${service.serviceId}`}
             >

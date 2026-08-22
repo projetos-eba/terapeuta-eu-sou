@@ -71,6 +71,7 @@ Preservar o padrão do node:
   sem ilustração dominante. Fundo e arte são decorativos (`alt=""`) e aparecem
   somente no hero.
 - Cards `Minha essência`, `Como posso te guiar` e `Um convite para você`.
+- No tablet, o hero deve preservar a leitura lado a lado: foto em uma coluna e a apresentação/bio com badges, avaliação e CTA na coluna vizinha. No mobile, o conteúdo volta a uma coluna; no desktop, mantém a composição ampla do Figma.
 - O registro compartilhado de temas alimenta editor e hero; não duplicar quatro
   componentes de perfil.
 - Seção `Vivências e terapias` com serviços, duração, preço e CTA.

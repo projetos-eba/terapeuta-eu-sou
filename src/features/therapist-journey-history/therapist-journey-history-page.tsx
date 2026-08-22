@@ -12,6 +12,7 @@ import {
   Download,
   Filter,
   HeartHandshake,
+  Info,
   MessageCircle,
   MoreVertical,
   NotebookText,
@@ -790,11 +791,11 @@ function MetricCard({ metric }: { metric: JourneyHistoryMetric }) {
 
   return (
     <article className="min-h-[190px] min-w-0 overflow-hidden rounded-card border border-brand-lavender/60 bg-white p-5 shadow-card">
-      <div className="grid grid-cols-[40px_minmax(0,1fr)] items-start gap-2.5">
-        <span className={`grid size-10 shrink-0 place-items-center rounded-full ${toneClasses[metric.tone]}`}>
+      <div className="grid grid-cols-[36px_minmax(0,1fr)] items-start gap-2">
+        <span className={`grid size-9 shrink-0 place-items-center rounded-full ${toneClasses[metric.tone]}`}>
           {icons[metric.tone]}
         </span>
-        <h2 className="min-w-0 break-words text-sm font-extrabold leading-5 text-brand-primary">
+        <h2 className="min-w-0 break-words text-[14px] font-extrabold leading-4 tracking-[-0.01em] text-brand-primary">
           {metric.label}
         </h2>
       </div>
@@ -817,24 +818,22 @@ function PortfolioSummary({ summary }: { summary: JourneyHistorySummary }) {
   const items = [
     { color: "bg-status-success", label: "Em acompanhamento", value: summary.active },
     { color: "bg-status-danger", label: "Sem encontro recente", value: summary.stale },
-    { color: "bg-status-warning", label: "Pausadas", value: summary.paused },
   ];
-  const activePercent = summary.total ? Math.round((summary.active / summary.total) * 100) : 0;
-  const stalePercent = summary.total ? Math.round((summary.stale / summary.total) * 100) : 0;
+  const trackedTotal = summary.active + summary.stale;
+  const activePercent = trackedTotal ? Math.round((summary.active / trackedTotal) * 100) : 0;
   const chartStyle = {
     "--active": `${activePercent}%`,
-    "--stale": `${activePercent + stalePercent}%`,
   } as CSSProperties;
 
   return (
     <SideCard className="col-span-2 xl:col-span-1" title="Resumo das pessoas acompanhadas">
       <div
-        className="mx-auto grid size-36 place-items-center rounded-full bg-[conic-gradient(var(--tes-color-brand-mint)_0_var(--active),var(--tes-color-status-danger)_var(--active)_var(--stale),var(--tes-color-status-warning)_0)]"
+        className="mx-auto grid size-36 place-items-center rounded-full bg-[conic-gradient(var(--tes-color-brand-mint)_0_var(--active),var(--tes-color-status-danger)_var(--active)_100%)]"
         style={chartStyle}
       >
         <div className="grid size-24 place-items-center rounded-full bg-white text-center">
           <strong className="block text-2xl font-extrabold text-brand-deep">
-            {summary.total}
+            {trackedTotal}
           </strong>
           <span className="text-[11px] font-semibold text-tesText-secondary">
             pessoas
@@ -845,15 +844,37 @@ function PortfolioSummary({ summary }: { summary: JourneyHistorySummary }) {
         {items.map((item) => (
           <div className="grid grid-cols-[16px_minmax(0,1fr)_64px] items-center gap-2 text-xs" key={item.label}>
             <span className={`size-2.5 rounded-full ${item.color}`} />
-            <span className="font-extrabold text-[#4d2861]">{item.label}</span>
+            <span className="flex min-w-0 items-center gap-1 font-extrabold text-[#4d2861]">
+              <span className="min-w-0">{item.label}</span>
+              {item.label === "Sem encontro recente" ? (
+                <span className="group relative inline-flex shrink-0">
+                  <button
+                    aria-label="Sobre sem encontro recente"
+                    aria-describedby="stale-encounter-tooltip"
+                    className="inline-flex size-5 items-center justify-center rounded-full text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+                    title="Sem encontro registrado nos últimos 30 dias."
+                    type="button"
+                  >
+                    <Info aria-hidden="true" size={14} />
+                  </button>
+                  <span
+                    className="pointer-events-none invisible absolute bottom-full left-0 z-10 mb-2 w-56 max-w-[calc(100vw-2rem)] translate-x-0 rounded-lg bg-brand-deep px-3 py-2 text-left text-xs font-semibold leading-5 text-white opacity-0 shadow-float transition group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+                    id="stale-encounter-tooltip"
+                    role="tooltip"
+                  >
+                    Sem encontro registrado nos últimos 30 dias. Este sinal ajuda a lembrar de revisar a continuidade da jornada com cuidado.
+                  </span>
+                </span>
+              ) : null}
+            </span>
             <span className="text-right font-semibold text-tesText-secondary">
-              {item.value} ({summary.total ? Math.round((item.value / summary.total) * 100) : 0}%)
+              {item.value} ({trackedTotal ? Math.round((item.value / trackedTotal) * 100) : 0}%)
             </span>
           </div>
         ))}
       </div>
       <p className="mt-4 text-[11px] font-semibold text-tesText-muted">
-        {activePercent}% das pessoas com atividade recente.
+        {activePercent}% das pessoas tiveram um encontro nos últimos 30 dias.
       </p>
     </SideCard>
   );

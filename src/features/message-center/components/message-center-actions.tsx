@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Check,
@@ -10,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { TESDialog } from "@/components/tes/tes-dialog";
+import { routes } from "@/lib/routes";
 
 import type {
   MessageCenterActorRole,
@@ -44,7 +46,11 @@ export function MessageCenterActions(props: MessageCenterActionsProps) {
         type="button"
       >
         <MessageSquarePlus aria-hidden="true" size={16} />
-        {props.variant === "support" ? "Novo suporte" : "Escolher mensagem"}
+        {props.variant === "support"
+          ? props.actorRole === "patient"
+            ? "Nova mensagem"
+            : "Novo suporte"
+          : "Escolher mensagem"}
       </button>
       {isOpen ? (
         <TemplateDialog {...props} onClose={() => setIsOpen(false)} />
@@ -57,6 +63,7 @@ function TemplateDialog({
   onClose,
   ...props
 }: MessageCenterActionsProps & { onClose: () => void }) {
+  const router = useRouter();
   const firstThread = useMemo(
     () =>
       props.threads.find((thread) => Boolean(thread.conversationId)) ?? null,
@@ -72,12 +79,19 @@ function TemplateDialog({
   const selectedTemplate = props.templates.find(
     (template) => template.key === templateKey,
   );
+  const [supportSubject, setSupportSubject] = useState(
+    selectedTemplate?.label ?? "",
+  );
+  const [supportDescription, setSupportDescription] = useState(
+    selectedTemplate?.body ?? "",
+  );
   const [parameters, setParameters] = useState<Record<string, string>>({});
   const [step, setStep] = useState<"choose" | "review" | "success">("choose");
   const [preview, setPreview] = useState<Preview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [protocol, setProtocol] = useState<string | null>(null);
+  const supportRequestId = useRef<string | null>(null);
 
   const templateParameters = selectedTemplate?.parameters ?? [];
   const canReview =
@@ -158,19 +172,22 @@ function TemplateDialog({
       return;
     }
     setIsSubmitting(true);
+    supportRequestId.current ??= crypto.randomUUID();
     const response = await fetch("/api/support/tickets", {
       body: JSON.stringify({
-        actorRole: props.actorRole,
-        requestId: crypto.randomUUID(),
+        bookingId: null,
+        category: supportCategoryForTemplate(selectedTemplate?.key),
+        description: supportDescription,
+        requestId: supportRequestId.current,
         source: "message_center",
-        templateKey,
+        subject: supportSubject,
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
     });
     const payload = (await response.json().catch(() => null)) as {
       ok?: boolean;
-      ticket?: { protocol?: string };
+      ticket?: { id?: string; protocol?: string };
       error?: { message?: string };
     } | null;
     setIsSubmitting(false);
@@ -178,6 +195,18 @@ function TemplateDialog({
       setError(
         payload?.error?.message ?? "Não foi possível abrir o chamado agora.",
       );
+      return;
+    }
+    const ticketId = (payload.ticket as { id?: string } | undefined)?.id;
+    if (ticketId) {
+      const href =
+        props.actorRole === "patient"
+          ? routes.patient.supportTicketDetail(ticketId)
+          : routes.therapist.supportTicketDetail(ticketId);
+      router.push(href);
+      router.refresh();
+      supportRequestId.current = null;
+      onClose();
       return;
     }
     setProtocol(payload.ticket?.protocol ?? "registrado");
@@ -188,7 +217,7 @@ function TemplateDialog({
     <TESDialog
       description={
         props.variant === "support"
-          ? "Escolha uma categoria para acionar a plataforma."
+          ? "Escolha uma categoria e conte o que você precisa para abrir sua conversa com o TES."
           : "Escolha uma mensagem aprovada, revise o conteúdo resolvido pelo TES e envie."
       }
       onClose={onClose}
@@ -209,20 +238,63 @@ function TemplateDialog({
               : "Mensagem enviada com segurança."}
           </p>
           <p className="mt-1 text-sm font-semibold leading-6">
-            O texto enviado foi resolvido pelo TES a partir de um modelo
-            aprovado.
+            {props.variant === "support"
+              ? "A equipe TES poderá acompanhar sua mensagem neste chamado."
+              : "O texto enviado foi resolvido pelo TES a partir de um modelo aprovado."}
           </p>
         </div>
       ) : props.variant === "support" ? (
         <form className="grid gap-4" onSubmit={createSupportTicket}>
           <TemplateOptions
+            legend="Categoria do suporte"
             selectedKey={templateKey}
             templates={props.templates}
-            onChange={setTemplateKey}
+            onChange={(key) => {
+              setTemplateKey(key);
+              supportRequestId.current = null;
+              const template = props.templates.find(
+                (item) => item.key === key,
+              );
+              setSupportSubject(template?.label ?? "");
+              setSupportDescription(template?.body ?? "");
+            }}
           />
+          <label className="grid gap-2">
+            <span className="text-sm font-extrabold text-brand-deep">
+              Assunto
+            </span>
+            <input
+              className="min-h-12 rounded-lg border border-brand-lavender px-3 text-sm font-semibold text-brand-deep"
+              maxLength={120}
+              onChange={(event) => {
+                supportRequestId.current = null;
+                setSupportSubject(event.target.value);
+              }}
+              value={supportSubject}
+            />
+          </label>
+          <label className="grid gap-2">
+            <span className="text-sm font-extrabold text-brand-deep">
+              Conte mais sobre o que aconteceu
+            </span>
+            <textarea
+              className="min-h-32 resize-y rounded-lg border border-brand-lavender px-3 py-3 text-sm font-semibold leading-6 text-brand-deep"
+              maxLength={4000}
+              onChange={(event) => {
+                supportRequestId.current = null;
+                setSupportDescription(event.target.value);
+              }}
+              value={supportDescription}
+            />
+          </label>
           {error ? <ErrorMessage message={error} /> : null}
           <Actions
-            disabled={!templateKey || isSubmitting}
+            disabled={
+              !templateKey ||
+              supportSubject.trim().length < 3 ||
+              !supportDescription.trim() ||
+              isSubmitting
+            }
             onBack={onClose}
             submitLabel="Abrir chamado"
             submitting={isSubmitting}
@@ -318,6 +390,7 @@ function TemplateDialog({
             </span>
           </label>
           <TemplateOptions
+            legend="Mensagem aprovada"
             selectedKey={templateKey}
             templates={props.templates}
             onChange={(key) => {
@@ -369,20 +442,32 @@ function TemplateDialog({
   );
 }
 
+function supportCategoryForTemplate(key: string | undefined) {
+  const categories: Record<string, string> = {
+    patient_support_payment: "pagamentos",
+    patient_support_access: "zoom_acesso",
+    patient_support_account: "conta_acesso",
+    therapist_support_finance: "financeiro_repasses",
+    therapist_support_schedule: "agenda_sessoes",
+    therapist_support_account: "conta_acesso",
+  };
+  return categories[key ?? ""] ?? "outro";
+}
+
 function TemplateOptions({
+  legend,
   selectedKey,
   templates,
   onChange,
 }: {
+  legend: string;
   selectedKey: string;
   templates: MessageCenterTemplate[];
   onChange: (key: string) => void;
 }) {
   return (
     <fieldset className="grid gap-2">
-      <legend className="text-sm font-extrabold text-brand-deep">
-        Mensagem aprovada
-      </legend>
+      <legend className="text-sm font-extrabold text-brand-deep">{legend}</legend>
       <div className="grid max-h-[46vh] gap-2 overflow-y-auto pr-1">
         {templates.map((template) => (
           <label

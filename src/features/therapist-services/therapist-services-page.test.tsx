@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -60,6 +61,47 @@ describe("TherapistServicesPage", () => {
     expect(
       screen.getByRole("img", { name: "Imagem da terapia Reiki" }),
     ).toHaveAttribute("src", "https://cdn.example.test/reiki-admin.jpg");
+  });
+
+  it("renders therapy photos in the most-booked services card", () => {
+    renderPage({
+      items: [
+        serviceFixture({
+          metrics: {
+            bookingCount: 4,
+            bookingCountDeltaPercent: null,
+            bookingsLast30Days: 3,
+          },
+          therapy: {
+            id: "22222222-2222-4222-8222-222222222227",
+            imageUrl: "https://cdn.example.test/reiki-ranking.jpg",
+            isAvailableForServices: true,
+            isPubliclyVisible: true,
+            name: "Reiki",
+            slug: "reiki",
+            status: "published",
+          },
+        }),
+      ],
+    });
+
+    const ranking = screen
+      .getByRole("heading", { name: "Serviços mais agendados" })
+      .closest("section");
+
+    expect(ranking).not.toBeNull();
+    expect(
+      within(ranking as HTMLElement).getByRole("img", {
+        name: "Imagem da terapia Reiki",
+      }),
+    ).toHaveAttribute("src", "https://cdn.example.test/reiki-ranking.jpg");
+  });
+
+  it("contains an unbroken service description inside the card", () => {
+    const longWord = "x".repeat(200);
+    renderPage({ items: [serviceFixture({ description: longWord })] });
+
+    expect(screen.getByText(longWord)).toHaveClass("break-words");
   });
 
   it("filters services by status", () => {
@@ -251,9 +293,37 @@ describe("TherapistServicesPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
 
     await waitFor(() => {
-      expect(onSaved).toHaveBeenCalledWith(updatedService, "Serviço atualizado.");
+      expect(onSaved).toHaveBeenCalledWith(
+        updatedService,
+        "Serviço atualizado.",
+      );
       expect(onClose).toHaveBeenCalledOnce();
     });
+  });
+
+  it("bounds an unbroken description in the review step", () => {
+    const longWord = "d".repeat(200);
+
+    render(
+      <TherapistServiceForm
+        catalog={catalogFixture().items}
+        mode="edit"
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+        service={serviceFixture()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.change(screen.getByLabelText("Descrição"), {
+      target: { value: longWord },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(screen.getByText(longWord)).toHaveClass(
+      "overflow-y-auto",
+      "break-words",
+    );
   });
 });
 
@@ -271,16 +341,15 @@ function renderPage(overrides: { items?: TherapistServiceSummary[] } = {}) {
       catalog={catalogFixture()}
       services={{
         contractVersion: 1,
-        items:
-          overrides.items ?? [
-            serviceFixture({ status: "draft" }),
-            serviceFixture({
-              serviceId: "d1000000-0000-4000-8000-000000000002",
-              status: "paused",
-              therapyId: "22222222-2222-4222-8222-222222222228",
-              title: "Tarô de clareza",
-            }),
-          ],
+        items: overrides.items ?? [
+          serviceFixture({ status: "draft" }),
+          serviceFixture({
+            serviceId: "d1000000-0000-4000-8000-000000000002",
+            status: "paused",
+            therapyId: "22222222-2222-4222-8222-222222222228",
+            title: "Tarô de clareza",
+          }),
+        ],
         plan: "premium_plus",
         serviceLimit: 10,
         therapistProfileId: "a1000000-0000-4000-8000-000000000001",

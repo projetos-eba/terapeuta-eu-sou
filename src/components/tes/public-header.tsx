@@ -52,52 +52,53 @@ export function PublicHeader() {
   ];
 
   return (
-    <header className="relative z-50 mx-auto w-full max-w-[1680px] px-5 py-4 sm:px-8 lg:px-12">
-      <div className="flex items-center justify-between gap-4">
-        <Logo header />
-        <nav className="hidden items-center gap-11 text-sm font-bold text-tesText-secondary xl:flex">
-          {nav.map(([label, href]) => (
-            <Link
-              key={href}
-              href={href}
-              className="transition hover:text-brand-primary focus:outline-none focus:ring-4 focus:ring-ring/20"
+    <header className="relative z-50 w-full bg-white">
+      <div className="mx-auto max-w-[1680px] px-5 py-4 sm:px-8 lg:px-12">
+        <div className="flex items-center justify-between gap-4">
+          <Logo header />
+          <nav className="hidden items-center gap-11 text-sm font-bold text-tesText-secondary xl:flex">
+            {nav.map(([label, href]) => (
+              <Link
+                key={href}
+                href={href}
+                className="transition hover:text-brand-primary focus:outline-none focus:ring-4 focus:ring-ring/20"
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+          <div className="hidden items-center gap-3 sm:flex">
+            <PublicAuthMenu className="block" />
+            <TESButton
+              href={routes.public.journey}
+              variant="gradient"
+              size="lg"
+              className="px-5 sm:px-7"
             >
-              {label}
-            </Link>
-          ))}
-        </nav>
-        <div className="hidden items-center gap-3 sm:flex">
-          <PublicAuthMenu className="block" />
-          <TESButton
-            href={routes.public.journey}
-            variant="gradient"
-            size="lg"
-            className="px-5 sm:px-7"
+              Começar minha jornada
+            </TESButton>
+          </div>
+          <button
+            type="button"
+            aria-controls="public-mobile-menu"
+            aria-expanded={isMobileMenuOpen}
+            aria-label={isMobileMenuOpen ? "Fechar menu" : "Abrir menu"}
+            className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-brand-lavender bg-white text-brand-primary shadow-card hover:border-brand-primary hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20 xl:hidden"
+            onClick={() => setIsMobileMenuOpen((current) => !current)}
           >
-            Começar minha jornada
-          </TESButton>
+            {isMobileMenuOpen ? (
+              <X className="size-5" aria-hidden="true" />
+            ) : (
+              <Menu className="size-5" aria-hidden="true" />
+            )}
+          </button>
         </div>
-        <button
-          type="button"
-          aria-controls="public-mobile-menu"
-          aria-expanded={isMobileMenuOpen}
-          aria-label={isMobileMenuOpen ? "Fechar menu" : "Abrir menu"}
-          className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-brand-lavender bg-white text-brand-primary shadow-card hover:border-brand-primary hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20 xl:hidden"
-          onClick={() => setIsMobileMenuOpen((current) => !current)}
-        >
-          {isMobileMenuOpen ? (
-            <X className="size-5" aria-hidden="true" />
-          ) : (
-            <Menu className="size-5" aria-hidden="true" />
-          )}
-        </button>
-      </div>
 
-      {isMobileMenuOpen ? (
-        <div
-          id="public-mobile-menu"
-          className="absolute left-5 right-5 top-[calc(100%+8px)] z-[80] overflow-hidden rounded-[24px] border border-brand-lavender bg-white shadow-float xl:hidden"
-        >
+        {isMobileMenuOpen ? (
+          <div
+            id="public-mobile-menu"
+            className="absolute left-5 right-5 top-[calc(100%+8px)] z-[80] overflow-hidden rounded-[24px] border border-brand-lavender bg-white shadow-float xl:hidden"
+          >
           <div className="grid gap-2 p-4">
             <p className="px-2 text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
               Navegação
@@ -131,8 +132,9 @@ export function PublicHeader() {
               />
             </div>
           </div>
-        </div>
-      ) : null}
+          </div>
+        ) : null}
+      </div>
     </header>
   );
 }

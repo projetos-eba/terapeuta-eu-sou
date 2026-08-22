@@ -90,6 +90,39 @@ describe("support tickets route", () => {
     });
   });
 
+  it("accepts a patient session without trusting a client-supplied role", async () => {
+    headerMocks.cookieGet.mockImplementation((name: string) =>
+      name === "tes_patient_access_token"
+        ? { value: "patient-token" }
+        : undefined,
+    );
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/auth/v1/user")) return Response.json({ id: userId });
+      if (url.includes("/rest/v1/profiles")) {
+        return Response.json([{ role: "patient" }]);
+      }
+      if (url.includes("/rpc/create_support_ticket_v1")) {
+        return Response.json({
+          id: "30000000-0000-4000-8000-000000000002",
+          status: "open",
+        });
+      }
+      return new Response(null, { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(request(validTicket()));
+
+    expect(response.status).toBe(201);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("create_support_ticket_v1"),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: "Bearer patient-token" }),
+      }),
+    );
+  });
+
   it("maps the server rate limit to a retryable 429", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);

@@ -113,9 +113,8 @@ function mapTherapistRow(row: PublicTherapistSearchRow): TherapistSearchCard {
     availabilityBucket: getAvailabilityBucket(row.next_slot_at),
     cityState: [row.city, row.state].filter(Boolean).join(", "),
     description:
-      row.service_description ??
-      row.therapist_headline ??
-      "Atendimento online com escuta cuidadosa e linguagem responsável.",
+      row.therapist_headline?.trim() ||
+      "Conheça a apresentação deste terapeuta no perfil completo.",
     durationLabel: formatDurationLabel(row.duration_minutes ?? 50),
     hasVideo: Boolean(row.has_video),
     highlight: row.highlight ?? "Perfil Verificado",

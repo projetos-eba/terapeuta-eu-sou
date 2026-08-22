@@ -88,6 +88,13 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
   conflito de versao e terapia indisponivel.
 - Responsividade minima: 320, 375, 768, 1024 e 1440px. Mobile nao usa tabela
   horizontal; cards e metricas colapsam em uma coluna/grid compacto.
+- Strings sem espaços (por exemplo, uma palavra com 200 caracteres) devem usar
+  quebra segura dentro do card, da seção e do `TESDialog`, sem overflow
+  horizontal da página ou do modal. A descrição da revisão deve permanecer em
+  uma área limitada com scroll interno quando necessário.
+- O ranking “Serviços mais agendados” exibe a imagem da terapia administrada no
+  catálogo; quando a imagem estiver ausente, usa fallback visual sem quebrar a
+  composição.
 - Formulario de criacao tem 3 passos: catalogo canonico, configuracao da oferta
   e revisao. O dado preenchido deve persistir ao voltar.
 - Formulario informa “Atendimento online” como regra fixa, sem seletor de

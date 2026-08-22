@@ -1,9 +1,9 @@
 ---
 name: therapist-support-ticket
-description: Manter o ticket e a thread de suporte do terapeuta sem misturar texto livre com mensagens a pacientes.
+description: Manter tickets e threads de suporte de pacientes e terapeutas sem misturar texto livre com mensagens entre participantes.
 ---
 
-# Ticket de Suporte do Terapeuta
+# Tickets de Suporte do Solicitante
 
 ## Fontes obrigatórias
 
@@ -16,6 +16,8 @@ description: Manter o ticket e a thread de suporte do terapeuta sem misturar tex
 
 - Central: `/terapeuta/mensagens`.
 - Detalhe: `/terapeuta/mensagens/suporte/:ticketId`.
+- Central do paciente: `/app/mensagens`.
+- Detalhe do paciente: `/app/mensagens/suporte/:ticketId`.
 - APIs: `POST|GET /api/support/tickets`, `GET|POST /api/support/tickets/:ticketId`.
 - Admin mínimo: `GET /api/admin/support/tickets/:ticketId/thread`,
   `POST /api/admin/support/tickets/:ticketId/reply` e
@@ -27,6 +29,8 @@ description: Manter o ticket e a thread de suporte do terapeuta sem misturar tex
 - `support_ticket_messages` é a thread plain text. `visibility=requester` é legível pelo solicitante; `visibility=internal` é exclusivamente TES/Admin.
 - Nunca usar `messages`, `conversations` ou o endpoint participante para suporte. Nunca adicionar texto livre ao fluxo paciente ↔ terapeuta.
 - `requestId` é obrigatório para criação e resposta, protegendo contra retry.
+- A identidade é derivada do cookie autenticado e validada como `patient` ou
+  `therapist`; nunca confiar em `actorRole` enviado pelo navegador.
 - Renderizar `body` como texto; não usar HTML, Markdown privilegiado ou `dangerouslySetInnerHTML`.
 - A thread Admin usa exclusivamente a RPC administrativa
   `admin_get_support_ticket_thread_v1`; somente ela pode incluir
@@ -39,4 +43,5 @@ description: Manter o ticket e a thread de suporte do terapeuta sem misturar tex
 - Validar que o Admin vê uma resposta subsequente do terapeuta e que uma nota
   interna criada pelo Admin não aparece após o reload do detalhe do terapeuta.
 - Validar desktop, tablet e mobile sem overflow do textarea.
+- Validar que o paciente consegue criar o chamado e abrir a thread pública.
 - Rodar testes API/Vitest, pgTAP de suporte e o teste de bypass de participante.

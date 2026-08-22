@@ -99,6 +99,9 @@ revalidada no servidor antes do checkout.
 - A agenda mostra uma janela de 5 dias. Quando o horário selecionado está ao
   menos 2 dias à frente de hoje, a janela pode mostrar 2 dias anteriores e 2
   seguintes; datas anteriores a hoje nunca devem aparecer como reserváveis.
+- Cada coluna de dia deve exibir no máximo 11 horários de uma vez; quando
+  houver mais opções, a lista usa rolagem interna sem aumentar indefinidamente
+  a altura da página.
 - Setas de navegação avançam/retrocedem 2 dias via `date`, bloqueando o
   retrocesso que cairia antes da data atual e sem gerar slot artificial.
 - A etapa "Preparar meu encontro" exige conta de cliente autenticada, slot e

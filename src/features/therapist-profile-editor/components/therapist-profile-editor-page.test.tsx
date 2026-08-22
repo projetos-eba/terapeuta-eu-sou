@@ -404,7 +404,7 @@ describe("TherapistProfileEditorPage", () => {
     fireEvent.change(screen.getByLabelText("Nome do perfil"), {
       target: { value: "Codex Terapeuta Playwright" },
     });
-    fireEvent.change(screen.getByLabelText("Texto curto"), {
+    fireEvent.change(screen.getByLabelText("Sua apresentação"), {
       target: { value: "Isso é um teste" },
     });
     fireEvent.click(
@@ -426,7 +426,7 @@ describe("TherapistProfileEditorPage", () => {
     fireEvent.change(screen.getByLabelText("Nome do perfil"), {
       target: { value: "Codex Terapeuta Playwright" },
     });
-    fireEvent.change(screen.getByLabelText("Texto curto"), {
+    fireEvent.change(screen.getByLabelText("Sua apresentação"), {
       target: { value: "Isso é um teste" },
     });
     fireEvent.change(screen.getByLabelText("Minha essência"), {
@@ -494,7 +494,7 @@ describe("TherapistProfileEditorPage", () => {
     fireEvent.change(screen.getByLabelText("Nome do perfil"), {
       target: { value: "Codex Terapeuta Playwright" },
     });
-    fireEvent.change(screen.getByLabelText("Texto curto"), {
+    fireEvent.change(screen.getByLabelText("Sua apresentação"), {
       target: { value: "Isso é um teste" },
     });
     fireEvent.change(screen.getByLabelText("Minha essência"), {

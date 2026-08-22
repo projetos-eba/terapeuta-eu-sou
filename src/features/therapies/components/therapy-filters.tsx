@@ -31,7 +31,7 @@ export function TherapyFilters({ params, totalCount }: TherapyFiltersProps) {
 
   return (
     <section className="bg-[#FBF8FF] py-7">
-      <div className="mx-auto max-w-[1320px] px-5 sm:px-8">
+      <div className="mx-auto max-w-[1440px] px-5 sm:px-8 lg:px-[68px]">
         <div className="flex flex-wrap items-center gap-3">
           {quickSorts.map((item) => {
             const Icon = item.icon;

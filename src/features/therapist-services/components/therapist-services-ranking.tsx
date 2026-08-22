@@ -1,4 +1,7 @@
+import { Leaf } from "lucide-react";
+
 import { TESCard } from "@/components/tes";
+import { cn } from "@/lib/utils";
 
 import type { TherapistServiceSummary } from "../therapist-services.types";
 
@@ -30,7 +33,7 @@ export function TherapistServicesRanking({
               <span className="grid size-7 place-items-center rounded-full bg-brand-lavenderSoft text-xs font-extrabold text-brand-primary">
                 {index + 1}
               </span>
-              <span className="block size-12 rounded-lg bg-brand-lavenderSoft" />
+              <TherapyThumbnail service={service} />
               <span className="min-w-0">
                 <strong className="block truncate text-sm text-brand-primary">
                   {service.title}
@@ -54,4 +57,42 @@ export function TherapistServicesRanking({
       )}
     </TESCard>
   );
+}
+
+function TherapyThumbnail({ service }: { service: TherapistServiceSummary }) {
+  const fallbackTone = [
+    "bg-brand-lavenderSoft",
+    "bg-status-successBg",
+    "bg-status-warningBg",
+    "bg-status-infoBg",
+  ][Math.abs(hashString(service.therapyId)) % 4];
+
+  return (
+    <span
+      className={cn(
+        "grid size-12 shrink-0 place-items-center overflow-hidden rounded-lg",
+        fallbackTone,
+      )}
+    >
+      {service.therapy.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- imagem administrada pelo catálogo público.
+        <img
+          alt={`Imagem da terapia ${service.therapy.name}`}
+          className="size-full object-cover"
+          src={service.therapy.imageUrl}
+        />
+      ) : (
+        <Leaf aria-hidden="true" className="size-5 text-brand-primary" />
+      )}
+    </span>
+  );
+}
+
+function hashString(value: string) {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(index);
+    hash |= 0;
+  }
+  return hash;
 }

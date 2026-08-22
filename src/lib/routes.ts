@@ -32,6 +32,8 @@ export const routes = {
     encounterDetail: (bookingId: string) => `/app/encontros/${bookingId}`,
     encounterVideo: (bookingId: string) => `/app/encontros/${bookingId}/video`,
     messages: "/app/mensagens",
+    supportTicketDetail: (ticketId: string) =>
+      `/app/mensagens/suporte/${ticketId}`,
     favorites: "/app/favoritos",
     favoriteTherapists: "/app/favoritos/terapeutas",
     favoriteTherapies: "/app/favoritos/terapias",

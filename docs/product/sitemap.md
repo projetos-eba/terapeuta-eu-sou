@@ -134,6 +134,8 @@ por redirect; elas não definem shells independentes.
 - `/app/encontros/:bookingId`: detalhe canônico do encontro.
 - `/app/encontros/:bookingId/video`: sala dedicada da videochamada.
 - `/app/mensagens`: mensagens e suporte por templates seguros.
+- `/app/mensagens/suporte/:ticketId`: detalhe e conversa pública de um chamado
+  do paciente com a equipe TES.
 - `/app/favoritos`: hub de favoritos.
 - `/app/favoritos/terapeutas`: terapeutas favoritos.
 - `/app/favoritos/terapias`: terapias favoritas.
@@ -146,9 +148,9 @@ por redirect; elas não definem shells independentes.
 - `/app/configuracoes/privacidade`: privacidade.
 - `/app/configuracoes/seguranca`: segurança.
 
-Observação: não há rota dedicada `/app/ajuda` neste momento. Links de suporte
-do paciente devem apontar para `/app/mensagens` com contexto de suporte até
-decisão futura de produto para uma central própria.
+Observação: não há rota dedicada `/app/ajuda` neste momento. Links gerais de
+suporte do paciente devem apontar para `/app/mensagens`; chamados já abertos
+podem levar ao detalhe `/app/mensagens/suporte/:ticketId`.
 
 ### Fluxos
 

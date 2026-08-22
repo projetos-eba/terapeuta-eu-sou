@@ -86,6 +86,43 @@ describe("TherapistProfilePage video block", () => {
     ).toHaveClass("size-[52px]");
   });
 
+  it("uses the plural label when the profile has zero reviews", () => {
+    render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
+
+    expect(screen.getByText("0 avaliações")).toBeInTheDocument();
+  });
+
+  it("keeps an unbroken service description inside the public card", () => {
+    const longWord = "x".repeat(220);
+
+    render(
+      <TherapistProfilePage
+        profile={{
+          ...baseProfile,
+          services: [
+            {
+              availability: [],
+              bookingUrl: "/reserva?serviceId=service-1",
+              currency: "BRL",
+              description: longWord,
+              durationMinutes: 60,
+              id: "service-1",
+              priceCents: 18500,
+              priceLabel: "R$ 185",
+              title: "Reiki online",
+              therapyId: "therapy-1",
+              therapyName: "Reiki",
+              therapySlug: "reiki",
+            },
+          ],
+        }}
+        reviews={[]}
+      />,
+    );
+
+    expect(screen.getByText(longWord)).toHaveClass("break-words");
+  });
+
   it("reads the current favorite state for an authenticated patient", async () => {
     const fetchMock = vi.fn(async () =>
       Response.json({ isFavorite: true, ok: true }),
@@ -179,6 +216,17 @@ describe("TherapistProfilePage video block", () => {
       document.querySelector('[data-profile-theme="natural"]'),
     ).toBeInTheDocument();
     expect(document.querySelectorAll("[data-profile-theme]")).toHaveLength(1);
+  });
+
+  it("keeps the hero presentation beside the photo from the tablet breakpoint", () => {
+    render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
+
+    const hero = document.querySelector('[data-profile-theme="serene"]');
+    const heroLayout = hero?.querySelector(":scope > div.relative");
+
+    expect(heroLayout).toHaveClass(
+      "md:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)]",
+    );
   });
 
   it.each([["serene"], ["natural"], ["warm"]] as const)(

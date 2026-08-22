@@ -63,6 +63,13 @@ describe("TherapistJourneyHistoryPage", () => {
         .closest("section"),
     ).toHaveClass("h-auto", "self-start", "xl:mb-5");
     expect(screen.getAllByText("Pessoas acompanhadas")).not.toHaveLength(0);
+    expect(screen.queryByText("Pausadas")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Sobre sem encontro recente" }),
+    ).toHaveAttribute(
+      "title",
+      "Sem encontro registrado nos últimos 30 dias.",
+    );
     expect(screen.queryByRole("columnheader", { name: "Encontros" })).not.toBeInTheDocument();
   });
 });
@@ -119,7 +126,7 @@ function pageFixture(): JourneyHistoryPageData {
         value: 1,
       },
       {
-        description: "Com retorno nos últimos 30 dias",
+        description: "Com encontro nos últimos 30 dias",
         id: "active",
         label: "Em acompanhamento",
         tone: "success",
@@ -133,7 +140,7 @@ function pageFixture(): JourneyHistoryPageData {
         value: 1,
       },
       {
-        description: "Há mais de 60 dias",
+        description: "Sem encontro há mais de 30 dias",
         id: "stale",
         label: "Sem encontro recente",
         tone: "danger",

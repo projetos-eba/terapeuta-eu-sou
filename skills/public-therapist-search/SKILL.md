@@ -38,6 +38,13 @@ Antes de alterar `/terapeutas`, consultar:
 - Fotos públicas de terapeutas devem usar os assets versionados em `public/therapists/`, mantendo URLs rastreáveis nos seeds, fallbacks e views: `ana-oliveira.png`, `rafael-santos-avatar.png`, `celia-martins.png`, `juliana-costa.png`, `lucas-pereira-avatar.png`, `andre-lima.png` e `marcio-andrade.png`.
 - Toda alteração em view/schema/policy exige migration versionada. Todo mock/seed deve ser idempotente.
 
+Regra de apresentação dos cards:
+
+- O texto exibido no card deve vir da apresentação curta publicada do terapeuta
+  (`therapist_headline`), com copy visual chamada “Sua apresentação”.
+- Nunca usar `service_description` como apresentação do terapeuta; essa
+  descrição pertence à oferta e aparece somente em contextos de serviço.
+
 ## Componentes Esperados
 
 - `PublicHeader`
@@ -59,6 +66,7 @@ Para o Figma `13273:3587`, preservar:
 - Frame desktop base: `1440px` de largura.
 - Margem lateral principal desktop: `68px`.
 - Hero: imagem recortada à direita com cerca de `765px x 351px`; título IvyPresto `54px`, duas linhas, trecho final em gradiente roxo-ciano.
+- O hero deve aproveitar a largura disponível sem criar gap visual no lado direito: mídia ancorada à direita, container central de `1440px` e margens de `68px`; o `PublicHeader` permanece em faixa branca própria para não receber a imagem do hero como fundo.
 - Busca: container central de cerca de `1243px`, `30px` de raio, fundo `#f7f4ff`, borda `#e8e2f6`, sombra suave; input `54px` de altura.
 - Filtros: segunda linha dentro do mesmo bloco visual, selects `52px` de altura, raio `16px`, texto `16px`; botão `Limpar Filtros` roxo.
 - Resultados: título `26px`, subtítulo `15px`, contagem à direita e select de ordenação `220px x 42px`.
