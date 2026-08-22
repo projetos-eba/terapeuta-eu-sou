@@ -1,7 +1,7 @@
 # Relatório — Fase 3: Admin Support Inbox
 
 Data: 2026-08-21
-Status: implementação local — qualificação HML pendente
+Status: PASS — qualificação HML concluída
 
 ## Decisão de UX
 
@@ -65,14 +65,48 @@ Tickets legados seguem com a descrição conceitual oferecida pela Fase 2.
   pgTAP deixa de estar disponível para arquivos seguintes. O focal da Fase 3 e
   a regressão de participant messaging passam em execução isolada.
 
-## Qualificação HML necessária
+## Qualificação HML — PASS
 
-Aplicar coordenadamente a migration Fase 3 após conferir Fases 1/2 e a
-complementação `20260821224500`. Em BrowserContexts independentes: terapeuta
-deixa ticket em `waiting_support`; Admin localiza pela Inbox, filtra, atribui a
-si, prioriza, cria nota interna e responde; terapeuta confirma resposta sem ver
-nota; Admin confirma retorno a `waiting_support` e resolve. Repetir desktop,
-tablet, mobile e o bypass de texto livre participante.
+O preflight remoto confirmou que HML já possui, em sequência, as migrations
+`20260821210644`, `20260821213315`, `20260821224500` e
+`20260821233000`. O runtime de homologação e o banco ficaram compatíveis; não
+houve qualquer ação em produção.
+
+O Playwright executou BrowserContexts independentes para terapeuta e Admin no
+Chromium de HML. O cenário criou um ticket QA, confirmou `open` no backend e
+validou a operação abaixo:
+
+1. Admin encontra o ticket pela Inbox filtrada por status e busca, atribui a
+   si, muda a prioridade para alta e inicia o atendimento (`in_progress`).
+2. A resposta pública leva o ticket a `waiting_requester`; a resposta do
+   terapeuta o devolve a `waiting_support`.
+3. A Inbox filtrada por `waiting_support` e prioridade encontra o ticket;
+   Admin cria uma nota interna e responde publicamente.
+4. O terapeuta vê a resposta, mas não recebe a nota interna nem no DTO nem na
+   tela. Admin resolve (`resolved`) e o terapeuta reabre explicitamente com
+   nova resposta, retornando a `waiting_support`.
+
+O cenário também conferiu a central e o detalhe em 1440px, 768px e 390px. Em
+mobile, o composer recebeu foco, permaneceu acessível após scroll e não houve
+overflow horizontal. Capturas persistentes com identidade QA não foram
+publicadas; a evidência sanitizada é o resultado dos cenários Playwright e suas
+traces efêmeras locais.
+
+O gate de regressão de mensagens participantes enviou, de forma autenticada,
+`body`, `message`, `description` e `html` para
+`/api/messages/send-template`; os quatro payloads receberam `422` antes de
+qualquer persistência:
+
+**PARTICIPANT FREE TEXT BYPASS = BLOCKED**
+
+Comandos HML executados:
+
+- cenário multi-persona da Inbox: 1 PASS;
+- regressão de conteúdo livre e responsividade: 2 PASS.
+
+O projeto `msedge` do Playwright não foi executável nesta máquina porque o
+navegador não está instalado. A qualificação foi realizada no Chromium, sem
+mascarar essa limitação de tooling.
 
 ## Documentação
 
