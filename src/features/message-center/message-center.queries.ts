@@ -12,6 +12,7 @@ import {
 import type {
   MessageCenterActorRole,
   MessageCenterCategory,
+  MessageCenterMessage,
   MessageCenterPageData,
   MessageCenterPlatformItem,
   MessageCenterThread,
@@ -164,13 +165,18 @@ async function getSupabaseMessageCenter(
     conversations,
     messages,
     bookings,
+    viewerProfileId: input.profileId,
   });
-  const platformItems = mapPlatformItems(supportTickets, notifications);
+  const platformItems = mapPlatformItems(
+    input.actorRole,
+    supportTickets,
+    notifications,
+  );
   const unreadCount =
     messages.filter(
       (message) =>
         message.read_at === null &&
-        message.sender_profile_id !== input.profileId,
+        message.sender_profile_id !== participantProfileId,
     ).length +
     notifications.filter((notification) => notification.read_at === null)
       .length;
@@ -215,12 +221,26 @@ async function mapThreads(input: {
   conversations: ConversationRow[];
   messages: MessageRow[];
   bookings: BookingRow[];
+  viewerProfileId: string;
 }): Promise<MessageCenterThread[]> {
   const latestByConversation = new Map<string, MessageRow>();
+  const messagesByConversation = new Map<string, MessageRow[]>();
   for (const message of input.messages) {
     if (!latestByConversation.has(message.conversation_id)) {
       latestByConversation.set(message.conversation_id, message);
     }
+    const conversationMessages =
+      messagesByConversation.get(message.conversation_id) ?? [];
+    conversationMessages.push(message);
+    messagesByConversation.set(message.conversation_id, conversationMessages);
+  }
+
+  for (const conversationMessages of messagesByConversation.values()) {
+    conversationMessages.sort(
+      (left, right) =>
+        new Date(left.created_at).getTime() -
+          new Date(right.created_at).getTime(),
+    );
   }
 
   if (input.conversations.length === 0) return [];
@@ -249,7 +269,10 @@ async function mapThreads(input: {
         conversation,
         bookings: input.bookings,
         message,
+        messages: messagesByConversation.get(conversation.id) ?? [],
         name: therapist?.public_name ?? "Terapeuta",
+        actorRole: input.actorRole,
+        viewerProfileId: input.viewerProfileId,
       });
     });
   }
@@ -271,7 +294,10 @@ async function mapThreads(input: {
       conversation,
       bookings: input.bookings,
       message,
+      messages: messagesByConversation.get(conversation.id) ?? [],
       name: patient?.display_name ?? "Cliente",
+      actorRole: input.actorRole,
+      viewerProfileId: input.viewerProfileId,
     });
   });
 }
@@ -281,7 +307,10 @@ function toThread(input: {
   conversation: ConversationRow;
   bookings: BookingRow[];
   message: MessageRow | undefined;
+  messages: MessageRow[];
   name: string;
+  actorRole: MessageCenterActorRole;
+  viewerProfileId: string;
 }): MessageCenterThread {
   const category = inferCategory(input.message?.body ?? "");
   const booking = input.bookings.find(
@@ -290,20 +319,19 @@ function toThread(input: {
   const metadata = isRecord(input.message?.metadata)
     ? input.message?.metadata
     : null;
-  const cta =
-    isRecord(metadata?.cta) &&
-    typeof metadata.cta.href === "string" &&
-    isCanonicalParticipantHref(metadata.cta.href) &&
-    isCtaAction(metadata.cta.action)
-      ? {
-          action: metadata.cta.action,
-          href: metadata.cta.href,
-          label:
-            typeof metadata.cta.label === "string"
-              ? metadata.cta.label
-              : "Abrir sessão",
-        }
-      : null;
+  const cta = toCanonicalCta({
+    actorRole: input.actorRole,
+    bookingId: input.conversation.booking_id,
+    value: metadata?.cta,
+  });
+  const threadMessages: MessageCenterMessage[] = input.messages.map(
+    (item) => ({
+      body: item.body,
+      createdAt: item.created_at,
+      id: item.id,
+      isFromViewer: item.sender_profile_id === input.viewerProfileId,
+    }),
+  );
 
   return {
     avatarUrl: input.avatarUrl,
@@ -313,7 +341,12 @@ function toThread(input: {
     categoryLabel: getCategoryLabel(category),
     conversationId: input.conversation.id,
     id: input.conversation.id,
-    isUnread: input.message?.read_at === null,
+    isUnread: input.messages.some(
+      (item) =>
+        item.read_at === null &&
+        item.sender_profile_id !== input.viewerProfileId,
+    ),
+    messages: threadMessages,
     name: input.name,
     timeLabel: formatRelativeTime(
       input.message?.created_at ?? input.conversation.last_message_at,
@@ -324,6 +357,35 @@ function toThread(input: {
       ? `Sobre a sessão de ${formatSessionDate(booking.starts_at)}`
       : null,
   };
+}
+
+function toCanonicalCta(input: {
+  actorRole: MessageCenterActorRole;
+  bookingId: string | null;
+  value: unknown;
+}) {
+  if (!isRecord(input.value) || !input.bookingId) return null;
+  const action = isCtaAction(input.value.action)
+    ? input.value.action
+    : "view_session";
+  const href =
+    input.actorRole === "patient"
+      ? `/app/encontros/${input.bookingId}`
+      : `/terapeuta/sessoes/${input.bookingId}`;
+
+  return { action, href, label: getCtaLabel(action, input.actorRole) };
+}
+
+function getCtaLabel(
+  action: NonNullable<MessageCenterThread["cta"]>["action"],
+  actorRole: MessageCenterActorRole,
+) {
+  if (action === "open_session") {
+    return actorRole === "patient" ? "Entrar no encontro" : "Abrir sessão";
+  }
+  if (action === "reschedule_session") return "Reagendar";
+  if (action === "cancel_session") return "Orientações para cancelar";
+  return actorRole === "patient" ? "Ver encontro" : "Ver sessão";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -341,12 +403,6 @@ function isCtaAction(
   );
 }
 
-function isCanonicalParticipantHref(value: string) {
-  return /^\/(?:app\/encontros|terapeuta\/sessoes)\/[0-9a-f-]{36}$/i.test(
-    value,
-  );
-}
-
 function formatSessionDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
@@ -355,6 +411,7 @@ function formatSessionDate(value: string) {
 }
 
 function mapPlatformItems(
+  actorRole: MessageCenterActorRole,
   tickets: SupportTicketRow[],
   notifications: NotificationRow[],
 ): MessageCenterPlatformItem[] {
@@ -372,6 +429,13 @@ function mapPlatformItems(
       isUnread: ticket.status !== "resolved",
       timeLabel: formatRelativeTime(ticket.created_at),
       title: ticket.subject,
+      cta: {
+        href:
+          actorRole === "patient"
+            ? `/app/mensagens/suporte/${ticket.id}`
+            : `/terapeuta/mensagens/suporte/${ticket.id}`,
+        label: "Abrir conversa",
+      },
     };
   });
   const notificationItems = notifications.map<MessageCenterPlatformItem>(
@@ -518,6 +582,17 @@ function createDemoMessageCenter(
         title: getThreadTitle(category),
         cta: null,
         sessionContext: null,
+        messages: [
+          {
+            body:
+              shell.templates.participant[
+                index % shell.templates.participant.length
+              ]?.body ?? "",
+            createdAt: new Date().toISOString(),
+            id: `demo-message-${index + 1}`,
+            isFromViewer: false,
+          },
+        ],
       };
     }),
   };

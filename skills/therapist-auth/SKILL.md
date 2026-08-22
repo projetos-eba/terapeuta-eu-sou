@@ -95,6 +95,9 @@ Backend:
 - A senha master nao pode liberar e-mail nao confirmado nem role diferente da function chamada.
 - Verifica `profiles.role = therapist`.
 - Define cookies HTTP-only internos para sessão inicial.
+- A home pública reconhece a sessão de terapeuta por `GET /api/auth/therapist/session`
+  e mostra um menu seguro com o nome e atalhos profissionais; a rota não expõe
+  tokens e `DELETE` encerra a sessão local e no provedor.
 - `POST /api/auth/session/refresh` renova a sessão de paciente, terapeuta ou
   admin pelo refresh token HTTP-only do respectivo papel. Ele só roda nos
   últimos 15 minutos do access token, revalida `profiles.role`, rotaciona os

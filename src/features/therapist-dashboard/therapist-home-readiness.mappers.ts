@@ -114,7 +114,7 @@ function profileItem(
     complete,
     description: complete
       ? "Seu perfil público já tem uma versão publicada."
-      : "Publique sua apresentação pública, texto curto e essência.",
+      : "Publique sua apresentação pública e sua essência.",
     href: complete ? routes.therapist.profile : routes.therapist.profileEdit,
     id: "profile",
     required: true,

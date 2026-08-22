@@ -41,10 +41,10 @@ export function ProfileEditorForm({
         />
       </ProfileFieldGroup>
 
-      <ProfileFieldGroup number={2} title="Texto curto">
+      <ProfileFieldGroup number={2} title="Sua apresentação">
         <ProfileTextarea
           id="shortIntro"
-          label="Texto curto"
+          label="Sua apresentação"
           maxLength={200}
           onChange={(value) => updateField("shortIntro", value)}
           rows={3}

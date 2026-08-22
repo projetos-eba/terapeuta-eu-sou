@@ -637,7 +637,7 @@ function ReviewStep({
   values: ServiceFormValues;
 }) {
   return (
-    <div className="grid gap-3 rounded-lg bg-brand-lavenderSoft/50 p-4">
+    <div className="grid min-w-0 gap-3 rounded-lg bg-brand-lavenderSoft/50 p-4">
       {[
         ["Terapia", values.therapy?.name ?? "Não selecionada"],
         ["Oferta", values.title || "Sem título"],
@@ -651,20 +651,25 @@ function ReviewStep({
         ["Refinamentos", `${values.interestIds.length} selecionado(s)`],
       ].map(([label, value]) => (
         <div
-          className="flex flex-col gap-1 border-b border-white/80 pb-3 last:border-0 last:pb-0 sm:flex-row sm:justify-between"
+          className="flex min-w-0 flex-col gap-1 border-b border-white/80 pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between sm:gap-5"
           key={label}
         >
-          <span className="text-xs font-extrabold uppercase tracking-[0.08em] text-tesText-muted">
+          <span className="shrink-0 text-xs font-extrabold uppercase tracking-[0.08em] text-tesText-muted">
             {label}
           </span>
-          <strong className="text-sm text-brand-deep sm:text-right">
+          <strong className="min-w-0 max-w-full break-words text-sm text-brand-deep sm:text-right [overflow-wrap:anywhere]">
             {value}
           </strong>
         </div>
       ))}
-      <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-        {values.description || "Sem descrição."}
-      </p>
+      <div className="min-w-0 border-t border-white/80 pt-3">
+        <span className="text-xs font-extrabold uppercase tracking-[0.08em] text-tesText-muted">
+          Descrição
+        </span>
+        <p className="mt-1 max-h-24 max-w-full overflow-y-auto break-words text-sm font-semibold leading-6 text-tesText-secondary [overflow-wrap:anywhere]">
+          {values.description || "Sem descrição."}
+        </p>
+      </div>
     </div>
   );
 }

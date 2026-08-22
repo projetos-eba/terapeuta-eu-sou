@@ -19,6 +19,7 @@ description: Implementar e manter a Central de Mensagens do paciente e do terape
 ## Rotas
 
 - Paciente: `/app/mensagens`.
+- Detalhe de suporte do paciente: `/app/mensagens/suporte/:ticketId`.
 - Terapeuta: `/terapeuta/mensagens`.
 - Detalhe de suporte do terapeuta: `/terapeuta/mensagens/suporte/:ticketId`.
 - A subrota autenticada `/terapeuta/mensagens/solicitar-terapia` é um fluxo
@@ -38,6 +39,11 @@ Fluxos permitidos:
 - terapeuta -> cliente: templates aprovados;
 - cliente -> plataforma: ticket de suporte autorizado;
 - terapeuta -> plataforma: ticket de suporte autorizado.
+
+O histórico de participante pode ser aberto em um painel de leitura com todas
+as mensagens da conversa, mantendo o envio entre paciente e terapeuta limitado
+aos templates aprovados. CTAs de encontro/sessão devem sempre apontar para as
+rotas canônicas do perfil atual, nunca para o perfil público do terapeuta.
 
 ## Contratos atuais
 
@@ -102,7 +108,8 @@ participantes.
 - Validar `/app/mensagens` e `/terapeuta/mensagens`.
 - Verificar que não existe input de texto livre entre participante e terapeuta.
 - Verificar criação, lista, detalhe e resposta do ticket de suporte do
-  terapeuta, inclusive estado resolvido e mobile.
+  paciente e do terapeuta, inclusive estado resolvido e mobile.
+- Verificar histórico bidirecional do participante e o CTA de encontro/sessão.
 - Verificar que o sino da topbar abre o popover acessível, mantém a Central de
   mensagens como destino completo e fecha por `Escape` ou clique externo.
 - Verificar marcação de notificações como lidas por clique real.

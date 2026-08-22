@@ -86,6 +86,7 @@ Para profissionais relacionados:
 ## Responsividade
 
 - Desktop: hero com imagem lateral, filtros horizontais, sidebar de categorias e grid de 4 colunas.
+- Desktop: manter o conteúdo em container central de até `1440px`, com margens laterais de `68px` a partir de `lg`; o cabeçalho público ocupa uma faixa branca própria, separada dos assets do hero.
 - Tablet: grid de 2 colunas, filtros acima da listagem.
 - Mobile: hero reduzido, busca primeiro, filtros em accordion, grid em 1 coluna quando a descrição precisar respirar.
 - Cards do catálogo devem seguir o padrão visual compacto do Figma `13273:1439`: imagem editorial no topo, nome centralizado, descrição com `line-clamp` de 3 linhas e CTA “Saiba mais”.

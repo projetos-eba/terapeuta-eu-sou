@@ -51,6 +51,49 @@ describe("therapist journey history", () => {
     expect(filtered[0].name).toBe("Ana Lima");
   });
 
+  it("uses the last 30 days to define a recent encounter", () => {
+    const rows = createRows();
+    rows.bookings = rows.bookings.map((booking) =>
+      booking.patient_profile_id ===
+      "b1000000-0000-4000-8000-000000000002"
+        ? { ...booking, starts_at: "2026-06-27T12:00:00-03:00" }
+        : booking,
+    );
+
+    const recent = mapJourneyHistoryPage({
+      ...rows,
+      now,
+      source: "supabase",
+      therapistProfileId: "c1000000-0000-4000-8000-000000000001",
+    });
+
+    expect(
+      recent.clients.find(
+        (client) => client.id === "b1000000-0000-4000-8000-000000000002",
+      )?.status,
+    ).toBe("active");
+
+    rows.bookings = rows.bookings.map((booking) =>
+      booking.patient_profile_id ===
+      "b1000000-0000-4000-8000-000000000002"
+        ? { ...booking, starts_at: "2026-06-26T12:00:00-03:00" }
+        : booking,
+    );
+
+    const stale = mapJourneyHistoryPage({
+      ...rows,
+      now,
+      source: "supabase",
+      therapistProfileId: "c1000000-0000-4000-8000-000000000001",
+    });
+
+    expect(
+      stale.clients.find(
+        (client) => client.id === "b1000000-0000-4000-8000-000000000002",
+      )?.status,
+    ).toBe("stale");
+  });
+
   it("maps detail timeline for one related client", () => {
     const detail = mapJourneyHistoryDetail({
       ...createRows(),

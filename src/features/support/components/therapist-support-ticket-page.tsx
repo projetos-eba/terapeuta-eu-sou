@@ -26,7 +26,13 @@ type Ticket = {
   subject: string;
 };
 
-export function TherapistSupportTicketPage({ ticketId }: { ticketId: string }) {
+export function SupportTicketPage({
+  actorRole,
+  ticketId,
+}: {
+  actorRole: "patient" | "therapist";
+  ticketId: string;
+}) {
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,11 +96,19 @@ export function TherapistSupportTicketPage({ ticketId }: { ticketId: string }) {
     await load();
   }
 
+  const isRequesterMessage = (
+    authorRole: Ticket["messages"][number]["author_role"],
+  ) => authorRole === actorRole || authorRole === "requester";
+
   return (
     <main className="mx-auto w-full max-w-[980px] pb-10 text-tesText-primary">
       <Link
         className="inline-flex min-h-11 items-center text-sm font-extrabold text-brand-primary"
-        href={routes.therapist.messages}
+        href={
+          actorRole === "patient"
+            ? routes.patient.messages
+            : routes.therapist.messages
+        }
       >
         ← Voltar para mensagens
       </Link>
@@ -130,14 +144,16 @@ export function TherapistSupportTicketPage({ ticketId }: { ticketId: string }) {
             {ticket.messages.map((message) => (
               <article
                 className={
-                  message.author_role === "therapist"
+                  isRequesterMessage(message.author_role)
                     ? "ml-auto max-w-[86%] rounded-2xl bg-brand-lavenderSoft p-4"
                     : "mr-auto max-w-[86%] rounded-2xl bg-surface-muted p-4"
                 }
                 key={message.id}
               >
                 <p className="text-sm font-extrabold text-brand-deep">
-                  {message.author_role === "admin" ? "Equipe TES" : "Você"}{" "}
+                  {isRequesterMessage(message.author_role)
+                    ? "Você"
+                    : "Equipe TES"}{" "}
                   <span className="ml-2 text-xs font-semibold text-tesText-secondary">
                     {date(message.created_at)}
                   </span>
@@ -219,6 +235,10 @@ export function TherapistSupportTicketPage({ ticketId }: { ticketId: string }) {
       ) : null}
     </main>
   );
+}
+
+export function TherapistSupportTicketPage({ ticketId }: { ticketId: string }) {
+  return <SupportTicketPage actorRole="therapist" ticketId={ticketId} />;
 }
 
 function Status({ status }: { status: string }) {

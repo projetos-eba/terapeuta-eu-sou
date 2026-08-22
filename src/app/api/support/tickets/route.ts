@@ -21,7 +21,7 @@ type SupportTicketRow = {
 };
 
 export async function GET() {
-  const context = await getTherapistSupportContext();
+  const context = await getRequesterSupportContext();
   if (!context.ok) return failure(context.message, context.status);
 
   try {
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
   const parsed = parseFutureSupportTicketCreate(body);
   if (!parsed) return failure("Revise as informações do chamado.", 422);
 
-  const context = await getTherapistSupportContext();
+  const context = await getRequesterSupportContext();
   if (!context.ok) return failure(context.message, context.status);
 
   try {
@@ -88,9 +88,11 @@ export async function POST(request: Request) {
   }
 }
 
-async function getTherapistSupportContext() {
+async function getRequesterSupportContext() {
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get("tes_therapist_access_token")?.value;
+  const accessToken =
+    cookieStore.get("tes_therapist_access_token")?.value ??
+    cookieStore.get("tes_patient_access_token")?.value;
   const config = getSupabasePublicConfig();
   if (!config || !accessToken) {
     return { ok: false as const, message: "Entre na sua conta.", status: 401 };
@@ -107,10 +109,10 @@ async function getTherapistSupportContext() {
       accessToken,
       `/rest/v1/profiles?select=role&id=eq.${encodeURIComponent(user.id)}&limit=1`,
     );
-    if (profiles[0]?.role !== "therapist") {
+    if (profiles[0]?.role !== "therapist" && profiles[0]?.role !== "patient") {
       return {
         ok: false as const,
-        message: "Acesso de terapeuta necessário.",
+        message: "Acesso de paciente ou terapeuta necessário.",
         status: 403,
       };
     }

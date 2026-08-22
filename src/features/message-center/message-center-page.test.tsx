@@ -36,6 +36,17 @@ describe("MessageCenterPage", () => {
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
   });
 
+  it("shows the complete participant history in both directions", () => {
+    render(<MessageCenterPage data={createData()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /ver mensagens/i }));
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("Mensagem recebida.")).toBeInTheDocument();
+    expect(screen.getByText("Minha confirmação.")).toBeInTheDocument();
+    expect(screen.getAllByText("Você").length).toBeGreaterThan(0);
+  });
+
   it("keeps support visually separate from protected participant messaging", () => {
     render(<MessageCenterPage data={createData()} />);
 
@@ -162,6 +173,52 @@ describe("MessageCenterPage", () => {
       global.fetch = originalFetch;
     }
   });
+
+  it("opens a patient support conversation after creating the ticket", async () => {
+    const originalFetch = global.fetch;
+    const fetchMock = vi.fn(async () =>
+      Response.json({
+        ok: true,
+        ticket: {
+          id: "30000000-0000-4000-8000-000000000001",
+          protocol: "30000000",
+          status: "open",
+        },
+      }),
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      render(
+        <MessageCenterPage
+          data={createData({ actorRole: "patient", source: "supabase" })}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /nova mensagem/i }));
+      fireEvent.change(screen.getByLabelText(/assunto/i), {
+        target: { value: "Dúvida sobre meu acesso" },
+      });
+      fireEvent.change(
+        screen.getByLabelText(/conte mais sobre o que aconteceu/i),
+        { target: { value: "Não consigo abrir o encontro." } },
+      );
+      fireEvent.click(screen.getByRole("button", { name: /abrir chamado/i }));
+
+      await waitFor(() => expect(pushMock).toHaveBeenCalled());
+      expect(pushMock).toHaveBeenCalledWith(
+        "/app/mensagens/suporte/30000000-0000-4000-8000-000000000001",
+      );
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/support/tickets",
+        expect.objectContaining({
+          body: expect.stringContaining('"category":"financeiro_repasses"'),
+          method: "POST",
+        }),
+      );
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
 });
 
 function createData(
@@ -235,6 +292,20 @@ function createData(
         timeLabel: "Hoje · 10:32",
         title: "Confirmação de presença na sessão",
         cta: null,
+        messages: [
+          {
+            body: "Mensagem recebida.",
+            createdAt: "2026-08-21T12:00:00.000Z",
+            id: "message-1",
+            isFromViewer: false,
+          },
+          {
+            body: "Minha confirmação.",
+            createdAt: "2026-08-21T12:05:00.000Z",
+            id: "message-2",
+            isFromViewer: true,
+          },
+        ],
         sessionContext: null,
       },
     ],

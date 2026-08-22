@@ -376,7 +376,11 @@ function MomentStep({
               <p className="text-xs font-bold text-tesText-muted">
                 {day.dateLabel}
               </p>
-              <div className="mt-4 grid gap-2">
+              <div
+                aria-label={`Horários disponíveis em ${day.dayLabel}`}
+                className="mt-4 grid max-h-[36rem] gap-2 overflow-y-auto overscroll-contain pr-2"
+                style={{ scrollbarGutter: "stable" }}
+              >
                 {day.slots.length > 0 ? (
                   day.slots.map((slot) => (
                     <Link

@@ -55,4 +55,24 @@ describe("AuthenticatedShell mobile", () => {
     expect(screen.queryByLabelText("Navegação principal")).toBeNull();
     expect(screen.queryByRole("button", { name: "Abrir menu" })).toBeNull();
   });
+
+  it.each([
+    ["therapist"],
+    ["patient"],
+  ] as const)("routes the logo to the public home for %s", (variant) => {
+    render(
+      <AuthenticatedShell
+        navigation={[{ href: "/app", icon: "home", label: "Início" }]}
+        user={{ name: "Ana", roleLabel: "Usuária" }}
+        variant={variant}
+      >
+        <p>Conteúdo</p>
+      </AuthenticatedShell>,
+    );
+
+    expect(screen.getByRole("link", { name: "Ir para o início" })).toHaveAttribute(
+      "href",
+      "/",
+    );
+  });
 });
