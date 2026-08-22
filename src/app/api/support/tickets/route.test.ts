@@ -89,6 +89,29 @@ describe("support tickets route", () => {
       status: "open",
     });
   });
+
+  it("maps the server rate limit to a retryable 429", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/auth/v1/user")) return Response.json({ id: userId });
+      if (url.includes("/rest/v1/profiles")) {
+        return Response.json([{ role: "therapist" }]);
+      }
+      if (url.includes("/rpc/create_support_ticket_v1")) {
+        return Response.json({ code: "P0001" }, { status: 400 });
+      }
+      return new Response(null, { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(request(validTicket()));
+
+    expect(response.status).toBe(429);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: { message: "Aguarde um momento antes de enviar outro chamado." },
+    });
+  });
 });
 
 function validTicket() {
