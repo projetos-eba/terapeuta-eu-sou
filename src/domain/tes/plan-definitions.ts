@@ -64,7 +64,7 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
     category: "base",
     code: "agenda_days_blocks",
     description:
-      "Agenda, bloqueios e horários essenciais para operar dentro da plataforma.",
+      "Agenda, bloqueios e horários para organizar seus atendimentos.",
     label: "Agenda, bloqueio de dias e horários",
     minimumPlan: TherapistPlan.Free,
     capability: "operation_essentials",
@@ -72,9 +72,8 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "base",
     code: "profile_focus_cover_bio",
-    description:
-      "Dados editoriais básicos para apresentar o perfil profissional.",
-    label: "Foto, capa, bio, especialidades",
+    description: "Foto, apresentação e informações principais do seu perfil.",
+    label: "Foto, apresentação e especialidades",
     minimumPlan: TherapistPlan.Free,
     capability: "operation_essentials",
   },
@@ -89,25 +88,24 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "base",
     code: "automatic_consultation_confirmation",
-    description:
-      "Confirmação operacional automática para consultas dentro do portal.",
-    label: "Confirmação automática de consulta",
+    description: "Confirmação automática das sessões dentro do TES.",
+    label: "Confirmação automática de sessão",
     minimumPlan: TherapistPlan.Free,
     capability: "operation_essentials",
   },
   {
     category: "base",
     code: "closed_portal_sessions",
-    description: "Atendimento organizado no ambiente fechado do portal.",
-    label: "Atendimento no ambiente fechado do portal",
+    description: "Atendimento organizado dentro do TES.",
+    label: "Sessões dentro do TES",
     minimumPlan: TherapistPlan.Free,
     capability: "operation_essentials",
   },
   {
     category: "premium",
     code: "username_url",
-    description: "URL personalizada com o nome público do terapeuta.",
-    label: "URL com o seu nome (/seunome)",
+    description: "Um link personalizado para compartilhar seu perfil.",
+    label: "Link do perfil com o seu nome",
     minimumPlan: TherapistPlan.Premium,
     capability: "custom_profile_slug",
   },
@@ -135,8 +133,9 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "premium",
     code: "automatic_reminders_partial",
-    description: "Lembretes operacionais automáticos em automação parcial.",
-    label: "Lembretes automáticos (automação parcial)",
+    description:
+      "Lembretes automáticos para ajudar no acompanhamento das sessões.",
+    label: "Lembretes automáticos",
     minimumPlan: TherapistPlan.Premium,
     capability: "agenda_insights",
   },
@@ -166,7 +165,8 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "premium_plus",
     code: "aura",
-    description: "Aura conforme recursos disponíveis no plano.",
+    description:
+      "Dicas do Assessor Aura para cuidar melhor da sua presença no TES.",
     minimumPlan: TherapistPlan.PremiumPlus,
     label: "Aura",
     capability: "aura_full",
@@ -174,47 +174,46 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "premium_plus",
     code: "complete_financial_dashboard",
-    description:
-      "Dashboard financeiro completo sem alterar comissão por plano.",
-    label: "Dashboard financeiro completo",
+    description: "Visão ampliada dos recebimentos e do movimento financeiro.",
+    label: "Visão completa dos recebimentos",
     minimumPlan: TherapistPlan.PremiumPlus,
     capability: "advanced_financials",
   },
   {
     category: "premium_plus",
     code: "complete_message_automation",
-    description:
-      "Automação completa de mensagens conforme regras da plataforma.",
-    label: "Automação de mensagens completa",
+    description: "Mais recursos para organizar suas mensagens.",
+    label: "Organização de mensagens",
     minimumPlan: TherapistPlan.PremiumPlus,
     capability: "aura_full",
   },
   {
     category: "premium_plus",
     code: "journey_history_crm",
-    description: "Histórico da Jornada em formato CRM operacional.",
-    label: "Histórico da Jornada (CRM)",
+    description: "Acompanhe o caminho das pessoas que já chegaram até você.",
+    label: "Histórico de pessoas atendidas",
     minimumPlan: TherapistPlan.PremiumPlus,
     capability: "full_crm",
   },
   {
     category: "premium_plus",
     code: "advanced_badge_system",
-    description: "Sistema de selos avançado conforme curadoria da plataforma.",
-    label: "Sistema de selos avançado",
+    description: "Mais formas de destacar sua experiência e seu trabalho.",
+    label: "Destaques do perfil",
     minimumPlan: TherapistPlan.PremiumPlus,
   },
   {
     category: "premium_plus",
     code: "seasonal_campaigns",
-    description: "Participação futura em campanhas sazonais.",
+    description:
+      "Participação em campanhas especiais do TES quando disponível.",
     label: "Participação em campanhas sazonais (Em breve)",
     minimumPlan: TherapistPlan.PremiumPlus,
   },
   {
     category: "academy",
     code: "tes_academy",
-    description: "Academia TES prevista para evolução futura dos planos.",
+    description: "Conteúdos de apoio do TES quando disponível.",
     label: "Academia TES (Em breve)",
     minimumPlan: TherapistPlan.PremiumPlus,
   },
@@ -270,7 +269,7 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
     code: TherapistPlan.PremiumPlus,
     ctaLabel: "Escolher Premium Plus",
     description:
-      "CRM completo, avaliações estratégicas, financeiro avançado e recomendações completas.",
+      "Mais recursos para acompanhar seu trabalho, seus recebimentos e suas escolhas.",
     features: therapistPlanFeatureDefinitions.map((feature) => feature.code),
     limits: {
       services: undefined,
@@ -281,7 +280,7 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
     priceNote: "Cobrança mensal recorrente",
     signupHref: getPlanSignupHref(TherapistPlan.PremiumPlus),
     stripePriceId: null,
-    subtitle: "Gerencie sua prática",
+    subtitle: "Cuide do seu trabalho",
   },
 ];
 

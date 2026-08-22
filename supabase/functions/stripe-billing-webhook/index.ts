@@ -187,6 +187,16 @@ async function handleEvent(
         eventTime,
       );
       return "processed";
+    case "payment_intent.requires_action":
+      await applyPaymentIntentState(
+        client,
+        stripe,
+        dataObject,
+        "processing",
+        eventId,
+        eventTime,
+      );
+      return "processed";
     case "payment_intent.succeeded":
       await applyPaymentIntentState(
         client,

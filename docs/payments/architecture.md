@@ -323,6 +323,7 @@ Configuracao detalhada para o Dashboard Stripe:
 - `invoice.payment_action_required`
 - `invoice.finalization_failed`
 - `payment_intent.processing`
+- `payment_intent.requires_action`
 - `payment_intent.succeeded`
 - `payment_intent.payment_failed`
 - `payment_intent.canceled`

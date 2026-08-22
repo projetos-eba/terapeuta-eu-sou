@@ -9,6 +9,8 @@ import {
   AppPageGrid,
   AppPageMain,
 } from "@/components/app-page";
+import { TESButton } from "@/components/tes";
+import { routes } from "@/lib/routes";
 
 import {
   createStableRequestId,
@@ -290,11 +292,17 @@ export function TherapistProfileEditorPage({
           <ProfileManagedElsewhere />
           <ProfileSection title="Importante">
             <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-              Depois do envio, a equipe TES revisa o perfil antes de ele voltar
-              a aparecer publicamente. A publicação pode levar de 2 a 3 horas
-              para refletir em todas as superfícies. Salvar rascunho não altera
-              o público.
+              Para enviar seu perfil para análise, complete também seus dados e
+              envie os documentos obrigatórios em Configurações. Salvar rascunho
+              não altera o que as pessoas veem.
             </p>
+            <TESButton
+              className="mt-4 min-h-11 rounded-lg"
+              href={routes.therapist.settings}
+              variant="secondary"
+            >
+              Completar dados e documentos
+            </TESButton>
           </ProfileSection>
         </AppPageAside>
       </AppPageGrid>
@@ -373,7 +381,7 @@ function ConfirmDialog({
     publish: {
       button: "Publicar alterações",
       description:
-        "A versão pública será atualizada. Ela pode levar de 2 a 3 horas para aparecer em todos os lugares.",
+        "Seu perfil será enviado para análise. Antes disso, confirme em Configurações se seus dados e documentos obrigatórios estão completos.",
       title: "Publicar alterações?",
     },
     reset: {

@@ -13,7 +13,7 @@ export function UpcomingSessionsCard({
 }) {
   return (
     <section className="rounded-panel border border-[var(--tes-color-border)]/70 bg-white p-5 shadow-card">
-      <h2 className="text-xl font-bold text-brand-deep">Próximos encontros</h2>
+      <h2 className="text-xl font-bold text-brand-deep">Próximas sessões</h2>
       {sessions.length ? (
         <ol className="mt-4 space-y-3">
           {sessions.slice(0, 4).map((session) => (
@@ -51,7 +51,7 @@ export function UpcomingSessionsCard({
         </ol>
       ) : (
         <p className="mt-6 text-sm leading-6 text-tesText-secondary">
-          Nenhum encontro futuro está agendado.
+          Nenhuma sessão futura está agendada.
         </p>
       )}
       <Link

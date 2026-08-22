@@ -1,17 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo } from "react";
 import {
   AlertCircle,
   Check,
   ChevronRight,
   CircleAlert,
-  FileBadge2,
-  FileText,
   Loader2,
-  MapPin,
   ShieldCheck,
-  Upload,
 } from "lucide-react";
 
 import {
@@ -24,53 +20,19 @@ import {
 import { TESButton } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
-import {
-  uploadTherapistPrivateDocument,
-  type TherapistPrivateDocumentKind,
-} from "../therapist-profile-editor.commands";
 import type {
-  TherapistPrivateDocumentSummary,
   TherapistProfileEditorData,
   TherapistProfileVerificationStatus,
 } from "../therapist-profile-editor.types";
 import { ProfileSection } from "./profile-section";
-
-const requiredDocuments: Array<{
-  description: string;
-  formats: string[];
-  helper: string;
-  kind: TherapistPrivateDocumentKind;
-  title: string;
-}> = [
-  {
-    description: "Envie um documento oficial com foto.",
-    formats: ["PDF", "JPG", "PNG"],
-    helper: "RG, CNH ou passaporte com foto",
-    kind: "identity_document",
-    title: "Documento de identidade",
-  },
-  {
-    description: "Envie um comprovante recente.",
-    formats: ["PDF", "JPG", "PNG"],
-    helper: "Documento emitido nos últimos 90 dias",
-    kind: "address_proof",
-    title: "Comprovante de endereço",
-  },
-];
 
 export function TherapistProfileRegistrationSurface({
   editor,
 }: {
   editor: TherapistProfileEditorData;
 }) {
-  const [documents, setDocuments] = useState(editor.privateDocuments);
-  const [verificationStatus, setVerificationStatus] = useState(
-    editor.verificationSummary?.status ?? editor.derived.verificationStatus,
-  );
-  const [uploadingKind, setUploadingKind] =
-    useState<TherapistPrivateDocumentKind | null>(null);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [liveMessage, setLiveMessage] = useState("");
+  const verificationStatus =
+    editor.verificationSummary?.status ?? editor.derived.verificationStatus;
 
   const fields = editor.draft?.fields ?? editor.published.fields;
   const profileStepComplete = Boolean(
@@ -79,44 +41,51 @@ export function TherapistProfileRegistrationSurface({
   );
   const servicesStepComplete = editor.derived.activeServiceCount > 0;
   const availabilityStepComplete = editor.derived.availabilityRuleCount > 0;
-  const documentsByKind = new Map(documents.map((item) => [item.kind, item]));
-  const documentsStepComplete = requiredDocuments.every((item) => {
-    const document = documentsByKind.get(item.kind);
-    return Boolean(document && document.status !== "rejected");
-  });
+  const documentsByKind = useMemo(
+    () => new Map(editor.privateDocuments.map((item) => [item.kind, item])),
+    [editor.privateDocuments],
+  );
+  const documentsStepComplete = ["identity_document", "address_proof"].every(
+    (kind) => {
+      const document = documentsByKind.get(
+        kind as "identity_document" | "address_proof",
+      );
+      return Boolean(document && document.status !== "rejected");
+    },
+  );
   const reviewStepState = reviewState(verificationStatus);
 
   const steps = [
     {
-      description: "Informações básicas e apresentação.",
+      description: "Preencha como você quer ser apresentado.",
       href: routes.therapist.profileEdit,
       key: "profile",
       label: "Perfil profissional",
       state: profileStepComplete ? "complete" : "pending",
     },
     {
-      description: "Terapias ativas para reserva online.",
+      description: "Adicione pelo menos uma terapia online.",
       href: routes.therapist.services,
       key: "services",
-      label: "Serviços e terapias",
+      label: "Terapias ativas",
       state: servicesStepComplete ? "complete" : "pending",
     },
     {
-      description: "Horários e dias de atendimento.",
+      description: "Informe quando você pode atender.",
       href: routes.therapist.agenda,
       key: "availability",
       label: "Disponibilidade",
       state: availabilityStepComplete ? "complete" : "pending",
     },
     {
-      description: "Documentos obrigatórios do cadastro.",
-      href: routes.therapist.profile,
+      description: "Preencha seus dados e envie os documentos obrigatórios.",
+      href: routes.therapist.settings,
       key: "documents",
-      label: "Documentos",
+      label: "Dados e documentos",
       state: documentsStepComplete
         ? verificationStatus === "changes_requested"
           ? "attention"
-          : "complete"
+          : "current"
         : "pending",
     },
     {
@@ -139,20 +108,7 @@ export function TherapistProfileRegistrationSurface({
 
   return (
     <AppPageContainer className="gap-5">
-      <div aria-live="polite" className="sr-only">
-        {liveMessage}
-      </div>
-
       <AppPageHeader title={pageMode.title}>{pageMode.subtitle}</AppPageHeader>
-
-      {errorMessage ? (
-        <div
-          className="rounded-card border border-status-danger/30 bg-status-dangerBg p-4 text-sm font-bold leading-6 text-status-danger"
-          role="alert"
-        >
-          {errorMessage}
-        </div>
-      ) : null}
 
       {pageMode.banner ? (
         <section className="rounded-card border border-status-success/35 bg-status-successBg p-4 sm:p-5">
@@ -226,89 +182,31 @@ export function TherapistProfileRegistrationSurface({
             </div>
           </ProfileSection>
 
-          {pageMode.showUploadCards ? (
-            <ProfileSection
-              description="Anexe os documentos obrigatórios para concluir seu cadastro."
-              title="Pendências para análise"
-            >
-              <div className="grid gap-4 lg:grid-cols-2">
-                {requiredDocuments.map((documentConfig) => (
-                  <DocumentUploadCard
-                    currentDocument={documentsByKind.get(documentConfig.kind)}
-                    key={documentConfig.kind}
-                    onUpload={async (file) => {
-                      setUploadingKind(documentConfig.kind);
-                      setErrorMessage(null);
-
-                      const result = await uploadTherapistPrivateDocument({
-                        file,
-                        kind: documentConfig.kind,
-                      });
-
-                      setUploadingKind(null);
-
-                      if (result.status === "error") {
-                        setErrorMessage(result.error.message);
-                        setLiveMessage(result.error.message);
-                        return;
-                      }
-
-                      setDocuments(result.data.documents);
-                      setVerificationStatus(result.data.verificationStatus);
-                      setLiveMessage(
-                        `${documentConfig.title} enviado com sucesso.`,
-                      );
-                    }}
-                    uploading={uploadingKind === documentConfig.kind}
-                    {...documentConfig}
-                  />
-                ))}
-              </div>
-            </ProfileSection>
-          ) : (
-            <ProfileSection
-              description="Os documentos enviados ficam disponíveis apenas para análise administrativa."
-              title="Documentos enviados"
-            >
-              <ul className="grid gap-4">
-                {requiredDocuments.map((documentConfig) => {
-                  const document = documentsByKind.get(documentConfig.kind);
-
-                  return (
-                    <li
-                      className="flex items-start justify-between gap-4 rounded-[22px] border border-border bg-white px-4 py-4"
-                      key={documentConfig.kind}
-                    >
-                      <div className="flex min-w-0 gap-3">
-                        <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-lavenderSoft text-brand-primary">
-                          <FileText aria-hidden="true" className="size-5" />
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-sm font-extrabold text-brand-deep">
-                            {documentConfig.title}
-                          </p>
-                          <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                            {document
-                              ? `${document.fileName} · ${formatFileSize(document.fileSizeBytes)}`
-                              : "Documento ainda não recebido."}
-                          </p>
-                          {document?.createdAt ? (
-                            <p className="mt-1 text-[11px] font-semibold leading-5 text-tesText-secondary sm:text-xs">
-                              Enviado em {formatDateTime(document.createdAt)}
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                      <StatusPill
-                        tone={document ? "success" : "warning"}
-                        value={document ? "Enviado" : "Pendente"}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
-            </ProfileSection>
-          )}
+          <ProfileSection
+            description="O preenchimento dos seus dados e o envio dos documentos obrigatórios acontecem em Configurações. Eles são necessários para aprovar e publicar seu perfil."
+            title="Dados e documentos"
+          >
+            <div className="rounded-[22px] border border-brand-lavender bg-surface-soft p-4 sm:p-5">
+              <p className="text-sm font-extrabold leading-6 text-brand-deep">
+                {documentsStepComplete
+                  ? "Seus documentos foram recebidos."
+                  : "Ainda falta enviar documentos obrigatórios."}
+              </p>
+              <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                Em Configurações, confirme também seus dados: só o conjunto de
+                informações e documentos permite concluir a aprovação do
+                cadastro.
+              </p>
+              <TESButton
+                className="mt-4 min-h-11 rounded-lg"
+                href={routes.therapist.settings}
+                variant="secondary"
+              >
+                Abrir Configurações
+                <ChevronRight aria-hidden="true" className="size-4" />
+              </TESButton>
+            </div>
+          </ProfileSection>
 
           <ProfileSection title="Resumo do seu perfil">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -329,7 +227,7 @@ export function TherapistProfileRegistrationSurface({
               />
               <SummaryDatum
                 label="Disponibilidade"
-                value={`${editor.derived.availabilityRuleCount} regra(s)`}
+                value={`${editor.derived.availabilityRuleCount} período(s)`}
               />
             </div>
           </ProfileSection>
@@ -391,7 +289,7 @@ export function TherapistProfileRegistrationSurface({
                     Seus documentos são privados
                   </p>
                   <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                    Eles são usados apenas para validação administrativa e não
+                    Eles são usados apenas para a análise da equipe TES e não
                     aparecem no seu perfil público.
                   </p>
                 </div>
@@ -401,125 +299,6 @@ export function TherapistProfileRegistrationSurface({
         </AppPageAside>
       </AppPageGrid>
     </AppPageContainer>
-  );
-}
-
-function DocumentUploadCard({
-  currentDocument,
-  description,
-  formats,
-  helper,
-  kind,
-  onUpload,
-  title,
-  uploading,
-}: {
-  currentDocument?: TherapistPrivateDocumentSummary;
-  description: string;
-  formats: string[];
-  helper: string;
-  kind: TherapistPrivateDocumentKind;
-  onUpload: (file: File) => Promise<void>;
-  title: string;
-  uploading: boolean;
-}) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-
-  return (
-    <div className="rounded-[24px] border border-border bg-white p-5">
-      <input
-        accept=".pdf,image/jpeg,image/png"
-        className="sr-only"
-        onChange={(event) => {
-          const file = event.currentTarget.files?.[0];
-          event.currentTarget.value = "";
-          if (file) void onUpload(file);
-        }}
-        ref={inputRef}
-        type="file"
-      />
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-base font-extrabold text-brand-deep">{title}</p>
-          <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-            {description}
-          </p>
-        </div>
-        <StatusPill
-          tone={
-            currentDocument?.status === "rejected"
-              ? "danger"
-              : currentDocument
-                ? "success"
-                : "warning"
-          }
-          value={
-            currentDocument?.status === "rejected"
-              ? "Reenvio solicitado"
-              : currentDocument
-                ? "Enviado"
-                : "Pendente"
-          }
-        />
-      </div>
-
-      <div className="mt-4 rounded-[20px] border border-dashed border-brand-lavender bg-surface-soft p-4">
-        <p className="text-sm font-extrabold text-brand-deep">
-          {currentDocument ? currentDocument.fileName : helper}
-        </p>
-        <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-          {currentDocument
-            ? `${formatFileSize(currentDocument.fileSizeBytes)} · ${formatValidationState(currentDocument.validationState)}`
-            : helper}
-        </p>
-        {currentDocument?.reviewNote ? (
-          <p className="mt-3 border-l-2 border-status-warning pl-3 text-sm font-semibold leading-6 text-tesText-secondary">
-            {currentDocument.reviewNote}
-          </p>
-        ) : null}
-        <div className="mt-3 flex flex-wrap gap-2">
-          {formats.map((format) => (
-            <span
-              className="rounded-full bg-brand-lavenderSoft px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.08em] text-brand-primary sm:text-xs"
-              key={format}
-            >
-              {format}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-3">
-        <TESButton
-          className="min-h-11 rounded-lg"
-          onClick={() => inputRef.current?.click()}
-          type="button"
-          variant={currentDocument ? "secondary" : "primary"}
-        >
-          {uploading ? (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-          ) : (
-            <Upload aria-hidden="true" className="size-4" />
-          )}
-          {uploading
-            ? "Enviando..."
-            : currentDocument
-              ? "Substituir arquivo"
-              : "Anexar documento"}
-        </TESButton>
-        {kind === "identity_document" ? (
-          <p className="flex items-center gap-2 text-sm font-semibold text-tesText-secondary">
-            <FileBadge2 aria-hidden="true" className="size-4" />
-            RG, CNH ou passaporte com foto
-          </p>
-        ) : (
-          <p className="flex items-center gap-2 text-sm font-semibold text-tesText-secondary">
-            <MapPin aria-hidden="true" className="size-4" />
-            Emitido nos últimos 90 dias
-          </p>
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -555,29 +334,6 @@ function StepBullet({
   return (
     <span className="grid size-7 shrink-0 place-items-center rounded-full bg-surface-soft text-brand-primary">
       <CircleAlert aria-hidden="true" className="size-4" />
-    </span>
-  );
-}
-
-function StatusPill({
-  tone,
-  value,
-}: {
-  tone: "danger" | "success" | "warning";
-  value: string;
-}) {
-  const classes =
-    tone === "success"
-      ? "bg-status-successBg text-status-success"
-      : tone === "danger"
-        ? "bg-status-dangerBg text-status-danger"
-        : "bg-status-warningBg text-status-warning";
-
-  return (
-    <span
-      className={`inline-flex min-h-8 items-center rounded-full px-3 text-[11px] font-extrabold uppercase tracking-[0.08em] sm:text-xs ${classes}`}
-    >
-      {value}
     </span>
   );
 }
@@ -651,12 +407,11 @@ function registrationMode({
         title: "Cadastro enviado com sucesso",
       },
       checklist: [
-        "Sua equipe administrativa confere a autenticidade dos documentos enviados.",
-        "Se houver algum ajuste, você receberá a orientação por e-mail e por esta área.",
-        "Após a aprovação, seu perfil segue disponível para reservas conforme os critérios já atendidos.",
+        "A equipe TES confere seus dados e os documentos enviados.",
+        "Se algum ajuste for necessário, vamos explicar o que precisa ser feito por e-mail e nesta área.",
+        "Depois da aprovação, seu perfil poderá ser publicado e receber novas sessões.",
       ],
       mode: "in_review" as const,
-      showUploadCards: false,
       subtitle:
         "Recebemos suas informações e documentos. Nossa equipe está avaliando seu perfil profissional.",
       supportCta: true,
@@ -671,12 +426,11 @@ function registrationMode({
       checklist: [
         "Revise o que precisa ser ajustado no seu perfil público.",
         "Reenvie os documentos solicitados quando necessário.",
-        "Depois disso, seu cadastro volta para análise administrativa.",
+        "Depois disso, seu cadastro volta para análise.",
       ],
       mode: "attention" as const,
-      showUploadCards: true,
       subtitle:
-        "Seu cadastro precisa de ajustes antes de seguir para a próxima revisão.",
+        "Seu cadastro precisa de alguns ajustes antes de podermos aprová-lo.",
       supportCta: true,
       title: "Revise seu cadastro",
     };
@@ -691,17 +445,16 @@ function registrationMode({
       ? [
           "Perfil, terapias e disponibilidade já foram informados.",
           "Os documentos privados foram recebidos com sucesso.",
-          "Se seu perfil ainda não apareceu em análise, revise a publicação e aguarde a sincronização da fila.",
+          "O cadastro está pronto para ser enviado. Publique seu perfil para iniciar a análise.",
         ]
       : [
           "Complete os dados principais do seu perfil.",
           "Cadastre ao menos uma terapia ativa e sua disponibilidade.",
-          "Anexe os documentos obrigatórios para concluir a revisão.",
+          "Preencha seus dados e envie os documentos obrigatórios em Configurações.",
         ],
     mode: "pending" as const,
-    showUploadCards: true,
     subtitle:
-      "Finalize as informações e envie os documentos obrigatórios para que possamos analisar seu perfil.",
+      "Finalize as informações e envie os documentos obrigatórios em Configurações para iniciarmos a análise.",
     supportCta: true,
     title: "Complete seu cadastro",
   };
@@ -718,7 +471,7 @@ function progressSummaryCopy({
     verificationStatus === "submitted" ||
     verificationStatus === "in_review"
   ) {
-    return "Seu cadastro já entrou em análise. Agora acompanhamos a revisão administrativa.";
+    return "Seu cadastro já entrou em análise. A equipe TES vai avisar você sobre o próximo passo.";
   }
 
   if (verificationStatus === "changes_requested") {
@@ -726,7 +479,7 @@ function progressSummaryCopy({
   }
 
   if (documentsComplete) {
-    return "Os documentos obrigatórios já foram recebidos nesta etapa.";
+    return "Os documentos foram recebidos. Confirme também seus dados em Configurações para concluirmos a análise.";
   }
 
   return "Envie os documentos obrigatórios para concluir seu cadastro.";
@@ -743,17 +496,17 @@ function reviewState(status: TherapistProfileVerificationStatus) {
 }
 
 function reviewDescription(status: TherapistProfileVerificationStatus) {
-  if (status === "approved") return "Cadastro aprovado e liberado.";
+  if (status === "approved") return "Cadastro aprovado pela equipe TES.";
   if (status === "submitted" || status === "in_review") {
-    return "Cadastro enviado e em análise administrativa.";
+    return "Cadastro recebido e em análise.";
   }
   if (status === "changes_requested") {
-    return "A equipe solicitou correções antes da aprovação.";
+    return "A equipe TES pediu alguns ajustes antes da aprovação.";
   }
   if (status === "rejected") {
-    return "O cadastro foi encerrado e precisa de nova orientação.";
+    return "O cadastro não foi aprovado. Fale com o suporte para entender o próximo passo.";
   }
-  return "A etapa de análise começa depois da publicação e dos documentos.";
+  return "A análise começa depois que o perfil estiver completo e os dados e documentos forem enviados.";
 }
 
 function statusLabel(state: "attention" | "complete" | "current" | "pending") {
@@ -768,18 +521,18 @@ function flowItems(mode: "attention" | "in_review" | "pending") {
     return [
       {
         description:
-          "A equipe verifica a autenticidade e a legibilidade dos documentos enviados.",
-        title: "Conferência dos documentos",
+          "A equipe TES confere se os dados e documentos estão corretos e legíveis.",
+        title: "Conferência",
       },
       {
         description:
-          "O cadastro é comparado com os critérios atuais da plataforma.",
-        title: "Validação do cadastro",
+          "A equipe verifica se seu cadastro está pronto para aprovação.",
+        title: "Aprovação do cadastro",
       },
       {
         description:
-          "Se algo precisar de correção, você receberá a orientação exata do que ajustar.",
-        title: "Aprovação ou ajustes",
+          "Se algo precisar de correção, você receberá uma orientação clara.",
+        title: "Próximo passo",
       },
     ];
   }
@@ -797,8 +550,7 @@ function flowItems(mode: "attention" | "in_review" | "pending") {
         title: "Reenvie os documentos",
       },
       {
-        description:
-          "Após a nova publicação, o cadastro retorna para a análise administrativa.",
+        description: "Depois do novo envio, o cadastro retorna para análise.",
         title: "Volte para análise",
       },
     ];
@@ -810,43 +562,13 @@ function flowItems(mode: "attention" | "in_review" | "pending") {
       title: "Perfil profissional",
     },
     {
-      description: "Cadastre serviços ativos e defina sua disponibilidade.",
+      description: "Cadastre terapias ativas e defina sua disponibilidade.",
       title: "Operação do perfil",
     },
     {
       description:
-        "Anexe os documentos privados exigidos para a validação administrativa.",
-      title: "Documentos obrigatórios",
+        "Preencha seus dados e envie os documentos obrigatórios em Configurações.",
+      title: "Dados e documentos",
     },
   ];
-}
-
-function formatFileSize(bytes: number) {
-  if (bytes >= 1024 * 1024) {
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  }
-  if (bytes >= 1024) {
-    return `${Math.round(bytes / 1024)} KB`;
-  }
-  return `${bytes} B`;
-}
-
-function formatDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "data indisponível";
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-    timeZone: "America/Sao_Paulo",
-  }).format(date);
-}
-
-function formatValidationState(
-  value: TherapistPrivateDocumentSummary["validationState"],
-) {
-  if (value === "passed") return "validado";
-  if (value === "pending") return "em conferência";
-  if (value === "failed") return "precisa de revisão";
-  return "recebido";
 }

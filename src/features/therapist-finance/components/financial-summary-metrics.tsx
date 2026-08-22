@@ -34,7 +34,10 @@ export function FinancialSummaryMetrics({
   const metrics = analytics.metrics;
 
   return (
-    <section aria-label="Métricas financeiras Premium" className="grid gap-5">
+    <section
+      aria-label="Acompanhamento financeiro Premium"
+      className="grid gap-5"
+    >
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           comparison={metrics.revenue.comparison.therapistNet}
@@ -52,7 +55,7 @@ export function FinancialSummaryMetrics({
               : formatCurrency(metrics.revenue.grossAverageTicketCents)
           }.`}
           icon={BarChart3}
-          label="Ticket médio"
+          label="Valor médio por sessão"
           value={
             metrics.revenue.netAverageTicketCents === null
               ? "Sem base"
@@ -64,13 +67,13 @@ export function FinancialSummaryMetrics({
           comparison={metrics.revenue.comparison.paidSessions}
           description={`${formatInteger(
             metrics.revenue.paidSessionCount,
-          )} sessão(ões) com pagamento confirmado.`}
+          )} sessões com pagamento confirmado.`}
           icon={RotateCcw}
           label="Sessões realizadas"
           value={formatInteger(metrics.sessions.completedCount)}
         />
         <MetricCard
-          description={`Janela de retorno: ${metrics.retention.observationWindowDays} dias. Denominador elegível: ${metrics.retention.eligiblePatients}.`}
+          description={`Acompanhamos ${metrics.retention.eligiblePatients} pessoas por ${metrics.retention.observationWindowDays} dias.`}
           icon={TrendingUp}
           label="Taxa de retorno"
           muted={metrics.retention.status === "insufficient_data"}
@@ -105,7 +108,7 @@ function PremiumMetricsLocked() {
       </span>
       <div>
         <h2 className="text-lg font-extrabold text-brand-deep">
-          Métricas financeiras Premium
+          Acompanhamento financeiro Premium
         </h2>
         <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
           O resumo operacional continua disponível. Comparação com período
@@ -186,7 +189,7 @@ function CancellationRescheduleCard({
             Cancelamentos e reagendamentos
           </h2>
           <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-            Taxas calculadas sobre sessões elegíveis agendadas no período.
+            Percentuais calculados sobre as sessões agendadas no período.
           </p>
         </div>
       </div>
@@ -203,9 +206,10 @@ function CancellationRescheduleCard({
         />
       </dl>
       <p className="rounded-lg bg-surface-soft p-3 text-sm font-semibold leading-6 text-tesText-secondary">
-        Denominador: {formatInteger(metrics.sessions.eligibleScheduledCount)}{" "}
-        sessão(ões) confirmadas, concluídas, canceladas, reembolsadas ou com
-        ausência registrada.
+        Base do cálculo:{" "}
+        {formatInteger(metrics.sessions.eligibleScheduledCount)} sessões
+        confirmadas, concluídas, canceladas, reembolsadas ou com ausência
+        registrada.
       </p>
     </AppPageSection>
   );
@@ -328,8 +332,8 @@ function RevenueByTherapyCard({
           Terapias que mais faturam
         </h2>
         <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-          Ordenado por receita líquida. Usa a terapia canônica vinculada ao
-          serviço e snapshots financeiros das sessões.
+          Ordenado por recebimento líquido e pelas sessões registradas no
+          período.
         </p>
       </div>
       {metrics.revenueByTherapy.length ? (

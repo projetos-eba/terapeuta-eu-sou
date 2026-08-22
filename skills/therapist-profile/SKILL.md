@@ -61,9 +61,16 @@ Não passar linhas cruas do Supabase para React.
   confirmado.
 - Em perfis já publicados, a ação primária volta a ser `Salvar alterações`;
   publicação posterior continua explícita sobre rascunho salvo.
-- O terapeuta anexa documentos privados obrigatórios nesta superfície; a
-  administração continua responsável por revisão, aprovação, suspensão, plano
-  e bloqueios.
+- O terapeuta envia os documentos privados obrigatórios em
+  `/terapeuta/configuracoes`; `/terapeuta/perfil` e
+  `/terapeuta/perfil/editar` apenas mostram o que falta e orientam para essa
+  área. A administração continua responsável por revisão, aprovação,
+  suspensão, plano e bloqueios.
+- A publicação só pode avançar quando os dados de identidade/endereço e os
+  documentos obrigatórios estiverem completos. A interface deve distinguir:
+  `Perfil completo` (conteúdo editorial preenchido), `Cadastro aprovado`
+  (análise administrativa concluída) e `Perfil publicado` (versão visível para
+  o público).
 - Toda publicação de uma nova versão, inclusive uma republicação de perfil já
   aprovado, envia atomicamente o conteúdo para a fila administrativa: cria ou
   reenfileira `therapist_verifications` em `submitted`, mantém a versão para a
@@ -128,11 +135,11 @@ Não passar linhas cruas do Supabase para React.
 - `/terapeuta/perfil` continua sendo uma leitura orientada e não um formulário,
   mas quando o cadastro ainda depende de documentos privados ou está em análise
   administrativa a rota deve trocar a prévia pública por uma superfície de
-  progresso/envio honesta, com etapas, pendências e orientação do próximo
-  passo.
+  progresso honesta, com etapas, pendências e orientação para
+  `/terapeuta/configuracoes`.
 - `/terapeuta/perfil/editar` deve conter header, progresso, formulário
-  numerado, temas, link público, upload/mídia, módulos
-  gerenciados, aviso importante e save bar.
+  numerado, temas, link público, upload de mídia pública, módulos gerenciados,
+  aviso importante e save bar. Não deve conter upload de documento privado.
 - Evitar CTAs conflitantes na primeira configuração: não mostrar `Salvar
 rascunho` como ação concorrente quando o perfil ainda não tem versão
   publicada.
@@ -151,6 +158,9 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
 - A UI deve deixar claro que os documentos são privados, usados apenas para
   validação administrativa e podem ser substituídos pelo terapeuta via nova
   anexação do mesmo tipo.
+- A comunicação editorial usa `Sua apresentação` para o texto principal. Os
+  campos legados `headline`, `shortIntro` e `bio` permanecem apenas no contrato
+  interno e não aparecem como nomes técnicos para o terapeuta.
 - Usar `TESDialog` para confirmações.
 - Manter `h1` único.
 - Labels visíveis e touch targets de pelo menos 44px.

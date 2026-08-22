@@ -44,8 +44,8 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
   `TherapistGettingStartedPage` apresenta o progresso circular, as etapas
   reais, pendências de documentos, resumo do perfil e orientação de análise.
   Os documentos privados são resumidos apenas como estado e encaminham para
-  `/terapeuta/perfil`, que continua sendo a superfície canônica de envio; não
-  duplicar upload, URLs ou dados privados no dashboard.
+  `/terapeuta/configuracoes`, que é a área canônica de envio; não duplicar
+  upload, URLs ou dados privados no dashboard.
 - Read model: RPC `public.get_therapist_dashboard_v1()`.
 - Recomendações: `public.aura_recommendations`, consultadas separadamente.
 - Assets locais: `public/therapist/dashboard/`.
@@ -74,6 +74,9 @@ Não distribuir queries pelos componentes. A entrada única da página é
 - Não usar dados privados do paciente para recomendações da Aura.
 - Métricas devem ser calculadas dos registros transacionais.
 - Usar “Pagamentos pendentes” para bookings `pending_payment`.
+- Na comunicação com o terapeuta, usar “Sessão”, “Terapia”, “Resultados” e
+  “Assessor Aura”; termos de implementação como booking, insight, serviço ou
+  métricas ficam restritos a contratos, logs e documentação.
 - Não prometer cura, diagnóstico ou resultado.
 
 ## Fallbacks

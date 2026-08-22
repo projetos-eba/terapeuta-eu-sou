@@ -53,15 +53,15 @@ export function ProfileEditorForm({
       </ProfileFieldGroup>
 
       <ProfileFieldGroup
-        description="As terapias oferecidas vêm da área Suas terapias para evitar duplicidade de catálogo."
+        description="As terapias que aparecem aqui são escolhidas em Suas terapias."
         number={3}
         title="Especialidades"
       >
         <div className="flex flex-wrap gap-3">
           {editor.derived.activeServiceCount > 0 ? (
             <span className="inline-flex min-h-11 items-center rounded-full border border-brand-lavender bg-white px-4 text-sm font-bold text-tesText-secondary shadow-card">
-              {editor.derived.activeServiceCount} serviço
-              {editor.derived.activeServiceCount === 1 ? "" : "s"} ativo
+              {editor.derived.activeServiceCount} terapia
+              {editor.derived.activeServiceCount === 1 ? "" : "s"} ativa
               {editor.derived.activeServiceCount === 1 ? "" : "s"}
             </span>
           ) : (
@@ -149,8 +149,8 @@ export function ProfileEditorForm({
                 Conteúdos avançados disponíveis no Premium Plus.
               </p>
               <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                O downgrade não apaga dados já cadastrados, mas novas edições
-                avançadas ficam bloqueadas pelo plano.
+                Ao mudar para um plano sem este recurso, seus conteúdos ficam
+                guardados, mas você não poderá fazer novas edições avançadas.
               </p>
               <TESButton
                 className="mt-3 min-h-11 rounded-lg"
@@ -168,9 +168,9 @@ export function ProfileEditorForm({
         <div className="flex items-start gap-3">
           <Sparkles aria-hidden="true" className="mt-1 text-brand-primary" />
           <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-            As informações acima são exibidas no seu perfil público. Preços,
-            horários, avaliações, documentos e dados administrativos continuam
-            em suas fontes próprias e não são editados aqui.
+            As informações acima aparecem no seu perfil público. Preços,
+            horários, avaliações, documentos e dados da conta ficam nas áreas
+            correspondentes.
           </p>
         </div>
       </div>

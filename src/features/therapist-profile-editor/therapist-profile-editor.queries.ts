@@ -42,7 +42,7 @@ export const getTherapistProfileEditorPage = cache(
 
     if (!config) {
       return {
-        message: "Configuração Supabase ausente para carregar o perfil.",
+        message: "Não foi possível carregar seu perfil agora.",
         status: "error",
       };
     }

@@ -161,7 +161,7 @@ export function TherapistBlocksPanel({
       return true;
     } catch {
       setCommand({
-        message: "Não foi possível conectar ao serviço de bloqueios.",
+        message: "Não foi possível atualizar seus bloqueios agora.",
         status: "error",
       });
       return false;
@@ -462,7 +462,9 @@ function CompactBlockRow({
           <h3 className="truncate text-sm font-extrabold text-brand-deep">
             {reasonLabel(block.reasonCode)}
           </h3>
-          {block.reason ? <span className="sr-only">{block.reason}</span> : null}
+          {block.reason ? (
+            <span className="sr-only">{block.reason}</span>
+          ) : null}
           {block.status === "cancelled" ? (
             <span className="rounded-full bg-neutral-100 px-2 py-1 text-[10px] font-extrabold text-tesText-muted">
               Removido

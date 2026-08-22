@@ -80,29 +80,32 @@ const COMPLETED_BOOKING_STATUSES = new Set([
 
 const RECENT_ENCOUNTER_WINDOW_DAYS = 30;
 
-const TOPIC_RULES: Array<{ label: string; pattern: RegExp; tone: JourneyHistorySegment["tone"] }> =
-  [
-    { label: "Ansiedade", pattern: /ansiedade|calma|respira/i, tone: "brand" },
-    { label: "Autoestima", pattern: /autoestima|confian/i, tone: "danger" },
-    {
-      label: "Autoconhecimento",
-      pattern: /autoconhecimento|clareza|percep/i,
-      tone: "brand",
-    },
-    {
-      label: "Relacionamentos",
-      pattern: /relacionamento|v[ií]nculo|famil/i,
-      tone: "danger",
-    },
-    { label: "Família", pattern: /fam[ií]lia|familiar/i, tone: "success" },
-    { label: "Carreira", pattern: /carreira|profissional/i, tone: "info" },
-    {
-      label: "Espiritualidade",
-      pattern: /espiritual|energia|reiki/i,
-      tone: "brand",
-    },
-    { label: "Propósito", pattern: /prop[oó]sito|dire[cç][aã]o/i, tone: "brand" },
-  ];
+const TOPIC_RULES: Array<{
+  label: string;
+  pattern: RegExp;
+  tone: JourneyHistorySegment["tone"];
+}> = [
+  { label: "Ansiedade", pattern: /ansiedade|calma|respira/i, tone: "brand" },
+  { label: "Autoestima", pattern: /autoestima|confian/i, tone: "danger" },
+  {
+    label: "Autoconhecimento",
+    pattern: /autoconhecimento|clareza|percep/i,
+    tone: "brand",
+  },
+  {
+    label: "Relacionamentos",
+    pattern: /relacionamento|v[ií]nculo|famil/i,
+    tone: "danger",
+  },
+  { label: "Família", pattern: /fam[ií]lia|familiar/i, tone: "success" },
+  { label: "Carreira", pattern: /carreira|profissional/i, tone: "info" },
+  {
+    label: "Espiritualidade",
+    pattern: /espiritual|energia|reiki/i,
+    tone: "brand",
+  },
+  { label: "Propósito", pattern: /prop[oó]sito|dire[cç][aã]o/i, tone: "brand" },
+];
 
 export function mapJourneyHistoryPage(
   input: MappingInput,
@@ -125,7 +128,7 @@ export function mapJourneyHistoryPage(
         value: summary.total,
       },
       {
-        description: "Com encontro nos últimos 30 dias",
+        description: "Com sessão nos últimos 30 dias",
         id: "active",
         label: "Em acompanhamento",
         tone: "success",
@@ -141,9 +144,9 @@ export function mapJourneyHistoryPage(
         value: countNewRelationships(input.relationships, now),
       },
       {
-        description: "Sem encontro há mais de 30 dias",
+        description: "Sem sessão há mais de 30 dias",
         id: "stale",
-        label: "Sem encontro recente",
+        label: "Sem sessão recente",
         tone: "danger",
         trendLabel: "precisam de revisão",
         value: summary.stale,
@@ -164,13 +167,18 @@ export function mapJourneyHistoryDetail(
   const client = page.clients.find((item) => item.id === input.patientId);
   if (!client) return null;
 
-  const serviceById = new Map(input.services.map((service) => [service.id, service]));
+  const serviceById = new Map(
+    input.services.map((service) => [service.id, service]),
+  );
   const summaryByBooking = new Map(
     input.summaries.map((summary) => [summary.booking_id, summary]),
   );
   const timeline = input.bookings
     .filter((booking) => booking.patient_profile_id === input.patientId)
-    .sort((a, b) => new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime())
+    .sort(
+      (a, b) =>
+        new Date(b.starts_at).getTime() - new Date(a.starts_at).getTime(),
+    )
     .map((booking) => {
       const service = serviceById.get(booking.service_id);
       const summary = summaryByBooking.get(booking.id);
@@ -186,7 +194,7 @@ export function mapJourneyHistoryDetail(
         date: booking.starts_at,
         description:
           summary?.summary ??
-          "Sessão registrada sem resumo compartilhado nesta superfície.",
+          "Sessão registrada sem resumo compartilhado nesta área.",
         href: routes.therapist.sessionDetail(booking.id),
         id: booking.id,
         status: booking.status,
@@ -205,18 +213,24 @@ export function mapJourneyHistoryDetail(
 }
 
 function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
-  const patientById = new Map(input.patients.map((patient) => [patient.id, patient]));
+  const patientById = new Map(
+    input.patients.map((patient) => [patient.id, patient]),
+  );
   const relationshipByPatient = new Map(
     input.relationships.map((relationship) => [
       relationship.patient_profile_id,
       relationship,
     ]),
   );
-  const serviceById = new Map(input.services.map((service) => [service.id, service]));
+  const serviceById = new Map(
+    input.services.map((service) => [service.id, service]),
+  );
   const summariesByPatient = groupBy(input.summaries, "patient_profile_id");
   const patientIds = [
     ...new Set([
-      ...input.relationships.map((relationship) => relationship.patient_profile_id),
+      ...input.relationships.map(
+        (relationship) => relationship.patient_profile_id,
+      ),
       ...input.bookings.map((booking) => booking.patient_profile_id),
     ]),
   ];
@@ -228,7 +242,10 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
 
       const bookings = input.bookings
         .filter((booking) => booking.patient_profile_id === patientId)
-        .sort((a, b) => new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime());
+        .sort(
+          (a, b) =>
+            new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime(),
+        );
       const countedBookings = bookings.filter((booking) =>
         ACTIVE_BOOKING_STATUSES.has(booking.status),
       );
@@ -259,7 +276,8 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
       return {
         avatarUrl: patient.avatar_url,
         emailLabel: patient.timezone ?? "Cliente TES",
-        firstSessionAt: countedBookings[0]?.starts_at ?? relationship?.started_at ?? null,
+        firstSessionAt:
+          countedBookings[0]?.starts_at ?? relationship?.started_at ?? null,
         id: patient.id,
         lastSessionAt: lastSession?.starts_at ?? null,
         lastSessionServiceTitle: lastSession
@@ -271,7 +289,11 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
           ? (serviceById.get(nextSession.service_id)?.title ?? "Sessão TES")
           : null,
         sessionsHref: `${routes.therapist.sessions}?patient=${patient.id}`,
-        status: getClientStatus(relationship?.status, lastSession?.starts_at, now),
+        status: getClientStatus(
+          relationship?.status,
+          lastSession?.starts_at,
+          now,
+        ),
         therapyLabels: therapyLabels.length ? therapyLabels : ["Jornada TES"],
         timelineHref: routes.therapist.patientJourney(patient.id),
         totalEncounters: countedBookings.filter((booking) =>
@@ -314,7 +336,9 @@ function buildSummary(clients: JourneyHistoryClient[]): JourneyHistorySummary {
   };
 }
 
-function buildSegments(clients: JourneyHistoryClient[]): JourneyHistorySegment[] {
+function buildSegments(
+  clients: JourneyHistoryClient[],
+): JourneyHistorySegment[] {
   const counts = new Map<string, number>();
   for (const client of clients) {
     for (const topic of client.topicLabels) {
@@ -329,7 +353,9 @@ function buildSegments(clients: JourneyHistoryClient[]): JourneyHistorySegment[]
       count,
       id: slug(label),
       label,
-      tone: TOPIC_RULES.find((rule) => rule.label === label)?.tone ?? segmentTone(index),
+      tone:
+        TOPIC_RULES.find((rule) => rule.label === label)?.tone ??
+        segmentTone(index),
     }));
 }
 
@@ -350,7 +376,7 @@ function buildReminders(
   const reminders: JourneyHistoryReminder[] = [
     {
       count: upcoming.length,
-        description: "Acompanhar confirmação do encontro",
+      description: "Acompanhar confirmação da sessão",
       href: routes.therapist.agenda,
       id: "upcoming",
       label: "clientes agendados",
@@ -358,7 +384,7 @@ function buildReminders(
     },
     {
       count: withoutReturn.length,
-      description: "Sem encontro há mais de 30 dias",
+      description: "Sem sessão há mais de 30 dias",
       href: routes.therapist.messages,
       id: "stale",
       label: "clientes sem retorno",
@@ -366,7 +392,7 @@ function buildReminders(
     },
     {
       count: noSummaries.length,
-      description: "Sem encontros concluídos registrados",
+      description: "Sem sessões concluídas registradas",
       href: routes.therapist.sessions,
       id: "new",
       label: "jornadas em inicio",
@@ -377,13 +403,17 @@ function buildReminders(
   return reminders.filter((reminder) => reminder.count > 0);
 }
 
-function countNewRelationships(relationships: JourneyRelationshipRow[], now: Date) {
+function countNewRelationships(
+  relationships: JourneyRelationshipRow[],
+  now: Date,
+) {
   const monthStart = new Date(now);
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
 
   return relationships.filter(
-    (relationship) => new Date(relationship.started_at).getTime() >= monthStart.getTime(),
+    (relationship) =>
+      new Date(relationship.started_at).getTime() >= monthStart.getTime(),
   ).length;
 }
 
@@ -397,7 +427,9 @@ function inferTopics(values: string[]) {
 }
 
 function segmentTone(index: number): JourneyHistorySegment["tone"] {
-  return ["brand", "danger", "success", "info", "warning"][index % 5] as JourneyHistorySegment["tone"];
+  return ["brand", "danger", "success", "info", "warning"][
+    index % 5
+  ] as JourneyHistorySegment["tone"];
 }
 
 function groupBy<T extends Record<K, string>, K extends keyof T>(

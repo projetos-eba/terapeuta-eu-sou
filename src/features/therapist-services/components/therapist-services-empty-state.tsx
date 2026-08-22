@@ -15,11 +15,11 @@ export function TherapistServicesEmptyState({
         <Sparkles aria-hidden="true" size={24} />
       </span>
       <h2 className="mt-4 font-display text-3xl font-light italic text-brand-deep">
-        Seus serviços começam por uma terapia canônica
+        Comece adicionando uma terapia
       </h2>
       <p className="mx-auto mt-3 max-w-lg text-sm font-semibold leading-6 text-tesText-secondary">
-        Escolha uma terapia aprovada pela plataforma e configure preço, duração,
-        descrição e formato do atendimento.
+        Escolha uma terapia disponível e informe preço, duração, descrição e
+        como você trabalha.
       </p>
       <TESButton
         className="mt-6 min-h-11 w-full rounded-lg sm:w-auto"
@@ -27,7 +27,7 @@ export function TherapistServicesEmptyState({
         onClick={onCreate}
         type="button"
       >
-        Criar primeiro serviço
+        Adicionar primeira terapia
       </TESButton>
     </section>
   );

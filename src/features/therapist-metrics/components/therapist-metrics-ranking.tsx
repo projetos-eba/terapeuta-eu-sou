@@ -72,8 +72,8 @@ export function TherapistMetricsTherapyRanking({
               : `Disponível após ${ranking.minimumSample} sessões concluídas no período.`}
           </p>
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            A amostra atual é de {ranking.observedSample}. Não exibimos uma
-            ordem instável como se fosse uma tendência.
+            Até agora, temos {ranking.observedSample} sessões. Esperamos ter
+            dados suficientes antes de mostrar uma tendência.
           </p>
         </div>
       )}
@@ -92,7 +92,7 @@ export function TherapistMetricsFavorites({
         <Heart aria-hidden="true" className="text-brand-primary" size={24} />
         {favorites.status === "insufficient_sample" ? (
           <LockKeyhole
-            aria-label="Métrica protegida por amostra mínima"
+            aria-label="Este dado só aparece com registros suficientes"
             className="text-tesText-muted"
             size={20}
           />
@@ -106,9 +106,9 @@ export function TherapistMetricsFavorites({
       </h2>
       {favorites.status === "insufficient_sample" ? (
         <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-          Esta métrica aparece a partir de {favorites.minimumSample} novos
-          favoritos no período. Favoritos pertencem ao perfil, nunca a uma
-          terapia ou serviço.
+          Este dado aparece a partir de {favorites.minimumSample} novos
+          favoritos no período. Os favoritos são do seu perfil, e não de uma
+          terapia específica.
         </p>
       ) : (
         <>

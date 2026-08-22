@@ -57,7 +57,7 @@ export function FinancialReceiptsTab({
           <input name="period" type="hidden" value={dateRange.key} />
 
           <label className="grid gap-1 text-sm font-extrabold text-brand-deep">
-            Status
+            Situação
             <select
               className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
               defaultValue={filters.status ?? ""}
@@ -168,8 +168,7 @@ export function FinancialReceiptsTab({
               Recebimentos do período
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Método de pagamento e origem da cobrança são tratados
-              separadamente.
+              Veja cada recebimento, sua sessão e a forma de pagamento.
             </p>
           </div>
           <p className="text-sm font-bold text-tesText-secondary">
@@ -205,10 +204,10 @@ export function FinancialReceiptsTab({
                       Método
                     </th>
                     <th className="border-b border-brand-lavender py-3 pr-3">
-                      Origem
+                      Origem do pagamento
                     </th>
                     <th className="border-b border-brand-lavender py-3 pr-3">
-                      Status
+                      Situação
                     </th>
                     <th className="border-b border-brand-lavender py-3">
                       Ação
@@ -313,7 +312,7 @@ export function FinancialReceiptsTab({
                       value={formatPaymentMethod(item.paymentMethodType)}
                     />
                     <ReceiptDetail
-                      label="Origem"
+                      label="Origem do pagamento"
                       value={formatPaymentOrigin(item.paymentOrigin)}
                     />
                   </dl>
@@ -330,8 +329,7 @@ export function FinancialReceiptsTab({
               Nenhum recebimento encontrado
             </h3>
             <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              Quando uma sessão tiver pagamento confirmado, ela
-              aparecerá aqui.
+              Quando uma sessão tiver pagamento confirmado, ela aparecerá aqui.
             </p>
           </div>
         )}

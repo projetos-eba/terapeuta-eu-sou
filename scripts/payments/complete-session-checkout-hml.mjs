@@ -42,8 +42,19 @@ const stripeSecretKey = getStripeSecretKey();
 const stripeWebhookSecret =
   process.env.STRIPE_PLATFORM_WEBHOOK_SECRET ?? process.env.STRIPE_WEBHOOK_SECRET;
 
-if (!["approved", "declined", "expired", "refund"].includes(scenario)) {
-  console.error("Use --scenario=approved, declined, expired or refund.");
+if (
+  ![
+    "approved",
+    "declined",
+    "expired",
+    "refund",
+    "boleto_approved",
+    "boleto_expired",
+  ].includes(scenario)
+) {
+  console.error(
+    "Use --scenario=approved, declined, expired, refund, boleto_approved or boleto_expired.",
+  );
   process.exit(1);
 }
 
@@ -142,6 +153,11 @@ try {
   }
 
   checkoutSessionId = checkoutPayload.checkout.checkoutSessionId;
+
+  if (scenario === "boleto_approved" || scenario === "boleto_expired") {
+    await runBoletoScenario(page, checkoutSessionId);
+    process.exit(0);
+  }
 
   if (scenario === "expired") {
     logStage("expire_checkout_session");
@@ -345,6 +361,104 @@ async function fillStripeCard(page, cardNumber) {
     'input[data-elements-stable-field-name="postalCode"]',
   ]);
   await clickStripeButton(page, /Pay|Pagar|Finalizar|Confirmar/i);
+}
+
+async function runBoletoScenario(page, checkoutSessionId) {
+  const expectedEmailSuffix =
+    scenario === "boleto_approved"
+      ? "succeed_immediately@"
+      : "expire_immediately@";
+  if (!patientEmail.toLowerCase().includes(expectedEmailSuffix)) {
+    throw new Error(`boleto_test_email_required:${expectedEmailSuffix}...`);
+  }
+
+  logStage("select_boleto");
+  await selectStripePaymentMethod(page, /Boleto/i);
+  await fillStripeBoleto(page);
+
+  const checkoutCompletedEventPromise = waitForStripeEvent({
+    objectId: checkoutSessionId,
+    type: "checkout.session.completed",
+  });
+  await clickStripeButton(page, /Pay|Pagar|Finalizar|Confirmar/i);
+  const checkoutCompletedEvent = await checkoutCompletedEventPromise;
+  await postSignedStripeEventTwice(checkoutCompletedEvent);
+
+  const paymentIntentId = await waitForCheckoutPaymentIntent(checkoutSessionId);
+  const paymentIntentEvent = await waitForStripeEvent({
+    objectId: paymentIntentId,
+    type:
+      scenario === "boleto_approved"
+        ? "payment_intent.succeeded"
+        : "payment_intent.payment_failed",
+  });
+  await postSignedStripeEventTwice(paymentIntentEvent);
+
+  const asyncCheckoutEvent = await waitForStripeEvent({
+    objectId: checkoutSessionId,
+    type:
+      scenario === "boleto_approved"
+        ? "checkout.session.async_payment_succeeded"
+        : "checkout.session.async_payment_failed",
+  });
+  await postSignedStripeEventTwice(asyncCheckoutEvent);
+
+  const expectedStatus =
+    scenario === "boleto_approved" ? "paid" : "failed";
+  const payment = await waitForSessionPayment(checkoutSessionId, expectedStatus);
+  printEvidence({
+    bookingId: payment.booking_id,
+    checkoutSessionId,
+    finalStatus: payment.financial_status,
+    ok: true,
+    scenario,
+    webhookDelivery: "signed_replay_of_real_stripe_events",
+  });
+}
+
+async function selectStripePaymentMethod(page, label) {
+  const locator = await findLocatorInPageOrFrames(page, (scope) =>
+    scope.getByText(label).first(),
+  );
+  if (!locator) throw new Error("stripe_boleto_option_not_visible");
+  await locator.click({ timeout: 15_000 });
+}
+
+async function fillStripeBoleto(page) {
+  await fillOptionalStripeField(
+    page,
+    /CPF|CNPJ|Tax ID|documento/i,
+    "00000000000",
+    [
+      'input[name="taxId"]',
+      'input[name="tax_id"]',
+      'input[autocomplete="tax-id"]',
+    ],
+  );
+  await fillOptionalStripeField(
+    page,
+    /Address|Endereço|Endereco|Rua/i,
+    "Rua de Homologacao, 100",
+    ['input[name="line1"]', 'input[autocomplete="address-line1"]'],
+  );
+  await fillOptionalStripeField(
+    page,
+    /City|Cidade/i,
+    "Sao Paulo",
+    ['input[name="city"]', 'input[autocomplete="address-level2"]'],
+  );
+  await fillOptionalStripeField(
+    page,
+    /State|Estado/i,
+    "SP",
+    ['input[name="state"]', 'input[autocomplete="address-level1"]'],
+  );
+  await fillOptionalStripeField(
+    page,
+    /ZIP|CEP|Postal/i,
+    "01001000",
+    ['input[name="postalCode"]', 'input[autocomplete="postal-code"]'],
+  );
 }
 
 async function expectStripeDecline(page) {

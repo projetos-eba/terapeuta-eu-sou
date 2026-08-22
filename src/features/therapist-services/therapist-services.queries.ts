@@ -49,7 +49,7 @@ export const getTherapistServicesPage = cache(
 
     if (!config) {
       return {
-        message: "Configuração Supabase ausente para carregar serviços.",
+        message: "Não foi possível carregar suas terapias agora.",
         status: "error",
       };
     }
@@ -105,7 +105,7 @@ async function callTherapistServicesEdge<T>(
       payload ?? {
         ok: false,
         error: {
-          message: "Não foi possível carregar os serviços agora.",
+          message: "Não foi possível carregar suas terapias agora.",
         },
       }
     );

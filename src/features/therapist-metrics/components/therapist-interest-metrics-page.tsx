@@ -50,9 +50,10 @@ export function TherapistInterestMetricsPage({
               Continuidade com contexto e privacidade
             </h2>
             <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-              A aba Interesse reúne retorno, evolução da base e coortes quando
-              existe amostra suficiente. Ela não mostra nomes, ranking entre
-              profissionais nem tendências agregadas do portal.
+              A aba Interesse reúne retorno, evolução das pessoas acompanhadas e
+              grupos ao longo do tempo quando há dados suficientes. Ela não
+              mostra nomes, comparação entre profissionais nem tendências
+              agregadas do portal.
             </p>
           </div>
           <Link
@@ -78,8 +79,8 @@ export function TherapistInterestMetricsPage({
             Continuidade do acompanhamento
           </h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            Comparações feitas apenas com seu próprio histórico e protegidas
-            pela amostra mínima de 10 registros elegíveis.
+            Comparações feitas apenas com seu próprio histórico e mostradas
+            quando há pelo menos 10 registros.
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -151,7 +152,7 @@ function SampledCard({
             </p>
             <p className="mt-3 text-sm font-semibold leading-5 text-tesText-secondary">
               {metric.previousValue === null
-                ? "Este é o primeiro período com amostra suficiente para esta leitura."
+                ? "Este é o primeiro período com dados suficientes para esta leitura."
                 : getTherapistMetricCopy(metric.directionCopyKey)}
             </p>
           </>
@@ -173,8 +174,7 @@ function Segments({ data }: { data: TherapistInterestMetricsReady }) {
         Distribuição por continuidade
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Os segmentos são exclusivos e seguem uma regra versionada. Nenhuma
-        pessoa é contada em dois grupos.
+        Os grupos não se repetem: cada pessoa aparece em apenas uma categoria.
       </p>
       {data.segments.status === "ready" ? (
         <div className="mt-5 grid gap-4">
@@ -267,15 +267,15 @@ function CohortTable({ data }: { data: TherapistInterestMetricsReady }) {
   return (
     <AppPageSection>
       <h2 className="text-xl font-extrabold text-brand-deep">
-        Retorno por coorte
+        Retorno por grupo
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
         Cada linha reúne pessoas cuja primeira sessão realizada ocorreu no mesmo
-        mês. Só entram coortes com pelo menos 10 pessoas.
+        mês. Só entram grupos com pelo menos 10 pessoas.
       </p>
       {data.cohorts.status === "ready" ? (
         <div
-          aria-label="Retorno mensal por coorte"
+          aria-label="Retorno mensal por grupo"
           className="mt-5 overflow-x-auto"
           role="region"
           tabIndex={0}
@@ -376,9 +376,9 @@ function TherapyReturn({ data }: { data: TherapistInterestMetricsReady }) {
 function UnavailableSignals() {
   const items = [
     {
-      label: "Favoritos que viraram encontro",
+      label: "Favoritos que viraram sessão",
       reason:
-        "A ligação histórica entre favorito e booking ainda não existe com privacidade suficiente.",
+        "A ligação histórica entre favorito e sessão ainda não pode ser mostrada com segurança.",
     },
     {
       label: "Sentimento pós-sessão",
@@ -391,14 +391,14 @@ function UnavailableSignals() {
     {
       label: "Temas e motivos de saída",
       reason:
-        "Textos livres não são analisados e ainda não há taxonomia versionada.",
+        "Textos escritos livremente ainda não podem ser organizados com segurança.",
     },
   ];
 
   return (
     <AppPageSection>
       <h2 className="text-lg font-extrabold text-brand-deep">
-        Leituras ainda indisponíveis
+        Informações ainda indisponíveis
       </h2>
       <div className="mt-4 grid gap-4">
         {items.map((item) => (
@@ -438,8 +438,8 @@ function ProtectedCollection({
         Mais dados são necessários
       </p>
       <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-        Esta leitura só aparece quando a amostra protegida alcança{" "}
-        {collection.minimumSample} registros elegíveis.
+        Esta leitura aparece quando houver pelo menos {collection.minimumSample}{" "}
+        registros neste período.
       </p>
     </div>
   );
@@ -455,11 +455,10 @@ function ProtectedSummary({
   return (
     <div className="mt-3">
       <p className="text-sm font-extrabold text-brand-primary">
-        Ainda sem amostra suficiente
+        Ainda sem dados suficientes
       </p>
       <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
-        Disponível a partir de {minimum} registros elegíveis. Amostra atual:{" "}
-        {observed}.
+        Disponível a partir de {minimum} registros. Até agora, temos {observed}.
       </p>
     </div>
   );

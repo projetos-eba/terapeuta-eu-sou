@@ -20,7 +20,10 @@ describe("TherapistFinancePage", () => {
     renderPage();
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "Financeiro completo" }),
+      screen.getByRole("heading", {
+        level: 1,
+        name: "Acompanhe seus recebimentos",
+      }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Resumo" })).toHaveAttribute(
       "aria-current",
@@ -53,14 +56,14 @@ describe("TherapistFinancePage", () => {
     renderPage();
 
     expect(
-      screen.getByRole("heading", { name: "Ticket médio" }),
+      screen.getByRole("heading", { name: "Valor médio por sessão" }),
     ).toBeInTheDocument();
     expect(screen.getByText("Taxa de retorno")).toBeInTheDocument();
     expect(screen.getByText("Terapias que mais faturam")).toBeInTheDocument();
     expect(screen.getByText("Evolução financeira")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: "Dashboard financeiro Premium Plus",
+        name: "Visão financeira do Premium Plus",
       }),
     ).toBeInTheDocument();
     expect(
@@ -110,7 +113,7 @@ describe("TherapistFinancePage", () => {
       screen.queryByText(/Benchmark suprimido por privacidade estatística/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Insight TES" }),
+      screen.getByRole("heading", { name: "Dica TES" }),
     ).toBeInTheDocument();
   });
 
@@ -128,7 +131,9 @@ describe("TherapistFinancePage", () => {
     });
 
     expect(
-      screen.getByRole("heading", { name: "Métricas financeiras Premium" }),
+      screen.getByRole("heading", {
+        name: "Acompanhamento financeiro Premium",
+      }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ver planos" })).toHaveAttribute(
       "href",
@@ -187,7 +192,7 @@ describe("TherapistFinancePage", () => {
 
     expect(screen.getByText("31/07/2026, 10:00")).toBeInTheDocument();
     expect(
-      screen.getByText("Próximo lote previsto para 31/07/2026, 10:00."),
+      screen.getByText("Próximo repasse previsto para 31/07/2026, 10:00."),
     ).toBeInTheDocument();
   });
 });

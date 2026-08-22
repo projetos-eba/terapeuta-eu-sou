@@ -18,10 +18,10 @@ export function TherapistServicesRanking({
   return (
     <TESCard as="section" className="p-5 sm:p-6">
       <h2 className="font-display text-3xl font-light italic text-brand-deep">
-        Serviços mais agendados
+        Terapias mais agendadas
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Seus serviços com mais agendamentos registrados.
+        As terapias que mais recebem agendamentos.
       </p>
       {ranked.length > 0 ? (
         <ol className="mt-6 grid gap-4">

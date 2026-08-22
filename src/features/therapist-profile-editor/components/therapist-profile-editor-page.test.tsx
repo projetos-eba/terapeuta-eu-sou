@@ -173,16 +173,14 @@ describe("TherapistProfileEditorPage", () => {
     expect(
       screen.getByRole("link", { name: "Visualizar perfil" }),
     ).toHaveAttribute("href", "/terapeuta/perfil");
-    expect(screen.getByText("Progresso do perfil")).toBeInTheDocument();
+    expect(screen.getByText("Perfil completo")).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Preview do perfil" }),
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByText("Informações gerenciadas em outras páginas"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Outras partes do seu perfil")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "As informações acima são exibidas no seu perfil público. Preços, horários, avaliações, documentos e dados administrativos continuam em suas fontes próprias e não são editados aqui.",
+        "Cada parte fica no lugar certo para você encontrar e atualizar com facilidade.",
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText("Dados derivados")).not.toBeInTheDocument();
@@ -326,7 +324,11 @@ describe("TherapistProfileEditorPage", () => {
 
     render(<TherapistProfileEditorPage editor={editor} />);
 
-    expect(screen.getAllByText(/2 a 3 horas/).length).toBeGreaterThan(0);
+    expect(
+      screen.getByText(
+        "Sua atualização está aguardando a revisão da equipe TES.",
+      ),
+    ).toBeInTheDocument();
     screen
       .getAllByRole("button", { name: /Publicar alterações/ })
       .forEach((button) => expect(button).toBeDisabled());
@@ -655,7 +657,9 @@ describe("TherapistProfileEditorPage", () => {
     const dialog = await screen.findByRole("dialog", {
       name: "Publicar alterações?",
     });
-    expect(dialog).toHaveTextContent(/2 a 3 horas/);
+    expect(dialog).toHaveTextContent(
+      /confirme em Configurações se seus dados e documentos obrigatórios estão completos/i,
+    );
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Publicar alterações" }),
     );

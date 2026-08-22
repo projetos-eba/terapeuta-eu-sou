@@ -94,7 +94,7 @@ export function TherapistReviewsPage({
     setInlineMessage(
       result.data.idempotentReplay
         ? "Resposta já estava registrada."
-        : "Resposta publicada e sincronizada com o perfil público.",
+        : "Resposta publicada no seu perfil público.",
     );
     return null;
   }
@@ -275,8 +275,8 @@ function ReviewsHero() {
               Avaliações
             </h1>
             <p className="mt-4 max-w-[540px] text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
-              Acompanhe as avaliações das pessoas sobre os encontros realizados
-              e fortaleça a confiança no seu trabalho.
+              Acompanhe as avaliações das pessoas sobre as sessões realizadas e
+              fortaleça a confiança no seu trabalho.
             </p>
           </div>
         </div>

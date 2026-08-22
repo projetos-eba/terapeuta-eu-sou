@@ -34,7 +34,7 @@ describe("buildTherapistNavigation", () => {
       false,
     );
     expect(
-      navigation.find((item) => item.label === "Upgrade")?.accessState,
+      navigation.find((item) => item.label === "Meu plano")?.accessState,
     ).toBe("hidden");
     expect(navigation.find((item) => item.label === "Mensagens")?.badge).toBe(
       4,
@@ -48,20 +48,21 @@ describe("buildTherapistNavigation", () => {
     });
 
     expect(
-      navigation.find((item) => item.label === "Assistente Aura")?.accessState,
+      navigation.find((item) => item.label === "Assessor Aura")?.accessState,
     ).toBe("locked");
     expect(
-      navigation.find((item) => item.label === "Histórico da Jornada")
-        ?.upgradeHref,
+      navigation.find((item) => item.label === "Histórico")?.upgradeHref,
     ).toBe(routes.therapist.plan);
     expect(
       navigation.find((item) => item.label === "Avaliações")?.accessState,
     ).toBe("enabled");
-    expect(navigation.find((item) => item.label === "Upgrade")).toMatchObject({
-      accessState: "enabled",
-      href: routes.therapist.plan,
-      tone: "upgrade",
-    });
+    expect(navigation.find((item) => item.label === "Meu plano")).toMatchObject(
+      {
+        accessState: "enabled",
+        href: routes.therapist.plan,
+        tone: "upgrade",
+      },
+    );
     expect(navigation.find((item) => item.label === "Ajuda")).toBeUndefined();
   });
 
@@ -75,14 +76,13 @@ describe("buildTherapistNavigation", () => {
       navigation.find((item) => item.label === "Agenda")?.accessState,
     ).toBe("enabled");
     expect(
-      navigation.find((item) => item.label === "Métricas & Relatórios")
-        ?.accessState,
+      navigation.find((item) => item.label === "Resultados")?.accessState,
     ).toBe("locked");
     expect(navigation.every((item) => item.href.startsWith("/terapeuta"))).toBe(
       true,
     );
     expect(
-      navigation.find((item) => item.label === "Upgrade")?.accessState,
+      navigation.find((item) => item.label === "Meu plano")?.accessState,
     ).toBe("enabled");
   });
 });

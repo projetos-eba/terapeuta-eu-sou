@@ -101,7 +101,7 @@ export const financialStatusLabels: Record<TherapistFinancialStatus, string> = {
 };
 
 export const payoutStatusLabels: Record<TherapistPayoutStatus, string> = {
-  batched: "Em lote",
+  batched: "Incluído no próximo repasse",
   blocked: "Bloqueado",
   eligible: "Disponível",
   failed: "Falhou",

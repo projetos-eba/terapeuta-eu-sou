@@ -149,8 +149,8 @@ export function PublicProfileSnapshot({
           />
           <ReadOnlyPublicItem
             icon={<Sparkles aria-hidden="true" size={18} />}
-            label="Serviços"
-            value="Gerenciados em Suas terapias"
+            label="Terapias"
+            value="Organizadas em Suas terapias"
           />
         </div>
       </article>

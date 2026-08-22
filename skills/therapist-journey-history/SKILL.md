@@ -31,8 +31,8 @@ Perfil/plano:
 O node Figma `13366:8765` define:
 
 - Título visual `Clientes` dentro da navegação `Histórico da Jornada`.
-- Métricas no topo: total de clientes, ativos, novos no mês, sem encontro recente.
-- Lista de clientes com busca, filtros, ordenação, status, terapias, última/próxima sessão e temas recorrentes. A contagem de encontros fica disponível somente nos cartões compactos e no detalhe da jornada, não como coluna da tabela.
+- Métricas no topo: total de clientes, ativos, novos no mês, sem sessão recente.
+- Lista de clientes com busca, filtros, ordenação, situação, terapias, última/próxima sessão e temas recorrentes. A contagem de sessões fica disponível somente nos cartões compactos e no detalhe da jornada, não como coluna da tabela.
 - Rail lateral com resumo da carteira, segmentos e lembretes.
 - Visual claro, premium, bordas lavanda, sombra suave, tipografia display IvyPresto para títulos.
 
@@ -41,11 +41,11 @@ operacional da jornada:
 
 - hero de identidade com nome, status, terapias vinculadas e atalhos para
   sessões e templates aprovados;
-- faixa de resumo com início da jornada, encontros registrados, próximo e último
-  encontro;
+- faixa de resumo com início da jornada, sessões registradas, próxima e última
+  sessão;
 - temas identificados nos registros, sem afirmar diagnóstico ou frequência que
   não exista na fonte;
-- memória dos encontros em tabela no desktop e cartões cronológicos no mobile,
+- memória das sessões em tabela no desktop e cartões cronológicos no mobile,
   com link canônico para a sessão;
 - cards finais para preferências de acolhimento e próximo encontro. Quando não
   houver preferência compartilhada, usar estado vazio explícito — nunca criar
@@ -68,7 +68,7 @@ Regras:
 - Links de comunicação devem apontar para `/terapeuta/mensagens`, que usa templates.
 - Links de sessões devem usar `/terapeuta/sessoes?patient=<patientProfileId>`.
 - Detalhes de sessão devem usar `/terapeuta/sessoes/[bookingId]`.
-- Os títulos de serviço e temas por encontro podem ser derivados dos mesmos
+- Os títulos de terapia e temas por sessão podem ser derivados dos mesmos
   `bookings`, `therapist_services` e `booking_session_summaries` já autorizados
   pela feature; não adicionar uma fonte paralela para enriquecer a tela.
 
@@ -87,19 +87,19 @@ Regras:
 
 Regra de acompanhamento:
 
-- “Em acompanhamento” indica uma pessoa com encontro registrado nos últimos 30
+- “Em acompanhamento” indica uma pessoa com sessão registrada nos últimos 30
   dias.
-- “Sem encontro recente” indica uma pessoa sem encontro registrado há mais de
-  30 dias (ou sem encontro registrado).
+- “Sem sessão recente” indica uma pessoa sem sessão registrada há mais de
+  30 dias (ou sem sessão registrada).
 - O gráfico de resumo mostra somente esses dois estados; relações pausadas não
   entram no gráfico.
-- O ícone de informação ao lado de “Sem encontro recente” explica essa janela
+- O ícone de informação ao lado de “Sem sessão recente” explica essa janela
   de forma breve e acessível.
 
 ## Copy Responsável
 
 - Não prometer cura, diagnóstico, resolução emocional ou resultado garantido.
-- Usar linguagem operacional: jornada, encontros, registros, continuidade, cuidado.
+- Usar linguagem operacional: jornada, sessões, registros, continuidade, cuidado.
 - Deixar claro que a timeline é operacional e não substitui prontuário clínico.
 
 ## QA
