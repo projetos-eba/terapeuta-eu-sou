@@ -1,7 +1,7 @@
 # Fase 4 — Mensagens Estruturadas V2
 
 Data: 2026-08-21  
-Status: implementação local concluída; QA HML depende de publicação coordenada.
+Status: **PASS — publicado e qualificado em HML**.
 
 ## Escopo e inventário
 
@@ -62,13 +62,28 @@ consultar o Supabase.
 - `npm run build` — PASS.
 - `npx supabase db lint` — PASS com warnings preexistentes fora da migration V2.
 
-Foi preparado `tests/e2e/hml-structured-messaging-v2.spec.ts` com dois
-BrowserContexts independentes, cobertura bilateral, responsividade e o gate de
-bypass. A suíte fica condicionada às variáveis QA HML e não foi executada porque
-esta implementação ainda não foi publicada em HML.
+Foi executado `tests/e2e/hml-structured-messaging-v2.spec.ts` em HML com dois
+BrowserContexts independentes para paciente e terapeuta. A suíte cobre preview →
+envio nas duas direções, leitura do corpo resolvido, rejeição de `body`,
+`message`, `description`, `html` e `url` arbitrários e responsividade desktop
+(1440px), tablet (768px) e mobile (390px), sem overflow horizontal.
 
-QA HML/E2E bilateral e screenshots ainda exigem deploy coordenado da migration
-e do runtime; nenhuma migration foi aplicada remotamente nesta etapa.
+Resultado: **3 testes, 3 aprovados**.
+
+## Deploy HML
+
+- Projeto Supabase confirmado: `Terapeuta-Eu-Sou-Homolog`.
+- Migration `20260822010000_structured_participant_messages_v2.sql` aplicada
+  uma única vez no HML; produção não recebeu alteração.
+- Runtime publicado nas branches `homolog` e `dev-antonio` no commit
+  `a270ae47`.
+- Foi criada uma única fixture QA de `conversations`, vinculada a uma sessão
+  confirmada já existente entre as contas QA; nenhum corpo livre foi semeado.
+- A URL compartilhada HML foi normalizada sem pontuação terminal. O harness foi
+  corrigido para usar o rótulo real `Entrar` no login do paciente.
+
+Capturas foram usadas durante o QA visual e não foram publicadas para evitar
+exposição de identidade das contas QA.
 
 ## Compatibilidade e pendências reais
 
@@ -77,8 +92,16 @@ e do runtime; nenhuma migration foi aplicada remotamente nesta etapa.
   também podem ser enviados em conversas legadas sem booking, enquanto CTAs só
   aparecem quando existe contexto de sessão autorizado.
 - Não há editor/Admin de templates nesta fase.
-- HML e E2E paciente ↔ terapeuta precisam ser executados após publicação
-  autorizada; produção não foi alterada.
+- A criação de novas conversas fora de uma sessão autorizada permanece fora do
+  contrato; a fixture HML usa exclusivamente booking já autorizado.
 
 > Entre terapeuta e paciente, o TES controla a linguagem. Entre usuário e TES,
 > o TES controla o acesso — não a conversa.
+
+## Resultado da fase
+
+**PARTICIPANT FREE TEXT BYPASS = BLOCKED** (local e HML).
+
+**PHASE 4 — PASS**
+
+**PHASE 5 READY**
