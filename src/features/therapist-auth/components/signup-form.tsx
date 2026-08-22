@@ -5,7 +5,6 @@ import Link from "next/link";
 import type { Route } from "next";
 import {
   Check,
-  Eye,
   Gem,
   LockKeyhole,
   Mail,
@@ -14,7 +13,7 @@ import {
   UserRound,
 } from "lucide-react";
 
-import { TESButton } from "@/components/tes";
+import { PasswordVisibilityToggle, TESButton } from "@/components/tes";
 import {
   TherapistPlan,
   getPlanFeatureDefinition,
@@ -264,7 +263,6 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
         <Field
           autoComplete="new-password"
           error={fieldErrors.confirmPassword}
-          icon={<Eye className="size-4" aria-hidden="true" />}
           label="Confirmar senha"
           name="confirmPassword"
           placeholder="Digite a senha novamente"
@@ -348,6 +346,8 @@ function Field({
   type?: string;
 }) {
   const errorId = `${name}-error`;
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const inputType = type === "password" && isPasswordVisible ? "text" : type;
 
   return (
     <div>
@@ -363,12 +363,18 @@ function Field({
           {...props}
           id={name}
           name={name}
-          type={type}
+          type={inputType}
           suppressHydrationWarning
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
           className="min-h-12 w-full bg-transparent text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-subtle"
         />
+        {type === "password" ? (
+          <PasswordVisibilityToggle
+            isVisible={isPasswordVisible}
+            onToggle={() => setIsPasswordVisible((current) => !current)}
+          />
+        ) : null}
       </div>
       <FieldError id={errorId} message={error} />
     </div>

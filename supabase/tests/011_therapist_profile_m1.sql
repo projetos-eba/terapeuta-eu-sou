@@ -1,6 +1,6 @@
 begin;
 
-select plan(19);
+select plan(20);
 
 select has_column(
   'public',
@@ -213,9 +213,15 @@ select ok(
 );
 
 select is(
-  (select public_name from public.public_therapist_profiles_v where slug = 'ana-oliveira'),
-  'Ana Oliveira M1',
-  'published profile updates the public projection'
+  (select count(*)::integer from public.public_therapist_profiles_v where slug = 'ana-oliveira'),
+  0,
+  'published profile remains hidden until administrative moderation'
+);
+
+select is(
+  (select status::text from public.therapist_verifications where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001' order by submitted_at desc nulls last, created_at desc limit 1),
+  'submitted',
+  'publishing creates a submitted moderation review'
 );
 
 select throws_ok(

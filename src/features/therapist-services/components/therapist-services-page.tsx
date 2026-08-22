@@ -455,7 +455,7 @@ function PlanLimitNotice({
   return (
     <div className="rounded-lg bg-brand-lavenderSoft px-4 py-3 text-sm font-bold text-brand-primary">
       {limit === null ? (
-        "Serviços sem limite definido para seu plano"
+        "Você pode cadastrar quantos serviços precisar"
       ) : (
         <>
           {used}/{limit} serviços usados ·{" "}

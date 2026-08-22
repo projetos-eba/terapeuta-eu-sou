@@ -1,6 +1,6 @@
 begin;
 
-select plan(17);
+select plan(20);
 
 select ok(
   has_function_privilege(
@@ -98,6 +98,12 @@ select is(
 );
 
 select is(
+  public.get_therapist_metrics_dashboard_v2(60) #>> '{meta,periodDays}',
+  '60',
+  'dashboard preserves the canonical 60 day period'
+);
+
+select is(
   public.get_therapist_metrics_dashboard_v2(90) #>> '{meta,periodDays}',
   '90',
   'dashboard preserves the canonical 90 day period'
@@ -108,6 +114,27 @@ select ok(
   and position('patient_profile_id' in public.get_therapist_metrics_dashboard_v2(30)::text) = 0,
   'dashboard exposes no patient identifiers'
 );
+
+select is(
+  public.get_therapist_metrics_dashboard_v2(120) #>> '{meta,periodDays}',
+  '120',
+  'dashboard preserves the canonical 120 day period'
+);
+
+reset role;
+
+select lives_ok(
+  $sql$
+    select public.get_therapist_occupancy_metrics_v2(
+      'c1000000-0000-4000-8000-000000000001',
+      'America/Sao_Paulo',
+      120
+    )
+  $sql$,
+  'occupancy accepts the approved 120-day period'
+);
+
+set local role authenticated;
 
 select throws_ok(
   'select public.get_therapist_metrics_dashboard_v2(31)',

@@ -290,9 +290,10 @@ export function TherapistProfileEditorPage({
           <ProfileManagedElsewhere />
           <ProfileSection title="Importante">
             <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-              Alterações publicadas podem levar até 2 a 3 horas para aparecer em
-              todas as superfícies públicas. Salvar rascunho não altera o
-              público.
+              Depois do envio, a equipe TES revisa o perfil antes de ele voltar
+              a aparecer publicamente. A publicação pode levar de 2 a 3 horas
+              para refletir em todas as superfícies. Salvar rascunho não altera
+              o público.
             </p>
           </ProfileSection>
         </AppPageAside>
@@ -372,7 +373,7 @@ function ConfirmDialog({
     publish: {
       button: "Publicar alterações",
       description:
-        "A versão pública será atualizada. A propagação pode levar até 2 a 3 horas.",
+        "A versão pública será atualizada. Ela pode levar de 2 a 3 horas para aparecer em todos os lugares.",
       title: "Publicar alterações?",
     },
     reset: {
@@ -520,10 +521,11 @@ function validateDraftFields(
       message: "Envie uma capa válida ou use uma URL pública da imagem.",
     };
   }
-  if (hasInvalidMediaUrl(fields.videoUrl, "https")) {
+  if (hasInvalidVideoUrl(fields.videoUrl, fields.videoProvider)) {
     return {
       focusId: "videoUrl",
-      message: "Use um link de vídeo seguro começando com https://.",
+      message:
+        "Use um link https:// do YouTube ou Vimeo. Para um arquivo enviado, selecione o vídeo novamente.",
     };
   }
   if (fields.videoTitle.length > 120) {
@@ -585,12 +587,34 @@ function hasInvalidMediaUrl(value: string, mode: "https" | "public") {
   return !(normalized.startsWith("https://") || normalized.startsWith("/"));
 }
 
+function hasInvalidVideoUrl(
+  value: string,
+  provider: TherapistProfileEditableFields["videoProvider"],
+) {
+  const normalized = value.trim();
+  if (!normalized) return false;
+  if (provider === "upload") return hasInvalidMediaUrl(normalized, "https");
+  if (!normalized.startsWith("https://") || /\s/.test(normalized)) return true;
+
+  try {
+    const hostname = new URL(normalized).hostname.replace(/^www\./, "");
+    if (provider === "youtube") {
+      return hostname !== "youtube.com" && hostname !== "youtu.be";
+    }
+    if (provider === "vimeo") return hostname !== "vimeo.com";
+  } catch {
+    return true;
+  }
+
+  return true;
+}
+
 function getSuccessMessage(action: PendingAction, replay: boolean) {
   if (replay) return "Operação já concluída anteriormente.";
   if (action === "save_draft") return "Rascunho salvo.";
   if (action === "discard_draft") return "Rascunho descartado.";
   if (action === "publish") {
-    return "Alterações publicadas. A propagação pode levar até 2 a 3 horas.";
+    return "Alterações enviadas para revisão. O perfil volta a ficar público após a aprovação da equipe TES.";
   }
   return "Perfil despublicado.";
 }

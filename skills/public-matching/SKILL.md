@@ -68,7 +68,9 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
 
 - `src/app/sua-jornada/page.tsx`: Server Component com config live, demo
   explicito ou estado indisponivel honesto.
-- `JourneyMatchClient`: selecao de temas/interesses, limites e envio.
+- `JourneyMatchClient`: selecao de temas, limites e envio. Os interesses
+  associados a cada tema permanecem uma dimensao interna do calculo e nao sao
+  escolhidos pelo visitante nesta jornada.
 - `src/app/sua-jornada/resultado/page.tsx`: `noindex`.
 - `MatchingResultClient`: recarrega escolhas do `sessionStorage`, recalcula pela API e redireciona para `/sua-jornada` quando nao houver estado.
 - A selecao salva em `sessionStorage` deve incluir `matchingVersionId`. A API
@@ -80,7 +82,6 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
   pode ser usado para afirmar quantidade de temas.
 - Assets oficiais extraidos do Figma ficam versionados em `public/journey/`.
 - A pagina deve manter hero com imagem fade, stepper, grid 5x2 de cards ilustrados no desktop e cards empilhados no mobile.
-- Ao remover um tema, remover tambem seus interesses.
 - CTA ativo com pelo menos um tema.
 - Ao atingir tres temas, cards restantes ficam desabilitados, mas visiveis.
 - Ao retornar para `/sua-jornada` pelo navegador, o CTA deve sair do estado de
@@ -104,8 +105,8 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
   - `/sua-jornada`
   - `/sua-jornada/resultado` sem sessionStorage redireciona.
   - limite de 1 a 3 temas.
-  - ate 3 interesses por tema.
-  - interesse precisa pertencer a tema selecionado.
+  - interesses associados acompanham os temas selecionados; nao ha seletor
+    publico de interesses.
   - refinamentos nao alteram ranking de terapias.
   - resultado aponta para `/terapias/:slug`.
   - resultado retorna apenas terapias existentes em `public_matching_therapies_v`.

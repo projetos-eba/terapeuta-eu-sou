@@ -82,7 +82,7 @@ const definitions: NavigationDefinition[] = [
     capability: "aura_full",
     href: routes.therapist.assessorIa,
     icon: "brain",
-    label: "Aura IA",
+    label: "Assistente Aura",
     planLabel: "Premium Plus",
   },
   {

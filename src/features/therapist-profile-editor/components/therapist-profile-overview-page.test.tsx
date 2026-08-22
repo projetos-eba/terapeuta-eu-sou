@@ -65,7 +65,7 @@ function makeEditor(
       },
     ],
     propagationNotice:
-      "As alterações publicadas podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
+      "Depois da aprovação, as alterações podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
     publicProfileHref: "/terapeutas/ana-oliveira",
     publicProfileSlug: "ana-oliveira",
     publicProfileTheme: "serene",

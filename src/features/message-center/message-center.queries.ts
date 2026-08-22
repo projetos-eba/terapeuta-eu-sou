@@ -415,8 +415,8 @@ function createMessageCenterShell(
     },
     participantSection: {
       description: isTherapist
-        ? "Comunicações por templates relacionadas às sessões e ao acompanhamento."
-        : "Comunicações por templates relacionadas aos seus encontros.",
+        ? "Mensagens aprovadas pelo TES para acompanhar sessões e o cuidado entre encontros."
+        : "Mensagens aprovadas pelo TES para acompanhar seus encontros.",
       title: isTherapist
         ? "Mensagens dos clientes"
         : "Mensagens dos terapeutas",

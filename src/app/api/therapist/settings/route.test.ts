@@ -99,10 +99,23 @@ describe("therapist settings route", () => {
     expect(payload.data.account).toEqual({
       displayName: "Ana Oliveira",
       phone: "+55 11 99999-9999",
+      identity: {
+        city: "",
+        complement: "",
+        documentNumber: "",
+        documentType: "cpf",
+        neighborhood: "",
+        postalCode: "",
+        state: "",
+        street: "",
+        streetNumber: "",
+      },
     });
 
     const patchCall = fetchMock.mock.calls.find(([url, init]) => {
-      return String(url).includes("/rest/v1/profiles?") && init?.method === "PATCH";
+      return (
+        String(url).includes("/rest/v1/profiles?") && init?.method === "PATCH"
+      );
     });
     expect(patchCall).toBeTruthy();
     expect(String(patchCall?.[0])).toContain(`id=eq.${userId}`);

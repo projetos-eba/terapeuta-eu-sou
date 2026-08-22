@@ -1,6 +1,6 @@
 begin;
 
-select plan(29);
+select plan(31);
 
 select ok(
   has_function_privilege(
@@ -73,6 +73,12 @@ select is(
   public.get_therapist_session_metrics_v1(30) ->> 'contractVersion',
   '1',
   'MTR-4 exposes a versioned contract'
+);
+
+select is(
+  public.get_therapist_session_metrics_v1(60) #>> '{meta,periodDays}',
+  '60',
+  'MTR-4 accepts the approved 60-day period'
 );
 
 select is(
@@ -170,6 +176,13 @@ select is(
     #>> '{access,status}',
   'ready',
   'Premium Plus receives the protected MTR-5 contract'
+);
+
+select is(
+  public.get_therapist_interest_metrics_v1(120)
+    #>> '{meta,periodDays}',
+  '120',
+  'MTR-5 accepts the approved 120-day period'
 );
 
 select is(

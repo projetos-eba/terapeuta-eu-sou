@@ -30,6 +30,7 @@ import type {
   AdminOperationField,
 } from "../admin-operations.types";
 import { AdminOperationCommandPanel } from "./admin-operation-command-panel";
+import { AdminProfileReviewPanel } from "./admin-profile-review-panel";
 import {
   buildMonogram,
   fieldMap,
@@ -212,6 +213,7 @@ export function AdminProfessionalDetailPage({
                 </p>
               </section>
             ) : null}
+            <AdminProfileReviewPanel review={data.profileReview} />
           </AppPageMain>
 
           <AppPageAside>
@@ -654,7 +656,9 @@ function DocumentReviewActions({
 
   async function submit(decision: "accepted" | "resubmission_requested") {
     if (decision === "resubmission_requested" && reason.trim().length < 3) {
-      setMessage("Informe o que precisa ser corrigido antes de solicitar o reenvio.");
+      setMessage(
+        "Informe o que precisa ser corrigido antes de solicitar o reenvio.",
+      );
       return;
     }
 
@@ -671,12 +675,16 @@ function DocumentReviewActions({
           method: "POST",
         },
       );
-      const payload = (await response.json().catch(() => null)) as
-        | { error?: { message?: string }; ok?: boolean }
-        | null;
+      const payload = (await response.json().catch(() => null)) as {
+        error?: { message?: string };
+        ok?: boolean;
+      } | null;
 
       if (!response.ok || !payload?.ok) {
-        setMessage(payload?.error?.message ?? "Não foi possível registrar a decisão agora.");
+        setMessage(
+          payload?.error?.message ??
+            "Não foi possível registrar a decisão agora.",
+        );
         return;
       }
 
@@ -719,7 +727,10 @@ function DocumentReviewActions({
       </button>
       {showReason ? (
         <div className="basis-full">
-          <label className="text-sm font-extrabold text-brand-deep" htmlFor={`document-reason-${documentId}`}>
+          <label
+            className="text-sm font-extrabold text-brand-deep"
+            htmlFor={`document-reason-${documentId}`}
+          >
             Orientação para o profissional
           </label>
           <textarea
@@ -749,7 +760,10 @@ function DocumentReviewActions({
         </div>
       ) : null}
       {message ? (
-        <p className="basis-full text-sm font-semibold leading-6 text-status-danger" role="alert">
+        <p
+          className="basis-full text-sm font-semibold leading-6 text-status-danger"
+          role="alert"
+        >
           {message}
         </p>
       ) : null}
@@ -1030,9 +1044,9 @@ function buildProfessionalProgressStages({
         ? `Enviado para revisão em ${formatDateTime(submittedAt)}.`
         : reflectsProfileDecision
           ? "A situação atual do cadastro confirma o encaminhamento para análise."
-        : verificationStatus === "none" || verificationStatus === "draft"
-          ? "Ainda não existe envio confirmado para análise."
-          : "Cadastro já encaminhado para a fila administrativa.",
+          : verificationStatus === "none" || verificationStatus === "draft"
+            ? "Ainda não existe envio confirmado para análise."
+            : "Cadastro já encaminhado para a fila administrativa.",
       eyebrow: progressEyebrow(
         reflectsProfileDecision ||
           Boolean(submittedAt) ||
@@ -1054,13 +1068,13 @@ function buildProfessionalProgressStages({
       detail:
         verificationStatus === "in_review"
           ? "Equipe administrativa analisando perfil e documentos agora."
-        : reviewedAt
-          ? `Análise registrada em ${formatDateTime(reviewedAt)}.`
-          : reflectsProfileDecision
-            ? "A situação atual do cadastro confirma que a análise administrativa foi concluída."
-          : reachedPostReview(verificationStatus)
-              ? "Análise concluída com decisão administrativa."
-              : "A revisão começa depois do envio para a fila.",
+          : reviewedAt
+            ? `Análise registrada em ${formatDateTime(reviewedAt)}.`
+            : reflectsProfileDecision
+              ? "A situação atual do cadastro confirma que a análise administrativa foi concluída."
+              : reachedPostReview(verificationStatus)
+                ? "Análise concluída com decisão administrativa."
+                : "A revisão começa depois do envio para a fila.",
       eyebrow: progressEyebrow(
         reflectsProfileDecision || reachedPostReview(verificationStatus),
         verificationStatus === "in_review",

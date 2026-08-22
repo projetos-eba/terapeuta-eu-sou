@@ -190,6 +190,17 @@
 
 @layer utilities {
   /*
+   * TES typography calibration: product text that historically used bold or
+   * extra-bold should render with the approved 600 weight. Keeping the class
+   * aliases preserves existing component contracts while making the weight
+   * consistent across every shell and public surface.
+   */
+  .font-bold,
+  .font-extrabold {
+    font-weight: 600;
+  }
+
+  /*
    * Legibility guardrail for legacy arbitrary microtext utilities.
    * New components must still declare `text-[10px] md:text-[11px]` directly.
    */

@@ -47,4 +47,18 @@ describe("therapist metrics export route", () => {
     expect(payload.error.message).not.toContain("Supabase");
     expect(response.headers.get("x-correlation-id")).toBeTruthy();
   });
+
+  it("accepts the 120-day period and continues to auth validation", async () => {
+    headerMocks.cookieGet.mockReturnValue(undefined);
+
+    const response = await GET(
+      new Request(
+        "https://tes.example.test/api/therapist/metrics/export?tab=overview&period=120",
+      ),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(payload.error.code).toBe("SESSION_EXPIRED");
+  });
 });

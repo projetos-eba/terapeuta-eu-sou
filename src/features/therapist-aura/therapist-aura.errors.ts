@@ -14,7 +14,7 @@ export class TherapistAuraError extends Error {
 export function getTherapistAuraErrorMessage(code: TherapistAuraErrorCode) {
   const messages: Record<TherapistAuraErrorCode, string> = {
     forbidden:
-      "A Aura completa está disponível para terapeutas Premium Plus com conta ativa.",
+      "O Assistente Aura está disponível para terapeutas Premium Plus com conta ativa.",
     invalid_contract:
       "Não foi possível concluir esta leitura agora. Tente novamente em instantes.",
     session_expired: "Sua sessão expirou. Entre novamente para continuar.",

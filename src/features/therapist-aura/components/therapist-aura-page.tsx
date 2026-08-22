@@ -42,7 +42,7 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
           <div>
             <span className="inline-flex min-h-8 items-center gap-2 rounded-full bg-white/80 px-3 text-xs font-extrabold text-brand-primary ring-1 ring-brand-lavender">
               <Sparkles aria-hidden="true" size={15} />
-              Aura IA Premium Plus
+              Assistente Aura · Premium Plus
             </span>
             <h1 className="mt-5 max-w-3xl font-display text-[38px] font-light italic leading-tight text-brand-deep sm:text-[52px]">
               Sinais objetivos para cuidar da sua presença.
@@ -221,7 +221,7 @@ export function TherapistAuraErrorState({ message }: { message: string }) {
         </span>
         <div>
           <h1 className="font-display text-[34px] font-light italic leading-tight text-brand-deep sm:text-[46px]">
-            Aura indisponível
+            Assistente Aura indisponível
           </h1>
           <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
             {message}

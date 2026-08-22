@@ -32,6 +32,8 @@ export async function TherapistAreaLayout({
       planLabel={config.planLabel}
       user={{
         avatarUrl: session.avatarUrl,
+        email: session.email,
+        fullName: session.name,
         name: firstName,
         planLabel: config.planLabel,
         roleLabel: "Terapeuta",

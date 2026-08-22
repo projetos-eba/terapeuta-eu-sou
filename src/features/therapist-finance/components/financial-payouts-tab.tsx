@@ -60,7 +60,14 @@ export function FinancialPayoutsTab({
           }
           icon={CalendarClock}
           label="Próximo lote"
-          value={payouts.summary.eligibleForPayoutCents}
+          valueText={
+            payouts.summary.nextBatchAt
+              ? formatDateTime(
+                  payouts.summary.nextBatchAt,
+                  payouts.filters.timezone,
+                )
+              : "Sem lote"
+          }
         />
         <PayoutMetricCard
           description="Valores já separados em lote ou transferência."
@@ -361,12 +368,16 @@ function PayoutMetricCard({
   icon: Icon,
   label,
   value,
+  valueText,
 }: {
   description: string;
   icon: LucideIcon;
   label: string;
-  value: number;
+  value?: number;
+  valueText?: string;
 }) {
+  const resolvedValue = valueText ?? formatCurrency(value ?? 0);
+
   return (
     <article className="rounded-card border border-brand-lavender bg-white p-5 shadow-card">
       <span className="grid size-12 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
@@ -374,7 +385,7 @@ function PayoutMetricCard({
       </span>
       <h2 className="mt-4 text-base font-extrabold text-brand-deep">{label}</h2>
       <p className="mt-2 text-[24px] font-extrabold leading-tight text-brand-deep">
-        {formatCurrency(value)}
+        {resolvedValue}
       </p>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
         {description}

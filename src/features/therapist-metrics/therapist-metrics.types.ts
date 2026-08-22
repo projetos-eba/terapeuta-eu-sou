@@ -93,7 +93,7 @@ export type TherapistMetricsOverview = {
     status: TherapistMetricDataStatus;
   };
   meta: Omit<TherapistMetricsFoundation["meta"], "periodDays"> & {
-    periodDays: 30 | 90;
+    periodDays: 30 | 60 | 90 | 120;
   };
   metricDefinitionVersion: 1;
   occupancy: {
@@ -324,7 +324,7 @@ export type TherapistMetricsOccupancy =
       coverageDays: number;
       coverageStart: string | null;
       reason: "history_in_formation";
-      requiredCoverageDays: 30 | 90;
+      requiredCoverageDays: TherapistMetricsPeriodDays;
       status: "forming";
     }
   | {
@@ -341,7 +341,7 @@ export type TherapistMetricsOccupancy =
         offeredMinutes: number;
         percentage: number | null;
       };
-      requiredCoverageDays: 30 | 90;
+      requiredCoverageDays: TherapistMetricsPeriodDays;
       series: TherapistOccupancyPoint[];
       status: "empty" | "ready";
     };

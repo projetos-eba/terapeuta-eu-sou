@@ -231,6 +231,17 @@ function validatePayload(input: unknown): TherapistProfileEditorPayload {
   if (!input || typeof input !== "object") invalid();
   const value = input as Record<string, unknown>;
   const publicName = boundedString(value.publicName, 2, 120);
+  const parsedVideoProvider = videoProvider(value.videoProvider);
+  const parsedVideoUrl = nullableString(value.videoUrl, 500);
+
+  if (
+    parsedVideoUrl &&
+    ((parsedVideoProvider === "upload" && !isHttpsUrl(parsedVideoUrl)) ||
+      (parsedVideoProvider !== "upload" &&
+        !isAllowedExternalVideoUrl(parsedVideoUrl)))
+  ) {
+    invalid();
+  }
 
   return {
     bio: nullableString(value.bio, 1600),
@@ -262,10 +273,10 @@ function validatePayload(input: unknown): TherapistProfileEditorPayload {
     })),
     shortIntro: nullableString(value.shortIntro, 280),
     state: nullableString(value.state, 40),
-    videoProvider: videoProvider(value.videoProvider),
+    videoProvider: parsedVideoProvider,
     videoThumbnailUrl: nullableString(value.videoThumbnailUrl, 500),
     videoTitle: nullableString(value.videoTitle, 120),
-    videoUrl: nullableString(value.videoUrl, 500),
+    videoUrl: parsedVideoUrl,
   };
 }
 
@@ -339,6 +350,29 @@ function videoProvider(value: unknown) {
     return value;
   }
   invalid();
+}
+
+function isHttpsUrl(value: string) {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedExternalVideoUrl(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:") return false;
+    const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
+    return (
+      hostname === "youtube.com" ||
+      hostname === "youtu.be" ||
+      hostname === "vimeo.com"
+    );
+  } catch {
+    return false;
+  }
 }
 
 function isInteger(value: unknown, min: number, max: number): value is number {

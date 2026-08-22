@@ -90,6 +90,25 @@ describe("therapist profile media route", () => {
     );
   });
 
+  it("rejects video files larger than 5 MB before upload", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const oversizedVideo = new File(
+      [new Uint8Array(5 * 1024 * 1024 + 1)],
+      "intro.mp4",
+      { type: "video/mp4" },
+    );
+
+    const response = await POST(
+      makeRequest({ file: oversizedVideo, kind: "video" }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(payload.error.message).toContain("no máximo 5 MB");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("uploads public media with a protected user-scoped object path", async () => {
     const fetchMock = makeFetchMock();
     vi.stubGlobal("fetch", fetchMock);

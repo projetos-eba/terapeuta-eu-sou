@@ -101,7 +101,7 @@ podem estar habilitados, bloqueados ou ocultos conforme plano e capability.
 - `/terapeuta/avaliacoes`: avaliações conforme capability.
 - `/terapeuta/metricas`: métricas intermediárias.
 - `/terapeuta/insights`: insights avançados.
-- `/terapeuta/assessor-ia`: Assessor IA.
+- `/terapeuta/assessor-ia`: Assistente Aura.
 - `/terapeuta/perfil`: perfil público.
 - `/terapeuta/plano`: central de comparação e upgrade para planos superiores.
 - `/terapeuta/configuracoes`: configurações, incluindo downgrade agendado,
@@ -179,7 +179,7 @@ Operação essencial com limites claros e convites contextuais para evolução.
 
 ### Permissões
 
-- Acessa agenda, pacientes, sessões, mensagens, serviços limitados, perfil e financeiro operacional.
+- Acessa agenda, pacientes, sessões, mensagens, serviços sem limite por plano, perfil e financeiro operacional.
 - Não acessa avaliações, métricas intermediárias, IA ou insights avançados.
 - Limites usam microcopy acolhedora, sem tom punitivo.
 
@@ -208,7 +208,7 @@ Operação profissional com financeiro, avaliações e métricas intermediárias
 - Inclui recursos do Free.
 - Acessa financeiro operacional, avaliações e métricas intermediárias.
 - Pode ver convites contextuais para Premium Plus.
-- Não acessa Assessor IA, insights avançados nem histórico operacional Premium Plus.
+- Não acessa Assistente Aura, insights avançados nem histórico operacional Premium Plus.
 
 ## Terapeuta Premium Plus - aliases de transição
 
@@ -227,7 +227,7 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 - `/plus/financeiro`: redirect legado para financeiro operacional.
 - `/plus/avaliacoes`: avaliações avançadas.
 - `/plus/insights`: insights exclusivos.
-- `/plus/assessor-ia`: Assessor IA.
+- `/plus/assessor-ia`: Assistente Aura (alias legado).
 - `/plus/perfil`: perfil público.
 - `/plus/configuracoes`: configurações.
 - `/plus/suporte`: redirect legado para Mensagens.

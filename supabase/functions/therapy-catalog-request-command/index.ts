@@ -1,6 +1,9 @@
 import { handleOptions } from "../_shared/auth/cors.ts";
 import { getRuntime, getServiceRoleKey } from "../_shared/auth/runtime.ts";
-import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
+import {
+  SupabaseHttpError,
+  SupabaseRestClient,
+} from "../_shared/auth/supabase-rest.ts";
 import { requestEmailOutboxDispatch } from "../_shared/email/outbox-dispatch.ts";
 import {
   DomainError,
@@ -68,7 +71,7 @@ runtime.serve(async (request) => {
     const action = validateAction(await parseJsonBody<unknown>(request));
 
     if (action.action === "categories") {
-      return success({ categories: await listCategories(client) });
+      return success({ themes: await listThemes(client) });
     }
 
     if (action.action === "list") {
@@ -76,27 +79,25 @@ runtime.serve(async (request) => {
     }
 
     if (action.action === "submit") {
-      const result = await client.rpc<SubmissionResult>(
-        "submit_therapy_catalog_request_v2",
-        {
+      const result = await withMappedDatabaseErrors(() =>
+        client.rpc<SubmissionResult>("submit_therapy_catalog_request_v2", {
           p_actor_user_id: user.id,
           p_payload: action.payload,
           p_request_id: action.requestId,
-        },
+        }),
       );
       await requestEmailOutboxDispatch(runtime);
       return success(result);
     }
 
     if (action.action === "resubmit") {
-      const result = await client.rpc<SubmissionResult>(
-        "resubmit_therapy_catalog_request_v2",
-        {
+      const result = await withMappedDatabaseErrors(() =>
+        client.rpc<SubmissionResult>("resubmit_therapy_catalog_request_v2", {
           p_actor_user_id: user.id,
           p_catalog_request_id: action.catalogRequestId,
           p_payload: action.payload,
           p_request_id: action.requestId,
-        },
+        }),
       );
       await requestEmailOutboxDispatch(runtime);
       return success(result);
@@ -232,10 +233,76 @@ function invalid(): never {
   );
 }
 
-async function listCategories(client: SupabaseRestClient) {
-  return client.get<Array<{ id: string; name: string; slug: string }>>(
-    "/rest/v1/therapy_categories?select=id,name,slug&is_active=eq.true&order=sort_order.asc,name.asc",
+async function withMappedDatabaseErrors<T>(operation: () => Promise<T>) {
+  try {
+    return await operation();
+  } catch (error) {
+    if (!(error instanceof SupabaseHttpError)) throw error;
+
+    if (
+      error.safeDetails?.includes("THERAPY_CATALOG_REQUEST_INVALID_CATEGORY")
+    ) {
+      throw new DomainError(
+        "invalid_payload",
+        422,
+        "Revise os temas e a classificacao informada para a solicitacao.",
+      );
+    }
+
+    if (
+      error.safeDetails?.includes("THERAPY_CATALOG_REQUEST_INVALID_PAYLOAD")
+    ) {
+      throw new DomainError(
+        "invalid_payload",
+        422,
+        "Revise os temas e os dados obrigatorios da solicitacao.",
+      );
+    }
+
+    if (error.safeDetails?.includes("THERAPY_CATALOG_REQUEST_NOT_FOUND")) {
+      throw new DomainError(
+        "not_found",
+        404,
+        "Nao encontramos esta solicitacao.",
+      );
+    }
+
+    if (error.safeDetails?.includes("THERAPY_CATALOG_REQUEST_NOT_EDITABLE")) {
+      throw new DomainError(
+        "not_editable",
+        409,
+        "Esta solicitacao nao aceita atualizacao neste momento.",
+      );
+    }
+
+    throw new DomainError(
+      "unavailable",
+      error.status >= 500 ? 503 : 422,
+      "Nao foi possivel concluir a solicitacao agora.",
+    );
+  }
+}
+
+async function listThemes(client: SupabaseRestClient) {
+  const themes = await client.get<
+    Array<{
+      description: string | null;
+      id: string;
+      name: string;
+      slug: string;
+      sort_order: number | null;
+    }>
+  >(
+    "/rest/v1/matching_themes?select=id,name,slug,description,sort_order&is_active=eq.true&order=sort_order.asc,name.asc",
   );
+
+  return themes.map((theme) => ({
+    description: theme.description ?? "",
+    id: theme.id,
+    name: theme.name,
+    slug: theme.slug,
+    sortOrder: theme.sort_order ?? 0,
+  }));
 }
 
 async function listOwnRequests(client: SupabaseRestClient, userId: string) {

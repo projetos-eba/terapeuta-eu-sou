@@ -676,7 +676,7 @@ preservado.
 - a ingestão pública passa por
   `record_public_therapist_metric_events_v1(uuid,jsonb)`;
 - o read model privado é `get_therapist_metrics_overview_v1(integer)`;
-- períodos permitidos são 30 e 90 dias locais completos;
+- períodos permitidos são 30, 60, 90 e 120 dias locais completos;
 - favoritos entram como evento autoritativo do perfil e continuam protegidos
   pela trava 10;
 - funil usa coorte pseudônima e nunca totais independentes;

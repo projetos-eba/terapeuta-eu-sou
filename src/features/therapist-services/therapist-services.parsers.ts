@@ -32,7 +32,7 @@ export function parseTherapistServicesCommand(
       action,
       currency: optionalCurrency(value.currency),
       deliveryFormat: optionalDeliveryFormat(value.deliveryFormat),
-      description: optionalNullableString(value.description, 800),
+      description: optionalNullableString(value.description, 200),
       durationMinutes: boundedInteger(value.durationMinutes, 15, 240),
       interestIds: uuidArray(value.interestIds, 0, 9),
       priceCents: boundedInteger(value.priceCents, 1000, 2000000),
@@ -48,7 +48,7 @@ export function parseTherapistServicesCommand(
       action,
       currency: optionalCurrency(value.currency),
       deliveryFormat: optionalDeliveryFormat(value.deliveryFormat),
-      description: optionalNullableString(value.description, 800),
+      description: optionalNullableString(value.description, 200),
       durationMinutes: optionalInteger(value.durationMinutes, 15, 240),
       expectedVersion: boundedInteger(value.expectedVersion, 1, 999999999),
       interestIds:

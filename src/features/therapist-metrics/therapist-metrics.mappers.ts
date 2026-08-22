@@ -313,8 +313,10 @@ function literalThirty(value: unknown): 30 {
   return 30;
 }
 
-function overviewPeriod(value: unknown): 30 | 90 {
-  if (value !== 30 && value !== 90) throw new Error("Invalid period.");
+function overviewPeriod(value: unknown): 30 | 60 | 90 | 120 {
+  if (value !== 30 && value !== 60 && value !== 90 && value !== 120) {
+    throw new Error("Invalid period.");
+  }
   return value;
 }
 

@@ -36,7 +36,7 @@ export function mapTherapistProfileEditorContract(
     ),
     propagationNotice: stringOr(
       value.propagationNotice,
-      "As alterações publicadas podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
+      "Depois da aprovação, as alterações podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
     ),
     publicProfileHref: stringOr(value.publicProfileHref, "/terapeutas"),
     publicProfileSlug: stringOr(

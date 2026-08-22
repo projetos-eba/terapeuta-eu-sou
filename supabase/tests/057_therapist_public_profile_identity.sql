@@ -253,15 +253,15 @@ select is(
   'publishing applies the selected theme to the canonical profile'
 );
 select results_eq(
-  $$ select public_profile_theme, bio_illustration_id
+  $$ select count(*)::integer
      from public.public_therapist_profile_content_v
      where slug = (
        select slug
        from public.therapist_profiles
        where id = 'c1000000-0000-4000-8000-000000000001'
      ) $$,
-  $$ values ('warm'::text, 'warm_layers'::text) $$,
-  'the public projection exposes only published personalization values'
+  $$ values (0) $$,
+  'the public projection remains hidden until profile moderation approves the submission'
 );
 
 select * from finish();

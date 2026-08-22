@@ -133,7 +133,8 @@ export function validateTherapistServicesCommand(
       invalid();
     }
 
-    const payload: Record<string, boolean | number | string | string[] | null> = {};
+    const payload: Record<string, boolean | number | string | string[] | null> =
+      {};
     if (body.therapyId !== undefined) {
       if (!isUuid(body.therapyId)) invalid();
       payload.therapyId = body.therapyId;
@@ -347,7 +348,7 @@ function isOptionalDescription(value: unknown) {
   return (
     value === undefined ||
     value === null ||
-    (typeof value === "string" && value.trim().length <= 800)
+    (typeof value === "string" && value.trim().length <= 200)
   );
 }
 
@@ -355,7 +356,11 @@ function isUuid(value: unknown): value is string {
   return typeof value === "string" && UUID.test(value);
 }
 
-function isUuidList(value: unknown, min: number, max: number): value is string[] {
+function isUuidList(
+  value: unknown,
+  min: number,
+  max: number,
+): value is string[] {
   return (
     Array.isArray(value) &&
     value.length >= min &&

@@ -126,7 +126,11 @@ export function AdminDashboardPage({ dashboard }: AdminDashboardPageProps) {
   );
 }
 
-function SummaryMetricCard({ metric }: { metric: DashboardMetricWithFallback }) {
+function SummaryMetricCard({
+  metric,
+}: {
+  metric: DashboardMetricWithFallback;
+}) {
   const Icon = iconForMetric(metric.icon);
 
   return (
@@ -164,7 +168,8 @@ function EvolutionPanel({ metrics }: { metrics: AvailableMetric[] }) {
   const max = Math.max(...metrics.map((metric) => metric.value), 1);
   const chartTooltipLines = buildChartTooltipLines(metrics);
   const points = metrics.map((metric, index) => {
-    const x = metrics.length === 1 ? 260 : 60 + index * (420 / (metrics.length - 1));
+    const x =
+      metrics.length === 1 ? 260 : 60 + index * (420 / (metrics.length - 1));
     const y = 185 - (metric.value / max) * 132;
 
     return { ...metric, x, y };
@@ -188,7 +193,9 @@ function EvolutionPanel({ metrics }: { metrics: AvailableMetric[] }) {
                 className="inline-flex items-center gap-2 text-xs font-extrabold text-tesText-secondary"
                 key={metric.key}
               >
-                <span className={`size-2.5 rounded-full ${dotClass(metric.tone)}`} />
+                <span
+                  className={`size-2.5 rounded-full ${dotClass(metric.tone)}`}
+                />
                 {metric.label}
               </span>
             ))}
@@ -215,12 +222,30 @@ function EvolutionPanel({ metrics }: { metrics: AvailableMetric[] }) {
               viewBox="0 0 520 220"
             >
               <defs>
-                <linearGradient id="admin-dashboard-line" x1="0" x2="1" y1="0" y2="0">
-                  <stop offset="0%" stopColor="var(--tes-color-brand-primary)" />
+                <linearGradient
+                  id="admin-dashboard-line"
+                  x1="0"
+                  x2="1"
+                  y1="0"
+                  y2="0"
+                >
+                  <stop
+                    offset="0%"
+                    stopColor="var(--tes-color-brand-primary)"
+                  />
                   <stop offset="52%" stopColor="var(--tes-color-status-info)" />
-                  <stop offset="100%" stopColor="var(--tes-color-status-success)" />
+                  <stop
+                    offset="100%"
+                    stopColor="var(--tes-color-status-success)"
+                  />
                 </linearGradient>
-                <linearGradient id="admin-dashboard-area" x1="0" x2="0" y1="0" y2="1">
+                <linearGradient
+                  id="admin-dashboard-area"
+                  x1="0"
+                  x2="0"
+                  y1="0"
+                  y2="1"
+                >
                   <stop
                     offset="0%"
                     stopColor="var(--tes-color-brand-lavender)"
@@ -245,7 +270,9 @@ function EvolutionPanel({ metrics }: { metrics: AvailableMetric[] }) {
                   y2={52 + line * 34}
                 />
               ))}
-              {areaPath ? <path d={areaPath} fill="url(#admin-dashboard-area)" /> : null}
+              {areaPath ? (
+                <path d={areaPath} fill="url(#admin-dashboard-area)" />
+              ) : null}
               {path ? (
                 <path
                   d={path}
@@ -257,15 +284,12 @@ function EvolutionPanel({ metrics }: { metrics: AvailableMetric[] }) {
                 />
               ) : null}
               {points.map((point) => (
-                <LineChartPoint
-                  key={point.key}
-                  point={point}
-                />
+                <LineChartPoint key={point.key} point={point} />
               ))}
               <text
                 fill="var(--tes-color-brand-primary)"
                 fontSize="12"
-                fontWeight="800"
+                fontWeight="600"
                 x="10"
                 y="57"
               >
@@ -274,7 +298,7 @@ function EvolutionPanel({ metrics }: { metrics: AvailableMetric[] }) {
               <text
                 fill="var(--tes-color-brand-primary)"
                 fontSize="12"
-                fontWeight="800"
+                fontWeight="600"
                 x="24"
                 y="193"
               >
@@ -338,7 +362,7 @@ function LineChartPoint({
       <text
         fill="var(--tes-color-text-muted)"
         fontSize="11"
-        fontWeight="800"
+        fontWeight="600"
         textAnchor="middle"
         x={point.x}
         y="213"
@@ -654,7 +678,7 @@ function SvgTooltip({
       <text
         fill="white"
         fontSize="13"
-        fontWeight="800"
+        fontWeight="600"
         x={left + 12}
         y={top + 21}
       >
@@ -690,11 +714,7 @@ function AlertItem({ alert }: { alert: AdminDashboardAlert }) {
   );
 }
 
-function StaticCardFooter({
-  children,
-}: {
-  children: ReactNode;
-}) {
+function StaticCardFooter({ children }: { children: ReactNode }) {
   return (
     <p className="mt-7 border-t border-brand-lavender/70 pt-5 text-center text-sm font-extrabold leading-6 text-tesText-secondary">
       {children}
@@ -713,9 +733,9 @@ function StatusPill({
 }) {
   return (
     <span
-      className={`inline-flex min-h-6 items-center justify-center rounded-full px-3 text-[0.68rem] font-extrabold ${
-        statusPillClass(tone)
-      } ${className}`}
+      className={`inline-flex min-h-6 items-center justify-center rounded-full px-3 text-[0.68rem] font-extrabold ${statusPillClass(
+        tone,
+      )} ${className}`}
     >
       {children}
     </span>
@@ -776,12 +796,16 @@ function buildHealthRows({
   metrics: AdminDashboardMetric[];
   modules: AdminDashboardModule[];
 }): HealthRow[] {
-  const readyModules = modules.filter((module) => module.status === "ready").length;
+  const readyModules = modules.filter(
+    (module) => module.status === "ready",
+  ).length;
   const totalModules = Math.max(modules.length, 1);
   const openSupport = findMetric(metrics, "open-support-tickets");
   const attentionSessions = findMetric(metrics, "attention-sessions");
   const pendingTherapists = findMetric(metrics, "pending-therapists");
-  const criticalAlerts = alerts.filter((alert) => alert.severity === "critical");
+  const criticalAlerts = alerts.filter(
+    (alert) => alert.severity === "critical",
+  );
 
   return [
     {
@@ -860,7 +884,9 @@ function hasPositiveValue(metric: AdminDashboardMetric | undefined) {
   return isAvailableMetric(metric) && metric.value > 0;
 }
 
-function buildLinePath(points: Array<AvailableMetric & { x: number; y: number }>) {
+function buildLinePath(
+  points: Array<AvailableMetric & { x: number; y: number }>,
+) {
   if (points.length === 0) return "";
   if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
 
@@ -978,8 +1004,10 @@ function metricIconClass(metric: AdminDashboardMetric) {
     return "bg-status-warningBg text-status-warning";
   }
 
-  if (metric.tone === "success") return "bg-status-successBg text-status-success";
-  if (metric.tone === "warning") return "bg-status-warningBg text-status-warning";
+  if (metric.tone === "success")
+    return "bg-status-successBg text-status-success";
+  if (metric.tone === "warning")
+    return "bg-status-warningBg text-status-warning";
   if (metric.tone === "danger") return "bg-status-dangerBg text-status-danger";
   if (metric.tone === "info") return "bg-status-infoBg text-status-info";
 
