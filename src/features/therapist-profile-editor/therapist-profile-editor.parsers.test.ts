@@ -88,4 +88,22 @@ describe("therapist profile editor parsers", () => {
       }),
     ).toThrow(TherapistProfileContractError);
   });
+
+  it("accepts only YouTube or Vimeo for external video links", () => {
+    expect(
+      parseEditorPayload({
+        publicName: "Ana Oliveira",
+        videoProvider: "youtube",
+        videoUrl: "https://youtu.be/example",
+      }),
+    ).toMatchObject({ videoProvider: "youtube" });
+
+    expect(() =>
+      parseEditorPayload({
+        publicName: "Ana Oliveira",
+        videoProvider: "external",
+        videoUrl: "https://example.test/video",
+      }),
+    ).toThrow(TherapistProfileContractError);
+  });
 });

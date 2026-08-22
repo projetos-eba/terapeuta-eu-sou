@@ -47,7 +47,7 @@ export function mapTherapistMetricsDashboard(
 
 function mapOccupancy(
   input: unknown,
-  requiredCoverageDays: 30 | 90,
+  requiredCoverageDays: 30 | 60 | 90 | 120,
 ): TherapistMetricsOccupancy {
   const value = record(input);
   const status = value.status;

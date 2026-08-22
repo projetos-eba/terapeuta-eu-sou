@@ -168,6 +168,28 @@ describe("TherapistFinancePage", () => {
     expect(screen.queryByLabelText(/cpf/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/cnpj/i)).not.toBeInTheDocument();
   });
+
+  it("shows the next payout card with the scheduled batch date instead of duplicating the eligible amount", () => {
+    renderPage("payouts", {
+      payouts: {
+        ...fixture().payouts,
+        filters: {
+          ...fixture().payouts.filters,
+          timezone: "America/Sao_Paulo",
+        },
+        summary: {
+          ...fixture().payouts.summary,
+          eligibleForPayoutCents: 8000,
+          nextBatchAt: "2026-07-31T13:00:00.000Z",
+        },
+      },
+    });
+
+    expect(screen.getByText("31/07/2026, 10:00")).toBeInTheDocument();
+    expect(
+      screen.getByText("Próximo lote previsto para 31/07/2026, 10:00."),
+    ).toBeInTheDocument();
+  });
 });
 
 function renderPage(

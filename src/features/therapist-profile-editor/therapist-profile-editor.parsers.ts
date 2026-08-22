@@ -63,6 +63,17 @@ export function parseEditorPayload(
   input: unknown,
 ): TherapistProfileEditorPayload {
   const value = object(input);
+  const parsedVideoProvider = videoProvider(value.videoProvider);
+  const parsedVideoUrl = optionalString(value.videoUrl, 500);
+
+  if (
+    parsedVideoUrl &&
+    ((parsedVideoProvider === "upload" && !isHttpsUrl(parsedVideoUrl)) ||
+      (parsedVideoProvider !== "upload" &&
+        !isAllowedExternalVideoUrl(parsedVideoUrl)))
+  ) {
+    throw invalid("video_url");
+  }
 
   return {
     bioIllustrationId: bioIllustrationId(value.bioIllustrationId),
@@ -94,10 +105,10 @@ export function parseEditorPayload(
     })),
     shortIntro: optionalString(value.shortIntro, 280),
     state: optionalString(value.state, 40),
-    videoProvider: videoProvider(value.videoProvider),
+    videoProvider: parsedVideoProvider,
     videoThumbnailUrl: optionalString(value.videoThumbnailUrl, 500),
     videoTitle: optionalString(value.videoTitle, 120),
-    videoUrl: optionalString(value.videoUrl, 500),
+    videoUrl: parsedVideoUrl,
   };
 }
 
@@ -210,6 +221,29 @@ function videoProvider(value: unknown) {
     return value;
   }
   throw invalid("video_provider");
+}
+
+function isHttpsUrl(value: string) {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedExternalVideoUrl(value: string) {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:") return false;
+    const hostname = url.hostname.replace(/^www\./, "").toLowerCase();
+    return (
+      hostname === "youtube.com" ||
+      hostname === "youtu.be" ||
+      hostname === "vimeo.com"
+    );
+  } catch {
+    return false;
+  }
 }
 
 function invalid(reason: string) {

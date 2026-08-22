@@ -182,7 +182,7 @@ function SampledSummary({
 function SessionEvolution({ data }: { data: TherapistSessionMetrics }) {
   const points = bucketEvolution(
     data.evolution.points,
-    data.meta.periodDays === 90 ? 7 : 3,
+    evolutionBucketSize(data.meta.periodDays),
   );
   const maximum = Math.max(
     1,
@@ -535,6 +535,15 @@ function Legend({ color, label }: { color: string; label: string }) {
       {label}
     </span>
   );
+}
+
+function evolutionBucketSize(
+  periodDays: TherapistSessionMetrics["meta"]["periodDays"],
+) {
+  if (periodDays >= 120) return 10;
+  if (periodDays >= 90) return 7;
+  if (periodDays >= 60) return 5;
+  return 3;
 }
 
 function bucketEvolution(

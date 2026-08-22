@@ -24,6 +24,7 @@ import type {
   AdminOperationModuleKey,
   AdminOperationPageData,
   AdminOperationPageResult,
+  AdminProfessionalProfileReview,
   AdminProfessionalPublishedProfile,
   AdminProfessionalVerificationSummary,
 } from "./admin-operations.types";
@@ -337,40 +338,41 @@ const SORT_OPTIONS: AdminListOption[] = [
   option("name", "Nome"),
 ];
 
-export const getAdminOperationPage = cache(async function getAdminOperationPage({
-  accessToken,
-  module,
-  searchParams,
-}: {
-  accessToken: string;
-  module: AdminOperationModuleKey;
-  searchParams?: Record<string, string | string[] | undefined>;
-}): Promise<AdminOperationPageResult> {
-  const config = getSupabasePublicConfig();
-  const spec = MODULES[module];
-  const query = parseAdminListQuery(searchParams);
-
-  if (!config) {
-    return {
-      message: "Não foi possível carregar este módulo agora.",
-      status: "error",
-    };
-  }
-
-  const readResult = await fetchAdminOperationReadModel({
+export const getAdminOperationPage = cache(
+  async function getAdminOperationPage({
     accessToken,
-    config,
     module,
-    query,
-  });
+    searchParams,
+  }: {
+    accessToken: string;
+    module: AdminOperationModuleKey;
+    searchParams?: Record<string, string | string[] | undefined>;
+  }): Promise<AdminOperationPageResult> {
+    const config = getSupabasePublicConfig();
+    const spec = MODULES[module];
+    const query = parseAdminListQuery(searchParams);
 
-  if (readResult.status !== "available") {
-    const rowsUnavailableMessage =
-      readResult.status === "forbidden"
-        ? "A sessão atual não tem permissão para consultar este módulo."
-        : "A leitura administrativa falhou. Isso não é tratado como lista vazia.";
+    if (!config) {
+      return {
+        message: "Não foi possível carregar este módulo agora.",
+        status: "error",
+      };
+    }
 
-    return {
+    const readResult = await fetchAdminOperationReadModel({
+      accessToken,
+      config,
+      module,
+      query,
+    });
+
+    if (readResult.status !== "available") {
+      const rowsUnavailableMessage =
+        readResult.status === "forbidden"
+          ? "A sessão atual não tem permissão para consultar este módulo."
+          : "A leitura administrativa falhou. Isso não é tratado como lista vazia.";
+
+      return {
         data: {
           description: spec.description,
           emptyMessage: spec.emptyMessage,
@@ -387,47 +389,48 @@ export const getAdminOperationPage = cache(async function getAdminOperationPage(
           query,
           rows: [],
           rowsStatus: readResult.status,
-        rowsUnavailableMessage,
+          rowsUnavailableMessage,
+          safetyNotes: spec.safetyNotes,
+          sourceLabel: spec.sourceLabel,
+          title: spec.title,
+        },
+        status: "success",
+      };
+    }
+
+    const metricsPayload = isRecord(readResult.model.metrics)
+      ? readResult.model.metrics
+      : {};
+    const rowsPayload = Array.isArray(readResult.model.rows)
+      ? readResult.model.rows
+      : [];
+
+    return {
+      data: {
+        description: spec.description,
+        emptyMessage: spec.emptyMessage,
+        generatedAt:
+          asString(readResult.model.generatedAt) ?? new Date().toISOString(),
+        listHref: getOperationListHref(module),
+        metrics: spec.metrics.map((metricSpec) =>
+          availableMetric(metricSpec, metricsPayload),
+        ),
+        filterOptions: {
+          sort: SORT_OPTIONS,
+          status: spec.statusOptions,
+        },
+        page: mapPageInfo(readResult.model.page, query),
+        query,
+        rows: mapAdminOperationRows({ module, rows: rowsPayload }),
+        rowsStatus: "available",
         safetyNotes: spec.safetyNotes,
         sourceLabel: spec.sourceLabel,
         title: spec.title,
       },
       status: "success",
     };
-  }
-
-  const metricsPayload = isRecord(readResult.model.metrics)
-    ? readResult.model.metrics
-    : {};
-  const rowsPayload = Array.isArray(readResult.model.rows)
-    ? readResult.model.rows
-    : [];
-
-  return {
-    data: {
-      description: spec.description,
-      emptyMessage: spec.emptyMessage,
-      generatedAt:
-        asString(readResult.model.generatedAt) ?? new Date().toISOString(),
-      listHref: getOperationListHref(module),
-      metrics: spec.metrics.map((metricSpec) =>
-        availableMetric(metricSpec, metricsPayload),
-      ),
-      filterOptions: {
-        sort: SORT_OPTIONS,
-        status: spec.statusOptions,
-      },
-      page: mapPageInfo(readResult.model.page, query),
-      query,
-      rows: mapAdminOperationRows({ module, rows: rowsPayload }),
-      rowsStatus: "available",
-      safetyNotes: spec.safetyNotes,
-      sourceLabel: spec.sourceLabel,
-      title: spec.title,
-    },
-    status: "success",
-  };
-});
+  },
+);
 
 export const getAdminOperationDetailPage = cache(
   async function getAdminOperationDetailPage({
@@ -486,8 +489,12 @@ export const getAdminOperationDetailPage = cache(
     if (module === "professionals") {
       const profileId = detail.id;
       const slug = asString(readResult.model.record.slug);
-      const [publicProfile, verificationSummary, privateDocuments] =
-        await Promise.all([
+      const [
+        publicProfile,
+        verificationSummary,
+        privateDocuments,
+        profileReview,
+      ] = await Promise.all([
         fetchAdminProfessionalPublishedProfile({
           accessToken,
           config,
@@ -503,6 +510,11 @@ export const getAdminOperationDetailPage = cache(
           accessToken,
           therapistProfileId: profileId,
         }),
+        fetchAdminProfessionalProfileReview({
+          accessToken,
+          config,
+          profileId,
+        }),
       ]);
 
       detail.publicProfile = publicProfile;
@@ -511,6 +523,7 @@ export const getAdminOperationDetailPage = cache(
       detail.verificationSummary =
         verificationSummary ??
         deriveProfileDecisionVerificationSummary(detail.statusLabel);
+      detail.profileReview = profileReview;
     }
 
     if (module === "verifications" && detail.relatedProfessionalId) {
@@ -521,6 +534,11 @@ export const getAdminOperationDetailPage = cache(
 
       detail.privateDocuments =
         privateDocuments.status === "success" ? privateDocuments.data : null;
+      detail.profileReview = await fetchAdminProfessionalProfileReview({
+        accessToken,
+        config,
+        profileId: detail.relatedProfessionalId,
+      });
     }
 
     return {
@@ -537,7 +555,7 @@ async function fetchAdminProfessionalPublishedProfile({
   slug,
 }: {
   accessToken: string;
-  config: { apiKey: string; url: string },
+  config: { apiKey: string; url: string };
   profileId: string;
   slug?: string;
 }): Promise<AdminProfessionalPublishedProfile> {
@@ -589,6 +607,117 @@ async function fetchAdminProfessionalPublishedProfile({
   } catch {
     return unavailable;
   }
+}
+
+async function fetchAdminProfessionalProfileReview({
+  accessToken,
+  config,
+  profileId,
+}: {
+  accessToken: string;
+  config: { apiKey: string; url: string };
+  profileId: string;
+}): Promise<AdminProfessionalProfileReview | null> {
+  try {
+    const response = await fetch(
+      `${config.url}/rest/v1/rpc/admin_get_therapist_profile_review_v1`,
+      {
+        body: JSON.stringify({ p_therapist_profile_id: profileId }),
+        cache: "no-store",
+        headers: {
+          ...adminReadHeaders({ accessToken, config }),
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      },
+    );
+
+    if (!response.ok) return null;
+
+    return mapAdminProfessionalProfileReview(
+      await response.json().catch(() => null),
+    );
+  } catch {
+    return null;
+  }
+}
+
+function mapAdminProfessionalProfileReview(
+  input: unknown,
+): AdminProfessionalProfileReview | null {
+  if (!isRecord(input)) return null;
+  const fields = isRecord(input.fields) ? input.fields : {};
+  const services = Array.isArray(input.services) ? input.services : [];
+
+  return {
+    contentVersionId: asText(input.contentVersionId) || null,
+    fields: {
+      bio: asText(fields.bio) || null,
+      city: asText(fields.city) || null,
+      country: asText(fields.country) || null,
+      essenceBody: asText(fields.essenceBody) || null,
+      experienceYears: asFiniteNumber(fields.experienceYears),
+      guideItems: mapGuideItems(fields.guideItems),
+      headline: asText(fields.headline) || null,
+      invitationBody: asText(fields.invitationBody) || null,
+      photoUrl: asText(fields.photoUrl) || null,
+      publicName: asText(fields.publicName) || null,
+      shortIntro: asText(fields.shortIntro) || null,
+      state: asText(fields.state) || null,
+      videoProvider: normalizeVideoProvider(fields.videoProvider),
+      videoThumbnailUrl: asText(fields.videoThumbnailUrl) || null,
+      videoTitle: asText(fields.videoTitle) || null,
+      videoUrl: asText(fields.videoUrl) || null,
+    },
+    privateIdentity: mapPrivateIdentity(input.privateIdentity),
+    profileStatus: asText(input.profileStatus),
+    publicStatus: asText(input.publicStatus),
+    publishedAt: asText(input.publishedAt) || null,
+    services: services.filter(isRecord).map((service) => ({
+      currency: asText(service.currency) || null,
+      description: asText(service.description) || null,
+      durationMinutes: asFiniteNumber(service.durationMinutes),
+      priceCents: asFiniteNumber(service.priceCents),
+      status: asText(service.status) || null,
+      therapyName: asText(service.therapyName) || null,
+      title: asText(service.title) || null,
+    })),
+    verificationStatus: asText(input.verificationStatus) || "none",
+  };
+}
+
+function mapPrivateIdentity(
+  value: unknown,
+): AdminProfessionalProfileReview["privateIdentity"] {
+  if (!isRecord(value)) return null;
+  return {
+    city: asText(value.city) || null,
+    complement: asText(value.complement) || null,
+    country: asText(value.country) || null,
+    documentNumber: asText(value.documentNumber) || null,
+    documentType:
+      value.documentType === "cpf" ||
+      value.documentType === "rg" ||
+      value.documentType === "passport"
+        ? value.documentType
+        : null,
+    neighborhood: asText(value.neighborhood) || null,
+    postalCode: asText(value.postalCode) || null,
+    state: asText(value.state) || null,
+    street: asText(value.street) || null,
+    streetNumber: asText(value.streetNumber) || null,
+  };
+}
+
+function normalizeVideoProvider(
+  value: unknown,
+): "external" | "upload" | "vimeo" | "youtube" | null {
+  return value === "external" ||
+    value === "upload" ||
+    value === "vimeo" ||
+    value === "youtube"
+    ? value
+    : null;
 }
 
 async function fetchAdminProfessionalVerificationSummary({
@@ -788,7 +917,10 @@ async function fetchAdminOperationReadModel({
       module,
     });
 
-    return { errorCode: "ADMIN_OPERATION_NETWORK_ERROR", status: "unavailable" };
+    return {
+      errorCode: "ADMIN_OPERATION_NETWORK_ERROR",
+      status: "unavailable",
+    };
   }
 }
 
@@ -863,7 +995,10 @@ async function fetchAdminOperationDetailReadModel({
     }
 
     if (model.record === null) {
-      return { errorCode: "ADMIN_OPERATION_DETAIL_NOT_FOUND", status: "not_found" };
+      return {
+        errorCode: "ADMIN_OPERATION_DETAIL_NOT_FOUND",
+        status: "not_found",
+      };
     }
 
     return { model, status: "available" };
@@ -983,6 +1118,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asString(value: unknown) {
   return typeof value === "string" && value ? value : undefined;
+}
+
+function asText(value: unknown) {
+  return asString(value) ?? "";
 }
 
 function asFiniteNumber(value: unknown) {

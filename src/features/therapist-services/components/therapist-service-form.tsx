@@ -380,6 +380,7 @@ function OfferFields({
           }
           className="min-h-[118px] w-full rounded-lg border border-brand-lavender px-4 py-3 text-sm font-semibold leading-6 text-brand-deep outline-none focus:border-brand-primary"
           id="service-description"
+          maxLength={200}
           onChange={(event) =>
             onChange((current) => ({
               ...current,
@@ -395,6 +396,9 @@ function OfferFields({
           }
           value={values.description}
         />
+        <p className="mt-1 text-xs font-semibold text-tesText-secondary">
+          {values.description.length}/200 caracteres
+        </p>
       </Field>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field
@@ -455,8 +459,8 @@ function OfferFields({
       </div>
       <div className="rounded-lg bg-brand-lavenderSoft/70 p-4 text-xs font-semibold leading-5 text-tesText-secondary">
         As regras detalhadas de reserva continuam centralizadas em Agenda /
-        Horários. Esta oferta só fica reservável após ativação válida pelo
-        pelas regras de segurança da plataforma.
+        Horários. Esta oferta só fica reservável após ativação válida pelo pelas
+        regras de segurança da plataforma.
       </div>
     </div>
   );
@@ -525,7 +529,10 @@ function MatchingFields({
         em cada tema selecionado.
       </p>
       {errors.matching ? (
-        <p className="text-sm font-bold text-status-danger" id="service-matching-error">
+        <p
+          className="text-sm font-bold text-status-danger"
+          id="service-matching-error"
+        >
           {errors.matching}
         </p>
       ) : null}
@@ -726,8 +733,8 @@ function validate(
   if (values.description.trim().length < 20) {
     errors.description = "Explique a proposta em pelo menos 20 caracteres.";
   }
-  if (values.description.trim().length > 800) {
-    errors.description = "Use no máximo 800 caracteres.";
+  if (values.description.trim().length > 200) {
+    errors.description = "Use no máximo 200 caracteres.";
   }
   if (values.durationMinutes < 15 || values.durationMinutes > 240) {
     errors.durationMinutes = "A duração deve ficar entre 15 e 240 minutos.";

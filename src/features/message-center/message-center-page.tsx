@@ -107,7 +107,7 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-base font-extrabold text-brand-deep">
-              Comunicação protegida por templates
+              Comunicação protegida pelo TES
             </h2>
             <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
               Esta central não possui chat livre. As interações entre cliente e

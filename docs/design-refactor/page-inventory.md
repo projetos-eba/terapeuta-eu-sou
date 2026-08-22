@@ -87,7 +87,7 @@ rota é uma página existente hoje.
 | 14 | Financeiro | `/terapeuta/financeiro` | financeiro | LEGACY | FilterBar, StatusCluster, MetricStrip local, OperationalTable | Alta | Alta densidade e risco; refactor só com owner financeiro. |
 | 15 | Avaliações | `/terapeuta/avaliacoes` | acompanhamento | PARTIAL | PageHeader balanced, EntityList, Status Anatomy | Média | Real e ainda card-heavy. |
 | 16 | Métricas e insights | `/terapeuta/insights` | análise | PARTIAL | Hero editorial, MetricStrip local, série SVG acessível, StatusCluster e rail analítico | Média | Refatorada em 17/08/2026; falta validação visual nos viewports. |
-| 17 | Assessor IA | `/terapeuta/assessor-ia` | orientação | PARTIAL | AccentSemanticSurface, CTA contextual | Média | Não passou por calibração própria. |
+| 17 | Assistente Aura | `/terapeuta/assessor-ia` | orientação | PARTIAL | AccentSemanticSurface, CTA contextual | Média | Não passou por calibração própria. |
 | 18 | Meu perfil | `/terapeuta/perfil` | preview | PARTIAL | EntitySummary, seção leve, CTA contextual | Média | Preview-first funcional. |
 | 19 | Editar perfil | `/terapeuta/perfil/editar` | configuração | PARTIAL | PageHeader balanced, seção leve, AppStickySaveBar | Média | Base funcional boa, visual intermediário. |
 | 20 | Meu plano | `/terapeuta/plano` | assinatura | PARTIAL | Hero editorial, resumo do plano, CTA contextual e comparação agrupada | Média | Refatorado em 17/08/2026; falta validação visual nos três viewports. |

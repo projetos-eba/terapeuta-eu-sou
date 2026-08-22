@@ -113,7 +113,7 @@ O pagamento real deve ser integrado ao Stripe. A sessao online deve usar Zoom vi
 
 ### 4.2 Sem IA real no MVP
 
-Match, insights, metricas prescritivas e Aura IA/Assessor IA devem ser determinísticos:
+Match, insights, metricas prescritivas e Assistente Aura devem ser determinísticos:
 
 - regras;
 - pesos;
@@ -405,7 +405,7 @@ Inclui:
 - servicos e terapias;
 - avaliacoes avancadas;
 - metricas e relatorios;
-- Aura/Assessor IA completo, sem IA real;
+- Assistente Aura completo, sem IA real;
 - financeiro completo;
 - suporte prioritario.
 
@@ -449,13 +449,13 @@ Responsabilidades:
 
 O Match v1 recomenda terapias, nao terapeutas.
 
-Status operacional atualizado: a jornada pública já usa temas e interesses, multiplicador de especificidade `1.4`, pesos versionados e somente a versão publicada de `matching_versions`. Este documento mantém decisões de arquitetura do MVP, mas o estado canônico atual está em `docs/product/integration-map.md`.
+Status operacional atualizado: a jornada pública seleciona temas; os interesses continuam versionados e associados aos temas para o cálculo determinístico, mas não são escolhidos separadamente. O multiplicador de especificidade `1.4`, os pesos versionados e somente a versão publicada de `matching_versions` permanecem no backend. Este documento mantém decisões de arquitetura do MVP, mas o estado canônico atual está em `docs/product/integration-map.md`.
 
 Ele deve:
 
 - ser publico;
 - ser anonimo;
-- coletar selecao de 1 a 3 temas e até 3 interesses por tema;
+- coletar selecao de 1 a 3 temas; usar interesses associados aos temas no cálculo, sem seleção pública separada;
 - calcular compatibilidade entre necessidades e terapias;
 - retornar terapias/caminhos recomendados;
 - levar o usuario para pagina da terapia;
@@ -478,7 +478,7 @@ Ele nao deve:
 ```txt
 Usuario acessa /sua-jornada
 -> seleciona ate 3 temas
--> seleciona interesses opcionais dos temas escolhidos
+-> interesses associados acompanham os temas no calculo
 -> clica em Ver caminhos
 -> backend calcula compatibilidade via /api/public/matching/calculate
 -> /sua-jornada/resultado exibe top terapias
@@ -494,8 +494,8 @@ Usuario acessa /sua-jornada
 | ---------------------------- | ------------------------------ | --------------------------------------------- |
 | Minimo de temas              | 1                              | Validado no frontend e backend.               |
 | Maximo de temas              | 3                              | Validado no frontend e backend.               |
-| Minimo de interesses         | 0                              | Interesses são opcionais.                     |
-| Maximo de interesses         | 3 por tema                     | Validado no backend.                          |
+| Interesses na jornada publica| Associados aos temas           | Não há seleção pública separada.              |
+| Interesses na jornada publica| Associados aos temas           | Não há seletor público separado.              |
 | Botao de resultado           | liberado com pelo menos 1 tema | Sem tema não calcula.                         |
 | Multiplicador de interesses  | `1.4`                          | Interesse é mais específico que tema.         |
 | Tabelas especificas de match | `matching_*`                   | Substituem o uso público de `therapy_themes`. |
@@ -529,7 +529,7 @@ O admin deve configurar pesos por terapia. Essa abordagem escala melhor que conf
 ```txt
 score_bruto =
   soma dos pesos dos temas selecionados
-  + soma dos pesos dos interesses selecionados * 1.4
+  + soma dos pesos dos interesses associados aos temas * 1.4
 ```
 
 O multiplicador `1.4` existe porque interesse é mais especifico que tema.
@@ -637,7 +637,10 @@ Decisao recomendada para evolucao:
 4. Adicionar metricas anonimas agregadas.
 5. Fechar pesos por RLS e calcular em Edge Function/server.
 
-Decisao Fase 1: nao criar UI publica de interesses enquanto `matching_interests` e seus pesos nao existirem. Se produto exigir temas + interesses ja no lancamento, `matching_interests`, vinculos e pesos por interesse devem ser promovidos para Fase 1 junto com a tela adicional do fluxo publico.
+Decisao histórica: a UI pública de interesses não era criada enquanto
+`matching_interests` e seus pesos não existissem. Decisão atual: os interesses
+existentes permanecem associados aos temas e são usados internamente; a
+jornada pública não oferece seleção separada.
 
 ### 8.10 APIs recomendadas do Match
 
@@ -1006,7 +1009,7 @@ Mostra o que aconteceu:
 
 Nao deve ser o principal ambiente de recomendacoes prescritivas.
 
-### 11.7 Aura IA / Assessor IA
+### 11.7 Assistente Aura (rota técnica `/terapeuta/assessor-ia`)
 
 Papel: prescritivo.
 
@@ -1822,7 +1825,7 @@ Uma entrega do MVP so deve ser considerada pronta quando:
 - Forma final da UI de pagamentos do paciente.
 - O mapeamento `/basico/pagamento` -> `/terapeuta/financeiro` foi implementado
   como redirect temporario, sem preservar uma segunda experiencia financeira.
-- Se o nome publico sera Aura IA, Assessor IA ou outro.
+- Decisão atual: o nome público é Assistente Aura; `aura_*` e `assessor-ia` permanecem identificadores técnicos por compatibilidade.
 
 Quando alguma decisao acima impactar implementacao, ela deve ser registrada antes de criar migracao, API ou comportamento de produto definitivo.
 

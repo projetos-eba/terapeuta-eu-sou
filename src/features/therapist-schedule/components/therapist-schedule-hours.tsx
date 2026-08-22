@@ -774,7 +774,9 @@ function SessionRulesCard({
               onChange={(event) => onTimezoneChange(event.target.value)}
               value={timezone}
             >
-              <option value="America/Sao_Paulo">Brasília (GMT-03)</option>
+              <option value="America/Sao_Paulo">
+                São Paulo (Brasília, GMT-03)
+              </option>
               <option value="America/Manaus">Manaus (GMT-04)</option>
               <option value="America/Rio_Branco">Rio Branco (GMT-05)</option>
               <option value="America/Noronha">
@@ -782,6 +784,11 @@ function SessionRulesCard({
               </option>
             </select>
           </RuleRow>
+          <p className="border-t border-brand-lavender bg-brand-lavenderSoft/60 px-5 py-4 text-sm font-semibold leading-6 text-tesText-secondary">
+            O TES organiza a agenda no fuso de São Paulo (Brasília). Isso vale
+            para a disponibilidade e para as reservas, inclusive quando você ou
+            a pessoa atendida estiverem fora do Brasil.
+          </p>
           <RuleRow
             description="Tempo mínimo para um novo agendamento."
             icon={CalendarDays}
@@ -919,9 +926,7 @@ function AvailabilitySummaryCard({
             <strong className="text-2xl font-extrabold text-brand-deep">
               {configuredDays}/7
             </strong>
-            <span className="text-xs font-bold text-tesText-muted">
-              dias
-            </span>
+            <span className="text-xs font-bold text-tesText-muted">dias</span>
           </div>
         </div>
       </div>

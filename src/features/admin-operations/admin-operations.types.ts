@@ -101,6 +101,58 @@ export type AdminProfessionalPublishedProfile = {
   status: "available" | "unavailable";
 };
 
+/**
+ * Admin-only preview of the latest profile submission. This is deliberately
+ * separate from the public projection because a submitted profile is hidden
+ * from public views until the verification decision is complete.
+ */
+export type AdminProfessionalProfileReview = {
+  contentVersionId: string | null;
+  fields: {
+    bio: string | null;
+    city: string | null;
+    country: string | null;
+    essenceBody: string | null;
+    experienceYears: number | null;
+    guideItems: Array<{ label: string }>;
+    headline: string | null;
+    invitationBody: string | null;
+    photoUrl: string | null;
+    publicName: string | null;
+    shortIntro: string | null;
+    state: string | null;
+    videoProvider: "external" | "upload" | "vimeo" | "youtube" | null;
+    videoThumbnailUrl: string | null;
+    videoTitle: string | null;
+    videoUrl: string | null;
+  };
+  profileStatus: string;
+  privateIdentity: {
+    city: string | null;
+    complement: string | null;
+    country: string | null;
+    documentNumber: string | null;
+    documentType: "cpf" | "rg" | "passport" | null;
+    neighborhood: string | null;
+    postalCode: string | null;
+    state: string | null;
+    street: string | null;
+    streetNumber: string | null;
+  } | null;
+  publicStatus: string;
+  publishedAt: string | null;
+  services: Array<{
+    currency: string | null;
+    description: string | null;
+    durationMinutes: number | null;
+    priceCents: number | null;
+    status: string | null;
+    therapyName: string | null;
+    title: string | null;
+  }>;
+  verificationStatus: string;
+};
+
 export type AdminProfessionalVerificationSummary = {
   reviewedAt: string | null;
   /**
@@ -135,6 +187,7 @@ export type AdminOperationDetailPageData = {
   /** Indica se a publicação administrativa pode ser solicitada agora. */
   canPublish?: boolean;
   privateDocuments?: AdminProfessionalDocumentReviewData | null;
+  profileReview?: AdminProfessionalProfileReview | null;
   safetyNotes: string[];
   sections: AdminOperationDetailSection[];
   statusLabel?: string;

@@ -62,7 +62,7 @@ function makeEditor(
     draft: null,
     privateDocuments: [],
     propagationNotice:
-      "As alterações publicadas podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
+      "Depois da aprovação, as alterações podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
     publicProfileHref: "/terapeutas/ana-oliveira",
     publicProfileSlug: "ana-oliveira",
     publicProfileTheme: "serene",
@@ -442,7 +442,7 @@ describe("TherapistProfileEditorPage", () => {
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Use um link de vídeo seguro começando com https://.",
+      "Use um link https:// do YouTube ou Vimeo.",
     );
     expect(commandMocks.sendTherapistProfileCommand).not.toHaveBeenCalled();
   });
@@ -531,9 +531,9 @@ describe("TherapistProfileEditorPage", () => {
         requestId: "22222222-2222-4222-8222-222222222222",
       }),
     );
-    expect(screen.getAllByText(/Alterações publicadas/).length).toBeGreaterThan(
-      0,
-    );
+    expect(
+      screen.getAllByText(/Alterações enviadas para revisão/).length,
+    ).toBeGreaterThan(0);
   });
 
   it("creates a draft before publishing a complete first profile without local edits", async () => {
@@ -668,9 +668,9 @@ describe("TherapistProfileEditorPage", () => {
         }),
       );
     });
-    expect(screen.getAllByText(/Alterações publicadas/).length).toBeGreaterThan(
-      0,
-    );
+    expect(
+      screen.getAllByText(/Alterações enviadas para revisão/).length,
+    ).toBeGreaterThan(0);
     expect(
       screen.queryByRole("dialog", { name: "Publicar alterações?" }),
     ).not.toBeInTheDocument();

@@ -148,6 +148,8 @@ function parseTab(value: string | null): TherapistMetricsTab | null {
 
 function parsePeriod(value: string | null): TherapistMetricsPeriodDays | null {
   if (value === "30") return 30;
+  if (value === "60") return 60;
   if (value === "90") return 90;
+  if (value === "120") return 120;
   return null;
 }

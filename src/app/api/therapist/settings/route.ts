@@ -75,6 +75,7 @@ export async function PATCH(request: Request) {
     const updated = await updateTherapistAccountSettings({
       accessToken,
       displayName: payload.displayName,
+      identity: payload.identity,
       phone: payload.phone,
       userId: user.id,
     });

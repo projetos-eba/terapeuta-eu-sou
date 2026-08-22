@@ -12,7 +12,7 @@ select is(has_function_privilege('anon', 'public.arm_email_outbox_test_fault_v1(
 select is(
   (public.submit_therapy_catalog_request_v2(
     'aaaaaaaa-0000-4000-8000-000000000001',
-    jsonb_build_object('informedName', 'Outbox pgTAP', 'suggestedCategoryId', '11111111-1111-4111-8111-111111111117', 'submission', jsonb_build_object('description','Descrição responsável.','objective','Objetivo para análise.','useCases','Situações relatadas.','sessionProcess','Atendimento online.')),
+    jsonb_build_object('informedName', 'Outbox pgTAP', 'submission', jsonb_build_object('description','Descrição responsável.','objective','Objetivo para análise.','themeIds',(select jsonb_agg(theme.id order by theme.sort_order) from public.matching_themes as theme where theme.slug in ('emocoes-bem-estar','relacionamentos')),'useCases','Situações relatadas.','sessionProcess','Atendimento online.')),
     '55100000-0000-4000-8000-000000000001'
   ) ->> 'status'), 'submitted', 'business action succeeds independently of delivery'
 );
@@ -25,7 +25,7 @@ select ok((select recipient_key ~ '^profile:' from public.email_outbox limit 1),
 select is(
   (public.submit_therapy_catalog_request_v2(
     'aaaaaaaa-0000-4000-8000-000000000001',
-    jsonb_build_object('informedName', 'Outbox pgTAP', 'suggestedCategoryId', '11111111-1111-4111-8111-111111111117', 'submission', jsonb_build_object('description','Descrição responsável.','objective','Objetivo para análise.','useCases','Situações relatadas.','sessionProcess','Atendimento online.')),
+    jsonb_build_object('informedName', 'Outbox pgTAP', 'submission', jsonb_build_object('description','Descrição responsável.','objective','Objetivo para análise.','themeIds',(select jsonb_agg(theme.id order by theme.sort_order) from public.matching_themes as theme where theme.slug in ('emocoes-bem-estar','relacionamentos')),'useCases','Situações relatadas.','sessionProcess','Atendimento online.')),
     '55100000-0000-4000-8000-000000000001'
   ) ->> 'idempotentReplay'), 'true', 'business replay remains idempotent'
 );

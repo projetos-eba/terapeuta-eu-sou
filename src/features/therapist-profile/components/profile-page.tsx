@@ -19,6 +19,7 @@ import { FavoriteTherapistButton } from "./favorite-therapist-button";
 import { ProfileShareButton } from "./profile-share-button";
 import { ReviewsCarousel } from "./reviews-carousel";
 import type { PublicTherapistProfile, TherapistProfileReview } from "../types";
+import { getPublicVideoEmbedUrl } from "../video-embed";
 
 function IconByName({ name }: { name: string }) {
   const className = "mx-auto size-[30px] text-status-info";
@@ -160,6 +161,8 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
 }
 
 function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
+  const videoEmbedUrl = getPublicVideoEmbedUrl(profile.video);
+
   return (
     <section className="mx-auto grid max-w-[1348px] gap-5 px-5 pt-8 md:grid-cols-3">
       <article className="rounded-[18px] border border-border bg-white p-9">
@@ -214,10 +217,33 @@ function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
           Um convite para você
         </h2>
         <div className="mt-4 grid gap-6 xl:grid-cols-[253px_1fr]">
-          {profile.video ? (
+          {profile.video && videoEmbedUrl ? (
+            <iframe
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="h-[184px] w-full rounded-[12px] border-0 bg-brand-deep"
+              loading="lazy"
+              referrerPolicy="strict-origin-when-cross-origin"
+              sandbox="allow-presentation allow-same-origin allow-scripts"
+              src={videoEmbedUrl}
+              title={profile.video.title}
+            />
+          ) : profile.video?.provider === "upload" ? (
+            <video
+              className="h-[184px] w-full rounded-[12px] bg-brand-deep object-cover"
+              controls
+              poster={profile.video.thumbnailUrl}
+              preload="metadata"
+              src={profile.video.url}
+            >
+              Seu navegador não conseguiu carregar este vídeo.
+            </video>
+          ) : profile.video ? (
             <a
               href={profile.video.url}
               className="relative grid h-[184px] place-items-center overflow-hidden rounded-[12px] bg-brand-deep text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              rel="noreferrer"
+              target="_blank"
             >
               <Image
                 src={profile.video.thumbnailUrl}

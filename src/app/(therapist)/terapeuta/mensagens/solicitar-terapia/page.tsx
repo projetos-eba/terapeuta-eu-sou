@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 
 import {
   TherapyCatalogRequestPage,
-  type TherapyRequestCategory,
+  type TherapyRequestTheme,
   type TherapyRequestSummary,
 } from "@/features/therapy-catalog-requests/therapy-catalog-request-page";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
@@ -24,8 +24,8 @@ export default async function TherapistTherapyCatalogRequestPage({
 
   if (!config) notFound();
 
-  const [categoriesResult, requestsResult] = await Promise.all([
-    callRequestCommand<{ categories: TherapyRequestCategory[] }>(config.url, session.accessToken, {
+  const [themesResult, requestsResult] = await Promise.all([
+    callRequestCommand<{ themes: TherapyRequestTheme[] }>(config.url, session.accessToken, {
       action: "categories",
     }),
     callRequestCommand<{ requests: TherapyRequestSummary[] }>(config.url, session.accessToken, {
@@ -33,7 +33,7 @@ export default async function TherapistTherapyCatalogRequestPage({
     }),
   ]);
 
-  if (!categoriesResult.ok || !requestsResult.ok) {
+  if (!themesResult.ok || !requestsResult.ok) {
     return (
       <main className="mx-auto w-full max-w-3xl pb-10">
         <section className="rounded-panel border border-state-danger/30 bg-white p-6 shadow-card">
@@ -46,7 +46,7 @@ export default async function TherapistTherapyCatalogRequestPage({
 
   return (
     <TherapyCatalogRequestPage
-      categories={categoriesResult.data.categories}
+      themes={themesResult.data.themes}
       initialRequestId={typeof params.request === "string" ? params.request : null}
       requests={requestsResult.data.requests}
     />

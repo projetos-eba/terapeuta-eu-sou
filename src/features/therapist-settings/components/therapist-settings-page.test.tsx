@@ -31,6 +31,17 @@ describe("TherapistSettingsPage", () => {
         account: {
           displayName: "Ana Oliveira",
           phone: "+55 11 99999-9999",
+          identity: {
+            city: "São Paulo",
+            complement: "Apto 42",
+            documentNumber: "52998224725",
+            documentType: "cpf",
+            neighborhood: "Pinheiros",
+            postalCode: "05409-000",
+            state: "SP",
+            street: "Rua dos Pinheiros",
+            streetNumber: "100",
+          },
         },
       },
       status: "success",
@@ -92,6 +103,17 @@ describe("TherapistSettingsPage", () => {
       expect(commandMocks.updateTherapistSettings).toHaveBeenCalledWith({
         displayName: "Ana Oliveira",
         phone: "+55 11 99999-9999",
+        identity: {
+          city: "São Paulo",
+          complement: "Apto 42",
+          documentNumber: "52998224725",
+          documentType: "cpf",
+          neighborhood: "Pinheiros",
+          postalCode: "05409-000",
+          state: "SP",
+          street: "Rua dos Pinheiros",
+          streetNumber: "100",
+        },
       });
     });
     expect(screen.getByText("Configurações salvas.")).toBeInTheDocument();
@@ -206,6 +228,17 @@ function settingsFixture(): TherapistSettingsData {
       email: "ana@example.test",
       phone: "",
       userId: "c1000000-0000-4000-8000-000000000001",
+      identity: {
+        city: "São Paulo",
+        complement: "Apto 42",
+        documentNumber: "52998224725",
+        documentType: "cpf",
+        neighborhood: "Pinheiros",
+        postalCode: "05409-000",
+        state: "SP",
+        street: "Rua dos Pinheiros",
+        streetNumber: "100",
+      },
     },
     profile: {
       isAcceptingBookings: false,

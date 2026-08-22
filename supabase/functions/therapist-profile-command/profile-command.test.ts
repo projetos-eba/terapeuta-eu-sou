@@ -90,6 +90,36 @@ Deno.test("rejects invalid therapist profile mutations", () => {
   );
 });
 
+Deno.test(
+  "accepts YouTube links and rejects arbitrary external video hosts",
+  () => {
+    const valid = validateTherapistProfileCommand({
+      action: "save_draft",
+      expectedVersion: 1,
+      payload: {
+        publicName: "Ana Oliveira",
+        videoProvider: "youtube",
+        videoUrl: "https://www.youtube.com/watch?v=example",
+      },
+      requestId,
+    });
+    assertEquals(valid.action, "save_draft");
+
+    assertDomainError(() =>
+      validateTherapistProfileCommand({
+        action: "save_draft",
+        expectedVersion: 1,
+        payload: {
+          publicName: "Ana Oliveira",
+          videoProvider: "external",
+          videoUrl: "https://example.test/video",
+        },
+        requestId,
+      }),
+    );
+  },
+);
+
 Deno.test("maps profile database conflicts", () => {
   const result = mapTherapistProfileDatabaseError(
     new SupabaseHttpError(400, "VERSION_CONFLICT"),

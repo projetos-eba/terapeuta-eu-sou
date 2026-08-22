@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarDays, Clock, HandCoins, Tags } from "lucide-react";
+import { useState } from "react";
 
 import { TESCard } from "@/components/tes";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,11 @@ export function TherapistServiceCard({
     service.status === "paused" ||
     service.status === "draft";
   const nextAction = service.status === "active" ? "pause" : "activate";
+  const description =
+    service.description ??
+    "Complete a descrição para explicar a proposta da experiência.";
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const canExpandDescription = description.length > 150;
 
   return (
     <TESCard
@@ -113,10 +119,28 @@ export function TherapistServiceCard({
                 />
               </div>
             </div>
-            <p className="mt-4 line-clamp-3 text-sm font-semibold leading-6 text-tesText-secondary">
-              {service.description ??
-                "Complete a descrição para explicar a proposta da experiência."}
+            <p
+              className={cn(
+                "mt-4 text-sm font-semibold leading-6 text-tesText-secondary",
+                canExpandDescription && !isDescriptionExpanded
+                  ? "line-clamp-3"
+                  : undefined,
+              )}
+              id={`service-description-${service.serviceId}`}
+            >
+              {description}
             </p>
+            {canExpandDescription ? (
+              <button
+                aria-controls={`service-description-${service.serviceId}`}
+                aria-expanded={isDescriptionExpanded}
+                className="mt-2 text-sm font-extrabold text-brand-primary underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+                onClick={() => setIsDescriptionExpanded((current) => !current)}
+                type="button"
+              >
+                {isDescriptionExpanded ? "Mostrar menos" : "Ver mais"}
+              </button>
+            ) : null}
             <div className="mt-5 flex flex-wrap gap-2">
               <InfoPill icon={<Clock aria-hidden="true" size={14} />}>
                 {service.durationMinutes} min

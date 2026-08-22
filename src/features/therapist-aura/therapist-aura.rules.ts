@@ -68,7 +68,8 @@ export const auraRules: RuleDefinition[] = [
     ruleKey: "aura.sessions.cancellation_increased.v1",
     title: "Cancelamentos aumentaram no período",
     tone: "attention",
-    when: ({ signals }) => worsenedRate(signals.sessions.cancellationRate, "up"),
+    when: ({ signals }) =>
+      worsenedRate(signals.sessions.cancellationRate, "up"),
   },
   {
     actionLabel: "Revisar sessões",
@@ -144,10 +145,7 @@ export function buildAuraRecommendationKey(
   return `${ruleKey}:${meta.periodStart}:${meta.periodEnd}`;
 }
 
-function worsenedRate(
-  metric: AuraSampledRate,
-  worseDirection: "down" | "up",
-) {
+function worsenedRate(metric: AuraSampledRate, worseDirection: "down" | "up") {
   return (
     metric.status === "ready" &&
     metric.direction === worseDirection &&

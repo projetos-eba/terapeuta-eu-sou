@@ -31,6 +31,10 @@ import type { TherapistPlanPageData } from "@/features/therapist-plan/therapist-
 import { routes } from "@/lib/routes";
 
 import { updateTherapistSettings } from "../therapist-settings.commands";
+import {
+  formatDocumentNumber,
+  formatPostalCode,
+} from "../therapist-settings.parsers";
 import type {
   TherapistSettingsData,
   TherapistSettingsEditableFields,
@@ -270,6 +274,148 @@ function AccountSection({
             value={fields.phone}
           />
         </div>
+        <div className="grid gap-5 border-t border-border pt-6">
+          <div>
+            <h3 className="text-base font-extrabold text-brand-deep">
+              Dados para validação do cadastro
+            </h3>
+            <p className="mt-1 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
+              Informe seu endereço e um documento de identificação. Esses dados
+              ficam protegidos e são usados somente pela equipe TES durante a
+              análise do perfil.
+            </p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <SelectField
+              id="documentType"
+              label="Documento"
+              onChange={(value) =>
+                onChange({
+                  identity: {
+                    ...fields.identity,
+                    documentNumber: "",
+                    documentType: value as "cpf" | "rg" | "passport",
+                  },
+                })
+              }
+              options={[
+                { label: "CPF", value: "cpf" },
+                { label: "RG", value: "rg" },
+                { label: "Passaporte", value: "passport" },
+              ]}
+              value={fields.identity.documentType}
+            />
+            <TextField
+              id="documentNumber"
+              label="Número do documento"
+              onChange={(value) =>
+                onChange({
+                  identity: {
+                    ...fields.identity,
+                    documentNumber: formatDocumentNumber(
+                      value,
+                      fields.identity.documentType,
+                    ),
+                  },
+                })
+              }
+              placeholder={documentPlaceholder(fields.identity.documentType)}
+              required
+              value={fields.identity.documentNumber}
+            />
+            <TextField
+              id="postalCode"
+              label="CEP"
+              onChange={(value) =>
+                onChange({
+                  identity: {
+                    ...fields.identity,
+                    postalCode: formatPostalCode(value),
+                  },
+                })
+              }
+              placeholder="00000-000"
+              required
+              value={fields.identity.postalCode}
+            />
+          </div>
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
+            <TextField
+              id="street"
+              label="Endereço"
+              onChange={(value) =>
+                onChange({
+                  identity: { ...fields.identity, street: value },
+                })
+              }
+              required
+              value={fields.identity.street}
+            />
+            <TextField
+              id="streetNumber"
+              label="Número"
+              onChange={(value) =>
+                onChange({
+                  identity: { ...fields.identity, streetNumber: value },
+                })
+              }
+              required
+              value={fields.identity.streetNumber}
+            />
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <TextField
+              id="complement"
+              label="Complemento"
+              onChange={(value) =>
+                onChange({
+                  identity: { ...fields.identity, complement: value },
+                })
+              }
+              value={fields.identity.complement}
+            />
+            <TextField
+              id="neighborhood"
+              label="Bairro"
+              onChange={(value) =>
+                onChange({
+                  identity: { ...fields.identity, neighborhood: value },
+                })
+              }
+              required
+              value={fields.identity.neighborhood}
+            />
+            <TextField
+              id="city"
+              label="Cidade"
+              onChange={(value) =>
+                onChange({
+                  identity: { ...fields.identity, city: value },
+                })
+              }
+              required
+              value={fields.identity.city}
+            />
+          </div>
+          <div className="grid gap-4 md:grid-cols-[180px_1fr]">
+            <TextField
+              id="state"
+              label="UF"
+              maxLength={2}
+              onChange={(value) =>
+                onChange({
+                  identity: { ...fields.identity, state: value.toUpperCase() },
+                })
+              }
+              required
+              value={fields.identity.state}
+            />
+            <p className="self-end text-sm font-semibold leading-6 text-tesText-secondary">
+              O endereço precisa estar no Brasil neste momento. O passaporte não
+              tem uma máscara única; usamos apenas letras e números.
+            </p>
+          </div>
+        </div>
         <AppPageActions>
           <TESButton
             className="rounded-lg"
@@ -481,7 +627,9 @@ function ProtectedDataPanel() {
           Upgrades ficam em Planos; cancelamentos e mudanças futuras ficam nesta
           página.
         </li>
-        <li>Dados bancários completos ficam no ambiente seguro de pagamentos.</li>
+        <li>
+          Dados bancários completos ficam no ambiente seguro de pagamentos.
+        </li>
         <li>Documentos privados não aparecem no perfil público.</li>
       </ul>
     </AppPageSection>
@@ -518,6 +666,7 @@ function TextField({
   disabled,
   id,
   label,
+  maxLength,
   onChange,
   placeholder,
   required,
@@ -526,6 +675,7 @@ function TextField({
   disabled?: boolean;
   id: string;
   label: string;
+  maxLength?: number;
   onChange?: (value: string) => void;
   placeholder?: string;
   required?: boolean;
@@ -540,11 +690,46 @@ function TextField({
         className="mt-3 min-h-11 w-full rounded-lg border border-brand-lavender/70 bg-white px-4 text-sm font-bold text-brand-deep shadow-card outline-none transition placeholder:text-tesText-subtle focus:border-brand-primary focus:ring-4 focus:ring-ring/20 disabled:bg-brand-lavenderSoft disabled:text-tesText-secondary"
         disabled={disabled}
         id={id}
+        maxLength={maxLength}
         onChange={(event) => onChange?.(event.target.value)}
         placeholder={placeholder}
         required={required}
         value={value}
       />
+    </div>
+  );
+}
+
+function SelectField({
+  id,
+  label,
+  onChange,
+  options,
+  value,
+}: {
+  id: string;
+  label: string;
+  onChange: (value: string) => void;
+  options: Array<{ label: string; value: string }>;
+  value: string;
+}) {
+  return (
+    <div>
+      <label className="text-sm font-extrabold text-brand-deep" htmlFor={id}>
+        {label}
+      </label>
+      <select
+        className="mt-3 min-h-11 w-full rounded-lg border border-brand-lavender/70 bg-white px-4 text-sm font-bold text-brand-deep shadow-card outline-none transition focus:border-brand-primary focus:ring-4 focus:ring-ring/20"
+        id={id}
+        onChange={(event) => onChange(event.target.value)}
+        value={value}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </div>
   );
 }
@@ -592,6 +777,18 @@ function validateSettingsFields(fields: TherapistSettingsEditableFields) {
   if (phone && (phone.length > 30 || !/^[+()0-9\s-]+$/.test(phone))) {
     return "Informe um telefone válido ou deixe o campo vazio.";
   }
+  const identity = fields.identity;
+  if (
+    !identity.documentNumber ||
+    !identity.postalCode ||
+    !identity.street ||
+    !identity.streetNumber ||
+    !identity.neighborhood ||
+    !identity.city ||
+    identity.state.length !== 2
+  ) {
+    return "Preencha seu documento e endereço para concluir a validação do cadastro.";
+  }
   return null;
 }
 
@@ -601,7 +798,16 @@ function pickEditableFields(
   return {
     displayName: settings.account.displayName,
     phone: settings.account.phone,
+    identity: settings.account.identity,
   };
+}
+
+function documentPlaceholder(
+  documentType: TherapistSettingsEditableFields["identity"]["documentType"],
+) {
+  if (documentType === "cpf") return "000.000.000-00";
+  if (documentType === "rg") return "00.000.000-0";
+  return "AB123456";
 }
 
 function planLabel(plan: TherapistSettingsData["profile"]["plan"]) {

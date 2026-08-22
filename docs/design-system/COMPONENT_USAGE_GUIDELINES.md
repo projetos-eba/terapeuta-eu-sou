@@ -317,7 +317,7 @@ Fonte Figma: `Design System / Recent Product Components` (`12829:626`).
 
 Regra geral: use estes componentes quando a tela precisar repetir blocos de produto das páginas recentes. Eles são master components visuais e devem ser preferidos a recriar cards locais com frames soltos.
 
-### Aura IA
+### Assistente Aura
 
 Use `Product/AuraPriorityOfDay` para a recomendação ou automação principal do dia. A linguagem deve explicar o impacto em termos humanos, como `Reengajamento concluído automaticamente`, evitando termos frios como `conversão` ou `lead recuperado`.
 

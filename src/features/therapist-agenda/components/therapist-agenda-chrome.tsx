@@ -46,10 +46,11 @@ export function TherapistAgendaHeader({
             Organize seus horários, acompanhe seus encontros e mantenha sua
             agenda sempre atualizada.
           </p>
+          <p className="mt-2 text-sm font-extrabold leading-6 text-brand-primary">
+            Todos os horários do TES seguem o fuso de São Paulo (Brasília).
+          </p>
         </div>
-        {actions ? (
-          <div className="lg:shrink-0">{actions}</div>
-        ) : null}
+        {actions ? <div className="lg:shrink-0">{actions}</div> : null}
       </header>
 
       <TherapistAgendaTabs activeTab={activeTab} />

@@ -23,6 +23,8 @@ export default async function AdminLayout({
       navigation={config.navigation}
       user={{
         avatarUrl: session.avatarUrl,
+        email: session.email,
+        fullName: session.name,
         name: firstName,
         roleLabel: "Admin",
       }}

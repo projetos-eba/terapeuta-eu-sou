@@ -347,7 +347,7 @@ function isOptionalDescription(value: unknown) {
   return (
     value === undefined ||
     value === null ||
-    (typeof value === "string" && value.trim().length <= 800)
+    (typeof value === "string" && value.trim().length <= 200)
   );
 }
 

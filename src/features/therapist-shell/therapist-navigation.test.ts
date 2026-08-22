@@ -48,7 +48,7 @@ describe("buildTherapistNavigation", () => {
     });
 
     expect(
-      navigation.find((item) => item.label === "Aura IA")?.accessState,
+      navigation.find((item) => item.label === "Assistente Aura")?.accessState,
     ).toBe("locked");
     expect(
       navigation.find((item) => item.label === "Histórico da Jornada")
