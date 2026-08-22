@@ -131,6 +131,57 @@ test("HML: conteúdo livre e URL arbitrária continuam bloqueados", async ({
   }
 });
 
+test("HML: central estruturada mantém fluxo responsivo", async ({
+  browser,
+}) => {
+  test.setTimeout(120_000);
+  const hml = assertHmlShareUrl(baseUrl);
+  const viewports = [
+    { height: 900, label: "desktop", width: 1440 },
+    { height: 1024, label: "tablet", width: 768 },
+    { height: 844, label: "mobile", width: 390 },
+  ];
+
+  for (const viewport of viewports) {
+    const context = await browser.newContext({
+      viewport: { height: viewport.height, width: viewport.width },
+    });
+    const page = await context.newPage();
+    try {
+      await login(
+        page,
+        context,
+        hml,
+        therapistEmail,
+        "/terapeuta/login",
+        "/terapeuta",
+        "therapist",
+        "Entrar como terapeuta",
+      );
+      await page.goto(withShare(hml, "/terapeuta/mensagens"));
+      await expect(
+        page.getByRole("heading", { name: "Central de mensagens" }),
+      ).toBeVisible();
+      const dimensions = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      expect(dimensions.scrollWidth, viewport.label).toBeLessThanOrEqual(
+        dimensions.clientWidth + 1,
+      );
+      await page.getByRole("button", { name: "Escolher mensagem" }).click();
+      await expect(
+        page.getByRole("heading", { name: "Escolher mensagem" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("button", { name: "Revisar mensagem" }),
+      ).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  }
+});
+
 async function login(
   page: Page,
   context: BrowserContext,
