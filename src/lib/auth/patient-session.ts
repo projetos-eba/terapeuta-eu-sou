@@ -9,6 +9,7 @@ import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 const DEMO_PROFILE_ID = "90000000-0000-4000-8000-000000000001";
 
 type SupabaseAuthUser = {
+  email?: string | null;
   id: string;
 };
 
@@ -20,6 +21,7 @@ type PatientProfile = {
 
 export type AuthenticatedPatientSession = {
   accessToken: string | null;
+  email: string | null;
   profileId: string;
 };
 
@@ -30,7 +32,7 @@ export async function requirePatientSession(): Promise<AuthenticatedPatientSessi
 
   if (!config) {
     if (process.env.NODE_ENV === "development") {
-      return { accessToken: null, profileId: DEMO_PROFILE_ID };
+      return { accessToken: null, email: null, profileId: DEMO_PROFILE_ID };
     }
 
     redirect(routes.public.clientSignIn);
@@ -55,7 +57,7 @@ export async function requirePatientSession(): Promise<AuthenticatedPatientSessi
       redirect(routes.public.clientSignIn);
     }
 
-    return { accessToken, profileId: profile.id };
+    return { accessToken, email: user.email ?? null, profileId: profile.id };
   } catch {
     redirect(routes.public.clientSignIn);
   }

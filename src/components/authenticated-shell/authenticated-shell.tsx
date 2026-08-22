@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useState } from "react";
 
+import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 import { ShellSidebar } from "./shell-sidebar";
@@ -41,6 +42,8 @@ export type ShellNavigationItem = {
 
 export type ShellUser = {
   avatarUrl?: string | null;
+  email?: string | null;
+  fullName?: string;
   name: string;
   planLabel?: string;
   roleLabel: string;
@@ -77,6 +80,7 @@ export function AuthenticatedShell({
 }: AuthenticatedShellProps) {
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
   const pathname = usePathname();
+  const resolvedLogoutHref = logoutHref ?? getDefaultLogoutHref(variant);
 
   if (isDedicatedVideoCallPath(pathname)) {
     return <main className="min-h-dvh">{children}</main>;
@@ -96,7 +100,7 @@ export function AuthenticatedShell({
           helpHref={helpHref}
           helpLabel={helpLabel}
           logoutAction={logoutAction}
-          logoutHref={logoutHref}
+          logoutHref={resolvedLogoutHref}
           navigation={navigation}
           onNavigate={() => setIsNavigationOpen(false)}
         />
@@ -113,6 +117,9 @@ export function AuthenticatedShell({
 
       <div className="lg:pl-[var(--tes-layout-auth-sidebar-width)]">
         <ShellTopbar
+          accountHref={getDefaultAccountHref(variant)}
+          logoutAction={logoutAction}
+          logoutHref={resolvedLogoutHref}
           notificationHref={
             notificationHref ?? getDefaultNotificationHref(variant)
           }
@@ -152,6 +159,24 @@ function getDefaultNotificationHref(
   if (variant === "admin") return "/admin/suporte";
 
   return "/app/mensagens?context=notificacoes";
+}
+
+function getDefaultAccountHref(
+  variant: NonNullable<AuthenticatedShellProps["variant"]>,
+) {
+  if (variant === "therapist") return routes.therapist.settings;
+  if (variant === "admin") return routes.admin.settings;
+
+  return routes.patient.settings;
+}
+
+function getDefaultLogoutHref(
+  variant: NonNullable<AuthenticatedShellProps["variant"]>,
+) {
+  if (variant === "therapist") return routes.public.therapistSignIn;
+  if (variant === "admin") return routes.admin.signIn;
+
+  return routes.public.clientSignIn;
 }
 
 export function ShellNavigationToggle({
