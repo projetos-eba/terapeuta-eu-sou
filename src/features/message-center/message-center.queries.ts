@@ -46,6 +46,7 @@ type TherapistProfileRow = {
 type ConversationRow = {
   id: string;
   last_message_at: string | null;
+  booking_id: string | null;
   patient_profile_id: string;
   therapist_profile_id: string;
 };
@@ -57,6 +58,14 @@ type MessageRow = {
   id: string;
   read_at: string | null;
   sender_profile_id: string;
+  metadata: unknown;
+};
+
+type BookingRow = {
+  ends_at: string;
+  id: string;
+  starts_at: string;
+  status: string;
 };
 
 type SupportTicketRow = {
@@ -122,30 +131,39 @@ async function getSupabaseMessageCenter(
 
   const conversations = await supabaseRequest<ConversationRow[]>(
     config,
-    `/rest/v1/conversations?select=id,patient_profile_id,therapist_profile_id,last_message_at&${input.actorRole === "patient" ? "patient_profile_id" : "therapist_profile_id"}=eq.${encodeURIComponent(participantProfileId)}&order=last_message_at.desc.nullslast&limit=8`,
+    `/rest/v1/conversations?select=id,patient_profile_id,therapist_profile_id,booking_id,last_message_at&${input.actorRole === "patient" ? "patient_profile_id" : "therapist_profile_id"}=eq.${encodeURIComponent(participantProfileId)}&order=last_message_at.desc.nullslast&limit=8`,
   );
   const conversationIds = conversations.map((conversation) => conversation.id);
-  const [messages, supportTickets, notifications] = await Promise.all([
-    conversationIds.length > 0
-      ? supabaseRequest<MessageRow[]>(
-          config,
-          `/rest/v1/messages?select=id,conversation_id,sender_profile_id,body,read_at,created_at&conversation_id=in.(${conversationIds.join(",")})&order=created_at.desc`,
-        )
-      : Promise.resolve([]),
-    supabaseRequest<SupportTicketRow[]>(
-      config,
-      `/rest/v1/support_tickets?select=id,category,subject,description,status,resolution_summary,created_at,last_activity_at&requester_profile_id=eq.${encodeURIComponent(input.profileId)}&order=last_activity_at.desc.nullslast&limit=8`,
-    ),
-    supabaseRequest<NotificationRow[]>(
-      config,
-      `/rest/v1/notifications?select=id,kind,title,body,read_at,created_at&profile_id=eq.${encodeURIComponent(input.profileId)}&order=created_at.desc&limit=4`,
-    ),
-  ]);
+  const [messages, supportTickets, notifications, bookings] = await Promise.all(
+    [
+      conversationIds.length > 0
+        ? supabaseRequest<MessageRow[]>(
+            config,
+            `/rest/v1/messages?select=id,conversation_id,sender_profile_id,body,metadata,read_at,created_at&conversation_id=in.(${conversationIds.join(",")})&order=created_at.desc`,
+          )
+        : Promise.resolve([]),
+      supabaseRequest<SupportTicketRow[]>(
+        config,
+        `/rest/v1/support_tickets?select=id,category,subject,description,status,resolution_summary,created_at,last_activity_at&requester_profile_id=eq.${encodeURIComponent(input.profileId)}&order=last_activity_at.desc.nullslast&limit=8`,
+      ),
+      supabaseRequest<NotificationRow[]>(
+        config,
+        `/rest/v1/notifications?select=id,kind,title,body,read_at,created_at&profile_id=eq.${encodeURIComponent(input.profileId)}&order=created_at.desc&limit=4`,
+      ),
+      conversations.some((conversation) => conversation.booking_id)
+        ? supabaseRequest<BookingRow[]>(
+            config,
+            `/rest/v1/bookings?select=id,starts_at,ends_at,status&id=in.(${[...new Set(conversations.map((conversation) => conversation.booking_id).filter(Boolean))].join(",")})`,
+          )
+        : Promise.resolve([]),
+    ],
+  );
   const threads = await mapThreads({
     actorRole: input.actorRole,
     config,
     conversations,
     messages,
+    bookings,
   });
   const platformItems = mapPlatformItems(supportTickets, notifications);
   const unreadCount =
@@ -196,6 +214,7 @@ async function mapThreads(input: {
   config: SupabaseServerConfig;
   conversations: ConversationRow[];
   messages: MessageRow[];
+  bookings: BookingRow[];
 }): Promise<MessageCenterThread[]> {
   const latestByConversation = new Map<string, MessageRow>();
   for (const message of input.messages) {
@@ -228,6 +247,7 @@ async function mapThreads(input: {
           name: therapist?.public_name ?? "Terapeuta",
         }),
         conversation,
+        bookings: input.bookings,
         message,
         name: therapist?.public_name ?? "Terapeuta",
       });
@@ -249,6 +269,7 @@ async function mapThreads(input: {
     return toThread({
       avatarUrl: patient?.avatar_url ?? null,
       conversation,
+      bookings: input.bookings,
       message,
       name: patient?.display_name ?? "Cliente",
     });
@@ -258,14 +279,36 @@ async function mapThreads(input: {
 function toThread(input: {
   avatarUrl: string | null;
   conversation: ConversationRow;
+  bookings: BookingRow[];
   message: MessageRow | undefined;
   name: string;
 }): MessageCenterThread {
   const category = inferCategory(input.message?.body ?? "");
+  const booking = input.bookings.find(
+    (item) => item.id === input.conversation.booking_id,
+  );
+  const metadata = isRecord(input.message?.metadata)
+    ? input.message?.metadata
+    : null;
+  const cta =
+    isRecord(metadata?.cta) &&
+    typeof metadata.cta.href === "string" &&
+    isCanonicalParticipantHref(metadata.cta.href) &&
+    isCtaAction(metadata.cta.action)
+      ? {
+          action: metadata.cta.action,
+          href: metadata.cta.href,
+          label:
+            typeof metadata.cta.label === "string"
+              ? metadata.cta.label
+              : "Abrir sessão",
+        }
+      : null;
 
   return {
     avatarUrl: input.avatarUrl,
     body: input.message?.body ?? "Sem atualização recente.",
+    bookingId: input.conversation.booking_id,
     category,
     categoryLabel: getCategoryLabel(category),
     conversationId: input.conversation.id,
@@ -276,7 +319,39 @@ function toThread(input: {
       input.message?.created_at ?? input.conversation.last_message_at,
     ),
     title: getThreadTitle(category),
+    cta,
+    sessionContext: booking
+      ? `Sobre a sessão de ${formatSessionDate(booking.starts_at)}`
+      : null,
   };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function isCtaAction(
+  value: unknown,
+): value is NonNullable<MessageCenterThread["cta"]>["action"] {
+  return (
+    value === "view_session" ||
+    value === "open_session" ||
+    value === "reschedule_session" ||
+    value === "cancel_session"
+  );
+}
+
+function isCanonicalParticipantHref(value: string) {
+  return /^\/(?:app\/encontros|terapeuta\/sessoes)\/[0-9a-f-]{36}$/i.test(
+    value,
+  );
+}
+
+function formatSessionDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
 }
 
 function mapPlatformItems(
@@ -427,6 +502,7 @@ function createDemoMessageCenter(
 
       return {
         avatarUrl: null,
+        bookingId: null,
         body:
           shell.templates.participant[
             index % shell.templates.participant.length
@@ -440,6 +516,8 @@ function createDemoMessageCenter(
         timeLabel:
           index < 2 ? `Hoje · ${10 - index}:32` : `${16 + index} Jun · 14:10`,
         title: getThreadTitle(category),
+        cta: null,
+        sessionContext: null,
       };
     }),
   };

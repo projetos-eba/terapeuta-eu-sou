@@ -1,8 +1,8 @@
 # Contratos de Mensagens e Suporte — TES
 
 Data: 2026-08-21  
-Status: Fase 2 implementada para terapeuta e com leitura/resposta mínima no
-detalhe Admin; a Inbox administrativa completa permanece para a Fase 3.
+Status: Fase 4 implementada; Structured Participant Messaging V2 e Support
+Ticketing permanecem bounded contexts separados.
 
 ## Estado real inventariado
 
@@ -26,6 +26,10 @@ Paciente e terapeuta podem comunicar somente texto previamente aprovado pelo TES
 - O banco resolve `templateKey` em `message_templates`, exige o contexto correto (`patient_to_therapist` ou `therapist_to_patient`) e persiste o texto e o `template_id` resolvidos.
 - `messages` é a projeção operacional atual. A escrita REST direta de `authenticated` foi revogada; registros legados sem `template_id` permanecem legíveis.
 - Não é permitido usar template para substituir cancelamento, reagendamento, pagamento ou outra operação canônica.
+- `message_templates` também guarda `category`, `usage_description`,
+  `parameter_schema`, `requires_booking` e `cta_action`. A descrição orienta
+  apenas a UI; parâmetros são opções fechadas; CTAs são transformados pelo
+  banco em rotas TES conforme o papel do destinatário.
 
 ### Support Ticketing
 
@@ -51,7 +55,7 @@ Suporte é a relação entre o solicitante e o TES. Texto livre é permitido som
 
 ## Contratos de API
 
-### Envio estruturado vigente
+### Envio estruturado V2 vigente
 
 `POST /api/messages/send-template`
 
@@ -59,11 +63,26 @@ Suporte é a relação entre o solicitante e o TES. Texto livre é permitido som
 {
   "actorRole": "patient",
   "conversationId": "uuid",
-  "templateKey": "patient_confirm_session"
+  "bookingId": "uuid-opcional",
+  "templateKey": "patient_confirm_session",
+  "parameters": {}
 }
 ```
 
-O endpoint valida a sessão, confirma o papel persistido e chama somente a RPC `send_structured_participant_message_v1(uuid, text)`. A RPC deriva `auth.uid()`, valida ownership da conversa e sentido do template; portanto o `body` não faz parte do contrato e não é enviado à persistência.
+`POST /api/messages/preview-template` usa o mesmo payload e devolve somente o
+conteúdo resolvido, destinatário, contexto e CTA canônico; não persiste. O
+`POST /api/messages/send-template` usa a RPC
+`send_structured_participant_message_v2(uuid, text, uuid, jsonb)`. A RPC deriva
+`auth.uid()`, valida ownership da conversa, sentido do template, booking,
+parâmetros fechados e CTA allowlisted; só então persiste `body`, `template_id`
+e metadata resolvidos. `body`, `message`, `description`, `html`, URL e qualquer
+campo desconhecido são rejeitados na borda HTTP e nunca chegam à persistência.
+`send_structured_participant_message_v1` permanece como wrapper compatível que
+delegará à V2.
+
+Os seis templates originais preservam envio em conversas legadas sem
+`booking_id`; nesse caso não há CTA. Os templates novos exigem contexto de
+booking quando o fluxo precisa de uma ação de sessão.
 
 Erros públicos: JSON inválido `400`, sessão ausente `401`, papel/conversa não autorizados `403`, template ou payload inválidos `422` e indisponibilidade `503`. A resposta de sucesso permanece `{ "ok": true }` com `201`.
 

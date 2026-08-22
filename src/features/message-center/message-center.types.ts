@@ -15,6 +15,7 @@ export type MessageCenterCategory =
 export type MessageCenterThread = {
   avatarUrl: string | null;
   body: string;
+  bookingId: string | null;
   category: MessageCenterCategory;
   categoryLabel: string;
   conversationId: string | null;
@@ -23,6 +24,18 @@ export type MessageCenterThread = {
   name: string;
   timeLabel: string;
   title: string;
+  cta: MessageCenterCta | null;
+  sessionContext: string | null;
+};
+
+export type MessageCenterCta = {
+  action:
+    | "view_session"
+    | "open_session"
+    | "reschedule_session"
+    | "cancel_session";
+  href: string;
+  label: string;
 };
 
 export type MessageCenterPlatformItem = {
@@ -47,8 +60,16 @@ export type MessageCenterSupportTicket = {
 export type MessageCenterTemplate = {
   body: string;
   category: MessageCenterCategory;
+  description: string;
   key: string;
   label: string;
+  parameters?: Array<{
+    key: string;
+    label: string;
+    options: Array<{ label: string; value: string }>;
+  }>;
+  requiresBooking?: boolean;
+  ctaAction?: MessageCenterCta["action"];
 };
 
 export type MessageCenterPageData = {

@@ -43,6 +43,7 @@ Fluxos permitidos:
 
 - Leitura de cliente/terapeuta: `conversations` e `messages`.
 - Plataforma/suporte: `support_tickets` e `notifications`.
+- Prévia server-side de mensagem: `POST /api/messages/preview-template`.
 - Envio de template entre participantes: `POST /api/messages/send-template`.
 - Abertura de chamado de suporte: `POST /api/support/tickets`.
 - Leitura segura do sino do shell: `GET /api/notifications`.
@@ -50,8 +51,12 @@ Fluxos permitidos:
 - Templates permitidos ficam em
   `src/features/message-center/message-center.templates.ts`.
 
-`/api/messages/send-template` deve ignorar qualquer texto vindo do navegador e
-resolver o corpo da mensagem pelo `templateKey` server-side.
+`/api/messages/preview-template` e `/api/messages/send-template` aceitam apenas
+`actorRole`, `conversationId`, `bookingId`, `templateKey` e parâmetros fechados.
+Campos `body`, `message`, `description`, `html`, Markdown, URLs e texto livre são
+rejeitados. A RPC V2 valida direção, conversa, booking, opções e CTA; resolve o
+corpo e a rota canônica no banco. A prévia não persiste nada e o envio persiste
+somente o corpo e metadata resolvidos pelo servidor.
 
 `/api/notifications/mark-read` deve aceitar somente usuário autenticado, limitar
 marcação em massa ao `profile_id` do próprio usuário e nunca alterar avisos de
@@ -110,9 +115,10 @@ participantes.
 
 ## Pendências conhecidas
 
-- A Fase 1 fechou a escrita direta de `messages`: o envio participante usa a
-  RPC `send_structured_participant_message_v1`, que resolve template e sentido
-  no banco. A expansão do catálogo continua pendente para fase posterior.
+- A Fase 1 fechou a escrita direta de `messages`. A Fase 4 adiciona a RPC V2,
+  catálogo categorizado, descrições de uso, parâmetros de opções fechadas,
+  contexto de booking, prévia e CTAs allowlisted. A V1 continua disponível como
+  wrapper compatível e permanece server-authoritative.
 - Publicar SLAs e canais oficiais antes de expor `/ajuda` como superfície
   pública.
 

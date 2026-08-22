@@ -1265,6 +1265,7 @@ export type Database = {
         Row: {
           amount_due_cents: number;
           amount_paid_cents: number;
+          billing_reason: string | null;
           created_at: string;
           currency: string;
           due_at: string | null;
@@ -1284,6 +1285,7 @@ export type Database = {
         Insert: {
           amount_due_cents?: number;
           amount_paid_cents?: number;
+          billing_reason?: string | null;
           created_at?: string;
           currency?: string;
           due_at?: string | null;
@@ -1303,6 +1305,7 @@ export type Database = {
         Update: {
           amount_due_cents?: number;
           amount_paid_cents?: number;
+          billing_reason?: string | null;
           created_at?: string;
           currency?: string;
           due_at?: string | null;
@@ -2612,7 +2615,7 @@ export type Database = {
           last_error: string | null;
           locked_at: string | null;
           locked_by: string | null;
-          next_attempt_at: string;
+          next_attempt_at: string | null;
           payload: Json;
           processed_at: string | null;
           recipient_key: string;
@@ -2637,7 +2640,7 @@ export type Database = {
           last_error?: string | null;
           locked_at?: string | null;
           locked_by?: string | null;
-          next_attempt_at?: string;
+          next_attempt_at?: string | null;
           payload?: Json;
           processed_at?: string | null;
           recipient_key: string;
@@ -2662,7 +2665,7 @@ export type Database = {
           last_error?: string | null;
           locked_at?: string | null;
           locked_by?: string | null;
-          next_attempt_at?: string;
+          next_attempt_at?: string | null;
           payload?: Json;
           processed_at?: string | null;
           recipient_key?: string;
@@ -3720,33 +3723,48 @@ export type Database = {
       message_templates: {
         Row: {
           body: string;
+          category: string;
           context: Database["public"]["Enums"]["message_context"];
           created_at: string;
+          cta_action: string | null;
           id: string;
           is_active: boolean;
           key: string;
+          parameter_schema: Json;
+          requires_booking: boolean;
           title: string;
           updated_at: string;
+          usage_description: string;
         };
         Insert: {
           body: string;
+          category?: string;
           context: Database["public"]["Enums"]["message_context"];
           created_at?: string;
+          cta_action?: string | null;
           id?: string;
           is_active?: boolean;
           key: string;
+          parameter_schema?: Json;
+          requires_booking?: boolean;
           title: string;
           updated_at?: string;
+          usage_description?: string;
         };
         Update: {
           body?: string;
+          category?: string;
           context?: Database["public"]["Enums"]["message_context"];
           created_at?: string;
+          cta_action?: string | null;
           id?: string;
           is_active?: boolean;
           key?: string;
+          parameter_schema?: Json;
+          requires_booking?: boolean;
           title?: string;
           updated_at?: string;
+          usage_description?: string;
         };
         Relationships: [];
       };
@@ -3756,6 +3774,7 @@ export type Database = {
           conversation_id: string;
           created_at: string;
           id: string;
+          metadata: Json;
           read_at: string | null;
           sender_profile_id: string | null;
           template_id: string | null;
@@ -3765,6 +3784,7 @@ export type Database = {
           conversation_id: string;
           created_at?: string;
           id?: string;
+          metadata?: Json;
           read_at?: string | null;
           sender_profile_id?: string | null;
           template_id?: string | null;
@@ -3774,6 +3794,7 @@ export type Database = {
           conversation_id?: string;
           created_at?: string;
           id?: string;
+          metadata?: Json;
           read_at?: string | null;
           sender_profile_id?: string | null;
           template_id?: string | null;
@@ -5912,6 +5933,7 @@ export type Database = {
       };
       support_tickets: {
         Row: {
+          assigned_admin_id: string | null;
           booking_id: string | null;
           category: string;
           correlation_id: string | null;
@@ -5933,6 +5955,7 @@ export type Database = {
           urgency: string;
         };
         Insert: {
+          assigned_admin_id?: string | null;
           booking_id?: string | null;
           category: string;
           correlation_id?: string | null;
@@ -5954,6 +5977,7 @@ export type Database = {
           urgency?: string;
         };
         Update: {
+          assigned_admin_id?: string | null;
           booking_id?: string | null;
           category?: string;
           correlation_id?: string | null;
@@ -5975,6 +5999,13 @@ export type Database = {
           urgency?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "support_tickets_assigned_admin_id_fkey";
+            columns: ["assigned_admin_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "support_tickets_booking_id_fkey";
             columns: ["booking_id"];
@@ -12075,12 +12106,36 @@ export type Database = {
         Args: { p_module: string; p_query?: Json };
         Returns: Json;
       };
+      admin_get_support_inbox_v1: { Args: { p_query?: Json }; Returns: Json };
+      admin_get_support_ticket_management_v1: {
+        Args: { p_ticket_id: string };
+        Returns: Json;
+      };
+      admin_get_support_ticket_thread_v1: {
+        Args: { p_ticket_id: string };
+        Returns: {
+          author_role: Database["public"]["Enums"]["user_role"];
+          body: string;
+          created_at: string;
+          id: string;
+          visibility: string;
+        }[];
+      };
       admin_list_matching_v1: {
         Args: { p_actor_user_id: string };
         Returns: Json;
       };
       admin_list_therapy_catalog_v1: {
         Args: { p_actor_user_id: string };
+        Returns: Json;
+      };
+      admin_manage_support_ticket_v1: {
+        Args: {
+          p_action: string;
+          p_priority?: string;
+          p_request_id: string;
+          p_ticket_id: string;
+        };
         Returns: Json;
       };
       admin_permission_for_therapy_catalog_event_v1: {
@@ -12380,7 +12435,7 @@ export type Database = {
           last_error: string | null;
           locked_at: string | null;
           locked_by: string | null;
-          next_attempt_at: string;
+          next_attempt_at: string | null;
           payload: Json;
           processed_at: string | null;
           recipient_key: string;
@@ -12458,7 +12513,7 @@ export type Database = {
           last_error: string | null;
           locked_at: string | null;
           locked_by: string | null;
-          next_attempt_at: string;
+          next_attempt_at: string | null;
           payload: Json;
           processed_at: string | null;
           recipient_key: string;
@@ -12559,6 +12614,7 @@ export type Database = {
           p_subject: string;
         };
         Returns: {
+          assigned_admin_id: string | null;
           booking_id: string | null;
           category: string;
           correlation_id: string | null;
@@ -12671,6 +12727,18 @@ export type Database = {
           p_therapist_absence_grace_seconds?: number;
         };
         Returns: number;
+      };
+      enqueue_transactional_email_v1: {
+        Args: {
+          p_action_key: string;
+          p_domain_event_id: string;
+          p_payload?: Json;
+          p_recipient_key: string;
+          p_recipient_user_id: string;
+          p_related_entity_id: string;
+          p_related_entity_type: string;
+        };
+        Returns: string;
       };
       enqueue_video_session_control_job_v1: {
         Args: {
@@ -13147,6 +13215,15 @@ export type Database = {
         Args: { p_slug: string };
         Returns: string;
       };
+      preview_structured_participant_message_v2: {
+        Args: {
+          p_booking_id?: string;
+          p_conversation_id: string;
+          p_parameters?: Json;
+          p_template_key: string;
+        };
+        Returns: Json;
+      };
       private_therapist_finance_advanced_comparison_v1: {
         Args: { p_current: number; p_previous: number };
         Returns: Json;
@@ -13539,6 +13616,15 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      resolve_structured_participant_message_v2: {
+        Args: {
+          p_booking_id?: string;
+          p_conversation_id: string;
+          p_parameters?: Json;
+          p_template_key: string;
+        };
+        Returns: Json;
+      };
       resolve_therapist_block_impact_v1: {
         Args: {
           p_actor_user_id: string;
@@ -13593,6 +13679,31 @@ export type Database = {
           conversation_id: string;
           created_at: string;
           id: string;
+          metadata: Json;
+          read_at: string | null;
+          sender_profile_id: string | null;
+          template_id: string | null;
+        };
+        SetofOptions: {
+          from: "*";
+          to: "messages";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
+      send_structured_participant_message_v2: {
+        Args: {
+          p_booking_id?: string;
+          p_conversation_id: string;
+          p_parameters?: Json;
+          p_template_key: string;
+        };
+        Returns: {
+          body: string;
+          conversation_id: string;
+          created_at: string;
+          id: string;
+          metadata: Json;
           read_at: string | null;
           sender_profile_id: string | null;
           template_id: string | null;
