@@ -81,7 +81,7 @@ export function PublicProfileSnapshot({
             </div>
 
             <p className="mt-4 max-w-[560px] text-sm font-semibold leading-6 text-tesText-secondary">
-              {profile.headline || "Seu texto curto aparecerá aqui."}
+              {profile.headline || "Sua apresentação aparecerá aqui."}
             </p>
           </div>
         </div>

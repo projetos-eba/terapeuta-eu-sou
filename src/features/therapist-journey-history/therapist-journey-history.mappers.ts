@@ -78,6 +78,8 @@ const COMPLETED_BOOKING_STATUSES = new Set([
   "no_show_therapist",
 ]);
 
+const RECENT_ENCOUNTER_WINDOW_DAYS = 30;
+
 const TOPIC_RULES: Array<{ label: string; pattern: RegExp; tone: JourneyHistorySegment["tone"] }> =
   [
     { label: "Ansiedade", pattern: /ansiedade|calma|respira/i, tone: "brand" },
@@ -123,7 +125,7 @@ export function mapJourneyHistoryPage(
         value: summary.total,
       },
       {
-        description: "Com retorno nos últimos 30 dias",
+        description: "Com encontro nos últimos 30 dias",
         id: "active",
         label: "Em acompanhamento",
         tone: "success",
@@ -139,7 +141,7 @@ export function mapJourneyHistoryPage(
         value: countNewRelationships(input.relationships, now),
       },
       {
-        description: "Há mais de 60 dias",
+        description: "Sem encontro há mais de 30 dias",
         id: "stale",
         label: "Sem encontro recente",
         tone: "danger",
@@ -300,7 +302,7 @@ function getClientStatus(
     (now.getTime() - new Date(lastSessionAt).getTime()) / 86_400_000,
   );
 
-  return daysSinceLast > 60 ? "stale" : "active";
+  return daysSinceLast > RECENT_ENCOUNTER_WINDOW_DAYS ? "stale" : "active";
 }
 
 function buildSummary(clients: JourneyHistoryClient[]): JourneyHistorySummary {
@@ -356,7 +358,7 @@ function buildReminders(
     },
     {
       count: withoutReturn.length,
-      description: "Sem sessão há mais de 60 dias",
+      description: "Sem encontro há mais de 30 dias",
       href: routes.therapist.messages,
       id: "stale",
       label: "clientes sem retorno",

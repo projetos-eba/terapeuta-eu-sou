@@ -60,7 +60,7 @@ export function AdminProfileReviewPanel({
       <div className="mt-7 grid gap-7 lg:grid-cols-[minmax(0,1fr)_260px]">
         <div className="space-y-6">
           <ReviewField label="Nome público" value={fields.publicName} />
-          <ReviewField label="Texto curto" value={fields.shortIntro} />
+          <ReviewField label="Sua apresentação" value={fields.shortIntro} />
           <ReviewField label="Minha essência" value={fields.essenceBody} />
           <ReviewField label="Apresentação" value={fields.invitationBody} />
           {fields.guideItems.length > 0 ? (

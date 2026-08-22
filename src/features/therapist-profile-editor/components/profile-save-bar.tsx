@@ -42,8 +42,8 @@ export function ProfileSaveBar({
 
   return (
     <AppStickySaveBar className="pb-[calc(1rem+env(safe-area-inset-bottom))]">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div>
+      <div className="flex min-w-0 flex-col gap-3">
+        <div className="min-w-0">
           <p className="text-sm font-extrabold leading-6 text-brand-deep">
             {message.title}
           </p>
@@ -51,7 +51,7 @@ export function ProfileSaveBar({
             {message.description}
           </p>
         </div>
-        <AppPageActions className="shrink-0">
+        <AppPageActions className="justify-end">
           {firstConfiguration ? null : (
             <TESButton
               className="min-h-11 rounded-lg"

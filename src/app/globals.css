@@ -33,7 +33,8 @@
   font-family: "IvyPresto Display";
   src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Headline-Semi-Bold.otf")
     format("opentype");
-  font-weight: 600 700;
+  /* IvyPresto Display is intentionally capped at the approved 600 weight. */
+  font-weight: 600;
   font-style: normal;
   font-display: swap;
 }
@@ -76,9 +77,10 @@
 
 @font-face {
   font-family: "IvyPresto Display";
-  src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Display-.otf")
+  src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Display-Semi-Bold.otf")
     format("opentype");
-  font-weight: 700;
+  /* Never expose a heavier italic cut than 600. */
+  font-weight: 600;
   font-style: italic;
   font-display: swap;
 }
@@ -198,6 +200,11 @@
   .font-bold,
   .font-extrabold {
     font-weight: 600;
+  }
+
+  .font-display {
+    /* Do not synthesize a heavier cut when a caller requests an unsupported weight. */
+    font-synthesis: none;
   }
 
   /*

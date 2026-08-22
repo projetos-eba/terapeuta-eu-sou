@@ -66,8 +66,8 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
           width={1122}
         />
       ) : null}
-      <div className="relative z-20 mx-auto grid max-w-[1440px] gap-8 px-5 pb-8 pt-6 sm:px-8 lg:grid-cols-[520px_1fr] lg:px-[56px]">
-        <div className="relative min-h-[360px] overflow-hidden rounded-b-[46%] rounded-t-[46%] lg:min-h-[410px]">
+      <div className="relative z-20 mx-auto grid max-w-[1440px] gap-6 px-5 pb-8 pt-6 sm:px-8 md:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)] md:items-center lg:grid-cols-[520px_1fr] lg:gap-8 lg:px-[56px]">
+        <div className="relative min-h-[300px] overflow-hidden rounded-b-[46%] rounded-t-[46%] sm:min-h-[340px] md:min-h-[360px] lg:min-h-[410px]">
           <Image
             src={profile.heroImage}
             alt={`Retrato de ${profile.name}`}
@@ -94,7 +94,7 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
             ) : null}
           </div>
 
-          <h1 className="mt-2 font-display text-[54px] font-light italic leading-[1.12] text-brand-deep md:text-[64px]">
+          <h1 className="mt-2 font-display text-[54px] font-light italic leading-[1.12] text-brand-deep md:text-[54px] lg:text-[64px]">
             {profile.name}
           </h1>
           <div className="mt-2 flex flex-wrap gap-5">
@@ -123,8 +123,7 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
               ))}
             </div>
             <p className="text-sm text-brand-deep">
-              {profile.rating.count} avaliação
-              {profile.rating.count === 1 ? "" : "ões"}
+              {profile.rating.count} {profile.rating.count === 1 ? "avaliação" : "avaliações"}
             </p>
           </div>
 
@@ -284,23 +283,23 @@ function Services({ profile }: { profile: PublicTherapistProfile }) {
         {profile.services.map((service) => (
           <article
             key={service.id}
-            className="grid min-h-[220px] gap-5 rounded-[18px] border border-border bg-white p-5 shadow-card sm:grid-cols-[128px_1fr]"
+            className="grid min-h-[220px] gap-5 overflow-hidden rounded-[18px] border border-border bg-white p-5 shadow-card sm:grid-cols-[128px_minmax(0,1fr)]"
           >
             <div className="grid min-h-[112px] place-items-center rounded-[16px] bg-brand-lavenderSoft text-brand-primary sm:min-h-0">
               <Sparkles className="size-8" />
             </div>
             <div className="min-w-0">
-              <h3 className="font-display text-[26px] font-light italic leading-tight text-brand-deep">
+              <h3 className="break-words font-display text-[26px] font-light italic leading-tight text-brand-deep [overflow-wrap:anywhere]">
                 {service.therapyName}
               </h3>
-              <p className="mt-3 min-h-[46px] text-sm leading-[1.5] text-tesText-secondary">
+              <p className="mt-3 min-h-[46px] max-w-full overflow-hidden break-words text-sm leading-[1.5] text-tesText-secondary [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] [overflow-wrap:anywhere]">
                 {service.description}
               </p>
               <p className="mt-4 flex items-center gap-2 text-xs font-medium text-brand-deep">
                 <Clock className="size-4" />
                 {service.durationMinutes} min
               </p>
-              <div className="mt-3 flex items-center justify-between gap-3">
+              <div className="mt-3 flex min-w-0 items-center justify-between gap-3">
                 <p className="text-xl font-extrabold text-brand-deep">
                   {service.priceLabel}
                 </p>

@@ -16,6 +16,7 @@ type ShellSidebarProps = {
   helpCardVariant?: "default" | "priority" | "therapist";
   helpHref?: string;
   helpLabel?: string;
+  homeHref: string;
   logoutAction?: () => void | Promise<void>;
   logoutHref?: string;
   navigation: ShellNavigationItem[];
@@ -26,6 +27,7 @@ export function ShellSidebar({
   helpCardVariant,
   helpHref,
   helpLabel,
+  homeHref,
   logoutAction,
   logoutHref = "/cliente/login",
   navigation,
@@ -63,7 +65,12 @@ export function ShellSidebar({
 
   return (
     <div className="flex h-full flex-col overflow-y-auto px-[13px] pb-4 pt-3">
-      <div className="flex h-[74px] items-center px-3">
+      <Link
+        aria-label="Ir para o início"
+        className="flex h-[74px] items-center rounded-md px-3 outline-none focus-visible:ring-4 focus-visible:ring-ring/20"
+        href={homeHref}
+        onClick={onNavigate}
+      >
         <Image
           alt="Terapeuta Eu Sou"
           className="h-auto w-[174px]"
@@ -72,7 +79,7 @@ export function ShellSidebar({
           src="/logo-oficial-terapeuta-eu-sou.png"
           width={174}
         />
-      </div>
+      </Link>
 
       <nav aria-label="Seções do ambiente" className="mt-3 flex flex-col gap-1">
         {navigation

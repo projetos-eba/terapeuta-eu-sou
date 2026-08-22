@@ -190,6 +190,59 @@ describe("support ticket detail route", () => {
 
     expect(response.status).toBe(201);
   });
+
+  it("loads and replies to a patient-owned support thread", async () => {
+    headerMocks.cookieGet.mockImplementation((name: string) =>
+      name === "tes_patient_access_token"
+        ? { value: "patient-token" }
+        : undefined,
+    );
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/auth/v1/user")) {
+          return Response.json({ id: "10000000-0000-4000-8000-000000000001" });
+        }
+        if (url.includes("/rest/v1/profiles")) {
+          return Response.json([{ role: "patient" }]);
+        }
+        if (url.includes("/rest/v1/support_tickets")) {
+          return Response.json([
+            {
+              booking_id: null,
+              category: "zoom_acesso",
+              created_at: "2026-08-21T12:00:00Z",
+              description: "Não consigo entrar.",
+              id: ticketId,
+              last_activity_at: "2026-08-21T12:00:00Z",
+              resolved_at: null,
+              status: "open",
+              subject: "Acesso à sessão",
+            },
+          ]);
+        }
+        if (url.includes("/rest/v1/support_ticket_messages")) {
+          return Response.json([]);
+        }
+        if (url.includes("/rpc/send_support_ticket_requester_message_v1")) {
+          expect(JSON.parse(String(init?.body))).toMatchObject({
+            p_ticket_id: ticketId,
+          });
+          return Response.json({ id: "40000000-0000-4000-8000-000000000003" });
+        }
+        return new Response(null, { status: 404 });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const getResponse = await GET(new Request("http://localhost"), context);
+    expect(getResponse.status).toBe(200);
+    const postResponse = await POST(
+      request({ body: "Ainda não consigo entrar.", requestId }),
+      context,
+    );
+    expect(postResponse.status).toBe(201);
+  });
 });
 
 function request(body: unknown) {

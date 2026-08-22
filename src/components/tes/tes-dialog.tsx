@@ -107,7 +107,7 @@ export function TESDialog({
         aria-labelledby={titleId}
         aria-modal="true"
         className={cn(
-          "max-h-[calc(100dvh-24px)] w-full max-w-[640px] overflow-y-auto rounded-t-[16px] border border-brand-lavender bg-white p-5 shadow-float outline-none sm:max-h-[calc(100dvh-48px)] sm:rounded-[16px] sm:p-7",
+          "max-h-[calc(100dvh-24px)] w-full max-w-[640px] overflow-x-hidden overflow-y-auto rounded-t-[16px] border border-brand-lavender bg-white p-5 shadow-float outline-none sm:max-h-[calc(100dvh-48px)] sm:rounded-[16px] sm:p-7",
           className,
         )}
         ref={panelRef}
@@ -115,7 +115,7 @@ export function TESDialog({
         tabIndex={-1}
       >
         <header className="flex items-start justify-between gap-4 border-b border-brand-lavender pb-5">
-          <div>
+          <div className="min-w-0">
             <h2
               className="font-display text-[28px] font-light leading-tight text-brand-deep sm:text-[32px]"
               id={titleId}
@@ -124,7 +124,7 @@ export function TESDialog({
             </h2>
             {description ? (
               <p
-                className="mt-2 max-w-xl text-sm font-semibold leading-6 text-tesText-secondary"
+                className="mt-2 max-w-xl break-words text-sm font-semibold leading-6 text-tesText-secondary [overflow-wrap:anywhere]"
                 id={descriptionId}
               >
                 {description}
@@ -140,7 +140,7 @@ export function TESDialog({
             <X aria-hidden="true" size={20} />
           </button>
         </header>
-        <div className="pt-5">{children}</div>
+        <div className="min-w-0 pt-5">{children}</div>
       </div>
     </div>,
     document.body,

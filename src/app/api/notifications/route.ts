@@ -127,12 +127,25 @@ function toNotificationItem(row: NotificationRow) {
   return {
     body: row.body,
     createdAt: row.created_at,
-    href: row.href?.startsWith("/") ? row.href : null,
+    href: isSafeNotificationHref(row.href) ? row.href : null,
     id: row.id,
     kind: row.kind,
     readAt: row.read_at,
     title: row.title,
   };
+}
+
+function isSafeNotificationHref(value: string | null) {
+  if (!value || !value.startsWith("/")) return false;
+  return (
+    value === "/app/mensagens" ||
+    value === "/terapeuta/mensagens" ||
+    value === "/admin/terapias" ||
+    /^\/(?:app\/encontros|terapeuta\/sessoes|admin\/suporte)\/[0-9a-f-]{36}$/i.test(
+      value,
+    ) ||
+    /^\/(?:app|terapeuta)\/mensagens\/suporte\/[0-9a-f-]{36}$/i.test(value)
+  );
 }
 
 function failure(message: string, status: number) {

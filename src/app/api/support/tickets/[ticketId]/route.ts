@@ -154,7 +154,9 @@ function parseMessage(value: unknown) {
 
 async function getContext() {
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get("tes_therapist_access_token")?.value;
+  const accessToken =
+    cookieStore.get("tes_therapist_access_token")?.value ??
+    cookieStore.get("tes_patient_access_token")?.value;
   const config = getSupabasePublicConfig();
   if (!config || !accessToken)
     return { ok: false as const, message: "Entre na sua conta.", status: 401 };
@@ -169,10 +171,10 @@ async function getContext() {
       accessToken,
       `/rest/v1/profiles?select=role&id=eq.${encodeURIComponent(user.id)}&limit=1`,
     );
-    if (profiles[0]?.role !== "therapist")
+    if (profiles[0]?.role !== "therapist" && profiles[0]?.role !== "patient")
       return {
         ok: false as const,
-        message: "Acesso de terapeuta necessário.",
+        message: "Acesso de paciente ou terapeuta necessário.",
         status: 403,
       };
     return { accessToken, config, ok: true as const };

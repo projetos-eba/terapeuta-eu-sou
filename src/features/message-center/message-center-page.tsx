@@ -14,6 +14,7 @@ import { platformAssets } from "@/lib/platform-assets";
 
 import { MessageCenterActions } from "./components/message-center-actions";
 import { MarkNotificationsReadButton } from "./components/mark-notifications-read-button";
+import { MessageThreadDialogButton } from "./components/message-thread-dialog";
 import type {
   MessageCenterCategory,
   MessageCenterPageData,
@@ -81,6 +82,7 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
           emptyLabel="Nenhuma comunicação de sessão por enquanto."
           items={data.threads}
           title={data.participantSection.title}
+          actorRole={data.actorRole}
         />
 
         {data.actorRole === "therapist" ? (
@@ -88,11 +90,18 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
         ) : (
           <PlatformCard
             action={
-              <div className="flex flex-wrap gap-2">
+              <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto sm:justify-end">
                 <MarkNotificationsReadButton
                   unreadCount={
                     data.platformItems.filter((item) => item.isUnread).length
                   }
+                />
+                <MessageCenterActions
+                  actorRole={data.actorRole}
+                  source={data.source}
+                  templates={data.templates.support}
+                  threads={data.threads}
+                  variant="support"
                 />
               </div>
             }
@@ -126,12 +135,14 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
 }
 
 function MessageCard({
+  actorRole,
   action,
   description,
   emptyLabel,
   items,
   title,
 }: {
+  actorRole: MessageCenterPageData["actorRole"];
   action: ReactNode;
   description: string;
   emptyLabel: string;
@@ -143,7 +154,9 @@ function MessageCard({
       <CardHeader action={action} description={description} title={title} />
       <div className="divide-y divide-brand-lavender/70">
         {items.length > 0 ? (
-          items.map((item) => <ThreadRow item={item} key={item.id} />)
+          items.map((item) => (
+            <ThreadRow actorRole={actorRole} item={item} key={item.id} />
+          ))
         ) : (
           <EmptyRow label={emptyLabel} />
         )}
@@ -201,7 +214,13 @@ function CardHeader({
   );
 }
 
-function ThreadRow({ item }: { item: MessageCenterThread }) {
+function ThreadRow({
+  actorRole,
+  item,
+}: {
+  actorRole: MessageCenterPageData["actorRole"];
+  item: MessageCenterThread;
+}) {
   return (
     <article className="grid min-h-[86px] grid-cols-[52px_minmax(0,1fr)] gap-4 px-5 py-4 sm:grid-cols-[52px_minmax(0,1fr)_86px]">
       <Avatar name={item.name} src={item.avatarUrl} />
@@ -225,13 +244,23 @@ function ThreadRow({ item }: { item: MessageCenterThread }) {
           {item.isUnread ? <UnreadDot /> : null}
         </div>
         {item.cta ? (
-          <Link
-            className="mt-2 inline-flex text-xs font-extrabold text-brand-primary underline-offset-2 hover:underline"
-            href={item.cta.href}
-          >
-            {item.cta.label}
-          </Link>
-        ) : null}
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <Link
+              className="inline-flex min-h-10 items-center text-xs font-extrabold text-brand-primary underline-offset-2 hover:underline"
+              href={item.cta.href}
+            >
+              {item.cta.label}
+            </Link>
+            <MessageThreadDialogButton
+              actorRole={actorRole}
+              thread={item}
+            />
+          </div>
+        ) : (
+          <div className="mt-3">
+            <MessageThreadDialogButton actorRole={actorRole} thread={item} />
+          </div>
+        )}
       </div>
       <p className="col-start-2 text-xs font-semibold text-tesText-secondary sm:col-start-auto sm:text-right">
         {item.timeLabel}
@@ -256,6 +285,14 @@ function PlatformRow({ item }: { item: MessageCenterPlatformItem }) {
         <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-tesText-secondary">
           {item.body}
         </p>
+        {item.cta ? (
+          <Link
+            className="mt-2 inline-flex min-h-10 items-center text-xs font-extrabold text-brand-primary underline-offset-2 hover:underline"
+            href={item.cta.href}
+          >
+            {item.cta.label}
+          </Link>
+        ) : null}
       </div>
       <p className="col-start-2 flex items-center gap-2 text-xs font-semibold text-tesText-secondary sm:col-start-auto sm:justify-end sm:text-right">
         {item.isUnread ? <UnreadDot /> : null}

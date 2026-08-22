@@ -21,6 +21,10 @@ type PatientSummary = {
   displayName: string;
 };
 
+type TherapistSummary = {
+  displayName: string;
+};
+
 type SessionResponse =
   | {
       authenticated: false;
@@ -28,6 +32,10 @@ type SessionResponse =
   | {
       authenticated: true;
       patient: PatientSummary;
+    }
+  | {
+      authenticated: true;
+      therapist: TherapistSummary;
     };
 
 type AuthState =
@@ -37,6 +45,10 @@ type AuthState =
   | {
       patient: PatientSummary;
       status: "authenticated";
+    }
+  | {
+      status: "authenticated";
+      therapist: TherapistSummary;
     };
 
 export function PublicAuthMenu({
@@ -59,8 +71,30 @@ export function PublicAuthMenu({
         if (!active) return;
 
         if (data.authenticated) {
-          setState({ patient: data.patient, status: "authenticated" });
-        } else {
+          if ("patient" in data) {
+            setState({ patient: data.patient, status: "authenticated" });
+          } else {
+            setState({ status: "authenticated", therapist: data.therapist });
+          }
+          return;
+        }
+
+        const therapistResponse = await fetch("/api/auth/therapist/session", {
+          cache: "no-store",
+        });
+        const therapistData =
+          (await therapistResponse.json()) as SessionResponse;
+
+        if (
+          active &&
+          therapistData.authenticated &&
+          "therapist" in therapistData
+        ) {
+          setState({
+            status: "authenticated",
+            therapist: therapistData.therapist,
+          });
+        } else if (active) {
           setState({ status: "guest" });
         }
       } catch {
@@ -76,6 +110,15 @@ export function PublicAuthMenu({
   }, []);
 
   if (state.status === "authenticated") {
+    if ("therapist" in state) {
+      return (
+        <TherapistPopover
+          className={className}
+          therapist={state.therapist}
+        />
+      );
+    }
+
     return <PatientPopover className={className} patient={state.patient} />;
   }
 
@@ -84,6 +127,99 @@ export function PublicAuthMenu({
       className={className}
       isLoading={state.status === "loading"}
     />
+  );
+}
+
+function TherapistPopover({
+  className,
+  therapist,
+}: {
+  className?: string;
+  therapist: TherapistSummary;
+}) {
+  const firstName = getFirstName(therapist.displayName);
+  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
+
+  async function handleLogout(event: MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+    setLogoutError(null);
+
+    try {
+      const response = await fetch("/api/auth/therapist/session", {
+        cache: "no-store",
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("logout_failed");
+      }
+
+      router.replace(routes.public.home);
+      router.refresh();
+    } catch {
+      setLogoutError("Não foi possível sair agora. Tente novamente.");
+      setIsLoggingOut(false);
+    }
+  }
+
+  return (
+    <details className={cn("group relative z-[70]", className)}>
+      <summary className="inline-flex h-12 cursor-pointer list-none flex-col items-start justify-center rounded-full border border-border bg-white px-6 text-sm font-extrabold leading-tight text-brand-primary shadow-card transition hover:border-brand-lavender focus:outline-none focus:ring-4 focus:ring-ring/20 [&::-webkit-details-marker]:hidden">
+        <span>Olá, {firstName}</span>
+        <span className="text-[11px] font-bold text-tesText-muted">
+          Conta terapeuta
+        </span>
+      </summary>
+
+      <div className="absolute right-0 top-[calc(100%+14px)] z-50 w-[300px] rounded-[24px] border-2 border-brand-lavender bg-white p-4 text-brand-deep shadow-float">
+        <span
+          className="absolute right-20 top-[-11px] size-5 rotate-45 border-l-2 border-t-2 border-brand-lavender bg-white"
+          aria-hidden="true"
+        />
+        <p className="px-2 text-lg font-extrabold leading-tight">
+          {therapist.displayName}
+        </p>
+        <p className="mt-1 px-2 text-sm font-bold text-tesText-muted">
+          Acompanhe sua agenda e sua presença profissional.
+        </p>
+
+        <div className="mt-4 space-y-2">
+          <MenuLink
+            href={routes.therapist.home}
+            icon={<LayoutDashboard className="size-5" aria-hidden="true" />}
+            label="Meu painel"
+          />
+          <MenuLink
+            href={routes.therapist.profile}
+            icon={<UserRound className="size-5" aria-hidden="true" />}
+            label="Meu perfil"
+          />
+          <button
+            className="flex min-h-12 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-extrabold text-brand-deep transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20 disabled:cursor-wait disabled:opacity-70"
+            disabled={isLoggingOut}
+            onClick={handleLogout}
+            type="button"
+          >
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+              <LogOut className="size-5" aria-hidden="true" />
+            </span>
+            {isLoggingOut ? "Saindo..." : "Sair"}
+          </button>
+          {logoutError ? (
+            <p className="px-3 text-xs font-bold leading-5 text-status-danger">
+              {logoutError}
+            </p>
+          ) : null}
+        </div>
+      </div>
+    </details>
   );
 }
 

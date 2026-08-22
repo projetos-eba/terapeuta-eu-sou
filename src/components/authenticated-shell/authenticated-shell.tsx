@@ -99,6 +99,7 @@ export function AuthenticatedShell({
           helpCardVariant={helpCardVariant}
           helpHref={helpHref}
           helpLabel={helpLabel}
+          homeHref={routes.public.home}
           logoutAction={logoutAction}
           logoutHref={resolvedLogoutHref}
           navigation={navigation}

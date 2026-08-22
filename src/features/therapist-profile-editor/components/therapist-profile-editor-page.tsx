@@ -426,7 +426,7 @@ function validateDraftFields(
   if (fields.shortIntro.length > 200) {
     return {
       focusId: "shortIntro",
-      message: "O texto curto deve ter até 200 caracteres.",
+      message: "Sua apresentação deve ter até 200 caracteres.",
     };
   }
   if (fields.headline.length > 180) {
@@ -548,7 +548,7 @@ function validatePublishFields(
     label: string;
   }> = [];
   if (!fields.shortIntro.trim() && !fields.headline.trim()) {
-    missingFields.push({ focusId: "shortIntro", label: "texto curto" });
+    missingFields.push({ focusId: "shortIntro", label: "sua apresentação" });
   }
   if (!fields.essenceBody.trim() && !fields.bio.trim()) {
     missingFields.push({ focusId: "essenceBody", label: "sua essência" });

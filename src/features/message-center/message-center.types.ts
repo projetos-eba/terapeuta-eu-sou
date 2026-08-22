@@ -21,11 +21,19 @@ export type MessageCenterThread = {
   conversationId: string | null;
   id: string;
   isUnread: boolean;
+  messages: MessageCenterMessage[];
   name: string;
   timeLabel: string;
   title: string;
   cta: MessageCenterCta | null;
   sessionContext: string | null;
+};
+
+export type MessageCenterMessage = {
+  body: string;
+  createdAt: string;
+  id: string;
+  isFromViewer: boolean;
 };
 
 export type MessageCenterCta = {
@@ -46,6 +54,10 @@ export type MessageCenterPlatformItem = {
   isUnread: boolean;
   timeLabel: string;
   title: string;
+  cta?: {
+    href: string;
+    label: string;
+  };
 };
 
 export type MessageCenterSupportTicket = {

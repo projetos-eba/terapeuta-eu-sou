@@ -46,7 +46,7 @@ type TherapistsPageProps = {
 
 function HeroIllustration() {
   return (
-    <div className="pointer-events-none absolute right-[-74px] top-[-27px] hidden h-[351px] w-[765px] overflow-hidden lg:block">
+    <div className="pointer-events-none absolute right-[-68px] top-[-27px] hidden h-[351px] w-[min(765px,58vw)] overflow-hidden lg:block">
       <TESDecorativeMedia
         className="absolute inset-0"
         fade="left"
