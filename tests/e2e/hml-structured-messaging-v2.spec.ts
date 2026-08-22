@@ -43,7 +43,7 @@ test("HML: preview e envio estruturado funcionam nas duas direções", async ({
       "/cliente/login",
       "/app",
       "patient",
-      "Entrar como paciente",
+      "Entrar",
     );
 
     await therapistPage.goto(withShare(hml, "/terapeuta/mensagens"));
