@@ -9,10 +9,13 @@ import { routes } from "@/lib/routes";
 
 export default async function TherapistVideoCallRoute({
   params,
+  searchParams,
 }: {
   params: Promise<{ bookingId: string }>;
+  searchParams?: Promise<{ feedback?: string | string[] }>;
 }) {
   const { bookingId } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
   const session = await requireTherapistSession(
     therapistRoutePolicies.sessions,
   );
@@ -36,6 +39,7 @@ export default async function TherapistVideoCallRoute({
       participantLabel={`Com ${booking.patientName}`}
       scheduleLabel={formatSessionDateTime(booking.startsAt, booking.timezone)}
       sessionTitle={booking.serviceTitle}
+      showFeedback={resolvedSearchParams.feedback === "1"}
     />
   );
 }

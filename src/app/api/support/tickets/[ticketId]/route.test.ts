@@ -67,7 +67,10 @@ describe("support ticket detail route", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await GET(new Request("http://localhost"), context);
+    const response = await GET(
+      new Request("http://localhost?role=therapist"),
+      context,
+    );
     const payload = await response.json();
 
     expect(response.status).toBe(200);
@@ -146,7 +149,10 @@ describe("support ticket detail route", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await GET(new Request("http://localhost"), context);
+    const response = await GET(
+      new Request("http://localhost?role=therapist"),
+      context,
+    );
     const payload = await response.json();
 
     expect(response.status).toBe(200);
@@ -235,10 +241,17 @@ describe("support ticket detail route", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    const getResponse = await GET(new Request("http://localhost"), context);
+    const getResponse = await GET(
+      new Request("http://localhost?role=patient"),
+      context,
+    );
     expect(getResponse.status).toBe(200);
     const postResponse = await POST(
-      request({ body: "Ainda não consigo entrar.", requestId }),
+      request({
+        actorRole: "patient",
+        body: "Ainda não consigo entrar.",
+        requestId,
+      }),
       context,
     );
     expect(postResponse.status).toBe(201);
@@ -246,8 +259,12 @@ describe("support ticket detail route", () => {
 });
 
 function request(body: unknown) {
+  const payload =
+    body && typeof body === "object" && !Array.isArray(body)
+      ? { actorRole: "therapist", ...(body as Record<string, unknown>) }
+      : body;
   return new Request("http://localhost", {
-    body: JSON.stringify(body),
+    body: JSON.stringify(payload),
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });

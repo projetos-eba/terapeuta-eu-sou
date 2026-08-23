@@ -152,7 +152,7 @@ test.describe("therapist metrics and reports", () => {
 async function loginAsAna(page: import("@playwright/test").Page) {
   await page.goto("/terapeuta/login");
   await page.getByLabel("E-mail").fill(therapistEmail);
-  await page.getByLabel("Senha").fill(therapistPassword);
+  await page.locator('input[name="password"]').fill(therapistPassword);
   await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
   await expect(page).toHaveURL(/\/terapeuta(?:\?.*)?$/);
 }

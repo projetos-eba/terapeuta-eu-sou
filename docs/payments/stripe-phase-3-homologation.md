@@ -83,6 +83,52 @@ Expected convergence:
 - `expired`: `session_payments.financial_status = canceled`.
 - `refund`: `session_payments.financial_status = refunded` or `partially_refunded`.
 
+## Cupom e Promotion Code
+
+O Checkout de sessão usa o campo nativo de Promotion Code da Stripe. O TES não
+mantém tabela própria de cupons: depois de um pagamento confirmado, o webhook
+usa `amount_subtotal`, `amount_total` e `total_details.amount_discount` da
+Checkout Session. `session_payments.gross_amount_cents` passa a representar o
+valor efetivamente cobrado; o subtotal original e o desconto ficam registrados
+no `metadata.stripe_checkout`. Comissão e repasse são recalculados sobre o
+valor efetivamente cobrado, usando a política financeira já vigente.
+
+Crie os objetos somente no test mode, sem `--live`:
+
+```bash
+stripe coupons create --duration=once --percent-off=20 --name="TES HML 20%"
+stripe promotion_codes create --promotion.type=coupon --promotion.coupon=coupon_COLE_O_ID_AQUI --code=TESHML20 --max-redemptions=10
+```
+
+Confirme no retorno da Stripe que `livemode` é `false` e informe o código criado
+ao harness:
+
+```bash
+PAYMENTS_HML_PROMOTION_CODE=TESHML20 \
+npm run payments:phase3:session:promotion:hml
+```
+
+O cenário cria uma reserva real de teste, aplica o código no Checkout visível,
+confere desconto positivo e `amount_total < amount_subtotal`, conclui com cartão
+de teste, reenvia `checkout.session.completed` e `payment_intent.succeeded` com
+assinatura válida duas vezes, e consulta no banco booking, status pago, valor
+original, valor cobrado, comissão, repasse e `metadata.stripe_checkout`.
+
+Para a mesma validação local, com Supabase/Edge Functions/Next locais e o
+listener da Stripe CLI apontando para `127.0.0.1`, use:
+
+```bash
+PAYMENTS_LOCAL_PATIENT_EMAIL=cliente@example.test \
+PAYMENTS_LOCAL_PATIENT_PASSWORD='senha-de-teste' \
+PAYMENTS_HML_PROMOTION_CODE=TESLOCAL20 \
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:3000 \
+SUPABASE_URL=http://127.0.0.1:54321 \
+npm run payments:e2e:session:promotion
+```
+
+Repita sem `PAYMENTS_HML_PROMOTION_CODE` para confirmar que o checkout sem
+cupom mantém `amount_subtotal = amount_total` e o mesmo fluxo de pagamento.
+
 ## Boleto no Checkout
 
 O Checkout de sessões já usa métodos de pagamento dinâmicos e todos os preços

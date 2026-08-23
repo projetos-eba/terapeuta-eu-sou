@@ -135,6 +135,7 @@ export async function requireTherapist(
   request: Request,
   options: {
     allowBlockedStatus?: boolean;
+    requireReceivingAccount?: boolean;
   } = {},
 ) {
   const user = await requireUser(client, request);
@@ -182,7 +183,66 @@ export async function requireTherapist(
     );
   }
 
+  if (options.requireReceivingAccount) {
+    const accounts = await client.get<
+      Array<{
+        details_submitted: boolean;
+        onboarding_status: string;
+        pending_requirements: unknown;
+        stripe_transfers_status: string;
+      }>
+    >(
+      `/rest/v1/therapist_connect_accounts?select=details_submitted,onboarding_status,pending_requirements,stripe_transfers_status&therapist_profile_id=eq.${encodeURIComponent(
+        rows[0].id,
+      )}&limit=1`,
+    );
+    const account = accounts[0];
+    if (!isTherapistReceivingAccountReady(account)) {
+      throw new DomainError(
+        "therapist_receiving_account_required",
+        403,
+        "Conclua o cadastro da conta de recebimento antes de iniciar o atendimento.",
+      );
+    }
+  }
+
   return { profile: rows[0], user };
+}
+
+export function isTherapistReceivingAccountReady(
+  account: {
+    details_submitted: boolean;
+    onboarding_status: string;
+    pending_requirements: unknown;
+    stripe_transfers_status: string;
+  } | null | undefined,
+) {
+  const pendingRequirements = account?.pending_requirements;
+  const currentlyDue =
+    pendingRequirements &&
+    typeof pendingRequirements === "object" &&
+    !Array.isArray(pendingRequirements)
+      ? getRequirementList(pendingRequirements, "currentlyDue")
+      : Array.isArray(pendingRequirements)
+        ? pendingRequirements
+        : [];
+  const blockedStatuses = new Set([
+    "requirements_due",
+    "restricted",
+    "disabled",
+  ]);
+
+  return Boolean(account?.details_submitted) &&
+    currentlyDue.length === 0 &&
+    !blockedStatuses.has(account?.onboarding_status ?? "") &&
+    (account?.onboarding_status !== "ready" ||
+      account.stripe_transfers_status === "active");
+}
+
+function getRequirementList(value: object, key: "currentlyDue") {
+  const record = value as Record<string, unknown>;
+  const candidate = record[key] ?? record.currently_due;
+  return Array.isArray(candidate) ? candidate : [];
 }
 
 export async function requirePatient(

@@ -21,6 +21,7 @@ import {
   type PlanDefinition,
 } from "@/domain/tes";
 import { routes } from "@/lib/routes";
+import { announceAuthSession } from "@/lib/auth/session-marker";
 import { cn } from "@/lib/utils";
 
 import type { TherapistAuthApiError } from "../errors";
@@ -178,6 +179,7 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
         return;
       }
 
+      announceAuthSession("therapist");
       window.location.assign(data.redirectTo);
     } catch {
       setFormError("Não foi possível conectar agora. Tente novamente.");

@@ -43,9 +43,10 @@ export function SupportTicketPage({
 
   const load = useCallback(async () => {
     setIsLoading(true);
-    const response = await fetch(`/api/support/tickets/${ticketId}`, {
-      cache: "no-store",
-    });
+    const response = await fetch(
+      `/api/support/tickets/${ticketId}?role=${actorRole}`,
+      { cache: "no-store" },
+    );
     const payload = (await response.json().catch(() => null)) as {
       error?: { message?: string };
       ticket?: Ticket;
@@ -60,7 +61,7 @@ export function SupportTicketPage({
       setError(null);
     }
     setIsLoading(false);
-  }, [ticketId]);
+  }, [actorRole, ticketId]);
 
   useEffect(() => {
     void load();
@@ -75,7 +76,11 @@ export function SupportTicketPage({
     setError(null);
     requestId.current ??= crypto.randomUUID();
     const response = await fetch(`/api/support/tickets/${ticketId}`, {
-      body: JSON.stringify({ body, requestId: requestId.current }),
+      body: JSON.stringify({
+        actorRole,
+        body,
+        requestId: requestId.current,
+      }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
     });

@@ -6,6 +6,7 @@ import type { Route } from "next";
 import { LockKeyhole, Mail } from "lucide-react";
 
 import { PasswordVisibilityToggle, TESButton } from "@/components/tes";
+import { announceAuthSession } from "@/lib/auth/session-marker";
 import { routes } from "@/lib/routes";
 
 import type { TherapistAuthApiError } from "../errors";
@@ -19,11 +20,13 @@ export function TherapistLoginForm({
   continuation,
   created,
   reset,
+  sessionChanged,
   verified,
 }: {
   continuation?: string;
   created: boolean;
   reset?: boolean;
+  sessionChanged?: boolean;
   verified?: boolean;
 }) {
   const [fieldErrors, setFieldErrors] = useState<TherapistAuthFieldErrors>({});
@@ -69,6 +72,7 @@ export function TherapistLoginForm({
         return;
       }
 
+      announceAuthSession("therapist");
       window.location.assign(data.redirectTo);
     } catch {
       setFormError("Não foi possível conectar agora. Tente novamente.");
@@ -113,8 +117,8 @@ export function TherapistLoginForm({
           Entre na sua área profissional
         </h1>
         <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
-          Use este acesso somente para contas de terapeuta. Pacientes e admin
-          devem usar seus acessos correspondentes.
+          Este acesso é para terapeutas. Se você está buscando atendimento,
+          escolha o acesso correspondente.
         </p>
       </div>
 
@@ -133,6 +137,12 @@ export function TherapistLoginForm({
       {reset ? (
         <p className="rounded-2xl bg-status-successBg px-4 py-3 text-sm font-bold text-status-success">
           Senha atualizada. Entre com sua nova senha.
+        </p>
+      ) : null}
+
+      {sessionChanged ? (
+        <p className="rounded-2xl bg-brand-lavenderSoft px-4 py-3 text-sm font-bold text-brand-deep">
+          Esta sessão foi encerrada porque outra conta foi acessada neste navegador.
         </p>
       ) : null}
 

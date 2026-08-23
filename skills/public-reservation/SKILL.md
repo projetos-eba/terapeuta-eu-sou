@@ -124,6 +124,11 @@ revalidada no servidor antes do checkout.
 - Mobile deve empilhar formulário e resumo sem sobreposição.
 - `npm run typecheck`, `npm run lint`, `npm run build`.
 
+## Copy Safety
+
+- Payment and reservation feedback must use human TES language; never expose
+  backend, webhook or other implementation terms to the visitor or patient.
+
 ## Pendências conhecidas
 
 - Homologação real do checkout exige Supabase local/remoto e Stripe test mode

@@ -190,12 +190,63 @@ export type AdminOperationDetailPageData = {
   profileReview?: AdminProfessionalProfileReview | null;
   safetyNotes: string[];
   sections: AdminOperationDetailSection[];
+  sessionFeedback?: AdminSessionFeedbackRead;
   statusLabel?: string;
   subtitle?: string;
   title: string;
   publicProfile?: AdminProfessionalPublishedProfile;
   verificationSummary?: AdminProfessionalVerificationSummary | null;
 };
+
+export type AdminSessionFeedbackItem = {
+  authorRole: "patient" | "therapist";
+  comment: string;
+  createdAt: string;
+  notPerformedReason: string | null;
+  outcome: "completed" | "not_performed";
+  rating: number | null;
+};
+
+export type AdminSessionAttendance = {
+  bothJoined: boolean;
+  patientJoined: boolean;
+  sessionClosed: boolean;
+  sessionEndedAt: string | null;
+  sessionEndsAt: string | null;
+  sessionStartedAt: string | null;
+  therapistJoined: boolean;
+};
+
+export type AdminSessionConfirmation = {
+  confirmedAt: string;
+  dueAt: string;
+  outcome: "completed" | "not_performed";
+  source: "manual" | "automatic";
+};
+
+export type AdminSessionFinancialAudit = {
+  eligibleAt: string | null;
+  serviceConfirmedAt: string | null;
+  serviceStatus: string;
+  transferStatus: string;
+};
+
+export type AdminSessionFeedbackData = {
+  attendance: AdminSessionAttendance;
+  confirmation: {
+    patient: AdminSessionConfirmation | null;
+    therapist: AdminSessionConfirmation | null;
+  };
+  divergent: boolean;
+  financial: AdminSessionFinancialAudit | null;
+  patient: AdminSessionFeedbackItem | null;
+  pendingRoles: Array<"patient" | "therapist">;
+  therapist: AdminSessionFeedbackItem | null;
+};
+
+export type AdminSessionFeedbackRead =
+  | { data: AdminSessionFeedbackData; status: "available" }
+  | { data: null; status: "unavailable" };
 
 export type AdminOperationDetailPageResult =
   | {

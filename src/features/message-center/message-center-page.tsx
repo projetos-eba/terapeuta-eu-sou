@@ -86,12 +86,16 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
         />
 
         {data.actorRole === "therapist" ? (
-          <TherapistSupportSection tickets={data.supportTickets} />
+          <TherapistSupportSection
+            actorRole={data.actorRole}
+            tickets={data.supportTickets}
+          />
         ) : (
           <PlatformCard
             action={
               <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto sm:justify-end">
                 <MarkNotificationsReadButton
+                  actorRole={data.actorRole}
                   unreadCount={
                     data.platformItems.filter((item) => item.isUnread).length
                   }

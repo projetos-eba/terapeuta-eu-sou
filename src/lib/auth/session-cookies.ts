@@ -1,6 +1,14 @@
 import type { NextResponse } from "next/server";
 
-export type AuthenticatedRole = "admin" | "patient" | "therapist";
+import { createHash, randomUUID } from "node:crypto";
+
+import {
+  getSessionMarkerCookieName,
+  type AuthenticatedRole,
+} from "./session-marker";
+
+export type { AuthenticatedRole } from "./session-marker";
+export { getSessionMarkerCookieName } from "./session-marker";
 
 export type AuthSessionCookies = {
   accessToken: string;
@@ -24,6 +32,7 @@ export function setAuthSessionCookies(
   response: NextResponse,
   role: AuthenticatedRole,
   session: AuthSessionCookies,
+  options: { sessionMarker?: string; userId?: string } = {},
 ) {
   response.cookies.set(getAccessTokenCookieName(role), session.accessToken, {
     httpOnly: true,
@@ -39,6 +48,29 @@ export function setAuthSessionCookies(
     sameSite: "lax",
     secure: SECURE_COOKIE,
   });
+  response.cookies.set(
+    getSessionMarkerCookieName(role),
+    options.sessionMarker ??
+      (options.userId
+        ? createSessionIdentityMarker(role, options.userId)
+        : randomUUID()),
+    {
+      httpOnly: false,
+      maxAge: REFRESH_TOKEN_MAX_AGE_SECONDS,
+      path: "/",
+      sameSite: "lax",
+      secure: SECURE_COOKIE,
+    },
+  );
+}
+
+export function createSessionIdentityMarker(
+  role: AuthenticatedRole,
+  userId: string,
+) {
+  return createHash("sha256")
+    .update(`tes-auth-session:${role}:${userId}`)
+    .digest("hex");
 }
 
 export function clearAuthSessionCookies(
@@ -48,6 +80,7 @@ export function clearAuthSessionCookies(
   for (const name of [
     getAccessTokenCookieName(role),
     getRefreshTokenCookieName(role),
+    getSessionMarkerCookieName(role),
   ]) {
     response.cookies.set(name, "", {
       httpOnly: true,

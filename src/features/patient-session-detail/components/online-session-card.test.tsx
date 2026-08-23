@@ -9,6 +9,7 @@ import {
 
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
 import { OnlineSessionCard } from "./online-session-card";
+import { SessionOverviewCard } from "./session-overview-card";
 
 describe("OnlineSessionCard", () => {
   it("does not enable the dedicated room when payment is not confirmed", () => {
@@ -66,6 +67,22 @@ describe("OnlineSessionCard", () => {
       screen.getByRole("link", { name: /abrir videochamada/i }),
     ).toHaveAttribute("href", "https://example.com/meeting");
   });
+
+  it("reopens private feedback from a terminal encounter detail", () => {
+    render(
+      <SessionOverviewCard
+        data={makeData({
+          financialStatus: SessionFinancialStatus.Paid,
+          status: BookingStatus.Completed,
+        })}
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: /avaliar encontro/i })).toHaveAttribute(
+      "href",
+      "/app/encontros/f2000000-0000-4000-8000-000000000001/video?feedback=1",
+    );
+  });
 });
 
 function makeData({
@@ -73,11 +90,13 @@ function makeData({
   financialStatus,
   meetingUrl = null,
   provider = "zoom",
+  status = BookingStatus.Confirmed,
 }: {
   canJoin?: boolean;
   financialStatus: SessionFinancialStatus;
   meetingUrl?: string | null;
   provider?: "external" | "google_meet" | "zoom";
+  status?: BookingStatus;
 }): PatientSessionDetailPageData {
   const booking = {
     canJoin: canJoin ?? financialStatus === SessionFinancialStatus.Paid,
@@ -89,7 +108,7 @@ function makeData({
     operationalVersion: 1,
     paymentStatus: financialStatus,
     startsAt: "2026-08-01T14:00:00.000Z",
-    status: BookingStatus.Confirmed,
+    status,
     statusLabel: "Confirmada",
     timeRangeLabel: "11:00 - 12:00",
     timezone: "America/Sao_Paulo",

@@ -472,8 +472,18 @@ export const getAdminOperationDetailPage = cache(
       };
     }
 
-    if (!isRecord(readResult.model.record)) {
+    const record = readResult.model.record;
+    if (!isRecord(record)) {
       return { status: "not_found" };
+    }
+
+    if (module === "sessions") {
+      const sessionFeedback = await fetchAdminSessionFeedback({
+        accessToken,
+        config,
+        bookingId: id,
+      });
+      record.session_feedback = sessionFeedback;
     }
 
     const detail = mapAdminOperationDetail({
@@ -483,12 +493,12 @@ export const getAdminOperationDetailPage = cache(
       generatedAt:
         asString(readResult.model.generatedAt) ?? new Date().toISOString(),
       module,
-      record: readResult.model.record,
+      record,
     });
 
     if (module === "professionals") {
       const profileId = detail.id;
-      const slug = asString(readResult.model.record.slug);
+      const slug = asString(record.slug);
       const [
         publicProfile,
         verificationSummary,
@@ -606,6 +616,41 @@ async function fetchAdminProfessionalPublishedProfile({
     };
   } catch {
     return unavailable;
+  }
+}
+
+async function fetchAdminSessionFeedback({
+  accessToken,
+  bookingId,
+  config,
+}: {
+  accessToken: string;
+  bookingId: string;
+  config: { apiKey: string; url: string };
+}) {
+  try {
+    const response = await fetch(
+      `${config.url}/rest/v1/rpc/admin_get_session_feedback_v1`,
+      {
+        body: JSON.stringify({ p_booking_id: bookingId }),
+        cache: "no-store",
+        headers: {
+          apikey: config.apiKey,
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      },
+    );
+
+    if (!response.ok) return { status: "unavailable" as const };
+
+    const payload = await response.json().catch(() => null);
+    return isRecord(payload)
+      ? { ...payload, status: "available" as const }
+      : { status: "unavailable" as const };
+  } catch {
+    return { status: "unavailable" as const };
   }
 }
 

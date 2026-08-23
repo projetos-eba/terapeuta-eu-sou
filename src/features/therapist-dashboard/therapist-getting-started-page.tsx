@@ -35,9 +35,11 @@ const checklistIcons: Record<TherapistHomeChecklistItem["id"], LucideIcon> = {
 };
 
 export function TherapistGettingStartedPage({
+  attentionMessage,
   readiness,
   session,
 }: {
+  attentionMessage?: string;
   session: Pick<AuthenticatedTherapistSession, "name" | "plan" | "status">;
   readiness: TherapistHomeReadiness;
 }) {
@@ -66,6 +68,14 @@ export function TherapistGettingStartedPage({
 
   return (
     <AppPageContainer className="max-w-[1210px] gap-7 pb-12 pt-1 lg:gap-8">
+      {attentionMessage ? (
+        <div
+          className="rounded-2xl border border-status-warning/30 bg-status-warningBg px-4 py-3 text-sm font-bold leading-6 text-brand-deep"
+          role="status"
+        >
+          {attentionMessage}
+        </div>
+      ) : null}
       <header className="max-w-3xl pt-2 sm:pt-5">
         <p className="text-sm font-extrabold uppercase tracking-[0.2em] text-brand-primary">
           {plan.name} · Cadastro profissional

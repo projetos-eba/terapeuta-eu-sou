@@ -136,7 +136,7 @@ export function mapSessionPresentation(
     return presentation(
       "payment_pending",
       "Pagamento pendente",
-      "A reserva aguarda confirmação financeira pelo Stripe.",
+      "A reserva aguarda a confirmação do pagamento.",
       "high",
       "warning",
       actions,
@@ -188,7 +188,7 @@ export function mapSessionPresentation(
     return presentation(
       "ready",
       "Pronta para iniciar",
-      "O backend autorizou a entrada na sala online.",
+      "Sua entrada na sala online está liberada.",
       "high",
       "success",
       actions,

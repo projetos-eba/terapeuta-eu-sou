@@ -296,7 +296,7 @@ async function loginAsTherapist(
         : fixtures.otherTherapistEmail,
     );
   await page
-    .getByLabel("Senha")
+    .locator('input[name="password"]')
     .fill(
       fixture === "primary"
         ? fixtures.therapistPassword
@@ -313,7 +313,7 @@ async function loginAsAdmin(
   for (let retriesRemaining = 2; retriesRemaining > 0; retriesRemaining -= 1) {
     await gotoShared(page, fixtures.sharedBaseUrl, "/admin-login");
     await page.getByLabel("E-mail").fill(fixtures.adminEmail);
-    await page.getByLabel("Senha").fill(fixtures.adminPassword);
+    await page.locator('input[name="password"]').fill(fixtures.adminPassword);
     const loginResponse = page
       .waitForResponse(
         (response) =>

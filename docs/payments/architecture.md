@@ -1,6 +1,6 @@
 # Arquitetura de pagamentos TES
 
-Atualizado em 2026-08-06.
+Atualizado em 2026-08-23.
 
 ## Visao geral
 
@@ -55,7 +55,16 @@ Essa configuracao permite reter fundos antes de liberar repasse. Como a platafor
 - TES: valor bruto menos valor do terapeuta.
 - Taxa Stripe: custo da TES, conciliado posteriormente por Charge/Balance Transaction.
 
-As regras ficam em `financial_policy_versions`. A versao inicial e `tes-payments-v1`:
+Quando uma Promotion Code da Stripe reduz o Checkout, o valor financeiro
+autoritativo da sessão é `Checkout Session.amount_total`, não o preço original
+do booking. O subtotal original, o desconto e o valor cobrado são preservados
+no `session_payments.metadata.stripe_checkout`; o campo
+`session_payments.gross_amount_cents` e a divisão entre TES/terapeuta são
+reconciliados no webhook sobre o valor efetivamente cobrado. Sem desconto, os
+valores continuam iguais aos snapshots do booking.
+
+As regras ficam em `financial_policy_versions`. A versao inicial e
+`tes-payments-v1` e permanece preservada nos snapshots financeiros existentes:
 
 - cancelamento gratuito ate 24h antes da sessao;
 - cancelamento tardio: 50% retido e 50% reembolsado;
@@ -70,6 +79,23 @@ As regras ficam em `financial_policy_versions`. A versao inicial e `tes-payments
 - cancelamento usa `cancel_at_period_end`, libera eventual schedule de
   downgrade e preserva o plano efetivo ate o fim pago; a mesma funcao aceita
   reversao autenticada e idempotente com `cancel_at_period_end = false`.
+
+A política ativa para novas confirmações de realização é versionada como
+`tes-payments-v2-session-attendance`. Ela exige confirmação independente do
+paciente e do terapeuta, manual ou automática. Para essa versão, o prazo de
+cada confirmação começa no fim programado em `bookings.ends_at`: uma resposta
+ausente pode ser confirmada automaticamente após 7 dias. Quando as duas
+confirmações necessárias estiverem concluídas, a elegibilidade financeira só
+ocorre depois de mais 1 dia de segurança. Bookings e pagamentos já criados
+continuam usando o snapshot da política gravado no pagamento; a migration não
+reescreve retroativamente decisões financeiras.
+
+A presença confirmada pelos eventos confiáveis do Zoom é evidência operacional
+para a realização, não é pagamento nem autorização de repasse. Feedback,
+confirmações e divergências não escrevem diretamente em ledger, transferências
+ou lotes. Mesmo após a confirmação bilateral, o lote exige pagamento confirmado,
+ausência de reembolso/disputa/bloqueio, conta Connect apta, valor positivo e as
+demais regras financeiras vigentes.
 
 ## Dados principais
 
@@ -157,8 +183,10 @@ sequenceDiagram
   S->>TES: webhook pagamento confirmado
   TES->>DB: session_payments.financial_status = paid
   T->>TES: confirma realizacao
-  TES->>DB: service_status = confirmed_by_therapist
-  TES->>DB: calcula eligible_at + 7 dias
+  P->>TES: confirma realizacao ou envia feedback
+  TES->>DB: registra confirmacoes independentes por participante
+  TES->>DB: confirma automaticamente respostas ausentes apos +7 dias
+  TES->>DB: calcula eligible_at apos +1 dia de seguranca
   TES->>S: cria Transfer no processamento do lote
   Note over TES,S: Transfer usa source_transaction = Charge da sessão
 ```

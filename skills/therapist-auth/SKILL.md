@@ -106,7 +106,16 @@ Backend:
   30 dias; não cria nem configura um logout por inatividade.
 - Nao define cookies quando o e-mail nao estiver confirmado.
 - Redireciona por plano.
-- Paciente/admin devem receber a mensagem segura: `Use o acesso correspondente ao seu perfil.`
+- Cada login bem-sucedido anuncia um marcador não sensível e estável por conta
+  e papel. Em abas do mesmo navegador, um login de outra conta do mesmo papel
+  encerra a sessão visual das abas anteriores e as leva ao login com uma
+  mensagem clara; um novo login da mesma conta mantém as abas. O marcador não
+  é credencial e não substitui os cookies HTTP-only.
+- As sessões são separadas por papel: cliente, terapeuta e admin não devem
+  compartilhar endpoints ou caches sem informar explicitamente o papel. Em
+  navegadores, perfis ou janelas anônimas diferentes, sessões do mesmo papel
+  continuam independentes.
+- Paciente/admin devem receber a mensagem segura: `Esse e-mail não corresponde a esse perfil de login.`
 - O parâmetro de continuação aceita somente `/terapeuta/checkout` com plano pago válido, evitando open redirect.
 
 ## Checkout
@@ -125,11 +134,15 @@ Backend:
 - Usar `PublicLogo`, fundo lavanda claro, card central, painel visual decorativo e formulário acessível.
 - No mobile, o formulário deve aparecer antes do painel visual decorativo.
 - Labels reais, mensagens de erro por campo, foco visível e CTAs com mínimo de 44px.
+- O retorno deve compartilhar uma faixa relativa com o logo: no mobile exibir
+  somente o ícone em alvo mínimo de 44px, sem sobrepor a marca; a palavra
+  “Voltar” permanece visível em telas maiores.
 - Os logins de terapeuta, cliente e admin compartilham controle acessível de
   mostrar/ocultar senha: ícone de olho, rótulo de ação, `aria-pressed` e alvo
   mínimo de 44px, sem mudar o payload ou a validação de autenticação.
 - O painel visual usa `brand-primary` (`#6C3D91`) e não o azul profundo.
 - Não usar linguagem interna de desenvolvimento na UI, como “hardening” ou “onboarding”, quando houver alternativa clara para a pessoa usuária.
+- O subtítulo do login deve orientar com clareza: “Este acesso é para terapeutas. Se você está buscando atendimento, escolha o acesso correspondente.”
 - Nunca prometer renda, aprovação automática, cura, diagnóstico ou resultado garantido.
 
 ## Pendências conhecidas
@@ -169,6 +182,14 @@ Backend:
 - Validar que login com e-mail nao confirmado mostra mensagem de confirmacao pendente para cliente e terapeuta.
 - Validar que reset de senha confirma e-mail no Auth e no profile antes de redirecionar para login.
 - Em validacao visual com navegador, cobrir cliques reais em login normal/master, cadastro normal com envio de e-mail, confirmacao por link, polling/status, reset valido/invalido, role mismatch e cadastro com confirmacao automatica.
+
+## QA adicional desta implementação
+
+- Validar o botão Voltar nas telas de login e cadastro de cliente, terapeuta e
+  admin, incluindo fallback seguro quando não houver histórico do mesmo site.
+- Validar que duas abas do mesmo navegador podem permanecer na mesma conta,
+  mas um login de conta diferente do mesmo papel encerra a aba anterior,
+  enquanto contextos de navegador diferentes permanecem independentes.
 
 ## Assets da plataforma
 

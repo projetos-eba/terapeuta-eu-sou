@@ -33,7 +33,7 @@ test.describe("patient favorites in HML", () => {
       await expect(page).toHaveURL(/\/cliente\/login\?next=/);
 
       await page.getByLabel("E-mail").fill(fixtures.patientEmail);
-      await page.getByLabel("Senha").fill(fixtures.patientPassword);
+      await page.locator('input[name="password"]').fill(fixtures.patientPassword);
       await page.getByRole("button", { name: "Entrar" }).click();
       await expect(page).toHaveURL(
         new RegExp(`/terapeutas/${fixtures.therapistSlug}(?:\\?.*)?$`),

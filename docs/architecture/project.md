@@ -113,7 +113,7 @@ O pagamento real deve ser integrado ao Stripe. A sessao online deve usar Zoom vi
 
 ### 4.2 Sem IA real no MVP
 
-Match, insights, metricas prescritivas e Assistente Aura devem ser determinísticos:
+Match, insights, metricas prescritivas e Assessora Aura devem ser determinísticos:
 
 - regras;
 - pesos;
@@ -405,7 +405,7 @@ Inclui:
 - servicos e terapias;
 - avaliacoes avancadas;
 - metricas e relatorios;
-- Assistente Aura completo, sem IA real;
+- Assessora Aura completa, sem IA real;
 - financeiro completo;
 - suporte prioritario.
 
@@ -1009,7 +1009,7 @@ Mostra o que aconteceu:
 
 Nao deve ser o principal ambiente de recomendacoes prescritivas.
 
-### 11.7 Assistente Aura (rota técnica `/terapeuta/assessor-ia`)
+### 11.7 Assessora Aura (rota técnica `/terapeuta/assessor-ia`)
 
 Papel: prescritivo.
 
@@ -1825,7 +1825,7 @@ Uma entrega do MVP so deve ser considerada pronta quando:
 - Forma final da UI de pagamentos do paciente.
 - O mapeamento `/basico/pagamento` -> `/terapeuta/financeiro` foi implementado
   como redirect temporario, sem preservar uma segunda experiencia financeira.
-- Decisão atual: o nome público é Assistente Aura; `aura_*` e `assessor-ia` permanecem identificadores técnicos por compatibilidade.
+- Decisão atual: o nome público é Assessora Aura; `aura_*` e `assessor-ia` permanecem identificadores técnicos por compatibilidade.
 
 Quando alguma decisao acima impactar implementacao, ela deve ser registrada antes de criar migracao, API ou comportamento de produto definitivo.
 

@@ -89,3 +89,5 @@ Use these support tables when needed:
 - Keep language supportive and responsible.
 - Do not promise cure, diagnosis, or guaranteed outcomes.
 - Do not mention implementation details in user-facing UI.
+- Payment, cancellation and access statuses must use human TES language; never
+  expose terms such as backend, webhook or provider to the patient.

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
-import { PublicLogo, TESDecorativeMedia } from "@/components/tes";
+import { AuthBackButton, PublicLogo, TESDecorativeMedia } from "@/components/tes";
+import { routes } from "@/lib/routes";
 import { platformAssets } from "@/lib/platform-assets";
 import { cn } from "@/lib/utils";
 
@@ -15,9 +16,12 @@ export function TherapistAuthShell({
   title: string;
 }) {
   return (
-    <main className="min-h-screen bg-surface-soft px-5 py-8 text-brand-deep sm:px-8">
+    <main className="relative min-h-screen bg-surface-soft px-5 py-8 text-brand-deep sm:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col items-center justify-center gap-8">
-        <PublicLogo />
+        <div className="relative flex w-full justify-center">
+          <AuthBackButton fallbackHref={routes.public.home} />
+          <PublicLogo />
+        </div>
         <section className="grid w-full overflow-hidden rounded-hero border border-border bg-surface-default shadow-float lg:grid-cols-[0.92fr_1.08fr]">
           <aside className="pointer-events-none relative isolate order-2 min-h-[360px] overflow-hidden bg-brand-primary sm:min-h-[440px] lg:order-1 lg:min-h-[760px]">
             <TESDecorativeMedia

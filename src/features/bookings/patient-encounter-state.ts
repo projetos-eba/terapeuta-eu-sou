@@ -146,7 +146,7 @@ function getPaymentState({
     return {
       kind: "confirmed",
       message:
-        "Pagamento confirmado pelo sistema. A sala será liberada dentro da janela segura do encontro.",
+        "Seu pagamento foi confirmado. A sala será liberada dentro da janela segura do encontro.",
       retryAllowed: false,
       slotState: "confirmed",
       title: "Pagamento confirmado",
@@ -157,7 +157,7 @@ function getPaymentState({
     return {
       kind: "processing",
       message:
-        "Recebemos a tentativa de pagamento e estamos aguardando a confirmação final do provedor. Atualizar a página não confirma o encontro.",
+        "Recebemos sua tentativa de pagamento e aguardamos a confirmação final. Atualizar a página não confirma o encontro.",
       retryAllowed: false,
       slotState: "reserved",
       title: "Pagamento em processamento",
@@ -171,7 +171,7 @@ function getPaymentState({
       kind: expired ? "expired" : "awaiting_webhook",
       message: expired
         ? "A confirmação não chegou a tempo e este horário não deve mais ser tratado como reservado."
-        : "O sistema ainda aguarda o webhook financeiro. O horário permanece em análise enquanto a confirmação não chega.",
+        : "Estamos confirmando o pagamento. O horário permanece em análise por enquanto.",
       retryAllowed: !expired,
       slotState: expired ? "released" : "review",
       title: expired ? "Pagamento expirado" : "Aguardando confirmação",
@@ -184,7 +184,7 @@ function getPaymentState({
     return {
       kind: "failed",
       message:
-        "A tentativa de pagamento falhou. Nenhuma entrada no Zoom será liberada até uma confirmação financeira válida.",
+        "Não foi possível confirmar o pagamento. A entrada na sala online só será liberada após a confirmação.",
       retryAllowed: canRetry,
       slotState: canRetry ? "review" : "released",
       title: "Pagamento não confirmado",
@@ -230,7 +230,7 @@ function getPaymentState({
     return {
       kind: "not_started",
       message:
-        "Ainda não há confirmação financeira para este encontro. A sala só será liberada após o webhook de pagamento.",
+        "Ainda não há confirmação do pagamento para este encontro. A sala só será liberada após a confirmação.",
       retryAllowed: true,
       slotState: "review",
       title: "Pagamento pendente",

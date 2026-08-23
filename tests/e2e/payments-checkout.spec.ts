@@ -32,7 +32,7 @@ test.describe("payments checkout smoke", () => {
     );
 
     await page.getByLabel("E-mail").fill(therapistEmail);
-    await page.getByLabel("Senha").fill(password);
+    await page.locator('input[name="password"]').fill(password);
     await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
 
     await expect(page).toHaveURL(/\/terapeuta\/checkout\?plan=premium/);
@@ -41,17 +41,17 @@ test.describe("payments checkout smoke", () => {
     ).toBeVisible();
     await expect(page.getByText("TES Premium")).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Checkout seguro no TES" }),
+      page.getByRole("heading", { name: "Pagamento seguro no TES" }),
     ).toBeVisible();
     await expect(
-      page.getByText(/O formulário abaixo é carregado pela Stripe/i),
+      page.getByText(/O TES não recebe número de cartão, CVC/i),
     ).toBeVisible();
     await expect(
       page.locator("#subscription-embedded-checkout iframe").first(),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
       page.getByText(
-        /Premium e Premium Plus só são liberados após confirmação do webhook Stripe/i,
+          /Premium e Premium Plus só são liberados após a confirmação segura do pagamento/i,
       ),
     ).toBeVisible();
   });
@@ -62,7 +62,7 @@ test.describe("payments checkout smoke", () => {
     );
 
     await page.getByLabel("E-mail").fill(therapistEmail);
-    await page.getByLabel("Senha").fill(password);
+    await page.locator('input[name="password"]').fill(password);
     await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
 
     await expect(page).toHaveURL(/\/terapeuta\/checkout\?plan=premium_plus/);
@@ -80,7 +80,7 @@ test.describe("payments checkout smoke", () => {
     );
 
     await page.getByLabel("E-mail").fill(therapistEmail);
-    await page.getByLabel("Senha").fill(password);
+    await page.locator('input[name="password"]').fill(password);
     await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
 
     await expect(page).toHaveURL(/checkout=success/);

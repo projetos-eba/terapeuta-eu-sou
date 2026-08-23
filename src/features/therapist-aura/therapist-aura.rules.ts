@@ -32,7 +32,7 @@ export const auraRules: RuleDefinition[] = [
     actionLabel: "Revisar agenda",
     actionRouteKey: "agenda",
     body: ({ signals }) =>
-      `Você tem ${signals.bookingReadiness.publicBookableServices} terapia(s) disponível(is) para agendamento, mas o Assessor Aura não encontrou horários livres nos próximos 14 dias.`,
+      `Você tem ${signals.bookingReadiness.publicBookableServices} terapia(s) disponível(is) para agendamento, mas a Assessora Aura não encontrou horários livres nos próximos 14 dias.`,
     evidenceLabel: () => "Janela analisada: próximos 14 dias.",
     priority: 95,
     ruleKey: "aura.booking_readiness.no_future_slots.v1",

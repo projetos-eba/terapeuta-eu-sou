@@ -52,6 +52,34 @@ function slugFilter(slug: string) {
   return encodeURIComponent(slug);
 }
 
+type PublicTherapyImageRow = {
+  hero_image_url: string | null;
+  id: string;
+  image_url: string | null;
+};
+
+async function getTherapyImages(therapyIds: string[]) {
+  const uniqueTherapyIds = Array.from(new Set(therapyIds));
+  if (!uniqueTherapyIds.length) return new Map<string, string | null>();
+
+  try {
+    const rows = await fetchView<PublicTherapyImageRow>(
+      "public_therapy_details_v",
+      `select=id,hero_image_url,image_url&id=in.(${uniqueTherapyIds.join(",")})`,
+      { fresh: true },
+    );
+
+    return new Map(
+      rows.map((row) => [
+        row.id,
+        row.hero_image_url ?? row.image_url ?? null,
+      ]),
+    );
+  } catch {
+    return new Map<string, string | null>();
+  }
+}
+
 export async function getPublicTherapistProfile(
   slug: string,
 ): Promise<TherapistProfileData | null> {
@@ -118,12 +146,16 @@ export async function getPublicTherapistProfileResult(
     if (availabilityResults.some((result) => result.status === "error")) {
       throw new Error("Public service availability is unavailable.");
     }
+    const therapyImages = await getTherapyImages(
+      serviceRows.map((service) => service.therapy_id),
+    );
     const services = serviceRows.map((service, index) =>
       mapServiceRow(
         service,
         availabilityResults[index]?.status === "success"
           ? availabilityResults[index].data.days
           : [],
+        therapyImages.get(service.therapy_id) ?? null,
       ),
     );
 

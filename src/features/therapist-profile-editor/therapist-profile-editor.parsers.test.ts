@@ -106,4 +106,19 @@ describe("therapist profile editor parsers", () => {
       }),
     ).toThrow(TherapistProfileContractError);
   });
+
+  it("keeps the invalid field reason for a helpful save error", () => {
+    try {
+      parseEditorPayload({
+        publicName: "Ana Oliveira",
+        publicProfileTheme: "theme-not-supported",
+      });
+      throw new Error("expected invalid profile theme");
+    } catch (error) {
+      expect(error).toBeInstanceOf(TherapistProfileContractError);
+      expect((error as TherapistProfileContractError).reason).toBe(
+        "public_profile_theme",
+      );
+    }
+  });
 });

@@ -1,4 +1,4 @@
-versão: 2026-08-11
+versão: 2026-08-22
 fonte: project.md — MVP Transacional TES consolidado + docs/agent-work
 próxima revisão: ao alterar stack, perfis, planos ou integrações
 
@@ -270,9 +270,12 @@ Stack real identificada:
   Functions para autenticação, e-mail, Match, Stripe e Zoom.
 - Hostinger Mail API: contrato confirmado em 2026-07-24. `GET https://api.mail.hostinger.com/api/v1/me` lista mailboxes; envio usa `POST https://api.mail.hostinger.com/api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, payload `to: string[]`, `display_name`, `subject`, `text`, `html`, e sucesso `204` sem corpo.
 - `CONFIRMED_AUTOMATICALLY_EMAIL` e secrets de e-mail pertencem somente a Supabase Edge Functions. Ausente/vazio equivale a `false`; aceita apenas `true` ou `false`; valor inválido deve falhar fechado e nunca ativar bypass. Quando `true`, cadastro confirma Auth via Admin API, não envia e-mail, não cria token e redireciona para login com `verified=1&automatic=1`.
-- Stripe Billing, Checkout de sessões, Connect Accounts v2, ledger e lotes de
-  repasse concluíram o Gate F0 de hardening. A homologação E2E externa no Stripe
-  test mode continua obrigatória antes de produção.
+- Stripe Billing, Checkout de sessões, Promotion Codes, Connect Accounts v2,
+  ledger e lotes de repasse concluíram o Gate F0 de hardening. O Checkout usa
+  os valores efetivos da Stripe após desconto para atualizar `session_payments`,
+  comissão, valor do terapeuta e ledger; o subtotal original permanece em
+  `session_payments.metadata.stripe_checkout`. A homologação E2E externa no
+  Stripe test mode continua obrigatória antes de produção.
 - Planos do terapeuta: `/terapeuta/plano` é a central de upgrades e lê catálogo
   e preços ativos de `billing_plans`/`billing_plan_prices`;
   `/terapeuta/configuracoes#plano-assinatura` concentra downgrade agendado,
@@ -314,6 +317,12 @@ Stack real identificada:
   uma única sessão curta, usa Playwright visível com contexts separados para
   terapeuta e paciente, e a emissão de JWT passa por rate limit distribuído no
   Supabase.
+- Videochamada e feedback: a sala visual abre em T-15, o feedback de qualidade
+  exige joins confiáveis de paciente e terapeuta, e confirmações bilaterais
+  independentes usam a política ativa de 7 dias + 1 dia de segurança. A tabela
+  `session_participant_confirmations` e os RPCs de confirmação permanecem
+  somente no backend; Admin lê presença, prazos, divergências e bloqueios sem
+  editar respostas ou acionar efeitos financeiros diretamente.
 - Meu Perfil M1/M2: `/terapeuta/perfil` usa a fonte canônica
   `therapist_profiles` como tela preview-first da versão publicada;
   `/terapeuta/perfil/editar` concentra rascunhos em
@@ -325,9 +334,14 @@ Stack real identificada:
   público via `/api/therapist/profile/media`, grid `AppPage*` e dados derivados
   somente leitura. Publicação pode levar 2 a 3 horas para refletir em todas as
   superfícies públicas.
-  A identidade pública oferece `serene`, `natural`, `warm` e `essential`, além
-  de quatro ilustrações TES opcionais, para todos os planos no fluxo de
-  rascunho/publicação. Slug é uma mutação imediata separada: Free usa
+  A identidade pública oferece quatro temas Free (`serene`, `natural`, `warm`
+  e `essential`) e quinze temas Premium/Premium Plus, além de quatro
+  ilustrações TES opcionais, no fluxo de rascunho/publicação. Os temas Premium
+  permanecem visíveis para Free, mas não podem ser aplicados. Após downgrade,
+  o próximo salvamento normaliza um tema Premium para `serene` com aviso na
+  edição. A biblioteca visual aprovada está no Figma
+  `Z42SR0Pi0m307SmcAkDqHb`, nó `14869:2`; o Figma atual da edição ainda não
+  contém essa biblioteca. Slug é uma mutação imediata separada: Free usa
   `free_public_slug` numérico estável de sete dígitos; Premium e Premium Plus
   usam a capability `custom_profile_slug`. Normalização, reservas, histórico,
   idempotência, downgrade e concorrência são autoridade do PostgreSQL.

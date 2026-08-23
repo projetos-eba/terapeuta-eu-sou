@@ -34,7 +34,13 @@ const categoryLabels: Record<SupportTicketCategory, string> = {
   outro: "Outro assunto",
 };
 
-export function TherapistSupportSection({ tickets }: { tickets: Ticket[] }) {
+export function TherapistSupportSection({
+  actorRole,
+  tickets,
+}: {
+  actorRole: "therapist";
+  tickets: Ticket[];
+}) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <section className="rounded-card border border-brand-lavender bg-white shadow-card">
@@ -102,12 +108,23 @@ export function TherapistSupportSection({ tickets }: { tickets: Ticket[] }) {
           </p>
         </div>
       )}
-      {isOpen ? <NewTicketDialog onClose={() => setIsOpen(false)} /> : null}
+      {isOpen ? (
+        <NewTicketDialog
+          actorRole={actorRole}
+          onClose={() => setIsOpen(false)}
+        />
+      ) : null}
     </section>
   );
 }
 
-function NewTicketDialog({ onClose }: { onClose: () => void }) {
+function NewTicketDialog({
+  actorRole,
+  onClose,
+}: {
+  actorRole: "therapist";
+  onClose: () => void;
+}) {
   const router = useRouter();
   const [category, setCategory] = useState<SupportTicketCategory>("outro");
   const [subject, setSubject] = useState("");
@@ -127,6 +144,7 @@ function NewTicketDialog({ onClose }: { onClose: () => void }) {
     requestId.current ??= crypto.randomUUID();
     const response = await fetch("/api/support/tickets", {
       body: JSON.stringify({
+        actorRole,
         bookingId: null,
         category,
         description,

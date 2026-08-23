@@ -23,6 +23,8 @@
     "payments:phase3:readiness:live": "node scripts/payments/stripe-phase3-live-smoke.mjs --stage=readiness",
     "payments:phase3:hml": "node scripts/payments/stripe-phase3-hml.mjs",
     "payments:phase3:session:hml": "node scripts/payments/complete-session-checkout-hml.mjs",
+    "payments:phase3:session:promotion:hml": "node scripts/payments/complete-session-checkout-hml.mjs --scenario=promotion_approved",
+    "payments:e2e:session:promotion": "node scripts/payments/complete-session-checkout-hml.mjs --target=local --scenario=promotion_approved",
     "payments:phase3:live:readiness": "node scripts/payments/stripe-phase3-live-smoke.mjs --stage=readiness",
     "payments:phase3:live:billing": "node scripts/payments/stripe-phase3-live-smoke.mjs --stage=billing",
     "payments:phase3:live:session": "node scripts/payments/stripe-phase3-live-smoke.mjs --stage=session",
@@ -52,7 +54,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:deno": "deno test --config supabase/functions/deno.json --allow-env --allow-net supabase/functions/_shared/auth supabase/functions/_shared/email supabase/functions/_shared/payments supabase/functions/_shared/zoom-video-sdk supabase/functions/admin-email-management-command supabase/functions/admin-therapy-catalog-command supabase/functions/email-outbox-dispatch supabase/functions/therapy-catalog-request-command supabase/functions/therapist-schedule-update supabase/functions/therapist-blocks-update supabase/functions/therapist-services-command supabase/functions/therapist-profile-command supabase/functions/therapist-reviews-command supabase/functions/session-booking-checkout supabase/functions/session-reschedule supabase/functions/request-session-cancellation",
+    "test:deno": "deno test --config supabase/functions/deno.json --allow-env --allow-net supabase/functions/_shared/auth supabase/functions/_shared/email supabase/functions/_shared/payments supabase/functions/_shared/zoom-video-sdk supabase/functions/admin-email-management-command supabase/functions/admin-therapy-catalog-command supabase/functions/email-outbox-dispatch supabase/functions/therapy-catalog-request-command supabase/functions/therapist-schedule-update supabase/functions/therapist-blocks-update supabase/functions/therapist-services-command supabase/functions/therapist-profile-command supabase/functions/therapist-reviews-command supabase/functions/session-booking-checkout supabase/functions/session-reschedule supabase/functions/request-session-cancellation supabase/functions/session-feedback-command",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

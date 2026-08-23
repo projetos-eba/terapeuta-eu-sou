@@ -261,6 +261,7 @@ export type TherapistProfileErrorCode =
   | "FORBIDDEN"
   | "PROFILE_LOCKED"
   | "PROFILE_NOT_FOUND"
+  | "PROFILE_REQUIREMENTS_INCOMPLETE"
   | "SLUG_INVALID"
   | "SLUG_RESERVED"
   | "SLUG_TAKEN"

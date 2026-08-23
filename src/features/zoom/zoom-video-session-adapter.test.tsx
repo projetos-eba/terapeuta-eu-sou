@@ -5,6 +5,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -82,7 +83,7 @@ describe("ZoomVideoSessionAdapter", () => {
     vi.unstubAllGlobals();
   });
 
-  it("keeps the button disabled outside the join window", () => {
+  it("keeps entry unavailable outside the join window", () => {
     render(
       <ZoomVideoSessionAdapter
         access={{
@@ -97,9 +98,8 @@ describe("ZoomVideoSessionAdapter", () => {
       />,
     );
 
-    expect(
-      screen.getByRole("button", { name: /15 min antes/i }),
-    ).toBeDisabled();
+    expect(screen.getByText(/Entrada liberada 15 min antes/i)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /entrar/i })).not.toBeInTheDocument();
   });
 
   it("initializes before joining as patient role 0 and does not render tokens", async () => {
@@ -212,9 +212,7 @@ describe("ZoomVideoSessionAdapter", () => {
 
     fireEvent(window, new Event("offline"));
 
-    expect(
-      await screen.findByText(/sem conexão com a internet/i),
-    ).toBeInTheDocument();
+    expect(screen.getAllByText(/sem conexão com a internet/i).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: /entrar/i })).toBeDisabled();
     expect(fetchMock).not.toHaveBeenCalled();
 
@@ -242,11 +240,11 @@ describe("ZoomVideoSessionAdapter", () => {
 
     handlers.get("peer-video-state-change")?.({ action: "Start", userId: 9 });
 
-    expect(await screen.findByLabelText(/video remoto/i)).toContainElement(
+    expect(await screen.findByLabelText(/vídeo remoto/i)).toContainElement(
       remoteElement,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /^sair$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /sair da sessão/i }));
     expect(await screen.findByText(/voce saiu/i)).toBeInTheDocument();
     expect(mockStream.detachVideo).toHaveBeenCalledWith(9);
     expect(destroyClient).toHaveBeenCalled();
@@ -298,7 +296,7 @@ describe("ZoomVideoSessionAdapter", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
     await screen.findByText(/voce entrou no encontro/i);
-    fireEvent.click(screen.getByRole("button", { name: /ativar camera/i }));
+    fireEvent.click(screen.getByRole("button", { name: /ativar câmera/i }));
 
     await waitFor(() => {
       expect(mockClient.getCurrentUserInfo).toHaveBeenCalled();
@@ -309,7 +307,7 @@ describe("ZoomVideoSessionAdapter", () => {
       );
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /desligar camera/i }));
+    fireEvent.click(screen.getByRole("button", { name: /desligar câmera/i }));
     await waitFor(() => {
       expect(mockStream.detachVideo).toHaveBeenCalledWith(7);
       expect(mockStream.stopVideo).toHaveBeenCalled();
@@ -318,11 +316,6 @@ describe("ZoomVideoSessionAdapter", () => {
 
   it("allows therapist role 1 to end the session after confirmation", async () => {
     vi.stubGlobal("fetch", accessResponse(1));
-    vi.stubGlobal(
-      "confirm",
-      vi.fn(() => true),
-    );
-
     render(
       <ZoomVideoSessionAdapter
         access={allowedAccess}
@@ -334,7 +327,13 @@ describe("ZoomVideoSessionAdapter", () => {
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
     expect(await screen.findByText(/responsavel/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: /encerrar encontro/i }));
+    fireEvent.click(screen.getByRole("button", { name: /encerrar para todos/i }));
+    const dialog = await screen.findByRole("dialog", {
+      name: /encerrar esta sessão/i,
+    });
+    fireEvent.click(
+      within(dialog).getByRole("button", { name: /encerrar para todos/i }),
+    );
 
     expect(
       await screen.findByText(/encontro foi encerrado para todos/i),
@@ -452,7 +451,7 @@ describe("ZoomVideoSessionAdapter", () => {
     );
 
     expect(
-      screen.getByText(/aguardando o terapeuta iniciar/i),
+      screen.getByText(/entrada será liberada assim que a presença do terapeuta/i),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /entrar/i })).toBeNull();
 
@@ -511,7 +510,7 @@ describe("ZoomVideoSessionAdapter", () => {
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(
-      screen.getByRole("button", { name: /atualizar sala/i }),
+      screen.getByRole("button", { name: /atualizando/i }),
     ).toBeDisabled();
 
     await act(async () => {
@@ -530,9 +529,9 @@ describe("ZoomVideoSessionAdapter", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(
-      screen.getByRole("button", { name: /entrar no encontro/i }),
+      screen.getByRole("button", { name: /entrar na sala/i }),
     ).toBeEnabled();
-    expect(screen.queryByText(/aguardando o terapeuta iniciar/i)).toBeNull();
+    expect(screen.queryByText(/entrada será liberada assim que a presença do terapeuta/i)).toBeNull();
   });
 
   it("previews patient access before showing join when server data is absent", async () => {
@@ -560,9 +559,9 @@ describe("ZoomVideoSessionAdapter", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: /verificando/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /atualizando/i })).toBeDisabled();
     expect(
-      await screen.findByText(/aguardando o terapeuta iniciar/i),
+      await screen.findByText(/presença do terapeuta/i),
     ).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/zoom/video-session-access",
@@ -609,7 +608,7 @@ describe("ZoomVideoSessionAdapter", () => {
       screen.getByText(/tentaremos novamente automaticamente/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /tentar atualizar sala/i }),
+      screen.getByRole("button", { name: /atualizar sala/i }),
     ).toBeEnabled();
 
     await act(async () => {
@@ -618,7 +617,7 @@ describe("ZoomVideoSessionAdapter", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(
-      screen.getByRole("button", { name: /entrar no encontro/i }),
+      screen.getByRole("button", { name: /entrar na sala/i }),
     ).toBeEnabled();
   });
 
@@ -668,7 +667,7 @@ describe("ZoomVideoSessionAdapter", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
     await screen.findByText(/voce entrou no encontro/i);
-    fireEvent.click(screen.getByRole("button", { name: /^sair$/i }));
+    fireEvent.click(screen.getByRole("button", { name: /sair da sessão/i }));
 
     expect(
       await screen.findByText(/nao foi possivel concluir todas as etapas/i),

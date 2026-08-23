@@ -9,6 +9,10 @@ import {
 } from "lucide-react";
 
 import type { PublicTherapistProfile } from "@/features/therapist-profile/types";
+import {
+  profilePhotoShapeClassName,
+  publicProfileThemeById,
+} from "@/features/therapist-profile/personalization";
 
 import { ProfileSection } from "./profile-section";
 
@@ -17,11 +21,19 @@ export function PublicProfileSnapshot({
 }: {
   profile: PublicTherapistProfile;
 }) {
+  const theme = publicProfileThemeById[profile.publicProfileTheme];
+
   return (
     <ProfileSection className="overflow-hidden p-0" title="Preview do perfil">
-      <article className="bg-[linear-gradient(180deg,var(--tes-color-surface-default)_0%,var(--tes-color-surface-soft)_100%)]">
+      <article
+        className="bg-[linear-gradient(180deg,var(--tes-color-surface-default)_0%,var(--tes-color-surface-soft)_100%)]"
+        data-profile-theme={theme.id}
+        style={theme.style}
+      >
         <div className="grid gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(220px,0.42fr)_minmax(0,1fr)]">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[42%] bg-brand-lavenderSoft">
+          <div
+            className={`relative aspect-[4/5] overflow-hidden bg-brand-lavenderSoft ${profilePhotoShapeClassName(theme.photoShape)}`}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element -- preview usa URL pública já autorizada do perfil. */}
             <img
               alt={`Retrato de ${profile.name}`}

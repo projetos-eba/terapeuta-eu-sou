@@ -10,10 +10,13 @@ import { routes } from "@/lib/routes";
 
 export default async function PatientVideoCallRoute({
   params,
+  searchParams,
 }: {
   params: Promise<{ bookingId: string }>;
+  searchParams?: Promise<{ feedback?: string | string[] }>;
 }) {
   const { bookingId } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
   const session = await requirePatientSession();
 
   try {
@@ -34,6 +37,7 @@ export default async function PatientVideoCallRoute({
         participantLabel={`Com ${data.therapist.name}`}
         scheduleLabel={`${data.booking.dateLabel}, ${data.booking.timeRangeLabel}`}
         sessionTitle={data.service.title}
+        showFeedback={resolvedSearchParams.feedback === "1"}
       />
     );
   } catch (error) {

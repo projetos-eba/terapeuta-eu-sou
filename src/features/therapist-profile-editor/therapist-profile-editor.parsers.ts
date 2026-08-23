@@ -3,14 +3,18 @@ import type {
   TherapistProfileEditableFields,
   TherapistProfileEditorPayload,
 } from "./therapist-profile-editor.types";
+import { isPublicProfileThemeId } from "@/features/therapist-profile/personalization";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export class TherapistProfileContractError extends Error {
-  constructor(message = "Invalid therapist profile contract.") {
-    super(message);
+  readonly reason: string;
+
+  constructor(reason = "generic") {
+    super("Invalid therapist profile contract.");
     this.name = "TherapistProfileContractError";
+    this.reason = reason;
   }
 }
 
@@ -18,29 +22,42 @@ export function parseTherapistProfileCommand(
   input: unknown,
 ): TherapistProfileCommand {
   const value = object(input);
-  const action = string(value.action);
+  const action = string(value.action, "action");
 
   if (action === "read") return { action };
 
   if (action === "check_slug_availability") {
-    return { action, slug: boundedString(value.slug, 1, 120) };
+    return {
+      action,
+      slug: boundedString(value.slug, 1, 120, "slug"),
+    };
   }
 
   if (action === "update_slug") {
     return {
       action,
-      expectedVersion: integer(value.expectedVersion, 1, 999999999),
-      requestId: uuid(value.requestId),
-      slug: boundedString(value.slug, 1, 120),
+      expectedVersion: integer(
+        value.expectedVersion,
+        1,
+        999999999,
+        "expected_version",
+      ),
+      requestId: uuid(value.requestId, "request_id"),
+      slug: boundedString(value.slug, 1, 120, "slug"),
     };
   }
 
   if (action === "save_draft") {
     return {
       action,
-      expectedVersion: integer(value.expectedVersion, 1, 999999999),
+      expectedVersion: integer(
+        value.expectedVersion,
+        1,
+        999999999,
+        "expected_version",
+      ),
       payload: parseEditorPayload(value.payload),
-      requestId: uuid(value.requestId),
+      requestId: uuid(value.requestId, "request_id"),
     };
   }
 
@@ -51,8 +68,13 @@ export function parseTherapistProfileCommand(
   ) {
     return {
       action,
-      expectedVersion: integer(value.expectedVersion, 1, 999999999),
-      requestId: uuid(value.requestId),
+      expectedVersion: integer(
+        value.expectedVersion,
+        1,
+        999999999,
+        "expected_version",
+      ),
+      requestId: uuid(value.requestId, "request_id"),
     };
   }
 
@@ -64,7 +86,7 @@ export function parseEditorPayload(
 ): TherapistProfileEditorPayload {
   const value = object(input);
   const parsedVideoProvider = videoProvider(value.videoProvider);
-  const parsedVideoUrl = optionalString(value.videoUrl, 500);
+  const parsedVideoUrl = optionalString(value.videoUrl, 500, "video_url");
 
   if (
     parsedVideoUrl &&
@@ -77,37 +99,49 @@ export function parseEditorPayload(
 
   return {
     bioIllustrationId: bioIllustrationId(value.bioIllustrationId),
-    bio: optionalString(value.bio, 1600),
-    city: optionalString(value.city, 80),
-    essenceBody: optionalString(value.essenceBody, 1600),
+    bio: optionalString(value.bio, 1600, "bio"),
+    city: optionalString(value.city, 80, "city"),
+    essenceBody: optionalString(value.essenceBody, 1600, "essence_body"),
     experienceYears:
       value.experienceYears === null || value.experienceYears === undefined
         ? null
-        : integer(value.experienceYears, 0, 80),
-    guideItems: optionalArray(value.guideItems, 6).map((item) => ({
-      icon: optionalString(item.icon, 40) || "sparkles",
-      label: boundedString(item.label, 1, 80),
-    })),
-    headline: optionalString(value.headline, 180),
-    invitationBody: optionalString(value.invitationBody, 600),
-    photoUrl: optionalString(value.photoUrl, 500),
-    publicName: boundedString(value.publicName, 2, 120),
+        : integer(value.experienceYears, 0, 80, "experience_years"),
+    guideItems: optionalArray(value.guideItems, 6, "guide_items").map(
+      (item) => ({
+        icon: optionalString(item.icon, 40, "guide_items") || "sparkles",
+        label: boundedString(item.label, 1, 80, "guide_items"),
+      }),
+    ),
+    headline: optionalString(value.headline, 180, "headline"),
+    invitationBody: optionalString(
+      value.invitationBody,
+      600,
+      "invitation_body",
+    ),
+    photoUrl: optionalString(value.photoUrl, 500, "photo_url"),
+    publicName: boundedString(value.publicName, 2, 120, "public_name"),
     publicProfileTheme: publicProfileTheme(value.publicProfileTheme),
-    reflections: optionalArray(value.reflections, 6).map((item) => ({
-      excerpt: optionalString(item.excerpt, 240),
-      href: optionalString(item.href, 500),
-      imageUrl: optionalString(item.imageUrl, 500),
-      minutesToRead:
-        item.minutesToRead === undefined || item.minutesToRead === null
-          ? 3
-          : integer(item.minutesToRead, 1, 60),
-      title: boundedString(item.title, 1, 120),
-    })),
-    shortIntro: optionalString(value.shortIntro, 280),
-    state: optionalString(value.state, 40),
+    reflections: optionalArray(value.reflections, 6, "reflections").map(
+      (item) => ({
+        excerpt: optionalString(item.excerpt, 240, "reflections"),
+        href: optionalString(item.href, 500, "reflections"),
+        imageUrl: optionalString(item.imageUrl, 500, "reflections"),
+        minutesToRead:
+          item.minutesToRead === undefined || item.minutesToRead === null
+            ? 3
+            : integer(item.minutesToRead, 1, 60, "reflections"),
+        title: boundedString(item.title, 1, 120, "reflections"),
+      }),
+    ),
+    shortIntro: optionalString(value.shortIntro, 280, "short_intro"),
+    state: optionalString(value.state, 40, "state"),
     videoProvider: parsedVideoProvider,
-    videoThumbnailUrl: optionalString(value.videoThumbnailUrl, 500),
-    videoTitle: optionalString(value.videoTitle, 120),
+    videoThumbnailUrl: optionalString(
+      value.videoThumbnailUrl,
+      500,
+      "video_thumbnail_url",
+    ),
+    videoTitle: optionalString(value.videoTitle, 120, "video_title"),
     videoUrl: parsedVideoUrl,
   };
 }
@@ -137,13 +171,7 @@ export function createEmptyEditorFields(): TherapistProfileEditableFields {
 
 function publicProfileTheme(value: unknown) {
   if (value === undefined || value === null || value === "") return "serene";
-  if (
-    value === "serene" ||
-    value === "natural" ||
-    value === "warm" ||
-    value === "essential"
-  )
-    return value;
+  if (isPublicProfileThemeId(value)) return value;
   throw invalid("public_profile_theme");
 }
 
@@ -159,52 +187,61 @@ function bioIllustrationId(value: unknown) {
   throw invalid("bio_illustration_id");
 }
 
-function boundedString(value: unknown, min: number, max: number) {
-  if (typeof value !== "string") throw invalid("string");
+function boundedString(
+  value: unknown,
+  min: number,
+  max: number,
+  reason = "string",
+) {
+  if (typeof value !== "string") throw invalid(reason);
   const normalized = value.trim();
   if (normalized.length < min || normalized.length > max) {
-    throw invalid("string_length");
+    throw invalid(reason);
   }
   return normalized;
 }
 
-function integer(value: unknown, min: number, max: number) {
+function integer(value: unknown, min: number, max: number, reason = "integer") {
   if (!Number.isInteger(value) || Number(value) < min || Number(value) > max) {
-    throw invalid("integer");
+    throw invalid(reason);
   }
   return Number(value);
 }
 
-function object(input: unknown): Record<string, unknown> {
+function object(input: unknown, reason = "object"): Record<string, unknown> {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
-    throw invalid("object");
+    throw invalid(reason);
   }
   return input as Record<string, unknown>;
 }
 
-function optionalArray(input: unknown, maxLength: number) {
+function optionalArray(input: unknown, maxLength: number, reason = "array") {
   if (input === null || input === undefined) return [];
   if (!Array.isArray(input) || input.length > maxLength) {
-    throw invalid("array");
+    throw invalid(reason);
   }
-  return input.map(object);
+  return input.map((item) => object(item, reason));
 }
 
-function optionalString(value: unknown, max: number) {
+function optionalString(
+  value: unknown,
+  max: number,
+  reason = "optional_string",
+) {
   if (value === null || value === undefined) return "";
-  if (typeof value !== "string") throw invalid("optional_string");
+  if (typeof value !== "string") throw invalid(reason);
   const normalized = value.trim();
-  if (normalized.length > max) throw invalid("optional_string_length");
+  if (normalized.length > max) throw invalid(reason);
   return normalized;
 }
 
-function string(value: unknown) {
-  if (typeof value !== "string") throw invalid("string");
+function string(value: unknown, reason = "string") {
+  if (typeof value !== "string") throw invalid(reason);
   return value;
 }
 
-function uuid(value: unknown) {
-  if (typeof value !== "string" || !UUID.test(value)) throw invalid("uuid");
+function uuid(value: unknown, reason = "uuid") {
+  if (typeof value !== "string" || !UUID.test(value)) throw invalid(reason);
   return value;
 }
 

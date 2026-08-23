@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -2302,9 +2300,11 @@ async function runFlow({ admin, config, evidence, logDir }) {
           waitUntil: "domcontentloaded",
         },
       );
-      await pages.therapist
-        .getByRole("link", { name: /Abrir sala da sess.o/i })
-        .click();
+      const therapistRoomLink = pages.therapist.locator(
+        `a[href="/terapeuta/sessoes/${config.bookingId}/video"]`,
+      );
+      await expect(therapistRoomLink.first()).toBeVisible({ timeout: 30_000 });
+      await therapistRoomLink.first().click();
       await expect(pages.therapist).toHaveURL(
         new RegExp(`/terapeuta/sessoes/${config.bookingId}/video`),
         { timeout: 30_000 },

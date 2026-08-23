@@ -393,8 +393,8 @@ export function PlansPreviewSection() {
                       Assinatura
                     </span>
                     <span className="mt-2 block max-w-xs text-xs font-bold leading-5 text-tesText-secondary">
-                      O cadastro envia apenas o código do plano. Preço e
-                      liberação futura são confirmados pelo backend.
+                      Os valores e a disponibilidade de cada plano são
+                      confirmados na próxima etapa.
                     </span>
                   </th>
                   {therapistPlanDefinitions.map((plan) => (
