@@ -2,6 +2,15 @@ begin;
 
 select plan(36);
 
+-- Keep this fixture relative to the test clock. Local seeds are idempotent and
+-- may have been applied on an earlier day, so their original future timestamp
+-- must not decide whether the block-impact contract is exercised.
+update public.bookings
+set
+  starts_at = ((current_date + 1)::date + time '10:00') at time zone 'America/Sao_Paulo',
+  ends_at = ((current_date + 1)::date + time '11:00') at time zone 'America/Sao_Paulo'
+where id = 'f2000000-0000-4000-8000-000000000004';
+
 create temporary table a4_baseline as
 select
   (

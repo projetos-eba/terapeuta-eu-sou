@@ -37,7 +37,7 @@ export function PatientSessionDetailPage({
       >
         <AppPageMain className="gap-10">
           <SessionOverviewCard data={data} />
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+          <div className="grid gap-10 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
             <SessionAboutCard data={data} />
             <SharedIntakeCard intake={data.intake} />
           </div>
@@ -51,7 +51,7 @@ export function PatientSessionDetailPage({
               Sua jornada com {data.therapist.name}
             </h2>
           </section>
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+          <div className="grid gap-10 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
             <PreparationCard data={data} />
             <CancellationPolicyCard policy={data.cancellationPolicy} />
           </div>

@@ -17,7 +17,7 @@ major_version = 15
 
 [db.seed]
 enabled = true
-sql_paths = ["./seeds/catalog.sql", "./seeds/local-test-data.sql"]
+sql_paths = ["./seeds/catalog.sql", "./seeds/local-test-data.sql", "./seeds/local-e2e-fixtures.sql"]
 
 [db.pooler]
 enabled = false

@@ -452,3 +452,28 @@ confirmação/feedback bilateral.
 
 P0 remanescente: nenhum identificado nesta qualificação. Isto não equivale a
 Production Ready; a decisão cobre somente o Golden Path transacional em HML.
+
+## Retomada do merge dev-vini para dev-antonio — 2026-08-23
+
+Status desta retomada: **NOT_READY**. Evidência histórica de HML não é usada
+como substituto para uma execução no ambiente configurado da rodada atual.
+
+| Gate | Resultado | Evidência sanitizada |
+| --- | --- | --- |
+| Integridade do merge | PASS | Sem arquivos não resolvidos; `git diff --check` passou. |
+| pgTAP local completo | PASS | 78 arquivos, 1.692 asserções; os casos de bloqueio da agenda e isolamento do outbox foram corrigidos com fixtures versionadas. |
+| Vitest local | PASS | `npm run test -- --pool=threads --maxWorkers=1`: 157 arquivos, 630 testes. Execução serial para preservar recursos. |
+| Edge Functions | PASS | `npm run test:deno`: 171 testes, zero falhas. |
+| UI de documentos Admin | PASS local | Playwright headed em 1440, 1024 e 390 px: sem sobreposição, overflow ou botões comprimidos. |
+| UI de detalhe do encontro | PASS local | Playwright headed em desktop, tablet e mobile; a grade interna comprimida foi removida e o estado/status passou a fluir abaixo dos metadados. |
+| Zoom local | PASS | `tests/e2e/zoom.spec.ts`, 3 cenários com cliques reais e contexts isolados; isto não substitui Zoom real HML. |
+| Stripe HML runtime preflight | BLOCKED | `payments:phase3:runtime-preflight:hml` falhou fechado por configuração HML ausente; artefato sanitizado: `test-results/stripe-phase3/runtime-preflight-2026-08-23T16-31-12-000Z.json`. |
+| Playwright HML / Zoom real HML | NOT_EXECUTED | Não havia URL compartilhada, personas efêmeras, credenciais ou confirmação manual momentânea no ambiente atual. Nenhuma operação externa foi iniciada. |
+| Comparação visual Figma | NOT_EXECUTED | O acesso ao Figma não estava disponível nesta rodada; a validação local não a substitui. |
+
+Condição para **PRODUCTION-READY**: repetir preflight HML com configuração
+efêmera, executar o Golden Path Stripe test mode até webhook e estado
+autoritativo, validar Playwright HML multi-contexto e, somente após confirmação
+manual do endpoint, uma única sessão Zoom real curta. A comparação visual com
+Figma também deve ser registrada. Até esses gates passarem, a qualificação
+permanece **NOT_READY**.

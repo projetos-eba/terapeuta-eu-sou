@@ -28,7 +28,7 @@ test.describe("therapist private documents", () => {
 
   test("stores, protects, reviews and re-requests documents through the real local Storage flow", async ({
     browser,
-  }) => {
+  }, testInfo) => {
     const therapistContext = await browser.newContext();
     const therapistPage = await therapistContext.newPage();
     const adminContext = await browser.newContext();
@@ -147,6 +147,7 @@ test.describe("therapist private documents", () => {
       await expect(
         adminPage.getByRole("heading", { name: "Documentos enviados" }),
       ).toBeVisible();
+      await assertAdminDocumentsResponsiveLayout(adminPage, testInfo);
 
       await assertProxiedDocumentAccess({
         documentId: identityDocumentId,
@@ -261,6 +262,80 @@ async function loginAsTherapist(
     );
   }
   await expect(page).toHaveURL(/\/terapeuta(?:\?.*)?$/);
+}
+
+async function assertAdminDocumentsResponsiveLayout(
+  page: import("@playwright/test").Page,
+  testInfo: import("@playwright/test").TestInfo,
+) {
+  const viewports = [
+    { height: 900, label: "desktop", width: 1440 },
+    { height: 768, label: "tablet", width: 1024 },
+    { height: 844, label: "mobile", width: 390 },
+  ];
+
+  for (const viewport of viewports) {
+    await page.setViewportSize(viewport);
+    await expect(
+      page.getByRole("heading", { name: "Documentos enviados" }),
+    ).toBeVisible();
+
+    for (const documentTitle of [
+      "Documento de identidade",
+      "Comprovante de endereço",
+    ]) {
+      const documentRow = page
+        .getByText(documentTitle, { exact: true })
+        .locator("xpath=ancestor::li");
+      await expect(documentRow).toBeVisible();
+      const layout = await documentRow.evaluate((row) => {
+        const rowBounds = row.getBoundingClientRect();
+        const controls = Array.from(
+          row.querySelectorAll<HTMLAnchorElement | HTMLButtonElement>(
+            "a, button",
+          ),
+        )
+          .filter((control) => {
+            const styles = window.getComputedStyle(control);
+            return styles.display !== "none" && styles.visibility !== "hidden";
+          })
+          .map((control) => control.getBoundingClientRect());
+        const controlsStayInside = controls.every(
+          (bounds) =>
+            bounds.left >= rowBounds.left - 1 &&
+            bounds.right <= rowBounds.right + 1 &&
+            bounds.top >= rowBounds.top - 1 &&
+            bounds.bottom <= rowBounds.bottom + 1,
+        );
+        const controlsOverlap = controls.some((bounds, index) =>
+          controls.slice(index + 1).some(
+            (other) =>
+              bounds.left < other.right &&
+              bounds.right > other.left &&
+              bounds.top < other.bottom &&
+              bounds.bottom > other.top,
+          ),
+        );
+
+        return {
+          controlsOverlap,
+          controlsStayInside,
+          pageHasHorizontalOverflow:
+            document.documentElement.scrollWidth > window.innerWidth,
+        };
+      });
+      expect(layout.controlsStayInside).toBe(true);
+      expect(layout.controlsOverlap).toBe(false);
+      expect(layout.pageHasHorizontalOverflow).toBe(false);
+    }
+
+    await page.screenshot({
+      fullPage: true,
+      path: testInfo.outputPath(`admin-private-documents-${viewport.label}.png`),
+    });
+  }
+
+  await page.setViewportSize({ height: 900, width: 1440 });
 }
 
 async function loginAsAdmin(page: import("@playwright/test").Page) {

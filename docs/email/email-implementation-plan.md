@@ -72,14 +72,17 @@ Aplicar o [contrato de design](./email-design-contract.md): `preheader` no regis
 
 ### 5. Scheduler de reminders
 
-Os cenários 18 e 19 precisam de tabela/job de agenda persistente, não de `setTimeout`. O design a implementar deve:
+Os cenários 18 e 19 usam a tabela/job persistente `booking_reminder_jobs`, não `setTimeout`. A implementação local deve:
 
 - criar/remover/invalidar jobs junto de confirmação, cancelamento e reagendamento;
 - armazenar somente referência a booking, versão, action e horário alvo;
-- usar timezone do booking/destinatário e uma janela de tolerância documentada;
+- calcular o alvo a partir do `starts_at` absoluto e usar o timezone do booking apenas na formatação;
+- aplicar janela estrita de um ciclo de um minuto, sem catch-up de jobs vencidos;
 - confirmar no claim que booking continua `confirmed`, versão igual e início futuro;
 - usar a outbox para dedupe/entrega; e
-- ser acionado por mecanismo Supabase Cron/worker autorizado, com recovery e observabilidade.
+- ser acionado por `tes-booking-reminders-v1` no Supabase Cron, com recovery da outbox e observabilidade.
+
+Status local: **IMPLEMENTED_LOCAL** para `booking_reminder_24h_patient` e `booking_reminder_1h_patient`. O primeiro lote não cria lembretes para terapeuta. A ativação automática das actions permanece uma decisão operacional por ambiente.
 
 ## Lotes de implementação propostos
 
