@@ -40,7 +40,9 @@ Consultar antes de alterar:
   - `public_therapist_profile_content_v`
   - `public_therapist_slug_redirects_v`
 - Conteúdo editorial publicado vem de `therapist_profile_content_versions` e tabelas filhas.
-- `public_profile_theme` aplica um dos quatro temas oficiais somente ao hero.
+- `public_profile_theme` aplica um dos dezenove temas oficiais ao hero e ao
+  recorte da foto. Os quatro IDs legados (`serene`, `natural`, `warm` e
+  `essential`) continuam Free; quinze novos IDs são Premium/Premium Plus.
   `bio_illustration_id` permanece compatível nos dados publicados, mas não é
   renderizado na página pública. Não limpar, renomear ou criar consumidor do
   campo fora de uma mudança de domínio planejada.
@@ -65,15 +67,15 @@ Preservar o padrão do node:
   Compartilhar usa apenas a URL canônica `/terapeutas/:slug`, sem parâmetros,
   dados privados ou textos promocionais.
 - O hero consome a camada visual oficial em
-  `public/therapists/profile-themes/`: `serene` combina fundo e botânica
-  lilás, `natural` usa sálvia e botânica verde, `warm` usa terracota e a
-  composição de poltrona. `essential` preserva a composição editorial clara
-  sem ilustração dominante. Fundo e arte são decorativos (`alt=""`) e aparecem
-  somente no hero.
+  `public/therapists/profile-themes/`. Os quinze backgrounds da biblioteca
+  foram exportados do Figma `Z42SR0Pi0m307SmcAkDqHb`, nó `14869:2`, e ficam
+  versionados em `library/`; os quatro temas legados preservam seus assets e
+  composição. Fundo e arte são decorativos (`alt=""`) e aparecem somente no
+  hero.
 - Cards `Minha essência`, `Como posso te guiar` e `Um convite para você`.
 - No tablet, o hero deve preservar a leitura lado a lado: foto em uma coluna e a apresentação/bio com badges, avaliação e CTA na coluna vizinha. No mobile, o conteúdo volta a uma coluna; no desktop, mantém a composição ampla do Figma.
-- O registro compartilhado de temas alimenta editor e hero; não duplicar quatro
-  componentes de perfil.
+- O registro compartilhado de temas alimenta editor, hero e snapshots; não
+  duplicar componentes de perfil. O `photoShape` é determinístico por `themeId`.
 - Seção `Vivências e terapias` com serviços, duração, preço e CTA.
 - A seção `Vivências e terapias` usa a terapia canônica como identidade
   pública. Não exibir títulos operacionais de serviço como chip/aba, por

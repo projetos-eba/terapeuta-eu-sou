@@ -186,19 +186,39 @@ describe("TherapistProfileEditorPage", () => {
     expect(screen.queryByText("Dados derivados")).not.toBeInTheDocument();
   });
 
-  it("offers all themes and keeps theme selection in the draft state", () => {
+  it("opens the library and keeps theme selection in the draft state", () => {
     render(<TherapistProfileEditorPage editor={makeEditor()} />);
 
-    expect(screen.getByLabelText(/Sereno/)).toBeChecked();
+    expect(screen.getByText("Sereno")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Alterar tema" }));
+
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("Escolha o visual do seu perfil");
+    expect(dialog.querySelectorAll("[data-theme-preview]")).toHaveLength(19);
+
+    const naturalCard = screen.getByRole("button", { name: /Natural/ });
+    fireEvent.click(naturalCard);
+    expect(naturalCard).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByText("Selecionado: Natural")).toBeInTheDocument();
+  });
+
+  it("lets Free explore Premium themes and opens the canonical upsell", () => {
+    render(
+      <TherapistProfileEditorPage
+        editor={makeEditor({ derived: { plan: "free" } })}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Alterar tema" }));
+    fireEvent.click(screen.getByRole("button", { name: /Geometria/ }));
+
     expect(
-      document.querySelector('[data-theme-preview-background="serene"]'),
-    ).toHaveAttribute("alt", "");
+      screen.getByRole("heading", { name: "Visual exclusivo do Premium" }),
+    ).toBeInTheDocument();
     expect(
-      document.querySelector('[data-theme-preview-illustration="natural"]'),
-    ).toHaveAttribute("alt", "");
-    fireEvent.click(screen.getByLabelText(/Natural/));
-    expect(screen.getByLabelText(/Natural/)).toBeChecked();
-    expect(screen.getByText("Tema atual")).toBeInTheDocument();
+      screen.getByRole("link", { name: "Conhecer Premium" }),
+    ).toHaveAttribute("href", "/terapeuta/plano");
+    expect(commandMocks.sendTherapistProfileCommand).not.toHaveBeenCalled();
   });
 
   it("keeps Minha essência editable without exposing the retired bio illustration gallery", () => {

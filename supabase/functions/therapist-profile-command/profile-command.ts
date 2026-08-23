@@ -4,6 +4,30 @@ import { DomainError } from "../_shared/payments/http.ts";
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+const PROFILE_THEME_IDS = [
+  "ancestral",
+  "aurora",
+  "botanico",
+  "celestial",
+  "cristalino",
+  "energia",
+  "essencial_editorial",
+  "essential",
+  "frequencia",
+  "geometria",
+  "lunar",
+  "natural",
+  "oraculo",
+  "profundo",
+  "sagrado",
+  "sereno_horizonte",
+  "serene",
+  "vinculos",
+  "warm",
+] as const;
+type ProfileThemeId = (typeof PROFILE_THEME_IDS)[number];
+const PROFILE_THEME_ID_SET = new Set<string>(PROFILE_THEME_IDS);
+
 export type TherapistProfileCommandBody =
   | { action?: "read" }
   | {
@@ -51,7 +75,7 @@ export type TherapistProfileEditorPayload = {
   videoThumbnailUrl: string | null;
   videoTitle: string | null;
   videoUrl: string | null;
-  publicProfileTheme: "essential" | "natural" | "serene" | "warm";
+  publicProfileTheme: ProfileThemeId;
   bioIllustrationId:
     | "essential_lines"
     | "gentle_horizon"
@@ -280,15 +304,11 @@ function validatePayload(input: unknown): TherapistProfileEditorPayload {
   };
 }
 
-function publicProfileTheme(value: unknown) {
+function publicProfileTheme(value: unknown): ProfileThemeId {
   if (value === undefined || value === null || value === "") return "serene";
-  if (
-    value === "serene" ||
-    value === "natural" ||
-    value === "warm" ||
-    value === "essential"
-  )
-    return value;
+  if (typeof value === "string" && PROFILE_THEME_ID_SET.has(value)) {
+    return value as ProfileThemeId;
+  }
   invalid();
 }
 

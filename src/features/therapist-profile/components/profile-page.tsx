@@ -12,7 +12,10 @@ import {
 
 import { PublicFooter, PublicHeader } from "@/components/tes";
 import { TrackedBookingLink } from "@/features/public-metrics";
-import { publicProfileThemeById } from "@/features/therapist-profile/personalization";
+import {
+  profilePhotoShapeClassName,
+  publicProfileThemeById,
+} from "@/features/therapist-profile/personalization";
 
 import { AvailabilitySelector } from "./availability-selector";
 import { FavoriteTherapistButton } from "./favorite-therapist-button";
@@ -40,7 +43,7 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
       data-profile-theme={theme.id}
       style={theme.style}
     >
-      {theme.heroBackgroundSrc ? (
+      {(theme.backgroundAsset ?? theme.heroBackgroundSrc) ? (
         <Image
           aria-hidden="true"
           alt=""
@@ -49,7 +52,7 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
           fill
           priority
           sizes="100vw"
-          src={theme.heroBackgroundSrc}
+          src={theme.backgroundAsset ?? theme.heroBackgroundSrc ?? ""}
         />
       ) : (
         <div className="pointer-events-none absolute -right-24 -top-40 size-[420px] rounded-full bg-[var(--profile-shape)] opacity-60" />
@@ -67,7 +70,9 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
         />
       ) : null}
       <div className="relative z-20 mx-auto grid max-w-[1440px] gap-6 px-5 pb-8 pt-6 sm:px-8 md:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)] md:items-center lg:grid-cols-[520px_1fr] lg:gap-8 lg:px-[56px]">
-        <div className="relative min-h-[300px] overflow-hidden rounded-b-[46%] rounded-t-[46%] sm:min-h-[340px] md:min-h-[360px] lg:min-h-[410px]">
+        <div
+          className={`relative min-h-[300px] overflow-hidden sm:min-h-[340px] md:min-h-[360px] lg:min-h-[410px] ${profilePhotoShapeClassName(theme.photoShape)}`}
+        >
           <Image
             src={profile.heroImage}
             alt={`Retrato de ${profile.name}`}

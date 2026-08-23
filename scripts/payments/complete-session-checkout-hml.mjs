@@ -22,19 +22,28 @@ loadEnvFiles();
 
 const args = new Set(process.argv.slice(2));
 const scenario = readArg("scenario", "approved");
+const target = readArg("target", "hml");
+const isLocalTarget = target === "local";
 const baseUrl =
   process.env.PLAYWRIGHT_BASE_URL?.trim() ??
-  "https://hml.terapeutaeusou.com.br";
+  (isLocalTarget ? "http://127.0.0.1:3000" : "https://hml.terapeutaeusou.com.br");
 const vercelCookieFile =
   process.env.PAYMENTS_HML_VERCEL_COOKIE_FILE?.trim() || null;
 const expectedHmlRef =
   process.env.PAYMENTS_HML_SUPABASE_REF?.trim() || "emzwqkmrryuqvqiohqnu";
 const publicTherapistSlug =
-  process.env.PAYMENTS_HML_PUBLIC_THERAPIST_SLUG?.trim() ??
+  (isLocalTarget
+    ? process.env.PAYMENTS_LOCAL_PUBLIC_THERAPIST_SLUG?.trim()
+    : process.env.PAYMENTS_HML_PUBLIC_THERAPIST_SLUG?.trim()) ??
   "antonio-ferrari-e2e";
 const requestedSlot = process.env.PAYMENTS_HML_SLOT?.trim() || null;
-const patientEmail = process.env.PAYMENTS_HML_PATIENT_EMAIL?.trim();
-const patientPassword = process.env.PAYMENTS_HML_PATIENT_PASSWORD?.trim();
+const patientEmail = (isLocalTarget
+  ? process.env.PAYMENTS_LOCAL_PATIENT_EMAIL
+  : process.env.PAYMENTS_HML_PATIENT_EMAIL)?.trim();
+const patientPassword = (isLocalTarget
+  ? process.env.PAYMENTS_LOCAL_PATIENT_PASSWORD
+  : process.env.PAYMENTS_HML_PATIENT_PASSWORD)?.trim();
+const promotionCode = process.env.PAYMENTS_HML_PROMOTION_CODE?.trim() || null;
 const supabaseUrl = getTargetSupabaseUrl();
 const supabaseAnonKey = getSupabaseAnonKey();
 const supabaseServiceRoleKey = getSupabaseServiceRoleKey();
@@ -48,13 +57,19 @@ if (
     "declined",
     "expired",
     "refund",
+    "promotion_approved",
     "boleto_approved",
     "boleto_expired",
   ].includes(scenario)
 ) {
   console.error(
-    "Use --scenario=approved, declined, expired, refund, boleto_approved or boleto_expired.",
+    "Use --scenario=approved, declined, expired, refund, promotion_approved, boleto_approved or boleto_expired.",
   );
+  process.exit(1);
+}
+
+if (!isLocalTarget && target !== "hml") {
+  console.error("Use --target=local or --target=hml.");
   process.exit(1);
 }
 
@@ -74,7 +89,7 @@ for (const [name, value] of Object.entries({
 }
 
 if (!stripeSecretKey.startsWith("sk_test_")) {
-  console.error("Use Stripe test mode for HML session checkout validation.");
+  console.error("Use Stripe test mode for session checkout validation.");
   process.exit(1);
 }
 
@@ -83,9 +98,21 @@ assertStripeModeAllowedForSupabaseUrl({
   supabaseUrl,
 });
 
-if (supabaseProjectRef(supabaseUrl) !== expectedHmlRef) {
+if (!isLocalTarget && supabaseProjectRef(supabaseUrl) !== expectedHmlRef) {
   console.error(
     `Session checkout HML requires Supabase ref ${expectedHmlRef}; found ${supabaseProjectRef(supabaseUrl) ?? "unknown"}.`,
+  );
+  process.exit(1);
+}
+
+if (isLocalTarget && !isLocalSupabaseUrl(supabaseUrl)) {
+  console.error("Local session checkout requires a local Supabase URL.");
+  process.exit(1);
+}
+
+if (scenario === "promotion_approved" && !promotionCode) {
+  console.error(
+    "PAYMENTS_HML_PROMOTION_CODE is required for promotion_approved.",
   );
   process.exit(1);
 }
@@ -121,7 +148,7 @@ try {
     ),
   );
   await page.getByLabel("E-mail").fill(patientEmail);
-  await page.getByLabel("Senha").fill(patientPassword);
+  await page.locator('input[name="password"]').fill(patientPassword);
   await page.getByRole("button", { name: "Entrar" }).click();
   await page.waitForURL(new RegExp(`/reserva\\?`), { timeout: 30_000 });
 
@@ -197,21 +224,51 @@ try {
     process.exit(0);
   }
 
+  if (scenario === "promotion_approved") {
+    logStage("apply_promotion_code");
+    await fillStripePromotionCode(page, promotionCode);
+  }
+
   logStage("fill_approved_card");
   await fillStripeCard(page, "4242424242424242");
-  await page.waitForURL(/\/reserva\/sucesso\?.*session_id=/, {
-    timeout: 120_000,
-  });
+  const checkoutCompletion = await waitForCheckoutCompletion(
+    page,
+    checkoutSessionId,
+  );
 
   const successUrl = new URL(page.url());
   const returnedSessionId = successUrl.searchParams.get("session_id");
-  if (returnedSessionId !== checkoutSessionId) {
+  if (
+    checkoutCompletion === "redirected" &&
+    returnedSessionId !== checkoutSessionId
+  ) {
     throw new Error("checkout_session_mismatch_after_redirect");
   }
 
   const checkout = await stripe.checkout.sessions.retrieve(checkoutSessionId);
+  if (checkout.livemode !== false) {
+    throw new Error("stripe_live_mode_detected");
+  }
   if (checkout.payment_status !== "paid") {
     throw new Error(`stripe_checkout_not_paid:${checkout.payment_status}`);
+  }
+
+  const discountAmountCents = checkout.total_details?.amount_discount ?? 0;
+  if (scenario === "promotion_approved") {
+    if (
+      !checkout.amount_subtotal ||
+      checkout.amount_total === null ||
+      discountAmountCents <= 0 ||
+      checkout.amount_total >= checkout.amount_subtotal
+    ) {
+      throw new Error("stripe_promotion_discount_not_applied");
+    }
+  } else if (
+    checkout.amount_subtotal !== null &&
+    checkout.amount_total !== null &&
+    (checkout.amount_total !== checkout.amount_subtotal || discountAmountCents !== 0)
+  ) {
+    throw new Error("unexpected_discount_without_promotion_code");
   }
 
   const checkoutEvent = await waitForStripeEvent({
@@ -261,11 +318,21 @@ try {
   }
 
   printEvidence({
+    actualAmountCents: checkout.amount_total,
     bookingId: paidPayment.booking_id,
+    commissionCents: paidPayment.platform_gross_commission_cents,
     checkoutSessionId,
+    checkoutCompletion,
+    discountAmountCents,
     finalStatus: paidPayment.financial_status,
+    livemode: checkout.livemode,
     ok: true,
+    originalAmountCents: checkout.amount_subtotal,
+    paymentGrossAmountCents: paidPayment.gross_amount_cents,
+    paymentMetadata: paidPayment.metadata?.stripe_checkout ?? null,
+    therapistAmountCents: paidPayment.therapist_amount_cents,
     scenario,
+    webhookEvents: ["checkout.session.completed", "payment_intent.succeeded"],
     webhookDelivery: "signed_replay_of_real_stripe_events",
   });
 } finally {
@@ -361,6 +428,48 @@ async function fillStripeCard(page, cardNumber) {
     'input[data-elements-stable-field-name="postalCode"]',
   ]);
   await clickStripeButton(page, /Pay|Pagar|Finalizar|Confirmar/i);
+}
+
+async function fillStripePromotionCode(page, code) {
+  const existingInput = await findLocatorInPageOrFrames(page, (scope) =>
+    scope.getByLabel(/Promotion code|Código promocional|Codigo promocional|Cupom/i).first(),
+  );
+
+  if (!existingInput) {
+    const addCode = await findLocatorInPageOrFrames(page, (scope) =>
+      scope.getByText(/Add (?:a )?promotion code|Add code|Adicionar código(?: promocional)?|Adicionar codigo(?: promocional)?|Have a promotion code|Tem um código promocional/i).first(),
+    );
+    if (!addCode) {
+      const visibleFrameText = [];
+      for (const scope of [page, ...page.frames()]) {
+        const text = await scope.locator("body").innerText().catch(() => "");
+        if (text.trim()) visibleFrameText.push(text.replace(/\s+/g, " ").slice(0, 500));
+      }
+      console.log(JSON.stringify({
+        code: "stripe_promotion_code_control_not_visible",
+        visibleFrameText,
+      }));
+      throw new Error("stripe_promotion_code_control_not_visible");
+    }
+    await addCode.click({ timeout: 15_000 });
+  }
+
+  await fillStripeField(
+    page,
+    /Promotion code|Código promocional|Codigo promocional|Cupom/i,
+    code,
+    [
+      'input[name="promotionCode"]',
+      'input[name="promotion_code"]',
+      'input[autocomplete="off"]',
+    ],
+  );
+  await clickStripeButton(page, /Apply|Aplicar/i);
+
+  const appliedCode = await findLocatorInPageOrFrames(page, (scope) =>
+    scope.getByText(code, { exact: false }).first(),
+  );
+  if (!appliedCode) throw new Error("stripe_promotion_code_not_visible_after_apply");
 }
 
 async function runBoletoScenario(page, checkoutSessionId) {
@@ -511,13 +620,13 @@ async function fillOptionalStripeField(page, label, value, selectors = []) {
 
 async function clickStripeButton(page, label) {
   const locator =
+    (await findLocatorInPageOrFrames(page, (scope) =>
+      scope.getByRole("button", { name: label }).first(),
+    )) ??
     (await findFirstSelectorInPageOrFrames(page, [
       'button[type="submit"]',
       '[data-testid="hosted-payment-submit-button"]',
     ])) ??
-    (await findLocatorInPageOrFrames(page, (scope) =>
-      scope.getByRole("button", { name: label }).first(),
-    )) ??
     (await findFirstEnabledButtonInPageOrFrames(page));
 
   if (!locator) throw new Error("stripe_submit_button_not_found");
@@ -589,6 +698,23 @@ async function waitForCheckoutPaymentIntent(sessionId) {
   throw new Error("payment_intent_not_attached_to_checkout");
 }
 
+async function waitForCheckoutCompletion(page, sessionId) {
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    if (/\/reserva\/sucesso\?.*session_id=/.test(page.url())) {
+      return "redirected";
+    }
+
+    const checkout = await stripe.checkout.sessions.retrieve(sessionId);
+    if (checkout.status === "complete" && checkout.payment_status === "paid") {
+      return "stripe_confirmed";
+    }
+    await delay(2000);
+  }
+
+  throw new Error("stripe_checkout_completion_not_confirmed");
+}
+
 async function waitForStripeEvent({ objectId, type }) {
   const deadline = Date.now() + 90_000;
   while (Date.now() < deadline) {
@@ -652,7 +778,7 @@ async function waitForAnySessionPaymentStatus(checkoutSessionId, statuses) {
 
 function getSessionPayment(checkoutSessionId) {
   return supabaseAdmin(
-    `/rest/v1/session_payments?select=id,booking_id,financial_status,stripe_charge_id,stripe_payment_intent_id,stripe_checkout_session_id&stripe_checkout_session_id=eq.${encodeURIComponent(checkoutSessionId)}&limit=1`,
+    `/rest/v1/session_payments?select=id,booking_id,financial_status,stripe_charge_id,stripe_payment_intent_id,stripe_checkout_session_id,gross_amount_cents,platform_gross_commission_cents,therapist_amount_cents,metadata&stripe_checkout_session_id=eq.${encodeURIComponent(checkoutSessionId)}&limit=1`,
   );
 }
 
@@ -692,6 +818,10 @@ function supabaseProjectRef(value) {
   } catch {
     return null;
   }
+}
+
+function isLocalSupabaseUrl(value) {
+  return /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?/i.test(value);
 }
 
 function delay(ms) {

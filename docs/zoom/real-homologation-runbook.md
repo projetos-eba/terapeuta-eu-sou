@@ -94,10 +94,13 @@ Regras do harness HML:
    baixo, sem overflow da pagina e com audio, camera e saida dentro do viewport.
 10. O harness exercita audio real do Video SDK e encerra a sessao pelo botao
    `Encerrar encontro`.
-11. Em caso de falha durante cleanup, o fallback permitido e `PUT
+11. Após a saída, o harness valida a tela de feedback para paciente e terapeuta,
+    registra uma resposta realizada ou não realizada e confirma no Admin a
+    leitura bilateral, a pendência ou a divergência sem edição.
+12. Em caso de falha durante cleanup, o fallback permitido e `PUT
 /videosdk/sessions/{sessionId}/status` via `endSessionByApi`; o harness nunca
    grava fixture paga direta nem atualiza `video_sessions` manualmente.
-12. Evidencia final fica em `.tmp/homologation/zoom-hml-*/evidence.json`,
+13. Evidencia final fica em `.tmp/homologation/zoom-hml-*/evidence.json`,
     somente com IDs em hash.
 
 Reflexos exigidos:

@@ -11,6 +11,7 @@ export type PlanFeatureCode =
   | "closed_portal_sessions"
   | "username_url"
   | "visual_identity_customization"
+  | "premium_profile_themes"
   | "reviews_testimonials"
   | "verification_badge"
   | "automatic_reminders_partial"
@@ -112,9 +113,17 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "base",
     code: "visual_identity_customization",
-    description: "Tema oficial e ilustração TES para a presença pública.",
-    label: "Tema e ilustração do perfil público",
+    description: "Quatro temas oficiais e ilustrações TES para a presença pública.",
+    label: "Temas básicos e ilustração do perfil público",
     minimumPlan: TherapistPlan.Free,
+  },
+  {
+    category: "premium",
+    code: "premium_profile_themes",
+    description:
+      "Quinze composições Premium com backgrounds e recortes exclusivos para o perfil público.",
+    label: "Biblioteca Premium de temas do perfil",
+    minimumPlan: TherapistPlan.Premium,
   },
   {
     category: "premium",

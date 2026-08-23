@@ -93,8 +93,18 @@ Não passar linhas cruas do Supabase para React.
   O navegador nunca recebe bucket, path interno ou URL assinada; outro
   terapeuta não pode abrir documentos alheios.
 - Capabilities são validadas no frontend e no backend.
-- Temas `serene`, `natural`, `warm` e `essential` são universais e seguem
-  rascunho/publicação. Não criar gate de plano.
+- O catálogo de temas possui quatro opções Free (`serene`, `natural`, `warm` e
+  `essential`) e quinze opções Premium/Premium Plus. Free visualiza todas as
+  composições, mas só aplica as quatro básicas; Premium e Premium Plus aplicam
+  as dezenove. Cada tema define seu `photoShape` (`circle`, `arch`, `oval` ou
+  `square`) no catálogo, sem configuração separada para a terapeuta.
+- A biblioteca secundária usa `TESDialog`, mantém seleção local até a confirmação
+  e encaminha o upsell para `/terapeuta/plano`. Após downgrade, o próximo
+  salvamento normaliza um tema Premium para `serene` e a interface avisa a
+  terapeuta.
+- A nova fonte visual é o Figma `Z42SR0Pi0m307SmcAkDqHb`, nó `14869:2`. O
+  frame visual novo não está presente no Figma atual da edição; a divergência
+  é intencional e registrada para manutenção.
 - `bioIllustrationId` permanece apenas como dado legado compatível em banco e
   contratos. A galeria e a renderização pública foram descontinuadas; não criar
   novo consumidor. Os assets históricos em `public/therapists/profile-bio/`

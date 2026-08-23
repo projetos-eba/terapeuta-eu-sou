@@ -4,6 +4,7 @@ import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 import type {
   AvailabilityDay,
   PublicTherapistProfile,
+  PublicProfileThemeId,
   TherapistProfileContent,
   TherapistProfileReview,
   TherapistProfileService,
@@ -83,7 +84,7 @@ export type ContentRow = {
     label: string;
   }> | null;
   invitation_body: string | null;
-  public_profile_theme: "essential" | "natural" | "serene" | "warm";
+  public_profile_theme: PublicProfileThemeId;
   reflections: Array<{
     href: string;
     imageUrl: string;

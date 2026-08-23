@@ -823,30 +823,12 @@ function ReservationSummary({
         {context.step === "pagamento" ? (
           <>
             <div className="space-y-3 border-t border-border/70 pt-6">
-              <label
-                htmlFor="coupon"
-                className="block text-xs font-extrabold uppercase tracking-[0.16em] text-tesText-muted"
-              >
-                Tem um cupom?
-              </label>
-              <div className="flex gap-3">
-                <input
-                  id="coupon"
-                  className="min-h-12 min-w-0 flex-1 rounded-2xl border border-border bg-white px-4 text-sm font-bold text-brand-deep outline-none focus:ring-4 focus:ring-ring/20"
-                  disabled
-                  placeholder="Código"
-                />
-                <button
-                  className="min-h-12 rounded-2xl bg-status-infoBg px-5 text-sm font-extrabold text-brand-deep disabled:opacity-60"
-                  disabled
-                  type="button"
-                >
-                  Aplicar
-                </button>
-              </div>
-              <p className="text-xs font-bold leading-5 text-tesText-muted">
-                Cupons ainda não estão disponíveis para esta reserva. O valor
-                final será calculado no servidor e exibido no checkout.
+              <p className="block text-sm font-extrabold uppercase tracking-[0.16em] text-tesText-muted">
+                Código promocional
+              </p>
+              <p className="text-sm font-bold leading-5 text-tesText-muted">
+                Se você tiver um código, poderá aplicá-lo no checkout seguro da
+                Stripe. O valor atualizado será exibido antes do pagamento.
               </p>
             </div>
             <TESButton

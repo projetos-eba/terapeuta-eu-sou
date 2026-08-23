@@ -4927,6 +4927,140 @@ export type Database = {
           },
         ];
       };
+      session_feedback: {
+        Row: {
+          author_profile_id: string;
+          author_role: Database["public"]["Enums"]["user_role"];
+          booking_id: string;
+          comment: string;
+          created_at: string;
+          id: string;
+          not_performed_reason: string | null;
+          outcome: string;
+          payload_hash: string;
+          rating: number | null;
+          request_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          author_profile_id: string;
+          author_role: Database["public"]["Enums"]["user_role"];
+          booking_id: string;
+          comment?: string;
+          created_at?: string;
+          id?: string;
+          not_performed_reason?: string | null;
+          outcome: string;
+          payload_hash: string;
+          rating?: number | null;
+          request_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          author_profile_id?: string;
+          author_role?: Database["public"]["Enums"]["user_role"];
+          booking_id?: string;
+          comment?: string;
+          created_at?: string;
+          id?: string;
+          not_performed_reason?: string | null;
+          outcome?: string;
+          payload_hash?: string;
+          rating?: number | null;
+          request_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_feedback_author_profile_id_fkey";
+            columns: ["author_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_feedback_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_feedback_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_session_read_model_v1";
+            referencedColumns: ["bookingId"];
+          },
+        ];
+      };
+      session_participant_confirmations: {
+        Row: {
+          booking_id: string;
+          confirmed_at: string;
+          confirmed_by_profile_id: string | null;
+          created_at: string;
+          due_at: string;
+          id: string;
+          outcome: string;
+          participant_role: Database["public"]["Enums"]["user_role"];
+          payload_hash: string;
+          request_id: string;
+          source: string;
+          updated_at: string;
+        };
+        Insert: {
+          booking_id: string;
+          confirmed_at?: string;
+          confirmed_by_profile_id?: string | null;
+          created_at?: string;
+          due_at: string;
+          id?: string;
+          outcome: string;
+          participant_role: Database["public"]["Enums"]["user_role"];
+          payload_hash: string;
+          request_id: string;
+          source: string;
+          updated_at?: string;
+        };
+        Update: {
+          booking_id?: string;
+          confirmed_at?: string;
+          confirmed_by_profile_id?: string | null;
+          created_at?: string;
+          due_at?: string;
+          id?: string;
+          outcome?: string;
+          participant_role?: Database["public"]["Enums"]["user_role"];
+          payload_hash?: string;
+          request_id?: string;
+          source?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_participant_confirmations_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "session_participant_confirmations_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_session_read_model_v1";
+            referencedColumns: ["bookingId"];
+          },
+          {
+            foreignKeyName: "session_participant_confirmations_confirmed_by_profile_id_fkey";
+            columns: ["confirmed_by_profile_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       session_payment_attempts: {
         Row: {
           created_at: string;
@@ -7116,6 +7250,107 @@ export type Database = {
             columns: ["uploaded_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      therapist_private_identity: {
+        Row: {
+          city: string;
+          complement: string | null;
+          country: string;
+          created_at: string;
+          document_number: string;
+          document_type: string;
+          id: string;
+          neighborhood: string;
+          postal_code: string;
+          state: string;
+          street: string;
+          street_number: string;
+          therapist_profile_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          city: string;
+          complement?: string | null;
+          country?: string;
+          created_at?: string;
+          document_number: string;
+          document_type: string;
+          id?: string;
+          neighborhood: string;
+          postal_code: string;
+          state: string;
+          street: string;
+          street_number: string;
+          therapist_profile_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          city?: string;
+          complement?: string | null;
+          country?: string;
+          created_at?: string;
+          document_number?: string;
+          document_type?: string;
+          id?: string;
+          neighborhood?: string;
+          postal_code?: string;
+          state?: string;
+          street?: string;
+          street_number?: string;
+          therapist_profile_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "therapist_private_identity_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: true;
+            referencedRelation: "public_home_therapists";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_private_identity_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: true;
+            referencedRelation: "public_home_therapists_internal";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_private_identity_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: true;
+            referencedRelation: "public_therapist_profiles_v";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_private_identity_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: true;
+            referencedRelation: "public_therapist_profiles_v_internal";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "therapist_private_identity_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: true;
+            referencedRelation: "public_therapist_search";
+            referencedColumns: ["therapist_profile_id"];
+          },
+          {
+            foreignKeyName: "therapist_private_identity_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: true;
+            referencedRelation: "public_therapist_search_internal";
+            referencedColumns: ["therapist_profile_id"];
+          },
+          {
+            foreignKeyName: "therapist_private_identity_therapist_profile_id_fkey";
+            columns: ["therapist_profile_id"];
+            isOneToOne: true;
+            referencedRelation: "therapist_profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -12106,6 +12341,10 @@ export type Database = {
         Args: { p_module: string; p_query?: Json };
         Returns: Json;
       };
+      admin_get_session_feedback_v1: {
+        Args: { p_booking_id: string };
+        Returns: Json;
+      };
       admin_get_support_inbox_v1: { Args: { p_query?: Json }; Returns: Json };
       admin_get_support_ticket_management_v1: {
         Args: { p_ticket_id: string };
@@ -12120,6 +12359,10 @@ export type Database = {
           id: string;
           visibility: string;
         }[];
+      };
+      admin_get_therapist_profile_review_v1: {
+        Args: { p_therapist_profile_id: string };
+        Returns: Json;
       };
       admin_list_matching_v1: {
         Args: { p_actor_user_id: string };
@@ -12790,6 +13033,10 @@ export type Database = {
         Args: { p_now?: string };
         Returns: number;
       };
+      finalize_bilateral_session_confirmation_v1: {
+        Args: { p_booking_id: string; p_now?: string };
+        Returns: string;
+      };
       generate_therapist_free_public_slug_v1: { Args: never; Returns: string };
       get_private_therapist_advanced_financial_dashboard_v1: {
         Args: {
@@ -12949,6 +13196,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      get_session_feedback_v1: {
+        Args: { p_booking_id: string };
+        Returns: Json;
+      };
       get_therapist_agenda_v1: {
         Args: { p_range_end?: string; p_range_start?: string };
         Returns: Json;
@@ -13034,6 +13285,7 @@ export type Database = {
         };
         Returns: Json;
       };
+      get_therapist_private_identity_v1: { Args: never; Returns: Json };
       get_therapist_profile_actor_m1: {
         Args: { p_actor_user_id: string };
         Returns: {
@@ -13281,6 +13533,21 @@ export type Database = {
         Returns: Json;
       };
       purge_temporary_data_v1: { Args: { p_now?: string }; Returns: Json };
+      queue_therapist_profile_review_v1: {
+        Args: { p_therapist_profile_id: string };
+        Returns: undefined;
+      };
+      reconcile_session_payment_amount_v1: {
+        Args: {
+          p_charged_amount_cents: number;
+          p_discount_amount_cents?: number;
+          p_metadata?: Json;
+          p_original_amount_cents?: number;
+          p_session_payment_id: string;
+          p_stripe_checkout_session_id?: string;
+        };
+        Returns: Json;
+      };
       record_admin_audit_event_v1: {
         Args: {
           p_action: string;
@@ -13300,6 +13567,17 @@ export type Database = {
       };
       record_public_therapist_metric_events_v1: {
         Args: { p_events: Json; p_session_id: string };
+        Returns: Json;
+      };
+      record_session_participant_confirmation_v1: {
+        Args: {
+          p_actor_user_id: string;
+          p_booking_id: string;
+          p_confirmed_at?: string;
+          p_outcome: string;
+          p_request_id: string;
+          p_source?: string;
+        };
         Returns: Json;
       };
       record_session_payment_stripe_reconciliation_v1: {
@@ -13643,6 +13921,21 @@ export type Database = {
         };
         Returns: Json;
       };
+      save_therapist_private_identity_v1: {
+        Args: {
+          p_city: string;
+          p_complement: string;
+          p_country?: string;
+          p_document_number: string;
+          p_document_type: string;
+          p_neighborhood: string;
+          p_postal_code: string;
+          p_state: string;
+          p_street: string;
+          p_street_number: string;
+        };
+        Returns: Json;
+      };
       save_therapist_profile_draft_content_base_v1: {
         Args: {
           p_actor_user_id: string;
@@ -13738,6 +14031,23 @@ export type Database = {
         Args: { p_service_id: string };
         Returns: Json;
       };
+      session_attendance_state_v1: {
+        Args: { p_booking_id: string; p_now?: string };
+        Returns: Json;
+      };
+      session_feedback_confirmation_payload: {
+        Args: {
+          p_booking_id: string;
+          p_participant_role: Database["public"]["Enums"]["user_role"];
+        };
+        Returns: Json;
+      };
+      session_feedback_payload: {
+        Args: {
+          p_feedback: Database["public"]["Tables"]["session_feedback"]["Row"];
+        };
+        Returns: Json;
+      };
       store_therapist_service_request_v1: {
         Args: {
           p_operation: string;
@@ -13746,6 +14056,18 @@ export type Database = {
           p_response: Json;
           p_service_id: string;
           p_therapist_profile_id: string;
+        };
+        Returns: Json;
+      };
+      submit_session_feedback_for_actor_v1: {
+        Args: {
+          p_actor_user_id: string;
+          p_booking_id: string;
+          p_comment: string;
+          p_not_performed_reason: string;
+          p_outcome: string;
+          p_rating: number;
+          p_request_id: string;
         };
         Returns: Json;
       };

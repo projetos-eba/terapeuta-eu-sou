@@ -296,6 +296,64 @@ describe("admin operation mappers", () => {
     expect(serialized).not.toContain("room-timeout");
   });
 
+  it("maps bilateral session feedback, pending participant and divergence", () => {
+    const detail = mapAdminOperationDetail({
+      auditEvents: [],
+      generatedAt: "2026-08-22T22:00:00.000Z",
+      module: "sessions",
+      record: {
+        id: "booking-1",
+        session_feedback: {
+          attendance: {
+            bothJoined: true,
+            patientJoined: true,
+            sessionClosed: true,
+            sessionEndedAt: "2026-08-22T22:00:00.000Z",
+            sessionEndsAt: "2026-08-22T21:50:00.000Z",
+            sessionStartedAt: "2026-08-22T21:00:00.000Z",
+            therapistJoined: true,
+          },
+          confirmation: { patient: null, therapist: null },
+          divergent: true,
+          financial: null,
+          patient: {
+            authorRole: "patient",
+            comment: "A chamada aconteceu.",
+            createdAt: "2026-08-22T21:00:00.000Z",
+            notPerformedReason: null,
+            outcome: "completed",
+            rating: 5,
+          },
+          pendingRoles: ["therapist"],
+          therapist: null,
+          requestId: "server-only-request-id",
+        },
+      },
+    });
+
+    expect(detail.sessionFeedback).toEqual({
+      data: {
+        attendance: {
+          bothJoined: true,
+          patientJoined: true,
+          sessionClosed: true,
+          sessionEndedAt: "2026-08-22T22:00:00.000Z",
+          sessionEndsAt: "2026-08-22T21:50:00.000Z",
+          sessionStartedAt: "2026-08-22T21:00:00.000Z",
+          therapistJoined: true,
+        },
+        confirmation: { patient: null, therapist: null },
+        divergent: true,
+        financial: null,
+        patient: expect.objectContaining({ rating: 5 }),
+        pendingRoles: ["therapist"],
+        therapist: null,
+      },
+      status: "available",
+    });
+    expect(JSON.stringify(detail)).not.toContain("server-only-request-id");
+  });
+
   it("maps honest session detail when the online room is not available yet", () => {
     const detail = mapAdminOperationDetail({
       auditEvents: [],

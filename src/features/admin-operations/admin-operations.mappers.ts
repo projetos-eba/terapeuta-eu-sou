@@ -199,10 +199,118 @@ export function mapAdminOperationDetail({
     canPublish: canPublishAdministratively(record),
     safetyNotes: getDetailSafetyNotes(module),
     sections: getDetailSections(module, record),
+    sessionFeedback:
+      module === "sessions"
+        ? mapAdminSessionFeedback(record.session_feedback)
+        : undefined,
     statusLabel: row?.statusLabel,
     subtitle: row?.subtitle,
     title: row?.title ?? getFallbackDetailTitle(module, id),
   };
+}
+
+function mapAdminSessionFeedback(value: unknown) {
+  if (!isRecord(value)) return undefined;
+  if (asText(value.status) === "unavailable") {
+    return { data: null, status: "unavailable" as const };
+  }
+
+  const patient = mapAdminSessionFeedbackItem(value.patient, "patient");
+  const therapist = mapAdminSessionFeedbackItem(value.therapist, "therapist");
+  const attendance = mapAdminSessionAttendance(value.attendance);
+  const confirmation = {
+    patient: mapAdminSessionConfirmation(
+      isRecord(value.confirmation) ? value.confirmation.patient : null,
+    ),
+    therapist: mapAdminSessionConfirmation(
+      isRecord(value.confirmation) ? value.confirmation.therapist : null,
+    ),
+  };
+  const financial = mapAdminSessionFinancial(value.financial);
+  const pendingRoles = Array.isArray(value.pendingRoles)
+    ? value.pendingRoles.filter(
+        (role): role is "patient" | "therapist" =>
+          role === "patient" || role === "therapist",
+      )
+    : [
+        ...(patient ? [] : ["patient" as const]),
+        ...(therapist ? [] : ["therapist" as const]),
+      ];
+
+  return {
+    data: {
+      attendance,
+      confirmation,
+      divergent: value.divergent === true,
+      financial,
+      patient,
+      pendingRoles,
+      therapist,
+    },
+    status: "available" as const,
+  };
+}
+
+function mapAdminSessionAttendance(value: unknown) {
+  const record = isRecord(value) ? value : {};
+  return {
+    bothJoined: record.bothJoined === true,
+    patientJoined: record.patientJoined === true,
+    sessionClosed: record.sessionClosed === true,
+    sessionEndedAt: asText(record.sessionEndedAt) || null,
+    sessionEndsAt: asText(record.sessionEndsAt) || null,
+    sessionStartedAt: asText(record.sessionStartedAt) || null,
+    therapistJoined: record.therapistJoined === true,
+  } satisfies import("./admin-operations.types").AdminSessionAttendance;
+}
+
+function mapAdminSessionConfirmation(value: unknown) {
+  if (!isRecord(value)) return null;
+  const outcome = asText(value.outcome);
+  const source = asText(value.source);
+  if (
+    (outcome !== "completed" && outcome !== "not_performed") ||
+    (source !== "manual" && source !== "automatic")
+  ) {
+    return null;
+  }
+
+  return {
+    confirmedAt: asText(value.confirmedAt),
+    dueAt: asText(value.dueAt),
+    outcome,
+    source,
+  } satisfies import("./admin-operations.types").AdminSessionConfirmation;
+}
+
+function mapAdminSessionFinancial(value: unknown) {
+  if (!isRecord(value)) return null;
+  return {
+    eligibleAt: asText(value.eligibleAt) || null,
+    serviceConfirmedAt: asText(value.serviceConfirmedAt) || null,
+    serviceStatus: asText(value.serviceStatus),
+    transferStatus: asText(value.transferStatus),
+  } satisfies import("./admin-operations.types").AdminSessionFinancialAudit;
+}
+
+function mapAdminSessionFeedbackItem(
+  value: unknown,
+  authorRole: "patient" | "therapist",
+) {
+  if (!isRecord(value)) return null;
+  const outcome = asText(value.outcome);
+  if (outcome !== "completed" && outcome !== "not_performed") return null;
+
+  const rating = typeof value.rating === "number" ? value.rating : null;
+
+  return {
+    authorRole,
+    comment: asText(value.comment),
+    createdAt: asText(value.createdAt),
+    notPerformedReason: asText(value.notPerformedReason) || null,
+    outcome,
+    rating,
+  } satisfies import("./admin-operations.types").AdminSessionFeedbackItem;
 }
 
 function getDetailSections(

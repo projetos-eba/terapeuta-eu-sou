@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { CalendarDays, Clock3, HeartHandshake, Video } from "lucide-react";
+import { BookingStatus } from "@/domain/tes";
+import { CalendarDays, Clock3, HeartHandshake, Star, Video } from "lucide-react";
 
 import { TESButton } from "@/components/tes/tes-button";
 import { routes } from "@/lib/routes";
@@ -137,6 +138,15 @@ export function SessionOverviewCard({
           >
             Ver perfil profissional
           </Link>
+          {canReviewFeedback(data.booking.status) ? (
+            <Link
+              className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              href={`${routes.patient.encounterVideo(data.booking.id)}?feedback=1` as Route<string>}
+            >
+              <Star aria-hidden="true" size={17} />
+              Avaliar encontro
+            </Link>
+          ) : null}
         </div>
       </div>
     </section>
@@ -317,6 +327,17 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
     label: "Falar com suporte",
     variant: "secondary",
   };
+}
+
+function canReviewFeedback(status: PatientSessionDetailPageData["booking"]["status"]) {
+  return (
+    status === BookingStatus.Completed ||
+    status === BookingStatus.CancelledByPatient ||
+    status === BookingStatus.CancelledByTherapist ||
+    status === BookingStatus.NoShowPatient ||
+    status === BookingStatus.NoShowTherapist ||
+    status === BookingStatus.Refunded
+  );
 }
 
 function getStatusTone(

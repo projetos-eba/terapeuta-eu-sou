@@ -3,6 +3,7 @@ import type {
   TherapistProfileEditableFields,
   TherapistProfileEditorPayload,
 } from "./therapist-profile-editor.types";
+import { isPublicProfileThemeId } from "@/features/therapist-profile/personalization";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -137,13 +138,7 @@ export function createEmptyEditorFields(): TherapistProfileEditableFields {
 
 function publicProfileTheme(value: unknown) {
   if (value === undefined || value === null || value === "") return "serene";
-  if (
-    value === "serene" ||
-    value === "natural" ||
-    value === "warm" ||
-    value === "essential"
-  )
-    return value;
+  if (isPublicProfileThemeId(value)) return value;
   throw invalid("public_profile_theme");
 }
 

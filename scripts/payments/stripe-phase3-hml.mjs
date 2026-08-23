@@ -75,6 +75,16 @@ const steps = [
   },
 ];
 
+if (process.env.PAYMENTS_HML_PROMOTION_CODE?.trim()) {
+  steps.splice(2, 0, {
+    args: [
+      "scripts/payments/complete-session-checkout-hml.mjs",
+      "--scenario=promotion_approved",
+    ],
+    name: "patient_session_promotion_approved",
+  });
+}
+
 for (const step of steps) {
   console.log(JSON.stringify({ phase: "stripe_3a_hml", step: step.name }));
   const code = await runNode(step.args, step.env ?? {});

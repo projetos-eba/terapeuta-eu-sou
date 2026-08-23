@@ -1,5 +1,6 @@
 import { createEmptyEditorFields } from "./therapist-profile-editor.parsers";
 import type { PublicTherapistProfile } from "@/features/therapist-profile/types";
+import { isPublicProfileThemeId } from "@/features/therapist-profile/personalization";
 
 import type {
   TherapistProfileAccountStatus,
@@ -175,9 +176,7 @@ function mapCapabilities(input: unknown): TherapistProfileCapabilities {
 }
 
 function publicProfileTheme(value: unknown) {
-  return value === "natural" || value === "warm" || value === "essential"
-    ? value
-    : "serene";
+  return isPublicProfileThemeId(value) ? value : "serene";
 }
 
 function mapCompleteness(input: unknown): TherapistProfileCompleteness {

@@ -15,6 +15,7 @@ export function ZoomVideoCallPage({
   participantLabel,
   scheduleLabel,
   sessionTitle,
+  showFeedback = false,
 }: {
   access: ZoomAccessState | null;
   actorRole: "patient" | "therapist";
@@ -23,9 +24,10 @@ export function ZoomVideoCallPage({
   participantLabel: string;
   scheduleLabel: string;
   sessionTitle: string;
+  showFeedback?: boolean;
 }) {
   return (
-    <div className="relative h-screen h-dvh overflow-hidden bg-[linear-gradient(145deg,#fdfcff_0%,#f4effb_48%,#eef8f7_100%)] text-tesText-primary">
+    <div className="relative h-screen h-dvh overflow-hidden bg-surface-soft text-tesText-primary">
       <div
         aria-hidden="true"
         className="absolute -left-32 top-20 size-80 rounded-full bg-brand-primary/10 blur-3xl"
@@ -47,7 +49,7 @@ export function ZoomVideoCallPage({
             </Link>
             <Image
               alt="Terapeuta Eu Sou"
-              className="hidden h-auto w-[126px] sm:block"
+            className="hidden h-auto w-[126px] sm:block"
               height={46}
               priority
               src="/logo-oficial-terapeuta-eu-sou.png"
@@ -70,7 +72,7 @@ export function ZoomVideoCallPage({
         </div>
       </header>
 
-      <main className="relative z-sticky mx-auto grid h-[calc(100dvh-4rem)] min-h-0 w-full max-w-[1480px] grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-y-auto px-4 py-3 sm:h-[calc(100dvh-5rem)] sm:gap-4 sm:px-6 sm:py-4 lg:px-8">
+      <main className="relative z-sticky mx-auto grid h-[calc(100dvh-4rem)] min-h-0 w-full max-w-[1480px] grid-rows-[auto_minmax(0,1fr)] gap-3 overflow-y-auto px-3 py-3 sm:h-[calc(100dvh-5rem)] sm:gap-4 sm:px-6 sm:py-4 lg:px-8">
         <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end sm:gap-3">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
@@ -95,8 +97,13 @@ export function ZoomVideoCallPage({
           <ZoomVideoSessionAdapter
             access={access}
             actorRole={actorRole}
+            backHref={backHref}
             bookingId={bookingId}
             displayMode="dedicated"
+            initialFeedback={showFeedback}
+            participantLabel={participantLabel}
+            scheduleLabel={scheduleLabel}
+            sessionTitle={sessionTitle}
           />
         </div>
       </main>
