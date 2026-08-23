@@ -33,8 +33,8 @@ Consultar antes de alterar:
 - Nao armazenar respostas individuais no banco.
 - Nao usar refinamentos, avaliacoes, disponibilidade ou plano do terapeuta no
   ranking de terapias.
-- Regra definitiva: temas recomendam terapias; refinamentos recomendam
-  terapeutas dentro da terapia escolhida.
+- Temas orientam as terapias possíveis; interesses refinam o contexto escolhido
+  e são preservados para a etapa de resultado, sem alterar o ranking atual.
 - Usar “Tema” e “Interesse” na UI; nao usar “subtema”.
 
 ## Banco e dados
@@ -69,8 +69,8 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
 - `src/app/sua-jornada/page.tsx`: Server Component com config live, demo
   explicito ou estado indisponivel honesto.
 - `JourneyMatchClient`: selecao de temas, limites e envio. Os interesses
-  associados a cada tema permanecem uma dimensao interna do calculo e nao sao
-  escolhidos pelo visitante nesta jornada.
+  associados a cada tema ficam visiveis para escolha, com limite de ate 3 por
+  tema.
 - `src/app/sua-jornada/resultado/page.tsx`: `noindex`.
 - `MatchingResultClient`: recarrega escolhas do `sessionStorage`, recalcula pela API e redireciona para `/sua-jornada` quando nao houver estado.
 - A selecao salva em `sessionStorage` deve incluir `matchingVersionId`. A API
@@ -105,8 +105,8 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
   - `/sua-jornada`
   - `/sua-jornada/resultado` sem sessionStorage redireciona.
   - limite de 1 a 3 temas.
-  - interesses associados acompanham os temas selecionados; nao ha seletor
-    publico de interesses.
+  - selecionar um tema abre os interesses associados.
+  - cada tema permite ate 3 interesses; desmarcar o tema remove seus interesses.
   - refinamentos nao alteram ranking de terapias.
   - resultado aponta para `/terapias/:slug`.
   - resultado retorna apenas terapias existentes em `public_matching_therapies_v`.

@@ -175,6 +175,7 @@ function TemplateDialog({
     supportRequestId.current ??= crypto.randomUUID();
     const response = await fetch("/api/support/tickets", {
       body: JSON.stringify({
+        actorRole: props.actorRole,
         bookingId: null,
         category: supportCategoryForTemplate(selectedTemplate?.key),
         description: supportDescription,

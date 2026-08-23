@@ -208,7 +208,7 @@ test.describe("Zoom Video SDK participant browser isolation", () => {
 async function loginAsPatient(page: import("@playwright/test").Page) {
   await page.goto("/cliente/login");
   await page.getByLabel("E-mail").fill(patientEmail);
-  await page.getByLabel("Senha").fill(patientPassword);
+  await page.locator('input[name="password"]').fill(patientPassword);
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/app(?:\?.*)?$/);
 }
@@ -216,7 +216,7 @@ async function loginAsPatient(page: import("@playwright/test").Page) {
 async function loginAsTherapist(page: import("@playwright/test").Page) {
   await page.goto("/terapeuta/login");
   await page.getByLabel("E-mail").fill(therapistEmail);
-  await page.getByLabel("Senha").fill(therapistPassword);
+  await page.locator('input[name="password"]').fill(therapistPassword);
   await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
   await expect(page).toHaveURL(/\/terapeuta(?:\?.*)?$/);
 }

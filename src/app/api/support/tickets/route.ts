@@ -19,9 +19,11 @@ type SupportTicketRow = {
   status: string;
   subject: string;
 };
+type RequesterRole = "patient" | "therapist";
 
-export async function GET() {
-  const context = await getRequesterSupportContext();
+export async function GET(request: Request) {
+  const role = readRole(new URL(request.url).searchParams.get("role"));
+  const context = await getRequesterSupportContext(role);
   if (!context.ok) return failure(context.message, context.status);
 
   try {
@@ -59,10 +61,16 @@ export async function POST(request: Request) {
     return failure("Envie os dados em formato válido.", 400);
   }
 
-  const parsed = parseFutureSupportTicketCreate(body);
+  const parsed = parseFutureSupportTicketCreate(stripActorRole(body));
+  const role = readRole(
+    body && typeof body === "object" && !Array.isArray(body)
+      ? Reflect.get(body, "actorRole")
+      : null,
+  );
+  if (!role) return failure("Nao foi possivel identificar sua area.", 422);
   if (!parsed) return failure("Revise as informações do chamado.", 422);
 
-  const context = await getRequesterSupportContext();
+  const context = await getRequesterSupportContext(role);
   if (!context.ok) return failure(context.message, context.status);
 
   try {
@@ -88,13 +96,14 @@ export async function POST(request: Request) {
   }
 }
 
-async function getRequesterSupportContext() {
+async function getRequesterSupportContext(role: RequesterRole | null) {
   const cookieStore = await cookies();
-  const accessToken =
-    cookieStore.get("tes_therapist_access_token")?.value ??
-    cookieStore.get("tes_patient_access_token")?.value;
+  const resolvedRole = role ?? getSoleSessionRole(cookieStore);
+  const accessToken = resolvedRole
+    ? cookieStore.get(`tes_${resolvedRole}_access_token`)?.value
+    : undefined;
   const config = getSupabasePublicConfig();
-  if (!config || !accessToken) {
+  if (!resolvedRole || !config || !accessToken) {
     return { ok: false as const, message: "Entre na sua conta.", status: 401 };
   }
 
@@ -109,7 +118,7 @@ async function getRequesterSupportContext() {
       accessToken,
       `/rest/v1/profiles?select=role&id=eq.${encodeURIComponent(user.id)}&limit=1`,
     );
-    if (profiles[0]?.role !== "therapist" && profiles[0]?.role !== "patient") {
+    if (profiles[0]?.role !== resolvedRole) {
       return {
         ok: false as const,
         message: "Acesso de paciente ou terapeuta necessário.",
@@ -121,6 +130,26 @@ async function getRequesterSupportContext() {
   } catch {
     return { ok: false as const, message: "Entre na sua conta.", status: 401 };
   }
+}
+
+function readRole(value: unknown): RequesterRole | null {
+  return value === "patient" || value === "therapist" ? value : null;
+}
+
+function getSoleSessionRole(cookieStore: Awaited<ReturnType<typeof cookies>>) {
+  const roles = (["patient", "therapist"] as const).filter((role) =>
+    Boolean(cookieStore.get(`tes_${role}_access_token`)?.value),
+  );
+  return roles.length === 1 ? roles[0] : null;
+}
+
+function stripActorRole(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return value;
+  }
+
+  const { actorRole: _actorRole, ...ticket } = value as Record<string, unknown>;
+  return ticket;
 }
 
 async function callCreateTicket(

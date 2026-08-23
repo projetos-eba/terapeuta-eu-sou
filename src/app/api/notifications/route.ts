@@ -19,12 +19,14 @@ type NotificationRow = {
 type SupabaseUser = {
   id: string;
 };
+type NotificationRole = "admin" | "patient" | "therapist";
 
-export async function GET() {
+export async function GET(request: Request) {
   const config = getSupabasePublicConfig();
-  const accessToken = await getAccessToken();
+  const role = readRole(new URL(request.url).searchParams.get("role"));
+  const accessToken = await getAccessToken(role);
 
-  if (!config || !accessToken) return failure("Entre na sua conta.", 401);
+  if (!role || !config || !accessToken) return failure("Entre na sua conta.", 401);
 
   try {
     const user = await supabaseRequest<SupabaseUser>(
@@ -90,14 +92,17 @@ export async function GET() {
   }
 }
 
-async function getAccessToken() {
+async function getAccessToken(role: NotificationRole | null) {
   const cookieStore = await cookies();
-  return (
-    cookieStore.get("tes_patient_access_token")?.value ??
-    cookieStore.get("tes_therapist_access_token")?.value ??
-    cookieStore.get("tes_admin_access_token")?.value ??
-    null
-  );
+  return role
+    ? cookieStore.get(`tes_${role}_access_token`)?.value ?? null
+    : null;
+}
+
+function readRole(value: string | null): NotificationRole | null {
+  return value === "admin" || value === "patient" || value === "therapist"
+    ? value
+    : null;
 }
 
 async function supabaseRequest<T>(

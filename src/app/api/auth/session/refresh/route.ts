@@ -5,6 +5,7 @@ import {
   clearAuthSessionCookies,
   getAccessTokenCookieName,
   getRefreshTokenCookieName,
+  getSessionMarkerCookieName,
   setAuthSessionCookies,
   type AuthenticatedRole,
 } from "@/lib/auth/session-cookies";
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get(getAccessTokenCookieName(role))?.value;
   const refreshToken = cookieStore.get(getRefreshTokenCookieName(role))?.value;
+  const sessionMarker = cookieStore.get(getSessionMarkerCookieName(role))?.value;
 
   if (!refreshToken) {
     return failure("Entre na sua conta para continuar.", 401);
@@ -88,7 +90,7 @@ export async function POST(request: Request) {
         status: roleValidation === "valid" ? 200 : 503,
       },
     );
-    setAuthSessionCookies(response, role, session);
+    setAuthSessionCookies(response, role, session, { sessionMarker });
     return response;
   } catch (error) {
     if (error instanceof InvalidRefreshTokenError) {

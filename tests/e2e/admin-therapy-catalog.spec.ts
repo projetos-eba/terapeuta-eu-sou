@@ -13,7 +13,7 @@ test.describe("admin therapy catalog", () => {
 
     await page.goto("/admin-login");
     await page.getByLabel("E-mail").fill(adminEmail);
-    await page.getByLabel("Senha").fill(adminPassword);
+    await page.locator('input[name="password"]').fill(adminPassword);
     await page.getByRole("button", { name: "Entrar no Admin" }).click();
     await expect(page).toHaveURL(/\/admin\/terapias(?:\?.*)?$/);
 

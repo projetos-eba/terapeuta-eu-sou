@@ -18,7 +18,7 @@ test.describe("admin professional verification flow", () => {
 
     await page.goto("/admin-login");
     await page.getByLabel("E-mail").fill(email);
-    await page.getByLabel("Senha").fill(password);
+    await page.locator('input[name="password"]').fill(password);
     await page.getByRole("button", { name: "Entrar no Admin" }).click();
     await expect(page).toHaveURL(/\/admin(?:\/terapias)?(?:\?.*)?$/, {
       timeout: 30_000,

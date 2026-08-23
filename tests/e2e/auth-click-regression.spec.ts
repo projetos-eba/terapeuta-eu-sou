@@ -158,7 +158,7 @@ async function runLoginClickScenario(
   try {
     await page.goto(config.loginPath);
     await page.getByLabel("E-mail").fill(config.email);
-    await page.getByLabel("Senha").fill(config.password);
+    await page.locator('input[name="password"]').fill(config.password);
 
     const button = page.getByRole("button", { name: config.buttonName });
     await expect(button).toBeVisible();
@@ -243,7 +243,7 @@ async function runAdminLoginClickScenario(
   try {
     await page.goto("/admin-login");
     const emailField = page.getByLabel("E-mail");
-    const passwordField = page.getByLabel("Senha");
+    const passwordField = page.locator('input[name="password"]');
     const fieldHitTests = {
       email: await getInputHitTest(page, "#email"),
       password: await getInputHitTest(page, "#password"),

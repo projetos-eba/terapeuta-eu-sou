@@ -37,7 +37,7 @@ const definitions: NavigationDefinition[] = [
     capability: "full_crm",
     href: routes.therapist.patients,
     icon: "route",
-    label: "Histórico",
+    label: "Histórico da Jornada",
     planLabel: "Premium Plus",
   },
   {
@@ -82,7 +82,7 @@ const definitions: NavigationDefinition[] = [
     capability: "aura_full",
     href: routes.therapist.assessorIa,
     icon: "brain",
-    label: "Assessor Aura",
+    label: "Assessora Aura",
     planLabel: "Premium Plus",
   },
   {

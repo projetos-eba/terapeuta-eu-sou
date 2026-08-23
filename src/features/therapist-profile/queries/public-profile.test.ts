@@ -89,6 +89,15 @@ describe("public therapist profile query", () => {
       if (url.includes("public_therapist_profile_services_v")) {
         return jsonResponse([serviceRow]);
       }
+      if (url.includes("public_therapy_details_v")) {
+        return jsonResponse([
+          {
+            hero_image_url: "https://cdn.example.test/reiki-admin.jpg",
+            id: "22222222-2222-4222-8222-222222222225",
+            image_url: "https://cdn.example.test/reiki-default.jpg",
+          },
+        ]);
+      }
       if (url.includes("get_service_available_slots_v1")) {
         return jsonResponse({
           slots: [
@@ -108,6 +117,9 @@ describe("public therapist profile query", () => {
 
     expect(result.status).toBe("success");
     if (result.status !== "success") return;
+    expect(result.data.profile.services[0]?.imageUrl).toBe(
+      "https://cdn.example.test/reiki-admin.jpg",
+    );
     expect(result.data.profile.services[0]?.availability[0]).toMatchObject({
       date: "2026-08-11",
       dayLabel: "Hoje",

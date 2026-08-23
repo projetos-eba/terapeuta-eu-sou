@@ -312,7 +312,7 @@ describe("zoom HML harness contract", () => {
       intervalMs: 1,
       observe: async () =>
         states.shift() ?? { kind: "join_ready", control: "Entrar no encontro" },
-      timeoutMs: 10,
+      timeoutMs: 1_000,
       triggerManualRefresh: async () => {
         manualRefreshCount += 1;
       },

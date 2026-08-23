@@ -10,7 +10,7 @@ test.describe("patient meeting URL privacy", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/cliente/login");
     await page.getByLabel("E-mail").fill(patientEmail);
-    await page.getByLabel("Senha").fill(patientPassword);
+    await page.locator('input[name="password"]').fill(patientPassword);
     await page.getByRole("button", { name: "Entrar" }).click();
     await expect(page).toHaveURL(/\/app(?:\?.*)?$/);
   });

@@ -22,6 +22,7 @@ export default async function TherapistLoginPage({
     created?: string;
     next?: string;
     reset?: string;
+    reason?: string;
     verified?: string;
   }>;
 }) {
@@ -38,6 +39,7 @@ export default async function TherapistLoginPage({
           continuation={params?.next}
           created={params?.created === "1"}
           reset={params?.reset === "1"}
+          sessionChanged={params?.reason === "session_changed"}
           verified={params?.verified === "1"}
         />
       </div>

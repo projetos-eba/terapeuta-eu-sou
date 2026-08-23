@@ -158,6 +158,9 @@ describe("TherapistServicesPage", () => {
     renderPage();
 
     fireEvent.click(screen.getByRole("button", { name: /adicionar terapia/i }));
+    expect(
+      screen.getByRole("img", { name: "Imagem da terapia Aromaterapia" }),
+    ).toHaveAttribute("src", "https://cdn.example.test/aromaterapia.jpg");
     fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
 
     expect(

@@ -47,7 +47,7 @@ test.describe("admin authorization surface", () => {
 async function loginAsAdmin(page: Page) {
   await page.goto("/admin-login");
   await page.getByLabel("E-mail").fill(adminEmail);
-  await page.getByLabel("Senha").fill(adminPassword);
+  await page.locator('input[name="password"]').fill(adminPassword);
   await page.getByRole("button", { name: "Entrar no Admin" }).click();
   await expect(page).toHaveURL(/\/admin(?:\/terapias)?(?:\?.*)?$/, {
     timeout: 30_000,
@@ -57,7 +57,7 @@ async function loginAsAdmin(page: Page) {
 async function loginAsPatient(page: Page) {
   await page.goto("/cliente/login");
   await page.getByLabel("E-mail").fill(patientEmail);
-  await page.getByLabel("Senha").fill(patientPassword);
+  await page.locator('input[name="password"]').fill(patientPassword);
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/app(?:\?.*)?$/, { timeout: 30_000 });
 }
@@ -65,7 +65,7 @@ async function loginAsPatient(page: Page) {
 async function loginAsTherapist(page: Page) {
   await page.goto("/terapeuta/login");
   await page.getByLabel("E-mail").fill(therapistEmail);
-  await page.getByLabel("Senha").fill(therapistPassword);
+  await page.locator('input[name="password"]').fill(therapistPassword);
   await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
   await expect(page).toHaveURL(/\/terapeuta(?:\?.*)?$/, {
     timeout: 30_000,

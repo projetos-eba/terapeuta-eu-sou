@@ -40,7 +40,8 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
 - Readiness: `getTherapistHomeReadiness({ session })`, derivado de
   `therapist_profiles`, conteúdo publicado/rascunho, serviços ativos,
   disponibilidade e Stripe Connect.
-- Onboarding: quando a prontidão essencial ainda não foi alcançada,
+- Onboarding: quando a prontidão essencial ou os documentos obrigatórios ainda
+  não foram concluídos,
   `TherapistGettingStartedPage` apresenta o progresso circular, as etapas
   reais, pendências de documentos, resumo do perfil e orientação de análise.
   Os documentos privados são resumidos apenas como estado e encaminham para
@@ -60,12 +61,17 @@ Não distribuir queries pelos componentes. A entrada única da página é
 - `premium_plus` é superset funcional.
 - Autorização usa access token e RLS; o cookie de plano é somente hint.
 - `/terapeuta` deve primeiro mostrar checklist para perfil publicado, terapias
-  ativas e agenda configurada.
-- A transição para o dashboard normal acontece pela mesma prontidão essencial
-  já autorizada. Documentos e verificação devem orientar o cadastro, sem
-  alterar silenciosamente a regra de publicação, reservas ou elegibilidade.
-- Stripe Connect aparece como item recomendado; status em análise é normal e
-  não bloqueia a entrada no dashboard.
+  ativas, agenda configurada, documentos obrigatórios enviados e onboarding do
+  Stripe Connect concluído.
+- A transição para o dashboard normal acontece somente após a prontidão
+  essencial, o envio dos documentos obrigatórios e a conclusão do cadastro
+  Stripe Connect. A verificação externa
+  continua sendo exibida como estado do cadastro e não é tratada como aprovação
+  automática.
+- Stripe Connect é item obrigatório. Conta inexistente, cadastro incompleto,
+  requisitos pendentes, conta restrita ou desabilitada mantêm o checklist ativo.
+  Depois que o onboarding for submetido, uma análise externa em andamento pode
+  ser exibida como estado do cadastro sem bloquear a entrada.
 - Free/Premium com checklist essencial concluído recebem dashboard base com
   estados vazios úteis; não consultar o read model Premium Plus para esses
   planos.
@@ -75,7 +81,7 @@ Não distribuir queries pelos componentes. A entrada única da página é
 - Métricas devem ser calculadas dos registros transacionais.
 - Usar “Pagamentos pendentes” para bookings `pending_payment`.
 - Na comunicação com o terapeuta, usar “Sessão”, “Terapia”, “Resultados” e
-  “Assessor Aura”; termos de implementação como booking, insight, serviço ou
+  “Assessora Aura”; termos de implementação como booking, insight, serviço ou
   métricas ficam restritos a contratos, logs e documentação.
 - Não prometer cura, diagnóstico ou resultado.
 
@@ -113,7 +119,7 @@ Não distribuir queries pelos componentes. A entrada única da página é
 
 - Premium Plus aprovado é a experiência profunda desta etapa dentro de
   `/terapeuta`.
-- Dashboard base após checklist essencial ainda não possui todos os read models
+- Dashboard base após todas as etapas obrigatórias ainda não possui todos os read models
   reais de Free/Premium; deve manter métricas vazias honestas até os contratos
   transacionais dessas superfícies evoluírem.
 - Demais rotas usam estado “Em construção” até seus respectivos frames e

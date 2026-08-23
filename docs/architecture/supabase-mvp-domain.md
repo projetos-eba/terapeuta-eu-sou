@@ -10,7 +10,7 @@ Status: proposta técnica inicial e parcialmente superada pelas migrations poste
 - Supabase Auth será a origem de identidade; `profiles.id` deve apontar para `auth.users.id`.
 - Stripe será o provedor de pagamento futuro, mas a migration só prepara campos.
 - Zoom ou ferramenta similar será integração futura, representada por campos opcionais de reunião.
-- Assistente Aura no MVP é nome de produto para recomendações por regras, pesos e condições. Não há IA generativa nem OpenAI neste recorte.
+- Assessora Aura no MVP é nome de produto para recomendações por regras, pesos e condições. Não há IA generativa nem OpenAI neste recorte.
 - Os planos técnicos atuais são `free`, `premium` e `premium_plus`. Eles substituem a linguagem anterior Básico, Pro e Plus na camada de domínio.
 - Dados públicos de terapeutas devem ser expostos preferencialmente por views ou Edge Functions, não por liberar a tabela operacional inteira.
 

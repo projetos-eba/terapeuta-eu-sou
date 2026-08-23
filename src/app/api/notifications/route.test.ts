@@ -55,7 +55,9 @@ describe("notifications route", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await GET();
+    const response = await GET(
+      new Request("http://localhost/api/notifications?role=patient"),
+    );
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
@@ -84,7 +86,9 @@ describe("notifications route", () => {
   it("requires an authenticated session cookie", async () => {
     headerMocks.cookieGet.mockReturnValue(undefined);
 
-    const response = await GET();
+    const response = await GET(
+      new Request("http://localhost/api/notifications?role=patient"),
+    );
 
     expect(response.status).toBe(401);
   });

@@ -129,9 +129,10 @@ Não passar linhas cruas do Supabase para React.
 - A edição fica em `/terapeuta/configuracoes`, em `Dados da conta`, com
   máscaras de CPF, RG e CEP. Passaporte aceita letras e números sem máscara
   brasileira universal.
-- A tabela só é lida/escrita pela identidade autenticada do terapeuta via
-  `get_therapist_private_identity_v1` e
-  `save_therapist_private_identity_v1`; nenhum desses campos entra em DTO ou
+- O terapeuta lê/escreve a tabela por `get_therapist_private_identity_v1` e
+  `save_therapist_private_identity_v1`. A Edge Function
+  `therapist-private-documents` tem somente leitura server-side com
+  `service_role` para calcular prontidão; nenhum desses campos entra em DTO ou
   view pública.
 - A projeção administrativa `admin_get_therapist_profile_review_v1` mostra
   conteúdo editorial, serviços e os dados de identidade necessários para a

@@ -38,6 +38,7 @@ export function ShellTopbar({
         <ShellNotificationButton
           count={notificationCount}
           href={notificationHref}
+          role={variant}
         />
         <ShellUserMenu
           accountHref={accountHref}

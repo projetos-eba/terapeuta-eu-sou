@@ -15,7 +15,7 @@ describe("PublicFooter", () => {
       ),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Como funciona" }),
+      screen.getByRole("link", { name: "O que é o TES?" }),
     ).toHaveAttribute("href", "/sobre-nos");
 
     expect(screen.queryByRole("link", { name: "Recursos" })).toBeNull();

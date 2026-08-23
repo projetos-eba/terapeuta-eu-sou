@@ -36,7 +36,7 @@ Read in this order, only as needed:
 - Legacy redirect: `/como-funciona` -> `/sobre-nos`.
 - Links must use `routes.public.about`.
 - Do not recreate `/como-funciona` as a separate public page.
-- `PublicHeader` and `PublicFooter` expose the label `Como funciona` pointing
+- `PublicHeader` and `PublicFooter` expose the label `O que é o TES?` pointing
   to `routes.public.about`.
 
 ## Copy Contract
@@ -100,7 +100,7 @@ Read in this order, only as needed:
 
 - Validate `/sobre-nos` renders with public header and footer.
 - Validate `/como-funciona` redirects to `/sobre-nos`.
-- Validate `Como funciona` appears in the desktop/mobile header and in the
+- Validate `O que é o TES?` appears in the desktop/mobile header and in the
   institutional footer group, always linking to `/sobre-nos`.
 - Validate CTAs by real click when Playwright/browser is available.
 - Execute `npx playwright test tests/e2e/public-about.spec.ts --project=chromium`

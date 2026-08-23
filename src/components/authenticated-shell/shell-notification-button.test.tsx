@@ -22,7 +22,7 @@ describe("ShellNotificationButton", () => {
       vi.fn(async () => notificationResponse()),
     );
 
-    render(<ShellNotificationButton count={1} href="/terapeuta/mensagens" />);
+    render(<ShellNotificationButton count={1} href="/terapeuta/mensagens" role="therapist" />);
 
     const button = screen.getByRole("button", {
       name: /notificações, 1 não lida/i,
@@ -48,7 +48,7 @@ describe("ShellNotificationButton", () => {
       vi.fn(async () => bookingNotificationResponse()),
     );
 
-    render(<ShellNotificationButton count={1} href="/terapeuta/mensagens" />);
+    render(<ShellNotificationButton count={1} href="/terapeuta/mensagens" role="therapist" />);
 
     expect(await screen.findByRole("status")).toHaveTextContent(
       "Novo agendamento confirmado",
@@ -71,7 +71,7 @@ describe("ShellNotificationButton", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<ShellNotificationButton count={1} href="/terapeuta/mensagens" />);
+    render(<ShellNotificationButton count={1} href="/terapeuta/mensagens" role="therapist" />);
     fireEvent.click(screen.getByRole("button", { name: /notificações/i }));
 
     fireEvent.click(

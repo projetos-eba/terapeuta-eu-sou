@@ -78,7 +78,7 @@ export function ProfileCompletenessChecklist({
         className="mt-5 inline-flex min-h-11 items-center text-sm font-extrabold text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
         href={routes.therapist.assessorIa}
       >
-        Ver mais dicas com o Assessor Aura →
+        Ver mais dicas com a Assessora Aura →
       </Link>
     </ProfileSection>
   );

@@ -210,7 +210,9 @@ async function resolveActor(client: SupabaseRestClient, request: Request) {
 
   if (user.role === "therapist") {
     try {
-      const { profile } = await requireTherapist(client, request);
+      const { profile } = await requireTherapist(client, request, {
+        requireReceivingAccount: true,
+      });
       return {
         displayName: sanitizeVideoDisplayName(profile.public_name),
         profile,
