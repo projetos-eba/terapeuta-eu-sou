@@ -61,7 +61,7 @@ Mapa canônico de áreas, rotas e fluxos do Terapeuta Eu Sou. A página Figma `�
 - `/ajuda`: central pública de ajuda em revisão interna, bloqueada para
   publicação até canais e SLAs aprovados.
 
-Contrato de navegação pública: o label `Como funciona` aparece no cabeçalho e
+Contrato de navegação pública: o label `O que é o TES?` aparece no cabeçalho e
 no rodapé e aponta para a rota canônica `/sobre-nos`. `/como-funciona` permanece
 somente como redirect de compatibilidade e não possui página própria.
 
@@ -101,7 +101,7 @@ podem estar habilitados, bloqueados ou ocultos conforme plano e capability.
 - `/terapeuta/avaliacoes`: avaliações conforme capability.
 - `/terapeuta/metricas`: métricas intermediárias.
 - `/terapeuta/insights`: insights avançados.
-- `/terapeuta/assessor-ia`: Assistente Aura.
+- `/terapeuta/assessor-ia`: Assessora Aura.
 - `/terapeuta/perfil`: perfil público.
 - `/terapeuta/plano`: central de comparação e upgrade para planos superiores.
 - `/terapeuta/configuracoes`: configurações, incluindo downgrade agendado,
@@ -210,7 +210,7 @@ Operação profissional com financeiro, avaliações e métricas intermediárias
 - Inclui recursos do Free.
 - Acessa financeiro operacional, avaliações e métricas intermediárias.
 - Pode ver convites contextuais para Premium Plus.
-- Não acessa Assistente Aura, insights avançados nem histórico operacional Premium Plus.
+- Não acessa Assessora Aura, insights avançados nem histórico operacional Premium Plus.
 
 ## Terapeuta Premium Plus - aliases de transição
 
@@ -229,7 +229,7 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 - `/plus/financeiro`: redirect legado para financeiro operacional.
 - `/plus/avaliacoes`: avaliações avançadas.
 - `/plus/insights`: insights exclusivos.
-- `/plus/assessor-ia`: Assistente Aura (alias legado).
+- `/plus/assessor-ia`: Assessora Aura (alias legado).
 - `/plus/perfil`: perfil público.
 - `/plus/configuracoes`: configurações.
 - `/plus/suporte`: redirect legado para Mensagens.

@@ -8,5 +8,7 @@ export function setAdminSessionCookies(
   response: NextResponse,
   session: AdminPasswordSession,
 ) {
-  setAuthSessionCookies(response, "admin", session);
+  setAuthSessionCookies(response, "admin", session, {
+    userId: session.userId,
+  });
 }

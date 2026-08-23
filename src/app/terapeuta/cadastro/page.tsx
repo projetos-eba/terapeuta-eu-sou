@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { PublicLogo } from "@/components/tes";
+import { AuthBackButton, PublicLogo } from "@/components/tes";
 import { TherapistPlan } from "@/domain/tes";
 import {
   normalizeTherapistPlan,
@@ -8,6 +8,7 @@ import {
   TherapistPlanSelection,
   TherapistSignupForm,
 } from "@/features/therapist-auth";
+import { routes } from "@/lib/routes";
 
 export const metadata: Metadata = {
   description:
@@ -35,9 +36,12 @@ export default async function TherapistSignupPage({
     requestedPlan !== TherapistPlan.PremiumPlus
   ) {
     return (
-      <main className="min-h-screen bg-surface-soft px-5 py-8 text-brand-deep sm:px-8">
+      <main className="relative min-h-screen bg-surface-soft px-5 py-8 text-brand-deep sm:px-8">
         <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col items-center justify-center gap-8">
-          <PublicLogo />
+          <div className="relative flex w-full justify-center">
+            <AuthBackButton fallbackHref={routes.public.forTherapists} />
+            <PublicLogo />
+          </div>
           <TherapistPlanSelection />
         </div>
       </main>

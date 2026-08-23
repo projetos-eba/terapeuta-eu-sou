@@ -12,8 +12,10 @@ type ApiFailure = {
 };
 
 export function MarkNotificationsReadButton({
+  actorRole,
   unreadCount,
 }: {
+  actorRole: "patient" | "therapist";
   unreadCount: number;
 }) {
   const router = useRouter();
@@ -27,7 +29,7 @@ export function MarkNotificationsReadButton({
     setFeedback(null);
 
     const response = await fetch("/api/notifications/mark-read", {
-      body: JSON.stringify({ markAll: true }),
+      body: JSON.stringify({ markAll: true, role: actorRole }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
     });

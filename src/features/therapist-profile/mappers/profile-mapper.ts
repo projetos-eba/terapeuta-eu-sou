@@ -171,6 +171,7 @@ export function mapContentRow(row: ContentRow | null): TherapistProfileContent {
 export function mapServiceRow(
   row: ServiceRow,
   availability: AvailabilityDay[] = [],
+  imageUrl: string | null = null,
 ): TherapistProfileService {
   return {
     availability,
@@ -185,6 +186,7 @@ export function mapServiceRow(
       row.description ?? "Sessão online com cuidado e escuta responsável.",
     durationMinutes: row.duration_minutes,
     id: row.service_id,
+    imageUrl,
     priceCents: row.price_cents,
     priceLabel: formatCurrency(row.price_cents),
     title: row.service_title,

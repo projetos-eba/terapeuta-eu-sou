@@ -29,9 +29,9 @@ test.describe("therapist services management", () => {
     await page
       .getByRole("button", { name: `Abrir ações de ${serviceTitle}` })
       .click();
-    await page.getByRole("button", { name: "Editar serviço" }).click();
+    await page.getByRole("button", { name: "Editar terapia" }).click();
     await expect(
-      page.getByRole("dialog", { name: "Editar serviço" }),
+      page.getByRole("dialog", { name: "Editar terapia" }),
     ).toBeVisible();
     await page
       .getByRole("checkbox", { name: /^Relacionamentos \d+ de/ })
@@ -43,7 +43,7 @@ test.describe("therapist services management", () => {
     await expect(page.getByText(updatedDescription)).toBeVisible();
 
     await page.getByRole("button", { name: `Ativar ${serviceTitle}` }).click();
-    await page.getByRole("button", { name: "Ativar serviço" }).click();
+    await page.getByRole("button", { name: "Ativar terapia" }).click();
     await expect(
       page.getByRole("button", { name: `Pausar ${serviceTitle}` }),
     ).toBeVisible();
@@ -56,7 +56,7 @@ test.describe("therapist services management", () => {
 
     await page.goto("/terapeuta/servicos");
     await page.getByRole("button", { name: `Pausar ${serviceTitle}` }).click();
-    await page.getByRole("button", { name: "Pausar serviço" }).click();
+    await page.getByRole("button", { name: "Pausar terapia" }).click();
     await expect(
       page.getByRole("button", { name: `Ativar ${serviceTitle}` }),
     ).toBeVisible();
@@ -76,7 +76,7 @@ test.describe("therapist services management", () => {
         page.getByRole("heading", { level: 1, name: "Suas terapias" }),
       ).toBeVisible();
       await expect(
-        page.getByRole("button", { name: "Novo serviço" }),
+        page.getByRole("button", { name: "Adicionar terapia" }),
       ).toBeVisible();
       await expect(page.getByText("Dicas TES")).toBeVisible();
       await expect(
@@ -98,7 +98,7 @@ test.describe("therapist services management", () => {
 async function loginAsAna(page: import("@playwright/test").Page) {
   await page.goto("/terapeuta/login");
   await page.getByLabel("E-mail").fill(therapistEmail);
-  await page.getByLabel("Senha").fill(therapistPassword);
+  await page.locator('input[name="password"]').fill(therapistPassword);
   await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
   await expect(page).toHaveURL(/\/terapeuta(?:\?.*)?$/);
 }
@@ -113,7 +113,7 @@ async function ensureServicePaused(
   if ((await pauseButton.count()) === 0) return;
 
   await pauseButton.click();
-  await page.getByRole("button", { name: "Pausar serviço" }).click();
+  await page.getByRole("button", { name: "Pausar terapia" }).click();
   await expect(
     page.getByRole("button", { name: `Ativar ${serviceTitle}` }),
   ).toBeVisible();

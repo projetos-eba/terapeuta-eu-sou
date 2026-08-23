@@ -117,7 +117,7 @@ test.describe("patient relationship flows", () => {
 async function loginAsPatient(page: import("@playwright/test").Page) {
   await page.goto("/cliente/login");
   await page.getByLabel("E-mail").fill(patientEmail);
-  await page.getByLabel("Senha").fill(patientPassword);
+  await page.locator('input[name="password"]').fill(patientPassword);
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/app(?:\?.*)?$/);
 }

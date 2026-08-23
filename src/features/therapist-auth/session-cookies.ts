@@ -11,7 +11,9 @@ export function setTherapistSessionCookies(
   response: NextResponse,
   session: TherapistPasswordSession,
 ) {
-  setAuthSessionCookies(response, "therapist", session);
+  setAuthSessionCookies(response, "therapist", session, {
+    userId: session.userId,
+  });
   setTherapistPlanCookie(response, session.plan);
 }
 

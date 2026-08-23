@@ -62,8 +62,9 @@ Edge Function:
 
 O cadastro inicial pode exigir `Documento de identidade` e `Comprovante de
 endereço`. A superfície de progresso em `/terapeuta/perfil` mostra essas
-pendências e permite ao terapeuta anexar ou substituir cada documento sem
-transformar o fluxo em uma confirmação automática.
+pendências e direciona o terapeuta para `/terapeuta/configuracoes`, onde ele
+anexa ou substitui cada documento sem transformar o fluxo em uma confirmação
+automática.
 
 - `POST /api/therapist/profile/documents` encaminha o upload autenticado para
   a Edge Function `therapist-private-documents`;
@@ -76,6 +77,9 @@ transformar o fluxo em uma confirmação automática.
   DTO de UI;
 - a rota autenticada faz proxy server-side da assinatura temporária (60 s), de
   modo que navegador nenhum recebe bucket, path interno ou URL assinada;
+- para calcular a prontidão, `therapist-private-documents` lê a identidade
+  privada somente no backend com `service_role` e privilégio SQL restrito a
+  `SELECT`; o navegador continua usando apenas RPCs autenticadas e RLS;
 - cada documento obrigatório tem decisão própria (`uploaded`, `accepted` ou
   `rejected`); solicitar reenvio exige uma orientação e registra evento
   imutável de auditoria, sem alterar automaticamente a verificação geral;

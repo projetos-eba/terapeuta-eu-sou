@@ -1,4 +1,5 @@
 export * from "./filter-button";
+export * from "./auth-back-button";
 export * from "./journey-banner";
 export * from "./password-visibility-toggle";
 export * from "./public-footer";

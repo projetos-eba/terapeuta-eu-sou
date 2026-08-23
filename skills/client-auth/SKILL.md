@@ -63,7 +63,7 @@ Backend:
 - Define cookies HTTP-only internos `tes_patient_access_token` e `tes_patient_refresh_token`.
 - Nao define cookies quando o e-mail nao estiver confirmado.
 - Redireciona para `/app`.
-- Terapeuta/admin devem receber a mensagem segura: `Use o acesso correspondente ao seu perfil.`
+- Terapeuta/admin devem receber a mensagem segura: `Esse e-mail não corresponde a esse perfil de login.`
 - Guards autenticados leem `profiles`/`patient_profiles` via token do usuário; além das policies RLS, as tabelas precisam de `grant select` para `authenticated`.
 
 ## Sessão pública segura
@@ -83,9 +83,20 @@ Backend:
 - O header público usa essa rota para trocar “Entrar | Cadastre-se” por
   “Olá, [Nome]”, com atalhos para painel, encontros e logout.
 
+Cada login bem-sucedido anuncia um marcador não sensível e estável por conta do
+papel cliente. Abas do mesmo navegador que exibem outra conta cliente são
+redirecionadas ao login; um novo login da mesma conta mantém as abas.
+Navegadores, perfis ou janelas anônimas diferentes mantêm sessões
+independentes. APIs de dados autenticados devem receber o papel explicitamente
+quando houver mais de um papel disponível no navegador; na ausência de papel,
+uma solicitação ambígua deve falhar fechada para evitar mistura de perfis.
+
 ## UI e copy
 
 - Usar fundo lavanda suave, card central, `PublicLogo`, formulário com labels reais e CTA com mínimo de 44px.
+- O retorno deve compartilhar uma faixa relativa com o logo: no mobile exibir
+  somente o ícone em alvo mínimo de 44px, sem sobrepor a marca; a palavra
+  “Voltar” permanece visível em telas maiores.
 - O campo de senha do login deve oferecer controle acessível para mostrar e
   ocultar a senha, com rótulo de ação, estado `aria-pressed` e alvo mínimo de
   44px; isso não altera o contrato de autenticação.
@@ -95,6 +106,12 @@ Backend:
 - Não mencionar documentos, conta bancária, repasse ou verificação profissional.
 - Não usar linguagem interna de desenvolvimento na UI, como “hardening” ou “onboarding”, quando houver alternativa clara para a pessoa usuária.
 - Nunca prometer cura, diagnóstico ou resultado garantido.
+
+## QA adicional desta implementação
+
+- Validar o botão Voltar nas telas de login e cadastro e o isolamento de duas
+  abas cliente no mesmo navegador, além da coexistência em contextos de
+  navegador diferentes.
 
 ## Pendências conhecidas
 

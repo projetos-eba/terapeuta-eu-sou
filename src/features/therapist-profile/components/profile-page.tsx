@@ -290,8 +290,17 @@ function Services({ profile }: { profile: PublicTherapistProfile }) {
             key={service.id}
             className="grid min-h-[220px] gap-5 overflow-hidden rounded-[18px] border border-border bg-white p-5 shadow-card sm:grid-cols-[128px_minmax(0,1fr)]"
           >
-            <div className="grid min-h-[112px] place-items-center rounded-[16px] bg-brand-lavenderSoft text-brand-primary sm:min-h-0">
-              <Sparkles className="size-8" />
+            <div className="relative grid min-h-[112px] place-items-center overflow-hidden rounded-[16px] bg-brand-lavenderSoft text-brand-primary sm:min-h-0">
+              {service.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element -- imagem administrada pelo catálogo público.
+                <img
+                  alt={`Imagem da terapia ${service.therapyName}`}
+                  className="size-full object-cover"
+                  src={service.imageUrl}
+                />
+              ) : (
+                <Sparkles className="size-8" />
+              )}
             </div>
             <div className="min-w-0">
               <h3 className="break-words font-display text-[26px] font-light italic leading-tight text-brand-deep [overflow-wrap:anywhere]">

@@ -38,7 +38,7 @@ neste documento.
 Data: 2026-08-20
 
 Escopo: recriação responsiva da rota pública `/sobre-nos`, inclusão de
-`Como funciona` no cabeçalho, no menu mobile e no rodapé, seguindo o Figma
+`O que é o TES?` no cabeçalho, no menu mobile e no rodapé, seguindo o Figma
 `Projeto TES - Copy`, node `14845:668`; refinamento posterior do hero sem CTA,
 da tipografia editorial leve, da proteção contra palavras viúvas e da mídia
 de alta qualidade nas superfícies públicas com assets editoriais.
@@ -328,6 +328,63 @@ O horário canônico permanece 23/08/2026 às 10:15 BRT e a consulta ocorreu ant
 de T-15. Não houve acesso a Zoom, entrada de host/paciente, alteração manual ou
 nova operação. A próxima execução deve começar às 10:00 BRT com o mesmo booking
 e novo precheck; não criar Checkout, pagamento, fixture ou video session.
+
+## Merge `dev-vini` → `dev-antonio` — qualificação incremental
+
+Data: 2026-08-23
+Ambiente: local; HML não configurado nesta máquina
+Estado: **NOT_READY**
+
+O merge permanece sem conflitos e sem reset ou abort. A nomenclatura visível foi
+consolidada como **Assessora Aura**, preservando a rota técnica
+`/terapeuta/assessor-ia`; Resultados, Meu plano e Histórico da Jornada permanecem
+nas respectivas superfícies. A prontidão operacional inclui os documentos
+privados obrigatórios e Connect submetido, sem tratar análise externa válida como
+pendência bloqueadora. Serviços preservam a copy canônica e a asserção de imagem
+do catálogo.
+
+### Segurança, migrations e dados privados
+
+| Gate | Resultado | Evidência sanitizada |
+| --- | --- | --- |
+| Migration de leitura server-side | PASS | `20260823133000_grant_service_role_private_identity_read.sql` aplicada localmente; somente `service_role` recebeu `SELECT` mínimo para o cálculo server-side de prontidão. |
+| Storage privado sem acesso direto | PASS | `20260823134500_remove_unversioned_private_documents_storage_policy.sql` aplicada localmente; nenhuma policy de browser permanece para o bucket privado. |
+| Contrato focal de Storage | PASS | `053_therapist_private_documents_bucket.sql`: 4/4. |
+| Documentos privados no navegador | PASS | Playwright headed local: upload, substituição, revisão, reenvio, isolamento entre terapeutas e expiração de URL assinada; 1/1. |
+| Lint de schema | PASS com ressalva | `npx supabase db lint --local` saiu com código 0; quatro avisos preexistentes de parâmetros/variáveis não usados permanecem rastreados. |
+| pgTAP completo | FAIL | 76/78 arquivos concluíram; falham `006_agenda_a4_blocks.sql` (fixture de impacto ausente) e `061_email_outbox_dispatch.sql` (contagem não isolada do outbox). Não houve correção especulativa. |
+
+As duas migrations são necessárias também no ambiente alvo: não há correção local
+ad hoc, nem alteração de schema sem arquivo versionado. Elas não expõem DTO
+público, token, cookie, segredo ou documento.
+
+### Gates locais executados nesta rodada
+
+| Gate | Resultado | Evidência |
+| --- | --- | --- |
+| Integridade do merge | PASS | Nenhum arquivo não resolvido; `git diff --cached --check` sem saída. |
+| TypeScript | PASS | `npm run typecheck`. |
+| Lint | PASS | `npm run lint`. |
+| Unitários | PASS | `npm run test`: 157 arquivos, 630 testes. |
+| Edge Functions | PASS | `npm run test:deno`: 171 testes, 0 falhas. |
+| Build | PASS | `npm run build`: compilação, tipos e 113 páginas estáticas concluídos. |
+| Navegação/autenticação pública | PASS | Playwright headed local: login, retorno, navegação pública e responsividade nas specs focais. |
+| Terapias e pagamento de plano | PASS | Playwright headed local: serviços 2/2; checkout de plano 3/3. O redirect nunca foi usado como confirmação de pagamento. |
+| Zoom local UI | FAIL | Duas specs bloqueiam corretamente uma booking de fixture já fora da janela temporal; nenhuma JWT ou entrada indevida foi emitida. A fixture deve ser renovada por fluxo controlado, sem enfraquecer o gate T-15. |
+
+### Bloqueios de HML e go/no-go
+
+Não foram executados Stripe test mode, Playwright HML, documentos HML ou sessão
+Zoom HML nesta máquina: as variáveis de configuração e credenciais efêmeras
+necessárias não estão presentes. Não houve tentativa externa, cobrança, retry
+cego ou sessão Zoom real. A comparação visual registrada com Figma também está
+pendente nesta rodada.
+
+Para retomar: corrigir ou isolar as duas fixtures pgTAP, disponibilizar HML e
+executar sequencialmente o preflight Stripe, os contexts de paciente/terapeuta/
+Admin e, após confirmação manual do endpoint ativo, uma única sessão Zoom curta
+com evidência sanitizada. Só então reavaliar `HOMOLOGATED`; esta rodada não
+autoriza `PRODUCTION-READY`.
 
 ## Fase 1D — Execução real Zoom + conclusão do Golden Path HML (retomada)
 

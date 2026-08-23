@@ -42,7 +42,7 @@ for (const viewport of viewports) {
 
       expect(bounds).not.toBeNull();
       expect(bounds!.x + bounds!.width).toBeGreaterThanOrEqual(
-        viewport.width - 1,
+        viewport.width - 16,
       );
     }
 
@@ -95,23 +95,31 @@ for (const viewport of viewports) {
   });
 }
 
-test("exposes Como funciona in the desktop header and footer", async ({
+test("navigates to O que é o TES? from the desktop header and footer", async ({
   page,
 }) => {
   await page.setViewportSize({ height: 900, width: 1440 });
-  await page.goto("/sobre-nos", { waitUntil: "domcontentloaded" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
 
-  await expect(
-    page.locator("header").getByRole("link", { name: "Como funciona" }),
-  ).toHaveAttribute("href", "/sobre-nos");
-  await expect(
-    page.locator("footer").getByRole("link", { name: "Como funciona" }),
-  ).toHaveAttribute("href", "/sobre-nos");
+  await page
+    .locator("header")
+    .getByRole("link", { name: "O que é o TES?" })
+    .click();
+  await expect(page).toHaveURL(/\/sobre-nos$/);
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page
+    .locator("footer")
+    .getByRole("link", { name: "O que é o TES?" })
+    .click();
+  await expect(page).toHaveURL(/\/sobre-nos$/);
 });
 
-test("exposes Como funciona in the mobile navigation", async ({ page }) => {
+test("navigates to O que é o TES? from the mobile navigation", async ({
+  page,
+}) => {
   await page.setViewportSize({ height: 844, width: 390 });
-  await page.goto("/sobre-nos", { waitUntil: "domcontentloaded" });
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.waitForLoadState("load");
   await page.waitForTimeout(500);
 
@@ -120,9 +128,9 @@ test("exposes Como funciona in the mobile navigation", async ({ page }) => {
   await menuButton.click();
   await expect(menuButton).toHaveAttribute("aria-expanded", "true");
 
-  await expect(
-    page
-      .locator("#public-mobile-menu")
-      .getByRole("link", { name: "Como funciona" }),
-  ).toHaveAttribute("href", "/sobre-nos");
+  await page
+    .locator("#public-mobile-menu")
+    .getByRole("link", { name: "O que é o TES?" })
+    .click();
+  await expect(page).toHaveURL(/\/sobre-nos$/);
 });

@@ -9,8 +9,13 @@ import {
 import { TherapistGettingStartedPage } from "@/features/therapist-dashboard/therapist-getting-started-page";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
-export default async function TherapistHomePage() {
+export default async function TherapistHomePage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ onboarding?: string }>;
+}) {
   const session = await requireTherapistSession();
+  const params = await searchParams;
   let readiness;
 
   try {
@@ -27,7 +32,15 @@ export default async function TherapistHomePage() {
 
   if (!readiness.isOperationallyReady) {
     return (
-      <TherapistGettingStartedPage readiness={readiness} session={session} />
+      <TherapistGettingStartedPage
+        attentionMessage={
+          params?.onboarding === "receiving-account"
+            ? "Conclua o cadastro da sua conta de recebimento para acessar a agenda e iniciar atendimentos."
+            : undefined
+        }
+        readiness={readiness}
+        session={session}
+      />
     );
   }
 

@@ -40,7 +40,7 @@ describe("support tickets route", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     expect(
-      (await POST(request({ ...validTicket(), actorRole: "patient" }))).status,
+      (await POST(request({ ...validTicket(), actorRole: "admin" }))).status,
     ).toBe(422);
     expect(
       (
@@ -112,7 +112,9 @@ describe("support tickets route", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const response = await POST(request(validTicket()));
+    const response = await POST(
+      request({ ...validTicket(), actorRole: "patient" }),
+    );
 
     expect(response.status).toBe(201);
     expect(fetchMock).toHaveBeenCalledWith(
@@ -149,6 +151,7 @@ describe("support tickets route", () => {
 
 function validTicket() {
   return {
+    actorRole: "therapist",
     bookingId: null,
     category: "financeiro_repasses",
     description: "Preciso entender quando o valor ficará disponível.",

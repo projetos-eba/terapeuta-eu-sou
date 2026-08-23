@@ -130,7 +130,7 @@ Lista de validação visual, funcional, técnica e de linguagem para telas TES.
 - [ ] Básico mostra limites sem punição.
 - [ ] Pro tem financeiro, avaliações e métricas intermediárias.
 - [ ] Pro pode evoluir para Plus por contexto.
-- [ ] Premium Plus tem insights, Assistente Aura e histórico do paciente no detalhe.
+- [ ] Premium Plus tem insights, Assessora Aura e histórico do paciente no detalhe.
 - [ ] Plus não tem upgrade.
 - [ ] Detalhe do paciente Plus não cria subpágina desnecessária.
 

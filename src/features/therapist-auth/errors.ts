@@ -12,7 +12,7 @@ export const THERAPIST_AUTH_GENERIC_ERROR =
   "Não foi possível conectar agora. Tente novamente em instantes.";
 
 export const THERAPIST_AUTH_ROLE_ERROR =
-  "Use o acesso correspondente ao seu perfil.";
+  "Esse e-mail não corresponde a esse perfil de login.";
 
 export function getSafeSignupError(status?: number) {
   if (status === 422) {

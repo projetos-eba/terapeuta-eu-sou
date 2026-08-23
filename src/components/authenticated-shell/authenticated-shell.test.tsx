@@ -59,6 +59,7 @@ describe("AuthenticatedShell mobile", () => {
   it.each([
     ["therapist"],
     ["patient"],
+    ["admin"],
   ] as const)("routes the logo to the public home for %s", (variant) => {
     render(
       <AuthenticatedShell
