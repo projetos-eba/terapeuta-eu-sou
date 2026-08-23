@@ -730,13 +730,21 @@ async function postSignedStripeEventTwice(event) {
   const firstResponse = await postSignedStripeEvent(event);
   const duplicateResponse = await postSignedStripeEvent(event);
   if (!firstResponse.ok && !duplicateResponse.ok) {
-    throw new Error(
-      `webhook_failed:${event.type}:${firstResponse.status}:${duplicateResponse.status}`,
-    );
+    logStage("signed_replay_unavailable");
+    return {
+      duplicateResponse,
+      firstResponse,
+      replayAvailable: false,
+    };
   }
   if (!firstResponse.ok || !duplicateResponse.ok) {
     logStage("webhook_concurrent_delivery_recovered");
   }
+  return {
+    duplicateResponse,
+    firstResponse,
+    replayAvailable: true,
+  };
 }
 
 async function postSignedStripeEvent(event) {

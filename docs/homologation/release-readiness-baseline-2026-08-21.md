@@ -504,3 +504,63 @@ pós-sessão foi exercitado nesta rodada.
 O booking foi preservado sem mutação. A continuação só poderá iniciar a partir
 de 23/08/2026 às 10:00 BRT, com novo precheck autoritativo e o harness oficial,
 sem criar booking, Checkout, pagamento, fixture ou video session.
+
+## Fase 1D — Execução real Zoom + conclusão do Golden Path HML (retomada)
+
+Data: 2026-08-23, 10:01–10:10 BRT
+
+Resultado: **PHASE 1 PASS**
+
+Esta retomada reutilizou exclusivamente o booking canônico pago/confirmado da
+Fase 1B. Não houve novo booking, Checkout, pagamento, fixture, video session,
+SQL administrativo ou alteração de produção.
+
+| Checkpoint | Resultado | Evidência sanitizada / estado autoritativo |
+| --- | --- | --- |
+| Paid booking recheck | PASS | `confirmed/paid`, BRL, R$ 120,00, uma payment e uma video session `ready` antes do join; T-15 aberto às 10:00 BRT. |
+| Zoom access window | PASS | Pré-janela foi negada corretamente; dentro de T-15 terapeuta autorizado e paciente liberado somente após presença do host. |
+| Therapist join | PASS | Video SDK real HML conectou o terapeuta primeiro, com papel host (`roleType=1`). |
+| Host session state | PASS | Webhook `session.user_joined` recebido e sessão lógica passou a `active`. |
+| Patient join | PASS | Paciente entrou depois do host, na mesma sessão, com papel próprio (`roleType=0`). |
+| Video session active | PASS | Ambos presentes; câmera local/remota observada nos dois contexts; nenhuma mídia gravada. |
+| Video session end | PASS | Fluxo canônico do host encerrou a sala; `session.ended`, `video_sessions.status=ended` e saídas dos dois papéis observados. |
+| Session completion | PASS | Estado operacional pós-sala fechado nos três shells; `actual_started_at` e `actual_ended_at` persistidos. |
+| Therapist financial consistency | PASS | RPCs privados e UI financeira responderam; bruto R$ 120,00, comissão R$ 24,00, terapeuta R$ 96,00, `paid`, `waiting_confirmation`, Connect consultável. |
+| Admin operational consistency | PASS | Admin retornou 200 e correlacionou sessão/encontro, pagamento, sala e financeiro. |
+| Database invariants | PASS | Exatamente um booking, um pagamento pago e uma video session; Checkout webhook processado; valores/vínculos íntegros e sem duplicidade. Eventos de join/leave de ambos os papéis presentes. |
+
+Root cause do primeiro retry dentro de T-15: seletor obsoleto do harness
+(`Abrir sala da sessão`) para uma UI que usa `Abrir sala`/`Acompanhar a sala` em
+dois links legítimos. O harness foi alinhado ao `href` canônico da video
+session; não houve correção no produto, Stripe, webhook ou booking. `node
+--check` e `scripts/homologation/zoom-hml.test.mjs` passaram (15/15).
+
+O endpoint de feedback pós-sessão retornou estado indisponível em HML e a
+consulta somente leitura identificou que `session_participant_confirmations`
+ainda não está no schema HML. Nenhuma resposta foi enviada e nenhum estado foi
+alterado; o alinhamento desse fluxo fica para a qualificação de comunicação e
+operação, sem invalidar o lifecycle transacional comprovado nesta fase.
+
+As tentativas históricas foram somente observadas: não há payment `pending`
+atual; os registros antigos estão em estados canônicos `pending_payment/cancelled`
+ou cancelados/refundados. Plano da Fase 2 (não executado): abandono/expiração de
+hold, Checkout recusado/abandonado, webhooks duplicados/atrasados, concorrência,
+cancelamento, refund, reagendamento, idempotência, reconnect/refresh Zoom,
+acesso indevido e confirmação/feedback bilateral.
+
+### Release Readiness Board — atualização após Fase 1D
+
+| ID/área | Status mais recente | Evidência |
+| --- | --- | --- |
+| F0-22 — Stripe Checkout → webhook → pagamento | PASS | Checkout Stripe test, webhook `checkout.session.completed` processado e `session_payments=paid` no booking canônico. |
+| F0-24 — Connect/onboarding/readiness | PASS | Estado Connect consultável no read model; recebimento em `waiting_confirmation`, sem payout forçado. |
+| F0-26 — Zoom Video SDK real/host-first | PASS | Sessão real HML com host-first, presença via webhook, paciente, encerramento e invariantes. |
+| F0-35 — Terapeuta: sessões/Zoom/financeiro | PASS | Sessão real e read models financeiros/Connect observados. |
+| F0-36 — Admin operacional do Golden Path | PASS | Detalhe Admin e correlação de sessão, pagamento, sala e financeiro responderam. |
+| F0-10 — CI remoto | P1 | Continua sem evidência verde para a revisão atual. |
+| F0-28 — E-mail real HML | P1 | Continua fora do escopo desta fase; validar na Fase 3. |
+| F0-32 — Rotas de pagamento/comprovante do paciente | P1 | Gap de App Router preservado; não foi necessário para o Golden Path. |
+| HML — `session_participant_confirmations`/feedback | P1 | Migration ausente no schema HML e endpoint de feedback indisponível; alinhar antes da qualificação operacional. |
+
+P0 remanescente: nenhum identificado nesta qualificação. O resultado PASS é
+restrito ao Golden Path transacional HML e não revoga os P1 acima.

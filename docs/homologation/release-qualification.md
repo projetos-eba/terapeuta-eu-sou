@@ -328,3 +328,70 @@ O horário canônico permanece 23/08/2026 às 10:15 BRT e a consulta ocorreu ant
 de T-15. Não houve acesso a Zoom, entrada de host/paciente, alteração manual ou
 nova operação. A próxima execução deve começar às 10:00 BRT com o mesmo booking
 e novo precheck; não criar Checkout, pagamento, fixture ou video session.
+
+## Fase 1D — Execução real Zoom + conclusão do Golden Path HML (retomada)
+
+Data: 2026-08-23, 10:01–10:10 BRT
+
+Resultado: **PHASE 1 PASS**
+
+O booking pago/confirmado da Fase 1B foi preservado e reutilizado sem nova
+operação financeira. O precheck autoritativo confirmou R$ 120,00 BRL, uma
+payment, uma video session `ready` e a janela T-15 aberta.
+
+| Checkpoint | Resultado |
+| --- | --- |
+| Paid booking recheck | PASS |
+| Zoom access window | PASS |
+| Therapist join | PASS |
+| Host session state | PASS |
+| Patient join | PASS |
+| Video session active | PASS |
+| Video session end | PASS |
+| Session completion | PASS |
+| Therapist financial consistency | PASS |
+| Admin operational consistency | PASS |
+| Database invariants | PASS |
+
+Evidência: o harness oficial HML completou contexts isolados e host-first;
+webhook Zoom `session.user_joined` liberou o paciente; os dois participantes
+entraram na mesma sessão real, câmera local/remota foi observada, a sessão ficou
+ativa por 45 segundos e o encerramento gerou `session.ended` e `status=ended` no
+backend. Paciente, terapeuta, financeiro e Admin responderam 200. Os RPCs
+privados de overview/recebimentos/repasses/Connect retornaram, com bruto de
+R$ 120,00, comissão de R$ 24,00, terapeuta de R$ 96,00 e repasse em
+`waiting_confirmation`.
+
+O primeiro retry em T-15 falhou somente no harness por seletor obsoleto. O
+seletor foi alinhado ao `href` canônico da rota `/terapeuta/sessoes/:id/video`;
+`node --check` e `zoom-hml.test.mjs` (15/15) passaram. Não houve alteração de
+produto, banco, webhook, Stripe ou produção.
+
+A confirmação/feedback bilateral posterior não foi enviada. A consulta
+read-only identificou que a migration de `session_participant_confirmations`
+ainda não está aplicada no schema HML e o endpoint de feedback retornou estado
+indisponível; isso fica registrado para a fase de comunicação/operação e não foi
+usado para alterar booking ou financeiro. As tentativas históricas pendentes
+foram apenas observadas; não há payment `pending` atual e os registros antigos
+estão em estados canônicos cancelados/refundados.
+
+Plano resumido da Fase 2 (não executado): abandono/expiração de holds, Checkout
+recusado, webhooks duplicados/atrasados, concorrência, cancelamento, refund,
+reagendamento, idempotência, reconnect/refresh Zoom, acesso indevido e
+confirmação/feedback bilateral.
+
+### Release Readiness Board — atualização após Fase 1D
+
+| Área | Status mais recente | Observação |
+| --- | --- | --- |
+| Stripe Checkout → webhook → pagamento | PASS | Checkout test, webhook processado e payment autoritativo `paid`. |
+| Connect/financeiro | PASS | Read models privados e Connect consultados; repasse não foi forçado. |
+| Zoom Video SDK/host-first | PASS | Join real de terapeuta e paciente, encerramento e invariantes. |
+| Admin operacional do Golden Path | PASS | Detalhe e correlação da operação disponíveis. |
+| CI remoto | P1 | Continua pendente de execução verde para a revisão atual. |
+| E-mail real HML | P1 | Fase 3. |
+| Rotas de pagamento/comprovante do paciente | P1 | Gap pré-existente de App Router, fora do Golden Path executado. |
+| Feedback/confirmations HML | P1 | `session_participant_confirmations` ausente no schema HML; alinhar antes da qualificação operacional. |
+
+P0 remanescente: nenhum identificado nesta qualificação. Isto não equivale a
+Production Ready; a decisão cobre somente o Golden Path transacional em HML.
