@@ -117,8 +117,8 @@ export function TherapistLoginForm({
           Entre na sua área profissional
         </h1>
         <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
-          Use este acesso somente para contas de terapeuta. Pacientes e admin
-          devem usar seus acessos correspondentes.
+          Este acesso é para terapeutas. Se você está buscando atendimento,
+          escolha o acesso correspondente.
         </p>
       </div>
 

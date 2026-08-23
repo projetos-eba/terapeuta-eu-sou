@@ -143,6 +143,8 @@ Session summaries are stored in `booking_session_summaries`, linked to `bookings
 - Keep language supportive and responsible.
 - Do not promise cure, diagnosis, or guaranteed outcomes.
 - Do not mention implementation, seed data, migrations, or development details in user-facing UI text.
+- Payment, cancellation and access statuses must use human TES language; never
+  expose terms such as backend, webhook or provider to the patient.
 
 ## Assets da plataforma
 

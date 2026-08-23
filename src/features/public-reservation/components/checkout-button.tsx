@@ -231,8 +231,8 @@ export function CheckoutButton({
         className={checkoutReady ? "min-h-[420px]" : "min-h-0"}
       />
       <p className="text-center text-xs font-bold text-tesText-muted">
-        Checkout seguro via Stripe. O retorno visual não confirma pagamento; a
-        confirmação acontece pelo webhook assinado.
+        Checkout seguro via Stripe. O retorno visual não confirma o pagamento;
+        aguarde a confirmação final antes de considerar sua reserva concluída.
       </p>
     </div>
   );

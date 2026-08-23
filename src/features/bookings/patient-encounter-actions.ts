@@ -191,19 +191,19 @@ function getCancellationImpactLabel({
   }
 
   if (!Number.isFinite(startsAtMs)) {
-    return "A política será calculada pelo backend no momento da solicitação.";
+    return "A política será definida no momento da solicitação.";
   }
 
   const hoursUntilStart = (startsAtMs - nowMs) / ONE_HOUR_MS;
   if (hoursUntilStart >= cancellationPolicy.freeUntilHours) {
-    return `Cancelamento antes de ${cancellationPolicy.freeUntilHours}h tende a reembolso integral, confirmado pelo backend.`;
+    return `Cancelamento antes de ${cancellationPolicy.freeUntilHours}h tende a reembolso integral. O valor final será informado ao concluir a solicitação.`;
   }
 
   if (Number.isFinite(endsAtMs) && nowMs > endsAtMs) {
     return `Após o encontro, casos de não comparecimento podem reter até ${cancellationPolicy.noShowFeePercent}% do valor.`;
   }
 
-  return `Cancelamento tardio pode reter ${cancellationPolicy.lateCancelFeePercent}% do valor, confirmado pelo backend.`;
+  return `Cancelamento tardio pode reter ${cancellationPolicy.lateCancelFeePercent}% do valor. O valor final será informado ao concluir a solicitação.`;
 }
 
 function getRefundState(

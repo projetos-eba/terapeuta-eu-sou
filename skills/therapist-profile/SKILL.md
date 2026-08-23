@@ -176,6 +176,9 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
 - Manter `h1` único.
 - Labels visíveis e touch targets de pelo menos 44px.
 - Não prometer cura, diagnóstico ou resultado.
+- Falhas ao salvar ou publicar devem informar a causa acionável do contrato (por
+  exemplo, campo inválido, limite de caracteres, link de vídeo ou conflito de
+  versão), sem expor detalhes internos do banco ou da infraestrutura.
 
 ## Cache
 

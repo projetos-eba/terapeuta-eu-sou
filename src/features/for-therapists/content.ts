@@ -92,5 +92,5 @@ export const planCategoryLabels = {
 export const commercialNotes = [
   "Valores pagos aparecem como referência inicial e podem ser confirmados no cadastro/checkout.",
   "A assinatura do terapeuta e os pagamentos de sessões são fluxos separados.",
-  "A liberação futura de planos deve acontecer apenas por webhook Stripe idempotente.",
+  "A ativação dos planos pagos acontece após a confirmação do pagamento.",
 ];
