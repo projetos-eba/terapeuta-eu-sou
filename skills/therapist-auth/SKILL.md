@@ -142,6 +142,7 @@ Backend:
   mínimo de 44px, sem mudar o payload ou a validação de autenticação.
 - O painel visual usa `brand-primary` (`#6C3D91`) e não o azul profundo.
 - Não usar linguagem interna de desenvolvimento na UI, como “hardening” ou “onboarding”, quando houver alternativa clara para a pessoa usuária.
+- O subtítulo do login deve orientar com clareza: “Este acesso é para terapeutas. Se você está buscando atendimento, escolha o acesso correspondente.”
 - Nunca prometer renda, aprovação automática, cura, diagnóstico ou resultado garantido.
 
 ## Pendências conhecidas

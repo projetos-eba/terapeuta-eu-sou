@@ -728,6 +728,31 @@ describe("TherapistProfileEditorPage", () => {
     ).not.toBeDisabled();
   });
 
+  it("shows the actionable reason returned for an invalid profile field", async () => {
+    commandMocks.sendTherapistProfileCommand.mockResolvedValueOnce({
+      error: {
+        code: "VALIDATION_ERROR",
+        message:
+          "Use um link https:// do YouTube ou Vimeo, ou envie um vídeo válido.",
+        status: 422,
+      },
+      status: "error",
+    });
+
+    render(<TherapistProfileEditorPage editor={makeEditor()} />);
+
+    fireEvent.change(screen.getByLabelText("Nome do perfil"), {
+      target: { value: "Ana com vídeo inválido" },
+    });
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Salvar alterações" })[0],
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Use um link https:// do YouTube ou Vimeo, ou envie um vídeo válido.",
+    );
+  });
+
   it("focuses the first invalid field and does not call the backend", () => {
     render(<TherapistProfileEditorPage editor={makeEditor()} />);
 

@@ -38,23 +38,26 @@ Deno.test("validates therapist profile draft payloads", () => {
   }
 });
 
-Deno.test("accepts the new Premium theme IDs at the Edge contract boundary", () => {
-  const result = validateTherapistProfileCommand({
-    action: "save_draft",
-    expectedVersion: 3,
-    payload: {
-      essenceBody: "Minha pratica combina presenca, clareza e cuidado.",
-      publicName: "Ana Oliveira",
-      publicProfileTheme: "essencial_editorial",
-      shortIntro: "Acolhimento online com linguagem clara.",
-    },
-    requestId,
-  });
+Deno.test(
+  "accepts the new Premium theme IDs at the Edge contract boundary",
+  () => {
+    const result = validateTherapistProfileCommand({
+      action: "save_draft",
+      expectedVersion: 3,
+      payload: {
+        essenceBody: "Minha pratica combina presenca, clareza e cuidado.",
+        publicName: "Ana Oliveira",
+        publicProfileTheme: "essencial_editorial",
+        shortIntro: "Acolhimento online com linguagem clara.",
+      },
+      requestId,
+    });
 
-  if (result.action === "save_draft") {
-    assertEquals(result.payload.publicProfileTheme, "essencial_editorial");
-  }
-});
+    if (result.action === "save_draft") {
+      assertEquals(result.payload.publicProfileTheme, "essencial_editorial");
+    }
+  },
+);
 
 Deno.test("validates slug availability and update commands", () => {
   assertEquals(
@@ -137,6 +140,26 @@ Deno.test(
     );
   },
 );
+
+Deno.test("returns the reason for invalid profile data", () => {
+  const error = assertThrows(() =>
+    validateTherapistProfileCommand({
+      action: "save_draft",
+      expectedVersion: 1,
+      payload: {
+        publicName: "Ana Oliveira",
+        publicProfileTheme: "theme-not-supported",
+      },
+      requestId,
+    }),
+  );
+
+  assertEquals(error instanceof DomainError, true);
+  assertEquals(
+    (error as DomainError).message,
+    "Escolha um visual válido para o seu perfil antes de salvar.",
+  );
+});
 
 Deno.test("maps profile database conflicts", () => {
   const result = mapTherapistProfileDatabaseError(

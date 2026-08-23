@@ -953,8 +953,8 @@ export function ReservationSuccessPage() {
           Estamos preparando seu encontro
         </h1>
         <p className="mt-5 max-w-2xl text-lg font-semibold leading-8 text-tesText-secondary">
-          Quando o pagamento for confirmado pelo webhook Stripe, o encontro
-          aparecerá na sua área de cliente com as orientações de acesso online.
+          Assim que o pagamento for confirmado, o encontro aparecerá na sua
+          área de cliente com as orientações de acesso online.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <TESButton href={routes.patient.home} variant="gradient" size="lg">
