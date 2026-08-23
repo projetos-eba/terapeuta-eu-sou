@@ -228,7 +228,7 @@ dados. A implementação futura deve ajustar:
 | ------------------- | --------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
 | Namespace           | Figma apresenta uma única página com três abas      | Sitemap separa métricas intermediárias e insights avançados | `/terapeuta/metricas` redireciona para `/terapeuta/insights` | Uma implementação; confirmar e documentar a rota canônica antes da UI                   |
 | Planos              | Frames ainda usam referências históricas a Pro/Plus | Parte do inventário ainda usa Pro/Plus                      | Capabilities usam Premium/Premium Plus                       | Copy nova usa Premium e Premium Plus; enums permanecem técnicos                         |
-| Aura                | Marca “Assistente Aura”                             | Documentos a descrevem como inteligência por plano          | Schema declara regras sem IA generativa                      | Usar “Assistente Aura” na interface e explicar que as recomendações são determinísticas |
+| Aura                | Marca “Assessora Aura”                             | Documentos a descrevem como inteligência por plano          | Schema declara regras sem IA generativa                      | Usar “Assessora Aura” na interface e explicar que as recomendações são determinísticas |
 | Visualizações       | Figma exibe valores e tendências                    | Documentação promete métricas de perfil                     | Tabela existe, mas somente seeds foram identificados         | Bloquear KPI real até existir ingestão produtiva observável                             |
 | Interesse           | Figma usa “Interessados em agendar”                 | Não há evento canônico definido                             | Não foi identificado evento de intenção no fluxo público     | Medir uma ação objetiva e renomear para “Iniciaram o agendamento”                       |
 | Sessões             | Figma separa realizadas e concluídas                | Conceitos não estão formalmente separados                   | Booking possui `completed`, mas presença é limitada          | Não duplicar KPIs sem uma diferença verificável                                         |
@@ -873,7 +873,7 @@ Assim:
 ### 9.1 Papel
 
 A Aura é uma camada de recomendação determinística baseada em regras
-versionadas. O nome comercial “Assistente Aura” não altera essa natureza técnica.
+versionadas. O nome comercial “Assessora Aura” não altera essa natureza técnica.
 
 A interface deve ser transparente, por exemplo:
 

@@ -65,7 +65,7 @@ Valor entregue:
 - Agenda, pacientes, sessões, mensagens e serviços.
 - Pagamentos e repasses conforme o plano.
 - Avaliações e métricas para planos superiores.
-- Insights e Assistente Aura no Premium Plus.
+- Insights e Assessora Aura no Premium Plus.
 - Suporte proporcional ao plano.
 
 ### Para Admin
@@ -203,7 +203,7 @@ Limites:
 
 - Sem avaliações como área principal.
 - Sem métricas intermediárias.
-- Sem Assistente Aura.
+- Sem Assessora Aura.
 - Sem insights avançados.
 - Sem suporte prioritário.
 
@@ -223,7 +223,7 @@ Objetivos:
 
 Limites:
 
-- Sem Assistente Aura.
+- Sem Assessora Aura.
 - Sem insights Plus.
 - Sem histórico operacional Plus do paciente.
 
@@ -235,7 +235,7 @@ Objetivos:
 
 - Operar agenda, sessões, mensagens e serviços com mais contexto.
 - Acompanhar pacientes e histórico operacional.
-- Usar o Assistente Aura para revisar perfil, serviços e presença.
+- Usar a Assessora Aura para revisar perfil, serviços e presença.
 - Ver insights avançados.
 - Acompanhar financeiro e avaliações com leitura mais profunda.
 - Acessar suporte prioritário.
@@ -264,8 +264,8 @@ Objetivos:
 | Plano        | Papel                 | Valor principal                | Recursos centrais                                                                                              | Não inclui                                                              |
 | ------------ | --------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | Free         | Entrada profissional  | Presença e operação essencial. | Perfil, agenda, pacientes, sessões, mensagens, serviços sem limite por plano, financeiro operacional, suporte. | Avaliações, métricas intermediárias, IA, insights avançados.            |
-| Premium      | Operação profissional | Gestão mais completa.          | Recursos do Free, agenda avançada, serviços completos, financeiro, avaliações, métricas, plano.                | Assistente Aura, insights Premium Plus, histórico operacional avançado. |
-| Premium Plus | Premium               | Inteligência e apoio avançado. | Recursos do Premium, insights, Assistente Aura, histórico operacional do paciente e suporte prioritário.       | —                                                                       |
+| Premium      | Operação profissional | Gestão mais completa.          | Recursos do Free, agenda avançada, serviços completos, financeiro, avaliações, métricas, plano.                | Assessora Aura, insights Premium Plus, histórico operacional avançado. |
+| Premium Plus | Premium               | Inteligência e apoio avançado. | Recursos do Premium, insights, Assessora Aura, histórico operacional do paciente e suporte prioritário.       | —                                                                       |
 
 ## Jornadas Principais
 

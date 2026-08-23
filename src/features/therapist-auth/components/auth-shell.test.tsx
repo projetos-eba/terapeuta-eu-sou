@@ -28,6 +28,11 @@ describe("therapist authentication UI", () => {
     expect(screen.queryByText("Perfil privado")).not.toBeInTheDocument();
     expect(screen.queryByText("Plano seguro")).not.toBeInTheDocument();
     expect(screen.getByText(/Plano selecionado:/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Voltar" })).toHaveClass(
+      "size-11",
+      "sm:w-auto",
+    );
+    expect(screen.getByText("Voltar")).toHaveClass("hidden", "sm:inline");
     expect(
       screen.queryByText(
         /Você completa perfil, documentos e dados de repasse depois/i,

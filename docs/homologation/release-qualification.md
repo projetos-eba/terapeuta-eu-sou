@@ -38,7 +38,7 @@ neste documento.
 Data: 2026-08-20
 
 Escopo: recriação responsiva da rota pública `/sobre-nos`, inclusão de
-`Como funciona` no cabeçalho, no menu mobile e no rodapé, seguindo o Figma
+`O que é o TES?` no cabeçalho, no menu mobile e no rodapé, seguindo o Figma
 `Projeto TES - Copy`, node `14845:668`; refinamento posterior do hero sem CTA,
 da tipografia editorial leve, da proteção contra palavras viúvas e da mídia
 de alta qualidade nas superfícies públicas com assets editoriais.

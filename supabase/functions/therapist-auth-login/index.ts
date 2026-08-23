@@ -11,6 +11,7 @@ import {
   isLocalMasterPasswordBypassEnabled,
 } from "../_shared/auth/runtime.ts";
 import { parseJson, SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
+import { findProfileByEmail } from "../_shared/auth/users.ts";
 
 type LoginBody = {
   email?: string;
@@ -49,6 +50,12 @@ runtime.serve(async (request) => {
 
   try {
     const client = new SupabaseRestClient(supabaseUrl, serviceRoleKey);
+    const profile = await findProfileByEmail(client, email);
+
+    if (profile && profile.role !== "therapist") {
+      throw new AuthLoginRoleError();
+    }
+
     const session = await loginWithPasswordOrMaster({
       client,
       email,

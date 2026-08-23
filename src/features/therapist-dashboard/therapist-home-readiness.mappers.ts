@@ -33,14 +33,16 @@ export function mapTherapistHomeReadiness({
     connectItem(connect),
   ];
   const requiredItems = checklist.filter((item) => item.required);
-  const requiredCount = requiredItems.length;
-  const completedRequiredCount = requiredItems.filter((item) => item.complete)
-    .length;
+  const documents = documentItems(editor);
+  const requiredCount = requiredItems.length + documents.length;
+  const completedRequiredCount =
+    requiredItems.filter((item) => item.complete).length +
+    documents.filter((item) => item.complete).length;
 
   return {
     checklist,
     completedRequiredCount,
-    documents: documentItems(editor),
+    documents,
     isOperationallyReady: completedRequiredCount === requiredCount,
     plan: session.plan,
     profileCompleteness: editor.completeness.percent,
@@ -172,7 +174,25 @@ function connectItem(
         "Conecte sua conta de recebimento para preparar os repasses das sessões.",
       href: `${routes.therapist.finance}?tab=conta`,
       id: "connect",
-      required: false,
+      required: true,
+      state: "pending",
+      title: "Conta de recebimento",
+    };
+  }
+
+  if (
+    !connect.detailsSubmitted ||
+    connect.onboardingStatus === "account_created" ||
+    connect.onboardingStatus === "not_started"
+  ) {
+    return {
+      actionLabel: "Continuar cadastro",
+      complete: false,
+      description:
+        "Conclua o cadastro da sua conta de recebimento antes de começar a atender.",
+      href: `${routes.therapist.finance}?tab=conta`,
+      id: "connect",
+      required: true,
       state: "pending",
       title: "Conta de recebimento",
     };
@@ -190,7 +210,7 @@ function connectItem(
         "Precisamos de algumas informações adicionais antes de liberar repasses.",
       href: `${routes.therapist.finance}?tab=conta`,
       id: "connect",
-      required: false,
+      required: true,
       state: "attention",
       title: "Conta de recebimento",
     };
@@ -206,7 +226,7 @@ function connectItem(
       description: "Sua conta está pronta para receber repasses elegíveis.",
       href: `${routes.therapist.finance}?tab=conta`,
       id: "connect",
-      required: false,
+      required: true,
       state: "complete",
       title: "Conta de recebimento",
     };
@@ -219,7 +239,7 @@ function connectItem(
       "Dados enviados. A análise pode continuar em andamento.",
     href: `${routes.therapist.finance}?tab=conta`,
     id: "connect",
-    required: false,
+    required: true,
     state: "in_review",
     title: "Conta de recebimento",
   };

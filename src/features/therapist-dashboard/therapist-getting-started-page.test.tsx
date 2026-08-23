@@ -80,7 +80,7 @@ const readinessFixture: TherapistHomeReadiness = {
       description: "Prepare os repasses.",
       href: "/terapeuta/financeiro?tab=conta",
       id: "connect",
-      required: false,
+      required: true,
       state: "pending",
       title: "Conta de recebimento",
     },
@@ -112,7 +112,7 @@ const readinessFixture: TherapistHomeReadiness = {
     state: "",
   },
   profilePublicStatus: "draft",
-  requiredCount: 3,
+  requiredCount: 6,
   therapistStatus: "draft",
   verificationStatus: "draft",
 };

@@ -15,7 +15,7 @@ import {
 
 import { routes } from "@/lib/routes";
 
-import { PublicAuthMenu } from "./public-auth-menu";
+import { PublicAuthMenu, usePublicAuthState } from "./public-auth-menu";
 import { TESButton } from "./tes-button";
 
 function Logo({ header = false }: { header?: boolean }) {
@@ -43,8 +43,10 @@ function Logo({ header = false }: { header?: boolean }) {
 
 export function PublicHeader() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const authState = usePublicAuthState();
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
   const nav: Array<[string, Route]> = [
-    ["Como funciona", routes.public.about as Route],
+    ["O que é o TES?", routes.public.about as Route],
     ["Terapias", routes.public.therapies as Route],
     ["Sua Jornada", routes.public.journey as Route],
     ["Terapeutas", routes.public.therapists as Route],
@@ -67,8 +69,8 @@ export function PublicHeader() {
               </Link>
             ))}
           </nav>
-          <div className="hidden items-center gap-3 sm:flex">
-            <PublicAuthMenu className="block" />
+          <div className="hidden items-center gap-3 xl:flex">
+            <PublicAuthMenu authState={authState} className="block" />
             <TESButton
               href={routes.public.journey}
               variant="gradient"
@@ -99,39 +101,50 @@ export function PublicHeader() {
             id="public-mobile-menu"
             className="absolute left-5 right-5 top-[calc(100%+8px)] z-[80] overflow-hidden rounded-[24px] border border-brand-lavender bg-white shadow-float xl:hidden"
           >
-          <div className="grid gap-2 p-4">
-            <p className="px-2 text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
-              Navegação
-            </p>
-            {nav.map(([label, href]) => (
-              <Link
-                key={href}
-                href={href}
-                className="flex min-h-12 items-center justify-between rounded-2xl px-3 text-base font-extrabold text-brand-deep hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {label}
-                <ChevronRight className="size-5" aria-hidden="true" />
-              </Link>
-            ))}
-          </div>
-          <div className="border-t border-brand-lavender bg-surface-muted p-4">
-            <p className="px-2 text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
-              Login e cadastro
-            </p>
-            <div className="mt-3 grid gap-3">
-              <MobileAuthLink
-                href={routes.public.clientSignIn}
-                icon={<UserRound className="size-5" aria-hidden="true" />}
-                label="Entrar como cliente"
-              />
-              <MobileAuthLink
-                href={routes.public.therapistSignIn}
-                icon={<ClipboardCheck className="size-5" aria-hidden="true" />}
-                label="Entrar como terapeuta"
-              />
+            <PublicAuthMenu
+              authState={authState}
+              onNavigate={closeMobileMenu}
+              variant="mobile-account"
+            />
+            <div className="grid gap-2 p-4">
+              <p className="px-2 text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
+                Navegação
+              </p>
+              {nav.map(([label, href]) => (
+                <Link
+                  key={href}
+                  href={href}
+                  className="flex min-h-12 items-center justify-between rounded-2xl px-3 text-base font-extrabold text-brand-deep hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
+                  onClick={closeMobileMenu}
+                >
+                  {label}
+                  <ChevronRight className="size-5" aria-hidden="true" />
+                </Link>
+              ))}
             </div>
-          </div>
+            {authState.status === "guest" ? (
+              <div className="border-t border-brand-lavender bg-surface-muted p-4">
+                <p className="px-2 text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
+                  Login e cadastro
+                </p>
+                <div className="mt-3 grid gap-3">
+                  <MobileAuthLink
+                    href={routes.public.clientSignIn}
+                    icon={<UserRound className="size-5" aria-hidden="true" />}
+                    label="Entrar como cliente"
+                    onClick={closeMobileMenu}
+                  />
+                  <MobileAuthLink
+                    href={routes.public.therapistSignIn}
+                    icon={
+                      <ClipboardCheck className="size-5" aria-hidden="true" />
+                    }
+                    label="Entrar como terapeuta"
+                    onClick={closeMobileMenu}
+                  />
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>
@@ -145,15 +158,18 @@ function MobileAuthLink({
   href,
   icon,
   label,
+  onClick,
 }: {
   href: string;
   icon: ReactNode;
   label: string;
+  onClick?: () => void;
 }) {
   return (
     <Link
       href={href as Route}
       className="flex min-h-12 items-center gap-3 rounded-2xl border border-brand-lavender bg-white px-3 text-sm font-extrabold text-brand-deep shadow-card hover:border-brand-primary hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
+      onClick={onClick}
     >
       <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
         {icon}

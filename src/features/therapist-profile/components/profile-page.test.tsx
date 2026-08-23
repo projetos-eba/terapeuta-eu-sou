@@ -107,6 +107,7 @@ describe("TherapistProfilePage video block", () => {
               description: longWord,
               durationMinutes: 60,
               id: "service-1",
+              imageUrl: null,
               priceCents: 18500,
               priceLabel: "R$ 185",
               title: "Reiki online",
@@ -420,6 +421,7 @@ describe("TherapistProfilePage video block", () => {
               description: "Sessão online com cuidado responsável.",
               durationMinutes: 50,
               id: "service-1",
+              imageUrl: "https://cdn.example.test/reiki-profile.jpg",
               priceCents: 17000,
               priceLabel: "R$ 170",
               title: "Reiki online",
@@ -438,6 +440,9 @@ describe("TherapistProfilePage video block", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText("Serviços online")).not.toBeInTheDocument();
     expect(screen.getAllByText("Reiki").length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole("img", { name: "Imagem da terapia Reiki" }),
+    ).toHaveAttribute("src", "https://cdn.example.test/reiki-profile.jpg");
     expect(screen.queryByText("Reiki online")).not.toBeInTheDocument();
   });
 

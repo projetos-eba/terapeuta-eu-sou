@@ -38,7 +38,7 @@ type SessionResponse =
       therapist: TherapistSummary;
     };
 
-type AuthState =
+export type PublicAuthState =
   | {
       status: "guest" | "loading";
     }
@@ -51,14 +51,14 @@ type AuthState =
       therapist: TherapistSummary;
     };
 
-export function PublicAuthMenu({
-  className = "hidden sm:block",
-}: {
-  className?: string;
-}) {
-  const [state, setState] = useState<AuthState>({ status: "loading" });
+export type PublicAuthMenuVariant = "desktop" | "mobile-account";
+
+export function usePublicAuthState(enabled = true): PublicAuthState {
+  const [state, setState] = useState<PublicAuthState>({ status: "loading" });
 
   useEffect(() => {
+    if (!enabled) return;
+
     let active = true;
 
     async function loadSession() {
@@ -107,19 +107,65 @@ export function PublicAuthMenu({
     return () => {
       active = false;
     };
-  }, []);
+  }, [enabled]);
+
+  return state;
+}
+
+export function PublicAuthMenu({
+  authState,
+  className,
+  onNavigate,
+  variant = "desktop",
+}: {
+  authState?: PublicAuthState;
+  className?: string;
+  onNavigate?: () => void;
+  variant?: PublicAuthMenuVariant;
+}) {
+  const internalState = usePublicAuthState(!authState);
+  const state = authState ?? internalState;
+
+  if (variant === "mobile-account") {
+    if (state.status !== "authenticated") return null;
+
+    if ("therapist" in state) {
+      return (
+        <TherapistPopover
+          onNavigate={onNavigate}
+          therapist={state.therapist}
+          variant="mobile"
+        />
+      );
+    }
+
+    return (
+      <PatientPopover
+        onNavigate={onNavigate}
+        patient={state.patient}
+        variant="mobile"
+      />
+    );
+  }
 
   if (state.status === "authenticated") {
     if ("therapist" in state) {
       return (
         <TherapistPopover
           className={className}
+          onNavigate={onNavigate}
           therapist={state.therapist}
         />
       );
     }
 
-    return <PatientPopover className={className} patient={state.patient} />;
+    return (
+      <PatientPopover
+        className={className}
+        onNavigate={onNavigate}
+        patient={state.patient}
+      />
+    );
   }
 
   return (
@@ -132,10 +178,14 @@ export function PublicAuthMenu({
 
 function TherapistPopover({
   className,
+  onNavigate,
   therapist,
+  variant = "popover",
 }: {
   className?: string;
+  onNavigate?: () => void;
   therapist: TherapistSummary;
+  variant?: "popover" | "mobile";
 }) {
   const firstName = getFirstName(therapist.displayName);
   const router = useRouter();
@@ -161,12 +211,41 @@ function TherapistPopover({
         throw new Error("logout_failed");
       }
 
+      onNavigate?.();
       router.replace(routes.public.home);
       router.refresh();
     } catch {
       setLogoutError("Não foi possível sair agora. Tente novamente.");
       setIsLoggingOut(false);
     }
+  }
+
+  if (variant === "mobile") {
+    return (
+      <MobileAccountPanel
+        displayName={therapist.displayName}
+        roleLabel="Conta terapeuta"
+      >
+        <MenuLink
+          href={routes.therapist.home}
+          icon={<LayoutDashboard className="size-5" aria-hidden="true" />}
+          label="Meu painel"
+          onClick={onNavigate}
+        />
+        <MenuLink
+          href={routes.therapist.profile}
+          icon={<UserRound className="size-5" aria-hidden="true" />}
+          label="Meu perfil"
+          onClick={onNavigate}
+        />
+        <LogoutButton isLoggingOut={isLoggingOut} onClick={handleLogout} />
+        {logoutError ? (
+          <p className="px-3 text-xs font-bold leading-5 text-status-danger">
+            {logoutError}
+          </p>
+        ) : null}
+      </MobileAccountPanel>
+    );
   }
 
   return (
@@ -195,23 +274,15 @@ function TherapistPopover({
             href={routes.therapist.home}
             icon={<LayoutDashboard className="size-5" aria-hidden="true" />}
             label="Meu painel"
+            onClick={onNavigate}
           />
           <MenuLink
             href={routes.therapist.profile}
             icon={<UserRound className="size-5" aria-hidden="true" />}
             label="Meu perfil"
+            onClick={onNavigate}
           />
-          <button
-            className="flex min-h-12 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-extrabold text-brand-deep transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20 disabled:cursor-wait disabled:opacity-70"
-            disabled={isLoggingOut}
-            onClick={handleLogout}
-            type="button"
-          >
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-              <LogOut className="size-5" aria-hidden="true" />
-            </span>
-            {isLoggingOut ? "Saindo..." : "Sair"}
-          </button>
+          <LogoutButton isLoggingOut={isLoggingOut} onClick={handleLogout} />
           {logoutError ? (
             <p className="px-3 text-xs font-bold leading-5 text-status-danger">
               {logoutError}
@@ -225,10 +296,14 @@ function TherapistPopover({
 
 function PatientPopover({
   className,
+  onNavigate,
   patient,
+  variant = "popover",
 }: {
   className?: string;
+  onNavigate?: () => void;
   patient: PatientSummary;
+  variant?: "popover" | "mobile";
 }) {
   const firstName = getFirstName(patient.displayName);
   const router = useRouter();
@@ -254,12 +329,41 @@ function PatientPopover({
         throw new Error("logout_failed");
       }
 
+      onNavigate?.();
       router.replace(routes.public.home);
       router.refresh();
     } catch {
       setLogoutError("Não foi possível sair agora. Tente novamente.");
       setIsLoggingOut(false);
     }
+  }
+
+  if (variant === "mobile") {
+    return (
+      <MobileAccountPanel
+        displayName={patient.displayName}
+        roleLabel="Conta cliente"
+      >
+        <MenuLink
+          href={routes.patient.home}
+          icon={<LayoutDashboard className="size-5" aria-hidden="true" />}
+          label="Meu painel"
+          onClick={onNavigate}
+        />
+        <MenuLink
+          href={routes.patient.encounters}
+          icon={<CalendarCheck className="size-5" aria-hidden="true" />}
+          label="Meus encontros"
+          onClick={onNavigate}
+        />
+        <LogoutButton isLoggingOut={isLoggingOut} onClick={handleLogout} />
+        {logoutError ? (
+          <p className="px-3 text-xs font-bold leading-5 text-status-danger">
+            {logoutError}
+          </p>
+        ) : null}
+      </MobileAccountPanel>
+    );
   }
 
   return (
@@ -288,23 +392,15 @@ function PatientPopover({
             href={routes.patient.home}
             icon={<LayoutDashboard className="size-5" aria-hidden="true" />}
             label="Meu painel"
+            onClick={onNavigate}
           />
           <MenuLink
             href={routes.patient.encounters}
             icon={<CalendarCheck className="size-5" aria-hidden="true" />}
             label="Meus encontros"
+            onClick={onNavigate}
           />
-          <button
-            className="flex min-h-12 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-extrabold text-brand-deep transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20 disabled:cursor-wait disabled:opacity-70"
-            disabled={isLoggingOut}
-            onClick={handleLogout}
-            type="button"
-          >
-            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-              <LogOut className="size-5" aria-hidden="true" />
-            </span>
-            {isLoggingOut ? "Saindo..." : "Sair"}
-          </button>
+          <LogoutButton isLoggingOut={isLoggingOut} onClick={handleLogout} />
           {logoutError ? (
             <p className="px-3 text-xs font-bold leading-5 text-status-danger">
               {logoutError}
@@ -360,6 +456,50 @@ function GuestPopover({
   );
 }
 
+function MobileAccountPanel({
+  children,
+  displayName,
+  roleLabel,
+}: {
+  children: ReactNode;
+  displayName: string;
+  roleLabel: string;
+}) {
+  return (
+    <div className="border-b border-brand-lavender bg-surface-muted p-4">
+      <div className="px-2">
+        <p className="text-lg font-extrabold leading-tight text-brand-deep">
+          {displayName}
+        </p>
+        <p className="mt-1 text-sm font-bold text-tesText-muted">{roleLabel}</p>
+      </div>
+      <div className="mt-3 space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function LogoutButton({
+  isLoggingOut,
+  onClick,
+}: {
+  isLoggingOut: boolean;
+  onClick: (event: MouseEvent<HTMLButtonElement>) => void;
+}) {
+  return (
+    <button
+      className="flex min-h-12 w-full items-center gap-3 rounded-2xl px-3 text-left text-sm font-extrabold text-brand-deep transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20 disabled:cursor-wait disabled:opacity-70"
+      disabled={isLoggingOut}
+      onClick={onClick}
+      type="button"
+    >
+      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+        <LogOut className="size-5" aria-hidden="true" />
+      </span>
+      {isLoggingOut ? "Saindo..." : "Sair"}
+    </button>
+  );
+}
+
 function LoginOption({
   href,
   icon,
@@ -390,15 +530,18 @@ function MenuLink({
   href,
   icon,
   label,
+  onClick,
 }: {
   href: string;
   icon: ReactNode;
   label: string;
+  onClick?: () => void;
 }) {
   return (
     <Link
       href={href as Route}
       className="flex min-h-12 items-center gap-3 rounded-2xl px-3 text-sm font-extrabold text-brand-deep transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
+      onClick={onClick}
     >
       <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
         {icon}

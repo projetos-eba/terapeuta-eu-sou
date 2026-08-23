@@ -6,6 +6,7 @@ import type { Route } from "next";
 import { LockKeyhole, Mail } from "lucide-react";
 
 import { PasswordVisibilityToggle, TESButton } from "@/components/tes";
+import { announceAuthSession } from "@/lib/auth/session-marker";
 import { routes } from "@/lib/routes";
 
 import type { ClientAuthApiError } from "../errors";
@@ -19,11 +20,13 @@ export function ClientLoginForm({
   created,
   next,
   reset,
+  sessionChanged,
   verified,
 }: {
   created: boolean;
   next?: string;
   reset?: boolean;
+  sessionChanged?: boolean;
   verified?: boolean;
 }) {
   const [fieldErrors, setFieldErrors] = useState<ClientAuthFieldErrors>({});
@@ -64,6 +67,7 @@ export function ClientLoginForm({
         return;
       }
 
+      announceAuthSession("patient");
       window.location.assign(data.redirectTo);
     } catch {
       setFormError("Não foi possível conectar agora. Tente novamente.");
@@ -128,6 +132,12 @@ export function ClientLoginForm({
       {reset ? (
         <p className="rounded-2xl bg-status-successBg px-4 py-3 text-sm font-bold text-status-success">
           Senha atualizada. Entre com sua nova senha.
+        </p>
+      ) : null}
+
+      {sessionChanged ? (
+        <p className="rounded-2xl bg-brand-lavenderSoft px-4 py-3 text-sm font-bold text-brand-deep">
+          Esta sessão foi encerrada porque outra conta foi acessada neste navegador.
         </p>
       ) : null}
 

@@ -4,11 +4,13 @@ import { routes } from "@/lib/routes";
 export type TherapistRoutePolicy = {
   capability?: TherapistCapability;
   minimumPlan?: TherapistPlan;
+  requiresReceivingAccount?: boolean;
 };
 
 export const therapistRoutePolicies = {
   agenda: {
     capability: "operation_essentials",
+    requiresReceivingAccount: true,
   },
   assessorIa: {
     capability: "aura_full",
@@ -38,6 +40,7 @@ export const therapistRoutePolicies = {
   },
   sessions: {
     capability: "operation_essentials",
+    requiresReceivingAccount: true,
   },
   settings: {
     capability: "operation_essentials",

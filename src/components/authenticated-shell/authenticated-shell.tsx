@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 
 import { ShellSidebar } from "./shell-sidebar";
 import { ShellTopbar } from "./shell-topbar";
+import { AuthSessionGuard } from "./auth-session-guard";
 
 export type ShellNavigationItem = {
   accessState?: "enabled" | "hidden" | "locked";
@@ -83,11 +84,18 @@ export function AuthenticatedShell({
   const resolvedLogoutHref = logoutHref ?? getDefaultLogoutHref(variant);
 
   if (isDedicatedVideoCallPath(pathname)) {
-    return <main className="min-h-dvh">{children}</main>;
+    return (
+      <>
+        <AuthSessionGuard loginHref={resolvedLogoutHref} role={variant} />
+        <main className="min-h-dvh">{children}</main>
+      </>
+    );
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[var(--tes-color-background)] text-tesText-primary">
+    <>
+      <AuthSessionGuard loginHref={resolvedLogoutHref} role={variant} />
+      <div className="min-h-screen overflow-x-hidden bg-[var(--tes-color-background)] text-tesText-primary">
       <aside
         aria-label="Navegação principal"
         className={cn(
@@ -141,7 +149,8 @@ export function AuthenticatedShell({
           {children}
         </main>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

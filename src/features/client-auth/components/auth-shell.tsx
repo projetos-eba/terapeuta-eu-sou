@@ -1,7 +1,8 @@
 import Image from "next/image";
 import type { ReactNode } from "react";
 
-import { PublicLogo } from "@/components/tes";
+import { AuthBackButton, PublicLogo } from "@/components/tes";
+import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 export function ClientAuthShell({
@@ -12,9 +13,12 @@ export function ClientAuthShell({
   className?: string;
 }) {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,#F4ECFA_0%,#FFFFFF_42%,#F8F5FF_100%)] px-5 py-8 text-brand-deep sm:px-8">
+    <main className="relative min-h-screen bg-[radial-gradient(circle_at_top,#F4ECFA_0%,#FFFFFF_42%,#F8F5FF_100%)] px-5 py-8 text-brand-deep sm:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col items-center justify-center gap-8">
-        <PublicLogo />
+        <div className="relative flex w-full justify-center">
+          <AuthBackButton fallbackHref={routes.public.home} />
+          <PublicLogo />
+        </div>
         <section className="grid w-full overflow-hidden rounded-[28px] border border-border bg-white shadow-float lg:grid-cols-[1.02fr_0.98fr]">
           <div
             className={cn(

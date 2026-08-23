@@ -51,7 +51,9 @@ export async function POST(request: Request) {
         getSafeRedirect(toLoginInput(body).next) ?? session.redirectTo,
     });
 
-    setAuthSessionCookies(response, "patient", session);
+    setAuthSessionCookies(response, "patient", session, {
+      userId: session.userId,
+    });
 
     return response;
   } catch (error) {

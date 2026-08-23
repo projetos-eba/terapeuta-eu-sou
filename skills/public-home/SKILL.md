@@ -78,7 +78,12 @@ Rules:
 The page should preserve these sections from Figma `13273:1844`:
 
 - Public header
-- Mobile public header with logo, icon menu button, navigation links, and profile-specific login links. Do not show the large "Começar minha jornada" CTA in the header on mobile.
+- Responsive public header with logo and a sidebar menu below the large-layout
+  breakpoint. When the sidebar is active, show only the logo and menu control
+  in the header; the authenticated account identity and its three actions stay
+  above the navigation inside the sidebar. Show profile-specific login links
+  only for guests. Keep the large "Começar minha jornada" CTA in the header
+  only on large layouts.
 - Hero with human image
 - `O que é o TES?` with the Figma-style supporting purple shape behind the trust cards
   - On large layouts the shape is capped at 50% of the viewport width; the trust

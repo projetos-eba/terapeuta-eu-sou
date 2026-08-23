@@ -18,6 +18,7 @@ export default async function ClientLoginPage({
   searchParams?: Promise<{
     created?: string;
     reset?: string;
+    reason?: string;
     next?: string;
     verified?: string;
   }>;
@@ -32,6 +33,7 @@ export default async function ClientLoginPage({
             created={params?.created === "1"}
             next={params?.next}
             reset={params?.reset === "1"}
+            sessionChanged={params?.reason === "session_changed"}
             verified={params?.verified === "1"}
           />
         </div>

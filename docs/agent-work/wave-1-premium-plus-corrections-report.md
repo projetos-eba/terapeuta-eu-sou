@@ -10,7 +10,7 @@ deploy em HML ou produção foi executado nesta rodada.
 
 ## Decisões aplicadas
 
-- O nome público canônico é **Assistente Aura**. `aura_*` e a rota técnica
+- O nome público canônico é **Assessora Aura**. `aura_*` e a rota técnica
   `/terapeuta/assessor-ia` permanecem compatíveis no código.
 - Todos os planos podem cadastrar serviços sem limite de quantidade. O limite
   legado permanece como contrato nullable apenas para compatibilidade dos
@@ -117,7 +117,7 @@ listados acima; não houve alteração destrutiva nem atualização de tipos ger
 3. **Dashboard financeiro e revisão jurídica da anotação da página 63**:
    permanecem fora desta Wave 1 por falta de decisão/escopo técnico fechado.
 4. **Figma**: ajustes pequenos foram aplicados usando os componentes existentes.
-   Rebuilds visuais maiores de Métricas, Assistente Aura e outras telas ficam
+   Rebuilds visuais maiores de Métricas, Assessora Aura e outras telas ficam
    para uma wave específica, conforme decisão humana.
 5. **Categorias da solicitação de nova prática**: a implementação atual usa a
    taxonomia persistida de `therapy_categories`, enquanto o Match usa a

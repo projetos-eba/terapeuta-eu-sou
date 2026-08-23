@@ -77,7 +77,7 @@ export function TherapyCatalogPicker({
                     <button
                       aria-selected={selected}
                       className={cn(
-                        "min-h-20 rounded-lg border p-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary",
+                        "min-h-20 rounded-lg border p-3 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary",
                         selected
                           ? "border-brand-primary bg-brand-lavenderSoft"
                           : "border-brand-lavender bg-white hover:bg-brand-lavenderSoft/60",
@@ -89,6 +89,23 @@ export function TherapyCatalogPicker({
                     >
                       <span className="flex items-start justify-between gap-3">
                         <span>
+                          <span className="mb-2 grid size-16 place-items-center overflow-hidden rounded-lg bg-brand-lavenderSoft text-brand-primary">
+                            {therapy.imageUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element -- imagem administrada pelo catálogo da plataforma.
+                              <img
+                                alt={`Imagem da terapia ${therapy.name}`}
+                                className="size-full object-cover"
+                                src={therapy.imageUrl}
+                              />
+                            ) : (
+                              <span
+                                aria-hidden="true"
+                                className="text-xl font-display italic"
+                              >
+                                {therapy.name.slice(0, 1)}
+                              </span>
+                            )}
+                          </span>
                           <strong className="block text-sm text-brand-deep">
                             {therapy.name}
                           </strong>

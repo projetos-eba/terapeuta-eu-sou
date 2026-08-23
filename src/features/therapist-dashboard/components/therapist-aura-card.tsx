@@ -15,7 +15,7 @@ export function TherapistAuraCard({
   return (
     <section className="relative overflow-hidden rounded-panel border-2 border-[#cdbff0] bg-[#fbf9ff] px-5 py-6 shadow-card sm:px-7">
       <Image
-        alt="Assistente Aura"
+        alt="Assessora Aura"
         className="pointer-events-none absolute bottom-0 left-0 hidden h-[270px] w-[180px] object-contain object-bottom sm:block"
         height={975}
         src="/therapist/dashboard/aura.png"
@@ -25,7 +25,7 @@ export function TherapistAuraCard({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-xl font-bold text-brand-deep">
-              Assistente Aura ao seu lado
+              Assessora Aura ao seu lado
             </h2>
             <span className="inline-flex items-center gap-1 rounded-full bg-status-warningBg px-3 py-1 text-[10px] font-semibold text-brand-deep">
               <Crown aria-hidden="true" className="size-3" />
@@ -36,7 +36,7 @@ export function TherapistAuraCard({
             className="text-xs font-bold text-brand-primary outline-none hover:text-brand-deep focus-visible:ring-4 focus-visible:ring-ring/20"
             href={routes.therapist.assessorIa as Route<string>}
           >
-            Abrir o Assistente Aura →
+            Abrir a Assessora Aura →
           </Link>
         </div>
         {aura ? (

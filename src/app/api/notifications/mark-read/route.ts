@@ -10,15 +10,16 @@ const UUID =
 type SupabaseUser = {
   id: string;
 };
+type NotificationRole = "admin" | "patient" | "therapist";
 
 export async function POST(request: Request) {
   const parsed = await parseBody(request);
   if (!parsed.ok) return failure(parsed.message, parsed.status);
 
   const config = getSupabasePublicConfig();
-  const accessToken = await getAccessToken();
+  const accessToken = await getAccessToken(parsed.role);
 
-  if (!config || !accessToken) return failure("Entre na sua conta.", 401);
+  if (!parsed.role || !config || !accessToken) return failure("Entre na sua conta.", 401);
 
   try {
     const user = await supabaseRequest<SupabaseUser>(
@@ -55,14 +56,11 @@ export async function POST(request: Request) {
   }
 }
 
-async function getAccessToken() {
+async function getAccessToken(role: NotificationRole | null) {
   const cookieStore = await cookies();
-  return (
-    cookieStore.get("tes_patient_access_token")?.value ??
-    cookieStore.get("tes_therapist_access_token")?.value ??
-    cookieStore.get("tes_admin_access_token")?.value ??
-    null
-  );
+  return role
+    ? cookieStore.get(`tes_${role}_access_token`)?.value ?? null
+    : null;
 }
 
 async function supabaseRequest<T>(
@@ -101,7 +99,17 @@ async function parseBody(request: Request) {
   }
 
   const markAll = Reflect.get(body, "markAll");
-  if (markAll === true) return { ok: true as const, scope: "all" as const };
+  const role = Reflect.get(body, "role");
+  if (role !== "admin" && role !== "patient" && role !== "therapist") {
+    return {
+      ok: false as const,
+      message: "NÃ£o foi possÃ­vel identificar sua Ã¡rea.",
+      status: 422,
+    };
+  }
+  if (markAll === true) {
+    return { ok: true as const, role, scope: "all" as const };
+  }
 
   const ids = Reflect.get(body, "ids");
   if (
@@ -117,7 +125,12 @@ async function parseBody(request: Request) {
     };
   }
 
-  return { ids: [...new Set(ids)], ok: true as const, scope: "ids" as const };
+  return {
+    ids: [...new Set(ids)],
+    ok: true as const,
+    role,
+    scope: "ids" as const,
+  };
 }
 
 function failure(message: string, status: number) {
