@@ -22,11 +22,11 @@ describe("mapTherapistHomeReadiness", () => {
 
     expect(readiness.isOperationallyReady).toBe(false);
     expect(readiness.completedRequiredCount).toBe(0);
-    expect(readiness.requiredCount).toBe(3);
+    expect(readiness.requiredCount).toBe(6);
     expect(readiness.checklist.find((item) => item.id === "connect")).toEqual(
       expect.objectContaining({
         complete: false,
-        required: false,
+        required: true,
         state: "pending",
       }),
     );
@@ -46,7 +46,7 @@ describe("mapTherapistHomeReadiness", () => {
     expect(readiness.verificationStatus).toBe("draft");
   });
 
-  it("unlocks the base dashboard when profile, services and agenda are ready", () => {
+  it("keeps the checklist until the required documents are also complete", () => {
     const readiness = mapTherapistHomeReadiness({
       connect: null,
       editor: editorFixture({
@@ -61,12 +61,65 @@ describe("mapTherapistHomeReadiness", () => {
       },
     });
 
-    expect(readiness.isOperationallyReady).toBe(true);
+    expect(readiness.isOperationallyReady).toBe(false);
     expect(readiness.completedRequiredCount).toBe(3);
-    expect(readiness.requiredCount).toBe(3);
+    expect(readiness.requiredCount).toBe(6);
   });
 
-  it("shows the receiving account in review as non-blocking and complete", () => {
+  it("unlocks the base dashboard after the required documents are complete", () => {
+    const readiness = mapTherapistHomeReadiness({
+      connect: null,
+      editor: editorFixture({
+        activeServiceCount: 1,
+        availabilityRuleCount: 2,
+        publicDocumentsComplete: true,
+        publicStatus: "published",
+      }),
+      session: {
+        plan: TherapistPlan.Free,
+        profileId,
+        status: TherapistStatus.Draft,
+      },
+    });
+
+    expect(readiness.isOperationallyReady).toBe(false);
+    expect(readiness.completedRequiredCount).toBe(5);
+    expect(readiness.requiredCount).toBe(6);
+  });
+
+  it("requires Connect onboarding before allowing the dashboard", () => {
+    const readiness = mapTherapistHomeReadiness({
+      connect: connectFixture({
+        detailsSubmitted: false,
+        onboardingStatus: "onboarding_started",
+        transferCapabilityStatus: "pending",
+      }),
+      editor: editorFixture({
+        activeServiceCount: 1,
+        availabilityRuleCount: 1,
+        publicDocumentsComplete: true,
+        publicStatus: "published",
+      }),
+      session: {
+        plan: TherapistPlan.PremiumPlus,
+        profileId,
+        status: TherapistStatus.InReview,
+      },
+    });
+
+    expect(readiness.isOperationallyReady).toBe(false);
+    expect(readiness.completedRequiredCount).toBe(5);
+    expect(readiness.requiredCount).toBe(6);
+    expect(readiness.checklist.find((item) => item.id === "connect")).toEqual(
+      expect.objectContaining({
+        complete: false,
+        required: true,
+        state: "pending",
+      }),
+    );
+  });
+
+  it("allows the dashboard after Connect onboarding is submitted", () => {
     const readiness = mapTherapistHomeReadiness({
       connect: connectFixture({
         onboardingStatus: "onboarding_started",
@@ -75,6 +128,7 @@ describe("mapTherapistHomeReadiness", () => {
       editor: editorFixture({
         activeServiceCount: 1,
         availabilityRuleCount: 1,
+        publicDocumentsComplete: true,
         publicStatus: "published",
       }),
       session: {
@@ -85,10 +139,12 @@ describe("mapTherapistHomeReadiness", () => {
     });
 
     expect(readiness.isOperationallyReady).toBe(true);
+    expect(readiness.completedRequiredCount).toBe(6);
+    expect(readiness.requiredCount).toBe(6);
     expect(readiness.checklist.find((item) => item.id === "connect")).toEqual(
       expect.objectContaining({
         complete: true,
-        required: false,
+        required: true,
         state: "in_review",
       }),
     );
@@ -149,6 +205,7 @@ function editorFixture(
   overrides: Partial<{
     activeServiceCount: number;
     availabilityRuleCount: number;
+    publicDocumentsComplete: boolean;
     publicStatus: TherapistProfileEditorData["derived"]["publicStatus"];
     privateDocuments: TherapistProfileEditorData["privateDocuments"];
     therapistProfileId: string;
@@ -184,7 +241,14 @@ function editorFixture(
       verificationStatus: "draft",
     },
     draft: null,
-    privateDocuments: overrides.privateDocuments ?? [],
+    privateDocuments:
+      overrides.privateDocuments ??
+      (overrides.publicDocumentsComplete
+        ? [
+            documentFixture({ kind: "identity_document" }),
+            documentFixture({ kind: "address_proof" }),
+          ]
+        : []),
     propagationNotice: "",
     publicProfileHref: "/terapeutas/teste",
     publicProfileSlug: "teste",
@@ -246,7 +310,7 @@ function connectFixture(
   overrides: Partial<
     Pick<
       TherapistConnectAccount,
-      "onboardingStatus" | "transferCapabilityStatus"
+      "detailsSubmitted" | "onboardingStatus" | "transferCapabilityStatus"
     >
   > = {},
 ): TherapistConnectAccount {
@@ -255,7 +319,7 @@ function connectFixture(
     chargesEnabled: false,
     contractVersion: 1,
     currentlyDue: [],
-    detailsSubmitted: true,
+    detailsSubmitted: overrides.detailsSubmitted ?? true,
     disabledReason: null,
     eventuallyDue: [],
     generatedAt: "2026-08-07T10:00:00.000Z",

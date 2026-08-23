@@ -43,13 +43,13 @@ test.describe("therapist private documents", () => {
     try {
       await loginAsTherapist(therapistPage, therapistEmail);
       await assertTherapistProfileRead(therapistPage);
-      await therapistPage.goto("/terapeuta/perfil", {
+      await therapistPage.goto("/terapeuta/configuracoes", {
         waitUntil: "domcontentloaded",
       });
       await expect(
         therapistPage.getByRole("heading", {
           level: 1,
-          name: /cadastro|perfil/i,
+          name: "Configurações",
         }),
       ).toBeVisible();
 
@@ -178,7 +178,7 @@ test.describe("therapist private documents", () => {
       await adminPage.waitForLoadState("domcontentloaded");
 
       await therapistPage.reload({ waitUntil: "domcontentloaded" });
-      await expect(therapistPage.getByText("Reenvio solicitado")).toBeVisible();
+      await expect(therapistPage.getByText("Novo envio")).toBeVisible();
       await expect(
         therapistPage.getByText("Envie um comprovante mais recente e legível."),
       ).toBeVisible();
@@ -244,7 +244,7 @@ async function loginAsTherapist(
 ) {
   await page.goto("/terapeuta/login", { waitUntil: "domcontentloaded" });
   await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Senha").fill(therapistPassword);
+  await page.locator('input[name="password"]').fill(therapistPassword);
   const responsePromise = page.waitForResponse(
     (response) =>
       response.url().includes("/api/auth/therapist/login") &&
@@ -267,7 +267,7 @@ async function loginAsAdmin(page: import("@playwright/test").Page) {
   for (let retriesRemaining = 2; retriesRemaining > 0; retriesRemaining -= 1) {
     await page.goto("/admin-login", { waitUntil: "domcontentloaded" });
     await page.getByLabel("E-mail").fill(adminEmail);
-    await page.getByLabel("Senha").fill(adminPassword);
+    await page.locator('input[name="password"]').fill(adminPassword);
     const loginResponse = page
       .waitForResponse(
         (response) =>

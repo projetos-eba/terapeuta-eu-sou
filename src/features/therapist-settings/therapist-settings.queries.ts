@@ -216,13 +216,22 @@ async function fetchPrivateDocumentCenter({
   }
 
   const payload = (await response.json().catch(() => null)) as {
-    data?: { documentCenter?: unknown };
+    data?: { documentCenter?: unknown } | unknown;
     ok?: boolean;
   } | null;
 
-  if (!payload?.ok || !payload.data?.documentCenter) {
+  const data = payload?.data;
+  const documentCenter =
+    data &&
+    typeof data === "object" &&
+    !Array.isArray(data) &&
+    "documentCenter" in data
+      ? data.documentCenter
+      : data;
+
+  if (!payload?.ok || !documentCenter) {
     throw new TherapistSettingsQueryError("unavailable");
   }
 
-  return payload.data.documentCenter;
+  return documentCenter;
 }

@@ -38,6 +38,24 @@ Deno.test("validates therapist profile draft payloads", () => {
   }
 });
 
+Deno.test("accepts the new Premium theme IDs at the Edge contract boundary", () => {
+  const result = validateTherapistProfileCommand({
+    action: "save_draft",
+    expectedVersion: 3,
+    payload: {
+      essenceBody: "Minha pratica combina presenca, clareza e cuidado.",
+      publicName: "Ana Oliveira",
+      publicProfileTheme: "essencial_editorial",
+      shortIntro: "Acolhimento online com linguagem clara.",
+    },
+    requestId,
+  });
+
+  if (result.action === "save_draft") {
+    assertEquals(result.payload.publicProfileTheme, "essencial_editorial");
+  }
+});
+
 Deno.test("validates slug availability and update commands", () => {
   assertEquals(
     validateTherapistProfileCommand({

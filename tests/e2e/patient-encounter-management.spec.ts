@@ -117,7 +117,7 @@ async function loginAsPatient(
 ) {
   await page.goto("/cliente/login");
   await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Senha").fill(patientPassword);
+  await page.locator('input[name="password"]').fill(patientPassword);
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/app(?:\?.*)?$/);
 }

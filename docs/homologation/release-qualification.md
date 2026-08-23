@@ -38,7 +38,7 @@ neste documento.
 Data: 2026-08-20
 
 Escopo: recriação responsiva da rota pública `/sobre-nos`, inclusão de
-`Como funciona` no cabeçalho, no menu mobile e no rodapé, seguindo o Figma
+`O que é o TES?` no cabeçalho, no menu mobile e no rodapé, seguindo o Figma
 `Projeto TES - Copy`, node `14845:668`; refinamento posterior do hero sem CTA,
 da tipografia editorial leve, da proteção contra palavras viúvas e da mídia
 de alta qualidade nas superfícies públicas com assets editoriais.
@@ -328,3 +328,179 @@ O horário canônico permanece 23/08/2026 às 10:15 BRT e a consulta ocorreu ant
 de T-15. Não houve acesso a Zoom, entrada de host/paciente, alteração manual ou
 nova operação. A próxima execução deve começar às 10:00 BRT com o mesmo booking
 e novo precheck; não criar Checkout, pagamento, fixture ou video session.
+
+## Merge `dev-vini` → `dev-antonio` — qualificação incremental
+
+Data: 2026-08-23
+Ambiente: local; HML não configurado nesta máquina
+Estado: **NOT_READY**
+
+O merge permanece sem conflitos e sem reset ou abort. A nomenclatura visível foi
+consolidada como **Assessora Aura**, preservando a rota técnica
+`/terapeuta/assessor-ia`; Resultados, Meu plano e Histórico da Jornada permanecem
+nas respectivas superfícies. A prontidão operacional inclui os documentos
+privados obrigatórios e Connect submetido, sem tratar análise externa válida como
+pendência bloqueadora. Serviços preservam a copy canônica e a asserção de imagem
+do catálogo.
+
+### Segurança, migrations e dados privados
+
+| Gate | Resultado | Evidência sanitizada |
+| --- | --- | --- |
+| Migration de leitura server-side | PASS | `20260823133000_grant_service_role_private_identity_read.sql` aplicada localmente; somente `service_role` recebeu `SELECT` mínimo para o cálculo server-side de prontidão. |
+| Storage privado sem acesso direto | PASS | `20260823134500_remove_unversioned_private_documents_storage_policy.sql` aplicada localmente; nenhuma policy de browser permanece para o bucket privado. |
+| Contrato focal de Storage | PASS | `053_therapist_private_documents_bucket.sql`: 4/4. |
+| Documentos privados no navegador | PASS | Playwright headed local: upload, substituição, revisão, reenvio, isolamento entre terapeutas e expiração de URL assinada; 1/1. |
+| Lint de schema | PASS com ressalva | `npx supabase db lint --local` saiu com código 0; quatro avisos preexistentes de parâmetros/variáveis não usados permanecem rastreados. |
+| pgTAP completo | FAIL | 76/78 arquivos concluíram; falham `006_agenda_a4_blocks.sql` (fixture de impacto ausente) e `061_email_outbox_dispatch.sql` (contagem não isolada do outbox). Não houve correção especulativa. |
+
+As duas migrations são necessárias também no ambiente alvo: não há correção local
+ad hoc, nem alteração de schema sem arquivo versionado. Elas não expõem DTO
+público, token, cookie, segredo ou documento.
+
+### Gates locais executados nesta rodada
+
+| Gate | Resultado | Evidência |
+| --- | --- | --- |
+| Integridade do merge | PASS | Nenhum arquivo não resolvido; `git diff --cached --check` sem saída. |
+| TypeScript | PASS | `npm run typecheck`. |
+| Lint | PASS | `npm run lint`. |
+| Unitários | PASS | `npm run test`: 157 arquivos, 630 testes. |
+| Edge Functions | PASS | `npm run test:deno`: 171 testes, 0 falhas. |
+| Build | PASS | `npm run build`: compilação, tipos e 113 páginas estáticas concluídos. |
+| Navegação/autenticação pública | PASS | Playwright headed local: login, retorno, navegação pública e responsividade nas specs focais. |
+| Terapias e pagamento de plano | PASS | Playwright headed local: serviços 2/2; checkout de plano 3/3. O redirect nunca foi usado como confirmação de pagamento. |
+| Zoom local UI | FAIL | Duas specs bloqueiam corretamente uma booking de fixture já fora da janela temporal; nenhuma JWT ou entrada indevida foi emitida. A fixture deve ser renovada por fluxo controlado, sem enfraquecer o gate T-15. |
+
+### Bloqueios de HML e go/no-go
+
+Não foram executados Stripe test mode, Playwright HML, documentos HML ou sessão
+Zoom HML nesta máquina: as variáveis de configuração e credenciais efêmeras
+necessárias não estão presentes. Não houve tentativa externa, cobrança, retry
+cego ou sessão Zoom real. A comparação visual registrada com Figma também está
+pendente nesta rodada.
+
+Para retomar: corrigir ou isolar as duas fixtures pgTAP, disponibilizar HML e
+executar sequencialmente o preflight Stripe, os contexts de paciente/terapeuta/
+Admin e, após confirmação manual do endpoint ativo, uma única sessão Zoom curta
+com evidência sanitizada. Só então reavaliar `HOMOLOGATED`; esta rodada não
+autoriza `PRODUCTION-READY`.
+
+## Fase 1D — Execução real Zoom + conclusão do Golden Path HML (retomada)
+
+Data: 2026-08-23, 10:01–10:10 BRT
+
+Resultado: **PHASE 1 PASS**
+
+O booking pago/confirmado da Fase 1B foi preservado e reutilizado sem nova
+operação financeira. O precheck autoritativo confirmou R$ 120,00 BRL, uma
+payment, uma video session `ready` e a janela T-15 aberta.
+
+| Checkpoint | Resultado |
+| --- | --- |
+| Paid booking recheck | PASS |
+| Zoom access window | PASS |
+| Therapist join | PASS |
+| Host session state | PASS |
+| Patient join | PASS |
+| Video session active | PASS |
+| Video session end | PASS |
+| Session completion | PASS |
+| Therapist financial consistency | PASS |
+| Admin operational consistency | PASS |
+| Database invariants | PASS |
+
+Evidência: o harness oficial HML completou contexts isolados e host-first;
+webhook Zoom `session.user_joined` liberou o paciente; os dois participantes
+entraram na mesma sessão real, câmera local/remota foi observada, a sessão ficou
+ativa por 45 segundos e o encerramento gerou `session.ended` e `status=ended` no
+backend. Paciente, terapeuta, financeiro e Admin responderam 200. Os RPCs
+privados de overview/recebimentos/repasses/Connect retornaram, com bruto de
+R$ 120,00, comissão de R$ 24,00, terapeuta de R$ 96,00 e repasse em
+`waiting_confirmation`.
+
+O primeiro retry em T-15 falhou somente no harness por seletor obsoleto. O
+seletor foi alinhado ao `href` canônico da rota `/terapeuta/sessoes/:id/video`;
+`node --check` e `zoom-hml.test.mjs` (15/15) passaram. Não houve alteração de
+produto, banco, webhook, Stripe ou produção.
+
+A confirmação/feedback bilateral posterior não foi enviada. A consulta
+read-only identificou que a migration de `session_participant_confirmations`
+ainda não está aplicada no schema HML e o endpoint de feedback retornou estado
+indisponível; isso fica registrado para a fase de comunicação/operação e não foi
+usado para alterar booking ou financeiro. As tentativas históricas pendentes
+foram apenas observadas; não há payment `pending` atual e os registros antigos
+estão em estados canônicos cancelados/refundados.
+
+Plano resumido da Fase 2 (não executado): abandono/expiração de holds, Checkout
+recusado, webhooks duplicados/atrasados, concorrência, cancelamento, refund,
+reagendamento, idempotência, reconnect/refresh Zoom, acesso indevido e
+confirmação/feedback bilateral.
+
+### Release Readiness Board — atualização após Fase 1D
+
+| Área | Status mais recente | Observação |
+| --- | --- | --- |
+| Stripe Checkout → webhook → pagamento | PASS | Checkout test, webhook processado e payment autoritativo `paid`. |
+| Connect/financeiro | PASS | Read models privados e Connect consultados; repasse não foi forçado. |
+| Zoom Video SDK/host-first | PASS | Join real de terapeuta e paciente, encerramento e invariantes. |
+| Admin operacional do Golden Path | PASS | Detalhe e correlação da operação disponíveis. |
+| CI remoto | P1 | Continua pendente de execução verde para a revisão atual. |
+| E-mail real HML | P1 | Fase 3. |
+| Rotas de pagamento/comprovante do paciente | P1 | Gap pré-existente de App Router, fora do Golden Path executado. |
+| Feedback/confirmations HML | P1 | `session_participant_confirmations` ausente no schema HML; alinhar antes da qualificação operacional. |
+
+P0 remanescente: nenhum identificado nesta qualificação. Isto não equivale a
+Production Ready; a decisão cobre somente o Golden Path transacional em HML.
+
+## Fase 2 — Failure Paths e Resiliência HML
+
+Data: 2026-08-23, somente HML/test mode. Resultado: **PHASE 2 FAIL**.
+
+| Cenário | Status | Evidência / root cause | Próxima ação |
+| --- | --- | --- | --- |
+| Recusa Stripe | PASS | `payment_intent.payment_failed` recebido e processado; pagamento local `failed`. | Regressão automatizada. |
+| Checkout abandonado/expirado | FAIL | Webhook real processado e payment `canceled`, mas booking ficou `pending_payment/payment_status=cancelled`; o slot não voltou à disponibilidade. | P1: corrigir lifecycle canônico de booking/hold. |
+| Hold/slot após falha | FAIL | O hold não ficou ativo, porém o booking cancelado continuou conflito no slot engine. | P1: validar release transacional. |
+| Webhook duplicado/atrasado | BLOCKED | Replay local rejeitado por divergência entre secret remoto HML e secret disponível ao harness; entregas Stripe reais seguem processadas. | P1: canal seguro para replay assinado. |
+| Concorrência independente | PASS | Uma tentativa oficial venceu e a outra recebeu 409; um booking apenas. | Manter regressão. |
+| Dois pacientes distintos | BLOCKED | Falta segundo paciente QA autorizado. | P1: provisionar credencial QA. |
+| Double-click/retry | PASS | Mesmo request id retornou a mesma operação; sem duplicidade. | Manter regressão. |
+| Refund | PASS | Refund Stripe test real, uma refund succeeded e payment local `refunded`. | Repetir retry após desbloqueio de secret. |
+| Cancelamento paciente/terapeuta | PASS | Fluxos oficiais e retries idempotentes; decisões/refunds únicos. | Manter regressão. |
+| Reagendamento | PASS | Request repetido e resolução oficial `applied`; booking versionado e horário atualizado. | Validar slot anterior na suíte consolidada. |
+| Zoom indevido/encerrado | PASS | Booking errado, role spoof e sessão encerrada negados. | Manter regressão. |
+| Zoom antes do host | BLOCKED | Sem sessão futura própria do paciente QA. | P1: fixture Zoom autorizada. |
+| Zoom reconnect/refresh/rejoin | BLOCKED | Sem sessão futura própria; não criado novo booking. | P1: executar com fixture dedicada. |
+| Confirmações bilaterais/feedback | BLOCKED | `20260823100000_session_attendance_confirmation_lifecycle.sql` local está ausente no HML; HML usa política v1 e `session_service_confirmations`; REST de `session_participant_confirmations`/feedback indisponível. Confirmação oficial do terapeuta alterou `transfer_status` para safety period, portanto o lifecycle participa do financeiro. | P1: alinhar schema/política e validar bilateralmente. |
+
+### Evidências, alterações e riscos
+
+Os testes usaram Edge Functions e Stripe test mode reais. Nenhum secret,
+cookie, token ou URL assinada foi documentado. Os bookings de tentativas
+interrompidas foram somente observados. A preferência de 24/08 foi aplicada ao
+cenário de recusa; cenários que exigiam Connect usaram a fixture canônica de
+25/08 por inexistência de Connect elegível em 24/08.
+
+O root cause de produto é a ausência de transição/liberação após payment
+`failed/canceled`: `apply_session_payment_state_v1` deixa o booking
+`pending_payment`, e o slot engine continua considerando-o conflito. Os demais
+bloqueios são de qualificação HML (secret de replay, usuário QA adicional,
+fixture Zoom própria e migration/política divergente). A única alteração foi
+no harness `scripts/payments/complete-session-checkout-hml.mjs`, que passou a
+classificar replay assinado indisponível sem mascarar o estado autoritativo.
+
+Validação local: `node --check` do harness, `zoom-hml.test.mjs` **15/15**,
+`npm run typecheck` **PASS** e `npm run lint` **PASS**. A lista de migrations
+remotas confirmou que `20260823100000` não está aplicada no HML. Nenhuma
+migration foi aplicada nesta fase.
+
+P0: nenhum identificado. P1: release de slot/booking após abandono ou falha,
+replay duplicado/atrasado, segundo paciente de concorrência, fixture Zoom
+adversarial, e alinhamento de confirmações/feedback; permanecem também os P1
+pré-existentes de CI, e-mail e rotas de pagamento do paciente.
+
+Fase 3 deve cobrir comunicação e operação. A recomendação final é
+**PHASE 2 FAIL**. Isto não declara Production Ready.
+
+Documentação atualizada.

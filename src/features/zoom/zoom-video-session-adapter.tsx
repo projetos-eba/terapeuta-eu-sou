@@ -1,27 +1,28 @@
 "use client";
 
-import { createElement, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   Copy,
   Headphones,
   Loader2,
   Mic,
-  MicOff,
-  PhoneOff,
   RefreshCw,
   Video,
-  VideoOff,
   Wifi,
 } from "lucide-react";
 
+import { TESDialog } from "@/components/tes";
 import { ZoomAccessReason, type ZoomAccessState } from "@/domain/tes";
 import {
-  getZoomAccessLabel,
   getZoomWaitingRoomStatusFromAccess,
 } from "@/features/bookings";
+import { SessionFeedbackForm } from "@/features/session-feedback/components/session-feedback-form";
 import { routes } from "@/lib/routes";
-import { cn } from "@/lib/utils";
+
+import { ZoomVideoControls } from "./components/zoom-video-controls";
+import { ZoomVideoStage } from "./components/zoom-video-stage";
+import { ZoomWaitingRoom } from "./components/zoom-waiting-room";
 
 type VideoSessionPayload = {
   access: ZoomAccessState;
@@ -119,13 +120,23 @@ const AUTH_SESSION_REFRESH_INTERVAL_MS = 5 * 60_000;
 export function ZoomVideoSessionAdapter({
   access,
   actorRole,
+  backHref,
   bookingId,
   displayMode = "embedded",
+  initialFeedback = false,
+  participantLabel = "Com outra pessoa",
+  scheduleLabel,
+  sessionTitle,
 }: {
   access: ZoomAccessState | null;
   actorRole: "patient" | "therapist";
+  backHref?: string;
   bookingId: string;
   displayMode?: "dedicated" | "embedded";
+  initialFeedback?: boolean;
+  participantLabel?: string;
+  scheduleLabel?: string;
+  sessionTitle?: string;
 }) {
   const [state, setState] = useState<SessionState>("idle");
   const [currentAccess, setCurrentAccess] = useState(access);
@@ -144,6 +155,7 @@ export function ZoomVideoSessionAdapter({
   const [remoteParticipantCount, setRemoteParticipantCount] = useState(0);
   const [roleType, setRoleType] = useState<0 | 1 | null>(null);
   const [cleanupFailures, setCleanupFailures] = useState<CleanupFailure[]>([]);
+  const [endDialogOpen, setEndDialogOpen] = useState(false);
   const currentAccessRef = useRef(access);
   const isOnlineRef = useRef(isOnline);
   const clientRef = useRef<ZoomVideoClient | null>(null);
@@ -193,6 +205,42 @@ export function ZoomVideoSessionAdapter({
   }, [access, updateCurrentAccess]);
 
   useEffect(() => {
+    if (!initialFeedback) return;
+
+    let cancelled = false;
+
+    async function resolveFeedbackIntent() {
+      try {
+        const response = await fetch(
+          `/api/session-feedback?bookingId=${encodeURIComponent(bookingId)}`,
+          { cache: "no-store" },
+        );
+        const payload = (await response.json().catch(() => null)) as
+          | { data?: { status?: string }; ok?: boolean }
+          | null;
+        const feedbackStatus = payload?.data?.status;
+
+        if (
+          !cancelled &&
+          payload?.ok &&
+          (feedbackStatus === "eligible" ||
+            feedbackStatus === "incident_only" ||
+            feedbackStatus === "submitted")
+        ) {
+          setState("ended");
+        }
+      } catch {
+        // The waiting room remains visible when the intent check is unavailable.
+      }
+    }
+
+    void resolveFeedbackIntent();
+    return () => {
+      cancelled = true;
+    };
+  }, [bookingId, initialFeedback]);
+
+  useEffect(() => {
     isOnlineRef.current = isOnline;
   }, [isOnline]);
 
@@ -213,13 +261,13 @@ export function ZoomVideoSessionAdapter({
     };
   }, []);
 
-  const waitingForTherapist =
-    actorRole === "patient" &&
-    currentAccess?.reason === ZoomAccessReason.TherapistNotInSession;
   const waitingRoomKind = getZoomWaitingRoomStatusFromAccess(
     currentAccess,
     new Date(nowMs),
   );
+  const waitingForTherapist =
+    actorRole === "patient" &&
+    currentAccess?.reason === ZoomAccessReason.TherapistNotInSession;
   const sectionClassName = displayMode === "dedicated" ? "w-full" : "mt-6";
 
   useEffect(() => {
@@ -675,16 +723,19 @@ export function ZoomVideoSessionAdapter({
 
   async function leaveSession(endSession = false) {
     if (leavingRef.current) return;
-    if (
-      endSession &&
-      !window.confirm(
-        "Encerrar o encontro para todos? A outra pessoa tambem sera desconectada.",
-      )
-    ) {
+    if (endSession) {
+      setEndDialogOpen(true);
       return;
     }
 
+    await completeLeave(false);
+  }
+
+  async function completeLeave(endSession: boolean) {
+    if (leavingRef.current) return;
+
     leavingRef.current = true;
+    setEndDialogOpen(false);
     setState("leaving");
     setMessage(
       endSession ? "Encerrando o encontro..." : "Saindo do encontro...",
@@ -950,157 +1001,70 @@ export function ZoomVideoSessionAdapter({
     setRemoteParticipantCount(remoteUserElementsRef.current.size);
   }
 
-  if (waitingForTherapist) {
+  if (state === "ended") {
     return (
-      <section className={sectionClassName} aria-label="Sala de espera">
-        <div className="grid gap-3 rounded-lg border border-brand-lavender bg-surface-soft p-4">
-          <div
-            aria-hidden="true"
-            className="relative min-h-36 overflow-hidden rounded-lg bg-[url('/client-auth/client-auth-journey-room.png')] bg-cover bg-center"
+      <section className={sectionClassName} aria-label="Feedback da sessão">
+        <SessionFeedbackForm
+          actorRole={actorRole}
+          bookingId={bookingId}
+          introductoryMessage={message}
+          sessionLabel={
+            actorRole === "patient"
+              ? "Seu encontro foi encerrado"
+              : "Sua sessão foi encerrada"
+          }
+        />
+        {backHref ? (
+          <a
+            className="mx-auto mt-4 flex min-h-11 w-fit items-center justify-center rounded-full border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            href={backHref}
           >
-            <div className="absolute inset-0 bg-brand-deep/10" />
-          </div>
-          <p
-            aria-live="polite"
-            className="text-sm font-extrabold text-brand-deep"
-          >
-            {waitingRoomKind === "therapist_absent_prolonged"
-              ? "Ausência prolongada do terapeuta."
-              : "Aguardando o terapeuta iniciar o encontro."}
-          </p>
-          <p className="text-xs font-semibold leading-5 text-tesText-secondary">
-            Assim que a presença for confirmada pelo Zoom, a entrada será
-            liberada automaticamente. Se a espera se prolongar, acione o suporte
-            com a referência do encontro.
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
-              disabled={previewLoading || !isOnline}
-              onClick={() => void refreshPreviewAccess()}
-              type="button"
-            >
-              {previewLoading ? (
-                <Loader2
-                  aria-hidden="true"
-                  className="animate-spin"
-                  size={18}
-                />
-              ) : (
-                <Video aria-hidden="true" size={18} />
-              )}
-              Atualizar sala
-            </button>
-            <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
-              disabled={previewLoading || !isOnline}
-              onClick={() => void refreshPreviewAccess()}
-              type="button"
-            >
-              <RefreshCw aria-hidden="true" size={18} />
-              Renovar acesso
-            </button>
-            {waitingRoomKind === "therapist_absent_prolonged" ? (
-              <>
-                <button
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                  onClick={() => void copySupportReference()}
-                  type="button"
-                >
-                  <Copy aria-hidden="true" size={18} />
-                  Copiar referência
-                </button>
-                <a
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                  href={`${routes.patient.messages}?context=suporte&booking=${bookingId}`}
-                >
-                  <Headphones aria-hidden="true" size={18} />
-                  Falar com suporte
-                </a>
-              </>
-            ) : null}
-            <span className="text-xs font-semibold text-tesText-secondary">
-              {formatHardEndCountdown(
-                currentAccess,
-                nowMs,
-                serverClockOffsetMs,
-              )}
-            </span>
-          </div>
-        </div>
-        {message || recoveryMessage ? (
-          <p
-            aria-live="polite"
-            className="mt-3 flex gap-2 text-xs font-semibold leading-5 text-tesText-secondary"
-          >
-            <AlertCircle
-              aria-hidden="true"
-              className="mt-0.5 shrink-0 text-brand-primary"
-              size={16}
-            />
-            {recoveryMessage ?? message}
-          </p>
+            Voltar aos detalhes
+          </a>
         ) : null}
       </section>
     );
   }
 
-  if (actorRole === "patient" && !currentAccess) {
-    if (!isOnline) {
-      return (
-        <section className={sectionClassName} aria-label="Sala de video">
-          <div className="grid gap-3 rounded-lg border border-brand-lavender bg-surface-soft p-4">
-            <p className="flex items-center gap-2 text-sm font-extrabold text-brand-deep">
-              <Wifi aria-hidden="true" size={18} />
-              Sem conexão com a internet
-            </p>
-            <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-              A sala será atualizada automaticamente assim que a conexão voltar.
-            </p>
-          </div>
-        </section>
-      );
-    }
+  if (state === "idle") {
+    const waitingKind = currentAccess?.allowed
+      ? "entry_available"
+      : currentAccess?.reason === ZoomAccessReason.TooEarly
+        ? "too_early"
+        : currentAccess?.reason === ZoomAccessReason.TooLate ||
+            currentAccess?.reason === ZoomAccessReason.HardTimeout ||
+            waitingRoomKind === "ended"
+          ? "ended"
+          : waitingRoomKind === "therapist_absent_prolonged"
+            ? "therapist_absent_prolonged"
+            : currentAccess?.reason === ZoomAccessReason.TherapistNotInSession
+              ? "waiting_therapist"
+              : "operational_unavailable";
 
     return (
-      <section className={sectionClassName} aria-label="Sala de video">
-        <div className="grid gap-3 rounded-lg border border-brand-lavender bg-surface-soft p-4">
-          <button
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-brand-lavenderSoft px-6 text-sm font-extrabold text-tesText-secondary disabled:cursor-wait"
-            disabled={previewLoading}
-            onClick={() => void refreshPreviewAccess()}
-            type="button"
-          >
-            {previewLoading ? (
-              <Loader2 aria-hidden="true" className="animate-spin" size={20} />
-            ) : (
-              <RefreshCw aria-hidden="true" size={20} />
-            )}
-            {previewLoading ? "Verificando sala" : "Tentar atualizar sala"}
-          </button>
-          {message ? (
-            <p
-              aria-live="polite"
-              className="text-xs font-semibold leading-5 text-tesText-secondary"
-            >
-              {message}
-            </p>
-          ) : null}
-        </div>
-      </section>
-    );
-  }
-
-  if (currentAccess && !currentAccess.allowed) {
-    return (
-      <button
-        className="mt-6 inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg bg-brand-lavenderSoft px-6 text-sm font-extrabold text-tesText-secondary"
-        disabled
-        type="button"
-      >
-        <Video aria-hidden="true" size={20} />
-        {getZoomAccessLabel(currentAccess)}
-      </button>
+      <ZoomWaitingRoom
+        actorRole={actorRole}
+        countdownLabel={
+          waitingKind === "too_early"
+            ? formatRoomOpeningCountdown(currentAccess, nowMs, serverClockOffsetMs)
+            : formatHardEndCountdown(currentAccess, nowMs, serverClockOffsetMs)
+        }
+        isOnline={isOnline}
+        kind={waitingKind}
+        message={recoveryMessage ?? message}
+        onJoin={() => void joinSession()}
+        onRefresh={() => void refreshPreviewAccess()}
+        onReviewPermissions={() => void reviewPermissions()}
+        participantLabel={participantLabel}
+        previewLoading={previewLoading}
+        scheduleLabel={scheduleLabel}
+        sessionTitle={sessionTitle}
+        supportHref={
+          actorRole === "patient"
+            ? `${routes.patient.messages}?context=suporte&booking=${bookingId}`
+            : `${routes.therapist.messages}?context=suporte&booking=${bookingId}`
+        }
+      />
     );
   }
 
@@ -1114,132 +1078,32 @@ export function ZoomVideoSessionAdapter({
   return (
     <section className={sectionClassName} aria-label="Sala de video">
       <div className="grid gap-4 rounded-lg border border-brand-lavender bg-surface-soft p-4">
-        <div
-          className={cn(
-            "relative grid overflow-hidden rounded-lg bg-brand-deep",
-            displayMode === "dedicated"
-              ? "h-[clamp(14rem,42dvh,26rem)] md:grid-cols-2 md:h-[min(52dvh,32rem)]"
-              : "min-h-[180px] md:grid-cols-2",
-          )}
-          data-testid="zoom-video-stage"
-        >
-          <div
-            className={cn(
-              "relative z-10 overflow-hidden rounded-lg border border-white/30 bg-brand-deep shadow-card",
-              displayMode === "dedicated"
-                ? "absolute right-3 top-3 aspect-video w-[38%] md:static md:aspect-auto md:h-full md:w-auto md:rounded-none md:border-0 md:shadow-none"
-                : "min-h-[180px]",
-            )}
-            data-testid="zoom-local-video"
-          >
-            <div
-              className="absolute inset-0 grid place-items-center px-3 text-center text-xs font-semibold text-white/80"
-              hidden={videoOn}
-            >
-              Sua câmera está desligada
-            </div>
-            {createElement("zoom-video-player-container", {
-              "aria-label": "Seu video",
-              className: "absolute inset-0 block h-full w-full overflow-hidden",
-              ref: localVideoRef,
-            })}
-          </div>
-          <div
-            aria-label="Video remoto"
-            className={cn(
-              "relative grid h-full overflow-hidden bg-white text-sm font-semibold text-tesText-secondary",
-              displayMode === "dedicated" ? "min-h-0" : "min-h-[180px]",
-            )}
-            data-testid="zoom-remote-video"
-          >
-            <div
-              className="absolute inset-0 grid place-items-center px-4 text-center"
-              hidden={remoteParticipantCount > 0}
-            >
-              Aguardando participante
-            </div>
-            {createElement("zoom-video-player-container", {
-              "aria-hidden": remoteParticipantCount === 0,
-              className: "absolute inset-0 block h-full w-full overflow-hidden",
-              ref: remoteVideoRef,
-            })}
-          </div>
-        </div>
+        <ZoomVideoStage
+          actorRole={actorRole}
+          localVideoRef={localVideoRef}
+          participantLabel={participantLabel}
+          remoteParticipantCount={remoteParticipantCount}
+          remoteVideoRef={remoteVideoRef}
+          state={state}
+          videoOn={videoOn}
+        />
 
-        <div className="flex flex-wrap gap-2">
-          {state !== "joined" && state !== "reconnecting" ? (
-            <>
-              <button
-                className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg bg-brand-primary px-6 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-80 sm:flex-none"
-                disabled={isBusy || !isOnline}
-                onClick={joinSession}
-                type="button"
-              >
-                {state === "loading" || state === "joining" ? (
-                  <Loader2
-                    aria-hidden="true"
-                    className="animate-spin"
-                    size={20}
-                  />
-                ) : (
-                  <Video aria-hidden="true" size={20} />
-                )}
-                {state === "joining" ? "Entrando..." : "Entrar no encontro"}
-              </button>
-              <button
-                className="inline-flex min-h-12 flex-1 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-not-allowed disabled:opacity-70 sm:flex-none"
-                disabled={isBusy || !isOnline}
-                onClick={() => void reviewPermissions()}
-                type="button"
-              >
-                <Mic aria-hidden="true" size={18} />
-                Testar câmera e microfone
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                aria-pressed={!audioMuted}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
-                disabled={isBusy || !isOnline}
-                onClick={toggleAudio}
-                type="button"
-              >
-                {audioMuted ? <MicOff size={18} /> : <Mic size={18} />}
-                {audioMuted ? "Ativar audio" : "Silenciar"}
-              </button>
-              <button
-                aria-pressed={videoOn}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
-                disabled={isBusy || !isOnline}
-                onClick={toggleVideo}
-                type="button"
-              >
-                {videoOn ? <VideoOff size={18} /> : <Video size={18} />}
-                {videoOn ? "Desligar camera" : "Ativar camera"}
-              </button>
-              <button
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-status-error/30 bg-white px-4 text-sm font-extrabold text-status-error focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-status-error disabled:cursor-wait disabled:opacity-70"
-                disabled={isBusy || !isOnline}
-                onClick={() => void leaveSession(false)}
-                type="button"
-              >
-                <PhoneOff size={18} />
-                Sair
-              </button>
-              {roleType === 1 ? (
-                <button
-                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-status-error px-4 text-sm font-extrabold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-status-error disabled:cursor-wait disabled:opacity-70"
-                  disabled={isBusy || !isOnline}
-                  onClick={() => void leaveSession(true)}
-                  type="button"
-                >
-                  Encerrar encontro
-                </button>
-              ) : null}
-            </>
-          )}
-        </div>
+        <ZoomVideoControls
+          actorRole={actorRole}
+          audioMuted={audioMuted}
+          isBusy={isBusy}
+          isOnline={isOnline}
+          onJoin={() => void joinSession()}
+          onLeave={() => void leaveSession(false)}
+          onReviewPermissions={() => void reviewPermissions()}
+          onTherapistEnd={() => void leaveSession(true)}
+          onToggleAudio={() => void toggleAudio()}
+          onToggleVideo={() => void toggleVideo()}
+          roleType={roleType}
+          state={state}
+          supportHref={`${actorRole === "patient" ? routes.patient.messages : routes.therapist.messages}?context=suporte&booking=${bookingId}`}
+          videoOn={videoOn}
+        />
         {currentAccess?.hardEndsAt ? (
           <p
             aria-live="polite"
@@ -1336,6 +1200,36 @@ export function ZoomVideoSessionAdapter({
           Algumas etapas de encerramento falharam. Tente recarregar a pagina se
           a sala parecer presa.
         </p>
+      ) : null}
+
+      {endDialogOpen ? (
+        <TESDialog
+          description="A outra pessoa também será desconectada. Essa ação encerra a sala para todos."
+          onClose={() => setEndDialogOpen(false)}
+          title="Encerrar esta sessão?"
+        >
+          <div className="grid gap-4">
+            <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+              Você poderá registrar o que aconteceu na tela de feedback depois do encerramento.
+            </p>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                className="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-lavender px-5 text-sm font-extrabold text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                onClick={() => setEndDialogOpen(false)}
+                type="button"
+              >
+                Continuar na sala
+              </button>
+              <button
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-status-error px-5 text-sm font-extrabold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-status-error"
+                onClick={() => void completeLeave(true)}
+                type="button"
+              >
+                Encerrar para todos
+              </button>
+            </div>
+          </div>
+        </TESDialog>
       ) : null}
     </section>
   );
@@ -1454,6 +1348,33 @@ function formatHardEndCountdown(
   const minutes = Math.floor(remainingMs / 60_000);
   const seconds = Math.floor((remainingMs % 60_000) / 1000);
   return `Tempo restante: ${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatRoomOpeningCountdown(
+  access: ZoomAccessState | null,
+  clientNowMs: number,
+  serverClockOffsetMs: number,
+) {
+  if (!access?.availableFrom) return "A sala abre 15 minutos antes do horário marcado.";
+
+  const availableFromMs = Date.parse(access.availableFrom);
+  if (!Number.isFinite(availableFromMs)) {
+    return "A sala abre 15 minutos antes do horário marcado.";
+  }
+
+  const remainingMs = availableFromMs - (clientNowMs + serverClockOffsetMs);
+  if (remainingMs <= 0) return "A sala está sendo preparada.";
+
+  const totalMinutes = Math.ceil(remainingMs / 60_000);
+  if (totalMinutes < 60) {
+    return `A sala abre em cerca de ${totalMinutes} min.`;
+  }
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes === 0
+    ? `A sala abre em cerca de ${hours}h.`
+    : `A sala abre em cerca de ${hours}h ${minutes}min.`;
 }
 
 function getServerClockOffsetMs(access: ZoomAccessState | null) {

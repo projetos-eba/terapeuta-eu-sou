@@ -42,7 +42,7 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
           <div>
             <span className="inline-flex min-h-8 items-center gap-2 rounded-full bg-white/80 px-3 text-xs font-extrabold text-brand-primary ring-1 ring-brand-lavender">
               <Sparkles aria-hidden="true" size={15} />
-              Assessor Aura · Premium Plus
+              Assessora Aura · Premium Plus
             </span>
             <h1 className="mt-5 max-w-3xl font-display text-[38px] font-light italic leading-tight text-brand-deep sm:text-[52px]">
               Sinais objetivos para cuidar da sua presença.
@@ -178,7 +178,7 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
                     Nenhum sinal prioritário agora
                   </h3>
                   <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-                    O Assessor Aura não encontrou uma ação prioritária entre os
+                    A Assessora Aura não encontrou uma ação prioritária entre os
                     dados disponíveis. Seus resultados continuam disponíveis
                     para acompanhamento.
                   </p>
@@ -199,11 +199,11 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
           <AppPageSection>
             <Sparkles aria-hidden="true" className="text-brand-primary" />
             <h2 className="mt-4 text-base font-extrabold text-brand-deep">
-              Como o Assessor Aura ajuda
+              Como a Assessora Aura ajuda
             </h2>
             <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              O Assessor Aura olha indicadores do seu trabalho e explica de onde
-              cada sugestão veio. Ele não lê conversas, comentários privados ou
+              A Assessora Aura olha indicadores do seu trabalho e explica de onde
+              cada sugestão veio. Ela não lê conversas, comentários privados ou
               conteúdos clínicos.
             </p>
           </AppPageSection>
@@ -222,7 +222,7 @@ export function TherapistAuraErrorState({ message }: { message: string }) {
         </span>
         <div>
           <h1 className="font-display text-[34px] font-light italic leading-tight text-brand-deep sm:text-[46px]">
-            Assessor Aura indisponível
+            Assessora Aura indisponível
           </h1>
           <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
             {message}

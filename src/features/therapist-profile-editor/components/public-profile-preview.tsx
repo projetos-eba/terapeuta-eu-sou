@@ -13,6 +13,10 @@ import {
 } from "lucide-react";
 
 import type { PublicTherapistProfile } from "@/features/therapist-profile/types";
+import {
+  profilePhotoShapeClassName,
+  publicProfileThemeById,
+} from "@/features/therapist-profile/personalization";
 
 import { ProfileSection } from "./profile-section";
 
@@ -30,6 +34,7 @@ export function PublicProfilePreview({
   publicHref: string;
 }) {
   const profile = mode === "draft" ? draft : current;
+  const theme = publicProfileThemeById[profile.publicProfileTheme];
 
   return (
     <ProfileSection className="overflow-hidden p-0" title="Prévia pública">
@@ -65,9 +70,15 @@ export function PublicProfilePreview({
         </Link>
       </div>
 
-      <article className="bg-[linear-gradient(180deg,var(--tes-color-surface-default)_0%,var(--tes-color-surface-soft)_100%)]">
+      <article
+        className="bg-[linear-gradient(180deg,var(--tes-color-surface-default)_0%,var(--tes-color-surface-soft)_100%)]"
+        data-profile-theme={theme.id}
+        style={theme.style}
+      >
         <div className="grid gap-5 p-4 sm:p-6 lg:grid-cols-[240px_1fr]">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[42%] bg-brand-lavenderSoft">
+          <div
+            className={`relative aspect-[4/5] overflow-hidden bg-brand-lavenderSoft ${profilePhotoShapeClassName(theme.photoShape)}`}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element -- preview usa URLs públicas dinâmicas do editor/Storage. */}
             <img
               alt={`Retrato de ${profile.name}`}

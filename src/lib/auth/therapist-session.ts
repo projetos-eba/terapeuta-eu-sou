@@ -22,6 +22,7 @@ export type RequireTherapistSessionOptions = {
   capability?: TherapistCapability;
   loginContinuation?: string;
   minimumPlan?: TherapistPlan;
+  requiresReceivingAccount?: boolean;
 };
 
 type SupabaseAuthUser = {
@@ -101,6 +102,19 @@ export async function requireTherapistSession(
 
     enforceTherapistRoutePolicy(therapistProfile.plan, options);
 
+    if (options.requiresReceivingAccount) {
+      const receivingAccountReady = await queryReceivingAccountReadiness(
+        config,
+        accessToken,
+      );
+
+      if (!receivingAccountReady) {
+        redirect(
+          `${routes.therapist.home}?onboarding=receiving-account`,
+        );
+      }
+    }
+
     return {
       accessToken,
       avatarUrl: therapistProfile.photo_url ?? profile.avatar_url,
@@ -163,6 +177,51 @@ async function requestSupabase<T>(
 
   if (!response.ok) throw new Error("Therapist session is invalid");
   return (await response.json()) as T;
+}
+
+async function queryReceivingAccountReadiness(
+  config: NonNullable<ReturnType<typeof getSupabasePublicConfig>>,
+  accessToken: string,
+) {
+  const response = await fetch(
+    `${config.url}/rest/v1/rpc/get_private_therapist_connect_account_v1`,
+    {
+      body: "{}",
+      cache: "no-store",
+      headers: {
+        apikey: config.apiKey,
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+
+  if (!response.ok) return false;
+
+  const value = (await response.json()) as {
+    accountExists?: unknown;
+    currentlyDue?: unknown;
+    detailsSubmitted?: unknown;
+    onboardingStatus?: unknown;
+    transferCapabilityStatus?: unknown;
+  };
+
+  const blockedStatuses = new Set(["requirements_due", "restricted", "disabled"]);
+  const currentlyDue = Array.isArray(value.currentlyDue)
+    ? value.currentlyDue
+    : [];
+
+  if (
+    value.accountExists !== true ||
+    value.detailsSubmitted !== true ||
+    currentlyDue.length > 0 ||
+    blockedStatuses.has(String(value.onboardingStatus))
+  ) {
+    return false;
+  }
+
+  return value.onboardingStatus !== "ready" || value.transferCapabilityStatus === "active";
 }
 
 function isNextRedirect(error: unknown) {

@@ -151,6 +151,7 @@ runtime.serve(async (request) => {
         tes_session_payment_id: sessionPayment.id,
         tes_therapist_id: booking.therapist_profile_id,
       },
+      allow_promotion_codes: true,
       mode: "payment" as const,
       payment_intent_data: {
         metadata: {

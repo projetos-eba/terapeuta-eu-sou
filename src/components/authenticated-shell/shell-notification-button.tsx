@@ -29,9 +29,11 @@ type NotificationResponse = {
 export function ShellNotificationButton({
   count: initialCount = 0,
   href,
+  role,
 }: {
   count?: number;
   href: string;
+  role: "admin" | "patient" | "therapist";
 }) {
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -54,7 +56,7 @@ export function ShellNotificationButton({
 
   const refresh = useCallback(async () => {
     try {
-      const response = await fetch("/api/notifications", {
+      const response = await fetch(`/api/notifications?role=${role}`, {
         cache: "no-store",
       });
       if (!response.ok) return;
@@ -83,7 +85,7 @@ export function ShellNotificationButton({
     } catch {
       // Keep the server-rendered count when a temporary poll fails.
     }
-  }, [showBookingToast]);
+  }, [role, showBookingToast]);
 
   useEffect(() => {
     void refresh();
@@ -135,12 +137,12 @@ export function ShellNotificationButton({
 
   const markRead = useCallback(async (ids: string[]) => {
     const response = await fetch("/api/notifications/mark-read", {
-      body: JSON.stringify({ ids }),
+      body: JSON.stringify({ ids, role }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
     });
     return response.ok;
-  }, []);
+  }, [role]);
 
   const handleNotificationClick = useCallback(
     (item: ShellNotification) => {
@@ -168,7 +170,7 @@ export function ShellNotificationButton({
 
     try {
       const response = await fetch("/api/notifications/mark-read", {
-        body: JSON.stringify({ markAll: true }),
+        body: JSON.stringify({ markAll: true, role }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
       });
@@ -181,7 +183,7 @@ export function ShellNotificationButton({
     } finally {
       setIsMarkingAll(false);
     }
-  }, [count, isMarkingAll]);
+  }, [count, isMarkingAll, role]);
 
   return (
     <>

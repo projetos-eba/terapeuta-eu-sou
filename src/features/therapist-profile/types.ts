@@ -1,4 +1,23 @@
-export type PublicProfileThemeId = "essential" | "natural" | "serene" | "warm";
+export type PublicProfileThemeId =
+  | "ancestral"
+  | "aurora"
+  | "botanico"
+  | "celestial"
+  | "cristalino"
+  | "energia"
+  | "essencial_editorial"
+  | "essential"
+  | "frequencia"
+  | "geometria"
+  | "lunar"
+  | "natural"
+  | "oraculo"
+  | "profundo"
+  | "sagrado"
+  | "sereno_horizonte"
+  | "serene"
+  | "vinculos"
+  | "warm";
 
 export type BioIllustrationId =
   | "essential_lines"
@@ -63,6 +82,7 @@ export type TherapistProfileService = {
   description: string;
   durationMinutes: number;
   id: string;
+  imageUrl: string | null;
   priceCents: number;
   priceLabel: string;
   title: string;

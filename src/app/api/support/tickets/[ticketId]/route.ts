@@ -31,12 +31,15 @@ type MessageRow = {
 type TicketMessageResponse = Omit<MessageRow, "author_role"> & {
   author_role: "admin" | "patient" | "requester" | "therapist";
 };
+type RequesterRole = "patient" | "therapist";
 
-export async function GET(_: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   const { ticketId } = await params;
   if (!UUID.test(ticketId)) return failure("Chamado inválido.", 422);
 
-  const context = await getContext();
+  const context = await getContext(
+    readRole(new URL(request.url).searchParams.get("role")),
+  );
   if (!context.ok) return failure(context.message, context.status);
 
   try {
@@ -103,7 +106,7 @@ export async function POST(request: Request, { params }: Params) {
   const parsed = parseMessage(payload);
   if (!parsed.ok) return failure(parsed.message, 422);
 
-  const context = await getContext();
+  const context = await getContext(parsed.actorRole);
   if (!context.ok) return failure(context.message, context.status);
 
   try {
@@ -142,6 +145,7 @@ function parseMessage(value: unknown) {
   }
   const requestId = Reflect.get(value, "requestId");
   const body = Reflect.get(value, "body");
+  const actorRole = readRole(Reflect.get(value, "actorRole"));
   if (typeof requestId !== "string" || !UUID.test(requestId)) {
     return { ok: false as const, message: "Requisição inválida." };
   }
@@ -149,16 +153,17 @@ function parseMessage(value: unknown) {
   if (!normalized || normalized.length > 4000) {
     return { ok: false as const, message: "Revise sua resposta." };
   }
-  return { body: normalized, ok: true as const, requestId };
+  return { actorRole, body: normalized, ok: true as const, requestId };
 }
 
-async function getContext() {
+async function getContext(role: RequesterRole | null) {
   const cookieStore = await cookies();
-  const accessToken =
-    cookieStore.get("tes_therapist_access_token")?.value ??
-    cookieStore.get("tes_patient_access_token")?.value;
+  const resolvedRole = role ?? getSoleSessionRole(cookieStore);
+  const accessToken = resolvedRole
+    ? cookieStore.get(`tes_${resolvedRole}_access_token`)?.value
+    : undefined;
   const config = getSupabasePublicConfig();
-  if (!config || !accessToken)
+  if (!resolvedRole || !config || !accessToken)
     return { ok: false as const, message: "Entre na sua conta.", status: 401 };
   try {
     const user = await requestSupabase<SupabaseUser>(
@@ -171,7 +176,7 @@ async function getContext() {
       accessToken,
       `/rest/v1/profiles?select=role&id=eq.${encodeURIComponent(user.id)}&limit=1`,
     );
-    if (profiles[0]?.role !== "therapist" && profiles[0]?.role !== "patient")
+    if (profiles[0]?.role !== resolvedRole)
       return {
         ok: false as const,
         message: "Acesso de paciente ou terapeuta necessário.",
@@ -181,6 +186,17 @@ async function getContext() {
   } catch {
     return { ok: false as const, message: "Entre na sua conta.", status: 401 };
   }
+}
+
+function readRole(value: unknown): RequesterRole | null {
+  return value === "patient" || value === "therapist" ? value : null;
+}
+
+function getSoleSessionRole(cookieStore: Awaited<ReturnType<typeof cookies>>) {
+  const roles = (["patient", "therapist"] as const).filter((role) =>
+    Boolean(cookieStore.get(`tes_${role}_access_token`)?.value),
+  );
+  return roles.length === 1 ? roles[0] : null;
 }
 
 async function requestSupabase<T>(

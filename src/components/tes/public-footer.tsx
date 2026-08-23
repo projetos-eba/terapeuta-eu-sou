@@ -124,7 +124,7 @@ function getFooterGroups(): FooterGroup[] {
     {
       title: "Institucional",
       items: [
-        { label: "Como funciona", href: routes.public.about as Route },
+        { label: "O que é o TES?", href: routes.public.about as Route },
         { label: "Terapias", href: routes.public.therapies as Route },
         { label: "Terapeutas", href: routes.public.therapists as Route },
         { label: "Sua Jornada", href: routes.public.journey as Route },

@@ -1,11 +1,9 @@
 "use client";
 
-import Image from "next/image";
-import { Check, Link2, LoaderCircle } from "lucide-react";
+import { Link2, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { TESButton } from "@/components/tes";
-import { publicProfileThemes } from "@/features/therapist-profile/personalization";
 import { cn } from "@/lib/utils";
 
 import {
@@ -20,6 +18,11 @@ import type {
 } from "../therapist-profile-editor.types";
 import { ProfileCapabilityGate } from "./profile-capability-gate";
 import { ProfileSection } from "./profile-section";
+import {
+  ProfileThemeLibraryDialog,
+  ProfileThemeSummary,
+  ProfileThemeUpsellDialog,
+} from "./profile-theme-library";
 
 export function ProfilePersonalizationPanel({
   editor,
@@ -39,106 +42,53 @@ export function ProfilePersonalizationPanel({
     value: TherapistProfileEditableFields[K],
   ) => void;
 }) {
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [isUpsellOpen, setIsUpsellOpen] = useState(false);
+
   return (
     <ProfileSection className="grid gap-8" title="Identidade da página pública">
       <fieldset>
         <legend className="text-base font-extrabold text-brand-deep">
-          Tema da página pública
+          Tema do perfil
         </legend>
         <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-          O tema altera somente o cabeçalho do seu perfil. O restante da página
-          continua com a identidade TES.
+          Escolha uma composição que combine com a forma como você quer
+          apresentar seu trabalho.
         </p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-          {publicProfileThemes.map((theme) => {
-            const selected = fields.publicProfileTheme === theme.id;
-            const current = editor.publicProfileTheme === theme.id;
-            return (
-              <label
-                className={cn(
-                  "relative cursor-pointer rounded-card border bg-white p-3 transition focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-brand-primary",
-                  selected
-                    ? "border-brand-primary shadow-card"
-                    : "border-border hover:border-brand-lavender",
-                )}
-                key={theme.id}
-              >
-                <input
-                  checked={selected}
-                  className="sr-only"
-                  name="public-profile-theme"
-                  onChange={() => updateField("publicProfileTheme", theme.id)}
-                  type="radio"
-                  value={theme.id}
-                />
-                <div
-                  className="relative h-24 overflow-hidden rounded-lg border border-border"
-                  data-theme-preview={theme.id}
-                  style={theme.style}
-                >
-                  {theme.heroBackgroundSrc ? (
-                    <Image
-                      alt=""
-                      aria-hidden="true"
-                      className="object-cover object-center"
-                      data-theme-preview-background={theme.id}
-                      fill
-                      sizes="(min-width: 640px) 50vw, 100vw"
-                      src={theme.heroBackgroundSrc}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-[var(--profile-hero-background)]" />
-                  )}
-                  {theme.heroIllustrationSrc ? (
-                    <Image
-                      alt=""
-                      aria-hidden="true"
-                      className="pointer-events-none absolute -bottom-7 -right-2 object-contain opacity-50"
-                      data-theme-preview-illustration={theme.id}
-                      fill
-                      sizes="180px"
-                      src={theme.heroIllustrationSrc}
-                    />
-                  ) : (
-                    <div className="absolute -right-5 -top-7 size-24 rounded-full bg-[var(--profile-shape)] opacity-70" />
-                  )}
-                  <div className="absolute bottom-4 left-4 h-2 w-24 rounded-full bg-brand-deep" />
-                  <div className="absolute bottom-8 left-4 h-1.5 w-16 rounded-full bg-[var(--profile-accent)]" />
-                </div>
-                <div className="mt-3 flex items-start justify-between gap-3">
-                  <div>
-                    <span className="text-sm font-extrabold text-brand-deep">
-                      {theme.label}
-                    </span>
-                    <p className="mt-1 text-sm leading-5 text-tesText-secondary">
-                      {theme.description}
-                    </p>
-                    <div className="mt-3 flex gap-1.5" aria-hidden="true">
-                      {theme.palette.map((color) => (
-                        <span
-                          className={cn(
-                            "size-4 rounded-full border border-border",
-                            color,
-                          )}
-                          key={color}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  {selected ? (
-                    <Check className="size-5 shrink-0 text-brand-primary" />
-                  ) : null}
-                </div>
-                {current ? (
-                  <span className="mt-3 inline-flex rounded-full bg-brand-lavenderSoft px-3 py-1 text-xs font-bold text-brand-primary">
-                    Tema atual
-                  </span>
-                ) : null}
-              </label>
-            );
-          })}
+        <div className="mt-4">
+          <ProfileThemeSummary
+            editor={editor}
+            fields={fields}
+            onOpen={() => setIsLibraryOpen(true)}
+          />
         </div>
       </fieldset>
+
+      {isLibraryOpen ? (
+        <ProfileThemeLibraryDialog
+          editor={editor}
+          fields={fields}
+          onClose={() => setIsLibraryOpen(false)}
+          onLockedTheme={() => {
+            setIsLibraryOpen(false);
+            setIsUpsellOpen(true);
+          }}
+          onSelect={(themeId) => {
+            updateField("publicProfileTheme", themeId);
+            onMessage("Tema selecionado. Salve as alterações para publicar.");
+          }}
+        />
+      ) : null}
+
+      {isUpsellOpen ? (
+        <ProfileThemeUpsellDialog
+          onClose={() => setIsUpsellOpen(false)}
+          onContinue={() => {
+            setIsUpsellOpen(false);
+            setIsLibraryOpen(true);
+          }}
+        />
+      ) : null}
 
       <SlugEditor
         editor={editor}

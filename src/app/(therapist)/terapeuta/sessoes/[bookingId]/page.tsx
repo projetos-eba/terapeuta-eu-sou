@@ -12,6 +12,7 @@ import {
   Info,
   Laptop,
   ShieldCheck,
+  Star,
   Video,
 } from "lucide-react";
 
@@ -232,8 +233,28 @@ function SessionReadiness({
         tone={canOpenRoom ? "success" : "brand"}
         value={getZoomAccessLabel(booking.zoomAccess)}
       />
+      {canReviewFeedback(booking.bookingStatus) ? (
+        <Link
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-brand-lavender px-3 text-sm font-semibold text-brand-primary transition-colors hover:border-brand-primary hover:text-brand-deep"
+          href={`${routes.therapist.sessionVideo(booking.bookingId)}?feedback=1`}
+        >
+          <Star aria-hidden="true" className="size-4" />
+          Avaliar sessão
+        </Link>
+      ) : null}
     </section>
   );
+}
+
+function canReviewFeedback(status: TherapistSessionDetailReadModel["bookingStatus"]) {
+  return [
+    "completed",
+    "cancelled_by_patient",
+    "cancelled_by_therapist",
+    "no_show_patient",
+    "no_show_therapist",
+    "refunded",
+  ].includes(status);
 }
 
 function SessionAbout({

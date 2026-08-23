@@ -60,14 +60,6 @@ runtime.serve(async (request) => {
       );
     }
 
-    if (new Date(booking.starts_at) > new Date()) {
-      throw new DomainError(
-        "session_not_started",
-        409,
-        "A sessao ainda nao chegou ao horario previsto.",
-      );
-    }
-
     if (
       ["cancelled_by_patient", "cancelled_by_therapist", "refunded"].includes(
         booking.status,
@@ -80,15 +72,16 @@ runtime.serve(async (request) => {
       );
     }
 
-    const confirmationId = await client.rpc<string>("confirm_session_service", {
+    const confirmation = await client.rpc("record_session_participant_confirmation_v1", {
+      p_actor_user_id: user.id,
       p_booking_id: booking.id,
-      p_confirmed_by_profile_id: user.id,
-      p_metadata: { source: "edge_function" },
-      p_review_id: null,
-      p_source: "therapist_manual",
+      p_outcome: "completed",
+      p_request_id: requestId,
+      p_source: "manual",
+      p_confirmed_at: new Date().toISOString(),
     });
 
-    return success({ confirmationId });
+    return success(confirmation);
   } catch (error) {
     return failure(error, requestId);
   }

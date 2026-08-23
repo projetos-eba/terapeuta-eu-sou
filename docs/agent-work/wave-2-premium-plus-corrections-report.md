@@ -97,7 +97,7 @@ visuais maiores reservados para uma wave posterior.
    e janela de QA.
 2. Dados jurídicos oficiais da empresa continuam pendentes por falta de fonte
    aprovada; não foram inventados.
-3. Rebuilds visuais maiores de Métricas e Assistente Aura continuam para uma
+3. Rebuilds visuais maiores de Métricas e Assessora Aura continuam para uma
    wave específica de Figma/QA visual. Ajustes pequenos usam os componentes e
    tokens já existentes.
 4. `npm run format:check` global continua com dívida histórica fora do escopo;

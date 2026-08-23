@@ -22,6 +22,12 @@ continuam sob Stripe, `session_payments`, ledger e regras internas.
 11. Webhooks `session.*` atualizam inicio, fim, presenca e participacoes
     operacionais.
 
+Antes do horario de abertura, a rota mostra somente a preparação do encontro e
+o horário de liberação. A sala visual é liberada em T-15. O terapeuta mantém o
+modelo host-first: entra primeiro e o paciente permanece aguardando até que o
+webhook confiável `session.user_joined` confirme a presença do terapeuta. O
+preflight não é presença e não libera feedback de qualidade.
+
 Enquanto a sala estiver aberta ou reconectando, o browser solicita a renovação
 da sessão TES em `POST /api/auth/session/refresh`. O endpoint lê somente
 cookies HTTP-only, rotaciona o refresh token apenas nos últimos 15 minutos do
@@ -33,6 +39,35 @@ validade do JWT curto emitido para o `join`.
 O proxy Next envia `actorRole` e seleciona explicitamente o cookie desse papel.
 A Edge Function rejeita mismatch para impedir token cruzado entre paciente e
 terapeuta.
+
+## Apresentação da sala e pós-sessão
+
+`ZoomVideoSessionAdapter` mantém o lifecycle do Video SDK separado da
+apresentação. `ZoomVideoStage` compõe os vídeos local/remoto, identificação,
+câmera e conexão em desktop e mobile; `ZoomVideoControls` concentra preflight,
+áudio, vídeo, suporte e saída. Em mobile, o remoto é dominante, o self-view é
+contido e o dock respeita `100dvh`.
+
+O encerramento usa `TESDialog`. Depois de sair, paciente e terapeuta permanecem
+na rota canônica da sala e podem registrar feedback bilateral privado. A mesma
+tela pode ser reaberta pelo detalhe com `?feedback=1`; isso não cria uma rota
+nova. O feedback usa `session_feedback` e é independente de `reviews` públicos.
+O read model administrativo mostra respostas pendentes e divergentes sem
+editar opiniões ou alterar pagamento, repasse, reembolso, booking ou confirmação
+de serviço.
+
+A experiência de preparação usa capa abstrata da terapia, horário, contador,
+status de entrada, preflight e estados honestos de erro/reconexão. Música de
+ambiente é opcional e só pode ser reproduzida depois de uma interação explícita
+do usuário; sem asset ou fonte licenciada, nenhum áudio é incluído. Nenhum
+retrato fictício, áudio, vídeo, transcrição, URL privada, JWT ou identificador
+do Zoom é persistido para compor a sala.
+
+O feedback de qualidade só muda para elegível quando o backend encontra entrada
+confiável de paciente e terapeuta e o encerramento efetivo ou programado da
+sessão. A query `feedback=1` apenas pede a abertura da experiência; não altera
+essa decisão. Se só um participante entrou, a interface oferece somente o
+relato de ocorrência quando o estado da sessão permitir.
 
 Na homologacao principal, esse passo 1 deve vir de Checkout Stripe test e
 webhook assinado. Fixtures com pagamento direto sao permitidas somente para

@@ -51,6 +51,31 @@ O fluxo real e host-first: paciente abre a tela primeiro e fica em sala de
 espera sem receber JWT; terapeuta entra; webhook `session.user_joined` confirma
 presenca; paciente e liberado por `preview` e so entao consome um token.
 
+A matriz local também cobre a janela anterior a T-15, a sala visual em T-15,
+terapeuta ausente, terapeuta presente aguardando paciente, ambos presentes,
+encerramento, reconexão e indisponibilidade de rede. O acesso por
+`feedback=1` é exercitado antes, durante e depois da sessão para confirmar que
+somente a evidência server-side de ambos os joins torna o feedback de qualidade
+elegível.
+
+Após a saída, a sala deve apresentar o feedback na mesma rota para o papel
+correto. O teste cobre feedback realizado e não realizado, nota de 1 a 5,
+motivos, comentário de 500 caracteres, erro de carregamento, erro de envio,
+replay idempotente e tentativa duplicada divergente. O Admin visualiza respostas
+ausentes, parciais, completas e conflitantes no detalhe da sessão, sem editar
+opiniões e sem alterar estado financeiro ou de realização.
+
+A confirmação bilateral é testada separadamente do feedback: replay idempotente,
+confirmação manual por cada papel, confirmação automática após sete dias do fim
+programado e elegibilidade um dia depois. Divergência, ausência, reembolso,
+disputa, Connect não apto ou qualquer bloqueio financeiro não podem ser
+convertidos em repasse pela tela de feedback.
+
+O QA visual deve registrar evidência em `1440x900`, `1024x768`, `390x844` e
+`360x800` quando necessário, cobrindo preparação antes de T-15, espera, sala
+ativa, saída, feedback elegível, ocorrência e erro. Controles devem manter
+44px mínimos, foco visível, labels acessíveis e movimento reduzido.
+
 A emissao de JWT do Video SDK e protegida por rate limit distribuido no
 Postgres, via `reserve_zoom_video_access_issue_v1`, para evitar bypass por
 multiplas instancias de Edge Function.

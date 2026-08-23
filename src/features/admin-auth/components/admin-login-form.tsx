@@ -4,6 +4,7 @@ import { LockKeyhole, Mail } from "lucide-react";
 import { useState, type FormEvent, type ReactNode } from "react";
 
 import { PasswordVisibilityToggle, TESButton } from "@/components/tes";
+import { announceAuthSession } from "@/lib/auth/session-marker";
 
 import type { AdminAuthFieldErrors } from "../types";
 
@@ -15,7 +16,7 @@ type LoginResponse =
       ok: false;
     };
 
-export function AdminLoginForm() {
+export function AdminLoginForm({ sessionChanged = false }: { sessionChanged?: boolean }) {
   const [fieldErrors, setFieldErrors] = useState<AdminAuthFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,6 +49,7 @@ export function AdminLoginForm() {
         return;
       }
 
+      announceAuthSession("admin");
       window.location.assign(data.redirectTo);
     } catch {
       setFormError("Não foi possível conectar agora. Tente novamente.");
@@ -82,6 +84,12 @@ export function AdminLoginForm() {
           role="alert"
         >
           {formError}
+        </p>
+      ) : null}
+
+      {sessionChanged ? (
+        <p className="rounded-2xl bg-brand-lavenderSoft px-4 py-3 text-sm font-bold text-brand-deep">
+          Esta sessão foi encerrada porque outra conta foi acessada neste navegador.
         </p>
       ) : null}
 

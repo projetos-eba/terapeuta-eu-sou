@@ -197,7 +197,7 @@ Nota de implementação de avatares de terapeutas, atualizada em 2026-07-24: fot
 
 Nota de implementação da página pública Para Terapeutas (`/para-terapeutas`), atualizada em 2026-07-24: a página segue o Figma `Page / Público / Para Terapeutas` (`13457:848`) com hero central, imagem sutil de fundo em `public/for-therapists/hero-therapist-laptop.png`, itens de confiança, bento grid de benefícios, painel roxo de planos e comparativo responsivo. O título "Você cuida de pessoas." usa Manrope semibold e `text-brand-deep`. A tabela visual deve consumir o catálogo único `PlanDefinition`, exibir apenas o nome dos recursos nas linhas, não usar coluna editorial lateral e preservar preços/CTAs de cadastro no rodapé; recursos não devem prometer IA real, renda, cura, diagnóstico ou resultado garantido.
 
-Nota de implementação do Match público (`/sua-jornada` e `/sua-jornada/resultado`), atualizada em 2026-08-22: a jornada segue o Figma `13273:2627` com seleção compacta de temas; os interesses associados acompanham os temas no cálculo e não são escolhidos separadamente. O CTA fica fixo após a primeira escolha e o resultado aparece em cards de terapias. A UI deve usar sempre os termos “Tema” e “Interesse”, evitar “subtema”, manter áreas clicáveis de ao menos 44px no mobile e não prometer diagnóstico, cura ou resultado.
+Nota de implementação do Match público (`/sua-jornada` e `/sua-jornada/resultado`), atualizada em 2026-08-23: a jornada segue o Figma `13273:2627` com seleção compacta de temas; ao selecionar um tema, os interesses associados aparecem em painéis de refinamento, com até 3 escolhas por tema. O CTA fica fixo após a primeira escolha e o resultado aparece em cards de terapias. A UI deve usar sempre os termos “Tema” e “Interesse”, evitar “subtema”, manter áreas clicáveis de ao menos 44px no mobile e não prometer diagnóstico, cura ou resultado.
 
 Nota de implementação do catálogo público de terapias (`/terapias`), atualizada em 2026-07-24: a página segue o Figma `13273:1439` com hero fotográfico, busca ampla, chips de ordenação, sidebar de categorias no desktop, accordion de filtros no mobile e grid de cards compactos com imagem editorial. Descrições dos cards devem ser limitadas visualmente a três linhas, preservando a leitura do grid. Cards públicos devem educar e conduzir ao detalhe da terapia, sem vender diretamente sessão nem prometer cura, diagnóstico ou resultado.
 
@@ -221,7 +221,7 @@ Usa shell de app com mais densidade: financeiro, métricas, avaliações, tabela
 
 ### Terapeuta Plus
 
-Usa visual premium com insights, Assistente Aura, detalhe do paciente em
+Usa visual premium com insights, Assessora Aura, detalhe do paciente em
 `/terapeuta/pacientes/:slug-do-paciente`, inteligência financeira futura, avaliações e
 suporte prioritário. Premium Plus não exibe upgrade; o acesso é controlado por
 capability dentro do shell compartilhado.

@@ -1,12 +1,21 @@
 import Image from "next/image";
 
+import { AuthBackButton } from "@/components/tes";
 import { AdminLoginForm } from "@/features/admin-auth/components/admin-login-form";
+import { routes } from "@/lib/routes";
 
-export default function AdminLoginPage() {
+export default async function AdminLoginPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ reason?: string }>;
+}) {
+  const params = await searchParams;
+
   return (
-    <main className="min-h-screen bg-surface-soft px-4 py-8 text-brand-deep sm:px-6 lg:px-8">
+    <main className="relative min-h-screen bg-surface-soft px-4 py-8 text-brand-deep sm:px-6 lg:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-64px)] w-full max-w-5xl flex-col justify-center gap-8">
-        <div className="flex justify-center">
+        <div className="relative flex justify-center">
+          <AuthBackButton fallbackHref={routes.public.home} />
           <Image
             alt="Terapeuta Eu Sou"
             height={58}
@@ -30,7 +39,7 @@ export default function AdminLoginPage() {
             </p>
           </div>
           <div className="order-1 p-6 sm:p-10 lg:order-2">
-            <AdminLoginForm />
+            <AdminLoginForm sessionChanged={params?.reason === "session_changed"} />
           </div>
         </section>
       </div>
