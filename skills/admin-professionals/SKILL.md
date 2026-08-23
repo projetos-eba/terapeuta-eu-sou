@@ -52,6 +52,11 @@ agendamento`, separando claramente aprovação administrativa, publicação e
 - Desktop pode manter ações em rail; em tablet/mobile elas seguem o resumo e
   as abas viram uma grade acessível. Nenhuma aba pode depender de scroll
   horizontal da página.
+- Em `Documentos`, a identidade e os metadados do arquivo permanecem em bloco
+  próprio; visualizar/baixar formam um grupo e decidir (aceitar ou solicitar
+  reenvio) outro. No tablet e mobile os grupos devem seguir a identidade em
+  sequência, sem comprimir texto, sobrepor controles ou exigir scroll
+  horizontal. No desktop, a decisão pode ocupar uma linha independente.
 
 ## Regra de publicação
 
@@ -99,4 +104,7 @@ pendente” e impede a ação.
 - Confirmar que busca, perfil, serviços, slots e reserva aplicam a mesma elegibilidade.
 - Validar a aba `Documentos` com pelo menos um anexo presente, um pendente e
   falha honesta quando a leitura privada não estiver disponível.
+- Exercitar `Documentos` em 1440x900, 1024x768 e 390x844, acionando visualizar,
+  baixar e uma decisão; registrar que controles visíveis não se sobrepõem nem
+  escapam do item do documento.
 - Nunca incluir documentos privados ou seus metadados nos DTOs administrativos ou públicos.

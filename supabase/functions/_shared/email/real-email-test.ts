@@ -14,7 +14,10 @@ declare const Deno: {
   exit(code?: number): never;
 };
 
-const ALLOWED_RECIPIENT = "viniciusferrari.silva@gmail.com";
+const ALLOWED_RECIPIENTS = new Set([
+  "viniciusferrari.silva@gmail.com",
+  "ferrarimarketing9@gmail.com",
+]);
 
 const runtime: EdgeRuntime = {
   env: Deno.env,
@@ -37,7 +40,7 @@ if (allow !== "true") {
   fail("ALLOW_REAL_EMAIL_TESTS must be true.");
 }
 
-if (recipient !== ALLOWED_RECIPIENT) {
+if (!recipient || !ALLOWED_RECIPIENTS.has(recipient)) {
   fail("EMAIL_E2E_RECIPIENT is not the approved recipient.");
 }
 

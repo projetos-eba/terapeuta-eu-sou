@@ -10,6 +10,16 @@ const therapistPassword =
 const bookingId =
   process.env.ZOOM_E2E_BOOKING_ID ?? "f2000000-0000-4000-8000-000000000001";
 
+function accessWindow() {
+  const now = Date.now();
+
+  return {
+    availableFrom: new Date(now - 5 * 60_000).toISOString(),
+    availableUntil: new Date(now + 60 * 60_000).toISOString(),
+    serverNow: new Date(now).toISOString(),
+  };
+}
+
 test.describe("Zoom Video SDK session gate", () => {
   test.beforeEach(async ({ page }) => {
     await loginAsPatient(page);
@@ -31,8 +41,7 @@ test.describe("Zoom Video SDK session gate", () => {
             data: {
               access: {
                 allowed: true,
-                availableFrom: "2026-07-26T12:45:00.000Z",
-                availableUntil: "2026-07-26T14:00:00.000Z",
+                ...accessWindow(),
                 reason: null,
                 videoSessionStatus: "ready",
               },
@@ -58,10 +67,12 @@ test.describe("Zoom Video SDK session gate", () => {
       });
     });
 
-    await page.goto(`/app/encontros/${bookingId}`);
+    await openDedicatedVideoRoom(page);
 
-    await expect(page.getByLabel("Sala de video")).toBeVisible();
-    await page.getByRole("button", { name: "Entrar no encontro" }).click();
+    await expect(
+      page.getByRole("region", { name: "Sala de espera do encontro" }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Entrar na sala" }).click();
 
     await expect(
       page.getByText("A sala ainda esta em preparacao."),
@@ -124,10 +135,8 @@ test.describe("Zoom Video SDK session gate", () => {
             data: {
               access: {
                 allowed: previewCount > 1,
-                availableFrom: "2026-07-26T12:45:00.000Z",
-                availableUntil: "2026-07-26T14:00:00.000Z",
+                ...accessWindow(),
                 reason: previewCount > 1 ? null : "THERAPIST_NOT_IN_SESSION",
-                serverNow: "2026-07-26T12:46:00.000Z",
                 videoSessionStatus: previewCount > 1 ? "ready" : "ready",
               },
             },
@@ -152,16 +161,16 @@ test.describe("Zoom Video SDK session gate", () => {
       });
     });
 
-    await page.goto(`/app/encontros/${bookingId}`);
+    await openDedicatedVideoRoom(page);
 
     await expect(
-      page.getByText(/Aguardando o terapeuta iniciar/i),
+      page.getByRole("heading", { name: "Estamos preparando o encontro" }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Atualizar sala" }).click();
     await expect(
-      page.getByRole("button", { name: "Entrar no encontro" }),
+      page.getByRole("button", { name: "Entrar na sala" }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Entrar no encontro" }).click();
+    await page.getByRole("button", { name: "Entrar na sala" }).click();
     await expect(page.getByText("Token expirado.")).toBeVisible();
     await page.getByRole("button", { name: "Revisar permissões" }).click();
     await expect(page.getByText(/Permissoes liberadas/i)).toBeVisible();
@@ -219,4 +228,14 @@ async function loginAsTherapist(page: import("@playwright/test").Page) {
   await page.locator('input[name="password"]').fill(therapistPassword);
   await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
   await expect(page).toHaveURL(/\/terapeuta(?:\?.*)?$/);
+}
+
+async function openDedicatedVideoRoom(page: import("@playwright/test").Page) {
+  await page.goto(`/app/encontros/${bookingId}`);
+  await page
+    .getByRole("link", {
+      name: /Ir para a sala segura/i,
+    })
+    .click();
+  await expect(page).toHaveURL(new RegExp(`/app/encontros/${bookingId}/video`));
 }

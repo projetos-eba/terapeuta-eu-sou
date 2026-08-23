@@ -68,7 +68,7 @@ habilitacao por acao continuam configuracao operacional do ambiente.
   na borda do provider; produção não deve configurá-lo.
 - `CONFIRMED_AUTOMATICALLY_EMAIL`: somente Edge Functions; ausente/vazio equivale a `false`; aceita apenas `true` ou `false`; valor invalido deve falhar fechado e nunca ativar bypass.
 - `ALLOW_REAL_EMAIL_TESTS`: opt-in local para `npm run test:email:real`.
-- `EMAIL_E2E_RECIPIENT`: deve ser exatamente `viniciusferrari.silva@gmail.com` para teste real.
+- `EMAIL_E2E_RECIPIENT`: deve ser exatamente um dos destinatários autorizados para o teste real: `viniciusferrari.silva@gmail.com` ou `ferrarimarketing9@gmail.com`.
 
 `EMAIL_PUBLIC_SITE_URL` pode ser informado com protocolo ou apenas dominio. Dominio sem protocolo vira `https://`; `localhost` e `127.0.0.1` viram `http://`.
 

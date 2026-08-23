@@ -162,6 +162,17 @@ async function dispatchOne(
         );
   } catch (error) {
     if (
+      error instanceof Error &&
+      isSkippableDeliveryError(error.message)
+    )
+      return finish(
+        client,
+        row.id,
+        workerId,
+        "skipped",
+        error.message,
+      );
+    if (
       error instanceof EmailProviderError &&
       error.deliveryOutcome === "not_accepted"
     )
@@ -243,6 +254,10 @@ async function resolveDelivery(
       recipient.role !== (isPatientAction ? "patient" : "therapist")
     ) {
       throw new Error("booking_recipient_mismatch");
+    }
+
+    if (isBookingReminderAction(row.action_key)) {
+      await assertBookingReminderIsCurrent(client, row, booking, recipient.id);
     }
 
     const baseUrl = getSiteUrl(runtime);
@@ -430,11 +445,27 @@ function isBookingAction(actionKey: EmailActionKey) {
   return [
     "booking_confirmed_patient",
     "booking_confirmed_therapist",
+    "booking_reminder_24h_patient",
+    "booking_reminder_1h_patient",
     "booking_cancelled_patient",
     "booking_cancelled_therapist",
     "booking_rescheduled_patient",
     "booking_rescheduled_therapist",
   ].includes(actionKey);
+}
+
+function isBookingReminderAction(actionKey: EmailActionKey) {
+  return [
+    "booking_reminder_24h_patient",
+    "booking_reminder_1h_patient",
+  ].includes(actionKey);
+}
+
+function isSkippableDeliveryError(message: string) {
+  return [
+    "booking_reminder_invalidated",
+    "booking_reminder_job_not_found",
+  ].includes(message);
 }
 
 function isSessionPaymentAction(actionKey: EmailActionKey) {
@@ -491,9 +522,11 @@ async function loadBooking(client: SupabaseRestClient, id: string) {
       starts_at: string;
       therapist_profile_id: string;
       timezone: string;
+      status: string;
+      version: number;
     }>
   >(
-    `/rest/v1/bookings?select=patient_profile_id,service_title_snapshot,starts_at,therapist_profile_id,timezone&id=eq.${encodeURIComponent(id)}&limit=1`,
+    `/rest/v1/bookings?select=patient_profile_id,service_title_snapshot,starts_at,therapist_profile_id,timezone,status,version&id=eq.${encodeURIComponent(id)}&limit=1`,
   );
   if (!booking) throw new Error("booking_not_found");
 
@@ -518,6 +551,69 @@ async function loadBooking(client: SupabaseRestClient, id: string) {
       user_id: therapist[0].user_id,
     },
   };
+}
+
+async function assertBookingReminderIsCurrent(
+  client: SupabaseRestClient,
+  row: OutboxRow,
+  booking: Awaited<ReturnType<typeof loadBooking>>,
+  recipientUserId: string,
+) {
+  const [job] = await client.get<
+    Array<{
+      id: string;
+      booking_id: string;
+      booking_version: number;
+      action_key: string;
+      recipient_user_id: string;
+      status: string;
+    }>
+  >(
+    `/rest/v1/booking_reminder_jobs?select=id,booking_id,booking_version,action_key,recipient_user_id,status&id=eq.${encodeURIComponent(row.domain_event_id)}&limit=1`,
+  );
+
+  if (
+    !job ||
+    job.booking_id !== row.related_entity_id ||
+    job.action_key !== row.action_key ||
+    job.recipient_user_id !== recipientUserId ||
+    job.status !== "enqueued"
+  ) {
+    throw new Error(
+      job ? "booking_reminder_invalidated" : "booking_reminder_job_not_found",
+    );
+  }
+
+  if (
+    booking.status !== "confirmed" ||
+    booking.version !== job.booking_version ||
+    Date.parse(booking.starts_at) <= Date.now()
+  ) {
+    throw new Error("booking_reminder_invalidated");
+  }
+
+  const [payment] = await client.get<
+    Array<{
+      financial_status: string;
+      refund_pending: boolean;
+      disputed_at: string | null;
+      internal_contested_at: string | null;
+      admin_blocked_at: string | null;
+    }>
+  >(
+    `/rest/v1/session_payments?select=financial_status,refund_pending,disputed_at,internal_contested_at,admin_blocked_at&booking_id=eq.${encodeURIComponent(row.related_entity_id)}&limit=1`,
+  );
+
+  if (
+    !payment ||
+    !["paid", "partially_refunded"].includes(payment.financial_status) ||
+    payment.refund_pending ||
+    payment.disputed_at !== null ||
+    payment.internal_contested_at !== null ||
+    payment.admin_blocked_at !== null
+  ) {
+    throw new Error("booking_reminder_invalidated");
+  }
 }
 
 async function loadSessionPayment(client: SupabaseRestClient, id: string) {

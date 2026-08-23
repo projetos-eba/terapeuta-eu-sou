@@ -55,6 +55,11 @@ Use these support tables when needed:
 - Density: `Balanced`, with `Comfortable` only in the primary context region.
 - First fold must answer: therapist, date/time, booking state and next authorized step.
 - Main layout: editorial header + dominant three-column encounter context + optional contextual aside on desktop; linear priority flow on mobile.
+- Em tablet, manter a sequência de prioridade antes de promover a grade de
+  contexto e as seções auxiliares para o arranjo desktop; a promoção de três
+  colunas só ocorre em largura ampla. Em 1440x900, 1024x768 e 390x844, texto,
+  estado e ações devem caber no próprio bloco, sem sobreposição nem scroll
+  horizontal.
 - The content order is: identity/status, about and shared context, secure online access, management actions, `Sua jornada com {therapist.name}`, preparation and cancellation policy.
 - The journey heading may only use the canonical therapist name and existing journey data; do not create a fictional timeline, milestones or therapeutic claims.
 - Prefer one dominant encounter context, then `rounded-card`, `border-border`, `shadow-card` and restrained `surface-soft` interiors for supporting sections.

@@ -34,8 +34,8 @@ export function SessionOverviewCard({
 
   return (
     <section className="overflow-hidden rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
-      <div className="grid gap-7 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.25fr)_minmax(220px,0.7fr)] lg:gap-0">
-        <div className="min-w-0 lg:border-r lg:border-border lg:pr-7">
+      <div className="grid gap-7">
+        <div className="min-w-0">
           <div className="flex items-start gap-4 sm:gap-5">
             <Avatar
               name={data.therapist.name}
@@ -43,7 +43,10 @@ export function SessionOverviewCard({
               src={data.therapist.avatarUrl}
             />
             <div className="min-w-0">
-              <h2 className="mt-2 truncate text-[1.55rem] font-extrabold leading-tight text-brand-deep sm:text-[1.75rem]">
+              <h2
+                className="mt-2 truncate text-[1.55rem] font-extrabold leading-tight text-brand-deep sm:text-[1.75rem]"
+                title={data.therapist.name}
+              >
                 {data.therapist.name}
               </h2>
               <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
@@ -63,8 +66,8 @@ export function SessionOverviewCard({
           </div>
         </div>
 
-        <div className="min-w-0 border-t border-border pt-6 lg:border-t-0 lg:px-7 lg:pt-1">
-          <dl className="grid gap-5 sm:grid-cols-3 lg:grid-cols-1 lg:gap-6">
+        <div className="min-w-0 border-t border-border pt-6">
+          <dl className="grid gap-5 sm:grid-cols-3">
             <OverviewFact
               icon={CalendarDays}
               label="Data"
@@ -85,7 +88,7 @@ export function SessionOverviewCard({
           </dl>
         </div>
 
-        <div className="min-w-0 border-t border-border pt-6 lg:border-l lg:border-t-0 lg:border-border lg:pl-7 lg:pt-1">
+        <div className="min-w-0 border-t border-border pt-6">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-tesText-muted sm:text-xs">
             Status
           </p>

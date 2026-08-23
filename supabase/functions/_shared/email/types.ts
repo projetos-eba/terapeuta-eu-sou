@@ -15,6 +15,8 @@ export type EmailActionKey =
   | "therapist_profile_reactivated"
   | "booking_confirmed_patient"
   | "booking_confirmed_therapist"
+  | "booking_reminder_24h_patient"
+  | "booking_reminder_1h_patient"
   | "booking_cancelled_patient"
   | "booking_cancelled_therapist"
   | "booking_rescheduled_patient"

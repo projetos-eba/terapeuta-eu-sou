@@ -735,6 +735,92 @@ export const emailActionRegistry: Record<
       encounter_url: "https://example.test/terapeuta/sessoes/exemplo",
     },
   },
+  booking_reminder_24h_patient: {
+    actionKey: "booking_reminder_24h_patient",
+    category: "Encontros",
+    label: "Lembrete de encontro — 24 horas — pessoa",
+    description: "Lembra a pessoa sobre um encontro confirmado 24 horas antes do horário persistido.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Falta 1 dia para seu encontro no TES",
+      preheader: "Seu encontro está se aproximando. Confira os detalhes.",
+      text: "Falta 1 dia para seu encontro no TES.\n\nOlá, {{recipient_name}}.\n\nSeu encontro com {{counterparty_name}} está previsto para {{meeting_date_time}} ({{meeting_timezone}}).\n\nTerapeuta: {{counterparty_name}}\nTerapia: {{service_title}}\nModalidade: Online\n\nConfira as informações do encontro pela sua área no TES.\n\nEquipe TES\n\nVer encontro: {{encounter_url}}",
+      html: defaultEmailHtml({
+        title: "Falta 1 dia para seu encontro",
+        ctaLabel: "Ver encontro",
+        ctaUrlToken: "encounter_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph(
+            "Seu encontro com {{counterparty_name}} está previsto para amanhã, no horário abaixo.",
+          ),
+          emailDetailList([
+            ["Terapeuta", "{{counterparty_name}}"],
+            ["Terapia", "{{service_title}}"],
+            ["Data e horário", "{{meeting_date_time}} ({{meeting_timezone}})"],
+            ["Modalidade", "Online"],
+          ]),
+          accountParagraph(
+            "Confira as informações do encontro pela sua área no TES.",
+          ),
+        ].join(""),
+      }),
+    },
+    allowedTokens: bookingTokens,
+    previewFixture: {
+      recipient_name: "Pessoa de exemplo",
+      counterparty_name: "Terapeuta de exemplo",
+      service_title: "Terapia de exemplo",
+      meeting_date_time: "20 de agosto de 2026 às 15:00",
+      meeting_timezone: "America/Sao_Paulo",
+      encounter_url: "https://example.test/app/encontros/exemplo",
+    },
+  },
+  booking_reminder_1h_patient: {
+    actionKey: "booking_reminder_1h_patient",
+    category: "Encontros",
+    label: "Lembrete de encontro — 1 hora — pessoa",
+    description: "Lembra a pessoa sobre um encontro confirmado 1 hora antes do horário persistido.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Seu encontro começa em 1 hora",
+      preheader: "Está quase na hora. Confira os detalhes do seu encontro.",
+      text: "Seu encontro começa em 1 hora.\n\nOlá, {{recipient_name}}.\n\nSeu encontro com {{counterparty_name}} está previsto para {{meeting_date_time}} ({{meeting_timezone}}).\n\nTerapeuta: {{counterparty_name}}\nTerapia: {{service_title}}\nModalidade: Online\n\nAcesse os detalhes pela sua área no TES e entre no encontro no momento apropriado.\n\nEquipe TES\n\nVer encontro: {{encounter_url}}",
+      html: defaultEmailHtml({
+        title: "Seu encontro começa em 1 hora",
+        ctaLabel: "Ver encontro",
+        ctaUrlToken: "encounter_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph(
+            "Seu encontro com {{counterparty_name}} está previsto para começar em 1 hora.",
+          ),
+          emailDetailList([
+            ["Terapeuta", "{{counterparty_name}}"],
+            ["Terapia", "{{service_title}}"],
+            ["Data e horário", "{{meeting_date_time}} ({{meeting_timezone}})"],
+            ["Modalidade", "Online"],
+          ]),
+          accountParagraph(
+            "Acesse os detalhes pela sua área no TES e entre no encontro no momento apropriado.",
+          ),
+        ].join(""),
+      }),
+    },
+    allowedTokens: bookingTokens,
+    previewFixture: {
+      recipient_name: "Pessoa de exemplo",
+      counterparty_name: "Terapeuta de exemplo",
+      service_title: "Terapia de exemplo",
+      meeting_date_time: "20 de agosto de 2026 às 15:00",
+      meeting_timezone: "America/Sao_Paulo",
+      encounter_url: "https://example.test/app/encontros/exemplo",
+    },
+  },
   booking_cancelled_patient: {
     actionKey: "booking_cancelled_patient",
     category: "Encontros",

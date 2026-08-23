@@ -60,7 +60,7 @@ export function SessionActionCards({
 
       <section
         aria-label="Ações complementares do encontro"
-        className="grid gap-4 sm:grid-cols-2"
+        className="grid gap-4 md:grid-cols-2"
       >
         {data.receipt.receiptUrl ? (
           <ActionLink

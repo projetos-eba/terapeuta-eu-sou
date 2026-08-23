@@ -1,6 +1,6 @@
 begin;
 
-select plan(23);
+select plan(24);
 
 select has_table('public', 'email_outbox', 'transactional email outbox exists');
 select is(has_table_privilege('anon', 'public.email_outbox', 'SELECT'), false, 'anon cannot read outbox');
@@ -17,10 +17,18 @@ select is(
   ) ->> 'status'), 'submitted', 'business action succeeds independently of delivery'
 );
 
-select is((select count(*)::integer from public.email_outbox where action_key = 'therapy_catalog_request_submitted'), 1, 'submit event is atomically enqueued once');
-select is((select template_version from public.email_outbox limit 1), 'v1', 'outbox snapshots the default template version');
-select is(jsonb_typeof((select template_overrides from public.email_outbox limit 1)), 'object', 'outbox snapshots template overrides');
-select ok((select recipient_key ~ '^profile:' from public.email_outbox limit 1), 'outbox stores an opaque recipient key');
+create temporary table email_outbox_fixture as
+select id, action_key, domain_event_id, recipient_key
+from public.email_outbox
+where action_key = 'therapy_catalog_request_submitted'
+order by created_at desc
+limit 1;
+
+select is((select count(*)::integer from email_outbox_fixture), 1, 'the test fixture identifies the delivery created for this request');
+select is((select count(*)::integer from public.email_outbox where id = (select id from email_outbox_fixture)), 1, 'submit event is atomically enqueued once');
+select is((select template_version from public.email_outbox where id = (select id from email_outbox_fixture)), 'v1', 'outbox snapshots the default template version');
+select is(jsonb_typeof((select template_overrides from public.email_outbox where id = (select id from email_outbox_fixture))), 'object', 'outbox snapshots template overrides');
+select ok((select recipient_key ~ '^profile:' from public.email_outbox where id = (select id from email_outbox_fixture)), 'outbox stores an opaque recipient key');
 
 select is(
   (public.submit_therapy_catalog_request_v2(
@@ -29,15 +37,15 @@ select is(
     '55100000-0000-4000-8000-000000000001'
   ) ->> 'idempotentReplay'), 'true', 'business replay remains idempotent'
 );
-select is((select count(*)::integer from public.email_outbox where action_key = 'therapy_catalog_request_submitted'), 1, 'business replay does not duplicate the outbox');
+select is((select count(*)::integer from public.email_outbox where domain_event_id = (select domain_event_id from email_outbox_fixture)), 1, 'business replay does not duplicate the outbox');
 
 insert into public.email_outbox(action_key, domain_event_id, related_entity_type, related_entity_id, recipient_user_id, recipient_key, idempotency_key, payload, template_version, template_overrides)
 select action_key, domain_event_id, related_entity_type, related_entity_id, recipient_user_id, 'profile:bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', idempotency_key, payload, template_version, template_overrides
-from public.email_outbox limit 1;
-select is((select count(*)::integer from public.email_outbox), 2, 'a different logical recipient may receive the same action for the same domain event');
+from public.email_outbox where id = (select id from email_outbox_fixture);
+select is((select count(*)::integer from public.email_outbox where domain_event_id = (select domain_event_id from email_outbox_fixture)), 2, 'a different logical recipient may receive the same action for the same domain event');
 select throws_ok(
   $$insert into public.email_outbox(action_key, domain_event_id, related_entity_type, related_entity_id, recipient_user_id, recipient_key, idempotency_key, payload, template_version, template_overrides)
-    select action_key, domain_event_id, related_entity_type, related_entity_id, recipient_user_id, recipient_key, idempotency_key, payload, template_version, template_overrides from public.email_outbox limit 1$$,
+    select action_key, domain_event_id, related_entity_type, related_entity_id, recipient_user_id, recipient_key, idempotency_key, payload, template_version, template_overrides from public.email_outbox where id = (select id from email_outbox_fixture)$$,
   '23505', NULL, 'the same action, domain event and recipient cannot be duplicated'
 );
 
