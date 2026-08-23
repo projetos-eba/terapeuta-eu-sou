@@ -37,7 +37,7 @@ const definitions: NavigationDefinition[] = [
     capability: "full_crm",
     href: routes.therapist.patients,
     icon: "route",
-    label: "Histórico da Jornada",
+    label: "Histórico",
     planLabel: "Premium Plus",
   },
   {

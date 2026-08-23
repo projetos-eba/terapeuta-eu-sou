@@ -51,8 +51,7 @@ describe("buildTherapistNavigation", () => {
       navigation.find((item) => item.label === "Assessora Aura")?.accessState,
     ).toBe("locked");
     expect(
-      navigation.find((item) => item.label === "Histórico da Jornada")
-        ?.upgradeHref,
+      navigation.find((item) => item.label === "Histórico")?.upgradeHref,
     ).toBe(routes.therapist.plan);
     expect(
       navigation.find((item) => item.label === "Avaliações")?.accessState,
