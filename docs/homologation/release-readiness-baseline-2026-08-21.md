@@ -564,3 +564,88 @@ acesso indevido e confirmação/feedback bilateral.
 
 P0 remanescente: nenhum identificado nesta qualificação. O resultado PASS é
 restrito ao Golden Path transacional HML e não revoga os P1 acima.
+
+## Fase 2 — Failure Paths e Resiliência HML
+
+Data da execução: 2026-08-23, HML/test mode. Resultado: **PHASE 2 FAIL**.
+
+Esta rodada não alterou produção, não usou Stripe live, não fez update SQL
+manual e não criou uma nova arquitetura de fixture. A preferência por slots em
+24/08 foi atendida no cenário de recusa; para cenários financeiros foi usada a
+fixture Connect-ready canônica em 25/08, pois as candidatas de 24/08 não tinham
+Connect elegível. Os bookings, pagamentos e holds de tentativas interrompidas
+foram preservados para a Fase 2.
+
+### Matriz de cenários
+
+| Cenário | Status | Evidência sanitizada / estado autoritativo | Severidade / próxima ação |
+| --- | --- | --- | --- |
+| Stripe recusado em test mode | PASS | Stripe entregou `payment_intent.payment_failed`; evento processado sem erro terminal; `session_payments=failed`. | P2; manter no pacote de regressão. |
+| Checkout abandonado/expirado | FAIL | `checkout.session.expired` processado e pagamento local `canceled`, porém o booking permaneceu `pending_payment/payment_status=cancelled` e o slot deixou de aparecer como disponível. | **P1**; implementar transição canônica de booking/hold e testar liberação sem apagar evidência. |
+| Hold expirado e slot liberado | FAIL | Hold consumido não ficou ativo, mas a reserva cancelada pelo Checkout continuou ocupando o slot; não há manutenção HML que finalize esse booking. | **P1**; corrigir o lifecycle de pagamento cancelado/falho e a projeção de disponibilidade. |
+| Webhook duplicado/atrasado | BLOCKED | Entregas reais do Stripe foram processadas (attempts=1, sem erro). Replay assinado controlado retornou 400 porque o secret remoto do endpoint HML não coincide com os secrets locais do harness; o secret remoto não é acessível pela CLI. | **P1**; obter secret de teste por canal seguro ou fornecer endpoint de replay oficial. |
+| Retorno do navegador antes do webhook | NOT_TESTED | Não foi isolado um retorno antecipado sem iniciar uma nova operação além dos cenários já preservados. | P2; executar com observabilidade server-side na Fase 2.1. |
+| Concorrência, duas tentativas independentes | PASS | Duas chamadas oficiais simultâneas para o mesmo slot produziram uma reserva e um `409 slot_held_by_another_user`; nenhuma duplicidade no banco. | P2; manter como regressão. |
+| Dois pacientes distintos no mesmo slot | BLOCKED | Não havia uma segunda credencial de paciente QA autorizada; não foram criados usuários artificiais. | **P1**; provisionar segundo paciente QA e repetir com contexts independentes. |
+| Double-click/retry idempotente | PASS | Mesmo `requestId` simultâneo retornou o mesmo booking/hold/payment; banco contém uma unidade de cada. | P2; manter como regressão. |
+| Refund Stripe real | PASS | `refund.created`, `charge.refunded` e eventos relacionados processados; Stripe test reportou uma refund succeeded; pagamento local `refunded`. | P2; incluir retry assinado quando o bloqueio de secret for removido. |
+| Cancelamento do paciente + retry | PASS | Fluxo oficial repetido com o mesmo request id; uma decisão, uma refund e booking `cancelled_by_patient`. | P2; manter como regressão. |
+| Cancelamento do terapeuta + retry | PASS | Fluxo oficial repetido; uma decisão, uma refund e booking `cancelled_by_therapist`. | P2; manter como regressão. |
+| Reagendamento + resolução + retry | PASS | Request repetido idempotentemente, resolução oficial `applied`, versão do booking incrementada e horário atualizado. | P2; incluir liberação do slot antigo no pacote de regressão. |
+| Zoom: acesso indevido/booking errado/role spoof | PASS | Acesso a sessão encerrada negado; booking de outra pessoa negado; role mismatch negado (403/409), sem token exposto. | P2; manter como regressão. |
+| Zoom: paciente antes do host | BLOCKED | Não havia video session futura `ready` do paciente QA; sessões disponíveis pertenciam a outra pessoa e não foram reutilizadas. | **P1**; provisionar uma sessão QA futura autorizada. |
+| Zoom: refresh/reconnect/rejoin | BLOCKED | Sem sessão futura própria para executar o smoke com segurança; não criar novo booking nesta rodada. | **P1**; executar com a fixture Zoom dedicada. |
+| Zoom após encerramento | PASS | Reentrada do paciente e terapeuta na video session encerrada foram negadas por política canônica (`HARD_TIMEOUT`). | P2; manter como regressão. |
+| `session_participant_confirmations`/feedback | BLOCKED | Migration local exata `20260823100000_session_attendance_confirmation_lifecycle.sql` está ausente no HML; HML lista v1 ativa (`auto_confirmation_days=30`, safety=7), REST da tabela retorna PGRST205 e feedback retorna 404. A confirmação oficial do terapeuta usou `session_service_confirmations` e moveu o pagamento para `waiting_safety_period`, provando participação financeira do lifecycle atual. | **P1**; alinhar migration/política em HML por processo aprovado e validar confirmação bilateral antes da operação. |
+
+### Root causes e alterações
+
+O único defeito de produto reproduzido nesta rodada foi o lifecycle de
+Checkout cancelado/falho: `apply_session_payment_state_v1` atualiza o pagamento,
+mas não leva o booking `pending_payment` a um estado terminal nem libera a
+janela ocupada pelo slot engine. O segundo grupo de problemas é de
+infraestrutura de qualificação: o secret de webhook HML não está disponível ao
+harness local para replay assinado, faltam um segundo paciente QA e uma sessão
+Zoom futura própria, e o schema/política de confirmação do HML diverge da
+migration local.
+
+A única alteração de código foi no harness
+`scripts/payments/complete-session-checkout-hml.mjs`: quando o replay assinado
+local não é possível, ele registra `signed_replay_unavailable` e continua
+somente para validar o estado autoritativo já produzido pelo Stripe real. Não
+houve alteração de produto, migration, RLS, webhook remoto ou dados via SQL.
+
+### Validações executadas
+
+- Stripe test mode: recusado, expirado, pagamentos aprovados, refund e
+  webhooks reais processados no HML.
+- Edge Functions oficiais: booking checkout, cancelamento, reagendamento,
+  confirmação do terapeuta e acesso Zoom.
+- Invariantes read-only: uma unidade por booking/payment/video session nos
+  cenários idempotentes; nenhuma duplicidade financeira observada.
+- `npx supabase migration list --project-ref emzwqkmrryuqvqiohqnu`: as
+  migrations locais `20260822180000`, `20260822200000`,
+  `20260823090000`, `20260823100000`, `20260823133000` e `20260823134500`
+  ainda não estão aplicadas no HML; em particular, a migration de confirmações
+  é a `20260823100000`.
+- `node --check scripts/payments/complete-session-checkout-hml.mjs`.
+- `npm run test -- --run scripts/homologation/zoom-hml.test.mjs`: **15/15**.
+- `npm run typecheck`: **PASS**.
+- `npm run lint`: **PASS** (políticas visual/online-only e ESLint sem erros).
+
+### P0/P1 e decisão
+
+P0 remanescente: nenhum acesso indevido, segredo exposto, cobrança duplicada
+ou corrupção financeira foi observado.
+
+P1 remanescente: liberação de slot após Checkout cancelado/falho; replay
+duplicado/atrasado dependente do secret remoto; segundo paciente para
+concorrência; fixture Zoom para paciente-before-host/reconnect; e alinhamento
+HML da migration/política de confirmações e feedback. CI remoto, e-mails
+críticos e rotas de pagamento do paciente permanecem P1 pré-existentes fora
+do escopo desta rodada.
+
+Fase 3 deve tratar comunicação/observabilidade. A decisão desta rodada é
+**PHASE 2 FAIL**; o TES não é declarado Production Ready.
+
+Documentação atualizada.

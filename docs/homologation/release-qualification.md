@@ -452,3 +452,55 @@ confirmação/feedback bilateral.
 
 P0 remanescente: nenhum identificado nesta qualificação. Isto não equivale a
 Production Ready; a decisão cobre somente o Golden Path transacional em HML.
+
+## Fase 2 — Failure Paths e Resiliência HML
+
+Data: 2026-08-23, somente HML/test mode. Resultado: **PHASE 2 FAIL**.
+
+| Cenário | Status | Evidência / root cause | Próxima ação |
+| --- | --- | --- | --- |
+| Recusa Stripe | PASS | `payment_intent.payment_failed` recebido e processado; pagamento local `failed`. | Regressão automatizada. |
+| Checkout abandonado/expirado | FAIL | Webhook real processado e payment `canceled`, mas booking ficou `pending_payment/payment_status=cancelled`; o slot não voltou à disponibilidade. | P1: corrigir lifecycle canônico de booking/hold. |
+| Hold/slot após falha | FAIL | O hold não ficou ativo, porém o booking cancelado continuou conflito no slot engine. | P1: validar release transacional. |
+| Webhook duplicado/atrasado | BLOCKED | Replay local rejeitado por divergência entre secret remoto HML e secret disponível ao harness; entregas Stripe reais seguem processadas. | P1: canal seguro para replay assinado. |
+| Concorrência independente | PASS | Uma tentativa oficial venceu e a outra recebeu 409; um booking apenas. | Manter regressão. |
+| Dois pacientes distintos | BLOCKED | Falta segundo paciente QA autorizado. | P1: provisionar credencial QA. |
+| Double-click/retry | PASS | Mesmo request id retornou a mesma operação; sem duplicidade. | Manter regressão. |
+| Refund | PASS | Refund Stripe test real, uma refund succeeded e payment local `refunded`. | Repetir retry após desbloqueio de secret. |
+| Cancelamento paciente/terapeuta | PASS | Fluxos oficiais e retries idempotentes; decisões/refunds únicos. | Manter regressão. |
+| Reagendamento | PASS | Request repetido e resolução oficial `applied`; booking versionado e horário atualizado. | Validar slot anterior na suíte consolidada. |
+| Zoom indevido/encerrado | PASS | Booking errado, role spoof e sessão encerrada negados. | Manter regressão. |
+| Zoom antes do host | BLOCKED | Sem sessão futura própria do paciente QA. | P1: fixture Zoom autorizada. |
+| Zoom reconnect/refresh/rejoin | BLOCKED | Sem sessão futura própria; não criado novo booking. | P1: executar com fixture dedicada. |
+| Confirmações bilaterais/feedback | BLOCKED | `20260823100000_session_attendance_confirmation_lifecycle.sql` local está ausente no HML; HML usa política v1 e `session_service_confirmations`; REST de `session_participant_confirmations`/feedback indisponível. Confirmação oficial do terapeuta alterou `transfer_status` para safety period, portanto o lifecycle participa do financeiro. | P1: alinhar schema/política e validar bilateralmente. |
+
+### Evidências, alterações e riscos
+
+Os testes usaram Edge Functions e Stripe test mode reais. Nenhum secret,
+cookie, token ou URL assinada foi documentado. Os bookings de tentativas
+interrompidas foram somente observados. A preferência de 24/08 foi aplicada ao
+cenário de recusa; cenários que exigiam Connect usaram a fixture canônica de
+25/08 por inexistência de Connect elegível em 24/08.
+
+O root cause de produto é a ausência de transição/liberação após payment
+`failed/canceled`: `apply_session_payment_state_v1` deixa o booking
+`pending_payment`, e o slot engine continua considerando-o conflito. Os demais
+bloqueios são de qualificação HML (secret de replay, usuário QA adicional,
+fixture Zoom própria e migration/política divergente). A única alteração foi
+no harness `scripts/payments/complete-session-checkout-hml.mjs`, que passou a
+classificar replay assinado indisponível sem mascarar o estado autoritativo.
+
+Validação local: `node --check` do harness, `zoom-hml.test.mjs` **15/15**,
+`npm run typecheck` **PASS** e `npm run lint` **PASS**. A lista de migrations
+remotas confirmou que `20260823100000` não está aplicada no HML. Nenhuma
+migration foi aplicada nesta fase.
+
+P0: nenhum identificado. P1: release de slot/booking após abandono ou falha,
+replay duplicado/atrasado, segundo paciente de concorrência, fixture Zoom
+adversarial, e alinhamento de confirmações/feedback; permanecem também os P1
+pré-existentes de CI, e-mail e rotas de pagamento do paciente.
+
+Fase 3 deve cobrir comunicação e operação. A recomendação final é
+**PHASE 2 FAIL**. Isto não declara Production Ready.
+
+Documentação atualizada.
