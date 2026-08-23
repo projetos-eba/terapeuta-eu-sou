@@ -649,3 +649,50 @@ Fase 3 deve tratar comunicação/observabilidade. A decisão desta rodada é
 **PHASE 2 FAIL**; o TES não é declarado Production Ready.
 
 Documentação atualizada.
+
+## HML — salvamento de tema Premium e publicação do perfil (2026-08-23)
+
+### Diagnóstico e correção
+
+Na fixture QA `antonio-ferrari-e2e`, a seleção do tema Premium **Energia** era
+aceita pela interface, mas o salvamento retornava apenas `Revise os dados do
+perfil antes de continuar.`. O mesmo perfil salvou o tema Free **Natural**,
+isolando o problema no runtime remoto de validação, não no slot, no plano ou no
+conteúdo do perfil.
+
+O código já promovido à branch de homologação continha a allowlist de temas e o
+tratamento de mensagens acionáveis, porém a Edge Function HML
+`therapist-profile-command` ainda estava com a versão anterior do validador e
+da mensagem genérica. A função foi publicada novamente somente no projeto
+Supabase HML; não houve alteração em produção, SQL manual ou mudança de
+estado financeiro.
+
+### Evidência HML
+
+| Checkpoint | Status | Evidência sanitizada |
+| --- | --- | --- |
+| Tema Premium selecionado | PASS | Interface selecionou `Energia` (Premium). |
+| Salvamento do rascunho | PASS | Após o deploy da Edge Function, UI exibiu `Rascunho salvo.` e o editor recarregou com `Energia`. |
+| Mensagem de erro acionável | PASS | Payload inválido de apresentação (281 caracteres) foi rejeitado sem persistência e exibiu `Sua apresentação deve ter até 200 caracteres.`; a mensagem genérica não reapareceu. |
+| Envio para revisão | PASS | Fluxo oficial exibiu `Alterações enviadas para revisão.`. |
+| Aprovação administrativa | PASS | Admin iniciou a análise e aprovou a verificação com motivo auditado. |
+| Publicação/elegibilidade | PASS | Admin usou `Tornar publicado e elegível`; estado read-only ficou `Publicado e elegível` / `Recebendo reservas: Sim`. |
+| Aparição pública | PASS | Perfil público voltou a responder com nome e apresentação atualizados; DOM sanitizado confirmou `data-profile-theme=energia` e `data-theme-hero-background=energia`, sem tokens ou dados privados. |
+
+O fluxo de publicação exige aprovação administrativa e, enquanto a análise
+está pendente, o perfil fica corretamente oculto. Isso é comportamento de
+moderação do produto, não falha de salvamento.
+
+### Gates atualizados
+
+| Área | Persona | Gate | Ambiente | Status | Evidência | Severidade | Próxima ação |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Perfil público | Terapeuta/Admin/Público | Tema Premium → salvar → revisão → aprovação → publicação | HML | **PASS** | Execução real na fixture QA, com backend e superfície pública coerentes. | P2 | Repetir no RC após o artefato HML final. |
+| Contrato de erro | Terapeuta | Falha de validação com motivo compreensível | HML | **PASS** | Limite de apresentação informado sem detalhe interno; nenhum estado persistido. | P2 | Manter regressão local e E2E focal. |
+
+Validações locais já aprovadas no commit promovido: `npm run typecheck`,
+`npm run lint`, `npm run build`, testes Vitest focais (26/26), testes Deno da
+Edge Function (9/9) e `git diff --check`.
+
+**Impacto documental:** documentação atualizada; `skills/therapist-profile/SKILL.md`
+também registra a exigência de motivo acionável em falhas de salvar/publicar.

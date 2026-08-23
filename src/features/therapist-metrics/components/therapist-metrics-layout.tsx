@@ -21,8 +21,9 @@ export function TherapistMetricsLayout({
   tab: TherapistMetricsTab;
 }) {
   return (
-    <AppPageContainer className="max-w-[1280px] gap-6 lg:gap-8">
+    <AppPageContainer className="max-w-[1280px] gap-5 lg:gap-6">
       <MetricsHero meta={meta} tab={tab} />
+      <MetricsControlBar meta={meta} tab={tab} />
       {children}
     </AppPageContainer>
   );
@@ -42,7 +43,7 @@ function MetricsHero({
   ];
 
   return (
-    <section className="overflow-hidden rounded-panel bg-white">
+    <section className="overflow-hidden rounded-panel border border-brand-lavender bg-white shadow-card">
       <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.82fr)]">
         <div className="grid content-between gap-8 p-5 sm:p-8 lg:p-10">
           <div>
@@ -60,8 +61,8 @@ function MetricsHero({
           </div>
 
           <nav
-            aria-label="Seções de acompanhamento"
-            className="flex min-h-12 w-full items-end gap-1 border-b border-brand-lavender"
+            aria-label="Visões de métricas"
+            className="-mx-2 flex min-h-12 w-[calc(100%+1rem)] items-end gap-1 overflow-x-auto border-b border-brand-lavender px-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {tabs.map((item) => {
               const active = item.value === tab;
@@ -94,59 +95,72 @@ function MetricsHero({
           />
         </div>
       </div>
+    </section>
+  );
+}
 
-      <div className="flex flex-col gap-4 border-t border-brand-lavender px-5 py-4 sm:px-8 lg:flex-row lg:items-center lg:justify-between lg:px-10">
-        <div className="flex items-start gap-3">
-          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-            <CalendarDays aria-hidden="true" size={19} />
-          </span>
-          <div>
-            <p className="text-sm font-extrabold text-brand-deep">
-              Últimos {meta.periodDays} dias completos
-            </p>
-            <p className="mt-0.5 text-sm font-semibold leading-5 text-tesText-secondary">
-              {formatPeriod(meta)} · {meta.timezone}
-            </p>
-          </div>
+function MetricsControlBar({
+  meta,
+  tab,
+}: {
+  meta: TherapistMetricsCommonMeta;
+  tab: TherapistMetricsTab;
+}) {
+  return (
+    <section
+      aria-label="Controles do período"
+      className="flex flex-col gap-4 rounded-card border border-brand-lavender bg-white p-4 shadow-card sm:p-5 lg:flex-row lg:items-center lg:justify-between"
+    >
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+          <CalendarDays aria-hidden="true" size={19} />
+        </span>
+        <div>
+          <p className="text-sm font-extrabold text-brand-deep">
+            Últimos {meta.periodDays} dias completos
+          </p>
+          <p className="mt-0.5 text-sm font-semibold leading-5 text-tesText-secondary">
+            {formatPeriod(meta)} · {meta.timezone}
+          </p>
         </div>
-
-        <form
-          action={routes.therapist.insights}
-          className="flex flex-wrap items-center gap-2"
-        >
-          <input name="tab" type="hidden" value={tab} />
-          <label className="sr-only" htmlFor="metrics-period">
-            Período do acompanhamento
-          </label>
-          <select
-            className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-extrabold text-brand-deep outline-none transition focus-visible:ring-2 focus-visible:ring-brand-primary"
-            defaultValue={String(meta.periodDays)}
-            id="metrics-period"
-            name="period"
-          >
-            <option value="30">30 dias</option>
-            <option value="60">60 dias</option>
-            <option value="90">90 dias</option>
-            <option value="120">120 dias</option>
-          </select>
-          <button
-            className="min-h-11 rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            type="submit"
-          >
-            Atualizar
-          </button>
-          <a
-            aria-label="Baixar relatório em CSV"
-            className="inline-flex size-11 items-center justify-center rounded-lg border border-brand-lavender bg-white text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto sm:gap-2 sm:px-4"
-            download
-            href={`/api/therapist/metrics/export?tab=${tab}&period=${meta.periodDays}`}
-            title="Baixar relatório em CSV"
-          >
-            <Download aria-hidden="true" size={18} />
-            <span className="hidden sm:inline">Baixar relatório</span>
-          </a>
-        </form>
       </div>
+
+      <form
+        action={routes.therapist.insights}
+        className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
+      >
+        <input name="tab" type="hidden" value={tab} />
+        <label className="sr-only" htmlFor="metrics-period">
+          Período das métricas
+        </label>
+        <select
+          className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-extrabold text-brand-deep outline-none transition focus-visible:ring-2 focus-visible:ring-brand-primary"
+          defaultValue={String(meta.periodDays)}
+          id="metrics-period"
+          name="period"
+        >
+          <option value="30">30 dias</option>
+          <option value="60">60 dias</option>
+          <option value="90">90 dias</option>
+          <option value="120">120 dias</option>
+        </select>
+        <button
+          className="min-h-11 rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          type="submit"
+        >
+          Atualizar
+        </button>
+        <a
+          aria-label="Baixar relatório em CSV"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          download
+          href={`/api/therapist/metrics/export?tab=${tab}&period=${meta.periodDays}`}
+          title="Baixar relatório em CSV"
+        >
+          <Download aria-hidden="true" size={18} />
+          Baixar relatório
+        </a>
+      </form>
     </section>
   );
 }

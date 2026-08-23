@@ -10,16 +10,16 @@ import {
 afterEach(cleanup);
 
 describe("TherapistMetricsPage", () => {
-  it("renders the six real-data indicators and canonical tabs", () => {
+  it("renders the six visual indicators and canonical tabs", () => {
     render(<TherapistMetricsPage data={dashboardFixture()} />);
 
     expect(
       screen.getByRole("heading", { level: 1, name: "Acompanhe seu trabalho" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Pessoas acompanhadas")).toBeInTheDocument();
-    expect(screen.getByText("Sessões realizadas")).toBeInTheDocument();
-    expect(screen.getByText("Tempo de atendimento")).toBeInTheDocument();
-    expect(screen.getByText("Pessoas que retornaram")).toBeInTheDocument();
+    expect(screen.getByText("Visualizações do perfil")).toBeInTheDocument();
+    expect(screen.getAllByText("Interessados em agendar")).toHaveLength(1);
+    expect(screen.getAllByText("Sessões realizadas").length).toBeGreaterThan(0);
+    expect(screen.getByText("Taxa de retorno")).toBeInTheDocument();
     expect(screen.getByText("Ocupação da agenda")).toBeInTheDocument();
     expect(screen.getByText("Terapia mais realizada")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Sessões" })).toHaveAttribute(
@@ -43,6 +43,21 @@ describe("TherapistMetricsPage", () => {
       <TherapistMetricsPage data={dashboardFixture()} />,
     );
     expect(container.querySelector(".grid-cols-2")).toBeInTheDocument();
+  });
+
+  it("keeps period and CSV actions in an accessible utility bar", () => {
+    render(<TherapistMetricsPage data={dashboardFixture()} />);
+
+    expect(
+      screen.getByRole("region", { name: "Controles do período" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Período das métricas")).toHaveValue("30");
+    expect(
+      screen.getByRole("link", { name: "Baixar relatório em CSV" }),
+    ).toHaveAttribute(
+      "href",
+      "/api/therapist/metrics/export?tab=overview&period=30",
+    );
   });
 
   it("distinguishes an infrastructure error", () => {

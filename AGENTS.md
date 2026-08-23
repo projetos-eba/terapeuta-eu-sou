@@ -358,6 +358,12 @@ Stack real identificada:
   `therapist_metrics_runtime_config` até validação formal de base legal, aviso
   e retenção. Não ativar por variável pública nem simular descoberta,
   ocupação, Aura ou amostra insuficiente. MTR-6/Aura permanece pendente.
+- A composição visual da visão geral de Métricas foi alinhada ao frame
+  `13366:3628`: hero editorial, faixa de período/CSV separada, seis KPIs,
+  funil, agenda, ranking, comparativo, roscas e heatmaps. Os componentes
+  visuais continuam locais à feature e usam somente os contratos agregados
+  existentes; descoberta desativada e ocupação em formação permanecem estados
+  honestos.
 - Financeiro do terapeuta F0/F1/F2/F3: `/terapeuta/financeiro` possui somente as
   abas Resumo, Recebimentos, Repasses e Conta de recebimento. A fonte canônica
   continua `session_payments`; o shell consome read models privados

@@ -504,3 +504,37 @@ Fase 3 deve cobrir comunicação e operação. A recomendação final é
 **PHASE 2 FAIL**. Isto não declara Production Ready.
 
 Documentação atualizada.
+
+## Anexo — perfil Premium em HML (2026-08-23)
+
+A qualificação do perfil QA `antonio-ferrari-e2e` isolou uma divergência de
+runtime: temas Free salvavam, enquanto o tema Premium `Energia` retornava a
+mensagem genérica de validação. A Edge Function HML
+`therapist-profile-command` foi atualizada pelo processo oficial, sem produção
+e sem alteração manual de banco.
+
+Após o deploy, o fluxo real passou: selecionar Energia → salvar rascunho
+(`Rascunho salvo.`) → enviar para revisão → iniciar e aprovar a análise no
+Admin → tornar publicado e elegível. O perfil público voltou a aparecer com a
+apresentação atualizada; os atributos visuais sanitizados confirmaram
+`data-profile-theme=energia` e `data-theme-hero-background=energia`.
+
+Também foi exercitada uma falha de contrato (281 caracteres na apresentação).
+O salvamento não persistiu e a HML exibiu o motivo acionável
+`Sua apresentação deve ter até 200 caracteres.`. Após recarregar, o perfil
+publicado permaneceu íntegro.
+
+| Checkpoint | Resultado |
+| --- | --- |
+| Premium theme save | **PASS** |
+| Error reason shown | **PASS** |
+| Review submission | **PASS** |
+| Admin approval/publication | **PASS** |
+| Public profile/theme visibility | **PASS** |
+
+A aprovação administrativa é uma etapa obrigatória do TES; a ocultação durante
+a análise foi observada e não foi tratada como defeito. Nenhum segredo, cookie,
+token, documento ou dado privado foi registrado nesta evidência.
+
+**Impacto documental:** documentação de homologação atualizada; nenhuma
+alteração de rota, schema, migration ou produção.

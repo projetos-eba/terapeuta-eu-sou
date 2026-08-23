@@ -18,17 +18,20 @@ test.describe("therapist metrics and reports", () => {
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Métricas e insights",
+        name: "Acompanhe seu trabalho",
       }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Pessoas acompanhadas" }),
+      page.getByRole("heading", { name: "Visualizações do perfil" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Interessados em agendar" }),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Sessões realizadas" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Tempo de atendimento" }),
+      page.getByRole("heading", { name: "Taxa de retorno" }),
     ).toBeVisible();
     await expect(page.getByText("Coleta pública desativada")).toBeVisible();
     await expect(
@@ -41,7 +44,9 @@ test.describe("therapist metrics and reports", () => {
     await expect(page).toHaveURL(
       /\/terapeuta\/insights\?tab=overview&period=90$/,
     );
-    await expect(page.getByText("Últimos 90 dias completos")).toBeVisible();
+    await expect(
+      page.getByText("Últimos 90 dias completos", { exact: true }),
+    ).toBeVisible();
   });
 
   test("navigates across MTR-4 and MTR-5 with shareable URLs", async ({
@@ -78,9 +83,7 @@ test.describe("therapist metrics and reports", () => {
         name: "Continuidade do acompanhamento",
       }),
     ).toBeVisible();
-    await expect(
-      page.getByText("Favoritos que viraram encontro"),
-    ).toBeVisible();
+    await expect(page.getByText("Favoritos que viraram sessão")).toBeVisible();
   });
 
   test("exports the authorized aggregate report as CSV", async ({ page }) => {
@@ -103,7 +106,7 @@ test.describe("therapist metrics and reports", () => {
       await expect(
         page.getByRole("heading", {
           level: 1,
-          name: "Métricas e insights",
+          name: "Acompanhe seu trabalho",
         }),
       ).toBeVisible();
       await expect(page.getByLabel("Período das métricas")).toBeVisible();

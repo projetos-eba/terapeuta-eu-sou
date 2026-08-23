@@ -203,10 +203,10 @@ export function DistributionDonut({
     colors.deep,
   ];
   return (
-    <div>
+    <div className="grid gap-4 sm:grid-cols-[minmax(180px,0.9fr)_minmax(0,1fr)] sm:items-center">
       <div
         aria-label={label}
-        className="relative mx-auto h-[220px] w-full max-w-[300px]"
+        className="relative mx-auto h-[190px] w-full max-w-[260px]"
         role="img"
         tabIndex={0}
       >
@@ -232,21 +232,21 @@ export function DistributionDonut({
           {centerLabel}
         </span>
       </div>
-      <ul className="mt-3 grid gap-2 text-sm font-semibold text-tesText-secondary">
+      <ul className="grid gap-2 text-sm font-semibold text-tesText-secondary">
         {items.map((item, index) => (
           <li
             className="flex items-center justify-between gap-3"
             key={item.label}
           >
-            <span className="flex items-center gap-2">
+            <span className="flex min-w-0 items-center gap-2">
               <span
                 aria-hidden="true"
-                className="size-2.5 rounded-full"
+                className="size-2.5 shrink-0 rounded-full"
                 style={{ background: palette[index % palette.length] }}
               />
-              {item.label}
+              <span className="truncate">{item.label}</span>
             </span>
-            <strong className="text-brand-deep">{item.value}</strong>
+            <strong className="shrink-0 text-brand-deep">{item.value}</strong>
           </li>
         ))}
       </ul>
@@ -267,9 +267,14 @@ export function MetricsHeatmap({
   ).sort((a, b) => a - b);
   const maximum = Math.max(1, ...points.map((point) => point.value));
   return (
-    <div className="w-full min-w-0 pb-2">
+    <div
+      aria-label={`Mapa de calor de ${valueLabel} por dia e horário`}
+      className="w-full min-w-0 overflow-x-auto pb-2"
+      role="region"
+      tabIndex={0}
+    >
       <table
-        className="w-full table-fixed border-separate border-spacing-0.5 sm:border-spacing-1"
+        className="min-w-[560px] table-fixed border-separate border-spacing-0.5 sm:border-spacing-1"
         aria-label={valueLabel}
       >
         <colgroup>
@@ -329,28 +334,32 @@ export function MetricsHeatmap({
   );
 }
 
-export function JourneyFunnel({
+export function MetricsFunnel({
   stages,
 }: {
   stages: Array<{ label: string; value: number }>;
 }) {
   const maximum = Math.max(1, ...stages.map((stage) => stage.value));
   return (
-    <ol aria-label="Jornada até o agendamento" className="grid gap-3">
+    <ol aria-label="Funil de conversão" className="grid gap-4">
       {stages.map((stage, index) => (
         <li
-          className="grid gap-2 sm:grid-cols-[150px_1fr_auto] sm:items-center"
+          className="grid gap-2 sm:grid-cols-[170px_minmax(0,1fr)_auto] sm:items-center"
           key={stage.label}
         >
           <span className="text-sm font-extrabold text-brand-deep">
             {stage.label}
           </span>
-          <span className="h-12 overflow-hidden rounded-lg bg-brand-lavenderSoft">
+          <span className="relative h-12 overflow-hidden rounded-lg bg-brand-lavenderSoft">
             <span
               aria-hidden="true"
-              className="block h-full rounded-lg bg-gradient-to-r from-brand-lavender to-brand-primary"
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-brand-lavender to-brand-primary"
               style={{
-                width: `${Math.max(8, (stage.value / maximum) * (100 - index * 6))}%`,
+                clipPath: "polygon(0 0, 100% 12%, 100% 88%, 0 100%)",
+                width:
+                  stage.value === 0
+                    ? "0%"
+                    : `${Math.max(14, (stage.value / maximum) * (100 - index * 8))}%`,
               }}
             />
           </span>
@@ -363,12 +372,20 @@ export function JourneyFunnel({
   );
 }
 
+export function JourneyFunnel({
+  stages,
+}: {
+  stages: Array<{ label: string; value: number }>;
+}) {
+  return <MetricsFunnel stages={stages} />;
+}
+
 const tooltipStyle = {
   background: "var(--tes-color-surface-default)",
   border: "1px solid var(--tes-color-brand-lavender)",
   borderRadius: 12,
   color: "var(--tes-color-text-primary)",
-  fontSize: 13,
+  fontSize: 14,
 };
 
 function shortDate(value: string) {
