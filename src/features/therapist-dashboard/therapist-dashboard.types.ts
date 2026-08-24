@@ -86,6 +86,10 @@ export type TherapistDashboardPageData = {
 
 export type TherapistDashboardQueryInput = {
   accessToken: string;
+  avatarUrl: string | null;
+  name: string;
+  plan: TherapistPlan;
+  profileCompleteness: number;
   profileId: string;
 };
 

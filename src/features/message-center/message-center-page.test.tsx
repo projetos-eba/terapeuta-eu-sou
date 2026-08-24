@@ -76,9 +76,7 @@ describe("MessageCenterPage", () => {
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     expect(
-      within(screen.getByRole("dialog")).getByText(
-        "Atualização operacional.",
-      ),
+      within(screen.getByRole("dialog")).getByText("Atualização operacional."),
     ).toBeInTheDocument();
   });
 
@@ -264,10 +262,9 @@ function createData(
     hero: {
       description:
         "Acompanhe mensagens automatizadas dos clientes, avisos da plataforma e suporte em um só lugar.",
-      pendingLabel: "Clientes aguardando",
       title: "Central de mensagens",
     },
-    metrics: { awaitingCount: 1, unreadCount: 1 },
+    metrics: { openSupportTicketsCount: 1, unreadMessagesCount: 1 },
     participantSection: {
       description: "Comunicações por templates.",
       title: "Mensagens dos clientes",

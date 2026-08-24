@@ -4,13 +4,17 @@ import { ImagePlus, Loader2, Play, Upload } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 
 import { TESButton, TESFeedbackDialog } from "@/components/tes";
+import { TherapistPlan } from "@/domain/tes";
+import {
+  canAccessTherapistPlan,
+  TherapistLockedCard,
+} from "@/features/therapist-access";
 
 import {
   type TherapistProfileMediaKind,
   uploadTherapistProfileMedia,
 } from "../therapist-profile-editor.commands";
 import type { TherapistProfileEditableFields } from "../therapist-profile-editor.types";
-import { ProfileCapabilityGate } from "./profile-capability-gate";
 import { ProfileTextField } from "./profile-field-group";
 import { ProfileSection } from "./profile-section";
 
@@ -97,25 +101,39 @@ export function ProfilePhotoUploader({
 export function ProfileVideoUploader({
   canUploadVideo,
   fields,
+  plan = TherapistPlan.PremiumPlus,
   updateField,
 }: {
   canUploadVideo: boolean;
   fields: TherapistProfileEditableFields;
+  plan?: TherapistPlan;
   updateField: <K extends keyof TherapistProfileEditableFields>(
     key: K,
     value: TherapistProfileEditableFields[K],
   ) => void;
 }) {
+  if (
+    !canUploadVideo ||
+    !canAccessTherapistPlan(plan, TherapistPlan.Premium)
+  ) {
+    return (
+      <ProfileSection title="Vídeo de apresentação">
+        <TherapistLockedCard
+          description="Vídeo de apresentação está disponível para planos Premium e Premium Plus."
+          requiredPlan={TherapistPlan.Premium}
+          title="Vídeo de apresentação"
+          variant="compact"
+        />
+      </ProfileSection>
+    );
+  }
+
   return (
     <ProfileSection
       description="Apresente-se em um conteúdo curto e responsável. Você pode enviar um vídeo de até 5 MB ou usar um link do YouTube ou Vimeo. Documentos privados não aparecem aqui."
       title="Vídeo de apresentação"
     >
-      <ProfileCapabilityGate
-        allowed={canUploadVideo}
-        message="Vídeo de apresentação está disponível para planos Premium e Premium Plus."
-      >
-        <div className="grid gap-4">
+      <div className="grid gap-4">
           <div className="relative aspect-video overflow-hidden rounded-lg border border-brand-lavender bg-brand-lavenderSoft">
             {fields.videoThumbnailUrl ? (
               // eslint-disable-next-line @next/next/no-img-element -- preview de URL pública recém-enviada ao Storage, sem remotePatterns estáticos.
@@ -180,8 +198,7 @@ export function ProfileVideoUploader({
               value={fields.videoTitle}
             />
           </div>
-        </div>
-      </ProfileCapabilityGate>
+      </div>
     </ProfileSection>
   );
 }

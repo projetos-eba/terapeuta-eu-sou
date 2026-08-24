@@ -51,6 +51,7 @@ export type MessageCenterPlatformItem = {
   category: MessageCenterCategory;
   categoryLabel: string;
   id: string;
+  isNotification?: boolean;
   isUnread: boolean;
   timeLabel: string;
   title: string;
@@ -88,12 +89,11 @@ export type MessageCenterPageData = {
   actorRole: MessageCenterActorRole;
   hero: {
     description: string;
-    pendingLabel: string;
     title: string;
   };
   metrics: {
-    awaitingCount: number;
-    unreadCount: number;
+    openSupportTicketsCount: number;
+    unreadMessagesCount: number;
   };
   participantSection: {
     description: string;

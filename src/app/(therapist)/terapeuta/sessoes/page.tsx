@@ -25,6 +25,7 @@ import {
 import {
   BookingStatus,
   SessionFinancialStatus,
+  TherapistPlan,
   type BookingStatus as BookingStatusValue,
   type SessionFinancialStatus as SessionFinancialStatusValue,
 } from "@/domain/tes";
@@ -35,6 +36,10 @@ import {
   type SessionPresentation,
   type SessionReadModelItem,
 } from "@/features/bookings";
+import {
+  canAccessTherapistPlan,
+  TherapistLockedCard,
+} from "@/features/therapist-access";
 import {
   AppPageAside,
   AppPageContainer,
@@ -122,7 +127,9 @@ export default async function TherapistSessionsPage({
           ) : (
             <>
               {metrics ? <SessionMetricsGrid metrics={metrics} /> : null}
-              {metrics ? <SessionSummaryStrip metrics={metrics} /> : null}
+              {metrics ? (
+                <SessionSummaryStrip metrics={metrics} plan={session.plan} />
+              ) : null}
 
               {filteredData && filteredData.items.length > 0 ? (
                 <section
@@ -262,7 +269,23 @@ function MetricCard({
   );
 }
 
-function SessionSummaryStrip({ metrics }: { metrics: SessionMetrics }) {
+function SessionSummaryStrip({
+  metrics,
+  plan,
+}: {
+  metrics: SessionMetrics;
+  plan: TherapistPlan;
+}) {
+  if (!canAccessTherapistPlan(plan, TherapistPlan.Premium)) {
+    return (
+      <TherapistLockedCard
+        requiredPlan={TherapistPlan.Premium}
+        title="Resumo da agenda"
+        variant="compact"
+      />
+    );
+  }
+
   const items = [
     {
       icon: <Calendar aria-hidden="true" size={20} />,

@@ -8,7 +8,6 @@ import {
   CircleDollarSign,
   Clock3,
   Info,
-  LockKeyhole,
   Sparkles,
   Target,
   TrendingUp,
@@ -16,6 +15,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { TherapistPlan } from "@/domain/tes";
+import { TherapistLockedCard } from "@/features/therapist-access";
 import { routes } from "@/lib/routes";
 
 import type {
@@ -65,59 +66,96 @@ export function FinancialSummaryTab({
         aria-label="Panorama financeiro"
         className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
       >
-        <FinancialKpiCard
-          comparison={metrics?.revenue.comparison.therapistNet}
-          description="Valor que pertence a você após comissão e reembolsos aplicáveis."
-          icon={CircleDollarSign}
-          label="Receita líquida"
-          value={formatCurrency(overview.therapistNetCents)}
-        />
-        <FinancialKpiCard
-          description="Valores em confirmação, período de segurança ou processamento."
-          icon={WalletCards}
-          label="A receber"
-          status={
-            receivable === 0
-              ? "Sem pendências"
-              : "Acompanhando o próximo repasse"
-          }
-          value={formatCurrency(receivable)}
-        />
-        <FinancialKpiCard
-          description="Receita contratada no mês. O potencial estimado fica separado."
-          icon={TrendingUp}
-          label="Previsto no mês"
-          status={
-            forecastAvailable && forecast
-              ? forecastProgressLabel(forecast)
-              : advanced.status === "locked"
-                ? "Disponível no Premium Plus"
-                : "Aguardando base suficiente"
-          }
-          tone={forecastAvailable ? "success" : "muted"}
-          value={
-            forecastAvailable && forecast
-              ? formatCurrency(forecast.contractedMonthNetCents)
-              : "—"
-          }
-        />
-        <FinancialKpiCard
-          description="Sessões concluídas ou confirmadas no período consultado."
-          icon={CalendarDays}
-          label="Sessões realizadas"
-          status={
-            metrics
-              ? `${formatInteger(metrics.sessions.completedCount)} no período`
-              : "Disponível no Premium"
-          }
-          tone={metrics ? "success" : "muted"}
-          value={metrics ? formatInteger(metrics.sessions.completedCount) : "—"}
-        />
+        {analytics.status === "locked" ? (
+          <TherapistLockedCard
+            className="sm:col-span-2 xl:col-span-4"
+            description="Indicadores e acompanhamento financeiro ficam disponíveis no Premium, quando fizer sentido para o momento da sua prática."
+            requiredPlan={TherapistPlan.Premium}
+            title="Panorama financeiro"
+            variant="section"
+          />
+        ) : (
+          <>
+            <FinancialKpiCard
+              comparison={metrics?.revenue.comparison.therapistNet}
+              description="Valor que pertence a você após comissão e reembolsos aplicáveis."
+              icon={CircleDollarSign}
+              label="Receita líquida"
+              value={formatCurrency(overview.therapistNetCents)}
+            />
+            <FinancialKpiCard
+              description="Valores em confirmação, período de segurança ou processamento."
+              icon={WalletCards}
+              label="A receber"
+              status={
+                receivable === 0
+                  ? "Sem pendências"
+                  : "Acompanhando o próximo repasse"
+              }
+              value={formatCurrency(receivable)}
+            />
+            {advanced.status === "locked" ? (
+              <TherapistLockedCard
+                description="A previsão separa o que já aconteceu do que ainda é possibilidade, para apoiar suas decisões com mais clareza."
+                requiredPlan={TherapistPlan.PremiumPlus}
+                title="Previsto no mês"
+                variant="compact"
+              />
+            ) : (
+              <FinancialKpiCard
+                description="Receita contratada no mês. O potencial estimado fica separado."
+                icon={TrendingUp}
+                label="Previsto no mês"
+                status={
+                  forecastAvailable && forecast
+                    ? forecastProgressLabel(forecast)
+                    : "Aguardando base suficiente"
+                }
+                tone={forecastAvailable ? "success" : "muted"}
+                value={
+                  forecastAvailable && forecast
+                    ? formatCurrency(forecast.contractedMonthNetCents)
+                    : "—"
+                }
+              />
+            )}
+            <FinancialKpiCard
+              description="Sessões concluídas ou confirmadas no período consultado."
+              icon={CalendarDays}
+              label="Sessões realizadas"
+              status={
+                metrics
+                  ? `${formatInteger(metrics.sessions.completedCount)} no período`
+                  : "Disponível no Premium"
+              }
+              tone={metrics ? "success" : "muted"}
+              value={metrics ? formatInteger(metrics.sessions.completedCount) : "—"}
+            />
+          </>
+        )}
       </section>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)]">
-        <MoneyCompositionPanel metrics={metrics} overview={overview} />
-        <AgendaPotentialPanel advanced={advanced} />
+        {analytics.status === "locked" ? (
+          <TherapistLockedCard
+            description="Acompanhe a composição e a evolução dos seus recebimentos com uma visão mais completa."
+            requiredPlan={TherapistPlan.Premium}
+            title="Composição financeira"
+            variant="section"
+          />
+        ) : (
+          <MoneyCompositionPanel metrics={metrics} overview={overview} />
+        )}
+        {advanced.status === "locked" ? (
+          <TherapistLockedCard
+            description="Uma leitura avançada pode ajudar no planejamento da sua agenda, sem misturar estimativa com receita garantida."
+            requiredPlan={TherapistPlan.PremiumPlus}
+            title="Sua agenda e potencial"
+            variant="section"
+          />
+        ) : (
+          <AgendaPotentialPanel advanced={advanced} />
+        )}
       </div>
 
       <section
@@ -160,7 +198,14 @@ export function FinancialSummaryTab({
             <FinancialAdvancedDashboard advanced={advanced} />
           </div>
         </details>
-      ) : null}
+      ) : (
+        <TherapistLockedCard
+          description="Evolução, previsões e oportunidades são leituras do Premium Plus para apoiar suas próximas decisões."
+          requiredPlan={TherapistPlan.PremiumPlus}
+          title="Análises avançadas"
+          variant="section"
+        />
+      )}
     </div>
   );
 }
@@ -498,6 +543,17 @@ function TherapyRankingCard({
 }: {
   metrics: TherapistFinancialMetrics | null;
 }) {
+  if (!metrics) {
+    return (
+      <TherapistLockedCard
+        description="Compare o movimento das suas terapias e entenda quais caminhos têm recebido mais procura."
+        requiredPlan={TherapistPlan.Premium}
+        title="Terapias que mais faturam"
+        variant="section"
+      />
+    );
+  }
+
   const therapies = metrics?.revenueByTherapy.slice(0, 2) ?? [];
   const max = Math.max(
     1,
@@ -565,6 +621,17 @@ function AverageTicketCard({
 }: {
   metrics: TherapistFinancialMetrics | null;
 }) {
+  if (!metrics) {
+    return (
+      <TherapistLockedCard
+        description="Acompanhe o valor médio líquido por sessão quando você quiser olhar para os seus padrões com mais clareza."
+        requiredPlan={TherapistPlan.Premium}
+        title="Ticket médio"
+        variant="section"
+      />
+    );
+  }
+
   const ticket = metrics?.revenue.netAverageTicketCents ?? null;
   const comparison = metrics?.revenue.comparison.averageTicket;
 
@@ -610,8 +677,18 @@ function OpportunityOfMonth({
 }: {
   advanced: TherapistFinanceAdvancedAccess;
 }) {
+  if (advanced.status === "locked") {
+    return (
+      <TherapistLockedCard
+        description="Uma leitura contextualizada pode ajudar você a escolher o próximo passo da sua prática."
+        requiredPlan={TherapistPlan.PremiumPlus}
+        title="Oportunidade do mês"
+        variant="section"
+      />
+    );
+  }
+
   const opportunity =
-    advanced.status === "available" &&
     advanced.dashboard.opportunities.status === "available"
       ? advanced.dashboard.opportunities.primary
       : null;
@@ -620,11 +697,7 @@ function OpportunityOfMonth({
     <section className="grid min-h-[288px] content-start gap-4 rounded-card border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
       <div className="flex items-center gap-2">
         <span className="grid size-8 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-          {advanced.status === "locked" ? (
-            <LockKeyhole aria-hidden="true" size={16} />
-          ) : (
-            <Target aria-hidden="true" size={16} />
-          )}
+          <Target aria-hidden="true" size={16} />
         </span>
         <h2 className="text-lg font-extrabold text-brand-deep">
           Oportunidade do mês
@@ -656,18 +729,6 @@ function OpportunityOfMonth({
             Abrir ação sugerida <ArrowRight aria-hidden="true" size={17} />
           </Link>
         </>
-      ) : advanced.status === "locked" ? (
-        <>
-          <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-            Desbloqueie sugestões baseadas nos seus dados financeiros no Premium Plus.
-          </p>
-          <Link
-            className="mt-auto inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            href={routes.therapist.plan}
-          >
-            Conhecer Premium Plus <ArrowRight aria-hidden="true" size={17} />
-          </Link>
-        </>
       ) : (
         <>
           <p className="text-sm font-semibold leading-6 text-tesText-secondary">
@@ -691,6 +752,17 @@ function FinancialEvolutionCard({
   metrics: TherapistFinancialMetrics | null;
   overview: TherapistFinancialOverview;
 }) {
+  if (!advanced && !metrics) {
+    return (
+      <TherapistLockedCard
+        description="Veja a evolução dos seus recebimentos quando essa leitura fizer parte do seu plano."
+        requiredPlan={TherapistPlan.Premium}
+        title="Evolução financeira"
+        variant="section"
+      />
+    );
+  }
+
   if (advanced?.financialEvolution.length) {
     return (
       <FinancialEvolutionChart

@@ -11,6 +11,7 @@ import {
   type TherapyCatalogContract,
   type TherapyCatalogOption,
 } from "./therapist-services.types";
+import { TherapistPlan } from "@/domain/tes";
 
 export function mapTherapyCatalogContract(
   input: unknown,
@@ -29,10 +30,13 @@ export function mapTherapistServicesContract(
   input: unknown,
 ): TherapistServicesContract {
   const value = record(input);
+  const currentPlan = plan(value.plan);
   return {
     contractVersion: literalOne(value.contractVersion),
-    items: array(value.items).map(mapTherapistServiceSummary),
-    plan: plan(value.plan),
+    items: array(value.items).map((item) =>
+      mapTherapistServiceSummary(item, currentPlan),
+    ),
+    plan: currentPlan,
     serviceLimit: nullableNumber(value.serviceLimit),
     therapistProfileId: string(value.therapistProfileId),
   };
@@ -40,18 +44,20 @@ export function mapTherapistServicesContract(
 
 export function mapTherapistServiceMutationResult(
   input: unknown,
+  currentPlan: TherapistPlan = TherapistPlan.Free,
 ): TherapistServiceMutationResult {
   const value = record(input);
 
   return {
     contractVersion: literalOne(value.contractVersion),
     idempotentReplay: boolean(value.idempotentReplay),
-    service: mapTherapistServiceSummary(value.service),
+    service: mapTherapistServiceSummary(value.service, currentPlan),
   };
 }
 
 export function mapTherapistServiceSummary(
   input: unknown,
+  currentPlan?: TherapistPlan,
 ): TherapistServiceSummary {
   const value = record(input);
   const therapy = record(value.therapy);
@@ -74,13 +80,20 @@ export function mapTherapistServiceSummary(
     durationMinutes: number(value.durationMinutes),
     isBookable: boolean(value.isBookable),
     isReservable: boolean(value.isReservable),
-    metrics: {
-      bookingCount: number(metrics.bookingCount),
-      bookingCountDeltaPercent: nullableNumber(
-        metrics.bookingCountDeltaPercent,
-      ),
-      bookingsLast30Days: number(metrics.bookingsLast30Days),
-    },
+    metrics:
+      currentPlan === TherapistPlan.Free
+        ? {
+            bookingCount: 0,
+            bookingCountDeltaPercent: null,
+            bookingsLast30Days: 0,
+          }
+        : {
+            bookingCount: number(metrics.bookingCount),
+            bookingCountDeltaPercent: nullableNumber(
+              metrics.bookingCountDeltaPercent,
+            ),
+            bookingsLast30Days: number(metrics.bookingsLast30Days),
+          },
     matching: {
       interestIds: stringArray(matching?.interestIds),
       themeIds: stringArray(matching?.themeIds),

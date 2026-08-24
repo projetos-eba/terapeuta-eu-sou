@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { TherapistInterestMetricsPage } from "./components/therapist-interest-metrics-page";
@@ -116,7 +116,11 @@ describe("therapist metric detail contracts", () => {
       />,
     );
 
-    expect(screen.getByText("Recurso Premium Plus")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /continuidade com contexto e privacidade.*premium plus/i,
+      }),
+    );
     expect(
       screen.getByRole("link", { name: /conhecer premium plus/i }),
     ).toHaveAttribute("href", "/terapeuta/plano");

@@ -26,11 +26,34 @@ export const supportTicketStatuses = [
 
 export const supportTicketBodyLimit = 4_000;
 export const supportTicketSubjectLimit = 120;
+export const supportTicketAttachmentLimit = 5;
+export const supportTicketAttachmentSizeLimit = 10 * 1024 * 1024;
+export const supportTicketAttachmentMimeTypes = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
 
 export type SupportTicketCategory = (typeof supportTicketCategories)[number];
 export type SupportTicketSource = (typeof supportTicketSources)[number];
 export type SupportTicketStatus = (typeof supportTicketStatuses)[number];
 export type SupportTicketVisibility = "internal" | "requester";
+
+export type SupportTicketAttachment = {
+  downloadPath: string;
+  fileName: string;
+  id: string;
+  mimeType: (typeof supportTicketAttachmentMimeTypes)[number];
+  sizeBytes: number;
+};
+
+export type SupportTicketAttachmentDescriptor = {
+  mimeType: (typeof supportTicketAttachmentMimeTypes)[number];
+  originalName: string;
+  sizeBytes: number;
+  storageObjectPath: string;
+};
 
 export type SupportTicketCreateContract = {
   bookingId: string | null;
@@ -106,6 +129,25 @@ export function normalizePlainText(value: unknown, preserveNewlines: boolean) {
   return preserveNewlines
     ? normalized.replace(/[^\S\n]+/g, " ")
     : normalized.replace(/\s+/g, " ");
+}
+
+export function sanitizeSupportAttachmentName(value: string) {
+  const normalized = value
+    .normalize("NFKC")
+    .replace(/[\\/\u0000-\u001f\u007f]+/g, "-")
+    .replace(/[^\p{L}\p{N}._ -]/gu, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 160);
+  return normalized || "anexo";
+}
+
+export function attachmentMimeTypeIsAllowed(
+  value: string,
+): value is SupportTicketAttachment["mimeType"] {
+  return (supportTicketAttachmentMimeTypes as readonly string[]).includes(
+    value,
+  );
 }
 
 function isOneOf<const T extends readonly string[]>(

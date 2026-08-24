@@ -46,8 +46,7 @@ const therapistToPatient: MessageCenterTemplate[] = [
   {
     body: "Tive um pequeno atraso. Devo conseguir estar com você {{delay_window_label}}.",
     category: "atualizacao",
-    description:
-      "Comunica uma janela curta de atraso sem escrever um motivo livre.",
+    description: "Comunica uma janela curta de atraso.",
     key: "therapist_delay",
     label: "Pequeno atraso",
     parameters: [
@@ -77,11 +76,13 @@ const therapistToPatient: MessageCenterTemplate[] = [
     requiresBooking: true,
     ctaAction: "view_session",
   },
+];
+
+const legacyParticipantTemplates: MessageCenterTemplate[] = [
   {
     body: "O cancelamento desta sessão foi processado pelo fluxo da plataforma.",
     category: "atualizacao",
-    description:
-      "Informa que o cancelamento já foi confirmado pelo fluxo oficial.",
+    description: "Modelo histórico, indisponível para novos envios.",
     key: "therapist_cancel_processed",
     label: "Cancelamento processado",
     requiresBooking: true,
@@ -90,8 +91,7 @@ const therapistToPatient: MessageCenterTemplate[] = [
   {
     body: "Para continuar, use o fluxo seguro da plataforma nesta sessão.",
     category: "plataforma",
-    description:
-      "Orienta o paciente a abrir a sessão e seguir uma ação conhecida no TES.",
+    description: "Modelo histórico, indisponível para novos envios.",
     key: "therapist_platform_action",
     label: "Ação na plataforma",
     requiresBooking: true,
@@ -224,9 +224,17 @@ export function getSupportTemplates(actorRole: MessageCenterActorRole) {
 }
 
 export function getTemplateByKey(key: string) {
-  return [...therapistToPatient, ...patientToTherapist].find(
-    (template) => template.key === key,
-  );
+  return [
+    ...therapistToPatient,
+    ...patientToTherapist,
+    ...legacyParticipantTemplates,
+  ].find((template) => template.key === key);
+}
+
+export function isSelectableParticipantTemplate(key: string) {
+  return getParticipantTemplates("therapist")
+    .concat(getParticipantTemplates("patient"))
+    .some((template) => template.key === key);
 }
 
 export function getSupportTemplateByKey(key: string) {

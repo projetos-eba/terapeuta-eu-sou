@@ -50,13 +50,18 @@ export type PatientAppointment = {
   startsAt: string;
   status: "confirmed" | "live";
   therapyLabel: string;
+  timezone: string;
 };
 
 export type PatientFavoriteProfessional = {
+  averageRating: number | null;
   avatarUrl: string | null;
   id: string;
   name: string;
+  reviewCount: number;
+  summary: string | null;
   specialty: string | null;
+  techniques: string[];
 };
 
 export type PendingPatientReview = {

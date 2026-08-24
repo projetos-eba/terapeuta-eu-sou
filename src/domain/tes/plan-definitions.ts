@@ -165,11 +165,11 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
     capability: "advanced_metrics",
   },
   {
-    category: "premium_plus",
+    category: "premium",
     code: "short_videos_presentation_video",
     description: "Vídeos curtos e vídeo de apresentação do perfil.",
     label: "Vídeos curtos / vídeo de apresentação",
-    minimumPlan: TherapistPlan.PremiumPlus,
+    minimumPlan: TherapistPlan.Premium,
   },
   {
     category: "premium_plus",

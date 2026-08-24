@@ -1,15 +1,32 @@
 import { Leaf } from "lucide-react";
 
 import { TESCard } from "@/components/tes";
+import { TherapistPlan } from "@/domain/tes";
+import {
+  canAccessTherapistPlan,
+  TherapistLockedCard,
+} from "@/features/therapist-access";
 import { cn } from "@/lib/utils";
 
 import type { TherapistServiceSummary } from "../therapist-services.types";
 
 export function TherapistServicesRanking({
+  plan,
   services,
 }: {
+  plan: TherapistPlan;
   services: TherapistServiceSummary[];
 }) {
+  if (!canAccessTherapistPlan(plan, TherapistPlan.Premium)) {
+    return (
+      <TherapistLockedCard
+        requiredPlan={TherapistPlan.Premium}
+        title="Terapias mais agendadas"
+        variant="section"
+      />
+    );
+  }
+
   const ranked = services
     .filter((service) => service.metrics.bookingCount > 0)
     .sort((a, b) => b.metrics.bookingCount - a.metrics.bookingCount)

@@ -14,6 +14,8 @@ import {
 
 import { AppPageContainer, AppPageSection } from "@/components/app-page";
 import { TESCard } from "@/components/tes";
+import { TherapistPlan } from "@/domain/tes";
+import { TherapistLockedCard } from "@/features/therapist-access";
 import { routes } from "@/lib/routes";
 
 import { getTherapistMetricCopy } from "../therapist-metrics.copy";
@@ -190,14 +192,23 @@ export function TherapistMetricsPage({
               "sessions",
             )}
           />
-          <MetricsKpiCard
-            copy={returnRateKpi.copy}
-            icon={RefreshCw}
-            label="Taxa de retorno"
-            sparkline={[]}
-            state={returnRateKpi.state}
-            value={returnRateKpi.value}
-          />
+          {data.therapist.plan === TherapistPlan.Premium ? (
+            <TherapistLockedCard
+              description="Acompanhe a continuidade do cuidado e os sinais de retorno quando essa leitura fizer sentido para você."
+              requiredPlan={TherapistPlan.PremiumPlus}
+              title="Taxa de retorno"
+              variant="compact"
+            />
+          ) : (
+            <MetricsKpiCard
+              copy={returnRateKpi.copy}
+              icon={RefreshCw}
+              label="Taxa de retorno"
+              sparkline={[]}
+              state={returnRateKpi.state}
+              value={returnRateKpi.value}
+            />
+          )}
           <MetricsKpiCard
             copy={occupancyKpi.copy}
             icon={Clock3}
@@ -283,7 +294,10 @@ export function TherapistMetricsPage({
           icon={UsersRound}
           title="Pessoas acompanhadas"
         >
-          <PatientContinuityCards interest={interestData} />
+          <PatientContinuityCards
+            interest={interestData}
+            plan={data.therapist.plan}
+          />
         </MetricPanel>
 
         <MetricPanel
@@ -316,7 +330,16 @@ export function TherapistMetricsPage({
           icon={RefreshCw}
           title="Comparativo com o período anterior"
         >
-          <MetricsComparison items={comparisonItems} />
+          {data.therapist.plan === TherapistPlan.Premium ? (
+            <TherapistLockedCard
+              description="Compare seus períodos e encontre leituras adicionais da sua prática quando estiver pronto para esse próximo passo."
+              requiredPlan={TherapistPlan.PremiumPlus}
+              title="Leituras comparativas"
+              variant="section"
+            />
+          ) : (
+            <MetricsComparison items={comparisonItems} />
+          )}
         </MetricPanel>
       </div>
 
@@ -672,9 +695,22 @@ function MetricPanel({
 
 function PatientContinuityCards({
   interest,
+  plan,
 }: {
   interest: TherapistInterestMetricsReady | null;
+  plan: TherapistPlan;
 }) {
+  if (plan === TherapistPlan.Premium) {
+    return (
+      <TherapistLockedCard
+        description="Uma visão de continuidade ajuda a acompanhar os caminhos das pessoas sem expor dados individuais."
+        requiredPlan={TherapistPlan.PremiumPlus}
+        title="Continuidade e relacionamento"
+        variant="section"
+      />
+    );
+  }
+
   const keys = ["active", "new", "recurring", "inactive"] as const;
   const items = keys.map((key) => ({
     key,

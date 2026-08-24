@@ -1,6 +1,4 @@
-import Link from "next/link";
 import {
-  ArrowUpRight,
   Heart,
   Repeat2,
   Sparkles,
@@ -14,7 +12,8 @@ import {
   AppPageSection,
 } from "@/components/app-page";
 import { TESCard } from "@/components/tes";
-import { routes } from "@/lib/routes";
+import { TherapistPlan } from "@/domain/tes";
+import { TherapistLockedCard } from "@/features/therapist-access";
 
 import { getTherapistMetricCopy } from "../therapist-metrics.copy";
 import type {
@@ -41,29 +40,12 @@ export function TherapistInterestMetricsPage({
   if (!isReadyInterest(data)) {
     return (
       <TherapistMetricsLayout meta={data.meta} tab="interest">
-        <AppPageSection className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center">
-          <div>
-            <p className="text-sm font-extrabold text-brand-primary">
-              Recurso Premium Plus
-            </p>
-            <h2 className="mt-2 font-display text-[32px] font-light italic leading-tight text-brand-deep sm:text-[40px]">
-              Continuidade com contexto e privacidade
-            </h2>
-            <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-              A aba Interesse reúne retorno, evolução das pessoas acompanhadas e
-              grupos ao longo do tempo quando há dados suficientes. Ela não
-              mostra nomes, comparação entre profissionais nem tendências
-              agregadas do portal.
-            </p>
-          </div>
-          <Link
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            href={routes.therapist.plan}
-          >
-            Conhecer Premium Plus
-            <ArrowUpRight aria-hidden="true" size={18} />
-          </Link>
-        </AppPageSection>
+        <TherapistLockedCard
+          description="A aba Interesse reúne retorno, evolução das pessoas acompanhadas e grupos ao longo do tempo, sempre com cuidado com a privacidade."
+          requiredPlan={TherapistPlan.PremiumPlus}
+          title="Continuidade com contexto e privacidade"
+          variant="section"
+        />
       </TherapistMetricsLayout>
     );
   }

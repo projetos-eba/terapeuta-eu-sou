@@ -1,7 +1,6 @@
 import Link from "next/link";
 import {
   CalendarDays,
-  LockKeyhole,
   Sparkles,
   Target,
   TrendingUp,
@@ -9,6 +8,8 @@ import {
 } from "lucide-react";
 
 import { AppPageSection } from "@/components/app-page";
+import { TherapistPlan } from "@/domain/tes";
+import { TherapistLockedCard } from "@/features/therapist-access";
 import { routes } from "@/lib/routes";
 
 import type {
@@ -105,27 +106,13 @@ export function FinancialAdvancedDashboard({
 
 function AdvancedLockedState() {
   return (
-    <AppPageSection className="grid gap-4 bg-brand-lavenderSoft/70 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
-      <span className="grid size-12 place-items-center rounded-full bg-white text-brand-primary">
-        <LockKeyhole aria-hidden="true" size={22} />
-      </span>
-      <div>
-        <h2 className="text-lg font-extrabold text-brand-deep">
-          Visão financeira do Premium Plus
-        </h2>
-        <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-          Projeções, potencial da agenda, oportunidades, retenção avançada,
-          evolução financeira e dicas práticas fazem parte do Premium Plus.
-          Recebimentos, repasses e conta de recebimento continuam disponíveis.
-        </p>
-      </div>
-      <Link
-        className="inline-flex min-h-11 items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-        href={routes.therapist.plan}
-      >
-        Ver Premium Plus
-      </Link>
-    </AppPageSection>
+    <TherapistLockedCard
+      className="rounded-card"
+      description="Projeções, potencial da agenda, oportunidades, retenção avançada, evolução financeira e dicas práticas fazem parte do Premium Plus. Recebimentos, repasses e conta de recebimento continuam disponíveis."
+      requiredPlan={TherapistPlan.PremiumPlus}
+      title="Visão financeira do Premium Plus"
+      variant="section"
+    />
   );
 }
 

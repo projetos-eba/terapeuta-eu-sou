@@ -10,6 +10,7 @@ import {
 
 import { TESDecorativeMedia } from "@/components/tes";
 import { TherapistSupportSection } from "@/features/support/components/therapist-support-section";
+import { MessageCenterLiveRefresh } from "@/features/support/components/support-live-refresh";
 import { platformAssets } from "@/lib/platform-assets";
 
 import { MessageCenterActions } from "./components/message-center-actions";
@@ -31,6 +32,10 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
 
   return (
     <main className="mx-auto grid w-full max-w-[1210px] gap-5 pb-10 text-tesText-primary">
+      <MessageCenterLiveRefresh
+        actorRole={data.actorRole}
+        enabled={data.source === "supabase"}
+      />
       <section className="relative isolate overflow-hidden rounded-card bg-white">
         <div className="grid min-h-[230px] lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.82fr)]">
           <div className="relative z-10 px-6 py-8 sm:px-8 lg:py-10">
@@ -43,15 +48,15 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
             <div className="mt-6 flex flex-wrap gap-3">
               <MetricPill
                 icon={<MessageSquareDot aria-hidden="true" size={15} />}
-                label="Não lidas"
+                label="Conversas não lidas"
                 tone="danger"
-                value={data.metrics.unreadCount}
+                value={data.metrics.unreadMessagesCount}
               />
               <MetricPill
                 icon={<BellDot aria-hidden="true" size={15} />}
-                label={data.hero.pendingLabel}
+                label="Chamados abertos"
                 tone="warning"
-                value={data.metrics.awaitingCount}
+                value={data.metrics.openSupportTicketsCount}
               />
             </div>
           </div>
@@ -98,7 +103,9 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
                 <MarkNotificationsReadButton
                   actorRole={data.actorRole}
                   unreadCount={
-                    data.platformItems.filter((item) => item.isUnread).length
+                    data.platformItems.filter(
+                      (item) => item.isNotification && item.isUnread,
+                    ).length
                   }
                 />
                 <MessageCenterActions

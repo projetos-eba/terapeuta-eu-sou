@@ -31,7 +31,7 @@ export function PatientFavoritesSection({
         </Link>
       </div>
       {professionals.length ? (
-        <div className="mt-2 grid grid-cols-3 gap-2">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {professionals.map((professional) => (
             <PatientFavoriteTherapistCard
               key={professional.id}
