@@ -33,6 +33,9 @@ Legacy namespaces `/basico/configuracoes`, `/pro/configuracoes` and
 - Route: `src/app/(therapist)/terapeuta/configuracoes/page.tsx`.
 - UI: `src/features/therapist-settings/components/therapist-settings-page.tsx`.
 - API: `src/app/api/therapist/settings/route.ts`.
+- CEP server-side: `src/app/api/therapist/address/cep/route.ts`, com consulta
+  ao ViaCEP somente após oito dígitos válidos, timeout e fallback manual sem
+  expor detalhes do provedor.
 - Shared feature files: `src/features/therapist-settings/`.
 - Source of account settings: `profiles`.
 - Source of public profile state: `therapist_profiles`.
@@ -65,6 +68,15 @@ access token and Supabase RLS.
 - Never log cookies, Authorization headers, Supabase keys or personal secrets.
 - Validation errors must be specific enough for the therapist to correct the
   form, but must not expose internal database details.
+- Erros de salvamento e upload usam `TESFeedbackDialog`; mensagens inline ficam
+  reservadas para sucesso, carregamento e validações diretamente relacionadas ao
+  campo.
+- O campo Estado aceita digitação natural e normaliza a UF de duas letras no
+  parser/contrato de persistência. A consulta de CEP preenche rua, bairro,
+  cidade e UF sem sobrescrever número ou complemento, que continuam editáveis.
+- A página de configurações é dinâmica e reidrata os documentos privados após
+  retorno à rota; upload/substituição atualiza o estado local e solicita refresh
+  server-side para preservar o estado persistido.
 - The page must make the three states understandable: `Perfil completo` is the
   editorial content, `Cadastro aprovado` is the administrative review, and
   `Perfil publicado` is the public visibility.
@@ -90,6 +102,10 @@ Any broader profile update requires a new security review.
 - UI shows success, local validation error and safe remote error states.
 - UI renders private document upload/replacement for `identity_document` and
   `address_proof`, with no bucket/path details exposed to the therapist.
+- CEP válido, CEP inexistente, timeout/indisponibilidade e edição manual após o
+  preenchimento automático.
+- Documentos já enviados aparecem no primeiro carregamento e mantêm o botão
+  `Substituir documento` após remount/navegação.
 - Links point to the canonical shell routes.
 - Free sees `Conhecer planos`; Premium can open Premium Plus and cancel;
   Premium Plus can schedule Premium or cancel; a scheduled cancellation can be

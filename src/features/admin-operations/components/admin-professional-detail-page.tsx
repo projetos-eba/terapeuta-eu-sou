@@ -22,6 +22,7 @@ import {
   AppPageGrid,
   AppPageMain,
 } from "@/components/app-page";
+import { TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 import type {
@@ -657,19 +658,19 @@ function DocumentReviewActions({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showReason, setShowReason] = useState(false);
   const [reason, setReason] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   async function submit(decision: "accepted" | "resubmission_requested") {
     if (decision === "resubmission_requested" && reason.trim().length < 3) {
-      setMessage(
+      setFeedback(
         "Informe o que precisa ser corrigido antes de solicitar o reenvio.",
       );
       return;
     }
 
     setIsSubmitting(true);
-    setMessage(null);
+    setFeedback(null);
     setSuccessMessage(null);
 
     try {
@@ -687,7 +688,7 @@ function DocumentReviewActions({
       } | null;
 
       if (!response.ok || !payload?.ok) {
-        setMessage(
+        setFeedback(
           payload?.error?.message ??
             "Não foi possível registrar a decisão agora.",
         );
@@ -703,7 +704,7 @@ function DocumentReviewActions({
       setReason("");
       router.refresh();
     } catch {
-      setMessage("Não foi possível registrar a decisão agora.");
+      setFeedback("Não foi possível registrar a decisão agora.");
     } finally {
       setIsSubmitting(false);
     }
@@ -765,13 +766,11 @@ function DocumentReviewActions({
           </div>
         </div>
       ) : null}
-      {message ? (
-        <p
-          className="basis-full text-sm font-semibold leading-6 text-status-danger"
-          role="alert"
-        >
-          {message}
-        </p>
+      {feedback ? (
+        <TESFeedbackDialog
+          message={feedback}
+          onClose={() => setFeedback(null)}
+        />
       ) : null}
       {successMessage ? (
         <p

@@ -142,7 +142,9 @@ mais realizada`. O último não usa a palavra "procura" enquanto não existir
 - Recharts é a biblioteca canônica deste dashboard para sparklines, séries,
   barras e roscas. Mapas de calor usam tabela semântica e tokens TES.
 - Todo gráfico deriva apenas do DTO autenticado, usa `ResponsiveContainer`,
-  tooltip, foco por teclado, nome acessível e resumo textual.
+  tooltip visual com data/label, séries e valores, foco por teclado, nome
+  acessível e resumo textual. Pontos ativos usam detalhe legível em hover e
+  foco, sem depender do título nativo do navegador.
 - Em mobile, KPIs usam duas colunas quando o espaço permitir; o exportador
   vira botão de ícone com nome acessível, e tabelas/grades preservam região
   rolável nomeada em vez de reduzir texto funcional.

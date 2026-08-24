@@ -3,6 +3,8 @@
 import { useRef, useState } from "react";
 import { Loader2, Send } from "lucide-react";
 
+import { TESFeedbackDialog } from "@/components/tes";
+
 export function AdminSupportReplyPanel({
   onSuccess,
   ticketId,
@@ -82,7 +84,7 @@ export function AdminSupportReplyPanel({
         </p>
       ) : null}
       {error ? (
-        <p className="text-sm font-bold text-status-danger">{error}</p>
+        <TESFeedbackDialog message={error} onClose={() => setError(null)} />
       ) : null}
     </div>
   );

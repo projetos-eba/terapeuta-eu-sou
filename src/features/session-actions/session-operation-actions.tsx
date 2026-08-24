@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { FormEvent, useMemo, useRef, useState } from "react";
 
-import { TESDialog } from "@/components/tes/tes-dialog";
+import { TESDialog, TESFeedbackDialog } from "@/components/tes";
 
 type ActorRole = "patient" | "therapist";
 
@@ -233,9 +233,7 @@ export function SessionOperationActions({
       ) : null}
 
       {error ? (
-        <p className="mt-4 rounded-lg bg-status-dangerBg px-4 py-3 text-sm font-bold text-status-danger">
-          {error}
-        </p>
+        <TESFeedbackDialog message={error} onClose={() => setError(null)} />
       ) : null}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">

@@ -3,7 +3,7 @@
 import { ImagePlus, Loader2, Play, Upload } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 
-import { TESButton } from "@/components/tes";
+import { TESButton, TESFeedbackDialog } from "@/components/tes";
 
 import {
   type TherapistProfileMediaKind,
@@ -272,12 +272,7 @@ function MediaUploadControl({
         </p>
       ) : null}
       {error ? (
-        <p
-          className="text-sm font-extrabold leading-6 text-status-danger"
-          role="alert"
-        >
-          {error}
-        </p>
+        <TESFeedbackDialog message={error} onClose={() => setError(null)} />
       ) : null}
     </div>
   );

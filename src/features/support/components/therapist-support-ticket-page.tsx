@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Send } from "lucide-react";
 
+import { TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 import { supportTicketBodyLimit } from "../support-contracts";
@@ -35,6 +36,7 @@ export function SupportTicketPage({
 }) {
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [body, setBody] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,11 +71,12 @@ export function SupportTicketPage({
 
   async function send() {
     if (!body.trim()) {
-      setError("Escreva uma resposta antes de enviar.");
+      setFeedback("Escreva uma resposta antes de enviar.");
       return;
     }
     setIsSubmitting(true);
     setError(null);
+    setFeedback(null);
     requestId.current ??= crypto.randomUUID();
     const response = await fetch(`/api/support/tickets/${ticketId}`, {
       body: JSON.stringify({
@@ -90,7 +93,7 @@ export function SupportTicketPage({
     } | null;
     setIsSubmitting(false);
     if (!response.ok || !payload?.ok) {
-      setError(
+      setFeedback(
         payload?.error?.message ??
           "Não foi possível enviar sua resposta agora.",
       );
@@ -117,6 +120,12 @@ export function SupportTicketPage({
       >
         ← Voltar para mensagens
       </Link>
+      {feedback ? (
+        <TESFeedbackDialog
+          message={feedback}
+          onClose={() => setFeedback(null)}
+        />
+      ) : null}
       {isLoading ? (
         <p className="mt-6 rounded-card border border-brand-lavender bg-white p-6 text-sm font-semibold text-tesText-secondary">
           Carregando chamado…

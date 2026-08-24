@@ -157,12 +157,12 @@ export function ProfileChipInput({
   function update(index: number, value: string) {
     const next = [...safeItems];
     next[index] = value;
-    onChange(next.filter((item) => item.trim()));
+    onChange(next);
   }
 
   function addItem() {
     if (safeItems.length >= max) return;
-    onChange([...safeItems, placeholder]);
+    onChange([...safeItems, ""]);
   }
 
   function removeItem(index: number) {
@@ -184,6 +184,7 @@ export function ProfileChipInput({
             <input
               className="min-w-[9ch] max-w-[18ch] bg-transparent outline-none"
               onChange={(event) => update(index, event.target.value)}
+              placeholder={placeholder}
               value={item}
             />
             <button

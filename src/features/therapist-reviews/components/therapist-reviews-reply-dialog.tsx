@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Loader2, Send } from "lucide-react";
 
-import { TESButton, TESDialog } from "@/components/tes";
+import { TESButton, TESDialog, TESFeedbackDialog } from "@/components/tes";
 
 import type { TherapistReviewItem } from "../therapist-reviews.types";
 
@@ -21,19 +21,25 @@ export function ReviewReplyDialog({
 }) {
   const [body, setBody] = useState(review.reply?.body ?? "");
   const [error, setError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{
+    focusId?: string;
+    message: string;
+  } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const descriptionId = useMemo(
     () => `reply-${review.id}-description`,
     [review.id],
   );
-  const errorId = useMemo(() => `reply-${review.id}-error`, [review.id]);
   const trimmedBody = body.trim();
   const invalid = trimmedBody.length < 3 || trimmedBody.length > 600;
 
   async function submit() {
     if (invalid) {
       setError("Escreva uma resposta entre 3 e 600 caracteres.");
-      document.getElementById("review-reply-body")?.focus();
+      setFeedback({
+        focusId: "review-reply-body",
+        message: "Escreva uma resposta entre 3 e 600 caracteres.",
+      });
       return;
     }
 
@@ -44,6 +50,7 @@ export function ReviewReplyDialog({
 
     if (message) {
       setError(message);
+      setFeedback({ message });
     }
   }
 
@@ -77,7 +84,7 @@ export function ReviewReplyDialog({
             A resposta deve ser breve, responsável e não incluir dados privados.
           </p>
           <textarea
-            aria-describedby={`${descriptionId}${error ? ` ${errorId}` : ""}`}
+            aria-describedby={descriptionId}
             className="mt-3 min-h-[160px] w-full rounded-card border border-brand-lavender px-4 py-3 text-sm font-bold leading-6 text-brand-deep outline-none transition placeholder:text-tesText-subtle focus:border-brand-primary focus:ring-4 focus:ring-ring/20"
             id="review-reply-body"
             maxLength={600}
@@ -85,17 +92,9 @@ export function ReviewReplyDialog({
             value={body}
           />
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-            {error ? (
-              <p
-                className="text-sm font-bold leading-6 text-status-danger"
-                id={errorId}
-                role="alert"
-              >
-                {error}
-              </p>
-            ) : (
-              <span />
-            )}
+            <span aria-live="polite" className="sr-only">
+              {error}
+            </span>
             <p className="text-sm font-semibold text-tesText-muted">
               {trimmedBody.length}/600 caracteres
             </p>
@@ -126,6 +125,18 @@ export function ReviewReplyDialog({
             {review.reply ? "Atualizar resposta" : "Publicar resposta"}
           </TESButton>
         </div>
+        {feedback ? (
+          <TESFeedbackDialog
+            message={feedback.message}
+            onClose={() => {
+              const focusId = feedback.focusId;
+              setFeedback(null);
+              if (focusId) {
+                window.setTimeout(() => document.getElementById(focusId)?.focus(), 0);
+              }
+            }}
+          />
+        ) : null}
       </div>
     </TESDialog>
   );

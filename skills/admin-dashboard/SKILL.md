@@ -34,7 +34,7 @@ shell admin ou métricas agregadas usadas para priorização operacional.
   `admin_get_dashboard_v1()`. Mutacoes do catalogo continuam em comandos
   especificos como `admin-therapy-catalog-command`.
 - Referência visual principal: Figma `Page / Admin Plataforma / Visão geral —
-  editável` (`13425:778`).
+editável` (`13425:778`).
 - A tela atual usa apenas contagens agregadas disponíveis. Não exibir receita,
   retenção ou séries temporais do Figma enquanto o contrato não trouxer esses
   dados diretamente.
@@ -47,7 +47,8 @@ shell admin ou métricas agregadas usadas para priorização operacional.
   (pontos, fatias, barras ou camadas), não em textos auxiliares. O tooltip deve
   explicar valor, percentual ou contexto em linguagem de produto. Não depender
   apenas do atributo nativo `title`; usar tooltip visual legível em hover e foco
-  quando o gráfico for customizado.
+  quando o gráfico for customizado. Na evolução, cada ponto deve exibir o
+  indicador, seu valor atual e uma descrição curta do contexto.
 
 ## Regras
 

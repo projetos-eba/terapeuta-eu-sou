@@ -9,7 +9,7 @@ import {
   AppPageGrid,
   AppPageMain,
 } from "@/components/app-page";
-import { TESButton } from "@/components/tes";
+import { TESButton, TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 import {
@@ -58,7 +58,11 @@ export function TherapistProfileEditorPage({
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
     null,
   );
-  const [inlineError, setInlineError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{
+    focusId?: string;
+    message: string;
+    tone: "error" | "warning";
+  } | null>(null);
   const [liveMessage, setLiveMessage] = useState("");
 
   const baselineFields = useMemo(
@@ -85,14 +89,13 @@ export function TherapistProfileEditorPage({
   function resetLocalChanges() {
     setFields(baselineFields);
     setConfirmAction(null);
-    setInlineError(null);
+    setFeedback(null);
     setLiveMessage("Alterações locais descartadas.");
   }
 
   function showValidationError(message: string, focusId: string) {
-    setInlineError(message);
+    setFeedback({ focusId, message, tone: "error" });
     setLiveMessage(message);
-    document.getElementById(focusId)?.focus();
   }
 
   function requestPublishConfirmation() {
@@ -102,7 +105,7 @@ export function TherapistProfileEditorPage({
       return;
     }
 
-    setInlineError(null);
+    setFeedback(null);
     setConfirmAction("publish");
   }
 
@@ -116,7 +119,7 @@ export function TherapistProfileEditorPage({
     }
 
     setPendingAction(action);
-    setInlineError(null);
+    setFeedback(null);
 
     const result = await sendMutationCommand(action, editor, fields);
     setPendingAction(null);
@@ -134,7 +137,7 @@ export function TherapistProfileEditorPage({
     }
 
     setPendingAction("publish");
-    setInlineError(null);
+    setFeedback(null);
 
     let sourceEditor = editor;
     if (mustSaveBeforePublishing) {
@@ -190,7 +193,7 @@ export function TherapistProfileEditorPage({
     const result = await sendTherapistProfileCommand(command);
 
     if (result.status === "error") {
-      setInlineError(result.error.message);
+      setFeedback({ message: result.error.message, tone: "error" });
       setLiveMessage(result.error.message);
       return null;
     }
@@ -242,15 +245,6 @@ export function TherapistProfileEditorPage({
         primaryMode={isFirstConfiguration ? "publish" : "save"}
       />
 
-      {inlineError ? (
-        <div
-          className="rounded-card border border-status-danger/30 bg-status-dangerBg p-4 text-sm font-bold leading-6 text-status-danger"
-          role="alert"
-        >
-          {inlineError}
-        </div>
-      ) : null}
-
       <ProfileCompleteness editor={editor} />
 
       <AppPageGrid>
@@ -259,7 +253,11 @@ export function TherapistProfileEditorPage({
             editor={editor}
             fields={fields}
             onEditorChange={setEditor}
-            onError={setInlineError}
+            onError={(message) =>
+              message
+                ? setFeedback({ message, tone: "error" })
+                : setFeedback(null)
+            }
             onMessage={setLiveMessage}
             updateField={updateField}
           />
@@ -322,6 +320,22 @@ export function TherapistProfileEditorPage({
               return;
             }
             void runMutation(confirmAction);
+          }}
+        />
+      ) : null}
+
+      {feedback ? (
+        <TESFeedbackDialog
+          message={feedback.message}
+          onClose={() => {
+            const focusId = feedback.focusId;
+            setFeedback(null);
+            if (focusId) {
+              window.setTimeout(
+                () => document.getElementById(focusId)?.focus(),
+                0,
+              );
+            }
           }}
         />
       ) : null}
