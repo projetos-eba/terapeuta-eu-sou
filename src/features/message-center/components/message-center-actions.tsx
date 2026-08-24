@@ -10,7 +10,7 @@ import {
   MessageSquarePlus,
 } from "lucide-react";
 
-import { TESDialog } from "@/components/tes/tes-dialog";
+import { TESButton, TESDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 import type {
@@ -40,10 +40,12 @@ export function MessageCenterActions(props: MessageCenterActionsProps) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <>
-      <button
-        className="inline-flex min-h-10 w-fit items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-xs font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+      <TESButton
+        className="w-fit"
         onClick={() => setIsOpen(true)}
+        size="sm"
         type="button"
+        variant="secondary"
       >
         <MessageSquarePlus aria-hidden="true" size={16} />
         {props.variant === "support"
@@ -51,7 +53,7 @@ export function MessageCenterActions(props: MessageCenterActionsProps) {
             ? "Nova mensagem"
             : "Novo suporte"
           : "Escolher mensagem"}
-      </button>
+      </TESButton>
       {isOpen ? (
         <TemplateDialog {...props} onClose={() => setIsOpen(false)} />
       ) : null}
@@ -336,19 +338,21 @@ function TemplateDialog({
           ) : null}
           {error ? <ErrorMessage message={error} /> : null}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender px-5 text-sm font-extrabold text-brand-primary"
+            <TESButton
               onClick={() => setStep("choose")}
+              size="md"
               type="button"
+              variant="secondary"
             >
               <ArrowLeft aria-hidden="true" size={16} />
               Voltar
-            </button>
-            <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white disabled:opacity-60"
+            </TESButton>
+            <TESButton
               disabled={isSubmitting}
               onClick={() => void sendTemplate()}
+              size="md"
               type="button"
+              variant="primary"
             >
               {isSubmitting ? (
                 <Loader2
@@ -358,7 +362,7 @@ function TemplateDialog({
                 />
               ) : null}
               Enviar mensagem
-            </button>
+            </TESButton>
           </div>
         </div>
       ) : (
@@ -529,24 +533,26 @@ function Actions({
 }) {
   return (
     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-      <button
-        className="inline-flex min-h-11 items-center justify-center rounded-lg border border-brand-lavender px-5 text-sm font-extrabold text-brand-primary"
+      <TESButton
         onClick={onBack}
+        size="md"
         type="button"
+        variant="secondary"
       >
         Voltar
-      </button>
-      <button
-        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
+      </TESButton>
+      <TESButton
         disabled={disabled}
         onClick={onSubmit}
+        size="md"
         type={onSubmit ? "button" : "submit"}
+        variant="primary"
       >
         {submitting ? (
           <Loader2 aria-hidden="true" className="animate-spin" size={17} />
         ) : null}
         {submitLabel}
-      </button>
+      </TESButton>
     </div>
   );
 }

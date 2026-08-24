@@ -196,14 +196,14 @@ function getCancellationImpactLabel({
 
   const hoursUntilStart = (startsAtMs - nowMs) / ONE_HOUR_MS;
   if (hoursUntilStart >= cancellationPolicy.freeUntilHours) {
-    return `Cancelamento antes de ${cancellationPolicy.freeUntilHours}h tende a reembolso integral. O valor final será informado ao concluir a solicitação.`;
+    return `Cancelamento com ${cancellationPolicy.freeUntilHours}h ou mais pode permitir reembolso integral ou reagendamento, quando aplicável. O valor final será informado ao concluir a solicitação.`;
   }
 
   if (Number.isFinite(endsAtMs) && nowMs > endsAtMs) {
-    return `Após o encontro, casos de não comparecimento podem reter até ${cancellationPolicy.noShowFeePercent}% do valor.`;
+    return "Não comparecimento não gera obrigação de reembolso. Situações excepcionais podem ser analisadas pelo TES.";
   }
 
-  return `Cancelamento tardio pode reter ${cancellationPolicy.lateCancelFeePercent}% do valor. O valor final será informado ao concluir a solicitação.`;
+  return "Cancelamento com menos de 24h pode ser considerado desistência e não gera obrigação de reembolso. Situações excepcionais podem ser analisadas pelo TES.";
 }
 
 function getRefundState(

@@ -32,7 +32,7 @@ test.describe("patient encounter management", () => {
     ]) {
       await page.setViewportSize(viewport);
       await expect(
-        page.getByRole("heading", { name: "Detalhe do encontro" }),
+        page.getByRole("heading", { name: "Detalhe do encontro" }).first(),
       ).toBeVisible();
       await expect(
         page.getByRole("heading", { name: "Seu encontro online" }),
@@ -47,7 +47,9 @@ test.describe("patient encounter management", () => {
 
       await page.screenshot({
         fullPage: true,
-        path: testInfo.outputPath(`patient-encounter-detail-${viewport.label}.png`),
+        path: testInfo.outputPath(
+          `patient-encounter-detail-${viewport.label}.png`,
+        ),
       });
     }
   });
@@ -130,7 +132,7 @@ test.describe("patient encounter management", () => {
     await expect(cancellationDialog).toBeVisible();
     await expect(
       cancellationDialog.getByText(
-        /Cancelamento antes de 24h tende a reembolso/i,
+        /24h ou mais pode permitir reembolso integral/i,
       ),
     ).toBeVisible();
     await page

@@ -109,7 +109,7 @@ function MetricsControlBar({
   return (
     <section
       aria-label="Controles do período"
-      className="flex flex-col gap-4 rounded-card border border-brand-lavender bg-white p-4 shadow-card sm:p-5 lg:flex-row lg:items-center lg:justify-between"
+      className="flex flex-col gap-3 rounded-card border border-brand-lavender bg-white p-3 shadow-card sm:gap-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between"
     >
       <div className="flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
@@ -127,14 +127,14 @@ function MetricsControlBar({
 
       <form
         action={routes.therapist.insights}
-        className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center"
+        className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center"
       >
         <input name="tab" type="hidden" value={tab} />
         <label className="sr-only" htmlFor="metrics-period">
           Período das métricas
         </label>
         <select
-          className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-extrabold text-brand-deep outline-none transition focus-visible:ring-2 focus-visible:ring-brand-primary"
+          className="min-h-11 min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-extrabold text-brand-deep outline-none transition focus-visible:ring-2 focus-visible:ring-brand-primary"
           defaultValue={String(meta.periodDays)}
           id="metrics-period"
           name="period"
@@ -145,20 +145,21 @@ function MetricsControlBar({
           <option value="120">120 dias</option>
         </select>
         <button
-          className="min-h-11 rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          className="min-h-11 rounded-lg bg-brand-primary px-3 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:px-4"
           type="submit"
         >
           Atualizar
         </button>
         <a
           aria-label="Baixar relatório em CSV"
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:px-4"
           download
           href={`/api/therapist/metrics/export?tab=${tab}&period=${meta.periodDays}`}
           title="Baixar relatório em CSV"
         >
           <Download aria-hidden="true" size={18} />
-          Baixar relatório
+          <span className="hidden sm:inline">Baixar relatório</span>
+          <span className="sm:hidden">CSV</span>
         </a>
       </form>
     </section>

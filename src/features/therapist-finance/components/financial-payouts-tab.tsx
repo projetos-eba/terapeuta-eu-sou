@@ -85,6 +85,8 @@ export function FinancialPayoutsTab({
         ) : null}
       </section>
 
+      <PayoutTimeline payouts={payouts} />
+
       <AppPageSection className="grid gap-4">
         <form
           className="flex flex-col gap-3 sm:flex-row sm:items-end"
@@ -361,6 +363,92 @@ export function FinancialPayoutsTab({
         </div>
       </AppPageSection>
     </div>
+  );
+}
+
+function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
+  const steps = [
+    {
+      detail:
+        payouts.summary.eligibleForPayoutCents > 0
+          ? formatCurrency(payouts.summary.eligibleForPayoutCents)
+          : "Nenhum valor disponível",
+      label: "Disponível para repasse",
+      tone:
+        payouts.summary.eligibleForPayoutCents > 0
+          ? "bg-status-success text-white"
+          : "bg-brand-lavender text-brand-primary",
+    },
+    {
+      detail: payouts.summary.nextBatchAt
+        ? formatDateTime(payouts.summary.nextBatchAt, payouts.filters.timezone)
+        : "Sem previsão para o período",
+      label: "Próximo repasse",
+      tone: payouts.summary.nextBatchAt
+        ? "bg-brand-primary text-white"
+        : "bg-brand-lavender text-brand-primary",
+    },
+    {
+      detail:
+        payouts.summary.payoutProcessingCents > 0
+          ? formatCurrency(payouts.summary.payoutProcessingCents)
+          : "Nenhum valor em processamento",
+      label: "Transferência",
+      tone:
+        payouts.summary.payoutProcessingCents > 0
+          ? "bg-status-warning text-white"
+          : "bg-brand-lavender text-brand-primary",
+    },
+  ];
+
+  return (
+    <AppPageSection className="grid gap-5 bg-surface-soft/70">
+      <div>
+        <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-brand-primary">
+          Acompanhe o caminho do repasse
+        </p>
+        <h2 className="mt-2 font-display text-[30px] font-light italic leading-tight text-brand-deep sm:text-[38px]">
+          Próximos repasses
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
+          Uma visão rápida do que está disponível, previsto e em transferência.
+        </p>
+      </div>
+      <ol className="grid gap-4 md:grid-cols-3 md:gap-0">
+        {steps.map((step, index) => (
+          <li
+            className="relative grid gap-3 md:px-5 first:md:pl-0 last:md:pr-0"
+            key={step.label}
+          >
+            {index < steps.length - 1 ? (
+              <span
+                aria-hidden="true"
+                className="absolute left-6 top-6 hidden h-px w-[calc(100%-1.5rem)] border-t border-dashed border-brand-lavender md:block"
+              />
+            ) : null}
+            <div className="relative z-10 flex items-center gap-3">
+              <span
+                className={`grid size-12 place-items-center rounded-full ${step.tone}`}
+              >
+                {index === 0 ? (
+                  <CheckCircle2 aria-hidden="true" size={21} />
+                ) : index === 1 ? (
+                  <CalendarClock aria-hidden="true" size={21} />
+                ) : (
+                  <Clock3 aria-hidden="true" size={21} />
+                )}
+              </span>
+              <span className="text-base font-extrabold text-brand-deep">
+                {step.label}
+              </span>
+            </div>
+            <p className="pl-[60px] text-sm font-semibold leading-6 text-tesText-secondary md:pl-0">
+              {step.detail}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </AppPageSection>
   );
 }
 

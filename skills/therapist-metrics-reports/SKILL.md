@@ -144,7 +144,8 @@ mais realizada`. O último não usa a palavra "procura" enquanto não existir
 - Todo gráfico deriva apenas do DTO autenticado, usa `ResponsiveContainer`,
   tooltip, foco por teclado, nome acessível e resumo textual.
 - Em mobile, KPIs usam duas colunas quando o espaço permitir; o exportador
-  vira botão de ícone com nome acessível, e tabelas/grades preservam região
+  vira uma ação CSV compacta com nome acessível, o período/atualização ocupam
+  uma faixa única quando houver espaço, e tabelas/grades preservam região
   rolável nomeada em vez de reduzir texto funcional.
 - A Visão geral inclui série de atividade, descoberta discriminada, ranking
   das próprias terapias, favoritos do perfil e aviso de ocupação.
@@ -155,6 +156,12 @@ mais realizada`. O último não usa a palavra "procura" enquanto não existir
 - Ocupação em formação usa `Histórico em formação`; descoberta desativada usa
   `Coleta pública desativada`; nenhum destes estados é convertido em zero ou
   em percentual estático do Figma.
+- Estados vazios, indisponíveis, em formação ou bloqueados preservam a
+  anatomia visual do dashboard: linha-base, funil de referência, grade de
+  calor neutra, rosca neutra, ranking com trilhas e comparativo sem valores.
+  Esses elementos orientam a leitura futura, mas devem trazer texto explícito
+  de que não representam contagem real; somente um zero vindo do DTO pode ser
+  exibido como dado.
 - A aba Interesse mostra capability lock para Premium e dados protegidos para
   Premium Plus; nunca preencher com mock.
 

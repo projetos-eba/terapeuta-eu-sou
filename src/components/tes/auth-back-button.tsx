@@ -2,8 +2,19 @@
 
 import { ArrowLeft } from "lucide-react";
 
-export function AuthBackButton({ fallbackHref = "/" }: { fallbackHref?: string }) {
+export function AuthBackButton({
+  alwaysFallback = false,
+  fallbackHref = "/",
+}: {
+  alwaysFallback?: boolean;
+  fallbackHref?: string;
+}) {
   function handleBack() {
+    if (alwaysFallback) {
+      window.location.replace(fallbackHref);
+      return;
+    }
+
     const referrer = document.referrer;
     const hasSameOriginHistory =
       window.history.length > 1 &&

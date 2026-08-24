@@ -33,7 +33,11 @@ test.describe("therapist metrics and reports", () => {
     await expect(
       page.getByRole("heading", { name: "Taxa de retorno" }),
     ).toBeVisible();
-    await expect(page.getByText("Coleta pública desativada")).toBeVisible();
+    await expect(
+      page.getByText(
+        "A estrutura do funil já está pronta. Os números aparecem após a ativação formal da coleta pública.",
+      ),
+    ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Ocupação da agenda" }),
     ).toBeVisible();

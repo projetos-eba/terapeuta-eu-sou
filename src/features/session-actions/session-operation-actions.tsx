@@ -42,6 +42,8 @@ type SessionOperationActionsProps = {
   cancellationImpactLabel: string;
   reschedule: RescheduleState;
   rescheduleDisabledReason: string | null;
+  description?: string;
+  heading?: string;
 };
 
 type DialogState = "cancel" | "reschedule" | null;
@@ -61,6 +63,8 @@ export function SessionOperationActions({
   canRequestReschedule,
   cancelDisabledReason,
   cancellationImpactLabel,
+  description,
+  heading,
   reschedule,
   rescheduleDisabledReason,
 }: SessionOperationActionsProps) {
@@ -211,13 +215,12 @@ export function SessionOperationActions({
       aria-label="Cancelamento e reagendamento"
       className="rounded-card border border-brand-lavender bg-white p-5 shadow-card"
     >
-      <h2 className="font-display text-3xl font-light italic text-brand-deep">
-        Alterar {userFacingSubject}
+      <h2 className="font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]">
+        {heading ?? `Alterar ${userFacingSubject}`}
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Reagendamentos e cancelamentos passam por validação da agenda, política
-        {actorRole === "patient" ? " do encontro" : " da sessão"} e estado de
-        pagamento.
+        {description ??
+          `Reagendamentos e cancelamentos passam por validação da agenda, política ${actorRole === "patient" ? "do encontro" : "da sessão"} e estado de pagamento.`}
       </p>
 
       {pendingReschedule ? (

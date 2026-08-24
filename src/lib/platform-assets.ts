@@ -32,6 +32,9 @@ export const platformAssets = {
   therapistDashboardHero: {
     src: "/assets/plataforma/therapist-dashboard-hero.png",
   },
+  therapistAuraCharacter: {
+    src: "/therapist/dashboard/aura.png",
+  },
   therapistFinanceHero: {
     src: "/assets/plataforma/therapist-finance-hero.png",
   },

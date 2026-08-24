@@ -16,25 +16,44 @@ describe("TherapistMetricsPage", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: "Acompanhe seu trabalho" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Visualizações do perfil")).toBeInTheDocument();
-    expect(screen.getAllByText("Interessados em agendar")).toHaveLength(1);
+    expect(
+      screen.getAllByText("Visualizações do perfil").length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Interessados em agendar").length,
+    ).toBeGreaterThan(0);
     expect(screen.getAllByText("Sessões realizadas").length).toBeGreaterThan(0);
-    expect(screen.getByText("Taxa de retorno")).toBeInTheDocument();
-    expect(screen.getByText("Ocupação da agenda")).toBeInTheDocument();
+    expect(screen.getAllByText("Taxa de retorno").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Ocupação da agenda").length).toBeGreaterThan(0);
     expect(screen.getByText("Terapia mais realizada")).toBeInTheDocument();
+    expect(screen.getByText("Resumo da agenda")).toBeInTheDocument();
+    expect(screen.getByText("Pessoas acompanhadas")).toBeInTheDocument();
+    expect(screen.getByText("Top terapias")).toBeInTheDocument();
+    expect(
+      screen.getByText("Comparativo com o período anterior"),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Sessões" })).toHaveAttribute(
       "href",
       "/terapeuta/insights?tab=sessions&period=30",
     );
   });
 
-  it("keeps discovery honest and occupancy in formation", () => {
+  it("keeps the visual references visible without presenting unavailable collection as data", () => {
     render(<TherapistMetricsPage data={dashboardFixture()} />);
 
-    expect(screen.getByText("Coleta pública desativada")).toBeInTheDocument();
-    expect(screen.getAllByText("Histórico em formação").length).toBeGreaterThan(
-      0,
-    );
+    expect(
+      screen.getByText(
+        "A estrutura do funil já está pronta. Os números aparecem após a ativação formal da coleta pública.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByLabelText("Mapa de calor de sessões: ainda sem dados"),
+    ).not.toHaveLength(0);
+    expect(
+      screen.getAllByRole("img", {
+        name: "Tendência de Visualizações do perfil: ainda sem dados",
+      }).length,
+    ).toBeGreaterThan(0);
     expect(screen.queryByText("2.842")).not.toBeInTheDocument();
   });
 
@@ -43,6 +62,28 @@ describe("TherapistMetricsPage", () => {
       <TherapistMetricsPage data={dashboardFixture()} />,
     );
     expect(container.querySelector(".grid-cols-2")).toBeInTheDocument();
+  });
+
+  it("keeps the evolution chart visible when the period has no completed sessions", () => {
+    const data = dashboardFixture();
+    data.overview.activity = {
+      freshThrough: data.meta.freshThrough,
+      points: [],
+      status: "empty",
+    };
+
+    render(<TherapistMetricsPage data={data} />);
+
+    expect(
+      screen.getByRole("img", {
+        name: "Evolução diária das sessões concluídas: ainda sem dados",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "O gráfico será preenchido conforme as sessões forem concluídas no período.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("keeps period and CSV actions in an accessible utility bar", () => {

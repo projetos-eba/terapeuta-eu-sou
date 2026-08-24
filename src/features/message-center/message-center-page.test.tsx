@@ -4,6 +4,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -45,6 +46,40 @@ describe("MessageCenterPage", () => {
     expect(screen.getByText("Mensagem recebida.")).toBeInTheDocument();
     expect(screen.getByText("Minha confirmação.")).toBeInTheDocument();
     expect(screen.getAllByText("Você").length).toBeGreaterThan(0);
+  });
+
+  it("keeps the history action beside the participant row and opens from its title", () => {
+    render(<MessageCenterPage data={createData()} />);
+
+    const threadTitle = screen.getByRole("button", {
+      name: "Abrir Confirmação de presença na sessão",
+    });
+    const threadRow = threadTitle.closest("article");
+
+    expect(threadRow).not.toBeNull();
+    expect(threadRow).toContainElement(
+      screen.getByRole("button", { name: /ver mensagens/i }),
+    );
+
+    fireEvent.click(threadTitle);
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByText("Mensagem recebida.")).toBeInTheDocument();
+  });
+
+  it("opens a platform notice when its title is selected", () => {
+    render(<MessageCenterPage data={createData({ actorRole: "patient" })} />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Abrir Aviso importante" }),
+    );
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("dialog")).getByText(
+        "Atualização operacional.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("keeps support visually separate from protected participant messaging", () => {

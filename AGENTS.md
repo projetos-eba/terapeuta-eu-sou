@@ -363,7 +363,9 @@ Stack real identificada:
   funil, agenda, ranking, comparativo, roscas e heatmaps. Os componentes
   visuais continuam locais à feature e usam somente os contratos agregados
   existentes; descoberta desativada e ocupação em formação permanecem estados
-  honestos.
+  honestos. Ausência de base mantém a estrutura gráfica em referência neutra
+  (linha-base, funil, grade, rosca, ranking e comparativo) com copy explícita;
+  só um zero devolvido pelo contrato pode ser apresentado como dado real.
 - Financeiro do terapeuta F0/F1/F2/F3: `/terapeuta/financeiro` possui somente as
   abas Resumo, Recebimentos, Repasses e Conta de recebimento. A fonte canônica
   continua `session_payments`; o shell consome read models privados
@@ -381,6 +383,15 @@ Stack real identificada:
   fluxo hospedado da Stripe, sem formulário bancário próprio e sem confirmar
   onboarding por redirect. Benchmark financeiro é anonimizado e suprimido sem
   amostra mínima; Insight TES financeiro é rule-based, não IA generativa.
+- A apresentação visual de Aura e Financeiro foi alinhada aos nós Figma
+  `13366:1634` e `14340:6283`, mantendo as anatomias específicas de cada
+  domínio. Aura usa hero editorial, personagem local, quatro KPIs, leituras
+  contextuais e recomendações determinísticas. Financeiro usa quatro abas,
+  cards, evolução, roscas e timeline de repasses; gráficos sem base continuam
+  visíveis em referência neutra e nunca exibem valores inventados. No mobile,
+  o Financeiro usa divulgação progressiva apenas para análises secundárias e
+  composição avançada; nenhum dado primário é removido. Aura tem skeleton
+  dedicado e controles de período com toque mínimo de 44px.
 
 ## 6. QA e definição de pronto
 

@@ -63,12 +63,16 @@ no `session_payments.metadata.stripe_checkout`; o campo
 reconciliados no webhook sobre o valor efetivamente cobrado. Sem desconto, os
 valores continuam iguais aos snapshots do booking.
 
-As regras ficam em `financial_policy_versions`. A versao inicial e
-`tes-payments-v1` e permanece preservada nos snapshots financeiros existentes:
+As regras ficam em `financial_policy_versions`. As versões financeiras são
+preservadas no snapshot de cada pagamento. A versão operacional vigente para
+novas contratações é `tes-payments-v3-cancellation-operational`; versões
+anteriores continuam disponíveis para interpretar pagamentos já criados:
 
 - cancelamento gratuito ate 24h antes da sessao;
-- cancelamento tardio: 50% retido e 50% reembolsado;
-- no-show: 50% retido e 50% reembolsado;
+- cancelamento com menos de 24h: não há obrigação de reembolso; situações
+  excepcionais podem ser analisadas individualmente pelo TES;
+- não comparecimento: não há obrigação de reembolso, ressalvadas situações
+  excepcionais analisadas pelo TES;
 - reembolsos antes de lote/transferencia podem ser automaticos; casos ja loteados, transferidos, disputados ou contestados entram em revisao manual;
 - confirmacao automatica da sessao apos 30 dias;
 - prazo de seguranca de 7 dias apos confirmacao antes de elegibilidade para repasse;
@@ -81,14 +85,16 @@ As regras ficam em `financial_policy_versions`. A versao inicial e
   reversao autenticada e idempotente com `cancel_at_period_end = false`.
 
 A política ativa para novas confirmações de realização é versionada como
-`tes-payments-v2-session-attendance`. Ela exige confirmação independente do
+`tes-payments-v3-cancellation-operational`. Ela exige confirmação independente do
 paciente e do terapeuta, manual ou automática. Para essa versão, o prazo de
 cada confirmação começa no fim programado em `bookings.ends_at`: uma resposta
 ausente pode ser confirmada automaticamente após 7 dias. Quando as duas
 confirmações necessárias estiverem concluídas, a elegibilidade financeira só
 ocorre depois de mais 1 dia de segurança. Bookings e pagamentos já criados
 continuam usando o snapshot da política gravado no pagamento; a migration não
-reescreve retroativamente decisões financeiras.
+reescreve retroativamente decisões financeiras. Após a aprovação, o
+processamento de reembolso deve começar em até 7 dias úteis, sem garantir o
+prazo de crédito do meio de pagamento.
 
 A presença confirmada pelos eventos confiáveis do Zoom é evidência operacional
 para a realização, não é pagamento nem autorização de repasse. Feedback,

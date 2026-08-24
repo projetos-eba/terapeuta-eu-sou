@@ -117,6 +117,53 @@ Frames:
 - Repasses: `14246:1347`;
 - Conta de recebimento: `14340:6282`, visual reference only.
 
+The consolidated visual strip is `14340:6283`. The implementation keeps the
+four product-approved tabs and adapts the reference into:
+
+- Resumo: editorial header, four summary cards, occupancy/potential donut,
+  opportunity panel, four metrics, therapy ranking, financial evolution and
+  retention donut;
+- Recebimentos: filters, period cards, receipts table/cards, weekly bars and
+  status donut;
+- Repasses: summary cards, payout timeline, paginated list and calculation
+  formula;
+- Conta de recebimento: secure Connect status, next action and account
+  checklist without local bank fields.
+
+Empty visualizations retain their frame, axes, legend and a neutral reference
+state with explicit copy. They must never fabricate financial values.
+
+The summary follows the consolidated visual strip as a deliberate hierarchy:
+editorial header and approved tabs; four KPI cards (`Receita líquida`, `A
+receber`, `Previsto no mês`, `Sessões realizadas`); the paired panels `Seu
+dinheiro` and `Sua agenda e potencial`; therapy ranking, net average ticket and
+opportunity; a full-width financial evolution; and methodology rows. This is a
+page-specific composition, not a new global dashboard primitive.
+
+The local `FinancialEvolutionChart` is the main financial reading. It combines
+real series from the applicable contract with bars for values in the period,
+lines for comparison or estimation, a currency tooltip, a textual alternative
+and a neutral plotted area when the period has no usable base. Premium Plus
+keeps forecast, agenda and opportunity in the main composition, with its
+deeper retention and methodology reading in an accessible disclosure so the
+first scroll remains faithful to the approved visual hierarchy without
+duplicating the main evolution chart.
+
+The visual direction follows the approved reference: editorial page title,
+light lavender surfaces, restrained iconography, a dedicated evolution panel
+and progressive disclosure on mobile. Copy must explain the reading in product
+language; it must not expose RPC/read-model terms or imply that estimated
+agenda potential is guaranteed revenue.
+
+On tablet the KPI strip becomes two columns and the complementary cards become
+two columns. On mobile, the primary cards and the money/agenda reading remain
+open; the three complementary cards become a single reading order and deeper
+Premium Plus analysis uses native expandable sections to avoid a redundant,
+very long first scroll. The chart keeps an internal named scroll region only
+when needed; the page itself must not overflow horizontally. Expandable
+summaries remain keyboard accessible and preserve all underlying data when
+opened.
+
 Respect hierarchy, spacing and density, but do not copy unsupported product
 features or bank-form fields.
 
@@ -128,6 +175,9 @@ format, lint, typecheck, unit tests, Deno, build, Supabase reset/lint/test db.
 
 ## Assets da plataforma
 
-- O cabeçalho usa `therapistFinanceHero` com fade à esquerda; o asset é
-  decorativo e não altera valores, abas, read models ou a operação Stripe.
+- A composição atual do cabeçalho financeiro segue o frame aprovado sem
+  imagem decorativa, para preservar a hierarquia limpa do Figma.
+- `therapistFinanceHero` continua disponível no catálogo de assets para outras
+  superfícies, mas não deve ser reintroduzido no cabeçalho sem nova decisão
+  visual.
 - Consulte `docs/design-system/platform-assets.md`.

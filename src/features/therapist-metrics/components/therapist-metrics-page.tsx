@@ -65,7 +65,7 @@ export function TherapistMetricsPage({
       : {
           copy: "Disponível no Premium Plus quando houver dados suficientes",
           state: "unavailable" as const,
-          value: "Indisponível",
+          value: "—",
         };
   const occupancyKpi =
     occupancy.status === "ready"
@@ -89,7 +89,7 @@ export function TherapistMetricsPage({
         : {
             copy: "A leitura aparece quando houver cobertura confiável",
             state: "forming" as const,
-            value: "Histórico em formação",
+            value: "—",
           };
   const therapyKpi =
     overview.therapyRanking.status === "ready" && topTherapy
@@ -101,8 +101,58 @@ export function TherapistMetricsPage({
       : {
           copy: "Aparece quando houver dados suficientes para preservar a privacidade",
           state: "unavailable" as const,
-          value: "Indisponível",
+          value: "—",
         };
+  const heatmapPoints =
+    sessions.heatmap.status === "ready"
+      ? sessions.heatmap.items.map((point) => ({
+          ...point,
+          value: point.sessions,
+        }))
+      : [];
+  const comparisonItems = [
+    comparisonReference(
+      "Visualizações do perfil",
+      overview.discovery.status === "ready"
+        ? overview.discovery.stages.profileViews
+        : null,
+      "Coleta pública ainda não está ativa",
+    ),
+    comparisonReference(
+      "Interessados em agendar",
+      overview.discovery.status === "ready"
+        ? overview.discovery.stages.bookingFlowStarts
+        : null,
+      "Coleta pública ainda não está ativa",
+    ),
+    comparisonCounter(
+      "Sessões realizadas",
+      overview.counters.sessionsCompleted,
+    ),
+    returnRate?.status === "ready" && returnRate.value !== null
+      ? comparisonSampled(
+          "Taxa de retorno",
+          returnRate.value,
+          returnRate.previousValue,
+        )
+      : comparisonReference(
+          "Taxa de retorno",
+          null,
+          "Disponível com dados suficientes no Premium Plus",
+        ),
+    occupancy.status === "ready" && occupancy.current.percentage !== null
+      ? comparisonSampled(
+          "Ocupação da agenda",
+          occupancy.current.percentage,
+          occupancy.previous.percentage,
+          "%",
+        )
+      : comparisonReference(
+          "Ocupação da agenda",
+          null,
+          "Histórico da agenda em formação",
+        ),
+  ];
 
   return (
     <TherapistMetricsLayout meta={data.meta} tab="overview">
@@ -180,30 +230,37 @@ export function TherapistMetricsPage({
           icon={Eye}
           title="Funil de conversão"
         >
-          {overview.discovery.status === "ready" ? (
-            <MetricsFunnel
-              stages={[
-                {
-                  label: "Visualizaram o perfil",
-                  value: overview.discovery.stages.profileViews.value,
-                },
-                {
-                  label: "Iniciaram o agendamento",
-                  value: overview.discovery.stages.bookingFlowStarts.value,
-                },
-                {
-                  label: "Sessões concluídas",
-                  value: overview.counters.sessionsCompleted.value,
-                },
-              ]}
-            />
-          ) : (
-            <MetricsPanelState
-              message="Visualizações, interesse e funil permanecem ocultos até a revisão formal de privacidade e retenção."
-              title="Coleta pública desativada"
-              variant="unavailable"
-            />
-          )}
+          <MetricsFunnel
+            stages={[
+              {
+                label: "Visualizaram o perfil",
+                value:
+                  overview.discovery.status === "ready"
+                    ? overview.discovery.stages.profileViews.value
+                    : 0,
+              },
+              {
+                label: "Iniciaram o agendamento",
+                value:
+                  overview.discovery.status === "ready"
+                    ? overview.discovery.stages.bookingFlowStarts.value
+                    : 0,
+              },
+              {
+                label: "Sessões concluídas",
+                value:
+                  overview.discovery.status === "ready"
+                    ? overview.counters.sessionsCompleted.value
+                    : 0,
+              },
+            ]}
+          />
+          {overview.discovery.status !== "ready" ? (
+            <MetricsVisualFootnote>
+              A estrutura do funil já está pronta. Os números aparecem após a
+              ativação formal da coleta pública.
+            </MetricsVisualFootnote>
+          ) : null}
         </MetricPanel>
 
         <MetricsAgendaSummary data={data} />
@@ -214,50 +271,29 @@ export function TherapistMetricsPage({
         icon={CalendarCheck2}
         title="Evolução das sessões"
       >
-        {overview.activity.status === "ready" ? (
-          <SessionsEvolutionChart points={overview.activity.points} />
-        ) : (
-          <MetricsPanelState
-            message="Ainda não há sessões concluídas neste período."
-            title="Nenhuma sessão no período"
-            variant="empty"
-          />
-        )}
+        <SessionsEvolutionChart
+          empty={overview.activity.status !== "ready"}
+          points={overview.activity.points}
+        />
       </MetricPanel>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]">
         <MetricPanel
-          description="Terapias com mais sessões concluídas no período. A leitura não representa procura."
-          icon={Star}
-          title="Terapias mais realizadas"
+          description="Grupos de continuidade são mostrados separadamente e não formam uma distribuição única."
+          icon={UsersRound}
+          title="Pessoas acompanhadas"
         >
-          {sessions.therapyDistribution.status === "ready" ? (
-            <TherapyRankingTable items={sessions.therapyDistribution.items} />
-          ) : (
-            <ProtectedMetric status={sessions.therapyDistribution.status} />
-          )}
+          <PatientContinuityCards interest={interestData} />
         </MetricPanel>
 
         <MetricPanel
-          description="Comparação com o seu próprio período anterior, sem benchmark entre profissionais."
-          icon={RefreshCw}
-          title="Comparativo com o período anterior"
+          description="Terapias com mais sessões concluídas no período. A leitura não representa procura."
+          icon={Star}
+          title="Top terapias"
         >
-          <MetricsComparison
-            items={[
-              {
-                label: "Pessoas acompanhadas",
-                metric: overview.counters.peopleServed,
-              },
-              {
-                label: "Sessões realizadas",
-                metric: overview.counters.sessionsCompleted,
-              },
-              {
-                label: "Tempo de atendimento",
-                metric: overview.counters.serviceMinutes,
-              },
-            ]}
+          <TherapyRankingTable
+            empty={sessions.therapyDistribution.status !== "ready"}
+            items={sessions.therapyDistribution.items}
           />
         </MetricPanel>
       </div>
@@ -268,17 +304,35 @@ export function TherapistMetricsPage({
           icon={Clock3}
           title="Melhores dias e horários"
         >
-          {sessions.heatmap.status === "ready" ? (
-            <MetricsHeatmap
-              points={sessions.heatmap.items.map((point) => ({
-                ...point,
-                value: point.sessions,
-              }))}
-              valueLabel="sessões"
-            />
-          ) : (
-            <ProtectedMetric status={sessions.heatmap.status} />
-          )}
+          <MetricsHeatmap
+            emptyMessage="A grade será preenchida conforme as sessões forem concluídas."
+            points={heatmapPoints}
+            valueLabel="sessões"
+          />
+        </MetricPanel>
+
+        <MetricPanel
+          description="Comparação com o seu próprio período anterior, sem benchmark entre profissionais."
+          icon={RefreshCw}
+          title="Comparativo com o período anterior"
+        >
+          <MetricsComparison items={comparisonItems} />
+        </MetricPanel>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <MetricPanel
+          description="A classificação por abordagem ainda não faz parte do contrato de dados disponível nesta visão."
+          icon={Sparkles}
+          title="Demanda por abordagem"
+        >
+          <DistributionDonut
+            centerLabel="0 sessões"
+            empty
+            emptyMessage="A visualização será ativada quando houver uma classificação autorizada por abordagem."
+            items={[]}
+            label="Demanda por abordagem"
+          />
         </MetricPanel>
 
         <MetricPanel
@@ -286,56 +340,15 @@ export function TherapistMetricsPage({
           icon={CalendarCheck2}
           title="Resultados das sessões"
         >
-          {sessions.outcomeDistribution.status === "ready" ? (
-            <DistributionDonut
-              centerLabel={`${sessions.outcomeDistribution.observedSample} sessões`}
-              items={sessions.outcomeDistribution.items.map((item) => ({
-                label: item.label,
-                value: item.value,
-              }))}
-              label="Distribuição dos resultados das sessões"
-            />
-          ) : (
-            <ProtectedMetric status={sessions.outcomeDistribution.status} />
-          )}
-        </MetricPanel>
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <MetricPanel
-          description="As categorias são apresentadas como grupos de continuidade e não devem ser somadas como uma distribuição universal sem essa definição."
-          icon={UsersRound}
-          title="Pessoas acompanhadas por continuidade"
-        >
-          {interestData && interestData.segments.status === "ready" ? (
-            <DistributionDonut
-              centerLabel={`${interestData.segments.observedSample} pessoas`}
-              items={interestData.segments.items.map((item) => ({
-                label: segmentLabel(item.key),
-                value: item.value,
-              }))}
-              label="Situação das pessoas acompanhadas"
-            />
-          ) : interestData ? (
-            <ProtectedMetric status={interestData.segments.status} />
-          ) : (
-            <MetricsPanelState
-              message="A leitura de continuidade é liberada no Premium Plus quando houver dados de pelo menos dez pessoas."
-              title="Recurso do Premium Plus"
-              variant="capability_locked"
-            />
-          )}
-        </MetricPanel>
-
-        <MetricPanel
-          description="A classificação por abordagem ainda não faz parte do contrato de dados disponível nesta visão."
-          icon={Sparkles}
-          title="Demanda por abordagem"
-        >
-          <MetricsPanelState
-            message="Este bloco será exibido quando houver uma classificação de abordagem real, versionada e autorizada."
-            title="Dados indisponíveis"
-            variant="unavailable"
+          <DistributionDonut
+            centerLabel={`${sessions.outcomeDistribution.observedSample} sessões`}
+            empty={sessions.outcomeDistribution.status !== "ready"}
+            emptyMessage="A rosca mostra a composição das sessões quando houver base suficiente."
+            items={sessions.outcomeDistribution.items.map((item) => ({
+              label: item.label,
+              value: item.value,
+            }))}
+            label="Distribuição dos resultados das sessões"
           />
         </MetricPanel>
       </div>
@@ -373,6 +386,7 @@ function MetricsKpiCard({
   value: string;
 }) {
   const isUnavailable = state === "unavailable";
+  const isReference = value === "—";
   const stateLabel = {
     empty: "Sem base",
     forming: "Em formação",
@@ -383,7 +397,7 @@ function MetricsKpiCard({
   return (
     <TESCard
       as="article"
-      className="flex min-h-[204px] min-w-0 flex-col border-brand-lavender/90 p-4 sm:min-h-[214px] sm:p-5"
+      className="flex min-h-[174px] min-w-0 flex-col border-brand-lavender/90 p-3 sm:min-h-[214px] sm:p-5"
     >
       <div className="flex min-h-11 items-start gap-2.5">
         <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
@@ -395,9 +409,11 @@ function MetricsKpiCard({
       </div>
       <p
         className={`mt-5 font-extrabold leading-tight text-brand-deep ${
-          isUnavailable
-            ? "whitespace-nowrap text-[22px] sm:text-[24px]"
-            : "break-words text-[24px] sm:text-[28px]"
+          isReference
+            ? "text-[32px] leading-none sm:text-[36px]"
+            : isUnavailable
+              ? "whitespace-nowrap text-[22px] sm:text-[24px]"
+              : "break-words text-[24px] sm:text-[28px]"
         }`}
       >
         {value}
@@ -407,15 +423,16 @@ function MetricsKpiCard({
           {stateLabel}
         </span>
       ) : null}
-      <p className="mt-2 min-h-10 text-sm font-semibold leading-5 text-tesText-secondary">
+      <p className="mt-2 min-h-8 text-sm font-semibold leading-5 text-tesText-secondary sm:min-h-10">
         {copy}
       </p>
       <div className="mt-auto pt-3">
-        {sparkline.length > 1 ? (
-          <MetricSparkline data={sparkline} label={`Tendência de ${label}`} />
-        ) : (
-          <div aria-hidden="true" className="h-8" />
-        )}
+        <MetricSparkline
+          className="h-9"
+          data={sparkline}
+          empty={state !== "ready" || sparkline.length < 2}
+          label={`Tendência de ${label}`}
+        />
       </div>
     </TESCard>
   );
@@ -423,58 +440,54 @@ function MetricsKpiCard({
 
 function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
   const { occupancy, sessions } = data;
+  const heatmapPoints =
+    sessions.heatmap.status === "ready"
+      ? sessions.heatmap.items.map((point) => ({
+          ...point,
+          value: point.sessions,
+        }))
+      : [];
+  const highlights = agendaHighlights(heatmapPoints);
   return (
     <MetricPanel
       description="Uma leitura compacta da capacidade e da concentração das sessões no período."
       icon={Clock3}
       title="Resumo da agenda"
     >
-      <div className="grid gap-4">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-[minmax(190px,0.72fr)_minmax(0,1fr)] lg:items-start">
+        <dl className="grid gap-3">
           <AgendaStat
-            label="Ocupação atual"
+            label="Total de sessões"
+            value={formatMetricValue(
+              data.overview.counters.sessionsCompleted.value,
+              "sessions",
+            )}
+          />
+          <AgendaStat
+            label="Taxa de ocupação"
             value={
               occupancy.status === "ready" &&
               occupancy.current.percentage !== null
                 ? `${formatNumber(occupancy.current.percentage)}%`
                 : occupancy.status === "forming"
-                  ? "Histórico em formação"
+                  ? "Em formação"
                   : "Sem base"
             }
           />
-          <AgendaStat
-            label="Minutos ocupados"
-            value={
-              occupancy.status === "ready"
-                ? formatMetricValue(
-                    occupancy.current.occupiedMinutes,
-                    "minutes",
-                  )
-                : "Indisponível"
-            }
-          />
-          <AgendaStat
-            label="Cobertura"
-            value={
-              occupancy.status === "forming"
-                ? `${occupancy.coverageDays}/${occupancy.requiredCoverageDays} dias`
-                : occupancy.status === "ready"
-                  ? `${occupancy.coverageDays} dias`
-                  : "Indisponível"
-            }
-          />
-        </div>
-        {sessions.heatmap.status === "ready" ? (
+          <AgendaStat label="Melhores dias" value={highlights.bestDays} />
+          <AgendaStat label="Horários de pico" value={highlights.peakHour} />
+          <AgendaStat label="Horários ociosos" value={highlights.quietHour} />
+        </dl>
+        <div className="min-w-0">
+          <p className="mb-3 text-xs font-extrabold text-brand-primary">
+            Ocupação por dia e horário
+          </p>
           <MetricsHeatmap
-            points={sessions.heatmap.items.map((point) => ({
-              ...point,
-              value: point.sessions,
-            }))}
+            emptyMessage="A leitura por horário aparece conforme a agenda cria histórico suficiente."
+            points={heatmapPoints}
             valueLabel="sessões"
           />
-        ) : (
-          <ProtectedMetric status={sessions.heatmap.status} />
-        )}
+        </div>
       </div>
     </MetricPanel>
   );
@@ -482,20 +495,26 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
 
 function AgendaStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-card bg-surface-soft p-3">
-      <p className="text-xs font-extrabold uppercase tracking-[0.08em] text-tesText-muted">
-        {label}
-      </p>
-      <p className="mt-2 break-words text-base font-extrabold text-brand-deep sm:text-lg">
-        {value}
-      </p>
+    <div className="flex items-center gap-3">
+      <span
+        aria-hidden="true"
+        className="size-8 shrink-0 rounded-full bg-brand-lavenderSoft"
+      />
+      <div className="min-w-0">
+        <dt className="text-sm font-bold text-brand-primary">{label}</dt>
+        <dd className="mt-0.5 break-words text-sm font-extrabold text-brand-deep">
+          {value}
+        </dd>
+      </div>
     </div>
   );
 }
 
 function TherapyRankingTable({
+  empty = false,
   items,
 }: {
+  empty?: boolean;
   items: Array<{
     percentage: number;
     sessions: number;
@@ -504,79 +523,114 @@ function TherapyRankingTable({
   }>;
 }) {
   const maximum = Math.max(1, ...items.map((item) => item.sessions));
+  const visualItems =
+    empty || items.length === 0
+      ? Array.from({ length: 3 }, (_, index) => ({
+          percentage: 0,
+          sessions: 0,
+          therapyId: `reference-${index + 1}`,
+          therapyName: index === 0 ? "Aguardando sessões" : "Sem dados ainda",
+        }))
+      : items.slice(0, 6);
   return (
-    <ol aria-label="Ranking de terapias realizadas" className="grid gap-3">
-      {items.slice(0, 6).map((item, index) => (
-        <li
-          className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3"
-          key={item.therapyId}
-        >
-          <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-sm font-extrabold text-brand-primary">
-            {index + 1}
-          </span>
-          <div className="min-w-0">
-            <div className="flex items-center justify-between gap-3">
-              <span className="truncate text-sm font-extrabold text-brand-deep">
-                {item.therapyName}
-              </span>
-              <span className="shrink-0 text-sm font-extrabold text-brand-deep">
-                {formatNumber(item.sessions)}
+    <div className="grid gap-3">
+      <ol aria-label="Ranking de terapias realizadas" className="grid gap-3">
+        {visualItems.map((item, index) => (
+          <li
+            className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3"
+            key={item.therapyId}
+          >
+            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-sm font-extrabold text-brand-primary">
+              {index + 1}
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center justify-between gap-3">
+                <span className="truncate text-sm font-extrabold text-brand-deep">
+                  {item.therapyName}
+                </span>
+                <span className="shrink-0 text-sm font-extrabold text-brand-deep">
+                  {formatNumber(item.sessions)}
+                </span>
+              </div>
+              <span className="mt-2 block h-2 overflow-hidden rounded-full bg-brand-lavenderSoft">
+                <span
+                  aria-hidden="true"
+                  className={`block h-full rounded-full ${
+                    empty ? "bg-brand-lavender" : "bg-brand-primary"
+                  }`}
+                  style={{
+                    width: empty
+                      ? `${100 - index * 18}%`
+                      : `${Math.max(6, (item.sessions / maximum) * 100)}%`,
+                  }}
+                />
               </span>
             </div>
-            <span className="mt-2 block h-2 overflow-hidden rounded-full bg-brand-lavenderSoft">
-              <span
-                aria-hidden="true"
-                className="block h-full rounded-full bg-brand-primary"
-                style={{
-                  width: `${Math.max(6, (item.sessions / maximum) * 100)}%`,
-                }}
-              />
+            <span className="text-xs font-bold text-tesText-muted">
+              sessões
             </span>
-          </div>
-          <span className="text-xs font-bold text-tesText-muted">sessões</span>
-        </li>
-      ))}
-    </ol>
+          </li>
+        ))}
+      </ol>
+      {empty ? (
+        <MetricsVisualFootnote>
+          As terapias aparecem aqui quando houver sessões concluídas suficientes
+          para preservar a privacidade.
+        </MetricsVisualFootnote>
+      ) : null}
+    </div>
   );
 }
 
-function MetricsComparison({
-  items,
-}: {
-  items: Array<{
-    label: string;
-    metric: TherapistMetricCounter<"minutes" | "people" | "sessions">;
-  }>;
-}) {
+function MetricsComparison({ items }: { items: MetricsComparisonItem[] }) {
   return (
     <div
       aria-label="Comparativo de métricas"
-      className="grid gap-3"
+      className="grid gap-2"
       role="list"
     >
-      {items.map(({ label, metric }) => {
-        const delta = metric.value - metric.previousValue;
-        return (
-          <div
-            className="grid gap-2 rounded-card border border-brand-lavender/80 bg-surface-soft p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
-            key={label}
-            role="listitem"
-          >
-            <div>
-              <p className="text-sm font-extrabold text-brand-deep">{label}</p>
-              <p className="mt-1 text-sm font-semibold text-tesText-secondary">
-                Atual: {formatMetricValue(metric.value, metric.unit)} ·
-                Anterior: {formatMetricValue(metric.previousValue, metric.unit)}
-              </p>
-            </div>
-            <span className="text-sm font-extrabold text-brand-primary">
-              {delta === 0
-                ? "Estável"
-                : `${delta > 0 ? "+" : "−"}${formatMetricValue(Math.abs(delta), metric.unit)}`}
+      <div
+        aria-hidden="true"
+        className="flex items-center justify-end gap-4 text-[11px] font-bold text-tesText-muted"
+      >
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2 w-4 rounded-full bg-brand-primary" /> Período
+          atual
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-0 w-4 border-t-2 border-dashed border-brand-lavender" />{" "}
+          Período anterior
+        </span>
+      </div>
+      {items.map((item) => (
+        <div
+          className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-brand-lavender/60 py-2 last:border-b-0"
+          key={item.label}
+          role="listitem"
+        >
+          <div className="min-w-0">
+            <p className="text-sm font-extrabold text-brand-deep">
+              {item.label}
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-tesText-secondary">
+              {item.reference
+                ? item.note
+                : `Atual: ${item.currentLabel} · Anterior: ${item.previousLabel}`}
+            </p>
+          </div>
+          <div className="grid min-w-[102px] grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:min-w-[160px]">
+            <MetricSparkline
+              className="h-8"
+              data={item.sparkline}
+              empty={item.reference}
+              label={`Tendência de ${item.label}`}
+            />
+            <span className="text-xs font-extrabold text-brand-primary">
+              {item.reference ? "—" : item.deltaLabel}
             </span>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }
@@ -595,18 +649,18 @@ function MetricPanel({
   title: string;
 }) {
   return (
-    <AppPageSection className={`min-w-0 ${className}`}>
-      <div className="mb-5 flex items-start gap-3">
+    <AppPageSection className={`min-w-0 p-4 sm:p-5 ${className}`}>
+      <div className="mb-4 flex items-start gap-3">
         <Icon
           aria-hidden="true"
           className="mt-0.5 shrink-0 text-brand-primary"
           size={23}
         />
         <div>
-          <h2 className="text-xl font-extrabold text-brand-deep sm:text-2xl">
+          <h2 className="text-lg font-extrabold text-brand-deep sm:text-xl">
             {title}
           </h2>
-          <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+          <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
             {description}
           </p>
         </div>
@@ -616,49 +670,183 @@ function MetricPanel({
   );
 }
 
-function MetricsPanelState({
-  message,
-  title,
-  variant,
+function PatientContinuityCards({
+  interest,
 }: {
-  message: string;
-  title: string;
-  variant: "capability_locked" | "empty" | "processing" | "unavailable";
+  interest: TherapistInterestMetricsReady | null;
 }) {
-  const styles = {
-    capability_locked: "border-brand-lavender bg-brand-lavenderSoft",
-    empty: "border-border/80 bg-surface-soft",
-    processing: "border-brand-lavender bg-brand-lavenderSoft",
-    unavailable: "border-brand-lavender bg-surface-soft",
-  }[variant];
+  const keys = ["active", "new", "recurring", "inactive"] as const;
+  const items = keys.map((key) => ({
+    key,
+    label: segmentLabel(key),
+    value:
+      interest?.segments.status === "ready"
+        ? (interest.segments.items.find((item) => item.key === key)?.value ?? 0)
+        : 0,
+  }));
+  const hasData = interest?.segments.status === "ready";
+
   return (
-    <div className={`rounded-card border p-5 ${styles}`}>
-      <h3 className="text-base font-extrabold text-brand-deep">{title}</h3>
-      <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        {message}
-      </p>
+    <div className="grid gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {items.map((item) => (
+          <div
+            className="rounded-card border border-brand-lavender/70 bg-surface-soft/60 p-3"
+            key={item.key}
+          >
+            <span
+              aria-hidden="true"
+              className="mb-3 block size-7 rounded-full bg-brand-lavenderSoft"
+            />
+            <p className="text-xs font-bold text-tesText-secondary">
+              {item.label}
+            </p>
+            <p className="mt-1 text-xl font-extrabold text-brand-deep">
+              {formatNumber(item.value)}
+            </p>
+          </div>
+        ))}
+      </div>
+      {!hasData ? (
+        <MetricsVisualFootnote>
+          Os cartões serão preenchidos quando houver dados de continuidade
+          suficientes para esta leitura.
+        </MetricsVisualFootnote>
+      ) : null}
     </div>
   );
 }
 
-function ProtectedMetric({
-  status,
-}: {
-  status: "empty" | "insufficient_sample" | "ready";
-}) {
-  return status === "empty" ? (
-    <MetricsPanelState
-      message="Ainda não há dados neste período."
-      title="Nenhum registro no período"
-      variant="empty"
-    />
-  ) : (
-    <MetricsPanelState
-      message="Este bloco será exibido quando houver pelo menos dez registros no período."
-      title="Ainda não há dados suficientes"
-      variant="unavailable"
-    />
+function MetricsVisualFootnote({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mt-3 rounded-card bg-surface-soft px-3 py-2 text-sm font-semibold leading-5 text-tesText-secondary">
+      {children}
+    </p>
   );
+}
+
+type MetricsComparisonItem = {
+  currentLabel: string;
+  deltaLabel: string;
+  label: string;
+  note?: string;
+  previousLabel: string;
+  reference: boolean;
+  sparkline: Array<{ label: string; value: number }>;
+};
+
+function comparisonCounter<
+  TUnit extends "events" | "minutes" | "people" | "sessions",
+>(label: string, metric: TherapistMetricCounter<TUnit>): MetricsComparisonItem {
+  const delta = metric.value - metric.previousValue;
+  return {
+    currentLabel: formatMetricValue(metric.value, metric.unit),
+    deltaLabel:
+      delta === 0
+        ? "Estável"
+        : `${delta > 0 ? "+" : "−"}${formatMetricValue(Math.abs(delta), metric.unit)}`,
+    label,
+    previousLabel: formatMetricValue(metric.previousValue, metric.unit),
+    reference: false,
+    sparkline: [
+      { label: "Anterior", value: metric.previousValue },
+      { label: "Atual", value: metric.value },
+    ],
+  };
+}
+
+function comparisonReference(
+  label: string,
+  metric: TherapistMetricCounter<"events"> | null,
+  note: string,
+): MetricsComparisonItem {
+  return metric
+    ? comparisonCounter(label, metric)
+    : emptyComparison(label, note);
+}
+
+function comparisonSampled(
+  label: string,
+  currentValue: number,
+  previousValue: number | null,
+  suffix = "%",
+): MetricsComparisonItem {
+  const previous = previousValue ?? 0;
+  const delta = currentValue - previous;
+  return {
+    currentLabel: `${formatNumber(currentValue)}${suffix}`,
+    deltaLabel:
+      previousValue === null
+        ? "Novo"
+        : delta === 0
+          ? "Estável"
+          : `${delta > 0 ? "+" : "−"}${formatNumber(Math.abs(delta))}${suffix}`,
+    label,
+    previousLabel:
+      previousValue === null
+        ? "Sem comparação"
+        : `${formatNumber(previous)}${suffix}`,
+    reference: false,
+    sparkline: [
+      { label: "Anterior", value: previous },
+      { label: "Atual", value: currentValue },
+    ],
+  };
+}
+
+function emptyComparison(label: string, note: string): MetricsComparisonItem {
+  return {
+    currentLabel: "—",
+    deltaLabel: "—",
+    label,
+    note,
+    previousLabel: "—",
+    reference: true,
+    sparkline: [],
+  };
+}
+
+function agendaHighlights(
+  points: Array<{ dayOfWeek: number; hourBucketStart: number; value: number }>,
+) {
+  if (points.length === 0) {
+    return {
+      bestDays: "Sem leitura",
+      peakHour: "Sem leitura",
+      quietHour: "Sem leitura",
+    };
+  }
+
+  const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const totalsByDay = new Map<number, number>();
+  const totalsByHour = new Map<number, number>();
+  for (const point of points) {
+    totalsByDay.set(
+      point.dayOfWeek,
+      (totalsByDay.get(point.dayOfWeek) ?? 0) + point.value,
+    );
+    totalsByHour.set(
+      point.hourBucketStart,
+      (totalsByHour.get(point.hourBucketStart) ?? 0) + point.value,
+    );
+  }
+  const bestDays = [...totalsByDay.entries()]
+    .sort(([, left], [, right]) => right - left)
+    .slice(0, 2)
+    .map(([day]) => dayNames[day])
+    .join(", ");
+  const hours = [...totalsByHour.entries()].sort(
+    ([, left], [, right]) => right - left,
+  );
+  const peak = hours[0]?.[0];
+  const quiet = hours.at(-1)?.[0];
+
+  return {
+    bestDays: bestDays || "Sem leitura",
+    peakHour: peak === undefined ? "Sem leitura" : `${peak}h – ${peak + 2}h`,
+    quietHour:
+      quiet === undefined ? "Sem leitura" : `${quiet}h – ${quiet + 2}h`,
+  };
 }
 
 function discoveryKpi(
@@ -669,7 +857,7 @@ function discoveryKpi(
     return {
       copy: "Coleta pública indisponível nesta versão",
       state: "unavailable" as const,
-      value: "Indisponível",
+      value: "—",
     };
   }
   if (metric.status === "empty") {

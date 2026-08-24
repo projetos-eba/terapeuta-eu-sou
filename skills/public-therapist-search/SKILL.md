@@ -37,6 +37,17 @@ Antes de alterar `/terapeutas`, consultar:
 - Seeds/mocks: manter 5 terapeutas em `supabase/seed.sql`, com `ana-oliveira` como perfil principal mais rico.
 - Fotos públicas de terapeutas devem usar os assets versionados em `public/therapists/`, mantendo URLs rastreáveis nos seeds, fallbacks e views: `ana-oliveira.png`, `rafael-santos-avatar.png`, `celia-martins.png`, `juliana-costa.png`, `lucas-pereira-avatar.png`, `andre-lima.png` e `marcio-andrade.png`.
 - Toda alteração em view/schema/policy exige migration versionada. Todo mock/seed deve ser idempotente.
+- `next_slot_at` é derivado pelo mesmo RPC autoritativo usado pela agenda pública:
+  `get_service_available_slots_v1`. A view não pode estimar o próximo horário
+  apenas pela regra semanal, porque isso ignora antecedência, buffers,
+  exceções, reservas e holds ativos.
+- `schedule_timezone` acompanha a projeção pública e deve ser usado para
+  classificar e formatar “Hoje”, “Amanhã” e dias da semana; instantes continuam
+  persistidos como UTC.
+- A consulta que alimenta os cards usa `no-store`, porque bookings e holds
+  podem mudar o próximo horário sem uma publicação editorial do perfil. Não
+  reintroduzir cache de 15 minutos nessa projeção sem um mecanismo equivalente
+  de invalidação de disponibilidade.
 
 Regra de apresentação dos cards:
 
@@ -97,8 +108,11 @@ Não substituir esses padrões por cards editoriais grandes, hero alternativo, c
 
 - Persistir favoritos apenas para usuário autenticado.
 - Conectar reserva real ao serviço/horário escolhido.
-- Evoluir disponibilidade para exceções, conflitos, reservas já ocupadas e slots reais.
-- Validar migration/seeds em Supabase local quando Docker estiver disponível.
+- Validar continuamente a equivalência entre `public_therapist_search.next_slot_at`
+  e o primeiro slot de `get_service_available_slots_v1` quando o contrato de
+  agenda for alterado.
+- A disponibilidade pública já considera exceções, conflitos, reservas,
+  holds, buffers, antecedência, duração e timezone por meio do motor A5.
 
 ## Assets da plataforma
 

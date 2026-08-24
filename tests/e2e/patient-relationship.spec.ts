@@ -98,12 +98,17 @@ test.describe("patient relationship flows", () => {
 
     await page.goto("/app");
     await page
-      .getByRole("link", { name: /Notificações, \d+ não lida/ })
+      .getByRole("button", { name: /Notificações, \d+ não lidas?/ })
       .click();
-    await expect(page).toHaveURL(/\/app\/mensagens\?context=notificacoes/);
+    await expect(
+      page.getByRole("region", { name: "Notificações recentes" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Abrir Central de mensagens" }),
+    ).toHaveAttribute("href", "/app/mensagens?context=notificacoes");
 
     const markReadButton = page.getByRole("button", {
-      name: "Marcar avisos como lidos",
+      name: "Marcar lidas",
     });
     await expect(markReadButton).toBeVisible();
     await expect(markReadButton).toBeEnabled();

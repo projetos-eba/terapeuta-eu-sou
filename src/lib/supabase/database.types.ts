@@ -1906,6 +1906,93 @@ export type Database = {
           },
         ];
       };
+      booking_reminder_jobs: {
+        Row: {
+          action_key: string;
+          attempts: number;
+          booking_id: string;
+          booking_version: number;
+          created_at: string;
+          id: string;
+          last_error: string | null;
+          lease_expires_at: string | null;
+          lease_owner: string | null;
+          outbox_id: string | null;
+          recipient_user_id: string;
+          scheduled_for: string;
+          status: Database["public"]["Enums"]["booking_reminder_job_status"];
+          updated_at: string;
+        };
+        Insert: {
+          action_key: string;
+          attempts?: number;
+          booking_id: string;
+          booking_version: number;
+          created_at?: string;
+          id?: string;
+          last_error?: string | null;
+          lease_expires_at?: string | null;
+          lease_owner?: string | null;
+          outbox_id?: string | null;
+          recipient_user_id: string;
+          scheduled_for: string;
+          status?: Database["public"]["Enums"]["booking_reminder_job_status"];
+          updated_at?: string;
+        };
+        Update: {
+          action_key?: string;
+          attempts?: number;
+          booking_id?: string;
+          booking_version?: number;
+          created_at?: string;
+          id?: string;
+          last_error?: string | null;
+          lease_expires_at?: string | null;
+          lease_owner?: string | null;
+          outbox_id?: string | null;
+          recipient_user_id?: string;
+          scheduled_for?: string;
+          status?: Database["public"]["Enums"]["booking_reminder_job_status"];
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "booking_reminder_jobs_action_key_fkey";
+            columns: ["action_key"];
+            isOneToOne: false;
+            referencedRelation: "email_action_definitions";
+            referencedColumns: ["action_key"];
+          },
+          {
+            foreignKeyName: "booking_reminder_jobs_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "booking_reminder_jobs_booking_id_fkey";
+            columns: ["booking_id"];
+            isOneToOne: false;
+            referencedRelation: "therapist_session_read_model_v1";
+            referencedColumns: ["bookingId"];
+          },
+          {
+            foreignKeyName: "booking_reminder_jobs_outbox_id_fkey";
+            columns: ["outbox_id"];
+            isOneToOne: false;
+            referencedRelation: "email_outbox";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "booking_reminder_jobs_recipient_user_id_fkey";
+            columns: ["recipient_user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       booking_reschedule_requests: {
         Row: {
           applied_at: string | null;
@@ -11583,6 +11670,7 @@ export type Database = {
           public_name: string | null;
           review_count: number | null;
           review_quote: string | null;
+          schedule_timezone: string | null;
           search_text: string | null;
           service_description: string | null;
           service_id: string | null;
@@ -11617,6 +11705,7 @@ export type Database = {
           public_name: string | null;
           review_count: number | null;
           review_quote: string | null;
+          schedule_timezone: string | null;
           search_text: string | null;
           service_description: string | null;
           service_id: string | null;
@@ -12632,6 +12721,10 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      cancel_booking_reminder_jobs_v1: {
+        Args: { p_booking_id: string; p_reason?: string };
+        Returns: number;
       };
       cancel_therapist_block_v1: {
         Args: {
@@ -13921,6 +14014,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      run_booking_reminder_scheduler_v1: {
+        Args: { p_limit?: number; p_now?: string };
+        Returns: Json;
+      };
       save_therapist_private_identity_v1: {
         Args: {
           p_city: string;
@@ -13964,6 +14061,10 @@ export type Database = {
           p_timezone: string;
         };
         Returns: Json;
+      };
+      schedule_booking_reminder_jobs_v1: {
+        Args: { p_booking_id: string; p_now?: string };
+        Returns: number;
       };
       send_structured_participant_message_v1: {
         Args: { p_conversation_id: string; p_template_key: string };
@@ -14384,6 +14485,14 @@ export type Database = {
         | "unpaid"
         | "paused";
       booking_hold_status: "active" | "cancelled" | "consumed" | "expired";
+      booking_reminder_job_status:
+        | "scheduled"
+        | "processing"
+        | "enqueued"
+        | "cancelled"
+        | "missed"
+        | "skipped"
+        | "failed";
       booking_status:
         | "draft"
         | "pending_payment"
@@ -14693,6 +14802,15 @@ export const Constants = {
         "paused",
       ],
       booking_hold_status: ["active", "cancelled", "consumed", "expired"],
+      booking_reminder_job_status: [
+        "scheduled",
+        "processing",
+        "enqueued",
+        "cancelled",
+        "missed",
+        "skipped",
+        "failed",
+      ],
       booking_status: [
         "draft",
         "pending_payment",

@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { MessageCircle } from "lucide-react";
 
-import { TESDialog } from "@/components/tes/tes-dialog";
+import { TESButton, TESDialog } from "@/components/tes";
 
 import type {
   MessageCenterActorRole,
@@ -14,22 +13,35 @@ import type {
 export function MessageThreadDialogButton({
   actorRole,
   thread,
+  trigger = "action",
 }: {
   actorRole: MessageCenterActorRole;
   thread: MessageCenterThread;
+  trigger?: "action" | "title";
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const isTitleTrigger = trigger === "title";
 
   return (
     <>
-      <button
-        className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-brand-lavender px-3 text-xs font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+      <TESButton
+        aria-label={isTitleTrigger ? `Abrir ${thread.title}` : undefined}
+        className={
+          isTitleTrigger
+            ? "h-auto min-h-0 max-w-full justify-start rounded-md px-0 py-0 text-left text-sm font-extrabold text-brand-deep hover:bg-transparent hover:text-brand-primary hover:underline"
+            : "w-fit"
+        }
         onClick={() => setIsOpen(true)}
+        size="sm"
+        title={isTitleTrigger ? thread.title : undefined}
         type="button"
+        variant={isTitleTrigger ? "ghost" : "secondary"}
       >
-        <MessageCircle aria-hidden="true" size={15} />
-        Ver mensagens
-      </button>
+        {isTitleTrigger ? null : (
+          <MessageCircle aria-hidden="true" size={15} />
+        )}
+        {isTitleTrigger ? thread.title : "Ver mensagens"}
+      </TESButton>
       {isOpen ? (
         <TESDialog
           description="Aqui ficam as mensagens aprovadas que você e a outra pessoa receberam nesta conversa."
@@ -69,13 +81,14 @@ export function MessageThreadDialogButton({
               </p>
             )}
             {thread.cta ? (
-              <Link
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-primary px-5 text-sm font-extrabold text-white"
+              <TESButton
                 href={thread.cta.href}
                 onClick={() => setIsOpen(false)}
+                size="md"
+                variant="primary"
               >
                 {actorRole === "patient" ? "Abrir encontro" : "Abrir sessão"}
-              </Link>
+              </TESButton>
             ) : null}
           </div>
         </TESDialog>

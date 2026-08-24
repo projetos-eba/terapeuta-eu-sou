@@ -55,7 +55,10 @@ describe("getPatientEncounterActionPolicy", () => {
     });
 
     expect(result.cancellation.allowed).toBe(true);
-    expect(result.cancellation.impactLabel).toContain("50%");
+    expect(result.cancellation.impactLabel).toContain(
+      "não gera obrigação de reembolso",
+    );
+    expect(result.cancellation.impactLabel).not.toContain("50%");
   });
 
   it("surfaces manual refund review after a cancellation decision", () => {

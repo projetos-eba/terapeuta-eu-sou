@@ -26,7 +26,7 @@ export default async function ClientLoginPage({
   const params = await searchParams;
 
   return (
-    <ClientAuthShell>
+    <ClientAuthShell alwaysFallback>
       <div className="pointer-events-none flex min-h-full w-full items-center">
         <div className="pointer-events-auto w-full">
           <ClientLoginForm

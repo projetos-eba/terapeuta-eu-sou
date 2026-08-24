@@ -22,7 +22,7 @@ describe("TherapistFinancePage", () => {
     expect(
       screen.getByRole("heading", {
         level: 1,
-        name: "Acompanhe seus recebimentos",
+        name: "Financeiro completo",
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Resumo" })).toHaveAttribute(
@@ -44,9 +44,13 @@ describe("TherapistFinancePage", () => {
   it("shows the approved value composition without adjustments", () => {
     renderPage();
 
-    expect(screen.getByText("Valor bruto das sessões")).toBeInTheDocument();
-    expect(screen.getByText("Comissão TES")).toBeInTheDocument();
-    expect(screen.getByText("Valor líquido do terapeuta")).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Valor bruto").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Comissão TES").length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText("Valor líquido").length,
+    ).toBeGreaterThan(0);
     expect(
       screen.queryByText(new RegExp(["ajus", "tes"].join(""), "i")),
     ).not.toBeInTheDocument();
@@ -56,16 +60,17 @@ describe("TherapistFinancePage", () => {
     renderPage();
 
     expect(
-      screen.getByRole("heading", { name: "Valor médio por sessão" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Taxa de retorno")).toBeInTheDocument();
-    expect(screen.getByText("Terapias que mais faturam")).toBeInTheDocument();
-    expect(screen.getByText("Evolução financeira")).toBeInTheDocument();
+      screen.getAllByRole("heading", { name: "Ticket médio" }).length,
+    ).toBeGreaterThan(0);
     expect(
-      screen.getByRole("heading", {
-        name: "Visão financeira do Premium Plus",
-      }),
-    ).toBeInTheDocument();
+      screen.getAllByText("Terapias que mais faturam").length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Evolução financeira").length).toBeGreaterThan(
+      0,
+    );
+    expect(
+      screen.getAllByRole("link", { name: "Conhecer Premium Plus" }).length,
+    ).toBeGreaterThan(0);
     expect(
       screen.queryByRole("heading", { name: "Evolução com projeção" }),
     ).not.toBeInTheDocument();
@@ -94,18 +99,18 @@ describe("TherapistFinancePage", () => {
     });
 
     expect(
-      screen.getByRole("heading", { name: "Previsão do mês" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText("Realizado líquido")).toBeInTheDocument();
+      screen.getAllByRole("heading", { name: "Previsão do mês" }).length,
+    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Realizado líquido").length).toBeGreaterThan(0);
     expect(
       screen.getAllByText("Receita contratada futura").length,
     ).toBeGreaterThan(0);
     expect(
-      screen.getByText("Potencial estimado da agenda"),
-    ).toBeInTheDocument();
+      screen.getAllByText("Potencial estimado da agenda").length,
+    ).toBeGreaterThan(0);
     expect(
-      screen.getByText(/não representa receita garantida/i),
-    ).toBeInTheDocument();
+      screen.getAllByText(/não representa receita garantida/i).length,
+    ).toBeGreaterThan(0);
     expect(
       screen.queryByRole("heading", { name: "Benchmark anonimizado" }),
     ).not.toBeInTheDocument();
@@ -113,8 +118,8 @@ describe("TherapistFinancePage", () => {
       screen.queryByText(/Benchmark suprimido por privacidade estatística/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Dica TES" }),
-    ).toBeInTheDocument();
+      screen.getAllByRole("heading", { name: "Dica TES" }).length,
+    ).toBeGreaterThan(0);
   });
 
   it("keeps advanced summary metrics locked for Free therapists", () => {
@@ -131,15 +136,14 @@ describe("TherapistFinancePage", () => {
     });
 
     expect(
-      screen.getByRole("heading", {
-        name: "Acompanhamento financeiro Premium",
-      }),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Ver planos" })).toHaveAttribute(
-      "href",
-      "/terapeuta/plano",
-    );
-    expect(screen.getByText("Total líquido no período")).toBeInTheDocument();
+      screen.getAllByText("Disponível no Premium").length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen
+        .getAllByRole("link", { name: "Conhecer Premium Plus" })
+        .every((link) => link.getAttribute("href") === "/terapeuta/plano"),
+    ).toBe(true);
+    expect(screen.getAllByText("Seu dinheiro").length).toBeGreaterThan(0);
   });
 
   it("keeps payment method and payment origin separated in receipts", () => {
@@ -148,6 +152,8 @@ describe("TherapistFinancePage", () => {
     expect(screen.getAllByText("Cartão").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Pagamento online").length).toBeGreaterThan(0);
     expect(screen.getByText("Reembolsos")).toBeInTheDocument();
+    expect(screen.getByText("Recebimentos por semana")).toBeInTheDocument();
+    expect(screen.getByText("Distribuição por status")).toBeInTheDocument();
   });
 
   it("does not render a local bank-data form for Connect", () => {
@@ -190,7 +196,7 @@ describe("TherapistFinancePage", () => {
       },
     });
 
-    expect(screen.getByText("31/07/2026, 10:00")).toBeInTheDocument();
+    expect(screen.getAllByText("31/07/2026, 10:00").length).toBeGreaterThan(0);
     expect(
       screen.getByText("Próximo repasse previsto para 31/07/2026, 10:00."),
     ).toBeInTheDocument();

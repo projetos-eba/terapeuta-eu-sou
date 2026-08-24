@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Heart } from "lucide-react";
 
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
@@ -10,7 +11,7 @@ export function SharedIntakeCard({
   const visibilityCopy = getVisibilityCopy(intake.visibility);
 
   return (
-    <section className="rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
+    <section className="relative overflow-hidden rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
       <div className="flex items-center gap-3">
         <span className="grid size-11 place-items-center rounded-full bg-status-dangerBg text-status-danger">
           <Heart aria-hidden="true" size={20} />
@@ -20,7 +21,7 @@ export function SharedIntakeCard({
         </h2>
       </div>
 
-      <div className="mt-6 rounded-[24px] bg-surface-soft p-5 sm:p-6">
+      <div className="relative z-10 mt-6 max-w-[min(100%,42rem)] rounded-[24px] bg-surface-soft p-5 sm:p-6">
         <p className="text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
           {visibilityCopy.intro}
         </p>
@@ -31,6 +32,14 @@ export function SharedIntakeCard({
           {visibilityCopy.footnote}
         </p>
       </div>
+      <Image
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-12 -right-16 hidden w-60 opacity-70 sm:block"
+        height={1254}
+        src="/patient/encounters/lotus-detail.png"
+        width={1254}
+      />
     </section>
   );
 }

@@ -78,10 +78,36 @@ describe("OnlineSessionCard", () => {
       />,
     );
 
-    expect(screen.getByRole("link", { name: /avaliar encontro/i })).toHaveAttribute(
+    expect(
+      screen.getByRole("link", { name: /avaliar encontro/i }),
+    ).toHaveAttribute(
       "href",
       "/app/encontros/f2000000-0000-4000-8000-000000000001/video?feedback=1",
     );
+  });
+
+  it("highlights a confirmed encounter without repeating utility actions", () => {
+    render(
+      <SessionOverviewCard
+        data={makeData({
+          financialStatus: SessionFinancialStatus.Paid,
+          canJoin: false,
+        })}
+      />,
+    );
+
+    expect(screen.getAllByText("Confirmada")).toHaveLength(2);
+    expect(
+      screen
+        .getAllByText("Confirmada")
+        .every((element) => element.classList.contains("text-status-success")),
+    ).toBe(true);
+    expect(
+      screen.queryByRole("link", { name: /testar dispositivos/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: /falar com suporte/i }),
+    ).toBeNull();
   });
 });
 
