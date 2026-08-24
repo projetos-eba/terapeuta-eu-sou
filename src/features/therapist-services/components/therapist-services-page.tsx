@@ -11,7 +11,13 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { TESButton, TESCard, TESDialog, TESInput } from "@/components/tes";
+import {
+  TESButton,
+  TESCard,
+  TESDialog,
+  TESFeedbackDialog,
+  TESInput,
+} from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 import {
@@ -553,9 +559,7 @@ function ConfirmServiceActionDialog({
         Estado atual: {getTherapistServiceStatusLabel(service.status)}
       </p>
       {error ? (
-        <p className="mt-4 rounded-lg bg-status-dangerBg p-3 text-sm font-bold text-status-danger">
-          {error}
-        </p>
+        <TESFeedbackDialog message={error} onClose={() => setError(null)} />
       ) : null}
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
         <TESButton

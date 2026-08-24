@@ -418,7 +418,7 @@ describe("TherapistProfileEditorPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("explains missing required fields before the first profile publication", () => {
+  it("explains missing required fields before the first profile publication", async () => {
     render(
       <TherapistProfileEditorPage editor={makeFirstConfigurationEditor()} />,
     );
@@ -436,7 +436,10 @@ describe("TherapistProfileEditorPage", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Preencha sua essência antes de publicar.",
     );
-    expect(screen.getByLabelText("Minha essência")).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Entendi" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Minha essência")).toHaveFocus(),
+    );
     expect(commandMocks.sendTherapistProfileCommand).not.toHaveBeenCalled();
   });
 
@@ -753,7 +756,7 @@ describe("TherapistProfileEditorPage", () => {
     );
   });
 
-  it("focuses the first invalid field and does not call the backend", () => {
+  it("focuses the first invalid field after the feedback dialog closes", async () => {
     render(<TherapistProfileEditorPage editor={makeEditor()} />);
 
     fireEvent.change(screen.getByLabelText("Nome do perfil"), {
@@ -766,7 +769,10 @@ describe("TherapistProfileEditorPage", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Informe o nome do perfil antes de salvar.",
     );
-    expect(screen.getByLabelText("Nome do perfil")).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Entendi" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Nome do perfil")).toHaveFocus(),
+    );
     expect(commandMocks.sendTherapistProfileCommand).not.toHaveBeenCalled();
   });
 

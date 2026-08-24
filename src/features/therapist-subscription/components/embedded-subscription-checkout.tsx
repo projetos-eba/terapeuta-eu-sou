@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { CreditCard, Loader2, ShieldCheck } from "lucide-react";
 
+import { TESFeedbackDialog } from "@/components/tes";
+
 declare global {
   interface Window {
     Stripe?: (publishableKey: string) => {
@@ -44,9 +46,16 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
   const [checkoutReady, setCheckoutReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fallbackError, setFallbackError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [isOpeningHostedCheckout, setIsOpeningHostedCheckout] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [resetKey, setResetKey] = useState(0);
+
+  const feedbackMessage = fallbackError ?? error;
+
+  useEffect(() => {
+    if (feedbackMessage) setFeedback(feedbackMessage);
+  }, [feedbackMessage]);
 
   useEffect(() => {
     let cancelled = false;
@@ -232,12 +241,6 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
 
       {error ? (
         <div className="space-y-3 rounded-[18px] border border-status-danger/20 bg-status-danger/10 p-4">
-          <p
-            role="alert"
-            className="text-sm font-bold leading-6 text-status-danger"
-          >
-            {error}
-          </p>
           <div className="grid gap-3 sm:grid-cols-2">
             <button
               type="button"
@@ -264,11 +267,18 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
             </button>
           </div>
           {fallbackError ? (
-            <p className="text-xs font-bold text-status-danger">
-              {fallbackError}
+            <p className="text-sm font-bold leading-6 text-status-danger">
+              A etapa alternativa não pôde ser aberta. Tente novamente.
             </p>
           ) : null}
         </div>
+      ) : null}
+
+      {feedback ? (
+        <TESFeedbackDialog
+          message={feedback}
+          onClose={() => setFeedback(null)}
+        />
       ) : null}
 
       <div

@@ -6,6 +6,9 @@ import { getTherapistProfileEditorPage } from "@/features/therapist-profile-edit
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function TherapistProfileEditPage() {
   const session = await requireTherapistSession(therapistRoutePolicies.profile);
   const result = await getTherapistProfileEditorPage({

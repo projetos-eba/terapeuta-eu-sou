@@ -97,7 +97,7 @@ describe("TherapistReviewsPage", () => {
     expect(screen.getByText("Sua resposta")).toBeInTheDocument();
   });
 
-  it("keeps validation errors attached to the reply field", () => {
+  it("shows validation feedback centrally and keeps the reply field available", () => {
     render(<TherapistReviewsPage initialData={pageFixture()} />);
 
     fireEvent.click(screen.getAllByRole("button", { name: "Responder" })[0]);
@@ -106,9 +106,10 @@ describe("TherapistReviewsPage", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /Publicar resposta/i }));
 
-    expect(
-      screen.getByText("Escreva uma resposta entre 3 e 600 caracteres."),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Escreva uma resposta entre 3 e 600 caracteres.",
+    );
+    expect(screen.getByLabelText("Resposta")).toBeInTheDocument();
     expect(mockedCommand).not.toHaveBeenCalled();
   });
 });

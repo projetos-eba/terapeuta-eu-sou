@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  createSaveMediaDraftCommand,
   uploadTherapistPrivateDocument,
   uploadTherapistProfileMedia,
 } from "./therapist-profile-editor.commands";
@@ -8,6 +9,24 @@ import {
 describe("therapist profile media commands", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("creates an idempotent photo draft command without profile fields", () => {
+    const command = createSaveMediaDraftCommand({
+      expectedVersion: 7,
+      mediaUrl:
+        "https://example.supabase.co/storage/v1/object/public/therapist-public-media/user/profile/photo.webp",
+    });
+
+    expect(command).toMatchObject({
+      action: "save_media_draft",
+      expectedVersion: 7,
+      kind: "photo",
+      mediaUrl: expect.stringContaining("therapist-public-media"),
+    });
+    expect(command.requestId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+    );
   });
 
   it("maps a successful public media upload", async () => {

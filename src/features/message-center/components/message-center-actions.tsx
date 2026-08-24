@@ -10,7 +10,7 @@ import {
   MessageSquarePlus,
 } from "lucide-react";
 
-import { TESButton, TESDialog } from "@/components/tes";
+import { TESButton, TESDialog, TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 import type {
@@ -60,7 +60,6 @@ export function MessageCenterActions(props: MessageCenterActionsProps) {
     </>
   );
 }
-
 function TemplateDialog({
   onClose,
   ...props
@@ -290,7 +289,9 @@ function TemplateDialog({
               value={supportDescription}
             />
           </label>
-          {error ? <ErrorMessage message={error} /> : null}
+          {error ? (
+            <TESFeedbackDialog message={error} onClose={() => setError(null)} />
+          ) : null}
           <Actions
             disabled={
               !templateKey ||
@@ -336,7 +337,9 @@ function TemplateDialog({
               </p>
             </div>
           ) : null}
-          {error ? <ErrorMessage message={error} /> : null}
+          {error ? (
+            <TESFeedbackDialog message={error} onClose={() => setError(null)} />
+          ) : null}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <TESButton
               onClick={() => setStep("choose")}
@@ -427,7 +430,9 @@ function TemplateDialog({
               </select>
             </label>
           ))}
-          {error ? <ErrorMessage message={error} /> : null}
+          {error ? (
+            <TESFeedbackDialog message={error} onClose={() => setError(null)} />
+          ) : null}
           <Actions
             disabled={
               !canReview ||
@@ -554,13 +559,5 @@ function Actions({
         {submitLabel}
       </TESButton>
     </div>
-  );
-}
-
-function ErrorMessage({ message }: { message: string }) {
-  return (
-    <p className="rounded-lg bg-status-dangerBg px-4 py-3 text-sm font-bold text-status-danger">
-      {message}
-    </p>
   );
 }

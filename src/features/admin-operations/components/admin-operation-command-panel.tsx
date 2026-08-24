@@ -9,6 +9,8 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
+import { TESFeedbackDialog } from "@/components/tes";
+
 import type {
   AdminOperationDetailPageData,
   AdminOperationModuleKey,
@@ -138,13 +140,7 @@ export function AdminOperationCommandPanel({
       </label>
 
       {error ? (
-        <p className="flex items-start gap-2 rounded-md border border-status-danger/20 bg-status-dangerBg p-3 text-sm font-bold leading-6 text-status-danger">
-          <AlertTriangle
-            aria-hidden="true"
-            className="mt-0.5 size-4 shrink-0"
-          />
-          {error}
-        </p>
+        <TESFeedbackDialog message={error} onClose={() => setError(null)} />
       ) : null}
 
       {success ? (

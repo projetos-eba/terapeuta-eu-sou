@@ -47,6 +47,9 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
   Os documentos privados são resumidos apenas como estado e encaminham para
   `/terapeuta/configuracoes`, que é a área canônica de envio; não duplicar
   upload, URLs ou dados privados no dashboard.
+- Cada etapa do checklist é uma única área de link acessível, com foco visível,
+  navegação por teclado e área de toque mínima de 44px. O comportamento é o
+  mesmo em mobile, tablet e desktop; não há link aninhado apenas no ícone.
 - Read model: RPC `public.get_therapist_dashboard_v1()`.
 - Recomendações: `public.aura_recommendations`, consultadas separadamente.
 - Assets locais: `public/therapist/dashboard/`.
@@ -114,6 +117,10 @@ Não distribuir queries pelos componentes. A entrada única da página é
 - Confirmar que todos os links do menu evitam 404.
 - Confirmar RLS entre Ana, Rafael e paciente.
 - Confirmar idempotência do seed.
+
+No onboarding, clicar no texto, descrição, estado ou ícone de cada etapa deve
+levar ao mesmo destino; validar também Tab/Enter e foco visível em 1440px,
+1024px e 390px.
 
 ## Pendências conhecidas
 

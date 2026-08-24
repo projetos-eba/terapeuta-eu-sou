@@ -37,6 +37,13 @@ export type TherapistProfileCommandBody =
       requestId?: string;
     }
   | {
+      action?: "save_media_draft";
+      expectedVersion?: number;
+      kind?: "photo";
+      mediaUrl?: string;
+      requestId?: string;
+    }
+  | {
       action?: "discard_draft" | "publish" | "unpublish";
       expectedVersion?: number;
       requestId?: string;
@@ -93,6 +100,13 @@ export type ValidTherapistProfileCommand =
       requestId: string;
     }
   | {
+      action: "save_media_draft";
+      expectedVersion: number;
+      kind: "photo";
+      mediaUrl: string;
+      requestId: string;
+    }
+  | {
       action: "discard_draft" | "publish" | "unpublish";
       expectedVersion: number;
       requestId: string;
@@ -122,6 +136,34 @@ export function validateTherapistProfileCommand(
       action: "save_draft",
       expectedVersion: body.expectedVersion,
       payload: validatePayload(body.payload),
+      requestId: body.requestId,
+    };
+  }
+
+  if (body.action === "save_media_draft") {
+    if (
+      !isUuid(body.requestId) ||
+      !isInteger(body.expectedVersion, 1, 999999999) ||
+      body.kind !== "photo"
+    ) {
+      invalid("request");
+    }
+
+    const mediaUrl = boundedString(body.mediaUrl, 1, 500, "photo_url");
+    if (
+      !isPublicProfileMediaUrl(mediaUrl) ||
+      !mediaUrl.includes(
+        "/storage/v1/object/public/therapist-public-media/",
+      )
+    ) {
+      invalid("photo_url");
+    }
+
+    return {
+      action: "save_media_draft",
+      expectedVersion: body.expectedVersion,
+      kind: "photo",
+      mediaUrl,
       requestId: body.requestId,
     };
   }
@@ -389,6 +431,15 @@ function videoProvider(value: unknown) {
 function isHttpsUrl(value: string) {
   try {
     return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isPublicProfileMediaUrl(value: string) {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
   } catch {
     return false;
   }

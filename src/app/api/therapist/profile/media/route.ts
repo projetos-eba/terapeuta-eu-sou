@@ -84,6 +84,20 @@ export async function POST(request: Request) {
 
   const publicUrl = `${config.url}/storage/v1/object/public/${bucket}/${objectPath}`;
 
+  if (kind === "photo") {
+    const draftSaved = await savePhotoDraft({
+      accessToken,
+      config,
+      expectedVersion: editor.version,
+      publicUrl,
+    });
+
+    if (!draftSaved) {
+      await deleteUploadedObject({ accessToken, config, objectPath });
+      return failure("Não foi possível salvar o rascunho da foto agora.", 502);
+    }
+  }
+
   return NextResponse.json(
     {
       data: {
@@ -96,6 +110,69 @@ export async function POST(request: Request) {
     },
     { headers: noStoreHeaders },
   );
+}
+
+async function savePhotoDraft({
+  accessToken,
+  config,
+  expectedVersion,
+  publicUrl,
+}: {
+  accessToken: string;
+  config: { apiKey: string; url: string };
+  expectedVersion: number;
+  publicUrl: string;
+}) {
+  try {
+    const response = await fetch(
+      `${config.url}/functions/v1/therapist-profile-command`,
+      {
+        body: JSON.stringify({
+          action: "save_media_draft",
+          expectedVersion,
+          kind: "photo",
+          mediaUrl: publicUrl,
+          requestId: crypto.randomUUID(),
+        }),
+        cache: "no-store",
+        headers: {
+          apikey: config.apiKey,
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      },
+    );
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function deleteUploadedObject({
+  accessToken,
+  config,
+  objectPath,
+}: {
+  accessToken: string;
+  config: { apiKey: string; url: string };
+  objectPath: string;
+}) {
+  try {
+    await fetch(
+      `${config.url}/storage/v1/object/${bucket}/${objectPath}`,
+      {
+        cache: "no-store",
+        headers: {
+          apikey: config.apiKey,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        method: "DELETE",
+      },
+    );
+  } catch {
+    // A cleanup failure must not replace the actionable upload error.
+  }
 }
 
 async function readAuthenticatedUserId(

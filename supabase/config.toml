@@ -17,7 +17,7 @@ major_version = 15
 
 [db.seed]
 enabled = true
-sql_paths = ["./seeds/catalog.sql", "./seeds/local-test-data.sql", "./seeds/local-e2e-fixtures.sql"]
+sql_paths = ["./seeds/catalog.sql", "./seeds/local-test-data.sql", "./seeds/local-e2e-fixtures.sql", "./seeds/local-adjustments-homologation.sql"]
 
 [db.pooler]
 enabled = false
@@ -60,6 +60,11 @@ file_size_limit = "10MiB"
 allowed_mime_types = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "image/jpeg", "image/png", "image/webp"]
 
 [storage.buckets.admin-public-media]
+public = true
+file_size_limit = "5MiB"
+allowed_mime_types = ["image/jpeg", "image/png", "image/webp"]
+
+[storage.buckets.patient-public-media]
 public = true
 file_size_limit = "5MiB"
 allowed_mime_types = ["image/jpeg", "image/png", "image/webp"]

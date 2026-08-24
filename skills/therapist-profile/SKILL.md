@@ -50,6 +50,12 @@ Não passar linhas cruas do Supabase para React.
 - Documentos privados: `therapist_private_documents`
 - Buckets: `therapist-public-media`, `therapist-private-documents`
 
+O upload de foto pública persiste o rascunho de mídia por meio do comando
+`save_media_draft` e do RPC `save_therapist_profile_media_draft_v1`. Esse comando
+altera somente `photoUrl`, exige versão/request idempotente, aceita perfil ainda
+incompleto e remove o objeto recém-enviado quando a persistência falha, sempre
+que possível. A publicação continua sendo uma ação separada.
+
 ## Regras
 
 - Salvar rascunho não altera views públicas.
@@ -179,6 +185,13 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
 - Falhas ao salvar ou publicar devem informar a causa acionável do contrato (por
   exemplo, campo inválido, limite de caracteres, link de vídeo ou conflito de
   versão), sem expor detalhes internos do banco ou da infraestrutura.
+- Falhas de upload ou de persistência da foto são apresentadas em
+  `TESFeedbackDialog`; a prévia/rascunho volta a aparecer depois de sair e
+  retornar à página.
+
+QA adicional: validar o comando `save_media_draft` com perfil incompleto,
+idempotência, conflito de versão, remount após navegação e limpeza best-effort
+do objeto quando a persistência falhar. A publicação deve continuar separada.
 
 ## Cache
 

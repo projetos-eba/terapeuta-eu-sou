@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+  TherapistAddressLookupResult,
   TherapistSettingsUpdatePayload,
   TherapistSettingsUpdateResult,
 } from "./therapist-settings.types";
@@ -21,6 +22,10 @@ export type TherapistSettingsCommandResult =
       error: { code: string; message: string; status?: number };
       status: "error";
     };
+
+export type TherapistAddressLookupCommandResult =
+  | { data: TherapistAddressLookupResult; status: "success" }
+  | { error: { code: string; message: string; status?: number }; status: "error" };
 
 export async function updateTherapistSettings(
   payload: TherapistSettingsUpdatePayload,
@@ -58,6 +63,46 @@ export async function updateTherapistSettings(
       error: {
         code: "NETWORK_ERROR",
         message: "Não foi possível conectar agora. Tente novamente.",
+      },
+      status: "error",
+    };
+  }
+}
+
+export async function lookupTherapistAddressByCep(
+  cep: string,
+  signal?: AbortSignal,
+): Promise<TherapistAddressLookupCommandResult> {
+  try {
+    const response = await fetch(
+      `/api/therapist/address/cep?cep=${encodeURIComponent(cep)}`,
+      { cache: "no-store", signal },
+    );
+    const envelope = (await response
+      .json()
+      .catch(() => null)) as ApiEnvelope<TherapistAddressLookupResult> | null;
+
+    if (!response.ok || !envelope || envelope.ok !== true) {
+      const error = envelope?.ok === false ? envelope.error : undefined;
+      return {
+        error: {
+          code: error?.code ?? "CEP_UNAVAILABLE",
+          message:
+            error?.message ??
+            "Não foi possível consultar este CEP. Você pode preencher o endereço manualmente.",
+          status: response.status,
+        },
+        status: "error",
+      };
+    }
+
+    return { data: envelope.data, status: "success" };
+  } catch {
+    return {
+      error: {
+        code: "CEP_UNAVAILABLE",
+        message:
+          "Não foi possível consultar este CEP. Você pode preencher o endereço manualmente.",
       },
       status: "error",
     };

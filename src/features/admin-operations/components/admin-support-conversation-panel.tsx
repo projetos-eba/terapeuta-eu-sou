@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileLock2, Loader2, MessageCircle, Send } from "lucide-react";
 
+import { TESFeedbackDialog } from "@/components/tes";
+
 import { AdminSupportReplyPanel } from "./admin-support-reply-panel";
 
 type ThreadMessage = {
@@ -239,7 +241,7 @@ function AdminSupportInternalNote({
         </p>
       ) : null}
       {error ? (
-        <p className="mt-3 text-sm font-bold text-status-danger">{error}</p>
+        <TESFeedbackDialog message={error} onClose={() => setError(null)} />
       ) : null}
     </div>
   );

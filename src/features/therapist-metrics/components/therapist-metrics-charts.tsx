@@ -17,6 +17,8 @@ import {
   YAxis,
 } from "recharts";
 
+import { TherapistChartTooltip } from "./therapist-chart-tooltip";
+
 const colors = {
   cyan: "var(--tes-color-brand-cyan)",
   deep: "var(--tes-color-brand-deep)",
@@ -71,10 +73,16 @@ export function MetricSparkline({
                   ? colors.warning
                   : colors.primary
             }
+            name="Valor"
             strokeLinecap="round"
             strokeDasharray={empty ? "4 4" : undefined}
             strokeWidth={empty ? 2 : 2.5}
             type="monotone"
+          />
+          <Tooltip
+            content={<TherapistChartTooltip />}
+            cursor={{ stroke: colors.lavender, strokeDasharray: "4 4" }}
+            isAnimationActive={false}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -163,14 +171,31 @@ export function SessionsEvolutionChart({
             />
             <YAxis allowDecimals={false} tickLine={false} width={34} />
             <Tooltip
-              contentStyle={tooltipStyle}
-              labelFormatter={(value) => fullDate(String(value))}
+              content={
+                <TherapistChartTooltip
+                  labelFormatter={(value) => fullDate(String(value))}
+                />
+              }
+              cursor={{ stroke: colors.lavender, strokeDasharray: "4 4" }}
+              isAnimationActive={false}
             />
             <Area
               dataKey="sessionsCompleted"
+              dot={{
+                fill: "white",
+                r: 3,
+                stroke: colors.primary,
+                strokeWidth: 2,
+              }}
               fill="url(#sessionsArea)"
               isAnimationActive={false}
               name="Sessões concluídas"
+              activeDot={{
+                fill: colors.primary,
+                r: 6,
+                stroke: "white",
+                strokeWidth: 2,
+              }}
               stroke={colors.primary}
               strokeWidth={3}
               type="monotone"
@@ -181,6 +206,12 @@ export function SessionsEvolutionChart({
                 dot={false}
                 isAnimationActive={false}
                 name="Período anterior"
+                activeDot={{
+                  fill: colors.cyan,
+                  r: 5,
+                  stroke: "white",
+                  strokeWidth: 2,
+                }}
                 stroke={colors.cyan}
                 strokeDasharray="6 5"
                 strokeWidth={2}
@@ -226,8 +257,9 @@ export function TherapyBarsChart({
           <XAxis allowDecimals={false} type="number" />
           <YAxis dataKey="name" tickLine={false} type="category" width={112} />
           <Tooltip
-            contentStyle={tooltipStyle}
+            content={<TherapistChartTooltip />}
             cursor={{ fill: "var(--tes-color-surface-soft)" }}
+            isAnimationActive={false}
           />
           <Bar
             dataKey="value"
@@ -296,7 +328,10 @@ export function DistributionDonut({
                 />
               ))}
             </Pie>
-            <Tooltip contentStyle={tooltipStyle} />
+            <Tooltip
+              content={<TherapistChartTooltip />}
+              isAnimationActive={false}
+            />
           </PieChart>
         </ResponsiveContainer>
         <span className="pointer-events-none absolute inset-0 grid place-items-center text-center text-sm font-extrabold text-brand-deep">
@@ -492,14 +527,6 @@ export function JourneyFunnel({
 }) {
   return <MetricsFunnel stages={stages} />;
 }
-
-const tooltipStyle = {
-  background: "var(--tes-color-surface-default)",
-  border: "1px solid var(--tes-color-brand-lavender)",
-  borderRadius: 12,
-  color: "var(--tes-color-text-primary)",
-  fontSize: 14,
-};
 
 function shortDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR", {

@@ -90,6 +90,23 @@ test.describe("therapist metrics and reports", () => {
     await expect(page.getByText("Favoritos que viraram sessão")).toBeVisible();
   });
 
+  test("shows point details in the sessions chart tooltip", async ({
+    page,
+  }) => {
+    await page.goto("/terapeuta/insights");
+
+    const chart = page.getByLabel(
+      "Evolução diária das sessões concluídas no período",
+    );
+    const points = chart.locator(".recharts-area-dot");
+    await expect(points.first()).toBeVisible();
+    await points.first().hover();
+
+    await expect(
+      page.getByRole("tooltip").filter({ hasText: "Sessões concluídas" }),
+    ).toBeVisible();
+  });
+
   test("exports the authorized aggregate report as CSV", async ({ page }) => {
     await page.goto("/terapeuta/insights?tab=sessions&period=30");
 

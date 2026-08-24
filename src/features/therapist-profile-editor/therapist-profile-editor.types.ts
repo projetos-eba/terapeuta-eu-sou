@@ -226,6 +226,14 @@ export type SaveTherapistProfileDraftCommand = {
   requestId: string;
 };
 
+export type SaveTherapistProfileMediaDraftCommand = {
+  action: "save_media_draft";
+  expectedVersion: number;
+  kind: "photo";
+  mediaUrl: string;
+  requestId: string;
+};
+
 export type SimpleTherapistProfileMutationCommand = {
   action: "discard_draft" | "publish" | "unpublish";
   expectedVersion: number;
@@ -236,6 +244,7 @@ export type TherapistProfileCommand =
   | ReadTherapistProfileCommand
   | CheckTherapistProfileSlugCommand
   | SaveTherapistProfileDraftCommand
+  | SaveTherapistProfileMediaDraftCommand
   | SimpleTherapistProfileMutationCommand
   | UpdateTherapistProfileSlugCommand;
 
