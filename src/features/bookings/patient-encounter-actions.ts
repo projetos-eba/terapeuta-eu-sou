@@ -256,6 +256,7 @@ function isTerminalBookingStatus(status: string) {
     status === BookingStatus.CancelledByTherapist ||
     status === BookingStatus.NoShowPatient ||
     status === BookingStatus.NoShowTherapist ||
+    status === BookingStatus.CancelledByPayment ||
     status === BookingStatus.Refunded
   );
 }

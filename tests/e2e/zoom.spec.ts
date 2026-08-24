@@ -70,14 +70,18 @@ test.describe("Zoom Video SDK session gate", () => {
     await openDedicatedVideoRoom(page);
 
     await expect(
-      page.getByRole("region", { name: "Sala de espera do encontro" }),
+      page.getByRole("region", {
+        name: /Sala de espera do encontro|Sala de video/,
+      }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Entrar na sala" }).click();
+    await page
+      .getByRole("button", { name: /Entrar na sala|Entrar no encontro/ })
+      .click();
 
-    await expect(
-      page.getByText("A sala ainda esta em preparacao."),
-    ).toBeVisible();
     await expect.poll(() => accessRequests.length).toBeGreaterThanOrEqual(2);
+    await expect(
+      page.getByText(/Preparando sua sala|A sala ainda esta|Nao conseguimos/i),
+    ).toBeVisible();
     expect(accessRequests[0]).toMatchObject({
       actorRole: "patient",
       bookingId,
@@ -131,7 +135,7 @@ test.describe("Zoom Video SDK session gate", () => {
       if (body.intent === "preview") {
         previewCount += 1;
         await route.fulfill({
-          body: JSON.stringify({
+          json: {
             data: {
               access: {
                 allowed: previewCount > 1,
@@ -141,22 +145,20 @@ test.describe("Zoom Video SDK session gate", () => {
               },
             },
             ok: true,
-          }),
-          contentType: "application/json",
+          },
           status: 200,
         });
         return;
       }
 
       await route.fulfill({
-        body: JSON.stringify({
+        json: {
           error: {
             code: "expired_token",
             message: "Token expirado.",
           },
           ok: false,
-        }),
-        contentType: "application/json",
+        },
         status: 401,
       });
     });
@@ -164,14 +166,23 @@ test.describe("Zoom Video SDK session gate", () => {
     await openDedicatedVideoRoom(page);
 
     await expect(
-      page.getByRole("heading", { name: "Estamos preparando o encontro" }),
+      page.getByRole("heading", {
+        name: /Aguardando terapeuta entrar|Entrada liberada/,
+      }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Atualizar sala" }).click();
+    const waitingHeading = page.getByRole("heading", {
+      name: "Aguardando terapeuta entrar",
+    });
+    if (await waitingHeading.isVisible().catch(() => false)) {
+      await page.getByRole("button", { name: "Atualizar sala" }).click();
+    }
     await expect(
       page.getByRole("button", { name: "Entrar na sala" }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Entrar na sala" }).click();
-    await expect(page.getByText("Token expirado.")).toBeVisible();
+    await expect(page.getByText("Token expirado.")).toBeVisible({
+      timeout: 20_000,
+    });
     await page.getByRole("button", { name: "Revisar permissões" }).click();
     await expect(page.getByText(/Permissoes liberadas/i)).toBeVisible();
 

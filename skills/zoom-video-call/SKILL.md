@@ -15,7 +15,13 @@ description: Implementar e validar as salas dedicadas de videochamada Zoom para 
 6. `docs/design-system/design-system.md`.
 7. `src/lib/routes.ts`.
 
-Frame dedicado no Figma: Não identificado nos arquivos analisados.
+Frame dedicado no Figma: Não identificado nos arquivos analisados. O detalhe do
+encontro usa o nó Figma `13366:6713`; as referências visuais da sala foram
+fornecidas em 2026-08-24 e as capas locais aprovadas são:
+
+- `public/zoom/waiting-room-cover.png` para a sala de espera;
+- `public/zoom/local-camera-off-cover.png` para a câmera local desativada;
+- `public/zoom/remote-waiting-cover.png` para a espera do outro participante.
 
 ## Rotas
 
@@ -39,11 +45,16 @@ Frame dedicado no Figma: Não identificado nos arquivos analisados.
 - Antes de T-15, renderizar somente preparação e horário de abertura. Em T-15,
   renderizar sala visual de espera com capa abstrata, contador, preflight e
   estado host-first; nunca liberar JWT do paciente apenas por query string.
+- A prévia de câmera é local ao navegador e usa `getUserMedia({ video: true,
+  audio: false })`; o teste de áudio usa somente `getUserMedia({ audio: true,
+  video: false })` e um indicador local de nível. Ambos encerram tracks ao
+  desligar o teste, entrar, falhar ou desmontar a tela.
 - A qualidade do encontro só fica elegível após `session.user_joined` confiável
   para paciente e terapeuta e encerramento efetivo/programado. Um único join
   direciona para ocorrência, não para avaliação de qualidade.
-- Música é opcional, sem autoplay e sem asset fictício; só usar fonte fornecida
-  e licenciada, após gesto explícito do usuário.
+- Música é opcional, sem autoplay e sem asset fictício; sem fonte licenciada,
+  manter o card visual com play inativo. A interface opcional `ambientAudioSrc`
+  só toca após gesto explícito do usuário.
 - O feedback bilateral usa `skills/session-feedback`, é privado, independente
   de `reviews` públicos e também aparece somente como leitura no detalhe Admin.
 - Paciente e terapeuta devem consultar os read models já existentes antes de
@@ -63,7 +74,9 @@ Frame dedicado no Figma: Não identificado nos arquivos analisados.
 
 ## QA
 
-- Confirmar que o CTA do detalhe abre a sala do mesmo booking.
+- Confirmar que o CTA do detalhe abre a sala do mesmo booking e continua
+  acessível durante a janela ativa mesmo sem presença do terapeuta; o bloqueio
+  host-first ocorre dentro da sala, antes da emissão de JWT do paciente.
 - Confirmar que a sala não exibe sidebar nem topbar.
 - Confirmar retorno ao detalhe e foco visível.
 - Validar waiting room, preflight, áudio, vídeo, reconexão, saída e
@@ -80,6 +93,9 @@ Frame dedicado no Figma: Não identificado nos arquivos analisados.
 - Validar câmera inicialmente desligada, ativação após o join, desligamento e
   visualização bidirecional real. Exercitar também permissão negada, nova
   concessão e recuperação sem recriar booking ou relaxar autorização.
+- Validar que as capas aparecem até o vídeo correspondente, que a prévia local
+  substitui apenas a capa de espera, que câmera e microfone são pedidos de modo
+  independente e que nenhum track permanece ativo após a navegação.
 - Em mobile a chamada deve caber em `100dvh` com fallback de viewport, vídeo
   remoto dominante, self-view contida e controles essenciais visíveis. Não
   usar as antigas alturas mínimas cumulativas por participante.

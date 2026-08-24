@@ -14502,6 +14502,7 @@ export type Database = {
         | "cancelled_by_therapist"
         | "no_show_patient"
         | "no_show_therapist"
+        | "cancelled_by_payment"
         | "refunded";
       connect_onboarding_status:
         | "not_started"
@@ -14820,6 +14821,7 @@ export const Constants = {
         "cancelled_by_therapist",
         "no_show_patient",
         "no_show_therapist",
+        "cancelled_by_payment",
         "refunded",
       ],
       connect_onboarding_status: [

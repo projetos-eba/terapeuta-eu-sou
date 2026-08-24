@@ -85,6 +85,11 @@ Use these support tables when needed:
   redundantes “Testar dispositivos” e “Falar com suporte” não devem ser
   repetidos nesse bloco. A preparação técnica permanece na seção dedicada
   quando existir.
+- Quando o pagamento está confirmado e o horário está dentro da janela ativa,
+  o CTA principal deve abrir a sala dedicada mesmo que a presença do terapeuta
+  ainda não tenha sido confirmada. A sala de espera aplica o host-first e
+  bloqueia o join do paciente até a presença confiável do terapeuta; o detalhe
+  não deve transformar essa espera em uma ação desabilitada.
 - Encontros confirmados usam a semântica verde do TES no status e no destaque
   contextual do hero, sem alterar a autorização real de entrada na sala.
 - Cancellation and refund copy follows `POLÍTICA DE CANCELAMENTO - OPERACIONAL.docx`: at least 24 hours may allow rescheduling or refund when applicable; under 24 hours and no-show do not create an obligation to refund; exceptional cases are individually reviewed.

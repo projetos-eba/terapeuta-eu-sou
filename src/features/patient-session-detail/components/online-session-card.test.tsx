@@ -109,6 +109,27 @@ describe("OnlineSessionCard", () => {
       screen.queryByRole("link", { name: /falar com suporte/i }),
     ).toBeNull();
   });
+
+  it("opens the waiting room from the hero while the live window is active", () => {
+    render(
+      <SessionOverviewCard
+        data={makeData({
+          canJoin: true,
+          financialStatus: SessionFinancialStatus.Paid,
+        })}
+      />,
+    );
+
+    expect(
+      screen
+        .getAllByRole("link", { name: "Entrar no encontro" })
+        .every(
+          (link) =>
+            link.getAttribute("href") ===
+            "/app/encontros/f2000000-0000-4000-8000-000000000001/video",
+        ),
+    ).toBe(true);
+  });
 });
 
 function makeData({

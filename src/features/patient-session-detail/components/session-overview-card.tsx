@@ -295,6 +295,25 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
     `${routes.patient.messages}?context=suporte&booking=${data.booking.id}` as Route<string>;
 
   if (data.onlineSession.provider === "zoom") {
+    const canOpenWaitingRoom =
+      data.booking.canJoin &&
+      data.encounterState.payment.kind === "confirmed" &&
+      [
+        "entry_available",
+        "operational_unavailable",
+        "therapist_absent_prolonged",
+        "therapist_present",
+        "waiting_therapist",
+      ].includes(data.encounterState.waitingRoom.kind);
+
+    if (canOpenWaitingRoom) {
+      return {
+        href: routes.patient.encounterVideo(data.booking.id) as Route<string>,
+        label: "Entrar no encontro",
+        variant: "gradient",
+      };
+    }
+
     if (
       data.encounterState.payment.kind === "confirmed" &&
       (data.encounterState.waitingRoom.kind === "entry_available" ||
@@ -360,6 +379,7 @@ function canReviewFeedback(
     status === BookingStatus.CancelledByTherapist ||
     status === BookingStatus.NoShowPatient ||
     status === BookingStatus.NoShowTherapist ||
+    status === BookingStatus.CancelledByPayment ||
     status === BookingStatus.Refunded
   );
 }

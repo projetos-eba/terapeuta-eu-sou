@@ -59,6 +59,7 @@ export const BookingStatus = {
   CancelledByTherapist: "cancelled_by_therapist",
   NoShowPatient: "no_show_patient",
   NoShowTherapist: "no_show_therapist",
+  CancelledByPayment: "cancelled_by_payment",
   Refunded: "refunded",
 } as const;
 

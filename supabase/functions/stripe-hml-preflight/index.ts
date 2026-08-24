@@ -15,6 +15,10 @@ import {
   getWebhookSecret,
 } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
+import {
+  fingerprintStripeIdentifier,
+  parseStripeEventId,
+} from "./webhook-inspection.ts";
 
 type Check = {
   name: string;
@@ -48,12 +52,14 @@ type GoldenPathAction =
   | "inspect"
   | "inspect_latest_paid"
   | "inspect_recent"
+  | "inspect_webhook_event"
   | "prepare"
   | "release";
 
 type GoldenPathRequest = {
   action?: GoldenPathAction;
   checkoutSessionId?: string;
+  stripeEventId?: string;
   fixture?: FixtureReference;
 };
 
@@ -129,6 +135,9 @@ runtime.serve(async (request) => {
             config.stripeApiKey,
           ),
         );
+      }
+      if (body.action === "inspect_webhook_event") {
+        return success(await inspectWebhookEvent(client, body));
       }
       if (body.action === "release") {
         await releaseGoldenPathFixture(client, body.fixture);
@@ -739,6 +748,127 @@ async function inspectGoldenPathFixture(
     stripeCheckout,
     videoSessions: videos,
     webhook: { checkoutCompletedProcessed: webhooks.length === 1 },
+  };
+}
+
+async function inspectWebhookEvent(
+  client: SupabaseRestClient,
+  request: GoldenPathRequest,
+) {
+  const eventId = parseStripeEventId(request.stripeEventId);
+  if (!eventId) {
+    throw new DomainError(
+      "stripe_event_reference_invalid",
+      400,
+      "Evento Stripe invalido.",
+    );
+  }
+
+  const events = await client.get<
+    Array<{
+      attempts: number;
+      event_type: string;
+      object_id: string | null;
+      processing_status: string;
+      source: "connect" | "platform";
+      stripe_event_created_at: string | null;
+    }>
+  >(
+    `/rest/v1/stripe_webhook_events?select=event_type,source,processing_status,attempts,object_id,stripe_event_created_at&stripe_event_id=eq.${encodeURIComponent(
+      eventId,
+    )}`,
+  );
+  const [event] = events;
+  if (!event) {
+    return {
+      eventFingerprint: await fingerprintStripeIdentifier(eventId),
+      found: false,
+    };
+  }
+
+  const eventFingerprint = await fingerprintStripeIdentifier(eventId);
+  const paymentRows = event.object_id
+    ? await client.get<
+        Array<{
+          booking_id: string;
+          financial_status: string;
+          stripe_event_id: string | null;
+          stripe_event_created_at: string | null;
+        }>
+      >(
+        `/rest/v1/session_payments?select=booking_id,financial_status,stripe_event_id,stripe_event_created_at&stripe_checkout_session_id=eq.${encodeURIComponent(
+          event.object_id,
+        )}`,
+      )
+    : [];
+  const payments = paymentRows.length || !event.object_id
+    ? paymentRows
+    : await client.get<
+        Array<{
+          booking_id: string;
+          financial_status: string;
+          stripe_event_id: string | null;
+          stripe_event_created_at: string | null;
+        }>
+      >(
+        `/rest/v1/session_payments?select=booking_id,financial_status,stripe_event_id,stripe_event_created_at&stripe_payment_intent_id=eq.${encodeURIComponent(
+          event.object_id,
+        )}`,
+      );
+  const bookingIds = [...new Set(payments.map((payment) => payment.booking_id))];
+  const bookings = await Promise.all(
+    bookingIds.map(async (bookingId) => {
+      const [booking] = await client.get<
+        Array<{ payment_status: string; status: string }>
+      >(
+        `/rest/v1/bookings?select=status,payment_status&id=eq.${encodeURIComponent(
+          bookingId,
+        )}&limit=1`,
+      );
+      return booking ?? null;
+    }),
+  );
+
+  const paymentStates = [...new Set(payments.map((payment) => payment.financial_status))]
+    .sort();
+  const bookingStates = bookings
+    .filter((booking): booking is { payment_status: string; status: string } =>
+      Boolean(booking),
+    )
+    .map((booking) => ({
+      paymentStatus: booking.payment_status,
+      status: booking.status,
+    }));
+
+  return {
+    event: {
+      createdAt: event.stripe_event_created_at,
+      fingerprint: eventFingerprint,
+      processingStatus: event.processing_status,
+      source: event.source,
+      type: event.event_type,
+    },
+    found: true,
+    invariants: {
+      bookingCount: bookingStates.length,
+      eventRecordCount: events.length,
+      eventRecordIsUnique: events.length === 1,
+      paymentCount: payments.length,
+      paymentStates,
+      bookingStates,
+      webhookAttemptCount: event.attempts,
+    },
+    relationships: {
+      paymentCorrelatesToEvent: payments.every(
+        (payment) => payment.stripe_event_id === eventId,
+      ),
+      paymentEventNotNewerThanWebhook: payments.every(
+        (payment) =>
+          !payment.stripe_event_created_at ||
+          !event.stripe_event_created_at ||
+          payment.stripe_event_created_at <= event.stripe_event_created_at,
+      ),
+    },
   };
 }
 
