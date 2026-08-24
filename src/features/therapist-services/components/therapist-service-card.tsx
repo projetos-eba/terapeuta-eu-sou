@@ -4,6 +4,7 @@ import { CalendarDays, Clock, HandCoins, Tags } from "lucide-react";
 import { useState } from "react";
 
 import { TESCard } from "@/components/tes";
+import { TherapistPlan } from "@/domain/tes";
 import { cn } from "@/lib/utils";
 
 import type { TherapistServiceSummary } from "../therapist-services.types";
@@ -30,12 +31,14 @@ export function TherapistServiceCard({
   canMoveUp,
   disabled,
   onAction,
+  plan,
   service,
 }: {
   canMoveDown: boolean;
   canMoveUp: boolean;
   disabled?: boolean;
   onAction: (action: TherapistServiceMenuAction) => void;
+  plan: TherapistPlan;
   service: TherapistServiceSummary;
 }) {
   const canToggle =
@@ -169,7 +172,7 @@ export function TherapistServiceCard({
             ) : null}
           </div>
         </div>
-        <TherapistServiceMetrics service={service} />
+        <TherapistServiceMetrics plan={plan} service={service} />
       </div>
     </TESCard>
   );

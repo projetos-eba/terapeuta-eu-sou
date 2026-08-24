@@ -1,5 +1,6 @@
 import { CalendarCheck2, Eye, UsersRound, WalletCards } from "lucide-react";
 
+import { TherapistPlan } from "@/domain/tes";
 import { routes } from "@/lib/routes";
 
 import type { TherapistDashboardPageData } from "../therapist-dashboard.types";
@@ -7,8 +8,10 @@ import { TherapistKpiCard } from "./therapist-kpi-card";
 
 export function TherapistKpiGrid({
   kpis,
+  plan,
 }: {
   kpis: TherapistDashboardPageData["kpis"];
+  plan: TherapistPlan;
 }) {
   return (
     <section
@@ -21,6 +24,8 @@ export function TherapistKpiGrid({
         kpi={kpis.monthlySessions}
         label="Sessões este mês"
         title="Sua agenda"
+        plan={plan}
+        requiredPlan={TherapistPlan.Free}
         value={formatNumber(kpis.monthlySessions.value)}
       />
       <TherapistKpiCard
@@ -29,6 +34,8 @@ export function TherapistKpiGrid({
         kpi={kpis.activePatients}
         label="Pessoas em acompanhamento"
         title="Pessoas que caminham com você"
+        plan={plan}
+        requiredPlan={TherapistPlan.PremiumPlus}
         value={formatNumber(kpis.activePatients.value)}
       />
       <TherapistKpiCard
@@ -37,6 +44,8 @@ export function TherapistKpiGrid({
         kpi={kpis.monthlyNetRevenueCents}
         label="Receita líquida do mês"
         title="Sua prática"
+        plan={plan}
+        requiredPlan={TherapistPlan.PremiumPlus}
         value={formatCurrency(kpis.monthlyNetRevenueCents.value)}
       />
       <TherapistKpiCard
@@ -45,6 +54,8 @@ export function TherapistKpiGrid({
         kpi={kpis.profileViews}
         label="Visitas ao perfil"
         title="Como as pessoas estão encontrando você"
+        plan={plan}
+        requiredPlan={TherapistPlan.Premium}
         value={formatNumber(kpis.profileViews.value)}
       />
     </section>

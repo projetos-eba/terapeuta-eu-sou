@@ -1,6 +1,11 @@
 import Link from "next/link";
 import type { Route } from "next";
 
+import { TherapistPlan } from "@/domain/tes";
+import {
+  canAccessTherapistPlan,
+  TherapistLockedCard,
+} from "@/features/therapist-access";
 import { routes } from "@/lib/routes";
 
 import type { TherapistDashboardPageData } from "../therapist-dashboard.types";
@@ -8,10 +13,22 @@ import { AttendanceRateChart } from "./attendance-rate-chart";
 import { TherapistWeekChart } from "./therapist-week-chart";
 
 export function TherapistWeekSummary({
+  plan,
   week,
 }: {
+  plan: TherapistPlan;
   week: TherapistDashboardPageData["week"];
 }) {
+  if (!canAccessTherapistPlan(plan, TherapistPlan.Premium)) {
+    return (
+      <TherapistLockedCard
+        requiredPlan={TherapistPlan.Premium}
+        title="Sua semana"
+        variant="section"
+      />
+    );
+  }
+
   return (
     <section className="rounded-panel border border-[var(--tes-color-border)]/70 bg-white p-5 shadow-card">
       <div className="flex flex-wrap items-start justify-between gap-3">

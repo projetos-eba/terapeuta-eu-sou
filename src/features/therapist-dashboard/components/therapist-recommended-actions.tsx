@@ -2,15 +2,32 @@ import Link from "next/link";
 import type { Route } from "next";
 import { Circle } from "lucide-react";
 
+import { TherapistPlan } from "@/domain/tes";
+import {
+  canAccessTherapistPlan,
+  TherapistLockedCard,
+} from "@/features/therapist-access";
 import { routes } from "@/lib/routes";
 
 import type { TherapistDashboardPageData } from "../therapist-dashboard.types";
 
 export function TherapistRecommendedActions({
   actions,
+  plan,
 }: {
   actions: TherapistDashboardPageData["recommendedActions"];
+  plan: TherapistPlan;
 }) {
+  if (!canAccessTherapistPlan(plan, TherapistPlan.PremiumPlus)) {
+    return (
+      <TherapistLockedCard
+        requiredPlan={TherapistPlan.PremiumPlus}
+        title="Ações recomendadas"
+        variant="section"
+      />
+    );
+  }
+
   return (
     <section className="flex min-h-[330px] flex-col rounded-panel border border-[var(--tes-color-border)]/70 bg-white p-6 shadow-card">
       <h2 className="text-xl font-bold text-brand-deep">Ações recomendadas</h2>

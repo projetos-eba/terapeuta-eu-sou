@@ -15,6 +15,7 @@ import {
   ProfileTextarea,
   ProfileTextField,
 } from "./profile-field-group";
+import { ProfileCapabilityGate } from "./profile-capability-gate";
 import { ProfileSection } from "./profile-section";
 
 export function ProfileEditorForm({
@@ -140,27 +141,13 @@ export function ProfileEditorForm({
             placeholder="Novo conteúdo"
           />
         ) : (
-          <div className="grid gap-3 rounded-lg border border-brand-lavender bg-brand-lavenderSoft p-4 sm:grid-cols-[64px_1fr]">
-            <div className="grid size-16 place-items-center rounded-lg bg-white text-brand-primary">
-              <BookOpen aria-hidden="true" size={24} />
-            </div>
-            <div>
-              <p className="text-sm font-extrabold leading-6 text-brand-deep">
-                Conteúdos avançados disponíveis no Premium Plus.
-              </p>
-              <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                Ao mudar para um plano sem este recurso, seus conteúdos ficam
-                guardados, mas você não poderá fazer novas edições avançadas.
-              </p>
-              <TESButton
-                className="mt-3 min-h-11 rounded-lg"
-                href={routes.therapist.plan}
-                variant="secondary"
-              >
-                Ver plano
-              </TESButton>
-            </div>
-          </div>
+          <ProfileCapabilityGate
+            allowed={false}
+            message="Seus conteúdos ficam guardados, mas novas edições avançadas fazem parte do Premium Plus."
+            title="Conteúdos e reflexões"
+          >
+            <BookOpen aria-hidden="true" />
+          </ProfileCapabilityGate>
         )}
       </ProfileFieldGroup>
 

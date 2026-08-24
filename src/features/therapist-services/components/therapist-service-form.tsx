@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, Check, Save } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { TESButton, TESDialog } from "@/components/tes";
+import { TherapistPlan } from "@/domain/tes";
 import { cn } from "@/lib/utils";
 
 import {
@@ -44,12 +45,14 @@ export function TherapistServiceForm({
   mode,
   onClose,
   onSaved,
+  plan = TherapistPlan.Free,
   service,
 }: {
   catalog: TherapyCatalogOption[];
   mode: "create" | "edit";
   onClose: () => void;
   onSaved: (service: TherapistServiceSummary, message: string) => void;
+  plan?: TherapistPlan;
   service?: TherapistServiceSummary;
 }) {
   const [step, setStep] = useState(mode === "edit" ? 2 : 1);

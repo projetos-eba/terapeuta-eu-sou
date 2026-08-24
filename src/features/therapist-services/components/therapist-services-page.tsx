@@ -266,6 +266,7 @@ export function TherapistServicesPage({
                     disabled={pendingServiceId === service.serviceId}
                     key={service.serviceId}
                     onAction={(action) => handleCardAction(service, action)}
+                    plan={initialServices.plan}
                     service={service}
                   />
                 );
@@ -296,7 +297,7 @@ export function TherapistServicesPage({
 
         <aside className="grid gap-5 md:grid-cols-2 xl:grid-cols-1">
           <TherapistServicesTips />
-          <TherapistServicesRanking services={services} />
+          <TherapistServicesRanking plan={initialServices.plan} services={services} />
         </aside>
       </section>
 
@@ -306,6 +307,7 @@ export function TherapistServicesPage({
           mode="create"
           onClose={() => setDialog(null)}
           onSaved={upsertService}
+          plan={initialServices.plan}
         />
       ) : null}
 
@@ -315,6 +317,7 @@ export function TherapistServicesPage({
           mode="edit"
           onClose={() => setDialog(null)}
           onSaved={upsertService}
+          plan={initialServices.plan}
           service={dialog.service}
         />
       ) : null}
@@ -324,6 +327,7 @@ export function TherapistServicesPage({
           action={dialog.action}
           onClose={() => setDialog(null)}
           onSaved={upsertService}
+          plan={initialServices.plan}
           service={dialog.service}
           setPendingServiceId={setPendingServiceId}
         />
@@ -482,12 +486,14 @@ function ConfirmServiceActionDialog({
   action,
   onClose,
   onSaved,
+  plan,
   service,
   setPendingServiceId,
 }: {
   action: "activate" | "archive" | "pause";
   onClose: () => void;
   onSaved: (service: TherapistServiceSummary, message: string) => void;
+  plan: TherapistServicesContract["plan"];
   service: TherapistServiceSummary;
   setPendingServiceId: (serviceId: string | null) => void;
 }) {

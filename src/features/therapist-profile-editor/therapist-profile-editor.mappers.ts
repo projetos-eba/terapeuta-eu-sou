@@ -1,6 +1,7 @@
 import { createEmptyEditorFields } from "./therapist-profile-editor.parsers";
 import type { PublicTherapistProfile } from "@/features/therapist-profile/types";
 import { isPublicProfileThemeId } from "@/features/therapist-profile/personalization";
+import { TherapistPlan } from "@/domain/tes";
 
 import type {
   TherapistProfileAccountStatus,
@@ -26,12 +27,15 @@ export function mapTherapistProfileEditorContract(
 ): TherapistProfileEditorData {
   const value = asObject(input);
   const published = asObject(value.published);
+  const derived = mapDerived(value.derived);
 
   return {
     capabilities: mapCapabilities(value.capabilities),
     completeness: mapCompleteness(value.completeness),
-    derived: mapDerived(value.derived),
-    draft: value.draft ? mapVersionedContent(value.draft, "draft") : null,
+    derived,
+    draft: value.draft
+      ? mapVersionedContent(value.draft, "draft", derived.plan)
+      : null,
     privateDocuments: array(value.privateDocuments).map((item) =>
       mapPrivateDocument(item),
     ),
@@ -48,7 +52,7 @@ export function mapTherapistProfileEditorContract(
         .at(-1) ?? "",
     ),
     publicProfileTheme: publicProfileTheme(value.publicProfileTheme),
-    published: mapVersionedContent(published, "published"),
+    published: mapVersionedContent(published, "published", derived.plan),
     therapistProfileId: requiredString(value.therapistProfileId),
     updatedAt: requiredString(value.updatedAt),
     verificationSummary: value.verificationSummary
@@ -138,7 +142,9 @@ export function mapEditorFieldsToPublicPreview({
     heroImage: fields.photoUrl || "/icon.svg",
     id: editor.therapistProfileId,
     isAcceptingBookings: editor.derived.canReceiveBookings,
-    isVerified: editor.derived.verificationStatus === "approved",
+    isVerified:
+      editor.derived.plan !== TherapistPlan.Free &&
+      editor.derived.verificationStatus === "approved",
     name: fields.publicName || "Seu nome público",
     plan: editor.derived.plan,
     profileUrl: editor.publicProfileHref,
@@ -151,7 +157,8 @@ export function mapEditorFieldsToPublicPreview({
     services: [],
     slug,
     tags: fields.guideItems.slice(0, 4).map((item) => item.label),
-    video: fields.videoUrl
+    video:
+      editor.derived.plan !== TherapistPlan.Free && fields.videoUrl
       ? {
           provider: fields.videoProvider,
           thumbnailUrl:
@@ -353,6 +360,7 @@ function mapEditableFields(input: unknown): TherapistProfileEditableFields {
 function mapVersionedContent(
   input: unknown,
   fallbackStatus: "draft" | "published",
+  plan: TherapistPlan,
 ): TherapistProfileVersionedContent {
   const value = asObject(input);
 
@@ -366,7 +374,7 @@ function mapVersionedContent(
       value.contentVersionId === null || value.contentVersionId === undefined
         ? null
         : requiredString(value.contentVersionId),
-    fields: mapEditableFields(value.fields),
+    fields: maskPaidEditorFields(mapEditableFields(value.fields), plan),
     publishedAt:
       value.publishedAt === null || value.publishedAt === undefined
         ? null
@@ -376,6 +384,22 @@ function mapVersionedContent(
       value.updatedAt === null || value.updatedAt === undefined
         ? null
         : requiredString(value.updatedAt),
+  };
+}
+
+function maskPaidEditorFields(
+  fields: TherapistProfileEditableFields,
+  plan: TherapistPlan,
+): TherapistProfileEditableFields {
+  return {
+    ...fields,
+    reflections: plan === TherapistPlan.PremiumPlus ? fields.reflections : [],
+    videoProvider:
+      plan === TherapistPlan.Free ? "external" : fields.videoProvider,
+    videoThumbnailUrl:
+      plan === TherapistPlan.Free ? "" : fields.videoThumbnailUrl,
+    videoTitle: plan === TherapistPlan.Free ? "" : fields.videoTitle,
+    videoUrl: plan === TherapistPlan.Free ? "" : fields.videoUrl,
   };
 }
 

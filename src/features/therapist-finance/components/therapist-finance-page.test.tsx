@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type {
@@ -68,9 +68,14 @@ describe("TherapistFinancePage", () => {
     expect(screen.getAllByText("Evolução financeira").length).toBeGreaterThan(
       0,
     );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Sua agenda e potencial.*Premium Plus/i,
+      }),
+    );
     expect(
-      screen.getAllByRole("link", { name: "Conhecer Premium Plus" }).length,
-    ).toBeGreaterThan(0);
+      screen.getByRole("link", { name: "Conhecer Premium Plus" }),
+    ).toHaveAttribute("href", "/terapeuta/plano");
     expect(
       screen.queryByRole("heading", { name: "Evolução com projeção" }),
     ).not.toBeInTheDocument();
@@ -135,15 +140,15 @@ describe("TherapistFinancePage", () => {
       },
     });
 
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Panorama financeiro.*Premium/i,
+      }),
+    );
     expect(
-      screen.getAllByText("Disponível no Premium").length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen
-        .getAllByRole("link", { name: "Conhecer Premium Plus" })
-        .every((link) => link.getAttribute("href") === "/terapeuta/plano"),
-    ).toBe(true);
-    expect(screen.getAllByText("Seu dinheiro").length).toBeGreaterThan(0);
+      screen.getByRole("link", { name: "Conhecer Premium" }),
+    ).toHaveAttribute("href", "/terapeuta/plano");
+    expect(screen.queryByText("Seu dinheiro")).not.toBeInTheDocument();
   });
 
   it("keeps payment method and payment origin separated in receipts", () => {

@@ -3,15 +3,32 @@ import Link from "next/link";
 import type { Route } from "next";
 import { CircleCheckBig, Crown, Star } from "lucide-react";
 
+import { TherapistPlan } from "@/domain/tes";
+import {
+  canAccessTherapistPlan,
+  TherapistLockedCard,
+} from "@/features/therapist-access";
 import { routes } from "@/lib/routes";
 
 import type { TherapistDashboardPageData } from "../therapist-dashboard.types";
 
 export function TherapistAuraCard({
   aura,
+  plan = TherapistPlan.PremiumPlus,
 }: {
   aura: TherapistDashboardPageData["aura"];
+  plan?: TherapistPlan;
 }) {
+  if (!canAccessTherapistPlan(plan, TherapistPlan.PremiumPlus)) {
+    return (
+      <TherapistLockedCard
+        requiredPlan={TherapistPlan.PremiumPlus}
+        title="Assessora Aura"
+        variant="section"
+      />
+    );
+  }
+
   return (
     <section className="relative overflow-hidden rounded-panel border-2 border-[#cdbff0] bg-[#fbf9ff] px-5 py-6 shadow-card sm:px-7">
       <Image

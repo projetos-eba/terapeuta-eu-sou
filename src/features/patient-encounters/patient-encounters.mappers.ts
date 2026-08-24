@@ -20,6 +20,8 @@ import type {
   PatientEncounterStatus,
 } from "./patient-encounters.types";
 
+const MAX_HISTORY_ENCOUNTERS = 50;
+
 export type BookingRecord = {
   cancelled_at: string | null;
   cancellation_reason: string | null;
@@ -115,7 +117,7 @@ export function mapPatientEncountersPage(
         new Date(encounter.endsAt) >= now,
     )
     .sort(sortUpcomingEncounters);
-  const upcomingEncounters = activeEncounters.slice(0, 3);
+  const upcomingEncounters = activeEncounters;
   const currentJourneyTherapistIds = new Set(
     upcomingEncounters.map((encounter) => encounter.therapist.id),
   );
@@ -125,7 +127,7 @@ export function mapPatientEncountersPage(
         encounter.status === "completed" || encounter.status === "cancelled",
     )
     .sort((left, right) => sortByStartsAt(right, left))
-    .slice(0, 3);
+    .slice(0, MAX_HISTORY_ENCOUNTERS);
   const completedCount = input.bookings.filter((booking) =>
     isCompletedBookingStatus(booking.status),
   ).length;
@@ -172,7 +174,7 @@ function mapPatientEncounter(
   return {
     actionHint:
       payment?.financial_status === "paid" && status === "confirmed"
-        ? `Entrada liberada ${BOOKING_JOIN_WINDOW_BEFORE_MINUTES} min antes`
+        ? `Acesso à sala liberado ${BOOKING_JOIN_WINDOW_BEFORE_MINUTES} minutos antes.`
         : undefined,
     approachLabel: getApproachLabel(therapy.slug),
     dateLabel: formatRelativeBookingDay(booking.starts_at, booking.timezone),

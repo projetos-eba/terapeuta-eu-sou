@@ -27,7 +27,7 @@ export function TherapistWelcomeHero({
         Tudo o que faz parte da sua jornada reunido em um só lugar.
       </p>
       <div className="relative z-10 mt-8 lg:absolute lg:bottom-5 lg:left-5 lg:w-[min(736px,calc(100%-40px))]">
-        <TherapistHeroStats today={data.today} />
+        <TherapistHeroStats plan={data.therapist.plan} today={data.today} />
       </div>
     </section>
   );

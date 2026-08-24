@@ -285,9 +285,10 @@ export function TherapistProfileEditorPage({
           <ProfileVideoUploader
             canUploadVideo={editor.capabilities.canUploadVideo}
             fields={fields}
+            plan={editor.derived.plan}
             updateField={updateField}
           />
-          <ProfileManagedElsewhere />
+          <ProfileManagedElsewhere plan={editor.derived.plan} />
           <ProfileSection title="Importante">
             <p className="text-sm font-semibold leading-6 text-tesText-secondary">
               Para enviar seu perfil para análise, complete também seus dados e

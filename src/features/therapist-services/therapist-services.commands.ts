@@ -15,6 +15,7 @@ import type {
   TherapistServicesContract,
   TherapyCatalogContract,
 } from "./therapist-services.types";
+import { TherapistPlan } from "@/domain/tes";
 
 type ApiEnvelope<T> =
   | { data: T; ok: true }
@@ -33,6 +34,7 @@ export type TherapistServicesCommandResult<T> =
 
 export async function sendTherapistServicesCommand(
   command: TherapistServicesCommand,
+  currentPlan: TherapistPlan = TherapistPlan.Free,
 ): Promise<
   TherapistServicesCommandResult<
     | TherapistServiceMutationResult
@@ -64,7 +66,7 @@ export async function sendTherapistServicesCommand(
     }
 
     return {
-      data: mapCommandData(command.action, payload.data),
+      data: mapCommandData(command.action, payload.data, currentPlan),
       status: "success",
     };
   } catch {
@@ -81,12 +83,13 @@ export async function sendTherapistServicesCommand(
 function mapCommandData(
   action: TherapistServicesCommand["action"],
   data: unknown,
+  currentPlan: TherapistPlan,
 ) {
   if (action === "catalog") return mapTherapyCatalogContract(data);
   if (action === "list" || action === "reorder") {
     return mapTherapistServicesContract(data);
   }
-  return mapTherapistServiceMutationResult(data);
+  return mapTherapistServiceMutationResult(data, currentPlan);
 }
 
 export function createStableRequestId() {

@@ -6,6 +6,7 @@ import {
   createCorrelationId,
   logServerOperationFailure,
 } from "@/lib/observability/server-operation-log";
+import { TherapistPlan } from "@/domain/tes";
 
 import {
   getTherapistFinanceErrorMessage,
@@ -31,6 +32,7 @@ import type {
   TherapistFinanceDateRange,
   TherapistFinanceFilters,
   TherapistFinancePageData,
+  TherapistFinancialOverview,
 } from "./therapist-finance.types";
 
 export type TherapistFinancePageResult =
@@ -51,6 +53,7 @@ export const getTherapistFinancePage = cache(
     filters,
     includeAdvancedFinancials,
     includeMetrics,
+    plan,
     profileId,
   }: {
     accessToken: string;
@@ -58,6 +61,7 @@ export const getTherapistFinancePage = cache(
     filters: TherapistFinanceFilters;
     includeAdvancedFinancials: boolean;
     includeMetrics: boolean;
+    plan: TherapistPlan;
     profileId: string;
   }): Promise<TherapistFinancePageResult> {
     const startedAt = performance.now();
@@ -87,6 +91,7 @@ export const getTherapistFinancePage = cache(
         queryTherapistConnectAccount(accessToken),
       ]);
 
+      const mappedOverview = mapTherapistFinancialOverview(overview);
       const data: TherapistFinancePageData = {
         account: mapTherapistConnectAccount(account),
         advanced: includeAdvancedFinancials
@@ -116,7 +121,7 @@ export const getTherapistFinancePage = cache(
               requiredPlan: "Premium",
               status: "locked",
             },
-        overview: mapTherapistFinancialOverview(overview),
+        overview: maskLockedOverview(mappedOverview, plan),
         payouts: mapTherapistPayoutsContract(payouts),
         receipts: mapTherapistReceiptsContract(receipts),
       };
@@ -161,4 +166,26 @@ function enforceProfile(actualProfileId: string, expectedProfileId: string) {
   if (actualProfileId !== expectedProfileId) {
     throw new TherapistFinanceError("forbidden");
   }
+}
+
+function maskLockedOverview(
+  overview: TherapistFinancialOverview,
+  plan: TherapistPlan,
+) {
+  if (plan !== TherapistPlan.Free) return overview;
+
+  return {
+    ...overview,
+    blockedCents: 0,
+    disputedCents: 0,
+    eligibleForPayoutCents: 0,
+    grossPaidCents: 0,
+    payoutProcessingCents: 0,
+    refundedToCustomersCents: 0,
+    tesCommissionCents: 0,
+    therapistNetCents: 0,
+    transferredCents: 0,
+    waitingConfirmationCents: 0,
+    waitingSafetyPeriodCents: 0,
+  } satisfies TherapistFinancialOverview;
 }

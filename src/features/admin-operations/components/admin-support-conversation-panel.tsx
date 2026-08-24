@@ -1,9 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FileLock2, Loader2, MessageCircle, Send } from "lucide-react";
+import {
+  FileLock2,
+  Loader2,
+  MessageCircle,
+  Paperclip,
+  Send,
+} from "lucide-react";
 
 import { TESFeedbackDialog } from "@/components/tes";
+import { useSupportLiveRefresh } from "@/features/support/components/support-live-refresh";
 
 import { AdminSupportReplyPanel } from "./admin-support-reply-panel";
 
@@ -13,6 +20,13 @@ type ThreadMessage = {
   created_at: string;
   id: string;
   visibility: "internal" | "requester";
+  attachments?: Array<{
+    downloadPath: string;
+    fileName: string;
+    id: string;
+    mimeType: string;
+    sizeBytes: number;
+  }>;
 };
 
 export function AdminSupportConversationPanel({
@@ -48,6 +62,7 @@ export function AdminSupportConversationPanel({
   useEffect(() => {
     void load();
   }, [load, refreshVersion]);
+  useSupportLiveRefresh({ actorRole: "admin", onRefresh: load, ticketId });
 
   function refresh() {
     setRefreshVersion((version) => version + 1);
@@ -118,6 +133,26 @@ export function AdminSupportConversationPanel({
             <p className="mt-2 whitespace-pre-wrap break-words text-sm font-semibold leading-6 text-tesText-secondary">
               {message.body}
             </p>
+            {message.attachments?.length ? (
+              <div className="mt-3 grid gap-2">
+                {message.attachments.map((attachment) => (
+                  <a
+                    className="flex items-center gap-2 rounded-lg border border-brand-lavender bg-white px-3 py-2 text-xs font-extrabold text-brand-primary hover:bg-brand-lavenderSoft"
+                    download={attachment.fileName}
+                    href={attachment.downloadPath}
+                    key={attachment.id}
+                  >
+                    <Paperclip aria-hidden="true" size={14} />
+                    <span className="min-w-0 truncate">
+                      {attachment.fileName}
+                    </span>
+                    <span className="ml-auto shrink-0 font-semibold text-tesText-secondary">
+                      {formatBytes(attachment.sizeBytes)}
+                    </span>
+                  </a>
+                ))}
+              </div>
+            ) : null}
           </article>
         ))}
       </div>
@@ -254,4 +289,9 @@ function formatDate(value: string) {
     minute: "2-digit",
     month: "short",
   }).format(new Date(value));
+}
+
+function formatBytes(value: number) {
+  if (value < 1024 * 1024) return `${Math.max(1, Math.round(value / 1024))} KB`;
+  return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }

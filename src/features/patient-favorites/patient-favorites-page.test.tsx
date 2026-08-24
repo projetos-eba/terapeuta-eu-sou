@@ -49,6 +49,7 @@ function createData(): PatientFavoriteTherapistsPageData {
   return {
     items: [
       {
+        averageRating: 4.9,
         avatarUrl: "/therapists/ana-oliveira.png",
         favoriteCreatedAt: "2026-08-01T00:00:00.000Z",
         headline: "Terapeuta integrativa",
@@ -57,6 +58,9 @@ function createData(): PatientFavoriteTherapistsPageData {
         name: "Ana Oliveira",
         profileHref: "/terapeutas/ana-oliveira",
         reservationHref: "/terapeutas?therapist=ana-oliveira",
+        reviewCount: 38,
+        summary: "Acompanho processos de reconexão e autocuidado.",
+        techniques: ["Reiki", "Meditação"],
       },
     ],
     patient: {

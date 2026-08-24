@@ -221,33 +221,33 @@ export const fallbackTestimonials: PublicHomeTestimonial[] = [
 
 export const homeFaqs: PublicHomeFaq[] = [
   {
-    question: "Como funciona o TES?",
+    question: "Como funciona o TEDS?",
     answer:
-      "Você explora caminhos terapêuticos, conhece perfis de terapeutas, escolhe um horário e segue para a reserva online quando fizer sentido.",
+      "No TEDS você pode explorar práticas terapêuticas, conhecer profissionais, escolher com quem deseja seguir e agendar seu encontro online pela plataforma.",
   },
   {
-    question: "A plataforma é segura?",
+    question: "Como encontro um terapeuta que faça sentido para mim?",
     answer:
-      "A experiência pública mostra apenas informações necessárias para a escolha. Dados sensíveis e dados de sessão devem seguir as regras de RLS e privacidade do projeto.",
+      "Você pode começar pelo Match, explorar práticas terapêuticas, ou conhecer diferentes perfis, comparar informações, experiências e avaliações para fazer sua escolha com calma.",
   },
   {
-    question: "Como escolho a terapeuta ideal para mim?",
+    question: "Posso cancelar ou reagendar um encontro?",
     answer:
-      "Você pode iniciar pela jornada guiada, explorar terapias ou comparar perfis. A escolha deve acontecer com calma, sem promessa de resultado.",
+      "Sim. Cancelamentos podem ser feitos com pelo menos 24 horas de antecedência, conforme a política vigente. As condições de cancelamento e agendamento são apresentadas antes da reserva.",
   },
   {
-    question: "A sessão é online?",
+    question: "Como o TEDS cuida da minha privacidade?",
     answer:
-      "O fluxo público apresenta sessões online. O link da sessão só deve ser gerado após pagamento confirmado pelas regras transacionais do projeto.",
+      "O TEDS procura utilizar apenas as informações necessárias para oferecer a experiência da plataforma. Dados pessoais e informações da sua navegação são tratados de acordo com as regras de privacidade aplicáveis.",
   },
   {
-    question: "Posso reagendar se necessário?",
+    question: "Os encontros são online?",
     answer:
-      "As regras de reagendamento devem aparecer no fluxo de reserva e na área logada, conforme políticas do produto.",
+      "Sim. Os encontros agendados pelo TEDS acontecem online. Depois da confirmação da reserva, você recebe pela plataforma as informações necessárias para participar.",
   },
   {
-    question: "O TES substitui acompanhamento médico?",
+    question: "O TEDS substitui acompanhamento médico ou psicológico?",
     answer:
-      "Não. O conteúdo do TES é informativo e não substitui acompanhamento médico, psicológico, diagnóstico ou tratamento profissional.",
+      "Não. O TEDS facilita o acesso a práticas integrativas e a profissionais, mas não realiza diagnósticos, prescreve tratamentos, nem substitui acompanhamento médico, psicológico, psiquiátrico ou atendimento de emergência.",
   },
 ];

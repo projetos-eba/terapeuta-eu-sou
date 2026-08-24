@@ -8,10 +8,17 @@ import {
   ChevronDown,
   Loader2,
   MessageSquarePlus,
+  Paperclip,
+  X,
 } from "lucide-react";
 
 import { TESButton, TESDialog, TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
+import {
+  supportTicketAttachmentLimit,
+  supportTicketAttachmentMimeTypes,
+  supportTicketAttachmentSizeLimit,
+} from "@/features/support/support-contracts";
 
 import type {
   MessageCenterActorRole,
@@ -92,6 +99,7 @@ function TemplateDialog({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [protocol, setProtocol] = useState<string | null>(null);
+  const [supportAttachments, setSupportAttachments] = useState<File[]>([]);
   const supportRequestId = useRef<string | null>(null);
 
   const templateParameters = selectedTemplate?.parameters ?? [];
@@ -174,17 +182,27 @@ function TemplateDialog({
     }
     setIsSubmitting(true);
     supportRequestId.current ??= crypto.randomUUID();
+    const ticketInput = {
+      actorRole: props.actorRole,
+      bookingId: null,
+      category: supportCategoryForTemplate(selectedTemplate?.key),
+      description: supportDescription,
+      requestId: supportRequestId.current,
+      source: "message_center",
+      subject: supportSubject,
+    };
+    const formData = new FormData();
+    for (const [key, value] of Object.entries(ticketInput)) {
+      formData.set(key, value === null ? "" : String(value));
+    }
+    for (const file of supportAttachments) formData.append("attachments", file);
     const response = await fetch("/api/support/tickets", {
-      body: JSON.stringify({
-        actorRole: props.actorRole,
-        bookingId: null,
-        category: supportCategoryForTemplate(selectedTemplate?.key),
-        description: supportDescription,
-        requestId: supportRequestId.current,
-        source: "message_center",
-        subject: supportSubject,
-      }),
-      headers: { "Content-Type": "application/json" },
+      body:
+        supportAttachments.length > 0 ? formData : JSON.stringify(ticketInput),
+      headers:
+        supportAttachments.length > 0
+          ? undefined
+          : { "Content-Type": "application/json" },
       method: "POST",
     });
     const payload = (await response.json().catch(() => null)) as {
@@ -254,11 +272,10 @@ function TemplateDialog({
             onChange={(key) => {
               setTemplateKey(key);
               supportRequestId.current = null;
-              const template = props.templates.find(
-                (item) => item.key === key,
-              );
+              const template = props.templates.find((item) => item.key === key);
               setSupportSubject(template?.label ?? "");
               setSupportDescription(template?.body ?? "");
+              setSupportAttachments([]);
             }}
           />
           <label className="grid gap-2">
@@ -274,6 +291,61 @@ function TemplateDialog({
               }}
               value={supportSubject}
             />
+          </label>
+          <label className="grid gap-2">
+            <span className="text-sm font-extrabold text-brand-deep">
+              Anexos (opcional)
+            </span>
+            <span className="flex min-h-12 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-brand-primary px-3 text-sm font-bold text-brand-primary">
+              <Paperclip aria-hidden="true" size={17} />
+              Adicionar PDF ou imagem
+              <input
+                accept={supportTicketAttachmentMimeTypes.join(",")}
+                className="sr-only"
+                multiple
+                onChange={(event) => {
+                  const selected = Array.from(event.target.files ?? []);
+                  setSupportAttachments((current) =>
+                    [...current, ...selected].slice(
+                      0,
+                      supportTicketAttachmentLimit,
+                    ),
+                  );
+                  event.currentTarget.value = "";
+                  supportRequestId.current = null;
+                }}
+                type="file"
+              />
+            </span>
+            {supportAttachments.length > 0 ? (
+              <div className="grid gap-2">
+                {supportAttachments.map((file, index) => (
+                  <span
+                    className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted px-3 py-2 text-xs font-bold text-tesText-secondary"
+                    key={`${file.name}-${file.lastModified}-${index}`}
+                  >
+                    <span className="truncate">{file.name}</span>
+                    <button
+                      aria-label={`Remover ${file.name}`}
+                      className="shrink-0 text-brand-primary"
+                      onClick={() =>
+                        setSupportAttachments((current) =>
+                          current.filter((_, itemIndex) => itemIndex !== index),
+                        )
+                      }
+                      type="button"
+                    >
+                      <X aria-hidden="true" size={15} />
+                    </button>
+                  </span>
+                ))}
+                <span className="text-xs font-semibold text-tesText-secondary">
+                  Até {supportTicketAttachmentLimit} arquivos de até{" "}
+                  {Math.round(supportTicketAttachmentSizeLimit / 1024 / 1024)}{" "}
+                  MB.
+                </span>
+              </div>
+            ) : null}
           </label>
           <label className="grid gap-2">
             <span className="text-sm font-extrabold text-brand-deep">
@@ -296,7 +368,7 @@ function TemplateDialog({
             disabled={
               !templateKey ||
               supportSubject.trim().length < 3 ||
-              !supportDescription.trim() ||
+              (!supportDescription.trim() && supportAttachments.length === 0) ||
               isSubmitting
             }
             onBack={onClose}
@@ -477,7 +549,9 @@ function TemplateOptions({
 }) {
   return (
     <fieldset className="grid gap-2">
-      <legend className="text-sm font-extrabold text-brand-deep">{legend}</legend>
+      <legend className="text-sm font-extrabold text-brand-deep">
+        {legend}
+      </legend>
       <div className="grid max-h-[46vh] gap-2 overflow-y-auto pr-1">
         {templates.map((template) => (
           <label
@@ -538,12 +612,7 @@ function Actions({
 }) {
   return (
     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-      <TESButton
-        onClick={onBack}
-        size="md"
-        type="button"
-        variant="secondary"
-      >
+      <TESButton onClick={onBack} size="md" type="button" variant="secondary">
         Voltar
       </TESButton>
       <TESButton

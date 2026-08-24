@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MessageCircle } from "lucide-react";
 
 import { TESButton, TESDialog } from "@/components/tes";
@@ -20,6 +20,17 @@ export function MessageThreadDialogButton({
   trigger?: "action" | "title";
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  useEffect(() => {
+    if (!isOpen || !thread.conversationId) return;
+    void fetch("/api/messages/mark-read", {
+      body: JSON.stringify({
+        actorRole,
+        conversationId: thread.conversationId,
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    }).catch(() => undefined);
+  }, [actorRole, isOpen, thread.conversationId]);
   const isTitleTrigger = trigger === "title";
 
   return (
@@ -37,9 +48,7 @@ export function MessageThreadDialogButton({
         type="button"
         variant={isTitleTrigger ? "ghost" : "secondary"}
       >
-        {isTitleTrigger ? null : (
-          <MessageCircle aria-hidden="true" size={15} />
-        )}
+        {isTitleTrigger ? null : <MessageCircle aria-hidden="true" size={15} />}
         {isTitleTrigger ? thread.title : "Ver mensagens"}
       </TESButton>
       {isOpen ? (

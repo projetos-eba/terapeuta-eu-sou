@@ -1,15 +1,14 @@
-import Link from "next/link";
 import {
   BarChart3,
   CalendarX2,
-  LockKeyhole,
   RotateCcw,
   TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 
 import { AppPageSection } from "@/components/app-page";
-import { routes } from "@/lib/routes";
+import { TherapistPlan } from "@/domain/tes";
+import { TherapistLockedCard } from "@/features/therapist-access";
 
 import type {
   FinancialMetricComparison,
@@ -102,27 +101,13 @@ export function FinancialSummaryMetrics({
 
 function PremiumMetricsLocked() {
   return (
-    <AppPageSection className="grid gap-4 bg-brand-lavenderSoft/70 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
-      <span className="grid size-12 place-items-center rounded-full bg-white text-brand-primary">
-        <LockKeyhole aria-hidden="true" size={22} />
-      </span>
-      <div>
-        <h2 className="text-lg font-extrabold text-brand-deep">
-          Acompanhamento financeiro Premium
-        </h2>
-        <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-          O resumo operacional continua disponível. Comparação com período
-          anterior, ticket médio, retorno, evolução e faturamento por terapia
-          fazem parte do Premium.
-        </p>
-      </div>
-      <Link
-        className="inline-flex min-h-11 items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-        href={routes.therapist.plan}
-      >
-        Ver planos
-      </Link>
-    </AppPageSection>
+    <TherapistLockedCard
+      className="rounded-card"
+      description="O resumo operacional continua disponível. Comparação com período anterior, ticket médio, retorno, evolução e faturamento por terapia fazem parte do Premium."
+      requiredPlan={TherapistPlan.Premium}
+      title="Acompanhamento financeiro Premium"
+      variant="section"
+    />
   );
 }
 
