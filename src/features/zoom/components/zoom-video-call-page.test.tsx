@@ -27,6 +27,8 @@ describe("ZoomVideoCallPage", () => {
         bookingId="booking-id"
         participantLabel="Com Ana"
         scheduleLabel="11/08, 14:00"
+        scheduledEndsAt="2026-08-11T15:00:00.000Z"
+        scheduledStartsAt="2026-08-11T14:00:00.000Z"
         sessionTitle="Reiki online"
       />,
     );

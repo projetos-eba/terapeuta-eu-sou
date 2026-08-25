@@ -22,9 +22,7 @@ import {
 
 import {
   BookingStatus,
-  SessionFinancialStatus,
   type BookingStatus as BookingStatusValue,
-  type SessionFinancialStatus as SessionFinancialStatusValue,
 } from "@/domain/tes";
 import {
   formatSessionDateTime,
@@ -162,7 +160,6 @@ export default async function TherapistSessionsPage({
               >
                 <SessionsFilterBar
                   bookingStatus={parsedFilters.filters.bookingStatus}
-                  financialStatus={parsedFilters.filters.financialStatus}
                   hasActiveFilters={hasActiveFilters}
                   itemCount={allItems.length}
                   periodPreset={parsedFilters.filters.periodPreset}
@@ -332,14 +329,12 @@ function MetricCard({
 
 function SessionsFilterBar({
   bookingStatus,
-  financialStatus,
   hasActiveFilters,
   itemCount,
   periodPreset,
   searchQuery,
 }: {
   bookingStatus?: BookingStatusValue;
-  financialStatus?: SessionFinancialStatusValue;
   hasActiveFilters: boolean;
   itemCount: number;
   periodPreset?: string;
@@ -348,9 +343,9 @@ function SessionsFilterBar({
   return (
     <form
       action={routes.therapist.sessions}
-      className="grid grid-cols-2 gap-3 border-b border-brand-lavender/60 p-4 sm:p-5 xl:grid-cols-[minmax(220px,1fr)_minmax(142px,0.58fr)_minmax(150px,0.68fr)_minmax(150px,0.62fr)_112px]"
+      className="grid grid-cols-2 gap-3 border-b border-brand-lavender/60 p-4 sm:p-5 xl:grid-cols-[minmax(220px,1fr)_minmax(142px,0.58fr)_minmax(150px,0.62fr)_112px]"
     >
-      <div className="col-span-2 flex items-center justify-between gap-3 xl:col-span-5">
+      <div className="col-span-2 flex items-center justify-between gap-3 xl:col-span-4">
         <div>
           <h2 className="text-base font-extrabold text-brand-deep">Sessões</h2>
           <p className="mt-1 text-xs font-semibold text-tesText-secondary">
@@ -385,12 +380,6 @@ function SessionsFilterBar({
         name="status"
         options={bookingStatusOptions}
         value={bookingStatus}
-      />
-      <SelectField
-        label="Pagamento"
-        name="payment"
-        options={financialStatusOptions}
-        value={financialStatus}
       />
       <SelectField
         label="Período"
@@ -471,12 +460,11 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
         </caption>
         <thead>
           <tr className="border-b border-brand-lavender/60 text-[11px] font-extrabold uppercase tracking-[0.08em] text-brand-primary">
-            <th className="w-[22%] px-5 py-5">Pessoa</th>
-            <th className="w-[17%] px-2.5 py-5">Terapia</th>
-            <th className="w-[17%] px-2.5 py-5">Data e horário</th>
-            <th className="w-[14%] px-2.5 py-5">Status</th>
-            <th className="w-[13%] px-2.5 py-5">Pagamento</th>
-            <th className="w-[10%] px-2.5 py-5 text-right">Valor</th>
+            <th className="w-[25%] px-5 py-5">Pessoa</th>
+            <th className="w-[19%] px-2.5 py-5">Terapia</th>
+            <th className="w-[21%] px-2.5 py-5">Data e horário</th>
+            <th className="w-[17%] px-2.5 py-5">Status</th>
+            <th className="w-[11%] px-2.5 py-5 text-right">Valor</th>
             <th className="w-[7%] px-3 py-5 text-right">Ações</th>
           </tr>
         </thead>
@@ -522,9 +510,6 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
                 </td>
                 <td className="px-2.5 py-4">
                   <StatusBadge presentation={presentation} />
-                </td>
-                <td className="px-2.5 py-4">
-                  <FinancialStatusBadge value={booking.financialStatus} />
                 </td>
                 <td className="px-2.5 py-4 text-right font-extrabold text-brand-deep">
                   {formatSessionMoney(booking.priceCents, booking.currency)}
@@ -578,7 +563,6 @@ function SessionsMobileList({ items }: { items: SessionReadModelItem[] }) {
                 </span>
               </span>
               <StatusBadge presentation={presentation} />
-              <FinancialStatusBadge value={booking.financialStatus} />
             </span>
             <span className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-tesText-secondary">
               <span>Atendimento online</span>
@@ -632,27 +616,29 @@ function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
                 nextSession.timezone,
               )}
             </p>
-            <Link
-              className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-              href={
-                routes.therapist.sessionDetail(nextSession.bookingId) as Route
-              }
-            >
-              <Video aria-hidden="true" size={16} />
-              {nextSessionPresentation?.actions.primary.label ?? "Ver detalhes"}
-            </Link>
+            <div className="mt-4 grid gap-3">
+              <Link
+                className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                href={
+                  routes.therapist.sessionDetail(nextSession.bookingId) as Route
+                }
+              >
+                <Video aria-hidden="true" size={16} />
+                {nextSessionPresentation?.actions.primary.label ?? "Ver detalhes"}
+              </Link>
+              <Link
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-brand-lavender text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
+                href={routes.therapist.agenda as Route}
+              >
+                Ver agenda completa
+              </Link>
+            </div>
           </div>
         ) : (
           <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
             Nenhuma próxima sessão encontrada nos itens carregados.
           </p>
         )}
-        <Link
-          className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-brand-lavender text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
-          href={routes.therapist.agenda as Route}
-        >
-          Ver agenda completa
-        </Link>
       </section>
 
       <section className="h-auto self-start rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card xl:mb-5">
@@ -933,15 +919,6 @@ const bookingStatusOptions = [
   { label: "Reembolsadas", value: BookingStatus.Refunded },
 ];
 
-const financialStatusOptions = [
-  { label: "Pago", value: SessionFinancialStatus.Paid },
-  { label: "Pendente", value: SessionFinancialStatus.Pending },
-  { label: "Processando", value: SessionFinancialStatus.Processing },
-  { label: "Falhou", value: SessionFinancialStatus.Failed },
-  { label: "Contestação", value: SessionFinancialStatus.Disputed },
-  { label: "Reembolsado", value: SessionFinancialStatus.Refunded },
-];
-
 const periodOptions = [
   { label: "Últimos 7 dias", value: "7" },
   { label: "Últimos 30 dias", value: "30" },
@@ -970,23 +947,6 @@ function SessionGroup({
       <SessionsMobileList items={items} />
       <SessionsTable items={items} />
     </section>
-  );
-}
-
-function FinancialStatusBadge({ value }: { value: string | null }) {
-  const tone =
-    value === "paid"
-      ? "bg-status-successBg text-status-success"
-      : value === "failed" || value === "disputed" || value === "canceled"
-        ? "bg-status-dangerBg text-status-danger"
-        : "bg-status-warningBg text-status-warning";
-
-  return (
-    <span
-      className={`inline-flex max-w-full rounded-full px-2.5 py-1 text-[10px] font-extrabold ${tone}`}
-    >
-      <span className="truncate">{formatFinancialStatus(value)}</span>
-    </span>
   );
 }
 
@@ -1082,7 +1042,6 @@ function buildCsvDataHref(items: SessionReadModelItem[]) {
       "Inicio",
       "Fim",
       "Status",
-      "Pagamento",
       "Valor",
       "Formato",
     ],
@@ -1092,7 +1051,6 @@ function buildCsvDataHref(items: SessionReadModelItem[]) {
       formatSessionDateTime(item.startsAt, item.timezone),
       formatSessionDateTime(item.endsAt, item.timezone),
       mapSessionPresentation(item).label,
-      formatFinancialStatus(item.financialStatus),
       formatSessionMoney(item.priceCents, item.currency),
       "Online",
     ]),
@@ -1124,21 +1082,6 @@ function formatCompactSessionDateTime(value: string, timezone: string) {
   return `${date} · ${time}`;
 }
 
-function formatFinancialStatus(value: string | null) {
-  const labels: Record<string, string> = {
-    canceled: "Cancelado",
-    disputed: "Em contestação",
-    failed: "Falhou",
-    paid: "Pago",
-    partially_refunded: "Reembolso parcial",
-    pending: "Pendente",
-    processing: "Processando",
-    refunded: "Reembolsado",
-  };
-
-  return value ? (labels[value] ?? "Em análise") : "Não iniciado";
-}
-
 function getCompactPresentationLabel(presentation: SessionPresentation) {
   if (presentation.state === "payment_pending") return "Pag. pendente";
   if (presentation.state === "reschedule_requested") return "Reagendamento";
@@ -1155,7 +1098,6 @@ function getSearchQuery(value: string | string[] | undefined) {
 function hasFilterState(
   filters: {
     bookingStatus?: string;
-    financialStatus?: string;
     periodPreset?: string;
   },
   searchQuery: string,
@@ -1163,7 +1105,6 @@ function hasFilterState(
   return Boolean(
     searchQuery ||
     filters.bookingStatus ||
-    filters.financialStatus ||
     (filters.periodPreset && filters.periodPreset !== "30"),
   );
 }

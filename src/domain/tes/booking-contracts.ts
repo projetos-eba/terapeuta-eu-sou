@@ -80,6 +80,8 @@ export type ZoomAccessState = {
   availableFrom: ISODateTimeString | null;
   availableUntil: ISODateTimeString | null;
   hardEndsAt?: ISODateTimeString | null;
+  scheduledEndsAt?: ISODateTimeString | null;
+  scheduledStartsAt?: ISODateTimeString | null;
   serverNow?: ISODateTimeString | null;
   videoSessionStatus: ZoomVideoSessionStatus | "not_available";
   reason: ZoomAccessReason | null;

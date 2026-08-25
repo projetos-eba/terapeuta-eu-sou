@@ -36,6 +36,8 @@ export default async function PatientVideoCallRoute({
         bookingId={bookingId}
         participantLabel={`Com ${data.therapist.name}`}
         scheduleLabel={`${data.booking.dateLabel}, ${data.booking.timeRangeLabel}`}
+        scheduledEndsAt={data.booking.endsAt}
+        scheduledStartsAt={data.booking.startsAt}
         sessionTitle={data.service.title}
         showFeedback={resolvedSearchParams.feedback === "1"}
       />

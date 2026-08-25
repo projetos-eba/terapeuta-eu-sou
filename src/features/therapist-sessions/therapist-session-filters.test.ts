@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { BookingStatus, SessionFinancialStatus } from "@/domain/tes";
+import { BookingStatus } from "@/domain/tes";
 import { formatSessionDateTime } from "@/features/bookings";
 
 import {
@@ -47,12 +47,12 @@ describe("therapist session filters", () => {
     });
   });
 
-  it("parses versionable URL filters and cursor pagination", () => {
+  it("parses status filters and ignores the removed payment filter", () => {
     const result = parseTherapistSessionFilters({
       cursorBookingId: "f2000000-0000-4000-8000-000000000001",
       cursorStartsAt: "2026-07-26T13:00:00.000Z",
       limit: "25",
-      payment: SessionFinancialStatus.Paid,
+      payment: "paid",
       periodEnd: "2026-08-01T00:00:00.000Z",
       periodStart: "2026-07-01T00:00:00.000Z",
       status: BookingStatus.Confirmed,
@@ -65,11 +65,13 @@ describe("therapist session filters", () => {
           bookingId: "f2000000-0000-4000-8000-000000000001",
           startsAt: "2026-07-26T13:00:00.000Z",
         },
-        financialStatus: SessionFinancialStatus.Paid,
         limit: 25,
       }),
       valid: true,
     });
+    if (result.valid) {
+      expect(result.filters).not.toHaveProperty("financialStatus");
+    }
   });
 
   it("rejects partial cursors, invalid periods and oversized pages", () => {
@@ -94,7 +96,6 @@ describe("therapist session filters", () => {
     const href = buildNextSessionsHref(
       {
         bookingStatus: BookingStatus.Confirmed,
-        financialStatus: SessionFinancialStatus.Paid,
         limit: 20,
       },
       {
@@ -104,7 +105,7 @@ describe("therapist session filters", () => {
     );
 
     expect(href).toContain("status=confirmed");
-    expect(href).toContain("payment=paid");
+    expect(href).not.toContain("payment=");
     expect(href).not.toContain("modality=");
     expect(href).toContain("cursorBookingId=f2000000");
   });

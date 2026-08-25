@@ -224,6 +224,10 @@ function zoomAccess(value: unknown): ZoomAccessState {
     allowed: requiredBoolean(row.allowed),
     availableFrom: requiredString(row.availableFrom),
     availableUntil: requiredString(row.availableUntil),
+    hardEndsAt: nullableString(row.hardEndsAt),
+    scheduledEndsAt: nullableString(row.scheduledEndsAt),
+    scheduledStartsAt: nullableString(row.scheduledStartsAt),
+    serverNow: nullableString(row.serverNow),
     videoSessionStatus: videoSessionStatusValue,
     reason,
   };

@@ -850,6 +850,7 @@ function formatParticipationDuration(value: unknown) {
 function formatControlJobOperation(value: string) {
   const labels: Record<string, string> = {
     confirm_end: "Confirmar o encerramento da sala",
+    end_scheduled: "Encerrar no horário programado",
     end_hard_timeout: "Encerrar ao atingir o limite de segurança",
     end_therapist_absent: "Encerrar por ausência do profissional",
     reconcile_orphan: "Conferir sala sem vínculo confirmado",

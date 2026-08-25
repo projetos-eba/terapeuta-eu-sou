@@ -109,6 +109,8 @@ type SessionState =
   | "ended"
   | "error";
 
+type RemoteVideoState = "off" | "attaching" | "on" | "error";
+
 type CleanupFailure = {
   operation: string;
   reason: string;
@@ -127,6 +129,8 @@ export function ZoomVideoSessionAdapter({
   initialFeedback = false,
   participantLabel = "Com outra pessoa",
   scheduleLabel,
+  scheduledEndsAt,
+  scheduledStartsAt,
   sessionTitle,
 }: {
   access: ZoomAccessState | null;
@@ -138,6 +142,8 @@ export function ZoomVideoSessionAdapter({
   initialFeedback?: boolean;
   participantLabel?: string;
   scheduleLabel?: string;
+  scheduledEndsAt?: string;
+  scheduledStartsAt?: string;
   sessionTitle?: string;
 }) {
   const [state, setState] = useState<SessionState>("idle");
@@ -154,7 +160,10 @@ export function ZoomVideoSessionAdapter({
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [audioMuted, setAudioMuted] = useState(true);
   const [videoOn, setVideoOn] = useState(false);
-  const [remoteParticipantCount, setRemoteParticipantCount] = useState(0);
+  const [localPreviewUnavailable, setLocalPreviewUnavailable] = useState(false);
+  const [remoteParticipantPresent, setRemoteParticipantPresent] = useState(false);
+  const [remoteVideoState, setRemoteVideoState] =
+    useState<RemoteVideoState>("off");
   const [roleType, setRoleType] = useState<0 | 1 | null>(null);
   const [cleanupFailures, setCleanupFailures] = useState<CleanupFailure[]>([]);
   const [endDialogOpen, setEndDialogOpen] = useState(false);
@@ -179,6 +188,7 @@ export function ZoomVideoSessionAdapter({
   const localUserElementsRef = useRef<HTMLElement[]>([]);
   const remoteUserElementsRef = useRef<Map<number, HTMLElement[]>>(new Map());
   const remoteVideoAttachInFlightRef = useRef<Set<number>>(new Set());
+  const remoteVideoResyncTimersRef = useRef<number[]>([]);
   const listenersRef = useRef<
     Array<{ event: string; handler: (...args: unknown[]) => void }>
   >([]);
@@ -258,6 +268,7 @@ export function ZoomVideoSessionAdapter({
       previewAbortControllerRef.current?.abort();
       joinAbortControllerRef.current?.abort();
       authRefreshAbortControllerRef.current?.abort();
+      clearRemoteVideoResyncTimers();
       window.removeEventListener("pagehide", handlePageHide);
       void cleanupRef.current?.({ destroyClient: true, endSession: false });
     };
@@ -273,11 +284,11 @@ export function ZoomVideoSessionAdapter({
   const sectionClassName = displayMode === "dedicated" ? "w-full" : "mt-6";
 
   useEffect(() => {
-    if (!currentAccess?.hardEndsAt) return undefined;
+    if (!(currentAccess?.scheduledStartsAt ?? scheduledStartsAt)) return undefined;
 
     const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, [currentAccess?.hardEndsAt]);
+  }, [currentAccess?.scheduledStartsAt, scheduledStartsAt]);
 
   const refreshPreviewAccess = useCallback(
     (forceOnline = false) => {
@@ -578,6 +589,7 @@ export function ZoomVideoSessionAdapter({
       registerClientListeners(client);
 
       await client.init("pt-BR", "Global", {
+        enforceMultipleVideos: true,
         leaveOnPageUnload: true,
         patchJsMedia: true,
         stayAwake: true,
@@ -599,6 +611,7 @@ export function ZoomVideoSessionAdapter({
       await stream.startAudio?.();
       await stream.muteAudio?.();
       await renderExistingRemoteVideos();
+      scheduleRemoteVideoResync();
 
       if (!mounted.current) {
         await cleanup({ destroyClient: true, endSession: false });
@@ -696,6 +709,7 @@ export function ZoomVideoSessionAdapter({
         localUserElementsRef.current = [];
         await stream.stopVideo?.();
         setVideoOn(false);
+        setLocalPreviewUnavailable(false);
         return;
       }
 
@@ -706,18 +720,22 @@ export function ZoomVideoSessionAdapter({
         throw new Error("participant_not_ready");
       }
       localUserIdRef.current = userId ?? null;
+      setVideoOn(true);
       const attached = await stream.attachVideo?.(userId, 2);
       const elements = normalizeVideoElements(attached);
       if (elements.length === 0) {
-        await stream.stopVideo?.();
-        throw new Error("local_video_not_attached");
+        setLocalPreviewUnavailable(true);
+        setMessage(
+          "Sua câmera está ligada, mas a prévia local não pode ser exibida neste dispositivo. O vídeo da outra pessoa permanece priorizado.",
+        );
+        return;
       }
       for (const element of elements) {
         styleVideoElement(element);
         container.appendChild(element);
       }
       localUserElementsRef.current = elements;
-      setVideoOn(true);
+      setLocalPreviewUnavailable(false);
     } catch (error) {
       setMessage(formatMediaError(error, "camera"));
     }
@@ -784,6 +802,7 @@ export function ZoomVideoSessionAdapter({
       );
     }
     listenersRef.current = [];
+    clearRemoteVideoResyncTimers();
 
     await stopAllRemoteVideos(failures);
 
@@ -796,7 +815,7 @@ export function ZoomVideoSessionAdapter({
     }
     removeVideoElements(localUserElementsRef.current);
     localUserElementsRef.current = [];
-    if (hadAttachedLocalVideo) {
+    if (hadAttachedLocalVideo || videoOn) {
       await recordCleanupFailure(failures, "stopVideo", () =>
         stream?.stopVideo?.(),
       );
@@ -819,8 +838,10 @@ export function ZoomVideoSessionAdapter({
     localUserIdRef.current = null;
     remoteUserElementsRef.current.clear();
     remoteVideoAttachInFlightRef.current.clear();
-    setRemoteParticipantCount(0);
+    setRemoteParticipantPresent(false);
+    setRemoteVideoState("off");
     setVideoOn(false);
+    setLocalPreviewUnavailable(false);
     setAudioMuted(true);
 
     if (failures.length > 0) {
@@ -846,6 +867,7 @@ export function ZoomVideoSessionAdapter({
       } else if (normalized.state === "Connected") {
         setState("joined");
         setMessage("Conexao restabelecida.");
+        scheduleRemoteVideoResync();
       } else if (normalized.state === "Closed") {
         setState("ended");
         setMessage(formatClosedReason(normalized.reason));
@@ -919,15 +941,21 @@ export function ZoomVideoSessionAdapter({
       (user) => user.userId && user.userId !== localUserIdRef.current,
     );
 
+    setRemoteParticipantPresent(remoteUsers.length > 0);
+
+    for (const [userId] of remoteUserElementsRef.current) {
+      const current = remoteUsers.find((user) => user.userId === userId);
+      if (!current?.bVideoOn) await detachRemoteVideo(userId, true);
+    }
+
     for (const user of remoteUsers) {
       if (user.bVideoOn) {
         await attachRemoteVideo(user.userId);
       }
     }
 
-    setRemoteParticipantCount(
-      Math.max(remoteUsers.length, remoteUserElementsRef.current.size),
-    );
+    if (remoteUserElementsRef.current.size > 0) setRemoteVideoState("on");
+    else if (!remoteUsers.some((user) => user.bVideoOn)) setRemoteVideoState("off");
   }
 
   async function attachRemoteVideo(userId: number) {
@@ -941,6 +969,8 @@ export function ZoomVideoSessionAdapter({
       return;
 
     remoteVideoAttachInFlightRef.current.add(userId);
+    setRemoteParticipantPresent(true);
+    setRemoteVideoState("attaching");
 
     try {
       const attached = await stream.attachVideo(userId, 2);
@@ -951,10 +981,9 @@ export function ZoomVideoSessionAdapter({
         container.appendChild(element);
       }
       remoteUserElementsRef.current.set(userId, elements);
-      setRemoteParticipantCount((current) =>
-        Math.max(current, remoteUserElementsRef.current.size),
-      );
+      setRemoteVideoState("on");
     } catch (error) {
+      setRemoteVideoState("error");
       setMessage(formatMediaError(error, "video remoto"));
     } finally {
       remoteVideoAttachInFlightRef.current.delete(userId);
@@ -964,19 +993,21 @@ export function ZoomVideoSessionAdapter({
   async function detachRemoteParticipants(users: ZoomParticipant[]) {
     for (const user of users) {
       if (user.userId && user.userId !== localUserIdRef.current) {
-        await detachRemoteVideo(user.userId);
+        await detachRemoteVideo(user.userId, false);
       }
     }
 
-    setRemoteParticipantCount(remoteUserElementsRef.current.size);
+    setRemoteParticipantPresent(false);
+    if (remoteUserElementsRef.current.size === 0) setRemoteVideoState("off");
   }
 
-  async function detachRemoteVideo(userId: number) {
+  async function detachRemoteVideo(userId: number, participantStillPresent = true) {
     const failures: CleanupFailure[] = [];
     await detachRemoteVideoWithFailures(userId, failures);
     if (failures.length > 0) {
       setCleanupFailures((current) => [...current, ...failures]);
     }
+    setRemoteParticipantPresent(participantStillPresent);
   }
 
   async function stopAllRemoteVideos(failures: CleanupFailure[]) {
@@ -1000,7 +1031,24 @@ export function ZoomVideoSessionAdapter({
       element.remove();
     }
     remoteUserElementsRef.current.delete(userId);
-    setRemoteParticipantCount(remoteUserElementsRef.current.size);
+    if (remoteUserElementsRef.current.size === 0) setRemoteVideoState("off");
+  }
+
+  function clearRemoteVideoResyncTimers() {
+    for (const timer of remoteVideoResyncTimersRef.current) {
+      window.clearTimeout(timer);
+    }
+    remoteVideoResyncTimersRef.current = [];
+  }
+
+  function scheduleRemoteVideoResync() {
+    clearRemoteVideoResyncTimers();
+    for (const delay of [0, 350, 1_200]) {
+      const timer = window.setTimeout(() => {
+        if (mounted.current && clientRef.current) void renderExistingRemoteVideos();
+      }, delay);
+      remoteVideoResyncTimersRef.current.push(timer);
+    }
   }
 
   if (state === "ended") {
@@ -1050,7 +1098,14 @@ export function ZoomVideoSessionAdapter({
         countdownLabel={
           waitingKind === "too_early"
             ? formatRoomOpeningCountdown(currentAccess, nowMs, serverClockOffsetMs)
-            : formatHardEndCountdown(currentAccess, nowMs, serverClockOffsetMs)
+            : formatScheduledSessionCountdown({
+                access: currentAccess,
+                actorRole,
+                clientNowMs: nowMs,
+                fallbackEndsAt: scheduledEndsAt,
+                fallbackStartsAt: scheduledStartsAt,
+                serverClockOffsetMs,
+              })
         }
         isOnline={isOnline}
         kind={waitingKind}
@@ -1084,8 +1139,11 @@ export function ZoomVideoSessionAdapter({
           actorRole={actorRole}
           audioMuted={audioMuted}
           localVideoRef={localVideoRef}
+          localPreviewUnavailable={localPreviewUnavailable}
+          onRetryRemoteVideo={scheduleRemoteVideoResync}
           participantLabel={participantLabel}
-          remoteParticipantCount={remoteParticipantCount}
+          remoteParticipantPresent={remoteParticipantPresent}
+          remoteVideoState={remoteVideoState}
           remoteVideoRef={remoteVideoRef}
           state={state}
           videoOn={videoOn}
@@ -1107,12 +1165,19 @@ export function ZoomVideoSessionAdapter({
           supportHref={`${actorRole === "patient" ? routes.patient.messages : routes.therapist.messages}?context=suporte&booking=${bookingId}`}
           videoOn={videoOn}
         />
-        {currentAccess?.hardEndsAt ? (
+        {(currentAccess?.scheduledEndsAt ?? scheduledEndsAt) ? (
           <p
             aria-live="polite"
             className="text-center text-xs font-semibold text-tesText-secondary"
           >
-            {formatHardEndCountdown(currentAccess, nowMs, serverClockOffsetMs)}
+            {formatScheduledSessionCountdown({
+              access: currentAccess,
+              actorRole,
+              clientNowMs: nowMs,
+              fallbackEndsAt: scheduledEndsAt,
+              fallbackStartsAt: scheduledStartsAt,
+              serverClockOffsetMs,
+            })}
           </p>
         ) : null}
       </div>
@@ -1335,22 +1400,39 @@ function formatZoomError(error: unknown) {
   return "Nao conseguimos carregar o video. Verifique camera, microfone e conexao.";
 }
 
-function formatHardEndCountdown(
-  access: ZoomAccessState | null,
-  clientNowMs: number,
-  serverClockOffsetMs: number,
-) {
-  if (!access?.hardEndsAt) return "";
+export function formatScheduledSessionCountdown(input: {
+  access: ZoomAccessState | null;
+  actorRole: "patient" | "therapist";
+  clientNowMs: number;
+  fallbackEndsAt?: string;
+  fallbackStartsAt?: string;
+  serverClockOffsetMs: number;
+}) {
+  const startsAt = input.access?.scheduledStartsAt ?? input.fallbackStartsAt;
+  const endsAt = input.access?.scheduledEndsAt ?? input.fallbackEndsAt;
+  if (!startsAt || !endsAt) return "";
 
-  const hardEndsAtMs = Date.parse(access.hardEndsAt);
-  if (!Number.isFinite(hardEndsAtMs)) return "";
+  const startsAtMs = Date.parse(startsAt);
+  const endsAtMs = Date.parse(endsAt);
+  const nowMs = input.clientNowMs + input.serverClockOffsetMs;
+  if (!Number.isFinite(startsAtMs) || !Number.isFinite(endsAtMs)) return "";
 
-  const remainingMs = hardEndsAtMs - (clientNowMs + serverClockOffsetMs);
-  if (remainingMs <= 0) return "Tempo seguro encerrado.";
+  if (nowMs >= endsAtMs) {
+    return input.actorRole === "patient"
+      ? "O horário programado do encontro terminou."
+      : "O horário programado da sessão terminou.";
+  }
 
+  const beforeStart = nowMs < startsAtMs;
+  const remainingMs = (beforeStart ? startsAtMs : endsAtMs) - nowMs;
   const minutes = Math.floor(remainingMs / 60_000);
   const seconds = Math.floor((remainingMs % 60_000) / 1000);
-  return `Tempo restante: ${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  const clock = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+
+  if (beforeStart) return `O encontro começa em ${clock}`;
+  return input.actorRole === "patient"
+    ? `Tempo restante do encontro: ${clock}`
+    : `Tempo restante da sessão: ${clock}`;
 }
 
 function formatRoomOpeningCountdown(

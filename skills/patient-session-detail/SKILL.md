@@ -51,6 +51,11 @@ Use these support tables when needed:
 - `booking_events`
 - `booking_session_summaries`
 
+O card “O que você compartilhou ao agendar” lê `booking_intake_responses.shared_note`,
+gravado no checkout da reserva. O texto deve ser exibido exatamente como foi
+compartilhado, com fallback acolhedor apenas quando a pessoa não registrar uma
+anotação.
+
 ## UI Rules
 
 - Reuse authenticated shell.
@@ -90,6 +95,11 @@ Use these support tables when needed:
   ainda não tenha sido confirmada. A sala de espera aplica o host-first e
   bloqueia o join do paciente até a presença confiável do terapeuta; o detalhe
   não deve transformar essa espera em uma ação desabilitada.
+- A copy do detalhe deriva horário e participação confiável mesmo antes do
+  preflight Zoom: antes de T-15 informa a abertura futura; na janela informa
+  que a sala de espera está disponível; após T+15 bloqueia somente a primeira
+  entrada; participação anterior permite reconexão até `ends_at`. Falha
+  operacional não pode ser inferida apenas de `zoomAccess=null`.
 - Encontros confirmados usam a semântica verde do TES no status e no destaque
   contextual do hero, sem alterar a autorização real de entrada na sala.
 - Cancellation and refund copy follows `POLÍTICA DE CANCELAMENTO - OPERACIONAL.docx`: at least 24 hours may allow rescheduling or refund when applicable; under 24 hours and no-show do not create an obligation to refund; exceptional cases are individually reviewed.

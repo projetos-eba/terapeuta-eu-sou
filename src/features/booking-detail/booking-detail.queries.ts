@@ -23,6 +23,7 @@ import {
   type BookingDetailSessionSummaryRow,
   type BookingDetailTherapistRow,
   type BookingDetailTherapyRow,
+  type BookingDetailVideoParticipationRow,
 } from "./booking-detail.mappers";
 import type {
   BookingDetailPageData,
@@ -89,6 +90,7 @@ export const getPatientSessionDetailPage = cache(
         paymentRows,
         rescheduleRows,
         cancellationDecisionRows,
+        patientParticipationRows,
       ] = await Promise.all([
         supabaseServerRestRequest<BookingDetailTherapistRow[]>(
           config,
@@ -117,6 +119,10 @@ export const getPatientSessionDetailPage = cache(
         supabaseServerRestRequest<BookingDetailCancellationDecisionRow[]>(
           config,
           `/rest/v1/session_cancellation_decisions?select=decision,refund_amount_cents,requires_manual_review,review_due_at&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
+        ),
+        supabaseServerRestRequest<BookingDetailVideoParticipationRow[]>(
+          config,
+          `/rest/v1/video_session_participations?select=id&booking_id=eq.${booking.id}&participant_role=eq.patient&event_type=eq.session.user_joined&limit=1`,
         ),
       ]);
       const therapist = therapists[0];
@@ -165,6 +171,7 @@ export const getPatientSessionDetailPage = cache(
         completedBookings,
         intake: intakeRows[0] ?? null,
         patient: profile,
+        patientHasJoined: patientParticipationRows.length > 0,
         patientProfile,
         perspective: "patient",
         policy: policyRows[0] ?? null,
@@ -241,6 +248,7 @@ function createDemoBookingDetail(
       display_name: "Carlos",
       id: profileId,
     },
+    patientHasJoined: false,
     patientProfile: {
       avatar_url: null,
       display_name: "Carlos",

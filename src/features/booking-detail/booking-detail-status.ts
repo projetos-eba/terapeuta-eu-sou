@@ -5,6 +5,7 @@ import type { BookingDetailStatus } from "./booking-detail.types";
 export function getBookingDetailStatus(input: {
   endsAt: string;
   paymentStatus: string | null;
+  patientHasJoined: boolean;
   startsAt: string;
   status: string;
 }): BookingDetailStatus {
@@ -12,6 +13,7 @@ export function getBookingDetailStatus(input: {
     canJoinBooking({
       endsAt: input.endsAt,
       paymentStatus: input.paymentStatus,
+      patientHasJoined: input.patientHasJoined,
       startsAt: input.startsAt,
       status: input.status,
     })

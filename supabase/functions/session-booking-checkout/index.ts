@@ -12,6 +12,7 @@ import {
   type BookingCheckoutCommandBody,
   mapBookingCheckoutDatabaseError,
   selectAvailableSlot,
+  MAX_SHARED_NOTE_LENGTH,
   type ServiceAvailableSlotsResponse,
   slotRangeEnd,
   validateBookingCheckoutCommand,
@@ -25,6 +26,12 @@ type BookingHoldRow = {
 
 type BookingRow = {
   id: string;
+};
+
+type ServiceIntakeContextRow = {
+  description: string | null;
+  id: string;
+  therapist_profile_id: string;
 };
 
 type LegalAcceptanceRow = {
@@ -52,6 +59,8 @@ type CheckoutResponse = {
 };
 
 const runtime = getRuntime("session-booking-checkout");
+const DEFAULT_SHARED_NOTE =
+  "Você poderá complementar suas informações antes do encontro, se desejar.";
 
 runtime.serve(async (request) => {
   const optionsResponse = handleOptions(request);
@@ -99,6 +108,19 @@ runtime.serve(async (request) => {
       );
       const selectedSlot = selectAvailableSlot(slots, command.startsAt);
 
+      operation = "get_booking_intake_context";
+      const serviceRows = await client.get<ServiceIntakeContextRow[]>(
+        `/rest/v1/therapist_services?select=id,therapist_profile_id,description&id=eq.${encodeURIComponent(command.serviceId)}&limit=1`,
+      );
+      const service = serviceRows[0];
+      if (!service) {
+        throw new DomainError(
+          "service_not_found",
+          404,
+          "Não foi possível confirmar o serviço escolhido.",
+        );
+      }
+
       operation = "reserve_booking_hold_v1";
       const hold = await client.rpc<BookingHoldRow>(operation, {
         p_ends_at: selectedSlot.endsAt,
@@ -129,6 +151,15 @@ runtime.serve(async (request) => {
         bookingId: booking.id,
         client,
         legalAcceptances,
+      });
+
+      operation = "save_booking_intake_response";
+      await saveBookingIntakeResponse({
+        bookingId: booking.id,
+        client,
+        patientProfileId: patient.id,
+        sharedNote: command.sharedNote ?? DEFAULT_SHARED_NOTE,
+        service,
       });
 
       operation = "stripe-create-session-payment";
@@ -163,9 +194,10 @@ runtime.serve(async (request) => {
         actor_role: "patient",
         correlation_id: correlationId,
         duration_ms: Math.max(0, Math.round(performance.now() - startedAt)),
-        error_code: error instanceof DomainError
-          ? error.code
-          : "session_booking_checkout_failed",
+        error_code:
+          error instanceof DomainError
+            ? error.code
+            : "session_booking_checkout_failed",
         operation,
       }),
     );
@@ -183,9 +215,9 @@ async function assertCheckoutLegalDocumentsPublished(
   ];
   const effectiveAt = encodeURIComponent(new Date().toISOString());
   const rows = await client.get<LegalDocumentVersionRow[]>(
-    `/rest/v1/legal_document_versions?select=document_key&document_key=in.(${
-      documentKeys.join(",")
-    })&status=eq.published&effective_at=lte.${effectiveAt}`,
+    `/rest/v1/legal_document_versions?select=document_key&document_key=in.(${documentKeys.join(
+      ",",
+    )})&status=eq.published&effective_at=lte.${effectiveAt}`,
   );
   const publishedKeys = new Set(rows.map((row) => row.document_key));
   const hasAllDocuments = documentKeys.every((key) => publishedKeys.has(key));
@@ -197,6 +229,38 @@ async function assertCheckoutLegalDocumentsPublished(
       "Os documentos juridicos aplicaveis ainda nao estao publicados.",
     );
   }
+}
+
+async function saveBookingIntakeResponse(input: {
+  bookingId: string;
+  client: SupabaseRestClient;
+  patientProfileId: string;
+  service: ServiceIntakeContextRow;
+  sharedNote: string;
+}) {
+  if (input.sharedNote.length > MAX_SHARED_NOTE_LENGTH) {
+    throw new DomainError(
+      "invalid_booking_checkout_payload",
+      422,
+      "Revise os dados compartilhados antes de continuar.",
+    );
+  }
+
+  await input.client.post(
+    "/rest/v1/booking_intake_responses?on_conflict=booking_id",
+    {
+      booking_id: input.bookingId,
+      focus_area: "Seu momento atual",
+      patient_profile_id: input.patientProfileId,
+      shared_note: input.sharedNote,
+      therapist_profile_id: input.service.therapist_profile_id,
+      therapy_goal:
+        input.service.description?.trim() ||
+        "Acompanhar sua jornada com presença e cuidado.",
+      visibility: "patient_therapist",
+    },
+    "resolution=merge-duplicates,return=minimal",
+  );
 }
 
 async function registerCheckoutLegalAcceptances(input: {
@@ -211,13 +275,11 @@ async function registerCheckoutLegalAcceptances(input: {
   };
   const acceptances: LegalAcceptanceRow[] = [];
 
-  for (
-    const documentKey of [
-      "terms-of-use",
-      "privacy-policy",
-      "cancellation-reschedule-refund-policy",
-    ]
-  ) {
+  for (const documentKey of [
+    "terms-of-use",
+    "privacy-policy",
+    "cancellation-reschedule-refund-policy",
+  ]) {
     const acceptance = await input.client.rpc<LegalAcceptanceRow>(
       "register_legal_acceptance_v1",
       {
@@ -289,9 +351,9 @@ async function invokeSessionPaymentCheckout(input: {
   const payload = (await response.json().catch(() => null)) as
     | CheckoutResponse
     | {
-      ok: false;
-      error?: { code?: string; message?: string };
-    }
+        ok: false;
+        error?: { code?: string; message?: string };
+      }
     | null;
 
   if (!response.ok || payload?.ok !== true) {

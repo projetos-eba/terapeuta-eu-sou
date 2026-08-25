@@ -161,6 +161,12 @@ runtime.serve(async (request) => {
       }
 
       await client.rpc("apply_zoom_video_session_event_v1", applyEventParams);
+      await client.rpc("synchronize_video_session_watchdog_v1", {
+        p_environment: config.environment,
+        p_max_duration_minutes: config.lifecycle.maxDurationMinutes,
+        p_provider_session_id: providerSessionId,
+        p_session_name: sessionName,
+      });
       await client.rpc("apply_zoom_video_webhook_transition_v1", {
         p_error_code: null,
         p_error_message: null,
