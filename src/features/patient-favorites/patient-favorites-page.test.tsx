@@ -18,6 +18,7 @@ describe("PatientFavoriteTherapistsPage", () => {
     expect(
       screen.getByRole("heading", { name: "Terapeutas favoritos" }),
     ).toBeInTheDocument();
+    expect(screen.getByRole("main")).toHaveClass("max-w-[1210px]");
     expect(screen.getByText("Ana Oliveira")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ver perfil" })).toHaveAttribute(
       "href",

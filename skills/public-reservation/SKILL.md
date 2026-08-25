@@ -120,6 +120,9 @@ revalidada no servidor antes do checkout.
 - O checkout real exige `service` + `slot` + `termsAccepted` e revalida serviço,
   preço, duração e slot no servidor.
 - Visitante deve ver opções de login/cadastro de cliente com `next`.
+- O botão `Voltar para agenda e horários` no fluxo da reserva retorna ao perfil
+  público do terapeuta em `/terapeutas/[slug]`; sem slug, retorna à listagem
+  pública de terapeutas.
 - Cliente autenticado deve ver dados de conta no fluxo e no pagamento, sem
   campos editáveis nesta etapa.
 - Cliente autenticado deve conseguir chamar `/api/public/reservation/checkout`

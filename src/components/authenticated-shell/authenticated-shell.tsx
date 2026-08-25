@@ -87,7 +87,7 @@ export function AuthenticatedShell({
     return (
       <>
         <AuthSessionGuard loginHref={resolvedLogoutHref} role={variant} />
-        <main className="min-h-dvh">{children}</main>
+        <main className="tes-authenticated-surface min-h-dvh">{children}</main>
       </>
     );
   }
@@ -95,7 +95,7 @@ export function AuthenticatedShell({
   return (
     <>
       <AuthSessionGuard loginHref={resolvedLogoutHref} role={variant} />
-      <div className="min-h-screen overflow-x-hidden bg-[var(--tes-color-background)] text-tesText-primary">
+      <div className="tes-authenticated-surface min-h-screen overflow-x-hidden bg-[var(--tes-color-background)] text-tesText-primary">
       <aside
         aria-label="Navegação principal"
         className={cn(
@@ -140,7 +140,7 @@ export function AuthenticatedShell({
         />
         <main
           className={cn(
-            "px-4 py-5 sm:px-6",
+            "tes-authenticated-surface px-4 py-5 sm:px-6",
             variant === "therapist"
               ? "min-h-[calc(100vh-96px)] lg:px-7 lg:py-6"
               : "min-h-[calc(100vh-var(--tes-layout-auth-topbar-height))] lg:px-4 lg:py-0",

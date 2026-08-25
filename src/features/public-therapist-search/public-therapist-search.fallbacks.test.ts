@@ -107,6 +107,92 @@ describe("public therapist search fallback contract", () => {
     );
   });
 
+  it("uses all published therapies from the public services projection", async () => {
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable");
+    vi.stubGlobal(
+      "fetch",
+      vi
+        .fn()
+        .mockResolvedValueOnce({
+          json: async () => [
+            {
+              average_rating: 4.8,
+              city: "São Paulo",
+              duration_minutes: 50,
+              has_video: false,
+              highlight: "Perfil Verificado",
+              highlight_tone: "verified",
+              next_slot_at: null,
+              photo_url: null,
+              public_name: "Brunna P",
+              review_count: 0,
+              review_quote: null,
+              search_text: "Brunna P apresentação Tarô",
+              service_description: "Descrição da oferta de Tarô.",
+              service_id: "service-taro",
+              service_price_cents: 12000,
+              service_title: "Tarô online",
+              slug: "brunna-paiva",
+              state: "SP",
+              tags: ["Autoconhecimento"],
+              theme_names: ["Autoconhecimento"],
+              theme_slugs: ["autoconhecimento"],
+              therapist_headline: "Acolhimento online com escuta cuidadosa.",
+              therapy_id: "therapy-taro",
+              therapy_name: "Tarô",
+              therapy_slug: "taro",
+            },
+          ],
+          ok: true,
+        })
+        .mockResolvedValueOnce({
+          json: async () => [
+            {
+              sort_order: 1,
+              therapist_slug: "brunna-paiva",
+              therapy_id: "therapy-taro",
+              therapy_name: "Tarô",
+              therapy_slug: "taro",
+            },
+            {
+              sort_order: 2,
+              therapist_slug: "brunna-paiva",
+              therapy_id: "therapy-reiki",
+              therapy_name: "Reiki",
+              therapy_slug: "reiki",
+            },
+            {
+              sort_order: 3,
+              therapist_slug: "brunna-paiva",
+              therapy_id: "therapy-constelacao",
+              therapy_name: "Constelação Familiar",
+              therapy_slug: "constelacao-familiar",
+            },
+          ],
+          ok: true,
+        }),
+    );
+
+    const result = await getPublicTherapistSearchResult(filters);
+
+    expect(result.therapists[0]?.therapies).toEqual([
+      { id: "therapy-taro", label: "Tarô", slug: "taro" },
+      { id: "therapy-reiki", label: "Reiki", slug: "reiki" },
+      {
+        id: "therapy-constelacao",
+        label: "Constelação Familiar",
+        slug: "constelacao-familiar",
+      },
+    ]);
+    expect(result.options.therapies.map((option) => option.value)).toEqual([
+      "constelacao-familiar",
+      "reiki",
+      "taro",
+    ]);
+  });
+
   it("returns degraded state on query failure without leaking the raw error", async () => {
     vi.stubEnv("NODE_ENV", "test");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");

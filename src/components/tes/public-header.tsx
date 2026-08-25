@@ -9,6 +9,7 @@ import {
   ClipboardCheck,
   LogIn,
   Menu,
+  Search,
   UserRound,
   X,
 } from "lucide-react";
@@ -41,7 +42,7 @@ function Logo({ header = false }: { header?: boolean }) {
   );
 }
 
-export function PublicHeader() {
+export function PublicHeader({ showMobileSearch = false }: { showMobileSearch?: boolean } = {}) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const authState = usePublicAuthState();
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
@@ -80,20 +81,31 @@ export function PublicHeader() {
               Começar minha jornada
             </TESButton>
           </div>
-          <button
-            type="button"
-            aria-controls="public-mobile-menu"
-            aria-expanded={isMobileMenuOpen}
-            aria-label={isMobileMenuOpen ? "Fechar menu" : "Abrir menu"}
-            className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-brand-lavender bg-white text-brand-primary shadow-card hover:border-brand-primary hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20 xl:hidden"
-            onClick={() => setIsMobileMenuOpen((current) => !current)}
-          >
-            {isMobileMenuOpen ? (
-              <X className="size-5" aria-hidden="true" />
-            ) : (
-              <Menu className="size-5" aria-hidden="true" />
-            )}
-          </button>
+          <div className="flex items-center gap-3 xl:hidden">
+            {showMobileSearch ? (
+              <Link
+                href={routes.public.therapists as Route}
+                aria-label="Buscar terapeutas"
+                className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-brand-lavender bg-white text-brand-deep shadow-card hover:border-brand-primary hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
+              >
+                <Search className="size-6" aria-hidden="true" />
+              </Link>
+            ) : null}
+            <button
+              type="button"
+              aria-controls="public-mobile-menu"
+              aria-expanded={isMobileMenuOpen}
+              aria-label={isMobileMenuOpen ? "Fechar menu" : "Abrir menu"}
+              className="inline-flex size-12 shrink-0 items-center justify-center rounded-full border border-brand-lavender bg-white text-brand-primary shadow-card hover:border-brand-primary hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20 xl:hidden"
+              onClick={() => setIsMobileMenuOpen((current) => !current)}
+            >
+              {isMobileMenuOpen ? (
+                <X className="size-5" aria-hidden="true" />
+              ) : (
+                <Menu className="size-5" aria-hidden="true" />
+              )}
+            </button>
+          </div>
         </div>
 
         {isMobileMenuOpen ? (

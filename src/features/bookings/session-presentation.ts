@@ -30,6 +30,17 @@ const mutableBookingStatuses: ReadonlySet<BookingStatus> = new Set([
   BookingStatus.PendingPayment,
 ]);
 
+const closedFinancialStatuses: ReadonlySet<SessionFinancialStatus> = new Set([
+  SessionFinancialStatus.Canceled,
+  SessionFinancialStatus.PartiallyRefunded,
+  SessionFinancialStatus.Refunded,
+]);
+
+const closedFulfillmentStatuses: ReadonlySet<FulfillmentStatus> = new Set([
+  FulfillmentStatus.Cancelled,
+  FulfillmentStatus.NotPerformed,
+]);
+
 const completableFulfillmentStatuses: ReadonlySet<FulfillmentStatus | null> =
   new Set([
     null,
@@ -57,13 +68,19 @@ export function mapSessionPresentation(
   const paymentIsConfirmed =
     session.financialStatus === SessionFinancialStatus.Paid;
   const canAccessZoom = session.zoomAccess.allowed;
+  const sessionIsClosed =
+    bookingIsClosed ||
+    (session.financialStatus !== null &&
+      closedFinancialStatuses.has(session.financialStatus)) ||
+    (session.fulfillmentStatus !== null &&
+      closedFulfillmentStatuses.has(session.fulfillmentStatus));
   const canReschedule =
-    !bookingIsClosed &&
+    !sessionIsClosed &&
     isFuture &&
     !hasPendingReschedule &&
     mutableBookingStatuses.has(session.bookingStatus);
   const canCancel =
-    !bookingIsClosed &&
+    !sessionIsClosed &&
     isFuture &&
     mutableBookingStatuses.has(session.bookingStatus);
   const canRegisterAttendance =
@@ -100,6 +117,42 @@ export function mapSessionPresentation(
       "refunded",
       "Reembolsada",
       "O pagamento desta sessão foi reembolsado.",
+      "medium",
+      "neutral",
+      actions,
+    );
+  }
+
+  if (session.financialStatus === SessionFinancialStatus.PartiallyRefunded) {
+    return presentation(
+      "refunded",
+      "Reembolso parcial",
+      "Há um reembolso parcial registrado para esta sessão.",
+      "medium",
+      "neutral",
+      actions,
+    );
+  }
+
+  if (session.financialStatus === SessionFinancialStatus.Canceled) {
+    return presentation(
+      "cancelled",
+      "Cancelada",
+      "O pagamento desta sessão foi cancelado e ela não pode mais acontecer.",
+      "medium",
+      "neutral",
+      actions,
+    );
+  }
+
+  if (
+    session.fulfillmentStatus === FulfillmentStatus.Cancelled ||
+    session.fulfillmentStatus === FulfillmentStatus.NotPerformed
+  ) {
+    return presentation(
+      "cancelled",
+      "Não realizada",
+      "Esta sessão já foi encerrada e não pode ser cancelada novamente.",
       "medium",
       "neutral",
       actions,
@@ -248,6 +301,41 @@ export function getZoomAccessLabel(access: SessionReadModelItem["zoomAccess"]) {
   };
 
   return access.reason ? labels[access.reason] : "Acesso indisponível";
+}
+
+export function getSessionOperationDisabledReason(
+  session: Pick<
+    SessionReadModelItem,
+    "bookingStatus" | "financialStatus" | "fulfillmentStatus" | "startsAt"
+  >,
+  action: "cancel" | "reschedule",
+) {
+  const actionLabel = action === "cancel" ? "cancelamento" : "reagendamento";
+
+  if (session.financialStatus === SessionFinancialStatus.Canceled) {
+    return "O pagamento foi cancelado; não é possível realizar o cancelamento ou reagendamento desta sessão.";
+  }
+
+  if (
+    session.financialStatus === SessionFinancialStatus.PartiallyRefunded ||
+    session.financialStatus === SessionFinancialStatus.Refunded
+  ) {
+    return "O pagamento já foi reembolsado; não é possível realizar o cancelamento ou reagendamento desta sessão.";
+  }
+
+  if (
+    closedBookingStatuses.has(session.bookingStatus) ||
+    (session.fulfillmentStatus !== null &&
+      closedFulfillmentStatuses.has(session.fulfillmentStatus))
+  ) {
+    return `Esta sessão já foi encerrada; não é possível realizar o ${actionLabel} novamente.`;
+  }
+
+  if (new Date(session.startsAt).getTime() <= Date.now()) {
+    return `O horário já passou; não é possível realizar o ${actionLabel} agora.`;
+  }
+
+  return `Esta sessão não está disponível para ${actionLabel}.`;
 }
 
 function getPrimaryAction(input: {

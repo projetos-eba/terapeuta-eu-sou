@@ -67,6 +67,8 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
 - “Próximas sessões” usa `get_therapist_agenda_v1` em uma janela de até 90
   dias, ordena os horários crescentes e mostra data, horário, pessoa e terapia.
   Uma falha de leitura fica explícita e não vira lista vazia.
+- O card de próximas sessões mantém data e horário em uma pilha compacta, com
+  espaçamento curto e legível entre as duas linhas.
 - O gráfico semanal usa tooltip TES, resumo textual acessível e tokens CSS, sem
   valores de referência inventados.
 - Para Free, “Ver mais” abre uma explicação no próprio painel e encaminha

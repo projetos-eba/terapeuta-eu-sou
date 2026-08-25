@@ -34,7 +34,7 @@ import {
   PublicSearchMetricsTracker,
   TrackedBookingLink,
 } from "@/features/public-metrics";
-import { buildPublicTherapistTherapyChips } from "@/features/public-therapists/therapy-presentation";
+import { TherapyBadgeList } from "@/features/public-therapist-search/components/therapy-badge-list";
 import { routes } from "@/lib/routes";
 import { platformAssets } from "@/lib/platform-assets";
 
@@ -278,13 +278,6 @@ function TherapistResultCard({
   therapist: TherapistSearchCard;
 }) {
   const isVerified = therapist.highlightTone === "verified";
-  const therapyChips = buildPublicTherapistTherapyChips([
-    {
-      id: therapist.therapyId,
-      name: therapist.therapyName,
-      slug: therapist.therapySlug,
-    },
-  ]);
 
   return (
     <div
@@ -332,20 +325,10 @@ function TherapistResultCard({
               <h3 className="text-2xl font-extrabold leading-tight tracking-normal text-brand-deep">
                 {therapist.name}
               </h3>
-              <ul
-                aria-label={`Terapias oferecidas por ${therapist.name}`}
-                className="mt-2 flex flex-wrap gap-2"
-              >
-                {therapyChips.map((therapy) => (
-                  <li key={therapy.id}>
-                    <span className="inline-flex min-h-7 max-w-[220px] items-center rounded-full bg-brand-lavenderSoft px-3 text-sm font-bold text-brand-primary">
-                      <span className="truncate" title={therapy.label}>
-                        {therapy.label}
-                      </span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <TherapyBadgeList
+                therapistName={therapist.name}
+                therapies={therapist.therapies}
+              />
             </div>
             <button
               type="button"

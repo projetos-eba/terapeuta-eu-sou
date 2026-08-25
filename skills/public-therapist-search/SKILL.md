@@ -31,12 +31,19 @@ Antes de alterar `/terapeutas`, consultar:
 
 ## Dados
 
-- Fonte dinâmica pública: view Supabase `public_therapist_search`.
+- Fonte dinâmica pública: view Supabase `public_therapist_search` para o
+  serviço principal do card e `public_therapist_profile_services_v` para a
+  lista completa de terapias publicadas por terapeuta.
 - Integração: REST fetch com `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. Não adicionar `@supabase/supabase-js` sem decisão explícita.
 - Fallback local obrigatório em `src/features/public-therapist-search/content.ts`.
 - Seeds/mocks: manter 5 terapeutas em `supabase/seed.sql`, com `ana-oliveira` como perfil principal mais rico.
 - Fotos públicas de terapeutas devem usar os assets versionados em `public/therapists/`, mantendo URLs rastreáveis nos seeds, fallbacks e views: `ana-oliveira.png`, `rafael-santos-avatar.png`, `celia-martins.png`, `juliana-costa.png`, `lucas-pereira-avatar.png`, `andre-lima.png` e `marcio-andrade.png`.
 - Toda alteração em view/schema/policy exige migration versionada. Todo mock/seed deve ser idempotente.
+- A busca deve preservar o serviço principal retornado por
+  `public_therapist_search` para preço, duração e reserva, mas enriquecer o
+  card com todas as terapias reais de `public_therapist_profile_services_v`.
+  A apresentação mostra até duas terapias e um badge `+N`; os nomes restantes
+  devem estar disponíveis em hover, foco e clique, com tooltip acessível.
 - `next_slot_at` é derivado pelo mesmo RPC autoritativo usado pela agenda pública:
   `get_service_available_slots_v1`. A view não pode estimar o próximo horário
   apenas pela regra semanal, porque isso ignora antecedência, buffers,
@@ -103,6 +110,9 @@ Não substituir esses padrões por cards editoriais grandes, hero alternativo, c
 - Validar URLs: `/terapeutas`, `/terapeutas?q=ana`, `/terapeutas?therapy=reiki`, `/terapeutas?therapy=taro`, `/terapeutas?therapy=constelacao-familiar`, `/terapeutas?price=100-150`, `/terapeutas?rating=4-plus`, `/terapeutas?sort=price_asc`, `/terapeutas?page=2`.
 - Validar responsividade desktop/mobile contra o Figma `13273:3587`.
 - Confirmar que a view não expõe email, telefone, dados internos de paciente, dados sensíveis, `meeting_url` ou campos privados.
+- Confirmar que um terapeuta com três ou mais terapias mostra duas etiquetas,
+  o contador das restantes e os nomes completos no tooltip, sem misturar temas
+  de cuidado com terapias.
 
 ## Pendências Conhecidas
 

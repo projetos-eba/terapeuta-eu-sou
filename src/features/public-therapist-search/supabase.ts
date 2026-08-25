@@ -6,6 +6,7 @@ import {
 } from "@/lib/public-data-result";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
+import { buildPublicTherapistTherapyChips } from "@/features/public-therapists/therapy-presentation";
 
 import { fallbackTherapists, THERAPIST_SEARCH_PAGE_SIZE } from "./content";
 import { getActiveFilterCount } from "./filters";
@@ -22,6 +23,7 @@ import type {
   TherapistSearchFilters,
   TherapistSearchOption,
   TherapistSearchResult,
+  TherapistSearchTherapy,
 } from "./types";
 
 type PublicTherapistSearchRow = {
@@ -51,6 +53,14 @@ type PublicTherapistSearchRow = {
   therapy_id: string;
   therapy_name: string;
   therapy_slug: string;
+};
+
+type PublicTherapistServiceRow = {
+  sort_order: number | null;
+  therapist_slug: string;
+  therapy_id: string | null;
+  therapy_name: string | null;
+  therapy_slug: string | null;
 };
 
 function hasSupabaseConfig() {
@@ -83,6 +93,29 @@ async function fetchTherapistRows() {
   return (await response.json()) as PublicTherapistSearchRow[];
 }
 
+async function fetchTherapistServiceRows(therapistSlugs: string[]) {
+  const config = getSupabasePublicConfig();
+
+  if (!config || !therapistSlugs.length) return [];
+
+  const response = await fetch(
+    `${config.url}/rest/v1/public_therapist_profile_services_v?select=sort_order,therapist_slug,therapy_id,therapy_name,therapy_slug&therapist_slug=in.(${therapistSlugs.join(",")})&order=therapist_slug.asc,sort_order.asc`,
+    {
+      cache: "no-store",
+      headers: {
+        apikey: config.apiKey,
+        Authorization: `Bearer ${config.apiKey}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error("Public therapist services fetch failed");
+  }
+
+  return (await response.json()) as PublicTherapistServiceRow[];
+}
+
 function normalizeSearch(value: string) {
   return value
     .normalize("NFD")
@@ -106,12 +139,16 @@ function formatSlugLabel(slug: string) {
   );
 }
 
-function mapTherapistRow(row: PublicTherapistSearchRow): TherapistSearchCard {
+function mapTherapistRow(
+  row: PublicTherapistSearchRow,
+  serviceRows: PublicTherapistServiceRow[],
+): TherapistSearchCard {
   const rating = row.average_rating ?? 0;
   const reviewCount = row.review_count ?? 0;
   const tags = row.tags?.length
     ? row.tags
     : (row.theme_names?.slice(0, 3) ?? [row.therapy_name]);
+  const therapies = buildTherapistTherapyList(row, serviceRows);
 
   return {
     availabilityBucket: getAvailabilityBucket(
@@ -134,10 +171,7 @@ function mapTherapistRow(row: PublicTherapistSearchRow): TherapistSearchCard {
       }) || "/therapists/ana-oliveira.png",
     name: row.public_name,
     nextSlotAt: row.next_slot_at,
-    nextSlotLabel: formatNextSlotLabel(
-      row.next_slot_at,
-      row.schedule_timezone,
-    ),
+    nextSlotLabel: formatNextSlotLabel(row.next_slot_at, row.schedule_timezone),
     priceCents: row.service_price_cents,
     priceLabel: formatPriceLabel(row.service_price_cents),
     quote: row.review_quote ?? "Perfil verificado na plataforma TES.",
@@ -149,6 +183,7 @@ function mapTherapistRow(row: PublicTherapistSearchRow): TherapistSearchCard {
     serviceTitle: row.service_title,
     slug: row.slug,
     tags,
+    therapies,
     themeSlugs: row.theme_slugs ?? [],
     therapyId: row.therapy_id,
     therapyName: row.therapy_name,
@@ -156,14 +191,42 @@ function mapTherapistRow(row: PublicTherapistSearchRow): TherapistSearchCard {
   };
 }
 
+function buildTherapistTherapyList(
+  row: PublicTherapistSearchRow,
+  serviceRows: PublicTherapistServiceRow[],
+): TherapistSearchTherapy[] {
+  const canonicalRows = [
+    ...serviceRows,
+    {
+      sort_order: Number.MAX_SAFE_INTEGER,
+      therapist_slug: row.slug,
+      therapy_id: row.therapy_id,
+      therapy_name: row.therapy_name,
+      therapy_slug: row.therapy_slug,
+    },
+  ];
+
+  return buildPublicTherapistTherapyChips(
+    canonicalRows.map((therapy) => ({
+      id: therapy.therapy_id,
+      name: therapy.therapy_name,
+      slug: therapy.therapy_slug,
+      sortOrder: therapy.sort_order,
+    })),
+    Number.MAX_SAFE_INTEGER,
+  );
+}
+
 function getOptions(therapists: TherapistSearchCard[]) {
   const therapies = new Map<string, TherapistSearchOption>();
   const themes = new Map<string, TherapistSearchOption>();
 
   therapists.forEach((therapist) => {
-    therapies.set(therapist.therapySlug, {
-      label: therapist.therapyName,
-      value: therapist.therapySlug,
+    therapist.therapies.forEach((therapy) => {
+      therapies.set(therapy.slug, {
+        label: therapy.label,
+        value: therapy.slug,
+      });
     });
 
     therapist.themeSlugs.forEach((slug) => {
@@ -192,6 +255,7 @@ function matchesFilters(
         therapist.serviceTitle,
         therapist.description,
         therapist.therapyName,
+        ...therapist.therapies.map((therapy) => therapy.label),
         therapist.cityState,
         ...therapist.tags,
       ].join(" "),
@@ -200,7 +264,10 @@ function matchesFilters(
     if (!haystack.includes(normalizeSearch(filters.q))) return false;
   }
 
-  if (filters.therapy && therapist.therapySlug !== filters.therapy) {
+  if (
+    filters.therapy &&
+    !therapist.therapies.some((therapy) => therapy.slug === filters.therapy)
+  ) {
     return false;
   }
 
@@ -360,7 +427,23 @@ export async function getPublicTherapistSearchResult(
 
   try {
     const rows = await fetchTherapistRows();
-    const therapists = rows.map(mapTherapistRow);
+    const serviceRows = await fetchTherapistServiceRows(
+      rows.map((row) => row.slug),
+    );
+    const serviceRowsBySlug = new Map<string, PublicTherapistServiceRow[]>();
+
+    serviceRows.forEach((serviceRow) => {
+      const currentRows =
+        serviceRowsBySlug.get(serviceRow.therapist_slug) ?? [];
+      serviceRowsBySlug.set(serviceRow.therapist_slug, [
+        ...currentRows,
+        serviceRow,
+      ]);
+    });
+
+    const therapists = rows.map((row) =>
+      mapTherapistRow(row, serviceRowsBySlug.get(row.slug) ?? []),
+    );
 
     return buildResult(therapists, filters, "success", "live");
   } catch (error) {

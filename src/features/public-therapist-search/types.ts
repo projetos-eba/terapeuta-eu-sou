@@ -26,6 +26,12 @@ export type TherapistSearchOption = {
   value: string;
 };
 
+export type TherapistSearchTherapy = {
+  id: string;
+  label: string;
+  slug: string;
+};
+
 export type TherapistSearchCard = {
   availabilityBucket: TherapistSearchAvailability | "later";
   cityState: string;
@@ -50,6 +56,7 @@ export type TherapistSearchCard = {
   serviceTitle: string;
   slug: string;
   tags: string[];
+  therapies: TherapistSearchTherapy[];
   themeSlugs: string[];
   therapyId: string;
   therapyName: string;

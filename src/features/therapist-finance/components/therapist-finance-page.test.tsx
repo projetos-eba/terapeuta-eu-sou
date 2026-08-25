@@ -84,7 +84,7 @@ describe("TherapistFinancePage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("renders Premium Plus advanced finance with realized, contracted and estimated values separated", () => {
+  it("keeps Premium Plus readings in the summary without the advanced accordion", () => {
     renderPage("summary", {
       advanced: {
         dashboard: advancedFixture(),
@@ -104,18 +104,20 @@ describe("TherapistFinancePage", () => {
     });
 
     expect(
-      screen.getAllByRole("heading", { name: "Previsão do mês" }).length,
-    ).toBeGreaterThan(0);
+      screen.getByRole("heading", { name: "Sua agenda e potencial" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Oportunidade do mês" }),
+    ).toBeInTheDocument();
     expect(screen.getAllByText("Realizado líquido").length).toBeGreaterThan(0);
-    expect(
-      screen.getAllByText("Receita contratada futura").length,
-    ).toBeGreaterThan(0);
-    expect(
-      screen.getAllByText("Potencial estimado da agenda").length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Potencial estimado").length).toBeGreaterThan(0);
     expect(
       screen.getAllByText(/não representa receita garantida/i).length,
     ).toBeGreaterThan(0);
+    expect(screen.queryByText("Análises avançadas")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Previsão do mês" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Benchmark anonimizado" }),
     ).not.toBeInTheDocument();
@@ -123,8 +125,8 @@ describe("TherapistFinancePage", () => {
       screen.queryByText(/Benchmark suprimido por privacidade estatística/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.getAllByRole("heading", { name: "Dica TES" }).length,
-    ).toBeGreaterThan(0);
+      screen.queryByRole("heading", { name: "Dica TES" }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps advanced summary metrics locked for Free therapists", () => {

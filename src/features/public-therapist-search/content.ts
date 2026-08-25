@@ -60,6 +60,13 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     serviceTitle: "Reiki online",
     slug: "ana-oliveira",
     tags: ["Ansiedade", "Autoestima", "Autoconhecimento"],
+    therapies: [
+      {
+        id: "22222222-2222-4222-8222-222222222225",
+        label: "Reiki",
+        slug: "reiki",
+      },
+    ],
     themeSlugs: ["equilibrio-emocional", "autoconhecimento"],
     therapyId: "22222222-2222-4222-8222-222222222225",
     therapyName: "Reiki",
@@ -90,6 +97,13 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     serviceTitle: "Leitura simbólica de Tarô",
     slug: "rafael-santos",
     tags: ["Mudanças de vida", "Propósito", "Equilíbrio emocional"],
+    therapies: [
+      {
+        id: "22222222-2222-4222-8222-222222222228",
+        label: "Tarô",
+        slug: "taro",
+      },
+    ],
     themeSlugs: ["mudancas-de-vida", "equilibrio-emocional"],
     therapyId: "22222222-2222-4222-8222-222222222228",
     therapyName: "Tarô",
@@ -120,6 +134,13 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     serviceTitle: "Constelação Familiar online",
     slug: "celia-martins",
     tags: ["Relacionamentos", "Família", "Padrões"],
+    therapies: [
+      {
+        id: "22222222-2222-4222-8222-222222222230",
+        label: "Constelação Familiar",
+        slug: "constelacao-familiar",
+      },
+    ],
     themeSlugs: ["relacionamentos", "autoconhecimento-transformacao"],
     therapyId: "22222222-2222-4222-8222-222222222230",
     therapyName: "Constelação Familiar",
@@ -150,6 +171,13 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     serviceTitle: "Constelação de vínculos",
     slug: "juliana-costa",
     tags: ["Família", "Relacionamentos", "Comunicação"],
+    therapies: [
+      {
+        id: "22222222-2222-4222-8222-222222222230",
+        label: "Constelação Familiar",
+        slug: "constelacao-familiar",
+      },
+    ],
     themeSlugs: ["autoconhecimento", "mudancas-de-vida"],
     therapyId: "22222222-2222-4222-8222-222222222230",
     therapyName: "Constelação Familiar",
@@ -180,6 +208,13 @@ export const fallbackTherapists: TherapistSearchCard[] = [
     serviceTitle: "Tarô e autoconhecimento",
     slug: "lucas-pereira",
     tags: ["Autoconhecimento", "Propósito", "Mudanças de vida"],
+    therapies: [
+      {
+        id: "22222222-2222-4222-8222-222222222228",
+        label: "Tarô",
+        slug: "taro",
+      },
+    ],
     themeSlugs: ["autoconhecimento", "mudancas-de-vida"],
     therapyId: "22222222-2222-4222-8222-222222222228",
     therapyName: "Tarô",

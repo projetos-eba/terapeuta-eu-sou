@@ -12,7 +12,10 @@ import {
 } from "@/domain/tes";
 
 import type { SessionReadModelItem } from "./session-read-model.types";
-import { mapSessionPresentation } from "./session-presentation";
+import {
+  getSessionOperationDisabledReason,
+  mapSessionPresentation,
+} from "./session-presentation";
 
 const now = new Date("2026-07-26T13:00:00.000Z");
 
@@ -84,6 +87,39 @@ describe("mapSessionPresentation", () => {
     expect(result.state).toBe("cancelled");
     expect(result.actions.canAccessZoom).toBe(false);
     expect(result.actions.canCancel).toBe(false);
+  });
+
+  it.each([
+    SessionFinancialStatus.Canceled,
+    SessionFinancialStatus.PartiallyRefunded,
+    SessionFinancialStatus.Refunded,
+  ])(
+    "blocks repeat operations for closed payment state %s",
+    (financialStatus) => {
+      const session = sessionFixture({ financialStatus });
+      const result = mapSessionPresentation(session, now);
+
+      expect(result.actions.canCancel).toBe(false);
+      expect(result.actions.canReschedule).toBe(false);
+      expect(getSessionOperationDisabledReason(session, "cancel")).toContain(
+        financialStatus === SessionFinancialStatus.Canceled
+          ? "pagamento foi cancelado"
+          : "pagamento já foi reembolsado",
+      );
+    },
+  );
+
+  it("blocks cancellation after a session was not performed", () => {
+    const session = sessionFixture({
+      fulfillmentStatus: FulfillmentStatus.NotPerformed,
+    });
+    const result = mapSessionPresentation(session, now);
+
+    expect(result.actions.canCancel).toBe(false);
+    expect(result.actions.canReschedule).toBe(false);
+    expect(getSessionOperationDisabledReason(session, "cancel")).toContain(
+      "já foi encerrada",
+    );
   });
 
   it("identifies a paid session whose video session is still being prepared", () => {

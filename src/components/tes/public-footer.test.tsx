@@ -37,4 +37,15 @@ describe("PublicFooter", () => {
       "/termos",
     );
   });
+
+  it("supports the public profile footer composition", () => {
+    render(<PublicFooter variant="profile" />);
+
+    expect(screen.getByRole("contentinfo")).toHaveClass("rounded-[22px]");
+    expect(
+      screen.getAllByText(
+        "© 2026 Terapeuta Eu Sou. Todos os direitos reservados.",
+      ),
+    ).toHaveLength(2);
+  });
 });

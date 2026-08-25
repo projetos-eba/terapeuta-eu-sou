@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Star } from "lucide-react";
+import { Heart, MessageCircleHeart, Star } from "lucide-react";
 
 import type { TherapistProfileReview } from "../types";
 
@@ -40,7 +40,7 @@ export function ReviewsCarousel({
   >({});
 
   return (
-    <section className="max-h-[620px] overflow-y-auto rounded-[22px] border border-border bg-white p-7">
+    <section className="max-h-none overflow-visible rounded-[22px] border border-brand-lavender bg-white p-6 shadow-card sm:p-7 lg:max-h-[620px] lg:overflow-y-auto">
       <div className="flex items-center justify-between gap-4">
         <h2 className="font-display text-[24px] font-light italic text-status-info">
           Avaliações
@@ -51,10 +51,23 @@ export function ReviewsCarousel({
       </div>
 
       {count === 0 ? (
-        <div className="mt-8 rounded-[24px] border border-brand-lavender p-6 text-sm font-medium leading-6 text-tesText-secondary">
-          Este perfil ainda não tem avaliações publicadas. As avaliações
-          aparecem somente após sessão paga, concluída e aprovada pela
-          moderação.
+        <div className="mt-6 grid min-h-[330px] place-items-center rounded-[24px] bg-brand-lavenderSoft/60 px-5 py-10 text-center">
+          <div>
+            <span className="relative mx-auto grid size-28 place-items-center rounded-full border border-brand-primary/50 bg-white text-brand-primary shadow-card">
+              <MessageCircleHeart aria-hidden="true" className="size-14" />
+              <Heart
+                aria-hidden="true"
+                className="absolute -right-2 -top-2 size-5 fill-current text-brand-primary"
+              />
+            </span>
+            <p className="mt-7 text-lg font-extrabold leading-7 text-brand-deep">
+              Este perfil ainda não tem avaliações publicadas.
+            </p>
+            <p className="mt-3 text-base font-medium leading-7 text-brand-primary">
+              As avaliações aparecem somente após sessão paga, concluída e
+              aprovada pela moderação.
+            </p>
+          </div>
         </div>
       ) : (
         <>

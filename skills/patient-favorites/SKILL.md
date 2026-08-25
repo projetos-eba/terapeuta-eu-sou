@@ -38,6 +38,9 @@ description: Implementar e manter favoritos autenticados do paciente.
   ao perfil e confirma a ação com um novo clique.
 - Estado vazio deve encaminhar para `/terapeutas`.
 - Não exibir métricas inventadas.
+- A página autenticada de terapeutas favoritos reutiliza `AppPageContainer`,
+  mantendo o grid desktop compartilhado com largura máxima de `1210px` e
+  transformação responsiva da lista.
 
 ## QA
 
