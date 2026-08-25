@@ -8,12 +8,15 @@ import {
 } from "../_shared/payments/http.ts";
 import {
   deriveConnectAccountState,
+  derivePayoutSettingsState,
+  retrieveBalanceSettings,
   retrieveAccountV2,
 } from "../_shared/payments/connect.ts";
 import {
   getPaymentsConfig,
   getPaymentsRuntime,
 } from "../_shared/payments/runtime.ts";
+import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 
 const runtime = getPaymentsRuntime("stripe-connect-sync-account");
 
@@ -54,7 +57,15 @@ runtime.serve(async (request) => {
       config.stripeApiKey,
       rows[0].stripe_account_id,
     );
-    const state = deriveConnectAccountState(account);
+    const stripe = createStripeClient(config.stripeApiKey);
+    const balanceSettings = await retrieveBalanceSettings(
+      stripe,
+      rows[0].stripe_account_id,
+    );
+    const payoutSettings = derivePayoutSettingsState(
+      balanceSettings as unknown as Record<string, unknown>,
+    );
+    const state = deriveConnectAccountState(account, payoutSettings);
 
     await client.patch(
       `/rest/v1/therapist_connect_accounts?id=eq.${encodeURIComponent(rows[0].id)}`,
@@ -66,7 +77,10 @@ runtime.serve(async (request) => {
         onboarding_status: state.onboardingStatus,
         operational_status: state.operationalStatus,
         pending_requirements: state.pendingRequirements,
+        payout_schedule_interval: state.payoutScheduleInterval,
+        payout_status: state.payoutStatus,
         payouts_enabled: state.payoutsEnabled,
+        balance_settings_synced_at: new Date().toISOString(),
         stripe_transfers_status: state.transfersStatus,
       },
       "return=minimal",
@@ -75,7 +89,13 @@ runtime.serve(async (request) => {
       "/rest/v1/therapist_connect_account_snapshots",
       {
         connect_account_id: rows[0].id,
-        snapshot: account,
+        snapshot: {
+          account,
+          balance_settings: {
+            interval: payoutSettings.interval,
+            payout_status: payoutSettings.payoutStatus,
+          },
+        },
       },
       "return=minimal",
     );
@@ -83,6 +103,8 @@ runtime.serve(async (request) => {
     return success({
       onboardingStatus: state.onboardingStatus,
       pendingRequirements: state.pendingRequirements,
+      payoutScheduleInterval: state.payoutScheduleInterval,
+      payoutStatus: state.payoutStatus,
       stripeTransfersStatus: state.transfersStatus,
     });
   } catch (error) {

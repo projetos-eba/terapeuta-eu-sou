@@ -28,6 +28,7 @@ import {
   TherapistBlockRecurrence,
   type TherapistBlock,
   type TherapistBlockImpact,
+  type TherapistPaidBlockConflict,
   type TherapistBlocksReadModel,
   type TherapistScheduleService,
 } from "@/domain/tes";
@@ -71,6 +72,9 @@ export function TherapistBlocksPanel({
   const [createOpen, setCreateOpen] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<TherapistBlock | null>(null);
   const [command, setCommand] = useState<CommandState>({ status: "idle" });
+  const [paidConflicts, setPaidConflicts] = useState<
+    TherapistPaidBlockConflict[]
+  >([]);
   const [search, setSearch] = useState(searchParams.get("busca") ?? "");
   const [viewType, setViewType] = useState<ViewType>("all");
 
@@ -134,7 +138,10 @@ export function TherapistBlocksPanel({
         method: "POST",
       });
       const payload = (await response.json().catch(() => null)) as {
-        data?: { impactedBookingCount?: number };
+        data?: {
+          impactedBookingCount?: number;
+          paidImpactedBookings?: TherapistPaidBlockConflict[];
+        };
         error?: { message?: string };
         ok?: boolean;
       } | null;
@@ -150,6 +157,9 @@ export function TherapistBlocksPanel({
       }
 
       const impacted = payload.data?.impactedBookingCount ?? 0;
+      if (body.action === "create") {
+        setPaidConflicts(payload.data?.paidImpactedBookings ?? []);
+      }
       setCommand({
         message:
           impacted > 0
@@ -177,7 +187,8 @@ export function TherapistBlocksPanel({
             aria-label="Novo bloqueio"
             className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-primary px-6 text-sm font-extrabold text-white shadow-float transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
             onClick={() => {
-              setCommand({ status: "idle" });
+            setCommand({ status: "idle" });
+              setPaidConflicts([]);
               setCreateOpen(true);
             }}
             type="button"
@@ -295,6 +306,13 @@ export function TherapistBlocksPanel({
         />
       ) : null}
 
+      {paidConflicts.length > 0 ? (
+        <PaidBlockConflictDialog
+          conflicts={paidConflicts}
+          onClose={() => setPaidConflicts([])}
+        />
+      ) : null}
+
       {cancelTarget ? (
         <CancelBlockDialog
           block={cancelTarget}
@@ -341,6 +359,72 @@ function FeedbackMessage({
       )}
       {command.message}
     </div>
+  );
+}
+
+function PaidBlockConflictDialog({
+  conflicts,
+  onClose,
+}: {
+  conflicts: TherapistPaidBlockConflict[];
+  onClose: () => void;
+}) {
+  return (
+    <TESDialog
+      className="max-w-xl"
+      description="O bloqueio foi salvo, mas estas sessões confirmadas e pagas continuam na agenda. Revise cada horário antes de manter o bloqueio."
+      onClose={onClose}
+      title="Atenção: há sessões pagas neste horário"
+    >
+      <div className="grid gap-5">
+        <div className="flex items-start gap-3 rounded-xl border-2 border-status-warning bg-status-warningBg p-4" role="alert">
+          <AlertTriangle
+            aria-hidden="true"
+            className="mt-0.5 shrink-0 text-status-warning"
+            size={22}
+          />
+          <p className="text-sm font-extrabold leading-6 text-brand-deep">
+            {conflicts.length === 1
+              ? "Existe uma sessão confirmada e paga dentro do bloqueio."
+              : `Existem ${conflicts.length} sessões confirmadas e pagas dentro do bloqueio.`}
+          </p>
+        </div>
+        <ul className="grid gap-3">
+          {conflicts.map((conflict) => (
+            <li
+              className="rounded-xl border border-brand-lavender bg-surface-soft p-4"
+              key={conflict.bookingId}
+            >
+              <p className="text-sm font-extrabold text-brand-deep">
+                {conflict.patientName}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-tesText-secondary">
+                {conflict.serviceTitle}
+              </p>
+              <time className="mt-2 block text-sm font-extrabold text-brand-primary">
+                {formatBlockDate(conflict.startsAt, conflict.timezone)} · {formatBlockTime(conflict.startsAt, conflict.endsAt, conflict.timezone)}
+              </time>
+            </li>
+          ))}
+        </ul>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <button
+            className="inline-flex min-h-11 items-center justify-center rounded-lg px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            onClick={onClose}
+            type="button"
+          >
+            Fechar aviso
+          </button>
+          <Link
+            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            href={`${routes.therapist.agenda}?aba=calendario` as Route}
+            onClick={onClose}
+          >
+            Ver agenda
+          </Link>
+        </div>
+      </div>
+    </TESDialog>
   );
 }
 

@@ -2,7 +2,7 @@
 
 import type { LucideIcon } from "lucide-react";
 import { LockKeyhole, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { TESButton, TESDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
@@ -17,18 +17,26 @@ import {
 type TherapistLockedCardProps = {
   className?: string;
   description?: string;
+  dialogBody?: ReactNode;
+  dialogDescription?: string;
+  dialogTitle?: string;
   icon?: LucideIcon;
   requiredPlan: TherapistPlan;
   title: string;
+  triggerLabel?: string;
   variant?: "card" | "compact" | "section";
 };
 
 export function TherapistLockedCard({
   className,
   description = "Uma visão criada para ajudar você a acompanhar melhor sua prática, encontrar padrões e tomar decisões com mais clareza.",
+  dialogBody,
+  dialogDescription,
+  dialogTitle = "Um recurso para sua prática",
   icon: Icon = LockKeyhole,
   requiredPlan,
   title,
+  triggerLabel = "Conhecer recurso",
   variant = "card",
 }: TherapistLockedCardProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -75,25 +83,30 @@ export function TherapistLockedCard({
 
         <span className="absolute bottom-4 right-5 inline-flex items-center gap-1.5 text-xs font-extrabold text-brand-primary">
           <Sparkles aria-hidden="true" size={14} />
-          Conhecer recurso
+          {triggerLabel}
         </span>
       </button>
 
       {isOpen ? (
         <TESDialog
-          description={`Este recurso faz parte do plano ${planLabel}. Ele foi pensado para ajudar você a acompanhar melhor sua prática, encontrar padrões e tomar decisões com mais clareza.`}
+          description={
+            dialogDescription ??
+            `Este recurso faz parte do plano ${planLabel}. Ele foi pensado para ajudar você a acompanhar melhor sua prática, encontrar padrões e tomar decisões com mais clareza.`
+          }
           onClose={() => setIsOpen(false)}
-          title="Um recurso para sua prática"
+          title={dialogTitle}
         >
           <div className="grid gap-5">
             <div className="grid size-12 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
               <LockKeyhole aria-hidden="true" size={22} />
             </div>
-            <p className="text-sm font-semibold leading-6 text-tesText-primary">
-              Seu plano atual continua pronto para a operação essencial. Quando
-              fizer sentido para você, conheça o {planLabel} e desbloqueie esta
-              visão.
-            </p>
+            {dialogBody ?? (
+              <p className="text-sm font-semibold leading-6 text-tesText-primary">
+                Seu plano atual continua pronto para a operação essencial.
+                Quando fizer sentido para você, conheça o {planLabel} e
+                desbloqueie esta visão.
+              </p>
+            )}
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <TESButton
                 onClick={() => setIsOpen(false)}
@@ -112,4 +125,3 @@ export function TherapistLockedCard({
     </>
   );
 }
-

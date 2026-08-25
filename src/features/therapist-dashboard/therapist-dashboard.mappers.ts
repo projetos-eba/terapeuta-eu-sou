@@ -1,4 +1,5 @@
 import { TherapistPlan } from "@/domain/tes";
+import type { SessionReadModelItem } from "@/features/bookings";
 import { getCanonicalTherapistPath } from "@/features/therapist-shell/therapist-route-policy";
 import { routes } from "@/lib/routes";
 
@@ -9,6 +10,19 @@ import type {
   TherapistDashboardPageData,
   TherapistDashboardTrend,
 } from "./therapist-dashboard.types";
+
+const SCHEDULED_BOOKING_STATUSES = new Set([
+  "confirmed",
+  "completed",
+  "no_show_patient",
+  "no_show_therapist",
+]);
+
+const CANCELLED_BOOKING_STATUSES = new Set([
+  "cancelled_by_patient",
+  "cancelled_by_therapist",
+  "refunded",
+]);
 
 export function calculateAttendanceRate(completed: number, noShows: number) {
   const denominator = completed + noShows;
@@ -39,6 +53,86 @@ export function calculateRevenueCents(
   return payments
     .filter((payment) => payment.status === "paid")
     .reduce((total, payment) => total + payment.netAmountCents, 0);
+}
+
+export function buildTherapistWeekSummary(
+  bookings: SessionReadModelItem[],
+  input: { localStart: string; timezone: string },
+): TherapistDashboardPageData["week"] {
+  const start = input.localStart.slice(0, 10);
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = addDateKey(start, index);
+    const dayBookings = bookings.filter(
+      (booking) => dateKeyInTimezone(booking.startsAt, input.timezone) === date,
+    );
+
+    return {
+      cancelled: dayBookings.filter((booking) =>
+        CANCELLED_BOOKING_STATUSES.has(booking.bookingStatus),
+      ).length,
+      completed: dayBookings.filter(
+        (booking) => booking.bookingStatus === "completed",
+      ).length,
+      date,
+      label: formatWeekdayLabel(date),
+      scheduled: dayBookings.filter((booking) =>
+        SCHEDULED_BOOKING_STATUSES.has(booking.bookingStatus),
+      ).length,
+    };
+  });
+
+  const completed = bookings.filter(
+    (booking) => booking.bookingStatus === "completed",
+  ).length;
+  const noShows = bookings.filter((booking) =>
+    ["no_show_patient", "no_show_therapist"].includes(booking.bookingStatus),
+  ).length;
+
+  return {
+    attendanceRate: calculateAttendanceRate(completed, noShows),
+    days,
+    rangeLabel: `${formatDateKey(start)} – ${formatDateKey(addDateKey(start, 6))}`,
+    state: days.some(
+      (day) => day.cancelled || day.completed || day.scheduled,
+    )
+      ? "ready"
+      : "empty",
+  };
+}
+
+export function mapUpcomingTherapistSessions(
+  bookings: SessionReadModelItem[],
+  now: Date,
+) {
+  return bookings
+    .filter(
+      (booking) =>
+        booking.bookingStatus === "confirmed" &&
+        new Date(booking.startsAt).getTime() >= now.getTime(),
+    )
+    .sort(
+      (first, second) =>
+        new Date(first.startsAt).getTime() -
+        new Date(second.startsAt).getTime(),
+    )
+    .slice(0, 4)
+    .map((booking) => ({
+      bookingId: booking.bookingId,
+      patientAvatarUrl: booking.patientAvatarUrl,
+      patientName: booking.patientName,
+      serviceTitle: booking.serviceTitle,
+      startsAt: booking.startsAt,
+      timezone: booking.timezone,
+    }));
+}
+
+export function createUnavailableTherapistWeek(): TherapistDashboardPageData["week"] {
+  return {
+    attendanceRate: 0,
+    days: [],
+    rangeLabel: "Semana atual",
+    state: "unavailable",
+  };
 }
 
 export function mapTherapistDashboardResponse(
@@ -125,8 +219,10 @@ export function mapTherapistDashboardResponse(
         patientName: string(row.patientName, "Paciente"),
         serviceTitle: string(row.serviceTitle, "Sessão"),
         startsAt: string(row.startsAt),
+        timezone: string(row.timezone, "America/Sao_Paulo"),
       };
     }),
+    upcomingSessionsState: "ready",
     week: {
       attendanceRate: number(week.attendanceRate),
       days: array(week.days).map((item) => {
@@ -140,6 +236,7 @@ export function mapTherapistDashboardResponse(
         };
       }),
       rangeLabel: string(week.rangeLabel),
+      state: "ready",
     },
   };
 }
@@ -232,4 +329,40 @@ function nullableString(value: unknown) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function dateKeyInTimezone(value: string, timezone: string) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: timezone,
+    year: "numeric",
+  }).formatToParts(new Date(value));
+  const part = (type: string) =>
+    parts.find((item) => item.type === type)?.value ?? "00";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+function addDateKey(value: string, days: number) {
+  const date = new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function formatDateKey(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "UTC",
+  }).format(new Date(`${value}T12:00:00Z`));
+}
+
+function formatWeekdayLabel(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    weekday: "short",
+    timeZone: "UTC",
+  })
+    .format(new Date(`${value}T12:00:00Z`))
+    .replace(".", "")
+    .toUpperCase();
 }

@@ -16,6 +16,7 @@ import {
   ProfileTextField,
 } from "./profile-field-group";
 import { ProfileCapabilityGate } from "./profile-capability-gate";
+import { ProfileGuideThemePicker } from "./profile-guide-theme-picker";
 import { ProfileSection } from "./profile-section";
 
 export function ProfileEditorForm({
@@ -42,7 +43,11 @@ export function ProfileEditorForm({
         />
       </ProfileFieldGroup>
 
-      <ProfileFieldGroup number={2} title="Sua apresentação">
+      <ProfileFieldGroup
+        info="Sua apresentação é o texto curto que aparece perto do seu nome. Use este espaço para explicar, de forma direta e acolhedora, como você se apresenta e o que a pessoa pode esperar da sua página."
+        number={2}
+        title="Sua apresentação"
+      >
         <ProfileTextarea
           id="shortIntro"
           label="Sua apresentação"
@@ -82,6 +87,7 @@ export function ProfileEditorForm({
 
       <ProfileFieldGroup
         description="Conte quem você é, sua abordagem e o que te inspira."
+        info="Minha essência é o espaço para falar com mais profundidade sobre sua abordagem, seus valores e a forma como você conduz seu trabalho. Evite prometer resultados ou fazer diagnósticos."
         number={4}
         title="Minha essência"
       >
@@ -96,22 +102,13 @@ export function ProfileEditorForm({
       </ProfileFieldGroup>
 
       <ProfileFieldGroup
-        description="Adicione os principais caminhos de cuidado que você apoia, sem prometer resultado."
+        description="Escolha os temas da plataforma que mais representam como você pode acompanhar cada pessoa."
         number={5}
         title="Como posso te guiar"
       >
-        <ProfileChipInput
-          addLabel="Adicionar item"
-          items={fields.guideItems.map((item) => item.label)}
-          label="Como posso te guiar"
-          max={6}
-          onChange={(items) =>
-            updateField(
-              "guideItems",
-              items.map((item) => ({ icon: "sparkles", label: item })),
-            )
-          }
-          placeholder="Novo caminho"
+        <ProfileGuideThemePicker
+          items={fields.guideItems}
+          onChange={(items) => updateField("guideItems", items)}
         />
       </ProfileFieldGroup>
 

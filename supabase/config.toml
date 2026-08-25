@@ -218,6 +218,12 @@ verify_jwt = false
 [functions.reconcile-stripe-transfers]
 verify_jwt = false
 
+[functions.weekly-payout-scheduler]
+verify_jwt = false
+
+[functions.stripe-connect-payout-schedule]
+verify_jwt = false
+
 [functions.zoom-webhook]
 verify_jwt = false
 

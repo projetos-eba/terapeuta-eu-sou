@@ -322,22 +322,38 @@ async function resolveDelivery(
   }
 
   if (
-    row.related_entity_type === "stripe_transfer" &&
-    row.action_key === "therapist_payout_completed"
+    row.related_entity_type === "stripe_payout" &&
+    (row.action_key === "therapist_payout_completed" ||
+      row.action_key === "therapist_payout_failed_after_paid")
   ) {
-    const transfer = await loadStripeTransfer(client, row.related_entity_id);
+    const payout = await loadStripePayout(client, row.related_entity_id);
     if (
-      transfer.therapist_user_id !== recipient.id ||
+      payout.therapist_user_id !== recipient.id ||
       recipient.role !== "therapist"
     ) {
       throw new Error("payout_recipient_mismatch");
     }
     return {
       templateData: {
-        amount: formatCurrency(transfer.amount_cents, transfer.currency),
+        amount: formatCurrency(payout.amount_cents, payout.currency),
         finance_url: `${getSiteUrl(runtime)}/terapeuta/financeiro`,
         recipient_name:
-          recipient.display_name ?? transfer.therapist_display_name,
+          recipient.display_name ?? payout.therapist_display_name,
+      },
+    };
+  }
+
+  if (
+    row.related_entity_type === "payout_operational_incident" &&
+    row.action_key === "payout_operational_alert_admin"
+  ) {
+    if (recipient.role !== "admin") throw new Error("payout_admin_recipient_mismatch");
+    const incident = await loadPayoutIncident(client, row.related_entity_id);
+    return {
+      templateData: {
+        admin_url: `${getSiteUrl(runtime)}/admin/pagamentos`,
+        incident_type: formatIncidentType(incident.incident_type),
+        recipient_name: recipient.display_name ?? "Administrador",
       },
     };
   }
@@ -661,28 +677,51 @@ async function loadSessionRefund(client: SupabaseRestClient, id: string) {
   return { ...refund, payment: await loadSessionPayment(client, refund.session_payment_id) };
 }
 
-async function loadStripeTransfer(client: SupabaseRestClient, id: string) {
-  const [transfer] = await client.get<
+async function loadStripePayout(client: SupabaseRestClient, id: string) {
+  const [payout] = await client.get<
     Array<{
       amount_cents: number;
       currency: string;
       therapist_profile_id: string;
     }>
   >(
-    `/rest/v1/stripe_transfers?select=amount_cents,currency,therapist_profile_id&id=eq.${encodeURIComponent(id)}&limit=1`,
+    `/rest/v1/stripe_payouts?select=amount_cents,currency,therapist_profile_id&id=eq.${encodeURIComponent(id)}&limit=1`,
   );
-  if (!transfer) throw new Error("stripe_transfer_not_found");
+  if (!payout) throw new Error("stripe_payout_not_found");
   const [therapist] = await client.get<
     Array<{ public_name: string; user_id: string }>
   >(
-    `/rest/v1/therapist_profiles?select=public_name,user_id&id=eq.${encodeURIComponent(transfer.therapist_profile_id)}&limit=1`,
+    `/rest/v1/therapist_profiles?select=public_name,user_id&id=eq.${encodeURIComponent(payout.therapist_profile_id)}&limit=1`,
   );
-  if (!therapist) throw new Error("stripe_transfer_therapist_missing");
+  if (!therapist) throw new Error("stripe_payout_therapist_missing");
   return {
-    ...transfer,
+    ...payout,
     therapist_display_name: therapist.public_name,
     therapist_user_id: therapist.user_id,
   };
+}
+
+async function loadPayoutIncident(client: SupabaseRestClient, id: string) {
+  const [incident] = await client.get<Array<{ incident_type: string }>>(
+    `/rest/v1/payout_operational_incidents?select=incident_type&id=eq.${encodeURIComponent(id)}&limit=1`,
+  );
+  if (!incident) throw new Error("payout_incident_not_found");
+  return incident;
+}
+
+function formatIncidentType(value: string) {
+  const labels: Record<string, string> = {
+    batch_incomplete_after_window: "lote incompleto após a janela",
+    payout_blocked: "payout bloqueado",
+    payout_failed: "payout falho",
+    payout_failed_after_paid: "falha bancária posterior",
+    payout_reconciliation_required: "reconciliação de payout",
+    transfer_blocked: "transfer bloqueado",
+    transfer_failed: "transfer falho",
+    transfer_reconciliation_required: "reconciliação de transfer",
+    transfer_reversed: "transfer revertido",
+  };
+  return labels[value] ?? "ocorrência operacional";
 }
 
 async function loadTherapistSubscription(client: SupabaseRestClient, id: string) {
@@ -801,6 +840,8 @@ type OutboxRow = {
     | "booking"
     | "session_payment"
     | "session_refund"
+    | "payout_operational_incident"
+    | "stripe_payout"
     | "stripe_transfer"
     | "therapist_subscription"
     | "therapy_catalog_request"

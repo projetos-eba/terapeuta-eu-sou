@@ -32,15 +32,17 @@ export function TherapistAuraCard({
   }
 
   return (
-    <section className="relative overflow-hidden rounded-panel border-2 border-[#cdbff0] bg-[#fbf9ff] px-5 py-6 shadow-card sm:px-7">
-      <Image
-        alt="Assessora Aura"
-        className="pointer-events-none absolute bottom-0 left-0 hidden h-[270px] w-[180px] object-contain object-bottom sm:block"
-        height={975}
-        src="/therapist/dashboard/aura.png"
-        width={680}
-      />
-      <div className="sm:pl-[170px]">
+    <section className="relative overflow-hidden rounded-panel border-2 border-brand-lavender bg-surface-soft px-5 py-6 shadow-card sm:px-7">
+      <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[210px] items-end justify-center sm:flex">
+        <Image
+          alt="Assessora Aura"
+          className="h-[270px] w-[180px] object-contain object-bottom"
+          height={975}
+          src="/therapist/dashboard/aura.png"
+          width={680}
+        />
+      </div>
+      <div className="sm:pl-[210px]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-xl font-bold text-brand-deep">

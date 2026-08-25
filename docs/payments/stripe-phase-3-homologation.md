@@ -224,7 +224,12 @@ Connect must be validated in HML before production:
 - `stripe-connect-sync-account` retrieves the account server-side.
 - `get_private_therapist_connect_account_v1` displays the latest synchronized status.
 - A status of `pending`, `requirements_due`, `restricted` or `in_review` is acceptable while Stripe is reviewing KYC.
-- A status of `charges_enabled=true` and `payouts_enabled=true` is required before treating transfers as operationally ready.
+- `stripe_transfers.status=active` autoriza Transfer. `payouts_enabled` vem
+  separadamente de Balance Settings. Para ADR-018 são obrigatórios
+  `payments.payouts.status=enabled` e `schedule.interval=daily`. O TES não cria
+  Payout: importa o automático, aguarda `reconciliation_status=completed` e
+  atribui Balance Transactions aos Transfers. Política v5 e cron continuam
+  inativos até a prova HML completa.
 
 ## LIVE Smoke Controlado
 
@@ -362,8 +367,10 @@ Connect processing requires `PAYMENTS_LIVE_SESSION_PAYMENT_ID`. The script:
 - Does not accelerate the safety window in production.
 - Creates/processes a payout batch only if the resulting batch has one item and
   total therapist amount is within R$ 5,00.
-- Uses the existing `process-payout-batch` function, which creates transfers
-  with `source_transaction` and idempotency.
+- Uses the hardened `process-payout-batch` function, which creates Transfers
+  with `source_transaction` and idempotency. Bank delivery is a separate Payout
+  in the connected-account context and only completes on authoritative
+  `payout.paid`; follow `docs/payments/weekly-payouts.md`.
 
 If the payment is still in the normal safety window, the stage exits as
 `BLOCKED` and the evidence records `transfer_status` and `eligible_at`; do not

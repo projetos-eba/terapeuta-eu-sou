@@ -114,6 +114,15 @@ export type TherapistBlockImpact = {
   status: "dismissed" | "pending" | "resolved";
 };
 
+export type TherapistPaidBlockConflict = {
+  bookingId: UUID;
+  endsAt: ISODateTimeString;
+  patientName: string;
+  serviceTitle: string;
+  startsAt: ISODateTimeString;
+  timezone: string;
+};
+
 export type TherapistBlock = {
   allDay: boolean;
   createdAt: ISODateTimeString;
@@ -189,6 +198,7 @@ export type TherapistBlockCommandResult = {
   idempotentReplay: boolean;
   impactedBookingCount?: number;
   occurrenceCount?: number;
+  paidImpactedBookings?: TherapistPaidBlockConflict[];
   scheduleVersion?: number;
   seriesId?: UUID;
 };

@@ -12,14 +12,18 @@ import {
   getSupabaseUrl,
   loadEnvFiles,
 } from "./env-utils.mjs";
+import {
+  connectSnapshotEvents,
+  connectThinEvents,
+  platformSnapshotEvents,
+} from "./stripe-webhook-events.mjs";
 
 loadEnvFiles();
 
 const args = new Set(process.argv.slice(2));
 const target = readArg("target", "hml");
 const expectedHmlRef =
-  process.env.PAYMENTS_HML_SUPABASE_REF?.trim() ||
-  "emzwqkmrryuqvqiohqnu";
+  process.env.PAYMENTS_HML_SUPABASE_REF?.trim() || "emzwqkmrryuqvqiohqnu";
 const publicTherapistSlug =
   process.env.PAYMENTS_HML_PUBLIC_THERAPIST_SLUG?.trim() ||
   "antonio-ferrari-e2e";
@@ -153,23 +157,34 @@ async function checkStripeApi(stripe) {
       country: account.country ?? null,
       id: maskStripeId(account.id),
     };
-    addCheck("stripe_api", "pass", "Stripe API respondeu com a conta da plataforma.");
+    addCheck(
+      "stripe_api",
+      "pass",
+      "Stripe API respondeu com a conta da plataforma.",
+    );
   } catch (error) {
-    addCheck("stripe_api", "blocked", `Stripe API indisponível: ${safeError(error)}.`);
+    addCheck(
+      "stripe_api",
+      "blocked",
+      `Stripe API indisponível: ${safeError(error)}.`,
+    );
   }
 }
 
 async function checkBillingCatalog({ serviceRoleKey, stripe, supabaseUrl }) {
   const rows = await supabaseGet({
-    path:
-      "/rest/v1/billing_plan_prices?select=billing_plans(code),interval,stripe_price_id,stripe_lookup_key,unit_amount_cents,is_active&is_active=eq.true",
+    path: "/rest/v1/billing_plan_prices?select=billing_plans(code),interval,stripe_price_id,stripe_lookup_key,unit_amount_cents,is_active&is_active=eq.true",
     serviceRoleKey,
     supabaseUrl,
   });
 
   const paidRows = rows.filter((row) => row.unit_amount_cents > 0);
   if (!paidRows.length) {
-    addCheck("billing_catalog", "fail", "Nenhum preço pago ativo encontrado no catálogo local.");
+    addCheck(
+      "billing_catalog",
+      "fail",
+      "Nenhum preço pago ativo encontrado no catálogo local.",
+    );
     return;
   }
 
@@ -227,64 +242,98 @@ async function checkBillingCatalog({ serviceRoleKey, stripe, supabaseUrl }) {
 }
 
 async function checkWebhookEndpoints(stripe, supabaseRef) {
-  let endpoints;
+  let destinations;
   try {
-    endpoints = await stripe.webhookEndpoints.list({ limit: 100 });
+    destinations = await stripe.v2.core.eventDestinations.list({
+      include: ["webhook_endpoint.url"],
+      limit: 100,
+    });
   } catch (error) {
     addCheck(
-      "stripe_webhook_endpoints",
+      "stripe_event_destinations",
       "blocked",
-      `Não foi possível listar webhooks Stripe: ${safeError(error)}.`,
+      `Não foi possível listar Event Destinations Stripe: ${safeError(error)}.`,
     );
     return;
   }
 
   const expectedHost = supabaseRef ? `${supabaseRef}.supabase.co` : null;
-  const rows = endpoints.data.map((endpoint) => ({
-    enabledEvents: endpoint.enabled_events,
-    id: maskStripeId(endpoint.id),
-    status: endpoint.status,
-    url: sanitizeUrl(endpoint.url),
+  const rows = destinations.data.map((destination) => ({
+    enabledEventCount: destination.enabled_events.length,
+    eventsFrom: destination.events_from,
+    name: destination.name,
+    payload: destination.event_payload,
+    status: destination.status,
+    url: sanitizeUrl(destination.webhook_endpoint?.url),
   }));
-  evidence.webhookEndpoints = rows;
+  evidence.eventDestinations = rows;
 
-  const platform = endpoints.data.find(
-    (endpoint) =>
-      endpoint.status === "enabled" &&
-      endpoint.url.includes("/functions/v1/stripe-billing-webhook") &&
-      (!expectedHost || endpoint.url.includes(expectedHost)),
-  );
-  const connect = endpoints.data.find(
-    (endpoint) =>
-      endpoint.status === "enabled" &&
-      endpoint.url.includes("/functions/v1/stripe-connect-webhook") &&
-      (!expectedHost || endpoint.url.includes(expectedHost)),
-  );
-
-  const platformEvents = [
-    "checkout.session.completed",
-    "customer.subscription.updated",
-    "invoice.paid",
-    "payment_intent.requires_action",
-    "payment_intent.succeeded",
-    "charge.refunded",
-    "transfer.updated",
+  const contracts = [
+    {
+      check: "platform_webhook_endpoint",
+      events: platformSnapshotEvents,
+      eventsFrom: "@self",
+      name: "stripe-billing-webhook-homolog",
+      path: "/functions/v1/stripe-billing-webhook",
+      payload: "snapshot",
+    },
+    {
+      check: "connect_webhook_endpoint",
+      events: connectSnapshotEvents,
+      eventsFrom: "@accounts",
+      name: "stripe-connect-webhook-snapshot-homolog",
+      path: "/functions/v1/stripe-connect-webhook",
+      payload: "snapshot",
+    },
+    {
+      check: "connect_thin_webhook_endpoint",
+      events: connectThinEvents,
+      eventsFrom: "@accounts",
+      name: "stripe-connect-webhook-thin-homolog",
+      path: "/functions/v1/stripe-connect-webhook",
+      payload: "thin",
+    },
   ];
-  const connectEvents = ["account.updated"];
 
-  addCheck(
-    "platform_webhook_endpoint",
-    platform && hasEvents(platform, platformEvents) ? "pass" : "fail",
-    platform
-      ? "Webhook da plataforma encontrado com eventos essenciais."
-      : "Webhook da plataforma não encontrado para a Edge Function esperada.",
+  for (const contract of contracts) {
+    const matches = destinations.data.filter(
+      (destination) =>
+        destination.name === contract.name &&
+        destination.status === "enabled" &&
+        destination.livemode === false &&
+        destination.event_payload === contract.payload &&
+        destination.events_from?.includes(contract.eventsFrom) &&
+        destination.webhook_endpoint?.url?.endsWith(contract.path) &&
+        (!expectedHost ||
+          destination.webhook_endpoint.url.includes(expectedHost)) &&
+        sameEvents(destination.enabled_events, contract.events),
+    );
+    addCheck(
+      contract.check,
+      matches.length === 1 ? "pass" : "fail",
+      matches.length === 1
+        ? `${contract.name} está habilitado com ${contract.events.length} eventos.`
+        : `${contract.name} ausente, duplicado ou divergente.`,
+    );
+  }
+
+  const canonicalNames = new Set(contracts.map((contract) => contract.name));
+  const unexpected = destinations.data.filter(
+    (destination) =>
+      destination.status === "enabled" &&
+      destination.livemode === false &&
+      isRelevantRemoteWebhook(
+        destination.webhook_endpoint?.url,
+        expectedHost,
+      ) &&
+      !canonicalNames.has(destination.name),
   );
   addCheck(
-    "connect_webhook_endpoint",
-    connect && hasEvents(connect, connectEvents) ? "pass" : "fail",
-    connect
-      ? "Webhook Connect snapshot encontrado com evento essencial."
-      : "Webhook Connect snapshot não encontrado para a Edge Function esperada.",
+    "webhook_destination_duplicates",
+    unexpected.length === 0 ? "pass" : "fail",
+    unexpected.length === 0
+      ? "Nenhum destino remoto adicional aponta para os webhooks TES."
+      : "Há destino remoto adicional apontando para webhook TES.",
   );
 }
 
@@ -304,10 +353,13 @@ async function checkEdgeFunctions(supabaseUrl) {
 
   for (const functionName of functions) {
     try {
-      const response = await fetch(`${supabaseUrl}/functions/v1/${functionName}`, {
-        method: "OPTIONS",
-        signal: AbortSignal.timeout(10_000),
-      });
+      const response = await fetch(
+        `${supabaseUrl}/functions/v1/${functionName}`,
+        {
+          method: "OPTIONS",
+          signal: AbortSignal.timeout(10_000),
+        },
+      );
       const ok = response.status >= 200 && response.status < 500;
       results.push({ functionName, ok, status: response.status });
     } catch (error) {
@@ -326,7 +378,11 @@ async function checkEdgeFunctions(supabaseUrl) {
   );
 }
 
-async function checkPublicTherapistFixture({ serviceRoleKey, slug, supabaseUrl }) {
+async function checkPublicTherapistFixture({
+  serviceRoleKey,
+  slug,
+  supabaseUrl,
+}) {
   const searchRows = await supabaseGet({
     path: `/rest/v1/public_therapist_search?select=slug,public_name,service_id,therapy_slug,next_slot_at&slug=eq.${encodeURIComponent(slug)}&limit=1`,
     serviceRoleKey,
@@ -361,7 +417,9 @@ async function supabaseGet({ path, serviceRoleKey, supabaseUrl }) {
   const text = await response.text();
 
   if (!response.ok) {
-    throw new Error(`supabase_get_failed:${response.status}:${text.slice(0, 120)}`);
+    throw new Error(
+      `supabase_get_failed:${response.status}:${text.slice(0, 120)}`,
+    );
   }
 
   return text ? JSON.parse(text) : [];
@@ -386,9 +444,27 @@ function formatStatus(status) {
   }[status];
 }
 
-function hasEvents(endpoint, requiredEvents) {
-  if (endpoint.enabled_events.includes("*")) return true;
-  return requiredEvents.every((event) => endpoint.enabled_events.includes(event));
+function sameEvents(actual, expected) {
+  return (
+    JSON.stringify([...actual].sort()) === JSON.stringify([...expected].sort())
+  );
+}
+
+function isRelevantRemoteWebhook(value, expectedHost) {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    const local = ["127.0.0.1", "localhost", "::1"].includes(url.hostname);
+    const relevantPath = [
+      "/functions/v1/stripe-billing-webhook",
+      "/functions/v1/stripe-connect-webhook",
+    ].some((path) => url.pathname.endsWith(path));
+    return (
+      !local && relevantPath && (!expectedHost || url.host === expectedHost)
+    );
+  } catch {
+    return false;
+  }
 }
 
 function safeHost(value) {
@@ -435,5 +511,8 @@ function maskStripeId(value) {
 
 function safeError(error) {
   if (!(error instanceof Error)) return "unknown";
-  return error.message.replace(/(sk|rk|pk|whsec)_(test|live)?_[A-Za-z0-9_]+/g, "$1_REDACTED");
+  return error.message.replace(
+    /(sk|rk|pk|whsec)_(test|live)?_[A-Za-z0-9_]+/g,
+    "$1_REDACTED",
+  );
 }

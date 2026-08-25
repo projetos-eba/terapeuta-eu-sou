@@ -19,7 +19,10 @@ export function TherapistDashboardPage({
       <TherapistWelcomeHero data={data} />
       <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,1fr)_306px]">
         <TherapistWeekSummary plan={data.therapist.plan} week={data.week} />
-        <UpcomingSessionsCard sessions={data.upcomingSessions} />
+        <UpcomingSessionsCard
+          sessions={data.upcomingSessions}
+          state={data.upcomingSessionsState}
+        />
       </div>
       <TherapistKpiGrid kpis={data.kpis} plan={data.therapist.plan} />
       <TherapistAttentionSection items={data.attentionItems} />

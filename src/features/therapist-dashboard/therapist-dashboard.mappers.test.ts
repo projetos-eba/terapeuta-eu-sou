@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { SessionReadModelItem } from "@/features/bookings";
 import { routes } from "@/lib/routes";
 
 import type { TherapistAuraPageData } from "../therapist-aura/therapist-aura.types";
@@ -7,6 +8,8 @@ import {
   calculateAttendanceRate,
   calculateRevenueCents,
   calculateTrend,
+  buildTherapistWeekSummary,
+  mapUpcomingTherapistSessions,
   mapTherapistDashboardResponse,
   mapTherapistAuraPage,
 } from "./therapist-dashboard.mappers";
@@ -40,6 +43,62 @@ describe("dashboard calculations", () => {
         { netAmountCents: 2400, status: "paid" },
       ]),
     ).toBe(3400);
+  });
+
+  it("counts the weekly series using the calendar timezone", () => {
+    const summary = buildTherapistWeekSummary(
+      [
+        session({
+          bookingStatus: "completed",
+          startsAt: "2026-08-24T03:30:00.000Z",
+        }),
+        session({
+          bookingStatus: "no_show_patient",
+          startsAt: "2026-08-25T15:00:00.000Z",
+        }),
+        session({
+          bookingStatus: "cancelled_by_patient",
+          startsAt: "2026-08-31T02:30:00.000Z",
+        }),
+      ],
+      { localStart: "2026-08-24", timezone: "America/Sao_Paulo" },
+    );
+
+    expect(summary.days[0]).toMatchObject({
+      completed: 1,
+      scheduled: 1,
+    });
+    expect(summary.days[1]).toMatchObject({ scheduled: 1 });
+    expect(summary.days[6]).toMatchObject({ cancelled: 1 });
+    expect(summary.attendanceRate).toBe(50);
+    expect(summary.rangeLabel).toBe("24/08 – 30/08");
+  });
+
+  it("orders the closest confirmed upcoming sessions independently of query order", () => {
+    const now = new Date("2026-08-25T12:00:00.000Z");
+    const result = mapUpcomingTherapistSessions(
+      [
+        session({
+          bookingId: "booking-later",
+          startsAt: "2026-08-27T12:00:00.000Z",
+        }),
+        session({
+          bookingId: "booking-soon",
+          startsAt: "2026-08-25T13:00:00.000Z",
+        }),
+        session({
+          bookingId: "booking-past",
+          startsAt: "2026-08-25T11:00:00.000Z",
+        }),
+      ],
+      now,
+    );
+
+    expect(result.map((item) => item.bookingId)).toEqual([
+      "booking-soon",
+      "booking-later",
+    ]);
+    expect(result[0]?.timezone).toBe("America/Sao_Paulo");
   });
 });
 
@@ -150,4 +209,44 @@ function insufficientRate() {
     unit: "percent" as const,
     value: null,
   };
+}
+
+function session(
+  overrides: Partial<SessionReadModelItem> = {},
+): SessionReadModelItem {
+  return {
+    attendanceSource: "none",
+    attendanceStatus: "unknown",
+    bookingId: "booking-default",
+    bookingStatus: "confirmed",
+    bookingVersion: 1,
+    cancellationDecision: null,
+    cancellationRequiresReview: null,
+    currency: "BRL",
+    durationMinutes: 50,
+    endsAt: "2026-08-25T14:00:00.000Z",
+    financialStatus: "paid",
+    fulfillmentStatus: null,
+    grossAmountCents: 10000,
+    videoSessionProvider: null,
+    videoSessionStatus: null,
+    modality: "online",
+    patientAvatarUrl: null,
+    patientName: "Pessoa TES",
+    patientProfileId: "patient-1",
+    priceCents: 10000,
+    proposedEndsAt: null,
+    proposedStartsAt: null,
+    proposedTimezone: null,
+    refundPending: null,
+    rescheduleStatus: null,
+    serviceId: "service-1",
+    serviceTitle: "Terapia online",
+    startsAt: "2026-08-25T13:00:00.000Z",
+    therapistAmountCents: 8000,
+    timezone: "America/Sao_Paulo",
+    transferStatus: null,
+    zoomAccess: "not_available",
+    ...overrides,
+  } as SessionReadModelItem;
 }

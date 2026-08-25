@@ -133,14 +133,7 @@ function ManagedLink({
   requiredPlan?: TherapistPlan;
 }) {
   if (requiredPlan && !canAccessTherapistPlan(plan, requiredPlan)) {
-    return (
-      <TherapistLockedCard
-        className="min-h-[120px] rounded-lg border-0 shadow-none"
-        requiredPlan={requiredPlan}
-        title={label}
-        variant="compact"
-      />
-    );
+    return null;
   }
 
   return (

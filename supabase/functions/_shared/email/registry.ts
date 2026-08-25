@@ -56,6 +56,12 @@ const payoutTokens = [
   { key: "finance_url", label: "Link do painel financeiro", kind: "url" },
 ] as const;
 
+const payoutIncidentTokens = [
+  { key: "recipient_name", label: "Nome do administrador" },
+  { key: "incident_type", label: "Tipo da ocorrência" },
+  { key: "admin_url", label: "Link de pagamentos", kind: "url" },
+] as const;
+
 const subscriptionTokens = [
   { key: "recipient_name", label: "Nome do terapeuta" },
   { key: "plan_name", label: "Nome do plano" },
@@ -1167,28 +1173,28 @@ export const emailActionRegistry: Record<
     actionKey: "therapist_payout_completed",
     category: "Financeiro",
     label: "Repasse realizado ao terapeuta",
-    description: "Confirma um repasse persistido após aceite do provider.",
+    description: "Confirma um repasse bancário após payout.paid autoritativo.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
     defaults: {
-      subject: "Seu repasse foi realizado",
+      subject: "Seu repasse bancário foi confirmado",
       preheader:
         "O valor referente aos seus atendimentos já foi processado.",
-      text: "Seu repasse foi realizado.\n\nOlá, {{recipient_name}}.\n\nInformamos que o repasse financeiro referente aos seus atendimentos elegíveis foi processado com sucesso.\n\nResumo da operação:\nValor do repasse: {{amount}}\n\nO valor foi processado conforme as regras financeiras da plataforma e será disponibilizado de acordo com os prazos da instituição financeira responsável pelo processamento da transferência.\n\nVocê pode acompanhar o histórico completo dos seus repasses e demais movimentações financeiras diretamente no seu painel do TES.\n\nAgradecemos por fazer parte da nossa comunidade.\n\nEquipe TES\n\nVer painel financeiro: {{finance_url}}",
+      text: "Seu repasse bancário foi confirmado.\n\nOlá, {{recipient_name}}.\n\nA Stripe confirmou o envio de {{amount}} para sua conta de recebimento. A instituição financeira ainda pode devolver uma falha posterior; se isso ocorrer, avisaremos você.\n\nVer painel financeiro: {{finance_url}}",
       html: defaultEmailHtml({
-        title: "Seu repasse foi realizado",
+        title: "Seu repasse bancário foi confirmado",
         ctaLabel: "Ver painel financeiro",
         ctaUrlToken: "finance_url",
         body: [
           accountParagraph("Olá, {{recipient_name}}."),
           accountParagraph(
-            "Informamos que o repasse financeiro referente aos seus atendimentos elegíveis foi processado com sucesso.",
+            "A Stripe confirmou o envio do repasse financeiro referente aos seus atendimentos elegíveis.",
           ),
           accountParagraph("<strong>Resumo da operação:</strong>"),
           emailDetailList([["Valor do repasse", "{{amount}}"]]),
           accountParagraph(
-            "O valor foi processado conforme as regras financeiras da plataforma e será disponibilizado de acordo com os prazos da instituição financeira responsável pelo processamento da transferência.",
+            "A instituição financeira ainda pode devolver uma falha posterior. Se isso ocorrer, avisaremos você.",
           ),
           accountParagraph(
             "Você pode acompanhar o histórico completo dos seus repasses e demais movimentações financeiras diretamente no seu painel do TES.",
@@ -1202,6 +1208,66 @@ export const emailActionRegistry: Record<
       recipient_name: "Terapeuta de exemplo",
       amount: "R$ 120,00",
       finance_url: "https://example.test/terapeuta/financeiro",
+    },
+  },
+  therapist_payout_failed_after_paid: {
+    actionKey: "therapist_payout_failed_after_paid",
+    category: "Financeiro",
+    label: "Falha posterior no repasse",
+    description: "Informa uma falha bancária posterior a payout.paid.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Seu repasse bancário precisa de atenção",
+      preheader: "A instituição financeira devolveu uma falha após a confirmação anterior.",
+      text: "Olá, {{recipient_name}}.\n\nA instituição financeira informou uma falha posterior no repasse de {{amount}}. Nenhuma nova movimentação será criada automaticamente até a revisão segura da conta.\n\nAcompanhar financeiro: {{finance_url}}",
+      html: defaultEmailHtml({
+        title: "Seu repasse bancário precisa de atenção",
+        ctaLabel: "Acompanhar financeiro",
+        ctaUrlToken: "finance_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph("A instituição financeira informou uma falha posterior no repasse de {{amount}}."),
+          accountParagraph("Nenhuma nova movimentação será criada automaticamente até a revisão segura da conta."),
+        ].join(""),
+      }),
+    },
+    allowedTokens: payoutTokens,
+    previewFixture: {
+      recipient_name: "Terapeuta de exemplo",
+      amount: "R$ 120,00",
+      finance_url: "https://example.test/terapeuta/financeiro",
+    },
+  },
+  payout_operational_alert_admin: {
+    actionKey: "payout_operational_alert_admin",
+    category: "Financeiro",
+    label: "Alerta operacional de repasse",
+    description: "Notifica administradores sem expor payloads ou dados bancários.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Repasse exige revisão administrativa",
+      preheader: "Uma ocorrência financeira sanitizada foi registrada.",
+      text: "Olá, {{recipient_name}}.\n\nUma ocorrência de repasse do tipo {{incident_type}} exige revisão. Consulte a área administrativa para verificar o estado persistido e o runbook.\n\nAbrir pagamentos: {{admin_url}}",
+      html: defaultEmailHtml({
+        title: "Repasse exige revisão administrativa",
+        ctaLabel: "Abrir pagamentos",
+        ctaUrlToken: "admin_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph("Uma ocorrência de repasse do tipo {{incident_type}} exige revisão."),
+          accountParagraph("Consulte o estado persistido e siga o runbook de reconciliação antes de autorizar nova movimentação."),
+        ].join(""),
+      }),
+    },
+    allowedTokens: payoutIncidentTokens,
+    previewFixture: {
+      recipient_name: "Administrador de exemplo",
+      incident_type: "reconciliação necessária",
+      admin_url: "https://example.test/admin/pagamentos",
     },
   },
   therapist_subscription_created: {

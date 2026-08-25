@@ -388,6 +388,15 @@ Stack real identificada:
   fluxo hospedado da Stripe, sem formulário bancário próprio e sem confirmar
   onboarding por redirect. Benchmark financeiro é anonimizado e suprimido sem
   amostra mínima; Insight TES financeiro é rule-based, não IA generativa.
+  A automação semanal está versionada e desativada até homologação HML: terça
+  02:00 America/Sao_Paulo, confirmação em 7 dias, segurança de 1 dia e backlog
+  até o cutoff. ADR-018 define Transfer semanal controlado pelo TES e Payout
+  automático diário criado pela Stripe para contas BR. `destination_payment` e
+  Balance Transactions atribuem cada Transfer a um Payout; lotes e Payouts
+  formam a relação muitos-para-muitos, sem metadata TES no Payout. Transfer liquida a obrigação no ledger;
+  somente cobertura reconciliada em Payout `paid` conclui o banco. A política
+  v5 e o cron permanecem inativos até preflight e prova externa. Runbook em
+  `docs/payments/weekly-payouts.md`.
 - A apresentação visual de Aura e Financeiro foi alinhada aos nós Figma
   `13366:1634` e `14340:6283`, mantendo as anatomias específicas de cada
   domínio. Aura usa hero editorial, personagem local, quatro KPIs, leituras

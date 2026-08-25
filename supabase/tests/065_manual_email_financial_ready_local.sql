@@ -1,6 +1,6 @@
 begin;
 
-select plan(21);
+select plan(22);
 
 select has_trigger(
   'public',
@@ -16,9 +16,9 @@ select has_trigger(
 );
 select has_trigger(
   'public',
-  'stripe_transfers',
-  'enqueue_therapist_payout_email',
-  'persisted accepted transfers enqueue therapist payout e-mail work'
+  'stripe_payouts',
+  'enqueue_stripe_payout_emails',
+  'authoritative Stripe Payout transitions enqueue therapist payout e-mail work'
 );
 select is(
   (
@@ -452,30 +452,72 @@ select is(
     select count(*)::integer
     from public.email_outbox
     where action_key = 'therapist_payout_completed'
-      and related_entity_id = 'f9900000-0000-4000-8000-000000000001'
+      and related_entity_type = 'stripe_transfer'
   ),
-  1,
-  'a persisted accepted transfer queues one therapist payout delivery'
+  0,
+  'an accepted Transfer does not prematurely queue a bank payout delivery'
 );
-update public.stripe_transfers
-set status = 'transferred'
-where id = 'f9900000-0000-4000-8000-000000000001';
+
+insert into public.stripe_payouts (
+  id,
+  payout_batch_therapist_id,
+  payout_batch_id,
+  therapist_profile_id,
+  connect_account_id,
+  stripe_payout_id,
+  idempotency_key,
+  request_fingerprint,
+  amount_cents,
+  status,
+  provider_status,
+  paid_at
+) select
+  'f9a00000-0000-4000-8000-000000000001',
+  'f9700000-0000-4000-8000-000000000001',
+  'f9600000-0000-4000-8000-000000000001',
+  'c1000000-0000-4000-8000-000000000001',
+  id,
+  'po_manual_email_payout',
+  'tes:test:payout:f9700000-0000-4000-8000-000000000001:v1',
+  'manual-email-payout-fingerprint',
+  13600,
+  'paid',
+  'paid',
+  '2046-02-01T10:07:00Z'
+from public.therapist_connect_accounts
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001';
+
 select is(
   (
     select count(*)::integer
     from public.email_outbox
     where action_key = 'therapist_payout_completed'
-      and related_entity_id = 'f9900000-0000-4000-8000-000000000001'
+      and related_entity_id = 'f9a00000-0000-4000-8000-000000000001'
   ),
   1,
-  'a replayed accepted transfer does not duplicate its delivery'
+  'an authoritative paid Payout queues one therapist delivery'
+);
+
+update public.stripe_payouts
+set status = 'paid'
+where id = 'f9a00000-0000-4000-8000-000000000001';
+
+select is(
+  (
+    select count(*)::integer
+    from public.email_outbox
+    where action_key = 'therapist_payout_completed'
+      and related_entity_id = 'f9a00000-0000-4000-8000-000000000001'
+  ),
+  1,
+  'a replayed paid Payout does not duplicate its delivery'
 );
 select is(
   (
     select payload
     from public.email_outbox
     where action_key = 'therapist_payout_completed'
-      and related_entity_id = 'f9900000-0000-4000-8000-000000000001'
+      and related_entity_id = 'f9a00000-0000-4000-8000-000000000001'
   ),
   '{}'::jsonb,
   'payout delivery payload does not persist financial account data'
@@ -484,7 +526,7 @@ select ok(
   (
     select count(*) = count(distinct (action_key, domain_event_id, recipient_key))
     from public.email_outbox
-    where related_entity_type in ('session_payment', 'session_refund', 'stripe_transfer')
+    where related_entity_type in ('session_payment', 'session_refund', 'stripe_transfer', 'stripe_payout')
   ),
   'financial deliveries preserve the action, logical-event, recipient dedupe contract'
 );

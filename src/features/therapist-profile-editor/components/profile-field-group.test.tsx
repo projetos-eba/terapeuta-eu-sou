@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
-import { ProfileChipInput } from "./profile-field-group";
+import { ProfileChipInput, ProfileFieldGroup } from "./profile-field-group";
 
 function Harness({ initial = [] }: { initial?: string[] }) {
   const [items, setItems] = useState(initial);
@@ -36,5 +36,28 @@ describe("ProfileChipInput", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remover Escuta" }));
 
     expect(screen.queryByDisplayValue("Escuta")).not.toBeInTheDocument();
+  });
+});
+
+describe("ProfileFieldGroup", () => {
+  it("reveals field guidance on hover-compatible focus and click", () => {
+    render(
+      <ProfileFieldGroup
+        info="Use este texto para apresentar sua abordagem com clareza."
+        title="Sua apresentação"
+      >
+        <span>Campo</span>
+      </ProfileFieldGroup>,
+    );
+
+    const infoButton = screen.getByRole("button", {
+      name: "Saiba mais sobre Sua apresentação",
+    });
+    fireEvent.click(infoButton);
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "apresentar sua abordagem",
+    );
+    expect(infoButton).toHaveAttribute("aria-expanded", "true");
   });
 });

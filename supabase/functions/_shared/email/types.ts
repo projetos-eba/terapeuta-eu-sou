@@ -26,6 +26,8 @@ export type EmailActionKey =
   | "session_payment_pending"
   | "session_refund_approved"
   | "therapist_payout_completed"
+  | "therapist_payout_failed_after_paid"
+  | "payout_operational_alert_admin"
   | "therapist_subscription_created"
   | "therapist_subscription_renewed"
   | "therapist_subscription_cancelled"

@@ -27,6 +27,7 @@ import type {
   TherapistProfileEditorData,
   TherapistProfileMutationResult,
 } from "../therapist-profile-editor.types";
+import { isTherapistProfileGuideThemeItem } from "../therapist-profile-guide-themes";
 import { ProfileCompleteness } from "./profile-completeness";
 import { ProfileEditorForm } from "./profile-editor-form";
 import { ProfilePageHeader } from "./profile-page-header";
@@ -482,10 +483,13 @@ function validateDraftFields(
       message: "Revise cidade e estado antes de salvar.",
     };
   }
-  if (fields.guideItems.length > 6) {
+  if (
+    fields.guideItems.length > 3 &&
+    fields.guideItems.every(isTherapistProfileGuideThemeItem)
+  ) {
     return {
       focusId: "guideItems",
-      message: "Mantenha no máximo 6 itens em Como posso te guiar.",
+      message: "Escolha no máximo 3 temas em Como posso te guiar.",
     };
   }
   if (

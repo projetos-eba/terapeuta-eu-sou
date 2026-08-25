@@ -178,6 +178,20 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
 - A comunicação editorial usa `Sua apresentação` para o texto principal. Os
   campos legados `headline`, `shortIntro` e `bio` permanecem apenas no contrato
   interno e não aparecem como nomes técnicos para o terapeuta.
+- `Como posso te guiar` usa os dez temas canônicos do Match (`Emoções e
+  Bem-Estar`, `Autoconhecimento e Transformação`, `Relacionamentos`,
+  `Autoestima e Poder Pessoal`, `Propósito e Direção`, `Espiritualidade e
+  Conexão Interior`, `Energia e Equilíbrio Energético`, `Libertação e Renovação`,
+  `Corpo, Relaxamento e Qualidade de Vida` e `Vida Profissional e
+  Prosperidade`). O terapeuta pode selecionar até três; os cards exibem ícones
+  do vocabulário visual compartilhado e persistem no contrato existente de
+  `guideItems`. Itens personalizados antigos permanecem até uma nova seleção.
+- `Sua apresentação` e `Minha essência` exibem ajuda contextual no ícone
+  informativo, acessível por foco, hover e clique, com explicações em linguagem
+  de produto.
+- No bloco `Outras partes do seu perfil`, `Avaliações` fica oculto para Free;
+  permanece visível para Premium e Premium Plus. A rota protegida continua
+  sendo a autoridade de acesso.
 - Usar `TESDialog` para confirmações.
 - Manter `h1` único.
 - Labels visíveis e touch targets de pelo menos 44px.

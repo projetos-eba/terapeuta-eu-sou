@@ -5,6 +5,8 @@ export type TherapistDashboardTrend = {
   percent: number | null;
 };
 
+export type TherapistDashboardDataState = "empty" | "ready" | "unavailable";
+
 export type TherapistDashboardKpi = {
   trend: TherapistDashboardTrend;
   value: number;
@@ -73,7 +75,9 @@ export type TherapistDashboardPageData = {
     patientName: string;
     serviceTitle: string;
     startsAt: string;
+    timezone: string;
   }>;
+  upcomingSessionsState: TherapistDashboardDataState;
   week: {
     attendanceRate: number;
     days: Array<{
@@ -84,6 +88,7 @@ export type TherapistDashboardPageData = {
       scheduled: number;
     }>;
     rangeLabel: string;
+    state: TherapistDashboardDataState;
   };
 };
 

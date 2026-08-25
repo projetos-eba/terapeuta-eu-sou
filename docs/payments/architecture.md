@@ -89,7 +89,7 @@ anteriores continuam disponíveis para interpretar pagamentos já criados:
   excepcionais analisadas pelo TES;
 - reembolsos antes de lote/transferencia podem ser automaticos; casos ja loteados, transferidos, disputados ou contestados entram em revisao manual;
 - confirmacao automatica da sessao apos 30 dias;
-- prazo de seguranca de 7 dias apos confirmacao antes de elegibilidade para repasse;
+- confirmação automática após 7 dias quando faltarem respostas bilaterais e prazo de segurança de 1 dia completo após a confirmação antes da elegibilidade;
 - lote semanal terca-feira 10:00 America/Sao_Paulo, com cutoff explicito e periodo unico por indice idempotente;
 - upgrades de assinatura cobram prorrata imediatamente; downgrades e cancelamentos entram no fim do periodo.
 - Premium Plus para Premium cria Subscription Schedule e registra o plano/data
@@ -128,7 +128,17 @@ demais regras financeiras vigentes.
 - `session_refunds`, `session_cancellation_decisions` e `session_disputes`: eventos compensatorios, decisoes de politica e bloqueios. Cancelamento usa `request_id` único e o RPC `claim_session_cancellation_decision_v1` (somente `service_role`) para registrar uma única decisão antes de chamar Stripe; retries reutilizam a decisão, a chave de idempotência do refund e a transição do booking.
 - `session_service_confirmations`: prova de realizacao da sessao.
 - `payout_batches`, `payout_batch_therapists`, `payout_batch_items`: lote semanal.
-- `stripe_transfers` e `stripe_transfer_reversals`: repasses e compensacoes.
+- `stripe_transfers` e `stripe_transfer_reversals`: Transfer da plataforma para o saldo conectado e compensações.
+- `stripe_payouts`: Payout automático criado pela Stripe, separado do ledger.
+- `stripe_payout_transfer_allocations`: atribuição única de cada Transfer ao
+  Payout por Balance Transaction; lotes e Payouts derivam relação
+  muitos-para-muitos.
+- `payout_scheduler_runs` e `payout_operational_incidents`: lease semanal, auditoria, bloqueios e reconciliação.
+
+> Decisão BR (ADR-018): o TES controla o Transfer semanal e a Stripe executa
+> Payout automático `daily`. A associação bancária não usa metadata de Payout;
+> usa `destination_payment` e `balance_transactions?payout=...`. A política v5
+> e o cron permanecem inativos até homologação HML completa.
 - `financial_ledger_entries`: ledger auditavel.
 - `stripe_webhook_events`: recebimento idempotente de webhooks.
 
@@ -250,6 +260,8 @@ Sessoes e repasses:
 - `process-payout-batch`
 - `retry-failed-payout-items`
 - `reconcile-stripe-transfers`
+- `weekly-payout-scheduler`
+- `stripe-connect-payout-schedule`
 
 `session-booking-checkout` é a fronteira autenticada da reserva pública:
 exige paciente derivado da sessão, `serviceId`, `startsAt`, `requestId` e
@@ -292,6 +304,8 @@ Read models privados:
 - `get_private_therapist_financial_overview_v1`;
 - `get_private_therapist_receipts_v1`;
 - `get_private_therapist_payouts_v1`;
+- `get_private_therapist_bank_payouts_v1`;
+- `get_admin_payout_operations_v1`;
 - `get_private_therapist_connect_account_v1`;
 - `get_private_therapist_financial_metrics_v1` para métricas F2 Premium e
   Premium Plus;
@@ -309,6 +323,9 @@ Documentos de contrato:
 - `docs/architecture/adr/ADR-013-therapist-finance-f2-metrics.md`;
 - `docs/architecture/adr/ADR-014-therapist-finance-f3-advanced-dashboard.md`;
 - `docs/architecture/adr/ADR-015-therapist-finance-f4-operational-payout-lifecycle.md`.
+- `docs/architecture/adr/ADR-017-weekly-transfer-payout-orchestration.md`.
+- `docs/architecture/adr/ADR-018-weekly-transfer-daily-automatic-payout.md`.
+- `docs/payments/weekly-payouts.md`.
 
 ## Execucao local
 

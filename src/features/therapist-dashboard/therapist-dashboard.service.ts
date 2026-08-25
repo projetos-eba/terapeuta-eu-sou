@@ -3,6 +3,10 @@ import "server-only";
 import { cache } from "react";
 
 import { TherapistPlan } from "@/domain/tes";
+import {
+  getTherapistAgendaPage,
+  getTherapistCalendar,
+} from "@/features/therapist-agenda";
 import { getTherapistAuraPage } from "@/features/therapist-aura/therapist-aura.service";
 import { getTherapistMetricsPage } from "@/features/therapist-metrics/therapist-metrics.service";
 import { getTherapistReviewsPage } from "@/features/therapist-reviews/therapist-reviews.service";
@@ -10,8 +14,10 @@ import { getTherapistSessionsPage } from "@/features/therapist-sessions/therapis
 
 import { TherapistDashboardError } from "./therapist-dashboard.errors";
 import {
-  calculateAttendanceRate,
   calculateTrend,
+  buildTherapistWeekSummary,
+  createUnavailableTherapistWeek,
+  mapUpcomingTherapistSessions,
 } from "./therapist-dashboard.mappers";
 import { createEmptyTherapistDashboardData } from "./therapist-dashboard-empty";
 import {
@@ -50,13 +56,14 @@ export const getTherapistDashboardPage = cache(
       return base;
     }
 
-    const [dashboard, auraResult] = await Promise.all([
+    const [dashboard, auraResult, timeline] = await Promise.all([
       queryTherapistDashboard(accessToken),
       getTherapistAuraPage({
         accessToken,
         periodDays: 30,
         profileId,
       }),
+      getTherapistDashboardTimeline({ accessToken, profileId }),
     ]);
     const main = mapTherapistDashboardResponse(dashboard);
 
@@ -72,7 +79,13 @@ export const getTherapistDashboardPage = cache(
           recommendedActions: [],
         };
 
-    return { ...main, ...recommendations };
+    return {
+      ...main,
+      ...recommendations,
+      upcomingSessions: timeline.upcomingSessions,
+      upcomingSessionsState: timeline.upcomingSessionsState,
+      week: timeline.week,
+    };
   },
 );
 
@@ -85,7 +98,6 @@ async function getTherapistBaseDashboardPage({
   profileId,
 }: TherapistDashboardQueryInput): Promise<TherapistDashboardPageData> {
   const now = new Date();
-  const currentWeekStart = startOfWeek(now);
   const previousMonthStart = startOfMonth(
     new Date(now.getFullYear(), now.getMonth() - 1, 1),
   );
@@ -102,7 +114,11 @@ async function getTherapistBaseDashboardPage({
     profileId,
   });
 
-  const sessions = result.data?.items ?? [];
+  if (result.status === "error") {
+    throw new TherapistDashboardError("unavailable");
+  }
+
+  const sessions = result.status === "success" ? result.data.items : [];
   const currentMonthStart = startOfMonth(now);
   const currentMonthSessions = sessions.filter(
     (session) =>
@@ -115,25 +131,22 @@ async function getTherapistBaseDashboardPage({
       session.startsAt < currentMonthStart.toISOString() &&
       isCountedSession(session.bookingStatus),
   );
-  const weekSessions = sessions.filter((session) => {
-    const dateKey = dateKeyInTimezone(session.startsAt);
-    return (
-      dateKey >= dateKeyInTimezone(currentWeekStart.toISOString()) &&
-      dateKey <= dateKeyInTimezone(addDays(currentWeekStart, 6).toISOString())
-    );
-  });
-  const todayKey = dateKeyInTimezone(now.toISOString());
+  const todayKey = dateKeyInTimezone(
+    now.toISOString(),
+    sessions[0]?.timezone ?? "America/Sao_Paulo",
+  );
   const todaySessions = sessions.filter(
     (session) =>
-      dateKeyInTimezone(session.startsAt) === todayKey &&
+      dateKeyInTimezone(
+        session.startsAt,
+        session.timezone ?? "America/Sao_Paulo",
+      ) === todayKey &&
       isActiveSession(session.bookingStatus),
   );
-  const completed = weekSessions.filter(
-    (session) => session.bookingStatus === "completed",
-  ).length;
-  const noShows = weekSessions.filter((session) =>
-    ["no_show_patient", "no_show_therapist"].includes(session.bookingStatus),
-  ).length;
+  const timeline = await getTherapistDashboardTimeline({
+    accessToken,
+    profileId,
+  });
 
   return {
     attentionItems: [
@@ -195,56 +208,59 @@ async function getTherapistBaseDashboardPage({
     },
     unreadMessagesCount: 0,
     unreadNotificationsCount: 0,
-    upcomingSessions: sessions
-      .filter(
-        (session) =>
-          session.bookingStatus === "confirmed" &&
-          new Date(session.startsAt).getTime() >= now.getTime(),
-      )
-      .sort((first, second) => first.startsAt.localeCompare(second.startsAt))
-      .slice(0, 4)
-      .map((session) => ({
-        bookingId: session.bookingId,
-        patientAvatarUrl: session.patientAvatarUrl,
-        patientName: session.patientName,
-        serviceTitle: session.serviceTitle,
-        startsAt: session.startsAt,
-      })),
-    week: {
-      attendanceRate: calculateAttendanceRate(completed, noShows),
-      days: Array.from({ length: 7 }, (_, index) => {
-        const day = addDays(currentWeekStart, index);
-        const key = dateKeyInTimezone(day.toISOString());
-        const daySessions = weekSessions.filter(
-          (session) => dateKeyInTimezone(session.startsAt) === key,
-        );
-        return {
-          cancelled: daySessions.filter((session) =>
-            [
-              "cancelled_by_patient",
-              "cancelled_by_therapist",
-              "refunded",
-            ].includes(session.bookingStatus),
-          ).length,
-          completed: daySessions.filter(
-            (session) => session.bookingStatus === "completed",
-          ).length,
-          date: key,
-          label: new Intl.DateTimeFormat("pt-BR", {
-            weekday: "short",
-          })
-            .format(day)
-            .replace(".", "")
-            .toUpperCase(),
-          scheduled: daySessions.filter((session) =>
-            isScheduledSession(session.bookingStatus),
-          ).length,
-        };
-      }),
-      rangeLabel: `${formatShortDate(currentWeekStart)} – ${formatShortDate(
-        addDays(currentWeekStart, 6),
-      )}`,
-    },
+    upcomingSessions: timeline.upcomingSessions,
+    upcomingSessionsState: timeline.upcomingSessionsState,
+    week: timeline.week,
+  };
+}
+
+async function getTherapistDashboardTimeline({
+  accessToken,
+  profileId,
+}: {
+  accessToken: string;
+  profileId: string;
+}) {
+  const now = new Date();
+  const rangeEnd = new Date(now);
+  rangeEnd.setDate(rangeEnd.getDate() + 90);
+
+  const [calendarResult, agendaResult] = await Promise.all([
+    getTherapistCalendar({
+      accessToken,
+      profileId,
+      view: "week",
+    }),
+    getTherapistAgendaPage({
+      accessToken,
+      profileId,
+      rangeEnd: rangeEnd.toISOString(),
+      rangeStart: now.toISOString(),
+    }),
+  ]);
+
+  const week =
+    calendarResult.status === "success"
+      ? buildTherapistWeekSummary(calendarResult.data.bookings, {
+          localStart: calendarResult.data.range.localStart,
+          timezone: calendarResult.data.timezone,
+        })
+      : createUnavailableTherapistWeek();
+
+  const upcomingSessions =
+    agendaResult.status === "success"
+      ? mapUpcomingTherapistSessions(agendaResult.data.bookings, now)
+      : [];
+
+  return {
+    upcomingSessions,
+    upcomingSessionsState:
+      agendaResult.status === "error"
+        ? ("unavailable" as const)
+        : upcomingSessions.length
+          ? ("ready" as const)
+          : ("empty" as const),
+    week,
   };
 }
 
@@ -324,23 +340,6 @@ function isCountedSession(status: string) {
   ].includes(status);
 }
 
-function isScheduledSession(status: string) {
-  return [
-    "confirmed",
-    "completed",
-    "no_show_patient",
-    "no_show_therapist",
-  ].includes(status);
-}
-
-function startOfWeek(value: Date) {
-  const date = new Date(value);
-  date.setHours(0, 0, 0, 0);
-  const day = date.getDay();
-  date.setDate(date.getDate() + (day === 0 ? -6 : 1 - day));
-  return date;
-}
-
 function startOfMonth(value: Date) {
   const date = new Date(value);
   date.setHours(0, 0, 0, 0);
@@ -348,27 +347,14 @@ function startOfMonth(value: Date) {
   return date;
 }
 
-function addDays(value: Date, days: number) {
-  const date = new Date(value);
-  date.setDate(date.getDate() + days);
-  return date;
-}
-
-function dateKeyInTimezone(value: string) {
+function dateKeyInTimezone(value: string, timezone: string) {
   const parts = new Intl.DateTimeFormat("en-CA", {
     day: "2-digit",
     month: "2-digit",
-    timeZone: "America/Sao_Paulo",
+    timeZone: timezone,
     year: "numeric",
   }).formatToParts(new Date(value));
   const part = (type: string) =>
     parts.find((item) => item.type === type)?.value ?? "00";
   return `${part("year")}-${part("month")}-${part("day")}`;
-}
-
-function formatShortDate(value: Date) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-  }).format(value);
 }

@@ -261,6 +261,18 @@ describe("TherapistProfileEditorPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("hides the managed reviews area for Free without changing other managed links", () => {
+    render(
+      <TherapistProfileEditorPage
+        editor={makeEditor({ derived: { plan: "free" } })}
+      />,
+    );
+
+    expect(screen.getByText("Terapias e preços")).toBeInTheDocument();
+    expect(screen.getByText("Horários disponíveis")).toBeInTheDocument();
+    expect(screen.queryByText("Avaliações")).not.toBeInTheDocument();
+  });
+
   it("saves a paid slug without discarding unsaved profile fields", async () => {
     const updatedEditor = makeEditor({
       publicProfileHref: "/terapeutas/ana-presenca",

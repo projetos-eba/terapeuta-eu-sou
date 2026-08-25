@@ -205,8 +205,22 @@ Deno.test("financial templates keep authoritative payment copy and safe CTAs", (
   assertEquals(payment.subject, "Pagamento confirmado com sucesso");
   assert(payment.html.includes("Recebemos seu pagamento"));
   assert(payment.text.includes("Ver detalhes"));
-  assertEquals(payout.subject, "Seu repasse foi realizado");
+  assertEquals(payout.subject, "Seu repasse bancário foi confirmado");
   assert(payout.text.includes("Ver painel financeiro"));
+
+  const failure = renderEmailTemplate("therapist_payout_failed_after_paid", {
+    amount: "R$ 120,00",
+    finance_url: "https://example.test/terapeuta/financeiro",
+    recipient_name: "Terapeuta",
+  });
+  assert(failure.text.includes("Nenhuma nova movimentação"));
+
+  const admin = renderEmailTemplate("payout_operational_alert_admin", {
+    admin_url: "https://example.test/admin/pagamentos",
+    incident_type: "reconciliação de payout",
+    recipient_name: "Admin",
+  });
+  assert(admin.text.includes("runbook"));
 });
 
 Deno.test("financial templates reject unsafe or unknown values", () => {

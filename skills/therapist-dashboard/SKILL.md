@@ -58,6 +58,20 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
   demonstrativa permanecem iguais nas duas superfícies.
 - Assets locais: `public/therapist/dashboard/`.
 
+## Dados temporais do painel
+
+- A visão “Sua semana” é derivada de `get_therapist_calendar_v1` na visão
+  semanal, usando `timezone` e `range.localStart` retornados pelo contrato.
+  Os estados de booking continuam sendo classificados conforme o domínio
+  transacional.
+- “Próximas sessões” usa `get_therapist_agenda_v1` em uma janela de até 90
+  dias, ordena os horários crescentes e mostra data, horário, pessoa e terapia.
+  Uma falha de leitura fica explícita e não vira lista vazia.
+- O gráfico semanal usa tooltip TES, resumo textual acessível e tokens CSS, sem
+  valores de referência inventados.
+- Para Free, “Ver mais” abre uma explicação no próprio painel e encaminha
+  somente para o plano Premium, nunca para `/terapeuta/insights`.
+
 Não distribuir queries pelos componentes. A entrada única da página é
 `getTherapistHomeReadiness({ session })`; quando o terapeuta está operacional e
 é Premium Plus aprovado, carregar o dashboard completo por

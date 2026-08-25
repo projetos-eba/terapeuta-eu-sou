@@ -69,10 +69,12 @@ export function createEmptyTherapistDashboardData({
     unreadMessagesCount: 0,
     unreadNotificationsCount: 0,
     upcomingSessions: [],
+    upcomingSessionsState: "empty",
     week: {
       attendanceRate: 0,
       days: currentWeekDays(),
       rangeLabel: "Primeira semana",
+      state: "empty",
     },
   };
 }

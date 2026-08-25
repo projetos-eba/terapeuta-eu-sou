@@ -34,6 +34,8 @@ type BillingPriceRow = {
 type ConnectAccountRow = {
   charges_enabled: boolean | null;
   operational_status: string | null;
+  payout_schedule_interval: string | null;
+  payout_status: string | null;
   payouts_enabled: boolean | null;
 };
 
@@ -184,12 +186,17 @@ runtime.serve(async (request) => {
     });
     await addCheck(checks, "platform_webhook", async () => {
       getWebhookSecret(runtime, "STRIPE_PLATFORM_WEBHOOK_SECRET");
-      const endpoints = await stripe.webhookEndpoints.list({ limit: 100 });
-      const endpoint = endpoints.data.find(
+      const destinations = await stripe.v2.core.eventDestinations.list({
+        include: ["webhook_endpoint.url"],
+        limit: 100,
+      });
+      const endpoint = destinations.data.find(
         (candidate) =>
           candidate.status === "enabled" &&
-          candidate.url.includes("/functions/v1/stripe-billing-webhook") &&
-          candidate.url.includes(new URL(config.supabaseUrl).host),
+          candidate.event_payload === "snapshot" &&
+          candidate.events_from?.includes("@self") &&
+          candidate.webhook_endpoint?.url?.includes("/functions/v1/stripe-billing-webhook") &&
+          candidate.webhook_endpoint.url.includes(new URL(config.supabaseUrl).host),
       );
       if (!endpoint || !hasEvents(endpoint.enabled_events, platformEvents)) {
         throw new Error("platform_webhook_missing_or_incomplete");
@@ -198,20 +205,50 @@ runtime.serve(async (request) => {
     });
     await addCheck(checks, "connect_webhook", async () => {
       getWebhookSecret(runtime, "STRIPE_CONNECT_WEBHOOK_SECRET");
-      const endpoints = await stripe.webhookEndpoints.list({ limit: 100 });
-      const endpoint = endpoints.data.find(
+      const destinations = await stripe.v2.core.eventDestinations.list({
+        include: ["webhook_endpoint.url"],
+        limit: 100,
+      });
+      const endpoint = destinations.data.find(
         (candidate) =>
           candidate.status === "enabled" &&
-          candidate.url.includes("/functions/v1/stripe-connect-webhook") &&
-          candidate.url.includes(new URL(config.supabaseUrl).host),
+          candidate.event_payload === "snapshot" &&
+          candidate.events_from?.includes("@accounts") &&
+          candidate.webhook_endpoint?.url?.includes("/functions/v1/stripe-connect-webhook") &&
+          candidate.webhook_endpoint.url.includes(new URL(config.supabaseUrl).host),
       );
       if (
         !endpoint ||
-        !hasEvents(endpoint.enabled_events, ["account.updated"])
+        !hasEvents(endpoint.enabled_events, connectEvents)
       ) {
         throw new Error("connect_webhook_missing_or_incomplete");
       }
-      return "Webhook Connect esta habilitado com o evento de estado da conta.";
+      return "Webhook Connect esta habilitado com eventos de conta, saldo e payout.";
+    });
+    await addCheck(checks, "connect_thin_webhook", async () => {
+      getWebhookSecret(runtime, "STRIPE_CONNECT_V2_WEBHOOK_SECRET");
+      const destinations = await stripe.v2.core.eventDestinations.list({
+        include: ["webhook_endpoint.url"],
+        limit: 100,
+      });
+      const endpoint = destinations.data.find(
+        (candidate) =>
+          candidate.status === "enabled" &&
+          candidate.event_payload === "thin" &&
+          candidate.webhook_endpoint?.url?.includes(
+            "/functions/v1/stripe-connect-webhook",
+          ) &&
+          candidate.webhook_endpoint.url.includes(
+            new URL(config.supabaseUrl).host,
+          ),
+      );
+      if (
+        !endpoint ||
+        !hasEvents(endpoint.enabled_events, connectThinEvents)
+      ) {
+        throw new Error("connect_thin_webhook_missing_or_incomplete");
+      }
+      return "Webhook Connect thin esta habilitado com eventos Accounts v2.";
     });
     await addCheck(checks, "payment_functions", async () => {
       const results = await Promise.all(
@@ -251,12 +288,16 @@ runtime.serve(async (request) => {
     });
     await addCheck(checks, "connect_account_state", async () => {
       const rows = await client.get<ConnectAccountRow[]>(
-        "/rest/v1/therapist_connect_accounts?select=operational_status,charges_enabled,payouts_enabled",
+        "/rest/v1/therapist_connect_accounts?select=operational_status,charges_enabled,payouts_enabled,payout_status,payout_schedule_interval",
       );
       if (!rows.length) throw new Error("connect_account_missing");
       const readyAccounts = rows.filter(
-        (row) => row.charges_enabled === true && row.payouts_enabled === true,
+        (row) => row.charges_enabled === true && row.payouts_enabled === true &&
+          row.payout_status === "enabled" && row.payout_schedule_interval === "daily",
       ).length;
+      if (readyAccounts !== rows.length) {
+        throw new Error("connect_accounts_not_ready_for_daily_automatic_payout");
+      }
       return `${rows.length} conta(s) Connect observada(s); ${readyAccounts} pronta(s) para repasse.`;
     });
     await addCheck(checks, "payout_operations", async () => {
@@ -264,6 +305,13 @@ runtime.serve(async (request) => {
         throw new Error("operations_token_missing");
       }
       return "Credencial operacional de repasses esta configurada no runtime HML.";
+    });
+    await addCheck(checks, "payout_admin_recipients", async () => {
+      const admins = await client.get<Array<{ id: string }>>(
+        "/rest/v1/profiles?select=id&role=eq.admin&email=not.is.null&auth_deleted_at=is.null&anonymized_at=is.null&limit=1",
+      );
+      if (!admins.length) throw new Error("payout_admin_recipient_missing");
+      return "Existe administrador elegivel para alertas operacionais.";
     });
 
     return success({ checks });
@@ -282,6 +330,31 @@ const platformEvents = [
   "transfer.updated",
 ];
 
+const connectEvents = [
+  "account.updated",
+  "account.external_account.updated",
+  "balance_settings.updated",
+  "payout.created",
+  "payout.updated",
+  "payout.paid",
+  "payout.failed",
+  "payout.canceled",
+];
+
+const connectThinEvents = [
+  "v2.core.account.closed",
+  "v2.core.account.created",
+  "v2.core.account.updated",
+  "v2.core.account[configuration.merchant].capability_status_updated",
+  "v2.core.account[configuration.merchant].updated",
+  "v2.core.account[configuration.recipient].capability_status_updated",
+  "v2.core.account[configuration.recipient].updated",
+  "v2.core.account[defaults].updated",
+  "v2.core.account[future_requirements].updated",
+  "v2.core.account[identity].updated",
+  "v2.core.account[requirements].updated",
+];
+
 const paymentFunctions = [
   "session-booking-checkout",
   "stripe-create-session-payment",
@@ -294,6 +367,8 @@ const paymentFunctions = [
   "create-weekly-payout-batch",
   "process-payout-batch",
   "reconcile-stripe-transfers",
+  "weekly-payout-scheduler",
+  "stripe-connect-payout-schedule",
 ];
 
 const HML_SUPABASE_HOST = "emzwqkmrryuqvqiohqnu.supabase.co";

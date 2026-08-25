@@ -2008,22 +2008,24 @@ insert into public.aura_recommendations (
   body,
   plan_required,
   context,
+  evidence,
   priority,
   expires_at,
   is_active
 )
 values
-  ('ea000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000001', 'weekly_service_interest', 'Interesse em Reiki', 'Seu serviço de Reiki recebeu mais visitas agregadas nesta semana.', 'premium_plus', '{"kind":"observation","source":"demo_seed"}'::jsonb, 30, now() + interval '14 days', true),
-  ('ea000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000001', 'profile_views_growth', 'Visitas ao perfil', 'As visitas agregadas ao seu perfil cresceram em relação ao período anterior.', 'premium_plus', '{"kind":"observation","source":"demo_seed"}'::jsonb, 25, now() + interval '14 days', true),
-  ('ea000000-0000-4000-8000-000000000003', 'c1000000-0000-4000-8000-000000000001', 'open_schedule', 'Horários disponíveis', 'Considere abrir horários adicionais nos dias com maior procura agregada.', 'premium_plus', '{"kind":"suggestion","source":"demo_seed"}'::jsonb, 20, now() + interval '14 days', true),
-  ('ea000000-0000-4000-8000-000000000004', 'c1000000-0000-4000-8000-000000000001', 'reply_reviews', 'Responda às avaliações', 'Há avaliações publicadas aguardando uma resposta sua.', 'premium_plus', '{"kind":"action","action_href":"/plus/avaliacoes","source":"demo_seed"}'::jsonb, 40, now() + interval '14 days', true),
-  ('ea000000-0000-4000-8000-000000000005', 'c1000000-0000-4000-8000-000000000001', 'profile_video', 'Atualize seu perfil', 'Revise os conteúdos do perfil para manter sua apresentação atualizada.', 'premium_plus', '{"kind":"action","action_href":"/plus/perfil","source":"demo_seed"}'::jsonb, 15, now() + interval '14 days', true)
+  ('ea000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000001', 'weekly_service_interest', 'Interesse em Reiki', 'Seu serviço de Reiki recebeu mais visitas agregadas nesta semana.', 'premium_plus', '{"kind":"observation","source":"demo_seed"}'::jsonb, '{"source":"seed"}'::jsonb, 30, now() + interval '14 days', true),
+  ('ea000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000001', 'profile_views_growth', 'Visitas ao perfil', 'As visitas agregadas ao seu perfil cresceram em relação ao período anterior.', 'premium_plus', '{"kind":"observation","source":"demo_seed"}'::jsonb, '{"source":"seed"}'::jsonb, 25, now() + interval '14 days', true),
+  ('ea000000-0000-4000-8000-000000000003', 'c1000000-0000-4000-8000-000000000001', 'open_schedule', 'Horários disponíveis', 'Considere abrir horários adicionais nos dias com maior procura agregada.', 'premium_plus', '{"kind":"suggestion","source":"demo_seed"}'::jsonb, '{"source":"seed"}'::jsonb, 20, now() + interval '14 days', true),
+  ('ea000000-0000-4000-8000-000000000004', 'c1000000-0000-4000-8000-000000000001', 'reply_reviews', 'Responda às avaliações', 'Há avaliações publicadas aguardando uma resposta sua.', 'premium_plus', '{"kind":"action","action_href":"/plus/avaliacoes","source":"demo_seed"}'::jsonb, '{"source":"seed"}'::jsonb, 40, now() + interval '14 days', true),
+  ('ea000000-0000-4000-8000-000000000005', 'c1000000-0000-4000-8000-000000000001', 'profile_video', 'Atualize seu perfil', 'Revise os conteúdos do perfil para manter sua apresentação atualizada.', 'premium_plus', '{"kind":"action","action_href":"/plus/perfil","source":"demo_seed"}'::jsonb, '{"source":"seed"}'::jsonb, 15, now() + interval '14 days', true)
 on conflict (id) do update
 set
   title = excluded.title,
   body = excluded.body,
   plan_required = excluded.plan_required,
   context = excluded.context,
+  evidence = excluded.evidence,
   priority = excluded.priority,
   expires_at = excluded.expires_at,
   is_active = excluded.is_active,

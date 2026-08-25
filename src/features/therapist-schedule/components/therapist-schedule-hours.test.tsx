@@ -50,6 +50,22 @@ describe("TherapistScheduleHours", () => {
     ).toBeDisabled();
   });
 
+  it("explains each session rule through an accessible information popover", () => {
+    renderSchedule();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Saiba mais sobre Intervalo de oferta",
+      }),
+    );
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "De quanto em quanto tempo",
+    );
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
   it("distinguishes unavailable agenda insights from a legitimate empty list", () => {
     renderSchedule();
 

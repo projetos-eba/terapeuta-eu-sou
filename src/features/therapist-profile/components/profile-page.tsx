@@ -16,6 +16,7 @@ import {
   profilePhotoShapeClassName,
   publicProfileThemeById,
 } from "@/features/therapist-profile/personalization";
+import { therapyDetailIconOptions } from "@/features/therapies/components/detail/detail-icons";
 
 import { AvailabilitySelector } from "./availability-selector";
 import { FavoriteTherapistButton } from "./favorite-therapist-button";
@@ -30,6 +31,11 @@ function IconByName({ name }: { name: string }) {
   if (name === "clock") return <Clock className={className} />;
   if (name === "leaf") return <Leaf className={className} />;
   if (name === "star") return <Star className={className} />;
+  const option = therapyDetailIconOptions.find((item) => item.key === name);
+  if (option) {
+    const Icon = option.icon;
+    return <Icon className={className} />;
+  }
   return <Sparkles className={className} />;
 }
 
