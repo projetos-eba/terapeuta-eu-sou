@@ -17,6 +17,45 @@ const baseInput = {
 };
 
 describe("getPatientEncounterPresentationState", () => {
+  it("derives honest copy when the detail has not fetched Zoom access yet", () => {
+    const before = getPatientEncounterPresentationState({
+      ...baseInput,
+      financialStatus: SessionFinancialStatus.Paid,
+      now: new Date("2026-08-01T13:44:59.999Z"),
+    });
+    const open = getPatientEncounterPresentationState({
+      ...baseInput,
+      financialStatus: SessionFinancialStatus.Paid,
+      now: new Date("2026-08-01T13:45:00.000Z"),
+    });
+    const expired = getPatientEncounterPresentationState({
+      ...baseInput,
+      financialStatus: SessionFinancialStatus.Paid,
+      now: new Date("2026-08-01T14:15:00.001Z"),
+    });
+
+    expect(before.waitingRoom.message).toBe(
+      "A sala de espera ficará disponível 15 minutos antes do horário agendado.",
+    );
+    expect(open.waitingRoom.message).toBe(
+      "A sala de espera está disponível. Entre para aguardar o terapeuta.",
+    );
+    expect(expired.waitingRoom.message).toBe(
+      "A janela de entrada foi encerrada. Se precisar de ajuda, fale com o suporte.",
+    );
+  });
+
+  it("keeps the waiting room available for a trusted reconnection", () => {
+    const state = getPatientEncounterPresentationState({
+      ...baseInput,
+      financialStatus: SessionFinancialStatus.Paid,
+      now: new Date("2026-08-01T14:40:00.000Z"),
+      patientHasJoined: true,
+    });
+
+    expect(state.waitingRoom.kind).toBe("entry_available");
+  });
+
   it("allows a paid patient to see the Zoom entry state inside the join window", () => {
     const state = getPatientEncounterPresentationState({
       ...baseInput,

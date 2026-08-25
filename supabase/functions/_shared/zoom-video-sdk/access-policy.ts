@@ -1,6 +1,6 @@
 export const VIDEO_SESSION_ACCESS_WINDOW = {
-  afterEndsMinutes: 30,
   beforeStartsMinutes: 15,
+  firstPatientJoinAfterStartsMinutes: 15,
 } as const;
 
 export type VideoAccessReason =
@@ -20,6 +20,8 @@ export type VideoAccessState = {
   availableFrom: string;
   availableUntil: string;
   hardEndsAt: string | null;
+  scheduledEndsAt: string;
+  scheduledStartsAt: string;
   videoSessionStatus: string;
   reason: VideoAccessReason | null;
   serverNow: string;
@@ -32,6 +34,7 @@ export function evaluateVideoSessionAccess(input: {
   financialStatus: string | null;
   hardEndsAt?: string | null;
   now?: Date;
+  patientHasJoined?: boolean;
   startsAt: string;
   therapistStatus?: string;
   therapistPresent?: boolean;
@@ -45,9 +48,14 @@ export function evaluateVideoSessionAccess(input: {
     startsAt.getTime() -
       VIDEO_SESSION_ACCESS_WINDOW.beforeStartsMinutes * 60_000,
   );
-  const availableUntil = new Date(
-    endsAt.getTime() + VIDEO_SESSION_ACCESS_WINDOW.afterEndsMinutes * 60_000,
+  const firstPatientJoinUntil = new Date(
+    startsAt.getTime() +
+      VIDEO_SESSION_ACCESS_WINDOW.firstPatientJoinAfterStartsMinutes * 60_000,
   );
+  const availableUntil =
+    input.actorRole === "patient" && !input.patientHasJoined
+      ? firstPatientJoinUntil
+      : endsAt;
   const hardEndsAt = input.hardEndsAt ? new Date(input.hardEndsAt) : null;
   let reason: VideoAccessReason | null = null;
 
@@ -74,7 +82,13 @@ export function evaluateVideoSessionAccess(input: {
     reason = "PAYMENT_NOT_CONFIRMED";
   } else if (now < availableFrom) {
     reason = "TOO_EARLY";
-  } else if (now >= availableUntil) {
+  } else if (now >= endsAt) {
+    reason = "TOO_LATE";
+  } else if (
+    input.actorRole === "patient" &&
+    !input.patientHasJoined &&
+    now > firstPatientJoinUntil
+  ) {
     reason = "TOO_LATE";
   } else if (hardEndsAt && now >= hardEndsAt) {
     reason = "HARD_TIMEOUT";
@@ -96,6 +110,8 @@ export function evaluateVideoSessionAccess(input: {
     availableFrom: availableFrom.toISOString(),
     availableUntil: availableUntil.toISOString(),
     hardEndsAt: input.hardEndsAt ?? null,
+    scheduledEndsAt: endsAt.toISOString(),
+    scheduledStartsAt: startsAt.toISOString(),
     videoSessionStatus: input.videoSessionStatus ?? "not_available",
     reason,
     serverNow: now.toISOString(),

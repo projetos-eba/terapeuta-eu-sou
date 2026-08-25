@@ -55,7 +55,7 @@ describe("TherapistScheduleHours", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Saiba mais sobre Intervalo de oferta",
+        name: "Saiba mais sobre Intervalo das sessões",
       }),
     );
 
@@ -151,7 +151,7 @@ describe("TherapistScheduleHours", () => {
     renderSchedule(initialSchedule);
 
     fireEvent.change(
-      screen.getByLabelText("Intervalo de oferta dos horários"),
+      screen.getByLabelText("Intervalo das sessões"),
       { target: { value: "45" } },
     );
     fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
@@ -205,7 +205,7 @@ describe("TherapistScheduleHours", () => {
     renderSchedule();
 
     fireEvent.change(
-      screen.getByLabelText("Intervalo de oferta dos horários"),
+      screen.getByLabelText("Intervalo das sessões"),
       { target: { value: "45" } },
     );
     fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));

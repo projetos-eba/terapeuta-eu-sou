@@ -92,6 +92,10 @@ participantes.
   `border-brand-lavender`, `bg-brand-lavenderSoft`) e ícones `lucide-react`.
 - Na lista de participantes, a ação `Ver mensagens` fica alinhada à linha da
   pessoa, sem criar uma faixa vertical separada abaixo do conteúdo.
+- O CTA genérico de visualização (`Ver sessão`/`Ver encontro`) não aparece na
+  linha nem no detalhe da conversa; somente ações contextuais, como abrir,
+  reagendar ou orientações de cancelamento, permanecem disponíveis quando
+  autorizadas.
 - Títulos de conversas e avisos da plataforma são acionáveis e abrem um
   painel de leitura em `TESDialog`; o histórico continua bidirecional e os
   avisos permanecem somente leitura.
@@ -120,6 +124,8 @@ participantes.
 - Verificar criação, lista, detalhe e resposta do ticket de suporte do
   paciente e do terapeuta, inclusive estado resolvido e mobile.
 - Verificar histórico bidirecional do participante e o CTA de encontro/sessão.
+- Verificar que `Ver sessão`/`Ver encontro` genérico não aparece nos tickets de
+  participante, tanto no fluxo terapeuta-paciente quanto no paciente-terapeuta.
 - Verificar que `Ver mensagens` permanece na linha/coluna de ações do
   participante e que o título da conversa abre o mesmo histórico.
 - Verificar que o título de um aviso de plataforma abre seu detalhe em

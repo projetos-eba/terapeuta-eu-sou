@@ -89,7 +89,7 @@ export function MessageThreadDialogButton({
                 Ainda não há mensagens nesta conversa.
               </p>
             )}
-            {thread.cta ? (
+            {thread.cta && thread.cta.action !== "view_session" ? (
               <TESButton
                 href={thread.cta.href}
                 onClick={() => setIsOpen(false)}

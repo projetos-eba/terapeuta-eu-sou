@@ -300,8 +300,6 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
       data.encounterState.payment.kind === "confirmed" &&
       [
         "entry_available",
-        "operational_unavailable",
-        "therapist_absent_prolonged",
         "therapist_present",
         "waiting_therapist",
       ].includes(data.encounterState.waitingRoom.kind);

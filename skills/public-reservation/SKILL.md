@@ -119,6 +119,9 @@ revalidada no servidor antes do checkout.
   criar checkout.
 - O checkout real exige `service` + `slot` + `termsAccepted` e revalida serviço,
   preço, duração e slot no servidor.
+- O texto opcional compartilhado no preparo é controlado pelo fluxo, enviado
+  no checkout como `sharedNote` e salvo em `booking_intake_responses` para ser
+  exibido sem alteração no detalhe autenticado do encontro.
 - Visitante deve ver opções de login/cadastro de cliente com `next`.
 - O botão `Voltar para agenda e horários` no fluxo da reserva retorna ao perfil
   público do terapeuta em `/terapeutas/[slug]`; sem slug, retorna à listagem
@@ -156,6 +159,5 @@ revalidada no servidor antes do checkout.
 - A tela depende das views públicas de perfil/serviço para refletir a agenda do
   terapeuta; se essas views estiverem indisponíveis, a agenda aparece vazia em
   vez de usar dados demonstrativos silenciosos.
-- Dados opcionais de preparo do encontro ainda não são persistidos no booking.
 - Homologar externamente campanhas e corridas de substituição em Stripe test
   mode antes de produção; consulte `skills/stripe-promotions`.

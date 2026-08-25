@@ -100,6 +100,24 @@ O limite e intencional e distribuido no banco. Ele impede emissao repetida de
 JWTs por booking/perfil/papel dentro de uma janela curta. Aguarde a janela
 expirar ou investigue chamadas duplicadas no cliente antes de repetir.
 
+## O participante entrou, mas o video remoto nao apareceu
+
+Confirme separadamente presenca e renderizacao. `session.user_joined` prova que
+a pessoa entrou, mas nao prova que o elemento remoto foi anexado. Verifique se
+o cliente foi inicializado com `enforceMultipleVideos: true`, se cada tile usa
+um `video-player-container` independente e se a camera remota percorreu
+`off -> attaching -> on`. Em `error`, use a recuperacao visivel; o adapter faz
+tentativas limitadas apos join, eventos de usuario/video e reconexao. Em
+dispositivo limitado a um render, o video remoto tem prioridade.
+
+## O contador mostra a duracao errada
+
+Inspecione `scheduled_starts_at`, `scheduled_ends_at` e `serverNow`. A interface
+nunca deve usar `hard_ends_at`: esse campo e o watchdog interno calculado a
+partir do inicio efetivo mais a configuracao (240 minutos em HML). Um valor de
+watchdog incoerente exige auditoria de migration, funcao implantada e eventos,
+mas nao pode aparecer como "Tempo restante do encontro".
+
 ## O orquestrador parou em `canonical_stripe_payment_e2e_pending`
 
 Nao abra Zoom por fora. Esse bloqueio significa que ainda nao existe evidencia

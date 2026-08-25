@@ -8,6 +8,7 @@ export type BookingCheckoutCommandBody = {
   holdTtlSeconds?: number;
   requestId?: string;
   serviceId?: string;
+  sharedNote?: string | null;
   startsAt?: string;
   termsAccepted?: boolean;
 };
@@ -16,8 +17,11 @@ export type ValidBookingCheckoutCommand = {
   holdTtlSeconds: number;
   requestId: string;
   serviceId: string;
+  sharedNote: string | null;
   startsAt: string;
 };
+
+export const MAX_SHARED_NOTE_LENGTH = 600;
 
 export type ServiceAvailableSlotsResponse = {
   contractVersion?: number;
@@ -41,6 +45,20 @@ export function validateBookingCheckoutCommand(
   body: BookingCheckoutCommandBody,
 ): ValidBookingCheckoutCommand {
   const ttl = body.holdTtlSeconds ?? 600;
+  const sharedNote = normalizeSharedNote(body.sharedNote);
+
+  if (
+    (body.sharedNote !== undefined &&
+      body.sharedNote !== null &&
+      typeof body.sharedNote !== "string") ||
+    (sharedNote !== null && sharedNote.length > MAX_SHARED_NOTE_LENGTH)
+  ) {
+    throw new DomainError(
+      "invalid_booking_checkout_payload",
+      422,
+      "Revise os dados da reserva.",
+    );
+  }
 
   if (
     !isUuid(body.requestId) ||
@@ -69,8 +87,15 @@ export function validateBookingCheckoutCommand(
     holdTtlSeconds: ttl,
     requestId: body.requestId,
     serviceId: body.serviceId,
+    sharedNote,
     startsAt: new Date(body.startsAt).toISOString(),
   };
+}
+
+function normalizeSharedNote(value: string | null | undefined) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized || null;
 }
 
 export function selectAvailableSlot(

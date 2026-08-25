@@ -8,14 +8,18 @@ export function PrepareForm({
   marketingConsent,
   onAdvanceToPayment,
   onMarketingConsentChange,
+  onSharedNoteChange,
   onTermsChange,
+  sharedNote,
 }: {
   acceptedTerms: boolean;
   canContinueToPayment: boolean;
   marketingConsent: boolean;
   onAdvanceToPayment: () => void;
   onMarketingConsentChange: (accepted: boolean) => void;
+  onSharedNoteChange: (value: string) => void;
   onTermsChange: (accepted: boolean) => void;
+  sharedNote: string;
 }) {
   const canAdvance = canContinueToPayment && acceptedTerms;
 
@@ -39,7 +43,9 @@ export function PrepareForm({
           name="intention"
           className="min-h-[188px] w-full resize-y rounded-[18px] border border-border bg-white px-5 py-4 text-base font-semibold leading-7 text-brand-deep shadow-card outline-none transition placeholder:text-tesText-muted focus:ring-4 focus:ring-ring/20"
           maxLength={600}
+          onChange={(event) => onSharedNoteChange(event.currentTarget.value)}
           placeholder="Ex.: quero chegar com mais calma, falar sobre meu momento atual... (opcional)"
+          value={sharedNote}
         />
         <p className="mt-2 text-sm font-semibold text-tesText-muted">
           Esse texto não substitui atendimento de saúde e será usado apenas para
@@ -125,10 +131,7 @@ export function PrepareForm({
           </label>
         </div>
         {!acceptedTerms ? (
-          <p
-            role="alert"
-            className="mt-3 text-sm font-bold text-status-danger"
-          >
+          <p role="alert" className="mt-3 text-sm font-bold text-status-danger">
             Aceite os termos para continuar para o pagamento.
           </p>
         ) : null}

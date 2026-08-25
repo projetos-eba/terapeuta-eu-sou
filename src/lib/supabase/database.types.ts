@@ -13839,6 +13839,15 @@ export type Database = {
         };
         Returns: number;
       };
+      synchronize_video_session_watchdog_v1: {
+        Args: {
+          p_environment: string;
+          p_max_duration_minutes: number;
+          p_provider_session_id: string | null;
+          p_session_name: string | null;
+        };
+        Returns: undefined;
+      };
       enqueue_transactional_email_v1: {
         Args: {
           p_action_key: string;
@@ -15578,6 +15587,7 @@ export type Database = {
         | "done"
         | "dead_letter";
       video_session_control_operation:
+        | "end_scheduled"
         | "end_hard_timeout"
         | "end_therapist_absent"
         | "reconcile_orphan"
@@ -15926,6 +15936,7 @@ export const Constants = {
         "dead_letter",
       ],
       video_session_control_operation: [
+        "end_scheduled",
         "end_hard_timeout",
         "end_therapist_absent",
         "reconcile_orphan",

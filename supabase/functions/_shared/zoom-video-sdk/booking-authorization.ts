@@ -6,6 +6,7 @@ export type AuthorizedVideoBooking = {
   endsAt: string;
   financialStatus: string | null;
   patientProfileId: string;
+  patientHasJoined: boolean;
   startsAt: string;
   therapistProfileId: string;
   therapistStatus: string;
@@ -104,11 +105,18 @@ export async function getAuthorizedVideoBooking(input: {
     );
   }
 
+  const patientParticipation = videoSession
+    ? await input.client.get<Array<{ id: string }>>(
+        `/rest/v1/video_session_participations?select=id&video_session_id=eq.${encodeURIComponent(videoSession.id)}&participant_role=eq.patient&event_type=eq.session.user_joined&limit=1`,
+      )
+    : [];
+
   return {
     bookingStatus: booking.status,
     endsAt: booking.ends_at,
     financialStatus: payment?.financial_status ?? null,
     patientProfileId: booking.patient_profile_id,
+    patientHasJoined: patientParticipation.length > 0,
     startsAt: booking.starts_at,
     therapistProfileId: booking.therapist_profile_id,
     therapistStatus: booking.therapist_profiles?.status ?? "unknown",

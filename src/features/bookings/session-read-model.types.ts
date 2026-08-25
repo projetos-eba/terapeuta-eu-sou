@@ -54,7 +54,6 @@ export type TherapistSessionsCursor = {
 export type TherapistSessionFilters = {
   bookingStatus?: BookingStatus;
   cursor?: TherapistSessionsCursor;
-  financialStatus?: SessionFinancialStatus;
   limit: number;
   modality?: SessionModality;
   patientProfileId?: string;

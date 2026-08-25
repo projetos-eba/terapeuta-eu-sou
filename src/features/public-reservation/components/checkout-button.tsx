@@ -53,6 +53,7 @@ export function CheckoutButton({
   onPromotionSettled,
   promotionRequest,
   serviceId,
+  sharedNote,
   startsAt,
 }: {
   acceptedTerms: boolean;
@@ -70,6 +71,7 @@ export function CheckoutButton({
   }) => void;
   promotionRequest?: { code: string | null; requestId: string } | null;
   serviceId: string | null;
+  sharedNote: string;
   startsAt: string | null;
 }) {
   const checkoutRef = useRef<{
@@ -152,6 +154,7 @@ export function CheckoutButton({
                   action: "create",
                   checkoutAttemptId: requestIdRef.current,
                   serviceId,
+                  sharedNote,
                   startsAt,
                   termsAccepted: true,
                 },
@@ -270,6 +273,7 @@ export function CheckoutButton({
     onPromotionSettled,
     promotionRequest,
     serviceId,
+    sharedNote,
     startsAt,
   ]);
 

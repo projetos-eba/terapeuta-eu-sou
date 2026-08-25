@@ -79,7 +79,9 @@ Não criar enums equivalentes dentro de features.
   com título em IvyPresto, região principal operacional e ContextRail de 320px
   no desktop. Os indicadores possuem ícone semântico e usam duas colunas em
   mobile quando a leitura permanecer suficiente.
-- Filtros por status de booking e status financeiro permanecem na URL. O
+- A lista usa somente o filtro de status de booking; o status financeiro continua
+  no read model para compor estados operacionais e a tela de detalhe, mas não é
+  exposto como filtro ou coluna na listagem. O
   parâmetro legado `modality` só pode ser `online` ou ausente; a UI não oferece
   escolha de formato porque o TES é online-only.
 - A busca por texto filtra cliente e terapia no recorte carregado; paginação
@@ -194,7 +196,8 @@ Não criar enums equivalentes dentro de features.
   no read model editável. Regras órfãs de terapia arquivada não devem transformar
   um ajuste válido em `schedule_service_forbidden`; a validação autoritativa
   continua no RPC.
-- Duração pertence ao serviço e `slotStepMinutes` significa intervalo de oferta.
+- Duração pertence ao serviço e `slotStepMinutes` controla o intervalo das sessões
+  na interface. O nome técnico permanece no contrato para compatibilidade.
   `bufferBeforeMinutes` e `bufferAfterMinutes` continuam preservados no domínio
   e no cálculo autoritativo, mas não são controles expostos na UI de Horários.
 - Não exibir toggle de reagendamento automático antes do domínio e dos

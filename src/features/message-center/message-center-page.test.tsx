@@ -67,6 +67,24 @@ describe("MessageCenterPage", () => {
     expect(screen.getByText("Mensagem recebida.")).toBeInTheDocument();
   });
 
+  it("does not show the generic session link in a participant message row", () => {
+    render(<MessageCenterPage data={createData()} />);
+
+    expect(
+      screen.queryByRole("link", { name: /ver sessão|ver encontro/i }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Abrir Confirmação de presença na sessão",
+      }),
+    );
+
+    expect(
+      screen.queryByRole("link", { name: /abrir sessão|abrir encontro/i }),
+    ).not.toBeInTheDocument();
+  });
+
   it("opens a platform notice when its title is selected", () => {
     render(<MessageCenterPage data={createData({ actorRole: "patient" })} />);
 
@@ -314,7 +332,7 @@ function createData(
       {
         avatarUrl: null,
         body: "Mensagem automatizada.",
-        bookingId: null,
+        bookingId: "f2000000-0000-4000-8000-000000000001",
         category: "confirmacao",
         categoryLabel: "Confirmação",
         conversationId: "eb000000-0000-4000-8000-000000000001",
@@ -323,7 +341,11 @@ function createData(
         name: "Beatriz Lima",
         timeLabel: "Hoje · 10:32",
         title: "Confirmação de presença na sessão",
-        cta: null,
+        cta: {
+          action: "view_session",
+          href: "/terapeuta/sessoes/f2000000-0000-4000-8000-000000000001",
+          label: "Ver sessão",
+        },
         messages: [
           {
             body: "Mensagem recebida.",
@@ -338,7 +360,7 @@ function createData(
             isFromViewer: true,
           },
         ],
-        sessionContext: null,
+        sessionContext: "Sobre a sessão de 25 de ago.",
       },
     ],
   };

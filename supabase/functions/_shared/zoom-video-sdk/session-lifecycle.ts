@@ -44,29 +44,14 @@ export function parseZoomVideoMaxDurationMinutes(
 
 export function computeVideoSessionHardEndsAt(input: {
   actualStartedAt?: string | null;
-  afterEndsMinutes: number;
   maxDurationMinutes: number;
   now?: Date;
-  scheduledEndsAt: string;
-  scheduledStartsAt: string;
 }) {
   const now = input.now ?? new Date();
-  const scheduledStartsAt = new Date(input.scheduledStartsAt);
-  const scheduledEndsAt = new Date(input.scheduledEndsAt);
   const actualStartedAt = input.actualStartedAt
     ? new Date(input.actualStartedAt)
     : now;
-  const effectiveStart = new Date(
-    Math.max(scheduledStartsAt.getTime(), actualStartedAt.getTime()),
-  );
-  const maxDurationEnd = new Date(
-    effectiveStart.getTime() + input.maxDurationMinutes * 60_000,
-  );
-  const toleratedScheduledEnd = new Date(
-    scheduledEndsAt.getTime() + input.afterEndsMinutes * 60_000,
-  );
-
   return new Date(
-    Math.min(maxDurationEnd.getTime(), toleratedScheduledEnd.getTime()),
+    actualStartedAt.getTime() + input.maxDurationMinutes * 60_000,
   );
 }

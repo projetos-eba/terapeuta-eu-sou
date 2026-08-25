@@ -84,6 +84,7 @@ export function ReservationPage({
   );
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
+  const [sharedNote, setSharedNote] = useState("");
   const [promotionCode, setPromotionCode] = useState("");
   const [promotionRequest, setPromotionRequest] = useState<{
     code: string | null;
@@ -106,6 +107,7 @@ export function ReservationPage({
     previousReservationKeyRef.current = reservationKey;
     setAcceptedTerms(false);
     setMarketingConsent(false);
+    setSharedNote("");
     setPromotionCode("");
     setPromotionRequest(null);
     setPromotionAmounts(null);
@@ -224,12 +226,14 @@ export function ReservationPage({
                 acceptedTerms={acceptedTerms}
                 context={context}
                 marketingConsent={marketingConsent}
+                onSharedNoteChange={setSharedNote}
                 onMarketingConsentChange={setMarketingConsent}
                 onTermsChange={(accepted) => {
                   setAcceptedTerms(accepted);
                   if (accepted) setJourneyError(null);
                 }}
                 onAdvanceToPayment={() => goToStep("pagamento")}
+                sharedNote={sharedNote}
               />
             ) : null}
             {currentStep === "pagamento" ? (
@@ -237,6 +241,7 @@ export function ReservationPage({
                 acceptedTerms={acceptedTerms}
                 context={context}
                 loginHref={loginHref}
+                sharedNote={sharedNote}
                 onCheckoutChange={handleCheckoutChange}
                 onPromotionSettled={handlePromotionSettled}
                 promotionRequest={promotionRequest}
@@ -536,14 +541,18 @@ function PrepareStep({
   marketingConsent,
   onAdvanceToPayment,
   onMarketingConsentChange,
+  onSharedNoteChange,
   onTermsChange,
+  sharedNote,
 }: {
   acceptedTerms: boolean;
   context: ReservationContext;
   marketingConsent: boolean;
   onAdvanceToPayment: () => void;
   onMarketingConsentChange: (accepted: boolean) => void;
+  onSharedNoteChange: (value: string) => void;
   onTermsChange: (accepted: boolean) => void;
+  sharedNote: string;
 }) {
   return (
     <div className="space-y-8">
@@ -560,7 +569,9 @@ function PrepareStep({
         marketingConsent={marketingConsent}
         onAdvanceToPayment={onAdvanceToPayment}
         onMarketingConsentChange={onMarketingConsentChange}
+        onSharedNoteChange={onSharedNoteChange}
         onTermsChange={onTermsChange}
+        sharedNote={sharedNote}
       />
     </div>
   );
@@ -573,6 +584,7 @@ function PaymentStep({
   onCheckoutChange,
   onPromotionSettled,
   promotionRequest,
+  sharedNote,
 }: {
   acceptedTerms: boolean;
   context: ReservationContext;
@@ -587,6 +599,7 @@ function PaymentStep({
     requestId: string;
   }) => void;
   promotionRequest: { code: string | null; requestId: string } | null;
+  sharedNote: string;
 }) {
   return (
     <div className="space-y-8">
@@ -639,6 +652,7 @@ function PaymentStep({
               onPromotionSettled={onPromotionSettled}
               promotionRequest={promotionRequest}
               serviceId={context.serviceId}
+              sharedNote={sharedNote}
               startsAt={context.selectedSlot}
             />
           </TESCard>

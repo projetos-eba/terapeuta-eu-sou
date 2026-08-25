@@ -124,11 +124,22 @@ Como IDs reais podem conter `/`, o `sessionId` e codificado duas vezes no path.
 ## Duracao e Abandono
 
 `ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES` e obrigatorio no runtime real. O fim
-duro salvo em `hard_ends_at` segue:
+duro salvo em `hard_ends_at` e um watchdog operacional, nao a duracao da
+reserva:
 
 ```text
-min(inicio efetivo + maximo configurado, fim agendado + tolerancia existente)
+actual_started_at + ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES
 ```
+
+Em HML, a configuracao atual e 240 minutos. O encerramento normal ocorre em
+`scheduled_ends_at` pela operacao duravel `end_scheduled`; somente uma sessao
+orfa protegida pelo watchdog usa `end_hard_timeout`. O navegador calcula todo
+contador visivel com `scheduled_starts_at`, `scheduled_ends_at` e `serverNow`,
+nunca com `hard_ends_at`.
+
+A janela abre em T-15. A primeira entrada do paciente e aceita ate T+15
+inclusive; depois, apenas um `session.user_joined` confiavel anterior autoriza
+reconexao. Toda entrada termina em `scheduled_ends_at`.
 
 Se o terapeuta sair, o paciente nao recebe novo JWT durante a ausencia. A
 maintenance encerra sessoes por hard timeout, ausencia prolongada do terapeuta

@@ -102,6 +102,10 @@ export type BookingDetailSessionPaymentRow = {
   financial_status: SessionFinancialStatusValue;
 };
 
+export type BookingDetailVideoParticipationRow = {
+  id: string;
+};
+
 export type BookingDetailCancellationDecisionRow = {
   decision: string;
   refund_amount_cents: number;
@@ -138,6 +142,7 @@ export type MapBookingDetailInput = {
   completedBookings: BookingDetailBookingRow[];
   intake: BookingDetailIntakeRow | null;
   patient: BookingDetailProfileRow;
+  patientHasJoined: boolean;
   patientProfile: BookingDetailPatientProfileRow;
   perspective: BookingDetailPerspective;
   policy: BookingDetailCancellationPolicyRow | null;
@@ -158,6 +163,7 @@ export function mapBookingDetail(
   const status = getBookingDetailStatus({
     endsAt: input.booking.ends_at,
     paymentStatus: input.sessionPayment?.financial_status ?? null,
+    patientHasJoined: input.patientHasJoined,
     startsAt: input.booking.starts_at,
     status: input.booking.status,
   });
@@ -241,6 +247,7 @@ export function mapBookingDetail(
       bookingStatus: input.booking.status,
       endsAt: input.booking.ends_at,
       financialStatus: input.sessionPayment?.financial_status ?? null,
+      patientHasJoined: input.patientHasJoined,
       provider,
       startsAt: input.booking.starts_at,
     }),

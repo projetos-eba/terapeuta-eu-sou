@@ -11,7 +11,8 @@ describe("ZoomVideoStage", () => {
         audioMuted
         localVideoRef={{ current: null }}
         participantLabel="Com Juliane Moore"
-        remoteParticipantCount={0}
+        remoteParticipantPresent={false}
+        remoteVideoState="off"
         remoteVideoRef={{ current: null }}
         state="joined"
         videoOn={false}
@@ -30,5 +31,27 @@ describe("ZoomVideoStage", () => {
     );
     expect(screen.getByText("Sua câmera está")).toBeVisible();
     expect(screen.getByText("terapeuta entrar")).toBeVisible();
+  });
+
+  it("offers explicit recovery when a remote camera cannot be attached", () => {
+    render(
+      <ZoomVideoStage
+        actorRole="patient"
+        audioMuted
+        localVideoRef={{ current: null }}
+        onRetryRemoteVideo={() => undefined}
+        participantLabel="Com Juliane Moore"
+        remoteParticipantPresent
+        remoteVideoRef={{ current: null }}
+        remoteVideoState="error"
+        state="joined"
+        videoOn={false}
+      />,
+    );
+
+    expect(screen.getByText("Não foi possível exibir o vídeo")).toBeVisible();
+    expect(
+      screen.getByRole("button", { name: "Tentar exibir novamente" }),
+    ).toBeVisible();
   });
 });

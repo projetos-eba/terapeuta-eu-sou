@@ -1,8 +1,4 @@
-import {
-  BookingStatus,
-  SessionFinancialStatus,
-  type SessionFinancialStatus as SessionFinancialStatusValue,
-} from "@/domain/tes";
+import { BookingStatus } from "@/domain/tes";
 import type {
   SessionModality,
   TherapistSessionFilters,
@@ -21,7 +17,6 @@ export function parseTherapistSessionFilters(
   const limitValue = first(searchParams.limit);
   const limit = limitValue ? Number(limitValue) : 20;
   const bookingStatus = first(searchParams.status);
-  const financialStatus = first(searchParams.payment);
   const modalityValue = first(searchParams.modality);
   const requestedPeriod = first(searchParams.period);
   const explicitPeriodStart = first(searchParams.periodStart);
@@ -35,9 +30,6 @@ export function parseTherapistSessionFilters(
     return invalidFilters();
   }
   if (bookingStatus && !isBookingStatus(bookingStatus)) {
-    return invalidFilters();
-  }
-  if (financialStatus && !isFinancialStatus(financialStatus)) {
     return invalidFilters();
   }
   if (modalityValue && !isModality(modalityValue)) {
@@ -87,10 +79,6 @@ export function parseTherapistSessionFilters(
         cursorStartsAt && cursorBookingId
           ? { bookingId: cursorBookingId, startsAt: cursorStartsAt }
           : undefined,
-      financialStatus:
-        financialStatus && isFinancialStatus(financialStatus)
-          ? financialStatus
-          : undefined,
       limit,
       modality:
         modalityValue && isModality(modalityValue) ? modalityValue : undefined,
@@ -110,7 +98,6 @@ export function buildNextSessionsHref(
 ) {
   const params = new URLSearchParams();
   if (filters.bookingStatus) params.set("status", filters.bookingStatus);
-  if (filters.financialStatus) params.set("payment", filters.financialStatus);
   if (filters.modality) params.set("modality", filters.modality);
   if (filters.periodPreset) params.set("period", filters.periodPreset);
   if (filters.patientProfileId) params.set("patient", filters.patientProfileId);
@@ -147,14 +134,6 @@ function isUuid(value: string) {
 
 function isBookingStatus(value: string): value is BookingStatus {
   return Object.values(BookingStatus).some((candidate) => candidate === value);
-}
-
-function isFinancialStatus(
-  value: string,
-): value is SessionFinancialStatusValue {
-  return Object.values(SessionFinancialStatus).some(
-    (candidate) => candidate === value,
-  );
 }
 
 function isModality(value: string): value is SessionModality {

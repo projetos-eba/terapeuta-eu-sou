@@ -2047,11 +2047,14 @@ async function validateBidirectionalCamera({ patientPage, therapistPage }) {
     therapistPage.getByRole("button", { name: "Ativar camera" }),
   ).toBeVisible();
 
+  await setCamera(therapistPage, true);
+  await assertAttachedVideo(therapistPage, "zoom-local-video");
+  await assertAttachedVideo(patientPage, "zoom-remote-video");
+
   await setCamera(patientPage, true);
   await assertAttachedVideo(patientPage, "zoom-local-video");
   await assertAttachedVideo(therapistPage, "zoom-remote-video");
 
-  await setCamera(therapistPage, true);
   await assertAttachedVideo(therapistPage, "zoom-local-video");
   await assertAttachedVideo(patientPage, "zoom-remote-video");
 
