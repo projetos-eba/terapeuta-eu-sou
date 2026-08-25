@@ -142,7 +142,11 @@ function SummaryCounter({
           {label}
         </p>
         <p className="mt-2 text-[34px] font-extrabold leading-none text-brand-deep">
-          {formatMetricValue(metric.value, metric.unit)}
+          {formatMetricValue(
+            metric.value,
+            metric.unit,
+            metric.status === "empty",
+          )}
         </p>
         <p className="mt-3 text-sm font-semibold leading-5 text-tesText-secondary">
           {getTherapistMetricCopy(metric.directionCopyKey)}

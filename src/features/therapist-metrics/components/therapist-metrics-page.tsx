@@ -104,7 +104,7 @@ export function TherapistMetricsPage({
       : {
           copy: "Disponível no Premium Plus quando houver dados suficientes",
           state: "unavailable" as const,
-          value: "—",
+          value: "-",
         };
   const occupancyKpi =
     occupancy.status === "ready"
@@ -116,19 +116,19 @@ export function TherapistMetricsPage({
               : ("ready" as const),
           value:
             occupancy.current.percentage === null
-              ? "Sem base"
+              ? "Sem dados"
               : `${formatNumber(occupancy.current.percentage)}%`,
         }
       : occupancy.status === "empty"
         ? {
             copy: "Não houve capacidade ofertada neste período",
             state: "empty" as const,
-            value: "Sem base",
+            value: "Sem dados",
           }
         : {
             copy: "A leitura aparece quando houver cobertura confiável",
             state: "forming" as const,
-            value: "—",
+            value: "-",
           };
   const therapyKpi =
     overview.therapyRanking.status === "ready" && topTherapy
@@ -140,7 +140,7 @@ export function TherapistMetricsPage({
       : {
           copy: "Aparece quando houver dados suficientes para preservar a privacidade",
           state: "unavailable" as const,
-          value: "—",
+          value: "-",
         };
   const comparisonItems = [
     comparisonReference(
@@ -224,6 +224,7 @@ export function TherapistMetricsPage({
             value={formatMetricValue(
               overview.counters.sessionsCompleted.value,
               "sessions",
+              overview.counters.sessionsCompleted.status === "empty",
             )}
           />
           {data.therapist.plan === TherapistPlan.Premium ? (
@@ -286,21 +287,21 @@ export function TherapistMetricsPage({
                 value:
                   overview.discovery.status === "ready"
                     ? overview.discovery.stages.profileViews.value
-                    : 0,
+                    : null,
               },
               {
                 label: "Iniciaram o agendamento",
                 value:
                   overview.discovery.status === "ready"
                     ? overview.discovery.stages.bookingFlowStarts.value
-                    : 0,
+                    : null,
               },
               {
                 label: "Sessões concluídas",
                 value:
                   overview.discovery.status === "ready"
                     ? overview.counters.sessionsCompleted.value
-                    : 0,
+                    : null,
               },
             ]}
           />
@@ -502,9 +503,9 @@ function MetricsKpiCard({
   value: string;
 }) {
   const isUnavailable = state === "unavailable";
-  const isReference = value === "—";
+  const isReference = value === "—" || value === "-";
   const stateLabel = {
-    empty: "Sem base",
+    empty: "Sem dados",
     forming: "Em formação",
     ready: null,
     unavailable: "Indisponível",
@@ -905,7 +906,7 @@ function TherapyRankingTable({
                     {item.therapyName}
                   </span>
                   <span className="shrink-0 text-sm font-extrabold text-brand-deep">
-                    {formatNumber(item.sessions)}
+                    {empty ? "-" : formatNumber(item.sessions)}
                   </span>
                 </div>
                 <span className="mt-2 block h-2 overflow-hidden rounded-full bg-brand-lavenderSoft">
@@ -1230,11 +1231,11 @@ function comparisonSampled(
 
 function emptyComparison(label: string, note: string): MetricsComparisonItem {
   return {
-    currentLabel: "—",
-    deltaLabel: "—",
+    currentLabel: "-",
+    deltaLabel: "-",
     label,
     note,
-    previousLabel: "—",
+    previousLabel: "-",
     reference: true,
     sparkline: [],
   };
@@ -1245,9 +1246,9 @@ function agendaHighlights(
 ) {
   if (points.length === 0) {
     return {
-      bestDays: "Sem leitura",
-      peakHour: "Sem leitura",
-      quietHour: "Sem leitura",
+      bestDays: "Sem dados",
+      peakHour: "Sem dados",
+      quietHour: "Sem dados",
     };
   }
 
@@ -1276,10 +1277,9 @@ function agendaHighlights(
   const quiet = hours.at(-1)?.[0];
 
   return {
-    bestDays: bestDays || "Sem leitura",
-    peakHour: peak === undefined ? "Sem leitura" : `${peak}h – ${peak + 2}h`,
-    quietHour:
-      quiet === undefined ? "Sem leitura" : `${quiet}h – ${quiet + 2}h`,
+    bestDays: bestDays || "Sem dados",
+    peakHour: peak === undefined ? "Sem dados" : `${peak}h – ${peak + 2}h`,
+    quietHour: quiet === undefined ? "Sem dados" : `${quiet}h – ${quiet + 2}h`,
   };
 }
 
@@ -1291,14 +1291,14 @@ function discoveryKpi(
     return {
       copy: "Coleta pública indisponível nesta versão",
       state: "unavailable" as const,
-      value: "—",
+      value: "-",
     };
   }
   if (metric.status === "empty") {
     return {
       copy: "Nenhum evento registrado neste período",
       state: "empty" as const,
-      value: "0",
+      value: "-",
     };
   }
   return {

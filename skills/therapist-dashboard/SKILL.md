@@ -101,9 +101,9 @@ Não distribuir queries pelos componentes. A entrada única da página é
 - Não usar dados privados do paciente para recomendações da Aura.
 - Métricas devem ser calculadas dos registros transacionais.
 - Usar “Pagamentos pendentes” para bookings `pending_payment`.
-- Na comunicação com o terapeuta, usar “Sessão”, “Terapia”, “Resultados” e
-  “Assessora Aura”; termos de implementação como booking, insight, serviço ou
-  métricas ficam restritos a contratos, logs e documentação.
+- Na comunicação com o terapeuta, usar “Sessão”, “Terapia”, “Métricas” e
+  “Assessora Aura”; termos de implementação como booking, insight e serviço
+  ficam restritos a contratos, logs e documentação.
 - Não prometer cura, diagnóstico ou resultado.
 
 ## Fallbacks
