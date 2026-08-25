@@ -18,12 +18,16 @@ export function TherapistDashboardPage({
     <div className="mx-auto max-w-[1360px] space-y-6 pb-10">
       <TherapistWelcomeHero data={data} />
       <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,1fr)_306px]">
-      <TherapistWeekSummary plan={data.therapist.plan} week={data.week} />
+        <TherapistWeekSummary plan={data.therapist.plan} week={data.week} />
         <UpcomingSessionsCard sessions={data.upcomingSessions} />
       </div>
       <TherapistKpiGrid kpis={data.kpis} plan={data.therapist.plan} />
       <TherapistAttentionSection items={data.attentionItems} />
-      <TherapistAuraCard aura={data.aura} plan={data.therapist.plan} />
+      <TherapistAuraCard
+        aura={data.aura}
+        auraState={data.auraState}
+        plan={data.therapist.plan}
+      />
       <div className="grid gap-6 lg:grid-cols-2 2xl:grid-cols-[1fr_1fr_1.17fr]">
         <TherapistJourneyHistory
           history={data.history}

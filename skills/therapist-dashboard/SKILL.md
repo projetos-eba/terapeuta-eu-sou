@@ -51,7 +51,11 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
   navegação por teclado e área de toque mínima de 44px. O comportamento é o
   mesmo em mobile, tablet e desktop; não há link aninhado apenas no ícone.
 - Read model: RPC `public.get_therapist_dashboard_v1()`.
-- Recomendações: `public.aura_recommendations`, consultadas separadamente.
+- Aura Premium Plus: o dashboard consome `get_therapist_aura_signals_v1(30)`
+  pelo mesmo serviço server-only da página `/terapeuta/assessor-ia`; não
+  consultar `public.aura_recommendations` diretamente em componentes ou em um
+  segundo contrato. Assim, regras, período, dismissals e filtros de origem
+  demonstrativa permanecem iguais nas duas superfícies.
 - Assets locais: `public/therapist/dashboard/`.
 
 Não distribuir queries pelos componentes. A entrada única da página é

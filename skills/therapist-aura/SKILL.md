@@ -22,9 +22,9 @@
   mobile usa alturas mínimas reduzidas sem perder o ritmo editorial do desktop,
   e os controles de período mantêm área de toque de 44px.
 - A rota tem skeleton dedicado com `aria-busy` e rótulo acessível explícito. O
-  frame Figma chama a superfície visual de `Aura IA`, enquanto o domínio e a
-  documentação de rota usam `Assessora Aura`; isso é uma distinção de nome, não
-  uma segunda feature ou capability.
+  frame Figma ainda chama a superfície visual de `Aura IA`, mas o nome público
+  e exibido no produto é `Assessora Aura`; isso é uma referência visual
+  histórica, não uma segunda feature ou capability.
 
 ## Fontes Obrigatórias
 
@@ -45,8 +45,15 @@
 - Nao usar IA generativa, LLM, embeddings, modelos de sentimento, chat ou texto livre.
 - O terapeuta e derivado de `auth.uid()` em RPC privada.
 - Premium nao recebe feed, pagina ou API Aura. `aura_limited` fica apenas como compatibilidade tecnica.
-- A pagina consome `get_therapist_aura_signals_v1(period)` e calcula recomendacoes em regra server-only.
-- Dismiss usa `dismiss_therapist_aura_signal_v1` com `requestId` server-side.
+- A pagina consome `get_therapist_aura_signals_v2(period)` e calcula recomendacoes em regra server-only.
+- Recomendações persistidas só entram quando `generated_at` pertence ao período histórico completo selecionado, estão ativas, não expiraram e usam regra/versão registradas.
+- Avaliações pendentes respeitam o mesmo período 30/90 exibido na página.
+- Dismiss usa `dismiss_therapist_aura_signal_v2`: o navegador envia apenas a chave opaca e o período; o servidor prova tenant, regra, versão, elegibilidade e janela antes de persistir.
+- O dashboard Premium Plus usa o mesmo `getTherapistAuraPage` da página
+  dedicada, com período de 30 dias; não há leitura REST paralela da tabela
+  `aura_recommendations`.
+- A UI informa data/fuso da leitura, separa histórico de agenda futura e
+  identifica barras sem série histórica como visual ilustrativo.
 
 ## Dados Permitidos
 
@@ -77,7 +84,8 @@
 - `npm run typecheck`
 - `npm run lint`
 - `npm run build`
-- `npm run test -- src/features/therapist-aura/therapist-aura.rules.test.ts`
+- `npx vitest run src/features/therapist-aura` (rules, mapper, page and dismiss UX)
+- `npx supabase test db --local supabase/tests/083_aura_contract_security.sql`
 - Playwright headed em `/terapeuta/assessor-ia` para Premium Plus logado.
 - Validar visualmente 1440x900, 1024x768, 390x844 e 360x800, incluindo foco,
   zoom de 200%, estado sem recomendações, amostra insuficiente e erro de

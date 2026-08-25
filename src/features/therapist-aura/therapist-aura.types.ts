@@ -38,6 +38,7 @@ export type TherapistAuraSignals = {
   reviews: {
     pendingReplyCount: number;
     status: "empty" | "ready";
+    windowDays: 30 | 90;
   };
   sessions: {
     cancellationRate: AuraSampledRate;

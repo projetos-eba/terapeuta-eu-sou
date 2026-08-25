@@ -11,7 +11,6 @@ import {
   RotateCcw,
   Sparkles,
   Target,
-  Trash2,
   WalletCards,
   type LucideIcon,
 } from "lucide-react";
@@ -21,7 +20,7 @@ import { TESDecorativeMedia } from "@/components/tes";
 import { platformAssets } from "@/lib/platform-assets";
 import { routes } from "@/lib/routes";
 
-import { dismissAuraRecommendationAction } from "../therapist-aura.actions";
+import { TherapistAuraDismissForm } from "./therapist-aura-dismiss-form";
 import type {
   AuraRecommendationTone,
   AuraRuleRecommendation,
@@ -51,13 +50,10 @@ const toneStyles: Record<
 
 export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
   const recommendationCount = data.recommendations.length;
-  const opportunityCount = data.recommendations.filter(
-    (recommendation) => recommendation.tone === "opportunity",
-  ).length;
-  const actionCount = data.recommendations.filter(
-    (recommendation) => recommendation.actionHref,
-  ).length;
   const returnRate = data.signals.continuity.returnRate;
+  const hasPendingReviewSignal =
+    data.signals.reviews.status === "ready" &&
+    data.signals.reviews.pendingReplyCount > 0;
 
   return (
     <AppPageContainer className="gap-5">
@@ -75,15 +71,15 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="font-display text-[42px] font-light italic leading-none text-brand-deep sm:text-[54px]">
-                Aura IA
+                Assessora Aura
               </h1>
               <span className="inline-flex min-h-9 items-center rounded-full border border-brand-lavender bg-brand-lavenderSoft px-4 text-sm font-extrabold text-brand-primary">
-                sua assistente inteligente
+                leitura por regras
               </span>
             </div>
             <p className="mt-6 max-w-[520px] text-sm font-semibold leading-6 text-brand-primary sm:text-base">
-              A Aura analisa automaticamente os dados da TES e organiza sinais
-              práticos para você agir com mais clareza.
+              A Assessora Aura analisa dados operacionais agregados da TES e
+              organiza sinais práticos para você agir com mais clareza.
             </p>
           </div>
           <span className="inline-flex min-h-9 w-fit items-center gap-2 rounded-full border border-brand-lavender bg-white/90 px-4 text-sm font-extrabold text-tesText-secondary">
@@ -92,7 +88,7 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
               className="text-brand-primary"
               size={16}
             />
-            Insights gerados automaticamente
+            Sinais calculados automaticamente
           </span>
         </div>
       </section>
@@ -133,30 +129,35 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
             })}
           </div>
         </div>
+        <p className="mt-4 text-xs font-semibold leading-5 text-tesText-muted">
+          Leitura calculada em {formatDateTime(data.meta.computedAt)} · período
+          histórico encerrado em {formatDate(data.meta.periodEnd)} · fuso{" "}
+          {data.meta.timezone}
+        </p>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <AuraKpiCard
-            description="Sinais selecionados para este período."
+            description="Recomendações elegíveis pelas regras da Aura."
             icon={Sparkles}
-            label="Insights do período"
+            label="Sinais do período"
             reference={!recommendationCount}
             value={String(recommendationCount)}
           />
           <AuraKpiCard
-            description="Leituras que apontam uma possibilidade de ação."
-            icon={Target}
-            label="Oportunidades identificadas"
-            reference={!opportunityCount}
+            description={`Avaliações publicadas sem resposta nos últimos ${data.signals.reviews.windowDays} dias completos.`}
+            icon={MessageSquareReply}
+            label="Avaliações pendentes"
+            reference={!data.signals.reviews.pendingReplyCount}
             tone="mint"
-            value={String(opportunityCount)}
+            value={String(data.signals.reviews.pendingReplyCount)}
           />
           <AuraKpiCard
-            description="Próximos passos que a Aura consegue indicar."
-            icon={ArrowRight}
-            label="Ações sugeridas"
-            reference={!actionCount}
+            description="Métricas com menos de 10 observações ficam protegidas."
+            icon={Target}
+            label="Amostras em formação"
+            reference={!insufficientSampleCount(data)}
             tone="coral"
-            value={String(actionCount)}
+            value={String(insufficientSampleCount(data))}
           />
           <AuraKpiCard
             description="Amostra mínima: 10 pessoas acompanhadas."
@@ -183,35 +184,39 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
             </p>
           </div>
           <span className="text-sm font-bold text-tesText-secondary">
-            Últimos {data.meta.periodDays} dias completos
+            Histórico: últimos {data.meta.periodDays} dias completos
           </span>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-3">
+        <div
+          className={`grid gap-4 ${hasPendingReviewSignal ? "lg:grid-cols-2" : "lg:grid-cols-3"}`}
+        >
           <AuraContextCard
             actionHref={routes.therapist.finance}
             actionLabel="Ver financeiro"
-            description="A leitura financeira completa fica na área de Financeiro, com realizado, contratado e estimado separados."
+            description="O Financeiro fica fora da leitura da Aura e separa realizado, contratado e estimado na área própria."
             icon={WalletCards}
             label="Financeiro"
             title="Acompanhe seus recebimentos em um só lugar"
             tone="care"
             value="Disponível no Financeiro"
           />
-          <AuraContextCard
-            actionHref={routes.therapist.reviews}
-            actionLabel="Ver avaliações"
-            description={growthDescription(data)}
-            icon={BarChart3}
-            label="Crescimento"
-            title={growthTitle(data)}
-            tone="attention"
-            value={
-              data.signals.reviews.status === "ready"
-                ? `${data.signals.reviews.pendingReplyCount} pendentes`
-                : "Em formação"
-            }
-          />
+          {!hasPendingReviewSignal ? (
+            <AuraContextCard
+              actionHref={routes.therapist.reviews}
+              actionLabel="Ver avaliações"
+              description={growthDescription(data)}
+              icon={BarChart3}
+              label="Crescimento"
+              title={growthTitle(data)}
+              tone="attention"
+              value={
+                data.signals.reviews.status === "ready"
+                  ? `${data.signals.reviews.pendingReplyCount} pendentes`
+                  : "Em formação"
+              }
+            />
+          ) : null}
           <AuraContextCard
             actionHref={routes.therapist.insights}
             actionLabel="Ver métricas"
@@ -245,8 +250,8 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
               </h2>
             </div>
             <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-              Ações práticas com base nos seus dados para gerar mais conexão e
-              agendamentos.
+              Ações práticas com base nos sinais agregados e auditáveis do seu
+              perfil, agenda, avaliações e sessões.
             </p>
           </div>
         </div>
@@ -297,7 +302,7 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <AuraResultMetric
-            label="Insights selecionados"
+            label="Sinais elegíveis"
             value={String(recommendationCount)}
           />
           <AuraResultMetric
@@ -358,7 +363,7 @@ function AuraKpiCard({
           {value}
         </p>
         <ReferenceBars
-          label={`${label}: ${reference ? "ainda sem dados" : "referência visual"}`}
+          label={`${label}: ${reference ? "ainda sem dados" : "visual ilustrativo"}`}
         />
       </div>
       <p className="mt-4 text-sm font-semibold leading-5 text-tesText-secondary">
@@ -443,32 +448,12 @@ function AuraRecommendationCard({
         >
           <RecommendationIcon routeKey={recommendation.actionRouteKey} />
         </span>
-        <form action={dismissAuraRecommendationAction}>
-          <input
-            name="recommendationKey"
-            type="hidden"
-            value={recommendation.id}
-          />
-          <input name="ruleKey" type="hidden" value={recommendation.ruleKey} />
-          <input
-            name="ruleVersion"
-            type="hidden"
-            value={recommendation.ruleVersion}
-          />
-          <input
-            name="periodStart"
-            type="hidden"
-            value={data.meta.periodStart}
-          />
-          <input name="periodEnd" type="hidden" value={data.meta.periodEnd} />
-          <button
-            aria-label={`Dispensar recomendação: ${recommendation.title}`}
-            className="grid size-11 place-items-center rounded-lg text-tesText-muted transition hover:bg-brand-lavenderSoft hover:text-brand-deep focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            type="submit"
-          >
-            <Trash2 aria-hidden="true" size={17} />
-          </button>
-        </form>
+        <TherapistAuraDismissForm
+          periodEnd={data.meta.periodEnd}
+          periodStart={data.meta.periodStart}
+          recommendationKey={recommendation.id}
+          recommendationTitle={recommendation.title}
+        />
       </div>
       <div className="mt-4">
         <p className="text-sm font-extrabold uppercase tracking-[0.1em] text-brand-primary">
@@ -500,7 +485,7 @@ function AuraRecommendationCard({
 function AuraResultMetric({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid gap-2 rounded-card border border-brand-lavender bg-surface-soft p-4">
-      <ReferenceBars label={`${label}: referência visual`} />
+      <ReferenceBars label={`${label}: visual ilustrativo`} />
       <strong className="text-2xl font-extrabold text-brand-deep">
         {value}
       </strong>
@@ -514,7 +499,7 @@ function AuraResultMetric({ label, value }: { label: string; value: string }) {
 function ReferenceBars({ label }: { label: string }) {
   return (
     <div
-      aria-label={label}
+      aria-label={`${label}. Não representa uma série histórica.`}
       className="flex h-8 items-end gap-1"
       role="img"
       tabIndex={0}
@@ -567,7 +552,7 @@ function growthDescription(data: TherapistAuraPageData) {
     data.signals.reviews.status === "ready" &&
     data.signals.reviews.pendingReplyCount > 0
   ) {
-    return "Responder avaliações publicadas ajuda a manter o cuidado depois da sessão e deixa esse espaço mais completo.";
+    return `Responder avaliações publicadas nos últimos ${data.signals.reviews.windowDays} dias ajuda a manter o cuidado depois da sessão e deixa esse espaço mais completo.`;
   }
   return "A Aura continua observando sinais agregados da sua jornada para indicar próximos passos quando houver base suficiente.";
 }
@@ -597,6 +582,29 @@ function formatRate(
     maximumFractionDigits: 1,
     minimumFractionDigits: 0,
   }).format(rate.value)}%`;
+}
+
+function insufficientSampleCount(data: TherapistAuraPageData) {
+  return [
+    data.signals.sessions.cancellationRate,
+    data.signals.sessions.noShowRate,
+    data.signals.continuity.returnRate,
+  ].filter((rate) => rate.status === "insufficient_sample").length;
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date(value));
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date(value));
 }
 
 export function TherapistAuraErrorState({ message }: { message: string }) {

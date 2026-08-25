@@ -14,9 +14,11 @@ import type { TherapistDashboardPageData } from "../therapist-dashboard.types";
 
 export function TherapistAuraCard({
   aura,
+  auraState = "empty",
   plan = TherapistPlan.PremiumPlus,
 }: {
   aura: TherapistDashboardPageData["aura"];
+  auraState?: TherapistDashboardPageData["auraState"];
   plan?: TherapistPlan;
 }) {
   if (!canAccessTherapistPlan(plan, TherapistPlan.PremiumPlus)) {
@@ -57,18 +59,29 @@ export function TherapistAuraCard({
           </Link>
         </div>
         {aura ? (
-          <div className="mt-6 grid gap-7 xl:grid-cols-2">
-            <AuraList
-              icon={CircleCheckBig}
-              items={aura.observations}
-              title="Aura observou"
-            />
-            <AuraList
-              icon={Star}
-              items={aura.suggestions}
-              title="Sugestões para sua jornada"
-            />
-          </div>
+          <>
+            <p className="mt-4 text-xs font-semibold text-tesText-muted">
+              Leitura por regras determinísticas · {aura.periodDays} dias ·
+              atualizada em {formatDateTime(aura.computedAt)}
+            </p>
+            <div className="mt-5 grid gap-7 xl:grid-cols-2">
+              <AuraList
+                icon={CircleCheckBig}
+                items={aura.observations}
+                title="Aura observou"
+              />
+              <AuraList
+                icon={Star}
+                items={aura.suggestions}
+                title="Sugestões para sua jornada"
+              />
+            </div>
+          </>
+        ) : auraState === "unavailable" ? (
+          <p className="mt-7 max-w-2xl text-sm leading-6 text-tesText-secondary">
+            A Assessora Aura não conseguiu atualizar esta leitura agora. Abra a
+            página da Aura para tentar novamente.
+          </p>
         ) : (
           <p className="mt-7 max-w-2xl text-sm leading-6 text-tesText-secondary">
             A Aura ainda não tem recomendações para este período. Seu painel
@@ -78,6 +91,14 @@ export function TherapistAuraCard({
       </div>
     </section>
   );
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date(value));
 }
 
 function AuraList({

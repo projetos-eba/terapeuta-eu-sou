@@ -2,12 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { routes } from "@/lib/routes";
 
+import type { TherapistAuraPageData } from "../therapist-aura/therapist-aura.types";
 import {
   calculateAttendanceRate,
   calculateRevenueCents,
   calculateTrend,
   mapTherapistDashboardResponse,
-  mapTherapistRecommendations,
+  mapTherapistAuraPage,
 } from "./therapist-dashboard.mappers";
 
 describe("dashboard calculations", () => {
@@ -67,24 +68,86 @@ describe("dashboard mapper", () => {
   });
 
   it("separates observations, suggestions and actions", () => {
-    const result = mapTherapistRecommendations([
-      {
-        body: "Sinal agregado",
-        context: { kind: "observation" },
-        id: "1",
-        source_rule_key: "signal",
-        title: "Sinal",
-      },
-      {
-        body: "Ação segura",
-        context: { action_href: "/plus/perfil", kind: "action" },
-        id: "2",
-        source_rule_key: "action",
-        title: "Atualize",
-      },
-    ]);
+    const result = mapTherapistAuraPage({
+      ...emptyAuraPage(),
+      recommendations: [
+        {
+          actionHref: routes.therapist.profile,
+          actionLabel: "Revisar perfil",
+          actionRouteKey: "profile",
+          body: "Sinal agregado",
+          evidenceLabel: "Fonte agregada",
+          id: "1",
+          priority: 90,
+          ruleKey: "aura.profile.v1",
+          ruleVersion: 1,
+          title: "Sinal",
+          tone: "attention",
+        },
+        {
+          actionHref: routes.therapist.reviews,
+          actionLabel: "Responder avaliações",
+          actionRouteKey: "reviews",
+          body: "Ação segura",
+          evidenceLabel: "Fonte agregada",
+          id: "2",
+          priority: 80,
+          ruleKey: "aura.reviews.v1",
+          ruleVersion: 1,
+          title: "Responda",
+          tone: "care",
+        },
+      ],
+    });
 
     expect(result.aura?.observations).toEqual(["Sinal agregado"]);
     expect(result.recommendedActions[0]?.href).toBe(routes.therapist.profile);
+    expect(result.recommendedActions[1]?.href).toBe(routes.therapist.reviews);
   });
 });
+
+function emptyAuraPage(): TherapistAuraPageData {
+  return {
+    contractVersion: 1,
+    dismissals: [],
+    meta: {
+      computedAt: "2026-08-23T12:00:00.000Z",
+      freshThrough: "2026-08-23T12:00:00.000Z",
+      periodDays: 30,
+      periodEnd: "2026-08-23T03:00:00.000Z",
+      periodStart: "2026-07-24T03:00:00.000Z",
+      previousPeriodEnd: "2026-07-24T03:00:00.000Z",
+      previousPeriodStart: "2026-06-24T03:00:00.000Z",
+      timezone: "America/Sao_Paulo",
+    },
+    recommendations: [],
+    ruleRegistryVersion: 1,
+    signals: {
+      bookingReadiness: {
+        publicBookableServices: 0,
+        servicesWithFutureAvailability: 0,
+        status: "empty",
+        windowDays: 14,
+      },
+      continuity: { returnRate: insufficientRate() },
+      reviews: { pendingReplyCount: 0, status: "empty", windowDays: 30 },
+      sessions: {
+        cancellationRate: insufficientRate(),
+        noShowRate: insufficientRate(),
+      },
+    },
+    therapist: { plan: "premium_plus", profileId: "therapist-1" },
+  };
+}
+
+function insufficientRate() {
+  return {
+    direction: null,
+    minimumSample: 10 as const,
+    observedSample: 0,
+    previousValue: null,
+    status: "insufficient_sample" as const,
+    unit: "percent" as const,
+    value: null,
+  };
+}
