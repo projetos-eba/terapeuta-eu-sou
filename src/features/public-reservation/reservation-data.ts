@@ -7,6 +7,7 @@ import type {
 } from "./types";
 import type { AvailabilityDay } from "@/features/therapist-profile/types";
 import { normalizeTimeZone } from "@/features/bookings/session-formatters";
+import { routes } from "@/lib/routes";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -73,7 +74,9 @@ export function resolveReservationContext(input: {
 
   const serviceLabel =
     readCleanLabel(params.get("serviceName")) ??
-    (therapySlug ? `${therapyLabels[therapySlug] ?? titleizeSlug(therapySlug)} online` : null) ??
+    (therapySlug
+      ? `${therapyLabels[therapySlug] ?? titleizeSlug(therapySlug)} online`
+      : null) ??
     "Encontro online TES";
 
   const time = selectedSlot
@@ -109,7 +112,10 @@ export function resolveReservationContext(input: {
       avatarUrl: therapist?.avatarUrl ?? null,
       headline: therapist?.headline ?? "Profissional TES",
       isVerified: Boolean(therapistSlug),
-      name: therapist?.name ?? titleizeSlug(therapistSlug) ?? "Terapeuta selecionado",
+      name:
+        therapist?.name ??
+        titleizeSlug(therapistSlug) ??
+        "Terapeuta selecionado",
       slug: therapistSlug,
     },
     therapySlug,
@@ -129,7 +135,7 @@ export function buildReservationSchedule(
   const today = startOfLocalDay(new Date());
   const referenceDate = context.selectedSlot
     ? new Date(context.selectedSlot)
-    : parseDateKey(current.get("date")) ?? today;
+    : (parseDateKey(current.get("date")) ?? today);
   const referenceStart = startOfLocalDay(referenceDate);
   const firstDay = new Date(referenceStart);
   firstDay.setDate(referenceStart.getDate() - 2);
@@ -196,11 +202,11 @@ export function reconcileReservationContextWithAvailability(
 
   const selectedSlotIsAvailable = Boolean(
     context.selectedSlot &&
-      availabilityDays.some((day) =>
-        day.slots.some(
-          (slot) => parseIsoDate(slot.startsAt) === context.selectedSlot,
-        ),
+    availabilityDays.some((day) =>
+      day.slots.some(
+        (slot) => parseIsoDate(slot.startsAt) === context.selectedSlot,
       ),
+    ),
   );
 
   return {
@@ -233,7 +239,11 @@ export function mergeReservationContextWithPublicProfile(
   const serviceLabel = input.service?.title ?? context.serviceLabel;
   const timezone = normalizeTimeZone(input.timezone ?? context.timezone);
   const time = context.selectedSlot
-    ? formatReservationTime(context.selectedSlot, durationMinutes ?? 50, timezone)
+    ? formatReservationTime(
+        context.selectedSlot,
+        durationMinutes ?? 50,
+        timezone,
+      )
     : null;
 
   return {
@@ -273,6 +283,12 @@ export function buildReservationHref(
   }
 
   return `/reserva?${next.toString()}`;
+}
+
+export function buildReservationReturnHref(therapistSlug: string | null) {
+  return therapistSlug
+    ? routes.public.therapistProfile(therapistSlug)
+    : routes.public.therapists;
 }
 
 export function buildClientAuthHref(kind: "login" | "signup", next: string) {

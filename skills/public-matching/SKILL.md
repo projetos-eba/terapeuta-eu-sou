@@ -82,6 +82,8 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
   pode ser usado para afirmar quantidade de temas.
 - Assets oficiais extraidos do Figma ficam versionados em `public/journey/`.
 - A pagina deve manter hero com imagem fade, stepper, grid 5x2 de cards ilustrados no desktop e cards empilhados no mobile. O cabeçalho público usa uma faixa branca própria, acima do hero, para preservar a leitura da navegação em telas grandes.
+- O hero não exibe badge temático acima do título; os temas disponíveis são
+  apresentados nos cards próprios da seleção.
 - CTA ativo com pelo menos um tema.
 - Ao atingir tres temas, cards restantes ficam desabilitados, mas visiveis.
 - Ao retornar para `/sua-jornada` pelo navegador, o CTA deve sair do estado de
@@ -103,6 +105,7 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
 - `npx supabase db reset` quando Docker estiver disponivel.
 - Validar:
   - `/sua-jornada`
+  - o hero não deve renderizar o badge editorial “Emoções e bem-estar”.
   - `/sua-jornada/resultado` sem sessionStorage redireciona.
   - limite de 1 a 3 temas.
   - selecionar um tema abre os interesses associados.

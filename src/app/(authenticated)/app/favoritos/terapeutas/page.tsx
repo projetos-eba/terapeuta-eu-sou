@@ -1,5 +1,6 @@
 import { revalidatePath } from "next/cache";
 
+import { AppPageContainer } from "@/components/app-page/app-page";
 import {
   getPatientFavoriteTherapistsPage,
   PatientFavoriteTherapistsPage,
@@ -28,15 +29,17 @@ export default async function PatientFavoriteTherapistsRoute() {
     );
   } catch {
     return (
-      <main className="mx-auto max-w-[830px] rounded-card border border-brand-lavender bg-white p-8 text-center shadow-card">
-        <h1 className="font-display text-3xl font-light italic text-brand-deep">
-          Não foi possível carregar seus favoritos.
-        </h1>
-        <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-          Atualize a página em alguns instantes ou acione o suporte se o
-          problema continuar.
-        </p>
-      </main>
+      <AppPageContainer>
+        <section className="rounded-card border border-brand-lavender bg-white p-8 text-center shadow-card">
+          <h1 className="font-display text-3xl font-light italic text-brand-deep">
+            Não foi possível carregar seus favoritos.
+          </h1>
+          <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
+            Atualize a página em alguns instantes ou acione o suporte se o
+            problema continuar.
+          </p>
+        </section>
+      </AppPageContainer>
     );
   }
 }

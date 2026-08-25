@@ -108,6 +108,10 @@ Não criar enums equivalentes dentro de features.
   janela, pagamento, perfil responsável e elegibilidade são revalidados no
   backend a cada acesso. Reagendar e cancelar reutilizam
   `SessionOperationActions`, sem atalhos paralelos.
+- Quando o booking, o pagamento ou a realização já estiverem encerrados
+  (incluindo pagamento cancelado, reembolso ou sessão não realizada),
+  `SessionOperationActions` mantém cancelamento e reagendamento desabilitados e
+  informa o motivo em texto acessível; não repetir uma ação já concluída.
 - No detalhe, o ContextRail mantém somente sua altura de conteúdo. Em tablet e
   mobile, as superfícies de apoio podem ocupar duas colunas quando houver
   espaço legível; o conteúdo principal permanece em uma sequência vertical.

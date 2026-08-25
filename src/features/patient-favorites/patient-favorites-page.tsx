@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { Heart, Search, Star, Trash2 } from "lucide-react";
 
+import { AppPageContainer } from "@/components/app-page/app-page";
 import { TESDecorativeMedia } from "@/components/tes";
 import { routes } from "@/lib/routes";
 import { platformAssets } from "@/lib/platform-assets";
@@ -22,7 +23,7 @@ export function PatientFavoriteTherapistsPage({
   removeFavoriteAction,
 }: PatientFavoriteTherapistsPageProps) {
   return (
-    <main className="pb-10 text-tesText-primary">
+    <AppPageContainer>
       <header className="relative isolate overflow-hidden rounded-card bg-surface-soft p-6 md:p-8">
         <TESDecorativeMedia
           className="absolute inset-y-0 right-0 hidden w-[56%] md:block"
@@ -90,7 +91,7 @@ export function PatientFavoriteTherapistsPage({
           </Link>
         </section>
       )}
-    </main>
+    </AppPageContainer>
   );
 }
 

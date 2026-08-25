@@ -80,6 +80,14 @@ describe("PublicHeader", () => {
     ).toHaveAttribute("href", "/sua-jornada");
   });
 
+  it("shows the profile search shortcut when requested", () => {
+    render(<PublicHeader showMobileSearch />);
+
+    expect(
+      screen.getByRole("link", { name: "Buscar terapeutas" }),
+    ).toHaveAttribute("href", "/terapeutas");
+  });
+
   it("uses the sidebar breakpoint for all non-large header controls", async () => {
     vi.stubGlobal(
       "fetch",

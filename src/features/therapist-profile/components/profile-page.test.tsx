@@ -66,9 +66,9 @@ describe("TherapistProfilePage video block", () => {
 
     expect(invitation).not.toBeNull();
     expect(
-      within(invitation as HTMLElement).getByText(
-        "Vídeo de apresentação indisponível no momento.",
-      ),
+      within(invitation as HTMLElement).getByRole("img", {
+        name: "Vídeo de apresentação indisponível no momento",
+      }),
     ).toBeInTheDocument();
     expect(within(invitation as HTMLElement).queryByRole("link")).toBeNull();
   });

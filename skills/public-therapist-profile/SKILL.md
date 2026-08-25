@@ -78,6 +78,14 @@ Preservar o padrão do node:
   hero.
 - Cards `Minha essência`, `Como posso te guiar` e `Um convite para você`.
 - No tablet, o hero deve preservar a leitura lado a lado: foto em uma coluna e a apresentação/bio com badges, avaliação e CTA na coluna vizinha. No mobile, o conteúdo volta a uma coluna; no desktop, mantém a composição ampla do Figma.
+- No mobile, o hero usa banner no topo com retrato circular sobreposto, ações
+  de busca/menu no cabeçalho, CTA em largura total e ações circulares de
+  favorito/compartilhamento. Os cards editoriais seguem a ordem essência,
+  guia e convite; o guia exibe no máximo três temas com ícones e separadores.
+- No mobile, serviços ficam fora do fluxo principal da referência e continuam
+  disponíveis no desktop; disponibilidade e avaliações aparecem em sequência,
+  com cinco horários por linha, estado vazio de avaliações ilustrado e rodapé
+  em card com grupos institucionais, para terapeutas e suporte/legal.
 - O registro compartilhado de temas alimenta editor, hero e snapshots; não
   duplicar componentes de perfil. O `photoShape` é determinístico por `themeId`.
 - Seção `Vivências e terapias` com serviços, duração, preço e CTA.
@@ -97,6 +105,10 @@ Preservar o padrão do node:
 - `npx supabase db lint`
 - Se Docker estiver disponível: `npx supabase db reset`
 - Validar `/terapeutas/ana-oliveira`, `/terapeuta/ana-oliveira`, perfil inexistente, sem avaliações, agenda indisponível e slots diferentes para 50min vs 60min.
+- Validar o perfil em viewport mobile, conferindo banner/retrato sobreposto,
+  três cards editoriais, painel de cinco horários por linha, estado vazio de
+  avaliações e rodapé em card; confirmar que o cabeçalho padrão e o rodapé
+  padrão permanecem inalterados nas demais páginas públicas.
 - Validar favorito sem sessão, favorito/remover com paciente autenticado e
   sincronização com o painel de Favoritos. Validar Web Share e fallback de
   cópia com a URL canônica sem query string.

@@ -166,6 +166,8 @@ Fallbacks técnicos: enquanto a fonte IvyPresto Display não estiver disponível
 
 Nota técnica: os arquivos locais de `IvyPresto Display` no projeto são itálicos. Para manter o nome de família definido no design system sem quebrar títulos retos no produto, o CSS declara `IvyPresto Display` com os cortes retos de `IvyPresto Headline` e os cortes itálicos de `IvyPresto Display`, todos servidos por `/public/fonts/ivy-presto`.
 
+Nas áreas autenticadas de terapeuta, paciente e admin, títulos com `font-display` usam sempre a variação itálica. Quando o componente não declara um peso, o padrão é `600`; pesos mais leves continuam disponíveis e qualquer peso acima de `600` é limitado. As telas públicas permanecem fora desse escopo.
+
 Uso:
 
 - Landing: títulos grandes e emocionais.

@@ -25,6 +25,7 @@ import {
 import {
   formatSessionDateTime,
   formatSessionMoney,
+  getSessionOperationDisabledReason,
   getZoomAccessLabel,
   mapSessionPresentation,
   type SessionPresentation,
@@ -111,21 +112,21 @@ export default async function TherapistSessionDetailPage({
             cancelDisabledReason={
               presentation.actions.canCancel
                 ? null
-                : "Esta sessão não está elegível para cancelamento operacional."
+                : getSessionOperationDisabledReason(booking, "cancel")
             }
             cancellationImpactLabel="A política operacional será aplicada antes de alterar agenda, pagamento ou repasse."
             reschedule={pendingReschedule}
             rescheduleDisabledReason={
               presentation.actions.canReschedule
                 ? null
-                : "Esta sessão não está elegível para reagendamento operacional."
+                : getSessionOperationDisabledReason(booking, "reschedule")
             }
           />
 
           <SessionAdditionalLinks booking={booking} />
         </AppPageMain>
 
-        <AppPageAside className="auto-rows-min self-start content-start grid-cols-2 gap-5 md:grid-cols-2 xl:!block">
+        <AppPageAside className="auto-rows-min self-start content-start grid-cols-1 md:grid-cols-2 xl:!block">
           <SessionActionRail booking={booking} presentation={presentation} />
         </AppPageAside>
       </AppPageGrid>

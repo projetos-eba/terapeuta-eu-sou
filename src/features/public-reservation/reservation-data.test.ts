@@ -1,11 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildReservationReturnHref,
   mergeReservationContextWithPublicProfile,
   resolveReservationContext,
 } from "./reservation-data";
 
 describe("public reservation data contract", () => {
+  it("returns to the therapist public profile from the reservation flow", () => {
+    expect(buildReservationReturnHref("ana-oliveira")).toBe(
+      "/terapeutas/ana-oliveira",
+    );
+    expect(buildReservationReturnHref(null)).toBe("/terapeutas");
+  });
+
   it("accepts canonical UUIDs for service checkout context", () => {
     const context = resolveReservationContext({
       isPatientAuthenticated: true,

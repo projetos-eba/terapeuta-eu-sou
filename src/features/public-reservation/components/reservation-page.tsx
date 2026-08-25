@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import {
   buildClientAuthHref,
   buildReservationHref,
+  buildReservationReturnHref,
   buildReservationSchedule,
 } from "../reservation-data";
 import type { AvailabilityDay } from "@/features/therapist-profile/types";
@@ -70,6 +71,9 @@ export function ReservationPage({
   const paymentStepHref = useMemo(
     () => buildReservationHref(query, { etapa: "pagamento" }),
     [query],
+  );
+  const therapistProfileHref = buildReservationReturnHref(
+    context.therapist.slug,
   );
   const [currentStep, setCurrentStep] = useState<ReservationStep>(() =>
     context.step === "pagamento"
@@ -189,7 +193,7 @@ export function ReservationPage({
       <ReservationTopbar />
       <div className="mx-auto w-full max-w-[1680px] px-5 py-10 sm:px-8 lg:px-12 lg:py-16">
         <Link
-          href={momentStepHref as Route<string>}
+          href={therapistProfileHref as Route<string>}
           className="inline-flex min-h-11 items-center gap-2 text-sm font-extrabold text-tesText-muted transition hover:text-brand-primary"
         >
           <ChevronLeft className="size-4" aria-hidden="true" />

@@ -4,7 +4,6 @@ import {
   ArrowRight,
   CalendarDays,
   CheckCircle2,
-  ChevronDown,
   CircleDollarSign,
   Clock3,
   Info,
@@ -27,7 +26,6 @@ import type {
   TherapistFinancialMetrics,
   TherapistFinancialOverview,
 } from "../therapist-finance.types";
-import { FinancialAdvancedDashboard } from "./financial-advanced-dashboard";
 import {
   FinancialEvolutionChart,
   type FinancialEvolutionHighlight,
@@ -201,34 +199,6 @@ export function FinancialSummaryTab({
         generatedAt={overview.generatedAt}
         timezone={overview.timezone}
       />
-
-      {advanced.status === "available" ? (
-        <details className="group rounded-card border border-brand-lavender bg-white shadow-card">
-          <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-base font-extrabold text-brand-deep marker:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary [&::-webkit-details-marker]:hidden sm:px-6">
-            <span>
-              Análises avançadas
-              <span className="mt-1 block text-sm font-semibold text-tesText-secondary">
-                Retenção, detalhes da previsão e sinais contextualizados.
-              </span>
-            </span>
-            <ChevronDown
-              aria-hidden="true"
-              className="shrink-0 text-brand-primary transition-transform group-open:rotate-180"
-              size={20}
-            />
-          </summary>
-          <div className="border-t border-brand-lavender p-4 sm:p-6">
-            <FinancialAdvancedDashboard advanced={advanced} />
-          </div>
-        </details>
-      ) : (
-        <TherapistLockedCard
-          description="Evolução, previsões e oportunidades são leituras do Premium Plus para apoiar suas próximas decisões."
-          requiredPlan={TherapistPlan.PremiumPlus}
-          title="Análises avançadas"
-          variant="section"
-        />
-      )}
     </div>
   );
 }
