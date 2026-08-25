@@ -881,7 +881,7 @@ export function ZoomVideoSessionAdapter({
     const userAdded = (payload: unknown) => {
       if (!mounted.current) return;
       setMessage("A outra pessoa entrou no encontro.");
-      void renderRemoteParticipants(asParticipantArray(payload));
+      void renderRemoteParticipantUpdates(asParticipantArray(payload));
     };
     const userRemoved = (payload: unknown) => {
       if (!mounted.current) return;
@@ -889,7 +889,8 @@ export function ZoomVideoSessionAdapter({
       void detachRemoteParticipants(asParticipantArray(payload));
     };
     const userUpdated = (payload: unknown) => {
-      void renderRemoteParticipants(asParticipantArray(payload));
+      if (!mounted.current) return;
+      void renderRemoteParticipantUpdates(asParticipantArray(payload));
     };
     const peerVideoStateChange = (payload: unknown) => {
       const event = payload as { action?: unknown; userId?: unknown };
@@ -934,6 +935,27 @@ export function ZoomVideoSessionAdapter({
   async function renderExistingRemoteVideos() {
     const users = clientRef.current?.getAllUser?.() ?? [];
     await renderRemoteParticipants(users);
+  }
+
+  async function renderRemoteParticipantUpdates(users: ZoomParticipant[]) {
+    const remoteUsers = users.filter(
+      (user) => user.userId && user.userId !== localUserIdRef.current,
+    );
+
+    if (remoteUsers.length === 0) return;
+
+    setRemoteParticipantPresent(true);
+
+    for (const user of remoteUsers) {
+      if (user.bVideoOn === true) {
+        await attachRemoteVideo(user.userId);
+      } else if (
+        user.bVideoOn === false &&
+        remoteUserElementsRef.current.has(user.userId)
+      ) {
+        await detachRemoteVideo(user.userId, true);
+      }
+    }
   }
 
   async function renderRemoteParticipants(users: ZoomParticipant[]) {
@@ -1112,6 +1134,7 @@ export function ZoomVideoSessionAdapter({
         message={recoveryMessage ?? message}
         onJoin={() => void joinSession()}
         onRefresh={() => void refreshPreviewAccess()}
+        bookingId={bookingId}
         participantLabel={participantLabel}
         previewLoading={previewLoading}
         scheduleLabel={scheduleLabel}
@@ -1340,7 +1363,8 @@ function asParticipantArray(value: unknown): ZoomParticipant[] {
 
     return [
       {
-        bVideoOn: user.bVideoOn === true,
+        bVideoOn:
+          typeof user.bVideoOn === "boolean" ? user.bVideoOn : undefined,
         displayName:
           typeof user.displayName === "string" ? user.displayName : undefined,
         userId: user.userId,

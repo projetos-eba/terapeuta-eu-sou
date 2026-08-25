@@ -36,6 +36,9 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
 - Reutilizar `ZoomVideoCallPage` para a estrutura imersiva.
 - Reutilizar `ZoomVideoSessionAdapter` para preflight, espera, entrada,
   controles, reconexão e encerramento.
+- O cabeçalho da sala e o cartão da sala de espera exibem o ID completo da
+  reserva logo abaixo do participante. A referência é o `bookingId` já
+  autorizado pela rota e não é um identificador do provedor Zoom.
 - A apresentação fica separada da integração: `ZoomVideoStage` concentra a
   composição desktop/mobile e `ZoomVideoControls` concentra preflight,
   microfone, câmera, suporte e saída. O adapter continua sendo a autoridade
@@ -99,8 +102,12 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
   preferencial.
 - Inicializar o SDK com `enforceMultipleVideos: true`. Separar presença do
   participante do estado do vídeo remoto (`off`, `attaching`, `on`, `error`) e
-  ressicronizar após join, atualização, câmera do peer e reconexão. Em limite
+  ressincronizar após join, atualização, câmera do peer e reconexão. Em limite
   de render, priorizar o remoto e informar que a prévia local está indisponível.
+- Tratar `user-added` e `user-updated` como deltas de participantes. Nunca usar
+  a ausência de um usuário nesses payloads para removê-lo, nem converter
+  `bVideoOn` ausente em câmera desligada; a reconciliação completa usa somente
+  `getAllUser()` após join e reconexão.
 - Ícones comunicam o estado atual: `MicOff`/`VideoOff` desligado e
   `Mic`/`Video` ligado; o nome acessível descreve a próxima ação.
 - Validar câmera inicialmente desligada, ativação após o join, desligamento e

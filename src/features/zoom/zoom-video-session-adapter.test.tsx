@@ -24,7 +24,10 @@ const destroyClient = vi.fn(() => {
 const remoteElement = document.createElement("video");
 const localElement = document.createElement("video");
 const mockClient = {
-  getAllUser: vi.fn(() => []),
+  getAllUser: vi.fn(
+    (): Array<{ bVideoOn?: boolean; displayName?: string; userId: number }> =>
+      [],
+  ),
   getCurrentUserInfo: vi.fn(() => ({ userId: 7 })),
   getMediaStream: vi.fn(() => mockStream),
   init: vi.fn(async () => {
@@ -83,6 +86,7 @@ describe("ZoomVideoSessionAdapter", () => {
     remoteElement.remove();
     localElement.remove();
     vi.clearAllMocks();
+    mockClient.getAllUser.mockReturnValue([]);
     vi.unstubAllGlobals();
   });
 
@@ -327,6 +331,52 @@ describe("ZoomVideoSessionAdapter", () => {
       expect(mockStream.detachVideo).toHaveBeenCalledWith(7);
       expect(mockStream.stopVideo).toHaveBeenCalled();
     });
+  });
+
+  it("keeps the therapist video attached when the patient enables their own camera", async () => {
+    vi.stubGlobal("fetch", accessResponse(0));
+    mockClient.getAllUser.mockReturnValue([
+      { bVideoOn: false, userId: 7 },
+      { bVideoOn: true, userId: 9 },
+    ]);
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+
+    const remoteVideo = await screen.findByLabelText(/vídeo remoto/i);
+    expect(remoteVideo).toContainElement(remoteElement);
+
+    fireEvent.click(screen.getByRole("button", { name: /ativar câmera/i }));
+    await waitFor(() => {
+      expect(screen.getByTestId("zoom-local-video")).toContainElement(
+        localElement,
+      );
+    });
+
+    mockStream.detachVideo.mockClear();
+    await act(async () => {
+      handlers.get("user-updated")?.([{ bVideoOn: true, userId: 7 }]);
+      handlers.get("user-updated")?.([
+        { displayName: "Terapeuta atualizado", userId: 9 },
+      ]);
+      await Promise.resolve();
+    });
+
+    expect(mockStream.detachVideo).not.toHaveBeenCalledWith(9);
+    expect(remoteVideo).toContainElement(remoteElement);
+    expect(screen.getByTestId("zoom-local-video")).toContainElement(
+      localElement,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /sair do encontro/i }));
+    await screen.findByText(/voce saiu/i);
   });
 
   it("allows therapist role 1 to end the session after confirmation", async () => {

@@ -19,10 +19,12 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { BookingReference } from "@/features/bookings";
 
 type ZoomWaitingRoomProps = {
   actorRole: "patient" | "therapist";
   ambientAudioSrc?: string | null;
+  bookingId?: string;
   countdownLabel?: string | null;
   isOnline: boolean;
   kind:
@@ -47,6 +49,7 @@ type DeviceTestState = "audio" | "camera" | "error" | "idle" | "loading";
 export function ZoomWaitingRoom({
   actorRole,
   ambientAudioSrc,
+  bookingId,
   countdownLabel,
   isOnline,
   kind,
@@ -293,6 +296,7 @@ export function ZoomWaitingRoom({
                   <p className="mt-1 truncate text-base font-extrabold text-brand-deep sm:text-lg">
                     {participantLabel.replace(/^Com\s+/i, "")}
                   </p>
+                  {bookingId ? <BookingReference id={bookingId} /> : null}
                   {scheduleLabel ? (
                     <p className="mt-1 text-sm font-semibold text-tesText-secondary">
                       {scheduleLabel}

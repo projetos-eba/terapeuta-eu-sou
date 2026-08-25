@@ -18,6 +18,8 @@ import type {
   TherapistReceiptsContract,
 } from "../therapist-finance.types";
 import {
+  defaultFinancialReceiptCopy,
+  financialReceiptCopyByStatus,
   financialStatusLabels,
   formatCurrency,
   formatDateTime,
@@ -45,6 +47,9 @@ export function FinancialReceiptsTab({
     (total, item) => total + item.refundedAmountCents,
     0,
   );
+  const receiptCopy = filters.status
+    ? financialReceiptCopyByStatus[filters.status]
+    : defaultFinancialReceiptCopy;
 
   return (
     <div className="grid gap-5">
@@ -165,10 +170,10 @@ export function FinancialReceiptsTab({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-xl font-extrabold text-brand-deep">
-              Recebimentos do período
+              {receiptCopy.title}
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Veja cada recebimento, sua sessão e a forma de pagamento.
+              {receiptCopy.description}
             </p>
           </div>
           <p className="text-sm font-bold text-tesText-secondary">
@@ -326,10 +331,10 @@ export function FinancialReceiptsTab({
         ) : (
           <div className="rounded-card border border-dashed border-brand-lavender bg-brand-lavenderSoft/50 p-6">
             <h3 className="text-lg font-extrabold text-brand-deep">
-              Nenhum recebimento encontrado
+              {receiptCopy.emptyTitle}
             </h3>
             <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-              Quando uma sessão tiver pagamento confirmado, ela aparecerá aqui.
+              {receiptCopy.emptyDescription}
             </p>
           </div>
         )}

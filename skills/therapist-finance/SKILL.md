@@ -79,6 +79,10 @@ recebimento`; provider and reconciliation terminology stays in the service
 - Sem base financeira deve aparecer como `Sem dados` em textos e `-` em
   números. Zero só deve ser mostrado quando houver movimentação real no
   período.
+- Na aba Recebimentos, o título, a descrição e o estado vazio da lista devem
+  acompanhar o filtro de situação selecionado. Com `Todos`, usar o texto
+  padrão; com uma situação específica, explicar em linguagem simples o que
+  aquele recebimento significa.
 - Connect Accounts v2 creation for the Brazilian TES platform must include
   `identity.country = br`, `identity.entity_type = individual`,
   recipient `stripe_balance.stripe_transfers` and merchant `card_payments`.

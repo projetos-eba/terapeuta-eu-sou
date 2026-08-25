@@ -25,6 +25,7 @@ import {
   type BookingStatus as BookingStatusValue,
 } from "@/domain/tes";
 import {
+  BookingReference,
   formatSessionDateTime,
   formatSessionMoney,
   mapSessionPresentation,
@@ -490,6 +491,7 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
                       >
                         {booking.patientName}
                       </Link>
+                      <BookingReference id={booking.bookingId} />
                       <SessionTimingBadge presentation={presentation} />
                     </span>
                   </div>
@@ -549,6 +551,7 @@ function SessionsMobileList({ items }: { items: SessionReadModelItem[] }) {
                 <span className="block truncate text-base font-extrabold text-brand-deep">
                   {booking.patientName}
                 </span>
+                <BookingReference id={booking.bookingId} />
                 <SessionTimingBadge presentation={presentation} />
                 <span className="mt-1 block truncate text-sm font-semibold text-brand-primary">
                   {booking.serviceTitle}
@@ -597,6 +600,7 @@ function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
                 <p className="truncate text-sm font-extrabold text-brand-deep">
                   {nextSession.patientName}
                 </p>
+                <BookingReference id={nextSession.bookingId} />
                 {nextSessionPresentation ? (
                   <SessionTimingBadge presentation={nextSessionPresentation} />
                 ) : null}

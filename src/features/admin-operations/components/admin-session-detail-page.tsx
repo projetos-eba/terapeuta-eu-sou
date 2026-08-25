@@ -80,7 +80,9 @@ export function AdminSessionDetailPage({
 
   const participantSummary = [
     productField("Profissional", participantFields.get("Terapeuta")),
+    productField("ID do profissional", participantFields.get("ID do terapeuta")),
     productField("Cliente", participantFields.get("Cliente")),
+    productField("ID do cliente", participantFields.get("ID do cliente")),
     productField("Formato", describeMeeting()),
   ].filter(Boolean) as Array<{ label: string; value: string }>;
 
@@ -150,7 +152,15 @@ export function AdminSessionDetailPage({
           details={
             [
               productField("Profissional", participantFields.get("Terapeuta")),
+              productField(
+                "ID do profissional",
+                participantFields.get("ID do terapeuta"),
+              ),
               productField("Cliente", participantFields.get("Cliente")),
+              productField(
+                "ID do cliente",
+                participantFields.get("ID do cliente"),
+              ),
               productField("Início", scheduleFields.get("Início")),
               productField(
                 "Sala online",

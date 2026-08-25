@@ -61,6 +61,9 @@ anotação.
 - Reuse authenticated shell.
 - Density: `Balanced`, with `Comfortable` only in the primary context region.
 - First fold must answer: therapist, date/time, booking state and next authorized step.
+- O ID completo da reserva é exibido como referência operacional logo abaixo do
+  nome da terapeuta no detalhe e nas listas de encontros. Ele é o mesmo
+  `bookingId` da rota e não expõe dados do provedor de vídeo.
 - Main layout: breadcrumb/header editorial + hero dominante + faixa de três
   estados + contexto principal e rail contextual em desktop; fluxo linear de
   prioridade no mobile.

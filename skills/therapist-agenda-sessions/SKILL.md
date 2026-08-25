@@ -93,6 +93,9 @@ Não criar enums equivalentes dentro de features.
   autoritativo indicar `ready`, `in_progress` ou `room_preparing`, a identidade
   da pessoa recebe um único badge contextual. O badge não concede acesso nem
   antecipa uma janela de reunião; a autorização final continua no detalhe.
+- O ID completo da reserva aparece como referência operacional logo abaixo do
+  nome do paciente na tabela, nos cards e no detalhe da sessão, usando o mesmo
+  `bookingId` da navegação.
 - Desktop usa tabela operacional com right rail. Tablet e mobile usam cards
   cronológicos em duas colunas quando houver largura, filtros em largura total
   e os mesmos links de detalhe. No rail, cards mantêm altura de conteúdo e são
