@@ -345,7 +345,7 @@ export function TherapistScheduleHours({
   }
 
   return (
-    <main className="mx-auto w-full max-w-[1210px] pb-14 text-tesText-primary">
+    <main className="mx-auto min-w-0 w-full max-w-[1210px] pb-14 text-tesText-primary">
       <form id="therapist-schedule-form" onSubmit={saveSchedule}>
         <TherapistAgendaHeader
           activeTab="horarios"
@@ -774,7 +774,7 @@ function SessionRulesCard({
           >
             <select
               aria-label="Fuso horário"
-              className="min-h-11 max-w-[220px] rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+              className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 sm:w-[220px] sm:max-w-full"
               onChange={(event) => onTimezoneChange(event.target.value)}
               value={timezone}
             >
@@ -840,13 +840,13 @@ function RuleRow({
   label: string;
 }) {
   return (
-    <div className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-      <div className="flex items-start gap-3">
+    <div className="grid min-w-0 gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+      <div className="flex min-w-0 items-start gap-3">
         <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-lavenderSoft text-brand-primary">
           <Icon aria-hidden="true" size={17} />
         </span>
-        <div>
-          <h3 className="flex items-center gap-2 text-sm font-extrabold text-brand-deep">
+        <div className="min-w-0">
+          <h3 className="flex min-w-0 flex-wrap items-center gap-2 text-sm font-extrabold text-brand-deep">
             <span>{label}</span>
             {info ? <RuleInfoPopover label={label} text={info} /> : null}
           </h3>
@@ -862,11 +862,37 @@ function RuleRow({
 
 function RuleInfoPopover({ label, text }: { label: string; text: string }) {
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
   const id = useId();
   const rootRef = useRef<HTMLSpanElement>(null);
 
+  function updatePosition() {
+    const anchor = rootRef.current?.getBoundingClientRect();
+    if (!anchor) return;
+
+    const viewportPadding = 16;
+    const tooltipWidth = Math.min(288, window.innerWidth - viewportPadding * 2);
+    const maxLeft = window.innerWidth - tooltipWidth - viewportPadding;
+
+    setPosition({
+      left: Math.min(
+        Math.max(viewportPadding, anchor.right - tooltipWidth),
+        maxLeft,
+      ),
+      top: anchor.bottom + 8,
+    });
+  }
+
   useEffect(() => {
     if (!open) return;
+
+    updatePosition();
+
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
 
     function closeOnOutside(event: PointerEvent) {
       if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
@@ -879,6 +905,8 @@ function RuleInfoPopover({ label, text }: { label: string; text: string }) {
     document.addEventListener("pointerdown", closeOnOutside);
     document.addEventListener("keydown", closeOnEscape);
     return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
       document.removeEventListener("pointerdown", closeOnOutside);
       document.removeEventListener("keydown", closeOnEscape);
     };
@@ -891,16 +919,20 @@ function RuleInfoPopover({ label, text }: { label: string; text: string }) {
         aria-expanded={open}
         aria-label={`Saiba mais sobre ${label}`}
         className="inline-flex size-11 items-center justify-center rounded-full text-brand-primary outline-none hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
-        onClick={() => setOpen((current) => !current)}
+        onClick={() => {
+          if (!open) updatePosition();
+          setOpen((current) => !current);
+        }}
         type="button"
       >
         <Info aria-hidden="true" size={16} />
       </button>
-      {open ? (
+      {open && position ? (
         <span
-          className="absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl border border-brand-lavender bg-white p-4 text-left text-sm font-semibold leading-6 text-tesText-secondary shadow-float"
+          className="fixed z-20 max-h-[calc(100dvh-2rem)] w-[18rem] max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-brand-lavender bg-white p-4 text-left text-sm font-semibold leading-6 text-tesText-secondary shadow-float"
           id={id}
           role="tooltip"
+          style={position}
         >
           {text}
         </span>
@@ -1167,7 +1199,7 @@ function MinutesSelect({
   return (
     <select
       aria-label={ariaLabel}
-      className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+      className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20 sm:w-[220px] sm:max-w-full"
       onChange={(event) => onChange(Number(event.target.value))}
       value={value}
     >

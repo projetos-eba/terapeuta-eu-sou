@@ -268,6 +268,7 @@ export function TherapistServicesPage({
                     onAction={(action) => handleCardAction(service, action)}
                     plan={initialServices.plan}
                     service={service}
+                    themeLabels={getServiceThemeLabels(service, catalog)}
                   />
                 );
               })}
@@ -590,4 +591,26 @@ function ConfirmServiceActionDialog({
 
 function byPosition(a: TherapistServiceSummary, b: TherapistServiceSummary) {
   return a.position - b.position;
+}
+
+function getServiceThemeLabels(
+  service: TherapistServiceSummary,
+  catalog: TherapyCatalogContract,
+) {
+  const therapy = catalog.items.find(
+    (item) => item.therapyId === service.therapyId,
+  );
+  const themesById = new Map(
+    (therapy?.matchingThemes ?? []).map((theme) => [theme.id, theme]),
+  );
+
+  return service.matching.themeIds
+    .map((themeId) => themesById.get(themeId))
+    .filter((theme): theme is NonNullable<typeof theme> => Boolean(theme))
+    .sort((first, second) => first.sortOrder - second.sortOrder)
+    .map((theme) => ({
+      id: theme.id,
+      label: theme.name,
+      slug: theme.slug,
+    }));
 }

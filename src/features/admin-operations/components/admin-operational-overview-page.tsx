@@ -9,6 +9,8 @@ import {
   Search,
 } from "lucide-react";
 
+import { BookingReference } from "@/features/bookings";
+
 import { ProductPagination } from "./admin-operation-display";
 
 import type {
@@ -373,9 +375,11 @@ function SessionsTable({ rows }: { rows: AdminOperationRow[] }) {
               </td>
               <td className="break-words px-4 py-4 text-sm font-semibold text-brand-deep">
                 {fields.Terapeuta || "Não informado"}
+                <BookingReference id={row.id} />
               </td>
               <td className="break-words px-4 py-4 text-sm font-semibold text-brand-deep">
                 {fields.Cliente || "Não informado"}
+                <BookingReference id={row.id} />
               </td>
               <td className="px-4 py-4">
                 <p className="text-sm font-extrabold text-brand-deep">
@@ -494,6 +498,9 @@ function MobileRow({
             </dt>
             <dd className="mt-1 break-words text-sm font-semibold text-brand-deep">
               {productLabel(fields[label]) || "Não informado"}
+              {module === "sessions" && label === "Cliente" ? (
+                <BookingReference id={row.id} />
+              ) : null}
             </dd>
           </div>
         ))}

@@ -30,7 +30,7 @@ export function TherapistFinancePage({
   tab: TherapistFinanceTab;
 }) {
   return (
-    <AppPageContainer className="gap-5">
+    <AppPageContainer className="min-w-0 gap-5 [&>*]:min-w-0">
       <FinancialHeader dateRange={dateRange} filters={filters} tab={tab} />
 
       {connectNotice ? <ConnectReturnNotice notice={connectNotice} /> : null}

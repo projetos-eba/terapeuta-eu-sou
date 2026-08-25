@@ -110,6 +110,13 @@ um `video-player-container` independente e se a camera remota percorreu
 tentativas limitadas apos join, eventos de usuario/video e reconexao. Em
 dispositivo limitado a um render, o video remoto tem prioridade.
 
+Se o remoto desaparece exatamente quando a camera local e ligada, confirme que
+`user-added` e `user-updated` estao sendo tratados como deltas. Esses eventos
+podem conter somente o participante alterado; usar o payload como roster
+completo faz a aplicacao desconectar incorretamente todos os remotos ausentes
+do evento. Somente `getAllUser()` pode alimentar a reconciliacao completa, e a
+ausencia de `bVideoOn` em uma atualizacao nao significa camera desligada.
+
 ## O contador mostra a duracao errada
 
 Inspecione `scheduled_starts_at`, `scheduled_ends_at` e `serverNow`. A interface

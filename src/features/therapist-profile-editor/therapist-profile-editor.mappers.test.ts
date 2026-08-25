@@ -57,6 +57,14 @@ const contract = {
     status: "published",
     updatedAt: "2026-07-27T12:00:00.000Z",
   },
+  verificationSummary: {
+    changesRequested: null,
+    id: "verification-1",
+    rejectionReason: null,
+    reviewedAt: null,
+    status: "approved",
+    submittedAt: "2026-07-28T11:10:00.000Z",
+  },
   therapistProfileId: "c1000000-0000-4000-8000-000000000001",
   updatedAt: "2026-07-28T12:00:00.000Z",
   version: 4,
@@ -71,6 +79,27 @@ describe("therapist profile editor mappers", () => {
     );
     expect(editor.derived.startingPriceCents).toBe(17000);
     expect(editor.completeness.percent).toBe(80);
+  });
+
+  it("maps the administrative correction reason without exposing other review data", () => {
+    const editor = mapTherapistProfileEditorContract({
+      ...contract,
+      derived: {
+        ...contract.derived,
+        accountStatus: "changes_requested",
+        publicStatus: "unpublished",
+        verificationStatus: "changes_requested",
+      },
+      verificationSummary: {
+        ...contract.verificationSummary,
+        changesRequested: "Atualize a apresentação do seu perfil.",
+        status: "changes_requested",
+      },
+    });
+
+    expect(editor.verificationSummary?.changesRequested).toBe(
+      "Atualize a apresentação do seu perfil.",
+    );
   });
 
   it("keeps an approved legacy profile approved when its verification history is absent", () => {
@@ -128,9 +157,7 @@ describe("therapist profile editor mappers", () => {
       ],
     });
 
-    expect(payload.guideItems).toEqual([
-      { icon: "sparkles", label: "Escuta" },
-    ]);
+    expect(payload.guideItems).toEqual([{ icon: "sparkles", label: "Escuta" }]);
     expect(payload.reflections).toEqual([
       {
         excerpt: null,

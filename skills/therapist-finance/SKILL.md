@@ -79,6 +79,10 @@ recebimento`; provider and reconciliation terminology stays in the service
 - Sem base financeira deve aparecer como `Sem dados` em textos e `-` em
   números. Zero só deve ser mostrado quando houver movimentação real no
   período.
+- Na aba Recebimentos, o título, a descrição e o estado vazio da lista devem
+  acompanhar o filtro de situação selecionado. Com `Todos`, usar o texto
+  padrão; com uma situação específica, explicar em linguagem simples o que
+  aquele recebimento significa.
 - Connect Accounts v2 creation for the Brazilian TES platform must include
   `identity.country = br`, `identity.entity_type = individual`,
   recipient `stripe_balance.stripe_transfers` and merchant `card_payments`.
@@ -162,6 +166,10 @@ two columns. On mobile, the primary cards and the money/agenda reading remain
 open, while the three complementary cards become a single reading order. The
 chart keeps an internal named scroll region only when needed; the page itself
 must not overflow horizontally.
+
+Keep `min-w-0` through the finance page and tab roots so mobile and tablet
+layouts stay inside the viewport. Only the evolution chart may retain a named
+internal horizontal scroll region when its series need more width.
 
 Respect hierarchy, spacing and density, but do not copy unsupported product
 features or bank-form fields.

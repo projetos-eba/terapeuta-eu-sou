@@ -113,6 +113,10 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - A UI fala em `Suas terapias`, `Adicionar terapia`, `Ativar terapia` e
   `Terapias mais agendadas`. `serviço` permanece apenas como nome de domínio ou
   contrato interno quando necessário.
+- Nos cards, a categoria da terapia permanece visível e os temas selecionados
+  pelo terapeuta aparecem em um badge circular `+N`, limitado a `+2`. O badge
+  abre um tooltip acessível por mouse, foco, clique e teclado com os nomes dos
+  temas selecionados.
 
 Rodar:
 

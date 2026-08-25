@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays, Clock, HandCoins, Tags } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { TESCard } from "@/components/tes";
 import { TherapistPlan } from "@/domain/tes";
@@ -33,6 +33,7 @@ export function TherapistServiceCard({
   onAction,
   plan,
   service,
+  themeLabels,
 }: {
   canMoveDown: boolean;
   canMoveUp: boolean;
@@ -40,6 +41,7 @@ export function TherapistServiceCard({
   onAction: (action: TherapistServiceMenuAction) => void;
   plan: TherapistPlan;
   service: TherapistServiceSummary;
+  themeLabels: Array<{ id: string; label: string; slug: string }>;
 }) {
   const canToggle =
     service.status === "active" ||
@@ -55,7 +57,7 @@ export function TherapistServiceCard({
   return (
     <TESCard
       as="article"
-      className="overflow-hidden rounded-[14px] border-brand-lavender/70 shadow-none"
+      className="overflow-visible rounded-[14px] border-brand-lavender/70 shadow-none"
     >
       <div className="grid gap-5 p-5 md:grid-cols-[minmax(0,1fr)_220px]">
         <div className="grid gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
@@ -153,9 +155,11 @@ export function TherapistServiceCard({
               <InfoPill icon={<HandCoins aria-hidden="true" size={14} />}>
                 {formatCurrency(service.priceCents)}
               </InfoPill>
-              <InfoPill icon={<Tags aria-hidden="true" size={14} />}>
-                {service.category.name}
-              </InfoPill>
+              <ServiceThemeBadges
+                category={service.category}
+                serviceName={service.title}
+                themes={themeLabels}
+              />
               <InfoPill icon={<CalendarDays aria-hidden="true" size={14} />}>
                 {service.isReservable ? "Reservável" : "Não reservável"}
               </InfoPill>
@@ -190,6 +194,78 @@ function InfoPill({
       {icon}
       {children}
     </span>
+  );
+}
+
+function ServiceThemeBadges({
+  category,
+  serviceName,
+  themes,
+}: {
+  category: { id: string; name: string; slug: string };
+  serviceName: string;
+  themes: Array<{ id: string; label: string; slug: string }>;
+}) {
+  const [clickedOpen, setClickedOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
+  const tooltipId = useId();
+  const hiddenThemes = themes.slice(0, 2);
+  const tooltipOpen = clickedOpen || focused || hovered;
+
+  return (
+    <ul
+      aria-label={`Categoria e temas selecionados para ${serviceName}`}
+      className="flex flex-wrap items-center gap-2"
+    >
+      <li>
+        <InfoPill icon={<Tags aria-hidden="true" size={14} />}>
+          <span className="max-w-[220px] truncate" title={category.name}>
+            {category.name}
+          </span>
+        </InfoPill>
+      </li>
+      {hiddenThemes.length > 0 ? (
+        <li
+          className="relative"
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          <button
+            aria-controls={tooltipId}
+            aria-describedby={tooltipOpen ? tooltipId : undefined}
+            aria-expanded={tooltipOpen}
+            aria-label={`Ver mais ${hiddenThemes.length} ${hiddenThemes.length === 1 ? "tema" : "temas"} de ${serviceName}`}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-brand-lavender bg-brand-lavenderSoft px-3 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavender focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            onBlur={() => setFocused(false)}
+            onClick={() => setClickedOpen((current) => !current)}
+            onFocus={() => setFocused(true)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") {
+                setClickedOpen(false);
+                setFocused(false);
+                event.currentTarget.blur();
+              }
+            }}
+            type="button"
+          >
+            +{hiddenThemes.length}
+          </button>
+          <div
+            className={`absolute bottom-full left-0 z-30 mb-2 w-64 rounded-xl border border-brand-lavender bg-white p-3 text-left text-sm font-semibold leading-5 text-tesText-secondary shadow-card ${tooltipOpen ? "block" : "hidden"}`}
+            id={tooltipId}
+            role="tooltip"
+          >
+            <p className="font-extrabold text-brand-deep">Outros temas</p>
+            <ul className="mt-1 space-y-1">
+              {hiddenThemes.map((theme) => (
+                <li key={theme.id}>{theme.label}</li>
+              ))}
+            </ul>
+          </div>
+        </li>
+      ) : null}
+    </ul>
   );
 }
 

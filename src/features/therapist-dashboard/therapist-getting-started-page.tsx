@@ -518,7 +518,9 @@ function StepState({
       ? "bg-status-successBg text-status-success"
       : state === "attention"
         ? "bg-status-warningBg text-status-warning"
-        : "bg-brand-lavenderSoft text-brand-primary";
+        : state === "in_review"
+          ? "bg-status-infoBg text-status-info"
+          : "bg-brand-lavenderSoft text-brand-primary";
 
   return (
     <span

@@ -212,4 +212,35 @@ describe("TherapistProfileOverviewPage", () => {
       screen.queryByRole("heading", { name: "Preview do perfil" }),
     ).not.toBeInTheDocument();
   });
+
+  it("shows the administrative correction reason in the registration flow", () => {
+    render(
+      <TherapistProfileOverviewPage
+        editor={makeEditor({
+          derived: {
+            ...makeEditor().derived,
+            publicStatus: "unpublished",
+            verificationStatus: "changes_requested",
+          },
+          verificationSummary: {
+            changesRequested: "Atualize sua apresentação e informe sua cidade.",
+            id: "verification-3",
+            rejectionReason: null,
+            reviewedAt: "2026-08-25T09:00:00.000Z",
+            status: "changes_requested",
+            submittedAt: "2026-08-24T09:00:00.000Z",
+          },
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Correções solicitadas pela equipe TES",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Atualize sua apresentação e informe sua cidade."),
+    ).toBeInTheDocument();
+  });
 });

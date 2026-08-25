@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Route } from "next";
 
 import { TESButton } from "@/components/tes/tes-button";
+import { BookingReference } from "@/features/bookings";
 import { routes } from "@/lib/routes";
 
 import {
@@ -79,6 +80,7 @@ export function NextEncounterSpotlight({
               <h3 className="truncate text-lg font-extrabold text-brand-deep">
                 {encounter.therapist.name}
               </h3>
+              <BookingReference id={encounter.id} />
               <p className="mt-1 text-sm font-bold leading-6 text-tesText-secondary">
                 {encounter.serviceLabel}
               </p>

@@ -3,8 +3,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type {
   TherapistAdvancedFinancialDashboard,
+  TherapistFinanceFilters,
   TherapistFinancePageData,
+  TherapistFinancialStatus,
 } from "../therapist-finance.types";
+import { financialReceiptCopyByStatus } from "./financial-formatters";
 import { TherapistFinancePage } from "./therapist-finance-page";
 
 vi.mock("next/navigation", () => ({
@@ -44,13 +47,9 @@ describe("TherapistFinancePage", () => {
   it("shows the approved value composition without adjustments", () => {
     renderPage();
 
-    expect(
-      screen.getAllByText("Valor bruto").length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Valor bruto").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Comissão TES").length).toBeGreaterThan(0);
-    expect(
-      screen.getAllByText("Valor líquido").length,
-    ).toBeGreaterThan(0);
+    expect(screen.getAllByText("Valor líquido").length).toBeGreaterThan(0);
     expect(
       screen.queryByText(new RegExp(["ajus", "tes"].join(""), "i")),
     ).not.toBeInTheDocument();
@@ -156,11 +155,113 @@ describe("TherapistFinancePage", () => {
   it("keeps payment method and payment origin separated in receipts", () => {
     renderPage("receipts");
 
+    expect(
+      screen.getByRole("heading", { name: "Recebimentos do período" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Veja cada recebimento, sua sessão e a forma de pagamento.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getAllByText("Cartão").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Pagamento online").length).toBeGreaterThan(0);
     expect(screen.getByText("Reembolsos")).toBeInTheDocument();
     expect(screen.getByText("Recebimentos por semana")).toBeInTheDocument();
     expect(screen.getByText("Distribuição por status")).toBeInTheDocument();
+  });
+
+  it.each(Object.entries(financialReceiptCopyByStatus))(
+    "renders dynamic receipts copy for %s",
+    (status, copy) => {
+      const baseReceipts = fixture().receipts;
+
+      renderPage(
+        "receipts",
+        {
+          receipts: {
+            ...baseReceipts,
+            items: [],
+            pagination: {
+              ...baseReceipts.pagination,
+              totalCount: 0,
+              totalPages: 1,
+            },
+          },
+        },
+        { status: status as TherapistFinancialStatus },
+      );
+
+      expect(
+        screen.getByRole("heading", { name: copy.title }),
+      ).toBeInTheDocument();
+      expect(screen.getByText(copy.description)).toBeInTheDocument();
+      expect(
+        screen.getByRole("heading", { name: copy.emptyTitle }),
+      ).toBeInTheDocument();
+      expect(screen.getByText(copy.emptyDescription)).toBeInTheDocument();
+    },
+  );
+
+  it("keeps the selected status copy while rendering matching receipts", () => {
+    const baseReceipts = fixture().receipts;
+    const copy = financialReceiptCopyByStatus.canceled;
+
+    renderPage(
+      "receipts",
+      {
+        receipts: {
+          ...baseReceipts,
+          items: [
+            {
+              ...baseReceipts.items[0],
+              financialStatus: "canceled",
+            },
+          ],
+        },
+      },
+      { status: "canceled" },
+    );
+
+    expect(
+      screen.getByRole("heading", { name: copy.title }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(copy.description)).toBeInTheDocument();
+    expect(screen.getAllByText("Lucas").length).toBeGreaterThan(0);
+    expect(screen.queryByText(copy.emptyTitle)).not.toBeInTheDocument();
+  });
+
+  it("preserves receipt filters in pagination and clear-filter links", () => {
+    const baseReceipts = fixture().receipts;
+
+    renderPage(
+      "receipts",
+      {
+        receipts: {
+          ...baseReceipts,
+          pagination: {
+            ...baseReceipts.pagination,
+            hasNextPage: true,
+            totalCount: 13,
+            totalPages: 2,
+          },
+        },
+      },
+      {
+        search: "Lucas",
+        status: "canceled",
+        therapyId: "therapy-1",
+      },
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Próxima página" }),
+    ).toHaveAttribute(
+      "href",
+      "/terapeuta/financeiro?tab=recebimentos&page=2&status=canceled&therapyId=therapy-1&q=Lucas",
+    );
+    expect(
+      screen.getByRole("link", { name: "Limpar filtros" }),
+    ).toHaveAttribute("href", "/terapeuta/financeiro?tab=recebimentos");
   });
 
   it("does not render a local bank-data form for Connect", () => {
@@ -213,6 +314,7 @@ describe("TherapistFinancePage", () => {
 function renderPage(
   tab: "account" | "payouts" | "receipts" | "summary" = "summary",
   overrides: Partial<TherapistFinancePageData> = {},
+  filtersOverride: Partial<TherapistFinanceFilters> = {},
 ) {
   const data = { ...fixture(), ...overrides };
 
@@ -226,6 +328,7 @@ function renderPage(
         search: null,
         status: null,
         therapyId: null,
+        ...filtersOverride,
       }}
       tab={tab}
     />,

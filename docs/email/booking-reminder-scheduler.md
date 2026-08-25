@@ -62,6 +62,25 @@ As actions são provisionadas inicialmente com despacho automático desativado.
 Após a validação do ambiente, a ativação deve ser feita pela configuração
 administrativa/operacional do ambiente, sem alterar migrations já aplicadas.
 
+### Ativação administrativa
+
+A superfície oficial para habilitar os lembretes é
+`/admin/configuracoes/emails`. Depois de confirmar que existe um remetente
+ativo padrão, que o provider está disponível e que o dispatcher interno está
+configurado, o administrador deve abrir e salvar individualmente os eventos:
+
+- `Lembrete de encontro — 24 horas — pessoa`;
+- `Lembrete de encontro — 1 hora — pessoa`.
+
+Em cada evento, habilite `Evento habilitado` e `Envio automático`. Essa ação
+grava apenas a configuração operacional do ambiente e não altera migrations ou
+defaults versionados.
+
+Jobs históricos em `skipped` não são reativados automaticamente. O scheduler
+possui janela estrita de um minuto e não faz backfill; somente jobs futuros e
+elegíveis devem seguir para a outbox após a ativação. Qualquer reenvio de um
+lembrete perdido exige uma decisão operacional explícita.
+
 ## Diagnóstico
 
 Monitorar:

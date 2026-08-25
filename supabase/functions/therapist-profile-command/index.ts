@@ -620,6 +620,7 @@ async function readVerificationSummary(
   if (!row?.id) return null;
 
   return {
+    changesRequested: normalizeNullableText(row.changes_requested),
     id: row.id,
     rejectionReason: normalizeNullableText(row.rejection_reason),
     reviewedAt: row.reviewed_at ?? null,
