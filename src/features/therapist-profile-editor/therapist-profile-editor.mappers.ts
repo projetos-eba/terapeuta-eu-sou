@@ -78,6 +78,23 @@ export function buildInitialEditorFields(
   return editor.draft?.fields ?? editor.published.fields;
 }
 
+export function getTherapistProfileReviewReason(
+  editor: TherapistProfileEditorData,
+) {
+  const summary = editor.verificationSummary;
+  const status = summary?.status ?? editor.derived.verificationStatus;
+
+  if (status === "changes_requested") {
+    return summary?.changesRequested?.trim() || null;
+  }
+
+  if (status === "rejected") {
+    return summary?.rejectionReason?.trim() || null;
+  }
+
+  return null;
+}
+
 export function serializeEditorPayload(fields: TherapistProfileEditableFields) {
   return {
     ...fields,
@@ -296,6 +313,7 @@ function mapVerificationSummary(
   const value = asObject(input);
 
   return {
+    changesRequested: stringOrNull(value.changesRequested),
     id: requiredString(value.id),
     rejectionReason: stringOrNull(value.rejectionReason),
     reviewedAt: stringOrNull(value.reviewedAt),

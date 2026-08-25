@@ -66,6 +66,73 @@ describe("mapTherapistHomeReadiness", () => {
     expect(readiness.requiredCount).toBe(6);
   });
 
+  it("marks the public profile as in review after publication is submitted", () => {
+    const readiness = mapTherapistHomeReadiness({
+      connect: null,
+      editor: editorFixture({
+        activeServiceCount: 1,
+        availabilityRuleCount: 1,
+        publicDocumentsComplete: true,
+        publicStatus: "unpublished",
+        verificationStatus: "submitted",
+      }),
+      session: {
+        plan: TherapistPlan.Free,
+        profileId,
+        status: TherapistStatus.Submitted,
+      },
+    });
+
+    expect(readiness.checklist.find((item) => item.id === "profile")).toEqual(
+      expect.objectContaining({
+        actionLabel: "Acompanhar análise",
+        complete: true,
+        description: expect.stringContaining("aguarda o início da análise"),
+        href: "/terapeuta/perfil",
+        state: "in_review",
+      }),
+    );
+    expect(readiness.completedRequiredCount).toBe(5);
+    expect(readiness.requiredCount).toBe(6);
+  });
+
+  it("keeps requested profile corrections as a real checklist pendency", () => {
+    const readiness = mapTherapistHomeReadiness({
+      connect: null,
+      editor: editorFixture({
+        activeServiceCount: 1,
+        availabilityRuleCount: 1,
+        publicDocumentsComplete: true,
+        publicStatus: "unpublished",
+        verificationStatus: "changes_requested",
+        verificationSummary: {
+          changesRequested: "Atualize sua apresentação pública.",
+          id: "verification-changes",
+          rejectionReason: null,
+          reviewedAt: "2026-08-25T10:00:00.000Z",
+          status: "changes_requested",
+          submittedAt: "2026-08-24T10:00:00.000Z",
+        },
+      }),
+      session: {
+        plan: TherapistPlan.Free,
+        profileId,
+        status: TherapistStatus.ChangesRequested,
+      },
+    });
+
+    expect(readiness.checklist.find((item) => item.id === "profile")).toEqual(
+      expect.objectContaining({
+        actionLabel: "Ver correções",
+        complete: false,
+        description: expect.stringContaining("ver a justificativa"),
+        state: "attention",
+      }),
+    );
+    expect(readiness.completedRequiredCount).toBe(4);
+    expect(readiness.requiredCount).toBe(6);
+  });
+
   it("unlocks the base dashboard after the required documents are complete", () => {
     const readiness = mapTherapistHomeReadiness({
       connect: null,
@@ -207,6 +274,8 @@ function editorFixture(
     availabilityRuleCount: number;
     publicDocumentsComplete: boolean;
     publicStatus: TherapistProfileEditorData["derived"]["publicStatus"];
+    verificationStatus: TherapistProfileEditorData["derived"]["verificationStatus"];
+    verificationSummary: TherapistProfileEditorData["verificationSummary"];
     privateDocuments: TherapistProfileEditorData["privateDocuments"];
     therapistProfileId: string;
   }> = {},
@@ -238,7 +307,7 @@ function editorFixture(
       publicStatus: overrides.publicStatus ?? "draft",
       reviewCount: 0,
       startingPriceCents: null,
-      verificationStatus: "draft",
+      verificationStatus: overrides.verificationStatus ?? "draft",
     },
     draft: null,
     privateDocuments:
@@ -282,7 +351,7 @@ function editorFixture(
     },
     therapistProfileId: overrides.therapistProfileId ?? profileId,
     updatedAt: "2026-08-07T10:00:00.000Z",
-    verificationSummary: null,
+    verificationSummary: overrides.verificationSummary ?? null,
     version: 1,
   };
 }

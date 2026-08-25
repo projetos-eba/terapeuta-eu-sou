@@ -52,7 +52,7 @@ export function FinancialReceiptsTab({
     : defaultFinancialReceiptCopy;
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5 [&>*]:min-w-0">
       <AppPageSection className="grid gap-4">
         <form
           className="grid gap-3 lg:grid-cols-[150px_180px_1fr_auto]"

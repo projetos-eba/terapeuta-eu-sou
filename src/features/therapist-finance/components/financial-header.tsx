@@ -29,9 +29,9 @@ export function FinancialHeader({
   tab: TherapistFinanceTab;
 }) {
   return (
-    <header className="grid gap-5">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div>
+    <header className="grid min-w-0 gap-5">
+      <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
           <h1 className="font-display text-[40px] font-light italic leading-tight text-brand-deep sm:text-[52px]">
             Financeiro completo
           </h1>
@@ -40,13 +40,13 @@ export function FinancialHeader({
           </p>
         </div>
 
-        <form className="flex flex-col gap-2 sm:flex-row" method="get">
+        <form className="flex min-w-0 flex-col gap-2 sm:flex-row" method="get">
           <input name="tab" type="hidden" value={toFinanceTabQueryValue(tab)} />
           <label className="sr-only" htmlFor="finance-period">
             Período financeiro
           </label>
           <select
-            className="min-h-11 min-w-[190px] rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+            className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary sm:w-auto sm:min-w-[190px]"
             defaultValue={dateRange.key}
             id="finance-period"
             name="period"
@@ -56,7 +56,7 @@ export function FinancialHeader({
             <option value="month">Mês atual</option>
           </select>
           <button
-            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
             type="submit"
           >
             Atualizar
@@ -67,7 +67,7 @@ export function FinancialHeader({
       <div className="border-b border-brand-lavender">
         <nav
           aria-label="Abas do financeiro"
-          className="flex gap-1 overflow-x-auto pb-0"
+          className="flex min-w-0 max-w-full gap-1 overflow-x-auto pb-0"
         >
           {financeTabs.map((item) => {
             const active = item.value === tab;
@@ -95,7 +95,6 @@ export function FinancialHeader({
           })}
         </nav>
       </div>
-
     </header>
   );
 }

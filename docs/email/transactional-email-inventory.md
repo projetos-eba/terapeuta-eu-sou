@@ -159,7 +159,9 @@ Essas extensões devem herdar o contrato visual/editorial oficial, sem serem rem
 
 ## Lembretes e jobs existentes
 
-O TES não depende de `setTimeout` web para trabalho persistente. O scheduler `tes-booking-reminders-v1` usa `pg_cron` a cada minuto para reclamar jobs persistidos em `booking_reminder_jobs`, revalidar booking, versão e pagamento e enfileirar somente o lembrete do paciente no `email_outbox`. A janela é estrita: jobs fora do ciclo do minuto são marcados como `missed`, sem catch-up. Cancelamento e reagendamento invalidam jobs e suprimem itens pendentes da outbox. O cron separado de recovery da outbox continua chamando a Edge Function via `pg_net`, com URL e segredo mantidos no Vault.
+O TES não depende de `setTimeout` web para trabalho persistente. Em ambientes habilitados, o scheduler `tes-booking-reminders-v1` usa `pg_cron` a cada minuto para reclamar jobs persistidos em `booking_reminder_jobs`, revalidar booking, versão e pagamento e enfileirar somente o lembrete do paciente no `email_outbox`. A janela é estrita: jobs fora do ciclo do minuto são marcados como `missed`, sem catch-up. Cancelamento e reagendamento invalidam jobs e suprimem itens pendentes da outbox. O cron separado de recovery da outbox continua chamando a Edge Function via `pg_net`, com URL e segredo mantidos no Vault.
+
+No Supabase local, esses contratos permanecem desativados por padrão (`cron.job.active = false`) para evitar trabalho persistente e consumo desnecessário de recursos. Só podem ser ativados em um teste de cron explicitamente identificado, com fixture isolada, monitoramento contínuo de CPU/RAM e limpeza que restaure todos os jobs para inativos.
 
 ## Inventário de gaps que bloqueiam implementação
 

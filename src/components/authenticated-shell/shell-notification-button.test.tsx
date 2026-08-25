@@ -83,6 +83,44 @@ describe("ShellNotificationButton", () => {
     );
   });
 
+  it("keeps the popover inside the viewport on narrow screens", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => notificationResponse()),
+    );
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      value: 390,
+    });
+    vi.spyOn(HTMLButtonElement.prototype, "getBoundingClientRect").mockReturnValue(
+      {
+        bottom: 92,
+        height: 44,
+        left: 286,
+        right: 330,
+        toJSON: () => ({}),
+        top: 48,
+        width: 44,
+        x: 286,
+        y: 48,
+      } as DOMRect,
+    );
+
+    render(
+      <ShellNotificationButton
+        count={1}
+        href="/terapeuta/mensagens"
+        role="therapist"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /notificações/i }));
+
+    const panel = await screen.findByRole("region", {
+      name: "Notificações recentes",
+    });
+    expect(panel).toHaveStyle({ right: "22px", top: "104px" });
+  });
+
   it("shows a temporary toast only for a confirmed booking", async () => {
     vi.stubGlobal(
       "fetch",
