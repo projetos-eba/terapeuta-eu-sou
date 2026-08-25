@@ -364,11 +364,13 @@ async function createTherapistProfile(userId, user) {
     body: JSON.stringify({
       bio: "Perfil E2E para validacao de pagamentos TES.",
       headline: "Atendimento E2E",
+      accepts_online_sessions: true,
       is_accepting_bookings: true,
       is_public: true,
       metadata,
       plan: user.plan,
       public_name: user.name,
+      public_status: "published",
       slug: `${runId}-${user.key}`.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
       status: "approved",
       user_id: userId,
@@ -381,7 +383,7 @@ async function createTherapistProfile(userId, user) {
 
 async function firstPublishedTherapy() {
   const rows = await supabaseJson(
-    "/rest/v1/therapies?select=id&status=eq.published&limit=1",
+    "/rest/v1/therapies?select=id&status=eq.published&is_public_visible=eq.true&limit=1",
   );
   if (!rows[0])
     throw new Error("No published therapy found. Run db reset/seed first.");
@@ -404,6 +406,8 @@ async function createService(therapistId, therapyId, key) {
         currency: "BRL",
         description: "Servico E2E para validacao de pagamentos.",
         duration_minutes: 50,
+        is_bookable: true,
+        online_only: true,
         price_cents: key.includes("plus") ? 24000 : 18000,
         status: "active",
         therapist_profile_id: therapistId,

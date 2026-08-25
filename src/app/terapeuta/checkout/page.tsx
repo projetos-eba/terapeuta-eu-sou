@@ -198,7 +198,10 @@ export default async function TherapistCheckoutPage({
             ) : params?.checkout === "success" ? (
               <CheckoutReturnMissingSessionId plan={requestedPlan} />
             ) : (
-              <EmbeddedSubscriptionCheckout plan={requestedPlan} />
+              <EmbeddedSubscriptionCheckout
+                key={requestedPlan}
+                plan={requestedPlan}
+              />
             )}
 
             <TESButton
@@ -297,7 +300,7 @@ function CheckoutReturnMissingSessionId({
   return (
     <section className="rounded-card border border-border bg-white p-5 sm:p-6">
       <p className="text-sm font-extrabold text-brand-deep">
-            Retorno incompleto do pagamento
+        Retorno incompleto do pagamento
       </p>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
         Não foi possível consultar esta tentativa de pagamento. Seu plano

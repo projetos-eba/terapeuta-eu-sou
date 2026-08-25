@@ -1,6 +1,6 @@
 # Arquitetura de pagamentos TES
 
-Atualizado em 2026-08-23.
+Atualizado em 2026-08-24.
 
 ## Visao geral
 
@@ -62,6 +62,20 @@ no `session_payments.metadata.stripe_checkout`; o campo
 `session_payments.gross_amount_cents` e a divisão entre TES/terapeuta são
 reconciliados no webhook sobre o valor efetivamente cobrado. Sem desconto, os
 valores continuam iguais aos snapshots do booking.
+
+Uma campanha de sessão pode reduzir o total a zero com desconto percentual de
+100% ou valor fixo exatamente igual ao subtotal. Nesse caso a Stripe cria uma
+Checkout Session sem cobrança/PaymentIntent, e o webhook assinado confirma o
+pagamento lógico da reserva; comissão, repasse e taxa Stripe ficam em zero.
+Descontos que excedam o subtotal são recusados para impedir valor negativo.
+
+O campo promocional é TES e fica fora do Embedded Checkout. Coupon define o
+benefício; Promotion Code define o texto público e carrega
+`tes_checkout_scope=session|subscription`. A Edge Function resolve o código na
+Stripe e cria uma nova Checkout Session com `discounts.promotion_code`; não há
+catálogo local. Assinaturas exigem também `Coupon.applies_to.products`
+explícito. Todos os Checkouts usam `locale=pt-BR`. Regras operacionais e
+homologação estão em `docs/payments/promotion-codes.md`.
 
 As regras ficam em `financial_policy_versions`. As versões financeiras são
 preservadas no snapshot de cada pagamento. A versão operacional vigente para
@@ -127,6 +141,8 @@ Desde o Gate F0:
   repasse até a reconciliação recuperar o Charge de origem;
 - o plano da assinatura é resolvido pelo `stripe_price_id` efetivo, nunca apenas
   pela metadata enviada ao Checkout.
+- falha ou expiração de tentativa superseded não altera o pagamento atual; um
+  sucesso real de tentativa anterior é aceito e expira as tentativas irmãs.
 
 Agenda e Sessões:
 
@@ -162,6 +178,8 @@ sequenceDiagram
 
   T->>TES: criar checkout de assinatura
   TES->>DB: valida terapeuta e plano
+  T->>TES: aplica Promotion Code TES opcional
+  TES->>S: resolve código, escopo e Product
   TES->>S: cria Checkout Session subscription
   S-->>T: client_secret do Checkout incorporado ou URL hospedada de fallback
   S->>TES: webhook assinado
@@ -185,6 +203,8 @@ sequenceDiagram
   P->>TES: pagar sessao
   TES->>DB: busca preco do servico
   TES->>DB: grava snapshot financeiro
+  P->>TES: aplica Promotion Code TES opcional
+  TES->>S: resolve código e escopo
   TES->>S: cria Checkout Session payment
   S->>TES: webhook pagamento confirmado
   TES->>DB: session_payments.financial_status = paid

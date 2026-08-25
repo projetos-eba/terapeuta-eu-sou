@@ -6,6 +6,7 @@ import type { Route } from "next";
 import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 
 import { TESButton } from "@/components/tes";
+import type { PromotionCheckoutAmounts } from "@/features/payments";
 
 declare global {
   interface Window {
@@ -27,9 +28,14 @@ type CheckoutResponse =
         bookingId: string;
         checkoutSessionId: string;
         clientSecret: string | null;
+        currency: string;
+        discountAmountCents: number;
         holdExpiresAt: string;
         holdId: string;
+        originalAmountCents: number;
+        promotion: PromotionCheckoutAmounts["promotion"];
         sessionPaymentId: string;
+        totalAmountCents: number;
       };
     }
   | {
@@ -43,6 +49,9 @@ export function CheckoutButton({
   disabled,
   isPatientAuthenticated,
   loginHref,
+  onCheckoutChange,
+  onPromotionSettled,
+  promotionRequest,
   serviceId,
   startsAt,
 }: {
@@ -50,6 +59,16 @@ export function CheckoutButton({
   disabled?: boolean;
   isPatientAuthenticated: boolean;
   loginHref: string;
+  onCheckoutChange?: (input: {
+    amounts: PromotionCheckoutAmounts;
+    ready: boolean;
+  }) => void;
+  onPromotionSettled?: (input: {
+    error: string | null;
+    promotion?: PromotionCheckoutAmounts["promotion"];
+    requestId: string;
+  }) => void;
+  promotionRequest?: { code: string | null; requestId: string } | null;
   serviceId: string | null;
   startsAt: string | null;
 }) {
@@ -58,7 +77,12 @@ export function CheckoutButton({
     mount: (selector: string) => void;
   } | null>(null);
   const checkoutInputKeyRef = useRef<string | null>(null);
-  const clientSecretPromiseRef = useRef<Promise<string> | null>(null);
+  const currentCheckoutRef = useRef<{
+    bookingId: string;
+    checkoutSessionId: string;
+    clientSecret: string;
+  } | null>(null);
+  const handledPromotionRequestRef = useRef<string | null>(null);
   const requestIdRef = useRef<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,7 +110,7 @@ export function CheckoutButton({
       const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
       if (!publishableKey) {
         setIsSubmitting(false);
-        setError("Configuração pública da Stripe ausente neste ambiente.");
+        setError("Não foi possível carregar o pagamento seguro agora.");
         return;
       }
 
@@ -96,7 +120,8 @@ export function CheckoutButton({
       if (checkoutInputKeyRef.current !== checkoutInputKey) {
         checkoutInputKeyRef.current = checkoutInputKey;
         requestIdRef.current = crypto.randomUUID();
-        clientSecretPromiseRef.current = null;
+        currentCheckoutRef.current = null;
+        handledPromotionRequestRef.current = null;
       }
 
       try {
@@ -108,41 +133,59 @@ export function CheckoutButton({
           throw new Error("stripe_not_loaded");
         }
 
-        const fetchClientSecret = () => {
-          if (!clientSecretPromiseRef.current) {
-            clientSecretPromiseRef.current = (async () => {
-              const response = await fetch("/api/public/reservation/checkout", {
-                body: JSON.stringify({
-                  requestId: requestIdRef.current,
+        const isPromotionReplacement =
+          promotionRequest &&
+          promotionRequest.requestId !== handledPromotionRequestRef.current &&
+          currentCheckoutRef.current;
+        const previousCheckout = currentCheckoutRef.current;
+        const response = await fetch("/api/public/reservation/checkout", {
+          body: JSON.stringify(
+            isPromotionReplacement
+              ? {
+                  action: "replace",
+                  bookingId: previousCheckout?.bookingId,
+                  checkoutAttemptId: promotionRequest.requestId,
+                  promotionCode: promotionRequest.code,
+                  replaceCheckoutSessionId: previousCheckout?.checkoutSessionId,
+                }
+              : {
+                  action: "create",
+                  checkoutAttemptId: requestIdRef.current,
                   serviceId,
                   startsAt,
                   termsAccepted: true,
-                }),
-                headers: {
-                  "Content-Type": "application/json",
                 },
-                method: "POST",
-              });
-              const data = (await response.json()) as CheckoutResponse;
+          ),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        const data = (await response.json()) as CheckoutResponse;
+        if (!data.ok) throw new Error(data.message);
+        if (!data.checkout.clientSecret) {
+          throw new Error("Não conseguimos carregar o pagamento seguro agora.");
+        }
 
-              if (!data.ok) {
-                throw new Error(data.message);
-              }
-
-              if (!data.checkout.clientSecret) {
-                throw new Error(
-                  "NÃ£o conseguimos carregar o checkout incorporado agora.",
-                );
-              }
-
-              return data.checkout.clientSecret;
-            })();
-          }
-
-          return clientSecretPromiseRef.current;
+        currentCheckoutRef.current = {
+          bookingId:
+            data.checkout.bookingId ?? previousCheckout?.bookingId ?? "",
+          checkoutSessionId: data.checkout.checkoutSessionId,
+          clientSecret: data.checkout.clientSecret,
         };
-
-        await fetchClientSecret();
+        if (promotionRequest) {
+          handledPromotionRequestRef.current = promotionRequest.requestId;
+        }
+        onCheckoutChange?.({
+          amounts: {
+            currency: data.checkout.currency,
+            discountAmountCents: data.checkout.discountAmountCents,
+            originalAmountCents: data.checkout.originalAmountCents,
+            promotion: data.checkout.promotion,
+            totalAmountCents: data.checkout.totalAmountCents,
+          },
+          ready: false,
+        });
+        const fetchClientSecret = () =>
+          Promise.resolve(data.checkout.clientSecret!);
         if (cancelled) return;
 
         const checkout = await stripe.initEmbeddedCheckout({
@@ -157,12 +200,56 @@ export function CheckoutButton({
         checkoutRef.current = checkout;
         checkout.mount("#reservation-embedded-checkout");
         setCheckoutReady(true);
+        onCheckoutChange?.({
+          amounts: {
+            currency: data.checkout.currency,
+            discountAmountCents: data.checkout.discountAmountCents,
+            originalAmountCents: data.checkout.originalAmountCents,
+            promotion: data.checkout.promotion,
+            totalAmountCents: data.checkout.totalAmountCents,
+          },
+          ready: true,
+        });
+        if (promotionRequest) {
+          onPromotionSettled?.({
+            error: null,
+            promotion: data.checkout.promotion,
+            requestId: promotionRequest.requestId,
+          });
+        }
       } catch (error) {
-        setError(
+        const message =
           error instanceof Error
             ? error.message
-            : "Não conseguimos iniciar o pagamento agora. Tente novamente.",
-        );
+            : "Não conseguimos iniciar o pagamento agora. Tente novamente.";
+        if (promotionRequest) {
+          handledPromotionRequestRef.current = promotionRequest.requestId;
+          const previousCheckout = currentCheckoutRef.current;
+          const stripe = window.Stripe?.(publishableKey);
+          if (stripe && previousCheckout?.clientSecret && !cancelled) {
+            try {
+              const checkout = await stripe.initEmbeddedCheckout({
+                fetchClientSecret: () =>
+                  Promise.resolve(previousCheckout.clientSecret),
+              });
+              if (!cancelled) {
+                checkoutRef.current = checkout;
+                checkout.mount("#reservation-embedded-checkout");
+                setCheckoutReady(true);
+              } else {
+                checkout.destroy();
+              }
+            } catch {
+              setError("Atualize a página para retomar o pagamento seguro.");
+            }
+          }
+          onPromotionSettled?.({
+            error: message,
+            requestId: promotionRequest.requestId,
+          });
+        } else {
+          setError(message);
+        }
       } finally {
         if (!cancelled) setIsSubmitting(false);
       }
@@ -175,7 +262,16 @@ export function CheckoutButton({
       checkoutRef.current?.destroy();
       checkoutRef.current = null;
     };
-  }, [acceptedTerms, disabled, isPatientAuthenticated, serviceId, startsAt]);
+  }, [
+    acceptedTerms,
+    disabled,
+    isPatientAuthenticated,
+    onCheckoutChange,
+    onPromotionSettled,
+    promotionRequest,
+    serviceId,
+    startsAt,
+  ]);
 
   if (!isPatientAuthenticated) {
     return (

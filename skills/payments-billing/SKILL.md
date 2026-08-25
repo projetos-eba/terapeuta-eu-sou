@@ -5,7 +5,7 @@ description: Use when working on TES Stripe Billing, therapist subscriptions, ch
 
 # Payments Billing
 
-Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payments/architecture.md`, `docs/payments/stripe-secrets-setup.md`, and `docs/payments/internal-operations-token.md` before editing code.
+Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payments/architecture.md`, `docs/payments/promotion-codes.md`, `docs/payments/stripe-secrets-setup.md`, and `docs/payments/internal-operations-token.md` before editing code.
 
 ## Boundaries
 
@@ -36,6 +36,12 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 - Use Stripe idempotency keys for creating checkout sessions, refunds, schedules, and transfers.
 - Webhooks must read raw body and verify Stripe signature.
 - Webhook events must be idempotent and must not reopen `processed` events.
+- Coupon defines the financial benefit; Promotion Code is resolved server-side
+  and must carry `tes_checkout_scope`. Subscription Coupons must explicitly
+  list eligible Stripe Products. Never maintain a parallel local coupon list.
+- Applying or removing a code replaces the Checkout Session. Non-success
+  events from superseded attempts cannot mutate the current session payment;
+  a real paid older attempt remains authoritative and closes siblings.
 - Webhook reservation must be atomic; failed/stale leases may be retried.
 - Checkout completion only confirms a session when `payment_status` is paid.
 - Subscription plan comes from the effective Stripe Price mapping.
@@ -58,7 +64,7 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 
 Tables: `billing_plans`, `billing_plan_prices`, `stripe_customers`, `therapist_subscriptions`, `billing_invoices`, `therapist_connect_accounts`, `session_payments`, `session_payment_attempts`, `session_refunds`, `session_cancellation_decisions`, `session_disputes`, `session_service_confirmations`, `payout_batches`, `payout_batch_items`, `stripe_transfers`, `stripe_transfer_reversals`, `financial_ledger_entries`, `stripe_webhook_events`, `financial_policy_versions`.
 
-Shared modules: `supabase/functions/_shared/payments/runtime.ts`, `stripe-client.ts`, `connect.ts`, `http.ts`, `idempotency.ts`, `money.ts`, `subscription-sync.ts`.
+Shared modules: `supabase/functions/_shared/payments/runtime.ts`, `stripe-client.ts`, `connect.ts`, `http.ts`, `idempotency.ts`, `money.ts`, `promotion-codes.ts`, `session-attempt-policy.ts`, `subscription-sync.ts`.
 
 Edge Functions:
 
@@ -116,6 +122,10 @@ Never expose, log, screenshot, or write real secret values.
   after a provider failure. Verify the booking transition and local decision
   before treating a Stripe response as success.
 - Use Stripe test mode only and never real cards.
+- Validate Promotion Codes for session, Premium, Premium Plus and both
+  Products, including remove/reapply, concurrent replacement, hosted fallback,
+  locale `pt-BR`, zero-total session completion through the signed webhook and
+  out-of-order superseded events.
 - Do not persist passwords, tokens, card data, or secrets in screenshots, traces, or reports.
 
 ## Prohibited Practices

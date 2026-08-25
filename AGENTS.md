@@ -276,6 +276,11 @@ Stack real identificada:
   comissão, valor do terapeuta e ledger; o subtotal original permanece em
   `session_payments.metadata.stripe_checkout`. A homologação E2E externa no
   Stripe test mode continua obrigatória antes de produção.
+  Promotion Codes são digitados em campo TES fora do Embedded Checkout, com
+  resolução dinâmica na Stripe, `tes_checkout_scope=session|subscription`,
+  Products explícitos para assinaturas, substituição idempotente do Checkout e
+  proteção contra eventos de tentativas superseded. Regras e operação ficam em
+  `docs/payments/promotion-codes.md` e `skills/stripe-promotions`.
 - Planos do terapeuta: `/terapeuta/plano` é a central de upgrades e lê catálogo
   e preços ativos de `billing_plans`/`billing_plan_prices`;
   `/terapeuta/configuracoes#plano-assinatura` concentra downgrade agendado,
