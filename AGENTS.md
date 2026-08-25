@@ -526,6 +526,9 @@ Regras:
 - Nunca criar, ajustar ou popular banco de forma ad hoc sem deixar arquivo rastreável no repositório.
 - Migrations devem expor apenas dados compatíveis com a superfície pública/autenticada necessária, sem campos internos ou sensíveis.
 - Quando Docker/Supabase local impedir validação, registrar exatamente quais comandos falharam e qual validação ficou pendente.
+- Cron local deve permanecer desativado por padrão: depois de iniciar, restaurar ou validar o Supabase local, conferir `cron.job` e garantir que nenhum job persistente esteja com `active = true`. A existência do contrato em migration não autoriza sua execução local.
+- A única exceção é um cenário de teste de cron explicitamente identificado, com fixture isolada, janela limitada, comando de ativação e limpeza documentados; ao final, todos os jobs devem voltar a `active = false` e não pode haver execução pendente.
+- Toda operação pesada de Docker, Supabase, build ou teste deve ser executada de forma serial, com snapshot de CPU e RAM antes, durante e depois. Sob pressão alta, pausar ou interromper preventivamente a próxima etapa e registrar a validação como inconclusiva quando necessário.
 
 ## 9.3 Operação multi-agent
 

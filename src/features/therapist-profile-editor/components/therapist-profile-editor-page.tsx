@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock3 } from "lucide-react";
 
 import {
   AppPageAside,
@@ -9,7 +9,7 @@ import {
   AppPageGrid,
   AppPageMain,
 } from "@/components/app-page";
-import { TESButton, TESFeedbackDialog } from "@/components/tes";
+import { TESButton, TESDialog, TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 import {
@@ -18,6 +18,7 @@ import {
 } from "../therapist-profile-editor.commands";
 import {
   buildInitialEditorFields,
+  getTherapistProfileReviewReason,
   serializeEditorPayload,
 } from "../therapist-profile-editor.mappers";
 import type {
@@ -38,11 +39,12 @@ import {
   ProfileVideoUploader,
 } from "./profile-media-uploader";
 import { ProfileSaveBar } from "./profile-save-bar";
-import { ProfileSection } from "./profile-section";
+import { ProfileReviewNotice, ProfileSection } from "./profile-section";
 import { UnsavedChangesDialog } from "./unsaved-changes-dialog";
 
 type PendingAction = "discard_draft" | "publish" | "save_draft" | "unpublish";
 type ConfirmAction = "discard_draft" | "publish" | "reset" | "unpublish";
+type PublicationResult = "published" | "in_review";
 
 export function TherapistProfileEditorPage({
   editor: initialEditor,
@@ -65,6 +67,8 @@ export function TherapistProfileEditorPage({
     tone: "error" | "warning";
   } | null>(null);
   const [liveMessage, setLiveMessage] = useState("");
+  const [publicationResult, setPublicationResult] =
+    useState<PublicationResult | null>(null);
 
   const baselineFields = useMemo(
     () => buildInitialEditorFields(editor),
@@ -79,6 +83,7 @@ export function TherapistProfileEditorPage({
   const isFirstConfiguration = !isPublished;
   const mustSaveBeforePublishing =
     hasUnsavedChanges || (isFirstConfiguration && !hasDraft);
+  const reviewReason = getTherapistProfileReviewReason(editor);
 
   function updateField<K extends keyof TherapistProfileEditableFields>(
     key: K,
@@ -211,7 +216,15 @@ export function TherapistProfileEditorPage({
     setFields(buildInitialEditorFields(nextEditor));
     setConfirmAction(null);
 
-    const message = getSuccessMessage(action, mutation.idempotentReplay);
+    if (action === "publish") {
+      setPublicationResult(getPublicationResult(nextEditor));
+    }
+
+    const message = getSuccessMessage(
+      action,
+      mutation.idempotentReplay,
+      nextEditor,
+    );
     setLiveMessage(message);
   }
 
@@ -247,6 +260,8 @@ export function TherapistProfileEditorPage({
       />
 
       <ProfileCompleteness editor={editor} />
+
+      {reviewReason ? <ProfileReviewNotice reason={reviewReason} /> : null}
 
       <AppPageGrid>
         <AppPageMain>
@@ -341,6 +356,13 @@ export function TherapistProfileEditorPage({
           }}
         />
       ) : null}
+
+      {publicationResult ? (
+        <PublicationResultDialog
+          onClose={() => setPublicationResult(null)}
+          result={publicationResult}
+        />
+      ) : null}
     </AppPageContainer>
   );
 }
@@ -423,6 +445,54 @@ function ConfirmDialog({
       onConfirm={onConfirm}
       title={copy.title}
     />
+  );
+}
+
+function PublicationResultDialog({
+  onClose,
+  result,
+}: {
+  onClose: () => void;
+  result: PublicationResult;
+}) {
+  const isInReview = result === "in_review";
+  const Icon = isInReview ? Clock3 : CheckCircle2;
+
+  return (
+    <TESDialog
+      onClose={onClose}
+      title={
+        isInReview
+          ? "Perfil enviado para análise"
+          : "Publicação enviada com sucesso"
+      }
+    >
+      <div className="grid gap-5">
+        <div
+          aria-live="polite"
+          className={`flex items-start gap-3 rounded-xl border p-4 text-sm font-bold leading-6 ${
+            isInReview
+              ? "border-status-info/30 bg-status-infoBg text-status-info"
+              : "border-status-success/30 bg-status-successBg text-status-success"
+          }`}
+          role="status"
+        >
+          <Icon aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+          <p>
+            {isInReview
+              ? "Recebemos suas alterações. A equipe TES vai analisar o perfil antes de liberar a nova versão para o público."
+              : "Suas alterações foram publicadas. Pode levar alguns instantes para a nova versão aparecer em todas as superfícies públicas."}
+          </p>
+        </div>
+        <TESButton
+          className="min-h-11 rounded-lg"
+          onClick={onClose}
+          type="button"
+        >
+          Entendi
+        </TESButton>
+      </div>
+    </TESDialog>
   );
 }
 
@@ -636,12 +706,29 @@ function hasInvalidVideoUrl(
   return true;
 }
 
-function getSuccessMessage(action: PendingAction, replay: boolean) {
+function getSuccessMessage(
+  action: PendingAction,
+  replay: boolean,
+  editor?: TherapistProfileEditorData,
+) {
   if (replay) return "Operação já concluída anteriormente.";
   if (action === "save_draft") return "Rascunho salvo.";
   if (action === "discard_draft") return "Rascunho descartado.";
   if (action === "publish") {
-    return "Alterações enviadas para revisão. O perfil volta a ficar público após a aprovação da equipe TES.";
+    return getPublicationResult(editor) === "in_review"
+      ? "Perfil enviado para análise."
+      : "Publicação enviada com sucesso.";
   }
   return "Perfil despublicado.";
+}
+
+function getPublicationResult(
+  editor: TherapistProfileEditorData | undefined,
+): PublicationResult {
+  const verificationStatus =
+    editor?.verificationSummary?.status ?? editor?.derived.verificationStatus;
+
+  return verificationStatus === "approved"
+    ? "published"
+    : "in_review";
 }

@@ -83,6 +83,14 @@ que possível. A publicação continua sendo uma ação separada.
   leitura segura do Admin e remove visibilidade/recebimento de reservas até a
   aprovação. Falha na fila deve abortar a publicação em vez de produzir
   sucesso parcial.
+- Depois de publicar, a interface deve confirmar o resultado em `TESDialog`:
+  `Publicação enviada com sucesso` quando a resposta já estiver aprovada e
+  `Perfil enviado para análise` enquanto a verificação administrativa estiver
+  em `submitted` ou `in_review`.
+- Quando a administração solicitar ajustes, `changes_requested` ou `rejected`
+  deve aparecer como atenção, com a justificativa privada retornada no resumo
+  de verificação (`changesRequested` ou `rejectionReason`) visível ao
+  terapeuta antes de uma nova publicação.
 - Perfis já aprovados ou suspensos não podem ser rebaixados por republicação.
 - Em cadastros antigos sem item em `therapist_verifications`, uma aprovação ou
   suspensão autoritativa em `therapist_profiles` preserva o estado terminal na
@@ -179,11 +187,11 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
   campos legados `headline`, `shortIntro` e `bio` permanecem apenas no contrato
   interno e não aparecem como nomes técnicos para o terapeuta.
 - `Como posso te guiar` usa os dez temas canônicos do Match (`Emoções e
-  Bem-Estar`, `Autoconhecimento e Transformação`, `Relacionamentos`,
+Bem-Estar`, `Autoconhecimento e Transformação`, `Relacionamentos`,
   `Autoestima e Poder Pessoal`, `Propósito e Direção`, `Espiritualidade e
-  Conexão Interior`, `Energia e Equilíbrio Energético`, `Libertação e Renovação`,
+Conexão Interior`, `Energia e Equilíbrio Energético`, `Libertação e Renovação`,
   `Corpo, Relaxamento e Qualidade de Vida` e `Vida Profissional e
-  Prosperidade`). O terapeuta pode selecionar até quatro; os cards exibem ícones
+Prosperidade`). O terapeuta pode selecionar até quatro; os cards exibem ícones
   do vocabulário visual compartilhado e persistem no contrato existente de
   `guideItems`. Itens personalizados antigos permanecem até uma nova seleção.
 - `Sua apresentação` e `Minha essência` exibem ajuda contextual no ícone

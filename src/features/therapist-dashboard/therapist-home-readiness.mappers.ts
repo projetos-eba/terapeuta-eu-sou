@@ -1,5 +1,6 @@
 import { TherapistStatus } from "@/domain/tes";
 import type { TherapistConnectAccount } from "@/features/therapist-finance/therapist-finance.types";
+import { getTherapistProfileReviewReason } from "@/features/therapist-profile-editor/therapist-profile-editor.mappers";
 import type { TherapistProfileEditorData } from "@/features/therapist-profile-editor/therapist-profile-editor.types";
 import type { AuthenticatedTherapistSession } from "@/lib/auth/therapist-session";
 import { routes } from "@/lib/routes";
@@ -23,8 +24,10 @@ export function mapTherapistHomeReadiness({
     throw new Error("therapist_home_profile_mismatch");
   }
 
+  const verificationStatus =
+    editor.verificationSummary?.status ?? editor.derived.verificationStatus;
   const checklist = [
-    profileItem(editor),
+    profileItem(editor, verificationStatus),
     servicesItem(editor),
     agendaItem(editor),
     connectItem(connect),
@@ -54,8 +57,7 @@ export function mapTherapistHomeReadiness({
     profilePublicStatus: editor.derived.publicStatus,
     requiredCount,
     therapistStatus: session.status,
-    verificationStatus:
-      editor.verificationSummary?.status ?? editor.derived.verificationStatus,
+    verificationStatus,
   };
 }
 
@@ -106,8 +108,45 @@ function documentItem({
 
 function profileItem(
   editor: TherapistProfileEditorData,
+  verificationStatus: TherapistProfileEditorData["derived"]["verificationStatus"],
 ): TherapistHomeChecklistItem {
-  const complete = editor.derived.publicStatus === "published";
+  const needsCorrections =
+    verificationStatus === "changes_requested" ||
+    verificationStatus === "rejected";
+  const inReview = ["submitted", "in_review"].includes(verificationStatus);
+  const complete =
+    editor.derived.publicStatus === "published" && !needsCorrections;
+
+  if (needsCorrections) {
+    return {
+      actionLabel: "Ver correções",
+      complete: false,
+      description: getTherapistProfileReviewReason(editor)
+        ? "A equipe TES pediu correções no seu perfil. Abra para ver a justificativa."
+        : "A equipe TES pediu correções no seu perfil antes de uma nova análise.",
+      href: routes.therapist.profile,
+      id: "profile",
+      required: true,
+      state: "attention",
+      title: "Perfil público",
+    };
+  }
+
+  if (inReview) {
+    return {
+      actionLabel: "Acompanhar análise",
+      complete: true,
+      description:
+        verificationStatus === "in_review"
+          ? "Seu perfil público está em análise pela equipe TES."
+          : "Seu perfil foi enviado e aguarda o início da análise da equipe TES.",
+      href: routes.therapist.profile,
+      id: "profile",
+      required: true,
+      state: "in_review",
+      title: "Perfil público",
+    };
+  }
 
   return {
     actionLabel: complete ? "Ver perfil" : "Publicar perfil",
