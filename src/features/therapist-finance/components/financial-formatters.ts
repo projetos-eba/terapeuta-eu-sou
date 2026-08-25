@@ -108,6 +108,91 @@ export const financialStatusLabels: Record<TherapistFinancialStatus, string> = {
   refunded: "Reembolsado",
 };
 
+export type FinancialReceiptCopy = {
+  description: string;
+  emptyDescription: string;
+  emptyTitle: string;
+  title: string;
+};
+
+export const defaultFinancialReceiptCopy: FinancialReceiptCopy = {
+  description: "Veja cada recebimento, sua sessão e a forma de pagamento.",
+  emptyDescription:
+    "Quando uma sessão tiver pagamento confirmado, ela aparecerá aqui.",
+  emptyTitle: "Nenhum recebimento encontrado",
+  title: "Recebimentos do período",
+};
+
+export const financialReceiptCopyByStatus: Record<
+  TherapistFinancialStatus,
+  FinancialReceiptCopy
+> = {
+  canceled: {
+    description:
+      "Veja cada recebimento, a sessão cancelada e a forma de pagamento. Essa sessão não aconteceu.",
+    emptyDescription:
+      "Não há recebimentos cancelados neste período. Tente outro período ou limpe os filtros.",
+    emptyTitle: "Nenhum recebimento cancelado encontrado",
+    title: "Recebimentos cancelados",
+  },
+  disputed: {
+    description:
+      "Veja cada recebimento, a sessão e a forma de pagamento. O pagamento está sendo analisado.",
+    emptyDescription:
+      "Não há recebimentos em disputa neste período. Tente outro período ou limpe os filtros.",
+    emptyTitle: "Nenhum recebimento em disputa encontrado",
+    title: "Recebimentos em disputa",
+  },
+  failed: {
+    description:
+      "Veja cada recebimento, a sessão e a forma de pagamento. O pagamento não foi concluído.",
+    emptyDescription:
+      "Não há recebimentos com falha neste período. Tente outro período ou limpe os filtros.",
+    emptyTitle: "Nenhum recebimento com falha encontrado",
+    title: "Recebimentos com falha",
+  },
+  paid: {
+    description:
+      "Veja cada recebimento, a sessão e a forma de pagamento. O pagamento foi confirmado.",
+    emptyDescription:
+      "Não há recebimentos pagos neste período. Tente outro período ou limpe os filtros.",
+    emptyTitle: "Nenhum recebimento pago encontrado",
+    title: "Recebimentos pagos",
+  },
+  partially_refunded: {
+    description:
+      "Veja cada recebimento, a sessão e a forma de pagamento. Parte do valor foi devolvida ao cliente.",
+    emptyDescription:
+      "Não há recebimentos com reembolso parcial neste período. Tente outro período ou limpe os filtros.",
+    emptyTitle: "Nenhum recebimento com reembolso parcial encontrado",
+    title: "Recebimentos com reembolso parcial",
+  },
+  pending: {
+    description:
+      "Veja cada recebimento, a sessão e a forma de pagamento. O pagamento ainda aguarda confirmação.",
+    emptyDescription:
+      "Não há recebimentos pendentes neste período. Tente outro período ou limpe os filtros.",
+    emptyTitle: "Nenhum recebimento pendente encontrado",
+    title: "Recebimentos pendentes",
+  },
+  processing: {
+    description:
+      "Veja cada recebimento, a sessão e a forma de pagamento. O pagamento ainda está sendo processado.",
+    emptyDescription:
+      "Não há recebimentos em processamento neste período. Tente outro período ou limpe os filtros.",
+    emptyTitle: "Nenhum recebimento em processamento encontrado",
+    title: "Recebimentos em processamento",
+  },
+  refunded: {
+    description:
+      "Veja cada recebimento, a sessão e a forma de pagamento. O valor foi devolvido ao cliente.",
+    emptyDescription:
+      "Não há recebimentos reembolsados neste período. Tente outro período ou limpe os filtros.",
+    emptyTitle: "Nenhum recebimento reembolsado encontrado",
+    title: "Recebimentos reembolsados",
+  },
+};
+
 export const payoutStatusLabels: Record<TherapistPayoutStatus, string> = {
   batched: "Incluído no próximo repasse",
   blocked: "Bloqueado",

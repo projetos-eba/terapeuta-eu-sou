@@ -38,7 +38,7 @@ export function FinancialPayoutsTab({
   const hasRefunds = payouts.items.some((item) => item.refundedAmountCents > 0);
 
   return (
-    <div className="grid gap-5">
+    <div className="grid min-w-0 gap-5 [&>*]:min-w-0">
       <section
         aria-label="Resumo de repasses"
         className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"

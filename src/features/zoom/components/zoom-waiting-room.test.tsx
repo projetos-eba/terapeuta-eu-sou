@@ -5,6 +5,7 @@ import { ZoomWaitingRoom } from "./zoom-waiting-room";
 
 const baseProps = {
   actorRole: "patient" as const,
+  bookingId: "f2000000-0000-4000-8000-000000000001",
   isOnline: true,
   kind: "too_early" as const,
   onJoin: vi.fn(),
@@ -110,6 +111,14 @@ describe("ZoomWaitingRoom", () => {
       "top-1/2",
       "-translate-x-1/2",
       "-translate-y-1/2",
+    );
+  });
+
+  it("shows the booking ID below the participant name", () => {
+    render(<ZoomWaitingRoom {...baseProps} />);
+
+    expect(screen.getByTestId("booking-reference")).toHaveTextContent(
+      "ID: f2000000-0000-4000-8000-000000000001",
     );
   });
 

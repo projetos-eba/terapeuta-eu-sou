@@ -569,8 +569,10 @@ describe("TherapistProfileEditorPage", () => {
       }),
     );
     expect(
-      screen.getAllByText(/Alterações enviadas para revisão/).length,
-    ).toBeGreaterThan(0);
+      await screen.findByRole("dialog", {
+        name: "Publicação enviada com sucesso",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("creates a draft before publishing a complete first profile without local edits", async () => {
@@ -708,11 +710,64 @@ describe("TherapistProfileEditorPage", () => {
       );
     });
     expect(
-      screen.getAllByText(/Alterações enviadas para revisão/).length,
-    ).toBeGreaterThan(0);
+      await screen.findByRole("dialog", {
+        name: "Publicação enviada com sucesso",
+      }),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("dialog", { name: "Publicar alterações?" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows when the publication is waiting for administrative review", async () => {
+    const editorWithDraft = makeEditor({
+      draft: {
+        baseProfileVersion: 4,
+        contentVersionId: "draft-version",
+        fields: {
+          ...makeEditor().published.fields,
+          publicName: "Ana em análise",
+          shortIntro: "Conteúdo pronto para análise.",
+        },
+        publishedAt: null,
+        status: "draft",
+        updatedAt: "2026-07-28T13:00:00.000Z",
+      },
+    });
+    const submittedEditor = makeEditor({
+      derived: { publicStatus: "unpublished", verificationStatus: "submitted" },
+      draft: null,
+      published: {
+        ...makeEditor().published,
+        fields: editorWithDraft.draft!.fields,
+        updatedAt: "2026-07-28T14:00:00.000Z",
+      },
+      version: 5,
+    });
+    commandMocks.sendTherapistProfileCommand.mockResolvedValueOnce({
+      data: { editor: submittedEditor, idempotentReplay: false },
+      status: "success",
+    });
+
+    render(<TherapistProfileEditorPage editor={editorWithDraft} />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Publicar alterações" }),
+    );
+    const confirmation = await screen.findByRole("dialog", {
+      name: "Publicar alterações?",
+    });
+    fireEvent.click(
+      within(confirmation).getByRole("button", {
+        name: "Publicar alterações",
+      }),
+    );
+
+    expect(
+      await screen.findByRole("dialog", {
+        name: "Perfil enviado para análise",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("shows a readable version conflict and restores controls on mutation error", async () => {

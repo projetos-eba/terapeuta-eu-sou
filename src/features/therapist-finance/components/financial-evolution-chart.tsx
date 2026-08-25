@@ -59,7 +59,7 @@ export function FinancialEvolutionChart({
   return (
     <section
       aria-label="Evolução financeira"
-      className="grid gap-5 rounded-panel border border-brand-lavender bg-white p-5 shadow-card sm:p-6"
+      className="grid min-w-0 gap-5 overflow-hidden rounded-panel border border-brand-lavender bg-white p-5 shadow-card sm:p-6"
     >
       <div className="grid gap-4 xl:grid-cols-[minmax(190px,0.9fr)_minmax(0,1.7fr)_auto] xl:items-start">
         <div>
@@ -73,7 +73,10 @@ export function FinancialEvolutionChart({
         {highlights.length ? (
           <div className="grid gap-3 sm:grid-cols-3">
             {highlights.map((item) => (
-              <div className="grid grid-cols-[10px_minmax(0,1fr)] gap-x-2" key={item.label}>
+              <div
+                className="grid grid-cols-[10px_minmax(0,1fr)] gap-x-2"
+                key={item.label}
+              >
                 <span
                   aria-hidden="true"
                   className="mt-1.5 size-2.5 rounded-full"
@@ -113,7 +116,7 @@ export function FinancialEvolutionChart({
       </div>
 
       {hasData ? (
-        <div className="overflow-x-auto rounded-[14px] border border-brand-lavender/60 bg-surface-soft/55 px-2 py-4 sm:px-4">
+        <div className="min-w-0 overflow-x-auto rounded-[14px] border border-brand-lavender/60 bg-surface-soft/55 px-2 py-4 sm:px-4">
           <div
             aria-label="Gráfico com a evolução dos valores financeiros"
             className="h-[270px] min-w-[560px]"
@@ -236,7 +239,7 @@ function EmptyEvolutionChart({ message }: { message: string }) {
         className="absolute inset-x-6 inset-y-6 rounded-lg opacity-70 [background-image:linear-gradient(to_bottom,var(--tes-color-brand-lavender)_1px,transparent_1px)] [background-size:100%_25%]"
       />
       <div className="relative grid h-full place-items-center text-center">
-        <div className="max-w-sm rounded-xl border border-dashed border-brand-lavender bg-white/90 px-5 py-4 shadow-card">
+        <div className="min-w-0 max-w-full rounded-xl border border-dashed border-brand-lavender bg-white/90 px-5 py-4 shadow-card sm:max-w-sm">
           <p className="text-sm font-extrabold text-brand-deep">
             Ainda estamos reunindo sua evolução
           </p>

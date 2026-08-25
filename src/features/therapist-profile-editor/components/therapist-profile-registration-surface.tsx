@@ -24,7 +24,8 @@ import type {
   TherapistProfileEditorData,
   TherapistProfileVerificationStatus,
 } from "../therapist-profile-editor.types";
-import { ProfileSection } from "./profile-section";
+import { getTherapistProfileReviewReason } from "../therapist-profile-editor.mappers";
+import { ProfileReviewNotice, ProfileSection } from "./profile-section";
 
 export function TherapistProfileRegistrationSurface({
   editor,
@@ -54,6 +55,7 @@ export function TherapistProfileRegistrationSurface({
     },
   );
   const reviewStepState = reviewState(verificationStatus);
+  const reviewReason = getTherapistProfileReviewReason(editor);
 
   const steps = [
     {
@@ -109,6 +111,8 @@ export function TherapistProfileRegistrationSurface({
   return (
     <AppPageContainer className="gap-5">
       <AppPageHeader title={pageMode.title}>{pageMode.subtitle}</AppPageHeader>
+
+      {reviewReason ? <ProfileReviewNotice reason={reviewReason} /> : null}
 
       {pageMode.banner ? (
         <section className="rounded-card border border-status-success/35 bg-status-successBg p-4 sm:p-5">

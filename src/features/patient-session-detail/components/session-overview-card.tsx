@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { TESButton } from "@/components/tes/tes-button";
+import { BookingReference } from "@/features/bookings";
 import { routes } from "@/lib/routes";
 
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
@@ -56,6 +57,7 @@ export function SessionOverviewCard({
                 >
                   {data.therapist.name}
                 </h2>
+                <BookingReference id={data.booking.id} />
                 <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
                   {data.therapist.roleLabel}
                 </p>

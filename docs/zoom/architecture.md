@@ -48,6 +48,12 @@ câmera e conexão em desktop e mobile; `ZoomVideoControls` concentra preflight,
 áudio, vídeo, suporte e saída. Em mobile, o remoto é dominante, o self-view é
 contido e o dock respeita `100dvh`.
 
+Os eventos `user-added` e `user-updated` do SDK são deltas de participantes,
+não snapshots completos da sala. O adapter aplica esses deltas somente aos
+usuários presentes no payload; a lista completa de `getAllUser()` fica
+reservada para a reconciliação após join e reconexão. Assim, uma atualização do
+usuário local ao ligar sua câmera nunca remove o vídeo remoto já anexado.
+
 Antes do join, a sala de espera pode abrir uma prévia exclusivamente local no
 navegador: o teste de câmera solicita somente vídeo e substitui a capa visual;
 o teste de áudio solicita somente microfone e mostra um indicador local. Esses

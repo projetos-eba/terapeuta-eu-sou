@@ -1,6 +1,7 @@
 import Image from "next/image";
 
 import { TESButton } from "@/components/tes/tes-button";
+import { BookingReference } from "@/features/bookings";
 
 import { getEncounterGuidance } from "../patient-encounters.copy";
 import type { PatientEncounter } from "../patient-encounters.types";
@@ -20,6 +21,7 @@ export function EncounterRow({ encounter }: { encounter: PatientEncounter }) {
           <h3 className="truncate text-base font-extrabold text-brand-deep">
             {encounter.therapist.name}
           </h3>
+          <BookingReference id={encounter.id} />
           <p className="mt-1 text-sm font-bold leading-6 text-tesText-secondary">
             {encounter.serviceLabel}
           </p>

@@ -97,6 +97,49 @@ describe("TherapistServicesPage", () => {
     ).toHaveAttribute("src", "https://cdn.example.test/reiki-ranking.jpg");
   });
 
+  it("shows the service category and selected themes in an accessible tooltip", () => {
+    renderPage({
+      items: [
+        serviceFixture({
+          category: {
+            id: "c1000000-0000-4000-8000-000000000005",
+            name: "Energia e proteção",
+            slug: "energia-protecao",
+          },
+          matching: {
+            interestIds: [],
+            themeIds: [
+              "71000000-0000-4000-8000-000000000002",
+              "71000000-0000-4000-8000-000000000003",
+            ],
+          },
+          therapy: {
+            id: "22222222-2222-4222-8222-222222222229",
+            imageUrl: null,
+            isAvailableForServices: true,
+            isPubliclyVisible: true,
+            name: "Aromaterapia",
+            slug: "aromaterapia",
+            status: "published",
+          },
+          therapyId: "22222222-2222-4222-8222-222222222229",
+        }),
+      ],
+    });
+
+    expect(screen.getAllByText("Energia e proteção")).toHaveLength(2);
+    const moreThemes = screen.getByRole("button", {
+      name: /ver mais 2 temas/i,
+    });
+    expect(moreThemes).toHaveTextContent("+2");
+    expect(screen.getByRole("tooltip")).toHaveClass("hidden");
+
+    fireEvent.mouseEnter(moreThemes);
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Autoconhecimento");
+    expect(screen.getByRole("tooltip")).toHaveTextContent("Espiritualidade");
+  });
+
   it("contains an unbroken service description inside the card", () => {
     const longWord = "x".repeat(200);
     renderPage({ items: [serviceFixture({ description: longWord })] });
@@ -443,6 +486,20 @@ function catalogFixture(): TherapyCatalogContract {
             name: "Emoções e bem-estar",
             slug: "emocoes-bem-estar",
             sortOrder: 1,
+          },
+          {
+            id: "71000000-0000-4000-8000-000000000002",
+            interests: [],
+            name: "Autoconhecimento",
+            slug: "autoconhecimento",
+            sortOrder: 2,
+          },
+          {
+            id: "71000000-0000-4000-8000-000000000003",
+            interests: [],
+            name: "Espiritualidade",
+            slug: "espiritualidade",
+            sortOrder: 3,
           },
         ],
         name: "Aromaterapia",

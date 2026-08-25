@@ -64,6 +64,7 @@ export type TherapistPrivateDocumentSummary = {
 };
 
 export type TherapistProfileVerificationSummary = {
+  changesRequested?: string | null;
   id: string;
   rejectionReason: string | null;
   reviewedAt: string | null;

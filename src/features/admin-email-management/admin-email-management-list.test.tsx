@@ -74,4 +74,77 @@ describe("AdminEmailManagementList", () => {
       "/admin/configuracoes/emails/eventos/email_verification",
     );
   });
+
+  it("renders both booking reminder events in the Encontros category", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        json: async () => ({
+          data: {
+            actions: [
+              {
+                actionKey: "booking_reminder_24h_patient",
+                category: "Encontros",
+                description:
+                  "Lembra a pessoa sobre um encontro confirmado 24 horas antes do horário persistido.",
+                label: "Lembrete de encontro — 24 horas — pessoa",
+                setting: {
+                  automatic_dispatch_enabled: false,
+                  enabled: false,
+                  sender_profile_id: null,
+                },
+                supportsAutomaticDispatch: true,
+              },
+              {
+                actionKey: "booking_reminder_1h_patient",
+                category: "Encontros",
+                description:
+                  "Lembra a pessoa sobre um encontro confirmado 1 hora antes do horário persistido.",
+                label: "Lembrete de encontro — 1 hora — pessoa",
+                setting: {
+                  automatic_dispatch_enabled: false,
+                  enabled: false,
+                  sender_profile_id: null,
+                },
+                supportsAutomaticDispatch: true,
+              },
+            ],
+            logs: [],
+            senders: [
+              {
+                active: true,
+                display_name: "TES",
+                id: "sender-1",
+                is_default: true,
+                last_test_at: null,
+                last_test_status: null,
+                mailbox_address: "contato@example.test",
+                provider: "hostinger_mail_api",
+              },
+            ],
+          },
+          ok: true,
+        }),
+        ok: true,
+      })),
+    );
+
+    render(<AdminEmailManagementList />);
+
+    expect(await screen.findByText("Encontros")).toBeInTheDocument();
+    expect(
+      screen.getByText("Lembrete de encontro — 24 horas — pessoa"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Lembrete de encontro — 1 hora — pessoa"),
+    ).toBeInTheDocument();
+
+    const links = screen.getAllByRole("link", { name: /Configurar evento/i });
+    expect(links.map((link) => link.getAttribute("href"))).toEqual(
+      expect.arrayContaining([
+        "/admin/configuracoes/emails/eventos/booking_reminder_24h_patient",
+        "/admin/configuracoes/emails/eventos/booking_reminder_1h_patient",
+      ]),
+    );
+  });
 });

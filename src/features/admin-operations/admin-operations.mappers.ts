@@ -391,7 +391,9 @@ function getDetailSections(
       ]),
       section("Participantes", [
         field("Terapeuta", asText(record.therapist_name)),
+        field("ID do terapeuta", asText(record.therapist_profile_id)),
         field("Cliente", asText(record.patient_name)),
+        field("ID do cliente", asText(record.patient_profile_id)),
         field("Formato", formatMeetingMode(record.meeting_provider)),
       ]),
       section("Sala online", getVideoSessionLifecycleFields(videoSession)),

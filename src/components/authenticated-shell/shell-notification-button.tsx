@@ -23,6 +23,8 @@ import { cn } from "@/lib/utils";
 
 const POLL_INTERVAL_MS = 3_000;
 const TOAST_DURATION_MS = 8_000;
+const NOTIFICATION_PANEL_GUTTER_PX = 16;
+const NOTIFICATION_PANEL_MAX_WIDTH_PX = 22 * 16;
 
 type ShellNotification = {
   body: string | null;
@@ -142,8 +144,21 @@ export function ShellNotificationButton({
     if (!button) return;
 
     const rect = button.getBoundingClientRect();
+    const panelWidth = Math.min(
+      NOTIFICATION_PANEL_MAX_WIDTH_PX,
+      Math.max(0, window.innerWidth - NOTIFICATION_PANEL_GUTTER_PX * 2),
+    );
+    const desiredRight = Math.max(
+      NOTIFICATION_PANEL_GUTTER_PX,
+      window.innerWidth - rect.right,
+    );
+    const maximumRight = Math.max(
+      NOTIFICATION_PANEL_GUTTER_PX,
+      window.innerWidth - panelWidth - NOTIFICATION_PANEL_GUTTER_PX,
+    );
+
     setPanelPosition({
-      right: Math.max(16, window.innerWidth - rect.right),
+      right: Math.min(desiredRight, maximumRight),
       top: rect.bottom + 12,
     });
   }, []);

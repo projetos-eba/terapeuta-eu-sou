@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Route } from "next";
 
 import type { ZoomAccessState } from "@/domain/tes";
+import { BookingReference } from "@/features/bookings";
 
 import { ZoomVideoSessionAdapter } from "../zoom-video-session-adapter";
 
@@ -61,6 +62,7 @@ export function ZoomVideoCallPage({
               <p className="truncate text-xs font-semibold text-tesText-secondary lg:text-sm">
                 {participantLabel} · {scheduleLabel}
               </p>
+              <BookingReference className="max-w-[42ch]" id={bookingId} />
             </div>
           </div>
 

@@ -23,6 +23,7 @@ import {
   AppPageMain,
 } from "@/components/app-page/app-page";
 import {
+  BookingReference,
   formatSessionDateTime,
   formatSessionMoney,
   getSessionOperationDisabledReason,
@@ -153,6 +154,7 @@ function SessionOverview({
               <p className="text-xl font-semibold text-brand-deep sm:text-2xl">
                 {booking.patientName}
               </p>
+              <BookingReference id={booking.bookingId} />
               <p className="mt-1 text-sm text-tesText-secondary">
                 {booking.serviceTitle} · Atendimento online
               </p>

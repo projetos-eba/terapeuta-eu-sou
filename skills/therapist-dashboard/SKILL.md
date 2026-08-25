@@ -95,6 +95,10 @@ Não distribuir queries pelos componentes. A entrada única da página é
   requisitos pendentes, conta restrita ou desabilitada mantêm o checklist ativo.
   Depois que o onboarding for submetido, uma análise externa em andamento pode
   ser exibida como estado do cadastro sem bloquear a entrada.
+- A aprovação administrativa não compõe a pendência do percentual de cadastro:
+  `submitted` e `in_review` deixam o item de perfil completo, mas visivelmente
+  em análise. `changes_requested` e `rejected` voltam a ser pendência em estado
+  de atenção, e o link do perfil deve permitir ler a justificativa recebida.
 - Free/Premium com checklist essencial concluído recebem dashboard base com
   estados vazios úteis; não consultar o read model Premium Plus para esses
   planos.

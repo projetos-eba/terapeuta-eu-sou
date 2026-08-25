@@ -71,6 +71,11 @@ permanecem anexadas. Presença do participante e vídeo remoto anexado são
 asserts diferentes. Safari/iPhone e Chrome/Android reais são obrigatórios em
 HML; emulação de viewport Chromium não substitui esses gates.
 
+O teste de adapter deve reproduzir também o `user-updated` incremental emitido
+quando o paciente liga a própria câmera. Um payload contendo apenas o usuário
+local, ou uma atualização remota sem `bVideoOn`, não pode chamar `detachVideo`
+para o terapeuta nem substituir o tile remoto por “Aguardando”.
+
 Os testes temporais cobrem T-15, T+15, T+15+1 ms, reconexão autorizada e bloqueio
 em `scheduled_ends_at`. Para 17:45–18:35, o contador mostra 7 minutos antes do
 início às 17:38, 50 minutos às 17:45 e 40 minutos às 17:55. Alterar o watchdog

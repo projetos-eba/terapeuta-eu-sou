@@ -56,6 +56,7 @@ describe("AdminOperationalOverviewPage", () => {
 
     expect(html).toContain("Agenda de sessões");
     expect(html).toContain("Ana Oliveira");
+    expect(html).toContain("ID: session-1");
     expect(html).not.toContain("Booking session-1");
     expect(html).not.toContain("bookings");
   });

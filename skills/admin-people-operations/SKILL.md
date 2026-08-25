@@ -101,9 +101,10 @@ refresh, cópia de link e QA com Playwright.
   para assunto, solicitante, categoria, prioridade, status e detalhe.
 - Os resumos por status são derivados exclusivamente de `data.rows` e devem ser
   descritos como recorte da página atual, nunca como distribuição da base.
-- O identificador técnico `Booking` não deve ser renderizado na lista de
-  sessões. Referências internas continuam disponíveis apenas no detalhe quando
-  forem apresentadas em linguagem de produto.
+- O termo técnico `Booking` não deve ser renderizado na lista de sessões. O ID
+  completo da reserva, no entanto, aparece como `ID:` logo abaixo dos nomes de
+  profissional e cliente para diferenciar reservas repetidas; o mesmo
+  `bookingId` permanece disponível no detalhe.
 - Estados vazio, restrito e indisponível usam copy específica do módulo e não
   propagam mensagens recebidas da infraestrutura.
 - Os detalhes de Sessão e Suporte seguem a hierarquia visual dos detalhes de
@@ -112,8 +113,9 @@ refresh, cópia de link e QA com Playwright.
 - O detalhe de Sessão exibe agenda, duração, participantes, formato online,
   pagamento, estado, presença na sala, horários reais, motivo de encerramento,
   resumo de participação e acompanhamentos automáticos presentes no DTO seguro.
-  Identificadores do provedor, nome interno da sala, chaves, correlações e IDs de
-  perfil não aparecem na interface.
+  O ID do terapeuta e o ID do cliente aparecem junto aos respectivos nomes
+  como referência administrativa. Identificadores do provedor, nome interno da
+  sala, chaves e correlações permanecem ocultos.
 - O detalhe de Suporte exibe solicitante, categoria, prioridade, urgência,
   vínculo com reserva, rastreabilidade e os comandos já autorizados. Não
   inventar descrição, SLA, responsável ou conversa quando ausentes.

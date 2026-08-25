@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Loader2, UserCheck } from "lucide-react";
 
 import { TESFeedbackDialog } from "@/components/tes";
+import { BookingReference } from "@/features/bookings";
 
 type Management = {
   assignedAdminId: string | null;
@@ -220,6 +221,7 @@ export function AdminSupportManagementPanel({
             {data.booking.therapistName ?? "Terapeuta"} ·{" "}
             {data.booking.patientName ?? "Paciente"}
           </p>
+          <BookingReference id={data.booking.id} />
           <p className="mt-1 text-xs font-bold text-tesText-secondary">
             {statusLabel(data.booking.status)} · Pagamento{" "}
             {data.booking.paymentStatus}

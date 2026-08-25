@@ -68,10 +68,10 @@ export function FinancialSummaryTab({
       metrics.sessions.rescheduledCount > 0);
 
   return (
-    <div className="grid gap-6">
+    <div className="grid min-w-0 gap-6 [&>*]:min-w-0">
       <section
         aria-label="Panorama financeiro"
-        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 [&>*]:min-w-0"
       >
         {analytics.status === "locked" ? (
           <TherapistLockedCard
@@ -156,7 +156,7 @@ export function FinancialSummaryTab({
         )}
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)]">
+      <div className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,0.96fr)_minmax(0,1.04fr)] [&>*]:min-w-0">
         {analytics.status === "locked" ? (
           <TherapistLockedCard
             description="Acompanhe a composição e a evolução dos seus recebimentos com uma visão mais completa."
@@ -181,7 +181,7 @@ export function FinancialSummaryTab({
 
       <section
         aria-label="Leituras complementares"
-        className="grid gap-5 lg:grid-cols-2 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.82fr)_minmax(0,1.36fr)]"
+        className="grid min-w-0 gap-5 lg:grid-cols-2 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.82fr)_minmax(0,1.36fr)] [&>*]:min-w-0"
       >
         <TherapyRankingCard metrics={metrics} />
         <AverageTicketCard metrics={metrics} />

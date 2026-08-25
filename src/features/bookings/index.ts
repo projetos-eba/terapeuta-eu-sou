@@ -1,5 +1,6 @@
 export * from "./booking-actions";
 export * from "./booking-formatters";
+export * from "./components/booking-reference";
 export * from "./booking-status";
 export * from "./booking.types";
 export * from "./patient-encounter-actions";

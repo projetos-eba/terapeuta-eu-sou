@@ -38,7 +38,7 @@ export function FinancialAdvancedDashboard({
   return (
     <section
       aria-label="Visão financeira do Premium Plus"
-      className="grid gap-5"
+      className="grid min-w-0 gap-5 [&>*]:min-w-0"
     >
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <AdvancedMetricCard
