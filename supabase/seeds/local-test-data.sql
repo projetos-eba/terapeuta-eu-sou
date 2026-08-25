@@ -1455,7 +1455,6 @@ join public.matching_interests
 where matching_interests.is_active = true
 on conflict (therapist_service_id, interest_id) do nothing;
 
--- Premium Plus therapist dashboard demo data for Ana Oliveira.
 insert into public.bookings (
   id,
   patient_profile_id,

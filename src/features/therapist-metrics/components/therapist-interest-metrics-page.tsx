@@ -1,9 +1,4 @@
-import {
-  Heart,
-  Repeat2,
-  Sparkles,
-  UsersRound,
-} from "lucide-react";
+import { Heart, Repeat2, Sparkles, UsersRound } from "lucide-react";
 
 import {
   AppPageAside,
@@ -23,6 +18,11 @@ import type {
   TherapistMetricSampledValue,
 } from "../therapist-metrics.types";
 import { TherapistMetricsLayout } from "./therapist-metrics-layout";
+import {
+  DistributionDonut,
+  PeopleEvolutionChart,
+  TherapyBarsChart,
+} from "./therapist-metrics-charts";
 
 const segmentLabels = {
   active: "Ativas",
@@ -70,21 +70,25 @@ export function TherapistInterestMetricsPage({
             icon={Repeat2}
             label="Pessoas que voltaram"
             metric={data.summary.peopleReturned}
+            tone="primary"
           />
           <SampledCard
             icon={UsersRound}
             label="Taxa de retorno"
             metric={data.summary.returnRate}
+            tone="mint"
           />
           <SampledCard
             icon={Sparkles}
             label="Sessões por pessoa"
             metric={data.summary.sessionsPerPerson}
+            tone="warning"
           />
           <SampledCard
             icon={Heart}
             label="Novos favoritos do perfil"
             metric={data.summary.profileFavorites}
+            tone="danger"
           />
         </div>
       </section>
@@ -109,6 +113,7 @@ function SampledCard({
   icon: Icon,
   label,
   metric,
+  tone,
 }: {
   icon: typeof Repeat2;
   label: string;
@@ -117,9 +122,19 @@ function SampledCard({
     | TherapistMetricSampledValue<"people">
     | TherapistMetricSampledValue<"percent">
     | TherapistMetricSampledValue<"ratio">;
+  tone: "danger" | "mint" | "primary" | "warning";
 }) {
+  const styles = {
+    danger: "from-status-dangerBg/60 before:bg-status-danger",
+    mint: "from-status-successBg/70 before:bg-status-success",
+    primary: "from-brand-lavenderSoft/70 before:bg-brand-primary",
+    warning: "from-status-warningBg/65 before:bg-status-warning",
+  }[tone];
   return (
-    <TESCard as="article" className="grid min-h-[215px] content-between p-5">
+    <TESCard
+      as="article"
+      className={`relative grid min-h-[215px] content-between overflow-hidden border-brand-lavender/70 bg-gradient-to-b via-white to-white p-5 shadow-[0_14px_34px_rgba(57,45,90,0.06)] before:absolute before:inset-x-5 before:top-0 before:h-[3px] before:rounded-b-full ${styles}`}
+    >
       <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
         <Icon aria-hidden="true" size={21} />
       </span>
@@ -159,16 +174,15 @@ function Segments({ data }: { data: TherapistInterestMetricsReady }) {
         Os grupos não se repetem: cada pessoa aparece em apenas uma categoria.
       </p>
       {data.segments.status === "ready" ? (
-        <div className="mt-5 grid gap-4">
-          {data.segments.items.map((item) => (
-            <MetricBar
-              key={item.key}
-              label={segmentLabels[item.key]}
-              percentage={item.percentage}
-              value={`${item.value} (${formatPercent(item.percentage)})`}
-            />
-          ))}
-        </div>
+        <DistributionDonut
+          centerLabel={`${data.segments.observedSample} pessoas`}
+          compact
+          items={data.segments.items.map((item) => ({
+            label: segmentLabels[item.key],
+            value: item.value,
+          }))}
+          label="Distribuição das pessoas por continuidade"
+        />
       ) : (
         <ProtectedCollection collection={data.segments} />
       )}
@@ -188,13 +202,11 @@ function BaseEvolution({ data }: { data: TherapistInterestMetricsReady }) {
     );
   }
 
-  const maximum = Math.max(
-    1,
-    ...data.baseEvolution.items.map((point) => point.totalPeople),
-  );
-
   return (
-    <AppPageSection aria-labelledby="base-evolution-title">
+    <AppPageSection
+      className="relative min-w-0 overflow-hidden border-brand-lavender/70 bg-[radial-gradient(circle_at_94%_0%,var(--tes-color-brand-lavender-soft)_0%,transparent_36%),linear-gradient(180deg,#fff_0%,#fff_100%)] shadow-[0_14px_34px_rgba(57,45,90,0.06)]"
+      aria-labelledby="base-evolution-title"
+    >
       <h2
         className="text-xl font-extrabold text-brand-deep"
         id="base-evolution-title"
@@ -202,45 +214,12 @@ function BaseEvolution({ data }: { data: TherapistInterestMetricsReady }) {
         Evolução da base atendida
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        A linha visual compara o total acumulado de pessoas atendidas e as
-        primeiras sessões em blocos de sete dias.
+        Compare a base acompanhada e as novas pessoas em cada bloco do período.
+        Passe o cursor ou navegue pelo gráfico para ver os valores exatos.
       </p>
-      <div
-        aria-hidden="true"
-        className="mt-6 grid h-52 items-end gap-2 rounded-lg bg-surface-soft p-4"
-        style={{
-          gridTemplateColumns: `repeat(${data.baseEvolution.items.length}, minmax(24px, 1fr))`,
-        }}
-      >
-        {data.baseEvolution.items.map((point) => (
-          <div
-            className="flex h-full items-end gap-1"
-            key={point.date}
-            title={`${point.date}: ${point.totalPeople} pessoas no total; ${point.newPeople} novas`}
-          >
-            <span
-              className="block w-1/2 min-w-2 rounded-t-sm bg-brand-primary"
-              style={{
-                height: `${Math.max(3, (point.totalPeople / maximum) * 100)}%`,
-              }}
-            />
-            <span
-              className="block w-1/2 min-w-2 rounded-t-sm bg-brand-cyan"
-              style={{
-                height: `${Math.max(3, (point.newPeople / maximum) * 100)}%`,
-              }}
-            />
-          </div>
-        ))}
+      <div className="mt-5">
+        <PeopleEvolutionChart points={data.baseEvolution.items} />
       </div>
-      <ul className="sr-only">
-        {data.baseEvolution.items.map((point) => (
-          <li key={point.date}>
-            {point.date}: {point.totalPeople} pessoas no total e{" "}
-            {point.newPeople} novas.
-          </li>
-        ))}
-      </ul>
     </AppPageSection>
   );
 }
@@ -338,16 +317,12 @@ function TherapyReturn({ data }: { data: TherapistInterestMetricsReady }) {
         compara o retorno com a própria oferta.
       </p>
       {data.therapyReturn.status === "ready" ? (
-        <div className="mt-5 grid gap-4">
-          {data.therapyReturn.items.map((item) => (
-            <MetricBar
-              key={item.therapyId}
-              label={item.therapyName}
-              percentage={item.returnRate}
-              value={`${item.returnedPeople} de ${item.people}`}
-            />
-          ))}
-        </div>
+        <TherapyBarsChart
+          items={data.therapyReturn.items.map((item) => ({
+            name: item.therapyName,
+            value: item.returnRate,
+          }))}
+        />
       ) : (
         <ProtectedCollection collection={data.therapyReturn} />
       )}
@@ -442,33 +417,6 @@ function ProtectedSummary({
       <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
         Disponível a partir de {minimum} registros. Até agora, temos {observed}.
       </p>
-    </div>
-  );
-}
-
-function MetricBar({
-  label,
-  percentage,
-  value,
-}: {
-  label: string;
-  percentage: number;
-  value: string;
-}) {
-  return (
-    <div>
-      <div className="flex items-end justify-between gap-4">
-        <span className="text-sm font-bold text-tesText-secondary">
-          {label}
-        </span>
-        <span className="text-sm font-extrabold text-brand-deep">{value}</span>
-      </div>
-      <div className="mt-2 h-2 overflow-hidden rounded-full bg-brand-lavenderSoft">
-        <span
-          className="block h-full rounded-full bg-brand-primary"
-          style={{ width: `${Math.max(2, percentage)}%` }}
-        />
-      </div>
     </div>
   );
 }

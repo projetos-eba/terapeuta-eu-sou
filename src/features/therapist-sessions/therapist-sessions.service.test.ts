@@ -90,6 +90,7 @@ function sessionsResponse(profileId = therapistProfileId) {
       serviceId: null,
     },
     items: [],
+    summary: null,
     page: {
       hasMore: false,
       limit: 20,

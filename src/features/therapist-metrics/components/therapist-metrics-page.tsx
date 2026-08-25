@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   AlertCircle,
+  ArrowRight,
   CalendarCheck2,
   Clock3,
   Eye,
@@ -24,10 +25,12 @@ import type {
   TherapistInterestMetricsReady,
   TherapistMetricCounter,
   TherapistMetricsDashboard,
+  TherapistMetricsDashboardView,
   TherapistMetricsOverview,
 } from "../therapist-metrics.types";
 import {
   DistributionDonut,
+  type MetricChartTone,
   MetricSparkline,
   MetricsFunnel,
   MetricsHeatmap,
@@ -39,13 +42,47 @@ import { TherapistMetricsLayout } from "./therapist-metrics-layout";
 export function TherapistMetricsPage({
   data,
 }: {
-  data: TherapistMetricsDashboard;
+  data: TherapistMetricsDashboard | TherapistMetricsDashboardView;
 }) {
   const { overview, sessions, occupancy, interest } = data;
-  const sparkline = overview.activity.points.map((point) => ({
-    label: point.date,
-    value: point.sessionsCompleted,
+  const sessionComparison =
+    "sessionEvolutionComparison" in data
+      ? data.sessionEvolutionComparison
+      : {
+          meta: data.meta,
+          points: overview.activity.points.map((point, index) => ({
+            current: point.sessionsCompleted,
+            currentDate: point.date,
+            index,
+            previous: 0,
+            previousDate: point.date,
+          })),
+          status: overview.activity.status,
+        };
+  const sparkline = aggregateSparklineToThree(
+    overview.activity.points.map((point) => ({
+      label: point.date,
+      value: point.sessionsCompleted,
+    })),
+  );
+  const occupancySparkline =
+    occupancy.status === "ready"
+      ? aggregateOccupancyToThree(occupancy.series)
+      : [];
+  const comparisonPoints = sessionComparison.points.map((point) => ({
+    date: point.currentDate,
+    previous: point.previous,
+    previousDate: point.previousDate,
+    sessionsCompleted: point.current,
   }));
+  const currentPeriodLabel = `Atual · ${formatPeriodRange(
+    sessionComparison.meta.periodStart,
+    sessionComparison.meta.periodEnd,
+  )}`;
+  const previousPeriodLabel = `Anterior · ${formatPeriodRange(
+    sessionComparison.meta.previousPeriodStart,
+    sessionComparison.meta.previousPeriodEnd,
+  )}`;
   const interestData = isInterestReady(interest) ? interest : null;
   const returnRate = interestData?.summary.returnRate ?? null;
   const topTherapy = overview.therapyRanking.items[0];
@@ -105,13 +142,6 @@ export function TherapistMetricsPage({
           state: "unavailable" as const,
           value: "—",
         };
-  const heatmapPoints =
-    sessions.heatmap.status === "ready"
-      ? sessions.heatmap.items.map((point) => ({
-          ...point,
-          value: point.sessions,
-        }))
-      : [];
   const comparisonItems = [
     comparisonReference(
       "Visualizações do perfil",
@@ -155,6 +185,7 @@ export function TherapistMetricsPage({
           "Histórico da agenda em formação",
         ),
   ];
+  const hasAnyActivity = dashboardHasActivity(data);
 
   return (
     <TherapistMetricsLayout meta={data.meta} tab="overview">
@@ -170,6 +201,7 @@ export function TherapistMetricsPage({
             label="Visualizações do perfil"
             sparkline={[]}
             state={profileViews.state}
+            tone="primary"
             value={profileViews.value}
           />
           <MetricsKpiCard
@@ -178,6 +210,7 @@ export function TherapistMetricsPage({
             label="Interessados em agendar"
             sparkline={[]}
             state={bookingStarts.state}
+            tone="mint"
             value={bookingStarts.value}
           />
           <MetricsKpiCard
@@ -187,6 +220,7 @@ export function TherapistMetricsPage({
             icon={CalendarCheck2}
             label="Sessões realizadas"
             sparkline={sparkline}
+            tone="cyan"
             value={formatMetricValue(
               overview.counters.sessionsCompleted.value,
               "sessions",
@@ -206,6 +240,7 @@ export function TherapistMetricsPage({
               label="Taxa de retorno"
               sparkline={[]}
               state={returnRateKpi.state}
+              tone="warning"
               value={returnRateKpi.value}
             />
           )}
@@ -213,15 +248,9 @@ export function TherapistMetricsPage({
             copy={occupancyKpi.copy}
             icon={Clock3}
             label="Ocupação da agenda"
-            sparkline={
-              occupancy.status === "ready"
-                ? occupancy.series.map((point) => ({
-                    label: point.date,
-                    value: point.percentage ?? 0,
-                  }))
-                : []
-            }
+            sparkline={occupancySparkline}
             state={occupancyKpi.state}
+            tone="primary"
             value={occupancyKpi.value}
           />
           <MetricsKpiCard
@@ -230,16 +259,25 @@ export function TherapistMetricsPage({
             label="Terapia mais realizada"
             sparkline={sparkline}
             state={therapyKpi.state}
+            tone="danger"
             value={therapyKpi.value}
           />
         </div>
+        <p className="mt-3 rounded-card border border-brand-cyan/20 bg-gradient-to-r from-brand-cyanSoft via-white to-status-successBg/60 px-4 py-3 text-sm font-semibold leading-5 text-tesText-secondary">
+          {hasAnyActivity
+            ? "Os indicadores usam somente períodos completos e dados agregados do seu próprio trabalho."
+            : "Seus indicadores começam a ser preenchidos conforme o perfil recebe movimento, a agenda é utilizada e as sessões são concluídas."}
+        </p>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.1fr)]">
+      <MetricsAgendaSummary data={data} />
+
+      <div className="grid gap-5 lg:grid-cols-2">
         <MetricPanel
-          description="Veja em que ponto os eventos de descoberta podem ser medidos com segurança."
+          description="A jornada agregada desde a visualização do perfil até a sessão concluída."
           icon={Eye}
           title="Funil de conversão"
+          tone="primary"
         >
           <MetricsFunnel
             stages={[
@@ -268,124 +306,113 @@ export function TherapistMetricsPage({
           />
           {overview.discovery.status !== "ready" ? (
             <MetricsVisualFootnote>
-              A estrutura do funil já está pronta. Os números aparecem após a
-              ativação formal da coleta pública.
+              A estrutura do funil está pronta. Os números de descoberta só
+              aparecem após a ativação formal e segura dessa coleta.
             </MetricsVisualFootnote>
           ) : null}
         </MetricPanel>
 
-        <MetricsAgendaSummary data={data} />
-      </div>
-
-      <MetricPanel
-        description={`Sessões concluídas nos últimos ${data.meta.periodDays} dias completos, com o dia atual fora da comparação.`}
-        icon={CalendarCheck2}
-        title="Evolução das sessões"
-      >
-        <SessionsEvolutionChart
-          empty={overview.activity.status !== "ready"}
-          points={overview.activity.points}
-        />
-      </MetricPanel>
-
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]">
         <MetricPanel
-          description="Grupos de continuidade são mostrados separadamente e não formam uma distribuição única."
-          icon={UsersRound}
-          title="Pessoas acompanhadas"
-        >
-          <PatientContinuityCards
-            interest={interestData}
-            plan={data.therapist.plan}
-          />
-        </MetricPanel>
-
-        <MetricPanel
-          description="Terapias com mais sessões concluídas no período. A leitura não representa procura."
-          icon={Star}
-          title="Top terapias"
-        >
-          <TherapyRankingTable
-            empty={sessions.therapyDistribution.status !== "ready"}
-            items={sessions.therapyDistribution.items}
-          />
-        </MetricPanel>
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <MetricPanel
-          description="Concentração das sessões concluídas por dia e faixa de horário, no seu fuso."
-          icon={Clock3}
-          title="Melhores dias e horários"
-        >
-          <MetricsHeatmap
-            emptyMessage="A grade será preenchida conforme as sessões forem concluídas."
-            points={heatmapPoints}
-            valueLabel="sessões"
-          />
-        </MetricPanel>
-
-        <MetricPanel
-          description="Comparação com o seu próprio período anterior, sem benchmark entre profissionais."
-          icon={RefreshCw}
-          title="Comparativo com o período anterior"
-        >
-          {data.therapist.plan === TherapistPlan.Premium ? (
-            <TherapistLockedCard
-              description="Compare seus períodos e encontre leituras adicionais da sua prática quando estiver pronto para esse próximo passo."
-              requiredPlan={TherapistPlan.PremiumPlus}
-              title="Leituras comparativas"
-              variant="section"
-            />
-          ) : (
-            <MetricsComparison items={comparisonItems} />
-          )}
-        </MetricPanel>
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <MetricPanel
-          description="A classificação por abordagem ainda não faz parte do contrato de dados disponível nesta visão."
-          icon={Sparkles}
-          title="Demanda por abordagem"
-        >
-          <DistributionDonut
-            centerLabel="0 sessões"
-            empty
-            emptyMessage="A visualização será ativada quando houver uma classificação autorizada por abordagem."
-            items={[]}
-            label="Demanda por abordagem"
-          />
-        </MetricPanel>
-
-        <MetricPanel
-          description="Situação final registrada para as sessões do período."
+          description={`Sessões concluídas nos últimos ${data.meta.periodDays} dias completos, sem incluir o dia atual.`}
           icon={CalendarCheck2}
-          title="Resultados das sessões"
+          title="Evolução das sessões"
+          tone="cyan"
         >
-          <DistributionDonut
-            centerLabel={`${sessions.outcomeDistribution.observedSample} sessões`}
-            empty={sessions.outcomeDistribution.status !== "ready"}
-            emptyMessage="A rosca mostra a composição das sessões quando houver base suficiente."
-            items={sessions.outcomeDistribution.items.map((item) => ({
-              label: item.label,
-              value: item.value,
-            }))}
-            label="Distribuição dos resultados das sessões"
+          <SessionsEvolutionChart
+            currentPeriodLabel={currentPeriodLabel}
+            empty={sessionComparison.status === "empty"}
+            points={comparisonPoints}
+            previousPeriodLabel={previousPeriodLabel}
           />
         </MetricPanel>
       </div>
 
-      <AppPageSection className="grid gap-4 border-brand-lavender/80 bg-surface-soft/70 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start">
+      {hasAnyActivity ? (
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]">
+          <MetricPanel
+            description="Grupos de continuidade são mostrados separadamente e não formam uma distribuição única."
+            icon={UsersRound}
+            title="Pessoas acompanhadas"
+            tone="mint"
+          >
+            <PatientContinuityCards
+              interest={interestData}
+              peopleServed={overview.counters.peopleServed}
+              plan={data.therapist.plan}
+            />
+          </MetricPanel>
+
+          <MetricPanel
+            description="Terapias com mais sessões concluídas no período. Esta leitura não representa procura."
+            icon={Star}
+            title="Top terapias"
+            tone="warning"
+          >
+            <TherapyRankingTable
+              empty={sessions.therapyDistribution.status !== "ready"}
+              items={sessions.therapyDistribution.items}
+            />
+          </MetricPanel>
+        </div>
+      ) : (
+        <MetricsPreviewGrid />
+      )}
+
+      {hasAnyActivity ? (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <MetricPanel
+            description="Comparação com o seu próprio período anterior, sem benchmark entre profissionais."
+            icon={RefreshCw}
+            title="Comparativo com o período anterior"
+            tone="cyan"
+          >
+            {data.therapist.plan === TherapistPlan.Premium ? (
+              <TherapistLockedCard
+                description="Compare seus períodos e encontre leituras adicionais da sua prática quando estiver pronto para esse próximo passo."
+                requiredPlan={TherapistPlan.PremiumPlus}
+                title="Leituras comparativas"
+                variant="section"
+              />
+            ) : (
+              <MetricsComparison items={comparisonItems} />
+            )}
+          </MetricPanel>
+
+          <MetricPanel
+            description="Situação final registrada para as sessões do período."
+            icon={CalendarCheck2}
+            title="Resultados das sessões"
+            tone="danger"
+          >
+            <DistributionDonut
+              centerLabel={`${sessions.outcomeDistribution.observedSample} sessões`}
+              empty={sessions.outcomeDistribution.status !== "ready"}
+              emptyMessage="A composição aparece quando houver base suficiente para preservar a privacidade."
+              items={sessions.outcomeDistribution.items.map((item) => ({
+                label: item.label,
+                value: item.value,
+              }))}
+              label="Distribuição dos resultados das sessões"
+            />
+          </MetricPanel>
+        </div>
+      ) : null}
+
+      <AppPageSection className="grid gap-4 border-brand-lavender/80 bg-gradient-to-r from-brand-lavenderSoft/70 to-surface-soft/60 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-start">
         <Info className="text-brand-primary" size={24} />
         <div>
           <h2 className="text-lg font-extrabold text-brand-deep">
-            Como estes números são calculados
+            Como interpretar este painel
           </h2>
           <p className="mt-2 max-w-4xl text-sm font-semibold leading-6 text-tesText-secondary">
+            Observe tendências ao longo do tempo, use a ocupação para organizar
+            sua disponibilidade e acompanhe a continuidade sem comparar seu
+            trabalho ao de outros profissionais.
+          </p>
+          <p className="mt-2 max-w-4xl text-sm font-semibold leading-6 text-tesText-secondary">
             O dia atual fica de fora para evitar comparações incompletas. Alguns
-            dados só aparecem quando há pelo menos dez registros, e a ocupação
-            só é mostrada quando o histórico da agenda está completo.
+            dados só aparecem com pelo menos dez registros e a ocupação exige
+            histórico completo da agenda.
           </p>
         </div>
       </AppPageSection>
@@ -393,12 +420,77 @@ export function TherapistMetricsPage({
   );
 }
 
+const metricToneStyles: Record<
+  MetricChartTone,
+  {
+    accent: string;
+    glow: string;
+    icon: string;
+    line: string;
+    panel: string;
+    pill: string;
+    surface: string;
+  }
+> = {
+  cyan: {
+    accent: "before:bg-brand-cyan",
+    glow: "bg-brand-cyan/25",
+    icon: "bg-brand-cyanSoft text-brand-cyan",
+    line: "bg-brand-cyan",
+    panel:
+      "bg-[radial-gradient(circle_at_92%_0%,var(--tes-color-brand-cyan-soft)_0%,transparent_38%),linear-gradient(180deg,var(--tes-color-surface-default)_0%,var(--tes-color-surface-default)_100%)]",
+    pill: "bg-brand-cyanSoft text-status-info",
+    surface: "from-brand-cyanSoft/70",
+  },
+  danger: {
+    accent: "before:bg-status-danger",
+    glow: "bg-status-danger/15",
+    icon: "bg-status-dangerBg text-status-danger",
+    line: "bg-status-danger",
+    panel:
+      "bg-[radial-gradient(circle_at_92%_0%,var(--tes-color-status-danger-bg)_0%,transparent_38%),linear-gradient(180deg,var(--tes-color-surface-default)_0%,var(--tes-color-surface-default)_100%)]",
+    pill: "bg-status-dangerBg text-status-danger",
+    surface: "from-status-dangerBg/55",
+  },
+  mint: {
+    accent: "before:bg-status-success",
+    glow: "bg-brand-mint/35",
+    icon: "bg-status-successBg text-status-success",
+    line: "bg-status-success",
+    panel:
+      "bg-[radial-gradient(circle_at_92%_0%,var(--tes-color-status-success-bg)_0%,transparent_38%),linear-gradient(180deg,var(--tes-color-surface-default)_0%,var(--tes-color-surface-default)_100%)]",
+    pill: "bg-status-successBg text-status-success",
+    surface: "from-status-successBg/65",
+  },
+  primary: {
+    accent: "before:bg-brand-primary",
+    glow: "bg-brand-lavender/45",
+    icon: "bg-brand-lavenderSoft text-brand-primary",
+    line: "bg-brand-primary",
+    panel:
+      "bg-[radial-gradient(circle_at_92%_0%,var(--tes-color-brand-lavender-soft)_0%,transparent_40%),linear-gradient(180deg,var(--tes-color-surface-default)_0%,var(--tes-color-surface-default)_100%)]",
+    pill: "bg-brand-lavenderSoft text-brand-primary",
+    surface: "from-brand-lavenderSoft/65",
+  },
+  warning: {
+    accent: "before:bg-status-warning",
+    glow: "bg-status-warning/15",
+    icon: "bg-status-warningBg text-status-warning",
+    line: "bg-status-warning",
+    panel:
+      "bg-[radial-gradient(circle_at_92%_0%,var(--tes-color-status-warning-bg)_0%,transparent_38%),linear-gradient(180deg,var(--tes-color-surface-default)_0%,var(--tes-color-surface-default)_100%)]",
+    pill: "bg-status-warningBg text-status-warning",
+    surface: "from-status-warningBg/60",
+  },
+};
+
 function MetricsKpiCard({
   copy,
   icon: Icon,
   label,
   sparkline,
   state = "ready",
+  tone = "primary",
   value,
 }: {
   copy: string;
@@ -406,6 +498,7 @@ function MetricsKpiCard({
   label: string;
   sparkline: Array<{ label: string; value: number }>;
   state?: "empty" | "forming" | "ready" | "unavailable";
+  tone?: MetricChartTone;
   value: string;
 }) {
   const isUnavailable = state === "unavailable";
@@ -416,14 +509,18 @@ function MetricsKpiCard({
     ready: null,
     unavailable: "Indisponível",
   }[state];
+  const toneStyles = metricToneStyles[tone];
 
   return (
     <TESCard
       as="article"
-      className="flex min-h-[174px] min-w-0 flex-col border-brand-lavender/90 p-3 sm:min-h-[214px] sm:p-5"
+      className={`relative flex min-h-[174px] min-w-0 flex-col overflow-hidden border-brand-lavender/70 bg-gradient-to-b ${toneStyles.surface} via-white to-white p-3 shadow-[0_14px_34px_rgba(57,45,90,0.07)] before:absolute before:inset-x-5 before:top-0 before:h-[3px] before:rounded-b-full sm:min-h-[214px] sm:p-5 ${toneStyles.accent}`}
+      data-tone={tone}
     >
       <div className="flex min-h-11 items-start gap-2.5">
-        <span className="grid size-9 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+        <span
+          className={`grid size-9 shrink-0 place-items-center rounded-[13px] ${toneStyles.icon}`}
+        >
           <Icon aria-hidden="true" size={18} />
         </span>
         <h3 className="text-sm font-extrabold leading-5 text-brand-deep">
@@ -442,7 +539,9 @@ function MetricsKpiCard({
         {value}
       </p>
       {stateLabel ? (
-        <span className="mt-2 inline-flex min-h-7 w-fit items-center rounded-full bg-brand-lavenderSoft px-2.5 text-xs font-extrabold text-brand-primary">
+        <span
+          className={`mt-2 inline-flex min-h-7 w-fit items-center rounded-full px-2.5 text-xs font-extrabold ${toneStyles.pill}`}
+        >
           {stateLabel}
         </span>
       ) : null}
@@ -455,10 +554,67 @@ function MetricsKpiCard({
           data={sparkline}
           empty={state !== "ready" || sparkline.length < 2}
           label={`Tendência de ${label}`}
+          tone={tone}
         />
       </div>
     </TESCard>
   );
+}
+
+export function aggregateSparklineToThree(
+  points: Array<{ label: string; value: number }>,
+) {
+  return aggregateToThree(points, (group) =>
+    group.reduce((total, point) => total + point.value, 0),
+  );
+}
+
+function aggregateOccupancyToThree(
+  points: Array<{
+    date: string;
+    occupiedMinutes: number;
+    offeredMinutes: number;
+  }>,
+) {
+  return aggregateToThree(
+    points.map((point) => ({
+      label: point.date,
+      occupiedMinutes: point.occupiedMinutes,
+      offeredMinutes: point.offeredMinutes,
+      value: 0,
+    })),
+    (group) => {
+      const offered = group.reduce(
+        (total, point) => total + point.offeredMinutes,
+        0,
+      );
+      const occupied = group.reduce(
+        (total, point) => total + point.occupiedMinutes,
+        0,
+      );
+      return offered === 0 ? 0 : (occupied / offered) * 100;
+    },
+  );
+}
+
+function aggregateToThree<T extends { label: string; value: number }>(
+  points: T[],
+  value: (group: T[]) => number,
+) {
+  if (points.length === 0) return [];
+  const groups = Math.min(3, points.length);
+  return Array.from({ length: groups }, (_, index) => {
+    const start = Math.floor((index * points.length) / groups);
+    const end = Math.floor(((index + 1) * points.length) / groups);
+    const group = points.slice(start, end);
+    return {
+      label:
+        group.length === 1
+          ? group[0].label
+          : `${group[0].label}–${group[group.length - 1].label}`,
+      value: value(group),
+    };
+  });
 }
 
 function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
@@ -471,65 +627,216 @@ function MetricsAgendaSummary({ data }: { data: TherapistMetricsDashboard }) {
         }))
       : [];
   const highlights = agendaHighlights(heatmapPoints);
+  const occupancyPercentage =
+    occupancy.status === "ready" &&
+    occupancy.current.percentage !== null &&
+    occupancy.current.offeredMinutes > 0
+      ? occupancy.current.percentage
+      : null;
+  const occupancyReady = occupancyPercentage !== null;
+
   return (
-    <MetricPanel
-      description="Uma leitura compacta da capacidade e da concentração das sessões no período."
-      icon={Clock3}
-      title="Resumo da agenda"
-    >
-      <div className="grid gap-5 lg:grid-cols-[minmax(190px,0.72fr)_minmax(0,1fr)] lg:items-start">
-        <dl className="grid gap-3">
-          <AgendaStat
-            label="Total de sessões"
-            value={formatMetricValue(
-              data.overview.counters.sessionsCompleted.value,
-              "sessions",
-            )}
-          />
-          <AgendaStat
-            label="Taxa de ocupação"
-            value={
-              occupancy.status === "ready" &&
-              occupancy.current.percentage !== null
-                ? `${formatNumber(occupancy.current.percentage)}%`
-                : occupancy.status === "forming"
-                  ? "Em formação"
-                  : "Sem base"
+    <AppPageSection className="min-w-0 overflow-hidden border-brand-cyan/25 bg-gradient-to-br from-white via-white to-brand-cyanSoft/55 p-4 sm:p-6">
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="grid size-10 shrink-0 place-items-center rounded-[14px] bg-brand-cyanSoft text-status-info">
+            <Clock3 aria-hidden="true" size={21} />
+          </span>
+          <div>
+            <h2 className="text-lg font-extrabold text-brand-deep sm:text-xl">
+              Agenda e horários
+            </h2>
+            <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
+              Entenda como sua disponibilidade está sendo utilizada e em quais
+              horários as sessões se concentram.
+            </p>
+          </div>
+        </div>
+        <Link
+          className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          href={routes.therapist.agenda}
+        >
+          Gerenciar agenda
+          <ArrowRight aria-hidden="true" size={17} />
+        </Link>
+      </div>
+
+      <div className="grid divide-y divide-brand-lavender/70 lg:grid-cols-[minmax(220px,0.72fr)_minmax(0,1.35fr)_minmax(210px,0.72fr)] lg:divide-x lg:divide-y-0">
+        <div className="min-w-0 py-4 lg:py-0 lg:pr-6">
+          <p className="text-sm font-extrabold text-brand-deep">
+            Ocupação da agenda
+          </p>
+          <DistributionDonut
+            centerLabel={`${formatNumber(occupancyPercentage ?? 0)}%`}
+            compact
+            empty={!occupancyReady}
+            emptyMessage={
+              occupancy.status === "forming"
+                ? `Histórico em formação: ${occupancy.coverageDays} de ${occupancy.requiredCoverageDays} dias cobertos.`
+                : "Publique horários e receba agendamentos para formar esta leitura."
             }
+            items={
+              occupancyPercentage === null
+                ? []
+                : [
+                    { label: "Ocupado", value: occupancyPercentage },
+                    {
+                      label: "Disponível",
+                      value: Math.max(0, 100 - occupancyPercentage),
+                    },
+                  ]
+            }
+            label="Ocupação da agenda"
+            palette="occupancy"
+            valueSuffix="%"
           />
-          <AgendaStat label="Melhores dias" value={highlights.bestDays} />
-          <AgendaStat label="Horários de pico" value={highlights.peakHour} />
-          <AgendaStat label="Horários ociosos" value={highlights.quietHour} />
-        </dl>
-        <div className="min-w-0">
-          <p className="mb-3 text-xs font-extrabold text-brand-primary">
-            Ocupação por dia e horário
+        </div>
+
+        <div className="min-w-0 py-5 lg:px-6 lg:py-0">
+          <p className="mb-3 text-sm font-extrabold text-brand-deep">
+            Intensidade das sessões por dia e horário
           </p>
           <MetricsHeatmap
-            emptyMessage="A leitura por horário aparece conforme a agenda cria histórico suficiente."
+            emptyMessage="A grade será preenchida conforme as sessões forem concluídas no período."
             points={heatmapPoints}
             valueLabel="sessões"
           />
         </div>
+
+        <div className="min-w-0 py-4 lg:py-0 lg:pl-6">
+          <p className="text-sm font-extrabold text-brand-deep">
+            Leitura do período
+          </p>
+          <dl className="mt-4 grid gap-4">
+            <AgendaStat
+              label="Sessões concluídas"
+              tone="cyan"
+              value={formatMetricValue(
+                data.overview.counters.sessionsCompleted.value,
+                "sessions",
+              )}
+            />
+            <AgendaStat
+              label="Melhores dias"
+              tone="mint"
+              value={highlights.bestDays}
+            />
+            <AgendaStat
+              label="Horários de pico"
+              tone="warning"
+              value={highlights.peakHour}
+            />
+            <AgendaStat
+              label="Horários ociosos"
+              tone="primary"
+              value={highlights.quietHour}
+            />
+          </dl>
+        </div>
       </div>
-    </MetricPanel>
+    </AppPageSection>
   );
 }
 
-function AgendaStat({ label, value }: { label: string; value: string }) {
+function AgendaStat({
+  label,
+  tone,
+  value,
+}: {
+  label: string;
+  tone: MetricChartTone;
+  value: string;
+}) {
+  const toneStyles = metricToneStyles[tone];
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 rounded-card bg-white/80 p-2.5 shadow-[0_8px_20px_rgba(57,45,90,0.05)]">
       <span
-        aria-hidden="true"
-        className="size-8 shrink-0 rounded-full bg-brand-lavenderSoft"
-      />
+        className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-extrabold ${toneStyles.icon}`}
+      >
+        •
+      </span>
       <div className="min-w-0">
-        <dt className="text-sm font-bold text-brand-primary">{label}</dt>
+        <dt className="text-sm font-bold text-tesText-secondary">{label}</dt>
         <dd className="mt-0.5 break-words text-sm font-extrabold text-brand-deep">
           {value}
         </dd>
       </div>
     </div>
+  );
+}
+
+function MetricsPreviewGrid() {
+  const previews = [
+    {
+      copy: "Acompanhe o volume de sessões ao longo dos períodos.",
+      icon: CalendarCheck2,
+      title: "Evolução das sessões",
+      tone: "cyan" as const,
+    },
+    {
+      copy: "Veja quais terapias concentram as sessões concluídas.",
+      icon: Star,
+      title: "Top terapias",
+      tone: "warning" as const,
+    },
+    {
+      copy: "Compare o período selecionado com o período anterior.",
+      icon: RefreshCw,
+      title: "Comparativo de períodos",
+      tone: "primary" as const,
+    },
+    {
+      copy: "Entenda a composição dos resultados registrados.",
+      icon: UsersRound,
+      title: "Resultados das sessões",
+      tone: "mint" as const,
+    },
+  ];
+
+  return (
+    <section aria-labelledby="metrics-preview-title">
+      <div className="mb-4">
+        <h2
+          className="font-display text-[30px] font-light italic leading-tight text-brand-deep sm:text-[36px]"
+          id="metrics-preview-title"
+        >
+          O que aparecerá com seu histórico
+        </h2>
+        <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+          As análises abaixo ganham forma sem dados de exemplo, conforme o seu
+          movimento real aumenta.
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {previews.map(({ copy, icon: Icon, title, tone }) => {
+          const toneStyles = metricToneStyles[tone];
+          return (
+            <TESCard
+              as="article"
+              className={`relative min-w-0 overflow-hidden border-brand-lavender/60 bg-gradient-to-b ${toneStyles.surface} to-white p-4 before:absolute before:inset-x-4 before:top-0 before:h-[3px] before:rounded-b-full ${toneStyles.accent}`}
+              key={title}
+            >
+              <span
+                className={`grid size-9 place-items-center rounded-[13px] ${toneStyles.icon}`}
+              >
+                <Icon aria-hidden="true" size={19} />
+              </span>
+              <h3 className="mt-4 text-sm font-extrabold text-brand-deep">
+                {title}
+              </h3>
+              <p className="mt-2 text-xs font-semibold leading-5 text-tesText-secondary">
+                {copy}
+              </p>
+              <span
+                className={`mt-4 inline-flex rounded-full px-2.5 py-1 text-xs font-extrabold ${toneStyles.pill}`}
+              >
+                Em formação
+              </span>
+            </TESCard>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -555,45 +862,72 @@ function TherapyRankingTable({
           therapyName: index === 0 ? "Aguardando sessões" : "Sem dados ainda",
         }))
       : items.slice(0, 6);
+  const rankingTones = [
+    {
+      bar: "bg-brand-primary",
+      rank: "bg-brand-lavenderSoft text-brand-primary",
+    },
+    {
+      bar: "bg-status-warning",
+      rank: "bg-status-warningBg text-status-warning",
+    },
+    {
+      bar: "bg-status-success",
+      rank: "bg-status-successBg text-status-success",
+    },
+    {
+      bar: "bg-status-danger",
+      rank: "bg-status-dangerBg text-status-danger",
+    },
+    {
+      bar: "bg-brand-cyan",
+      rank: "bg-brand-cyanSoft text-status-info",
+    },
+  ];
   return (
     <div className="grid gap-3">
       <ol aria-label="Ranking de terapias realizadas" className="grid gap-3">
-        {visualItems.map((item, index) => (
-          <li
-            className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3"
-            key={item.therapyId}
-          >
-            <span className="grid size-8 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-sm font-extrabold text-brand-primary">
-              {index + 1}
-            </span>
-            <div className="min-w-0">
-              <div className="flex items-center justify-between gap-3">
-                <span className="truncate text-sm font-extrabold text-brand-deep">
-                  {item.therapyName}
-                </span>
-                <span className="shrink-0 text-sm font-extrabold text-brand-deep">
-                  {formatNumber(item.sessions)}
+        {visualItems.map((item, index) => {
+          const tone = rankingTones[index % rankingTones.length];
+          return (
+            <li
+              className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3"
+              key={item.therapyId}
+            >
+              <span
+                className={`grid size-8 shrink-0 place-items-center rounded-full text-sm font-extrabold ${tone.rank}`}
+              >
+                {index + 1}
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="truncate text-sm font-extrabold text-brand-deep">
+                    {item.therapyName}
+                  </span>
+                  <span className="shrink-0 text-sm font-extrabold text-brand-deep">
+                    {formatNumber(item.sessions)}
+                  </span>
+                </div>
+                <span className="mt-2 block h-2 overflow-hidden rounded-full bg-brand-lavenderSoft">
+                  <span
+                    aria-hidden="true"
+                    className={`block h-full rounded-full ${
+                      empty ? "bg-brand-lavender" : tone.bar
+                    }`}
+                    style={{
+                      width: empty
+                        ? `${100 - index * 18}%`
+                        : `${Math.max(6, (item.sessions / maximum) * 100)}%`,
+                    }}
+                  />
                 </span>
               </div>
-              <span className="mt-2 block h-2 overflow-hidden rounded-full bg-brand-lavenderSoft">
-                <span
-                  aria-hidden="true"
-                  className={`block h-full rounded-full ${
-                    empty ? "bg-brand-lavender" : "bg-brand-primary"
-                  }`}
-                  style={{
-                    width: empty
-                      ? `${100 - index * 18}%`
-                      : `${Math.max(6, (item.sessions / maximum) * 100)}%`,
-                  }}
-                />
+              <span className="text-xs font-bold text-tesText-muted">
+                sessões
               </span>
-            </div>
-            <span className="text-xs font-bold text-tesText-muted">
-              sessões
-            </span>
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ol>
       {empty ? (
         <MetricsVisualFootnote>
@@ -606,6 +940,13 @@ function TherapyRankingTable({
 }
 
 function MetricsComparison({ items }: { items: MetricsComparisonItem[] }) {
+  const tones: MetricChartTone[] = [
+    "primary",
+    "mint",
+    "cyan",
+    "warning",
+    "danger",
+  ];
   return (
     <div
       aria-label="Comparativo de métricas"
@@ -625,7 +966,7 @@ function MetricsComparison({ items }: { items: MetricsComparisonItem[] }) {
           Período anterior
         </span>
       </div>
-      {items.map((item) => (
+      {items.map((item, index) => (
         <div
           className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-brand-lavender/60 py-2 last:border-b-0"
           key={item.label}
@@ -647,8 +988,11 @@ function MetricsComparison({ items }: { items: MetricsComparisonItem[] }) {
               data={item.sparkline}
               empty={item.reference}
               label={`Tendência de ${item.label}`}
+              tone={tones[index % tones.length]}
             />
-            <span className="text-xs font-extrabold text-brand-primary">
+            <span
+              className={`text-xs font-extrabold ${comparisonDeltaStyle(item)}`}
+            >
               {item.reference ? "—" : item.deltaLabel}
             </span>
           </div>
@@ -658,27 +1002,48 @@ function MetricsComparison({ items }: { items: MetricsComparisonItem[] }) {
   );
 }
 
+function comparisonDeltaStyle(item: MetricsComparisonItem) {
+  if (item.reference || item.deltaLabel === "Estável") {
+    return "text-tesText-muted";
+  }
+  if (item.deltaLabel.startsWith("−")) return "text-status-danger";
+  return "text-status-success";
+}
+
 function MetricPanel({
   children,
   className = "",
   description,
   icon: Icon,
   title,
+  tone = "primary",
 }: {
   children: React.ReactNode;
   className?: string;
   description: string;
   icon: LucideIcon;
   title: string;
+  tone?: MetricChartTone;
 }) {
+  const toneStyles = metricToneStyles[tone];
   return (
-    <AppPageSection className={`min-w-0 p-4 sm:p-5 ${className}`}>
-      <div className="mb-4 flex items-start gap-3">
-        <Icon
-          aria-hidden="true"
-          className="mt-0.5 shrink-0 text-brand-primary"
-          size={23}
-        />
+    <AppPageSection
+      className={`relative min-w-0 overflow-hidden border-brand-lavender/65 p-4 shadow-[0_14px_34px_rgba(57,45,90,0.06)] sm:p-5 ${toneStyles.panel} ${className}`}
+    >
+      <span
+        aria-hidden="true"
+        className={`pointer-events-none absolute -right-12 -top-16 size-40 rounded-[38%_62%_56%_44%] opacity-70 blur-3xl ${toneStyles.glow}`}
+      />
+      <span
+        aria-hidden="true"
+        className={`pointer-events-none absolute right-5 top-0 h-1 w-24 rounded-b-full opacity-80 ${toneStyles.line}`}
+      />
+      <div className="relative z-[1] mb-4 flex items-start gap-3">
+        <span
+          className={`grid size-10 shrink-0 place-items-center rounded-[14px] ${toneStyles.icon}`}
+        >
+          <Icon aria-hidden="true" size={21} />
+        </span>
         <div>
           <h2 className="text-lg font-extrabold text-brand-deep sm:text-xl">
             {title}
@@ -688,16 +1053,18 @@ function MetricPanel({
           </p>
         </div>
       </div>
-      {children}
+      <div className="relative z-[1]">{children}</div>
     </AppPageSection>
   );
 }
 
 function PatientContinuityCards({
   interest,
+  peopleServed,
   plan,
 }: {
   interest: TherapistInterestMetricsReady | null;
+  peopleServed: TherapistMetricCounter<"people">;
   plan: TherapistPlan;
 }) {
   if (plan === TherapistPlan.Premium) {
@@ -721,27 +1088,58 @@ function PatientContinuityCards({
         : 0,
   }));
   const hasData = interest?.segments.status === "ready";
+  const continuityTones = {
+    active: metricToneStyles.primary,
+    inactive: metricToneStyles.danger,
+    new: metricToneStyles.mint,
+    recurring: metricToneStyles.warning,
+  };
 
   return (
     <div className="grid gap-3">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        {items.map((item) => (
-          <div
-            className="rounded-card border border-brand-lavender/70 bg-surface-soft/60 p-3"
-            key={item.key}
-          >
-            <span
-              aria-hidden="true"
-              className="mb-3 block size-7 rounded-full bg-brand-lavenderSoft"
-            />
-            <p className="text-xs font-bold text-tesText-secondary">
-              {item.label}
-            </p>
-            <p className="mt-1 text-xl font-extrabold text-brand-deep">
-              {formatNumber(item.value)}
-            </p>
-          </div>
-        ))}
+      <div className="grid gap-4 sm:grid-cols-[180px_minmax(0,1fr)] sm:items-center">
+        <div className="rounded-card bg-gradient-to-b from-status-successBg/70 to-white p-2">
+          <DistributionDonut
+            centerLabel={`${formatNumber(peopleServed.value)} pessoas`}
+            compact
+            empty={peopleServed.status !== "ready"}
+            emptyMessage="O total aparecerá quando houver pessoas acompanhadas no período."
+            items={[
+              {
+                label: "Pessoas acompanhadas",
+                value: peopleServed.value,
+              },
+            ]}
+            label="Total de pessoas acompanhadas no período"
+            palette="continuity"
+            showLegend={false}
+          />
+          <p className="px-2 pb-2 text-center text-xs font-bold leading-4 text-tesText-secondary">
+            Total único no período
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {items.map((item) => {
+            const tone = continuityTones[item.key];
+            return (
+              <div
+                className={`relative overflow-hidden rounded-card border border-brand-lavender/55 bg-gradient-to-b ${tone.surface} to-white p-3 before:absolute before:inset-x-3 before:top-0 before:h-[3px] before:rounded-b-full ${tone.accent}`}
+                key={item.key}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`mb-3 block size-7 rounded-full ${tone.icon}`}
+                />
+                <p className="text-xs font-bold text-tesText-secondary">
+                  {item.label}
+                </p>
+                <p className="mt-1 text-xl font-extrabold text-brand-deep">
+                  {formatNumber(item.value)}
+                </p>
+              </div>
+            );
+          })}
+        </div>
       </div>
       {!hasData ? (
         <MetricsVisualFootnote>
@@ -910,10 +1308,48 @@ function discoveryKpi(
   };
 }
 
+function dashboardHasActivity(data: TherapistMetricsDashboard) {
+  const { occupancy, overview, sessions } = data;
+  const counters = Object.values(overview.counters);
+  const hasCounterHistory = counters.some(
+    (counter) => counter.value > 0 || counter.previousValue > 0,
+  );
+  const hasDiscoveryHistory =
+    overview.discovery.status === "ready" &&
+    Object.values(overview.discovery.stages).some(
+      (counter) => counter.value > 0 || counter.previousValue > 0,
+    );
+  const hasOccupancyHistory =
+    occupancy.status === "ready" &&
+    (occupancy.current.offeredMinutes > 0 ||
+      occupancy.previous.offeredMinutes > 0);
+
+  return (
+    hasCounterHistory ||
+    hasDiscoveryHistory ||
+    hasOccupancyHistory ||
+    sessions.heatmap.status === "ready" ||
+    sessions.therapyDistribution.status === "ready" ||
+    sessions.outcomeDistribution.status === "ready"
+  );
+}
+
 function formatNumber(value: number) {
   return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(
     value,
   );
+}
+
+function formatPeriodRange(start: string, endExclusive: string) {
+  const startDate = new Date(start);
+  const endDate = new Date(endExclusive);
+  endDate.setUTCDate(endDate.getUTCDate() - 1);
+  const formatter = new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    timeZone: "UTC",
+  });
+  return `${formatter.format(startDate)} – ${formatter.format(endDate)}`;
 }
 
 function segmentLabel(key: string) {

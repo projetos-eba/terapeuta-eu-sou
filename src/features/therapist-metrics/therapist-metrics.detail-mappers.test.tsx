@@ -5,6 +5,7 @@ import { TherapistInterestMetricsPage } from "./components/therapist-interest-me
 import { TherapistSessionMetricsPage } from "./components/therapist-session-metrics-page";
 import {
   mapTherapistInterestMetrics,
+  mapTherapistSessionEvolutionComparison,
   mapTherapistSessionMetrics,
 } from "./therapist-metrics.detail-mappers";
 import { buildTherapistMetricsCsv } from "./therapist-metrics.export";
@@ -12,6 +13,40 @@ import { buildTherapistMetricsCsv } from "./therapist-metrics.export";
 afterEach(cleanup);
 
 describe("therapist metric detail contracts", () => {
+  it("maps a complete aligned current-versus-previous session series", () => {
+    const payload = {
+      contractVersion: 1,
+      meta: meta(),
+      metricDefinitionVersion: 1,
+      points: Array.from({ length: 30 }, (_, index) => ({
+        current: index === 29 ? 4 : 0,
+        currentDate: `2026-07-${String(index + 1).padStart(2, "0")}`,
+        index,
+        previous: index === 29 ? 2 : 0,
+        previousDate: `2026-06-${String(index + 1).padStart(2, "0")}`,
+      })),
+      status: "ready",
+      therapist: { plan: "premium_plus", profileId: "therapist-profile-id" },
+    };
+
+    const mapped = mapTherapistSessionEvolutionComparison(payload);
+    expect(mapped.points).toHaveLength(30);
+    expect(mapped.points[29]).toMatchObject({ current: 4, previous: 2 });
+  });
+
+  it("rejects a comparison series that does not cover the selected period", () => {
+    expect(() =>
+      mapTherapistSessionEvolutionComparison({
+        contractVersion: 1,
+        meta: meta(),
+        metricDefinitionVersion: 1,
+        points: [],
+        status: "empty",
+        therapist: { plan: "premium_plus", profileId: "therapist-profile-id" },
+      }),
+    ).toThrow();
+  });
+
   it("maps the MTR-4 contract without patient identity or free text", () => {
     const mapped = mapTherapistSessionMetrics(sessionPayload());
 
