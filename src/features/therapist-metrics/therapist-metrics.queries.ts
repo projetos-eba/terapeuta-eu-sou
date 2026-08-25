@@ -109,6 +109,17 @@ export function queryTherapistSessionMetrics(
   );
 }
 
+export function queryTherapistSessionEvolutionComparison(
+  accessToken: string,
+  periodDays: 30 | 60 | 90 | 120,
+) {
+  return queryTherapistMetricsDetail(
+    accessToken,
+    "get_therapist_session_evolution_comparison_v1",
+    periodDays,
+  );
+}
+
 export function queryTherapistInterestMetrics(
   accessToken: string,
   periodDays: 30 | 60 | 90 | 120,
@@ -122,7 +133,10 @@ export function queryTherapistInterestMetrics(
 
 async function queryTherapistMetricsDetail(
   accessToken: string,
-  rpc: "get_therapist_interest_metrics_v1" | "get_therapist_session_metrics_v1",
+  rpc:
+    | "get_therapist_interest_metrics_v1"
+    | "get_therapist_session_evolution_comparison_v1"
+    | "get_therapist_session_metrics_v1",
   periodDays: 30 | 60 | 90 | 120,
 ) {
   const config = getSupabasePublicConfig();

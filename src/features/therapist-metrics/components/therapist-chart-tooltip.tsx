@@ -40,10 +40,10 @@ export function TherapistChartTooltip({
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none min-w-[176px] max-w-[250px] rounded-[14px] bg-brand-deep px-4 py-3 text-left text-white shadow-[0_18px_38px_rgba(20,16,90,0.2)]"
+      className="pointer-events-none min-w-[176px] max-w-[250px] rounded-[14px] border border-brand-lavender/80 bg-white/95 px-4 py-3 text-left shadow-[0_16px_36px_rgba(61,42,90,0.14)] backdrop-blur-sm"
       role="tooltip"
     >
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-brand-lavender">
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-brand-primary">
         {title}
       </p>
       <ul className="mt-2 grid gap-2">
@@ -54,13 +54,13 @@ export function TherapistChartTooltip({
           >
             <span
               aria-hidden="true"
-              className="size-2.5 shrink-0 rounded-full ring-2 ring-white/20"
+              className="size-2.5 shrink-0 rounded-full ring-2 ring-brand-lavenderSoft"
               style={{ backgroundColor: item.color }}
             />
-            <span className="min-w-0 flex-1 truncate text-white/80">
+            <span className="min-w-0 flex-1 truncate font-semibold text-tesText-secondary">
               {item.label}
             </span>
-            <strong className="shrink-0 font-extrabold text-white">
+            <strong className="shrink-0 font-extrabold text-brand-deep">
               {item.value}
             </strong>
           </li>

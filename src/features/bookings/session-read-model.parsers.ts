@@ -44,6 +44,7 @@ export function parseTherapistSessionsReadModel(
       serviceId: nullableString(filters.serviceId),
     },
     items: requiredArray(row.items).map(parseSessionReadModelItem),
+    summary: nullableSessionsSummary(row.summary),
     page: {
       hasMore: requiredBoolean(page.hasMore),
       limit: requiredNumber(page.limit),
@@ -52,6 +53,25 @@ export function parseTherapistSessionsReadModel(
     therapistProfileId: requiredString(row.therapistProfileId),
     timezone: requiredString(row.timezone),
     version: version(row.version),
+  };
+}
+
+function nullableSessionsSummary(
+  value: unknown,
+): TherapistSessionsReadModel["summary"] {
+  if (value === null || value === undefined) return null;
+  const row = requiredRecord(value);
+  const attendanceRate = row.attendanceRate;
+
+  return {
+    attendanceRate:
+      attendanceRate === null || attendanceRate === undefined
+        ? null
+        : requiredNumber(attendanceRate),
+    cancelled: requiredNumber(row.cancelled),
+    completed: requiredNumber(row.completed),
+    pending: requiredNumber(row.pending),
+    total: requiredNumber(row.total),
   };
 }
 

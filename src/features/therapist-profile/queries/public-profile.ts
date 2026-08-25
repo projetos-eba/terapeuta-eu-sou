@@ -56,27 +56,38 @@ type PublicTherapyImageRow = {
   hero_image_url: string | null;
   id: string;
   image_url: string | null;
+  theme_names: string[] | null;
+};
+
+type PublicTherapyPresentation = {
+  imageUrl: string | null;
+  themeNames: string[];
 };
 
 async function getTherapyImages(therapyIds: string[]) {
   const uniqueTherapyIds = Array.from(new Set(therapyIds));
-  if (!uniqueTherapyIds.length) return new Map<string, string | null>();
+  if (!uniqueTherapyIds.length) {
+    return new Map<string, PublicTherapyPresentation>();
+  }
 
   try {
     const rows = await fetchView<PublicTherapyImageRow>(
       "public_therapy_details_v",
-      `select=id,hero_image_url,image_url&id=in.(${uniqueTherapyIds.join(",")})`,
+      `select=id,hero_image_url,image_url,theme_names&id=in.(${uniqueTherapyIds.join(",")})`,
       { fresh: true },
     );
 
     return new Map(
       rows.map((row) => [
         row.id,
-        row.hero_image_url ?? row.image_url ?? null,
+        {
+          imageUrl: row.hero_image_url ?? row.image_url ?? null,
+          themeNames: row.theme_names ?? [],
+        },
       ]),
     );
   } catch {
-    return new Map<string, string | null>();
+    return new Map<string, PublicTherapyPresentation>();
   }
 }
 
@@ -155,7 +166,8 @@ export async function getPublicTherapistProfileResult(
         availabilityResults[index]?.status === "success"
           ? availabilityResults[index].data.days
           : [],
-        therapyImages.get(service.therapy_id) ?? null,
+        therapyImages.get(service.therapy_id)?.imageUrl ?? null,
+        therapyImages.get(service.therapy_id)?.themeNames ?? [],
       ),
     );
 

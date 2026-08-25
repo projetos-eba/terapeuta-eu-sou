@@ -172,6 +172,7 @@ export function mapServiceRow(
   row: ServiceRow,
   availability: AvailabilityDay[] = [],
   imageUrl: string | null = null,
+  themeNames: string[] = [],
 ): TherapistProfileService {
   return {
     availability,
@@ -189,6 +190,7 @@ export function mapServiceRow(
     imageUrl,
     priceCents: row.price_cents,
     priceLabel: formatCurrency(row.price_cents),
+    themeNames,
     title: row.service_title,
     therapyId: row.therapy_id,
     therapyName: row.therapy_name,
@@ -220,7 +222,7 @@ export function mapProfileRow(
 ): PublicTherapistProfile {
   return {
     acceptsOnlineSessions: row.accepts_online_sessions,
-    badges: row.plan === "free" ? [] : row.badges ?? [],
+    badges: row.plan === "free" ? [] : (row.badges ?? []),
     bio: row.bio ?? content.essenceBody,
     cityState: [row.city, row.state].filter(Boolean).join(", "),
     content: {

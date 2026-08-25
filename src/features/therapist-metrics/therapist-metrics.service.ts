@@ -5,6 +5,7 @@ import { cache } from "react";
 import { mapTherapistMetricsDashboard } from "./therapist-metrics.dashboard-mappers";
 import {
   mapTherapistInterestMetrics,
+  mapTherapistSessionEvolutionComparison,
   mapTherapistSessionMetrics,
 } from "./therapist-metrics.detail-mappers";
 import {
@@ -16,15 +17,16 @@ import {
   queryTherapistInterestMetrics,
   queryTherapistMetricsDashboard,
   queryTherapistMetricsOverview,
+  queryTherapistSessionEvolutionComparison,
   queryTherapistSessionMetrics,
 } from "./therapist-metrics.queries";
 import type {
   TherapistInterestMetrics,
-  TherapistMetricsDashboard,
+  TherapistMetricsDashboardView,
   TherapistMetricsOverview,
   TherapistMetricsPeriodDays,
   TherapistMetricsTab,
-  TherapistSessionMetrics,
+  TherapistSessionMetricsView,
 } from "./therapist-metrics.types";
 
 export type TherapistMetricsPageResult =
@@ -76,12 +78,12 @@ export const getTherapistMetricsPage = cache(
 
 export type TherapistMetricsViewResult =
   | {
-      data: TherapistMetricsDashboard;
+      data: TherapistMetricsDashboardView;
       status: "success";
       tab: "overview";
     }
   | {
-      data: TherapistSessionMetrics;
+      data: TherapistSessionMetricsView;
       status: "success";
       tab: "sessions";
     }
@@ -110,11 +112,20 @@ export const getTherapistMetricsView = cache(
   }): Promise<TherapistMetricsViewResult> {
     try {
       if (tab === "sessions") {
-        const data = mapTherapistSessionMetrics(
-          await queryTherapistSessionMetrics(accessToken, periodDays),
-        );
+        const [rawMetrics, rawComparison] = await Promise.all([
+          queryTherapistSessionMetrics(accessToken, periodDays),
+          queryTherapistSessionEvolutionComparison(accessToken, periodDays),
+        ]);
+        const data = mapTherapistSessionMetrics(rawMetrics);
+        const evolutionComparison =
+          mapTherapistSessionEvolutionComparison(rawComparison);
         enforceProfile(data.therapist.profileId, profileId);
-        return { data, status: "success", tab };
+        enforceProfile(evolutionComparison.therapist.profileId, profileId);
+        return {
+          data: { ...data, evolutionComparison },
+          status: "success",
+          tab,
+        };
       }
 
       if (tab === "interest") {
@@ -125,11 +136,20 @@ export const getTherapistMetricsView = cache(
         return { data, status: "success", tab };
       }
 
-      const data = mapTherapistMetricsDashboard(
-        await queryTherapistMetricsDashboard(accessToken, periodDays),
-      );
+      const [rawDashboard, rawComparison] = await Promise.all([
+        queryTherapistMetricsDashboard(accessToken, periodDays),
+        queryTherapistSessionEvolutionComparison(accessToken, periodDays),
+      ]);
+      const data = mapTherapistMetricsDashboard(rawDashboard);
+      const sessionEvolutionComparison =
+        mapTherapistSessionEvolutionComparison(rawComparison);
       enforceProfile(data.therapist.profileId, profileId);
-      return { data, status: "success", tab };
+      enforceProfile(sessionEvolutionComparison.therapist.profileId, profileId);
+      return {
+        data: { ...data, sessionEvolutionComparison },
+        status: "success",
+        tab,
+      };
     } catch (error) {
       const code =
         error instanceof TherapistMetricsError ? error.code : "unavailable";

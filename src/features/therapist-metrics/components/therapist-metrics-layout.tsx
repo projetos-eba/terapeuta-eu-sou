@@ -23,7 +23,6 @@ export function TherapistMetricsLayout({
   return (
     <AppPageContainer className="max-w-[1280px] gap-5 lg:gap-6">
       <MetricsHero meta={meta} tab={tab} />
-      <MetricsControlBar meta={meta} tab={tab} />
       {children}
     </AppPageContainer>
   );
@@ -45,7 +44,7 @@ function MetricsHero({
   return (
     <section className="overflow-hidden rounded-panel border border-brand-lavender bg-white shadow-card">
       <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.82fr)]">
-        <div className="grid content-between gap-8 p-5 sm:p-8 lg:p-10">
+        <div className="grid content-between gap-8 p-5 sm:p-8 lg:p-10 lg:pr-8">
           <div>
             <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-brand-primary">
               Seu acompanhamento
@@ -59,32 +58,9 @@ function MetricsHero({
               com mais clareza.
             </p>
           </div>
-
-          <nav
-            aria-label="Visões de métricas"
-            className="-mx-2 flex min-h-12 w-[calc(100%+1rem)] items-end gap-1 overflow-x-auto border-b border-brand-lavender px-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-          >
-            {tabs.map((item) => {
-              const active = item.value === tab;
-              return (
-                <Link
-                  aria-current={active ? "page" : undefined}
-                  className={`relative inline-flex min-h-12 items-center justify-center px-3 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:px-5 sm:text-base ${
-                    active
-                      ? "text-brand-deep after:absolute after:inset-x-3 after:bottom-0 after:h-1 after:rounded-full after:bg-brand-primary sm:after:inset-x-5"
-                      : "text-tesText-secondary hover:text-brand-deep"
-                  }`}
-                  href={`${routes.therapist.insights}?tab=${item.value}&period=${meta.periodDays}`}
-                  key={item.value}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
         </div>
 
-        <div className="relative min-h-[250px] bg-brand-lavenderSoft sm:min-h-[310px] lg:min-h-full">
+        <div className="relative min-h-[230px] bg-brand-lavenderSoft sm:min-h-[300px] lg:min-h-full">
           <TESDecorativeMedia
             className="absolute inset-0"
             fade="left"
@@ -94,6 +70,32 @@ function MetricsHero({
             src={platformAssets.therapistMetricsHero.src}
           />
         </div>
+      </div>
+
+      <div className="grid border-t border-brand-lavender lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+        <nav
+          aria-label="Visões de métricas"
+          className="flex min-h-14 items-end gap-1 overflow-x-auto px-3 [-ms-overflow-style:none] [scrollbar-width:none] sm:px-6 [&::-webkit-scrollbar]:hidden"
+        >
+          {tabs.map((item) => {
+            const active = item.value === tab;
+            return (
+              <Link
+                aria-current={active ? "page" : undefined}
+                className={`relative inline-flex min-h-14 shrink-0 items-center justify-center px-3 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-brand-primary sm:px-5 sm:text-base ${
+                  active
+                    ? "text-brand-deep after:absolute after:inset-x-3 after:bottom-0 after:h-1 after:rounded-full after:bg-brand-primary sm:after:inset-x-5"
+                    : "text-tesText-secondary hover:text-brand-deep"
+                }`}
+                href={`${routes.therapist.insights}?tab=${item.value}&period=${meta.periodDays}`}
+                key={item.value}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+        <MetricsControlBar meta={meta} tab={tab} />
       </div>
     </section>
   );
@@ -109,7 +111,7 @@ function MetricsControlBar({
   return (
     <section
       aria-label="Controles do período"
-      className="flex flex-col gap-3 rounded-card border border-brand-lavender bg-white p-3 shadow-card sm:gap-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between"
+      className="grid gap-3 border-t border-brand-lavender p-3 sm:p-4 lg:min-w-[540px] lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:border-l lg:border-t-0"
     >
       <div className="flex items-start gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
@@ -119,7 +121,7 @@ function MetricsControlBar({
           <p className="text-sm font-extrabold text-brand-deep">
             Últimos {meta.periodDays} dias completos
           </p>
-          <p className="mt-0.5 text-sm font-semibold leading-5 text-tesText-secondary">
+          <p className="mt-0.5 text-xs font-semibold leading-5 text-tesText-secondary">
             {formatPeriod(meta)} · {meta.timezone}
           </p>
         </div>
@@ -127,7 +129,7 @@ function MetricsControlBar({
 
       <form
         action={routes.therapist.insights}
-        className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2 sm:flex sm:flex-row sm:flex-wrap sm:items-center"
+        className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-2"
       >
         <input name="tab" type="hidden" value={tab} />
         <label className="sr-only" htmlFor="metrics-period">
@@ -158,8 +160,7 @@ function MetricsControlBar({
           title="Baixar relatório em CSV"
         >
           <Download aria-hidden="true" size={18} />
-          <span className="hidden sm:inline">Baixar relatório</span>
-          <span className="sm:hidden">CSV</span>
+          <span className="sr-only">Baixar relatório</span>
         </a>
       </form>
     </section>

@@ -134,7 +134,8 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
               ))}
             </div>
             <p className="text-sm text-brand-deep">
-              {profile.rating.count} {profile.rating.count === 1 ? "avaliação" : "avaliações"}
+              {profile.rating.count}{" "}
+              {profile.rating.count === 1 ? "avaliação" : "avaliações"}
             </p>
           </div>
 
@@ -319,6 +320,26 @@ function Services({ profile }: { profile: PublicTherapistProfile }) {
                 <Clock className="size-4" />
                 {service.durationMinutes} min
               </p>
+              {service.themeNames.length ? (
+                <div
+                  className="mt-3 flex flex-wrap gap-2"
+                  aria-label="Temas desta terapia"
+                >
+                  {service.themeNames.slice(0, 3).map((theme) => (
+                    <span
+                      className="inline-flex max-w-full rounded-full bg-brand-lavenderSoft px-2.5 py-1 text-[11px] font-bold text-brand-primary"
+                      key={theme}
+                    >
+                      <span className="truncate">{theme}</span>
+                    </span>
+                  ))}
+                  {service.themeNames.length > 3 ? (
+                    <span className="inline-flex rounded-full bg-brand-cyanSoft px-2.5 py-1 text-[11px] font-bold text-status-info">
+                      +{service.themeNames.length - 3} temas
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
               <div className="mt-3 flex min-w-0 items-center justify-between gap-3">
                 <p className="text-xl font-extrabold text-brand-deep">
                   {service.priceLabel}
