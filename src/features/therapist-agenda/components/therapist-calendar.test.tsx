@@ -153,6 +153,32 @@ describe("TherapistCalendar", () => {
 
     expect(trigger).toHaveAccessibleName(/1\s*filtro\(s\) ativo\(s\)/);
   });
+
+  it("distinguishes fully refunded sessions with a striped, textual state", () => {
+    const fixture = calendarFixture();
+    fixture.bookings[0]!.bookingStatus = BookingStatus.Refunded;
+    fixture.bookings[0]!.financialStatus = SessionFinancialStatus.Refunded;
+
+    render(<TherapistCalendar data={fixture} />);
+
+    const refundedSessions = document.querySelectorAll(
+      '[data-session-state="refunded"]',
+    );
+
+    expect(refundedSessions.length).toBeGreaterThanOrEqual(2);
+    refundedSessions.forEach((session) => {
+      expect(session).toHaveStyle({
+        backgroundImage:
+          "repeating-linear-gradient(135deg, var(--tes-color-surface-default) 0 8px, var(--tes-color-brand-lavender-soft) 8px 16px)",
+      });
+    });
+    expect(
+      screen.getAllByRole("button", { name: /Reembolsada/ }).length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      screen.getAllByText("Cancelada ou reembolsada").length,
+    ).toBeGreaterThanOrEqual(1);
+  });
 });
 
 function calendarFixture(): TherapistCalendarReadModel {

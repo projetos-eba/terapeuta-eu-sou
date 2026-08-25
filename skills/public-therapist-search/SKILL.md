@@ -62,6 +62,9 @@ Regra de apresentação dos cards:
   (`therapist_headline`), com copy visual chamada “Sua apresentação”.
 - Nunca usar `service_description` como apresentação do terapeuta; essa
   descrição pertence à oferta e aparece somente em contextos de serviço.
+- O card público não exibe tags de cuidado ou temas derivadas de
+  `therapist.tags`. Os chips visíveis junto ao nome ficam restritos às terapias
+  publicadas, com no máximo duas e o contador acessível das demais.
 
 ## Componentes Esperados
 
@@ -69,7 +72,7 @@ Regra de apresentação dos cards:
 - hero público com copy acolhedora
 - formulário de busca e filtros linkáveis por URL
 - contagem de resultados e ordenação
-- cards de terapeuta com foto, tags, avaliação, preço, próxima disponibilidade e CTAs
+- cards de terapeuta com foto, terapias, avaliação, preço, próxima disponibilidade e CTAs
 - estado sem resultados
 - paginação
 - `JourneyBanner`

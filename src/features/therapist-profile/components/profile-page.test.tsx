@@ -231,6 +231,39 @@ describe("TherapistProfilePage video block", () => {
     );
   });
 
+  it("shows four guide themes in a two-by-two public layout", () => {
+    const guideItems = [
+      { icon: "heart", label: "Emoções e Bem-Estar" },
+      { icon: "mind", label: "Autoconhecimento e Transformação" },
+      { icon: "star", label: "Autoestima e Poder Pessoal" },
+      { icon: "sparkles", label: "Espiritualidade e Conexão Interior" },
+    ];
+
+    render(
+      <TherapistProfilePage
+        profile={{
+          ...baseProfile,
+          content: { ...baseProfile.content, guideItems },
+        }}
+        reviews={[]}
+      />,
+    );
+
+    const guideCard = screen
+      .getByRole("heading", { name: "Como posso te guiar" })
+      .closest("article");
+    expect(guideCard).not.toBeNull();
+
+    const guideList = within(guideCard as HTMLElement).getByRole("list", {
+      name: "Caminhos pelos quais posso te guiar",
+    });
+    expect(guideList).toHaveClass("grid-cols-2");
+    expect(within(guideList).getAllByRole("listitem")).toHaveLength(4);
+    guideItems.forEach((item) => {
+      expect(within(guideList).getByText(item.label)).toBeVisible();
+    });
+  });
+
   it.each([["serene"], ["natural"], ["warm"]] as const)(
     "uses the official %s hero assets as decorative layers",
     (theme) => {

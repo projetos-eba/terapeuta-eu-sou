@@ -221,9 +221,9 @@ export const fallbackTestimonials: PublicHomeTestimonial[] = [
 
 export const homeFaqs: PublicHomeFaq[] = [
   {
-    question: "Como funciona o TEDS?",
+    question: "Como funciona o TES?",
     answer:
-      "No TEDS você pode explorar práticas terapêuticas, conhecer profissionais, escolher com quem deseja seguir e agendar seu encontro online pela plataforma.",
+      "No TES você pode explorar práticas terapêuticas, conhecer profissionais, escolher com quem deseja seguir e agendar seu encontro online pela plataforma.",
   },
   {
     question: "Como encontro um terapeuta que faça sentido para mim?",
@@ -236,18 +236,18 @@ export const homeFaqs: PublicHomeFaq[] = [
       "Sim. Cancelamentos podem ser feitos com pelo menos 24 horas de antecedência, conforme a política vigente. As condições de cancelamento e agendamento são apresentadas antes da reserva.",
   },
   {
-    question: "Como o TEDS cuida da minha privacidade?",
+    question: "Como o TES cuida da minha privacidade?",
     answer:
-      "O TEDS procura utilizar apenas as informações necessárias para oferecer a experiência da plataforma. Dados pessoais e informações da sua navegação são tratados de acordo com as regras de privacidade aplicáveis.",
+      "O TES procura utilizar apenas as informações necessárias para oferecer a experiência da plataforma. Dados pessoais e informações da sua navegação são tratados de acordo com as regras de privacidade aplicáveis.",
   },
   {
     question: "Os encontros são online?",
     answer:
-      "Sim. Os encontros agendados pelo TEDS acontecem online. Depois da confirmação da reserva, você recebe pela plataforma as informações necessárias para participar.",
+      "Sim. Os encontros agendados pelo TES acontecem online. Depois da confirmação da reserva, você recebe pela plataforma as informações necessárias para participar.",
   },
   {
-    question: "O TEDS substitui acompanhamento médico ou psicológico?",
+    question: "O TES substitui acompanhamento médico ou psicológico?",
     answer:
-      "Não. O TEDS facilita o acesso a práticas integrativas e a profissionais, mas não realiza diagnósticos, prescreve tratamentos, nem substitui acompanhamento médico, psicológico, psiquiátrico ou atendimento de emergência.",
+      "Não. O TES facilita o acesso a práticas integrativas e a profissionais, mas não realiza diagnósticos, prescreve tratamentos, nem substitui acompanhamento médico, psicológico, psiquiátrico ou atendimento de emergência.",
   },
 ];

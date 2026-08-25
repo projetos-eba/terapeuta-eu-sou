@@ -184,10 +184,12 @@ Não criar enums equivalentes dentro de features.
   supporting copy canônica, tabs de base aberta e grid principal + ContextRail
   em desktop. Horários e Bloqueios não podem introduzir cabeçalho, tab bar ou
   largura paralelos ao Calendário.
-- O editor bloqueia imediatamente uma faixa sobreposta no mesmo dia, inclusive
-  quando uma faixa geral conflita com a faixa específica de uma terapia. O
-  comando transacional e o banco continuam sendo a autoridade final contra
-  concorrência, replay e escrita fora da interface.
+- O editor permite digitar e manter temporariamente uma faixa sobreposta no
+  mesmo dia, inclusive quando uma faixa geral conflita com a faixa específica
+  de uma terapia. Ao sair do campo, exibe o aviso de sobreposição; enquanto o
+  conflito existir, o salvamento permanece bloqueado. O comando transacional e
+  o banco continuam sendo a autoridade final contra concorrência, replay e
+  escrita fora da interface.
 - O payload de Horários só pode reenviar regras e settings de terapias presentes
   no read model editável. Regras órfãs de terapia arquivada não devem transformar
   um ajuste válido em `schedule_service_forbidden`; a validação autoritativa
@@ -230,6 +232,17 @@ Não criar enums equivalentes dentro de features.
 - `booking_holds` usa TTL, idempotência, snapshots e advisory lock por
   terapeuta.
 - `occupied_during` e constraints GiST impedem conflito entre serviços.
+- Um reembolso integral confirmado na fonte canônica
+  `session_payments.financial_status = 'refunded'` move o booking para
+  `refunded`, preserva o histórico e libera o intervalo ocupado. A
+  reconciliação é idempotente, registra `booking_events` e alcança também
+  reembolsos integrais históricos que ficaram com booking ativo.
+- Reembolso parcial e disputa não liberam horário automaticamente, porque a
+  sessão ainda pode permanecer válida; qualquer encerramento operacional deve
+  ocorrer pelo fluxo próprio.
+- O calendário privado continua exibindo sessões canceladas e reembolsadas no
+  histórico do período. Timeline, mês e lista mobile usam padrão diagonal,
+  legenda e estado textual para não depender somente de cor.
 
 ## Comandos transacionais A2
 

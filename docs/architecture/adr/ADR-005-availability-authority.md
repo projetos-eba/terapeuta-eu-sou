@@ -17,7 +17,11 @@ oferecia garantia transacional e interpretava os dias no timezone do runtime.
 
 - O perfil público e a reserva consomem o RPC autoritativo; o preview TypeScript
   não pode alimentar horários reserváveis.
-- Todo booking do terapeuta bloqueia o horário, independentemente do serviço.
+- Todo booking ativo do terapeuta bloqueia o horário, independentemente do
+  serviço.
+- Um reembolso integral na fonte financeira canônica sincroniza o booking para
+  `refunded`, preservando o registro e liberando o intervalo protegido.
+- Reembolso parcial e disputa não liberam disponibilidade automaticamente.
 - Buffers fazem parte do intervalo ocupado.
 - Faixas inválidas ou sobrepostas falham com erro de domínio.
 - Exceções disponíveis e indisponíveis permanecem explícitas.
@@ -42,4 +46,6 @@ Consumidores de reserva usam `get_service_available_slots_v1`. A UI deve tratar
 `SLOT_NOT_AVAILABLE`,
 `SLOT_HELD_BY_ANOTHER_USER` e `BOOKING_CONFLICT`, permitindo nova escolha. A2
 continua sendo a barreira final contra duas reservas ativas para o mesmo
-terapeuta.
+terapeuta. O calendário privado preserva sessões encerradas no histórico e as
+diferencia com estado textual e padrão visual, sem recolocá-las entre os
+conflitos de disponibilidade.

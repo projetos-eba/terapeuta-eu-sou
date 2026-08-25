@@ -139,13 +139,14 @@ export function TherapistScheduleHours({
       rule === target ? { ...rule, [field]: value } : rule,
     );
 
-    if (hasOverlappingAvailabilityRules(nextRules)) {
-      showOverlapFeedback();
-      return;
-    }
-
     setRules(nextRules);
     markChanged();
+  }
+
+  function validateEditedRange() {
+    if (hasOverlappingAvailabilityRules(rules)) {
+      showOverlapFeedback();
+    }
   }
 
   function toggleDay(dayOfWeek: number) {
@@ -504,6 +505,7 @@ export function TherapistScheduleHours({
                                   onChange={(value) =>
                                     updateRule(rule, "startTime", value)
                                   }
+                                  onBlur={validateEditedRange}
                                   value={normalizeClock(rule.startTime)}
                                 />
                                 <span
@@ -517,6 +519,7 @@ export function TherapistScheduleHours({
                                   onChange={(value) =>
                                     updateRule(rule, "endTime", value)
                                   }
+                                  onBlur={validateEditedRange}
                                   value={normalizeClock(rule.endTime)}
                                 />
                                 <button
@@ -1128,10 +1131,12 @@ function UpcomingExceptionsCard({
 
 function TimeInput({
   ariaLabel,
+  onBlur,
   onChange,
   value,
 }: {
   ariaLabel: string;
+  onBlur: () => void;
   onChange: (value: string) => void;
   value: string;
 }) {
@@ -1140,6 +1145,7 @@ function TimeInput({
       aria-label={ariaLabel}
       className="min-h-11 min-w-0 w-full rounded-lg border border-brand-lavender bg-white px-2 text-center text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
       onChange={(event) => onChange(event.target.value)}
+      onBlur={onBlur}
       step={900}
       type="time"
       value={value}

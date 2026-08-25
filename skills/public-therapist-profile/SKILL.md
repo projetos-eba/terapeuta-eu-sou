@@ -81,7 +81,9 @@ Preservar o padrão do node:
 - No mobile, o hero usa banner no topo com retrato circular sobreposto, ações
   de busca/menu no cabeçalho, CTA em largura total e ações circulares de
   favorito/compartilhamento. Os cards editoriais seguem a ordem essência,
-  guia e convite; o guia exibe no máximo três temas com ícones e separadores.
+  guia e convite; o guia exibe no máximo quatro temas com ícones. Quando houver
+  quatro escolhas, a composição usa duas colunas e duas linhas, com respiro
+  suficiente entre ícones e textos.
 - No mobile, serviços ficam fora do fluxo principal da referência e continuam
   disponíveis no desktop; disponibilidade e avaliações aparecem em sequência,
   com cinco horários por linha, estado vazio de avaliações ilustrado e rodapé

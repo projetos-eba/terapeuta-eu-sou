@@ -104,10 +104,21 @@ describe("TherapistScheduleHours", () => {
     const starts = screen.getAllByLabelText("Início de Segunda-feira");
     fireEvent.change(starts[1]!, { target: { value: "08:00" } });
 
+    await waitFor(() => expect(starts[1]).toHaveValue("08:00"));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    fireEvent.blur(screen.getAllByLabelText("Início de Segunda-feira")[0]!);
+
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Essa faixa se sobrepõe a outro horário disponível no mesmo dia.",
     );
-    expect(starts[1]).toHaveValue("12:00");
+
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(starts[1]).toHaveValue("08:00");
   });
 
   it("sends the versioned command and confirms a successful save", async () => {
