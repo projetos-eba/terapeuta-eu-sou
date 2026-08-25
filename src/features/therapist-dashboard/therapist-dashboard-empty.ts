@@ -30,6 +30,7 @@ export function createEmptyTherapistDashboardData({
       },
     ],
     aura: null,
+    auraState: "empty",
     history: {
       activePatients: 0,
       averageRating: null,

@@ -39,6 +39,7 @@ describe("buildAuraRecommendations", () => {
         reviews: {
           pendingReplyCount: 3,
           status: "ready",
+          windowDays: 30,
         },
         sessions: {
           cancellationRate: readyRate({
@@ -89,6 +90,7 @@ describe("buildAuraRecommendations", () => {
         reviews: {
           pendingReplyCount: 1,
           status: "ready",
+          windowDays: 30,
         },
       }),
     })[0];
@@ -101,6 +103,7 @@ describe("buildAuraRecommendations", () => {
           reviews: {
             pendingReplyCount: 1,
             status: "ready",
+            windowDays: 30,
           },
         }),
       }),
@@ -141,6 +144,7 @@ function signalsFixture(
     reviews: {
       pendingReplyCount: 0,
       status: "empty",
+      windowDays: 30,
     },
     sessions: {
       cancellationRate: readyRate({

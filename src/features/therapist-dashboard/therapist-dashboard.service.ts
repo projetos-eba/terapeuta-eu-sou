@@ -3,23 +3,22 @@ import "server-only";
 import { cache } from "react";
 
 import { TherapistPlan } from "@/domain/tes";
+import { getTherapistAuraPage } from "@/features/therapist-aura/therapist-aura.service";
 import { getTherapistMetricsPage } from "@/features/therapist-metrics/therapist-metrics.service";
 import { getTherapistReviewsPage } from "@/features/therapist-reviews/therapist-reviews.service";
-import {
-  getTherapistSessionsPage,
-} from "@/features/therapist-sessions/therapist-sessions.service";
+import { getTherapistSessionsPage } from "@/features/therapist-sessions/therapist-sessions.service";
 
 import { TherapistDashboardError } from "./therapist-dashboard.errors";
-import { calculateAttendanceRate, calculateTrend } from "./therapist-dashboard.mappers";
+import {
+  calculateAttendanceRate,
+  calculateTrend,
+} from "./therapist-dashboard.mappers";
 import { createEmptyTherapistDashboardData } from "./therapist-dashboard-empty";
 import {
   mapTherapistDashboardResponse,
-  mapTherapistRecommendations,
+  mapTherapistAuraPage,
 } from "./therapist-dashboard.mappers";
-import {
-  queryTherapistDashboard,
-  queryTherapistRecommendations,
-} from "./therapist-dashboard.queries";
+import { queryTherapistDashboard } from "./therapist-dashboard.queries";
 import type {
   TherapistDashboardPageData,
   TherapistDashboardQueryInput,
@@ -51,9 +50,13 @@ export const getTherapistDashboardPage = cache(
       return base;
     }
 
-    const [dashboard, recommendationResult] = await Promise.all([
+    const [dashboard, auraResult] = await Promise.all([
       queryTherapistDashboard(accessToken),
-      queryRecommendationsSafely(accessToken),
+      getTherapistAuraPage({
+        accessToken,
+        periodDays: 30,
+        profileId,
+      }),
     ]);
     const main = mapTherapistDashboardResponse(dashboard);
 
@@ -61,9 +64,13 @@ export const getTherapistDashboardPage = cache(
       throw new TherapistDashboardError("forbidden");
     }
 
-    const recommendations = recommendationResult
-      ? mapTherapistRecommendations(recommendationResult)
-      : { aura: null, recommendedActions: [] };
+    const recommendations = auraResult.ok
+      ? mapTherapistAuraPage(auraResult.data)
+      : {
+          aura: null,
+          auraState: "unavailable" as const,
+          recommendedActions: [],
+        };
 
     return { ...main, ...recommendations };
   },
@@ -79,7 +86,9 @@ async function getTherapistBaseDashboardPage({
 }: TherapistDashboardQueryInput): Promise<TherapistDashboardPageData> {
   const now = new Date();
   const currentWeekStart = startOfWeek(now);
-  const previousMonthStart = startOfMonth(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+  const previousMonthStart = startOfMonth(
+    new Date(now.getFullYear(), now.getMonth() - 1, 1),
+  );
   const rangeEnd = new Date(now);
   rangeEnd.setDate(rangeEnd.getDate() + 90);
 
@@ -108,8 +117,10 @@ async function getTherapistBaseDashboardPage({
   );
   const weekSessions = sessions.filter((session) => {
     const dateKey = dateKeyInTimezone(session.startsAt);
-    return dateKey >= dateKeyInTimezone(currentWeekStart.toISOString()) &&
-      dateKey <= dateKeyInTimezone(addDays(currentWeekStart, 6).toISOString());
+    return (
+      dateKey >= dateKeyInTimezone(currentWeekStart.toISOString()) &&
+      dateKey <= dateKeyInTimezone(addDays(currentWeekStart, 6).toISOString())
+    );
   });
   const todayKey = dateKeyInTimezone(now.toISOString());
   const todaySessions = sessions.filter(
@@ -142,6 +153,7 @@ async function getTherapistBaseDashboardPage({
       },
     ],
     aura: null,
+    auraState: "empty",
     history: {
       activePatients: 0,
       averageRating: null,
@@ -250,8 +262,10 @@ async function enrichPremiumDashboard(
     }),
   ]);
 
-  const reviews = reviewsResult.status === "success" ? reviewsResult.data : null;
-  const metrics = metricsResult.status === "success" ? metricsResult.data : null;
+  const reviews =
+    reviewsResult.status === "success" ? reviewsResult.data : null;
+  const metrics =
+    metricsResult.status === "success" ? metricsResult.data : null;
 
   return {
     ...base,
@@ -278,7 +292,8 @@ async function enrichPremiumDashboard(
         patientInitial: review.patientInitials.slice(0, 1),
         patientName: review.patientName,
         publishedAt:
-          review.publishedAt ?? new Date(Date.now() - index * 86400000).toISOString(),
+          review.publishedAt ??
+          new Date(Date.now() - index * 86400000).toISOString(),
         rating: review.rating,
       })) ?? [],
     today: {
@@ -346,7 +361,8 @@ function dateKeyInTimezone(value: string) {
     timeZone: "America/Sao_Paulo",
     year: "numeric",
   }).formatToParts(new Date(value));
-  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? "00";
+  const part = (type: string) =>
+    parts.find((item) => item.type === type)?.value ?? "00";
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
@@ -355,15 +371,4 @@ function formatShortDate(value: Date) {
     day: "2-digit",
     month: "2-digit",
   }).format(value);
-}
-
-async function queryRecommendationsSafely(accessToken: string) {
-  try {
-    return await queryTherapistRecommendations(accessToken);
-  } catch {
-    console.warn(
-      "[therapist-dashboard] Aura recommendations are temporarily unavailable.",
-    );
-    return null;
-  }
 }

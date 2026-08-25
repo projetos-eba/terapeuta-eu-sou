@@ -8,7 +8,7 @@ export async function queryTherapistAuraSignals(
   accessToken: string,
   periodDays: 30 | 90,
 ) {
-  return requestAuraRpc(accessToken, "get_therapist_aura_signals_v1", {
+  return requestAuraRpc(accessToken, "get_therapist_aura_signals_v2", {
     p_period_days: periodDays,
   });
 }
@@ -19,30 +19,24 @@ export async function dismissTherapistAuraSignal({
   periodStart,
   recommendationKey,
   requestId,
-  ruleKey,
-  ruleVersion,
 }: {
   accessToken: string;
   periodEnd: string;
   periodStart: string;
   recommendationKey: string;
   requestId: string;
-  ruleKey: string;
-  ruleVersion: number;
 }) {
-  return requestAuraRpc(accessToken, "dismiss_therapist_aura_signal_v1", {
+  return requestAuraRpc(accessToken, "dismiss_therapist_aura_signal_v2", {
     p_period_end: periodEnd,
     p_period_start: periodStart,
     p_recommendation_key: recommendationKey,
     p_request_id: requestId,
-    p_rule_key: ruleKey,
-    p_rule_version: ruleVersion,
   });
 }
 
 async function requestAuraRpc(
   accessToken: string,
-  rpc: "dismiss_therapist_aura_signal_v1" | "get_therapist_aura_signals_v1",
+  rpc: "dismiss_therapist_aura_signal_v2" | "get_therapist_aura_signals_v2",
   body: Record<string, unknown>,
 ) {
   const config = getSupabasePublicConfig();
@@ -77,13 +71,16 @@ function mapRpcError(status: number, payload: unknown) {
       ? payload.message
       : "";
 
+  if (message === "RECOMMENDATION_NOT_FOUND") {
+    return new TherapistAuraError("invalid_recommendation");
+  }
+
   if (
     status === 403 ||
     message === "CAPABILITY_NOT_ALLOWED" ||
     message === "FORBIDDEN" ||
     message === "PROFILE_LOCKED" ||
-    message === "PROFILE_NOT_FOUND" ||
-    message === "RECOMMENDATION_NOT_FOUND"
+    message === "PROFILE_NOT_FOUND"
   ) {
     return new TherapistAuraError("forbidden");
   }

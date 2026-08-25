@@ -4,8 +4,14 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TherapistAuraPageData } from "../therapist-aura.types";
 import { TherapistAuraPage } from "./therapist-aura-page";
 
+const refreshMock = vi.hoisted(() => vi.fn());
+
 vi.mock("../therapist-aura.actions", () => ({
   dismissAuraRecommendationAction: vi.fn(),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: refreshMock }),
 }));
 
 afterEach(cleanup);
@@ -15,7 +21,7 @@ describe("TherapistAuraPage", () => {
     render(<TherapistAuraPage data={emptyFixture()} />);
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "Aura IA" }),
+      screen.getByRole("heading", { level: 1, name: "Assessora Aura" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Seus números mais importantes" }),
@@ -27,9 +33,36 @@ describe("TherapistAuraPage", () => {
       screen.getByRole("heading", { name: "Nenhum sinal prioritário agora" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("img", { name: "Insights do período: ainda sem dados" }),
+      screen.getByRole("img", {
+        name: "Sinais do período: ainda sem dados. Não representa uma série histórica.",
+      }),
     ).toBeInTheDocument();
     expect(screen.getAllByText("Em formação").length).toBeGreaterThan(0);
+  });
+
+  it("does not repeat the review signal in the context cards", () => {
+    render(<TherapistAuraPage data={reviewRecommendationFixture()} />);
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Avaliações aguardam uma resposta",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        name: "Sua presença tem avaliações esperando resposta",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Acompanhe seus recebimentos em um só lugar",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "A continuidade ainda está em formação",
+      }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -62,6 +95,7 @@ function emptyFixture(): TherapistAuraPageData {
       reviews: {
         pendingReplyCount: 0,
         status: "empty",
+        windowDays: 30,
       },
       sessions: {
         cancellationRate: insufficientRate(),
@@ -84,5 +118,36 @@ function insufficientRate() {
     status: "insufficient_sample" as const,
     unit: "percent" as const,
     value: null,
+  };
+}
+
+function reviewRecommendationFixture(): TherapistAuraPageData {
+  const fixture = emptyFixture();
+  return {
+    ...fixture,
+    recommendations: [
+      {
+        actionHref: "/terapeuta/avaliacoes",
+        actionLabel: "Responder avaliações",
+        actionRouteKey: "reviews",
+        body: "Há 7 avaliação(ões) publicada(s) sem resposta sua.",
+        evidenceLabel:
+          "Somente avaliações publicadas sem resposta nos últimos 90 dias completos foram consideradas.",
+        id: "aura.reviews.pending_reply.v1:period-start:period-end",
+        priority: 90,
+        ruleKey: "aura.reviews.pending_reply.v1",
+        ruleVersion: 1,
+        title: "Avaliações aguardam uma resposta",
+        tone: "care",
+      },
+    ],
+    signals: {
+      ...fixture.signals,
+      reviews: {
+        pendingReplyCount: 7,
+        status: "ready",
+        windowDays: 90,
+      },
+    },
   };
 }

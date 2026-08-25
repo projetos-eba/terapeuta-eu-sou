@@ -2,9 +2,9 @@ import { TherapistPlan } from "@/domain/tes";
 import { getCanonicalTherapistPath } from "@/features/therapist-shell/therapist-route-policy";
 import { routes } from "@/lib/routes";
 
+import type { TherapistAuraPageData } from "../therapist-aura/therapist-aura.types";
 import { TherapistDashboardError } from "./therapist-dashboard.errors";
 import type {
-  AuraRecommendationRow,
   TherapistDashboardKpi,
   TherapistDashboardPageData,
   TherapistDashboardTrend,
@@ -43,7 +43,10 @@ export function calculateRevenueCents(
 
 export function mapTherapistDashboardResponse(
   value: unknown,
-): Omit<TherapistDashboardPageData, "aura" | "recommendedActions"> {
+): Omit<
+  TherapistDashboardPageData,
+  "aura" | "auraState" | "recommendedActions"
+> {
   if (!isRecord(value)) throw new TherapistDashboardError("invalid_response");
 
   const therapist = record(value.therapist);
@@ -141,36 +144,41 @@ export function mapTherapistDashboardResponse(
   };
 }
 
-export function mapTherapistRecommendations(rows: AuraRecommendationRow[]) {
+export function mapTherapistAuraPage(
+  auraPage: TherapistAuraPageData,
+): Pick<
+  TherapistDashboardPageData,
+  "aura" | "auraState" | "recommendedActions"
+> {
   const observations: string[] = [];
   const suggestions: string[] = [];
   const actions: TherapistDashboardPageData["recommendedActions"] = [];
 
-  for (const row of rows) {
-    const context = record(row.context);
-    const kind = string(context.kind, "suggestion");
-
-    if (kind === "observation") {
-      observations.push(row.body);
-    } else if (kind === "action") {
-      actions.push({
-        body: row.body,
-        href: getCanonicalTherapistPath(
-          string(context.action_href, routes.therapist.profile),
-        ),
-        id: row.id,
-        title: row.title,
-      });
+  for (const recommendation of auraPage.recommendations) {
+    if (recommendation.tone === "attention") {
+      observations.push(recommendation.body);
     } else {
-      suggestions.push(row.body);
+      suggestions.push(recommendation.body);
     }
+
+    actions.push({
+      body: recommendation.body,
+      href: getCanonicalTherapistPath(recommendation.actionHref),
+      id: recommendation.id,
+      title: recommendation.title,
+    });
   }
 
   return {
-    aura:
-      observations.length || suggestions.length
-        ? { observations, suggestions }
-        : null,
+    aura: auraPage.recommendations.length
+      ? {
+          computedAt: auraPage.meta.computedAt,
+          observations,
+          periodDays: auraPage.meta.periodDays,
+          suggestions,
+        }
+      : null,
+    auraState: auraPage.recommendations.length ? "ready" : "empty",
     recommendedActions: actions,
   };
 }

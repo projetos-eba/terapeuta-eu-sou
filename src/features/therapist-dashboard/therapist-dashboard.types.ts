@@ -19,9 +19,12 @@ export type TherapistDashboardPageData = {
     tone: "info" | "warning";
   }>;
   aura: null | {
+    computedAt: string;
     observations: string[];
+    periodDays: 30 | 90;
     suggestions: string[];
   };
+  auraState: "empty" | "ready" | "unavailable";
   history: {
     activePatients: number;
     averageRating: number | null;
@@ -91,12 +94,4 @@ export type TherapistDashboardQueryInput = {
   plan: TherapistPlan;
   profileCompleteness: number;
   profileId: string;
-};
-
-export type AuraRecommendationRow = {
-  body: string;
-  context: unknown;
-  id: string;
-  source_rule_key: string;
-  title: string;
 };

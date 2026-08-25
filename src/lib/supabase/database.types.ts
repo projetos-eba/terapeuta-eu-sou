@@ -13055,6 +13055,15 @@ export type Database = {
         };
         Returns: Json;
       };
+      dismiss_therapist_aura_signal_v2: {
+        Args: {
+          p_period_end: string;
+          p_period_start: string;
+          p_recommendation_key: string;
+          p_request_id: string;
+        };
+        Returns: Json;
+      };
       dispatch_email_outbox_recovery_v1: { Args: never; Returns: undefined };
       enqueue_due_video_session_control_jobs_v1: {
         Args: {
@@ -13298,6 +13307,10 @@ export type Database = {
         Returns: Json;
       };
       get_therapist_aura_signals_v1: {
+        Args: { p_period_days?: number };
+        Returns: Json;
+      };
+      get_therapist_aura_signals_v2: {
         Args: { p_period_days?: number };
         Returns: Json;
       };
