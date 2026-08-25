@@ -730,10 +730,13 @@ export function MetricsHeatmap({
 export function MetricsFunnel({
   stages,
 }: {
-  stages: Array<{ label: string; value: number }>;
+  stages: Array<{ label: string; value: number | null }>;
 }) {
-  const maximum = Math.max(1, ...stages.map((stage) => stage.value));
-  const isReference = stages.every((stage) => stage.value === 0);
+  const numericValues = stages.flatMap((stage) =>
+    stage.value === null ? [] : [stage.value],
+  );
+  const maximum = Math.max(1, ...numericValues);
+  const isReference = stages.some((stage) => stage.value === null);
   return (
     <ol aria-label="Funil de conversão" className="grid gap-3">
       {stages.map((stage, index) => (
@@ -743,7 +746,9 @@ export function MetricsFunnel({
         >
           <span>
             <strong className="block text-xl font-extrabold text-brand-deep">
-              {new Intl.NumberFormat("pt-BR").format(stage.value)}
+              {stage.value === null
+                ? "-"
+                : new Intl.NumberFormat("pt-BR").format(stage.value)}
             </strong>
             <span className="mt-0.5 block text-xs font-bold leading-4 text-tesText-secondary">
               {stage.label}
@@ -764,14 +769,14 @@ export function MetricsFunnel({
                 clipPath: "polygon(7% 0, 93% 0, 100% 100%, 0 100%)",
                 width: isReference
                   ? `${96 - index * 18}%`
-                  : stage.value === 0
+                  : stage.value === null || stage.value === 0
                     ? "0%"
                     : `${Math.max(24, (stage.value / maximum) * (96 - index * 12))}%`,
               }}
             />
           </span>
           <strong className="min-w-12 text-right text-sm text-tesText-secondary">
-            {isReference
+            {isReference || stage.value === null
               ? "—"
               : `${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format((stage.value / maximum) * 100)}%`}
           </strong>
@@ -784,7 +789,7 @@ export function MetricsFunnel({
 export function JourneyFunnel({
   stages,
 }: {
-  stages: Array<{ label: string; value: number }>;
+  stages: Array<{ label: string; value: number | null }>;
 }) {
   return <MetricsFunnel stages={stages} />;
 }

@@ -18,8 +18,10 @@ import type {
 import {
   formatComparison,
   formatCurrency,
+  formatCurrencyOrDash,
   formatDate,
   formatInteger,
+  formatIntegerOrDash,
   formatPercent,
 } from "./financial-formatters";
 
@@ -31,6 +33,7 @@ export function FinancialSummaryMetrics({
   if (analytics.status === "locked") return <PremiumMetricsLocked />;
 
   const metrics = analytics.metrics;
+  const hasSessionData = hasFinancialSessionData(metrics);
 
   return (
     <section
@@ -43,33 +46,40 @@ export function FinancialSummaryMetrics({
           description="Valor líquido devido ao terapeuta no período."
           icon={TrendingUp}
           label="Receita líquida"
-          value={formatCurrency(metrics.revenue.therapistNetCents)}
+          value={formatCurrencyOrDash(
+            metrics.revenue.therapistNetCents,
+            hasSessionData,
+          )}
           valueKind="currency"
         />
         <MetricCard
           comparison={metrics.revenue.comparison.averageTicket}
           description={`Principal: ticket médio líquido. Bruto: ${
             metrics.revenue.grossAverageTicketCents === null
-              ? "sem base"
+              ? "sem dados"
               : formatCurrency(metrics.revenue.grossAverageTicketCents)
           }.`}
           icon={BarChart3}
           label="Valor médio por sessão"
           value={
-            metrics.revenue.netAverageTicketCents === null
-              ? "Sem base"
+            metrics.revenue.netAverageTicketCents === null || !hasSessionData
+              ? "Sem dados"
               : formatCurrency(metrics.revenue.netAverageTicketCents)
           }
           valueKind="currency"
         />
         <MetricCard
           comparison={metrics.revenue.comparison.paidSessions}
-          description={`${formatInteger(
+          description={`${formatIntegerOrDash(
             metrics.revenue.paidSessionCount,
+            hasSessionData,
           )} sessões com pagamento confirmado.`}
           icon={RotateCcw}
           label="Sessões realizadas"
-          value={formatInteger(metrics.sessions.completedCount)}
+          value={formatIntegerOrDash(
+            metrics.sessions.completedCount,
+            hasSessionData,
+          )}
         />
         <MetricCard
           description={`Acompanhamos ${metrics.retention.eligiblePatients} pessoas por ${metrics.retention.observationWindowDays} dias.`}
@@ -182,12 +192,18 @@ function CancellationRescheduleCard({
         <MetricPill
           label="Cancelamentos"
           meta={formatPercent(metrics.sessions.cancellationRate)}
-          value={formatInteger(metrics.sessions.cancelledCount)}
+          value={formatIntegerOrDash(
+            metrics.sessions.cancelledCount,
+            hasFinancialSessionData(metrics),
+          )}
         />
         <MetricPill
           label="Reagendamentos"
           meta={formatPercent(metrics.sessions.rescheduleRate)}
-          value={formatInteger(metrics.sessions.rescheduledCount)}
+          value={formatIntegerOrDash(
+            metrics.sessions.rescheduledCount,
+            hasFinancialSessionData(metrics),
+          )}
         />
       </dl>
       <p className="rounded-lg bg-surface-soft p-3 text-sm font-semibold leading-6 text-tesText-secondary">
@@ -197,6 +213,15 @@ function CancellationRescheduleCard({
         registrada.
       </p>
     </AppPageSection>
+  );
+}
+
+function hasFinancialSessionData(metrics: TherapistFinancialMetrics) {
+  return (
+    metrics.revenue.paidSessionCount > 0 ||
+    metrics.sessions.completedCount > 0 ||
+    metrics.sessions.cancelledCount > 0 ||
+    metrics.sessions.rescheduledCount > 0
   );
 }
 
@@ -299,7 +324,7 @@ function FinancialEvolutionCard({
           </div>
         </div>
       ) : (
-        <EmptyMetricState message="Sem série financeira para o período selecionado." />
+        <EmptyMetricState message="Sem dados financeiros para o período selecionado." />
       )}
     </AppPageSection>
   );
@@ -361,7 +386,7 @@ function RevenueByTherapyCard({
                   </td>
                   <td className="border-b border-brand-lavender/70 py-3 pr-3">
                     {item.averageTicketCents === null
-                      ? "Sem base"
+                      ? "Sem dados"
                       : formatCurrency(item.averageTicketCents)}
                   </td>
                   <td className="border-b border-brand-lavender/70 py-3">

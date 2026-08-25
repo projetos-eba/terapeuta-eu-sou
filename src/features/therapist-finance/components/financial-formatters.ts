@@ -11,6 +11,10 @@ export function formatCurrency(cents: number) {
   }).format(cents / 100);
 }
 
+export function formatCurrencyOrDash(cents: number, hasData: boolean) {
+  return hasData ? formatCurrency(cents) : "-";
+}
+
 export function formatDateTime(
   value: string | null,
   timezone = "America/Sao_Paulo",
@@ -41,7 +45,7 @@ export function formatPeriodLabel(start: string, end: string) {
 }
 
 export function formatPercent(value: number | null, fractionDigits = 1) {
-  if (value === null) return "Sem base";
+  if (value === null) return "Sem dados";
   return `${new Intl.NumberFormat("pt-BR", {
     maximumFractionDigits: fractionDigits,
     minimumFractionDigits: fractionDigits,
@@ -50,6 +54,10 @@ export function formatPercent(value: number | null, fractionDigits = 1) {
 
 export function formatInteger(value: number) {
   return new Intl.NumberFormat("pt-BR").format(value);
+}
+
+export function formatIntegerOrDash(value: number, hasData: boolean) {
+  return hasData ? formatInteger(value) : "-";
 }
 
 export function formatComparison(

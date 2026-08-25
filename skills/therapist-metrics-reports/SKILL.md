@@ -20,9 +20,9 @@ Use esta skill ao alterar Métricas & Relatórios no shell do terapeuta.
 - Canônica: `/terapeuta/insights`.
 - Compatibilidade: `/terapeuta/metricas` redireciona para a rota canônica.
 - Não criar uma segunda implementação para abas ou planos.
-- Nome mostrado no menu: `Resultados`. A interface deve falar em
-  acompanhamento e trabalho do terapeuta; `métricas` e `insights` ficam apenas
-  como termos internos de rota, contrato e documentação técnica.
+- Nome mostrado no menu: `Métricas`. A interface deve falar em
+  acompanhamento e trabalho do terapeuta; `insights` fica apenas como termo
+  interno de rota, contrato e documentação técnica.
 
 ## Estado Atual
 
@@ -155,6 +155,9 @@ mais realizada`. O último não usa a palavra "procura" enquanto não existir
 - Texto funcional mínimo de 14px.
 - Touch targets mínimos de 44px.
 - Zero legítimo, indisponibilidade e capability negada são estados distintos.
+- Quando não houver base para uma métrica numérica, exibir `-`; para leituras
+  textuais, usar `Sem dados`. Preservar o zero somente quando o contrato
+  confirmar um resultado real.
 - Ocupação em formação usa `Histórico em formação`; descoberta desativada usa
   `Coleta pública desativada`; nenhum destes estados é convertido em zero ou
   em percentual estático do Figma.
@@ -195,6 +198,6 @@ zoom de 200%.
 
 ## Assets da plataforma
 
-- O hero compartilhado das abas de Resultados usa `therapistMetricsHero` com fade
+- O hero compartilhado das abas de Métricas usa `therapistMetricsHero` com fade
   à esquerda e sem alterar dados, capability ou período. Consulte
   `docs/design-system/platform-assets.md`.

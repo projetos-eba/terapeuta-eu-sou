@@ -37,7 +37,7 @@ const definitions: NavigationDefinition[] = [
     capability: "full_crm",
     href: routes.therapist.patients,
     icon: "route",
-    label: "Histórico",
+    label: "Histórico da Jornada",
     planLabel: "Premium Plus",
   },
   {
@@ -75,7 +75,7 @@ const definitions: NavigationDefinition[] = [
     capability: "advanced_metrics",
     href: routes.therapist.insights,
     icon: "chart",
-    label: "Resultados",
+    label: "Métricas",
     planLabel: "Premium",
   },
   {

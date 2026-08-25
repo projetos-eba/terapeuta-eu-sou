@@ -51,7 +51,7 @@ describe("buildTherapistNavigation", () => {
       navigation.find((item) => item.label === "Assessora Aura")?.accessState,
     ).toBe("locked");
     expect(
-      navigation.find((item) => item.label === "Histórico")?.upgradeHref,
+      navigation.find((item) => item.label === "Histórico da Jornada")?.upgradeHref,
     ).toBe(routes.therapist.plan);
     expect(
       navigation.find((item) => item.label === "Avaliações")?.accessState,
@@ -76,7 +76,7 @@ describe("buildTherapistNavigation", () => {
       navigation.find((item) => item.label === "Agenda")?.accessState,
     ).toBe("enabled");
     expect(
-      navigation.find((item) => item.label === "Resultados")?.accessState,
+      navigation.find((item) => item.label === "Métricas")?.accessState,
     ).toBe("locked");
     expect(navigation.every((item) => item.href.startsWith("/terapeuta"))).toBe(
       true,
