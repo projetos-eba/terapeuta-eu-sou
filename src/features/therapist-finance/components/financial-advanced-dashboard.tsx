@@ -48,7 +48,7 @@ export function FinancialAdvancedDashboard({
           value={
             forecastReady
               ? formatCurrency(dashboard.forecast.realizedNetCents)
-              : "—"
+              : "-"
           }
         />
         <AdvancedMetricCard
@@ -58,7 +58,7 @@ export function FinancialAdvancedDashboard({
           value={
             forecastReady
               ? formatCurrency(dashboard.forecast.contractedFutureNetCents)
-              : "—"
+              : "-"
           }
         />
         <AdvancedMetricCard
@@ -68,7 +68,7 @@ export function FinancialAdvancedDashboard({
           value={
             forecastReady
               ? formatCurrency(dashboard.forecast.contractedMonthNetCents)
-              : "—"
+              : "-"
           }
         />
         <AdvancedMetricCard
@@ -82,7 +82,7 @@ export function FinancialAdvancedDashboard({
               ? formatCurrency(
                   dashboard.forecast.estimatedOpenAgendaPotentialCents,
                 )
-              : "—"
+              : "-"
           }
         />
       </div>
@@ -582,7 +582,7 @@ function RetentionCard({
           label="Mediana até retorno"
           value={
             dashboard.retention.medianDaysToReturn === null
-              ? "Sem base"
+              ? "Sem dados"
               : `${dashboard.retention.medianDaysToReturn} dias`
           }
         />
@@ -703,7 +703,7 @@ function AdvancedRevenueByTherapy({
                   </td>
                   <td className="border-b border-brand-lavender/70 py-3 pr-3">
                     {item.averageTicketCents === null
-                      ? "Sem base"
+                      ? "Sem dados"
                       : formatCurrency(item.averageTicketCents)}
                   </td>
                   <td className="border-b border-brand-lavender/70 py-3 pr-3">

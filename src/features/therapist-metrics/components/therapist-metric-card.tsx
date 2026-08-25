@@ -56,7 +56,11 @@ export function TherapistMetricCard<
 
       <div>
         <p className="text-[36px] font-extrabold leading-tight text-brand-deep sm:text-[42px]">
-          {formatMetricValue(counter.value, counter.unit)}
+          {formatMetricValue(
+            counter.value,
+            counter.unit,
+            counter.status === "empty",
+          )}
         </p>
         {counter.status === "empty" ? (
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-muted">
@@ -81,7 +85,11 @@ export function TherapistMetricCard<
         </p>
         <p className="mt-2 text-sm font-bold leading-6 text-tesText-muted">
           Período anterior:{" "}
-          {formatMetricValue(counter.previousValue, counter.unit)}
+          {formatMetricValue(
+            counter.previousValue,
+            counter.unit,
+            counter.status === "empty",
+          )}
         </p>
       </div>
     </TESCard>
@@ -91,7 +99,10 @@ export function TherapistMetricCard<
 export function formatMetricValue(
   value: number,
   unit: "events" | "minutes" | "people" | "sessions",
+  empty = false,
 ) {
+  if (empty) return "-";
+
   if (unit !== "minutes") {
     return new Intl.NumberFormat("pt-BR").format(value);
   }

@@ -54,6 +54,9 @@
   `aura_recommendations`.
 - A UI informa data/fuso da leitura, separa histórico de agenda futura e
   identifica barras sem série histórica como visual ilustrativo.
+- Na Visão geral, a ilustração da Aura fica centralizada no espaço visual
+  reservado; a copy exibida ao terapeuta usa linguagem simples e não menciona
+  a implementação técnica das regras.
 
 ## Dados Permitidos
 

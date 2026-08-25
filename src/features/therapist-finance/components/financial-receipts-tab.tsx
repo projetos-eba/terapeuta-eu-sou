@@ -463,7 +463,7 @@ function ReceiptsVisualSummary({
                   {item.label}
                 </span>
                 <strong className="shrink-0 text-brand-deep">
-                  {hasData ? formatCurrency(item.value) : "—"}
+                  {hasData ? formatCurrency(item.value) : "-"}
                 </strong>
               </li>
             ))}
@@ -549,7 +549,7 @@ function ReceiptDonut({
       tabIndex={0}
     >
       <span className="grid size-[104px] place-items-center rounded-full bg-white px-2 text-center text-sm font-extrabold text-brand-deep">
-        {total > 0 ? formatCurrency(total) : "—"}
+        {total > 0 ? formatCurrency(total) : "-"}
       </span>
     </div>
   );

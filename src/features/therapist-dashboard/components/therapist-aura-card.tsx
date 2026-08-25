@@ -33,10 +33,10 @@ export function TherapistAuraCard({
 
   return (
     <section className="relative overflow-hidden rounded-panel border-2 border-brand-lavender bg-surface-soft px-5 py-6 shadow-card sm:px-7">
-      <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[210px] items-end justify-center sm:flex">
+      <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[210px] items-center justify-center sm:flex">
         <Image
           alt="Assessora Aura"
-          className="h-[270px] w-[180px] object-contain object-bottom"
+          className="h-[270px] w-[180px] object-contain object-center"
           height={975}
           src="/therapist/dashboard/aura.png"
           width={680}
@@ -63,8 +63,8 @@ export function TherapistAuraCard({
         {aura ? (
           <>
             <p className="mt-4 text-xs font-semibold text-tesText-muted">
-              Leitura por regras determinísticas · {aura.periodDays} dias ·
-              atualizada em {formatDateTime(aura.computedAt)}
+              Leitura da Aura · {aura.periodDays} dias · atualizada em{" "}
+              {formatDateTime(aura.computedAt)}
             </p>
             <div className="mt-5 grid gap-7 xl:grid-cols-2">
               <AuraList
