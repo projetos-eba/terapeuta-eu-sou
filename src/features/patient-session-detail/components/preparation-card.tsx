@@ -17,7 +17,7 @@ export function PreparationCard({
         </h2>
       </div>
 
-      <div className="rounded-[24px] bg-surface-soft p-5 sm:p-6">
+      <div className="mt-6 rounded-[24px] bg-surface-soft p-5 sm:p-6">
         <p className="text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
           Use este tempo para chegar ao encontro com mais calma, privacidade e
           estabilidade.

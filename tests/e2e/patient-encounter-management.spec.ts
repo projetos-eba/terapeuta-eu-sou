@@ -16,6 +16,44 @@ const cancellationBookingId =
 test.use({ screenshot: "on", trace: "on", video: "on" });
 
 test.describe("patient encounter management", () => {
+  test("keeps encounter detail readable and operable on desktop, tablet and mobile", async ({
+    page,
+  }, testInfo) => {
+    await loginAsPatient(page, reschedulePatientEmail);
+    await page.goto(`/app/encontros/${rescheduleBookingId}`);
+    await expect(
+      page.getByRole("heading", { name: "Detalhe do encontro" }),
+    ).toBeVisible();
+
+    for (const viewport of [
+      { height: 900, label: "desktop", width: 1440 },
+      { height: 768, label: "tablet", width: 1024 },
+      { height: 844, label: "mobile", width: 390 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await expect(
+        page.getByRole("heading", { name: "Detalhe do encontro" }).first(),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Seu encontro online" }),
+      ).toBeVisible();
+
+      const metrics = await page.evaluate(() => ({
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      }));
+      expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth);
+      await assertOverviewIdentityIsNotCompressed(page);
+
+      await page.screenshot({
+        fullPage: true,
+        path: testInfo.outputPath(
+          `patient-encounter-detail-${viewport.label}.png`,
+        ),
+      });
+    }
+  });
+
   test("requests reschedule with a real click from the encounter detail", async ({
     page,
   }) => {
@@ -88,10 +126,15 @@ test.describe("patient encounter management", () => {
     await expect(cancelButton).toBeEnabled();
     await cancelButton.click();
 
+    const cancellationDialog = page.getByRole("dialog", {
+      name: "Cancelar encontro",
+    });
+    await expect(cancellationDialog).toBeVisible();
     await expect(
-      page.getByRole("dialog", { name: "Cancelar encontro" }),
+      cancellationDialog.getByText(
+        /24h ou mais pode permitir reembolso integral/i,
+      ),
     ).toBeVisible();
-    await expect(page.getByText(/reembolso/i)).toBeVisible();
     await page
       .getByLabel("Motivo opcional")
       .fill("Preciso cancelar este horário.");
@@ -110,6 +153,29 @@ test.describe("patient encounter management", () => {
     });
   });
 });
+
+async function assertOverviewIdentityIsNotCompressed(
+  page: import("@playwright/test").Page,
+) {
+  const metrics = await page.locator("section").evaluateAll((sections) => {
+    const overview = sections.find(
+      (section) =>
+        section.querySelector("h2") !== null &&
+        section.querySelector("img") !== null,
+    );
+    const title = overview?.querySelector("h2");
+
+    return {
+      found: Boolean(title),
+      isHorizontallyClipped: title
+        ? title.scrollWidth > title.clientWidth
+        : false,
+    };
+  });
+
+  expect(metrics.found).toBe(true);
+  expect(metrics.isHorizontallyClipped).toBe(false);
+}
 
 async function loginAsPatient(
   page: import("@playwright/test").Page,

@@ -1,8 +1,6 @@
 import Link from "next/link";
 import {
-  BarChart3,
   CalendarDays,
-  LockKeyhole,
   Sparkles,
   Target,
   TrendingUp,
@@ -10,6 +8,8 @@ import {
 } from "lucide-react";
 
 import { AppPageSection } from "@/components/app-page";
+import { TherapistPlan } from "@/domain/tes";
+import { TherapistLockedCard } from "@/features/therapist-access";
 import { routes } from "@/lib/routes";
 
 import type {
@@ -33,6 +33,7 @@ export function FinancialAdvancedDashboard({
   if (advanced.status === "locked") return <AdvancedLockedState />;
 
   const dashboard = advanced.dashboard;
+  const forecastReady = dashboard.forecast.status === "available";
 
   return (
     <section
@@ -43,25 +44,46 @@ export function FinancialAdvancedDashboard({
         <AdvancedMetricCard
           description="Valor líquido já realizado no mês de referência."
           label="Receita líquida realizada"
-          value={formatCurrency(dashboard.forecast.realizedNetCents)}
+          muted={!forecastReady}
+          value={
+            forecastReady
+              ? formatCurrency(dashboard.forecast.realizedNetCents)
+              : "—"
+          }
         />
         <AdvancedMetricCard
           description="Sessões futuras já pagas e válidas. Não inclui pagamento pendente."
           label="Receita contratada futura"
-          value={formatCurrency(dashboard.forecast.contractedFutureNetCents)}
+          muted={!forecastReady}
+          value={
+            forecastReady
+              ? formatCurrency(dashboard.forecast.contractedFutureNetCents)
+              : "—"
+          }
         />
         <AdvancedMetricCard
           description="Realizado mais receita futura contratada no mês."
           label="Receita contratada no mês"
-          value={formatCurrency(dashboard.forecast.contractedMonthNetCents)}
+          muted={!forecastReady}
+          value={
+            forecastReady
+              ? formatCurrency(dashboard.forecast.contractedMonthNetCents)
+              : "—"
+          }
         />
         <AdvancedMetricCard
           description="Estimativa baseada nos horários disponíveis e nos valores atuais das suas terapias. Não representa receita garantida."
           label="Potencial disponível da agenda"
-          muted={dashboard.agendaPotential.status !== "available"}
-          value={formatCurrency(
-            dashboard.forecast.estimatedOpenAgendaPotentialCents,
-          )}
+          muted={
+            !forecastReady || dashboard.agendaPotential.status !== "available"
+          }
+          value={
+            forecastReady
+              ? formatCurrency(
+                  dashboard.forecast.estimatedOpenAgendaPotentialCents,
+                )
+              : "—"
+          }
         />
       </div>
 
@@ -75,10 +97,7 @@ export function FinancialAdvancedDashboard({
         <InsightCard dashboard={dashboard} />
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <RetentionCard dashboard={dashboard} />
-        <AdvancedEvolutionCard dashboard={dashboard} />
-      </div>
+      <RetentionCard dashboard={dashboard} />
 
       <AdvancedRevenueByTherapy dashboard={dashboard} />
     </section>
@@ -87,27 +106,13 @@ export function FinancialAdvancedDashboard({
 
 function AdvancedLockedState() {
   return (
-    <AppPageSection className="grid gap-4 bg-brand-lavenderSoft/70 md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center">
-      <span className="grid size-12 place-items-center rounded-full bg-white text-brand-primary">
-        <LockKeyhole aria-hidden="true" size={22} />
-      </span>
-      <div>
-        <h2 className="text-lg font-extrabold text-brand-deep">
-          Visão financeira do Premium Plus
-        </h2>
-        <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-          Projeções, potencial da agenda, oportunidades, retenção avançada,
-          evolução financeira e dicas práticas fazem parte do Premium Plus.
-          Recebimentos, repasses e conta de recebimento continuam disponíveis.
-        </p>
-      </div>
-      <Link
-        className="inline-flex min-h-11 items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-        href={routes.therapist.plan}
-      >
-        Ver Premium Plus
-      </Link>
-    </AppPageSection>
+    <TherapistLockedCard
+      className="rounded-card"
+      description="Projeções, potencial da agenda, oportunidades, retenção avançada, evolução financeira e dicas práticas fazem parte do Premium Plus. Recebimentos, repasses e conta de recebimento continuam disponíveis."
+      requiredPlan={TherapistPlan.PremiumPlus}
+      title="Visão financeira do Premium Plus"
+      variant="section"
+    />
   );
 }
 
@@ -147,6 +152,23 @@ function ForecastBreakdown({
 }: {
   dashboard: TherapistAdvancedFinancialDashboard;
 }) {
+  if (dashboard.forecast.status !== "available") {
+    return (
+      <div className="grid gap-4">
+        <div>
+          <h2 className="text-xl font-extrabold text-brand-deep">
+            Previsão do mês
+          </h2>
+          <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+            A previsão será apresentada quando houver uma base suficiente para
+            separar o que já aconteceu do que está contratado ou estimado.
+          </p>
+        </div>
+        <EmptyAdvancedState message="Ainda estamos reunindo dados para esta leitura." />
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-4">
       <div>
@@ -224,6 +246,28 @@ function AgendaPotentialCard({
   dashboard: TherapistAdvancedFinancialDashboard;
 }) {
   const potential = dashboard.agendaPotential;
+  if (potential.status !== "available") {
+    return (
+      <div className="grid gap-4">
+        <div className="flex items-start gap-3">
+          <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+            <CalendarDays aria-hidden="true" size={21} />
+          </span>
+          <div>
+            <h2 className="text-xl font-extrabold text-brand-deep">
+              Ocupação e potencial da agenda
+            </h2>
+            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+              Esta leitura aparece assim que houver histórico suficiente da sua
+              agenda.
+            </p>
+          </div>
+        </div>
+        <EmptyAdvancedState message="Ainda não há base suficiente para apresentar a ocupação com segurança." />
+      </div>
+    );
+  }
+
   const maxMinutes = Math.max(1, potential.capacityMinutes);
   const committedPercent = Math.min(
     100,
@@ -343,6 +387,27 @@ function OpportunityCard({
 }: {
   dashboard: TherapistAdvancedFinancialDashboard;
 }) {
+  if (dashboard.opportunities.status !== "available") {
+    return (
+      <AppPageSection className="grid gap-4">
+        <div className="flex items-start gap-3">
+          <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+            <Target aria-hidden="true" size={21} />
+          </span>
+          <div>
+            <h2 className="text-xl font-extrabold text-brand-deep">
+              Oportunidade do mês
+            </h2>
+            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+              Uma sugestão aparece quando houver base suficiente para uma
+              leitura confiável.
+            </p>
+          </div>
+        </div>
+      </AppPageSection>
+    );
+  }
+
   const opportunity = dashboard.opportunities.primary;
 
   return (
@@ -574,111 +639,6 @@ function RetentionCard({
         <EmptyAdvancedState message="Ainda não há dados suficientes para mostrar este acompanhamento." />
       )}
     </AppPageSection>
-  );
-}
-
-function AdvancedEvolutionCard({
-  dashboard,
-}: {
-  dashboard: TherapistAdvancedFinancialDashboard;
-}) {
-  const maxValue = Math.max(
-    1,
-    ...dashboard.financialEvolution.flatMap((point) => [
-      point.realizedNetCents,
-      point.contractedNetCents,
-      point.projectedNetCents ?? 0,
-      point.previousPeriodNetCents ?? 0,
-    ]),
-  );
-
-  return (
-    <AppPageSection className="grid gap-4">
-      <div>
-        <h2 className="text-xl font-extrabold text-brand-deep">
-          Evolução com projeção
-        </h2>
-        <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-          Séries separadas para realizado, contratado, estimado e período
-          anterior.
-        </p>
-      </div>
-      <div className="flex flex-wrap gap-4 text-xs font-extrabold text-tesText-secondary">
-        <Legend colorClass="bg-brand-primary" label="Realizado" />
-        <Legend colorClass="bg-status-info" label="Contratado" />
-        <Legend colorClass="bg-brand-deep" label="Estimado" />
-        <Legend colorClass="bg-brand-lavender" label="Período anterior" />
-      </div>
-      {dashboard.financialEvolution.length ? (
-        <div className="flex min-h-[190px] items-end gap-3 overflow-x-auto rounded-card border border-brand-lavender bg-surface-soft px-4 pb-3 pt-5">
-          {dashboard.financialEvolution.map((point) => (
-            <div
-              className="flex min-w-[76px] flex-1 flex-col items-center gap-2"
-              key={point.periodStart}
-            >
-              <div className="flex h-28 items-end gap-1">
-                <Bar
-                  label={`Realizado ${formatCurrency(point.realizedNetCents)}`}
-                  max={maxValue}
-                  value={point.realizedNetCents}
-                />
-                <Bar
-                  className="bg-status-info"
-                  label={`Contratado ${formatCurrency(point.contractedNetCents)}`}
-                  max={maxValue}
-                  value={point.contractedNetCents}
-                />
-                <Bar
-                  className="bg-brand-deep"
-                  label={`Estimado ${formatCurrency(point.projectedNetCents ?? 0)}`}
-                  max={maxValue}
-                  value={point.projectedNetCents ?? 0}
-                />
-                <Bar
-                  className="bg-brand-lavender"
-                  label={`Período anterior ${formatCurrency(point.previousPeriodNetCents ?? 0)}`}
-                  max={maxValue}
-                  value={point.previousPeriodNetCents ?? 0}
-                />
-              </div>
-              <span className="text-xs font-bold text-tesText-secondary">
-                {formatDate(point.periodStart).slice(0, 5)}
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <EmptyAdvancedState message="Sem série financeira avançada para o período." />
-      )}
-    </AppPageSection>
-  );
-}
-
-function Legend({ colorClass, label }: { colorClass: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span className={`size-3 rounded-sm ${colorClass}`} /> {label}
-    </span>
-  );
-}
-
-function Bar({
-  className = "bg-brand-primary",
-  label,
-  max,
-  value,
-}: {
-  className?: string;
-  label: string;
-  max: number;
-  value: number;
-}) {
-  return (
-    <span
-      aria-label={label}
-      className={`w-3 rounded-t ${className}`}
-      style={{ height: `${Math.max(4, (value / max) * 112)}px` }}
-    />
   );
 }
 

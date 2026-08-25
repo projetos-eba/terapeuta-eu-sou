@@ -2,6 +2,12 @@ import Link from "next/link";
 import type { Route } from "next";
 import type { LucideIcon } from "lucide-react";
 
+import { TherapistPlan } from "@/domain/tes";
+import {
+  canAccessTherapistPlan,
+  TherapistLockedCard,
+} from "@/features/therapist-access";
+
 import type { TherapistDashboardKpi } from "../therapist-dashboard.types";
 
 export function TherapistKpiCard({
@@ -9,6 +15,8 @@ export function TherapistKpiCard({
   icon: Icon,
   kpi,
   label,
+  plan,
+  requiredPlan,
   title,
   value,
 }: {
@@ -16,9 +24,15 @@ export function TherapistKpiCard({
   icon: LucideIcon;
   kpi: TherapistDashboardKpi;
   label: string;
+  plan: TherapistPlan;
+  requiredPlan: TherapistPlan;
   title: string;
   value: string;
 }) {
+  if (!canAccessTherapistPlan(plan, requiredPlan)) {
+    return <TherapistLockedCard requiredPlan={requiredPlan} title={title} />;
+  }
+
   return (
     <article className="flex min-h-[278px] flex-col rounded-panel border border-[var(--tes-color-border)]/70 bg-white p-5 shadow-card">
       <div className="flex items-start gap-3">

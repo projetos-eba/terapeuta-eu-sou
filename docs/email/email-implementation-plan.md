@@ -72,14 +72,17 @@ Aplicar o [contrato de design](./email-design-contract.md): `preheader` no regis
 
 ### 5. Scheduler de reminders
 
-Os cenários 18 e 19 precisam de tabela/job de agenda persistente, não de `setTimeout`. O design a implementar deve:
+Os cenários 18 e 19 usam a tabela/job persistente `booking_reminder_jobs`, não `setTimeout`. A implementação local deve:
 
 - criar/remover/invalidar jobs junto de confirmação, cancelamento e reagendamento;
 - armazenar somente referência a booking, versão, action e horário alvo;
-- usar timezone do booking/destinatário e uma janela de tolerância documentada;
+- calcular o alvo a partir do `starts_at` absoluto e usar o timezone do booking apenas na formatação;
+- aplicar janela estrita de um ciclo de um minuto, sem catch-up de jobs vencidos;
 - confirmar no claim que booking continua `confirmed`, versão igual e início futuro;
 - usar a outbox para dedupe/entrega; e
-- ser acionado por mecanismo Supabase Cron/worker autorizado, com recovery e observabilidade.
+- ser acionado por `tes-booking-reminders-v1` no Supabase Cron, com recovery da outbox e observabilidade.
+
+Status local: **IMPLEMENTED_LOCAL** para `booking_reminder_24h_patient` e `booking_reminder_1h_patient`. O primeiro lote não cria lembretes para terapeuta. A ativação automática das actions permanece uma decisão operacional por ambiente.
 
 ## Lotes de implementação propostos
 
@@ -148,7 +151,7 @@ As chaves abaixo são propostas de registry, não entidades já criadas. Separar
 | Cadastro/Auth      | `registration_started`, `email_verification` (existente), `registration_completed`, `patient_welcome`, `therapist_welcome`, `password_reset` (existente), `password_changed`, `account_new_login`, `account_email_changed_old`, `account_email_changed_new`, `account_phone_changed`                                                                  |
 | Verificação        | `therapist_profile_submitted_for_review`, `therapist_documents_requested`, `therapist_profile_approved`, `therapist_profile_rejected`, `therapist_profile_suspended`, `therapist_profile_reactivated`                                                                                                                                                 |
 | Encontros          | `booking_confirmed_patient`, `booking_confirmed_therapist`, `booking_reminder_24h_patient`, `booking_reminder_24h_therapist`, `booking_reminder_1h_patient`, `booking_reminder_1h_therapist`, `booking_cancelled_patient`, `booking_cancelled_therapist`, `booking_rescheduled_patient`, `booking_rescheduled_therapist`, `booking_review_invitation` |
-| Financeiro         | `session_payment_approved`, `session_payment_declined`, `session_payment_pending`, `session_refund_approved`, `therapist_payout_completed`; `session_refund_rejected` permanece **NEEDS_PRODUCT**                                                                                                                                                     |
+| Financeiro         | `session_payment_approved`, `session_payment_declined`, `session_payment_pending`, `session_refund_approved`, `therapist_payout_completed`, `therapist_payout_failed_after_paid`, `payout_operational_alert_admin`; `session_refund_rejected` permanece **NEEDS_PRODUCT** |
 | Assinaturas        | `therapist_subscription_created`, `therapist_subscription_renewed`, `therapist_subscription_cancelled`, `therapist_subscription_plan_changed`                                                                                                                                                                                                         |
 | Institucional/LGPD | `legal_terms_updated`, `legal_privacy_updated`, `planned_maintenance`, `institutional_announcement`, `lgpd_request_received`, `lgpd_request_completed`, `account_deletion_completed`                                                                                                                                                                  |
 

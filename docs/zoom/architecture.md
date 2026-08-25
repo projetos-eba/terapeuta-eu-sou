@@ -48,6 +48,12 @@ câmera e conexão em desktop e mobile; `ZoomVideoControls` concentra preflight,
 áudio, vídeo, suporte e saída. Em mobile, o remoto é dominante, o self-view é
 contido e o dock respeita `100dvh`.
 
+Antes do join, a sala de espera pode abrir uma prévia exclusivamente local no
+navegador: o teste de câmera solicita somente vídeo e substitui a capa visual;
+o teste de áudio solicita somente microfone e mostra um indicador local. Esses
+streams não inicializam o Video SDK, não solicitam acesso à sala, não emitem
+JWT e são encerrados ao desligar o teste, entrar, falhar ou desmontar a tela.
+
 O encerramento usa `TESDialog`. Depois de sair, paciente e terapeuta permanecem
 na rota canônica da sala e podem registrar feedback bilateral privado. A mesma
 tela pode ser reaberta pelo detalhe com `?feedback=1`; isso não cria uma rota
@@ -59,9 +65,14 @@ de serviço.
 A experiência de preparação usa capa abstrata da terapia, horário, contador,
 status de entrada, preflight e estados honestos de erro/reconexão. Música de
 ambiente é opcional e só pode ser reproduzida depois de uma interação explícita
-do usuário; sem asset ou fonte licenciada, nenhum áudio é incluído. Nenhum
+do usuário; sem asset ou fonte licenciada, o controle permanece inativo. Nenhum
 retrato fictício, áudio, vídeo, transcrição, URL privada, JWT ou identificador
 do Zoom é persistido para compor a sala.
+
+Quando o detalhe do encontro está dentro da janela ativa e o pagamento está
+confirmado, o CTA pode abrir a sala de espera mesmo antes da presença do
+terapeuta. Isso preserva o host-first: a tela de espera é acessível, mas o
+paciente só recebe acesso de join depois do evento confiável do terapeuta.
 
 O feedback de qualidade só muda para elegível quando o backend encontra entrada
 confiável de paciente e terapeuta e o encerramento efetivo ou programado da

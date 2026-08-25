@@ -172,6 +172,7 @@ export function mapServiceRow(
   row: ServiceRow,
   availability: AvailabilityDay[] = [],
   imageUrl: string | null = null,
+  themeNames: string[] = [],
 ): TherapistProfileService {
   return {
     availability,
@@ -189,6 +190,7 @@ export function mapServiceRow(
     imageUrl,
     priceCents: row.price_cents,
     priceLabel: formatCurrency(row.price_cents),
+    themeNames,
     title: row.service_title,
     therapyId: row.therapy_id,
     therapyName: row.therapy_name,
@@ -220,10 +222,13 @@ export function mapProfileRow(
 ): PublicTherapistProfile {
   return {
     acceptsOnlineSessions: row.accepts_online_sessions,
-    badges: row.badges ?? [],
+    badges: row.plan === "free" ? [] : (row.badges ?? []),
     bio: row.bio ?? content.essenceBody,
     cityState: [row.city, row.state].filter(Boolean).join(", "),
-    content,
+    content: {
+      ...content,
+      reflections: row.plan === "premium_plus" ? content.reflections : [],
+    },
     headline: row.published_headline ?? row.short_intro ?? content.shortIntro,
     heroImage:
       getTherapistAvatarUrl(row.photo_url, {
@@ -232,7 +237,7 @@ export function mapProfileRow(
       }) ?? "/therapists/ana-oliveira.png",
     id: row.id,
     isAcceptingBookings: row.is_accepting_bookings,
-    isVerified: Boolean(row.is_verified),
+    isVerified: row.plan !== "free" && Boolean(row.is_verified),
     name: row.public_name,
     plan: row.plan,
     profileUrl: `/terapeutas/${row.slug}`,
@@ -245,11 +250,14 @@ export function mapProfileRow(
     services,
     slug: row.slug,
     tags: row.tags ?? [],
-    video: normalizeVideo({
-      provider: row.video_provider,
-      thumbnailUrl: row.video_thumbnail_url,
-      title: row.video_title,
-      url: row.video_url,
-    }),
+    video:
+      row.plan === "free"
+        ? null
+        : normalizeVideo({
+            provider: row.video_provider,
+            thumbnailUrl: row.video_thumbnail_url,
+            title: row.video_title,
+            url: row.video_url,
+          }),
   };
 }

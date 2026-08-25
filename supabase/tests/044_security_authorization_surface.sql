@@ -55,6 +55,7 @@ select ok(
         'record_public_therapist_metric_events_v1(uuid,jsonb)',
         'is_therapist_publication_eligible_v1(uuid)',
         'is_public_service_booking_eligible_v1(uuid)',
+        'get_public_therapy_theme_names_v1(uuid)',
         'public_therapist_slug_redirect_rows_v1()'
       )
   ),

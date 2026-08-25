@@ -120,20 +120,34 @@ Use esta skill ao alterar Métricas & Relatórios no shell do terapeuta.
 ## UI
 
 - Reutilizar `AppPageContainer`, `AppPageSection`, `TESCard` e tokens TES.
-- Hero usa o asset local
-  `/therapist/dashboard/therapist-hero.png`.
+- O hero compartilhado usa o asset local
+  `/assets/plataforma/therapist-metrics-hero.png`, exposto por
+  `platformAssets.therapistMetricsHero`, com fade compatível com o shell TES.
 - Referências visuais confirmadas no Figma: Visão geral `13366:3628`, Sessões
   `13366:4259` e Interesse `13366:4896`, complementadas pela captura fornecida
   em 17/08/2026.
-- A primeira dobra combina hero editorial, abas, período, exportação CSV e
-  seis indicadores em grid responsivo. A Visão geral usa cards abertos em duas
-  colunas no desktop e uma coluna para gráficos complexos no mobile.
+- A primeira dobra combina hero editorial, abas, uma faixa utilitária separada
+  para período/exportação CSV e seis indicadores em grid responsivo. A Visão
+  geral segue a anatomia do frame com funil, resumo da agenda, evolução,
+  ranking, comparativo, heatmap e roscas; os controles permanecem fora do hero
+  para não competir com a composição editorial.
+- Os seis indicadores são `Visualizações do perfil`, `Interessados em agendar`,
+  `Sessões realizadas`, `Taxa de retorno`, `Ocupação da agenda` e `Terapia
+mais realizada`. O último não usa a palavra "procura" enquanto não existir
+  um evento de demanda no contrato.
+- `MetricsKpiCard`, `MetricsAgendaSummary`, `TherapyRankingTable` e
+  `MetricsComparison` são composição local da visão geral. Não promover estes
+  blocos a design system compartilhado antes de existir reutilização real em
+  Financeiro ou Aura.
 - Recharts é a biblioteca canônica deste dashboard para sparklines, séries,
   barras e roscas. Mapas de calor usam tabela semântica e tokens TES.
 - Todo gráfico deriva apenas do DTO autenticado, usa `ResponsiveContainer`,
-  tooltip, foco por teclado, nome acessível e resumo textual.
+  tooltip visual com data/label, séries e valores, foco por teclado, nome
+  acessível e resumo textual. Pontos ativos usam detalhe legível em hover e
+  foco, sem depender do título nativo do navegador.
 - Em mobile, KPIs usam duas colunas quando o espaço permitir; o exportador
-  vira botão de ícone com nome acessível, e tabelas/grades preservam região
+  vira uma ação CSV compacta com nome acessível, o período/atualização ocupam
+  uma faixa única quando houver espaço, e tabelas/grades preservam região
   rolável nomeada em vez de reduzir texto funcional.
 - A Visão geral inclui série de atividade, descoberta discriminada, ranking
   das próprias terapias, favoritos do perfil e aviso de ocupação.
@@ -141,6 +155,15 @@ Use esta skill ao alterar Métricas & Relatórios no shell do terapeuta.
 - Texto funcional mínimo de 14px.
 - Touch targets mínimos de 44px.
 - Zero legítimo, indisponibilidade e capability negada são estados distintos.
+- Ocupação em formação usa `Histórico em formação`; descoberta desativada usa
+  `Coleta pública desativada`; nenhum destes estados é convertido em zero ou
+  em percentual estático do Figma.
+- Estados vazios, indisponíveis, em formação ou bloqueados preservam a
+  anatomia visual do dashboard: linha-base, funil de referência, grade de
+  calor neutra, rosca neutra, ranking com trilhas e comparativo sem valores.
+  Esses elementos orientam a leitura futura, mas devem trazer texto explícito
+  de que não representam contagem real; somente um zero vindo do DTO pode ser
+  exibido como dado.
 - A aba Interesse mostra capability lock para Premium e dados protegidos para
   Premium Plus; nunca preencher com mock.
 

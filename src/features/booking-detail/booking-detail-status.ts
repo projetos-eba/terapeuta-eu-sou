@@ -32,6 +32,7 @@ export function getBookingDetailStatusLabel(status: BookingDetailStatus) {
     live: "Ao vivo agora",
     no_show_patient: "Não comparecimento",
     no_show_therapist: "Não realizada",
+    cancelled_by_payment: "Pagamento não concluído",
     pending_payment: "Pagamento pendente",
     refunded: "Reembolsada",
   };

@@ -1,5 +1,6 @@
 import { AdminSupportInboxPage } from "@/features/admin-operations/components/admin-support-inbox-page";
 import { getAdminSupportInbox } from "@/features/admin-operations/admin-support-inbox";
+import { SupportInboxLiveRefresh } from "@/features/support/components/support-live-refresh";
 import { requireAdminSession } from "@/lib/auth/admin-session";
 
 export default async function AdminSupportRoute({
@@ -31,5 +32,10 @@ export default async function AdminSupportRoute({
     );
   }
 
-  return <AdminSupportInboxPage data={result.data} />;
+  return (
+    <>
+      <SupportInboxLiveRefresh />
+      <AdminSupportInboxPage data={result.data} />
+    </>
+  );
 }

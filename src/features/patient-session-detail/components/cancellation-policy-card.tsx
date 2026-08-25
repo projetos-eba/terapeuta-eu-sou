@@ -9,11 +9,11 @@ export function CancellationPolicyCard({
 }) {
   return (
     <section className="rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
-      <div className="flex items-center gap-3">
-        <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-          <Info aria-hidden="true" size={20} />
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary sm:size-11">
+          <Info aria-hidden="true" size={19} />
         </span>
-        <h2 className="font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]">
+        <h2 className="font-display text-[2rem] font-light italic leading-[0.96] text-brand-deep sm:text-[2.3rem]">
           Política de cancelamento
         </h2>
       </div>
@@ -22,26 +22,27 @@ export function CancellationPolicyCard({
         <div className="space-y-5">
           <PolicyLine
             icon={CheckCircle2}
-            text="Sem custo"
+            text="Reembolso integral ou reagendamento, quando aplicável."
             title={`Até ${policy.freeUntilHours} horas de antecedência`}
             tone="success"
           />
           <PolicyLine
             icon={Info}
-            text={`Sujeito à cobrança de ${policy.lateCancelFeePercent}% do valor`}
+            text="Sem obrigação de reembolso. Exceções podem ser analisadas pelo TES."
             title={`Menos de ${policy.freeUntilHours} horas`}
             tone="warning"
           />
           <PolicyLine
             icon={OctagonX}
-            text={`Cobrança de ${policy.noShowFeePercent}% do valor do encontro`}
+            text="Sem obrigação de reembolso. Casos excepcionais podem ser analisados."
             title="Não comparecimento"
             tone="danger"
           />
         </div>
 
         <p className="mt-5 border-t border-border pt-4 text-[11px] font-semibold leading-5 text-tesText-secondary sm:text-xs">
-          O valor final será confirmado no momento da solicitação.
+          Após aprovação, o processamento do reembolso começa em até 7 dias
+          úteis. O prazo de crédito depende do meio de pagamento.
         </p>
       </div>
     </section>

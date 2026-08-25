@@ -1,0 +1,38 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+const read = (path: string) => readFileSync(join(process.cwd(), path), "utf8");
+
+describe("Stripe promotion checkout contract", () => {
+  it("keeps the native field disabled and localizes every checkout", () => {
+    const session = read(
+      "supabase/functions/stripe-create-session-payment/index.ts",
+    );
+    const subscription = read(
+      "supabase/functions/stripe-create-subscription-checkout/index.ts",
+    );
+
+    expect(session).not.toContain("allow_promotion_codes");
+    expect(session).toContain('locale: "pt-BR"');
+    expect(subscription).toContain('locale: "pt-BR"');
+    expect(session).toContain("promotion_code: promotion.promotionCodeId");
+    expect(subscription).toContain("promotion_code: promotion.promotionCodeId");
+  });
+
+  it("renders one TES domain field in both checkout journeys", () => {
+    const reservation = read(
+      "src/features/public-reservation/components/reservation-page.tsx",
+    );
+    const subscription = read(
+      "src/features/therapist-subscription/components/embedded-subscription-checkout.tsx",
+    );
+
+    expect(reservation).toContain("<PromotionCodeField");
+    expect(subscription).toContain("<PromotionCodeField");
+    expect(subscription.indexOf("<PromotionCodeField")).toBeLessThan(
+      subscription.indexOf("Pagamento seguro no TES"),
+    );
+  });
+});

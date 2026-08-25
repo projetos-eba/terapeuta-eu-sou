@@ -21,6 +21,7 @@ const closedBookingStatuses: ReadonlySet<BookingStatus> = new Set([
   BookingStatus.CancelledByTherapist,
   BookingStatus.NoShowPatient,
   BookingStatus.NoShowTherapist,
+  BookingStatus.CancelledByPayment,
   BookingStatus.Refunded,
 ]);
 

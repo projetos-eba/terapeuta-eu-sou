@@ -95,6 +95,7 @@ describe("public therapist profile query", () => {
             hero_image_url: "https://cdn.example.test/reiki-admin.jpg",
             id: "22222222-2222-4222-8222-222222222225",
             image_url: "https://cdn.example.test/reiki-default.jpg",
+            theme_names: ["Autoconhecimento", "Equilíbrio emocional"],
           },
         ]);
       }
@@ -130,6 +131,87 @@ describe("public therapist profile query", () => {
         String(url).includes("get_service_available_slots_v1"),
       ),
     ).toBe(true);
+  });
+
+  it("keeps every eligible public service and its therapy themes", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("public_therapist_profiles_v")) {
+        return jsonResponse([
+          {
+            accepts_online_sessions: true,
+            average_rating: null,
+            badges: [],
+            bio: null,
+            city: "São Paulo",
+            id: "profile-1",
+            is_accepting_bookings: true,
+            is_verified: true,
+            photo_url: null,
+            plan: "premium_plus",
+            public_name: "Terapeuta HML",
+            published_headline: null,
+            review_count: 0,
+            sessions_completed: 0,
+            short_intro: "Escuta responsável.",
+            slug: "terapeuta-hml",
+            state: "SP",
+            tags: ["Reiki", "Tarô"],
+            video_provider: null,
+            video_thumbnail_url: null,
+            video_title: null,
+            video_url: null,
+          },
+        ]);
+      }
+      if (url.includes("public_therapist_profile_services_v")) {
+        return jsonResponse([
+          serviceRow,
+          {
+            ...serviceRow,
+            service_id: "e2e10000-0000-4000-8000-000000000002",
+            service_title: "Tarô e autoconhecimento",
+            therapy_id: "22222222-2222-4222-8222-222222222228",
+            therapy_name: "Tarô",
+            therapy_slug: "taro",
+          },
+        ]);
+      }
+      if (url.includes("public_therapy_details_v")) {
+        return jsonResponse([
+          {
+            hero_image_url: "https://cdn.example.test/reiki-admin.jpg",
+            id: "22222222-2222-4222-8222-222222222225",
+            image_url: null,
+            theme_names: ["Autoconhecimento", "Equilíbrio emocional"],
+          },
+          {
+            hero_image_url: "https://cdn.example.test/taro-admin.jpg",
+            id: "22222222-2222-4222-8222-222222222228",
+            image_url: null,
+            theme_names: ["Mudanças de vida", "Propósito"],
+          },
+        ]);
+      }
+      if (url.includes("get_service_available_slots_v1")) {
+        return jsonResponse({ slots: [], timezone: "America/Sao_Paulo" });
+      }
+      return jsonResponse([]);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getPublicTherapistProfileResult("terapeuta-hml");
+
+    expect(result.status).toBe("success");
+    if (result.status !== "success") return;
+    expect(result.data.profile.services).toHaveLength(2);
+    expect(
+      result.data.profile.services.map((service) => service.therapyName),
+    ).toEqual(["Reiki", "Tarô"]);
+    expect(result.data.profile.services[0]?.themeNames).toEqual([
+      "Autoconhecimento",
+      "Equilíbrio emocional",
+    ]);
   });
 });
 

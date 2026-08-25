@@ -56,6 +56,12 @@ const payoutTokens = [
   { key: "finance_url", label: "Link do painel financeiro", kind: "url" },
 ] as const;
 
+const payoutIncidentTokens = [
+  { key: "recipient_name", label: "Nome do administrador" },
+  { key: "incident_type", label: "Tipo da ocorrência" },
+  { key: "admin_url", label: "Link de pagamentos", kind: "url" },
+] as const;
+
 const subscriptionTokens = [
   { key: "recipient_name", label: "Nome do terapeuta" },
   { key: "plan_name", label: "Nome do plano" },
@@ -735,6 +741,92 @@ export const emailActionRegistry: Record<
       encounter_url: "https://example.test/terapeuta/sessoes/exemplo",
     },
   },
+  booking_reminder_24h_patient: {
+    actionKey: "booking_reminder_24h_patient",
+    category: "Encontros",
+    label: "Lembrete de encontro — 24 horas — pessoa",
+    description: "Lembra a pessoa sobre um encontro confirmado 24 horas antes do horário persistido.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Falta 1 dia para seu encontro no TES",
+      preheader: "Seu encontro está se aproximando. Confira os detalhes.",
+      text: "Falta 1 dia para seu encontro no TES.\n\nOlá, {{recipient_name}}.\n\nSeu encontro com {{counterparty_name}} está previsto para {{meeting_date_time}} ({{meeting_timezone}}).\n\nTerapeuta: {{counterparty_name}}\nTerapia: {{service_title}}\nModalidade: Online\n\nConfira as informações do encontro pela sua área no TES.\n\nEquipe TES\n\nVer encontro: {{encounter_url}}",
+      html: defaultEmailHtml({
+        title: "Falta 1 dia para seu encontro",
+        ctaLabel: "Ver encontro",
+        ctaUrlToken: "encounter_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph(
+            "Seu encontro com {{counterparty_name}} está previsto para amanhã, no horário abaixo.",
+          ),
+          emailDetailList([
+            ["Terapeuta", "{{counterparty_name}}"],
+            ["Terapia", "{{service_title}}"],
+            ["Data e horário", "{{meeting_date_time}} ({{meeting_timezone}})"],
+            ["Modalidade", "Online"],
+          ]),
+          accountParagraph(
+            "Confira as informações do encontro pela sua área no TES.",
+          ),
+        ].join(""),
+      }),
+    },
+    allowedTokens: bookingTokens,
+    previewFixture: {
+      recipient_name: "Pessoa de exemplo",
+      counterparty_name: "Terapeuta de exemplo",
+      service_title: "Terapia de exemplo",
+      meeting_date_time: "20 de agosto de 2026 às 15:00",
+      meeting_timezone: "America/Sao_Paulo",
+      encounter_url: "https://example.test/app/encontros/exemplo",
+    },
+  },
+  booking_reminder_1h_patient: {
+    actionKey: "booking_reminder_1h_patient",
+    category: "Encontros",
+    label: "Lembrete de encontro — 1 hora — pessoa",
+    description: "Lembra a pessoa sobre um encontro confirmado 1 hora antes do horário persistido.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Seu encontro começa em 1 hora",
+      preheader: "Está quase na hora. Confira os detalhes do seu encontro.",
+      text: "Seu encontro começa em 1 hora.\n\nOlá, {{recipient_name}}.\n\nSeu encontro com {{counterparty_name}} está previsto para {{meeting_date_time}} ({{meeting_timezone}}).\n\nTerapeuta: {{counterparty_name}}\nTerapia: {{service_title}}\nModalidade: Online\n\nAcesse os detalhes pela sua área no TES e entre no encontro no momento apropriado.\n\nEquipe TES\n\nVer encontro: {{encounter_url}}",
+      html: defaultEmailHtml({
+        title: "Seu encontro começa em 1 hora",
+        ctaLabel: "Ver encontro",
+        ctaUrlToken: "encounter_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph(
+            "Seu encontro com {{counterparty_name}} está previsto para começar em 1 hora.",
+          ),
+          emailDetailList([
+            ["Terapeuta", "{{counterparty_name}}"],
+            ["Terapia", "{{service_title}}"],
+            ["Data e horário", "{{meeting_date_time}} ({{meeting_timezone}})"],
+            ["Modalidade", "Online"],
+          ]),
+          accountParagraph(
+            "Acesse os detalhes pela sua área no TES e entre no encontro no momento apropriado.",
+          ),
+        ].join(""),
+      }),
+    },
+    allowedTokens: bookingTokens,
+    previewFixture: {
+      recipient_name: "Pessoa de exemplo",
+      counterparty_name: "Terapeuta de exemplo",
+      service_title: "Terapia de exemplo",
+      meeting_date_time: "20 de agosto de 2026 às 15:00",
+      meeting_timezone: "America/Sao_Paulo",
+      encounter_url: "https://example.test/app/encontros/exemplo",
+    },
+  },
   booking_cancelled_patient: {
     actionKey: "booking_cancelled_patient",
     category: "Encontros",
@@ -1081,28 +1173,28 @@ export const emailActionRegistry: Record<
     actionKey: "therapist_payout_completed",
     category: "Financeiro",
     label: "Repasse realizado ao terapeuta",
-    description: "Confirma um repasse persistido após aceite do provider.",
+    description: "Confirma um repasse bancário após payout.paid autoritativo.",
     supportsAutomaticDispatch: true,
     adminConfigurable: true,
     currentTemplateVersion: "v1",
     defaults: {
-      subject: "Seu repasse foi realizado",
+      subject: "Seu repasse bancário foi confirmado",
       preheader:
         "O valor referente aos seus atendimentos já foi processado.",
-      text: "Seu repasse foi realizado.\n\nOlá, {{recipient_name}}.\n\nInformamos que o repasse financeiro referente aos seus atendimentos elegíveis foi processado com sucesso.\n\nResumo da operação:\nValor do repasse: {{amount}}\n\nO valor foi processado conforme as regras financeiras da plataforma e será disponibilizado de acordo com os prazos da instituição financeira responsável pelo processamento da transferência.\n\nVocê pode acompanhar o histórico completo dos seus repasses e demais movimentações financeiras diretamente no seu painel do TES.\n\nAgradecemos por fazer parte da nossa comunidade.\n\nEquipe TES\n\nVer painel financeiro: {{finance_url}}",
+      text: "Seu repasse bancário foi confirmado.\n\nOlá, {{recipient_name}}.\n\nA Stripe confirmou o envio de {{amount}} para sua conta de recebimento. A instituição financeira ainda pode devolver uma falha posterior; se isso ocorrer, avisaremos você.\n\nVer painel financeiro: {{finance_url}}",
       html: defaultEmailHtml({
-        title: "Seu repasse foi realizado",
+        title: "Seu repasse bancário foi confirmado",
         ctaLabel: "Ver painel financeiro",
         ctaUrlToken: "finance_url",
         body: [
           accountParagraph("Olá, {{recipient_name}}."),
           accountParagraph(
-            "Informamos que o repasse financeiro referente aos seus atendimentos elegíveis foi processado com sucesso.",
+            "A Stripe confirmou o envio do repasse financeiro referente aos seus atendimentos elegíveis.",
           ),
           accountParagraph("<strong>Resumo da operação:</strong>"),
           emailDetailList([["Valor do repasse", "{{amount}}"]]),
           accountParagraph(
-            "O valor foi processado conforme as regras financeiras da plataforma e será disponibilizado de acordo com os prazos da instituição financeira responsável pelo processamento da transferência.",
+            "A instituição financeira ainda pode devolver uma falha posterior. Se isso ocorrer, avisaremos você.",
           ),
           accountParagraph(
             "Você pode acompanhar o histórico completo dos seus repasses e demais movimentações financeiras diretamente no seu painel do TES.",
@@ -1116,6 +1208,66 @@ export const emailActionRegistry: Record<
       recipient_name: "Terapeuta de exemplo",
       amount: "R$ 120,00",
       finance_url: "https://example.test/terapeuta/financeiro",
+    },
+  },
+  therapist_payout_failed_after_paid: {
+    actionKey: "therapist_payout_failed_after_paid",
+    category: "Financeiro",
+    label: "Falha posterior no repasse",
+    description: "Informa uma falha bancária posterior a payout.paid.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Seu repasse bancário precisa de atenção",
+      preheader: "A instituição financeira devolveu uma falha após a confirmação anterior.",
+      text: "Olá, {{recipient_name}}.\n\nA instituição financeira informou uma falha posterior no repasse de {{amount}}. Nenhuma nova movimentação será criada automaticamente até a revisão segura da conta.\n\nAcompanhar financeiro: {{finance_url}}",
+      html: defaultEmailHtml({
+        title: "Seu repasse bancário precisa de atenção",
+        ctaLabel: "Acompanhar financeiro",
+        ctaUrlToken: "finance_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph("A instituição financeira informou uma falha posterior no repasse de {{amount}}."),
+          accountParagraph("Nenhuma nova movimentação será criada automaticamente até a revisão segura da conta."),
+        ].join(""),
+      }),
+    },
+    allowedTokens: payoutTokens,
+    previewFixture: {
+      recipient_name: "Terapeuta de exemplo",
+      amount: "R$ 120,00",
+      finance_url: "https://example.test/terapeuta/financeiro",
+    },
+  },
+  payout_operational_alert_admin: {
+    actionKey: "payout_operational_alert_admin",
+    category: "Financeiro",
+    label: "Alerta operacional de repasse",
+    description: "Notifica administradores sem expor payloads ou dados bancários.",
+    supportsAutomaticDispatch: true,
+    adminConfigurable: true,
+    currentTemplateVersion: "v1",
+    defaults: {
+      subject: "Repasse exige revisão administrativa",
+      preheader: "Uma ocorrência financeira sanitizada foi registrada.",
+      text: "Olá, {{recipient_name}}.\n\nUma ocorrência de repasse do tipo {{incident_type}} exige revisão. Consulte a área administrativa para verificar o estado persistido e o runbook.\n\nAbrir pagamentos: {{admin_url}}",
+      html: defaultEmailHtml({
+        title: "Repasse exige revisão administrativa",
+        ctaLabel: "Abrir pagamentos",
+        ctaUrlToken: "admin_url",
+        body: [
+          accountParagraph("Olá, {{recipient_name}}."),
+          accountParagraph("Uma ocorrência de repasse do tipo {{incident_type}} exige revisão."),
+          accountParagraph("Consulte o estado persistido e siga o runbook de reconciliação antes de autorizar nova movimentação."),
+        ].join(""),
+      }),
+    },
+    allowedTokens: payoutIncidentTokens,
+    previewFixture: {
+      recipient_name: "Administrador de exemplo",
+      incident_type: "reconciliação necessária",
+      admin_url: "https://example.test/admin/pagamentos",
     },
   },
   therapist_subscription_created: {

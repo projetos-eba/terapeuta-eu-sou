@@ -10,11 +10,13 @@ import {
 
 import { TESDecorativeMedia } from "@/components/tes";
 import { TherapistSupportSection } from "@/features/support/components/therapist-support-section";
+import { MessageCenterLiveRefresh } from "@/features/support/components/support-live-refresh";
 import { platformAssets } from "@/lib/platform-assets";
 
 import { MessageCenterActions } from "./components/message-center-actions";
 import { MarkNotificationsReadButton } from "./components/mark-notifications-read-button";
 import { MessageThreadDialogButton } from "./components/message-thread-dialog";
+import { PlatformNotificationDialogButton } from "./components/platform-notification-dialog";
 import type {
   MessageCenterCategory,
   MessageCenterPageData,
@@ -30,6 +32,10 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
 
   return (
     <main className="mx-auto grid w-full max-w-[1210px] gap-5 pb-10 text-tesText-primary">
+      <MessageCenterLiveRefresh
+        actorRole={data.actorRole}
+        enabled={data.source === "supabase"}
+      />
       <section className="relative isolate overflow-hidden rounded-card bg-white">
         <div className="grid min-h-[230px] lg:grid-cols-[minmax(0,1fr)_minmax(380px,0.82fr)]">
           <div className="relative z-10 px-6 py-8 sm:px-8 lg:py-10">
@@ -42,15 +48,15 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
             <div className="mt-6 flex flex-wrap gap-3">
               <MetricPill
                 icon={<MessageSquareDot aria-hidden="true" size={15} />}
-                label="Não lidas"
+                label="Conversas não lidas"
                 tone="danger"
-                value={data.metrics.unreadCount}
+                value={data.metrics.unreadMessagesCount}
               />
               <MetricPill
                 icon={<BellDot aria-hidden="true" size={15} />}
-                label={data.hero.pendingLabel}
+                label="Chamados abertos"
                 tone="warning"
-                value={data.metrics.awaitingCount}
+                value={data.metrics.openSupportTicketsCount}
               />
             </div>
           </div>
@@ -97,7 +103,9 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
                 <MarkNotificationsReadButton
                   actorRole={data.actorRole}
                   unreadCount={
-                    data.platformItems.filter((item) => item.isUnread).length
+                    data.platformItems.filter(
+                      (item) => item.isNotification && item.isUnread,
+                    ).length
                   }
                 />
                 <MessageCenterActions
@@ -226,14 +234,18 @@ function ThreadRow({
   item: MessageCenterThread;
 }) {
   return (
-    <article className="grid min-h-[86px] grid-cols-[52px_minmax(0,1fr)] gap-4 px-5 py-4 sm:grid-cols-[52px_minmax(0,1fr)_86px]">
+    <article className="grid min-h-[86px] grid-cols-[52px_minmax(0,1fr)] gap-x-4 gap-y-3 px-5 py-4 sm:grid-cols-[52px_minmax(0,1fr)_auto]">
       <Avatar name={item.name} src={item.avatarUrl} />
       <div className="min-w-0">
         <p className="truncate text-xs font-bold text-tesText-secondary">
           {item.name}
         </p>
-        <h3 className="mt-1 truncate text-sm font-extrabold text-brand-deep">
-          {item.title}
+        <h3 className="mt-1 min-w-0 truncate">
+          <MessageThreadDialogButton
+            actorRole={actorRole}
+            thread={item}
+            trigger="title"
+          />
         </h3>
         <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-tesText-secondary">
           {item.body}
@@ -248,27 +260,22 @@ function ThreadRow({
           {item.isUnread ? <UnreadDot /> : null}
         </div>
         {item.cta ? (
-          <div className="mt-3 flex flex-wrap items-center gap-3">
+          <div className="mt-3">
             <Link
               className="inline-flex min-h-10 items-center text-xs font-extrabold text-brand-primary underline-offset-2 hover:underline"
               href={item.cta.href}
             >
               {item.cta.label}
             </Link>
-            <MessageThreadDialogButton
-              actorRole={actorRole}
-              thread={item}
-            />
           </div>
-        ) : (
-          <div className="mt-3">
-            <MessageThreadDialogButton actorRole={actorRole} thread={item} />
-          </div>
-        )}
+        ) : null}
       </div>
-      <p className="col-start-2 text-xs font-semibold text-tesText-secondary sm:col-start-auto sm:text-right">
-        {item.timeLabel}
-      </p>
+      <div className="col-start-2 flex flex-wrap items-center gap-3 sm:col-start-3 sm:row-start-1 sm:row-span-2 sm:flex-col sm:items-end sm:justify-start">
+        <p className="text-xs font-semibold text-tesText-secondary sm:text-right">
+          {item.timeLabel}
+        </p>
+        <MessageThreadDialogButton actorRole={actorRole} thread={item} />
+      </div>
     </article>
   );
 }
@@ -283,8 +290,8 @@ function PlatformRow({ item }: { item: MessageCenterPlatformItem }) {
         <p className="truncate text-xs font-bold text-tesText-secondary">
           {item.categoryLabel}
         </p>
-        <h3 className="mt-1 truncate text-sm font-extrabold text-brand-deep">
-          {item.title}
+        <h3 className="mt-1 min-w-0 truncate">
+          <PlatformNotificationDialogButton item={item} />
         </h3>
         <p className="mt-1 line-clamp-2 text-xs font-semibold leading-5 text-tesText-secondary">
           {item.body}

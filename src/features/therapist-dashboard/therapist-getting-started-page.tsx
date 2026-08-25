@@ -320,20 +320,24 @@ function ChecklistRow({ item }: { item: TherapistHomeChecklistItem }) {
   const Icon = checklistIcons[item.id];
 
   return (
-    <li className="flex items-start gap-3 py-3 first:pt-0">
-      <StepState state={item.state} />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-extrabold text-brand-deep">{item.title}</p>
-        <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
-          {item.description}
-        </p>
-      </div>
+    <li className="first:pt-0">
       <Link
         aria-label={`${item.actionLabel}: ${item.title}`}
-        className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        className="group flex min-h-16 w-full items-start gap-3 rounded-xl py-3 transition hover:bg-brand-lavenderSoft/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
         href={item.href}
       >
-        <Icon aria-hidden="true" className="size-4" />
+        <StepState state={item.state} />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-extrabold text-brand-deep">
+            {item.title}
+          </span>
+          <span className="mt-1 block text-sm font-semibold leading-5 text-tesText-secondary">
+            {item.description}
+          </span>
+        </span>
+        <span className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition group-hover:bg-white">
+          <Icon aria-hidden="true" className="size-4" />
+        </span>
       </Link>
     </li>
   );
@@ -341,20 +345,24 @@ function ChecklistRow({ item }: { item: TherapistHomeChecklistItem }) {
 
 function DocumentStepRow({ item }: { item: TherapistHomeDocument }) {
   return (
-    <li className="flex items-start gap-3 py-3">
-      <StepState state={item.state} />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-extrabold text-brand-deep">{item.title}</p>
-        <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
-          {item.description}
-        </p>
-      </div>
+    <li>
       <Link
         aria-label={`Abrir Configurações para enviar ${item.title}`}
-        className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        className="group flex min-h-16 w-full items-start gap-3 rounded-xl py-3 transition hover:bg-brand-lavenderSoft/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
         href={routes.therapist.settings}
       >
-        <FileText aria-hidden="true" className="size-4" />
+        <StepState state={item.state} />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-extrabold text-brand-deep">
+            {item.title}
+          </span>
+          <span className="mt-1 block text-sm font-semibold leading-5 text-tesText-secondary">
+            {item.description}
+          </span>
+        </span>
+        <span className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition group-hover:bg-white">
+          <FileText aria-hidden="true" className="size-4" />
+        </span>
       </Link>
     </li>
   );
@@ -366,26 +374,28 @@ function ReviewStep({ status }: { status: string }) {
   const attention = status === "changes_requested" || status === "rejected";
 
   return (
-    <li className="flex items-start gap-3 py-3 pb-0">
-      <StepState
-        state={complete ? "complete" : attention ? "attention" : "pending"}
-      />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-extrabold text-brand-deep">
-          Revisar e enviar
-        </p>
-        <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
-          {complete
-            ? "Cadastro encaminhado para análise."
-            : "Revise os dados e envie seu cadastro quando estiver pronto."}
-        </p>
-      </div>
+    <li className="pb-0">
       <Link
         aria-label="Abrir cadastro para revisão"
-        className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        className="group flex min-h-16 w-full items-start gap-3 rounded-xl py-3 transition hover:bg-brand-lavenderSoft/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
         href={routes.therapist.profile}
       >
-        <Send aria-hidden="true" className="size-4" />
+        <StepState
+          state={complete ? "complete" : attention ? "attention" : "pending"}
+        />
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-extrabold text-brand-deep">
+            Revisar e enviar
+          </span>
+          <span className="mt-1 block text-sm font-semibold leading-5 text-tesText-secondary">
+            {complete
+              ? "Cadastro encaminhado para análise."
+              : "Revise os dados e envie seu cadastro quando estiver pronto."}
+          </span>
+        </span>
+        <span className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition group-hover:bg-white">
+          <Send aria-hidden="true" className="size-4" />
+        </span>
       </Link>
     </li>
   );

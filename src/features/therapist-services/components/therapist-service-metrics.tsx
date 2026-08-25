@@ -1,12 +1,30 @@
 import { CalendarCheck } from "lucide-react";
 
+import { TherapistPlan } from "@/domain/tes";
+import {
+  canAccessTherapistPlan,
+  TherapistLockedCard,
+} from "@/features/therapist-access";
 import type { TherapistServiceSummary } from "../therapist-services.types";
 
 export function TherapistServiceMetrics({
+  plan,
   service,
 }: {
+  plan: TherapistPlan;
   service: TherapistServiceSummary;
 }) {
+  if (!canAccessTherapistPlan(plan, TherapistPlan.Premium)) {
+    return (
+      <TherapistLockedCard
+        className="min-h-[120px] rounded-lg border-0 shadow-none"
+        requiredPlan={TherapistPlan.Premium}
+        title="Métricas da terapia"
+        variant="compact"
+      />
+    );
+  }
+
   return (
     <div className="pointer-events-none grid gap-3 md:min-w-[210px] xl:min-w-[220px]">
       <MetricItem

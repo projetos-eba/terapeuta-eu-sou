@@ -9,13 +9,14 @@ import {
   success,
 } from "../_shared/payments/http.ts";
 import {
+  type BookingCheckoutCommandBody,
   mapBookingCheckoutDatabaseError,
   selectAvailableSlot,
-  slotRangeEnd,
-  type BookingCheckoutCommandBody,
   type ServiceAvailableSlotsResponse,
+  slotRangeEnd,
   validateBookingCheckoutCommand,
 } from "./booking-checkout-command.ts";
+import type { PromotionSummary } from "../_shared/payments/promotion-codes.ts";
 
 type BookingHoldRow = {
   expires_at: string;
@@ -40,7 +41,12 @@ type CheckoutResponse = {
   data: {
     clientSecret: string | null;
     checkoutSessionId: string;
+    currency: string;
+    discountAmountCents: number;
+    originalAmountCents: number;
+    promotion: PromotionSummary | null;
     sessionPaymentId: string;
+    totalAmountCents: number;
     url: string | null;
   };
 };
@@ -129,6 +135,7 @@ runtime.serve(async (request) => {
       const checkout = await invokeSessionPaymentCheckout({
         bearerToken,
         bookingId: booking.id,
+        checkoutAttemptId: command.requestId,
         serviceRoleKey,
         supabaseUrl,
       });
@@ -137,9 +144,14 @@ runtime.serve(async (request) => {
         bookingId: booking.id,
         clientSecret: checkout.data.clientSecret,
         checkoutSessionId: checkout.data.checkoutSessionId,
+        currency: checkout.data.currency,
+        discountAmountCents: checkout.data.discountAmountCents,
         holdExpiresAt: hold.expires_at,
         holdId: hold.id,
+        originalAmountCents: checkout.data.originalAmountCents,
+        promotion: checkout.data.promotion,
         sessionPaymentId: checkout.data.sessionPaymentId,
+        totalAmountCents: checkout.data.totalAmountCents,
         url: checkout.data.url,
       });
     } catch (error) {
@@ -151,10 +163,9 @@ runtime.serve(async (request) => {
         actor_role: "patient",
         correlation_id: correlationId,
         duration_ms: Math.max(0, Math.round(performance.now() - startedAt)),
-        error_code:
-          error instanceof DomainError
-            ? error.code
-            : "session_booking_checkout_failed",
+        error_code: error instanceof DomainError
+          ? error.code
+          : "session_booking_checkout_failed",
         operation,
       }),
     );
@@ -172,7 +183,9 @@ async function assertCheckoutLegalDocumentsPublished(
   ];
   const effectiveAt = encodeURIComponent(new Date().toISOString());
   const rows = await client.get<LegalDocumentVersionRow[]>(
-    `/rest/v1/legal_document_versions?select=document_key&document_key=in.(${documentKeys.join(",")})&status=eq.published&effective_at=lte.${effectiveAt}`,
+    `/rest/v1/legal_document_versions?select=document_key&document_key=in.(${
+      documentKeys.join(",")
+    })&status=eq.published&effective_at=lte.${effectiveAt}`,
   );
   const publishedKeys = new Set(rows.map((row) => row.document_key));
   const hasAllDocuments = documentKeys.every((key) => publishedKeys.has(key));
@@ -198,11 +211,13 @@ async function registerCheckoutLegalAcceptances(input: {
   };
   const acceptances: LegalAcceptanceRow[] = [];
 
-  for (const documentKey of [
-    "terms-of-use",
-    "privacy-policy",
-    "cancellation-reschedule-refund-policy",
-  ]) {
+  for (
+    const documentKey of [
+      "terms-of-use",
+      "privacy-policy",
+      "cancellation-reschedule-refund-policy",
+    ]
+  ) {
     const acceptance = await input.client.rpc<LegalAcceptanceRow>(
       "register_legal_acceptance_v1",
       {
@@ -251,6 +266,7 @@ async function snapshotBookingLegalVersions(input: {
 async function invokeSessionPaymentCheckout(input: {
   bearerToken: string;
   bookingId: string;
+  checkoutAttemptId: string;
   serviceRoleKey: string;
   supabaseUrl: string;
 }) {
@@ -259,6 +275,7 @@ async function invokeSessionPaymentCheckout(input: {
     {
       body: JSON.stringify({
         bookingId: input.bookingId,
+        checkoutAttemptId: input.checkoutAttemptId,
         checkoutUiMode: "embedded",
       }),
       headers: {
@@ -272,9 +289,9 @@ async function invokeSessionPaymentCheckout(input: {
   const payload = (await response.json().catch(() => null)) as
     | CheckoutResponse
     | {
-        ok: false;
-        error?: { code?: string; message?: string };
-      }
+      ok: false;
+      error?: { code?: string; message?: string };
+    }
     | null;
 
   if (!response.ok || payload?.ok !== true) {

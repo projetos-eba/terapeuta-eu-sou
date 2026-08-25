@@ -52,6 +52,7 @@ type BookingRow = {
   starts_at: string;
   status: "completed" | "confirmed" | string;
   therapist_profile_id: string;
+  timezone: string;
 };
 
 type ProfessionalRow = {
@@ -59,6 +60,15 @@ type ProfessionalRow = {
   id: string;
   photo_url: string | null;
   public_name: string;
+};
+
+type FavoriteProfessionalDetailsRow = {
+  average_rating: number | null;
+  id: string;
+  published_headline: string | null;
+  review_count: number | null;
+  short_intro: string | null;
+  tags: string[] | null;
 };
 
 type ServiceRow = {
@@ -198,7 +208,7 @@ async function getSupabasePatientOverview(
   ] = await Promise.all([
     supabaseRequest<BookingRow[]>(
       config,
-      `/rest/v1/bookings?select=id,therapist_profile_id,service_id,starts_at,ends_at,status,completed_at&patient_profile_id=eq.${patient.id}&order=starts_at.asc`,
+      `/rest/v1/bookings?select=id,therapist_profile_id,service_id,starts_at,ends_at,timezone,status,completed_at&patient_profile_id=eq.${patient.id}&order=starts_at.asc`,
     ),
     supabaseRequest<FavoriteRow[]>(
       config,
@@ -218,7 +228,7 @@ async function getSupabasePatientOverview(
     ),
     supabaseRequest<SupportTicketRow[]>(
       config,
-      `/rest/v1/support_tickets?select=id,subject,description,status,resolution_summary,created_at&requester_profile_id=eq.${encodeURIComponent(profileId)}&order=created_at.desc&limit=3`,
+      `/rest/v1/support_tickets?select=id,subject,description,status,resolution_summary,created_at&requester_profile_id=eq.${encodeURIComponent(profileId)}&status=in.(open,in_review)&order=created_at.desc&limit=3`,
     ),
   ]);
 
@@ -228,12 +238,24 @@ async function getSupabasePatientOverview(
   ]);
   const serviceIds = unique(bookings.map((booking) => booking.service_id));
   const conversationIds = conversations.map((conversation) => conversation.id);
-  const [professionals, services, unreadMessages, reviews] = await Promise.all([
+  const [
+    professionals,
+    favoriteProfessionalDetails,
+    services,
+    unreadMessages,
+    reviews,
+  ] = await Promise.all([
     getRowsByIds<ProfessionalRow>(
       config,
       "therapist_profiles",
       "id,public_name,headline,photo_url",
       professionalIds,
+    ),
+    getRowsByIds<FavoriteProfessionalDetailsRow>(
+      config,
+      "public_therapist_profiles_v",
+      "id,short_intro,published_headline,tags,average_rating,review_count",
+      unique(favorites.map((favorite) => favorite.therapist_profile_id)),
     ),
     getRowsByIds<ServiceRow>(
       config,
@@ -262,6 +284,9 @@ async function getSupabasePatientOverview(
   const professionalById = new Map(
     professionals.map((item) => [item.id, item]),
   );
+  const favoriteProfessionalDetailsById = new Map(
+    favoriteProfessionalDetails.map((item) => [item.id, item]),
+  );
   const serviceById = new Map(services.map((item) => [item.id, item]));
   const therapyById = new Map(therapies.map((item) => [item.id, item]));
   const reviewedBookingIds = new Set(
@@ -273,7 +298,6 @@ async function getSupabasePatientOverview(
         booking.status === "confirmed" &&
         new Date(booking.ends_at) >= new Date(),
     )
-    .slice(0, 3)
     .flatMap((booking) => {
       const professional = professionalById.get(booking.therapist_profile_id);
       const service = serviceById.get(booking.service_id);
@@ -304,7 +328,16 @@ async function getSupabasePatientOverview(
     },
     favoriteProfessionals: favorites.flatMap((favorite) => {
       const professional = professionalById.get(favorite.therapist_profile_id);
-      return professional ? [toFavoriteProfessional(professional)] : [];
+      return professional
+        ? [
+            toFavoriteProfessional(
+              professional,
+              favoriteProfessionalDetailsById.get(
+                favorite.therapist_profile_id,
+              ),
+            ),
+          ]
+        : [];
     }),
     latestMoodCheckin: toMoodCheckin(moods[0]),
     moodOptions,
@@ -322,7 +355,9 @@ async function getSupabasePatientOverview(
       therapyById,
     ),
     source: "supabase",
-    supportTickets: supportTickets.map(toSupportTicket),
+    supportTickets: supportTickets
+      .map(toSupportTicket)
+      .filter((ticket) => ticket.status !== "resolved"),
     unreadMessagesCount: unreadMessages.length,
     unreadNotificationsCount: notifications.length,
     upcomingAppointments,
@@ -405,19 +440,25 @@ function toAppointment(
     startsAt: booking.starts_at,
     status: isLive ? "live" : "confirmed",
     therapyLabel: therapy.name,
+    timezone: booking.timezone,
   };
 }
 
 function toFavoriteProfessional(
   professional: ProfessionalRow,
+  details?: FavoriteProfessionalDetailsRow,
 ): PatientFavoriteProfessional {
   return {
+    averageRating: details?.average_rating ?? null,
     avatarUrl: getTherapistAvatarUrl(professional.photo_url, {
       name: professional.public_name,
     }),
     id: professional.id,
     name: professional.public_name,
-    specialty: professional.headline,
+    reviewCount: details?.review_count ?? 0,
+    summary: details?.short_intro ?? details?.published_headline ?? null,
+    specialty: details?.published_headline ?? professional.headline ?? null,
+    techniques: details?.tags?.filter(Boolean).slice(0, 4) ?? [],
   };
 }
 
@@ -516,22 +557,37 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
     },
     favoriteProfessionals: [
       {
+        averageRating: 4.9,
         avatarUrl: "/therapists/andre-lima.png",
         id: "92000000-0000-4000-8000-000000000014",
         name: "André Lima",
+        reviewCount: 38,
+        summary:
+          "Acompanho processos de reconexão e autocuidado com escuta acolhedora.",
         specialty: "Terapeuta Holístico",
+        techniques: ["Reiki", "Meditação", "Aromaterapia"],
       },
       {
+        averageRating: 4.8,
         avatarUrl: "/therapists/ana-oliveira.png",
         id: "92000000-0000-4000-8000-000000000015",
         name: "Sofia Mendes",
+        reviewCount: 24,
+        summary:
+          "Um espaço tranquilo para olhar para o momento presente e suas possibilidades.",
         specialty: "Terapeuta Holística",
+        techniques: ["Tarô", "Respiração", "Cristais"],
       },
       {
+        averageRating: 5,
         avatarUrl: "/therapists/marcio-andrade.png",
         id: "92000000-0000-4000-8000-000000000016",
         name: "Roberto Vaz",
+        reviewCount: 17,
+        summary:
+          "Práticas integrativas para apoiar escolhas mais conscientes no cotidiano.",
         specialty: "Terapeuta Holístico",
+        techniques: ["Constelação", "Reiki", "Yoga"],
       },
     ],
     latestMoodCheckin: {
@@ -555,14 +611,6 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
     },
     source: "demo",
     supportTickets: [
-      {
-        createdAt: new Date(now.getTime() - 86400000).toISOString(),
-        description: "O valor foi estornado para o seu cartão Visa.",
-        id: "a0000000-0000-4000-8000-000000000011",
-        resolutionSummary: "O reembolso foi concluído.",
-        status: "resolved",
-        subject: "Reembolso de sessão",
-      },
       {
         createdAt: new Date(now.getTime() - 172800000).toISOString(),
         description: "Nossa equipe técnica está verificando o log...",
@@ -588,6 +636,7 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
         startsAt: todayStart.toISOString(),
         status: "live",
         therapyLabel: "Reiki",
+        timezone: "America/Sao_Paulo",
       },
       {
         endsAt: tomorrowEnd.toISOString(),
@@ -602,6 +651,7 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
         startsAt: tomorrowStart.toISOString(),
         status: "confirmed",
         therapyLabel: "Tarô",
+        timezone: "America/Sao_Paulo",
       },
       {
         endsAt: nextTuesdayEnd.toISOString(),
@@ -616,6 +666,7 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
         startsAt: nextTuesday.toISOString(),
         status: "confirmed",
         therapyLabel: "Reiki",
+        timezone: "America/Sao_Paulo",
       },
     ],
   };

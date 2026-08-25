@@ -8,6 +8,11 @@ import {
   WalletCards,
 } from "lucide-react";
 
+import { TherapistPlan } from "@/domain/tes";
+import {
+  canAccessTherapistPlan,
+  TherapistLockedCard,
+} from "@/features/therapist-access";
 import { routes } from "@/lib/routes";
 
 import type { TherapistProfileEditorData } from "../therapist-profile-editor.types";
@@ -19,6 +24,16 @@ export function ProfileDerivedMetrics({
 }: {
   editor: TherapistProfileEditorData;
 }) {
+  if (!canAccessTherapistPlan(editor.derived.plan, TherapistPlan.Premium)) {
+    return (
+      <TherapistLockedCard
+        requiredPlan={TherapistPlan.Premium}
+        title="Resumo do perfil"
+        variant="section"
+      />
+    );
+  }
+
   const derived = editor.derived;
 
   return (
@@ -57,7 +72,11 @@ export function ProfileDerivedMetrics({
   );
 }
 
-export function ProfileManagedElsewhere() {
+export function ProfileManagedElsewhere({
+  plan = TherapistPlan.PremiumPlus,
+}: {
+  plan?: TherapistPlan;
+} = {}) {
   return (
     <ProfileSection
       description="Cada parte fica no lugar certo para você encontrar e atualizar com facilidade."
@@ -68,24 +87,29 @@ export function ProfileManagedElsewhere() {
           href={routes.therapist.services}
           icon={<WalletCards aria-hidden="true" size={18} />}
           label="Terapias e preços"
+          plan={plan}
           suffix="Editar em Suas terapias"
         />
         <ManagedLink
           href={routes.therapist.agenda}
           icon={<CalendarDays aria-hidden="true" size={18} />}
           label="Horários disponíveis"
+          plan={plan}
           suffix="Editar em Agenda"
         />
         <ManagedLink
           href={routes.therapist.reviews}
           icon={<Star aria-hidden="true" size={18} />}
           label="Avaliações"
+          plan={plan}
           suffix="Ver avaliações"
+          requiredPlan={TherapistPlan.Premium}
         />
         <ManagedLink
           href={routes.therapist.finance}
           icon={<CreditCard aria-hidden="true" size={18} />}
           label="Recebimentos"
+          plan={plan}
           suffix="Ver financeiro"
         />
       </div>
@@ -97,13 +121,21 @@ function ManagedLink({
   href,
   icon,
   label,
+  plan,
   suffix,
+  requiredPlan,
 }: {
   href: string;
   icon: ReactNode;
   label: string;
+  plan: TherapistPlan;
   suffix: string;
+  requiredPlan?: TherapistPlan;
 }) {
+  if (requiredPlan && !canAccessTherapistPlan(plan, requiredPlan)) {
+    return null;
+  }
+
   return (
     <Link
       className="grid min-h-[56px] grid-cols-[38px_minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-2 text-sm font-bold text-brand-deep transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
@@ -120,6 +152,7 @@ function ManagedLink({
     </Link>
   );
 }
+
 
 function formatPrice(cents: number | null) {
   if (cents === null) return "Ainda sem dados";

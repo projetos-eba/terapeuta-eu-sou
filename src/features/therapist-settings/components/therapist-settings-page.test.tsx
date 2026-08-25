@@ -12,10 +12,12 @@ import type { TherapistPlanPageData } from "@/features/therapist-plan/therapist-
 import type { TherapistSettingsData } from "../therapist-settings.types";
 
 const commandMocks = vi.hoisted(() => ({
+  lookupTherapistAddressByCep: vi.fn(),
   updateTherapistSettings: vi.fn(),
 }));
 
 vi.mock("../therapist-settings.commands", () => ({
+  lookupTherapistAddressByCep: commandMocks.lookupTherapistAddressByCep,
   updateTherapistSettings: commandMocks.updateTherapistSettings,
 }));
 
@@ -25,6 +27,14 @@ vi.mock("next/navigation", () => ({
 
 describe("TherapistSettingsPage", () => {
   beforeEach(() => {
+    commandMocks.lookupTherapistAddressByCep.mockReset();
+    commandMocks.lookupTherapistAddressByCep.mockResolvedValue({
+      error: {
+        code: "CEP_UNAVAILABLE",
+        message: "Preencha o endereço manualmente.",
+      },
+      status: "error",
+    });
     commandMocks.updateTherapistSettings.mockReset();
     commandMocks.updateTherapistSettings.mockResolvedValue({
       data: {

@@ -1,15 +1,32 @@
 import Link from "next/link";
 import type { Route } from "next";
 
+import { TherapistPlan } from "@/domain/tes";
+import {
+  canAccessTherapistPlan,
+  TherapistLockedCard,
+} from "@/features/therapist-access";
 import { routes } from "@/lib/routes";
 
 import type { TherapistDashboardPageData } from "../therapist-dashboard.types";
 
 export function TherapistRecentReviews({
+  plan = TherapistPlan.PremiumPlus,
   reviews,
 }: {
+  plan?: TherapistPlan;
   reviews: TherapistDashboardPageData["recentReviews"];
 }) {
+  if (!canAccessTherapistPlan(plan, TherapistPlan.Premium)) {
+    return (
+      <TherapistLockedCard
+        requiredPlan={TherapistPlan.Premium}
+        title="Avaliações recentes"
+        variant="section"
+      />
+    );
+  }
+
   return (
     <section className="flex min-h-[330px] flex-col rounded-panel border border-[var(--tes-color-border)]/70 bg-white p-6 shadow-card">
       <h2 className="max-w-xs text-xl font-bold leading-6 text-brand-deep">

@@ -101,9 +101,10 @@ existentes.
 
 ## Agent E — QA e estado do gate
 
-- Teste direcionado de acesso online: 3 testes aprovados.
+- Testes direcionados da feature: 5 arquivos e 17 testes aprovados.
+- Suíte completa: 158 arquivos e 635 testes aprovados.
 - `npm run lint`, `npm run typecheck` e `npm run build`: aprovados na execução
-  isolada final.
+  final.
 - Playwright alcançou a rota local, mas a proteção de autenticação redirecionou
   corretamente para `/cliente/login`; não havia uma sessão de paciente
   disponível para comprovar a página real em desktop, tablet e mobile.
@@ -112,5 +113,36 @@ Não há evidência visual autenticada suficiente para atribuir Visual Quality
 Score ou aprovar P02 como página calibrada. O próximo gate é uma sessão real de
 paciente no navegador, com screenshots nos três viewports e revisão de
 hierarquia, overflow, touch targets e CTAs state-aware.
+
+## Aplicação visual complementar — 2026-08-23
+
+As referências anexadas pelo produto foram incorporadas como direção visual
+complementar ao node Figma `13366:6713`. A implementação atual concentra a
+primeira dobra em um hero editorial com identidade, data, horário, sala, status
+e ação autorizada; adiciona uma faixa responsiva de pagamento, sala e estado do
+encontro; e reorganiza as seções em uma rail contextual somente em desktop
+amplo. No mobile, suporte e lembrete aparecem antes do contexto, e o restante
+segue em fluxo vertical sem scroll horizontal.
+
+Estados de erro, loading e not-found passaram a ter superfícies próprias. A
+composição não adiciona rotas de calendário ou edição de intake porque esses
+fluxos não foram identificados nos contratos atuais.
+
+## Ajustes operacionais — 2026-08-24
+
+- A ilustração de lótus permanece somente no campo de contexto compartilhado do
+  agendamento; foi removida do hero, de “Sobre este encontro” e do lembrete.
+- O card “Mais opções” foi removido. Informações úteis agora abrem respostas
+  locais em `TESDialog`, sem encaminhar perguntas para a Central de mensagens.
+- “Antes do encontro” recebeu o espaçamento padrão entre título e recomendações.
+- A política exibida segue o documento operacional recebido: 24 horas ou mais
+  permitem reagendamento ou reembolso quando aplicável; menos de 24 horas e
+  não comparecimento não geram obrigação de reembolso; exceções são analisadas
+  individualmente.
+- O popover de notificações passou a ser renderizado em camada global ancorada
+  ao sino, evitando que o conteúdo da página atravesse o painel.
+
+O QA visual autenticado continua pendente por falta de uma sessão de paciente
+disponível no navegador local.
 
 `P02 IMPLEMENTED — VISUAL QA AUTHENTICATED PENDING`

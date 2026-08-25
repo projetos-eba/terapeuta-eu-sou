@@ -50,6 +50,12 @@ Não passar linhas cruas do Supabase para React.
 - Documentos privados: `therapist_private_documents`
 - Buckets: `therapist-public-media`, `therapist-private-documents`
 
+O upload de foto pública persiste o rascunho de mídia por meio do comando
+`save_media_draft` e do RPC `save_therapist_profile_media_draft_v1`. Esse comando
+altera somente `photoUrl`, exige versão/request idempotente, aceita perfil ainda
+incompleto e remove o objeto recém-enviado quando a persistência falha, sempre
+que possível. A publicação continua sendo uma ação separada.
+
 ## Regras
 
 - Salvar rascunho não altera views públicas.
@@ -172,6 +178,20 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
 - A comunicação editorial usa `Sua apresentação` para o texto principal. Os
   campos legados `headline`, `shortIntro` e `bio` permanecem apenas no contrato
   interno e não aparecem como nomes técnicos para o terapeuta.
+- `Como posso te guiar` usa os dez temas canônicos do Match (`Emoções e
+  Bem-Estar`, `Autoconhecimento e Transformação`, `Relacionamentos`,
+  `Autoestima e Poder Pessoal`, `Propósito e Direção`, `Espiritualidade e
+  Conexão Interior`, `Energia e Equilíbrio Energético`, `Libertação e Renovação`,
+  `Corpo, Relaxamento e Qualidade de Vida` e `Vida Profissional e
+  Prosperidade`). O terapeuta pode selecionar até três; os cards exibem ícones
+  do vocabulário visual compartilhado e persistem no contrato existente de
+  `guideItems`. Itens personalizados antigos permanecem até uma nova seleção.
+- `Sua apresentação` e `Minha essência` exibem ajuda contextual no ícone
+  informativo, acessível por foco, hover e clique, com explicações em linguagem
+  de produto.
+- No bloco `Outras partes do seu perfil`, `Avaliações` fica oculto para Free;
+  permanece visível para Premium e Premium Plus. A rota protegida continua
+  sendo a autoridade de acesso.
 - Usar `TESDialog` para confirmações.
 - Manter `h1` único.
 - Labels visíveis e touch targets de pelo menos 44px.
@@ -179,6 +199,13 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
 - Falhas ao salvar ou publicar devem informar a causa acionável do contrato (por
   exemplo, campo inválido, limite de caracteres, link de vídeo ou conflito de
   versão), sem expor detalhes internos do banco ou da infraestrutura.
+- Falhas de upload ou de persistência da foto são apresentadas em
+  `TESFeedbackDialog`; a prévia/rascunho volta a aparecer depois de sair e
+  retornar à página.
+
+QA adicional: validar o comando `save_media_draft` com perfil incompleto,
+idempotência, conflito de versão, remount após navegação e limpeza best-effort
+do objeto quando a persistência falhar. A publicação deve continuar separada.
 
 ## Cache
 

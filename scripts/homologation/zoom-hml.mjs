@@ -26,6 +26,11 @@ const REDACTED_EMAIL = "[redacted-email]";
 const REDACTED_JWT = "[redacted-jwt]";
 const REDACTED_SHARE = "[redacted-vercel-share]";
 const REDACTED_UUID = "[redacted-uuid]";
+const BILATERAL_CONFIRMED_SERVICE_STATUSES = new Set([
+  "auto_confirmed",
+  "confirmed_by_patient_review",
+  "confirmed_by_therapist",
+]);
 
 export function hasFlag(argv, name) {
   return argv.includes(`--${name}`);
@@ -1451,7 +1456,7 @@ async function readSessionState(admin, config) {
   );
   const [payment] = await admin.select(
     "session_payments",
-    `select=id,booking_id,financial_status,stripe_checkout_session_id,paid_at&id=eq.${encodeURIComponent(
+    `select=id,booking_id,financial_status,service_status,service_confirmed_at,transfer_status,eligible_at,stripe_checkout_session_id,paid_at&id=eq.${encodeURIComponent(
       config.sessionPaymentId,
     )}&booking_id=eq.${encodeURIComponent(config.bookingId)}&limit=1`,
   );
@@ -1467,6 +1472,141 @@ async function readSessionState(admin, config) {
     payment,
     videoSession,
   };
+}
+
+async function assertSingleVideoSession(
+  admin,
+  config,
+  expectedVideoSessionId,
+  expectedProviderSessionId,
+) {
+  const sessions = await admin.select(
+    "video_sessions",
+    `select=id,provider_session_id,status&booking_id=eq.${encodeURIComponent(
+      config.bookingId,
+    )}`,
+  );
+
+  if (sessions.length !== 1) {
+    throw new Error(`video_session_duplicate:${sessions.length}`);
+  }
+
+  const [session] = sessions;
+  if (session.id !== expectedVideoSessionId) {
+    throw new Error("video_session_id_changed");
+  }
+  if (expectedProviderSessionId && session.provider_session_id !== expectedProviderSessionId) {
+    throw new Error("provider_session_id_changed");
+  }
+
+  return session;
+}
+
+function getJoinButton(page) {
+  return page.getByRole("button", {
+    name: /Entrar na sala|Entrar no encontro|Entrar na sess.o/i,
+  });
+}
+
+async function joinFromWaitingRoom(page, actorRole) {
+  const joinButton = getJoinButton(page);
+  await expect(joinButton).toBeVisible({ timeout: 45_000 });
+  await expect(joinButton).toBeEnabled({ timeout: 45_000 });
+  await joinButton.click();
+  await expect(
+    page.getByText(
+      actorRole === "therapist"
+        ? /Voce entrou como responsavel pelo encontro/i
+        : /Voce entrou no encontro/i,
+    ),
+  ).toBeVisible({ timeout: 45_000 });
+  await assertSafeShell(page, `${actorRole}_joined_after_transition`);
+}
+
+async function refreshAndRejoin(page, actorRole) {
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.getByLabel(/Sala de (video|espera do encontro)/i)).toBeVisible({
+    timeout: 45_000,
+  });
+  await joinFromWaitingRoom(page, actorRole);
+}
+
+async function exerciseNetworkReconnect(page, context) {
+  await expect(
+    page.getByRole("button", { name: "Sair da sessão" }),
+  ).toBeVisible({ timeout: 30_000 });
+
+  await context.setOffline(true);
+  try {
+    await expect(
+      page.getByText(/Conexão interrompida|Reconectando o encontro/i).first(),
+    ).toBeVisible({ timeout: 15_000 });
+  } finally {
+    await context.setOffline(false);
+  }
+
+  await expect(
+    page.getByText(/Conexão restabelecida|Voce entrou|Você entrou/i).first(),
+  ).toBeVisible({ timeout: 30_000 });
+  await expect(
+    page.getByRole("button", { name: "Sair da sessão" }),
+  ).toBeVisible({ timeout: 30_000 });
+}
+
+async function leaveAndRejoin(page, actorRole) {
+  await page.getByRole("button", { name: "Sair da sessão" }).click();
+  await joinFromWaitingRoom(page, actorRole);
+}
+
+async function submitCompletedFeedback(page, baseUrl, route) {
+  await page.goto(buildSharedUrl(baseUrl, `${route}?feedback=1`), {
+    waitUntil: "domcontentloaded",
+  });
+  await expect(page.getByRole("heading", { name: /Como foi/i })).toBeVisible({
+    timeout: 45_000,
+  });
+  await expect(
+    page.getByRole("button", { name: "Enviar feedback" }),
+  ).toBeVisible({ timeout: 45_000 });
+  await page.getByRole("button", { name: "5 estrelas", exact: true }).click();
+  await page.getByRole("button", { name: "Enviar feedback" }).click();
+  await expect(page.getByText("Feedback registrado")).toBeVisible({
+    timeout: 45_000,
+  });
+}
+
+async function postCompletedFeedback(page, bookingId, rating) {
+  return page.evaluate(async ({ bookingId: id, rating: value }) => {
+    const response = await fetch("/api/session-feedback", {
+      body: JSON.stringify({
+        bookingId: id,
+        comment: "",
+        notPerformedReason: null,
+        outcome: "completed",
+        rating: value,
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    });
+    const payload = await response.json().catch(() => null);
+    return {
+      errorCode: payload?.error?.code ?? null,
+      idempotentReplay: payload?.data?.idempotentReplay === true,
+      ok: response.ok && payload?.ok === true,
+      status: response.status,
+    };
+  }, { bookingId, rating });
+}
+
+async function assertAdminBilateralFeedback(page) {
+  await expect(
+    page.getByText("Confirmação do cliente", { exact: true }),
+  ).toBeVisible({ timeout: 30_000 });
+  await expect(
+    page.getByText("Confirmação do terapeuta", { exact: true }),
+  ).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/Pendente:/i)).toHaveCount(0);
+  await expect(page.getByText("Sessão realizada")).toHaveCount(2);
 }
 
 async function assertRemotePreflight(admin, config, evidence) {
@@ -1755,7 +1895,7 @@ async function assertSafeShell(page, role) {
 }
 
 async function assertPatientWaiting(page) {
-  await expect(page.getByLabel("Sala de video")).toBeVisible({
+  await expect(page.getByLabel(/Sala de (video|espera do encontro)/i)).toBeVisible({
     timeout: 30_000,
   });
   await expect
@@ -1763,11 +1903,11 @@ async function assertPatientWaiting(page) {
       async () => {
         const bodyText = await page.locator("body").innerText();
         return (
-          /Aguardando o terapeuta iniciar o encontro|Aguardando terapeuta|A sala ainda n.o abriu|Aguardando participante|Sala indispon.vel/i.test(
+          /Aguardando o terapeuta iniciar o encontro|Aguardando terapeuta|A sala ainda n.o abriu|Aguardando participante|Sala indispon.vel|Estamos preparando o encontro|Aguardando atualização/i.test(
             bodyText,
           ) &&
           (await page
-            .getByRole("button", { name: "Entrar no encontro" })
+            .getByRole("button", { name: /Entrar no encontro|Entrar na sala/i })
             .count()) === 0
         );
       },
@@ -1778,11 +1918,20 @@ async function assertPatientWaiting(page) {
 
 async function assertPatientBeforeJoinWindow(page) {
   await expect(
-    page.getByRole("button", { name: "Entrar no encontro" }),
+    page.getByRole("button", { name: /Entrar no encontro|Entrar na sala/i }),
   ).toHaveCount(0);
+  const availabilityButton = page.getByRole("button", {
+    name: /Dispon.vel 15 min antes/i,
+  });
+  if (await availabilityButton.count()) {
+    await expect(availabilityButton).toBeDisabled({ timeout: 30_000 });
+    return;
+  }
   await expect(
-    page.getByRole("button", { name: /Dispon.vel 15 min antes/i }),
-  ).toBeDisabled({ timeout: 30_000 });
+    page.getByText(
+      /A sala ainda n.o abriu|Estamos preparando o encontro|Aguardando atualização/i,
+    ).first(),
+  ).toBeVisible({ timeout: 30_000 });
 }
 
 async function exerciseParticipantControls(page) {
@@ -1993,7 +2142,7 @@ async function assertPatientClosedState(page) {
         return (
           !/Entrando\.\.\./i.test(bodyText) &&
           (await page
-            .getByRole("button", { name: "Entrar no encontro" })
+            .getByRole("button", { name: /Entrar no encontro|Entrar na sala/i })
             .count()) === 0 &&
           /encerrad|Sala indispon.vel|A sala ainda n.o abriu|Aguardando o terapeuta iniciar/i.test(
             bodyText,
@@ -2006,10 +2155,12 @@ async function assertPatientClosedState(page) {
 }
 
 async function observePatientJoinState(page) {
-  const joinButton = page.getByRole("button", { name: "Entrar no encontro" });
+  const joinButton = page.getByRole("button", {
+    name: /Entrar no encontro|Entrar na sala/i,
+  });
   if ((await joinButton.count()) > 0) {
     return {
-      control: "Entrar no encontro",
+      control: "Entrar no encontro ou Entrar na sala",
       kind: (await joinButton.isEnabled()) ? "join_ready" : "join_disabled",
     };
   }
@@ -2025,7 +2176,7 @@ async function observePatientJoinState(page) {
   }
 
   const roomLocator = page.locator(
-    "section[aria-label='Sala de video'], section[aria-label='Sala de espera']",
+    "section[aria-label='Sala de video'], section[aria-label='Sala de espera'], section[aria-label='Sala de espera do encontro']",
   );
   const rawText =
     ((await roomLocator.first().count()) > 0
@@ -2042,7 +2193,7 @@ async function observePatientJoinState(page) {
   }
 
   if (
-    /Verificando sala|O terapeuta iniciou o encontro\. Voce ja pode entrar\./i.test(
+    /Verificando sala|O terapeuta iniciou o encontro\. Voce ja pode entrar\.|O terapeuta já está na sala/i.test(
       rawText,
     )
   ) {
@@ -2310,7 +2461,7 @@ async function runFlow({ admin, config, evidence, logDir }) {
         { timeout: 30_000 },
       );
       const joinButton = pages.therapist.getByRole("button", {
-        name: /Entrar no encontro|Entrar na sess.o/i,
+        name: /Entrar no encontro|Entrar na sess.o|Entrar na sala/i,
       });
       await expect(joinButton).toBeVisible({ timeout: 120_000 });
       await joinButton.click();
@@ -2353,7 +2504,7 @@ async function runFlow({ admin, config, evidence, logDir }) {
 
     await phase(evidence, "patient_join", async () => {
       const joinButton = pages.patient.getByRole("button", {
-        name: "Entrar no encontro",
+        name: /Entrar no encontro|Entrar na sala/i,
       });
       await expect(joinButton).toBeVisible({ timeout: 45_000 });
       await joinButton.click();
@@ -2381,6 +2532,108 @@ async function runFlow({ admin, config, evidence, logDir }) {
         ),
       ],
     };
+
+    await phase(evidence, "same_video_session_initial", async () => {
+      await assertSingleVideoSession(
+        admin,
+        config,
+        sessionSnapshot.videoSession.id,
+        providerSessionId,
+      );
+      evidence.videoSessionInvariant = {
+        duplicateCount: 0,
+        sameVideoSession: true,
+      };
+    });
+
+    await phase(evidence, "patient_refresh_rejoin", async () => {
+      await refreshAndRejoin(pages.patient, "patient");
+      await assertSingleVideoSession(
+        admin,
+        config,
+        sessionSnapshot.videoSession.id,
+        providerSessionId,
+      );
+      evidence.adversarial = {
+        ...(evidence.adversarial ?? {}),
+        patientRefreshRejoin: true,
+      };
+    });
+
+    await phase(evidence, "therapist_refresh_rejoin", async () => {
+      await refreshAndRejoin(pages.therapist, "therapist");
+      await waitForTherapistPresence(admin, config);
+      await assertSingleVideoSession(
+        admin,
+        config,
+        sessionSnapshot.videoSession.id,
+        providerSessionId,
+      );
+      evidence.adversarial = {
+        ...(evidence.adversarial ?? {}),
+        therapistRefreshRejoin: true,
+      };
+    });
+
+    await phase(evidence, "patient_network_reconnect", async () => {
+      await exerciseNetworkReconnect(pages.patient, patientContext);
+      evidence.adversarial = {
+        ...(evidence.adversarial ?? {}),
+        patientReconnect: true,
+      };
+    });
+
+    await phase(evidence, "therapist_network_reconnect", async () => {
+      await exerciseNetworkReconnect(pages.therapist, therapistContext);
+      evidence.adversarial = {
+        ...(evidence.adversarial ?? {}),
+        therapistReconnect: true,
+      };
+    });
+
+    await phase(evidence, "patient_leave_rejoin", async () => {
+      await leaveAndRejoin(pages.patient, "patient");
+      await assertSingleVideoSession(
+        admin,
+        config,
+        sessionSnapshot.videoSession.id,
+        providerSessionId,
+      );
+      evidence.adversarial = {
+        ...(evidence.adversarial ?? {}),
+        patientLeaveRejoin: true,
+      };
+    });
+
+    await phase(evidence, "therapist_leave_rejoin", async () => {
+      await pages.therapist.getByRole("button", { name: "Sair da sessão" }).click();
+      await joinFromWaitingRoom(pages.therapist, "therapist");
+      await waitForTherapistPresence(admin, config);
+      await assertSingleVideoSession(
+        admin,
+        config,
+        sessionSnapshot.videoSession.id,
+        providerSessionId,
+      );
+      evidence.adversarial = {
+        ...(evidence.adversarial ?? {}),
+        therapistLeaveRejoin: true,
+      };
+    });
+
+    await phase(evidence, "same_video_session_after_reconnect", async () => {
+      const session = await assertSingleVideoSession(
+        admin,
+        config,
+        sessionSnapshot.videoSession.id,
+        providerSessionId,
+      );
+      evidence.videoSessionInvariant = {
+        duplicateCount: 0,
+        providerSessionStable: session.provider_session_id === providerSessionId,
+        sameVideoSession: true,
+      };
+    });
 
     await phase(evidence, "bidirectional_camera", async () => {
       await validateBidirectionalCamera({
@@ -2461,6 +2714,104 @@ async function runFlow({ admin, config, evidence, logDir }) {
         assertSafeShell(pages.therapist, "therapist_closed"),
         assertSafeShell(pages.admin, "admin_closed"),
       ]);
+    });
+
+    await phase(evidence, "post_end_rejoin_denied", async () => {
+      await expect(getJoinButton(pages.patient)).toHaveCount(0);
+      await expect(getJoinButton(pages.therapist)).toHaveCount(0);
+      evidence.adversarial = {
+        ...(evidence.adversarial ?? {}),
+        postEndRejoinDenied: true,
+      };
+    });
+
+    await phase(evidence, "patient_bilateral_confirmation", () =>
+      submitCompletedFeedback(
+        pages.patient,
+        config.baseUrl,
+        `/app/encontros/${config.bookingId}/video`,
+      ),
+    );
+
+    await phase(evidence, "patient_confirmation_retry", async () => {
+      const result = await postCompletedFeedback(
+        pages.patient,
+        config.bookingId,
+        5,
+      );
+      if (result.status !== 200 || !result.ok || !result.idempotentReplay) {
+        throw new Error("patient_confirmation_retry_not_idempotent");
+      }
+      evidence.bilateral = {
+        ...(evidence.bilateral ?? {}),
+        patientRetry: result,
+      };
+    });
+
+    await phase(evidence, "patient_confirmation_conflict", async () => {
+      const result = await postCompletedFeedback(
+        pages.patient,
+        config.bookingId,
+        4,
+      );
+      if (result.status !== 409 || result.errorCode !== "REQUEST_CONFLICT") {
+        throw new Error("patient_confirmation_conflict_not_rejected");
+      }
+      evidence.bilateral = {
+        ...(evidence.bilateral ?? {}),
+        patientConflict: result,
+      };
+    });
+
+    await phase(evidence, "therapist_bilateral_confirmation", () =>
+      submitCompletedFeedback(
+        pages.therapist,
+        config.baseUrl,
+        `/terapeuta/sessoes/${config.bookingId}/video`,
+      ),
+    );
+
+    const bilateralState = await phase(
+      evidence,
+      "bilateral_financial_state",
+      () =>
+        poll({
+          intervalMs: 1_000,
+          timeoutMs: 30_000,
+          task: async () => {
+            const state = await readSessionState(admin, config);
+            if (
+              state.booking?.status === "completed" &&
+              BILATERAL_CONFIRMED_SERVICE_STATUSES.has(
+                state.payment?.service_status,
+              ) &&
+              state.payment?.transfer_status === "waiting_safety_period" &&
+              state.payment?.service_confirmed_at
+            ) {
+              return state;
+            }
+            return null;
+          },
+        }),
+    );
+    evidence.bilateral = {
+      ...(evidence.bilateral ?? {}),
+      bookingStatus: bilateralState.booking.status,
+      financialStatus: bilateralState.payment.financial_status,
+      serviceConfirmedAt: bilateralState.payment.service_confirmed_at,
+      serviceStatus: bilateralState.payment.service_status,
+      transferStatus: bilateralState.payment.transfer_status,
+      waitingSafetyPeriod: true,
+    };
+
+    await phase(evidence, "admin_bilateral_confirmation_audit", async () => {
+      await pages.admin.goto(
+        buildSharedUrl(config.baseUrl, `/admin/sessoes/${config.bookingId}`),
+        { waitUntil: "domcontentloaded" },
+      );
+      await assertAdminDetail(pages.admin);
+      await assertAdminBilateralFeedback(pages.admin);
+      await assertSafeShell(pages.admin, "admin_bilateral_confirmation");
     });
   } finally {
     if (providerSessionId) {

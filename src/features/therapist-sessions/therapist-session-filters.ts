@@ -6,6 +6,7 @@ import {
 import type {
   SessionModality,
   TherapistSessionFilters,
+  TherapistSessionPeriodPreset,
 } from "@/features/bookings";
 
 type SearchParams = Record<string, string | string[] | undefined>;
@@ -22,8 +23,9 @@ export function parseTherapistSessionFilters(
   const bookingStatus = first(searchParams.status);
   const financialStatus = first(searchParams.payment);
   const modalityValue = first(searchParams.modality);
-  const periodStart = first(searchParams.periodStart);
-  const periodEnd = first(searchParams.periodEnd);
+  const requestedPeriod = first(searchParams.period);
+  const explicitPeriodStart = first(searchParams.periodStart);
+  const explicitPeriodEnd = first(searchParams.periodEnd);
   const patientProfileId = first(searchParams.patient);
   const serviceId = first(searchParams.service);
   const cursorStartsAt = first(searchParams.cursorStartsAt);
@@ -41,8 +43,25 @@ export function parseTherapistSessionFilters(
   if (modalityValue && !isModality(modalityValue)) {
     return invalidFilters();
   }
-  if (periodStart && !isIsoDate(periodStart)) return invalidFilters();
-  if (periodEnd && !isIsoDate(periodEnd)) return invalidFilters();
+  if (requestedPeriod && !isPeriodPreset(requestedPeriod)) {
+    return invalidFilters();
+  }
+  if (explicitPeriodStart && !isIsoDate(explicitPeriodStart)) {
+    return invalidFilters();
+  }
+  if (explicitPeriodEnd && !isIsoDate(explicitPeriodEnd)) {
+    return invalidFilters();
+  }
+  const periodPreset = isPeriodPreset(requestedPeriod)
+    ? requestedPeriod
+    : explicitPeriodStart || explicitPeriodEnd
+      ? undefined
+      : "30";
+  const { periodEnd, periodStart } = resolvePeriodWindow(
+    periodPreset,
+    explicitPeriodStart,
+    explicitPeriodEnd,
+  );
   if (
     periodStart &&
     periodEnd &&
@@ -77,6 +96,7 @@ export function parseTherapistSessionFilters(
         modalityValue && isModality(modalityValue) ? modalityValue : undefined,
       patientProfileId,
       periodEnd,
+      periodPreset,
       periodStart,
       serviceId,
     },
@@ -92,6 +112,7 @@ export function buildNextSessionsHref(
   if (filters.bookingStatus) params.set("status", filters.bookingStatus);
   if (filters.financialStatus) params.set("payment", filters.financialStatus);
   if (filters.modality) params.set("modality", filters.modality);
+  if (filters.periodPreset) params.set("period", filters.periodPreset);
   if (filters.patientProfileId) params.set("patient", filters.patientProfileId);
   if (filters.periodEnd) params.set("periodEnd", filters.periodEnd);
   if (filters.periodStart) params.set("periodStart", filters.periodStart);
@@ -138,4 +159,36 @@ function isFinancialStatus(
 
 function isModality(value: string): value is SessionModality {
   return value === "online";
+}
+
+function isPeriodPreset(
+  value: string | undefined,
+): value is TherapistSessionPeriodPreset {
+  return (
+    value === "7" ||
+    value === "30" ||
+    value === "60" ||
+    value === "90" ||
+    value === "all"
+  );
+}
+
+function resolvePeriodWindow(
+  preset: TherapistSessionPeriodPreset | undefined,
+  explicitStart: string | undefined,
+  explicitEnd: string | undefined,
+) {
+  if (explicitStart || explicitEnd) {
+    return { periodEnd: explicitEnd, periodStart: explicitStart };
+  }
+  if (!preset || preset === "all") {
+    return { periodEnd: undefined, periodStart: undefined };
+  }
+
+  const end = new Date();
+  const start = new Date(end.getTime() - Number(preset) * 86_400_000);
+  return {
+    periodEnd: end.toISOString(),
+    periodStart: start.toISOString(),
+  };
 }

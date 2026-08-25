@@ -22,7 +22,13 @@ describe("ShellNotificationButton", () => {
       vi.fn(async () => notificationResponse()),
     );
 
-    render(<ShellNotificationButton count={1} href="/terapeuta/mensagens" role="therapist" />);
+    render(
+      <ShellNotificationButton
+        count={1}
+        href="/terapeuta/mensagens"
+        role="therapist"
+      />,
+    );
 
     const button = screen.getByRole("button", {
       name: /notificações, 1 não lida/i,
@@ -32,9 +38,44 @@ describe("ShellNotificationButton", () => {
     expect(
       await screen.findByRole("region", { name: "Notificações recentes" }),
     ).toBeVisible();
+    expect(
+      screen.getByRole("region", { name: "Notificações recentes" }),
+    ).toHaveClass("fixed", "z-overlay");
     expect(screen.getByText("Nova mensagem")).toBeVisible();
+    expect(
+      screen
+        .getByRole("link", { name: /nova mensagem/i })
+        .querySelector("svg.lucide-message-circle"),
+    ).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("region", { name: "Notificações recentes" }),
+      ).toBeNull(),
+    );
+  });
+
+  it("closes when the page outside the global popover is pressed", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => notificationResponse()),
+    );
+
+    render(
+      <ShellNotificationButton
+        count={1}
+        href="/terapeuta/mensagens"
+        role="therapist"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /notificações/i }));
+    expect(
+      await screen.findByRole("region", { name: "Notificações recentes" }),
+    ).toBeVisible();
+
+    fireEvent.mouseDown(document.body);
+
     await waitFor(() =>
       expect(
         screen.queryByRole("region", { name: "Notificações recentes" }),
@@ -48,7 +89,13 @@ describe("ShellNotificationButton", () => {
       vi.fn(async () => bookingNotificationResponse()),
     );
 
-    render(<ShellNotificationButton count={1} href="/terapeuta/mensagens" role="therapist" />);
+    render(
+      <ShellNotificationButton
+        count={1}
+        href="/terapeuta/mensagens"
+        role="therapist"
+      />,
+    );
 
     expect(await screen.findByRole("status")).toHaveTextContent(
       "Novo agendamento confirmado",
@@ -71,7 +118,13 @@ describe("ShellNotificationButton", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    render(<ShellNotificationButton count={1} href="/terapeuta/mensagens" role="therapist" />);
+    render(
+      <ShellNotificationButton
+        count={1}
+        href="/terapeuta/mensagens"
+        role="therapist"
+      />,
+    );
     fireEvent.click(screen.getByRole("button", { name: /notificações/i }));
 
     fireEvent.click(
@@ -88,7 +141,7 @@ describe("ShellNotificationButton", () => {
 });
 
 function notificationResponse(
-  itemOverrides: Partial<{ href: string | null }> = {},
+  itemOverrides: Partial<{ href: string | null; kind: string }> = {},
 ) {
   return Response.json({
     count: 1,
@@ -100,7 +153,7 @@ function notificationResponse(
           ? (itemOverrides.href ?? null)
           : "/terapeuta/mensagens",
         id: "10000000-0000-4000-8000-000000000001",
-        kind: "message_received",
+        kind: itemOverrides.kind ?? "message_received",
         readAt: null,
         title: "Nova mensagem",
       },

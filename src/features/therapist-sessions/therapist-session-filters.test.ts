@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { BookingStatus, SessionFinancialStatus } from "@/domain/tes";
 import { formatSessionDateTime } from "@/features/bookings";
@@ -9,6 +9,44 @@ import {
 } from "./therapist-session-filters";
 
 describe("therapist session filters", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("defaults to the last 30 days and supports explicit period presets", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-25T12:00:00.000Z"));
+
+    const defaultPeriod = parseTherapistSessionFilters({});
+    expect(defaultPeriod).toMatchObject({
+      filters: {
+        periodPreset: "30",
+        periodEnd: "2026-08-25T12:00:00.000Z",
+        periodStart: "2026-07-26T12:00:00.000Z",
+      },
+      valid: true,
+    });
+
+    const sevenDays = parseTherapistSessionFilters({ period: "7" });
+    expect(sevenDays).toMatchObject({
+      filters: {
+        periodPreset: "7",
+        periodStart: "2026-08-18T12:00:00.000Z",
+      },
+      valid: true,
+    });
+
+    const allHistory = parseTherapistSessionFilters({ period: "all" });
+    expect(allHistory).toMatchObject({
+      filters: {
+        periodPreset: "all",
+        periodStart: undefined,
+        periodEnd: undefined,
+      },
+      valid: true,
+    });
+  });
+
   it("parses versionable URL filters and cursor pagination", () => {
     const result = parseTherapistSessionFilters({
       cursorBookingId: "f2000000-0000-4000-8000-000000000001",

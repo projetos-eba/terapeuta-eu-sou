@@ -100,6 +100,47 @@ describe("TherapistBlocksPanel", () => {
     expect(navigationMocks.refresh).toHaveBeenCalledOnce();
   });
 
+  it("opens a prominent alert with the real paid booking details", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: {
+            idempotentReplay: false,
+            impactedBookingCount: 1,
+            occurrenceCount: 1,
+            paidImpactedBookings: [
+              {
+                bookingId: "f2000000-0000-4000-8000-000000000004",
+                endsAt: "2026-07-30T16:00:00.000Z",
+                patientName: "Marina Souza",
+                serviceTitle: "Reiki online",
+                startsAt: "2026-07-30T15:00:00.000Z",
+                timezone: "America/Sao_Paulo",
+              },
+            ],
+          },
+          ok: true,
+        }),
+        { headers: { "Content-Type": "application/json" }, status: 200 },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    renderPanel();
+
+    fireEvent.click(screen.getByRole("button", { name: "Novo bloqueio" }));
+    fireEvent.click(screen.getByRole("button", { name: "Criar bloqueio" }));
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("dialog", {
+          name: "Atenção: há sessões pagas neste horário",
+        }),
+      ).toBeVisible(),
+    );
+    expect(screen.getByText("Marina Souza")).toBeInTheDocument();
+    expect(screen.getByText("Reiki online")).toBeInTheDocument();
+  });
+
   it("cancels a series with optimistic schedule version", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(

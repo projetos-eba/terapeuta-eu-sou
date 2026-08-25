@@ -35,6 +35,22 @@ As páginas `/termos`, `/privacidade` e
 
 ## Matriz de divergências entre PDFs, produto e código
 
+### Fonte operacional recebida em 2026-08-23
+
+O arquivo `POLÍTICA DE CANCELAMENTO - OPERACIONAL.docx`, recebido para ajustar
+o detalhe do encontro do paciente, foi tratado como fonte operacional para a
+experiência autenticada e para a próxima versão de `financial_policy_versions`.
+Ele orienta: 24 horas ou mais para solicitar reagendamento ou reembolso quando
+aplicável; menos de 24 horas e não comparecimento sem obrigação de reembolso,
+com análise individual de exceções; e início do processamento aprovado em até
+7 dias úteis.
+
+O documento não traz, nos arquivos analisados, versão jurídica publicada,
+hash, data de vigência ou aprovação formal para substituir o documento público
+`2026.08.01-pdf`. Por isso, o registry e as páginas jurídicas públicas não são
+alterados por esta atualização operacional. A publicação jurídica continua
+pendente até que esses metadados sejam fornecidos.
+
 | Item                                                                                      | Evidência no código                                       | Risco                                                                          | Severidade | Ação                                                                                           |
 | ----------------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------- | ---------------------------------------------------------------------------------------------- |
 | `/termos` e `/privacidade` exibiam mensagens internas de pendência                        | `src/app/termos/page.tsx`, `src/app/privacidade/page.tsx` | Publicação de texto proibido ao usuário final                                  | P1         | Corrigido: páginas usam registry e bloqueiam publicação externa quando não há versão publicada |

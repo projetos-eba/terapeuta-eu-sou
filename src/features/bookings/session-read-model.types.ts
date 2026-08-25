@@ -58,10 +58,13 @@ export type TherapistSessionFilters = {
   limit: number;
   modality?: SessionModality;
   patientProfileId?: string;
+  periodPreset?: TherapistSessionPeriodPreset;
   periodEnd?: string;
   periodStart?: string;
   serviceId?: string;
 };
+
+export type TherapistSessionPeriodPreset = "7" | "30" | "60" | "90" | "all";
 
 export type TherapistSessionsReadModel = {
   filters: {
@@ -74,6 +77,7 @@ export type TherapistSessionsReadModel = {
     serviceId: string | null;
   };
   items: SessionReadModelItem[];
+  summary: TherapistSessionsSummary | null;
   page: {
     hasMore: boolean;
     limit: number;
@@ -82,6 +86,14 @@ export type TherapistSessionsReadModel = {
   therapistProfileId: string;
   timezone: string;
   version: 1;
+};
+
+export type TherapistSessionsSummary = {
+  attendanceRate: number | null;
+  cancelled: number;
+  completed: number;
+  pending: number;
+  total: number;
 };
 
 export type TherapistSessionDetailReadModel = SessionReadModelItem & {

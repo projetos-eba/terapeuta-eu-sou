@@ -8,26 +8,34 @@ import type { TherapistDashboardPageData } from "../therapist-dashboard.types";
 
 export function UpcomingSessionsCard({
   sessions,
+  state = sessions.length ? "ready" : "empty",
 }: {
   sessions: TherapistDashboardPageData["upcomingSessions"];
+  state?: TherapistDashboardPageData["upcomingSessionsState"];
 }) {
   return (
     <section className="rounded-panel border border-[var(--tes-color-border)]/70 bg-white p-5 shadow-card">
       <h2 className="text-xl font-bold text-brand-deep">Próximas sessões</h2>
-      {sessions.length ? (
+      {state === "unavailable" ? (
+        <p className="mt-6 rounded-xl bg-status-warningBg p-4 text-sm font-semibold leading-6 text-tesText-secondary">
+          Não foi possível carregar os próximos horários agora. Tente
+          novamente em alguns instantes.
+        </p>
+      ) : sessions.length ? (
         <ol className="mt-4 space-y-3">
           {sessions.slice(0, 4).map((session) => (
             <li key={session.bookingId}>
               <Link
-                className="grid min-h-12 grid-cols-[52px_32px_minmax(0,1fr)] items-center gap-2 rounded-sm px-1 outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20"
+                className="grid min-h-16 grid-cols-[82px_32px_minmax(0,1fr)] items-center gap-2 rounded-sm px-1 outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20"
                 href={
                   routes.therapist.sessionDetail(
                     session.bookingId,
                   ) as Route<string>
                 }
               >
-                <time className="text-xs font-bold text-brand-deep">
-                  {formatTime(session.startsAt)}
+                <time className="grid gap-0.5 text-xs font-bold text-brand-deep">
+                  <span>{formatDate(session.startsAt, session.timezone)}</span>
+                  <span>{formatTime(session.startsAt, session.timezone)}</span>
                 </time>
                 <span className="relative grid size-7 place-items-center overflow-hidden rounded-full bg-brand-lavenderSoft text-xs font-bold text-brand-primary">
                   {session.patientAvatarUrl ? (
@@ -42,8 +50,13 @@ export function UpcomingSessionsCard({
                     session.patientName.slice(0, 1)
                   )}
                 </span>
-                <span className="truncate text-xs font-semibold text-brand-deep">
-                  {session.patientName}
+                <span className="min-w-0">
+                  <strong className="block truncate text-xs font-semibold text-brand-deep">
+                    {session.patientName}
+                  </strong>
+                  <span className="mt-0.5 block truncate text-[11px] font-semibold text-tesText-muted">
+                    {session.serviceTitle}
+                  </span>
                 </span>
               </Link>
             </li>
@@ -64,9 +77,18 @@ export function UpcomingSessionsCard({
   );
 }
 
-function formatTime(value: string) {
+function formatDate(value: string, timezone: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: timezone,
+  }).format(new Date(value));
+}
+
+function formatTime(value: string, timezone: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: timezone,
   }).format(new Date(value));
 }

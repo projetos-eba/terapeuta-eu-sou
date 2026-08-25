@@ -41,6 +41,7 @@ export type StripeTransferCreateParams = {
   amount: number;
   currency: "brl";
   destination: string;
+  expand: ["destination_payment.balance_transaction"];
   metadata: {
     payout_batch_id: string;
     payout_batch_item_id: string;
@@ -93,6 +94,7 @@ export function buildSessionTransferCreateParams(input: {
     amount: input.amountCents,
     currency: "brl",
     destination: input.destination,
+    expand: ["destination_payment.balance_transaction"],
     metadata: {
       payout_batch_id: input.batchId,
       payout_batch_item_id: input.itemId,

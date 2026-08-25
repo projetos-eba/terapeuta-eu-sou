@@ -96,7 +96,8 @@ uma solicitação ambígua deve falhar fechada para evitar mistura de perfis.
 - Usar fundo lavanda suave, card central, `PublicLogo`, formulário com labels reais e CTA com mínimo de 44px.
 - O retorno deve compartilhar uma faixa relativa com o logo: no mobile exibir
   somente o ícone em alvo mínimo de 44px, sem sobrepor a marca; a palavra
-  “Voltar” permanece visível em telas maiores.
+  “Voltar” permanece visível em telas maiores. No login, esse retorno sempre
+  leva à home pública (`/`), sem reutilizar a página anterior do histórico.
 - O campo de senha do login deve oferecer controle acessível para mostrar e
   ocultar a senha, com rótulo de ação, estado `aria-pressed` e alvo mínimo de
   44px; isso não altera o contrato de autenticação.
@@ -109,9 +110,10 @@ uma solicitação ambígua deve falhar fechada para evitar mistura de perfis.
 
 ## QA adicional desta implementação
 
-- Validar o botão Voltar nas telas de login e cadastro e o isolamento de duas
-  abas cliente no mesmo navegador, além da coexistência em contextos de
-  navegador diferentes.
+- Validar o botão Voltar nas telas de login e cadastro: o login leva sempre à
+  home pública e o cadastro preserva o fallback próprio quando aplicável. Validar
+  também o isolamento de duas abas cliente no mesmo navegador, além da
+  coexistência em contextos de navegador diferentes.
 
 ## Pendências conhecidas
 

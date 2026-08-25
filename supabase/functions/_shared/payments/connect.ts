@@ -1,4 +1,28 @@
 import { TES_STRIPE_API_VERSION } from "./stripe-client.ts";
+import type { StripeClient } from "./stripe-client.ts";
+
+export type ConnectPayoutSettingsState = {
+  interval: "daily" | "manual" | "monthly" | "weekly" | null;
+  payoutStatus: "disabled" | "enabled";
+  payoutsEnabled: boolean;
+};
+
+export function assertConnectAccountOwnership(
+  account: Record<string, unknown>,
+  input: { environment: "live" | "test"; therapistProfileId: string },
+) {
+  const metadata = asRecord(account.metadata);
+  if (
+    metadata.system !== "tes" ||
+    metadata.tes_therapist_id !== input.therapistProfileId ||
+    metadata.environment !== input.environment
+  ) {
+    throw Object.assign(new Error("Conta Connect nao pertence ao contexto informado."), {
+      code: "connect_account_ownership_mismatch",
+      statusCode: 422,
+    });
+  }
+}
 
 export function createRecipientAccountV2(input: {
   apiKey: string;
@@ -197,7 +221,14 @@ export function getPendingRequirements(account: Record<string, unknown>) {
   };
 }
 
-export function deriveConnectAccountState(account: Record<string, unknown>) {
+export function deriveConnectAccountState(
+  account: Record<string, unknown>,
+  payoutSettings: ConnectPayoutSettingsState = {
+    interval: null,
+    payoutStatus: "disabled",
+    payoutsEnabled: false,
+  },
+) {
   const transfersStatus = getTransfersStatus(account);
   const cardPaymentsStatus = getCardPaymentsStatus(account);
   const pendingRequirements = getPendingRequirements(account);
@@ -220,8 +251,87 @@ export function deriveConnectAccountState(account: Record<string, unknown>) {
           : "restricted",
     operationalStatus: closed ? "disabled" : ready ? "ready" : "restricted",
     pendingRequirements,
-    payoutsEnabled: transfersStatus === "active",
+    payoutScheduleInterval: payoutSettings.interval,
+    payoutStatus: payoutSettings.payoutStatus,
+    payoutsEnabled: payoutSettings.payoutsEnabled,
     transfersStatus,
+  };
+}
+
+export async function retrieveBalanceSettings(
+  stripe: StripeClient,
+  accountId: string,
+) {
+  return await stripe.balanceSettings.retrieve(
+    {},
+    { stripeContext: accountId },
+  );
+}
+
+export async function setManualPayoutSchedule(
+  stripe: StripeClient,
+  accountId: string,
+  idempotencyKey: string,
+) {
+  return await stripe.balanceSettings.update(
+    {
+      payments: {
+        payouts: {
+          schedule: { interval: "manual" },
+        },
+      },
+    },
+    { idempotencyKey, stripeContext: accountId },
+  );
+}
+
+export async function setDailyAutomaticPayoutSchedule(
+  stripe: StripeClient,
+  accountId: string,
+  idempotencyKey: string,
+) {
+  return await stripe.balanceSettings.update(
+    {
+      payments: {
+        payouts: {
+          schedule: { interval: "daily" },
+        },
+      },
+    },
+    { idempotencyKey, stripeContext: accountId },
+  );
+}
+
+export function isManualPayoutScheduleUnavailable(error: unknown) {
+  const value = asRecord(error);
+  const raw = asRecord(value.raw);
+  const message = [value.message, raw.message]
+    .find((candidate): candidate is string => typeof candidate === "string") ?? "";
+
+  return /cannot be on a manual payout plan|payout interval ["']manual["'] is not available/i
+    .test(message);
+}
+
+export function derivePayoutSettingsState(
+  settings: Record<string, unknown>,
+): ConnectPayoutSettingsState {
+  const payments = asRecord(settings.payments);
+  const payouts = asRecord(payments.payouts);
+  const schedule = asRecord(payouts.schedule);
+  const status = payouts.status === "enabled" ? "enabled" : "disabled";
+  const rawInterval = schedule.interval;
+  const interval =
+    rawInterval === "daily" ||
+    rawInterval === "manual" ||
+    rawInterval === "monthly" ||
+    rawInterval === "weekly"
+      ? rawInterval
+      : null;
+
+  return {
+    interval,
+    payoutStatus: status,
+    payoutsEnabled: status === "enabled",
   };
 }
 

@@ -17,7 +17,7 @@ major_version = 15
 
 [db.seed]
 enabled = true
-sql_paths = ["./seeds/catalog.sql", "./seeds/local-test-data.sql"]
+sql_paths = ["./seeds/catalog.sql", "./seeds/local-test-data.sql", "./seeds/local-e2e-fixtures.sql", "./seeds/local-adjustments-homologation.sql"]
 
 [db.pooler]
 enabled = false
@@ -63,6 +63,16 @@ allowed_mime_types = ["application/pdf", "application/msword", "application/vnd.
 public = true
 file_size_limit = "5MiB"
 allowed_mime_types = ["image/jpeg", "image/png", "image/webp"]
+
+[storage.buckets.patient-public-media]
+public = true
+file_size_limit = "5MiB"
+allowed_mime_types = ["image/jpeg", "image/png", "image/webp"]
+
+[storage.buckets.support-ticket-attachments]
+public = false
+file_size_limit = "10MiB"
+allowed_mime_types = ["application/pdf", "image/jpeg", "image/png", "image/webp"]
 
 [auth]
 enabled = true
@@ -206,6 +216,12 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.reconcile-stripe-transfers]
+verify_jwt = false
+
+[functions.weekly-payout-scheduler]
+verify_jwt = false
+
+[functions.stripe-connect-payout-schedule]
 verify_jwt = false
 
 [functions.zoom-webhook]

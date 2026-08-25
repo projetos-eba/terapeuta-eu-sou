@@ -11,7 +11,13 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { TESButton, TESCard, TESDialog, TESInput } from "@/components/tes";
+import {
+  TESButton,
+  TESCard,
+  TESDialog,
+  TESFeedbackDialog,
+  TESInput,
+} from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 import {
@@ -260,6 +266,7 @@ export function TherapistServicesPage({
                     disabled={pendingServiceId === service.serviceId}
                     key={service.serviceId}
                     onAction={(action) => handleCardAction(service, action)}
+                    plan={initialServices.plan}
                     service={service}
                   />
                 );
@@ -290,7 +297,7 @@ export function TherapistServicesPage({
 
         <aside className="grid gap-5 md:grid-cols-2 xl:grid-cols-1">
           <TherapistServicesTips />
-          <TherapistServicesRanking services={services} />
+          <TherapistServicesRanking plan={initialServices.plan} services={services} />
         </aside>
       </section>
 
@@ -300,6 +307,7 @@ export function TherapistServicesPage({
           mode="create"
           onClose={() => setDialog(null)}
           onSaved={upsertService}
+          plan={initialServices.plan}
         />
       ) : null}
 
@@ -309,6 +317,7 @@ export function TherapistServicesPage({
           mode="edit"
           onClose={() => setDialog(null)}
           onSaved={upsertService}
+          plan={initialServices.plan}
           service={dialog.service}
         />
       ) : null}
@@ -318,6 +327,7 @@ export function TherapistServicesPage({
           action={dialog.action}
           onClose={() => setDialog(null)}
           onSaved={upsertService}
+          plan={initialServices.plan}
           service={dialog.service}
           setPendingServiceId={setPendingServiceId}
         />
@@ -476,12 +486,14 @@ function ConfirmServiceActionDialog({
   action,
   onClose,
   onSaved,
+  plan,
   service,
   setPendingServiceId,
 }: {
   action: "activate" | "archive" | "pause";
   onClose: () => void;
   onSaved: (service: TherapistServiceSummary, message: string) => void;
+  plan: TherapistServicesContract["plan"];
   service: TherapistServiceSummary;
   setPendingServiceId: (serviceId: string | null) => void;
 }) {
@@ -553,9 +565,7 @@ function ConfirmServiceActionDialog({
         Estado atual: {getTherapistServiceStatusLabel(service.status)}
       </p>
       {error ? (
-        <p className="mt-4 rounded-lg bg-status-dangerBg p-3 text-sm font-bold text-status-danger">
-          {error}
-        </p>
+        <TESFeedbackDialog message={error} onClose={() => setError(null)} />
       ) : null}
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
         <TESButton

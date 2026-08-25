@@ -20,10 +20,11 @@ import {
 import { normalizeStripeBillingWebhookError } from "./errors.ts";
 import { ensureVideoSessionForPaidSessionPayment } from "./session-payment-side-effects.ts";
 import {
+  type CheckoutFinancialSnapshot,
   createPaymentIntentFinancialSnapshot,
   extractCheckoutFinancialSnapshot,
-  type CheckoutFinancialSnapshot,
 } from "../_shared/payments/checkout-financials.ts";
+import { shouldApplySessionAttemptEvent } from "../_shared/payments/session-attempt-policy.ts";
 
 type FinancialStatus = "canceled" | "failed" | "paid" | "processing";
 
@@ -307,8 +308,24 @@ async function handleCheckoutEvent(
     eventType === "checkout.session.async_payment_failed" ||
     eventType === "checkout.session.expired"
   ) {
+    const checkoutSessionId = stringOrNull(session.id);
+    if (checkoutSessionId) {
+      const isCurrent = await isCurrentSessionCheckout(
+        client,
+        sessionPaymentId,
+        checkoutSessionId,
+      );
+      await updateAttemptStatus(
+        client,
+        checkoutSessionId,
+        isCurrent
+          ? eventType === "checkout.session.expired" ? "expired" : "failed"
+          : "superseded",
+      );
+      if (!isCurrent) return;
+    }
     await applySessionPaymentState(client, {
-      checkoutSessionId: stringOrNull(session.id),
+      checkoutSessionId,
       eventId,
       eventTime,
       paymentIntentId: stringOrNull(session.payment_intent),
@@ -318,9 +335,23 @@ async function handleCheckoutEvent(
     return;
   }
 
-  if (session.payment_status !== "paid") {
+  const checkoutIsSettled = session.payment_status === "paid" ||
+    session.payment_status === "no_payment_required";
+
+  if (!checkoutIsSettled) {
+    const checkoutSessionId = stringOrNull(session.id);
+    if (
+      checkoutSessionId &&
+      !(await isCurrentSessionCheckout(
+        client,
+        sessionPaymentId,
+        checkoutSessionId,
+      ))
+    ) {
+      return;
+    }
     await applySessionPaymentState(client, {
-      checkoutSessionId: stringOrNull(session.id),
+      checkoutSessionId,
       eventId,
       eventTime,
       paymentIntentId: stringOrNull(session.payment_intent),
@@ -356,6 +387,12 @@ async function handleCheckoutEvent(
     sessionPaymentId,
     status: "paid",
   });
+  await closeSiblingCheckoutAttempts({
+    client,
+    paidCheckoutSessionId: stringOrNull(session.id),
+    sessionPaymentId,
+    stripe,
+  });
 }
 
 async function applyPaymentIntentState(
@@ -375,9 +412,27 @@ async function applyPaymentIntentState(
   const reconciliation = status === "paid" && chargeId
     ? await retrieveChargeReconciliation(stripe, chargeId)
     : null;
-  const resolvedCheckout = status === "paid"
-    ? await resolvePaymentIntentFinancialSnapshot(client, stripe, paymentIntent)
-    : { checkoutSessionId: null, financialSnapshot: null };
+  const resolvedCheckout = await resolvePaymentIntentFinancialSnapshot(
+    client,
+    stripe,
+    paymentIntent,
+  );
+  if (
+    status !== "paid" &&
+    resolvedCheckout.checkoutSessionId &&
+    !(await isCurrentSessionCheckout(
+      client,
+      sessionPaymentId,
+      resolvedCheckout.checkoutSessionId,
+    ))
+  ) {
+    await updateAttemptStatus(
+      client,
+      resolvedCheckout.checkoutSessionId,
+      "superseded",
+    );
+    return;
+  }
 
   await applySessionPaymentState(client, {
     chargeId,
@@ -390,6 +445,14 @@ async function applyPaymentIntentState(
     sessionPaymentId,
     status,
   });
+  if (status === "paid") {
+    await closeSiblingCheckoutAttempts({
+      client,
+      paidCheckoutSessionId: resolvedCheckout.checkoutSessionId,
+      sessionPaymentId,
+      stripe,
+    });
+  }
 }
 
 async function applySessionPaymentState(
@@ -481,8 +544,9 @@ async function resolveCheckoutFinancialSnapshot(
   const checkoutSessionId = stringOrNull(session.id);
   const sessionWithAmounts = numberOrNull(session.amount_total) === null &&
       checkoutSessionId
-    ? ((await stripe.checkout.sessions.retrieve(checkoutSessionId)) as unknown as
-      Record<string, unknown>)
+    ? ((await stripe.checkout.sessions.retrieve(
+      checkoutSessionId,
+    )) as unknown as Record<string, unknown>)
     : session;
 
   return extractCheckoutFinancialSnapshot(sessionWithAmounts);
@@ -499,15 +563,7 @@ async function resolvePaymentIntentFinancialSnapshot(
   const localPayment = sessionPaymentId
     ? await getSessionPaymentFinancialContext(client, sessionPaymentId)
     : null;
-  let checkoutSessionId = localPayment?.stripeCheckoutSessionId ?? null;
-
-  if (checkoutSessionId) {
-    const checkout = await stripe.checkout.sessions.retrieve(checkoutSessionId);
-    const financialSnapshot = extractCheckoutFinancialSnapshot(
-      checkout as unknown as Record<string, unknown>,
-    );
-    if (financialSnapshot) return { checkoutSessionId, financialSnapshot };
-  }
+  let checkoutSessionId: string | null = null;
 
   if (paymentIntentId) {
     const sessions = await stripe.checkout.sessions.list({
@@ -522,6 +578,15 @@ async function resolvePaymentIntentFinancialSnapshot(
       );
       if (financialSnapshot) return { checkoutSessionId, financialSnapshot };
     }
+  }
+
+  checkoutSessionId = localPayment?.stripeCheckoutSessionId ?? null;
+  if (checkoutSessionId) {
+    const checkout = await stripe.checkout.sessions.retrieve(checkoutSessionId);
+    const financialSnapshot = extractCheckoutFinancialSnapshot(
+      checkout as unknown as Record<string, unknown>,
+    );
+    if (financialSnapshot) return { checkoutSessionId, financialSnapshot };
   }
 
   const originalAmountCents = localPayment
@@ -542,13 +607,17 @@ async function getSessionPaymentFinancialContext(
   client: SupabaseRestClient,
   sessionPaymentId: string,
 ) {
-  const rows = await client.get<Array<{
-    currency: string | null;
-    gross_amount_cents: number;
-    metadata: Record<string, unknown> | null;
-    stripe_checkout_session_id: string | null;
-  }>>(
-    `/rest/v1/session_payments?select=gross_amount_cents,currency,metadata,stripe_checkout_session_id&id=eq.${encodeURIComponent(sessionPaymentId)}&limit=1`,
+  const rows = await client.get<
+    Array<{
+      currency: string | null;
+      gross_amount_cents: number;
+      metadata: Record<string, unknown> | null;
+      stripe_checkout_session_id: string | null;
+    }>
+  >(
+    `/rest/v1/session_payments?select=gross_amount_cents,currency,metadata,stripe_checkout_session_id&id=eq.${
+      encodeURIComponent(sessionPaymentId)
+    }&limit=1`,
   );
   const payment = rows[0];
   if (!payment) return null;
@@ -559,6 +628,85 @@ async function getSessionPaymentFinancialContext(
     metadata: payment.metadata ?? {},
     stripeCheckoutSessionId: payment.stripe_checkout_session_id,
   };
+}
+
+async function isCurrentSessionCheckout(
+  client: SupabaseRestClient,
+  sessionPaymentId: string,
+  checkoutSessionId: string,
+) {
+  const rows = await client.get<
+    Array<{ id: string; stripe_checkout_session_id: string | null }>
+  >(
+    `/rest/v1/session_payments?select=id,stripe_checkout_session_id&id=eq.${
+      encodeURIComponent(sessionPaymentId)
+    }&limit=1`,
+  );
+  const payment = rows[0];
+  return shouldApplySessionAttemptEvent({
+    currentCheckoutSessionId: payment?.stripe_checkout_session_id ?? null,
+    eventCheckoutSessionId: checkoutSessionId,
+    status: "failed",
+  });
+}
+
+async function updateAttemptStatus(
+  client: SupabaseRestClient,
+  checkoutSessionId: string | null,
+  status: string,
+) {
+  if (!checkoutSessionId) return;
+  await client.patch(
+    `/rest/v1/session_payment_attempts?stripe_checkout_session_id=eq.${
+      encodeURIComponent(checkoutSessionId)
+    }`,
+    { status },
+    "return=minimal",
+  );
+}
+
+async function closeSiblingCheckoutAttempts(input: {
+  client: SupabaseRestClient;
+  paidCheckoutSessionId: string | null;
+  sessionPaymentId: string;
+  stripe: ReturnType<typeof createStripeClient>;
+}) {
+  if (input.paidCheckoutSessionId) {
+    await updateAttemptStatus(
+      input.client,
+      input.paidCheckoutSessionId,
+      "paid",
+    );
+  }
+  const attempts = await input.client.get<
+    Array<{ stripe_checkout_session_id: string | null }>
+  >(
+    `/rest/v1/session_payment_attempts?select=stripe_checkout_session_id&session_payment_id=eq.${
+      encodeURIComponent(input.sessionPaymentId)
+    }&stripe_checkout_session_id=not.is.null&limit=100`,
+  );
+
+  for (const attempt of attempts) {
+    const checkoutSessionId = attempt.stripe_checkout_session_id;
+    if (!checkoutSessionId || checkoutSessionId === input.paidCheckoutSessionId) {
+      continue;
+    }
+    await updateAttemptStatus(input.client, checkoutSessionId, "superseded");
+    try {
+      const checkout = await input.stripe.checkout.sessions.retrieve(
+        checkoutSessionId,
+      );
+      if (checkout.status === "open") {
+        await input.stripe.checkout.sessions.expire(checkoutSessionId);
+      }
+    } catch {
+      console.warn(
+        JSON.stringify({
+          code: "SIBLING_CHECKOUT_EXPIRATION_SKIPPED",
+        }),
+      );
+    }
+  }
 }
 
 function readOriginalAmountCents(metadata: Record<string, unknown>) {

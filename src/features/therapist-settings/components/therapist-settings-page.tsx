@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   CalendarDays,
@@ -25,12 +25,15 @@ import {
   AppPageMain,
   AppPageSection,
 } from "@/components/app-page";
-import { TESButton } from "@/components/tes";
+import { TESButton, TESFeedbackDialog } from "@/components/tes";
 import { SubscriptionManagementPanel } from "@/features/therapist-plan/components/subscription-management-panel";
 import type { TherapistPlanPageData } from "@/features/therapist-plan/therapist-plan.types";
 import { routes } from "@/lib/routes";
 
-import { updateTherapistSettings } from "../therapist-settings.commands";
+import {
+  lookupTherapistAddressByCep,
+  updateTherapistSettings,
+} from "../therapist-settings.commands";
 import {
   formatDocumentNumber,
   formatPostalCode,
@@ -58,6 +61,7 @@ export function TherapistSettingsPage({
     text: string;
     tone: "error" | "success";
   } | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const hasChanges = useMemo(
     () => JSON.stringify(fields) !== JSON.stringify(savedFields),
@@ -67,7 +71,7 @@ export function TherapistSettingsPage({
   async function submit() {
     const validation = validateSettingsFields(fields);
     if (validation) {
-      setMessage({ text: validation, tone: "error" });
+      setFeedback(validation);
       return;
     }
 
@@ -77,7 +81,7 @@ export function TherapistSettingsPage({
     setPending(false);
 
     if (result.status === "error") {
-      setMessage({ text: result.error.message, tone: "error" });
+      setFeedback(result.error.message);
       return;
     }
 
@@ -117,14 +121,10 @@ export function TherapistSettingsPage({
         publicar seu perfil no TES.
       </AppPageHeader>
 
-      {message ? (
+      {message?.tone === "success" ? (
         <div
-          className={
-            message.tone === "success"
-              ? "rounded-card border border-status-success/30 bg-status-successBg p-4 text-sm font-bold leading-6 text-status-success"
-              : "rounded-card border border-status-danger/30 bg-status-dangerBg p-4 text-sm font-bold leading-6 text-status-danger"
-          }
-          role={message.tone === "error" ? "alert" : "status"}
+          className="rounded-card border border-status-success/30 bg-status-successBg p-4 text-sm font-bold leading-6 text-status-success"
+          role="status"
         >
           {message.text}
         </div>
@@ -210,6 +210,12 @@ export function TherapistSettingsPage({
           />
         </AppPageAside>
       </AppPageGrid>
+      {feedback ? (
+        <TESFeedbackDialog
+          message={feedback}
+          onClose={() => setFeedback(null)}
+        />
+      ) : null}
     </AppPageContainer>
   );
 }
@@ -253,6 +259,57 @@ function AccountSection({
   onSubmit: () => void;
   pending: boolean;
 }) {
+  const latestIdentity = useRef(fields.identity);
+  const lookupCepRef = useRef<string | null>(null);
+  const [cepLookup, setCepLookup] = useState<"idle" | "loading" | "error">(
+    "idle",
+  );
+  const [cepLookupMessage, setCepLookupMessage] = useState<string | null>(null);
+  const postalCode = fields.identity.postalCode;
+
+  latestIdentity.current = fields.identity;
+
+  useEffect(() => {
+    const digits = postalCode.replace(/\D/g, "");
+    if (digits.length !== 8) {
+      lookupCepRef.current = null;
+      setCepLookup("idle");
+      setCepLookupMessage(null);
+      return;
+    }
+    if (lookupCepRef.current === digits) return;
+
+    lookupCepRef.current = digits;
+    const controller = new AbortController();
+    setCepLookup("loading");
+    setCepLookupMessage(null);
+
+    void lookupTherapistAddressByCep(digits, controller.signal).then((result) => {
+      if (controller.signal.aborted) return;
+      if (result.status === "error") {
+        setCepLookup("error");
+        setCepLookupMessage(result.error.message);
+        return;
+      }
+
+      const current = latestIdentity.current;
+      onChange({
+        identity: {
+          ...current,
+          city: result.data.city || current.city,
+          neighborhood: result.data.neighborhood || current.neighborhood,
+          postalCode: result.data.postalCode,
+          state: result.data.state || current.state,
+          street: result.data.street || current.street,
+        },
+      });
+      setCepLookup("idle");
+      setCepLookupMessage("Endereço localizado. Confira e edite os campos se necessário.");
+    });
+
+    return () => controller.abort();
+  }, [onChange, postalCode]);
+
   return (
     <AppPageSection>
       <div className="grid gap-6">
@@ -342,6 +399,17 @@ function AccountSection({
               required
               value={fields.identity.postalCode}
             />
+            <div className="md:col-span-3" aria-live="polite">
+              {cepLookup === "loading" ? (
+                <p className="text-sm font-semibold text-tesText-secondary">
+                  Consultando o endereço...
+                </p>
+              ) : cepLookupMessage ? (
+                <p className="text-sm font-semibold text-tesText-secondary">
+                  {cepLookupMessage}
+                </p>
+              ) : null}
+            </div>
           </div>
           <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
             <TextField
@@ -403,12 +471,13 @@ function AccountSection({
           </div>
           <div className="grid gap-4 md:grid-cols-[180px_1fr]">
             <TextField
+              autoComplete="address-level1"
               id="state"
               label="Estado"
               maxLength={2}
               onChange={(value) =>
                 onChange({
-                  identity: { ...fields.identity, state: value.toUpperCase() },
+                  identity: { ...fields.identity, state: value },
                 })
               }
               required
@@ -727,6 +796,7 @@ function SectionHeading({
 }
 
 function TextField({
+  autoComplete,
   disabled,
   id,
   label,
@@ -736,6 +806,7 @@ function TextField({
   required,
   value,
 }: {
+  autoComplete?: string;
   disabled?: boolean;
   id: string;
   label: string;
@@ -751,6 +822,7 @@ function TextField({
         {label}
       </label>
       <input
+        autoComplete={autoComplete}
         className="mt-3 min-h-11 w-full rounded-lg border border-brand-lavender/70 bg-white px-4 text-sm font-bold text-brand-deep shadow-card outline-none transition placeholder:text-tesText-subtle focus:border-brand-primary focus:ring-4 focus:ring-ring/20 disabled:bg-brand-lavenderSoft disabled:text-tesText-secondary"
         disabled={disabled}
         id={id}

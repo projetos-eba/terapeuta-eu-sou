@@ -130,7 +130,10 @@ export function PreEncounterDeviceCheck({
   }
 
   return (
-    <div className="mt-6 rounded-lg border border-brand-lavender bg-surface-soft p-4">
+    <div
+      className="mt-6 rounded-[22px] border border-brand-lavender bg-surface-soft p-4 sm:p-5"
+      id="device-check"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-sm font-extrabold text-brand-deep">

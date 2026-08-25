@@ -276,6 +276,11 @@ Stack real identificada:
   comissão, valor do terapeuta e ledger; o subtotal original permanece em
   `session_payments.metadata.stripe_checkout`. A homologação E2E externa no
   Stripe test mode continua obrigatória antes de produção.
+  Promotion Codes são digitados em campo TES fora do Embedded Checkout, com
+  resolução dinâmica na Stripe, `tes_checkout_scope=session|subscription`,
+  Products explícitos para assinaturas, substituição idempotente do Checkout e
+  proteção contra eventos de tentativas superseded. Regras e operação ficam em
+  `docs/payments/promotion-codes.md` e `skills/stripe-promotions`.
 - Planos do terapeuta: `/terapeuta/plano` é a central de upgrades e lê catálogo
   e preços ativos de `billing_plans`/`billing_plan_prices`;
   `/terapeuta/configuracoes#plano-assinatura` concentra downgrade agendado,
@@ -358,6 +363,14 @@ Stack real identificada:
   `therapist_metrics_runtime_config` até validação formal de base legal, aviso
   e retenção. Não ativar por variável pública nem simular descoberta,
   ocupação, Aura ou amostra insuficiente. MTR-6/Aura permanece pendente.
+- A composição visual da visão geral de Métricas foi alinhada ao frame
+  `13366:3628`: hero editorial, faixa de período/CSV separada, seis KPIs,
+  funil, agenda, ranking, comparativo, roscas e heatmaps. Os componentes
+  visuais continuam locais à feature e usam somente os contratos agregados
+  existentes; descoberta desativada e ocupação em formação permanecem estados
+  honestos. Ausência de base mantém a estrutura gráfica em referência neutra
+  (linha-base, funil, grade, rosca, ranking e comparativo) com copy explícita;
+  só um zero devolvido pelo contrato pode ser apresentado como dado real.
 - Financeiro do terapeuta F0/F1/F2/F3: `/terapeuta/financeiro` possui somente as
   abas Resumo, Recebimentos, Repasses e Conta de recebimento. A fonte canônica
   continua `session_payments`; o shell consome read models privados
@@ -375,6 +388,24 @@ Stack real identificada:
   fluxo hospedado da Stripe, sem formulário bancário próprio e sem confirmar
   onboarding por redirect. Benchmark financeiro é anonimizado e suprimido sem
   amostra mínima; Insight TES financeiro é rule-based, não IA generativa.
+  A automação semanal está versionada e desativada até homologação HML: terça
+  02:00 America/Sao_Paulo, confirmação em 7 dias, segurança de 1 dia e backlog
+  até o cutoff. ADR-018 define Transfer semanal controlado pelo TES e Payout
+  automático diário criado pela Stripe para contas BR. `destination_payment` e
+  Balance Transactions atribuem cada Transfer a um Payout; lotes e Payouts
+  formam a relação muitos-para-muitos, sem metadata TES no Payout. Transfer liquida a obrigação no ledger;
+  somente cobertura reconciliada em Payout `paid` conclui o banco. A política
+  v5 e o cron permanecem inativos até preflight e prova externa. Runbook em
+  `docs/payments/weekly-payouts.md`.
+- A apresentação visual de Aura e Financeiro foi alinhada aos nós Figma
+  `13366:1634` e `14340:6283`, mantendo as anatomias específicas de cada
+  domínio. Aura usa hero editorial, personagem local, quatro KPIs, leituras
+  contextuais e recomendações determinísticas. Financeiro usa quatro abas,
+  cards, evolução, roscas e timeline de repasses; gráficos sem base continuam
+  visíveis em referência neutra e nunca exibem valores inventados. No mobile,
+  o Financeiro usa divulgação progressiva apenas para análises secundárias e
+  composição avançada; nenhum dado primário é removido. Aura tem skeleton
+  dedicado e controles de período com toque mínimo de 44px.
 
 ## 6. QA e definição de pronto
 

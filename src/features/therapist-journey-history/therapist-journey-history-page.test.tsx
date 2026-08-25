@@ -36,7 +36,7 @@ describe("TherapistJourneyDetailPage", () => {
 
 describe("TherapistJourneyHistoryPage", () => {
   it("keeps the portfolio hierarchy and an accessible export action", () => {
-    render(
+    const view = render(
       <TherapistJourneyHistoryPage
         data={pageFixture()}
         filters={{ q: "", segment: "", sort: "last_session", status: "all" }}
@@ -71,6 +71,9 @@ describe("TherapistJourneyHistoryPage", () => {
     expect(
       screen.queryByRole("columnheader", { name: "Encontros" }),
     ).not.toBeInTheDocument();
+    expect(
+      view.container.querySelector("svg.lucide-chevron-down"),
+    ).toHaveClass("pointer-events-none");
   });
 });
 

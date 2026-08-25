@@ -6,9 +6,11 @@ import { platformAssets } from "@/lib/platform-assets";
 import { cn } from "@/lib/utils";
 
 export function TherapistAuthShell({
+  alwaysFallback = false,
   children,
   className,
 }: {
+  alwaysFallback?: boolean;
   children: ReactNode;
   className?: string;
   description: string;
@@ -19,7 +21,10 @@ export function TherapistAuthShell({
     <main className="relative min-h-screen bg-surface-soft px-5 py-8 text-brand-deep sm:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col items-center justify-center gap-8">
         <div className="relative flex w-full justify-center">
-          <AuthBackButton fallbackHref={routes.public.home} />
+          <AuthBackButton
+            alwaysFallback={alwaysFallback}
+            fallbackHref={routes.public.home}
+          />
           <PublicLogo />
         </div>
         <section className="grid w-full overflow-hidden rounded-hero border border-border bg-surface-default shadow-float lg:grid-cols-[0.92fr_1.08fr]">

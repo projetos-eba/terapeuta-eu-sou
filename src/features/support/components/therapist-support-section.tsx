@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
 import { Headphones, Loader2, MessageSquarePlus } from "lucide-react";
 
-import { TESDialog } from "@/components/tes/tes-dialog";
+import { TESDialog, TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 import {
@@ -230,9 +230,7 @@ function NewTicketDialog({
           </span>
         </label>
         {error ? (
-          <p className="rounded-lg bg-status-dangerBg px-4 py-3 text-sm font-bold text-status-danger">
-            {error}
-          </p>
+          <TESFeedbackDialog message={error} onClose={() => setError(null)} />
         ) : null}
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button

@@ -714,7 +714,7 @@ function SelectControl({
       </select>
       <ChevronDown
         aria-hidden="true"
-        className="absolute right-4 top-1/2 -translate-y-1/2 text-brand-primary"
+        className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-brand-primary"
         size={15}
       />
     </label>

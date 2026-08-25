@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 
+import { isSelectableParticipantTemplate } from "@/features/message-center/message-center.templates";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 const UUID =
@@ -38,6 +39,7 @@ export function parseStructuredMessageBody(
     !UUID.test(conversationId) ||
     typeof templateKey !== "string" ||
     templateKey.trim().length === 0 ||
+    !isSelectableParticipantTemplate(templateKey.trim()) ||
     (bookingId !== undefined &&
       (typeof bookingId !== "string" || !UUID.test(bookingId))) ||
     (parameters !== undefined &&

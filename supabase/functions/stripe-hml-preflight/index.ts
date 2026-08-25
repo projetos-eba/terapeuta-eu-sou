@@ -15,6 +15,10 @@ import {
   getWebhookSecret,
 } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
+import {
+  fingerprintStripeIdentifier,
+  parseStripeEventId,
+} from "./webhook-inspection.ts";
 
 type Check = {
   name: string;
@@ -30,6 +34,8 @@ type BillingPriceRow = {
 type ConnectAccountRow = {
   charges_enabled: boolean | null;
   operational_status: string | null;
+  payout_schedule_interval: string | null;
+  payout_status: string | null;
   payouts_enabled: boolean | null;
 };
 
@@ -48,12 +54,14 @@ type GoldenPathAction =
   | "inspect"
   | "inspect_latest_paid"
   | "inspect_recent"
+  | "inspect_webhook_event"
   | "prepare"
   | "release";
 
 type GoldenPathRequest = {
   action?: GoldenPathAction;
   checkoutSessionId?: string;
+  stripeEventId?: string;
   fixture?: FixtureReference;
 };
 
@@ -130,6 +138,9 @@ runtime.serve(async (request) => {
           ),
         );
       }
+      if (body.action === "inspect_webhook_event") {
+        return success(await inspectWebhookEvent(client, body));
+      }
       if (body.action === "release") {
         await releaseGoldenPathFixture(client, body.fixture);
         return success({ released: true });
@@ -175,12 +186,17 @@ runtime.serve(async (request) => {
     });
     await addCheck(checks, "platform_webhook", async () => {
       getWebhookSecret(runtime, "STRIPE_PLATFORM_WEBHOOK_SECRET");
-      const endpoints = await stripe.webhookEndpoints.list({ limit: 100 });
-      const endpoint = endpoints.data.find(
+      const destinations = await stripe.v2.core.eventDestinations.list({
+        include: ["webhook_endpoint.url"],
+        limit: 100,
+      });
+      const endpoint = destinations.data.find(
         (candidate) =>
           candidate.status === "enabled" &&
-          candidate.url.includes("/functions/v1/stripe-billing-webhook") &&
-          candidate.url.includes(new URL(config.supabaseUrl).host),
+          candidate.event_payload === "snapshot" &&
+          candidate.events_from?.includes("@self") &&
+          candidate.webhook_endpoint?.url?.includes("/functions/v1/stripe-billing-webhook") &&
+          candidate.webhook_endpoint.url.includes(new URL(config.supabaseUrl).host),
       );
       if (!endpoint || !hasEvents(endpoint.enabled_events, platformEvents)) {
         throw new Error("platform_webhook_missing_or_incomplete");
@@ -189,20 +205,50 @@ runtime.serve(async (request) => {
     });
     await addCheck(checks, "connect_webhook", async () => {
       getWebhookSecret(runtime, "STRIPE_CONNECT_WEBHOOK_SECRET");
-      const endpoints = await stripe.webhookEndpoints.list({ limit: 100 });
-      const endpoint = endpoints.data.find(
+      const destinations = await stripe.v2.core.eventDestinations.list({
+        include: ["webhook_endpoint.url"],
+        limit: 100,
+      });
+      const endpoint = destinations.data.find(
         (candidate) =>
           candidate.status === "enabled" &&
-          candidate.url.includes("/functions/v1/stripe-connect-webhook") &&
-          candidate.url.includes(new URL(config.supabaseUrl).host),
+          candidate.event_payload === "snapshot" &&
+          candidate.events_from?.includes("@accounts") &&
+          candidate.webhook_endpoint?.url?.includes("/functions/v1/stripe-connect-webhook") &&
+          candidate.webhook_endpoint.url.includes(new URL(config.supabaseUrl).host),
       );
       if (
         !endpoint ||
-        !hasEvents(endpoint.enabled_events, ["account.updated"])
+        !hasEvents(endpoint.enabled_events, connectEvents)
       ) {
         throw new Error("connect_webhook_missing_or_incomplete");
       }
-      return "Webhook Connect esta habilitado com o evento de estado da conta.";
+      return "Webhook Connect esta habilitado com eventos de conta, saldo e payout.";
+    });
+    await addCheck(checks, "connect_thin_webhook", async () => {
+      getWebhookSecret(runtime, "STRIPE_CONNECT_V2_WEBHOOK_SECRET");
+      const destinations = await stripe.v2.core.eventDestinations.list({
+        include: ["webhook_endpoint.url"],
+        limit: 100,
+      });
+      const endpoint = destinations.data.find(
+        (candidate) =>
+          candidate.status === "enabled" &&
+          candidate.event_payload === "thin" &&
+          candidate.webhook_endpoint?.url?.includes(
+            "/functions/v1/stripe-connect-webhook",
+          ) &&
+          candidate.webhook_endpoint.url.includes(
+            new URL(config.supabaseUrl).host,
+          ),
+      );
+      if (
+        !endpoint ||
+        !hasEvents(endpoint.enabled_events, connectThinEvents)
+      ) {
+        throw new Error("connect_thin_webhook_missing_or_incomplete");
+      }
+      return "Webhook Connect thin esta habilitado com eventos Accounts v2.";
     });
     await addCheck(checks, "payment_functions", async () => {
       const results = await Promise.all(
@@ -242,12 +288,16 @@ runtime.serve(async (request) => {
     });
     await addCheck(checks, "connect_account_state", async () => {
       const rows = await client.get<ConnectAccountRow[]>(
-        "/rest/v1/therapist_connect_accounts?select=operational_status,charges_enabled,payouts_enabled",
+        "/rest/v1/therapist_connect_accounts?select=operational_status,charges_enabled,payouts_enabled,payout_status,payout_schedule_interval",
       );
       if (!rows.length) throw new Error("connect_account_missing");
       const readyAccounts = rows.filter(
-        (row) => row.charges_enabled === true && row.payouts_enabled === true,
+        (row) => row.charges_enabled === true && row.payouts_enabled === true &&
+          row.payout_status === "enabled" && row.payout_schedule_interval === "daily",
       ).length;
+      if (readyAccounts !== rows.length) {
+        throw new Error("connect_accounts_not_ready_for_daily_automatic_payout");
+      }
       return `${rows.length} conta(s) Connect observada(s); ${readyAccounts} pronta(s) para repasse.`;
     });
     await addCheck(checks, "payout_operations", async () => {
@@ -255,6 +305,13 @@ runtime.serve(async (request) => {
         throw new Error("operations_token_missing");
       }
       return "Credencial operacional de repasses esta configurada no runtime HML.";
+    });
+    await addCheck(checks, "payout_admin_recipients", async () => {
+      const admins = await client.get<Array<{ id: string }>>(
+        "/rest/v1/profiles?select=id&role=eq.admin&email=not.is.null&auth_deleted_at=is.null&anonymized_at=is.null&limit=1",
+      );
+      if (!admins.length) throw new Error("payout_admin_recipient_missing");
+      return "Existe administrador elegivel para alertas operacionais.";
     });
 
     return success({ checks });
@@ -273,6 +330,31 @@ const platformEvents = [
   "transfer.updated",
 ];
 
+const connectEvents = [
+  "account.updated",
+  "account.external_account.updated",
+  "balance_settings.updated",
+  "payout.created",
+  "payout.updated",
+  "payout.paid",
+  "payout.failed",
+  "payout.canceled",
+];
+
+const connectThinEvents = [
+  "v2.core.account.closed",
+  "v2.core.account.created",
+  "v2.core.account.updated",
+  "v2.core.account[configuration.merchant].capability_status_updated",
+  "v2.core.account[configuration.merchant].updated",
+  "v2.core.account[configuration.recipient].capability_status_updated",
+  "v2.core.account[configuration.recipient].updated",
+  "v2.core.account[defaults].updated",
+  "v2.core.account[future_requirements].updated",
+  "v2.core.account[identity].updated",
+  "v2.core.account[requirements].updated",
+];
+
 const paymentFunctions = [
   "session-booking-checkout",
   "stripe-create-session-payment",
@@ -285,6 +367,8 @@ const paymentFunctions = [
   "create-weekly-payout-batch",
   "process-payout-batch",
   "reconcile-stripe-transfers",
+  "weekly-payout-scheduler",
+  "stripe-connect-payout-schedule",
 ];
 
 const HML_SUPABASE_HOST = "emzwqkmrryuqvqiohqnu.supabase.co";
@@ -739,6 +823,127 @@ async function inspectGoldenPathFixture(
     stripeCheckout,
     videoSessions: videos,
     webhook: { checkoutCompletedProcessed: webhooks.length === 1 },
+  };
+}
+
+async function inspectWebhookEvent(
+  client: SupabaseRestClient,
+  request: GoldenPathRequest,
+) {
+  const eventId = parseStripeEventId(request.stripeEventId);
+  if (!eventId) {
+    throw new DomainError(
+      "stripe_event_reference_invalid",
+      400,
+      "Evento Stripe invalido.",
+    );
+  }
+
+  const events = await client.get<
+    Array<{
+      attempts: number;
+      event_type: string;
+      object_id: string | null;
+      processing_status: string;
+      source: "connect" | "platform";
+      stripe_event_created_at: string | null;
+    }>
+  >(
+    `/rest/v1/stripe_webhook_events?select=event_type,source,processing_status,attempts,object_id,stripe_event_created_at&stripe_event_id=eq.${encodeURIComponent(
+      eventId,
+    )}`,
+  );
+  const [event] = events;
+  if (!event) {
+    return {
+      eventFingerprint: await fingerprintStripeIdentifier(eventId),
+      found: false,
+    };
+  }
+
+  const eventFingerprint = await fingerprintStripeIdentifier(eventId);
+  const paymentRows = event.object_id
+    ? await client.get<
+        Array<{
+          booking_id: string;
+          financial_status: string;
+          stripe_event_id: string | null;
+          stripe_event_created_at: string | null;
+        }>
+      >(
+        `/rest/v1/session_payments?select=booking_id,financial_status,stripe_event_id,stripe_event_created_at&stripe_checkout_session_id=eq.${encodeURIComponent(
+          event.object_id,
+        )}`,
+      )
+    : [];
+  const payments = paymentRows.length || !event.object_id
+    ? paymentRows
+    : await client.get<
+        Array<{
+          booking_id: string;
+          financial_status: string;
+          stripe_event_id: string | null;
+          stripe_event_created_at: string | null;
+        }>
+      >(
+        `/rest/v1/session_payments?select=booking_id,financial_status,stripe_event_id,stripe_event_created_at&stripe_payment_intent_id=eq.${encodeURIComponent(
+          event.object_id,
+        )}`,
+      );
+  const bookingIds = [...new Set(payments.map((payment) => payment.booking_id))];
+  const bookings = await Promise.all(
+    bookingIds.map(async (bookingId) => {
+      const [booking] = await client.get<
+        Array<{ payment_status: string; status: string }>
+      >(
+        `/rest/v1/bookings?select=status,payment_status&id=eq.${encodeURIComponent(
+          bookingId,
+        )}&limit=1`,
+      );
+      return booking ?? null;
+    }),
+  );
+
+  const paymentStates = [...new Set(payments.map((payment) => payment.financial_status))]
+    .sort();
+  const bookingStates = bookings
+    .filter((booking): booking is { payment_status: string; status: string } =>
+      Boolean(booking),
+    )
+    .map((booking) => ({
+      paymentStatus: booking.payment_status,
+      status: booking.status,
+    }));
+
+  return {
+    event: {
+      createdAt: event.stripe_event_created_at,
+      fingerprint: eventFingerprint,
+      processingStatus: event.processing_status,
+      source: event.source,
+      type: event.event_type,
+    },
+    found: true,
+    invariants: {
+      bookingCount: bookingStates.length,
+      eventRecordCount: events.length,
+      eventRecordIsUnique: events.length === 1,
+      paymentCount: payments.length,
+      paymentStates,
+      bookingStates,
+      webhookAttemptCount: event.attempts,
+    },
+    relationships: {
+      paymentCorrelatesToEvent: payments.every(
+        (payment) => payment.stripe_event_id === eventId,
+      ),
+      paymentEventNotNewerThanWebhook: payments.every(
+        (payment) =>
+          !payment.stripe_event_created_at ||
+          !event.stripe_event_created_at ||
+          payment.stripe_event_created_at <= event.stripe_event_created_at,
+      ),
+    },
   };
 }
 

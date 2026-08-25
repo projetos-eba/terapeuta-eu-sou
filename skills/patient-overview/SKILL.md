@@ -52,7 +52,7 @@ description: Implementar e manter a visão geral autenticada do paciente TES.
 
 - O hero usa `platformAssets.patientOverviewHero` com fade à esquerda e sem borda decorativa.
 - As páginas de destino de algumas ações do shell serão implementadas nas próximas etapas autenticadas.
-- Enquanto `/app/configuracoes/perfil` e `/app/configuracoes/notificacoes` não tiverem páginas, `Perfil` permanece fora da navegação e o card `Notificações` é somente informativo.
+- `/app/configuracoes/perfil` agora possui uma página própria de conta do paciente; `/app/configuracoes/notificacoes` continua pendente e o card `Notificações` permanece somente informativo.
 
 ## Assets da plataforma
 

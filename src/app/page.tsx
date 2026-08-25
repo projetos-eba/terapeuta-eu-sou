@@ -214,8 +214,8 @@ function StepsSection() {
   return (
     <section className="mx-auto max-w-[1680px] px-5 py-16 sm:px-8 lg:px-12">
       <SectionHeading
-        title="Como funciona"
-        body="Quatro passos simples para você iniciar sua jornada com calma."
+        title="Encontre caminhos para o seu momento"
+        body="O Match ajuda você a compreender o que busca, conhecer possibilidades terapêuticas e encontrar profissionais alinhados às suas necessidades."
       />
 
       <ol className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -345,7 +345,7 @@ function TherapySection({ therapies }: { therapies: PublicHomeTherapy[] }) {
           body="As descrições são informativas e não prometem cura, diagnóstico ou resultado."
         />
         <TESButton href={routes.public.therapies} variant="secondary">
-          Ver catálogo
+          Todas as terapias
           <ArrowRight className="size-4" />
         </TESButton>
       </div>

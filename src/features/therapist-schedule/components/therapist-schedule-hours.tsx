@@ -17,7 +17,7 @@ import {
   Sparkles,
   Trash2,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { TESDialog } from "@/components/tes";
 import type {
@@ -753,6 +753,7 @@ function SessionRulesCard({
           <RuleRow
             description="Frequência em que os inícios são oferecidos."
             icon={CalendarDays}
+            info="De quanto em quanto tempo o TES oferece um novo horário para agendamento. Por exemplo: 30 minutos oferece horários começando a cada 30 minutos."
             label="Intervalo de oferta"
           >
             <MinutesSelect
@@ -765,6 +766,7 @@ function SessionRulesCard({
           <RuleRow
             description="Aplicado ao cálculo e à exibição dos horários."
             icon={Globe2}
+            info="Este fuso define como os horários da sua agenda serão calculados e exibidos. O TES usa São Paulo (Brasília) como referência; se você atende de outro país, organize sua disponibilidade considerando esse horário."
             label="Fuso horário"
           >
             <select
@@ -791,6 +793,7 @@ function SessionRulesCard({
           <RuleRow
             description="Tempo mínimo para um novo agendamento."
             icon={CalendarDays}
+            info="É o tempo mínimo entre o momento do agendamento e o início da sessão. Por exemplo: 120 minutos significa que a pessoa precisa agendar com pelo menos 2 horas de antecedência."
             label="Antecedência mínima"
           >
             <MinutesSelect
@@ -824,11 +827,13 @@ function RuleRow({
   children,
   description,
   icon: Icon,
+  info,
   label,
 }: {
   children: React.ReactNode;
   description: string;
   icon: typeof Clock3;
+  info?: string;
   label: string;
 }) {
   return (
@@ -838,7 +843,10 @@ function RuleRow({
           <Icon aria-hidden="true" size={17} />
         </span>
         <div>
-          <h3 className="text-sm font-extrabold text-brand-deep">{label}</h3>
+          <h3 className="flex items-center gap-2 text-sm font-extrabold text-brand-deep">
+            <span>{label}</span>
+            {info ? <RuleInfoPopover label={label} text={info} /> : null}
+          </h3>
           <p className="mt-1 text-xs font-semibold leading-5 text-tesText-muted">
             {description}
           </p>
@@ -846,6 +854,55 @@ function RuleRow({
       </div>
       {children}
     </div>
+  );
+}
+
+function RuleInfoPopover({ label, text }: { label: string; text: string }) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const rootRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function closeOnOutside(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <span className="relative inline-flex" ref={rootRef}>
+      <button
+        aria-controls={id}
+        aria-expanded={open}
+        aria-label={`Saiba mais sobre ${label}`}
+        className="inline-flex size-11 items-center justify-center rounded-full text-brand-primary outline-none hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+        onClick={() => setOpen((current) => !current)}
+        type="button"
+      >
+        <Info aria-hidden="true" size={16} />
+      </button>
+      {open ? (
+        <span
+          className="absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl border border-brand-lavender bg-white p-4 text-left text-sm font-semibold leading-6 text-tesText-secondary shadow-float"
+          id={id}
+          role="tooltip"
+        >
+          {text}
+        </span>
+      ) : null}
+    </span>
   );
 }
 

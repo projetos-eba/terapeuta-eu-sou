@@ -1,10 +1,9 @@
 import Link from "next/link";
 import type { Route } from "next";
 import type { LucideIcon } from "lucide-react";
-import { Download, MoreHorizontal, ReceiptText } from "lucide-react";
+import { Download, ReceiptText } from "lucide-react";
 
 import { SessionOperationActions } from "@/features/session-actions/session-operation-actions";
-import { routes } from "@/lib/routes";
 
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
 
@@ -17,17 +16,7 @@ export function SessionActionCards({
   const hasReceipt = Boolean(data.receipt.receiptUrl);
 
   return (
-    <section className="grid gap-6 rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
-      <div>
-        <h2 className="font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]">
-          Gerencie este encontro
-        </h2>
-        <p className="mt-3 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
-          Cancelamento e reagendamento seguem a disponibilidade da agenda, a
-          política vigente e a confirmação financeira da plataforma.
-        </p>
-      </div>
-
+    <section className="grid gap-5">
       <SessionOperationActions
         actorRole="patient"
         bookingId={data.booking.id}
@@ -38,6 +27,8 @@ export function SessionActionCards({
         cancelDisabledReason={cancellation.disabledReason}
         rescheduleDisabledReason={reschedule.disabledReason}
         reschedule={data.reschedule}
+        description="Flexibilidade e segurança para você cuidar do que importa."
+        heading="Gerencie este encontro"
       />
 
       <section className="rounded-[24px] bg-surface-soft p-5 sm:p-6">
@@ -58,10 +49,7 @@ export function SessionActionCards({
         </div>
       </section>
 
-      <section
-        aria-label="Ações complementares do encontro"
-        className="grid gap-4 sm:grid-cols-2"
-      >
+      <section aria-label="Comprovante do encontro" className="grid gap-4">
         {data.receipt.receiptUrl ? (
           <ActionLink
             description="Baixe o comprovante quando ele estiver disponível para este encontro."
@@ -76,14 +64,6 @@ export function SessionActionCards({
             title="Baixar comprovante"
           />
         )}
-        <ActionLink
-          description="Peça ajuda ou acesse outras orientações seguras para este encontro."
-          href={
-            `${routes.patient.messages}?context=suporte&booking=${data.booking.id}` as Route<string>
-          }
-          icon={MoreHorizontal}
-          title="Mais opções"
-        />
       </section>
     </section>
   );

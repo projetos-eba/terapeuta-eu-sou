@@ -135,30 +135,43 @@ async function getSupabaseMessageCenter(
     `/rest/v1/conversations?select=id,patient_profile_id,therapist_profile_id,booking_id,last_message_at&${input.actorRole === "patient" ? "patient_profile_id" : "therapist_profile_id"}=eq.${encodeURIComponent(participantProfileId)}&order=last_message_at.desc.nullslast&limit=8`,
   );
   const conversationIds = conversations.map((conversation) => conversation.id);
-  const [messages, supportTickets, notifications, bookings] = await Promise.all(
-    [
-      conversationIds.length > 0
-        ? supabaseRequest<MessageRow[]>(
-            config,
-            `/rest/v1/messages?select=id,conversation_id,sender_profile_id,body,metadata,read_at,created_at&conversation_id=in.(${conversationIds.join(",")})&order=created_at.desc`,
-          )
-        : Promise.resolve([]),
-      supabaseRequest<SupportTicketRow[]>(
-        config,
-        `/rest/v1/support_tickets?select=id,category,subject,description,status,resolution_summary,created_at,last_activity_at&requester_profile_id=eq.${encodeURIComponent(input.profileId)}&order=last_activity_at.desc.nullslast&limit=8`,
-      ),
-      supabaseRequest<NotificationRow[]>(
-        config,
-        `/rest/v1/notifications?select=id,kind,title,body,read_at,created_at&profile_id=eq.${encodeURIComponent(input.profileId)}&order=created_at.desc&limit=4`,
-      ),
-      conversations.some((conversation) => conversation.booking_id)
-        ? supabaseRequest<BookingRow[]>(
-            config,
-            `/rest/v1/bookings?select=id,starts_at,ends_at,status&id=in.(${[...new Set(conversations.map((conversation) => conversation.booking_id).filter(Boolean))].join(",")})`,
-          )
-        : Promise.resolve([]),
-    ],
-  );
+  const [
+    messages,
+    supportTickets,
+    notifications,
+    bookings,
+    unreadMessagesCount,
+    openSupportTicketsCount,
+  ] = await Promise.all([
+    conversationIds.length > 0
+      ? supabaseRequest<MessageRow[]>(
+          config,
+          `/rest/v1/messages?select=id,conversation_id,sender_profile_id,body,metadata,read_at,created_at&conversation_id=in.(${conversationIds.join(",")})&order=created_at.desc`,
+        )
+      : Promise.resolve([]),
+    supabaseRequest<SupportTicketRow[]>(
+      config,
+      `/rest/v1/support_tickets?select=id,category,subject,description,status,resolution_summary,created_at,last_activity_at&requester_profile_id=eq.${encodeURIComponent(input.profileId)}&order=last_activity_at.desc.nullslast&limit=8`,
+    ),
+    supabaseRequest<NotificationRow[]>(
+      config,
+      `/rest/v1/notifications?select=id,kind,title,body,read_at,created_at&profile_id=eq.${encodeURIComponent(input.profileId)}&order=created_at.desc&limit=4`,
+    ),
+    conversations.some((conversation) => conversation.booking_id)
+      ? supabaseRequest<BookingRow[]>(
+          config,
+          `/rest/v1/bookings?select=id,starts_at,ends_at,status&id=in.(${[...new Set(conversations.map((conversation) => conversation.booking_id).filter(Boolean))].join(",")})`,
+        )
+      : Promise.resolve([]),
+    supabaseCount(
+      config,
+      `/rest/v1/messages?select=id,conversations!inner(patient_profile_id,therapist_profile_id)&conversations.${input.actorRole === "patient" ? "patient_profile_id" : "therapist_profile_id"}=eq.${encodeURIComponent(participantProfileId)}&sender_profile_id=neq.${encodeURIComponent(input.profileId)}&read_at=is.null`,
+    ),
+    supabaseCount(
+      config,
+      `/rest/v1/support_tickets?select=id&requester_profile_id=eq.${encodeURIComponent(input.profileId)}&status=neq.resolved`,
+    ),
+  ]);
   const threads = await mapThreads({
     actorRole: input.actorRole,
     config,
@@ -172,22 +185,11 @@ async function getSupabaseMessageCenter(
     supportTickets,
     notifications,
   );
-  const unreadCount =
-    messages.filter(
-      (message) =>
-        message.read_at === null &&
-        message.sender_profile_id !== participantProfileId,
-    ).length +
-    notifications.filter((notification) => notification.read_at === null)
-      .length;
-
   return {
     ...createMessageCenterShell(input.actorRole),
     metrics: {
-      awaitingCount:
-        threads.filter((thread) => thread.isUnread).length +
-        supportTickets.filter((ticket) => ticket.status !== "resolved").length,
-      unreadCount,
+      openSupportTicketsCount,
+      unreadMessagesCount,
     },
     platformItems,
     supportTickets: supportTickets.map((ticket) => ({
@@ -239,7 +241,7 @@ async function mapThreads(input: {
     conversationMessages.sort(
       (left, right) =>
         new Date(left.created_at).getTime() -
-          new Date(right.created_at).getTime(),
+        new Date(right.created_at).getTime(),
     );
   }
 
@@ -324,14 +326,12 @@ function toThread(input: {
     bookingId: input.conversation.booking_id,
     value: metadata?.cta,
   });
-  const threadMessages: MessageCenterMessage[] = input.messages.map(
-    (item) => ({
-      body: item.body,
-      createdAt: item.created_at,
-      id: item.id,
-      isFromViewer: item.sender_profile_id === input.viewerProfileId,
-    }),
-  );
+  const threadMessages: MessageCenterMessage[] = input.messages.map((item) => ({
+    body: item.body,
+    createdAt: item.created_at,
+    id: item.id,
+    isFromViewer: item.sender_profile_id === input.viewerProfileId,
+  }));
 
   return {
     avatarUrl: input.avatarUrl,
@@ -426,6 +426,7 @@ function mapPlatformItems(
       category,
       categoryLabel: getCategoryLabel(category),
       id: ticket.id,
+      isNotification: false,
       isUnread: ticket.status !== "resolved",
       timeLabel: formatRelativeTime(ticket.created_at),
       title: ticket.subject,
@@ -448,6 +449,7 @@ function mapPlatformItems(
         category,
         categoryLabel: getCategoryLabel(category),
         id: notification.id,
+        isNotification: true,
         isUnread: notification.read_at === null,
         timeLabel: formatRelativeTime(notification.created_at),
         title: notification.title,
@@ -472,9 +474,6 @@ function createMessageCenterShell(
       description: isTherapist
         ? "Acompanhe mensagens automatizadas dos clientes, avisos da plataforma e suporte em um só lugar."
         : "Acompanhe mensagens automatizadas dos terapeutas, avisos da plataforma e suporte em um só lugar.",
-      pendingLabel: isTherapist
-        ? "Clientes aguardando"
-        : "Terapeutas aguardando",
       title: "Central de mensagens",
     },
     participantSection: {
@@ -527,13 +526,14 @@ function createDemoMessageCenter(
 
   return {
     ...shell,
-    metrics: { awaitingCount: 5, unreadCount: 8 },
+    metrics: { openSupportTicketsCount: 5, unreadMessagesCount: 8 },
     platformItems: [
       {
         body: "Implementamos melhorias para agilizar o processo.",
         category: "suporte",
         categoryLabel: "Suporte TES",
         id: "platform-1",
+        isNotification: true,
         isUnread: true,
         timeLabel: "Hoje · 11:20",
         title: "Atualização no fluxo de reembolso",
@@ -543,6 +543,7 @@ function createDemoMessageCenter(
         category: "financeiro",
         categoryLabel: "Financeiro",
         id: "platform-2",
+        isNotification: true,
         isUnread: false,
         timeLabel: "Ontem · 09:08",
         title: isTherapist
@@ -554,6 +555,7 @@ function createDemoMessageCenter(
         category: "plataforma",
         categoryLabel: "Plataforma",
         id: "platform-3",
+        isNotification: true,
         isUnread: true,
         timeLabel: "16 Jun · 16:30",
         title: "Nova funcionalidade: lembretes automáticos",
@@ -623,6 +625,24 @@ async function supabaseRequest<T>(
   if (!response.ok) throw new MessageCenterDataError();
 
   return (await response.json()) as T;
+}
+
+async function supabaseCount(config: SupabaseServerConfig, path: string) {
+  const response = await fetch(`${config.url}${path}`, {
+    cache: "no-store",
+    headers: {
+      apikey: config.apiKey,
+      Authorization: `Bearer ${config.accessToken}`,
+      Prefer: "count=exact",
+      Range: "0-0",
+    },
+    method: "HEAD",
+  });
+  if (!response.ok) throw new Error("Message center count failed");
+
+  const contentRange = response.headers.get("content-range") ?? "";
+  const count = Number(contentRange.split("/").at(-1));
+  return Number.isFinite(count) ? count : 0;
 }
 
 async function getRowsByIds<T>(

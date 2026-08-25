@@ -5,7 +5,7 @@ description: Use when working on TES Stripe Billing, therapist subscriptions, ch
 
 # Payments Billing
 
-Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payments/architecture.md`, `docs/payments/stripe-secrets-setup.md`, and `docs/payments/internal-operations-token.md` before editing code.
+Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payments/architecture.md`, `docs/payments/promotion-codes.md`, `docs/payments/stripe-secrets-setup.md`, and `docs/payments/internal-operations-token.md` before editing code.
 
 ## Boundaries
 
@@ -36,6 +36,12 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 - Use Stripe idempotency keys for creating checkout sessions, refunds, schedules, and transfers.
 - Webhooks must read raw body and verify Stripe signature.
 - Webhook events must be idempotent and must not reopen `processed` events.
+- Coupon defines the financial benefit; Promotion Code is resolved server-side
+  and must carry `tes_checkout_scope`. Subscription Coupons must explicitly
+  list eligible Stripe Products. Never maintain a parallel local coupon list.
+- Applying or removing a code replaces the Checkout Session. Non-success
+  events from superseded attempts cannot mutate the current session payment;
+  a real paid older attempt remains authoritative and closes siblings.
 - Webhook reservation must be atomic; failed/stale leases may be retried.
 - Checkout completion only confirms a session when `payment_status` is paid.
 - Subscription plan comes from the effective Stripe Price mapping.
@@ -56,15 +62,24 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 
 ## Architecture Map
 
-Tables: `billing_plans`, `billing_plan_prices`, `stripe_customers`, `therapist_subscriptions`, `billing_invoices`, `therapist_connect_accounts`, `session_payments`, `session_payment_attempts`, `session_refunds`, `session_cancellation_decisions`, `session_disputes`, `session_service_confirmations`, `payout_batches`, `payout_batch_items`, `stripe_transfers`, `stripe_transfer_reversals`, `financial_ledger_entries`, `stripe_webhook_events`, `financial_policy_versions`.
+Tables: `billing_plans`, `billing_plan_prices`, `stripe_customers`, `therapist_subscriptions`, `billing_invoices`, `therapist_connect_accounts`, `session_payments`, `session_payment_attempts`, `session_refunds`, `session_cancellation_decisions`, `session_disputes`, `session_service_confirmations`, `payout_batches`, `payout_batch_items`, `stripe_transfers`, `stripe_transfer_reversals`, `stripe_payouts`, `stripe_payout_transfer_allocations`, `payout_scheduler_runs`, `payout_operational_incidents`, `financial_ledger_entries`, `stripe_webhook_events`, `financial_policy_versions`.
 
-Shared modules: `supabase/functions/_shared/payments/runtime.ts`, `stripe-client.ts`, `connect.ts`, `http.ts`, `idempotency.ts`, `money.ts`, `subscription-sync.ts`.
+Shared modules: `supabase/functions/_shared/payments/runtime.ts`, `stripe-client.ts`, `connect.ts`, `http.ts`, `idempotency.ts`, `money.ts`, `promotion-codes.ts`, `session-attempt-policy.ts`, `subscription-sync.ts`.
 
 Edge Functions:
 
 - Billing: `stripe-sync-billing-catalog`, `stripe-create-subscription-checkout`, `stripe-subscription-checkout-status`, `stripe-change-therapist-subscription`, `stripe-cancel-therapist-subscription`, `stripe-create-billing-portal`, `stripe-billing-webhook`.
 - Connect: `stripe-connect-create-account`, `stripe-connect-create-account-link`, `stripe-connect-create-login-link`, `stripe-connect-sync-account`, `stripe-connect-webhook`.
-- Sessions and payouts: `stripe-create-session-payment`, `request-session-cancellation`, `confirm-session-by-therapist`, `auto-confirm-sessions`, `evaluate-transfer-eligibility`, `create-weekly-payout-batch`, `process-payout-batch`, `retry-failed-payout-items`, `reconcile-stripe-transfers`.
+- Sessions and payouts: `stripe-create-session-payment`, `request-session-cancellation`, `confirm-session-by-therapist`, `auto-confirm-sessions`, `evaluate-transfer-eligibility`, `create-weekly-payout-batch`, `process-payout-batch`, `retry-failed-payout-items`, `reconcile-stripe-transfers`, `weekly-payout-scheduler`, `stripe-connect-payout-schedule`.
+- Read `docs/payments/weekly-payouts.md` before changing weekly batches, Balance Settings, Transfer/Payout states, retry, reconciliation or alerts.
+- `payouts_enabled` comes from Balance Settings, never from the Transfer capability. Scheduler must not auto-correct the payout schedule.
+- ADR-018 is authoritative for BR: weekly TES Transfers followed by Stripe
+  automatic daily Payouts. Persist `destination_payment`, import Payouts without
+  TES metadata and reconcile `balance_transactions?payout=...` into the
+  allocation table. Each Transfer belongs to one Payout; batches and Payouts
+  derive the many-to-many relation. Keep policy v5 and cron disabled until HML.
+- A Transfer creates the ledger debit; the Payout is a separate bank-delivery state and must not create a second ledger debit.
+- Only `payout.paid` queues payout success. Accept and escalate a later `payout.failed`.
 
 ## Secrets
 
@@ -84,14 +99,15 @@ Never expose, log, screenshot, or write real secret values.
 3. Start functions: `npm run dev:functions`.
 4. Start Next: `npm run dev`.
 5. Start Stripe listener: `npm run payments:webhooks:listen`.
-6. Validate env: `npm run payments:env`.
-7. Sync catalog: `npm run payments:catalog:sync`.
-8. Verify catalog: `npm run payments:catalog:verify`.
-9. Create E2E data: `npm run payments:e2e:seed`.
-10. Run headed payment navigation: `npm run test:e2e:payments:headed`.
-11. Inspect failed Stripe events in `stripe_webhook_events`.
-12. Cleanup E2E data: `npm run payments:e2e:cleanup`.
-13. For joint Stripe session payment + Zoom Video SDK homologation, run
+6. Validate Test Mode destinations: `npm run payments:webhooks:verify:test`.
+7. Validate env: `npm run payments:env`.
+8. Sync catalog: `npm run payments:catalog:sync`.
+9. Verify catalog: `npm run payments:catalog:verify`.
+10. Create E2E data: `npm run payments:e2e:seed`.
+11. Run headed payment navigation: `npm run test:e2e:payments:headed`.
+12. Inspect failed Stripe events in `stripe_webhook_events`.
+13. Cleanup E2E data: `npm run payments:e2e:cleanup`.
+14. For joint Stripe session payment + Zoom Video SDK homologation, run
     `npm run homologation:zoom:local` and require canonical webhook evidence
     before any real Zoom session.
 
@@ -116,6 +132,10 @@ Never expose, log, screenshot, or write real secret values.
   after a provider failure. Verify the booking transition and local decision
   before treating a Stripe response as success.
 - Use Stripe test mode only and never real cards.
+- Validate Promotion Codes for session, Premium, Premium Plus and both
+  Products, including remove/reapply, concurrent replacement, hosted fallback,
+  locale `pt-BR`, zero-total session completion through the signed webhook and
+  out-of-order superseded events.
 - Do not persist passwords, tokens, card data, or secrets in screenshots, traces, or reports.
 
 ## Prohibited Practices

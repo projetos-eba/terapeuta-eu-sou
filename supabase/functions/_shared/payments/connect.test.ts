@@ -1,17 +1,43 @@
 import {
+  assertConnectAccountOwnership,
   buildRecipientAccountIdempotencyKey,
   buildRecipientAccountV2Payload,
   deriveConnectAccountState,
+  derivePayoutSettingsState,
   getCardPaymentsStatus,
   getPendingRequirements,
   getTransfersStatus,
+  isManualPayoutScheduleUnavailable,
 } from "./connect.ts";
+
+Deno.test("Connect ownership requires TES therapist and Stripe environment metadata", () => {
+  const account = {
+    metadata: {
+      environment: "test",
+      system: "tes",
+      tes_therapist_id: "therapist-1",
+    },
+  };
+
+  assertConnectAccountOwnership(account, {
+    environment: "test",
+    therapistProfileId: "therapist-1",
+  });
+  assertThrows(
+    () => assertConnectAccountOwnership(account, {
+      environment: "live",
+      therapistProfileId: "therapist-1",
+    }),
+    Error,
+    "Conta Connect nao pertence",
+  );
+});
 
 declare const Deno: {
   test(name: string, fn: () => void | Promise<void>): void;
 };
 
-Deno.test("Connect v2 active transfer capability is ready", () => {
+Deno.test("Connect v2 separates transfer capability from payout readiness", () => {
   const account = accountWithTransferStatus("active", "active");
   const state = deriveConnectAccountState(account);
 
@@ -20,7 +46,38 @@ Deno.test("Connect v2 active transfer capability is ready", () => {
   assertEquals(state.onboardingStatus, "ready");
   assertEquals(state.operationalStatus, "ready");
   assertEquals(state.chargesEnabled, true);
+  assertEquals(state.payoutsEnabled, false);
+
+  const ready = deriveConnectAccountState(account, {
+    interval: "daily",
+    payoutStatus: "enabled",
+    payoutsEnabled: true,
+  });
+  assertEquals(ready.payoutsEnabled, true);
+  assertEquals(ready.payoutScheduleInterval, "daily");
+});
+
+Deno.test("Balance Settings is the authority for payout readiness", () => {
+  const state = derivePayoutSettingsState({
+    payments: { payouts: { schedule: { interval: "daily" }, status: "enabled" } },
+  });
+  assertEquals(state.payoutStatus, "enabled");
+  assertEquals(state.interval, "daily");
   assertEquals(state.payoutsEnabled, true);
+});
+
+Deno.test("Connect classifies provider refusal of a manual payout schedule", () => {
+  assertEquals(
+    isManualPayoutScheduleUnavailable({
+      message: "You cannot be on a manual payout plan in country BR.",
+      type: "StripeInvalidRequestError",
+    }),
+    true,
+  );
+  assertEquals(
+    isManualPayoutScheduleUnavailable({ message: "Network unavailable" }),
+    false,
+  );
 });
 
 Deno.test("Connect v2 user requirements restrict the account", () => {
@@ -172,4 +229,21 @@ function assertEquals(actual: unknown, expected: unknown) {
       `Expected ${String(expected)}, received ${String(actual)}.`,
     );
   }
+}
+
+function assertThrows(
+  callback: () => unknown,
+  expectedType: typeof Error,
+  expectedMessage: string,
+) {
+  try {
+    callback();
+  } catch (error) {
+    if (
+      error instanceof expectedType &&
+      error.message.includes(expectedMessage)
+    ) return;
+    throw error;
+  }
+  throw new Error("Expected callback to throw.");
 }

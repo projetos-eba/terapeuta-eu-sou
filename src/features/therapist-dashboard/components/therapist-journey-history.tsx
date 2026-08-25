@@ -2,15 +2,32 @@ import Link from "next/link";
 import type { Route } from "next";
 import { CalendarCheck2, Star, UsersRound } from "lucide-react";
 
+import { TherapistPlan } from "@/domain/tes";
+import {
+  canAccessTherapistPlan,
+  TherapistLockedCard,
+} from "@/features/therapist-access";
 import { routes } from "@/lib/routes";
 
 import type { TherapistDashboardPageData } from "../therapist-dashboard.types";
 
 export function TherapistJourneyHistory({
   history,
+  plan,
 }: {
   history: TherapistDashboardPageData["history"];
+  plan: TherapistPlan;
 }) {
+  if (!canAccessTherapistPlan(plan, TherapistPlan.PremiumPlus)) {
+    return (
+      <TherapistLockedCard
+        requiredPlan={TherapistPlan.PremiumPlus}
+        title="Histórico da jornada"
+        variant="section"
+      />
+    );
+  }
+
   const items = [
     {
       icon: CalendarCheck2,

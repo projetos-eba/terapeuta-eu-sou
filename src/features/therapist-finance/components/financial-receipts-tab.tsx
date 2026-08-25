@@ -334,6 +334,8 @@ export function FinancialReceiptsTab({
           </div>
         )}
 
+        <ReceiptsVisualSummary receipts={receipts} />
+
         <Pagination
           dateRange={dateRange}
           filters={filters}
@@ -341,6 +343,214 @@ export function FinancialReceiptsTab({
           page={receipts.pagination.page}
         />
       </AppPageSection>
+    </div>
+  );
+}
+
+function ReceiptsVisualSummary({
+  receipts,
+}: {
+  receipts: TherapistReceiptsContract;
+}) {
+  const points = buildWeeklyPoints(receipts.items);
+  const statusTotals = buildStatusTotals(receipts.items);
+  const total = statusTotals.reduce((sum, item) => sum + item.value, 0);
+  const hasData = total > 0;
+  const max = Math.max(1, ...points.map((point) => point.value));
+
+  return (
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+      <section className="rounded-card border border-brand-lavender bg-white p-5">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-xl font-extrabold text-brand-deep">
+              Recebimentos por semana
+            </h2>
+            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+              Valores brutos com pagamento confirmado no período.
+            </p>
+          </div>
+          <span className="rounded-lg bg-brand-lavenderSoft px-3 py-2 text-sm font-extrabold text-brand-primary">
+            Semanal
+          </span>
+        </div>
+        <div
+          aria-label={
+            hasData
+              ? "Recebimentos brutos por semana"
+              : "Recebimentos por semana: ainda sem dados"
+          }
+          className="mt-5 grid min-h-[190px] grid-cols-[auto_minmax(0,1fr)] gap-3"
+          role="img"
+          tabIndex={0}
+        >
+          <div className="flex flex-col justify-between py-2 text-xs font-bold text-tesText-muted">
+            <span>{formatCurrency(max)}</span>
+            <span>{formatCurrency(Math.round(max / 2))}</span>
+            <span>R$ 0</span>
+          </div>
+          <div className="flex items-end gap-3 overflow-x-auto rounded-card border border-brand-lavender bg-surface-soft px-4 pb-3 pt-5">
+            {(points.length
+              ? points
+              : Array.from({ length: 5 }, (_, index) => ({
+                  label: `ref-${index}`,
+                  value: 0,
+                }))
+            ).map((point) => (
+              <div
+                className="flex min-w-[48px] flex-1 flex-col items-center gap-2"
+                key={point.label}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`w-7 rounded-t ${hasData ? "bg-brand-primary" : "border border-dashed border-brand-lavender bg-transparent"}`}
+                  style={{
+                    height: `${Math.max(4, (point.value / max) * 112)}px`,
+                  }}
+                />
+                <span className="text-[11px] font-bold text-tesText-muted">
+                  {hasData ? point.label : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
+          {hasData
+            ? "Acompanhe a distribuição dos recebimentos dentro do período selecionado."
+            : "O gráfico será preenchido conforme os pagamentos forem confirmados."}
+        </p>
+      </section>
+
+      <section className="rounded-card border border-brand-lavender bg-white p-5">
+        <h2 className="text-xl font-extrabold text-brand-deep">
+          Distribuição por status
+        </h2>
+        <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+          Situação financeira dos recebimentos consultados.
+        </p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-[170px_minmax(0,1fr)] sm:items-center">
+          <ReceiptDonut
+            label={
+              hasData
+                ? "Distribuição de recebimentos por status"
+                : "Distribuição por status: ainda sem dados"
+            }
+            total={total}
+            values={statusTotals}
+          />
+          <ul className="grid gap-3 text-sm font-bold text-tesText-secondary">
+            {(hasData
+              ? statusTotals
+              : [
+                  {
+                    label: "Aguardando dados",
+                    value: 0,
+                    color: "var(--tes-color-brand-lavender)",
+                  },
+                ]
+            ).map((item) => (
+              <li
+                className="flex items-center justify-between gap-3"
+                key={item.label}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="size-3 shrink-0 rounded-full"
+                    style={{ background: item.color }}
+                  />
+                  {item.label}
+                </span>
+                <strong className="shrink-0 text-brand-deep">
+                  {hasData ? formatCurrency(item.value) : "—"}
+                </strong>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function buildWeeklyPoints(items: TherapistReceiptsContract["items"]) {
+  const buckets = new Map<string, number>();
+  for (const item of items) {
+    const date = new Date(item.sessionDate);
+    const weekStart = new Date(date);
+    weekStart.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+    const key = weekStart.toISOString().slice(0, 10);
+    buckets.set(key, (buckets.get(key) ?? 0) + item.grossAmountCents);
+  }
+
+  return [...buckets.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([label, value]) => ({
+      label: formatDateTime(`${label}T12:00:00.000Z`).slice(0, 5),
+      value,
+    }));
+}
+
+function buildStatusTotals(items: TherapistReceiptsContract["items"]) {
+  const colors: Record<string, string> = {
+    paid: "var(--tes-color-status-success)",
+    processing: "var(--tes-color-brand-cyan)",
+    scheduled: "var(--tes-color-brand-primary)",
+  };
+  const labels: Record<string, string> = {
+    paid: "Pago",
+    processing: "Processando",
+    scheduled: "Agendado",
+  };
+  const totals = new Map<string, number>();
+  for (const item of items)
+    totals.set(
+      item.financialStatus,
+      (totals.get(item.financialStatus) ?? 0) + item.grossAmountCents,
+    );
+  return [...totals.entries()].map(([status, value]) => ({
+    color: colors[status] ?? "var(--tes-color-brand-lavender)",
+    label:
+      labels[status] ??
+      financialStatusLabels[status as keyof typeof financialStatusLabels] ??
+      "Outro",
+    value,
+  }));
+}
+
+function ReceiptDonut({
+  label,
+  total,
+  values,
+}: {
+  label: string;
+  total: number;
+  values: Array<{ color: string; label: string; value: number }>;
+}) {
+  let offset = 0;
+  const stops =
+    values.length && total > 0
+      ? values
+          .map((item) => {
+            const start = (offset / total) * 100;
+            offset += item.value;
+            return `${item.color} ${start}% ${(offset / total) * 100}%`;
+          })
+          .join(", ")
+      : "var(--tes-color-brand-lavender) 0 100%";
+
+  return (
+    <div
+      aria-label={label}
+      className="relative mx-auto grid size-[154px] place-items-center rounded-full"
+      role="img"
+      style={{ background: `conic-gradient(${stops})` }}
+      tabIndex={0}
+    >
+      <span className="grid size-[104px] place-items-center rounded-full bg-white px-2 text-center text-sm font-extrabold text-brand-deep">
+        {total > 0 ? formatCurrency(total) : "—"}
+      </span>
     </div>
   );
 }

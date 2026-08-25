@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FileBadge2, Loader2, MapPin, Upload } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-import { TESButton } from "@/components/tes";
+import { TESButton, TESFeedbackDialog } from "@/components/tes";
 
 import {
   uploadTherapistPrivateDocument,
@@ -45,6 +46,7 @@ export function TherapistPrivateDocumentsSection({
   initialDocuments: TherapistPrivateDocumentSummary[];
   initialVerificationStatus: TherapistProfileVerificationStatus;
 }) {
+  const router = useRouter();
   const [documents, setDocuments] = useState(initialDocuments);
   const [verificationStatus, setVerificationStatus] = useState(
     initialVerificationStatus,
@@ -55,6 +57,15 @@ export function TherapistPrivateDocumentsSection({
     text: string;
     tone: "error" | "success";
   } | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDocuments(initialDocuments);
+  }, [initialDocuments]);
+
+  useEffect(() => {
+    setVerificationStatus(initialVerificationStatus);
+  }, [initialVerificationStatus]);
 
   const documentsByKind = new Map(documents.map((item) => [item.kind, item]));
   const documentsComplete = requiredPrivateDocuments.every((item) => {
@@ -70,7 +81,7 @@ export function TherapistPrivateDocumentsSection({
     setUploadingKind(null);
 
     if (result.status === "error") {
-      setMessage({ text: result.error.message, tone: "error" });
+      setFeedback(result.error.message);
       return;
     }
 
@@ -80,6 +91,7 @@ export function TherapistPrivateDocumentsSection({
       text: "Documento recebido. A equipe TES vai conferir as informações.",
       tone: "success",
     });
+    router.refresh();
   }
 
   return (
@@ -99,14 +111,10 @@ export function TherapistPrivateDocumentsSection({
         </div>
 
         <div aria-live="polite">
-          {message ? (
+          {message?.tone === "success" ? (
             <p
-              className={`rounded-lg p-3 text-sm font-bold leading-6 ${
-                message.tone === "success"
-                  ? "bg-status-successBg text-status-success"
-                  : "bg-status-dangerBg text-status-danger"
-              }`}
-              role={message.tone === "error" ? "alert" : "status"}
+              className="rounded-lg bg-status-successBg p-3 text-sm font-bold leading-6 text-status-success"
+              role="status"
             >
               {message.text}
             </p>
@@ -132,6 +140,12 @@ export function TherapistPrivateDocumentsSection({
               : "Recebemos os documentos desta etapa. A equipe TES avisará você se precisar de algum ajuste."
             : "Falta enviar os documentos obrigatórios para continuarmos com a análise."}
         </p>
+        {feedback ? (
+          <TESFeedbackDialog
+            message={feedback}
+            onClose={() => setFeedback(null)}
+          />
+        ) : null}
       </div>
     </ProfileSection>
   );

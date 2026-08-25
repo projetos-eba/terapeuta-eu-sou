@@ -22,6 +22,7 @@ import {
   AppPageGrid,
   AppPageMain,
 } from "@/components/app-page";
+import { TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 import type {
@@ -571,7 +572,7 @@ function DocumentsPanel({
         <ul className="divide-y divide-border border-y border-border">
           {review.documents.map((document) => (
             <li
-              className="grid gap-4 py-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:gap-6"
+              className="grid gap-5 py-6 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-start xl:gap-x-8"
               key={document.kind}
             >
               <div className="flex min-w-0 gap-3">
@@ -598,9 +599,9 @@ function DocumentsPanel({
                 </div>
               </div>
               {document.id ? (
-                <div className="flex flex-wrap gap-3">
+                <div className="grid grid-cols-2 gap-3 xl:col-start-2 xl:flex xl:justify-end">
                   <Link
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-extrabold text-brand-primary outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-extrabold text-brand-primary outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20 xl:min-w-32"
                     href={`/api/admin/profissionais/${professionalId}/documents/${document.id}`}
                     target="_blank"
                   >
@@ -608,13 +609,21 @@ function DocumentsPanel({
                     <ExternalLink aria-hidden="true" className="size-4" />
                   </Link>
                   <Link
-                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-extrabold text-brand-primary outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-border px-4 text-sm font-extrabold text-brand-primary outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20 xl:min-w-28"
                     href={`/api/admin/profissionais/${professionalId}/documents/${document.id}?download=1`}
                     target="_blank"
                   >
                     Baixar
                     <ExternalLink aria-hidden="true" className="size-4" />
                   </Link>
+                </div>
+              ) : (
+                <span className="text-sm font-extrabold text-status-warning xl:col-start-2 xl:justify-self-end">
+                  Pendente
+                </span>
+              )}
+              {document.id ? (
+                <div className="xl:col-span-2">
                   <DocumentReviewActions
                     documentId={document.id}
                     professionalId={professionalId}
@@ -622,9 +631,7 @@ function DocumentsPanel({
                   />
                 </div>
               ) : (
-                <span className="text-sm font-extrabold text-status-warning">
-                  Pendente
-                </span>
+                null
               )}
             </li>
           ))}
@@ -651,19 +658,19 @@ function DocumentReviewActions({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showReason, setShowReason] = useState(false);
   const [reason, setReason] = useState("");
-  const [message, setMessage] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   async function submit(decision: "accepted" | "resubmission_requested") {
     if (decision === "resubmission_requested" && reason.trim().length < 3) {
-      setMessage(
+      setFeedback(
         "Informe o que precisa ser corrigido antes de solicitar o reenvio.",
       );
       return;
     }
 
     setIsSubmitting(true);
-    setMessage(null);
+    setFeedback(null);
     setSuccessMessage(null);
 
     try {
@@ -681,7 +688,7 @@ function DocumentReviewActions({
       } | null;
 
       if (!response.ok || !payload?.ok) {
-        setMessage(
+        setFeedback(
           payload?.error?.message ??
             "Não foi possível registrar a decisão agora.",
         );
@@ -697,7 +704,7 @@ function DocumentReviewActions({
       setReason("");
       router.refresh();
     } catch {
-      setMessage("Não foi possível registrar a decisão agora.");
+      setFeedback("Não foi possível registrar a decisão agora.");
     } finally {
       setIsSubmitting(false);
     }
@@ -706,10 +713,10 @@ function DocumentReviewActions({
   if (status === "missing") return null;
 
   return (
-    <div className="flex basis-full flex-wrap items-center gap-3 border-t border-border pt-3">
+    <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
       {status !== "accepted" ? (
         <button
-          className="inline-flex min-h-11 items-center justify-center rounded-lg bg-status-successBg px-4 text-sm font-extrabold text-status-success outline-none transition hover:bg-status-successBg/70 focus-visible:ring-4 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-status-successBg px-4 text-sm font-extrabold text-status-success outline-none transition hover:bg-status-successBg/70 focus-visible:ring-4 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
           disabled={isSubmitting}
           onClick={() => void submit("accepted")}
           type="button"
@@ -718,7 +725,7 @@ function DocumentReviewActions({
         </button>
       ) : null}
       <button
-        className="inline-flex min-h-11 items-center justify-center rounded-lg border border-status-warning/30 px-4 text-sm font-extrabold text-status-warning outline-none transition hover:bg-status-warningBg focus-visible:ring-4 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-status-warning/30 px-4 text-sm font-extrabold text-status-warning outline-none transition hover:bg-status-warningBg focus-visible:ring-4 focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
         disabled={isSubmitting}
         onClick={() => setShowReason((value) => !value)}
         type="button"
@@ -726,7 +733,7 @@ function DocumentReviewActions({
         Solicitar reenvio
       </button>
       {showReason ? (
-        <div className="basis-full">
+        <div className="w-full pt-1">
           <label
             className="text-sm font-extrabold text-brand-deep"
             htmlFor={`document-reason-${documentId}`}
@@ -759,13 +766,11 @@ function DocumentReviewActions({
           </div>
         </div>
       ) : null}
-      {message ? (
-        <p
-          className="basis-full text-sm font-semibold leading-6 text-status-danger"
-          role="alert"
-        >
-          {message}
-        </p>
+      {feedback ? (
+        <TESFeedbackDialog
+          message={feedback}
+          onClose={() => setFeedback(null)}
+        />
       ) : null}
       {successMessage ? (
         <p

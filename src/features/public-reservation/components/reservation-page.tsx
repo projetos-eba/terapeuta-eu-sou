@@ -21,6 +21,10 @@ import {
 } from "lucide-react";
 
 import { PublicLogo, TESButton, TESCard } from "@/components/tes";
+import {
+  PromotionCodeField,
+  type PromotionCheckoutAmounts,
+} from "@/features/payments";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -76,6 +80,16 @@ export function ReservationPage({
   );
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
+  const [promotionCode, setPromotionCode] = useState("");
+  const [promotionRequest, setPromotionRequest] = useState<{
+    code: string | null;
+    requestId: string;
+  } | null>(null);
+  const [promotionAmounts, setPromotionAmounts] =
+    useState<PromotionCheckoutAmounts | null>(null);
+  const [promotionError, setPromotionError] = useState<string | null>(null);
+  const [promotionPending, setPromotionPending] = useState(false);
+  const [checkoutReady, setCheckoutReady] = useState(false);
   const previousReservationKeyRef = useRef(reservationKey);
   const [journeyError, setJourneyError] = useState<string | null>(
     context.step === "pagamento"
@@ -88,6 +102,12 @@ export function ReservationPage({
     previousReservationKeyRef.current = reservationKey;
     setAcceptedTerms(false);
     setMarketingConsent(false);
+    setPromotionCode("");
+    setPromotionRequest(null);
+    setPromotionAmounts(null);
+    setPromotionError(null);
+    setPromotionPending(false);
+    setCheckoutReady(false);
     setJourneyError(
       context.step === "pagamento"
         ? "Aceite os termos antes de seguir para o pagamento."
@@ -121,6 +141,26 @@ export function ReservationPage({
     context.canPrepareEncounter && context.isPatientAuthenticated;
   const canPay = canPrepare && acceptedTerms;
   const activeContext = { ...context, step: currentStep };
+  const handleCheckoutChange = useCallback(
+    (input: { amounts: PromotionCheckoutAmounts; ready: boolean }) => {
+      setPromotionAmounts(input.amounts);
+      setCheckoutReady(input.ready);
+    },
+    [],
+  );
+  const handlePromotionSettled = useCallback(
+    (input: {
+      error: string | null;
+      promotion?: PromotionCheckoutAmounts["promotion"];
+      requestId: string;
+    }) => {
+      void input.requestId;
+      setPromotionPending(false);
+      setPromotionError(input.error);
+      if (!input.error) setPromotionCode(input.promotion?.code ?? "");
+    },
+    [],
+  );
 
   const goToStep = useCallback(
     (step: ReservationStep) => {
@@ -193,6 +233,9 @@ export function ReservationPage({
                 acceptedTerms={acceptedTerms}
                 context={context}
                 loginHref={loginHref}
+                onCheckoutChange={handleCheckoutChange}
+                onPromotionSettled={handlePromotionSettled}
+                promotionRequest={promotionRequest}
               />
             ) : null}
           </section>
@@ -202,6 +245,28 @@ export function ReservationPage({
               acceptedTerms={acceptedTerms}
               canPay={canPay}
               context={activeContext}
+              checkoutReady={checkoutReady}
+              promotionAmounts={promotionAmounts}
+              promotionCode={promotionCode}
+              promotionError={promotionError}
+              promotionPending={promotionPending}
+              onApplyPromotion={() => {
+                setPromotionError(null);
+                setPromotionPending(true);
+                setPromotionRequest({
+                  code: promotionCode.trim(),
+                  requestId: crypto.randomUUID(),
+                });
+              }}
+              onPromotionCodeChange={setPromotionCode}
+              onRemovePromotion={() => {
+                setPromotionError(null);
+                setPromotionPending(true);
+                setPromotionRequest({
+                  code: null,
+                  requestId: crypto.randomUUID(),
+                });
+              }}
               onAdvanceToPayment={() => goToStep("pagamento")}
             />
             <PolicyCard />
@@ -501,10 +566,23 @@ function PaymentStep({
   acceptedTerms,
   context,
   loginHref,
+  onCheckoutChange,
+  onPromotionSettled,
+  promotionRequest,
 }: {
   acceptedTerms: boolean;
   context: ReservationContext;
   loginHref: string;
+  onCheckoutChange: (input: {
+    amounts: PromotionCheckoutAmounts;
+    ready: boolean;
+  }) => void;
+  onPromotionSettled: (input: {
+    error: string | null;
+    promotion?: PromotionCheckoutAmounts["promotion"];
+    requestId: string;
+  }) => void;
+  promotionRequest: { code: string | null; requestId: string } | null;
 }) {
   return (
     <div className="space-y-8">
@@ -553,6 +631,9 @@ function PaymentStep({
               disabled={!context.hasRequiredCheckoutData}
               isPatientAuthenticated={context.isPatientAuthenticated}
               loginHref={loginHref}
+              onCheckoutChange={onCheckoutChange}
+              onPromotionSettled={onPromotionSettled}
+              promotionRequest={promotionRequest}
               serviceId={context.serviceId}
               startsAt={context.selectedSlot}
             />
@@ -742,13 +823,29 @@ function ReadonlyInfo({
 function ReservationSummary({
   acceptedTerms,
   canPay,
+  checkoutReady,
   context,
+  onApplyPromotion,
   onAdvanceToPayment,
+  onPromotionCodeChange,
+  onRemovePromotion,
+  promotionAmounts,
+  promotionCode,
+  promotionError,
+  promotionPending,
 }: {
   acceptedTerms: boolean;
   canPay: boolean;
+  checkoutReady: boolean;
   context: ReservationContext;
+  onApplyPromotion: () => void;
   onAdvanceToPayment: () => void;
+  onPromotionCodeChange: (value: string) => void;
+  onRemovePromotion: () => void;
+  promotionAmounts: PromotionCheckoutAmounts | null;
+  promotionCode: string;
+  promotionError: string | null;
+  promotionPending: boolean;
 }) {
   const loginHref = buildClientAuthHref("login", context.currentPath);
 
@@ -826,10 +923,17 @@ function ReservationSummary({
               <p className="block text-sm font-extrabold uppercase tracking-[0.16em] text-tesText-muted">
                 Código promocional
               </p>
-              <p className="text-sm font-bold leading-5 text-tesText-muted">
-                Se você tiver um código, poderá aplicá-lo no checkout seguro da
-                Stripe. O valor atualizado será exibido antes do pagamento.
-              </p>
+              <PromotionCodeField
+                amounts={promotionAmounts}
+                appliedPromotion={promotionAmounts?.promotion}
+                disabled={!checkoutReady}
+                error={promotionError}
+                isLoading={promotionPending}
+                onApply={onApplyPromotion}
+                onChange={onPromotionCodeChange}
+                onRemove={onRemovePromotion}
+                value={promotionCode}
+              />
             </div>
             <TESButton
               href="#stripe-checkout"
@@ -953,8 +1057,8 @@ export function ReservationSuccessPage() {
           Estamos preparando seu encontro
         </h1>
         <p className="mt-5 max-w-2xl text-lg font-semibold leading-8 text-tesText-secondary">
-          Assim que o pagamento for confirmado, o encontro aparecerá na sua
-          área de cliente com as orientações de acesso online.
+          Assim que o pagamento for confirmado, o encontro aparecerá na sua área
+          de cliente com as orientações de acesso online.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <TESButton href={routes.patient.home} variant="gradient" size="lg">

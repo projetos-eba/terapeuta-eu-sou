@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ExternalLink, RefreshCw } from "lucide-react";
 
+import { TESFeedbackDialog } from "@/components/tes";
+
 import { sendTherapistFinanceConnectCommand } from "../therapist-finance.commands";
 import type { TherapistFinanceConnectAction } from "../therapist-finance.types";
 
@@ -20,15 +22,17 @@ export function FinancialConnectAccountActions({
   const [pendingAction, setPendingAction] =
     useState<TherapistFinanceConnectAction | null>(null);
   const [message, setMessage] = useState("");
+  const [feedback, setFeedback] = useState("");
 
   async function run(action: TherapistFinanceConnectAction) {
     setMessage("");
+    setFeedback("");
     setPendingAction(action);
     const result = await sendTherapistFinanceConnectCommand(action);
     setPendingAction(null);
 
     if (result.status === "error") {
-      setMessage(result.error.message);
+      setFeedback(result.error.message);
       return;
     }
 
@@ -66,9 +70,12 @@ export function FinancialConnectAccountActions({
         ) : null}
       </div>
       {message ? (
-        <p className="text-sm font-bold leading-6 text-status-danger">
+        <p className="text-sm font-bold leading-6 text-status-success" role="status">
           {message}
         </p>
+      ) : null}
+      {feedback ? (
+        <TESFeedbackDialog message={feedback} onClose={() => setFeedback("")} />
       ) : null}
     </div>
   );

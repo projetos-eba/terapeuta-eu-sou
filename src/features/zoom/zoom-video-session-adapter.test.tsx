@@ -98,7 +98,9 @@ describe("ZoomVideoSessionAdapter", () => {
       />,
     );
 
-    expect(screen.getByText(/Entrada liberada 15 min antes/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Disponível 15 minutos antes do início/i),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /entrar/i })).not.toBeInTheDocument();
   });
 
@@ -244,7 +246,7 @@ describe("ZoomVideoSessionAdapter", () => {
       remoteElement,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /sair da sessão/i }));
+    fireEvent.click(screen.getByRole("button", { name: /sair do encontro/i }));
     expect(await screen.findByText(/voce saiu/i)).toBeInTheDocument();
     expect(mockStream.detachVideo).toHaveBeenCalledWith(9);
     expect(destroyClient).toHaveBeenCalled();
@@ -667,7 +669,7 @@ describe("ZoomVideoSessionAdapter", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
     await screen.findByText(/voce entrou no encontro/i);
-    fireEvent.click(screen.getByRole("button", { name: /sair da sessão/i }));
+    fireEvent.click(screen.getByRole("button", { name: /sair do encontro/i }));
 
     expect(
       await screen.findByText(/nao foi possivel concluir todas as etapas/i),

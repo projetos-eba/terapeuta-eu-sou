@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Route } from "next";
 import {
-  Calendar,
   CalendarClock,
   CalendarDays,
   Check,
@@ -17,7 +16,6 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
-  Star,
   Video,
   Wifi,
 } from "lucide-react";
@@ -34,6 +32,7 @@ import {
   mapSessionPresentation,
   type SessionPresentation,
   type SessionReadModelItem,
+  type TherapistSessionsSummary,
 } from "@/features/bookings";
 import {
   AppPageAside,
@@ -67,21 +66,54 @@ export default async function TherapistSessionsPage({
     return <SessionsErrorState message={parsedFilters.message} />;
   }
 
-  const result = await getTherapistSessionsPage({
-    accessToken: session.accessToken,
-    filters: parsedFilters.filters,
-    profileId: session.profileId,
-  });
-
-  const filteredData =
-    result.status === "success"
-      ? {
-          ...result.data,
-          items: filterSessionsByQuery(result.data.items, searchQuery),
-        }
-      : null;
-  const metrics = filteredData ? getSessionMetrics(filteredData.items) : null;
-  const csvHref = filteredData ? buildCsvDataHref(filteredData.items) : "#";
+  const now = new Date().toISOString();
+  const historyFilters = {
+    ...parsedFilters.filters,
+    cursor: undefined,
+    periodEnd: now,
+  };
+  const upcomingFilters = {
+    ...parsedFilters.filters,
+    cursor: undefined,
+    periodEnd: undefined,
+    periodPreset: undefined,
+    periodStart: now,
+  };
+  const [historyResult, upcomingResult] = await Promise.all([
+    getTherapistSessionsPage({
+      accessToken: session.accessToken,
+      filters: historyFilters,
+      profileId: session.profileId,
+    }),
+    getTherapistSessionsPage({
+      accessToken: session.accessToken,
+      filters: upcomingFilters,
+      profileId: session.profileId,
+    }),
+  ]);
+  const readError =
+    historyResult.status === "error"
+      ? historyResult
+      : upcomingResult.status === "error"
+        ? upcomingResult
+        : null;
+  const historyData =
+    historyResult.status === "success" ? historyResult.data : null;
+  const upcomingData =
+    upcomingResult.status === "success" ? upcomingResult.data : null;
+  const historyItems = filterSessionsByQuery(
+    historyData?.items ?? [],
+    searchQuery,
+  );
+  const upcomingItems = filterSessionsByQuery(
+    upcomingData?.items ?? [],
+    searchQuery,
+  );
+  const allItems = dedupeSessions([...historyItems, ...upcomingItems]);
+  const metrics = historyData
+    ? getSessionMetrics(historyData.items, historyData.summary)
+    : null;
+  const csvHref = allItems.length > 0 ? buildCsvDataHref(allItems) : "#";
   const hasActiveFilters = hasFilterState(parsedFilters.filters, searchQuery);
 
   return (
@@ -108,57 +140,84 @@ export default async function TherapistSessionsPage({
               href={csvHref}
             >
               <Download aria-hidden="true" size={18} />
-              <span className="hidden text-sm font-extrabold sm:inline">Exportar</span>
+              <span className="hidden text-sm font-extrabold sm:inline">
+                Exportar
+              </span>
             </a>
           </header>
 
-          {result.status === "error" ? (
+          {readError ? (
             <SessionsErrorState
-              correlationId={result.error.correlationId}
-              message={result.error.message}
+              correlationId={readError.error.correlationId}
+              message={readError.error.message}
             />
-          ) : result.status === "empty" ? (
+          ) : !historyData && !upcomingData ? (
             <SessionsEmptyState />
           ) : (
             <>
               {metrics ? <SessionMetricsGrid metrics={metrics} /> : null}
-              {metrics ? <SessionSummaryStrip metrics={metrics} /> : null}
-
-              {filteredData && filteredData.items.length > 0 ? (
-                <section
-                  aria-label="Lista de sessões"
-                  className="min-w-0 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card"
-                >
-                  <SessionsFilterBar
-                    bookingStatus={parsedFilters.filters.bookingStatus}
-                    financialStatus={parsedFilters.filters.financialStatus}
-                    hasActiveFilters={hasActiveFilters}
-                    itemCount={filteredData.items.length}
-                    searchQuery={searchQuery}
+              <section
+                aria-label="Lista de sessões"
+                className="min-w-0 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card"
+              >
+                <SessionsFilterBar
+                  bookingStatus={parsedFilters.filters.bookingStatus}
+                  financialStatus={parsedFilters.filters.financialStatus}
+                  hasActiveFilters={hasActiveFilters}
+                  itemCount={allItems.length}
+                  periodPreset={parsedFilters.filters.periodPreset}
+                  searchQuery={searchQuery}
+                />
+                {historyItems.length > 0 ? (
+                  <SessionGroup
+                    description="Sessões realizadas, canceladas ou pendentes dentro do período selecionado."
+                    items={historyItems}
+                    title="Histórico do período"
                   />
-                  <SessionsMobileList items={filteredData.items} />
-                  <SessionsTable items={filteredData.items} />
-                  <footer className="flex flex-col gap-2 border-t border-brand-lavender/60 px-5 py-5 text-xs font-semibold text-tesText-muted sm:flex-row sm:items-center sm:justify-between">
-                    <span>
-                      Mostrando {filteredData.items.length} de{" "}
-                      {result.data.items.length} sessões carregadas.
-                    </span>
-                    <span>Os estados são atualizados conforme cada reserva.</span>
-                  </footer>
-                </section>
-              ) : (
-                <SessionsNoFilterResults />
-              )}
+                ) : null}
+                {upcomingItems.length > 0 ? (
+                  <SessionGroup
+                    description="Próximos atendimentos confirmados ou em processamento."
+                    items={upcomingItems}
+                    title="Próximas sessões"
+                  />
+                ) : null}
+                {allItems.length === 0 ? <SessionsNoFilterResults /> : null}
+                <footer className="flex flex-col gap-2 border-t border-brand-lavender/60 px-5 py-5 text-xs font-semibold text-tesText-muted sm:flex-row sm:items-center sm:justify-between">
+                  <span>
+                    Mostrando {allItems.length} sessão(ões) neste recorte.
+                  </span>
+                  <span>Os estados são atualizados conforme cada reserva.</span>
+                </footer>
+              </section>
 
-              {result.data.page.hasMore && result.data.page.nextCursor ? (
+              {historyData?.page.hasMore && historyData.page.nextCursor ? (
                 <div className="flex justify-center">
                   <Link
                     className="inline-flex min-h-11 items-center justify-center rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
                     href={
                       withSearchQuery(
                         buildNextSessionsHref(
-                          parsedFilters.filters,
-                          result.data.page.nextCursor,
+                          historyFilters,
+                          historyData.page.nextCursor,
+                        ),
+                        searchQuery,
+                      ) as Route
+                    }
+                  >
+                    Carregar histórico
+                  </Link>
+                </div>
+              ) : null}
+              {upcomingData?.page.hasMore && upcomingData.page.nextCursor ? (
+                <div className="flex justify-center">
+                  <Link
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                    href={
+                      withSearchQuery(
+                        buildNextSessionsHref(
+                          upcomingFilters,
+                          upcomingData.page.nextCursor,
                         ),
                         searchQuery,
                       ) as Route
@@ -172,9 +231,9 @@ export default async function TherapistSessionsPage({
           )}
         </AppPageMain>
 
-        {result.status === "success" && filteredData ? (
+        {allItems.length > 0 ? (
           <AppPageAside className="auto-rows-min self-start content-start grid-cols-2 gap-5 md:grid-cols-2 xl:!block">
-            <SessionsRightRail items={filteredData.items} />
+            <SessionsRightRail items={allItems} />
           </AppPageAside>
         ) : null}
       </AppPageGrid>
@@ -186,7 +245,7 @@ function SessionMetricsGrid({ metrics }: { metrics: SessionMetrics }) {
   return (
     <section
       aria-label="Indicadores de sessões"
-      className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4"
+      className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 2xl:grid-cols-5"
     >
       <MetricCard
         description="na semana atual"
@@ -216,6 +275,15 @@ function SessionMetricsGrid({ metrics }: { metrics: SessionMetrics }) {
         tone="danger"
         value={metrics.cancelled}
       />
+      <MetricCard
+        description="no período selecionado"
+        icon={<CheckCheck aria-hidden="true" size={20} />}
+        label="Taxa de presença"
+        tone="success"
+        value={
+          metrics.attendanceRate === null ? "—" : `${metrics.attendanceRate}%`
+        }
+      />
     </section>
   );
 }
@@ -231,7 +299,7 @@ function MetricCard({
   icon: React.ReactNode;
   label: string;
   tone: "brand" | "danger" | "success" | "warning";
-  value: number;
+  value: number | string;
 }) {
   const toneClasses = {
     brand: "bg-brand-lavenderSoft text-brand-primary",
@@ -241,14 +309,14 @@ function MetricCard({
   };
 
   return (
-    <article className="min-h-[190px] min-w-0 overflow-hidden rounded-card border border-brand-lavender/60 bg-white p-5 shadow-card">
-      <div className="grid grid-cols-[40px_minmax(0,1fr)] items-start gap-2.5">
+    <article className="min-h-[172px] min-w-0 overflow-hidden rounded-card border border-brand-lavender/60 bg-white p-5 shadow-card">
+      <div className="flex min-w-0 items-start gap-2.5">
         <span
           className={`grid size-10 shrink-0 place-items-center rounded-full ${toneClasses[tone]}`}
         >
           {icon}
         </span>
-        <h2 className="min-w-0 break-words text-sm font-extrabold leading-5 text-brand-primary">
+        <h2 className="min-w-0 text-sm font-extrabold leading-5 text-brand-primary">
           {label}
         </h2>
       </div>
@@ -262,75 +330,39 @@ function MetricCard({
   );
 }
 
-function SessionSummaryStrip({ metrics }: { metrics: SessionMetrics }) {
-  const items = [
-    {
-      icon: <Calendar aria-hidden="true" size={20} />,
-      label: "Horário mais agendado",
-      value: metrics.mostBookedWindow,
-    },
-    {
-      icon: <Star aria-hidden="true" size={20} />,
-      label: "Terapia mais realizada",
-      value: metrics.topService,
-    },
-    {
-      icon: <CheckCheck aria-hidden="true" size={20} />,
-      label: "Taxa de presença",
-      value: `${metrics.attendanceRate}% das sessões confirmadas`,
-    },
-  ];
-
-  return (
-    <section className="grid rounded-panel border border-brand-lavender/60 bg-white shadow-card md:grid-cols-3">
-      {items.map((item) => (
-        <div
-          className="flex min-w-0 gap-3 border-brand-lavender/60 p-5 md:border-r md:last:border-r-0"
-          key={item.label}
-        >
-          <span className="mt-1 shrink-0 text-brand-primary">{item.icon}</span>
-          <span className="min-w-0">
-            <span className="block text-xs font-semibold text-tesText-secondary">
-              {item.label}
-            </span>
-            <span className="mt-1 block text-sm font-extrabold leading-5 text-brand-primary">
-              {item.value}
-            </span>
-          </span>
-        </div>
-      ))}
-    </section>
-  );
-}
-
 function SessionsFilterBar({
   bookingStatus,
   financialStatus,
   hasActiveFilters,
   itemCount,
+  periodPreset,
   searchQuery,
 }: {
   bookingStatus?: BookingStatusValue;
   financialStatus?: SessionFinancialStatusValue;
   hasActiveFilters: boolean;
   itemCount: number;
+  periodPreset?: string;
   searchQuery: string;
 }) {
   return (
     <form
       action={routes.therapist.sessions}
-      className="grid grid-cols-2 gap-3 border-b border-brand-lavender/60 p-4 sm:p-5 xl:grid-cols-[minmax(220px,1fr)_minmax(132px,0.58fr)_minmax(150px,0.68fr)_112px]"
+      className="grid grid-cols-2 gap-3 border-b border-brand-lavender/60 p-4 sm:p-5 xl:grid-cols-[minmax(220px,1fr)_minmax(142px,0.58fr)_minmax(150px,0.68fr)_minmax(150px,0.62fr)_112px]"
     >
-      <div className="col-span-2 flex items-center justify-between gap-3 xl:col-span-4">
+      <div className="col-span-2 flex items-center justify-between gap-3 xl:col-span-5">
         <div>
-          <h2 className="text-base font-extrabold text-brand-deep">
-            Sessões agendadas
-          </h2>
+          <h2 className="text-base font-extrabold text-brand-deep">Sessões</h2>
           <p className="mt-1 text-xs font-semibold text-tesText-secondary">
-            {itemCount} {itemCount === 1 ? "sessão carregada" : "sessões carregadas"}
+            {itemCount}{" "}
+            {itemCount === 1 ? "sessão carregada" : "sessões carregadas"}
           </p>
         </div>
-        <Filter aria-hidden="true" className="shrink-0 text-brand-primary" size={20} />
+        <Filter
+          aria-hidden="true"
+          className="shrink-0 text-brand-primary"
+          size={20}
+        />
       </div>
       <label className="relative col-span-2 block min-w-0 xl:col-span-1">
         <span className="sr-only">Buscar por pessoa ou terapia</span>
@@ -359,6 +391,12 @@ function SessionsFilterBar({
         name="payment"
         options={financialStatusOptions}
         value={financialStatus}
+      />
+      <SelectField
+        label="Período"
+        name="period"
+        options={periodOptions}
+        value={periodPreset ?? "30"}
       />
       <div className="col-span-2 flex gap-2 xl:col-span-1">
         <button
@@ -433,12 +471,13 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
         </caption>
         <thead>
           <tr className="border-b border-brand-lavender/60 text-[11px] font-extrabold uppercase tracking-[0.08em] text-brand-primary">
-            <th className="w-[24%] px-5 py-5">Pessoa</th>
-            <th className="w-[19%] px-2.5 py-5">Terapia</th>
-            <th className="w-[18%] px-2.5 py-5">Data e horário</th>
-            <th className="w-[16%] px-2.5 py-5">Status</th>
-            <th className="w-[13%] px-2.5 py-5 text-right">Valor</th>
-            <th className="w-[10%] px-3 py-5 text-right">Ações</th>
+            <th className="w-[22%] px-5 py-5">Pessoa</th>
+            <th className="w-[17%] px-2.5 py-5">Terapia</th>
+            <th className="w-[17%] px-2.5 py-5">Data e horário</th>
+            <th className="w-[14%] px-2.5 py-5">Status</th>
+            <th className="w-[13%] px-2.5 py-5">Pagamento</th>
+            <th className="w-[10%] px-2.5 py-5 text-right">Valor</th>
+            <th className="w-[7%] px-3 py-5 text-right">Ações</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-brand-lavender/50">
@@ -484,6 +523,9 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
                 <td className="px-2.5 py-4">
                   <StatusBadge presentation={presentation} />
                 </td>
+                <td className="px-2.5 py-4">
+                  <FinancialStatusBadge value={booking.financialStatus} />
+                </td>
                 <td className="px-2.5 py-4 text-right font-extrabold text-brand-deep">
                   {formatSessionMoney(booking.priceCents, booking.currency)}
                 </td>
@@ -527,11 +569,16 @@ function SessionsMobileList({ items }: { items: SessionReadModelItem[] }) {
                   {booking.serviceTitle}
                 </span>
                 <span className="mt-2 flex items-start gap-2 text-xs font-semibold leading-5 text-tesText-secondary">
-                  <CalendarDays aria-hidden="true" className="mt-0.5 shrink-0 text-brand-primary" size={15} />
+                  <CalendarDays
+                    aria-hidden="true"
+                    className="mt-0.5 shrink-0 text-brand-primary"
+                    size={15}
+                  />
                   {formatSessionDateTime(booking.startsAt, booking.timezone)}
                 </span>
               </span>
               <StatusBadge presentation={presentation} />
+              <FinancialStatusBadge value={booking.financialStatus} />
             </span>
             <span className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-tesText-secondary">
               <span>Atendimento online</span>
@@ -575,7 +622,11 @@ function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
               </div>
             </div>
             <p className="mt-4 flex items-start gap-2 text-xs font-semibold leading-5 text-tesText-secondary">
-              <CalendarDays aria-hidden="true" className="mt-0.5 shrink-0 text-brand-primary" size={16} />
+              <CalendarDays
+                aria-hidden="true"
+                className="mt-0.5 shrink-0 text-brand-primary"
+                size={16}
+              />
               {formatSessionDateTime(
                 nextSession.startsAt,
                 nextSession.timezone,
@@ -860,12 +911,10 @@ function SessionsErrorState({
 }
 
 type SessionMetrics = {
-  attendanceRate: number;
+  attendanceRate: number | null;
   cancelled: number;
   completed: number;
-  mostBookedWindow: string;
   pending: number;
-  topService: string;
   weekSessions: number;
 };
 
@@ -893,24 +942,69 @@ const financialStatusOptions = [
   { label: "Reembolsado", value: SessionFinancialStatus.Refunded },
 ];
 
-function getSessionMetrics(items: SessionReadModelItem[]): SessionMetrics {
+const periodOptions = [
+  { label: "Últimos 7 dias", value: "7" },
+  { label: "Últimos 30 dias", value: "30" },
+  { label: "Últimos 60 dias", value: "60" },
+  { label: "Últimos 90 dias", value: "90" },
+  { label: "Histórico completo", value: "all" },
+];
+
+function SessionGroup({
+  description,
+  items,
+  title,
+}: {
+  description: string;
+  items: SessionReadModelItem[];
+  title: string;
+}) {
+  return (
+    <section aria-label={title}>
+      <header className="border-b border-brand-lavender/40 px-4 py-4 sm:px-5">
+        <h3 className="text-base font-extrabold text-brand-deep">{title}</h3>
+        <p className="mt-1 text-xs font-semibold leading-5 text-tesText-secondary">
+          {description}
+        </p>
+      </header>
+      <SessionsMobileList items={items} />
+      <SessionsTable items={items} />
+    </section>
+  );
+}
+
+function FinancialStatusBadge({ value }: { value: string | null }) {
+  const tone =
+    value === "paid"
+      ? "bg-status-successBg text-status-success"
+      : value === "failed" || value === "disputed" || value === "canceled"
+        ? "bg-status-dangerBg text-status-danger"
+        : "bg-status-warningBg text-status-warning";
+
+  return (
+    <span
+      className={`inline-flex max-w-full rounded-full px-2.5 py-1 text-[10px] font-extrabold ${tone}`}
+    >
+      <span className="truncate">{formatFinancialStatus(value)}</span>
+    </span>
+  );
+}
+
+function getSessionMetrics(
+  items: SessionReadModelItem[],
+  summary: TherapistSessionsSummary | null,
+): SessionMetrics {
   const now = new Date();
   const weekStart = startOfWeek(now);
   const weekEnd = new Date(weekStart.getTime() + 7 * 86_400_000);
-  const completed = items.filter(isCompletedSession).length;
-  const confirmed = items.filter(
-    (item) => item.bookingStatus === BookingStatus.Confirmed,
-  ).length;
+  const completed =
+    summary?.completed ?? items.filter(isCompletedSession).length;
 
   return {
-    attendanceRate: confirmed
-      ? Math.round((completed / Math.max(confirmed, completed)) * 100)
-      : 0,
-    cancelled: items.filter(isCancelledSession).length,
+    attendanceRate: summary?.attendanceRate ?? null,
+    cancelled: summary?.cancelled ?? items.filter(isCancelledSession).length,
     completed,
-    mostBookedWindow: getMostBookedWindow(items),
-    pending: items.filter(isPendingSession).length,
-    topService: getTopService(items),
+    pending: summary?.pending ?? items.filter(isPendingSession).length,
     weekSessions: items.filter((item) => {
       const startsAt = new Date(item.startsAt);
       return startsAt >= weekStart && startsAt < weekEnd;
@@ -930,6 +1024,15 @@ function filterSessionsByQuery(
       `${item.patientName} ${item.serviceTitle}`,
     );
     return haystack.includes(normalizedQuery);
+  });
+}
+
+function dedupeSessions(items: SessionReadModelItem[]) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.bookingId)) return false;
+    seen.add(item.bookingId);
+    return true;
   });
 }
 
@@ -966,40 +1069,9 @@ function isCancelledSession(item: SessionReadModelItem) {
     item.bookingStatus === BookingStatus.CancelledByTherapist ||
     item.bookingStatus === BookingStatus.NoShowPatient ||
     item.bookingStatus === BookingStatus.NoShowTherapist ||
+    item.bookingStatus === BookingStatus.CancelledByPayment ||
     item.bookingStatus === BookingStatus.Refunded
   );
-}
-
-function getMostBookedWindow(items: SessionReadModelItem[]) {
-  if (!items.length) return "Sem dados suficientes";
-  const counts = new Map<string, number>();
-
-  for (const item of items) {
-    const date = new Date(item.startsAt);
-    const key = `${formatWeekday(item.startsAt, item.timezone)}|${date.getUTCHours()}`;
-    counts.set(key, (counts.get(key) ?? 0) + 1);
-  }
-
-  const [winner] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0] ?? [];
-  if (!winner) return "Sem dados suficientes";
-
-  const [weekday, hour] = winner.split("|");
-  const startHour = Number(hour);
-  return `${weekday}s · ${startHour}h - ${startHour + 2}h`;
-}
-
-function getTopService(items: SessionReadModelItem[]) {
-  if (!items.length) return "Sem dados suficientes";
-  const counts = new Map<string, number>();
-  for (const item of items) {
-    counts.set(item.serviceTitle, (counts.get(item.serviceTitle) ?? 0) + 1);
-  }
-
-  const [winner] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0] ?? [];
-  if (!winner) return "Sem dados suficientes";
-
-  const ratio = Math.round(((counts.get(winner) ?? 0) / items.length) * 100);
-  return `${winner} · ${ratio}% das sessões`;
 }
 
 function buildCsvDataHref(items: SessionReadModelItem[]) {
@@ -1052,13 +1124,6 @@ function formatCompactSessionDateTime(value: string, timezone: string) {
   return `${date} · ${time}`;
 }
 
-function formatWeekday(value: string, timezone: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    timeZone: timezone,
-    weekday: "long",
-  }).format(new Date(value));
-}
-
 function formatFinancialStatus(value: string | null) {
   const labels: Record<string, string> = {
     canceled: "Cancelado",
@@ -1088,11 +1153,18 @@ function getSearchQuery(value: string | string[] | undefined) {
 }
 
 function hasFilterState(
-  filters: { bookingStatus?: string; financialStatus?: string },
+  filters: {
+    bookingStatus?: string;
+    financialStatus?: string;
+    periodPreset?: string;
+  },
   searchQuery: string,
 ) {
   return Boolean(
-    searchQuery || filters.bookingStatus || filters.financialStatus,
+    searchQuery ||
+    filters.bookingStatus ||
+    filters.financialStatus ||
+    (filters.periodPreset && filters.periodPreset !== "30"),
   );
 }
 
