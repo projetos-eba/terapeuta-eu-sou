@@ -18,8 +18,8 @@ export function UpcomingSessionsCard({
       <h2 className="text-xl font-bold text-brand-deep">Próximas sessões</h2>
       {state === "unavailable" ? (
         <p className="mt-6 rounded-xl bg-status-warningBg p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-          Não foi possível carregar os próximos horários agora. Tente
-          novamente em alguns instantes.
+          Não foi possível carregar os próximos horários agora. Tente novamente
+          em alguns instantes.
         </p>
       ) : sessions.length ? (
         <ol className="mt-4 space-y-3">
@@ -33,7 +33,7 @@ export function UpcomingSessionsCard({
                   ) as Route<string>
                 }
               >
-                <time className="grid gap-0.5 text-xs font-bold text-brand-deep">
+                <time className="grid gap-0 text-xs font-bold leading-4 text-brand-deep">
                   <span>{formatDate(session.startsAt, session.timezone)}</span>
                   <span>{formatTime(session.startsAt, session.timezone)}</span>
                 </time>

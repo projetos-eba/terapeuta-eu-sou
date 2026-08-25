@@ -32,7 +32,7 @@ export function AvailabilitySelector({
   const compactDays = days.slice(0, 3);
 
   return (
-    <section className="max-h-[620px] overflow-y-auto rounded-[22px] bg-brand-primary p-8 text-white">
+    <section className="max-h-none overflow-visible rounded-[22px] bg-brand-primary p-6 text-white sm:p-8 lg:max-h-[620px] lg:overflow-y-auto">
       <div className="flex flex-wrap items-start justify-between gap-5">
         <div className="flex items-center gap-5">
           <CalendarDays className="size-8" />
@@ -75,13 +75,13 @@ export function AvailabilitySelector({
           compactDays.map((day) => (
             <div
               key={`${selectedService?.id}-${day.date}`}
-              className="grid grid-cols-[72px_1fr] gap-5"
+              className="grid grid-cols-[72px_minmax(0,1fr)] gap-3 sm:gap-5"
             >
               <div className="text-sm font-medium leading-5">
                 <p>{day.dayLabel}</p>
                 <p>{day.dateLabel}</p>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+              <div className="grid grid-cols-5 gap-2 sm:gap-3">
                 {day.slots.slice(0, 5).map((slot) => (
                   <TrackedBookingLink
                     key={`${slot.serviceId}-${slot.startsAt}`}
@@ -94,7 +94,7 @@ export function AvailabilitySelector({
                     })}
                     serviceId={slot.serviceId}
                     therapistSlug={therapistSlug}
-                    className="rounded-[9px] bg-brand-primaryPressed px-4 py-3 text-center text-sm font-medium"
+                    className="min-w-0 rounded-[9px] bg-brand-primaryPressed px-1 py-3 text-center text-sm font-medium sm:px-4"
                   >
                     {slot.timeLabel}
                   </TrackedBookingLink>

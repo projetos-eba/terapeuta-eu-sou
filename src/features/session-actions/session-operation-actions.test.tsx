@@ -69,6 +69,36 @@ describe("SessionOperationActions", () => {
     expect(firstPayload.requestId).toBe(secondPayload.requestId);
     expect(firstPayload.requestId).toBe("a1000000-0000-4000-8000-000000000001");
   });
+
+  it("keeps a completed cancellation unavailable and explains why", () => {
+    render(
+      <SessionOperationActions
+        actorRole="therapist"
+        bookingId="b1000000-0000-4000-8000-000000000002"
+        bookingVersion={1}
+        canCancel={false}
+        canRequestReschedule={false}
+        cancelDisabledReason="O pagamento já foi reembolsado; não é possível cancelar esta sessão."
+        cancellationImpactLabel="A sessão não pode ser alterada novamente."
+        reschedule={null}
+        rescheduleDisabledReason="A sessão não pode ser reagendada."
+      />,
+    );
+
+    const cancelButton = screen.getByRole("button", {
+      name: "Cancelar sessão",
+    });
+    expect(cancelButton).toBeDisabled();
+    expect(cancelButton).toHaveAttribute(
+      "aria-describedby",
+      "b1000000-0000-4000-8000-000000000002-cancel-disabled-reason",
+    );
+    expect(
+      screen.getByText(
+        /Cancelamento indisponível: O pagamento já foi reembolsado/,
+      ),
+    ).toBeInTheDocument();
+  });
 });
 
 function renderActions() {

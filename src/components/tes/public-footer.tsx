@@ -1,5 +1,6 @@
 import type { Route } from "next";
 import Link from "next/link";
+import { Building2, ShieldCheck, UserRound, type LucideIcon } from "lucide-react";
 
 import { getPublicSocialLinks } from "@/config/public-social-links";
 import {
@@ -16,25 +17,45 @@ type FooterGroup = {
   title: string;
 };
 
-export function PublicFooter() {
+export function PublicFooter({ variant = "default" }: { variant?: "default" | "profile" } = {}) {
   const socialLinks = getPublicSocialLinks();
   const groups = getFooterGroups();
+  const isProfile = variant === "profile";
 
   return (
-    <footer className="mx-auto grid max-w-[1680px] gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[360px_1fr] lg:px-12">
+    <footer
+      className={
+        isProfile
+          ? "mx-5 grid max-w-[1680px] gap-10 rounded-[22px] border border-brand-lavender bg-white/90 px-6 py-8 shadow-card sm:mx-8 sm:p-10 lg:mx-auto lg:w-auto lg:grid-cols-[360px_1fr] lg:rounded-none lg:border-0 lg:bg-transparent lg:px-12 lg:py-10 lg:shadow-none"
+          : "mx-auto grid max-w-[1680px] gap-10 px-5 py-10 sm:px-8 lg:grid-cols-[360px_1fr] lg:px-12"
+      }
+    >
       <div>
         <PublicLogo />
         <p className="mt-4 max-w-sm text-sm font-semibold leading-6 text-tesText-secondary">
           Onde terapeutas encontram espaço e pessoas encontram caminhos.
         </p>
-        <p className="mt-8 max-w-[260px] text-sm font-bold leading-6 text-tesText-muted sm:max-w-none">
+        <p
+          className={
+            isProfile
+              ? "mt-8 hidden max-w-[260px] text-sm font-bold leading-6 text-tesText-muted sm:max-w-none lg:block"
+              : "mt-8 max-w-[260px] text-sm font-bold leading-6 text-tesText-muted sm:max-w-none"
+          }
+        >
           © 2026 Terapeuta Eu Sou. Todos os direitos reservados.
         </p>
       </div>
-      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+      <div
+        className={
+          isProfile
+            ? "grid grid-cols-2 gap-x-5 gap-y-8 lg:grid-cols-4 lg:gap-8"
+            : "grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
+        }
+      >
         {groups.map((group) => (
           <div key={group.title}>
-            <h3 className="text-base font-extrabold text-brand-deep">
+            <h3 className="flex items-center gap-3 text-base font-extrabold text-brand-deep">
+              {isProfile ? <FooterGroupIcon title={group.title} /> : null}
               {group.title}
             </h3>
             <ul className="mt-4 space-y-2">
@@ -84,7 +105,28 @@ export function PublicFooter() {
           </div>
         ) : null}
       </div>
+      {isProfile ? (
+        <p className="text-center text-sm font-bold leading-6 text-tesText-muted lg:hidden">
+          © 2026 Terapeuta Eu Sou. Todos os direitos reservados.
+        </p>
+      ) : null}
     </footer>
+  );
+}
+
+function FooterGroupIcon({ title }: { title: string }) {
+  const Icon: LucideIcon =
+    title === "Institucional"
+      ? Building2
+      : title === "Para terapeutas"
+        ? UserRound
+        : ShieldCheck;
+
+  return (
+    <Icon
+      aria-hidden="true"
+      className="size-5 shrink-0 text-brand-primary lg:hidden"
+    />
   );
 }
 

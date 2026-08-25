@@ -125,7 +125,7 @@ four product-approved tabs and adapts the reference into:
 
 - Resumo: editorial header, four summary cards, occupancy/potential donut,
   opportunity panel, four metrics, therapy ranking, financial evolution and
-  retention donut;
+  methodology rows;
 - Recebimentos: filters, period cards, receipts table/cards, weekly bars and
   status donut;
 - Repasses: summary cards, payout timeline, paginated list and calculation
@@ -147,10 +147,9 @@ The local `FinancialEvolutionChart` is the main financial reading. It combines
 real series from the applicable contract with bars for values in the period,
 lines for comparison or estimation, a currency tooltip, a textual alternative
 and a neutral plotted area when the period has no usable base. Premium Plus
-keeps forecast, agenda and opportunity in the main composition, with its
-deeper retention and methodology reading in an accessible disclosure so the
-first scroll remains faithful to the approved visual hierarchy without
-duplicating the main evolution chart.
+keeps forecast, agenda and opportunity in the main composition. The summary
+does not render a separate "Análises avançadas" accordion; the methodology
+rows remain part of the page's explanatory content.
 
 The visual direction follows the approved reference: editorial page title,
 light lavender surfaces, restrained iconography, a dedicated evolution panel
@@ -160,12 +159,9 @@ agenda potential is guaranteed revenue.
 
 On tablet the KPI strip becomes two columns and the complementary cards become
 two columns. On mobile, the primary cards and the money/agenda reading remain
-open; the three complementary cards become a single reading order and deeper
-Premium Plus analysis uses native expandable sections to avoid a redundant,
-very long first scroll. The chart keeps an internal named scroll region only
-when needed; the page itself must not overflow horizontally. Expandable
-summaries remain keyboard accessible and preserve all underlying data when
-opened.
+open, while the three complementary cards become a single reading order. The
+chart keeps an internal named scroll region only when needed; the page itself
+must not overflow horizontally.
 
 Respect hierarchy, spacing and density, but do not copy unsupported product
 features or bank-form fields.

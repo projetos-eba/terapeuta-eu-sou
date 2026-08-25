@@ -3,6 +3,7 @@ import {
   BadgeCheck,
   Clock,
   Crown,
+  Flower2,
   Heart,
   Leaf,
   Play,
@@ -45,52 +46,54 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
 
   return (
     <section
-      className="relative overflow-hidden bg-[var(--profile-hero-background)]"
+      className="relative overflow-hidden bg-[var(--profile-hero-background)] md:overflow-hidden"
       data-profile-theme={theme.id}
       style={theme.style}
     >
-      {(theme.backgroundAsset ?? theme.heroBackgroundSrc) ? (
-        <Image
-          aria-hidden="true"
-          alt=""
-          className="pointer-events-none object-cover object-center"
-          data-theme-hero-background={theme.id}
-          fill
-          priority
-          sizes="100vw"
-          src={theme.backgroundAsset ?? theme.heroBackgroundSrc ?? ""}
-        />
-      ) : (
-        <div className="pointer-events-none absolute -right-24 -top-40 size-[420px] rounded-full bg-[var(--profile-shape)] opacity-60" />
-      )}
-      {theme.heroIllustrationSrc ? (
-        <Image
-          aria-hidden="true"
-          alt=""
-          className={`pointer-events-none absolute z-10 hidden object-contain opacity-45 xl:block ${theme.heroIllustrationClassName ?? ""}`}
-          data-theme-hero-illustration={theme.id}
-          height={1402}
-          sizes="(min-width: 1280px) 33vw, 0px"
-          src={theme.heroIllustrationSrc}
-          width={1122}
-        />
-      ) : null}
-      <div className="relative z-20 mx-auto grid max-w-[1440px] gap-6 px-5 pb-8 pt-6 sm:px-8 md:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)] md:items-center lg:grid-cols-[520px_1fr] lg:gap-8 lg:px-[56px]">
+      <div className="absolute inset-x-0 top-0 h-[350px] overflow-hidden rounded-b-[36px] md:inset-0 md:h-full md:rounded-none">
+        {(theme.backgroundAsset ?? theme.heroBackgroundSrc) ? (
+          <Image
+            aria-hidden="true"
+            alt=""
+            className="pointer-events-none object-cover object-center"
+            data-theme-hero-background={theme.id}
+            fill
+            priority
+            sizes="100vw"
+            src={theme.backgroundAsset ?? theme.heroBackgroundSrc ?? ""}
+          />
+        ) : (
+          <div className="pointer-events-none absolute -right-24 -top-40 size-[420px] rounded-full bg-[var(--profile-shape)] opacity-60" />
+        )}
+        {theme.heroIllustrationSrc ? (
+          <Image
+            aria-hidden="true"
+            alt=""
+            className={`pointer-events-none absolute z-10 hidden object-contain opacity-45 xl:block ${theme.heroIllustrationClassName ?? ""}`}
+            data-theme-hero-illustration={theme.id}
+            height={1402}
+            sizes="(min-width: 1280px) 33vw, 0px"
+            src={theme.heroIllustrationSrc}
+            width={1122}
+          />
+        ) : null}
+      </div>
+      <div className="relative z-20 mx-auto grid max-w-[1440px] gap-6 px-5 pb-10 pt-6 sm:px-8 md:items-center md:pb-8 md:pt-6 md:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)] lg:grid-cols-[520px_1fr] lg:gap-8 lg:px-[56px]">
         <div
-          className={`relative min-h-[300px] overflow-hidden sm:min-h-[340px] md:min-h-[360px] lg:min-h-[410px] ${profilePhotoShapeClassName(theme.photoShape)}`}
+          className={`relative z-10 mx-auto mt-[116px] size-[300px] overflow-hidden max-md:!rounded-full sm:mt-[128px] sm:size-[320px] md:mx-0 md:mt-0 md:h-auto md:min-h-[360px] md:w-auto lg:min-h-[410px] ${profilePhotoShapeClassName(theme.photoShape)}`}
         >
           <Image
             src={profile.heroImage}
             alt={`Retrato de ${profile.name}`}
             fill
             priority
-            sizes="520px"
+            sizes="(max-width: 767px) 320px, 520px"
             className="object-cover"
           />
         </div>
 
-        <div className="flex flex-col justify-center">
-          <div className="flex flex-wrap gap-3">
+        <div className="flex min-w-0 flex-col items-center justify-center md:items-start">
+          <div className="flex flex-wrap justify-center gap-3 md:justify-start">
             {profile.isVerified ? (
               <span className="inline-flex min-h-9 items-center gap-2 rounded-full border border-border bg-status-infoBg px-6 py-2 text-sm font-semibold text-status-info">
                 <BadgeCheck className="size-4" />
@@ -105,10 +108,10 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
             ) : null}
           </div>
 
-          <h1 className="mt-2 font-display text-[54px] font-light italic leading-[1.12] text-brand-deep md:text-[54px] lg:text-[64px]">
+          <h1 className="mt-3 text-center font-display text-[48px] font-light italic leading-[1.05] text-brand-deep md:text-left md:text-[54px] lg:text-[64px]">
             {profile.name}
           </h1>
-          <div className="mt-2 flex flex-wrap gap-5">
+          <div className="mt-3 flex flex-wrap justify-center gap-4 md:justify-start md:gap-5">
             {profile.tags.map((tag) => (
               <span
                 key={tag}
@@ -119,7 +122,7 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
             ))}
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3 md:justify-start">
             <p className="text-2xl font-semibold text-brand-deep">
               {profile.rating.average
                 ? profile.rating.average.toLocaleString("pt-BR", {
@@ -139,17 +142,17 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
             </p>
           </div>
 
-          <p className="mt-4 max-w-[360px] text-sm font-semibold leading-6 text-tesText-secondary">
+          <p className="mt-4 hidden max-w-[360px] text-sm font-semibold leading-6 text-tesText-secondary md:block">
             {profile.headline}
           </p>
 
-          <div className="mt-7 flex flex-wrap items-center gap-4">
+          <div className="mt-7 flex w-full flex-wrap items-center justify-center gap-4 md:justify-start">
             {profile.isAcceptingBookings && primaryService ? (
               <TrackedBookingLink
                 href={primaryService.bookingUrl}
                 serviceId={primaryService.id}
                 therapistSlug={profile.slug}
-                className="inline-flex h-[52px] w-[204px] items-center justify-center gap-3 rounded-[15px] bg-brand-primary text-sm font-extrabold text-white"
+                className="inline-flex h-[52px] w-full items-center justify-center gap-3 rounded-[15px] bg-brand-primary text-sm font-extrabold text-white sm:w-[204px]"
               >
                 Agendar sessão
                 <span>→</span>
@@ -175,15 +178,22 @@ function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
   const videoEmbedUrl = getPublicVideoEmbedUrl(profile.video);
 
   return (
-    <section className="mx-auto grid max-w-[1348px] gap-5 px-5 pt-8 md:grid-cols-3">
-      <article className="rounded-[18px] border border-border bg-white p-9">
-        <h2 className="font-display text-2xl font-light italic text-status-info">
-          Minha essência
-        </h2>
-        <p className="mt-8 text-sm font-medium leading-[1.55] text-tesText-primary">
-          {profile.content.essenceBody}
-        </p>
-        <div className="mt-8 grid grid-cols-2 gap-6">
+    <section className="mx-auto grid max-w-[1348px] gap-5 px-5 pt-8 sm:px-8 md:grid-cols-3">
+      <article className="rounded-[22px] border border-brand-lavender bg-white p-6 shadow-card sm:p-9 md:shadow-none">
+        <div className="grid grid-cols-[96px_minmax(0,1fr)] items-start gap-5 md:block">
+          <span className="grid size-24 place-items-center rounded-[28px] bg-brand-lavenderSoft text-brand-primary md:hidden">
+            <Flower2 aria-hidden="true" className="size-12" />
+          </span>
+          <div>
+            <h2 className="font-display text-2xl font-light italic text-status-info">
+              Minha essência
+            </h2>
+            <p className="mt-5 text-base font-medium leading-[1.6] text-tesText-primary md:mt-8 md:text-sm md:leading-[1.55]">
+              {profile.content.essenceBody}
+            </p>
+          </div>
+        </div>
+        <div className="mt-8 hidden grid-cols-2 gap-6 md:grid">
           {profile.content.experienceYears ? (
             <div className="rounded-[9px] border border-brand-cyan/30 p-3 text-center">
               <Leaf className="mx-auto size-7 text-status-info" />
@@ -207,15 +217,20 @@ function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
         </div>
       </article>
 
-      <article className="rounded-[18px] border border-border bg-white p-9 text-center">
+      <article className="rounded-[22px] border border-brand-lavender bg-white p-6 shadow-card sm:p-9 md:text-center md:shadow-none">
         <h2 className="font-display text-2xl font-light italic text-status-info">
           Como posso te guiar
         </h2>
-        <div className="mt-8 grid grid-cols-3 gap-7">
-          {profile.content.guideItems.map((item) => (
-            <div key={item.label}>
-              <IconByName name={item.icon} />
-              <p className="mt-2 text-sm font-medium leading-[1.45] text-tesText-primary">
+        <div className="mt-7 grid grid-cols-3 gap-0">
+          {profile.content.guideItems.slice(0, 3).map((item, index) => (
+            <div
+              className={`grid gap-3 px-2 text-center first:pl-0 last:pr-0 ${index > 0 ? "border-l border-brand-lavender" : ""}`}
+              key={item.label}
+            >
+              <span className="mx-auto grid size-20 place-items-center rounded-full bg-brand-lavenderSoft">
+                <IconByName name={item.icon} />
+              </span>
+              <p className="text-sm font-medium leading-[1.45] text-tesText-primary">
                 {item.label}
               </p>
             </div>
@@ -223,11 +238,11 @@ function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
         </div>
       </article>
 
-      <article className="rounded-[18px] border border-border bg-white p-9">
+      <article className="rounded-[22px] border border-brand-lavender bg-white p-6 shadow-card sm:p-9 md:shadow-none">
         <h2 className="font-display text-2xl font-light italic text-status-info">
           Um convite para você
         </h2>
-        <div className="mt-4 grid gap-6 xl:grid-cols-[253px_1fr]">
+        <div className="mt-5 grid gap-5 xl:grid-cols-[253px_1fr]">
           {profile.video && videoEmbedUrl ? (
             <iframe
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -266,8 +281,14 @@ function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
               <Play className="relative z-10 size-12 fill-current" />
             </a>
           ) : (
-            <div className="grid h-[184px] place-items-center rounded-[12px] border border-dashed border-brand-lavender bg-brand-lavenderSoft px-5 text-center text-sm font-semibold leading-6 text-brand-deep">
-              Vídeo de apresentação indisponível no momento.
+            <div
+              aria-label="Vídeo de apresentação indisponível no momento"
+              className="grid h-[184px] place-items-center rounded-[12px] border border-brand-lavender bg-brand-lavenderSoft px-5 text-center text-brand-deep"
+              role="img"
+            >
+              <span className="grid size-16 place-items-center rounded-full bg-white text-brand-primary shadow-card">
+                <Play aria-hidden="true" className="ml-1 size-7 fill-current" />
+              </span>
             </div>
           )}
           <p className="self-center text-sm font-medium leading-[1.55] text-tesText-primary">
@@ -370,10 +391,12 @@ export function TherapistProfilePage({
 }) {
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,var(--tes-color-surface-default)_0%,var(--tes-color-surface-soft)_42%,var(--tes-color-surface-default)_100%)] text-tesText-primary">
-      <PublicHeader />
+      <PublicHeader showMobileSearch />
       <Hero profile={profile} />
       <IntroCards profile={profile} />
-      <Services profile={profile} />
+      <div className="hidden md:block">
+        <Services profile={profile} />
+      </div>
       <section className="mx-auto mt-8 grid max-w-[1348px] items-start gap-8 px-5 pb-10 sm:px-8 lg:grid-cols-[1.05fr_0.95fr]">
         <AvailabilitySelector
           services={profile.services}
@@ -385,7 +408,7 @@ export function TherapistProfilePage({
           reviews={reviews}
         />
       </section>
-      <PublicFooter />
+      <PublicFooter variant="profile" />
     </main>
   );
 }

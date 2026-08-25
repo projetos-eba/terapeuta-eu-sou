@@ -93,6 +93,9 @@ Use these support tables when needed:
 - Encontros confirmados usam a semântica verde do TES no status e no destaque
   contextual do hero, sem alterar a autorização real de entrada na sala.
 - Cancellation and refund copy follows `POLÍTICA DE CANCELAMENTO - OPERACIONAL.docx`: at least 24 hours may allow rescheduling or refund when applicable; under 24 hours and no-show do not create an obligation to refund; exceptional cases are individually reviewed.
+- Quando o booking, o pagamento ou a realização já estiverem encerrados, as
+  ações compartilhadas de cancelamento e reagendamento ficam desabilitadas e
+  mostram o motivo em texto acessível.
 - Do not invent testimonials, therapeutic journey claims, images or summaries that are not present in the canonical detail data.
 - Datas e horários do encontro devem ser formatados no `booking.timezone` do
   registro. Instantes persistidos continuam em UTC e não podem ser deslocados

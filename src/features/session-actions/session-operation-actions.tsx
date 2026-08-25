@@ -266,6 +266,11 @@ export function SessionOperationActions({
             setDialog("cancel");
           }}
           title={cancelDisabledReason ?? undefined}
+          aria-describedby={
+            !canCancel && cancelDisabledReason
+              ? `${bookingId}-cancel-disabled-reason`
+              : undefined
+          }
           type="button"
         >
           <CircleX aria-hidden="true" size={18} />
@@ -278,7 +283,10 @@ export function SessionOperationActions({
         </p>
       ) : null}
       {!canCancel && cancelDisabledReason ? (
-        <p className="mt-2 text-xs font-semibold leading-5 text-tesText-secondary">
+        <p
+          className="mt-2 text-xs font-semibold leading-5 text-tesText-secondary"
+          id={`${bookingId}-cancel-disabled-reason`}
+        >
           Cancelamento indisponível: {cancelDisabledReason}
         </p>
       ) : null}

@@ -27,6 +27,7 @@ describe("AuthenticatedShell mobile", () => {
       </AuthenticatedShell>,
     );
 
+    expect(screen.getByRole("main")).toHaveClass("tes-authenticated-surface");
     fireEvent.click(screen.getByRole("button", { name: "Abrir menu" }));
     expect(screen.getByLabelText("Navegação principal")).toHaveClass(
       "translate-x-0",
@@ -52,6 +53,7 @@ describe("AuthenticatedShell mobile", () => {
     );
 
     expect(screen.getByText("Sala dedicada")).toBeVisible();
+    expect(screen.getByRole("main")).toHaveClass("tes-authenticated-surface");
     expect(screen.queryByLabelText("Navegação principal")).toBeNull();
     expect(screen.queryByRole("button", { name: "Abrir menu" })).toBeNull();
   });

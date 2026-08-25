@@ -2,11 +2,12 @@ import Link from "next/link";
 import type { Route } from "next";
 import { Heart, Search } from "lucide-react";
 
+import { AppPageContainer } from "@/components/app-page/app-page";
 import { routes } from "@/lib/routes";
 
 export default function PatientFavoriteTherapiesRoute() {
   return (
-    <main className="pb-10 text-tesText-primary">
+    <AppPageContainer>
       <section className="rounded-card border border-brand-lavender bg-white p-8 text-center shadow-card">
         <span className="mx-auto grid size-16 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
           <Heart aria-hidden="true" size={28} />
@@ -26,6 +27,6 @@ export default function PatientFavoriteTherapiesRoute() {
           Explorar terapias
         </Link>
       </section>
-    </main>
+    </AppPageContainer>
   );
 }
