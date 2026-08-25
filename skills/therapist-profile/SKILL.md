@@ -183,7 +183,7 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
   `Autoestima e Poder Pessoal`, `Propósito e Direção`, `Espiritualidade e
   Conexão Interior`, `Energia e Equilíbrio Energético`, `Libertação e Renovação`,
   `Corpo, Relaxamento e Qualidade de Vida` e `Vida Profissional e
-  Prosperidade`). O terapeuta pode selecionar até três; os cards exibem ícones
+  Prosperidade`). O terapeuta pode selecionar até quatro; os cards exibem ícones
   do vocabulário visual compartilhado e persistem no contrato existente de
   `guideItems`. Itens personalizados antigos permanecem até uma nova seleção.
 - `Sua apresentação` e `Minha essência` exibem ajuda contextual no ícone

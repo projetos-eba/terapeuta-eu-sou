@@ -23,7 +23,10 @@ import { useEffect, useMemo, useState } from "react";
 
 import { mapSessionPresentation } from "@/features/bookings";
 import { TESDialog } from "@/components/tes/tes-dialog";
-import type { TherapistScheduleRule } from "@/domain/tes";
+import {
+  SessionFinancialStatus,
+  type TherapistScheduleRule,
+} from "@/domain/tes";
 import { routes } from "@/lib/routes";
 
 import { TherapistAgendaHeader } from "./therapist-agenda-chrome";
@@ -44,6 +47,11 @@ const weekDayLabels = ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"];
 const hourBlocks = [8, 10, 12, 14, 16, 18, 20];
 const hourHeight = 66;
 const defaultTimelineRange = { endHour: 22, startHour: 8 };
+const closedBookingPattern = {
+  backgroundColor: "var(--tes-color-surface-mist)",
+  backgroundImage:
+    "repeating-linear-gradient(135deg, var(--tes-color-surface-default) 0 8px, var(--tes-color-brand-lavender-soft) 8px 16px)",
+};
 
 type CalendarStatusFilter = "all" | "paid" | "pending_payment" | "reschedule";
 
@@ -694,17 +702,23 @@ function TimelineBooking({
   if (!placement) return null;
   const style = colorStyles[booking.colorKey];
   const status = mapSessionPresentation(booking);
+  const isClosed = isClosedCalendarBooking(status.state, booking.financialStatus);
 
   return (
     <button
-      aria-label={`${booking.serviceTitle} com ${booking.patientName}, ${formatTimeRange(booking.startsAt, booking.endsAt, timezone)}`}
-      className={`absolute inset-x-2 z-10 overflow-hidden rounded-md border px-2.5 py-2 text-left shadow-sm transition hover:z-20 hover:brightness-[0.98] focus-visible:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-primary ${style.border} ${style.surface}`}
+      aria-label={`${booking.serviceTitle} com ${booking.patientName}, ${formatTimeRange(booking.startsAt, booking.endsAt, timezone)}, ${status.label}`}
+      className={`absolute inset-x-2 z-10 overflow-hidden rounded-md border px-2.5 py-2 text-left shadow-sm transition hover:z-20 hover:brightness-[0.98] focus-visible:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-primary ${isClosed ? "border-tesText-muted" : `${style.border} ${style.surface}`}`}
+      data-session-state={status.state}
       onClick={() => onSelect(booking)}
-      style={{ height: placement.height, top: placement.top }}
+      style={{
+        ...(isClosed ? closedBookingPattern : {}),
+        height: placement.height,
+        top: placement.top,
+      }}
       type="button"
     >
       <span
-        className={`block text-[11px] font-extrabold leading-none ${style.text}`}
+        className={`block text-[11px] font-extrabold leading-none ${isClosed ? "text-tesText-secondary" : style.text}`}
       >
         {formatTime(booking.startsAt, timezone)}
       </span>
@@ -712,9 +726,8 @@ function TimelineBooking({
         {booking.serviceTitle}
       </span>
       <span className="mt-1 block truncate text-[10px] font-bold leading-tight text-tesText-secondary md:text-[11px]">
-        {booking.patientName}
+        {isClosed ? status.label : booking.patientName}
       </span>
-      <span className="sr-only">{status.label}</span>
     </button>
   );
 }
@@ -827,11 +840,19 @@ function MonthCalendar({
                   <div className="mt-2 grid gap-1">
                     {dayBookings.slice(0, 3).map((booking) => {
                       const style = colorStyles[booking.colorKey];
+                      const presentation = mapSessionPresentation(booking);
+                      const isClosed = isClosedCalendarBooking(
+                        presentation.state,
+                        booking.financialStatus,
+                      );
                       return (
                         <button
-                          className={`flex min-h-11 items-center gap-1.5 rounded px-2.5 text-left text-sm font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${style.surface} ${style.text}`}
+                          aria-label={`${formatTime(booking.startsAt, timezone)}, ${booking.patientName}, ${presentation.label}`}
+                          className={`flex min-h-11 items-center gap-1.5 rounded border px-2.5 text-left text-sm font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${isClosed ? "border-tesText-muted text-tesText-secondary" : `border-transparent ${style.surface} ${style.text}`}`}
+                          data-session-state={presentation.state}
                           key={booking.bookingId}
                           onClick={() => onSelect(booking)}
+                          style={isClosed ? closedBookingPattern : undefined}
                           type="button"
                         >
                           <span>{formatTime(booking.startsAt, timezone)}</span>
@@ -891,16 +912,23 @@ function MobileChronologicalList({
             if (item.kind === "booking") {
               const style = colorStyles[item.booking.colorKey];
               const presentation = mapSessionPresentation(item.booking);
+              const isClosed = isClosedCalendarBooking(
+                presentation.state,
+                item.booking.financialStatus,
+              );
               return (
                 <button
-                  aria-label={`Sessão de ${item.booking.serviceTitle}: ${item.booking.patientName}, ${item.timeRange}`}
+                  aria-label={`Sessão de ${item.booking.serviceTitle}: ${item.booking.patientName}, ${item.timeRange}, ${presentation.label}`}
                   className="grid min-h-[86px] w-full grid-cols-[52px_minmax(0,1fr)] items-center gap-3 px-4 py-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
+                  data-session-state={presentation.state}
                   key={item.id}
                   onClick={() => onSelect(item.booking)}
+                  style={isClosed ? closedBookingPattern : undefined}
                   type="button"
                 >
                   <span
-                    className={`grid size-11 place-items-center rounded-xl text-[11px] font-extrabold text-white ${style.badge}`}
+                    className={`grid size-11 place-items-center rounded-xl border text-[11px] font-extrabold ${isClosed ? "border-tesText-muted text-tesText-secondary" : `border-transparent text-white ${style.badge}`}`}
+                    style={isClosed ? closedBookingPattern : undefined}
                   >
                     {item.time}
                   </span>
@@ -1007,6 +1035,14 @@ function CalendarLegend({
         <span aria-hidden="true" className="size-3 rounded-sm bg-[#77738d]" />
         Indisponível
       </span>
+      <span className="inline-flex items-center gap-2 text-[10px] font-extrabold text-tesText-secondary md:text-[11px]">
+        <span
+          aria-hidden="true"
+          className="size-3 rounded-sm border border-tesText-muted"
+          style={closedBookingPattern}
+        />
+        Cancelada ou reembolsada
+      </span>
     </>
   );
   return (
@@ -1030,6 +1066,17 @@ function CalendarLegend({
         {legendItems}
       </section>
     </>
+  );
+}
+
+function isClosedCalendarBooking(
+  presentationState: ReturnType<typeof mapSessionPresentation>["state"],
+  financialStatus: TherapistCalendarBooking["financialStatus"],
+) {
+  return (
+    presentationState === "cancelled" ||
+    (presentationState === "refunded" &&
+      financialStatus !== SessionFinancialStatus.PartiallyRefunded)
   );
 }
 

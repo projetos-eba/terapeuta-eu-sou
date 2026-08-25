@@ -49,6 +49,12 @@ O endpoint publico `get_service_available_slots_v1` recebe somente o servico e
 o intervalo desejado. Ele nao retorna paciente, terapeuta, motivo de bloqueio,
 hold, pagamento ou qualquer dado clinico.
 
+Desde 2026-08-25, reembolso integral em
+`session_payments.financial_status = 'refunded'` sincroniza o booking para o
+estado terminal `refunded`. A transicao preserva auditoria, libera o intervalo
+GiST e cancela a sala futura ainda nao iniciada. Reembolso parcial e disputa
+nao encerram nem liberam a sessao automaticamente.
+
 Ao criar um hold, o trigger `validate_booking_hold_schedule_v1` repete a
 validacao autoritativa no banco. Conflitos A2 continuam retornando seus codigos
 especificos antes de um erro generico de slot.
@@ -129,6 +135,11 @@ para tokens e classes, permitindo evolucao visual sem gravar CSS no schema.
 - idempotencia e conflito;
 - identidade, RLS e terapeuta suspenso;
 - visoes e range do calendario.
+
+`supabase/tests/087_fully_refunded_booking_slot_release.sql` cobre a
+reconciliacao integral, idempotencia, auditoria, liberacao publica do slot,
+protecao contra escrita direta e a permanencia do conflito em reembolso
+parcial.
 
 Vitest cobre parser e estados principais do componente. Playwright cobre dados
 reais, dialogo, detalhe da sessao, navegacao entre abas, dia/semana/mes e

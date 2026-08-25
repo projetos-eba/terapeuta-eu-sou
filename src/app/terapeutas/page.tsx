@@ -347,17 +347,6 @@ function TherapistResultCard({
             {therapist.reviewsLabel}
           </p>
 
-          <div className="flex flex-wrap gap-2">
-            {therapist.tags.slice(0, 3).map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex min-h-7 items-center justify-center rounded-full bg-brand-lavenderSoft px-3 text-sm font-semibold text-brand-primary"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-
           <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-[1fr_auto] sm:items-end">
             <div>
               <p className="text-xs font-semibold leading-5 text-tesText-muted">
