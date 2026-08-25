@@ -17,15 +17,41 @@ export function mapTherapistAuraSignals(input: unknown): TherapistAuraPageData {
     const meta = mapMeta(value.meta);
     const signals = mapSignals(value.signals);
     const dismissals = array(value.dismissals).map(mapDismissal);
+    const dismissedRecommendationKeys = new Set(
+      dismissals.map((dismissal) => dismissal.recommendationKey),
+    );
+    const liveRecommendations = buildAuraRecommendations({
+      dismissals,
+      meta,
+      signals,
+    });
+    const persistedRecommendations = array(value.recommendations)
+      .filter(hasPersistedEvidence)
+      .map(mapPersistedRecommendation)
+      .filter(
+        (recommendation) =>
+          !dismissedRecommendationKeys.has(recommendation.id),
+      );
+    const seenRecommendationIdentities = new Set<string>();
+    const recommendations = [
+      ...liveRecommendations,
+      ...persistedRecommendations,
+    ]
+      .filter((recommendation) => {
+        const identity = recommendationIdentity(recommendation);
+        if (seenRecommendationIdentities.has(identity)) return false;
+        seenRecommendationIdentities.add(identity);
+        return true;
+      })
+      .sort(
+        (a, b) => b.priority - a.priority || a.title.localeCompare(b.title),
+      );
 
     return {
       contractVersion: literal(value.contractVersion, 1),
       dismissals,
       meta,
-      recommendations: [
-        ...buildAuraRecommendations({ dismissals, meta, signals }),
-        ...array(value.recommendations).map(mapPersistedRecommendation),
-      ].sort((a, b) => b.priority - a.priority || a.title.localeCompare(b.title)),
+      recommendations,
       ruleRegistryVersion: literal(value.ruleRegistryVersion, 1),
       signals,
       therapist: {
@@ -37,6 +63,12 @@ export function mapTherapistAuraSignals(input: unknown): TherapistAuraPageData {
     if (error instanceof TherapistAuraError) throw error;
     throw new TherapistAuraError("invalid_contract");
   }
+}
+
+function recommendationIdentity(
+  recommendation: ReturnType<typeof buildAuraRecommendations>[number],
+) {
+  return `${recommendation.ruleKey}:${recommendation.ruleVersion}`;
 }
 
 function mapSignals(input: unknown): TherapistAuraSignals {
@@ -63,6 +95,7 @@ function mapSignals(input: unknown): TherapistAuraSignals {
     reviews: {
       pendingReplyCount: nonNegativeInteger(reviews.pendingReplyCount),
       status: oneOf(reviews.status, "empty", "ready"),
+      windowDays: oneOf(reviews.windowDays, 30, 90),
     },
     sessions: {
       cancellationRate: sampledRate(record(sessions.cancellationRate)),
@@ -141,7 +174,7 @@ function mapPersistedRecommendation(
     actionLabel: "Ver detalhe",
     actionRouteKey,
     body: value.body,
-    evidenceLabel: "Recomendação registrada por regra determinística.",
+    evidenceLabel: describePersistedEvidence(value.evidence, value.generatedAt),
     id: `persisted:${value.id}`,
     priority: value.priority,
     ruleKey: value.ruleKey,
@@ -149,6 +182,37 @@ function mapPersistedRecommendation(
     title: value.title,
     tone: "opportunity",
   };
+}
+
+function hasPersistedEvidence(input: unknown) {
+  const value = record(input);
+  const evidence = record(value.evidence);
+  const source = evidence.source;
+  return (
+    Object.keys(evidence).length > 0 &&
+    source !== "demo_seed" &&
+    source !== "seed"
+  );
+}
+
+function describePersistedEvidence(
+  evidence: Record<string, unknown>,
+  generatedAt: string,
+) {
+  const observedSample = evidence.observedSample;
+  const periodDays = evidence.periodDays;
+  if (
+    typeof observedSample === "number" &&
+    Number.isSafeInteger(observedSample) &&
+    observedSample >= 0 &&
+    typeof periodDays === "number" &&
+    Number.isSafeInteger(periodDays) &&
+    periodDays > 0
+  ) {
+    return `Evidência agregada: ${observedSample} observações em ${periodDays} dias completos.`;
+  }
+
+  return `Evidência agregada registrada em ${formatDate(generatedAt)}; nenhum dado individual é exibido.`;
 }
 
 function mapPersistedRecommendationRow(
@@ -184,6 +248,13 @@ function dateTime(value: unknown) {
   const parsed = nonEmptyString(value);
   if (Number.isNaN(Date.parse(parsed))) throw new Error("Invalid date.");
   return parsed;
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date(value));
 }
 
 function positiveInteger(value: unknown) {

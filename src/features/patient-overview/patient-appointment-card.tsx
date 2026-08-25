@@ -46,12 +46,20 @@ export function PatientAppointmentCard({
         <div className="flex items-center gap-2">
           <CalendarDays aria-hidden="true" className="size-4 text-black" />
           <dt className="sr-only">Data</dt>
-          <dd>{formatAppointmentDate(appointment.startsAt)}</dd>
+          <dd>
+            {formatAppointmentDate(appointment.startsAt, appointment.timezone)}
+          </dd>
         </div>
         <div className="mt-2 flex items-center gap-2">
           <Clock3 aria-hidden="true" className="size-4 text-black" />
           <dt className="sr-only">Horário</dt>
-          <dd>{formatTimeRange(appointment.startsAt, appointment.endsAt)}</dd>
+          <dd>
+            {formatTimeRange(
+              appointment.startsAt,
+              appointment.endsAt,
+              appointment.timezone,
+            )}
+          </dd>
         </div>
       </dl>
       <div className="flex flex-col gap-2 sm:items-end">

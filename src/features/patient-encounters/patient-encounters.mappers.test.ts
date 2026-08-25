@@ -154,8 +154,65 @@ describe("patient encounters mapper", () => {
 
     expect(result.nextEncounter?.status).toBe("confirmed");
     expect(result.nextEncounter?.actionHint).toBe(
-      "Entrada liberada 15 min antes",
+      "Acesso à sala liberado 15 minutos antes.",
     );
+  });
+
+  it("keeps every active scheduled encounter in upcoming encounters", () => {
+    const bookings = Array.from({ length: 5 }, (_, index) =>
+      createBooking(
+        `95000000-0000-4000-8000-0000000001${index}`,
+        new Date(Date.now() + (index + 1) * 24 * 60 * 60 * 1000),
+      ),
+    );
+
+    const result = mapPatientEncountersPage({
+      bookings,
+      favoriteTherapistsCount: 0,
+      patient,
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map(),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(result.upcomingEncounters).toHaveLength(5);
+  });
+
+  it("keeps a bounded recent history for the scrollable list", () => {
+    const bookings = Array.from({ length: 55 }, (_, index) => {
+      const startsAt = new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000);
+      return {
+        ...createBooking(
+          `95000000-0000-4000-8000-0000000002${index}`,
+          startsAt,
+        ),
+        completed_at: startsAt.toISOString(),
+        status: "completed",
+      };
+    });
+
+    const result = mapPatientEncountersPage({
+      bookings,
+      favoriteTherapistsCount: 0,
+      patient,
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map(),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(result.historyEncounters).toHaveLength(50);
   });
 
   it("keeps cancelled encounters in history with refund-oriented action", () => {
@@ -193,6 +250,9 @@ describe("patient encounters mapper", () => {
   });
 
   it("formats encounter times in the booking timezone instead of the server timezone", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-24T00:00:00.000Z"));
+
     const booking = createBooking(
       "95000000-0000-4000-8000-000000000006",
       new Date("2026-08-24T12:10:00.000Z"),

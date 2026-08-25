@@ -49,6 +49,9 @@ select ok(
   'authenticated users have an RLS-protected aggregate read surface'
 );
 
+update public.therapist_metrics_runtime_config
+set public_telemetry_enabled = false;
+
 set local role anon;
 
 select is(

@@ -1,8 +1,14 @@
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 import type { Route } from "next";
 import { BookingStatus } from "@/domain/tes";
-import { CalendarDays, Clock3, HeartHandshake, Star, Video } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronRight,
+  Clock3,
+  Star,
+  Video,
+} from "lucide-react";
 
 import { TESButton } from "@/components/tes/tes-button";
 import { routes } from "@/lib/routes";
@@ -33,38 +39,42 @@ export function SessionOverviewCard({
   const statusTone = getStatusTone(data.booking.status, data.booking.canJoin);
 
   return (
-    <section className="overflow-hidden rounded-card border border-border bg-white p-5 shadow-card sm:p-7">
-      <div className="grid gap-7 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.25fr)_minmax(220px,0.7fr)] lg:gap-0">
-        <div className="min-w-0 lg:border-r lg:border-border lg:pr-7">
-          <div className="flex items-start gap-4 sm:gap-5">
-            <Avatar
-              name={data.therapist.name}
-              online={data.therapist.isOnline}
-              src={data.therapist.avatarUrl}
-            />
-            <div className="min-w-0">
-              <h2 className="mt-2 truncate text-[1.55rem] font-extrabold leading-tight text-brand-deep sm:text-[1.75rem]">
-                {data.therapist.name}
-              </h2>
-              <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
-                {data.therapist.roleLabel}
-              </p>
-              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <span className="inline-flex min-h-8 items-center rounded-full bg-white/90 px-3 text-[11px] font-extrabold text-brand-primary sm:text-xs">
+    <>
+      <section className="rounded-card border border-brand-lavender bg-white p-5 shadow-card sm:p-7">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(14rem,0.9fr)_minmax(16rem,1.05fr)] xl:gap-0">
+          <div className="min-w-0 xl:pr-7">
+            <div className="flex items-center gap-4 sm:gap-5">
+              <Avatar
+                name={data.therapist.name}
+                online={data.therapist.isOnline}
+                src={data.therapist.avatarUrl}
+              />
+              <div className="min-w-0">
+                <h2
+                  className="truncate text-[1.65rem] font-extrabold leading-tight text-brand-deep sm:text-[1.9rem]"
+                  title={data.therapist.name}
+                >
+                  {data.therapist.name}
+                </h2>
+                <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
+                  {data.therapist.roleLabel}
+                </p>
+                <p className="mt-2 text-sm font-extrabold text-brand-primary">
                   {data.service.therapyName}
-                </span>
-                {ratingLabel ? (
-                  <span className="text-[11px] font-semibold leading-5 text-tesText-secondary sm:text-xs">
-                    {ratingLabel}
-                  </span>
-                ) : null}
+                  {ratingLabel ? ` · ${ratingLabel}` : null}
+                </p>
+                <Link
+                  className="mt-2 inline-flex min-h-10 items-center gap-1 text-sm font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                  href={data.therapist.profileHref as Route<string>}
+                >
+                  Ver perfil
+                  <ChevronRight aria-hidden="true" size={16} />
+                </Link>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="min-w-0 border-t border-border pt-6 lg:border-t-0 lg:px-7 lg:pt-1">
-          <dl className="grid gap-5 sm:grid-cols-3 lg:grid-cols-1 lg:gap-6">
+          <div className="grid grid-cols-3 gap-2 border-t border-border pt-5 sm:gap-4 xl:grid-cols-1 xl:border-l xl:border-t-0 xl:px-7 xl:pt-0">
             <OverviewFact
               icon={CalendarDays}
               label="Data"
@@ -77,79 +87,48 @@ export function SessionOverviewCard({
               supporting={data.booking.durationLabel}
             />
             <OverviewFact
-              icon={HeartHandshake}
-              label="Terapia"
-              value={data.service.title}
-              supporting={data.service.therapyName}
-            />
-          </dl>
-        </div>
-
-        <div className="min-w-0 border-t border-border pt-6 lg:border-l lg:border-t-0 lg:border-border lg:pl-7 lg:pt-1">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-tesText-muted sm:text-xs">
-            Status
-          </p>
-          <div className="mt-3">
-            <StatusPill tone={statusTone}>
-              {data.booking.statusLabel}
-            </StatusPill>
-          </div>
-          <p className="mt-4 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base sm:leading-7">
-            {guidance}
-          </p>
-
-          <div className="mt-5 grid gap-4 border-t border-border pt-5">
-            <StateLine
-              label="Pagamento"
-              supporting={data.encounterState.payment.message}
-              value={data.encounterState.payment.title}
-            />
-            <StateLine
-              label="Segurança de acesso"
-              supporting={data.onlineSession.securityNote}
-              value={data.onlineSession.joinRecommendation}
+              icon={Video}
+              label="Sala"
+              supporting="Videoconferência"
+              value={getRoomLabel(data)}
             />
           </div>
 
-          {primaryAction.disabled ? (
-            <button
-              className="mt-5 inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center gap-2 rounded-full bg-surface-soft px-6 text-sm font-extrabold text-tesText-secondary"
-              disabled
-              title={primaryAction.reason}
-              type="button"
-            >
-              <Video aria-hidden="true" size={18} />
-              {primaryAction.label}
-            </button>
-          ) : (
-            <TESButton
-              className="mt-5 w-full"
-              href={primaryAction.href}
-              size="lg"
-              variant={primaryAction.variant ?? "primary"}
-            >
-              <Video aria-hidden="true" size={18} />
-              {primaryAction.label}
-            </TESButton>
-          )}
-          <Link
-            className="mt-4 inline-flex min-h-11 items-center text-sm font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            href={data.therapist.profileHref as Route<string>}
+          <div
+            className={`grid gap-4 border-t border-border pt-5 xl:border-l xl:border-t-0 xl:pl-7 xl:pt-0 ${
+              data.booking.status === BookingStatus.Confirmed
+                ? "rounded-2xl border-status-success/25 bg-status-successBg/45 p-4 xl:ml-3 xl:border xl:pl-4"
+                : ""
+            }`}
           >
-            Ver perfil profissional
-          </Link>
-          {canReviewFeedback(data.booking.status) ? (
-            <Link
-              className="mt-3 inline-flex min-h-11 items-center gap-2 text-sm font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-              href={`${routes.patient.encounterVideo(data.booking.id)}?feedback=1` as Route<string>}
-            >
-              <Star aria-hidden="true" size={17} />
-              Avaliar encontro
-            </Link>
-          ) : null}
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-tesText-muted sm:text-xs">
+                Status
+              </p>
+              <div className="mt-2">
+                <StatusPill tone={statusTone}>
+                  {data.booking.statusLabel}
+                </StatusPill>
+              </div>
+            </div>
+            <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+              {guidance}
+            </p>
+            <div className="hidden xl:block">
+              <HeroAction
+                action={primaryAction}
+                data={data}
+                showFeedback
+              />
+            </div>
+          </div>
         </div>
+      </section>
+
+      <div className="grid gap-3 xl:hidden">
+        <HeroAction action={primaryAction} data={data} showFeedback={false} />
       </div>
-    </section>
+    </>
   );
 }
 
@@ -166,42 +145,22 @@ function OverviewFact({
 }) {
   return (
     <div className="min-w-0">
-      <p className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.16em] text-tesText-muted sm:text-xs">
-        <Icon aria-hidden="true" className="text-brand-primary" size={16} />
+      <p className="flex min-w-0 items-center gap-1 text-[13px] font-extrabold text-brand-deep sm:gap-2 sm:text-sm">
+        <Icon
+          aria-hidden="true"
+          className="shrink-0 text-brand-primary"
+          size={19}
+        />
         {label}
       </p>
-      <p className="mt-3 text-sm font-extrabold leading-6 text-brand-deep sm:text-base">
+      <p className="mt-1 break-words text-sm font-extrabold leading-5 text-brand-deep sm:text-base sm:leading-6">
         {value}
       </p>
       {supporting ? (
-        <p className="text-[11px] font-semibold leading-5 text-tesText-secondary sm:text-xs">
+        <p className="break-words text-[13px] font-semibold leading-5 text-tesText-secondary sm:text-sm">
           {supporting}
         </p>
       ) : null}
-    </div>
-  );
-}
-
-function StateLine({
-  label,
-  supporting,
-  value,
-}: {
-  label: string;
-  supporting: string;
-  value: string;
-}) {
-  return (
-    <div className="grid gap-1">
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-tesText-muted sm:text-xs">
-        {label}
-      </p>
-      <p className="text-sm font-extrabold leading-6 text-brand-deep sm:text-base">
-        {value}
-      </p>
-      <p className="text-[11px] font-semibold leading-5 text-tesText-secondary sm:text-xs">
-        {supporting}
-      </p>
     </div>
   );
 }
@@ -260,6 +219,69 @@ function Avatar({
   );
 }
 
+function HeroAction({
+  action,
+  data,
+  showFeedback,
+}: {
+  action: PrimaryAction;
+  data: PatientSessionDetailPageData;
+  showFeedback: boolean;
+}) {
+  const isJoinAction =
+    !action.disabled &&
+    (action.label === "Entrar no encontro" ||
+      action.label === "Abrir videochamada");
+
+  return (
+    <div className="grid gap-3">
+      {isJoinAction ? (
+        <TESButton
+          className="min-h-14 w-full text-base sm:text-lg"
+          href={action.href}
+          size="lg"
+          variant={action.variant ?? "gradient"}
+        >
+          <Video aria-hidden="true" size={22} />
+          Entrar no encontro
+        </TESButton>
+      ) : (
+        <button
+          className="inline-flex min-h-14 w-full cursor-not-allowed items-center justify-center gap-2 rounded-full bg-surface-soft px-6 text-base font-extrabold text-tesText-secondary"
+          disabled
+          title={action.disabled ? action.reason : undefined}
+          type="button"
+        >
+          <Video aria-hidden="true" size={22} />
+          Entrar no encontro
+        </button>
+      )}
+
+      <p className="text-center text-sm font-semibold leading-6 text-tesText-secondary xl:hidden">
+        {data.onlineSession.joinRecommendation}
+      </p>
+
+      {showFeedback && canReviewFeedback(data.booking.status) ? (
+        <Link
+          className="inline-flex min-h-11 items-center justify-center gap-2 text-sm font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          href={
+            `${routes.patient.encounterVideo(data.booking.id)}?feedback=1` as Route<string>
+          }
+        >
+          <Star aria-hidden="true" size={17} />
+          Avaliar encontro
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+function getRoomLabel(data: PatientSessionDetailPageData) {
+  return data.onlineSession.provider === "zoom"
+    ? "Sala segura"
+    : "Sala externa";
+}
+
 function getGuidanceMessage(data: PatientSessionDetailPageData) {
   if (data.encounterState.payment.kind !== "confirmed") {
     return data.encounterState.payment.message;
@@ -273,6 +295,25 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
     `${routes.patient.messages}?context=suporte&booking=${data.booking.id}` as Route<string>;
 
   if (data.onlineSession.provider === "zoom") {
+    const canOpenWaitingRoom =
+      data.booking.canJoin &&
+      data.encounterState.payment.kind === "confirmed" &&
+      [
+        "entry_available",
+        "operational_unavailable",
+        "therapist_absent_prolonged",
+        "therapist_present",
+        "waiting_therapist",
+      ].includes(data.encounterState.waitingRoom.kind);
+
+    if (canOpenWaitingRoom) {
+      return {
+        href: routes.patient.encounterVideo(data.booking.id) as Route<string>,
+        label: "Entrar no encontro",
+        variant: "gradient",
+      };
+    }
+
     if (
       data.encounterState.payment.kind === "confirmed" &&
       (data.encounterState.waitingRoom.kind === "entry_available" ||
@@ -329,13 +370,16 @@ function getPrimaryAction(data: PatientSessionDetailPageData): PrimaryAction {
   };
 }
 
-function canReviewFeedback(status: PatientSessionDetailPageData["booking"]["status"]) {
+function canReviewFeedback(
+  status: PatientSessionDetailPageData["booking"]["status"],
+) {
   return (
     status === BookingStatus.Completed ||
     status === BookingStatus.CancelledByPatient ||
     status === BookingStatus.CancelledByTherapist ||
     status === BookingStatus.NoShowPatient ||
     status === BookingStatus.NoShowTherapist ||
+    status === BookingStatus.CancelledByPayment ||
     status === BookingStatus.Refunded
   );
 }
@@ -344,7 +388,9 @@ function getStatusTone(
   status: PatientSessionDetailPageData["booking"]["status"],
   canJoin: boolean,
 ) {
-  if (canJoin || status === "live") return "success";
+  if (canJoin || status === BookingStatus.Confirmed || status === "live") {
+    return "success";
+  }
   if (status === "pending_payment") return "warning";
   if (
     status === "cancelled_by_patient" ||

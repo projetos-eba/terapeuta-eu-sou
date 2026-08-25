@@ -143,7 +143,7 @@ export function FeaturedTherapistsCarousel({
             Terapeutas em destaque
           </p>
           <h2 className="font-display text-4xl font-light italic leading-tight text-brand-deep md:text-5xl">
-            Profissionais verificados para você conhecer com calma
+            Profissionais verificados para você conhecer
           </h2>
         </div>
         <TESButton href={routes.public.therapists} variant="secondary">

@@ -12,6 +12,7 @@ import type {
   TherapistProfileCommand,
   TherapistProfileEditorData,
   TherapistProfileMutationResult,
+  SaveTherapistProfileMediaDraftCommand,
   TherapistProfileSlugAvailabilityResult,
   TherapistPrivateDocumentSummary,
   TherapistProfileVerificationStatus,
@@ -99,6 +100,22 @@ export async function sendTherapistProfileCommand(
       status: "error",
     };
   }
+}
+
+export function createSaveMediaDraftCommand({
+  expectedVersion,
+  mediaUrl,
+}: Pick<
+  SaveTherapistProfileMediaDraftCommand,
+  "expectedVersion" | "mediaUrl"
+>): SaveTherapistProfileMediaDraftCommand {
+  return {
+    action: "save_media_draft",
+    expectedVersion,
+    kind: "photo",
+    mediaUrl,
+    requestId: createStableRequestId(),
+  };
 }
 
 function mapSlugAvailability(

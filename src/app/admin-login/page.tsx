@@ -15,7 +15,7 @@ export default async function AdminLoginPage({
     <main className="relative min-h-screen bg-surface-soft px-4 py-8 text-brand-deep sm:px-6 lg:px-8">
       <div className="mx-auto flex min-h-[calc(100vh-64px)] w-full max-w-5xl flex-col justify-center gap-8">
         <div className="relative flex justify-center">
-          <AuthBackButton fallbackHref={routes.public.home} />
+          <AuthBackButton alwaysFallback fallbackHref={routes.public.home} />
           <Image
             alt="Terapeuta Eu Sou"
             height={58}

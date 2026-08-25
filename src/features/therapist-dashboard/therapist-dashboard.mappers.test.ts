@@ -1,13 +1,17 @@
 import { describe, expect, it } from "vitest";
 
+import type { SessionReadModelItem } from "@/features/bookings";
 import { routes } from "@/lib/routes";
 
+import type { TherapistAuraPageData } from "../therapist-aura/therapist-aura.types";
 import {
   calculateAttendanceRate,
   calculateRevenueCents,
   calculateTrend,
+  buildTherapistWeekSummary,
+  mapUpcomingTherapistSessions,
   mapTherapistDashboardResponse,
-  mapTherapistRecommendations,
+  mapTherapistAuraPage,
 } from "./therapist-dashboard.mappers";
 
 describe("dashboard calculations", () => {
@@ -40,6 +44,62 @@ describe("dashboard calculations", () => {
       ]),
     ).toBe(3400);
   });
+
+  it("counts the weekly series using the calendar timezone", () => {
+    const summary = buildTherapistWeekSummary(
+      [
+        session({
+          bookingStatus: "completed",
+          startsAt: "2026-08-24T03:30:00.000Z",
+        }),
+        session({
+          bookingStatus: "no_show_patient",
+          startsAt: "2026-08-25T15:00:00.000Z",
+        }),
+        session({
+          bookingStatus: "cancelled_by_patient",
+          startsAt: "2026-08-31T02:30:00.000Z",
+        }),
+      ],
+      { localStart: "2026-08-24", timezone: "America/Sao_Paulo" },
+    );
+
+    expect(summary.days[0]).toMatchObject({
+      completed: 1,
+      scheduled: 1,
+    });
+    expect(summary.days[1]).toMatchObject({ scheduled: 1 });
+    expect(summary.days[6]).toMatchObject({ cancelled: 1 });
+    expect(summary.attendanceRate).toBe(50);
+    expect(summary.rangeLabel).toBe("24/08 – 30/08");
+  });
+
+  it("orders the closest confirmed upcoming sessions independently of query order", () => {
+    const now = new Date("2026-08-25T12:00:00.000Z");
+    const result = mapUpcomingTherapistSessions(
+      [
+        session({
+          bookingId: "booking-later",
+          startsAt: "2026-08-27T12:00:00.000Z",
+        }),
+        session({
+          bookingId: "booking-soon",
+          startsAt: "2026-08-25T13:00:00.000Z",
+        }),
+        session({
+          bookingId: "booking-past",
+          startsAt: "2026-08-25T11:00:00.000Z",
+        }),
+      ],
+      now,
+    );
+
+    expect(result.map((item) => item.bookingId)).toEqual([
+      "booking-soon",
+      "booking-later",
+    ]);
+    expect(result[0]?.timezone).toBe("America/Sao_Paulo");
+  });
 });
 
 describe("dashboard mapper", () => {
@@ -67,24 +127,126 @@ describe("dashboard mapper", () => {
   });
 
   it("separates observations, suggestions and actions", () => {
-    const result = mapTherapistRecommendations([
-      {
-        body: "Sinal agregado",
-        context: { kind: "observation" },
-        id: "1",
-        source_rule_key: "signal",
-        title: "Sinal",
-      },
-      {
-        body: "Ação segura",
-        context: { action_href: "/plus/perfil", kind: "action" },
-        id: "2",
-        source_rule_key: "action",
-        title: "Atualize",
-      },
-    ]);
+    const result = mapTherapistAuraPage({
+      ...emptyAuraPage(),
+      recommendations: [
+        {
+          actionHref: routes.therapist.profile,
+          actionLabel: "Revisar perfil",
+          actionRouteKey: "profile",
+          body: "Sinal agregado",
+          evidenceLabel: "Fonte agregada",
+          id: "1",
+          priority: 90,
+          ruleKey: "aura.profile.v1",
+          ruleVersion: 1,
+          title: "Sinal",
+          tone: "attention",
+        },
+        {
+          actionHref: routes.therapist.reviews,
+          actionLabel: "Responder avaliações",
+          actionRouteKey: "reviews",
+          body: "Ação segura",
+          evidenceLabel: "Fonte agregada",
+          id: "2",
+          priority: 80,
+          ruleKey: "aura.reviews.v1",
+          ruleVersion: 1,
+          title: "Responda",
+          tone: "care",
+        },
+      ],
+    });
 
     expect(result.aura?.observations).toEqual(["Sinal agregado"]);
     expect(result.recommendedActions[0]?.href).toBe(routes.therapist.profile);
+    expect(result.recommendedActions[1]?.href).toBe(routes.therapist.reviews);
   });
 });
+
+function emptyAuraPage(): TherapistAuraPageData {
+  return {
+    contractVersion: 1,
+    dismissals: [],
+    meta: {
+      computedAt: "2026-08-23T12:00:00.000Z",
+      freshThrough: "2026-08-23T12:00:00.000Z",
+      periodDays: 30,
+      periodEnd: "2026-08-23T03:00:00.000Z",
+      periodStart: "2026-07-24T03:00:00.000Z",
+      previousPeriodEnd: "2026-07-24T03:00:00.000Z",
+      previousPeriodStart: "2026-06-24T03:00:00.000Z",
+      timezone: "America/Sao_Paulo",
+    },
+    recommendations: [],
+    ruleRegistryVersion: 1,
+    signals: {
+      bookingReadiness: {
+        publicBookableServices: 0,
+        servicesWithFutureAvailability: 0,
+        status: "empty",
+        windowDays: 14,
+      },
+      continuity: { returnRate: insufficientRate() },
+      reviews: { pendingReplyCount: 0, status: "empty", windowDays: 30 },
+      sessions: {
+        cancellationRate: insufficientRate(),
+        noShowRate: insufficientRate(),
+      },
+    },
+    therapist: { plan: "premium_plus", profileId: "therapist-1" },
+  };
+}
+
+function insufficientRate() {
+  return {
+    direction: null,
+    minimumSample: 10 as const,
+    observedSample: 0,
+    previousValue: null,
+    status: "insufficient_sample" as const,
+    unit: "percent" as const,
+    value: null,
+  };
+}
+
+function session(
+  overrides: Partial<SessionReadModelItem> = {},
+): SessionReadModelItem {
+  return {
+    attendanceSource: "none",
+    attendanceStatus: "unknown",
+    bookingId: "booking-default",
+    bookingStatus: "confirmed",
+    bookingVersion: 1,
+    cancellationDecision: null,
+    cancellationRequiresReview: null,
+    currency: "BRL",
+    durationMinutes: 50,
+    endsAt: "2026-08-25T14:00:00.000Z",
+    financialStatus: "paid",
+    fulfillmentStatus: null,
+    grossAmountCents: 10000,
+    videoSessionProvider: null,
+    videoSessionStatus: null,
+    modality: "online",
+    patientAvatarUrl: null,
+    patientName: "Pessoa TES",
+    patientProfileId: "patient-1",
+    priceCents: 10000,
+    proposedEndsAt: null,
+    proposedStartsAt: null,
+    proposedTimezone: null,
+    refundPending: null,
+    rescheduleStatus: null,
+    serviceId: "service-1",
+    serviceTitle: "Terapia online",
+    startsAt: "2026-08-25T13:00:00.000Z",
+    therapistAmountCents: 8000,
+    timezone: "America/Sao_Paulo",
+    transferStatus: null,
+    zoomAccess: "not_available",
+    ...overrides,
+  } as SessionReadModelItem;
+}

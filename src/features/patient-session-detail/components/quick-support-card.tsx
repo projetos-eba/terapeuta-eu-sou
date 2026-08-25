@@ -6,12 +6,12 @@ import { routes } from "@/lib/routes";
 
 export function QuickSupportCard({ bookingId }: { bookingId: string }) {
   return (
-    <section className="rounded-card border border-border bg-white p-5 shadow-card sm:p-6">
+    <section className="rounded-card border border-border bg-white p-4 shadow-card sm:p-6">
       <div className="flex items-center gap-3">
-        <span className="grid size-11 place-items-center rounded-full bg-white text-brand-primary">
+        <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
           <Headphones aria-hidden="true" size={20} />
         </span>
-        <h2 className="font-display text-[1.75rem] font-light italic leading-none text-brand-deep">
+        <h2 className="font-display text-[1.5rem] font-light italic leading-none text-brand-deep sm:text-[1.75rem]">
           Suporte rápido
         </h2>
       </div>

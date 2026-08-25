@@ -12,6 +12,7 @@ Use esta skill ao implementar ou refatorar `/reserva` e `/reserva/sucesso`.
 - `docs/product/routes-map.md`
 - `docs/product/page-inventory.md`
 - `docs/product/integration-map.md`
+- `docs/payments/promotion-codes.md`
 - `docs/design-system/design-system.md`
 - `docs/product/glossary.md`
 - `src/lib/routes.ts`
@@ -67,6 +68,12 @@ revalidada no servidor antes do checkout.
 - A experiência de pagamento usa Stripe Embedded Checkout. O backend retorna
   apenas o `clientSecret` da Checkout Session incorporada; dados de cartão ficam
   nos componentes oficiais da Stripe.
+- O campo de código promocional fica no `ReservationSummary`, fora do iframe.
+  Aplicar/remover chama a rota com `action=replace`, cria uma nova tentativa,
+  destrói o checkout anterior e remonta o iframe sem recarregar a página.
+- O navegador nunca envia Promotion Code ID, Coupon ID ou totais como
+  autoridade. A Edge Function resolve o código na Stripe e exige
+  `tes_checkout_scope=session`.
 - Redirecionamento de sucesso nunca confirma pagamento. Apenas webhook Stripe
   atualiza pagamento/booking de forma definitiva.
 - Não coletar número de cartão, CVC ou dados bancários no Next.
@@ -79,6 +86,7 @@ revalidada no servidor antes do checkout.
 - `AuthStep`
 - `PrepareForm`
 - `CheckoutButton`/container de Embedded Checkout
+- `PromotionCodeField` de domínio compartilhado em `src/features/payments`
 - `PolicyCard`
 - `ReservationSuccessPage`
 
@@ -117,6 +125,15 @@ revalidada no servidor antes do checkout.
 - Cliente autenticado deve conseguir chamar `/api/public/reservation/checkout`
   somente com `termsAccepted: true`.
 - Slot inexistente/indisponível deve retornar erro seguro.
+- Cupom percentual/fixo válido deve exibir subtotal, desconto e total da
+  resposta Stripe; total zero por desconto autorizado deve concluir pelo
+  webhook assinado, enquanto outro escopo, código inválido, desconto acima do
+  subtotal e concorrência devem falhar fechado sem desmontar definitivamente a
+  tentativa válida.
+- O iframe não deve mostrar o campo nativo “Add code” e todo o checkout deve
+  usar `pt-BR`.
+- Evento expirado/falhado de tentativa superseded não pode cancelar a reserva;
+  um pagamento real anterior ainda deve ser aceito uma única vez.
 - Um slot `2026-08-24T12:10:00.000Z` no timezone `America/Sao_Paulo` deve ser
   exibido como `09:10`, inclusive no resumo antes do checkout.
 - Sem Supabase configurado, submit deve retornar erro controlado sem expor
@@ -137,5 +154,5 @@ revalidada no servidor antes do checkout.
   terapeuta; se essas views estiverem indisponíveis, a agenda aparece vazia em
   vez de usar dados demonstrativos silenciosos.
 - Dados opcionais de preparo do encontro ainda não são persistidos no booking.
-- Cupom permanece visualmente indisponível até existir política futura de
-  descontos validada server-side.
+- Homologar externamente campanhas e corridas de substituição em Stripe test
+  mode antes de produção; consulte `skills/stripe-promotions`.

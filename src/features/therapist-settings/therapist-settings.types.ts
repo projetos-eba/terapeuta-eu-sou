@@ -55,3 +55,11 @@ export type TherapistSettingsUpdatePayload = Omit<
 export type TherapistSettingsUpdateResult = {
   account: TherapistSettingsEditableFields;
 };
+
+export type TherapistAddressLookupResult = {
+  city: string;
+  neighborhood: string;
+  postalCode: string;
+  state: string;
+  street: string;
+};

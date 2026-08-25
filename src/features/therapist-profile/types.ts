@@ -85,6 +85,7 @@ export type TherapistProfileService = {
   imageUrl: string | null;
   priceCents: number;
   priceLabel: string;
+  themeNames: string[];
   title: string;
   therapyId: string;
   therapyName: string;

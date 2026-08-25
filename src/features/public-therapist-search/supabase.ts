@@ -36,6 +36,7 @@ type PublicTherapistSearchRow = {
   public_name: string;
   review_count: number | null;
   review_quote: string | null;
+  schedule_timezone: string | null;
   search_text: string | null;
   service_description: string | null;
   service_id: string;
@@ -64,11 +65,14 @@ async function fetchTherapistRows() {
   const response = await fetch(
     `${config.url}/rest/v1/public_therapist_search?select=*&order=public_name.asc`,
     {
+      // next_slot_at depends on the live slot engine (bookings and holds can
+      // change it without a profile publication). The profile agenda already
+      // uses no-store, so the discovery card must not serve a stale forecast.
+      cache: "no-store",
       headers: {
         apikey: config.apiKey,
         Authorization: `Bearer ${config.apiKey}`,
       },
-      next: { revalidate: 900, tags: ["therapist-search"] },
     },
   );
 
@@ -110,7 +114,10 @@ function mapTherapistRow(row: PublicTherapistSearchRow): TherapistSearchCard {
     : (row.theme_names?.slice(0, 3) ?? [row.therapy_name]);
 
   return {
-    availabilityBucket: getAvailabilityBucket(row.next_slot_at),
+    availabilityBucket: getAvailabilityBucket(
+      row.next_slot_at,
+      row.schedule_timezone,
+    ),
     cityState: [row.city, row.state].filter(Boolean).join(", "),
     description:
       row.therapist_headline?.trim() ||
@@ -127,7 +134,10 @@ function mapTherapistRow(row: PublicTherapistSearchRow): TherapistSearchCard {
       }) || "/therapists/ana-oliveira.png",
     name: row.public_name,
     nextSlotAt: row.next_slot_at,
-    nextSlotLabel: formatNextSlotLabel(row.next_slot_at),
+    nextSlotLabel: formatNextSlotLabel(
+      row.next_slot_at,
+      row.schedule_timezone,
+    ),
     priceCents: row.service_price_cents,
     priceLabel: formatPriceLabel(row.service_price_cents),
     quote: row.review_quote ?? "Perfil verificado na plataforma TES.",

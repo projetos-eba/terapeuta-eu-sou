@@ -4,10 +4,12 @@ import { platformAssets } from "./platform-assets";
 
 describe("platformAssets", () => {
   it("keeps production assets in the dedicated public directory", () => {
-    expect(Object.values(platformAssets)).toHaveLength(17);
+    expect(Object.values(platformAssets)).toHaveLength(18);
 
     for (const asset of Object.values(platformAssets)) {
-      expect(asset.src).toMatch(/^\/assets\/plataforma\/.+\.png$/);
+      expect(asset.src).toMatch(
+        /^(\/assets\/plataforma|\/therapist\/dashboard)\/.+\.png$/,
+      );
     }
   });
 

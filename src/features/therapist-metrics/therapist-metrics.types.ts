@@ -218,6 +218,25 @@ export type TherapistSessionMetrics = {
   }>;
 };
 
+export type TherapistSessionEvolutionComparison = {
+  contractVersion: 1;
+  meta: TherapistMetricsCommonMeta;
+  metricDefinitionVersion: 1;
+  points: Array<{
+    current: number;
+    currentDate: string;
+    index: number;
+    previous: number;
+    previousDate: string;
+  }>;
+  status: "empty" | "ready";
+  therapist: TherapistMetricsFoundation["therapist"];
+};
+
+export type TherapistSessionMetricsView = TherapistSessionMetrics & {
+  evolutionComparison: TherapistSessionEvolutionComparison;
+};
+
 export type TherapistInterestSegmentKey =
   | "active"
   | "inactive"
@@ -355,4 +374,8 @@ export type TherapistMetricsDashboard = {
   overview: TherapistMetricsOverview;
   sessions: TherapistSessionMetrics;
   therapist: TherapistMetricsFoundation["therapist"];
+};
+
+export type TherapistMetricsDashboardView = TherapistMetricsDashboard & {
+  sessionEvolutionComparison: TherapistSessionEvolutionComparison;
 };

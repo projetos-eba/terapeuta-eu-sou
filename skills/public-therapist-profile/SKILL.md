@@ -51,6 +51,10 @@ Consultar antes de alterar:
 - Terapias e serviços são gerenciados pela plataforma/Admin, não pela copy livre do terapeuta.
 - Avaliações públicas devem estar vinculadas a booking `completed` e `paid`.
 - Disponibilidade deve vir do RPC autoritativo `get_service_available_slots_v1`, que deriva regras semanais, exceções, bookings existentes, buffers, antecedência mínima, duração e timezone do serviço. Não recalcular slots públicos no runtime Next.
+- A lista pública `/terapeutas` usa a mesma autoridade: `next_slot_at` da view
+  `public_therapist_search` é projetado a partir do primeiro slot do RPC e
+  `schedule_timezone` deve ser respeitado na apresentação. Uma previsão de
+  regra semanal não é uma fonte válida de disponibilidade.
 - Cada serviço deve carregar sua própria grade de horários calculada; Reiki 50min, Tarô 60min e Constelação Familiar 60min não podem compartilhar uma lista fixa de slots.
 - O painel compacto de disponibilidade mostra somente os próximos 3 dias com horários disponíveis; dias corridos sem slot não devem aparecer como linhas vazias.
 - A agenda mensal usa o mesmo payload calculado por serviço e destaca apenas dias disponíveis, listando horários após a seleção do dia.

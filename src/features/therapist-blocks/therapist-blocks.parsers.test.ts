@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   parseCreateTherapistBlockInput,
+  parseTherapistBlockCommandResult,
   parseTherapistBlocksReadModel,
 } from "./therapist-blocks.parsers";
 
@@ -109,5 +110,25 @@ describe("therapist block contracts", () => {
         timezone: "America/Sao_Paulo",
       }),
     ).toThrow();
+  });
+
+  it("parses confirmed and paid booking details returned by the create command", () => {
+    const result = parseTherapistBlockCommandResult({
+      idempotentReplay: false,
+      paidImpactedBookings: [
+        {
+          bookingId: "f2000000-0000-4000-8000-000000000004",
+          endsAt: "2026-07-28T15:00:00Z",
+          patientName: "Marina Souza",
+          serviceTitle: "Reiki",
+          startsAt: "2026-07-28T14:00:00Z",
+          timezone: "America/Sao_Paulo",
+        },
+      ],
+    });
+
+    expect(result.paidImpactedBookings).toEqual([
+      expect.objectContaining({ patientName: "Marina Souza" }),
+    ]);
   });
 });

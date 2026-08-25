@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { TESButton, TESDialog } from "@/components/tes";
+import { TESButton, TESDialog, TESFeedbackDialog } from "@/components/tes";
 import type { TherapistPlan } from "@/domain/tes";
 
 export function SubscriptionCommandButton({
@@ -80,9 +80,11 @@ export function SubscriptionCommandButton({
         {children}
       </TESButton>
       {message ? (
-        <p className="mt-2 text-sm font-bold text-status-danger" role="alert">
-          {message}
-        </p>
+        <TESFeedbackDialog
+          message={message}
+          onClose={() => setMessage(null)}
+          tone={message.startsWith("Alteração recebida") ? "warning" : "error"}
+        />
       ) : null}
       {open ? (
         <TESDialog

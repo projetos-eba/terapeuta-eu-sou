@@ -18,6 +18,7 @@ export function isCancelledBookingStatus(status: string) {
     status === "cancelled_by_therapist" ||
     status === "no_show_patient" ||
     status === "no_show_therapist" ||
+    status === "cancelled_by_payment" ||
     status === "refunded"
   );
 }

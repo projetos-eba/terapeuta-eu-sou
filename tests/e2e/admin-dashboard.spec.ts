@@ -63,4 +63,25 @@ test.describe("admin dashboard", () => {
       .click();
     await expect(page).toHaveURL(/\/admin\/terapias(?:\?.*)?$/);
   });
+
+  test("reveals details when focusing an evolution chart point", async ({
+    page,
+  }) => {
+    await page.goto("/admin-login");
+    await page.getByLabel("E-mail").fill(adminEmail);
+    await page.locator('input[name="password"]').fill(adminPassword);
+    await page.getByRole("button", { name: "Entrar no Admin" }).click();
+    await expect(page).toHaveURL(/\/admin(?:\?.*)?$/);
+    await page.goto("/admin");
+
+    const point = page.getByRole("img", {
+      name: "Detalhes de Pacientes ativos: 41",
+    });
+    await point.locator('circle[aria-hidden="true"]').hover();
+    const tooltip = page.locator("g.admin-dashboard-chart-tooltips > g").first();
+    await expect(tooltip).toContainText("Pacientes ativos");
+    await expect
+      .poll(() => tooltip.evaluate((element) => getComputedStyle(element).opacity))
+      .toBe("1");
+  });
 });

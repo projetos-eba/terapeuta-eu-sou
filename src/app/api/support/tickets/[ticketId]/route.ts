@@ -2,6 +2,11 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { normalizePlainText } from "@/features/support/support-contracts";
+import {
+  readSupportAttachmentFiles,
+  removeSupportAttachments,
+  uploadSupportAttachments,
+} from "@/features/support/support-attachments";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 const UUID =
@@ -28,8 +33,16 @@ type MessageRow = {
   created_at: string;
   id: string;
 };
+type AttachmentRow = {
+  id: string;
+  message_id: string;
+  mime_type: "application/pdf" | "image/jpeg" | "image/png" | "image/webp";
+  original_name: string;
+  size_bytes: number;
+};
 type TicketMessageResponse = Omit<MessageRow, "author_role"> & {
   author_role: "admin" | "patient" | "requester" | "therapist";
+  attachments?: ReturnType<typeof toAttachment>[];
 };
 type RequesterRole = "patient" | "therapist";
 
@@ -56,9 +69,28 @@ export async function GET(request: Request, { params }: Params) {
       context.accessToken,
       `/rest/v1/support_ticket_messages?select=id,author_role,body,created_at&ticket_id=eq.${ticketId}&visibility=eq.requester&order=created_at.asc`,
     );
+    const messageIds = persistedMessages.map((message) => message.id);
+    const attachments = messageIds.length
+      ? await requestSupabase<AttachmentRow[]>(
+          context.config,
+          context.accessToken,
+          `/rest/v1/support_ticket_message_attachments?select=id,message_id,original_name,mime_type,size_bytes&ticket_id=eq.${ticketId}&message_id=in.(${messageIds.join(",")})&order=created_at.asc`,
+        ).catch(() => [])
+      : [];
+    const attachmentsByMessage = new Map<string, AttachmentRow[]>();
+    for (const attachment of attachments) {
+      const rows = attachmentsByMessage.get(attachment.message_id) ?? [];
+      rows.push(attachment);
+      attachmentsByMessage.set(attachment.message_id, rows);
+    }
 
     const messages: TicketMessageResponse[] = persistedMessages.length
-      ? persistedMessages
+      ? persistedMessages.map((message) => ({
+          ...message,
+          attachments: (attachmentsByMessage.get(message.id) ?? []).map(
+            (attachment) => toAttachment(ticketId, attachment, context.role),
+          ),
+        }))
       : ticket.description
         ? [
             {
@@ -97,24 +129,73 @@ export async function POST(request: Request, { params }: Params) {
   const { ticketId } = await params;
   if (!UUID.test(ticketId)) return failure("Chamado inválido.", 422);
 
+  const isMultipart = request.headers
+    .get("content-type")
+    ?.toLowerCase()
+    .includes("multipart/form-data");
   let payload: unknown;
-  try {
-    payload = await request.json();
-  } catch {
-    return failure("Envie os dados em formato válido.", 400);
+  let attachments: ReturnType<typeof readSupportAttachmentFiles>["files"] = [];
+  if (isMultipart) {
+    const formData = await request.formData().catch(() => null);
+    if (!formData) return failure("Envie os dados em formato válido.", 400);
+    const parsedFiles = readSupportAttachmentFiles(formData);
+    if (parsedFiles.error) return failure(parsedFiles.error, 422);
+    attachments = parsedFiles.files;
+    payload = {
+      actorRole: formValue(formData, "actorRole"),
+      body: formValue(formData, "body"),
+      requestId: formValue(formData, "requestId"),
+    };
+  } else {
+    try {
+      payload = await request.json();
+    } catch {
+      return failure("Envie os dados em formato válido.", 400);
+    }
   }
-  const parsed = parseMessage(payload);
+  const parsed = parseMessage(payload, attachments.length > 0);
   if (!parsed.ok) return failure(parsed.message, 422);
 
   const context = await getContext(parsed.actorRole);
   if (!context.ok) return failure(context.message, context.status);
 
+  let uploadedPaths: string[] = [];
   try {
+    if (attachments.length > 0) {
+      const existingMessage = await findExistingRequesterMessage(
+        context.config,
+        context.accessToken,
+        ticketId,
+        context.userId,
+        parsed.requestId,
+      );
+      if (existingMessage) {
+        return NextResponse.json(
+          { ok: true },
+          { headers: noStoreHeaders, status: 201 },
+        );
+      }
+    }
+
+    const uploaded =
+      attachments.length > 0
+        ? await uploadSupportAttachments({
+            accessToken: context.accessToken,
+            config: context.config,
+            files: attachments,
+            requestId: parsed.requestId,
+            ticketId,
+          })
+        : { descriptors: [], uploadedPaths: [] };
+    uploadedPaths = uploaded.uploadedPaths;
     const response = await fetch(
-      `${context.config.url}/rest/v1/rpc/send_support_ticket_requester_message_v1`,
+      `${context.config.url}/rest/v1/rpc/${attachments.length > 0 ? "send_support_ticket_requester_message_with_attachments_v1" : "send_support_ticket_requester_message_v1"}`,
       {
         body: JSON.stringify({
           p_body: parsed.body,
+          ...(attachments.length > 0
+            ? { p_attachments: uploaded.descriptors }
+            : {}),
           p_request_id: parsed.requestId,
           p_ticket_id: ticketId,
         }),
@@ -127,19 +208,30 @@ export async function POST(request: Request, { params }: Params) {
         method: "POST",
       },
     );
-    if (!response.ok)
+    if (!response.ok) {
+      await removeSupportAttachments(
+        context.config,
+        context.accessToken,
+        uploadedPaths,
+      );
       return rpcFailure(await response.json().catch(() => null));
+    }
 
     return NextResponse.json(
       { ok: true },
       { headers: noStoreHeaders, status: 201 },
     );
   } catch {
+    await removeSupportAttachments(
+      context.config,
+      context.accessToken,
+      uploadedPaths,
+    );
     return failure("Não foi possível enviar sua resposta agora.", 503);
   }
 }
 
-function parseMessage(value: unknown) {
+function parseMessage(value: unknown, hasAttachments = false) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return { ok: false as const, message: "Revise sua resposta." };
   }
@@ -150,10 +242,34 @@ function parseMessage(value: unknown) {
     return { ok: false as const, message: "Requisição inválida." };
   }
   const normalized = normalizePlainText(body, true);
-  if (!normalized || normalized.length > 4000) {
+  if ((!normalized && !hasAttachments) || (normalized?.length ?? 0) > 4000) {
     return { ok: false as const, message: "Revise sua resposta." };
   }
-  return { actorRole, body: normalized, ok: true as const, requestId };
+  return {
+    actorRole,
+    body: normalized ?? "Envio um anexo para ajudar no atendimento.",
+    ok: true as const,
+    requestId,
+  };
+}
+
+function formValue(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : "";
+}
+
+function toAttachment(
+  ticketId: string,
+  attachment: AttachmentRow,
+  actorRole: RequesterRole,
+) {
+  return {
+    downloadPath: `/api/support/tickets/${ticketId}/attachments/${attachment.id}?role=${actorRole}`,
+    fileName: attachment.original_name,
+    id: attachment.id,
+    mimeType: attachment.mime_type,
+    sizeBytes: attachment.size_bytes,
+  };
 }
 
 async function getContext(role: RequesterRole | null) {
@@ -182,10 +298,31 @@ async function getContext(role: RequesterRole | null) {
         message: "Acesso de paciente ou terapeuta necessário.",
         status: 403,
       };
-    return { accessToken, config, ok: true as const };
+    return {
+      accessToken,
+      config,
+      ok: true as const,
+      role: resolvedRole,
+      userId: user.id,
+    };
   } catch {
     return { ok: false as const, message: "Entre na sua conta.", status: 401 };
   }
+}
+
+async function findExistingRequesterMessage(
+  config: NonNullable<ReturnType<typeof getSupabasePublicConfig>>,
+  accessToken: string,
+  ticketId: string,
+  userId: string,
+  requestId: string,
+) {
+  const messages = await requestSupabase<Array<{ id: string }>>(
+    config,
+    accessToken,
+    `/rest/v1/support_ticket_messages?select=id&ticket_id=eq.${ticketId}&author_profile_id=eq.${userId}&request_id=eq.${encodeURIComponent(requestId)}&visibility=eq.requester&limit=1`,
+  );
+  return messages[0] ?? null;
 }
 
 function readRole(value: unknown): RequesterRole | null {

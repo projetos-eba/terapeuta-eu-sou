@@ -9,5 +9,6 @@ export * from "./tes-button";
 export * from "./tes-card";
 export * from "./tes-decorative-media";
 export * from "./tes-dialog";
+export * from "./tes-feedback-dialog";
 export * from "./tes-input";
 export * from "./therapist-card";

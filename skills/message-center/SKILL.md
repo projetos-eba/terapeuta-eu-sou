@@ -90,6 +90,16 @@ participantes.
 - Responsivo: uma coluna no mobile/tablet e duas colunas no desktop largo.
 - Usar tokens TES (`text-brand-deep`, `text-tesText-secondary`,
   `border-brand-lavender`, `bg-brand-lavenderSoft`) e ícones `lucide-react`.
+- Na lista de participantes, a ação `Ver mensagens` fica alinhada à linha da
+  pessoa, sem criar uma faixa vertical separada abaixo do conteúdo.
+- Títulos de conversas e avisos da plataforma são acionáveis e abrem um
+  painel de leitura em `TESDialog`; o histórico continua bidirecional e os
+  avisos permanecem somente leitura.
+- Ações da central usam `TESButton` e suas variantes canônicas, mantendo a
+  diferença de hierarquia entre ação primária, secundária e título acionável.
+- O popover global do sino representa tipos conhecidos de aviso com ícones
+  semânticos (`message_received`, `review`, `reschedule`, sessão, pagamento e
+  suporte); tipos futuros usam `Bell` como fallback sem quebrar a leitura.
 
 ## Segurança e privacidade
 
@@ -110,9 +120,17 @@ participantes.
 - Verificar criação, lista, detalhe e resposta do ticket de suporte do
   paciente e do terapeuta, inclusive estado resolvido e mobile.
 - Verificar histórico bidirecional do participante e o CTA de encontro/sessão.
+- Verificar que `Ver mensagens` permanece na linha/coluna de ações do
+  participante e que o título da conversa abre o mesmo histórico.
+- Verificar que o título de um aviso de plataforma abre seu detalhe em
+  `TESDialog`, sem criar chat ou composer livre.
 - Verificar que o sino da topbar abre o popover acessível, mantém a Central de
   mensagens como destino completo e fecha por `Escape` ou clique externo.
+- Verificar que o popover do sino usa a camada global do shell e permanece acima
+  do conteúdo da página, sem vazamento de texto ou sobreposição de stacking.
 - Verificar marcação de notificações como lidas por clique real.
+- Verificar que o popover apresenta ícone coerente para cada tipo de aviso e
+  mantém o título e o ponto de não lida legíveis em desktop e mobile.
 - Verificar que aviso temporário aparece apenas para encontro confirmado e
   respeita `prefers-reduced-motion`.
 - Verificar abertura/fechamento do `TESDialog`, foco e `Escape`.

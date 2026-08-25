@@ -183,6 +183,25 @@ runtime.serve(async (request) => {
         });
       }
 
+      if (command.action === "save_media_draft") {
+        const result = await client.rpc<PublishCommandResult>(
+          "save_therapist_profile_media_draft_v1",
+          {
+            p_actor_user_id: user.id,
+            p_expected_version: command.expectedVersion,
+            p_kind: command.kind,
+            p_media_url: command.mediaUrl,
+            p_request_id: command.requestId,
+          },
+        );
+
+        return success({
+          contractVersion: result.contractVersion ?? 1,
+          editor: await readEnrichedEditor(client, user.id),
+          idempotentReplay: Boolean(result.idempotentReplay),
+        });
+      }
+
       if (command.action === "discard_draft") {
         const result = await client.rpc<PublishCommandResult>(
           "discard_therapist_profile_draft_v1",

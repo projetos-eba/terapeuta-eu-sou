@@ -85,8 +85,11 @@ Expected convergence:
 
 ## Cupom e Promotion Code
 
-O Checkout de sessão usa o campo nativo de Promotion Code da Stripe. O TES não
-mantém tabela própria de cupons: depois de um pagamento confirmado, o webhook
+Os checkouts usam o campo promocional TES fora do iframe Stripe. O TES não
+mantém tabela própria de cupons: a Edge Function resolve o Promotion Code na
+Stripe, exige `tes_checkout_scope=session|subscription` e cria uma nova
+Checkout Session com o desconto. Assinaturas exigem ainda Products explícitos
+no Coupon. Depois de um pagamento confirmado, o webhook
 usa `amount_subtotal`, `amount_total` e `total_details.amount_discount` da
 Checkout Session. `session_payments.gross_amount_cents` passa a representar o
 valor efetivamente cobrado; o subtotal original e o desconto ficam registrados
@@ -97,7 +100,7 @@ Crie os objetos somente no test mode, sem `--live`:
 
 ```bash
 stripe coupons create --duration=once --percent-off=20 --name="TES HML 20%"
-stripe promotion_codes create --promotion.type=coupon --promotion.coupon=coupon_COLE_O_ID_AQUI --code=TESHML20 --max-redemptions=10
+stripe promotion_codes create --promotion.type=coupon --promotion.coupon=coupon_COLE_O_ID_AQUI --code=TESHML20 --max-redemptions=10 -d "metadata[tes_checkout_scope]=session"
 ```
 
 Confirme no retorno da Stripe que `livemode` é `false` e informe o código criado
@@ -108,11 +111,19 @@ PAYMENTS_HML_PROMOTION_CODE=TESHML20 \
 npm run payments:phase3:session:promotion:hml
 ```
 
-O cenário cria uma reserva real de teste, aplica o código no Checkout visível,
+O cenário cria uma reserva real de teste, aplica o código no campo TES visível,
+confirma que o campo nativo Stripe não aparece, remonta o Embedded Checkout,
 confere desconto positivo e `amount_total < amount_subtotal`, conclui com cartão
 de teste, reenvia `checkout.session.completed` e `payment_intent.succeeded` com
 assinatura válida duas vezes, e consulta no banco booking, status pago, valor
 original, valor cobrado, comissão, repasse e `metadata.stripe_checkout`.
+
+Para a campanha gratuita, use um Coupon `percent_off=100` ou `amount_off`
+exatamente igual ao subtotal. O Checkout não deve pedir cartão nem criar
+PaymentIntent; a confirmação deve ocorrer somente após o webhook
+`checkout.session.completed`, com `session_payments.gross_amount_cents = 0`,
+comissão e valor do terapeuta iguais a zero, e booking confirmado. Nunca trate o
+redirect como confirmação.
 
 Para a mesma validação local, com Supabase/Edge Functions/Next locais e o
 listener da Stripe CLI apontando para `127.0.0.1`, use:
@@ -128,6 +139,10 @@ npm run payments:e2e:session:promotion
 
 Repita sem `PAYMENTS_HML_PROMOTION_CODE` para confirmar que o checkout sem
 cupom mantém `amount_subtotal = amount_total` e o mesmo fluxo de pagamento.
+
+Para regras completas de sessão, Premium, Premium Plus, três meses grátis,
+ativação, rollback e eventos superseded, siga
+`docs/payments/promotion-codes.md`.
 
 ## Boleto no Checkout
 
@@ -209,7 +224,12 @@ Connect must be validated in HML before production:
 - `stripe-connect-sync-account` retrieves the account server-side.
 - `get_private_therapist_connect_account_v1` displays the latest synchronized status.
 - A status of `pending`, `requirements_due`, `restricted` or `in_review` is acceptable while Stripe is reviewing KYC.
-- A status of `charges_enabled=true` and `payouts_enabled=true` is required before treating transfers as operationally ready.
+- `stripe_transfers.status=active` autoriza Transfer. `payouts_enabled` vem
+  separadamente de Balance Settings. Para ADR-018 são obrigatórios
+  `payments.payouts.status=enabled` e `schedule.interval=daily`. O TES não cria
+  Payout: importa o automático, aguarda `reconciliation_status=completed` e
+  atribui Balance Transactions aos Transfers. Política v5 e cron continuam
+  inativos até a prova HML completa.
 
 ## LIVE Smoke Controlado
 
@@ -347,8 +367,10 @@ Connect processing requires `PAYMENTS_LIVE_SESSION_PAYMENT_ID`. The script:
 - Does not accelerate the safety window in production.
 - Creates/processes a payout batch only if the resulting batch has one item and
   total therapist amount is within R$ 5,00.
-- Uses the existing `process-payout-batch` function, which creates transfers
-  with `source_transaction` and idempotency.
+- Uses the hardened `process-payout-batch` function, which creates Transfers
+  with `source_transaction` and idempotency. Bank delivery is a separate Payout
+  in the connected-account context and only completes on authoritative
+  `payout.paid`; follow `docs/payments/weekly-payouts.md`.
 
 If the payment is still in the normal safety window, the stage exits as
 `BLOCKED` and the evidence records `transfer_status` and `eligible_at`; do not

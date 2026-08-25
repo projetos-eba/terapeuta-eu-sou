@@ -199,6 +199,15 @@ Não criar enums equivalentes dentro de features.
   reais. Não substituir essa composição por uma grade genérica de KPIs.
 - Pop-ups de Horários e Bloqueios usam `TESDialog`; não criar overlay local
   dentro da feature.
+- A aba Horários apresenta informações contextuais acessíveis para intervalo
+  de oferta, fuso horário e antecedência mínima. O texto reforça a referência
+  operacional de São Paulo/Brasília para terapeutas que atendem de fora do
+  Brasil.
+- O comando de criação usa `create_therapist_block_v2` na Edge Function. Além
+  dos impactos A4 já registrados, ele retorna somente as sessões confirmadas
+  cuja fonte financeira canônica está em `session_payments.financial_status =
+  'paid'`, com data, horário, pessoa, terapia e fuso para o alerta imediato.
+  A criação continua sem cancelar ou reagendar booking.
 - `availability_exceptions` é a autoridade dos intervalos materializados;
   `availability_exception_series` representa recorrência e não substitui as
   ocorrências.
@@ -278,6 +287,9 @@ Não criar enums equivalentes dentro de features.
   auditoria, sobreposição, timezone e propriedade do serviço.
 - O pgTAP A4 deve cobrir séries, ocorrências UTC, impactos, booking preservado,
   versão compartilhada, replay, remoção lógica, RLS e terapeuta suspenso.
+- O pgTAP de conflito pago deve confirmar que sessões confirmadas e pagas
+  retornam detalhes reais e que sessões sem pagamento `paid` não entram no
+  alerta.
 - O pgTAP A5 deve cobrir privacidade pública, slots, bloqueios, bookings, holds,
   RLS, identidade, terapeuta suspenso e calendário versionado.
 - Testar conflito entre serviços, buffers, exceções e período vazio.

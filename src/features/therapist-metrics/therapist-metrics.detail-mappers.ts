@@ -6,9 +6,50 @@ import type {
   TherapistMetricDirectionCopyKey,
   TherapistMetricProtectedCollection,
   TherapistMetricsCommonMeta,
+  TherapistSessionEvolutionComparison,
   TherapistSessionMetrics,
   TherapistSessionOutcomeKey,
 } from "./therapist-metrics.types";
+
+export function mapTherapistSessionEvolutionComparison(
+  input: unknown,
+): TherapistSessionEvolutionComparison {
+  try {
+    const value = record(input);
+    const meta = commonMeta(value.meta);
+    const points = array(value.points).map((point, expectedIndex) => {
+      const item = record(point);
+      const index = nonNegativeInteger(item.index);
+      if (index !== expectedIndex) {
+        throw new Error("Comparison points are not sequential.");
+      }
+
+      return {
+        current: nonNegativeInteger(item.current),
+        currentDate: metricDate(item.currentDate),
+        index,
+        previous: nonNegativeInteger(item.previous),
+        previousDate: metricDate(item.previousDate),
+      };
+    });
+
+    if (points.length !== meta.periodDays) {
+      throw new Error("Comparison series does not cover the selected period.");
+    }
+
+    return {
+      contractVersion: literal(value.contractVersion, 1),
+      meta,
+      metricDefinitionVersion: literal(value.metricDefinitionVersion, 1),
+      points,
+      status: emptyOrReady(value.status),
+      therapist: therapist(value.therapist),
+    };
+  } catch (error) {
+    if (error instanceof TherapistMetricsError) throw error;
+    throw new TherapistMetricsError("invalid_contract");
+  }
+}
 
 export function mapTherapistSessionMetrics(
   input: unknown,

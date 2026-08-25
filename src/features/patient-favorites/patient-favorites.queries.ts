@@ -40,6 +40,15 @@ type TherapistRow = {
   slug: string;
 };
 
+type PublicTherapistDetailsRow = {
+  average_rating: number | null;
+  id: string;
+  published_headline: string | null;
+  review_count: number | null;
+  short_intro: string | null;
+  tags: string[] | null;
+};
+
 export class PatientFavoritesDataError extends Error {
   constructor() {
     super("Não foi possível carregar seus favoritos.");
@@ -83,20 +92,42 @@ export const getPatientFavoriteTherapistsPage = cache(
         config,
         `/rest/v1/favorite_therapists?select=therapist_profile_id,created_at&patient_profile_id=eq.${patientProfile.id}&order=created_at.desc`,
       );
-      const therapists = await getRowsByIds<TherapistRow>(
-        config,
-        "therapist_profiles",
-        "id,slug,public_name,headline,photo_url,is_accepting_bookings",
-        favorites.map((favorite) => favorite.therapist_profile_id),
+      const favoriteTherapistIds = favorites.map(
+        (favorite) => favorite.therapist_profile_id,
       );
+      const [therapists, publicDetails] = await Promise.all([
+        getRowsByIds<TherapistRow>(
+          config,
+          "therapist_profiles",
+          "id,slug,public_name,headline,photo_url,is_accepting_bookings",
+          favoriteTherapistIds,
+        ),
+        getRowsByIds<PublicTherapistDetailsRow>(
+          config,
+          "public_therapist_profiles_v",
+          "id,short_intro,published_headline,tags,average_rating,review_count",
+          favoriteTherapistIds,
+        ),
+      ]);
       const therapistById = new Map(
         therapists.map((therapist) => [therapist.id, therapist]),
+      );
+      const publicDetailsById = new Map(
+        publicDetails.map((details) => [details.id, details]),
       );
 
       return {
         items: favorites.flatMap((favorite) => {
           const therapist = therapistById.get(favorite.therapist_profile_id);
-          return therapist ? [mapFavoriteTherapist(favorite, therapist)] : [];
+          return therapist
+            ? [
+                mapFavoriteTherapist(
+                  favorite,
+                  therapist,
+                  publicDetailsById.get(therapist.id),
+                ),
+              ]
+            : [];
         }),
         patient: {
           id: profile.id,
@@ -114,19 +145,25 @@ export const getPatientFavoriteTherapistsPage = cache(
 function mapFavoriteTherapist(
   favorite: FavoriteTherapistRow,
   therapist: TherapistRow,
+  details?: PublicTherapistDetailsRow,
 ): PatientFavoriteTherapist {
   return {
+    averageRating: details?.average_rating ?? null,
     avatarUrl: getTherapistAvatarUrl(therapist.photo_url, {
       name: therapist.public_name,
       slug: therapist.slug,
     }),
     favoriteCreatedAt: favorite.created_at,
-    headline: therapist.headline,
+    headline:
+      details?.published_headline ?? details?.short_intro ?? therapist.headline,
     id: therapist.id,
     isAcceptingBookings: therapist.is_accepting_bookings,
     name: therapist.public_name,
     profileHref: routes.public.therapistProfile(therapist.slug),
     reservationHref: `${routes.public.therapists}?therapist=${therapist.slug}`,
+    reviewCount: details?.review_count ?? 0,
+    summary: details?.short_intro ?? null,
+    techniques: details?.tags?.filter(Boolean).slice(0, 5) ?? [],
   };
 }
 
@@ -136,6 +173,7 @@ function createDemoFavoriteTherapists(
   return {
     items: [
       {
+        averageRating: 4.9,
         avatarUrl: "/therapists/ana-oliveira.png",
         favoriteCreatedAt: new Date().toISOString(),
         headline: "Terapeuta integrativa",
@@ -144,6 +182,10 @@ function createDemoFavoriteTherapists(
         name: "Ana Oliveira",
         profileHref: routes.public.therapistProfile("ana-oliveira"),
         reservationHref: `${routes.public.therapists}?therapist=ana-oliveira`,
+        reviewCount: 38,
+        summary:
+          "Acompanho processos de reconexão e autocuidado com escuta acolhedora.",
+        techniques: ["Reiki", "Meditação", "Aromaterapia"],
       },
     ],
     patient: {

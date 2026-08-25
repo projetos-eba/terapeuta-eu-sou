@@ -1,0 +1,4 @@
+interface:
+  display_name: "Stripe Promotions TES"
+  short_description: "Cupons Stripe seguros nos checkouts TES"
+  default_prompt: "Use $stripe-promotions para configurar, implementar ou auditar Coupons e Promotion Codes nos checkouts TES."

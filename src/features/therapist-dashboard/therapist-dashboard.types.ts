@@ -5,6 +5,8 @@ export type TherapistDashboardTrend = {
   percent: number | null;
 };
 
+export type TherapistDashboardDataState = "empty" | "ready" | "unavailable";
+
 export type TherapistDashboardKpi = {
   trend: TherapistDashboardTrend;
   value: number;
@@ -19,9 +21,12 @@ export type TherapistDashboardPageData = {
     tone: "info" | "warning";
   }>;
   aura: null | {
+    computedAt: string;
     observations: string[];
+    periodDays: 30 | 90;
     suggestions: string[];
   };
+  auraState: "empty" | "ready" | "unavailable";
   history: {
     activePatients: number;
     averageRating: number | null;
@@ -70,7 +75,9 @@ export type TherapistDashboardPageData = {
     patientName: string;
     serviceTitle: string;
     startsAt: string;
+    timezone: string;
   }>;
+  upcomingSessionsState: TherapistDashboardDataState;
   week: {
     attendanceRate: number;
     days: Array<{
@@ -81,18 +88,15 @@ export type TherapistDashboardPageData = {
       scheduled: number;
     }>;
     rangeLabel: string;
+    state: TherapistDashboardDataState;
   };
 };
 
 export type TherapistDashboardQueryInput = {
   accessToken: string;
+  avatarUrl: string | null;
+  name: string;
+  plan: TherapistPlan;
+  profileCompleteness: number;
   profileId: string;
-};
-
-export type AuraRecommendationRow = {
-  body: string;
-  context: unknown;
-  id: string;
-  source_rule_key: string;
-  title: string;
 };

@@ -8,10 +8,17 @@ import {
   ChevronDown,
   Loader2,
   MessageSquarePlus,
+  Paperclip,
+  X,
 } from "lucide-react";
 
-import { TESDialog } from "@/components/tes/tes-dialog";
+import { TESButton, TESDialog, TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
+import {
+  supportTicketAttachmentLimit,
+  supportTicketAttachmentMimeTypes,
+  supportTicketAttachmentSizeLimit,
+} from "@/features/support/support-contracts";
 
 import type {
   MessageCenterActorRole,
@@ -40,10 +47,12 @@ export function MessageCenterActions(props: MessageCenterActionsProps) {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <>
-      <button
-        className="inline-flex min-h-10 w-fit items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-xs font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+      <TESButton
+        className="w-fit"
         onClick={() => setIsOpen(true)}
+        size="sm"
         type="button"
+        variant="secondary"
       >
         <MessageSquarePlus aria-hidden="true" size={16} />
         {props.variant === "support"
@@ -51,14 +60,13 @@ export function MessageCenterActions(props: MessageCenterActionsProps) {
             ? "Nova mensagem"
             : "Novo suporte"
           : "Escolher mensagem"}
-      </button>
+      </TESButton>
       {isOpen ? (
         <TemplateDialog {...props} onClose={() => setIsOpen(false)} />
       ) : null}
     </>
   );
 }
-
 function TemplateDialog({
   onClose,
   ...props
@@ -91,6 +99,7 @@ function TemplateDialog({
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [protocol, setProtocol] = useState<string | null>(null);
+  const [supportAttachments, setSupportAttachments] = useState<File[]>([]);
   const supportRequestId = useRef<string | null>(null);
 
   const templateParameters = selectedTemplate?.parameters ?? [];
@@ -173,17 +182,27 @@ function TemplateDialog({
     }
     setIsSubmitting(true);
     supportRequestId.current ??= crypto.randomUUID();
+    const ticketInput = {
+      actorRole: props.actorRole,
+      bookingId: null,
+      category: supportCategoryForTemplate(selectedTemplate?.key),
+      description: supportDescription,
+      requestId: supportRequestId.current,
+      source: "message_center",
+      subject: supportSubject,
+    };
+    const formData = new FormData();
+    for (const [key, value] of Object.entries(ticketInput)) {
+      formData.set(key, value === null ? "" : String(value));
+    }
+    for (const file of supportAttachments) formData.append("attachments", file);
     const response = await fetch("/api/support/tickets", {
-      body: JSON.stringify({
-        actorRole: props.actorRole,
-        bookingId: null,
-        category: supportCategoryForTemplate(selectedTemplate?.key),
-        description: supportDescription,
-        requestId: supportRequestId.current,
-        source: "message_center",
-        subject: supportSubject,
-      }),
-      headers: { "Content-Type": "application/json" },
+      body:
+        supportAttachments.length > 0 ? formData : JSON.stringify(ticketInput),
+      headers:
+        supportAttachments.length > 0
+          ? undefined
+          : { "Content-Type": "application/json" },
       method: "POST",
     });
     const payload = (await response.json().catch(() => null)) as {
@@ -253,11 +272,10 @@ function TemplateDialog({
             onChange={(key) => {
               setTemplateKey(key);
               supportRequestId.current = null;
-              const template = props.templates.find(
-                (item) => item.key === key,
-              );
+              const template = props.templates.find((item) => item.key === key);
               setSupportSubject(template?.label ?? "");
               setSupportDescription(template?.body ?? "");
+              setSupportAttachments([]);
             }}
           />
           <label className="grid gap-2">
@@ -276,6 +294,61 @@ function TemplateDialog({
           </label>
           <label className="grid gap-2">
             <span className="text-sm font-extrabold text-brand-deep">
+              Anexos (opcional)
+            </span>
+            <span className="flex min-h-12 cursor-pointer items-center gap-2 rounded-lg border border-dashed border-brand-primary px-3 text-sm font-bold text-brand-primary">
+              <Paperclip aria-hidden="true" size={17} />
+              Adicionar PDF ou imagem
+              <input
+                accept={supportTicketAttachmentMimeTypes.join(",")}
+                className="sr-only"
+                multiple
+                onChange={(event) => {
+                  const selected = Array.from(event.target.files ?? []);
+                  setSupportAttachments((current) =>
+                    [...current, ...selected].slice(
+                      0,
+                      supportTicketAttachmentLimit,
+                    ),
+                  );
+                  event.currentTarget.value = "";
+                  supportRequestId.current = null;
+                }}
+                type="file"
+              />
+            </span>
+            {supportAttachments.length > 0 ? (
+              <div className="grid gap-2">
+                {supportAttachments.map((file, index) => (
+                  <span
+                    className="flex items-center justify-between gap-3 rounded-lg bg-surface-muted px-3 py-2 text-xs font-bold text-tesText-secondary"
+                    key={`${file.name}-${file.lastModified}-${index}`}
+                  >
+                    <span className="truncate">{file.name}</span>
+                    <button
+                      aria-label={`Remover ${file.name}`}
+                      className="shrink-0 text-brand-primary"
+                      onClick={() =>
+                        setSupportAttachments((current) =>
+                          current.filter((_, itemIndex) => itemIndex !== index),
+                        )
+                      }
+                      type="button"
+                    >
+                      <X aria-hidden="true" size={15} />
+                    </button>
+                  </span>
+                ))}
+                <span className="text-xs font-semibold text-tesText-secondary">
+                  Até {supportTicketAttachmentLimit} arquivos de até{" "}
+                  {Math.round(supportTicketAttachmentSizeLimit / 1024 / 1024)}{" "}
+                  MB.
+                </span>
+              </div>
+            ) : null}
+          </label>
+          <label className="grid gap-2">
+            <span className="text-sm font-extrabold text-brand-deep">
               Conte mais sobre o que aconteceu
             </span>
             <textarea
@@ -288,12 +361,14 @@ function TemplateDialog({
               value={supportDescription}
             />
           </label>
-          {error ? <ErrorMessage message={error} /> : null}
+          {error ? (
+            <TESFeedbackDialog message={error} onClose={() => setError(null)} />
+          ) : null}
           <Actions
             disabled={
               !templateKey ||
               supportSubject.trim().length < 3 ||
-              !supportDescription.trim() ||
+              (!supportDescription.trim() && supportAttachments.length === 0) ||
               isSubmitting
             }
             onBack={onClose}
@@ -334,21 +409,25 @@ function TemplateDialog({
               </p>
             </div>
           ) : null}
-          {error ? <ErrorMessage message={error} /> : null}
+          {error ? (
+            <TESFeedbackDialog message={error} onClose={() => setError(null)} />
+          ) : null}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-brand-lavender px-5 text-sm font-extrabold text-brand-primary"
+            <TESButton
               onClick={() => setStep("choose")}
+              size="md"
               type="button"
+              variant="secondary"
             >
               <ArrowLeft aria-hidden="true" size={16} />
               Voltar
-            </button>
-            <button
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white disabled:opacity-60"
+            </TESButton>
+            <TESButton
               disabled={isSubmitting}
               onClick={() => void sendTemplate()}
+              size="md"
               type="button"
+              variant="primary"
             >
               {isSubmitting ? (
                 <Loader2
@@ -358,7 +437,7 @@ function TemplateDialog({
                 />
               ) : null}
               Enviar mensagem
-            </button>
+            </TESButton>
           </div>
         </div>
       ) : (
@@ -423,7 +502,9 @@ function TemplateDialog({
               </select>
             </label>
           ))}
-          {error ? <ErrorMessage message={error} /> : null}
+          {error ? (
+            <TESFeedbackDialog message={error} onClose={() => setError(null)} />
+          ) : null}
           <Actions
             disabled={
               !canReview ||
@@ -468,7 +549,9 @@ function TemplateOptions({
 }) {
   return (
     <fieldset className="grid gap-2">
-      <legend className="text-sm font-extrabold text-brand-deep">{legend}</legend>
+      <legend className="text-sm font-extrabold text-brand-deep">
+        {legend}
+      </legend>
       <div className="grid max-h-[46vh] gap-2 overflow-y-auto pr-1">
         {templates.map((template) => (
           <label
@@ -529,32 +612,21 @@ function Actions({
 }) {
   return (
     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-      <button
-        className="inline-flex min-h-11 items-center justify-center rounded-lg border border-brand-lavender px-5 text-sm font-extrabold text-brand-primary"
-        onClick={onBack}
-        type="button"
-      >
+      <TESButton onClick={onBack} size="md" type="button" variant="secondary">
         Voltar
-      </button>
-      <button
-        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
+      </TESButton>
+      <TESButton
         disabled={disabled}
         onClick={onSubmit}
+        size="md"
         type={onSubmit ? "button" : "submit"}
+        variant="primary"
       >
         {submitting ? (
           <Loader2 aria-hidden="true" className="animate-spin" size={17} />
         ) : null}
         {submitLabel}
-      </button>
+      </TESButton>
     </div>
-  );
-}
-
-function ErrorMessage({ message }: { message: string }) {
-  return (
-    <p className="rounded-lg bg-status-dangerBg px-4 py-3 text-sm font-bold text-status-danger">
-      {message}
-    </p>
   );
 }

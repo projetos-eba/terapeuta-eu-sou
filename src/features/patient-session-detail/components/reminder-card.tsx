@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { Bell } from "lucide-react";
 
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
@@ -11,8 +10,8 @@ export function ReminderCard({
   const minutes = booking.minutesUntilStart;
 
   return (
-    <section className="relative overflow-hidden rounded-card border border-border bg-white p-5 shadow-card sm:p-6">
-      <div className="relative z-10 flex items-center gap-3">
+    <section className="rounded-card border border-border bg-white p-5 shadow-card sm:p-6">
+      <div className="flex items-center gap-3">
         <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
           <Bell aria-hidden="true" size={20} />
         </span>
@@ -28,7 +27,7 @@ export function ReminderCard({
         </div>
       </div>
 
-      <div className="relative z-10 mt-5 rounded-panel bg-brand-lavenderSoft px-4 py-5">
+      <div className="mt-5 rounded-panel bg-brand-lavenderSoft px-4 py-5">
         <p className="text-sm font-semibold text-tesText-secondary">
           {minutes
             ? "Seu encontro começa em"
@@ -44,18 +43,10 @@ export function ReminderCard({
         ) : null}
       </div>
 
-      <p className="relative z-10 mt-4 max-w-[17rem] text-sm font-semibold leading-6 text-tesText-secondary">
+      <p className="mt-4 max-w-[17rem] text-sm font-semibold leading-6 text-tesText-secondary">
         Entrar alguns minutos antes costuma ajudar a ajustar câmera, áudio e
         conexão com mais calma.
       </p>
-      <Image
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute -bottom-14 -right-16 w-52 opacity-35"
-        height={1254}
-        src="/patient/encounters/lotus-detail.png"
-        width={1254}
-      />
     </section>
   );
 }

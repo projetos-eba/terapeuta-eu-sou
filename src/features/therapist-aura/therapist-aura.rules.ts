@@ -48,7 +48,8 @@ export const auraRules: RuleDefinition[] = [
     actionRouteKey: "reviews",
     body: ({ signals }) =>
       `Há ${signals.reviews.pendingReplyCount} avaliação(ões) publicada(s) sem resposta sua.`,
-    evidenceLabel: () => "Somente avaliações publicadas foram consideradas.",
+    evidenceLabel: ({ signals }) =>
+      `Somente avaliações publicadas sem resposta nos últimos ${signals.reviews.windowDays} dias completos foram consideradas.`,
     priority: 90,
     ruleKey: "aura.reviews.pending_reply.v1",
     title: "Avaliações aguardam uma resposta",
@@ -142,7 +143,7 @@ export function buildAuraRecommendationKey(
   ruleKey: string,
   meta: Pick<TherapistAuraMeta, "periodEnd" | "periodStart">,
 ) {
-  return `${ruleKey}:${meta.periodStart}:${meta.periodEnd}`;
+  return `${ruleKey}:${new Date(meta.periodStart).toISOString()}:${new Date(meta.periodEnd).toISOString()}`;
 }
 
 function worsenedRate(metric: AuraSampledRate, worseDirection: "down" | "up") {

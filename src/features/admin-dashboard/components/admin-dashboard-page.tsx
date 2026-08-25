@@ -166,7 +166,6 @@ function SummaryMetricCard({
 
 function EvolutionPanel({ metrics }: { metrics: AvailableMetric[] }) {
   const max = Math.max(...metrics.map((metric) => metric.value), 1);
-  const chartTooltipLines = buildChartTooltipLines(metrics);
   const points = metrics.map((metric, index) => {
     const x =
       metrics.length === 1 ? 260 : 60 + index * (420 / (metrics.length - 1));
@@ -309,7 +308,6 @@ function EvolutionPanel({ metrics }: { metrics: AvailableMetric[] }) {
                   <LineChartTooltip
                     key={`${point.key}-tooltip`}
                     point={point}
-                    tooltipLines={chartTooltipLines}
                   />
                 ))}
               </g>
@@ -375,14 +373,18 @@ function LineChartPoint({
 
 function LineChartTooltip({
   point,
-  tooltipLines,
 }: {
   point: AvailableMetric & { x: number; y: number };
-  tooltipLines: string[];
 }) {
   return (
-    <g className="group outline-none" tabIndex={0}>
+    <g
+      aria-label={`Detalhes de ${point.label}: ${formatNumber(point.value)}`}
+      className="group outline-none"
+      role="img"
+      tabIndex={0}
+    >
       <circle
+        aria-hidden="true"
         className="cursor-help"
         cx={point.x}
         cy={point.y}
@@ -391,7 +393,8 @@ function LineChartTooltip({
         r="19"
       />
       <SvgTooltip
-        lines={tooltipLines}
+        accentColor={chartColorForTone(point.tone)}
+        lines={buildMetricTooltipLines(point)}
         viewBoxWidth={520}
         x={point.x}
         y={point.y}
@@ -621,6 +624,7 @@ function DonutChart({
           >
             <path className="cursor-help" d={segment.path} fill="transparent" />
             <SvgTooltip
+              accentColor={segment.color}
               lines={segment.tooltipLines}
               viewBoxWidth={220}
               x={segment.tooltipX}
@@ -650,11 +654,13 @@ function TooltipBubble({ children }: { children: ReactNode }) {
 }
 
 function SvgTooltip({
+  accentColor = "var(--tes-color-brand-lavender)",
   lines,
   viewBoxWidth,
   x,
   y,
 }: {
+  accentColor?: string;
   lines: string[];
   viewBoxWidth: number;
   x: number;
@@ -675,15 +681,29 @@ function SvgTooltip({
         x={left}
         y={top}
       />
+      <rect
+        fill={accentColor}
+        height={Math.max(18, height - 20)}
+        rx="2"
+        width="3"
+        x={left + 10}
+        y={top + 10}
+      />
       <text
         fill="white"
-        fontSize="13"
+        fontSize="12"
         fontWeight="600"
-        x={left + 12}
+        x={left + 22}
         y={top + 21}
       >
         {lines.map((line, index) => (
-          <tspan dy={index === 0 ? 0 : 16} key={line} x={left + 12}>
+          <tspan
+            dy={index === 0 ? 0 : 16}
+            fontSize={index === 0 ? "13" : "12"}
+            fontWeight={index === 0 ? "800" : "600"}
+            key={`${line}-${index}`}
+            x={left + 22}
+          >
             {line}
           </tspan>
         ))}
@@ -900,12 +920,11 @@ function buildLinePath(
   }, "");
 }
 
-function buildChartTooltipLines(metrics: AvailableMetric[]) {
+function buildMetricTooltipLines(metric: AvailableMetric) {
   return [
-    "Indicadores atuais",
-    ...metrics.map(
-      (metric) => `${shortMetricLabel(metric)}: ${formatNumber(metric.value)}`,
-    ),
+    metric.label,
+    `Valor atual: ${formatNumber(metric.value)}`,
+    shortenTooltipText(metric.description),
   ];
 }
 
@@ -991,6 +1010,14 @@ function chartColor(colorClass: string) {
   return colorMap[colorClass] ?? "var(--tes-color-brand-primary)";
 }
 
+function chartColorForTone(tone: AdminDashboardMetric["tone"]) {
+  if (tone === "danger") return "var(--tes-color-status-danger)";
+  if (tone === "info") return "var(--tes-color-status-info)";
+  if (tone === "success") return "var(--tes-color-status-success)";
+  if (tone === "warning") return "var(--tes-color-status-warning)";
+  return "var(--tes-color-brand-lavender)";
+}
+
 function iconForMetric(icon: DashboardMetricWithFallback["icon"]) {
   if (icon === "calendar") return CalendarDays;
   if (icon === "heart") return HeartPulse;
@@ -1053,6 +1080,10 @@ function shortMetricLabel(metric: AdminDashboardMetric) {
   };
 
   return map[metric.key] ?? metric.label;
+}
+
+function shortenTooltipText(value: string) {
+  return value.length > 34 ? `${value.slice(0, 31)}…` : value;
 }
 
 function funnelTooltip(step: FunnelStep, firstValue: number) {

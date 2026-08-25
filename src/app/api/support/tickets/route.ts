@@ -5,6 +5,11 @@ import {
   parseFutureSupportTicketCreate,
   type SupportTicketCreateContract,
 } from "@/features/support/support-contracts";
+import {
+  readSupportAttachmentFiles,
+  removeSupportAttachments,
+  uploadSupportAttachments,
+} from "@/features/support/support-attachments";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 const noStoreHeaders = { "Cache-Control": "no-store" };
@@ -54,11 +59,33 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const isMultipart = request.headers
+    .get("content-type")
+    ?.toLowerCase()
+    .includes("multipart/form-data");
   let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return failure("Envie os dados em formato válido.", 400);
+  let attachments: ReturnType<typeof readSupportAttachmentFiles>["files"] = [];
+  if (isMultipart) {
+    const formData = await request.formData().catch(() => null);
+    if (!formData) return failure("Envie os dados em formato válido.", 400);
+    const parsedFiles = readSupportAttachmentFiles(formData);
+    if (parsedFiles.error) return failure(parsedFiles.error, 422);
+    attachments = parsedFiles.files;
+    body = {
+      actorRole: formValue(formData, "actorRole"),
+      bookingId: formValue(formData, "bookingId") || null,
+      category: formValue(formData, "category"),
+      description: formValue(formData, "description"),
+      requestId: formValue(formData, "requestId"),
+      source: formValue(formData, "source"),
+      subject: formValue(formData, "subject"),
+    };
+  } else {
+    try {
+      body = await request.json();
+    } catch {
+      return failure("Envie os dados em formato válido.", 400);
+    }
   }
 
   const parsed = parseFutureSupportTicketCreate(stripActorRole(body));
@@ -73,12 +100,56 @@ export async function POST(request: Request) {
   const context = await getRequesterSupportContext(role);
   if (!context.ok) return failure(context.message, context.status);
 
+  const ticketId = attachments.length > 0 ? crypto.randomUUID() : null;
+  let uploadedPaths: string[] = [];
   try {
+    if (attachments.length > 0) {
+      const existingTicket = await findExistingTicket(
+        context.config,
+        context.accessToken,
+        parsed.requestId,
+      );
+      if (existingTicket) {
+        return NextResponse.json(
+          {
+            ok: true,
+            ticket: {
+              id: existingTicket.id,
+              protocol: existingTicket.id.slice(0, 8).toUpperCase(),
+              status: existingTicket.status,
+            },
+          },
+          { headers: noStoreHeaders, status: 201 },
+        );
+      }
+    }
+
     const ticket = await callCreateTicket(
       context.config,
       context.accessToken,
       parsed,
+      ticketId,
+      [],
     );
+    const uploaded = ticketId
+      ? await uploadSupportAttachments({
+          accessToken: context.accessToken,
+          config: context.config,
+          files: attachments,
+          requestId: parsed.requestId,
+          ticketId: ticket.id,
+        })
+      : { descriptors: [], uploadedPaths: [] };
+    uploadedPaths = uploaded.uploadedPaths;
+    if (ticketId && uploaded.descriptors.length > 0) {
+      await attachTicketAttachments(
+        context.config,
+        context.accessToken,
+        ticket.id,
+        parsed.requestId,
+        uploaded.descriptors,
+      );
+    }
 
     return NextResponse.json(
       {
@@ -92,6 +163,11 @@ export async function POST(request: Request) {
       { headers: noStoreHeaders, status: 201 },
     );
   } catch (error) {
+    await removeSupportAttachments(
+      context.config,
+      context.accessToken,
+      uploadedPaths,
+    );
     return rpcFailure(error, "Não foi possível abrir o chamado agora.");
   }
 }
@@ -126,10 +202,23 @@ async function getRequesterSupportContext(role: RequesterRole | null) {
       };
     }
 
-    return { accessToken, config, ok: true as const };
+    return { accessToken, config, ok: true as const, userId: user.id };
   } catch {
     return { ok: false as const, message: "Entre na sua conta.", status: 401 };
   }
+}
+
+async function findExistingTicket(
+  config: NonNullable<ReturnType<typeof getSupabasePublicConfig>>,
+  accessToken: string,
+  requestId: string,
+) {
+  const tickets = await supabaseRequest<Array<{ id: string; status: string }>>(
+    config,
+    accessToken,
+    `/rest/v1/support_tickets?select=id,status&request_id=eq.${encodeURIComponent(requestId)}&limit=1`,
+  );
+  return tickets[0] ?? null;
 }
 
 function readRole(value: unknown): RequesterRole | null {
@@ -156,11 +245,22 @@ async function callCreateTicket(
   config: NonNullable<ReturnType<typeof getSupabasePublicConfig>>,
   accessToken: string,
   input: SupportTicketCreateContract,
+  ticketId: string | null,
+  attachments: Array<{
+    mimeType: string;
+    originalName: string;
+    sizeBytes: number;
+    storageObjectPath: string;
+  }>,
 ) {
+  const withAttachments = Boolean(ticketId);
   const response = await fetch(
-    `${config.url}/rest/v1/rpc/create_support_ticket_v1`,
+    `${config.url}/rest/v1/rpc/${withAttachments ? "create_support_ticket_with_attachments_v1" : "create_support_ticket_v1"}`,
     {
       body: JSON.stringify({
+        ...(withAttachments
+          ? { p_attachments: attachments, p_ticket_id: ticketId }
+          : {}),
         p_booking_id: input.bookingId,
         p_category: input.category,
         p_description: input.description,
@@ -179,6 +279,43 @@ async function callCreateTicket(
   );
   if (!response.ok) throw await response.json().catch(() => null);
   return (await response.json()) as { id: string; status: string };
+}
+
+async function attachTicketAttachments(
+  config: NonNullable<ReturnType<typeof getSupabasePublicConfig>>,
+  accessToken: string,
+  ticketId: string,
+  requestId: string,
+  attachments: Array<{
+    mimeType: string;
+    originalName: string;
+    sizeBytes: number;
+    storageObjectPath: string;
+  }>,
+) {
+  const response = await fetch(
+    `${config.url}/rest/v1/rpc/attach_support_ticket_requester_attachments_v1`,
+    {
+      body: JSON.stringify({
+        p_attachments: attachments,
+        p_request_id: requestId,
+        p_ticket_id: ticketId,
+      }),
+      cache: "no-store",
+      headers: {
+        apikey: config.apiKey,
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    },
+  );
+  if (!response.ok) throw await response.json().catch(() => null);
+}
+
+function formValue(formData: FormData, key: string) {
+  const value = formData.get(key);
+  return typeof value === "string" ? value : "";
 }
 
 async function supabaseRequest<T>(

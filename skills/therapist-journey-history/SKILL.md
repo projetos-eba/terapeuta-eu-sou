@@ -95,6 +95,12 @@ Regra de acompanhamento:
   entram no gráfico.
 - O ícone de informação ao lado de “Sem sessão recente” explica essa janela
   de forma breve e acessível.
+- Os cards de resumo devem explicar o significado no próprio título, descrição
+  e badge: total registrado, sessão nos últimos 30 dias, relações iniciadas no
+  mês e continuidade que vale revisar. Evitar rótulos abstratos sem contexto.
+- Os controles de filtro usam o select nativo; a área da seta decorativa deve
+  ser transparente aos eventos (`pointer-events: none`) para que clicar na
+  seta abra o filtro da mesma forma que clicar no texto.
 
 ## Copy Responsável
 

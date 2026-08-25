@@ -16,6 +16,13 @@ type ThreadMessage = {
   created_at: string;
   id: string;
   visibility: "internal" | "requester";
+  attachments?: Array<{
+    downloadPath: string;
+    fileName: string;
+    id: string;
+    mimeType: string;
+    sizeBytes: number;
+  }>;
 };
 
 export async function GET(_: Request, { params }: Params) {
@@ -27,7 +34,7 @@ export async function GET(_: Request, { params }: Params) {
 
   try {
     const response = await fetch(
-      `${context.config.url}/rest/v1/rpc/admin_get_support_ticket_thread_v1`,
+      `${context.config.url}/rest/v1/rpc/admin_get_support_ticket_thread_v2`,
       {
         body: JSON.stringify({ p_ticket_id: ticketId }),
         cache: "no-store",
@@ -52,7 +59,24 @@ export async function GET(_: Request, { params }: Params) {
       );
     }
 
-    const messages = (await response.json()) as ThreadMessage[];
+    const messages = (
+      (await response.json()) as Array<
+        ThreadMessage & {
+          attachments?: Array<{
+            fileName: string;
+            id: string;
+            mimeType: string;
+            sizeBytes: number;
+          }>;
+        }
+      >
+    ).map((message) => ({
+      ...message,
+      attachments: (message.attachments ?? []).map((attachment) => ({
+        ...attachment,
+        downloadPath: `/api/admin/support/tickets/${ticketId}/attachments/${attachment.id}`,
+      })),
+    }));
     return NextResponse.json(
       { ok: true, messages },
       { headers: noStoreHeaders },

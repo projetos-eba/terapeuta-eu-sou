@@ -20,8 +20,15 @@ import type {
   TherapistMetricProtectedCollection,
   TherapistMetricSampledValue,
   TherapistSessionMetrics,
+  TherapistSessionMetricsView,
 } from "../therapist-metrics.types";
 import { formatMetricValue } from "./therapist-metric-card";
+import {
+  DistributionDonut,
+  MetricsHeatmap,
+  SessionsEvolutionChart,
+  TherapyBarsChart,
+} from "./therapist-metrics-charts";
 import { TherapistMetricsLayout } from "./therapist-metrics-layout";
 
 const dayLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
@@ -29,7 +36,7 @@ const dayLabels = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 export function TherapistSessionMetricsPage({
   data,
 }: {
-  data: TherapistSessionMetrics;
+  data: TherapistSessionMetrics | TherapistSessionMetricsView;
 }) {
   return (
     <TherapistMetricsLayout meta={data.meta} tab="sessions">
@@ -118,7 +125,10 @@ function SummaryCounter({
     | "sessionsRescheduled"];
 }) {
   return (
-    <TESCard as="article" className="grid min-h-[205px] content-between p-5">
+    <TESCard
+      as="article"
+      className="relative grid min-h-[205px] content-between overflow-hidden border-brand-lavender/70 bg-gradient-to-b from-brand-lavenderSoft/60 via-white to-white p-5 shadow-[0_14px_34px_rgba(57,45,90,0.06)] before:absolute before:inset-x-5 before:top-0 before:h-[3px] before:rounded-b-full before:bg-brand-primary"
+    >
       <div className="flex items-start justify-between gap-3">
         <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
           <Icon aria-hidden="true" size={21} />
@@ -152,7 +162,10 @@ function SampledSummary({
   metric: TherapistMetricSampledValue<"percent">;
 }) {
   return (
-    <TESCard as="article" className="grid min-h-[205px] content-between p-5">
+    <TESCard
+      as="article"
+      className="relative grid min-h-[205px] content-between overflow-hidden border-brand-cyan/25 bg-gradient-to-b from-brand-cyanSoft via-white to-white p-5 shadow-[0_14px_34px_rgba(57,45,90,0.06)] before:absolute before:inset-x-5 before:top-0 before:h-[3px] before:rounded-b-full before:bg-brand-cyan"
+    >
       <span className="grid size-11 place-items-center rounded-full bg-brand-cyanSoft text-status-info">
         <Icon aria-hidden="true" size={21} />
       </span>
@@ -179,21 +192,37 @@ function SampledSummary({
   );
 }
 
-function SessionEvolution({ data }: { data: TherapistSessionMetrics }) {
-  const points = bucketEvolution(
-    data.evolution.points,
-    evolutionBucketSize(data.meta.periodDays),
-  );
-  const maximum = Math.max(
-    1,
-    ...points.map(
-      (point) =>
-        point.sessionsCompleted + point.sessionsCancelled + point.noShows,
-    ),
-  );
+function SessionEvolution({
+  data,
+}: {
+  data: TherapistSessionMetrics | TherapistSessionMetricsView;
+}) {
+  const comparison =
+    "evolutionComparison" in data
+      ? data.evolutionComparison
+      : {
+          meta: data.meta,
+          points: data.evolution.points.map((point, index) => ({
+            current: point.sessionsCompleted,
+            currentDate: point.date,
+            index,
+            previous: 0,
+            previousDate: point.date,
+          })),
+          status: data.evolution.status,
+        };
+  const points = comparison.points.map((point) => ({
+    date: point.currentDate,
+    previous: point.previous,
+    previousDate: point.previousDate,
+    sessionsCompleted: point.current,
+  }));
 
   return (
-    <AppPageSection aria-labelledby="session-evolution-title">
+    <AppPageSection
+      className="relative min-w-0 overflow-hidden border-brand-cyan/25 bg-[radial-gradient(circle_at_94%_0%,var(--tes-color-brand-cyan-soft)_0%,transparent_34%),linear-gradient(180deg,#fff_0%,#fff_100%)] shadow-[0_14px_34px_rgba(57,45,90,0.06)]"
+      aria-labelledby="session-evolution-title"
+    >
       <h2
         className="text-xl font-extrabold text-brand-deep"
         id="session-evolution-title"
@@ -201,62 +230,19 @@ function SessionEvolution({ data }: { data: TherapistSessionMetrics }) {
         Evolução das sessões no período
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Realizações, ausências, cancelamentos e reagendamentos permanecem
-        separados para mostrar cada situação com clareza.
+        Compare sessões concluídas com o intervalo imediatamente anterior de
+        mesma duração. A linha tracejada representa o histórico anterior.
       </p>
 
-      {data.evolution.status === "empty" ? (
-        <EmptyBlock text="Ainda não há resultados de sessão neste período." />
-      ) : (
-        <>
-          <div
-            aria-hidden="true"
-            className="mt-6 grid h-52 items-end gap-2 rounded-lg bg-surface-soft p-4"
-            style={{
-              gridTemplateColumns: `repeat(${points.length}, minmax(18px, 1fr))`,
-            }}
-          >
-            {points.map((point) => (
-              <div
-                className="flex h-full flex-col justify-end gap-0.5"
-                key={point.date}
-                title={`${point.date}: ${point.sessionsCompleted} realizadas, ${point.noShows} ausências, ${point.sessionsCancelled} canceladas`}
-              >
-                <span
-                  className="block min-h-0.5 rounded-t-sm bg-status-danger"
-                  style={{
-                    height: `${(point.sessionsCancelled / maximum) * 100}%`,
-                  }}
-                />
-                <span
-                  className="block min-h-0.5 bg-brand-cyan"
-                  style={{ height: `${(point.noShows / maximum) * 100}%` }}
-                />
-                <span
-                  className="block min-h-1 bg-brand-primary"
-                  style={{
-                    height: `${Math.max(2, (point.sessionsCompleted / maximum) * 100)}%`,
-                  }}
-                />
-              </div>
-            ))}
-          </div>
-          <ul className="sr-only">
-            {points.map((point) => (
-              <li key={point.date}>
-                {point.date}: {point.sessionsCompleted} realizadas,{" "}
-                {point.noShows} ausências, {point.sessionsCancelled} canceladas
-                e {point.sessionsRescheduled} reagendamentos aplicados.
-              </li>
-            ))}
-          </ul>
-          <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs font-bold text-tesText-secondary">
-            <Legend color="bg-brand-primary" label="Realizadas" />
-            <Legend color="bg-brand-cyan" label="Ausências" />
-            <Legend color="bg-status-danger" label="Canceladas" />
-          </div>
-        </>
-      )}
+      <div className="mt-5">
+        <SessionsEvolutionChart
+          currentPeriodLabel={`Atual · ${formatPeriodRange(comparison.meta.periodStart, comparison.meta.periodEnd)}`}
+          empty={comparison.status === "empty"}
+          points={points}
+          previousPeriodLabel={`Anterior · ${formatPeriodRange(comparison.meta.previousPeriodStart, comparison.meta.previousPeriodEnd)}`}
+        />
+      </div>
+      <SessionOutcomeSummary data={data} />
     </AppPageSection>
   );
 }
@@ -273,20 +259,11 @@ function SessionHeatmap({ data }: { data: TherapistSessionMetrics }) {
     );
   }
 
-  const maximum = Math.max(
-    1,
-    ...data.heatmap.items.map((item) => item.sessions),
-  );
-  const countByCell = new Map(
-    data.heatmap.items.map((item) => [
-      `${item.dayOfWeek}:${item.hourBucketStart}`,
-      item.sessions,
-    ]),
-  );
-  const hours = Array.from({ length: 12 }, (_, index) => index * 2);
-
   return (
-    <AppPageSection aria-labelledby="session-heatmap-title">
+    <AppPageSection
+      className="border-status-success/20 bg-gradient-to-br from-white via-white to-status-successBg/60 shadow-[0_14px_34px_rgba(57,45,90,0.05)]"
+      aria-labelledby="session-heatmap-title"
+    >
       <h2
         className="text-xl font-extrabold text-brand-deep"
         id="session-heatmap-title"
@@ -297,65 +274,57 @@ function SessionHeatmap({ data }: { data: TherapistSessionMetrics }) {
         Volume de sessões realizadas no seu fuso. Tons mais intensos indicam
         maior concentração no período selecionado.
       </p>
-      <div
-        aria-label="Tabela de sessões realizadas por dia e faixa de horário"
-        className="mt-5 overflow-x-auto pb-2"
-        role="region"
-        tabIndex={0}
-      >
-        <table className="min-w-[720px] border-separate border-spacing-1.5">
-          <thead>
-            <tr>
-              <th className="p-1 text-left text-xs text-tesText-muted">Dia</th>
-              {hours.map((hour) => (
-                <th
-                  className="p-1 text-center text-xs text-tesText-muted"
-                  key={hour}
-                  scope="col"
-                >
-                  {String(hour).padStart(2, "0")}h
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {dayLabels.map((day, dayIndex) => (
-              <tr key={day}>
-                <th
-                  className="p-1 text-left text-xs font-extrabold text-brand-deep"
-                  scope="row"
-                >
-                  {day}
-                </th>
-                {hours.map((hour) => {
-                  const count = countByCell.get(`${dayIndex + 1}:${hour}`) ?? 0;
-                  return (
-                    <td className="p-0.5" key={hour}>
-                      <span
-                        aria-label={`${day}, ${String(hour).padStart(2, "0")}h a ${String(hour + 2).padStart(2, "0")}h: ${count} sessões`}
-                        className="relative grid h-9 min-w-10 place-items-center overflow-hidden rounded bg-brand-lavenderSoft text-xs font-extrabold text-brand-deep"
-                      >
-                        <span
-                          aria-hidden="true"
-                          className="absolute inset-0 bg-brand-primary"
-                          style={{
-                            opacity:
-                              count === 0
-                                ? 0.08
-                                : Math.max(0.25, count / maximum),
-                          }}
-                        />
-                        <span className="relative">{count}</span>
-                      </span>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="mt-5">
+        <MetricsHeatmap
+          points={data.heatmap.items.map((item) => ({
+            ...item,
+            value: item.sessions,
+          }))}
+          valueLabel="sessões"
+        />
       </div>
     </AppPageSection>
+  );
+}
+
+function SessionOutcomeSummary({ data }: { data: TherapistSessionMetrics }) {
+  const totals = data.evolution.points.reduce(
+    (result, point) => ({
+      cancelled: result.cancelled + point.sessionsCancelled,
+      noShows: result.noShows + point.noShows,
+      rescheduled: result.rescheduled + point.sessionsRescheduled,
+    }),
+    { cancelled: 0, noShows: 0, rescheduled: 0 },
+  );
+  const items = [
+    {
+      label: "Canceladas",
+      tone: "bg-status-dangerBg text-status-danger",
+      value: totals.cancelled,
+    },
+    {
+      label: "Ausências",
+      tone: "bg-brand-cyanSoft text-status-info",
+      value: totals.noShows,
+    },
+    {
+      label: "Reagendadas",
+      tone: "bg-status-warningBg text-status-warning",
+      value: totals.rescheduled,
+    },
+  ];
+  return (
+    <dl className="mt-4 grid gap-2 border-t border-brand-lavender/55 pt-4 sm:grid-cols-3">
+      {items.map((item) => (
+        <div
+          className={`rounded-card px-3 py-2.5 ${item.tone}`}
+          key={item.label}
+        >
+          <dt className="text-xs font-bold">{item.label}</dt>
+          <dd className="mt-1 text-lg font-extrabold">{item.value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
@@ -366,16 +335,15 @@ function OutcomeDistribution({ data }: { data: TherapistSessionMetrics }) {
         Comparecimento e resultados
       </h2>
       {data.outcomeDistribution.status === "ready" ? (
-        <div className="mt-5 grid gap-4">
-          {data.outcomeDistribution.items.map((item) => (
-            <MetricBar
-              key={item.key}
-              label={item.label}
-              percentage={item.percentage}
-              value={`${item.value} (${formatPercent(item.percentage)})`}
-            />
-          ))}
-        </div>
+        <DistributionDonut
+          centerLabel={`${data.outcomeDistribution.observedSample} sessões`}
+          compact
+          items={data.outcomeDistribution.items.map((item) => ({
+            label: item.label,
+            value: item.value,
+          }))}
+          label="Distribuição dos resultados das sessões"
+        />
       ) : (
         <ProtectedBlock collection={data.outcomeDistribution} />
       )}
@@ -393,16 +361,12 @@ function TherapyDistribution({ data }: { data: TherapistSessionMetrics }) {
         Esta leitura considera a terapia escolhida na reserva.
       </p>
       {data.therapyDistribution.status === "ready" ? (
-        <div className="mt-5 grid gap-4">
-          {data.therapyDistribution.items.map((item) => (
-            <MetricBar
-              key={item.therapyId}
-              label={item.therapyName}
-              percentage={item.percentage}
-              value={`${item.sessions} sessões`}
-            />
-          ))}
-        </div>
+        <TherapyBarsChart
+          items={data.therapyDistribution.items.map((item) => ({
+            name: item.therapyName,
+            value: item.sessions,
+          }))}
+        />
       ) : (
         <ProtectedBlock collection={data.therapyDistribution} />
       )}
@@ -528,56 +492,20 @@ function MetricBar({
   );
 }
 
-function Legend({ color, label }: { color: string; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-2">
-      <span aria-hidden="true" className={`size-2.5 rounded-full ${color}`} />
-      {label}
-    </span>
-  );
-}
-
-function evolutionBucketSize(
-  periodDays: TherapistSessionMetrics["meta"]["periodDays"],
-) {
-  if (periodDays >= 120) return 10;
-  if (periodDays >= 90) return 7;
-  if (periodDays >= 60) return 5;
-  return 3;
-}
-
-function bucketEvolution(
-  points: TherapistSessionMetrics["evolution"]["points"],
-  size: number,
-) {
-  const result: TherapistSessionMetrics["evolution"]["points"] = [];
-  for (let index = 0; index < points.length; index += size) {
-    const group = points.slice(index, index + size);
-    if (group.length === 0) continue;
-    result.push({
-      date: group[0].date,
-      noShows: sum(group, "noShows"),
-      sessionsCancelled: sum(group, "sessionsCancelled"),
-      sessionsCompleted: sum(group, "sessionsCompleted"),
-      sessionsRescheduled: sum(group, "sessionsRescheduled"),
-    });
-  }
-  return result;
-}
-
-function sum(
-  points: TherapistSessionMetrics["evolution"]["points"],
-  key:
-    | "noShows"
-    | "sessionsCancelled"
-    | "sessionsCompleted"
-    | "sessionsRescheduled",
-) {
-  return points.reduce((total, point) => total + point[key], 0);
-}
-
 function formatPercent(value: number) {
   return `${new Intl.NumberFormat("pt-BR", {
     maximumFractionDigits: 1,
   }).format(value)}%`;
+}
+
+function formatPeriodRange(start: string, endExclusive: string) {
+  const startDate = new Date(start);
+  const endDate = new Date(endExclusive);
+  endDate.setUTCDate(endDate.getUTCDate() - 1);
+  const formatter = new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    timeZone: "UTC",
+  });
+  return `${formatter.format(startDate)} – ${formatter.format(endDate)}`;
 }

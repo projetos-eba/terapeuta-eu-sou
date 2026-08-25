@@ -649,3 +649,202 @@ Fase 3 deve tratar comunicação/observabilidade. A decisão desta rodada é
 **PHASE 2 FAIL**; o TES não é declarado Production Ready.
 
 Documentação atualizada.
+
+## Fase 2.1 — Closure HML (2026-08-24)
+
+Resultado: **PHASE 2 FAIL**. A rodada fechou o defeito de lifecycle de
+pagamento/agenda e alinhou migrations no HML, mas três gates continuam
+bloqueados por infraestrutura ou identidades de qualificação não disponíveis.
+
+| Gate | Resultado | Evidência sanitizada | Severidade |
+| --- | --- | --- | --- |
+| Failed/expired Checkout releases slot | **PASS** | Checkout Stripe test expirado em HML → webhook real → payment `canceled` → booking `cancelled_by_payment`; a regressão pgTAP local aceitou novo hold no mesmo intervalo e confirmou retry sem duplicar booking/payment. | P2 regressão |
+| Duplicate/delayed webhook | **BLOCKED** | Replay assinado retornou 400 e o preflight HML marcou `platform_webhook=FAIL`; secret/runtime remoto não foi disponibilizado ao harness. | P1 |
+| Two-patient concurrency | **BLOCKED** | Contenção transacional de duas tentativas já tem evidência de 409 para o perdedor, porém faltou uma segunda identidade de paciente QA para o gate solicitado. | P1 |
+| Zoom before-host/reconnect | **BLOCKED** | Sem sessão futura dedicada e sem Browser/IAB disponível para o smoke real; não houve alteração de booking/video session. | P1 |
+| Bilateral confirmation/financial lifecycle | **BLOCKED** | Migration `20260823100000_session_attendance_confirmation_lifecycle.sql` e migrations posteriores estão aplicadas no HML; pgTAP local 076 PASS. Fluxo remoto bilateral não foi executado sem browser/harness autenticado disponível. | P1 |
+
+### Root cause e correção
+
+`apply_session_payment_state_v1` não terminalizava o booking não pago após
+`failed/canceled`; `pending_payment` continuava sendo considerado conflito pelo
+slot engine. Foram adicionados `cancelled_by_payment`, trigger transacional de
+liberação e guard contra alteração manual fora do workflow Stripe.
+
+Migrations aplicadas no HML: `20260823170000`, `20260823210000`,
+`20260824090000`, `20260824100000` e `20260824100100`. A migration de
+confirmação `20260823100000` também consta como aplicada na lista remota.
+
+### Validação
+
+pgTAP **83/83 arquivos, 1.739 testes PASS**; Vitest **167/167 arquivos,
+658 testes PASS**; Deno **174/174 PASS**; typecheck, lint e build **PASS**.
+O teste HML de Checkout expirado preservou a evidência autoritativa sem
+imprimir secrets ou alterar estados manualmente. A tentativa de browser nesta
+rodada falhou por indisponibilidade do backend; por isso não há evidência nova
+de Zoom adversarial ou confirmação bilateral remota.
+
+P0: nenhum identificado. P1: webhook replay/configuração HML, segundo paciente
+QA, fixture/harness Zoom adversarial, confirmação bilateral remota e os P1
+pré-existentes de CI/e-mail/rotas de pagamento do paciente.
+
+**PHASE 2 FAIL** — não iniciar a Fase 3 e não declarar Production Ready.
+
+## Fase 2.3 — Qualification Infrastructure Closure (2026-08-24)
+
+| Gate | Resultado | Evidência sanitizada | Severidade |
+| --- | --- | --- | --- |
+| Stripe replay authoritative evidence | **PASS** | Endpoint platform HML ativo e separado do Connect em Stripe test. Replay real de `checkout.session.completed` confirmou `livemode=false` e `pending_webhooks=0`; inspeção Admin/HML confirmou evento platform processado, registro único, uma tentativa, pagamento `paid`, booking `confirmed/paid` e correlações verdadeiras. | P1 encerrado; manter regressão |
+| Two-patient concurrency | **PASS** | Dois BrowserContexts independentes autenticados com as identidades QA existentes enviaram simultaneamente o mesmo request de checkout para o mesmo slot público. O resultado foi exatamente um `200` e um `409 SLOT_CONFLICT`; o estado autoritativo convergiu para um único booking de teste, depois `cancelled_by_payment`/`canceled` após expiração do Checkout HML. Não houve pagamento confirmado; o booking criado pelo teste teve zero `video_session`; não restou hold ativo. Uma reserva histórica `cancelled_by_patient`/`refunded` e sua `video_session` foram excluídas da conclusão. A ação visual `Avançar para pagamento` permaneceu desabilitada na rota direta de preparação mesmo com sessão, slot e termos válidos; por isso a chamada foi exercitada pelo request do próprio BrowserContext e a divergência visual permanece registrada. | P2 follow-up visual; manter concorrência como regressão |
+| Zoom adversarial/reconnect | **BLOCKED** | O share HML vigente permitiu Playwright headed e contexts isolados. O harness oficial criou/reutilizou reservas QA reais com Checkout Stripe test + webhook; o estado chegou a booking `confirmed`, pagamento `paid` e `video_session` `ready`, e a entrada real do terapeuta criou uma sessão Video SDK. Na execução automática, o paciente ficou na sala protegida; com fallback manual, a UI mostrou “O terapeuta já está na sala”, mas não foi obtida evidência de um controle de entrada reconhecido. O harness foi ajustado para os rótulos atuais, porém não foi criada outra fixture paga para repetir após esse ajuste. Refresh, reconnect e rejoin completos permanecem sem evidência; todas as fixtures foram canceladas e reembolsadas pela trilha oficial. | P1 produto/integração: corrigir a transição/controle pós-host e repetir o runbook em uma única fixture autorizada |
+| Bilateral confirmation lifecycle | **BLOCKED** | Os contexts de paciente, terapeuta e Admin foram autenticados. A sessão paga usada no gate Zoom foi limpa antes deste fluxo; não houve execução remota de confirmação bilateral, retry/conflito ou efeito financeiro em `waiting_confirmation`/`waiting_safety_period`. | P1 infraestrutura/identidade: provisionar sessão QA separada e executar o fluxo oficial |
+
+Alteração controlada: `stripe-hml-preflight` recebeu `inspect_webhook_event`,
+restrita a role Admin e ao hostname HML, retornando apenas fingerprint,
+contagens e estados. Foi publicada exclusivamente em HML. O replay ocorreu
+somente em Stripe test e a leitura foi autoritativa/sanitizada. Não houve
+mudança em produção, schema, RLS ou provider. A concorrência HML criou somente
+o estado transitório autorizado para o teste; o Checkout foi expirado
+imediatamente e o webhook convergiu para `cancelled_by_payment` / `canceled`,
+sem hold ativo, pagamento confirmado ou nova `video_session` para o booking do
+teste.
+
+Validações: teste Deno focal **2/2 PASS**, `deno check` da função **PASS**,
+replay Stripe test com `pending_webhooks=0`, inspeção Admin/HML processada,
+login Admin/terapeuta HML PASS e `git diff --check` **PASS**. Playwright
+headed foi executado com contexts isolados no share HML vigente. A camada
+visual da rota direta de preparação manteve o botão de avanço desabilitado
+apesar da sessão e do slot válidos; a contenção foi comprovada pelo mesmo
+endpoint de checkout chamado pelos dois contexts, sem mascarar o follow-up.
+
+P0 novo: nenhum. P1: Browser/Playwright para Zoom e execução remota do
+lifecycle bilateral; permanecem CI, e-mail crítico e rotas de pagamento do
+paciente como pendências pré-existentes. A divergência visual da reserva é
+follow-up de experiência, não aprovação de pagamento.
+
+**PHASE 2 FAIL** — Fase 3 não iniciada; não declarar Production Ready.
+
+## HML — salvamento de tema Premium e publicação do perfil (2026-08-23)
+
+### Diagnóstico e correção
+
+Na fixture QA `antonio-ferrari-e2e`, a seleção do tema Premium **Energia** era
+aceita pela interface, mas o salvamento retornava apenas `Revise os dados do
+perfil antes de continuar.`. O mesmo perfil salvou o tema Free **Natural**,
+isolando o problema no runtime remoto de validação, não no slot, no plano ou no
+conteúdo do perfil.
+
+O código já promovido à branch de homologação continha a allowlist de temas e o
+tratamento de mensagens acionáveis, porém a Edge Function HML
+`therapist-profile-command` ainda estava com a versão anterior do validador e
+da mensagem genérica. A função foi publicada novamente somente no projeto
+Supabase HML; não houve alteração em produção, SQL manual ou mudança de
+estado financeiro.
+
+### Evidência HML
+
+| Checkpoint | Status | Evidência sanitizada |
+| --- | --- | --- |
+| Tema Premium selecionado | PASS | Interface selecionou `Energia` (Premium). |
+| Salvamento do rascunho | PASS | Após o deploy da Edge Function, UI exibiu `Rascunho salvo.` e o editor recarregou com `Energia`. |
+| Mensagem de erro acionável | PASS | Payload inválido de apresentação (281 caracteres) foi rejeitado sem persistência e exibiu `Sua apresentação deve ter até 200 caracteres.`; a mensagem genérica não reapareceu. |
+| Envio para revisão | PASS | Fluxo oficial exibiu `Alterações enviadas para revisão.`. |
+| Aprovação administrativa | PASS | Admin iniciou a análise e aprovou a verificação com motivo auditado. |
+| Publicação/elegibilidade | PASS | Admin usou `Tornar publicado e elegível`; estado read-only ficou `Publicado e elegível` / `Recebendo reservas: Sim`. |
+| Aparição pública | PASS | Perfil público voltou a responder com nome e apresentação atualizados; DOM sanitizado confirmou `data-profile-theme=energia` e `data-theme-hero-background=energia`, sem tokens ou dados privados. |
+
+O fluxo de publicação exige aprovação administrativa e, enquanto a análise
+está pendente, o perfil fica corretamente oculto. Isso é comportamento de
+moderação do produto, não falha de salvamento.
+
+### Gates atualizados
+
+| Área | Persona | Gate | Ambiente | Status | Evidência | Severidade | Próxima ação |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Perfil público | Terapeuta/Admin/Público | Tema Premium → salvar → revisão → aprovação → publicação | HML | **PASS** | Execução real na fixture QA, com backend e superfície pública coerentes. | P2 | Repetir no RC após o artefato HML final. |
+| Contrato de erro | Terapeuta | Falha de validação com motivo compreensível | HML | **PASS** | Limite de apresentação informado sem detalhe interno; nenhum estado persistido. | P2 | Manter regressão local e E2E focal. |
+
+Validações locais já aprovadas no commit promovido: `npm run typecheck`,
+`npm run lint`, `npm run build`, testes Vitest focais (26/26), testes Deno da
+Edge Function (9/9) e `git diff --check`.
+
+**Impacto documental:** documentação atualizada; `skills/therapist-profile/SKILL.md`
+também registra a exigência de motivo acionável em falhas de salvar/publicar.
+
+## Fase 2.2 — Fechamento dos quatro gates bloqueados (2026-08-24)
+
+O gate de falha/expiração de Checkout permanece **PASS**. Esta rodada tratou
+somente os quatro gates remanescentes e terminou **PHASE 2 FAIL**.
+
+| Gate | Resultado | Evidência sanitizada | Severidade |
+| --- | --- | --- | --- |
+| Duplicate/delayed webhook | **BLOCKED** | 400 diagnosticado como secret local divergente do secret remoto. Endpoint platform HML rotacionado em Stripe test, secret injetado somente no Supabase HML, endpoint antigo removido. Reenvio oficial de evento real retornou sucesso e `pending_webhooks=0`; a CLI impede nova retransmissão do mesmo request dentro de 24h. Endpoint Connect permaneceu separado, mas a convergência em `stripe_webhook_events`/payment não foi lida nesta rodada. | P1 |
+| Two-patient concurrency | **BLOCKED** | Duas contas QA sintéticas foram criadas pelo signup oficial, mas ficaram em `email_flow`; sem confirmação não houve login/contexto, booking ou pagamento. | P1 |
+| Zoom before-host/reconnect | **BLOCKED** | Browser/IAB indisponível; Chromium headed encerrou por permissão do Crashpad. Nenhuma nova sessão foi criada. | P1 |
+| Bilateral confirmation/financial lifecycle | **BLOCKED** | Migration aplicada no HML e testes locais PASS, mas o fluxo remoto terapeuta/paciente não foi executado sem contexts autenticados. | P1 |
+
+Nenhum código de produto foi alterado. Não foram criados booking, hold,
+pagamento ou `video_session` nesta rodada. A configuração Stripe alterada é
+exclusivamente test/HML.
+
+P0: nenhum identificado. P1: confirmação de leitura DB do replay, mailbox ou
+auto-confirmação para paciente QA, browser/fixture Zoom real, confirmação
+bilateral HML e pendências pré-existentes de CI/e-mail/rotas de pagamento.
+
+**PHASE 2 FAIL** — não iniciar a Fase 3 e não declarar Production Ready.
+
+## Fase 2.3 — Atualização de execução HML (2026-08-24)
+
+O resultado vigente desta retomada é **PHASE 2 FAIL**: Stripe replay
+authoritative evidence e Two-patient concurrency estão **PASS**; Zoom
+adversarial/reconnect e Bilateral confirmation lifecycle permanecem
+**BLOCKED**. O share HML permitiu Browser/Playwright headed com contexts
+isolados. O harness oficial criou/reutilizou reservas QA pagas controladas via
+Checkout Stripe test + webhook, confirmou booking `confirmed`, pagamento `paid`,
+`video_session` `ready` e entrada real do terapeuta, mas o paciente permaneceu
+na sala protegida; o fallback manual chegou a mostrar “O terapeuta já está na
+sala”, mas não houve evidência de um controle de entrada reconhecido. O
+harness foi ajustado para `Entrar na sala` e `Sala de espera do encontro`, sem
+nova fixture paga após o ajuste. O cleanup encerrou a sessão Video SDK; todas
+as reservas foram canceladas e os pagamentos convergiram para `refunded` com
+`refund_pending=false` por refund Stripe test e webhooks assinados. Refresh,
+reconnect e rejoin não foram executados. A
+concorrência foi executada com dois BrowserContexts independentes e
+autenticados no mesmo slot: um request retornou `200`, o outro `409
+SLOT_CONFLICT`; o Checkout vencedor foi expirado e convergiu para
+`cancelled_by_payment`/`canceled`, sem hold ativo, pagamento confirmado ou
+`video_session` nova para o booking do teste.
+
+A divergência visual do botão `Avançar para pagamento`, que permaneceu
+desabilitado na rota direta de preparação apesar de sessão, slot e termos
+válidos, ficou registrada como follow-up de experiência; a contenção foi
+comprovada pelo mesmo endpoint chamado pelos dois contexts, sem mascarar o
+problema visual. O teste focal `scripts/homologation/zoom-hml.test.mjs`
+permaneceu em **15/15 PASS** após o ajuste do harness para o rótulo atual
+`Entrar na sala` e a sala de espera atual. Fase 3 não iniciada; não declarar
+Production Ready. Nova execução HML do fluxo Zoom requer autorização específica
+para criar outra fixture paga.
+
+## Fase 2.3 — Fechamento final dos gates remanescentes (2026-08-24)
+
+Decisão final desta rodada: **PHASE 2 FAIL**. O Checkout falho/expirado foi
+confirmado pela regressão focal, sem repetir cenário HML. Foi criada somente
+uma fixture paga nova em Stripe test para Zoom e confirmação bilateral; não
+houve alteração em produção.
+
+| Gate | Resultado | Evidência sanitizada |
+| --- | --- | --- |
+| Failed/expired Checkout releases slot | **PASS** | `079_payment_failure_booking_release.sql`: 8/8 no pgTAP local, cobrindo estado terminal `cancelled_by_payment`, auditoria, retry idempotente e liberação do intervalo para novo hold. |
+| Zoom adversarial/reconnect | **FAIL** | O fluxo real comprovou host-first, liberação do paciente, refresh dos dois participantes, reconnect de rede e uma única `video_session`. Falhou em `patient_leave_rejoin` porque o controle estava desabilitado durante a transição de carregamento; o cleanup encerrou a sessão. Leave/rejoin completo e rejoin pós-encerramento não têm evidência autoritativa nesta rodada. A falha observada foi de sincronização do harness, sem confirmação de bug de produto. |
+| Bilateral confirmation lifecycle | **PASS** | Na fixture exata: paciente 200, retry idempotente 200, conflito 409 `REQUEST_CONFLICT`, terapeuta 200. O estado final ficou `booking=completed`, duas confirmações `completed`, `service_status=confirmed_by_therapist`, `service_confirmed_at` presente, `transfer_status=waiting_safety_period` e elegibilidade futura registrada. A Edge Function ausente no HML foi publicada somente no HML. |
+
+A migration `20260823100000_session_attendance_confirmation_lifecycle.sql` e
+as migrations posteriores permaneceram alinhadas no HML; o teste pgTAP focal
+passou 35/35. O harness foi corrigido para considerar os estados confirmados
+canônicos, incluindo `confirmed_by_therapist`, sem alterar o contrato de
+produto.
+
+**Impacto documental:** documentação atualizada. A Fase 3 não foi iniciada e
+o TES não é declarado Production Ready.
+
+**PHASE 2 FAIL** — o gate Zoom adversarial/reconnect permanece sem fechamento.

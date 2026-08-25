@@ -22,7 +22,7 @@ import {
   AppPageSection,
   AppStickySaveBar,
 } from "@/components/app-page";
-import { TESButton } from "@/components/tes/tes-button";
+import { TESButton, TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 type ProviderKey = "hostinger_mail_api";
@@ -81,6 +81,7 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
   const [data, setData] = useState<Detail | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [error, setError] = useState("");
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [preview, setPreview] = useState<Detail["preview"] | null>(null);
   const [previewState, setPreviewState] = useState<
     "idle" | "loading" | "unavailable"
@@ -174,6 +175,7 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
     setSaving(true);
     setSaved(false);
     setError("");
+    setFeedback(null);
     try {
       const response = await fetch("/api/admin/emails", {
         body: JSON.stringify({
@@ -191,7 +193,7 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
       });
       const result = await response.json();
       if (!response.ok || !result.ok) {
-        setError(
+        setFeedback(
           result.error?.message ?? "Não foi possível salvar a configuração.",
         );
         return;
@@ -199,7 +201,7 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
       applyDetail(result.data);
       setSaved(true);
     } catch {
-      setError("Não foi possível salvar a configuração.");
+      setFeedback("Não foi possível salvar a configuração.");
     } finally {
       setSaving(false);
     }
@@ -544,6 +546,13 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
           )}
         </AppPageSection>
       </AppPageGrid>
+
+      {feedback ? (
+        <TESFeedbackDialog
+          message={feedback}
+          onClose={() => setFeedback(null)}
+        />
+      ) : null}
 
       <AppStickySaveBar>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -136,7 +136,8 @@ Backend:
 - Labels reais, mensagens de erro por campo, foco visível e CTAs com mínimo de 44px.
 - O retorno deve compartilhar uma faixa relativa com o logo: no mobile exibir
   somente o ícone em alvo mínimo de 44px, sem sobrepor a marca; a palavra
-  “Voltar” permanece visível em telas maiores.
+  “Voltar” permanece visível em telas maiores. No login, esse retorno sempre
+  leva à home pública (`/`), sem reutilizar a página anterior do histórico.
 - Os logins de terapeuta, cliente e admin compartilham controle acessível de
   mostrar/ocultar senha: ícone de olho, rótulo de ação, `aria-pressed` e alvo
   mínimo de 44px, sem mudar o payload ou a validação de autenticação.
@@ -185,8 +186,9 @@ Backend:
 
 ## QA adicional desta implementação
 
-- Validar o botão Voltar nas telas de login e cadastro de cliente, terapeuta e
-  admin, incluindo fallback seguro quando não houver histórico do mesmo site.
+- Validar o botão Voltar nas telas de login de cliente, terapeuta e admin: todas
+  devem levar sempre à home pública. Validar os cadastros separadamente,
+  incluindo fallback seguro quando não houver histórico do mesmo site.
 - Validar que duas abas do mesmo navegador podem permanecer na mesma conta,
   mas um login de conta diferente do mesmo papel encerra a aba anterior,
   enquanto contextos de navegador diferentes permanecem independentes.

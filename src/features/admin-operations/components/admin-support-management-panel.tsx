@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Loader2, UserCheck } from "lucide-react";
 
+import { TESFeedbackDialog } from "@/components/tes";
+
 type Management = {
   assignedAdminId: string | null;
   assignedAdminName: string | null;
@@ -194,9 +196,7 @@ export function AdminSupportManagementPanel({
         )}
       </div>
       {error ? (
-        <p className="rounded-xl bg-status-dangerBg p-3 text-sm font-bold text-status-danger">
-          {error}
-        </p>
+        <TESFeedbackDialog message={error} onClose={() => setError(null)} />
       ) : null}
       {data.requesterEmail ? (
         <div className="rounded-xl bg-surface-soft p-3">

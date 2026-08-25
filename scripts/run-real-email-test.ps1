@@ -25,13 +25,23 @@ if (-not $serviceRoleKey) {
 $env:SUPABASE_SERVICE_ROLE_KEY = $serviceRoleKey
 
 try {
-  & deno run `
-    --allow-env `
-    --allow-net `
-    --env-file=.env.local `
-    --env-file=supabase/functions/.env.local `
-    --config supabase/functions/deno.json `
-    supabase/functions/_shared/email/real-email-test.ts
+  $envFiles = @(
+    ".env.local",
+    "supabase/functions/.env",
+    "supabase/functions/.env.local"
+  ) | Where-Object { Test-Path -LiteralPath $_ }
+
+  $denoArgs = @("run", "--allow-env", "--allow-net")
+  foreach ($envFile in $envFiles) {
+    $denoArgs += "--env-file=$envFile"
+  }
+  $denoArgs += @(
+    "--config",
+    "supabase/functions/deno.json",
+    "supabase/functions/_shared/email/real-email-test.ts"
+  )
+
+  & deno @denoArgs
 
   exit $LASTEXITCODE
 } finally {

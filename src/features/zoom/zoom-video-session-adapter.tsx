@@ -120,6 +120,7 @@ const AUTH_SESSION_REFRESH_INTERVAL_MS = 5 * 60_000;
 export function ZoomVideoSessionAdapter({
   access,
   actorRole,
+  ambientAudioSrc,
   backHref,
   bookingId,
   displayMode = "embedded",
@@ -130,6 +131,7 @@ export function ZoomVideoSessionAdapter({
 }: {
   access: ZoomAccessState | null;
   actorRole: "patient" | "therapist";
+  ambientAudioSrc?: string | null;
   backHref?: string;
   bookingId: string;
   displayMode?: "dedicated" | "embedded";
@@ -1044,6 +1046,7 @@ export function ZoomVideoSessionAdapter({
     return (
       <ZoomWaitingRoom
         actorRole={actorRole}
+        ambientAudioSrc={ambientAudioSrc}
         countdownLabel={
           waitingKind === "too_early"
             ? formatRoomOpeningCountdown(currentAccess, nowMs, serverClockOffsetMs)
@@ -1054,7 +1057,6 @@ export function ZoomVideoSessionAdapter({
         message={recoveryMessage ?? message}
         onJoin={() => void joinSession()}
         onRefresh={() => void refreshPreviewAccess()}
-        onReviewPermissions={() => void reviewPermissions()}
         participantLabel={participantLabel}
         previewLoading={previewLoading}
         scheduleLabel={scheduleLabel}
@@ -1077,9 +1079,10 @@ export function ZoomVideoSessionAdapter({
 
   return (
     <section className={sectionClassName} aria-label="Sala de video">
-      <div className="grid gap-4 rounded-lg border border-brand-lavender bg-surface-soft p-4">
+      <div className="grid gap-4">
         <ZoomVideoStage
           actorRole={actorRole}
+          audioMuted={audioMuted}
           localVideoRef={localVideoRef}
           participantLabel={participantLabel}
           remoteParticipantCount={remoteParticipantCount}
@@ -1107,7 +1110,7 @@ export function ZoomVideoSessionAdapter({
         {currentAccess?.hardEndsAt ? (
           <p
             aria-live="polite"
-            className="text-xs font-semibold text-tesText-secondary"
+            className="text-center text-xs font-semibold text-tesText-secondary"
           >
             {formatHardEndCountdown(currentAccess, nowMs, serverClockOffsetMs)}
           </p>
@@ -1195,7 +1198,7 @@ export function ZoomVideoSessionAdapter({
       {cleanupFailures.length > 0 ? (
         <p
           aria-live="assertive"
-          className="mt-2 text-xs font-semibold leading-5 text-status-error"
+          className="mt-2 text-xs font-semibold leading-5 text-status-danger"
         >
           Algumas etapas de encerramento falharam. Tente recarregar a pagina se
           a sala parecer presa.
@@ -1221,7 +1224,7 @@ export function ZoomVideoSessionAdapter({
                 Continuar na sala
               </button>
               <button
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-status-error px-5 text-sm font-extrabold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-status-error"
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-status-danger px-5 text-sm font-extrabold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-status-danger"
                 onClick={() => void completeLeave(true)}
                 type="button"
               >

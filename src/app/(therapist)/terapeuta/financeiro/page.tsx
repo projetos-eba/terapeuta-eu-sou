@@ -52,6 +52,7 @@ export default async function TherapistFinanceRoute({
       "advanced_financials",
     ),
     includeMetrics: canUseTherapistCapability(session.plan, "advanced_metrics"),
+    plan: session.plan,
     profileId: session.profileId,
   });
 

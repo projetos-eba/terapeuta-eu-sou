@@ -30,6 +30,12 @@ Status: concluído.
 | Leitura                | `get_therapist_blocks_v1()`              |
 | Escrita                | Edge `therapist-blocks-update`           |
 
+O comando versionado `create_therapist_block_v2` preserva o comando A4
+existente e acrescenta, de forma atômica, o conjunto de sessões confirmadas
+com pagamento `paid` afetadas pelo bloqueio. A resposta contém somente os
+dados operacionais necessários para o alerta da interface: pessoa, terapia,
+data, horário e fuso.
+
 ## Fluxo
 
 ```text
@@ -82,7 +88,7 @@ pixel quando o conector estiver disponível.
 | ---------- | ----------------------------------------------------------------------------------------------------------------- |
 | Vitest     | parsers, contrato, criação, remoção de série e resolução de impacto                                               |
 | Deno       | ações, ranges, all-day e erros sanitizados da Edge                                                                |
-| pgTAP      | 36 invariantes de schema, grants, RLS, timezone, impacto, booking preservado, versão, replay, remoção e suspensão |
+| pgTAP      | Invariantes de schema, grants, RLS, timezone, impacto, booking preservado, versão, replay, remoção, suspensão e filtro de conflitos pagos |
 | Playwright | login, dados reais, criação/remover reversível e screenshots desktop/tablet/mobile                                |
 
 ## Pendências para produção

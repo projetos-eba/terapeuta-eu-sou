@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { CheckCheck, Loader2 } from "lucide-react";
 import { useState } from "react";
 
+import { TESButton } from "@/components/tes";
+
 type ApiFailure = {
   ok: false;
   error?: {
@@ -55,11 +57,13 @@ export function MarkNotificationsReadButton({
 
   return (
     <div className="grid w-full gap-2 sm:w-auto">
-      <button
-        className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+      <TESButton
+        className="w-full sm:w-auto"
         disabled={unreadCount === 0 || isSubmitting}
         onClick={markRead}
+        size="sm"
         type="button"
+        variant="secondary"
       >
         {isSubmitting ? (
           <Loader2 aria-hidden="true" className="size-4 animate-spin" />
@@ -67,7 +71,7 @@ export function MarkNotificationsReadButton({
           <CheckCheck aria-hidden="true" size={16} />
         )}
         Marcar avisos como lidos
-      </button>
+      </TESButton>
       <p className="sr-only" role="status">
         {feedback ?? ""}
       </p>

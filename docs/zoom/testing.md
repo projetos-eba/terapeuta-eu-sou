@@ -58,6 +58,12 @@ encerramento, reconexão e indisponibilidade de rede. O acesso por
 somente a evidência server-side de ambos os joins torna o feedback de qualidade
 elegível.
 
+A sala de espera também deve comprovar que as três capas locais aparecem nos
+estados corretos, que o teste de câmera solicita apenas vídeo, que o teste de
+áudio solicita apenas microfone, e que os tracks de prévia são liberados ao
+entrar ou sair. Áudio ambiente sem fonte licenciada permanece visível, porém
+inativo e sem autoplay.
+
 Após a saída, a sala deve apresentar o feedback na mesma rota para o papel
 correto. O teste cobre feedback realizado e não realizado, nota de 1 a 5,
 motivos, comentário de 500 caracteres, erro de carregamento, erro de envio,

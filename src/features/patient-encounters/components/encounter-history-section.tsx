@@ -24,10 +24,15 @@ export function EncounterHistorySection({
       </div>
 
       {encounters.length > 0 ? (
-        <div className="mt-5 divide-y divide-border border-y border-border">
-          {encounters.map((encounter) => (
-            <EncounterRow encounter={encounter} key={encounter.id} />
-          ))}
+        <div
+          className="mt-5 max-h-[760px] overflow-y-auto overscroll-contain pr-2 [scrollbar-width:thin]"
+          data-testid="patient-history-scroll"
+        >
+          <div className="divide-y divide-border border-y border-border">
+            {encounters.map((encounter) => (
+              <EncounterRow encounter={encounter} key={encounter.id} />
+            ))}
+          </div>
         </div>
       ) : (
         <p className="mt-5 max-w-[620px] text-sm font-semibold leading-6 text-tesText-muted">

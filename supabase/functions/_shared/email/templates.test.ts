@@ -123,6 +123,33 @@ Deno.test(
   },
 );
 
+Deno.test("patient booking reminder templates keep the authenticated encounter CTA", () => {
+  const data = {
+    counterparty_name: "Terapeuta de exemplo",
+    encounter_url: "https://example.test/app/encontros/exemplo",
+    meeting_date_time: "20 de agosto de 2026 às 15:00",
+    meeting_timezone: "America/Sao_Paulo",
+    recipient_name: "Pessoa de exemplo",
+    service_title: "Terapia de exemplo",
+  };
+
+  const reminder24h = renderEmailTemplate(
+    "booking_reminder_24h_patient",
+    data,
+  );
+  const reminder1h = renderEmailTemplate(
+    "booking_reminder_1h_patient",
+    data,
+  );
+
+  assertEquals(reminder24h.subject, "Falta 1 dia para seu encontro no TES");
+  assertEquals(reminder1h.subject, "Seu encontro começa em 1 hora");
+  assert(reminder24h.text.includes("Ver encontro"));
+  assert(reminder1h.text.includes("Ver encontro"));
+  assert(reminder1h.html.includes("/app/encontros/exemplo"));
+  assert(!reminder1h.text.toLowerCase().includes("zoom.us"));
+});
+
 Deno.test("booking templates reject an unknown token", () => {
   try {
     renderEmailTemplate(
@@ -178,8 +205,22 @@ Deno.test("financial templates keep authoritative payment copy and safe CTAs", (
   assertEquals(payment.subject, "Pagamento confirmado com sucesso");
   assert(payment.html.includes("Recebemos seu pagamento"));
   assert(payment.text.includes("Ver detalhes"));
-  assertEquals(payout.subject, "Seu repasse foi realizado");
+  assertEquals(payout.subject, "Seu repasse bancário foi confirmado");
   assert(payout.text.includes("Ver painel financeiro"));
+
+  const failure = renderEmailTemplate("therapist_payout_failed_after_paid", {
+    amount: "R$ 120,00",
+    finance_url: "https://example.test/terapeuta/financeiro",
+    recipient_name: "Terapeuta",
+  });
+  assert(failure.text.includes("Nenhuma nova movimentação"));
+
+  const admin = renderEmailTemplate("payout_operational_alert_admin", {
+    admin_url: "https://example.test/admin/pagamentos",
+    incident_type: "reconciliação de payout",
+    recipient_name: "Admin",
+  });
+  assert(admin.text.includes("runbook"));
 });
 
 Deno.test("financial templates reject unsafe or unknown values", () => {

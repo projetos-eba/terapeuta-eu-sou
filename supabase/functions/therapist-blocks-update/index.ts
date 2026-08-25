@@ -47,7 +47,7 @@ runtime.serve(async (request) => {
 
     try {
       if (command.action === "create") {
-        operation = "create_therapist_block_v1";
+        operation = "create_therapist_block_v2";
         return success(
           await client.rpc(operation, {
             p_actor_user_id: user.id,

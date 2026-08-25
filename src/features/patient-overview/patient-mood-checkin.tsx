@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Frown, Leaf, LockKeyhole, Meh, Smile, Sparkles } from "lucide-react";
+import {
+  CircleHelp,
+  CloudRain,
+  KeyRound,
+  Leaf,
+  Sparkles,
+  SunMedium,
+  Wind,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -12,12 +20,39 @@ import type {
 } from "./patient-overview.types";
 
 const moodIcons = {
-  calm: Smile,
-  anxious: Frown,
-  confused: Meh,
+  calm: SunMedium,
+  anxious: Wind,
+  confused: CircleHelp,
   hopeful: Leaf,
   inspired: Sparkles,
-  sad: Frown,
+  sad: CloudRain,
+};
+
+const moodVisuals = {
+  calm: {
+    icon: "bg-status-warningBg text-status-warning",
+    selected: "border-status-warning bg-status-warningBg text-status-warning",
+  },
+  anxious: {
+    icon: "bg-status-infoBg text-status-info",
+    selected: "border-status-info bg-status-infoBg text-status-info",
+  },
+  sad: {
+    icon: "bg-status-infoBg text-status-info",
+    selected: "border-status-info bg-status-infoBg text-status-info",
+  },
+  confused: {
+    icon: "bg-brand-lavenderSoft text-brand-primary",
+    selected: "border-brand-primary bg-brand-lavenderSoft text-brand-primary",
+  },
+  inspired: {
+    icon: "bg-status-dangerBg text-status-danger",
+    selected: "border-status-danger bg-status-dangerBg text-status-danger",
+  },
+  hopeful: {
+    icon: "bg-status-successBg text-status-success",
+    selected: "border-status-success bg-status-successBg text-status-success",
+  },
 };
 
 export function PatientMoodCheckin({
@@ -56,14 +91,15 @@ export function PatientMoodCheckin({
       <div className="mt-5 grid grid-cols-2 gap-3">
         {moodOptions.map((option) => {
           const Icon = moodIcons[option.key];
+          const visual = moodVisuals[option.key];
           const isSelected = selectedMood === option.key;
           return (
             <button
               aria-pressed={isSelected}
               className={cn(
-                "flex min-h-14 items-center gap-3 rounded-md border px-3 text-left text-xs font-medium outline-none transition focus-visible:ring-4 focus-visible:ring-ring/20",
+                "flex min-h-14 items-center gap-3 rounded-xl border px-3 text-left text-xs font-medium outline-none transition focus-visible:ring-4 focus-visible:ring-ring/20",
                 isSelected
-                  ? "border-brand-primary bg-brand-lavenderSoft text-brand-primary"
+                  ? visual.selected
                   : "border-[var(--tes-color-border)] text-brand-primary hover:bg-surface-soft",
               )}
               disabled={isPending}
@@ -71,16 +107,23 @@ export function PatientMoodCheckin({
               onClick={() => selectMood(option.key)}
               type="button"
             >
-              <Icon aria-hidden="true" className="size-7" strokeWidth={1.5} />
+              <span
+                className={cn(
+                  "grid size-9 shrink-0 place-items-center rounded-full",
+                  visual.icon,
+                )}
+              >
+                <Icon aria-hidden="true" className="size-5" strokeWidth={2} />
+              </span>
               {option.label}
             </button>
           );
         })}
       </div>
       <p className="mt-7 flex gap-3 text-xs leading-4 text-[var(--tes-color-text-secondary-app)]">
-        <LockKeyhole
+        <KeyRound
           aria-hidden="true"
-          className="size-5 shrink-0 text-black"
+          className="size-5 shrink-0 text-brand-primary"
         />
         Suas respostas são privadas e ajudam apenas você.
       </p>

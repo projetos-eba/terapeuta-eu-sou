@@ -58,12 +58,13 @@ if (
     "expired",
     "refund",
     "promotion_approved",
+    "promotion_zero",
     "boleto_approved",
     "boleto_expired",
   ].includes(scenario)
 ) {
   console.error(
-    "Use --scenario=approved, declined, expired, refund, promotion_approved, boleto_approved or boleto_expired.",
+    "Use --scenario=approved, declined, expired, refund, promotion_approved, promotion_zero, boleto_approved or boleto_expired.",
   );
   process.exit(1);
 }
@@ -149,7 +150,7 @@ try {
   );
   await page.getByLabel("E-mail").fill(patientEmail);
   await page.locator('input[name="password"]').fill(patientPassword);
-  await page.getByRole("button", { name: "Entrar" }).click();
+  await page.getByRole("button", { name: "Entrar" }).click({ force: true });
   await page.waitForURL(new RegExp(`/reserva\\?`), { timeout: 30_000 });
 
   logStage("accept_terms_and_start_checkout");
@@ -224,13 +225,18 @@ try {
     process.exit(0);
   }
 
-  if (scenario === "promotion_approved") {
+  if (scenario === "promotion_approved" || scenario === "promotion_zero") {
     logStage("apply_promotion_code");
-    await fillStripePromotionCode(page, promotionCode);
+    checkoutSessionId = await fillTesPromotionCode(page, promotionCode);
   }
 
-  logStage("fill_approved_card");
-  await fillStripeCard(page, "4242424242424242");
+  if (scenario === "promotion_zero") {
+    logStage("confirm_no_cost_checkout");
+    await clickStripeButton(page, /Pagar|Confirmar|Finalizar|Reservar|Book/i);
+  } else {
+    logStage("fill_approved_card");
+    await fillStripeCard(page, "4242424242424242");
+  }
   const checkoutCompletion = await waitForCheckoutCompletion(
     page,
     checkoutSessionId,
@@ -249,7 +255,10 @@ try {
   if (checkout.livemode !== false) {
     throw new Error("stripe_live_mode_detected");
   }
-  if (checkout.payment_status !== "paid") {
+  const settledWithoutCharge = scenario === "promotion_zero" &&
+    (checkout.payment_status === "paid" ||
+      checkout.payment_status === "no_payment_required");
+  if (checkout.payment_status !== "paid" && !settledWithoutCharge) {
     throw new Error(`stripe_checkout_not_paid:${checkout.payment_status}`);
   }
 
@@ -262,6 +271,15 @@ try {
       checkout.amount_total >= checkout.amount_subtotal
     ) {
       throw new Error("stripe_promotion_discount_not_applied");
+    }
+  } else if (scenario === "promotion_zero") {
+    if (
+      checkout.amount_subtotal === null ||
+      checkout.amount_total !== 0 ||
+      discountAmountCents !== checkout.amount_subtotal ||
+      checkout.payment_intent
+    ) {
+      throw new Error("stripe_zero_cost_checkout_not_reconciled");
     }
   } else if (
     checkout.amount_subtotal !== null &&
@@ -281,15 +299,31 @@ try {
     typeof checkout.payment_intent === "string"
       ? checkout.payment_intent
       : checkout.payment_intent?.id;
-  if (!paymentIntentId) throw new Error("payment_intent_missing");
+  if (scenario === "promotion_zero") {
+    if (paymentIntentId) throw new Error("unexpected_payment_intent_for_zero_cost_checkout");
+  } else if (!paymentIntentId) {
+    throw new Error("payment_intent_missing");
+  }
 
-  const paymentIntentEvent = await waitForStripeEvent({
-    objectId: paymentIntentId,
-    type: "payment_intent.succeeded",
-  });
-  await postSignedStripeEventTwice(paymentIntentEvent);
+  if (paymentIntentId) {
+    const paymentIntentEvent = await waitForStripeEvent({
+      objectId: paymentIntentId,
+      type: "payment_intent.succeeded",
+    });
+    await postSignedStripeEventTwice(paymentIntentEvent);
+  }
 
   const paidPayment = await waitForSessionPayment(checkoutSessionId, "paid");
+
+  if (scenario === "promotion_zero") {
+    if (
+      paidPayment.gross_amount_cents !== 0 ||
+      paidPayment.platform_gross_commission_cents !== 0 ||
+      paidPayment.therapist_amount_cents !== 0
+    ) {
+      throw new Error("zero_cost_financial_reconciliation_failed");
+    }
+  }
 
   if (scenario === "refund") {
     logStage("create_refund");
@@ -332,7 +366,9 @@ try {
     paymentMetadata: paidPayment.metadata?.stripe_checkout ?? null,
     therapistAmountCents: paidPayment.therapist_amount_cents,
     scenario,
-    webhookEvents: ["checkout.session.completed", "payment_intent.succeeded"],
+    webhookEvents: scenario === "promotion_zero"
+      ? ["checkout.session.completed"]
+      : ["checkout.session.completed", "payment_intent.succeeded"],
     webhookDelivery: "signed_replay_of_real_stripe_events",
   });
 } finally {
@@ -430,46 +466,32 @@ async function fillStripeCard(page, cardNumber) {
   await clickStripeButton(page, /Pay|Pagar|Finalizar|Confirmar/i);
 }
 
-async function fillStripePromotionCode(page, code) {
-  const existingInput = await findLocatorInPageOrFrames(page, (scope) =>
-    scope.getByLabel(/Promotion code|Código promocional|Codigo promocional|Cupom/i).first(),
-  );
-
-  if (!existingInput) {
-    const addCode = await findLocatorInPageOrFrames(page, (scope) =>
-      scope.getByText(/Add (?:a )?promotion code|Add code|Adicionar código(?: promocional)?|Adicionar codigo(?: promocional)?|Have a promotion code|Tem um código promocional/i).first(),
-    );
-    if (!addCode) {
-      const visibleFrameText = [];
-      for (const scope of [page, ...page.frames()]) {
-        const text = await scope.locator("body").innerText().catch(() => "");
-        if (text.trim()) visibleFrameText.push(text.replace(/\s+/g, " ").slice(0, 500));
-      }
-      console.log(JSON.stringify({
-        code: "stripe_promotion_code_control_not_visible",
-        visibleFrameText,
-      }));
-      throw new Error("stripe_promotion_code_control_not_visible");
-    }
-    await addCode.click({ timeout: 15_000 });
+async function fillTesPromotionCode(page, code) {
+  const field = page.getByLabel(/Código promocional/i);
+  await field.fill(code);
+  const [response] = await Promise.all([
+    page.waitForResponse(
+      (candidate) =>
+        candidate.url().includes("/api/public/reservation/checkout") &&
+        candidate.request().method() === "POST" &&
+        candidate.request().postDataJSON()?.action === "replace",
+      { timeout: 45_000 },
+    ),
+    page.getByRole("button", { name: "Aplicar" }).click(),
+  ]);
+  const payload = await response.json();
+  if (!payload?.ok || !payload.checkout?.checkoutSessionId) {
+    throw new Error(`tes_promotion_code_failed:${response.status()}`);
   }
-
-  await fillStripeField(
-    page,
-    /Promotion code|Código promocional|Codigo promocional|Cupom/i,
-    code,
-    [
-      'input[name="promotionCode"]',
-      'input[name="promotion_code"]',
-      'input[autocomplete="off"]',
-    ],
-  );
-  await clickStripeButton(page, /Apply|Aplicar/i);
-
-  const appliedCode = await findLocatorInPageOrFrames(page, (scope) =>
-    scope.getByText(code, { exact: false }).first(),
-  );
-  if (!appliedCode) throw new Error("stripe_promotion_code_not_visible_after_apply");
+  await page.getByText("Código aplicado", { exact: true }).waitFor({
+    state: "visible",
+    timeout: 30_000,
+  });
+  await page
+    .locator("#reservation-embedded-checkout iframe")
+    .first()
+    .waitFor({ state: "visible", timeout: 60_000 });
+  return payload.checkout.checkoutSessionId;
 }
 
 async function runBoletoScenario(page, checkoutSessionId) {
@@ -706,7 +728,11 @@ async function waitForCheckoutCompletion(page, sessionId) {
     }
 
     const checkout = await stripe.checkout.sessions.retrieve(sessionId);
-    if (checkout.status === "complete" && checkout.payment_status === "paid") {
+    if (
+      checkout.status === "complete" &&
+      (checkout.payment_status === "paid" ||
+        checkout.payment_status === "no_payment_required")
+    ) {
       return "stripe_confirmed";
     }
     await delay(2000);

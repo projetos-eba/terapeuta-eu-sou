@@ -1,4 +1,4 @@
-import { TherapistPlan, TherapistStatus } from "@/domain/tes";
+import { TherapistStatus } from "@/domain/tes";
 import {
   createEmptyTherapistDashboardData,
   getTherapistHomeReadiness,
@@ -44,10 +44,7 @@ export default async function TherapistHomePage({
     );
   }
 
-  if (
-    session.status !== TherapistStatus.Approved ||
-    session.plan !== TherapistPlan.PremiumPlus
-  ) {
+  if (session.status !== TherapistStatus.Approved) {
     return (
       <TherapistDashboardPage
         data={createEmptyTherapistDashboardData({ readiness, session })}
@@ -58,6 +55,10 @@ export default async function TherapistHomePage({
   try {
     const data = await getTherapistDashboardPage({
       accessToken: session.accessToken,
+      avatarUrl: session.avatarUrl,
+      name: session.name,
+      plan: session.plan,
+      profileCompleteness: readiness.profileCompleteness,
       profileId: session.profileId,
     });
 

@@ -12,7 +12,11 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 
-import { TESButton, TESDialog } from "@/components/tes";
+import {
+  TESButton,
+  TESDialog,
+  TESFeedbackDialog,
+} from "@/components/tes";
 import type {
   AdminMatchingContract,
   AdminMatchingInterest,
@@ -416,7 +420,11 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
               }
               required
             />
-            <DialogActions error={error} isSaving={isSaving} />
+            <DialogActions
+              error={error}
+              isSaving={isSaving}
+              onClose={() => setError(null)}
+            />
           </form>
         </TESDialog>
       ) : null}
@@ -474,7 +482,11 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
               }
               required
             />
-            <DialogActions error={error} isSaving={isSaving} />
+            <DialogActions
+              error={error}
+              isSaving={isSaving}
+              onClose={() => setError(null)}
+            />
           </form>
         </TESDialog>
       ) : null}
@@ -501,7 +513,11 @@ export function AdminMatchingPage({ initialMatching }: AdminMatchingPageProps) {
               }
               required
             />
-            <DialogActions error={error} isSaving={isSaving} />
+            <DialogActions
+              error={error}
+              isSaving={isSaving}
+              onClose={() => setError(null)}
+            />
           </form>
         </TESDialog>
       ) : null}
@@ -881,16 +897,16 @@ function TextArea({
 function DialogActions({
   error,
   isSaving,
+  onClose,
 }: {
   error: string | null;
   isSaving: boolean;
+  onClose: () => void;
 }) {
   return (
     <div>
       {error ? (
-        <p className="mb-3 rounded-md bg-status-dangerBg p-3 text-sm font-bold text-status-danger">
-          {error}
-        </p>
+        <TESFeedbackDialog message={error} onClose={onClose} />
       ) : null}
       <button
         type="submit"

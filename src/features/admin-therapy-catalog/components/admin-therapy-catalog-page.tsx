@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import { TESButton, TESDialog } from "@/components/tes";
+import { TESButton, TESDialog, TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 import {
@@ -74,6 +74,7 @@ export function AdminTherapyCatalogPage({
   } | null>(null);
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [isMutating, setIsMutating] = useState(false);
   const [requestDetails, setRequestDetails] = useState<
     AdminTherapyCatalogRequestDetail[]
@@ -156,6 +157,7 @@ export function AdminTherapyCatalogPage({
   async function saveTherapy(command: AdminTherapyDraftCommand) {
     setIsMutating(true);
     setMessage(null);
+    setFeedback(null);
 
     const result = await sendAdminTherapyCatalogCommand({
       action: "save",
@@ -166,7 +168,7 @@ export function AdminTherapyCatalogPage({
     setIsMutating(false);
 
     if (result.status === "error") {
-      setMessage("Não foi possível salvar a terapia agora. Tente novamente.");
+      setFeedback("Não foi possível salvar a terapia agora. Tente novamente.");
       return;
     }
 
@@ -179,6 +181,7 @@ export function AdminTherapyCatalogPage({
     if (!transitionTarget) return;
     setIsMutating(true);
     setMessage(null);
+    setFeedback(null);
 
     const result = await sendAdminTherapyCatalogCommand({
       action: "transition",
@@ -192,7 +195,7 @@ export function AdminTherapyCatalogPage({
     setIsMutating(false);
 
     if (result.status === "error") {
-      setMessage("Não foi possível concluir esta ação agora. Tente novamente.");
+      setFeedback("Não foi possível concluir esta ação agora. Tente novamente.");
       return;
     }
 
@@ -215,6 +218,7 @@ export function AdminTherapyCatalogPage({
   ) {
     setIsMutating(true);
     setMessage(null);
+    setFeedback(null);
     const result = await sendAdminTherapyCatalogCommand({
       action: "decideRequest",
       catalogRequestId: request.id,
@@ -225,7 +229,7 @@ export function AdminTherapyCatalogPage({
     });
     setIsMutating(false);
     if (result.status === "error") {
-      setMessage(
+      setFeedback(
         "Não foi possível registrar a decisão agora. Tente novamente.",
       );
       return;
@@ -289,6 +293,12 @@ export function AdminTherapyCatalogPage({
         >
           {message}
         </p>
+      ) : null}
+      {feedback ? (
+        <TESFeedbackDialog
+          message={feedback}
+          onClose={() => setFeedback(null)}
+        />
       ) : null}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
@@ -383,7 +393,7 @@ export function AdminTherapyCatalogPage({
           const url = await getAdminCatalogRequestMaterialUrl(materialId);
           if (url) window.open(url, "_blank", "noopener,noreferrer");
           else
-            setMessage(
+            setFeedback(
               "Não foi possível abrir o material agora. Tente novamente.",
             );
         }}

@@ -16,9 +16,24 @@ type EdgeCheckoutResponse = {
     checkoutSessionId?: string;
     checkoutUiMode?: string;
     clientSecret?: string | null;
+    currency?: string;
+    discountAmountCents?: number;
+    originalAmountCents?: number;
+    promotion?: PromotionSummary | null;
+    totalAmountCents?: number;
     url?: string | null;
   };
   ok: boolean;
+};
+
+type PromotionSummary = {
+  amountOffCents?: number;
+  code: string;
+  couponId: string;
+  duration: "forever" | "once" | "repeating";
+  durationInMonths?: number;
+  percentOff?: number;
+  promotionCodeId: string;
 };
 
 export async function POST(request: Request) {
@@ -35,7 +50,10 @@ export async function POST(request: Request) {
   if (
     !isPaidPlan(input.plan) ||
     !isCheckoutUiMode(input.checkoutUiMode) ||
-    !UUID.test(input.requestId)
+    !UUID.test(input.requestId) ||
+    (input.replaceCheckoutSessionId !== null &&
+      !input.replaceCheckoutSessionId.startsWith("cs_")) ||
+    (input.promotionCode !== null && !input.promotionCode.trim())
   ) {
     return failure("Revise o plano escolhido antes de continuar.", 422);
   }
@@ -57,6 +75,8 @@ export async function POST(request: Request) {
         body: {
           checkoutUiMode: input.checkoutUiMode,
           plan: input.plan,
+          promotionCode: input.promotionCode,
+          replaceCheckoutSessionId: input.replaceCheckoutSessionId,
           requestId: input.requestId,
         },
       },
@@ -82,7 +102,12 @@ export async function POST(request: Request) {
         checkout: {
           checkoutSessionId: checkout.checkoutSessionId,
           clientSecret: checkout.clientSecret,
+          currency: checkout.currency,
+          discountAmountCents: checkout.discountAmountCents,
           mode: checkout.checkoutUiMode,
+          originalAmountCents: checkout.originalAmountCents,
+          promotion: checkout.promotion,
+          totalAmountCents: checkout.totalAmountCents,
           url: checkout.url,
         },
         ok: true,
@@ -112,6 +137,16 @@ function parseInput(value: unknown) {
         ? record.checkoutUiMode
         : "embedded",
     plan: typeof record.plan === "string" ? record.plan : "",
+    promotionCode:
+      record.promotionCode === null
+        ? null
+        : typeof record.promotionCode === "string"
+          ? record.promotionCode
+          : null,
+    replaceCheckoutSessionId:
+      typeof record.replaceCheckoutSessionId === "string"
+        ? record.replaceCheckoutSessionId
+        : null,
     requestId: typeof record.requestId === "string" ? record.requestId : "",
   };
 }
@@ -138,13 +173,25 @@ function mapCheckoutError(error: SupabaseFunctionError) {
   }
 
   if (
+    error.code?.startsWith("promotion_") ||
+    error.code === "checkout_replacement_forbidden" ||
+    error.code === "checkout_replacement_conflict"
+  ) {
+    return {
+      code: error.code,
+      message: error.message || "Código promocional inválido ou indisponível.",
+      status: error.status >= 400 ? error.status : 422,
+    };
+  }
+
+  if (
     error.code === "missing_stripe_env" ||
     error.code === "missing_supabase_env" ||
     error.code === "invalid_stripe_secret_key"
   ) {
     return {
       code: "CONFIGURATION_UNAVAILABLE",
-      message: "O pagamento está temporariamente indisponível neste ambiente.",
+      message: "O pagamento está temporariamente indisponível. Tente novamente.",
       status: 503,
     };
   }

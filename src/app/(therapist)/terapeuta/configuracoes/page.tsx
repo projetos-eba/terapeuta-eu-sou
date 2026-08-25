@@ -7,6 +7,9 @@ import { getTherapistSettingsPage } from "@/features/therapist-settings/therapis
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function TherapistSettingsPage() {
   const session = await requireTherapistSession(
     therapistRoutePolicies.settings,

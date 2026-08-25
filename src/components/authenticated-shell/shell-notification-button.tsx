@@ -2,7 +2,21 @@
 
 import Link from "next/link";
 import type { Route } from "next";
-import { Bell, CheckCheck, X } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Bell,
+  CalendarCheck2,
+  CalendarClock,
+  CheckCheck,
+  ClipboardList,
+  CreditCard,
+  Headphones,
+  MessageCircle,
+  Star,
+  Video,
+  X,
+} from "lucide-react";
+import { createPortal } from "react-dom";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
@@ -26,6 +40,11 @@ type NotificationResponse = {
   toast?: ShellNotification | null;
 };
 
+type PanelPosition = {
+  right: number;
+  top: number;
+};
+
 export function ShellNotificationButton({
   count: initialCount = 0,
   href,
@@ -37,9 +56,14 @@ export function ShellNotificationButton({
 }) {
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
   const knownIdsRef = useRef<Set<string> | null>(null);
   const [count, setCount] = useState(initialCount);
   const [isOpen, setIsOpen] = useState(false);
+  const [panelPosition, setPanelPosition] = useState<PanelPosition | null>(
+    null,
+  );
   const [items, setItems] = useState<ShellNotification[]>([]);
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [toast, setToast] = useState<ShellNotification | null>(null);
@@ -113,12 +137,41 @@ export function ShellNotificationButton({
     return () => window.clearTimeout(timeoutId);
   }, [toast]);
 
+  const updatePanelPosition = useCallback(() => {
+    const button = buttonRef.current;
+    if (!button) return;
+
+    const rect = button.getBoundingClientRect();
+    setPanelPosition({
+      right: Math.max(16, window.innerWidth - rect.right),
+      top: rect.bottom + 12,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setPanelPosition(null);
+      return;
+    }
+
+    updatePanelPosition();
+    const handleViewportChange = () => updatePanelPosition();
+    window.addEventListener("resize", handleViewportChange);
+    window.addEventListener("scroll", handleViewportChange, true);
+
+    return () => {
+      window.removeEventListener("resize", handleViewportChange);
+      window.removeEventListener("scroll", handleViewportChange, true);
+    };
+  }, [isOpen, updatePanelPosition]);
+
   useEffect(() => {
     const onPointerDown = (event: MouseEvent) => {
       if (
         isOpen &&
         event.target instanceof Node &&
-        !rootRef.current?.contains(event.target)
+        !rootRef.current?.contains(event.target) &&
+        !panelRef.current?.contains(event.target)
       ) {
         setIsOpen(false);
       }
@@ -135,14 +188,17 @@ export function ShellNotificationButton({
     };
   }, [isOpen]);
 
-  const markRead = useCallback(async (ids: string[]) => {
-    const response = await fetch("/api/notifications/mark-read", {
-      body: JSON.stringify({ ids, role }),
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-    });
-    return response.ok;
-  }, [role]);
+  const markRead = useCallback(
+    async (ids: string[]) => {
+      const response = await fetch("/api/notifications/mark-read", {
+        body: JSON.stringify({ ids, role }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      return response.ok;
+    },
+    [role],
+  );
 
   const handleNotificationClick = useCallback(
     (item: ShellNotification) => {
@@ -199,6 +255,7 @@ export function ShellNotificationButton({
           }
           className="relative inline-flex size-11 items-center justify-center rounded-full text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
           onClick={() => setIsOpen((current) => !current)}
+          ref={buttonRef}
           type="button"
         >
           <Bell aria-hidden="true" className="size-6" strokeWidth={1.8} />
@@ -209,80 +266,85 @@ export function ShellNotificationButton({
           ) : null}
         </button>
 
-        {isOpen ? (
-          <section
-            aria-label="Notificações recentes"
-            className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-brand-lavender bg-white shadow-[0_18px_45px_-20px_rgba(20,16,90,0.35)]"
-            id={panelId}
-          >
-            <div className="flex items-center justify-between gap-3 border-b border-brand-lavender px-4 py-3">
-              <div>
-                <h2 className="text-sm font-bold text-brand-deep">
-                  Notificações
-                </h2>
-                <p className="text-xs text-tesText-secondary">
-                  {count === 0
-                    ? "Você está em dia."
-                    : `${count} ${count === 1 ? "não lida" : "não lidas"}`}
-                </p>
-              </div>
-              {count > 0 ? (
-                <button
-                  className="inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-sm font-semibold text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20 disabled:cursor-wait disabled:opacity-60"
-                  disabled={isMarkingAll}
-                  onClick={() => void handleMarkAllRead()}
-                  type="button"
-                >
-                  <CheckCheck aria-hidden="true" className="size-4" />
-                  Marcar lidas
-                </button>
-              ) : null}
-            </div>
-
-            {items.length > 0 ? (
-              <ul
-                aria-label="Lista de notificações"
-                className="max-h-[22rem] overflow-y-auto"
+        {isOpen && panelPosition
+          ? createPortal(
+              <section
+                aria-label="Notificações recentes"
+                className="fixed z-overlay w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-brand-lavender bg-white shadow-[0_18px_45px_-20px_rgba(20,16,90,0.35)]"
+                id={panelId}
+                ref={panelRef}
+                style={panelPosition}
               >
-                {items.map((item) => (
-                  <li key={item.id}>
-                    {item.href ? (
-                      <Link
-                        className={notificationRowClassName(item)}
-                        href={item.href as Route<string>}
-                        onClick={() => handleNotificationClick(item)}
-                      >
-                        <NotificationContent item={item} />
-                      </Link>
-                    ) : (
-                      <button
-                        className={notificationRowClassName(item)}
-                        onClick={() => handleNotificationClick(item)}
-                        type="button"
-                      >
-                        <NotificationContent item={item} />
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="px-4 py-8 text-center text-sm text-tesText-secondary">
-                Nenhuma notificação por enquanto.
-              </p>
-            )}
+                <div className="flex items-center justify-between gap-3 border-b border-brand-lavender px-4 py-3">
+                  <div>
+                    <h2 className="text-sm font-bold text-brand-deep">
+                      Notificações
+                    </h2>
+                    <p className="text-xs text-tesText-secondary">
+                      {count === 0
+                        ? "Você está em dia."
+                        : `${count} ${count === 1 ? "não lida" : "não lidas"}`}
+                    </p>
+                  </div>
+                  {count > 0 ? (
+                    <button
+                      className="inline-flex min-h-11 items-center gap-1 rounded-md px-2 text-sm font-semibold text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20 disabled:cursor-wait disabled:opacity-60"
+                      disabled={isMarkingAll}
+                      onClick={() => void handleMarkAllRead()}
+                      type="button"
+                    >
+                      <CheckCheck aria-hidden="true" className="size-4" />
+                      Marcar lidas
+                    </button>
+                  ) : null}
+                </div>
 
-            <Link
-              className="block border-t border-brand-lavender px-4 py-3 text-center text-sm font-semibold text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
-              href={href as Route<string>}
-              onClick={() => setIsOpen(false)}
-            >
-              {href.startsWith("/admin")
-                ? "Abrir suporte"
-                : "Abrir Central de mensagens"}
-            </Link>
-          </section>
-        ) : null}
+                {items.length > 0 ? (
+                  <ul
+                    aria-label="Lista de notificações"
+                    className="max-h-[22rem] overflow-y-auto"
+                  >
+                    {items.map((item) => (
+                      <li key={item.id}>
+                        {item.href ? (
+                          <Link
+                            className={notificationRowClassName(item)}
+                            href={item.href as Route<string>}
+                            onClick={() => handleNotificationClick(item)}
+                          >
+                            <NotificationContent item={item} />
+                          </Link>
+                        ) : (
+                          <button
+                            className={notificationRowClassName(item)}
+                            onClick={() => handleNotificationClick(item)}
+                            type="button"
+                          >
+                            <NotificationContent item={item} />
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="px-4 py-8 text-center text-sm text-tesText-secondary">
+                    Nenhuma notificação por enquanto.
+                  </p>
+                )}
+
+                <Link
+                  className="block border-t border-brand-lavender px-4 py-3 text-center text-sm font-semibold text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+                  href={href as Route<string>}
+                  onClick={() => setIsOpen(false)}
+                >
+                  {href.startsWith("/admin")
+                    ? "Abrir suporte"
+                    : "Abrir Central de mensagens"}
+                </Link>
+              </section>,
+              document.body,
+            )
+          : null}
       </div>
 
       {toast ? (
@@ -338,23 +400,51 @@ function notificationRowClassName(item: ShellNotification) {
 
 function NotificationContent({ item }: { item: ShellNotification }) {
   return (
-    <span className="block">
-      <span className="flex items-start justify-between gap-3">
-        <span className="text-sm font-semibold text-brand-deep">
-          {item.title}
+    <span className="flex items-start gap-3">
+      <NotificationIcon kind={item.kind} />
+      <span className="min-w-0 flex-1">
+        <span className="flex items-start justify-between gap-3">
+          <span className="text-sm font-semibold text-brand-deep">
+            {item.title}
+          </span>
+          {item.readAt === null ? (
+            <span
+              aria-label="Não lida"
+              className="mt-1.5 size-2 shrink-0 rounded-full bg-brand-primary"
+            />
+          ) : null}
         </span>
-        {item.readAt === null ? (
-          <span
-            aria-label="Não lida"
-            className="mt-1.5 size-2 shrink-0 rounded-full bg-brand-primary"
-          />
+        {item.body ? (
+          <span className="mt-1 block text-xs leading-5 text-tesText-secondary">
+            {item.body}
+          </span>
         ) : null}
       </span>
-      {item.body ? (
-        <span className="mt-1 block text-xs leading-5 text-tesText-secondary">
-          {item.body}
-        </span>
-      ) : null}
+    </span>
+  );
+}
+
+const notificationIcons: Record<string, LucideIcon> = {
+  appointment: Video,
+  booking_confirmed: CalendarCheck2,
+  message_received: MessageCircle,
+  payment: CreditCard,
+  review: Star,
+  reschedule: CalendarClock,
+  support_ticket_created: Headphones,
+  support_ticket_updated: Headphones,
+  therapy_catalog_request_submitted: ClipboardList,
+};
+
+function NotificationIcon({ kind }: { kind: string }) {
+  const Icon = notificationIcons[kind] ?? Bell;
+
+  return (
+    <span
+      aria-hidden="true"
+      className="grid size-10 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary"
+    >
+      <Icon className="size-[18px]" strokeWidth={1.8} />
     </span>
   );
 }

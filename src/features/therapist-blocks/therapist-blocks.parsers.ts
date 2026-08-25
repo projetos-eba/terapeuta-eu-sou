@@ -5,6 +5,7 @@ import {
   type TherapistBlockActionInput,
   type TherapistBlockCommandResult,
   type TherapistBlocksReadModel,
+  type TherapistPaidBlockConflict,
 } from "@/domain/tes";
 
 import { TherapistBlocksContractError } from "./therapist-blocks.errors";
@@ -171,8 +172,24 @@ export function parseTherapistBlockCommandResult(
     idempotentReplay: boolean(data.idempotentReplay),
     impactedBookingCount: optionalNonNegativeInteger(data.impactedBookingCount),
     occurrenceCount: optionalNonNegativeInteger(data.occurrenceCount),
+    paidImpactedBookings:
+      data.paidImpactedBookings === undefined
+        ? undefined
+        : array(data.paidImpactedBookings).map(parsePaidBlockConflict),
     scheduleVersion: optionalPositiveInteger(data.scheduleVersion),
     seriesId: data.seriesId === undefined ? undefined : uuid(data.seriesId),
+  };
+}
+
+function parsePaidBlockConflict(value: unknown): TherapistPaidBlockConflict {
+  const data = object(value);
+  return {
+    bookingId: uuid(data.bookingId),
+    endsAt: dateTime(data.endsAt),
+    patientName: text(data.patientName),
+    serviceTitle: text(data.serviceTitle),
+    startsAt: dateTime(data.startsAt),
+    timezone: boundedText(data.timezone, 100),
   };
 }
 

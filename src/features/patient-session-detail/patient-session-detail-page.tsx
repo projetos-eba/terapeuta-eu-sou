@@ -1,5 +1,4 @@
 import {
-  AppPageAside,
   AppPageContainer,
   AppPageGrid,
   AppPageMain,
@@ -14,6 +13,7 @@ import { SessionAboutCard } from "./components/session-about-card";
 import { SessionActionCards } from "./components/session-action-cards";
 import { SessionDetailHeader } from "./components/session-detail-header";
 import { SessionOverviewCard } from "./components/session-overview-card";
+import { SessionStatusStrip } from "./components/session-status-strip";
 import { SharedIntakeCard } from "./components/shared-intake-card";
 import { UsefulInfoCard } from "./components/useful-info-card";
 import type { PatientSessionDetailPageData } from "./patient-session-detail.types";
@@ -26,46 +26,56 @@ export function PatientSessionDetailPage({
   const showContextAside = data.booking.status !== "completed";
 
   return (
-    <AppPageContainer className="max-w-[1140px] gap-8 pb-14 text-tesText-primary sm:gap-10">
+    <AppPageContainer className="max-w-[1146px] gap-5 pb-14 text-tesText-primary sm:gap-6 lg:gap-7">
       <SessionDetailHeader />
-      <AppPageGrid
-        className={
-          showContextAside
-            ? "gap-10 xl:grid-cols-[minmax(0,1fr)_280px] xl:items-start"
-            : "gap-10"
-        }
-      >
-        <AppPageMain className="gap-10">
-          <SessionOverviewCard data={data} />
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-            <SessionAboutCard data={data} />
-            <SharedIntakeCard intake={data.intake} />
+      <SessionOverviewCard data={data} />
+      <SessionStatusStrip data={data} />
+
+      <AppPageGrid className="gap-5 xl:grid-cols-[minmax(0,1fr)_296px] xl:items-start xl:gap-6">
+        {showContextAside ? (
+          <div className="order-1 grid min-w-0 gap-5 lg:order-2 xl:col-start-2 xl:row-start-1 xl:sticky xl:top-28">
+            <div className="grid grid-cols-2 gap-3 max-[370px]:grid-cols-1 xl:grid-cols-1 xl:gap-5">
+              <QuickSupportCard bookingId={data.booking.id} />
+              {typeof data.booking.minutesUntilStart === "number" ? (
+                <ReminderCard booking={data.booking} />
+              ) : null}
+            </div>
+            <div className="hidden lg:block">
+              <UsefulInfoCard compact />
+            </div>
           </div>
+        ) : null}
+
+        <AppPageMain
+          className={
+            showContextAside
+              ? "order-2 gap-5 lg:order-1 xl:col-start-1 xl:row-span-2"
+              : "order-1 gap-5 lg:order-1 xl:col-span-2"
+          }
+        >
+          <SessionAboutCard data={data} />
+          <SharedIntakeCard intake={data.intake} />
           <OnlineSessionCard data={data} />
           <SessionActionCards data={data} />
-          <section aria-labelledby="journey-with-therapist-heading">
-            <h2
-              className="font-display text-[2rem] font-light italic leading-none text-brand-deep sm:text-[2.3rem]"
-              id="journey-with-therapist-heading"
-            >
-              Sua jornada com {data.therapist.name}
-            </h2>
-          </section>
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-            <PreparationCard data={data} />
-            <CancellationPolicyCard policy={data.cancellationPolicy} />
-          </div>
-          {!showContextAside ? <UsefulInfoCard /> : null}
+          {showContextAside ? (
+            <div className="lg:hidden">
+              <UsefulInfoCard />
+            </div>
+          ) : (
+            <UsefulInfoCard />
+          )}
         </AppPageMain>
-        {showContextAside ? (
-          <AppPageAside className="gap-6 xl:sticky xl:top-28 xl:grid-cols-1 xl:self-start">
-            <QuickSupportCard bookingId={data.booking.id} />
-            <UsefulInfoCard compact />
-            {typeof data.booking.minutesUntilStart === "number" ? (
-              <ReminderCard booking={data.booking} />
-            ) : null}
-          </AppPageAside>
-        ) : null}
+
+        <div
+          className={
+            showContextAside
+              ? "order-3 grid gap-5 lg:order-3 xl:col-start-2 xl:row-start-2"
+              : "order-2 grid gap-5 lg:order-2 xl:col-span-2"
+          }
+        >
+          <PreparationCard data={data} />
+          <CancellationPolicyCard policy={data.cancellationPolicy} />
+        </div>
       </AppPageGrid>
     </AppPageContainer>
   );

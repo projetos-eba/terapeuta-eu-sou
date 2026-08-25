@@ -47,9 +47,30 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
   Os documentos privados são resumidos apenas como estado e encaminham para
   `/terapeuta/configuracoes`, que é a área canônica de envio; não duplicar
   upload, URLs ou dados privados no dashboard.
+- Cada etapa do checklist é uma única área de link acessível, com foco visível,
+  navegação por teclado e área de toque mínima de 44px. O comportamento é o
+  mesmo em mobile, tablet e desktop; não há link aninhado apenas no ícone.
 - Read model: RPC `public.get_therapist_dashboard_v1()`.
-- Recomendações: `public.aura_recommendations`, consultadas separadamente.
+- Aura Premium Plus: o dashboard consome `get_therapist_aura_signals_v1(30)`
+  pelo mesmo serviço server-only da página `/terapeuta/assessor-ia`; não
+  consultar `public.aura_recommendations` diretamente em componentes ou em um
+  segundo contrato. Assim, regras, período, dismissals e filtros de origem
+  demonstrativa permanecem iguais nas duas superfícies.
 - Assets locais: `public/therapist/dashboard/`.
+
+## Dados temporais do painel
+
+- A visão “Sua semana” é derivada de `get_therapist_calendar_v1` na visão
+  semanal, usando `timezone` e `range.localStart` retornados pelo contrato.
+  Os estados de booking continuam sendo classificados conforme o domínio
+  transacional.
+- “Próximas sessões” usa `get_therapist_agenda_v1` em uma janela de até 90
+  dias, ordena os horários crescentes e mostra data, horário, pessoa e terapia.
+  Uma falha de leitura fica explícita e não vira lista vazia.
+- O gráfico semanal usa tooltip TES, resumo textual acessível e tokens CSS, sem
+  valores de referência inventados.
+- Para Free, “Ver mais” abre uma explicação no próprio painel e encaminha
+  somente para o plano Premium, nunca para `/terapeuta/insights`.
 
 Não distribuir queries pelos componentes. A entrada única da página é
 `getTherapistHomeReadiness({ session })`; quando o terapeuta está operacional e
@@ -114,6 +135,10 @@ Não distribuir queries pelos componentes. A entrada única da página é
 - Confirmar que todos os links do menu evitam 404.
 - Confirmar RLS entre Ana, Rafael e paciente.
 - Confirmar idempotência do seed.
+
+No onboarding, clicar no texto, descrição, estado ou ícone de cada etapa deve
+levar ao mesmo destino; validar também Tab/Enter e foco visível em 1440px,
+1024px e 390px.
 
 ## Pendências conhecidas
 

@@ -4,6 +4,7 @@ import { Link2, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { TESButton } from "@/components/tes";
+import { TherapistPlan } from "@/domain/tes";
 import { cn } from "@/lib/utils";
 
 import {
@@ -247,6 +248,8 @@ function SlugEditor({
           <ProfileCapabilityGate
             allowed={false}
             message="O link personalizado está disponível nos planos Premium e Premium Plus. Seu identificador numérico continua estável e compartilhável."
+            requiredPlan={TherapistPlan.Premium}
+            title="Link personalizado"
           >
             {null}
           </ProfileCapabilityGate>

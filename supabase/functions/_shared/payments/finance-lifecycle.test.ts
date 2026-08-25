@@ -64,6 +64,7 @@ Deno.test(
     assertEquals(params.amount, 16_000);
     assertEquals(params.currency, "brl");
     assertEquals(params.destination, "acct_123");
+    assertEquals(params.expand[0], "destination_payment.balance_transaction");
     assertEquals(params.source_transaction, "ch_123");
     assertEquals(params.transfer_group, "tes_booking_booking_123");
     assertEquals(params.metadata.tes_session_payment_id, "payment_123");

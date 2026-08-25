@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { Heart, Search, Trash2 } from "lucide-react";
+import { Heart, Search, Star, Trash2 } from "lucide-react";
 
 import { TESDecorativeMedia } from "@/components/tes";
 import { routes } from "@/lib/routes";
@@ -104,39 +104,65 @@ function FavoriteTherapistCard({
   const removeAction = removeFavoriteAction.bind(null, item.id);
 
   return (
-    <article className="flex h-full flex-col rounded-card border border-brand-lavender bg-white p-5 shadow-card">
-      <div className="flex items-start gap-4">
-        <div className="relative size-16 overflow-hidden rounded-full bg-brand-lavenderSoft">
-          {item.avatarUrl ? (
-            <Image
-              alt=""
-              className="object-cover"
-              fill
-              sizes="64px"
-              src={item.avatarUrl}
-            />
-          ) : (
-            <span className="grid size-full place-items-center text-xl font-extrabold text-brand-primary">
-              {item.name.charAt(0)}
-            </span>
-          )}
-        </div>
-        <div className="min-w-0">
-          <h2 className="text-lg font-extrabold leading-tight text-brand-deep">
-            {item.name}
-          </h2>
-          <p className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-tesText-secondary">
-            {item.headline ?? "Terapeuta TES"}
-          </p>
-          <span className="mt-3 inline-flex min-h-7 items-center rounded-full bg-status-successBg px-3 text-xs font-extrabold text-status-success">
-            {item.isAcceptingBookings
-              ? "Aceitando encontros"
-              : "Agenda pausada"}
+    <article className="flex h-full flex-col overflow-hidden rounded-card border border-brand-lavender bg-white shadow-card">
+      <div className="relative aspect-[4/3] bg-brand-lavenderSoft">
+        {item.avatarUrl ? (
+          <Image
+            alt=""
+            className="object-cover object-center"
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+            src={item.avatarUrl}
+          />
+        ) : (
+          <span className="grid size-full place-items-center text-4xl font-extrabold text-brand-primary">
+            {item.name.charAt(0)}
           </span>
-        </div>
+        )}
+        <span className="absolute left-4 top-4 inline-flex min-h-7 items-center rounded-full bg-white/90 px-3 text-xs font-extrabold text-brand-primary shadow-card">
+          {item.isAcceptingBookings ? "Aceitando encontros" : "Agenda pausada"}
+        </span>
       </div>
 
-      <div className="mt-auto grid gap-4 pt-6">
+      <div className="flex h-full flex-col p-5">
+        <h2 className="text-lg font-extrabold leading-tight text-brand-deep">
+          {item.name}
+        </h2>
+        <p className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-tesText-secondary">
+          {item.headline ?? "Terapeuta TES"}
+        </p>
+        <div className="mt-3 flex items-center gap-2 text-sm font-extrabold text-tesText-secondary">
+          <Star
+            aria-hidden="true"
+            className="size-4 fill-status-warning text-status-warning"
+          />
+          {item.averageRating !== null
+            ? `${item.averageRating.toFixed(1)} · ${item.reviewCount} avaliações`
+            : "Ainda sem avaliações"}
+        </div>
+        {item.summary ? (
+          <p className="mt-4 line-clamp-3 text-sm font-semibold leading-6 text-tesText-secondary">
+            {item.summary}
+          </p>
+        ) : null}
+        {item.techniques.length > 0 ? (
+          <div
+            className="mt-4 flex flex-wrap gap-2"
+            aria-label="Técnicas do terapeuta"
+          >
+            {item.techniques.map((technique) => (
+              <span
+                className="rounded-full bg-brand-lavenderSoft px-3 py-1 text-xs font-extrabold text-brand-primary"
+                key={technique}
+              >
+                {technique}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="mt-auto grid gap-4 px-5 pb-5">
         <form action={removeAction}>
           <button
             className="flex h-11 min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary transition hover:border-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"

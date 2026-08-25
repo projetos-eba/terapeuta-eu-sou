@@ -261,6 +261,18 @@ describe("TherapistProfileEditorPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("hides the managed reviews area for Free without changing other managed links", () => {
+    render(
+      <TherapistProfileEditorPage
+        editor={makeEditor({ derived: { plan: "free" } })}
+      />,
+    );
+
+    expect(screen.getByText("Terapias e preços")).toBeInTheDocument();
+    expect(screen.getByText("Horários disponíveis")).toBeInTheDocument();
+    expect(screen.queryByText("Avaliações")).not.toBeInTheDocument();
+  });
+
   it("saves a paid slug without discarding unsaved profile fields", async () => {
     const updatedEditor = makeEditor({
       publicProfileHref: "/terapeutas/ana-presenca",
@@ -418,7 +430,7 @@ describe("TherapistProfileEditorPage", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("explains missing required fields before the first profile publication", () => {
+  it("explains missing required fields before the first profile publication", async () => {
     render(
       <TherapistProfileEditorPage editor={makeFirstConfigurationEditor()} />,
     );
@@ -436,7 +448,10 @@ describe("TherapistProfileEditorPage", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Preencha sua essência antes de publicar.",
     );
-    expect(screen.getByLabelText("Minha essência")).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Entendi" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Minha essência")).toHaveFocus(),
+    );
     expect(commandMocks.sendTherapistProfileCommand).not.toHaveBeenCalled();
   });
 
@@ -753,7 +768,7 @@ describe("TherapistProfileEditorPage", () => {
     );
   });
 
-  it("focuses the first invalid field and does not call the backend", () => {
+  it("focuses the first invalid field after the feedback dialog closes", async () => {
     render(<TherapistProfileEditorPage editor={makeEditor()} />);
 
     fireEvent.change(screen.getByLabelText("Nome do perfil"), {
@@ -766,7 +781,10 @@ describe("TherapistProfileEditorPage", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Informe o nome do perfil antes de salvar.",
     );
-    expect(screen.getByLabelText("Nome do perfil")).toHaveFocus();
+    fireEvent.click(screen.getByRole("button", { name: "Entendi" }));
+    await waitFor(() =>
+      expect(screen.getByLabelText("Nome do perfil")).toHaveFocus(),
+    );
     expect(commandMocks.sendTherapistProfileCommand).not.toHaveBeenCalled();
   });
 

@@ -1,12 +1,31 @@
 import { CalendarDays, Clock3, Star, UserRoundPlus } from "lucide-react";
 
+import { TherapistPlan } from "@/domain/tes";
+import {
+  canAccessTherapistPlan,
+  TherapistLockedCard,
+} from "@/features/therapist-access";
+
 import type { TherapistDashboardPageData } from "../therapist-dashboard.types";
 
 export function TherapistHeroStats({
+  plan,
   today,
 }: {
+  plan: TherapistPlan;
   today: TherapistDashboardPageData["today"];
 }) {
+  if (!canAccessTherapistPlan(plan, TherapistPlan.Premium)) {
+    return (
+      <TherapistLockedCard
+        className="min-h-24 rounded-panel border-[var(--tes-color-border)]/70 p-4 sm:p-5"
+        requiredPlan={TherapistPlan.Premium}
+        title="Estatísticas rápidas"
+        variant="compact"
+      />
+    );
+  }
+
   const stats = [
     {
       icon: CalendarDays,

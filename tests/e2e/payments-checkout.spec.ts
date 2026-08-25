@@ -47,6 +47,11 @@ test.describe("payments checkout smoke", () => {
       page.getByText(/O TES não recebe número de cartão, CVC/i),
     ).toBeVisible();
     await expect(
+      page.getByRole("heading", { name: "Código promocional" }),
+    ).toBeVisible();
+    await expect(page.locator("#tes-promotion-code")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Aplicar" })).toBeVisible();
+    await expect(
       page.locator("#subscription-embedded-checkout iframe").first(),
     ).toBeVisible({ timeout: 30_000 });
     await expect(
@@ -67,6 +72,10 @@ test.describe("payments checkout smoke", () => {
 
     await expect(page).toHaveURL(/\/terapeuta\/checkout\?plan=premium_plus/);
     await expect(page.getByText("TES Premium Plus")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Código promocional" }),
+    ).toBeVisible();
+    await expect(page.locator("#tes-promotion-code")).toBeVisible();
     await expect(
       page.locator("#subscription-embedded-checkout iframe").first(),
     ).toBeVisible({ timeout: 30_000 });

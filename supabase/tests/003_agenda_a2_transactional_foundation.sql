@@ -594,7 +594,11 @@ select is(
       'Ajuste de agenda.',
       'a2-reschedule-request-0001',
       172800,
-      1
+      (
+        select version
+        from public.bookings
+        where id = 'f2000000-0000-4000-8000-000000000001'
+      )
     )
   ).status,
   'pending',
@@ -612,7 +616,11 @@ select is(
       'Ajuste de agenda.',
       'a2-reschedule-request-0001',
       172800,
-      1
+      (
+        select booking_version_at_request
+        from public.booking_reschedule_requests
+        where request_id = 'a2-reschedule-request-0001'
+      )
     )
   ).id,
   (
@@ -634,7 +642,11 @@ select is(
       'aaaaaaaa-0000-4000-8000-000000000001',
       'accepted',
       'a2-reschedule-resolution-0001',
-      1
+      (
+        select booking_version_at_request
+        from public.booking_reschedule_requests
+        where request_id = 'a2-reschedule-request-0001'
+      )
     )->>'applied'
   )::boolean,
   true,
@@ -647,7 +659,11 @@ select is(
     from public.bookings
     where id = 'f2000000-0000-4000-8000-000000000001'
   ),
-  2,
+  (
+    select booking_version_at_request + 1
+    from public.booking_reschedule_requests
+    where request_id = 'a2-reschedule-request-0001'
+  ),
   'rescheduling increments the booking version'
 );
 
