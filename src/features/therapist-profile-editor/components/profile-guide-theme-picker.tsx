@@ -14,7 +14,7 @@ import {
   therapistProfileGuideThemes,
 } from "../therapist-profile-guide-themes";
 
-const MAX_SELECTED_GUIDE_THEMES = 3;
+const MAX_SELECTED_GUIDE_THEMES = 4;
 
 export function ProfileGuideThemePicker({
   items,
@@ -45,7 +45,7 @@ export function ProfileGuideThemePicker({
     }
 
     if (selectedThemes.length >= MAX_SELECTED_GUIDE_THEMES) {
-      setMessage("Você pode escolher até 3 temas.");
+      setMessage("Você pode escolher até 4 temas.");
       return;
     }
 
@@ -60,7 +60,7 @@ export function ProfileGuideThemePicker({
           className="text-sm font-semibold leading-6 text-tesText-secondary"
           id="guideItems-description"
         >
-          Escolha até 3 temas que representam os caminhos pelos quais você pode
+          Escolha até 4 temas que representam os caminhos pelos quais você pode
           acompanhar cada pessoa.
         </p>
         <span className="shrink-0 rounded-full bg-brand-lavenderSoft px-3 py-1.5 text-sm font-extrabold text-brand-primary">
@@ -141,7 +141,7 @@ export function ProfileGuideThemePicker({
           <p>
             Você ainda tem caminhos personalizados salvos anteriormente. Eles
             continuam no perfil até que você escolha um dos temas acima; ao
-            escolher, serão substituídos por até 3 temas da plataforma.
+            escolher, serão substituídos por até 4 temas da plataforma.
           </p>
         </div>
       ) : null}

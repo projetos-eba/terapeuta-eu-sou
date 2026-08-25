@@ -144,8 +144,8 @@ export function PublicProfilePreview({
           </PreviewCard>
           <PreviewCard title="Como posso te guiar">
             {profile.content.guideItems.length ? (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {profile.content.guideItems.map((item) => (
+              <div className="grid grid-cols-2 gap-3">
+                {profile.content.guideItems.slice(0, 4).map((item) => (
                   <span
                     className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-brand-lavender px-3 text-sm font-bold text-brand-deep"
                     key={item.label}

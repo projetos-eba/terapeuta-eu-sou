@@ -484,12 +484,12 @@ function validateDraftFields(
     };
   }
   if (
-    fields.guideItems.length > 3 &&
+    fields.guideItems.length > 4 &&
     fields.guideItems.every(isTherapistProfileGuideThemeItem)
   ) {
     return {
       focusId: "guideItems",
-      message: "Escolha no máximo 3 temas em Como posso te guiar.",
+      message: "Escolha no máximo 4 temas em Como posso te guiar.",
     };
   }
   if (

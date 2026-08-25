@@ -176,6 +176,7 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
 
 function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
   const videoEmbedUrl = getPublicVideoEmbedUrl(profile.video);
+  const guideItems = profile.content.guideItems.slice(0, 4);
 
   return (
     <section className="mx-auto grid max-w-[1348px] gap-5 px-5 pt-8 sm:px-8 md:grid-cols-3">
@@ -221,13 +222,18 @@ function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
         <h2 className="font-display text-2xl font-light italic text-status-info">
           Como posso te guiar
         </h2>
-        <div className="mt-7 grid grid-cols-3 gap-0">
-          {profile.content.guideItems.slice(0, 3).map((item, index) => (
+        <div
+          aria-label="Caminhos pelos quais posso te guiar"
+          className="mt-7 grid grid-cols-2 gap-x-4 gap-y-7 sm:gap-x-6"
+          role="list"
+        >
+          {guideItems.map((item, index) => (
             <div
-              className={`grid gap-3 px-2 text-center first:pl-0 last:pr-0 ${index > 0 ? "border-l border-brand-lavender" : ""}`}
+              className={`grid content-start gap-3 px-2 text-center ${index % 2 === 1 ? "border-l border-brand-lavender" : ""} ${guideItems.length % 2 === 1 && index === guideItems.length - 1 ? "col-span-2 mx-auto w-full max-w-[180px] border-l-0" : ""}`}
               key={item.label}
+              role="listitem"
             >
-              <span className="mx-auto grid size-20 place-items-center rounded-full bg-brand-lavenderSoft">
+              <span className="mx-auto grid size-[68px] place-items-center rounded-full bg-brand-lavenderSoft sm:size-[72px]">
                 <IconByName name={item.icon} />
               </span>
               <p className="text-sm font-medium leading-[1.45] text-tesText-primary">

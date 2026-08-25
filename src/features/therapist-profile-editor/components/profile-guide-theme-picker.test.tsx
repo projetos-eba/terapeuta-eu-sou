@@ -15,36 +15,41 @@ describe("ProfileGuideThemePicker", () => {
 
   it("shows the ten platform themes with their selection state", () => {
     render(
-      <Harness
-        initial={[{ icon: "heart", label: "Emoções e Bem-Estar" }]}
-      />,
+      <Harness initial={[{ icon: "heart", label: "Emoções e Bem-Estar" }]} />,
     );
 
     expect(screen.getAllByRole("button")).toHaveLength(10);
-    expect(screen.getByText("1/3 selecionados")).toBeInTheDocument();
+    expect(screen.getByText("1/4 selecionados")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Emoções e Bem-Estar/ }),
     ).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("allows up to three themes and explains the limit", () => {
+  it("allows up to four themes and explains the limit", () => {
     render(<Harness />);
 
-    fireEvent.click(screen.getByRole("button", { name: /Emoções e Bem-Estar/ }));
     fireEvent.click(
-      screen.getByRole("button", { name: /Relacionamentos/ }),
+      screen.getByRole("button", { name: /Emoções e Bem-Estar/ }),
     );
-    fireEvent.click(screen.getByRole("button", { name: /Propósito e Direção/ }));
-    expect(screen.getByText("3/3 selecionados")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Relacionamentos/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /Propósito e Direção/ }),
+    );
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Espiritualidade e Conexão Interior/,
+      }),
+    );
+    expect(screen.getByText("4/4 selecionados")).toBeInTheDocument();
 
     fireEvent.click(
-      screen.getByRole("button", { name: /Espiritualidade e Conexão Interior/ }),
+      screen.getByRole("button", { name: /Energia e Equilíbrio Energético/ }),
     );
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Você pode escolher até 3 temas.",
+      "Você pode escolher até 4 temas.",
     );
-    expect(screen.getByText("3/3 selecionados")).toBeInTheDocument();
+    expect(screen.getByText("4/4 selecionados")).toBeInTheDocument();
   });
 
   it("preserves legacy free-text paths until a platform theme is chosen", () => {
@@ -60,6 +65,6 @@ describe("ProfileGuideThemePicker", () => {
     expect(
       screen.queryByText(/caminhos personalizados salvos anteriormente/i),
     ).not.toBeInTheDocument();
-    expect(screen.getByText("1/3 selecionados")).toBeInTheDocument();
+    expect(screen.getByText("1/4 selecionados")).toBeInTheDocument();
   });
 });

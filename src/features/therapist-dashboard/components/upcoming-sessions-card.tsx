@@ -26,7 +26,7 @@ export function UpcomingSessionsCard({
           {sessions.slice(0, 4).map((session) => (
             <li key={session.bookingId}>
               <Link
-                className="grid min-h-16 grid-cols-[82px_32px_minmax(0,1fr)] items-center gap-2 rounded-sm px-1 outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20"
+                className="grid min-h-16 grid-cols-[68px_28px_minmax(0,1fr)] items-center gap-1 rounded-sm px-0 outline-none transition hover:bg-surface-soft focus-visible:ring-4 focus-visible:ring-ring/20"
                 href={
                   routes.therapist.sessionDetail(
                     session.bookingId,
