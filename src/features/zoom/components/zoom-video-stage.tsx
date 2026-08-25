@@ -10,8 +10,11 @@ type ZoomVideoStageProps = {
   actorRole: "patient" | "therapist";
   audioMuted: boolean;
   localVideoRef: React.MutableRefObject<HTMLElement | null>;
+  localPreviewUnavailable?: boolean;
+  onRetryRemoteVideo?: () => void;
   participantLabel: string;
-  remoteParticipantCount: number;
+  remoteParticipantPresent: boolean;
+  remoteVideoState: "off" | "attaching" | "on" | "error";
   remoteVideoRef: React.MutableRefObject<HTMLElement | null>;
   state:
     | "idle"
@@ -29,8 +32,11 @@ export function ZoomVideoStage({
   actorRole,
   audioMuted,
   localVideoRef,
+  localPreviewUnavailable = false,
+  onRetryRemoteVideo,
   participantLabel,
-  remoteParticipantCount,
+  remoteParticipantPresent,
+  remoteVideoState,
   remoteVideoRef,
   state,
   videoOn,
@@ -51,18 +57,25 @@ export function ZoomVideoStage({
         isConnected={isConnected}
         kind="local"
         label="Você"
+        localPreviewUnavailable={localPreviewUnavailable}
         videoOn={videoOn}
       />
       <VideoTile
         connectionLabel={
-          remoteParticipantCount > 0 ? "Conectado" : "Aguardando"
+          remoteVideoState === "on"
+            ? "Conectado"
+            : remoteParticipantPresent
+              ? "Câmera desligada"
+              : "Aguardando"
         }
         containerRef={remoteVideoRef}
         dataTestId="zoom-remote-video"
         isConnected={isConnected}
         kind="remote"
         label={remoteLabel}
-        remoteParticipantCount={remoteParticipantCount}
+        onRetryRemoteVideo={onRetryRemoteVideo}
+        remoteParticipantPresent={remoteParticipantPresent}
+        remoteVideoState={remoteVideoState}
         waitingLabel={
           actorRole === "patient"
             ? "Aguardando terapeuta entrar"
@@ -81,7 +94,10 @@ function VideoTile({
   isConnected,
   kind,
   label,
-  remoteParticipantCount = 0,
+  localPreviewUnavailable = false,
+  onRetryRemoteVideo,
+  remoteParticipantPresent = false,
+  remoteVideoState = "off",
   videoOn = false,
   waitingLabel,
 }: {
@@ -92,11 +108,17 @@ function VideoTile({
   isConnected: boolean;
   kind: "local" | "remote";
   label: string;
-  remoteParticipantCount?: number;
+  localPreviewUnavailable?: boolean;
+  onRetryRemoteVideo?: () => void;
+  remoteParticipantPresent?: boolean;
+  remoteVideoState?: "off" | "attaching" | "on" | "error";
   videoOn?: boolean;
   waitingLabel?: string;
 }) {
-  const showsVideo = kind === "local" ? videoOn : remoteParticipantCount > 0;
+  const showsVideo =
+    kind === "local"
+      ? videoOn && !localPreviewUnavailable
+      : remoteVideoState === "on";
   const coverSrc =
     kind === "local"
       ? "/zoom/local-camera-off-cover.png"
@@ -132,17 +154,42 @@ function VideoTile({
               )}
             </span>
             <p className="text-sm font-semibold md:text-xl">
-              {kind === "local" ? "Sua câmera está" : "Aguardando"}
+              {kind === "local"
+                ? localPreviewUnavailable
+                  ? "Sua câmera está ligada"
+                  : "Sua câmera está"
+                : remoteVideoState === "error"
+                  ? "Não foi possível exibir o vídeo"
+                  : remoteParticipantPresent
+                    ? "A câmera está"
+                    : "Aguardando"}
             </p>
             <p className="font-display text-2xl font-light italic leading-none md:text-4xl">
-              {kind === "local" ? "desativada" : waitingLabel?.replace(/^Aguardando\s+/i, "")}
+              {kind === "local"
+                ? localPreviewUnavailable
+                  ? "sem prévia neste dispositivo"
+                  : "desativada"
+                : remoteVideoState === "error"
+                  ? "tente novamente"
+                  : remoteParticipantPresent
+                    ? "desativada"
+                    : waitingLabel?.replace(/^Aguardando\s+/i, "")}
             </p>
+            {kind === "remote" && remoteVideoState === "error" ? (
+              <button
+                className="mx-auto inline-flex min-h-11 items-center justify-center rounded-full border border-white/60 bg-white/15 px-4 text-sm font-extrabold text-white backdrop-blur focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                onClick={onRetryRemoteVideo}
+                type="button"
+              >
+                Tentar exibir novamente
+              </button>
+            ) : null}
           </div>
         </div>
       ) : null}
-      {createElement("zoom-video-player-container", {
+      {createElement("video-player-container", {
         "aria-hidden": !showsVideo,
-        className: "absolute inset-0 block h-full w-full overflow-hidden",
+        class: "absolute inset-0 block h-full w-full overflow-hidden",
         ref: containerRef,
       })}
       <div className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-2 rounded-[14px] bg-brand-deep/75 px-3 py-2 text-white backdrop-blur md:inset-x-3 md:bottom-3">

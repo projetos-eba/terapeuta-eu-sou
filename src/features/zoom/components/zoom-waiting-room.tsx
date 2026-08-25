@@ -474,7 +474,7 @@ function WaitingRoomVisual({
 
         {!hasCameraPreview ? (
           <div
-            className="absolute left-1/2 top-[46%] grid size-20 -translate-x-1/2 -translate-y-1/2 place-items-center text-brand-primary sm:size-24"
+            className="absolute left-1/2 top-1/2 grid size-20 -translate-x-1/2 -translate-y-1/2 place-items-center text-brand-primary sm:size-24"
             data-testid="waiting-room-center-mark"
           >
             <UserRound aria-hidden="true" size={44} strokeWidth={1.7} />

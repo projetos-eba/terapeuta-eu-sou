@@ -756,11 +756,11 @@ function SessionRulesCard({
           <RuleRow
             description="Frequência em que os inícios são oferecidos."
             icon={CalendarDays}
-            info="De quanto em quanto tempo o TES oferece um novo horário para agendamento. Por exemplo: 30 minutos oferece horários começando a cada 30 minutos."
-            label="Intervalo de oferta"
+            info="De quanto em quanto tempo uma nova sessão pode começar. Por exemplo: 30 minutos organiza os horários com início a cada 30 minutos."
+            label="Intervalo das sessões"
           >
             <MinutesSelect
-              ariaLabel="Intervalo de oferta dos horários"
+              ariaLabel="Intervalo das sessões"
               onChange={(value) => onSettingChange("slotStepMinutes", value)}
               options={[15, 30, 45, 60]}
               value={service.settings.slotStepMinutes}

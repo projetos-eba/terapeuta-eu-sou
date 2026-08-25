@@ -113,9 +113,9 @@ export function ZoomVideoControls({
           onClick={onToggleVideo}
         >
           {videoOn ? (
-            <VideoOff aria-hidden="true" size={21} />
-          ) : (
             <Video aria-hidden="true" size={21} />
+          ) : (
+            <VideoOff aria-hidden="true" size={21} />
           )}
         </ControlButton>
         {supportHref ? (
@@ -181,6 +181,7 @@ function ControlButton({
       aria-pressed={active}
       className="grid min-h-12 min-w-12 place-items-center rounded-full bg-brand-lavenderSoft px-3 text-brand-primary transition hover:bg-brand-lavender focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
       onClick={onClick}
+      title={label}
       type="button"
     >
       {children}

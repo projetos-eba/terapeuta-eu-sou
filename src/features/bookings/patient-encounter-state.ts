@@ -66,13 +66,14 @@ type Input = {
   endsAt: string;
   financialStatus: SessionFinancialStatus | null;
   now?: Date;
+  patientHasJoined?: boolean;
   provider: "external" | "google_meet" | "zoom";
   startsAt: string;
   zoomAccess?: ZoomAccessState | null;
 };
 
 const JOIN_WINDOW_BEFORE_MS = 15 * 60_000;
-const JOIN_WINDOW_AFTER_MS = 30 * 60_000;
+const FIRST_JOIN_WINDOW_AFTER_MS = 15 * 60_000;
 const THERAPIST_ABSENCE_THRESHOLD_MS = 10 * 60_000;
 
 export function getPatientEncounterPresentationState({
@@ -80,6 +81,7 @@ export function getPatientEncounterPresentationState({
   endsAt,
   financialStatus,
   now = new Date(),
+  patientHasJoined = false,
   provider,
   startsAt,
   zoomAccess = null,
@@ -98,6 +100,7 @@ export function getPatientEncounterPresentationState({
     endsAtMs,
     financialStatus,
     nowMs,
+    patientHasJoined,
     provider,
     startsAtMs,
     zoomAccess,
@@ -252,6 +255,7 @@ function getWaitingRoomState({
   endsAtMs,
   financialStatus,
   nowMs,
+  patientHasJoined,
   provider,
   startsAtMs,
   zoomAccess,
@@ -260,6 +264,7 @@ function getWaitingRoomState({
   endsAtMs: number;
   financialStatus: SessionFinancialStatus | null;
   nowMs: number;
+  patientHasJoined: boolean;
   provider: "external" | "google_meet" | "zoom";
   startsAtMs: number;
   zoomAccess: ZoomAccessState | null;
@@ -300,7 +305,7 @@ function getWaitingRoomState({
       message:
         status === ZoomVideoSessionStatus.Active
           ? "O terapeuta já está presente. Você pode entrar no encontro."
-          : "Sua entrada está disponível dentro da janela segura.",
+          : "A sala de espera está disponível. Entre para aguardar o terapeuta.",
       title:
         status === ZoomVideoSessionStatus.Active
           ? "Terapeuta presente"
@@ -311,7 +316,8 @@ function getWaitingRoomState({
   if (zoomAccess?.reason === ZoomAccessReason.TooEarly) {
     return {
       kind: "too_early",
-      message: "Ainda está cedo. A sala abre perto do horário agendado.",
+      message:
+        "A sala de espera ficará disponível 15 minutos antes do horário agendado.",
       title: "A sala ainda não abriu",
     };
   }
@@ -332,11 +338,12 @@ function getWaitingRoomState({
   if (
     zoomAccess?.reason === ZoomAccessReason.TooLate ||
     zoomAccess?.reason === ZoomAccessReason.HardTimeout ||
-    (Number.isFinite(endsAtMs) && nowMs > endsAtMs + JOIN_WINDOW_AFTER_MS)
+    (Number.isFinite(endsAtMs) && nowMs >= endsAtMs)
   ) {
     return {
       kind: "ended",
-      message: "A janela segura de entrada já foi encerrada.",
+      message:
+        "A janela de entrada foi encerrada. Se precisar de ajuda, fale com o suporte.",
       title: "Janela encerrada",
     };
   }
@@ -347,8 +354,35 @@ function getWaitingRoomState({
   ) {
     return {
       kind: "too_early",
-      message: "Ainda está cedo. A sala abre perto do horário agendado.",
+      message:
+        "A sala de espera ficará disponível 15 minutos antes do horário agendado.",
       title: "A sala ainda não abriu",
+    };
+  }
+
+  if (
+    Number.isFinite(startsAtMs) &&
+    Number.isFinite(endsAtMs) &&
+    nowMs < endsAtMs &&
+    (patientHasJoined || nowMs <= startsAtMs + FIRST_JOIN_WINDOW_AFTER_MS)
+  ) {
+    return {
+      kind: "entry_available",
+      message:
+        "A sala de espera está disponível. Entre para aguardar o terapeuta.",
+      title: "Entrada disponível",
+    };
+  }
+
+  if (
+    Number.isFinite(startsAtMs) &&
+    nowMs > startsAtMs + FIRST_JOIN_WINDOW_AFTER_MS
+  ) {
+    return {
+      kind: "ended",
+      message:
+        "A janela de entrada foi encerrada. Se precisar de ajuda, fale com o suporte.",
+      title: "Janela encerrada",
     };
   }
 

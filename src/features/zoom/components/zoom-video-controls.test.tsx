@@ -49,4 +49,33 @@ describe("ZoomVideoControls", () => {
       screen.queryByRole("button", { name: "Encerrar para todos" }),
     ).toBeNull();
   });
+
+  it("uses icons for the current microphone and camera states", () => {
+    const { rerender } = render(
+      <ZoomVideoControls {...baseProps} actorRole="patient" roleType={0} />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Ativar microfone" }).querySelector(".lucide-mic-off"),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Ativar câmera" }).querySelector(".lucide-video-off"),
+    ).not.toBeNull();
+
+    rerender(
+      <ZoomVideoControls
+        {...baseProps}
+        actorRole="patient"
+        audioMuted={false}
+        roleType={0}
+        videoOn
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Silenciar microfone" }).querySelector(".lucide-mic"),
+    ).not.toBeNull();
+    expect(
+      screen.getByRole("button", { name: "Desligar câmera" }).querySelector(".lucide-video"),
+    ).not.toBeNull();
+  });
 });

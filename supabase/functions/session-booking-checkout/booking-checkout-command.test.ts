@@ -31,9 +31,42 @@ Deno.test(
     assertEquals(command.holdTtlSeconds, 600);
     assertEquals(command.requestId, requestId);
     assertEquals(command.serviceId, serviceId);
+    assertEquals(command.sharedNote, null);
     assertEquals(command.startsAt, startsAt);
   },
 );
+
+Deno.test(
+  "booking checkout command preserves the shared preparation note",
+  () => {
+    const command = validateBookingCheckoutCommand({
+      requestId,
+      serviceId,
+      sharedNote: "  Quero chegar com calma.  ",
+      startsAt,
+      termsAccepted: true,
+    });
+
+    assertEquals(command.sharedNote, "Quero chegar com calma.");
+  },
+);
+
+Deno.test("booking checkout command bounds the shared preparation note", () => {
+  const error = assertThrows(
+    () =>
+      validateBookingCheckoutCommand({
+        requestId,
+        serviceId,
+        sharedNote: "x".repeat(601),
+        startsAt,
+        termsAccepted: true,
+      }),
+    DomainError,
+  );
+
+  assertEquals(error.code, "invalid_booking_checkout_payload");
+  assertEquals(error.status, 422);
+});
 
 Deno.test(
   "booking checkout command rejects invalid identifiers and ttl",

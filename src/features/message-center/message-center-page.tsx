@@ -48,7 +48,7 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
             <div className="mt-6 flex flex-wrap gap-3">
               <MetricPill
                 icon={<MessageSquareDot aria-hidden="true" size={15} />}
-                label="Conversas não lidas"
+                label="Mensagens não lidas"
                 tone="danger"
                 value={data.metrics.unreadMessagesCount}
               />
@@ -259,7 +259,7 @@ function ThreadRow({
           <CategoryBadge category={item.category} label={item.categoryLabel} />
           {item.isUnread ? <UnreadDot /> : null}
         </div>
-        {item.cta ? (
+        {item.cta && item.cta.action !== "view_session" ? (
           <div className="mt-3">
             <Link
               className="inline-flex min-h-10 items-center text-xs font-extrabold text-brand-primary underline-offset-2 hover:underline"

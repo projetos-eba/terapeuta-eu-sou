@@ -368,6 +368,8 @@ function toCanonicalCta(input: {
   const action = isCtaAction(input.value.action)
     ? input.value.action
     : "view_session";
+  if (action === "view_session") return null;
+
   const href =
     input.actorRole === "patient"
       ? `/app/encontros/${input.bookingId}`

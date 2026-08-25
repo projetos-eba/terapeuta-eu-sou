@@ -35,6 +35,13 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
 - Paciente so recebe JWT apos webhook confiavel de `session.user_joined` do
   terapeuta; token emitido para terapeuta nao e presenca.
 - `ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES` e obrigatorio no runtime real.
+- Essa variável é somente o watchdog de custo para sessão órfã:
+  `hard_ends_at = actual_started_at + duração configurada` (240 minutos em HML).
+  O fim normal é `scheduled_ends_at`, enfileirado como `end_scheduled`; o
+  watchdog usa `end_hard_timeout`. Nenhum deles altera o horário da reserva.
+- Paciente entra pela primeira vez até T+15 inclusive. Depois, a autorização
+  consulta apenas a existência de `session.user_joined` confiável para permitir
+  reconexão até, mas não incluindo, `scheduled_ends_at`.
 - Enquanto a sala estiver `joined` ou `reconnecting`, o browser chama
   `POST /api/auth/session/refresh` periodicamente para manter a sessão TES
   autenticada. O endpoint só rotaciona tokens perto da expiração; uma falha de
@@ -104,6 +111,9 @@ Com `ALLOW_REAL_ZOOM=false`, nao fazer chamada externa nem entrar em sessao real
   e evidências sanitizadas sob `.tmp/homologation/`. O gate real também exige
   recuperação de permissão, câmera bidirecional e viewports desktop/tablet/
   mobile durante a chamada.
+- A prova bidirecional liga primeiro a câmera do terapeuta, confirma o remoto
+  no paciente, liga a câmera do paciente e confirma que ambos mantêm self-view
+  e remoto. Safari/iPhone e Chrome/Android reais permanecem gates separados.
 - O harness HML falha fechado sem fixture canônica resolvida, sem `_vercel_share`,
   com `provider_session_id` preexistente, com qualquer sessao Zoom ativa antes
   do teste, ou se o pagamento canonico estiver ausente. Ele nao cria fixture

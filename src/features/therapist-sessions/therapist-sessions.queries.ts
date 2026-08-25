@@ -22,7 +22,7 @@ export async function queryTherapistSessions(
       p_booking_status: filters.bookingStatus ?? null,
       p_cursor_booking_id: filters.cursor?.bookingId ?? null,
       p_cursor_starts_at: filters.cursor?.startsAt ?? null,
-      p_financial_status: filters.financialStatus ?? null,
+      p_financial_status: null,
       p_limit: filters.limit,
       p_modality: filters.modality ?? null,
       p_patient_profile_id: filters.patientProfileId ?? null,

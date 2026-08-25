@@ -213,6 +213,7 @@ Deno.test(
       endsAt: "2026-07-26T13:30:00.000Z",
       financialStatus: "paid",
       now: new Date("2026-07-26T13:00:00.000Z"),
+      patientHasJoined: true,
       startsAt: "2026-07-26T12:30:00.000Z",
       therapistPresent: true,
       videoSessionReady: true,
@@ -270,6 +271,7 @@ Deno.test(
       endsAt: "2026-07-26T13:30:00.000Z",
       financialStatus: "paid",
       now: new Date("2026-07-26T13:00:00.000Z"),
+      patientHasJoined: true,
       startsAt: "2026-07-26T12:30:00.000Z",
       therapistPresent: true,
       videoSessionReady: true,
@@ -310,6 +312,56 @@ Deno.test(
         hardEndsAt: "2026-07-26T12:59:59.000Z",
       }).reason,
       "HARD_TIMEOUT",
+    );
+  },
+);
+
+Deno.test(
+  "patient first join is inclusive at T+15 and reconnect remains open until scheduled end",
+  () => {
+    const base = {
+      actorRole: "patient" as const,
+      bookingStatus: "confirmed",
+      endsAt: "2026-07-26T13:50:00.000Z",
+      financialStatus: "paid",
+      startsAt: "2026-07-26T13:00:00.000Z",
+      therapistPresent: true,
+      videoSessionReady: true,
+      videoSessionStatus: "active",
+    };
+
+    const boundary = evaluateVideoSessionAccess({
+      ...base,
+      now: new Date("2026-07-26T13:15:00.000Z"),
+      patientHasJoined: false,
+    });
+    assertEquals(boundary.allowed, true);
+    assertEquals(boundary.availableUntil, "2026-07-26T13:15:00.000Z");
+    assertEquals(boundary.scheduledEndsAt, "2026-07-26T13:50:00.000Z");
+
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        now: new Date("2026-07-26T13:15:00.001Z"),
+        patientHasJoined: false,
+      }).reason,
+      "TOO_LATE",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        now: new Date("2026-07-26T13:49:59.999Z"),
+        patientHasJoined: true,
+      }).allowed,
+      true,
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        now: new Date("2026-07-26T13:50:00.000Z"),
+        patientHasJoined: true,
+      }).reason,
+      "TOO_LATE",
     );
   },
 );
@@ -376,25 +428,19 @@ Deno.test("max duration policy rejects missing and unsafe values", () => {
 });
 
 Deno.test(
-  "hard end uses min of effective start max duration and scheduled tolerance",
+  "hard end is a watchdog based only on the effective provider start",
   () => {
     assertEquals(
       computeVideoSessionHardEndsAt({
         actualStartedAt: "2026-07-26T12:45:00.000Z",
-        afterEndsMinutes: 30,
-        maxDurationMinutes: 60,
-        scheduledEndsAt: "2026-07-26T13:30:00.000Z",
-        scheduledStartsAt: "2026-07-26T13:00:00.000Z",
+        maxDurationMinutes: 240,
       }).toISOString(),
-      "2026-07-26T14:00:00.000Z",
+      "2026-07-26T16:45:00.000Z",
     );
     assertEquals(
       computeVideoSessionHardEndsAt({
         actualStartedAt: "2026-07-26T13:10:00.000Z",
-        afterEndsMinutes: 30,
         maxDurationMinutes: 20,
-        scheduledEndsAt: "2026-07-26T13:30:00.000Z",
-        scheduledStartsAt: "2026-07-26T13:00:00.000Z",
       }).toISOString(),
       "2026-07-26T13:30:00.000Z",
     );

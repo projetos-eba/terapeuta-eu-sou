@@ -109,6 +109,7 @@ runtime.serve(async (request) => {
       endsAt: booking.endsAt,
       financialStatus: booking.financialStatus,
       hardEndsAt: booking.videoSession?.hardEndsAt ?? null,
+      patientHasJoined: booking.patientHasJoined,
       startsAt: booking.startsAt,
       therapistStatus: booking.therapistStatus,
       therapistPresent: booking.videoSession?.therapistPresent ?? false,

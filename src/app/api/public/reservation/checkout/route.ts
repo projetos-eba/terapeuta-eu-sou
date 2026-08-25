@@ -9,6 +9,7 @@ import {
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_SHARED_NOTE_LENGTH = 600;
 
 type CheckoutPayload = {
   ok: true;
@@ -75,6 +76,18 @@ export async function POST(request: Request) {
       { status: 428 },
     );
   }
+  if (
+    input.sharedNote !== null &&
+    input.sharedNote.length > MAX_SHARED_NOTE_LENGTH
+  ) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: "Revise o texto compartilhado antes de continuar.",
+      },
+      { status: 422 },
+    );
+  }
 
   const config = getSupabasePublicConfig();
   if (!config) {
@@ -110,6 +123,7 @@ export async function POST(request: Request) {
           holdTtlSeconds: 600,
           requestId: input.checkoutAttemptId,
           serviceId: input.serviceId,
+          sharedNote: input.sharedNote,
           startsAt: new Date(input.startsAt).toISOString(),
           termsAccepted: true,
         },
@@ -182,9 +196,16 @@ function toCheckoutInput(value: unknown) {
       record.promotionCode === null ? null : asString(record.promotionCode),
     replaceCheckoutSessionId: asString(record.replaceCheckoutSessionId),
     serviceId: asString(record.serviceId),
+    sharedNote: normalizeSharedNote(record.sharedNote),
     startsAt: asString(record.startsAt),
     termsAccepted: record.termsAccepted === true,
   };
+}
+
+function normalizeSharedNote(value: unknown) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized || null;
 }
 
 type CheckoutInput = ReturnType<typeof toCheckoutInput>;
@@ -315,7 +336,8 @@ function mapCheckoutError(status: number) {
   if (status === 503) {
     return {
       code: "STRIPE_CONFIGURATION_ERROR",
-      message: "O pagamento está temporariamente indisponível. Tente novamente.",
+      message:
+        "O pagamento está temporariamente indisponível. Tente novamente.",
     };
   }
   return {

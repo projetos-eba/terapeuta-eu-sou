@@ -767,3 +767,39 @@ o TES não é declarado Production Ready.
 
 **PHASE 2 FAIL** — o gate Zoom adversarial/reconnect não foi fechado nesta
 rodada.
+
+## Fase 2.4 — Separação entre agenda e watchdog Zoom (2026-08-25)
+
+Esta rodada corrige o contrato temporal e a renderização bidirecional antes de
+uma nova qualificação externa. Não houve escrita em HML ou produção, nem foi
+aberta sessão real do Zoom.
+
+| Gate | Resultado | Evidência sanitizada / pendência |
+| --- | --- | --- |
+| Agenda, primeira entrada e reconexão | **PASS local** | T-15, T+15 inclusivo, T+15+1 ms, reconexão previamente confiável e bloqueio em `scheduled_ends_at` cobertos por Deno, Vitest e pgTAP. |
+| Duração exibida | **PASS local** | O contador usa exclusivamente `scheduledStartsAt`, `scheduledEndsAt` e o relógio do servidor. `hardEndsAt` não é mais apresentado como duração do encontro. |
+| Encerramento normal e watchdog | **PASS local** | `end_scheduled` encerra no horário agendado; `end_hard_timeout` permanece proteção operacional. O watchdog é sincronizado como início efetivo + limite configurado e a migration recalcula somente sessões ativas. |
+| Vídeo bidirecional | **PASS automatizado local** | SDK inicializado com múltiplos vídeos, containers independentes, estado remoto explícito, ressincronização limitada e recuperação de falha. O harness exige câmera do terapeuta visível ao paciente antes de ligar a câmera do paciente e revalida ambas as direções. |
+| Ícones e copy | **PASS local** | Microfone e câmera representam o estado atual; nomes acessíveis descrevem a próxima ação. O detalhe distingue sala futura, aberta, terapeuta presente, janela expirada e falha operacional real. |
+| Homologação canônica externa | **BLOCKED** | `homologation:zoom:local` concluiu os gates locais prévios, mas o endpoint público de webhook configurado respondeu HTTP 404 na validação do túnel. O fluxo interrompeu antes de abrir sessão real ou gerar custo. |
+| Safari/iPhone e Chrome/Android reais | **NOT EXECUTED** | Viewport móvel em Chromium não substitui dispositivo real. Aceite externo continua obrigatório em telefone, desktop e tablet. |
+
+Validações concluídas: Vitest **732/732**, Deno **200/200**, Zoom Video SDK
+**18/18**, harness HML **15/15**, pgTAP Zoom focal **57/57**, novo pgTAP de
+agenda/watchdog **9/9**, API mock sem chamada real, `typecheck`, `lint` e
+`build` em **PASS**. O reset local do Supabase aplicou as duas migrations com
+sucesso. Os processos temporários do harness foram encerrados.
+
+A causa específica do valor `11:42` no registro histórico de HML não foi
+confirmada nesta rodada, porque a auditoria somente leitura desse registro não
+foi executada antes do bloqueio externo. O defeito de produto comprovado era a
+exibição de `hardEndsAt` como duração; o valor histórico também pode refletir
+snapshot ou versão implantada anterior e não deve ser atribuído sem evidência.
+
+**Impacto documental:** documentação atualizada nas skills Zoom e de detalhe
+do encontro, arquitetura, testes, troubleshooting, runbook e qualificação de
+release.
+
+**PHASE 2 FAIL** — a promoção permanece bloqueada até a sessão canônica HML e
+os testes em dispositivos reais comprovarem vídeo bidirecional, reconexão,
+encerramento agendado e watchdog.

@@ -15,6 +15,8 @@ export function ZoomVideoCallPage({
   bookingId,
   participantLabel,
   scheduleLabel,
+  scheduledEndsAt,
+  scheduledStartsAt,
   sessionTitle,
   showFeedback = false,
 }: {
@@ -25,6 +27,8 @@ export function ZoomVideoCallPage({
   bookingId: string;
   participantLabel: string;
   scheduleLabel: string;
+  scheduledEndsAt: string;
+  scheduledStartsAt: string;
   sessionTitle: string;
   showFeedback?: boolean;
 }) {
@@ -88,6 +92,8 @@ export function ZoomVideoCallPage({
           initialFeedback={showFeedback}
           participantLabel={participantLabel}
           scheduleLabel={scheduleLabel}
+          scheduledEndsAt={scheduledEndsAt}
+          scheduledStartsAt={scheduledStartsAt}
           sessionTitle={sessionTitle}
         />
       </main>

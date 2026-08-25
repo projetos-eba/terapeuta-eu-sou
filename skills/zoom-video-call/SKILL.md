@@ -45,6 +45,13 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
 - Antes de T-15, renderizar somente preparação e horário de abertura. Em T-15,
   renderizar sala visual de espera com capa abstrata, contador, preflight e
   estado host-first; nunca liberar JWT do paciente apenas por query string.
+- A primeira entrada do paciente termina em T+15, inclusive. Depois disso,
+  somente uma participação confiável anterior permite reconexão, sempre antes
+  de `scheduled_ends_at`. Terapeuta e reconexão autorizada terminam exatamente
+  no fim agendado.
+- O contador visível usa somente `scheduledStartsAt`, `scheduledEndsAt` e
+  `serverNow`. `hardEndsAt` é watchdog interno e nunca representa duração do
+  encontro.
 - A prévia de câmera é local ao navegador e usa `getUserMedia({ video: true,
   audio: false })`; o teste de áudio usa somente `getUserMedia({ audio: true,
   video: false })` e um indicador local de nível. Ambos encerram tracks ao
@@ -88,8 +95,14 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
   caracteres e reabertura por query controlada.
 - O `userId` local vem de `ZoomVideoClient.getCurrentUserInfo()`, nunca do
   media stream. A self-view e os vídeos remotos usam `attachVideo` dentro de
-  `zoom-video-player-container`; `renderVideo` em canvas não é o contrato
+  `video-player-container`; `renderVideo` em canvas não é o contrato
   preferencial.
+- Inicializar o SDK com `enforceMultipleVideos: true`. Separar presença do
+  participante do estado do vídeo remoto (`off`, `attaching`, `on`, `error`) e
+  ressicronizar após join, atualização, câmera do peer e reconexão. Em limite
+  de render, priorizar o remoto e informar que a prévia local está indisponível.
+- Ícones comunicam o estado atual: `MicOff`/`VideoOff` desligado e
+  `Mic`/`Video` ligado; o nome acessível descreve a próxima ação.
 - Validar câmera inicialmente desligada, ativação após o join, desligamento e
   visualização bidirecional real. Exercitar também permissão negada, nova
   concessão e recuperação sem recriar booking ou relaxar autorização.
@@ -101,6 +114,8 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
   usar as antigas alturas mínimas cumulativas por participante.
 - Validar desktop, tablet, mobile de aproximadamente 390px e mobile baixo, com
   controles de pelo menos 44px, sem overflow da página.
+- Aceite HML móvel exige Safari/iPhone e Chrome/Android reais; viewport Chromium
+  é evidência responsiva complementar, não substituto.
 - Executar testes focados, `npm run typecheck`, `npm run lint` e
   `npm run build`.
 - Executar `npm run test:deno`, `npm run zoom:video-sdk:test`, `npx supabase

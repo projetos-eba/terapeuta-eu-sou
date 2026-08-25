@@ -20,6 +20,7 @@ type ControlJob = {
   id: string;
   max_attempts: number;
   operation:
+    | "end_scheduled"
     | "end_hard_timeout"
     | "end_therapist_absent"
     | "reconcile_orphan"
@@ -208,6 +209,7 @@ function getLimit(request: Request) {
 }
 
 function getTerminationReason(operation: ControlJob["operation"]) {
+  if (operation === "end_scheduled") return "scheduled_end";
   if (operation === "end_hard_timeout") return "hard_timeout";
   if (operation === "end_therapist_absent") return "therapist_absent";
   if (operation === "reconcile_orphan") return "reconcile_orphan";

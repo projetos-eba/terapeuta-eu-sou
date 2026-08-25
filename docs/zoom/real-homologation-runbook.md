@@ -87,11 +87,12 @@ Regras do harness HML:
 6. Terapeuta entra, o harness valida `therapist_present=true`,
    `provider_session_id` e `hard_ends_at` via Supabase HML.
 7. Paciente entra apenas depois da presenca confiavel do terapeuta.
-8. O harness nega e concede novamente a permissao de camera do paciente,
-   confirma entrada inicial sem camera, ativacao durante a chamada, self-view e
-   video remoto para os dois papeis e desligamento consistente.
+8. O harness nega e concede novamente a permissao de camera do paciente. Depois
+   liga primeiro a camera do terapeuta, confirma o video remoto no paciente,
+   liga a camera do paciente e confirma que ambos mantem self-view e remoto.
 9. Durante a chamada, valida desktop, tablet, mobile de 390px e viewport mobile
    baixo, sem overflow da pagina e com audio, camera e saida dentro do viewport.
+   Essa evidencia Chromium nao substitui Safari/iPhone e Chrome/Android reais.
 10. O harness exercita audio real do Video SDK e encerra a sessao pelo botao
    `Encerrar encontro`.
 11. Após a saída, o harness valida a tela de feedback para paciente e terapeuta,
@@ -115,8 +116,9 @@ Reflexos exigidos:
 O Zoom Video SDK pode contabilizar uso quando participantes entram na sessao.
 Use uma unica sessao curta, com camera desligada e microfone silenciado. A meta
 de HML e 30 a 60 segundos. O limite duro vem de
-`ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES`; o harness visual tem watchdog local
-de 180 segundos.
+`ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES`, usado apenas como watchdog de sessao
+orfa (240 minutos em HML); a duracao exibida e o encerramento normal vem da
+reserva. O harness visual tem watchdog local de 180 segundos.
 
 ## Comandos Locais
 

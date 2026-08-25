@@ -64,6 +64,18 @@ estados corretos, que o teste de câmera solicita apenas vídeo, que o teste de
 entrar ou sair. Áudio ambiente sem fonte licenciada permanece visível, porém
 inativo e sem autoplay.
 
+A sala ativa deve iniciar o SDK com `enforceMultipleVideos: true`, usar
+`video-player-container` e provar câmera bidirecional na ordem: terapeuta liga,
+paciente vê o remoto, paciente liga, terapeuta vê o remoto e as duas telas
+permanecem anexadas. Presença do participante e vídeo remoto anexado são
+asserts diferentes. Safari/iPhone e Chrome/Android reais são obrigatórios em
+HML; emulação de viewport Chromium não substitui esses gates.
+
+Os testes temporais cobrem T-15, T+15, T+15+1 ms, reconexão autorizada e bloqueio
+em `scheduled_ends_at`. Para 17:45–18:35, o contador mostra 7 minutos antes do
+início às 17:38, 50 minutos às 17:45 e 40 minutos às 17:55. Alterar o watchdog
+não altera esses valores.
+
 Após a saída, a sala deve apresentar o feedback na mesma rota para o papel
 correto. O teste cobre feedback realizado e não realizado, nota de 1 a 5,
 motivos, comentário de 500 caracteres, erro de carregamento, erro de envio,

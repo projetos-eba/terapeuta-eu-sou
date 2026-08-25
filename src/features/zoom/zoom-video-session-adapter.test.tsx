@@ -11,7 +11,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ZoomAccessReason } from "@/domain/tes";
 
-import { ZoomVideoSessionAdapter } from "./zoom-video-session-adapter";
+import {
+  formatScheduledSessionCountdown,
+  ZoomVideoSessionAdapter,
+} from "./zoom-video-session-adapter";
 
 const calls: string[] = [];
 const handlers = new Map<string, (...args: unknown[]) => void>();
@@ -121,6 +124,11 @@ describe("ZoomVideoSessionAdapter", () => {
       await screen.findByText(/voce entrou no encontro/i),
     ).toBeInTheDocument();
     expect(calls.slice(0, 2)).toEqual(["init", "join"]);
+    expect(mockClient.init).toHaveBeenCalledWith(
+      "pt-BR",
+      "Global",
+      expect.objectContaining({ enforceMultipleVideos: true }),
+    );
     expect(mockClient.join).toHaveBeenCalledWith(
       "tesvs-session",
       "jwt-token-role-0",
@@ -172,6 +180,8 @@ describe("ZoomVideoSessionAdapter", () => {
             access: {
               ...allowedAccess,
               hardEndsAt: new Date(serverNow + 30 * 60_000).toISOString(),
+              scheduledEndsAt: new Date(serverNow + 40 * 60_000).toISOString(),
+              scheduledStartsAt: new Date(serverNow - 10 * 60_000).toISOString(),
               serverNow: new Date(serverNow).toISOString(),
             },
             roleType: 0,
@@ -197,7 +207,10 @@ describe("ZoomVideoSessionAdapter", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
-    expect(await screen.findByText(/tempo restante:/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/tempo restante do encontro: (39:5\d|40:00)/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/tempo seguro/i)).toBeNull();
   });
 
   it("blocks entry while offline and refreshes the room after reconnecting", async () => {
@@ -674,6 +687,34 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(
       await screen.findByText(/nao foi possivel concluir todas as etapas/i),
     ).toBeInTheDocument();
+  });
+});
+
+describe("formatScheduledSessionCountdown", () => {
+  it("uses scheduled booking times and never the watchdog", () => {
+    const access = {
+      ...allowedAccess,
+      hardEndsAt: "2026-08-25T21:55:00.000Z",
+      scheduledEndsAt: "2026-08-25T18:35:00.000Z",
+      scheduledStartsAt: "2026-08-25T17:45:00.000Z",
+    };
+
+    expect(
+      formatScheduledSessionCountdown({
+        access,
+        actorRole: "patient",
+        clientNowMs: Date.parse("2026-08-25T17:38:00.000Z"),
+        serverClockOffsetMs: 0,
+      }),
+    ).toBe("O encontro começa em 07:00");
+    expect(
+      formatScheduledSessionCountdown({
+        access,
+        actorRole: "patient",
+        clientNowMs: Date.parse("2026-08-25T17:55:00.000Z"),
+        serverClockOffsetMs: 0,
+      }),
+    ).toBe("Tempo restante do encontro: 40:00");
   });
 });
 
