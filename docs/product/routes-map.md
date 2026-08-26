@@ -75,9 +75,10 @@ controlado pelo navegador.
   agenda configurada, os documentos obrigatórios enviados e o onboarding da
   conta Stripe Connect submetido. Conta inexistente, cadastro incompleto,
   requisitos pendentes, conta restrita ou desabilitada mantêm o checklist
-  ativo. Após o onboarding ser submetido, uma análise externa em andamento não
-  bloqueia a virada para o dashboard. Após o checklist
-  obrigatório, Free/Premium usam dashboard
+  ativo. Após o onboarding ser submetido, uma análise externa em andamento pode
+  ser exibida no cadastro, mas não substitui a aprovação administrativa do
+  perfil nem libera a virada para o dashboard. Após o checklist
+  obrigatório e a aprovação administrativa, Free/Premium usam dashboard
   base com estados vazios úteis; o dashboard operacional completo é carregado
   somente quando o terapeuta está em Premium Plus e
   `therapist_profiles.status = approved`; falhas de read model continuam como

@@ -2,7 +2,7 @@ export function AttendanceRateChart({ value }: { value: number }) {
   const normalized = Math.max(0, Math.min(100, value));
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex min-w-0 max-w-full flex-col items-center">
       <div
         aria-label={`Taxa de comparecimento: ${normalized}%`}
         className="relative grid size-32 place-items-center rounded-full"
@@ -16,7 +16,7 @@ export function AttendanceRateChart({ value }: { value: number }) {
           {normalized}%
         </strong>
       </div>
-      <p className="mt-4 text-center text-sm font-bold text-brand-deep">
+      <p className="mt-4 max-w-full text-center text-sm font-bold text-brand-deep">
         Taxa de comparecimento
       </p>
     </div>
