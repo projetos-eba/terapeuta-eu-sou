@@ -5,6 +5,7 @@ import { ZoomVideoControls } from "./zoom-video-controls";
 
 const baseProps = {
   audioMuted: true,
+  canEndForAll: true,
   isBusy: false,
   isOnline: true,
   onJoin: vi.fn(),
@@ -48,6 +49,28 @@ describe("ZoomVideoControls", () => {
     expect(
       screen.queryByRole("button", { name: "Encerrar para todos" }),
     ).toBeNull();
+  });
+
+  it("keeps final end disabled before the last five minutes", () => {
+    render(
+      <ZoomVideoControls
+        {...baseProps}
+        actorRole="therapist"
+        canEndForAll={false}
+        roleType={1}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", {
+        name: /disponível nos 5 minutos finais/i,
+      }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText(
+        "O encerramento para todos ficará disponível nos 5 minutos finais.",
+      ),
+    ).toBeVisible();
   });
 
   it("uses icons for the current microphone and camera states", () => {

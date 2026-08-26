@@ -158,6 +158,47 @@ describe("patient encounters mapper", () => {
     );
   });
 
+  it("blocks a first entry after T+10 and preserves an authorized reconnection", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-01T14:10:00.001Z"));
+
+    const booking = createBooking(
+      "95000000-0000-4000-8000-000000000007",
+      new Date("2026-08-01T14:00:00.000Z"),
+    );
+    const baseInput = {
+      bookings: [booking],
+      favoriteTherapistsCount: 0,
+      patient,
+      rescheduleByBookingId: new Map<string, never>(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map([
+        [booking.id, { booking_id: booking.id, financial_status: "paid" }],
+      ]),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    };
+
+    const firstEntry = mapPatientEncountersPage(baseInput);
+    const reconnection = mapPatientEncountersPage({
+      ...baseInput,
+      patientEntryEntitlementByBookingId: new Map([[booking.id, true]]),
+    });
+
+    expect(firstEntry.nextEncounter?.status).toBe("confirmed");
+    expect(firstEntry.nextEncounter?.primaryAction.label).not.toBe(
+      "Entrar no encontro",
+    );
+    expect(reconnection.nextEncounter?.status).toBe("live");
+    expect(reconnection.nextEncounter?.primaryAction.label).toBe(
+      "Entrar no encontro",
+    );
+  });
+
   it("keeps every active scheduled encounter in upcoming encounters", () => {
     const bookings = Array.from({ length: 5 }, (_, index) =>
       createBooking(
@@ -294,5 +335,6 @@ function createBooking(id: string, startsAt: Date) {
     status: "confirmed",
     therapist_profile_id: therapist.id,
     timezone: "America/Sao_Paulo",
+    version: 1,
   };
 }

@@ -41,7 +41,7 @@ describe("getPatientEncounterPresentationState", () => {
       "A sala de espera está disponível. Entre para aguardar o terapeuta.",
     );
     expect(expired.waitingRoom.message).toBe(
-      "A janela de entrada foi encerrada. Se precisar de ajuda, fale com o suporte.",
+      "A tolerância de entrada de 10 minutos foi encerrada. Se precisar de ajuda, fale com o suporte.",
     );
   });
 

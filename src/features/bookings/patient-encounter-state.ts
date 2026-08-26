@@ -73,7 +73,7 @@ type Input = {
 };
 
 const JOIN_WINDOW_BEFORE_MS = 15 * 60_000;
-const FIRST_JOIN_WINDOW_AFTER_MS = 15 * 60_000;
+const FIRST_JOIN_WINDOW_AFTER_MS = 10 * 60_000;
 const THERAPIST_ABSENCE_THRESHOLD_MS = 10 * 60_000;
 
 export function getPatientEncounterPresentationState({
@@ -343,7 +343,7 @@ function getWaitingRoomState({
     return {
       kind: "ended",
       message:
-        "A janela de entrada foi encerrada. Se precisar de ajuda, fale com o suporte.",
+        "A tolerância de entrada de 10 minutos foi encerrada. Se precisar de ajuda, fale com o suporte.",
       title: "Janela encerrada",
     };
   }
@@ -381,7 +381,7 @@ function getWaitingRoomState({
     return {
       kind: "ended",
       message:
-        "A janela de entrada foi encerrada. Se precisar de ajuda, fale com o suporte.",
+        "A tolerância de entrada de 10 minutos foi encerrada. Se precisar de ajuda, fale com o suporte.",
       title: "Janela encerrada",
     };
   }

@@ -33,6 +33,7 @@ export type BookingRecord = {
   status: string;
   therapist_profile_id: string;
   timezone: string;
+  version: number;
 };
 
 export type SessionPaymentRecord = {
@@ -77,6 +78,7 @@ type MapPatientEncountersInput = {
   bookings: BookingRecord[];
   favoriteTherapistsCount: number;
   patient: PatientEncountersPatient;
+  patientEntryEntitlementByBookingId?: Map<string, boolean>;
   reviews: ReviewRecord[];
   serviceById: Map<string, ServiceRecord>;
   sessionPaymentByBookingId: Map<string, SessionPaymentRecord>;
@@ -167,7 +169,12 @@ function mapPatientEncounter(
 
   const payment = input.sessionPaymentByBookingId.get(booking.id) ?? null;
   const reschedule = input.rescheduleByBookingId.get(booking.id) ?? null;
-  const status = getEncounterStatus(booking, payment, reschedule);
+  const status = getEncounterStatus(
+    booking,
+    payment,
+    reschedule,
+    input.patientEntryEntitlementByBookingId?.get(booking.id) ?? false,
+  );
   const summaryId = summaryBookingIds.has(booking.id) ? booking.id : null;
   const hasReview = reviewedBookingIds.has(booking.id);
 
@@ -209,6 +216,7 @@ function getEncounterStatus(
   booking: BookingRecord,
   payment: SessionPaymentRecord | null,
   reschedule: RescheduleRecord | null,
+  patientHasEntryEntitlement: boolean,
 ): PatientEncounterStatus {
   if (isCompletedBookingStatus(booking.status)) return "completed";
   if (isCancelledBookingStatus(booking.status)) return "cancelled";
@@ -227,6 +235,7 @@ function getEncounterStatus(
     canJoinBooking({
       endsAt: booking.ends_at,
       paymentStatus: payment?.financial_status ?? null,
+      patientHasJoined: patientHasEntryEntitlement,
       startsAt: booking.starts_at,
       status: booking.status,
     })

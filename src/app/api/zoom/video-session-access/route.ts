@@ -34,7 +34,12 @@ export async function POST(request: Request) {
       { headers: noStoreHeaders, status: 422 },
     );
   }
-  if (intent !== null && intent !== "join" && intent !== "preview") {
+  if (
+    intent !== null &&
+    intent !== "join" &&
+    intent !== "preview" &&
+    intent !== "end"
+  ) {
     return NextResponse.json(
       { ok: false, message: "Acao de acesso invalida." },
       { headers: noStoreHeaders, status: 422 },

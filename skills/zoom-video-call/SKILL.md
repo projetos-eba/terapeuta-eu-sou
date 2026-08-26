@@ -43,15 +43,20 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
   composição desktop/mobile e `ZoomVideoControls` concentra preflight,
   microfone, câmera, suporte e saída. O adapter continua sendo a autoridade
   de lifecycle do Video SDK.
-- Ao sair ou encerrar, o adapter muda para o feedback na mesma rota. O detalhe
-  pode reabrir a experiência por `?feedback=1`; não criar rota canônica nova.
+- Sair é individual: usa `leave(false)`, volta à espera e preserva reconexão.
+  Somente encerramento definitivo confirmado pelo backend, ou fim programado,
+  libera feedback na mesma rota. O detalhe pode reabrir a experiência por
+  `?feedback=1`; não criar rota canônica nova.
 - Antes de T-15, renderizar somente preparação e horário de abertura. Em T-15,
   renderizar sala visual de espera com capa abstrata, contador, preflight e
   estado host-first; nunca liberar JWT do paciente apenas por query string.
-- A primeira entrada do paciente termina em T+15, inclusive. Depois disso,
-  somente uma participação confiável anterior permite reconexão, sempre antes
-  de `scheduled_ends_at`. Terapeuta e reconexão autorizada terminam exatamente
-  no fim agendado.
+- A chegada do paciente é registrada ao abrir a espera autenticada entre T-15 e
+  T+10, inclusive, por booking e versão. Essa chegada ou uma participação
+  confiável anterior permite reconexão antes de `scheduled_ends_at`; cada join
+  ainda exige presença atual do terapeuta. T+10+1 ms bloqueia quem não chegou.
+- Somente terapeuta encerra para todos, pelo backend, entre T-5 inclusive e o
+  fim agendado. Antes disso o controle fica desabilitado. Nunca chamar
+  `client.leave(true)` no navegador.
 - O contador visível usa somente `scheduledStartsAt`, `scheduledEndsAt` e
   `serverNow`. `hardEndsAt` é watchdog interno e nunca representa duração do
   encontro.
@@ -93,7 +98,7 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
   encerramento conforme o papel.
 - Validar bloqueio antes de T-15, espera com terapeuta ausente, liberação do
   paciente após join do terapeuta, ambos os joins, saída e estados de ocorrência.
-- Validar a transição `leave -> feedback`, feedback já enviado, erro de leitura,
+- Validar `leave -> espera -> reentrada`, `final end -> feedback`, feedback já enviado, erro de leitura,
   erro de envio, resposta realizada, não realização, comentário de 500
   caracteres e reabertura por query controlada.
 - O `userId` local vem de `ZoomVideoClient.getCurrentUserInfo()`, nunca do

@@ -76,13 +76,18 @@ quando o paciente liga a própria câmera. Um payload contendo apenas o usuário
 local, ou uma atualização remota sem `bVideoOn`, não pode chamar `detachVideo`
 para o terapeuta nem substituir o tile remoto por “Aguardando”.
 
-Os testes temporais cobrem T-15, T+15, T+15+1 ms, reconexão autorizada e bloqueio
-em `scheduled_ends_at`. Para 17:45–18:35, o contador mostra 7 minutos antes do
+Os testes temporais cobrem T-15, chegada em T+10, bloqueio em T+10+1 ms,
+reconexão por chegada da versão atual ou join confiável e bloqueio em
+`scheduled_ends_at`. Para 17:45–18:35, o contador mostra 7 minutos antes do
 início às 17:38, 50 minutos às 17:45 e 40 minutos às 17:55. Alterar o watchdog
 não altera esses valores.
 
-Após a saída, a sala deve apresentar o feedback na mesma rota para o papel
-correto. O teste cobre feedback realizado e não realizado, nota de 1 a 5,
+Após uma saída individual, a sala deve voltar à espera e permitir nova entrada
+enquanto o terapeuta estiver presente; suporte, voltar, refresh e troca de
+dispositivo não removem a chegada pontual. Feedback aparece somente após
+encerramento definitivo confirmado em T-5 ou no fim programado. O teste cobre
+negação antes de T-5, autorização na fronteira, replay idempotente, fechamento
+precoce sem confirmação, feedback realizado e não realizado, nota de 1 a 5,
 motivos, comentário de 500 caracteres, erro de carregamento, erro de envio,
 replay idempotente e tentativa duplicada divergente. O Admin visualiza respostas
 ausentes, parciais, completas e conflitantes no detalhe da sessão, sem editar
