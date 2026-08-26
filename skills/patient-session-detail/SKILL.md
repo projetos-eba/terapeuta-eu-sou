@@ -100,9 +100,11 @@ anotação.
   não deve transformar essa espera em uma ação desabilitada.
 - A copy do detalhe deriva horário e participação confiável mesmo antes do
   preflight Zoom: antes de T-15 informa a abertura futura; na janela informa
-  que a sala de espera está disponível; após T+15 bloqueia somente a primeira
-  entrada; participação anterior permite reconexão até `ends_at`. Falha
-  operacional não pode ser inferida apenas de `zoomAccess=null`.
+  que a sala de espera está disponível; após T+10 bloqueia quem não possui
+  chegada pontual da versão atual nem participação confiável. A chegada
+  registrada ou participação anterior permite reconexão até `ends_at`, sempre
+  condicionada à presença atual do terapeuta. Falha operacional não pode ser
+  inferida apenas de `zoomAccess=null`.
 - Encontros confirmados usam a semântica verde do TES no status e no destaque
   contextual do hero, sem alterar a autorização real de entrada na sala.
 - Cancellation and refund copy follows `POLÍTICA DE CANCELAMENTO - OPERACIONAL.docx`: at least 24 hours may allow rescheduling or refund when applicable; under 24 hours and no-show do not create an obligation to refund; exceptional cases are individually reviewed.

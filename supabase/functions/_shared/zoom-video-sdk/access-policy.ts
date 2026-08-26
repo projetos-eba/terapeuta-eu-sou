@@ -1,6 +1,6 @@
 export const VIDEO_SESSION_ACCESS_WINDOW = {
   beforeStartsMinutes: 15,
-  firstPatientJoinAfterStartsMinutes: 15,
+  firstPatientJoinAfterStartsMinutes: 10,
 } as const;
 
 export type VideoAccessReason =
@@ -35,6 +35,7 @@ export function evaluateVideoSessionAccess(input: {
   hardEndsAt?: string | null;
   now?: Date;
   patientHasJoined?: boolean;
+  patientHasTimelyArrival?: boolean;
   startsAt: string;
   therapistStatus?: string;
   therapistPresent?: boolean;
@@ -52,10 +53,12 @@ export function evaluateVideoSessionAccess(input: {
     startsAt.getTime() +
       VIDEO_SESSION_ACCESS_WINDOW.firstPatientJoinAfterStartsMinutes * 60_000,
   );
-  const availableUntil =
-    input.actorRole === "patient" && !input.patientHasJoined
-      ? firstPatientJoinUntil
-      : endsAt;
+  const patientEntryEntitled = Boolean(
+    input.patientHasJoined || input.patientHasTimelyArrival,
+  );
+  const availableUntil = input.actorRole === "patient" && !patientEntryEntitled
+    ? firstPatientJoinUntil
+    : endsAt;
   const hardEndsAt = input.hardEndsAt ? new Date(input.hardEndsAt) : null;
   let reason: VideoAccessReason | null = null;
 
@@ -64,10 +67,9 @@ export function evaluateVideoSessionAccess(input: {
     (input.therapistStatus === "suspended" ||
       input.therapistStatus === "rejected")
   ) {
-    reason =
-      input.therapistStatus === "suspended"
-        ? "THERAPIST_SUSPENDED"
-        : "THERAPIST_NOT_ALLOWED";
+    reason = input.therapistStatus === "suspended"
+      ? "THERAPIST_SUSPENDED"
+      : "THERAPIST_NOT_ALLOWED";
   } else if (
     [
       "cancelled_by_patient",
@@ -86,7 +88,7 @@ export function evaluateVideoSessionAccess(input: {
     reason = "TOO_LATE";
   } else if (
     input.actorRole === "patient" &&
-    !input.patientHasJoined &&
+    !patientEntryEntitled &&
     now > firstPatientJoinUntil
   ) {
     reason = "TOO_LATE";

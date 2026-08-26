@@ -17,6 +17,7 @@ import {
   type VideoAccessState,
 } from "../_shared/zoom-video-sdk/access-policy.ts";
 import { getAuthorizedVideoBooking } from "../_shared/zoom-video-sdk/booking-authorization.ts";
+import { ZoomVideoSdkApiClient } from "../_shared/zoom-video-sdk/api-client.ts";
 import { getZoomVideoSdkConfig } from "../_shared/zoom-video-sdk/config.ts";
 import { ZoomVideoSdkError } from "../_shared/zoom-video-sdk/errors.ts";
 import { createVideoSdkJwt } from "../_shared/zoom-video-sdk/sdk-jwt.ts";
@@ -28,7 +29,21 @@ import {
 type Body = {
   actorRole?: "patient" | "therapist";
   bookingId?: string;
-  intent?: "join" | "preview";
+  intent?: "end" | "join" | "preview";
+};
+
+type WaitingRoomArrivalResult = {
+  entitled?: boolean;
+};
+
+type ManualEndAuthorization = {
+  allowed?: boolean;
+  alreadyEnded?: boolean;
+  availableAt?: string;
+  providerSessionId?: string | null;
+  reason?: string;
+  serverNow?: string;
+  videoSessionId?: string | null;
 };
 
 const runtime = getPaymentsRuntime("zoom-video-session-access");
@@ -66,7 +81,7 @@ runtime.serve(async (request) => {
       );
     }
     const intent = body.intent ?? "join";
-    if (intent !== "join" && intent !== "preview") {
+    if (intent !== "join" && intent !== "preview" && intent !== "end") {
       throw new DomainError(
         "invalid_video_access_intent",
         422,
@@ -103,6 +118,37 @@ runtime.serve(async (request) => {
       profileId: actor.profile.id,
       role: actor.role,
     });
+
+    if (intent === "end") {
+      if (actor.role !== "therapist") {
+        throw new DomainError(
+          "FINAL_END_THERAPIST_REQUIRED",
+          403,
+          "Somente o terapeuta pode encerrar o encontro para todos.",
+        );
+      }
+
+      return await endVideoSession({
+        actorProfileId: actor.profile.id,
+        bookingId,
+        client,
+        config,
+        requestId,
+        startedAt,
+      });
+    }
+
+    let patientHasTimelyArrival = booking.patientHasTimelyArrival;
+    if (actor.role === "patient") {
+      const arrival = await client.rpc<WaitingRoomArrivalResult>(
+        "record_patient_zoom_waiting_room_arrival_v1",
+        {
+          p_booking_id: bookingId,
+          p_patient_profile_id: actor.profile.id,
+        },
+      );
+      patientHasTimelyArrival = patientHasTimelyArrival || Boolean(arrival?.entitled);
+    }
     const access = evaluateVideoSessionAccess({
       actorRole: actor.role,
       bookingStatus: booking.bookingStatus,
@@ -110,12 +156,13 @@ runtime.serve(async (request) => {
       financialStatus: booking.financialStatus,
       hardEndsAt: booking.videoSession?.hardEndsAt ?? null,
       patientHasJoined: booking.patientHasJoined,
+      patientHasTimelyArrival,
       startsAt: booking.startsAt,
       therapistStatus: booking.therapistStatus,
       therapistPresent: booking.videoSession?.therapistPresent ?? false,
       videoSessionReady: Boolean(
         booking.videoSession &&
-        ["ready", "active"].includes(booking.videoSession.status),
+          ["ready", "active"].includes(booking.videoSession.status),
       ),
       videoSessionStatus: booking.videoSession?.status ?? null,
     });
@@ -125,6 +172,19 @@ runtime.serve(async (request) => {
     }
 
     if (!access.allowed) {
+      console.warn(
+        JSON.stringify({
+          actorRole: actor.role,
+          code: "ZOOM_VIDEO_ACCESS_DENIED",
+          durationMs: Date.now() - startedAt,
+          intent,
+          patientHasJoined: booking.patientHasJoined,
+          patientHasTimelyArrival,
+          reason: access.reason,
+          requestId,
+          therapistPresent: booking.videoSession?.therapistPresent ?? false,
+        }),
+      );
       return withNoStore(videoAccessFailure(access, requestId));
     }
 
@@ -191,12 +251,11 @@ runtime.serve(async (request) => {
       JSON.stringify({
         actorRole: actorRole ?? "unknown",
         bookingId,
-        code:
-          error instanceof DomainError
-            ? error.code
-            : error instanceof ZoomVideoSdkError
-              ? error.code
-              : "ZOOM_VIDEO_ACCESS_UNKNOWN",
+        code: error instanceof DomainError
+          ? error.code
+          : error instanceof ZoomVideoSdkError
+          ? error.code
+          : "ZOOM_VIDEO_ACCESS_UNKNOWN",
         durationMs: Date.now() - startedAt,
         requestId,
       }),
@@ -258,9 +317,7 @@ function videoAccessFailure(access: VideoAccessState, requestId: string) {
       },
       ok: false,
     },
-    reason === "THERAPIST_NOT_ALLOWED" || reason === "THERAPIST_SUSPENDED"
-      ? 403
-      : 409,
+    reason === "THERAPIST_NOT_ALLOWED" || reason === "THERAPIST_SUSPENDED" ? 403 : 409,
   );
 }
 
@@ -324,3 +381,97 @@ function withNoStore(response: Response) {
 }
 
 export {};
+
+async function endVideoSession(input: {
+  actorProfileId: string;
+  bookingId: string;
+  client: SupabaseRestClient;
+  config: ReturnType<typeof getZoomVideoSdkConfig>;
+  requestId: string;
+  startedAt: number;
+}) {
+  const authorization = await input.client.rpc<ManualEndAuthorization>(
+    "authorize_therapist_zoom_manual_end_v1",
+    {
+      p_booking_id: input.bookingId,
+      p_therapist_profile_id: input.actorProfileId,
+    },
+  );
+
+  if (!authorization?.allowed) {
+    const reason = authorization?.reason ?? "VIDEO_SESSION_NOT_READY";
+    const message = reason === "FINAL_END_TOO_EARLY"
+      ? "O encerramento para todos ficará disponível nos 5 minutos finais."
+      : reason === "TOO_LATE"
+      ? "O horário programado do encontro terminou."
+      : "Não foi possível encerrar o encontro agora.";
+
+    console.warn(
+      JSON.stringify({
+        actorRole: "therapist",
+        code: "ZOOM_VIDEO_FINAL_END_DENIED",
+        durationMs: Date.now() - input.startedAt,
+        reason,
+        requestId: input.requestId,
+      }),
+    );
+
+    return withNoStore(
+      jsonResponse(
+        {
+          data: {
+            availableAt: authorization?.availableAt ?? null,
+            serverNow: authorization?.serverNow ?? new Date().toISOString(),
+          },
+          error: { code: reason, message, requestId: input.requestId },
+          ok: false,
+        },
+        409,
+      ),
+    );
+  }
+
+  if (!authorization.alreadyEnded) {
+    const providerSessionId = authorization.providerSessionId;
+    const videoSessionId = authorization.videoSessionId;
+    if (!providerSessionId || !videoSessionId) {
+      throw new DomainError(
+        "VIDEO_SESSION_NOT_READY",
+        409,
+        "Não foi possível encerrar o encontro agora.",
+      );
+    }
+
+    const zoom = new ZoomVideoSdkApiClient({ config: input.config });
+    try {
+      await zoom.endSession(providerSessionId);
+    } catch (error) {
+      if (!(error instanceof ZoomVideoSdkError && error.status === 404)) {
+        throw error;
+      }
+    }
+
+    await input.client.rpc("mark_video_session_termination_confirmed_v1", {
+      p_reason: "manual_end",
+      p_video_session_id: videoSessionId,
+    });
+  }
+
+  console.log(
+    JSON.stringify({
+      actorRole: "therapist",
+      code: "ZOOM_VIDEO_FINAL_END_CONFIRMED",
+      durationMs: Date.now() - input.startedAt,
+      idempotentReplay: Boolean(authorization.alreadyEnded),
+      requestId: input.requestId,
+    }),
+  );
+
+  return withNoStore(
+    success({
+      ended: true,
+      idempotentReplay: Boolean(authorization.alreadyEnded),
+      serverNow: authorization.serverNow ?? new Date().toISOString(),
+    }),
+  );
+}

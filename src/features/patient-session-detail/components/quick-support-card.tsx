@@ -6,7 +6,7 @@ import { routes } from "@/lib/routes";
 
 export function QuickSupportCard({ bookingId }: { bookingId: string }) {
   return (
-    <section className="rounded-card border border-border bg-white p-4 shadow-card sm:p-6">
+    <section className="w-full min-w-0 rounded-card border border-border bg-white p-4 shadow-card sm:p-6">
       <div className="flex items-center gap-3">
         <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
           <Headphones aria-hidden="true" size={20} />

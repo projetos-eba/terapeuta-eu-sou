@@ -1,10 +1,12 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { TherapistGettingStartedPage } from "./therapist-getting-started-page";
 import type { TherapistHomeReadiness } from "./therapist-home-readiness.types";
 
 describe("TherapistGettingStartedPage", () => {
+  afterEach(cleanup);
+
   it("shows the real registration progress and its next actions", () => {
     render(
       <TherapistGettingStartedPage
@@ -46,6 +48,51 @@ describe("TherapistGettingStartedPage", () => {
         (link) => link.getAttribute("href") === "/terapeuta/configuracoes",
       );
     expect(settingsLinks).toHaveLength(4);
+  });
+
+  it("keeps the checklist visible when the completed profile awaits approval", () => {
+    const readiness: TherapistHomeReadiness = {
+      ...readinessFixture,
+      checklist: readinessFixture.checklist.map((item) => ({
+        ...item,
+        complete: true,
+        state: item.id === "profile" ? "in_review" : "complete",
+      })),
+      completedRequiredCount: 6,
+      documents: readinessFixture.documents.map((item) => ({
+        ...item,
+        complete: true,
+        state: "complete",
+      })),
+      isOperationallyReady: true,
+      profilePublicStatus: "unpublished",
+      therapistStatus: "submitted",
+      verificationStatus: "submitted",
+    };
+
+    render(
+      <TherapistGettingStartedPage
+        readiness={readiness}
+        session={{
+          name: "Antonio Silva",
+          plan: "premium_plus",
+          status: "submitted",
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Complete seu cadastro" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("6 de 6 concluídas")).toBeInTheDocument();
+    expect(
+      screen.getByText("Cadastro enviado para análise"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Seu cadastro está completo. Acompanhe a análise na situação ao lado.",
+      ),
+    ).toBeInTheDocument();
   });
 });
 

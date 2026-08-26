@@ -125,6 +125,25 @@ partir do inicio efetivo mais a configuracao (240 minutos em HML). Um valor de
 watchdog incoerente exige auditoria de migration, funcao implantada e eventos,
 mas nao pode aparecer como "Tempo restante do encontro".
 
+## O paciente saiu e recebeu 409 ao tentar voltar
+
+Confira a razão sanitizada retornada pelo acesso. `THERAPIST_NOT_IN_SESSION`
+significa que a chegada pode continuar válida, mas o terapeuta precisa estar
+presente novamente. `TOO_LATE` só deve ocorrer antes do primeiro acesso quando
+não existe `zoom_waiting_room_entered` da versão atual nem
+`session.user_joined` confiável, ou quando o horário programado terminou.
+Verifique booking `version`, `starts_at`, o evento de chegada e a presença do
+terapeuta sem inspecionar ou expor identificadores do provedor.
+
+## Sair abriu feedback ou Encerrar para todos apareceu cedo
+
+`Sair do encontro/sessão` é sempre individual e recuperável; deve usar
+`leave(false)` e voltar à espera. `Encerrar para todos` é exclusivo do
+terapeuta, permanece desabilitado antes de T-5 e passa pelo intent backend
+`end`. Um evento `Closed` precoce não basta para liberar feedback: confirme o
+estado de attendance server-side e aguarde o fim agendado quando o provedor
+encerrou antes da janela final.
+
 ## O orquestrador parou em `canonical_stripe_payment_e2e_pending`
 
 Nao abra Zoom por fora. Esse bloqueio significa que ainda nao existe evidencia

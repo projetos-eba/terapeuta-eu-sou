@@ -44,8 +44,8 @@ type ApiResponse =
       ok: true;
     }
   | {
-      data?: { access?: ZoomAccessState };
-      error?: { message?: string };
+      data?: { access?: ZoomAccessState; availableAt?: string };
+      error?: { code?: string; message?: string };
       message?: string;
       ok: false;
     };
@@ -179,8 +179,10 @@ export function ZoomVideoSessionAdapter({
   );
   const previewAbortControllerRef = useRef<AbortController | null>(null);
   const joinAbortControllerRef = useRef<AbortController | null>(null);
+  const finalEndAbortControllerRef = useRef<AbortController | null>(null);
   const authRefreshAbortControllerRef = useRef<AbortController | null>(null);
   const authRefreshInFlightRef = useRef(false);
+  const arrivalPreviewRequestedRef = useRef(false);
   const leavingRef = useRef(false);
   const localVideoRef = useRef<HTMLElement | null>(null);
   const remoteVideoRef = useRef<HTMLElement | null>(null);
@@ -267,6 +269,7 @@ export function ZoomVideoSessionAdapter({
       mounted.current = false;
       previewAbortControllerRef.current?.abort();
       joinAbortControllerRef.current?.abort();
+      finalEndAbortControllerRef.current?.abort();
       authRefreshAbortControllerRef.current?.abort();
       clearRemoteVideoResyncTimers();
       window.removeEventListener("pagehide", handlePageHide);
@@ -282,6 +285,12 @@ export function ZoomVideoSessionAdapter({
     actorRole === "patient" &&
     currentAccess?.reason === ZoomAccessReason.TherapistNotInSession;
   const sectionClassName = displayMode === "dedicated" ? "w-full" : "mt-6";
+  const finalEndAvailable = isFinalEndAvailable({
+    access: currentAccess,
+    clientNowMs: nowMs,
+    fallbackEndsAt: scheduledEndsAt,
+    serverClockOffsetMs,
+  });
 
   useEffect(() => {
     if (!(currentAccess?.scheduledStartsAt ?? scheduledStartsAt)) return undefined;
@@ -291,7 +300,10 @@ export function ZoomVideoSessionAdapter({
   }, [currentAccess?.scheduledStartsAt, scheduledStartsAt]);
 
   const refreshPreviewAccess = useCallback(
-    (forceOnline = false) => {
+    (forceOnline = false, silent = false) => {
+      if (actorRole === "patient") {
+        arrivalPreviewRequestedRef.current = true;
+      }
       if (!isOnlineRef.current && !forceOnline) {
         setMessage(
           "Sem conexão com a internet. A sala será atualizada quando a conexão voltar.",
@@ -302,7 +314,7 @@ export function ZoomVideoSessionAdapter({
 
       const controller = new AbortController();
       previewAbortControllerRef.current = controller;
-      setPreviewLoading(true);
+      if (!silent) setPreviewLoading(true);
 
       const request = (async () => {
         const timeout = window.setTimeout(
@@ -335,6 +347,21 @@ export function ZoomVideoSessionAdapter({
               setMessage(
                 "O terapeuta iniciou o encontro. Voce ja pode entrar.",
               );
+            } else if (
+              actorRole === "patient" &&
+              refreshedAccess.reason ===
+                ZoomAccessReason.TherapistNotInSession
+            ) {
+              setMessage(
+                "Sua chegada foi registrada. A entrada será liberada quando o terapeuta estiver na sala.",
+              );
+            } else if (
+              actorRole === "patient" &&
+              refreshedAccess.reason === ZoomAccessReason.TooLate
+            ) {
+              setMessage(
+                "A tolerância de entrada de 10 minutos foi encerrada. Se precisar de ajuda, fale com o suporte.",
+              );
             } else {
               setMessage(null);
             }
@@ -354,7 +381,7 @@ export function ZoomVideoSessionAdapter({
           window.clearTimeout(timeout);
           previewAbortControllerRef.current = null;
           previewRequestRef.current = null;
-          setPreviewLoading(false);
+          if (!silent) setPreviewLoading(false);
         }
 
         return currentAccessRef.current;
@@ -437,6 +464,20 @@ export function ZoomVideoSessionAdapter({
       window.removeEventListener("online", handleOnline);
     };
   }, [actorRole, refreshPreviewAccess]);
+
+  useEffect(() => {
+    if (
+      actorRole !== "patient" ||
+      state !== "idle" ||
+      !currentAccess ||
+      arrivalPreviewRequestedRef.current
+    ) {
+      return;
+    }
+
+    arrivalPreviewRequestedRef.current = true;
+    void refreshPreviewAccess(false, currentAccess.allowed);
+  }, [actorRole, currentAccess, refreshPreviewAccess, state]);
 
   useEffect(() => {
     if (actorRole !== "patient" || currentAccess || state !== "idle") return;
@@ -554,6 +595,26 @@ export function ZoomVideoSessionAdapter({
       const payload = (await response.json()) as ApiResponse;
 
       if (!response.ok || !payload.ok) {
+        if (!payload.ok && payload.data?.access) {
+          updateCurrentAccess(payload.data.access);
+          if (
+            payload.data.access.reason ===
+            ZoomAccessReason.TherapistNotInSession
+          ) {
+            setState("idle");
+            setMessage(
+              "Sua chegada foi registrada. A entrada será liberada quando o terapeuta estiver na sala.",
+            );
+            return;
+          }
+          if (payload.data.access.reason === ZoomAccessReason.TooLate) {
+            setState("idle");
+            setMessage(
+              "A tolerância de entrada de 10 minutos foi encerrada. Se precisar de ajuda, fale com o suporte.",
+            );
+            return;
+          }
+        }
         throw new Error(
           (!payload.ok && (payload.error?.message ?? payload.message)) ||
             "Nao conseguimos abrir a sala agora.",
@@ -744,6 +805,12 @@ export function ZoomVideoSessionAdapter({
   async function leaveSession(endSession = false) {
     if (leavingRef.current) return;
     if (endSession) {
+      if (!finalEndAvailable) {
+        setMessage(
+          "O encerramento para todos ficará disponível nos 5 minutos finais.",
+        );
+        return;
+      }
       setEndDialogOpen(true);
       return;
     }
@@ -754,24 +821,128 @@ export function ZoomVideoSessionAdapter({
   async function completeLeave(endSession: boolean) {
     if (leavingRef.current) return;
 
+    if (endSession) {
+      await completeFinalEnd();
+      return;
+    }
+
     leavingRef.current = true;
     setEndDialogOpen(false);
     setState("leaving");
-    setMessage(
-      endSession ? "Encerrando o encontro..." : "Saindo do encontro...",
-    );
+    setMessage("Saindo do encontro...");
 
-    const failures = await cleanup({ destroyClient: true, endSession });
+    const failures = await cleanup({ destroyClient: true, endSession: false });
     leavingRef.current = false;
 
     if (!mounted.current) return;
-    setState(failures.length > 0 ? "error" : "ended");
+    if (failures.length > 0) {
+      setState("error");
+      setMessage(
+        "Nao foi possivel concluir todas as etapas de saída. Confira sua conexão e tente novamente.",
+      );
+      return;
+    }
+
+    setState("idle");
+    await refreshPreviewAccess();
     setMessage(
-      failures.length > 0
-        ? "Nao foi possivel concluir todas as etapas de encerramento. Confira sua conexao e tente novamente."
-        : endSession
-          ? "O encontro foi encerrado para todos."
-          : "Voce saiu do encontro.",
+      actorRole === "patient"
+        ? "Você saiu do encontro. Você pode entrar novamente enquanto o encontro estiver ativo e o terapeuta estiver na sala."
+        : "Você saiu da sessão. Você pode entrar novamente enquanto a sessão estiver ativa.",
+    );
+  }
+
+  async function completeFinalEnd() {
+    if (leavingRef.current || !finalEndAvailable) return;
+
+    leavingRef.current = true;
+    setEndDialogOpen(false);
+    setState("leaving");
+    setMessage("Encerrando o encontro para todos...");
+
+    const controller = new AbortController();
+    finalEndAbortControllerRef.current = controller;
+    const timeout = window.setTimeout(
+      () => controller.abort(),
+      ACCESS_REQUEST_TIMEOUT_MS,
+    );
+
+    try {
+      const response = await fetch("/api/zoom/video-session-access", {
+        body: JSON.stringify({ actorRole, bookingId, intent: "end" }),
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        signal: controller.signal,
+      });
+      const payload = (await response.json()) as ApiResponse;
+
+      if (!response.ok || !payload.ok) {
+        setState("joined");
+        setMessage(
+          !payload.ok && payload.error?.code === "FINAL_END_TOO_EARLY"
+            ? "O encerramento para todos ficará disponível nos 5 minutos finais."
+            : "Não foi possível encerrar o encontro para todos. A chamada continua ativa; tente novamente.",
+        );
+        return;
+      }
+
+      const failures = await cleanup({
+        destroyClient: true,
+        endSession: false,
+      });
+      setState("ended");
+      setMessage(
+        failures.length > 0
+          ? "O encontro foi encerrado. Houve uma falha ao limpar a mídia local; você já pode compartilhar seu feedback."
+          : "O encontro foi encerrado. Você já pode compartilhar seu feedback e confirmar como ele aconteceu.",
+      );
+    } catch {
+      setState("joined");
+      setMessage(
+        "Não foi possível encerrar o encontro para todos. A chamada continua ativa; tente novamente.",
+      );
+    } finally {
+      window.clearTimeout(timeout);
+      if (finalEndAbortControllerRef.current === controller) {
+        finalEndAbortControllerRef.current = null;
+      }
+      leavingRef.current = false;
+    }
+  }
+
+  async function resolveProviderClosure(reason?: string) {
+    await cleanup({ destroyClient: true, endSession: false });
+
+    try {
+      const response = await fetch(
+        `/api/session-feedback?bookingId=${encodeURIComponent(bookingId)}`,
+        { cache: "no-store" },
+      );
+      const payload = (await response.json().catch(() => null)) as
+        | { data?: { status?: string }; ok?: boolean }
+        | null;
+      const feedbackStatus = payload?.data?.status;
+      const feedbackAvailable =
+        payload?.ok &&
+        (feedbackStatus === "eligible" ||
+          feedbackStatus === "incident_only" ||
+          feedbackStatus === "submitted");
+
+      if (feedbackAvailable) {
+        setState("ended");
+        setMessage(
+          "O encontro foi encerrado. Você já pode compartilhar seu feedback e confirmar como ele aconteceu.",
+        );
+        return;
+      }
+    } catch {
+      // Fail closed: a provider disconnect alone cannot confirm completion.
+    }
+
+    setState("error");
+    setMessage(
+      `${formatClosedReason(reason)} A confirmação do encontro ficará disponível somente no horário previsto.`,
     );
   }
 
@@ -869,9 +1040,10 @@ export function ZoomVideoSessionAdapter({
         setMessage("Conexao restabelecida.");
         scheduleRemoteVideoResync();
       } else if (normalized.state === "Closed") {
-        setState("ended");
-        setMessage(formatClosedReason(normalized.reason));
-        void cleanup({ destroyClient: true, endSession: false });
+        if (leavingRef.current) return;
+        setState("leaving");
+        setMessage("Confirmando o encerramento do encontro...");
+        void resolveProviderClosure(normalized.reason);
       } else if (normalized.state === "Fail") {
         setState("error");
         setMessage("Falha ao manter a conexao do encontro.");
@@ -1175,6 +1347,7 @@ export function ZoomVideoSessionAdapter({
         <ZoomVideoControls
           actorRole={actorRole}
           audioMuted={audioMuted}
+          canEndForAll={finalEndAvailable}
           isBusy={isBusy}
           isOnline={isOnline}
           onJoin={() => void joinSession()}
@@ -1457,6 +1630,22 @@ export function formatScheduledSessionCountdown(input: {
   return input.actorRole === "patient"
     ? `Tempo restante do encontro: ${clock}`
     : `Tempo restante da sessão: ${clock}`;
+}
+
+export function isFinalEndAvailable(input: {
+  access: ZoomAccessState | null;
+  clientNowMs: number;
+  fallbackEndsAt?: string;
+  serverClockOffsetMs: number;
+}) {
+  const endsAt = input.access?.scheduledEndsAt ?? input.fallbackEndsAt;
+  if (!endsAt) return false;
+
+  const endsAtMs = Date.parse(endsAt);
+  if (!Number.isFinite(endsAtMs)) return false;
+
+  const nowMs = input.clientNowMs + input.serverClockOffsetMs;
+  return nowMs >= endsAtMs - 5 * 60_000 && nowMs < endsAtMs;
 }
 
 function formatRoomOpeningCountdown(

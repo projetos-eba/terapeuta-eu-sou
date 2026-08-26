@@ -168,6 +168,40 @@ describe("zoom video session access route", () => {
     );
   });
 
+  it("forwards final-end intent only with the therapist session", async () => {
+    headerMocks.cookieGet.mockImplementation((name: string) =>
+      name === "tes_therapist_access_token"
+        ? { value: "therapist-access-token" }
+        : undefined,
+    );
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ data: { ended: true }, ok: true }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      makeRequest({ actorRole: "therapist", intent: "end" }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://tes.supabase.test/functions/v1/zoom-video-session-access",
+      expect.objectContaining({
+        body: JSON.stringify({
+          actorRole: "therapist",
+          bookingId,
+          intent: "end",
+        }),
+        headers: expect.objectContaining({
+          Authorization: "Bearer therapist-access-token",
+        }),
+      }),
+    );
+  });
+
   it("fails safely when the upstream access request does not finish", async () => {
     vi.useFakeTimers();
     headerMocks.cookieGet.mockImplementation((name: string) =>

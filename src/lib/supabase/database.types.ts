@@ -13266,6 +13266,14 @@ export type Database = {
         Returns: undefined;
       };
       auto_confirm_sessions: { Args: { p_now?: string }; Returns: number };
+      authorize_therapist_zoom_manual_end_v1: {
+        Args: {
+          p_booking_id: string;
+          p_now?: string;
+          p_therapist_profile_id: string;
+        };
+        Returns: Json;
+      };
       build_video_session_access_state_v1: {
         Args: {
           p_booking_status: Database["public"]["Enums"]["booking_status"];
@@ -14804,6 +14812,14 @@ export type Database = {
           p_max_issued?: number;
           p_profile_id: string;
           p_window_seconds?: number;
+        };
+        Returns: Json;
+      };
+      record_patient_zoom_waiting_room_arrival_v1: {
+        Args: {
+          p_booking_id: string;
+          p_now?: string;
+          p_patient_profile_id: string;
         };
         Returns: Json;
       };

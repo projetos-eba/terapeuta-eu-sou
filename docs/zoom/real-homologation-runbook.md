@@ -93,15 +93,19 @@ Regras do harness HML:
 9. Durante a chamada, valida desktop, tablet, mobile de 390px e viewport mobile
    baixo, sem overflow da pagina e com audio, camera e saida dentro do viewport.
    Essa evidencia Chromium nao substitui Safari/iPhone e Chrome/Android reais.
-10. O harness exercita audio real do Video SDK e encerra a sessao pelo botao
-   `Encerrar encontro`.
-11. Após a saída, o harness valida a tela de feedback para paciente e terapeuta,
+10. O paciente sai individualmente, volta à espera e reconecta após T+10 usando
+    a chegada pontual já registrada. Repetir por suporte, voltar, refresh e
+    outro dispositivo.
+11. Antes de T-5, o harness comprova que `Encerrar para todos` permanece
+    bloqueado. Em T-5, o terapeuta confirma o encerramento definitivo pelo
+    backend; o navegador nunca usa `leave(true)`.
+12. Após o encerramento confirmado, o harness valida a tela de feedback para paciente e terapeuta,
     registra uma resposta realizada ou não realizada e confirma no Admin a
     leitura bilateral, a pendência ou a divergência sem edição.
-12. Em caso de falha durante cleanup, o fallback permitido e `PUT
+13. Em caso de falha durante cleanup, o fallback permitido e `PUT
 /videosdk/sessions/{sessionId}/status` via `endSessionByApi`; o harness nunca
    grava fixture paga direta nem atualiza `video_sessions` manualmente.
-13. Evidencia final fica em `.tmp/homologation/zoom-hml-*/evidence.json`,
+14. Evidencia final fica em `.tmp/homologation/zoom-hml-*/evidence.json`,
     somente com IDs em hash.
 
 Reflexos exigidos:

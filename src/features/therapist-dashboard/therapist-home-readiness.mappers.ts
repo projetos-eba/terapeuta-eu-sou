@@ -61,6 +61,19 @@ export function mapTherapistHomeReadiness({
   };
 }
 
+export function canAccessTherapistDashboard({
+  readiness,
+  therapistStatus,
+}: {
+  readiness: Pick<TherapistHomeReadiness, "isOperationallyReady">;
+  therapistStatus: TherapistStatus;
+}) {
+  return (
+    readiness.isOperationallyReady &&
+    therapistStatus === TherapistStatus.Approved
+  );
+}
+
 function documentItems(
   editor: TherapistProfileEditorData,
 ): TherapistHomeDocument[] {

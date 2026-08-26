@@ -35,7 +35,7 @@ describe("canJoinBooking", () => {
     ).toBe(true);
   });
 
-  it("allows first entry through T+15 inclusive and blocks one millisecond later", () => {
+  it("allows first arrival through T+10 inclusive and blocks one millisecond later", () => {
     const input = {
       endsAt: "2026-08-01T15:00:00.000Z",
       patientHasJoined: false,
@@ -47,13 +47,25 @@ describe("canJoinBooking", () => {
     expect(
       canJoinBooking({
         ...input,
-        now: new Date("2026-08-01T14:15:00.000Z"),
+        now: new Date("2026-08-01T14:10:00.000Z"),
       }),
     ).toBe(true);
     expect(
       canJoinBooking({
         ...input,
-        now: new Date("2026-08-01T14:15:00.001Z"),
+        now: new Date("2026-08-01T14:10:00.001Z"),
+      }),
+    ).toBe(false);
+  });
+
+  it("does not treat an omitted arrival state as permission after T+10", () => {
+    expect(
+      canJoinBooking({
+        endsAt: "2026-08-01T15:00:00.000Z",
+        now: new Date("2026-08-01T14:10:00.001Z"),
+        paymentStatus: "paid",
+        startsAt: "2026-08-01T14:00:00.000Z",
+        status: "confirmed",
       }),
     ).toBe(false);
   });

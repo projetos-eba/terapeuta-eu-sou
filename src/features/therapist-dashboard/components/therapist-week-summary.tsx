@@ -53,7 +53,7 @@ export function TherapistWeekSummary({
   }
 
   return (
-    <section className="rounded-panel border border-[var(--tes-color-border)]/70 bg-white p-5 shadow-card">
+    <section className="min-w-0 max-w-full rounded-panel border border-[var(--tes-color-border)]/70 bg-white p-5 shadow-card">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-brand-deep">Sua semana</h2>
@@ -73,8 +73,8 @@ export function TherapistWeekSummary({
         <Legend color="var(--tes-color-brand-lavender)" label="Sessões realizadas" />
         <Legend color="var(--tes-color-status-danger)" label="Cancelamentos" />
       </div>
-      <div className="mt-4 grid items-center gap-6 xl:grid-cols-[minmax(0,1fr)_190px]">
-        <div>
+      <div className="mt-4 grid min-w-0 items-center gap-6 xl:grid-cols-[minmax(0,1fr)_190px]">
+        <div className="min-w-0">
           <TherapistWeekChart days={week.days} />
           {week.state === "empty" ? (
             <p className="mt-2 text-center text-sm font-semibold text-tesText-muted">
@@ -82,7 +82,7 @@ export function TherapistWeekSummary({
             </p>
           ) : null}
         </div>
-        <div className="border-t border-[var(--tes-color-border)] pt-6 xl:border-l xl:border-t-0 xl:pl-7 xl:pt-0">
+        <div className="min-w-0 border-t border-[var(--tes-color-border)] pt-6 xl:border-l xl:border-t-0 xl:pl-7 xl:pt-0">
           <AttendanceRateChart value={week.attendanceRate} />
         </div>
       </div>

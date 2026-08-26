@@ -4,7 +4,10 @@ import { TherapistPlan, TherapistStatus } from "@/domain/tes";
 import type { TherapistConnectAccount } from "@/features/therapist-finance/therapist-finance.types";
 import type { TherapistProfileEditorData } from "@/features/therapist-profile-editor/therapist-profile-editor.types";
 
-import { mapTherapistHomeReadiness } from "./therapist-home-readiness.mappers";
+import {
+  canAccessTherapistDashboard,
+  mapTherapistHomeReadiness,
+} from "./therapist-home-readiness.mappers";
 
 const profileId = "00000000-0000-4000-8000-000000000001";
 
@@ -94,6 +97,41 @@ describe("mapTherapistHomeReadiness", () => {
     );
     expect(readiness.completedRequiredCount).toBe(5);
     expect(readiness.requiredCount).toBe(6);
+  });
+
+  it("keeps the completed checklist visible while administrative approval is pending", () => {
+    const readiness = mapTherapistHomeReadiness({
+      connect: connectFixture(),
+      editor: editorFixture({
+        activeServiceCount: 1,
+        availabilityRuleCount: 1,
+        publicDocumentsComplete: true,
+        publicStatus: "unpublished",
+        verificationStatus: "submitted",
+      }),
+      session: {
+        plan: TherapistPlan.Free,
+        profileId,
+        status: TherapistStatus.Submitted,
+      },
+    });
+
+    expect(readiness.completedRequiredCount).toBe(readiness.requiredCount);
+    expect(readiness.isOperationallyReady).toBe(true);
+    expect(
+      readiness.checklist.find((item) => item.id === "profile"),
+    ).toEqual(
+      expect.objectContaining({
+        complete: true,
+        state: "in_review",
+      }),
+    );
+    expect(
+      canAccessTherapistDashboard({
+        readiness,
+        therapistStatus: TherapistStatus.Submitted,
+      }),
+    ).toBe(false);
   });
 
   it("keeps requested profile corrections as a real checklist pendency", () => {
@@ -186,7 +224,7 @@ describe("mapTherapistHomeReadiness", () => {
     );
   });
 
-  it("allows the dashboard after Connect onboarding is submitted", () => {
+  it("does not count submitted Connect onboarding as a checklist pendency", () => {
     const readiness = mapTherapistHomeReadiness({
       connect: connectFixture({
         onboardingStatus: "onboarding_started",

@@ -16,6 +16,7 @@ import { TESButton } from "@/components/tes";
 type ZoomVideoControlsProps = {
   actorRole: "patient" | "therapist";
   audioMuted: boolean;
+  canEndForAll: boolean;
   isBusy: boolean;
   isOnline: boolean;
   onJoin: () => void;
@@ -41,6 +42,7 @@ type ZoomVideoControlsProps = {
 export function ZoomVideoControls({
   actorRole,
   audioMuted,
+  canEndForAll,
   isBusy,
   isOnline,
   onJoin,
@@ -149,16 +151,32 @@ export function ZoomVideoControls({
       </button>
 
       {roleType === 1 ? (
-        <button
-          aria-label="Encerrar para todos"
-          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[24px] bg-status-danger px-5 text-sm font-extrabold text-white shadow-card transition hover:bg-status-danger/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-status-danger disabled:pointer-events-none disabled:opacity-60"
-          disabled={isBusy || !isOnline}
-          onClick={onTherapistEnd}
-          type="button"
-        >
-          <PhoneOff aria-hidden="true" size={19} />
-          Encerrar para todos
-        </button>
+        <div className="grid justify-items-center gap-2">
+          <button
+            aria-label={
+              canEndForAll
+                ? "Encerrar para todos"
+                : "Encerrar para todos — disponível nos 5 minutos finais"
+            }
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[24px] bg-status-danger px-5 text-sm font-extrabold text-white shadow-card transition hover:bg-status-danger/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-status-danger disabled:pointer-events-none disabled:opacity-60"
+            disabled={isBusy || !isOnline || !canEndForAll}
+            onClick={onTherapistEnd}
+            title={
+              canEndForAll
+                ? "Encerrar para todos"
+                : "Disponível nos 5 minutos finais"
+            }
+            type="button"
+          >
+            <PhoneOff aria-hidden="true" size={19} />
+            Encerrar para todos
+          </button>
+          {!canEndForAll ? (
+            <span className="max-w-64 text-center text-sm font-semibold leading-5 text-tesText-secondary">
+              O encerramento para todos ficará disponível nos 5 minutos finais.
+            </span>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
