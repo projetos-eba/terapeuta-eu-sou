@@ -3,7 +3,7 @@ export { isBookingStatus } from "@/domain/tes";
 export const BOOKING_JOIN_WINDOW_BEFORE_MINUTES = 15;
 export const BOOKING_JOIN_WINDOW_BEFORE_MS =
   BOOKING_JOIN_WINDOW_BEFORE_MINUTES * 60 * 1000;
-export const BOOKING_FIRST_JOIN_WINDOW_AFTER_MINUTES = 15;
+export const BOOKING_FIRST_JOIN_WINDOW_AFTER_MINUTES = 10;
 export const BOOKING_FIRST_JOIN_WINDOW_AFTER_MS =
   BOOKING_FIRST_JOIN_WINDOW_AFTER_MINUTES * 60 * 1000;
 
@@ -44,7 +44,7 @@ export function canJoinBooking(input: {
   const joinWindowStartsAt = startsAt - BOOKING_JOIN_WINDOW_BEFORE_MS;
 
   if (now < joinWindowStartsAt || now >= endsAt) return false;
-  if (input.patientHasJoined === undefined || input.patientHasJoined) return true;
+  if (input.patientHasJoined) return true;
 
   return now <= startsAt + BOOKING_FIRST_JOIN_WINDOW_AFTER_MS;
 }

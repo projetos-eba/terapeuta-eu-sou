@@ -60,10 +60,14 @@ o teste de áudio solicita somente microfone e mostra um indicador local. Esses
 streams não inicializam o Video SDK, não solicitam acesso à sala, não emitem
 JWT e são encerrados ao desligar o teste, entrar, falhar ou desmontar a tela.
 
-O encerramento usa `TESDialog`. Depois de sair, paciente e terapeuta permanecem
-na rota canônica da sala e podem registrar feedback bilateral privado. A mesma
-tela pode ser reaberta pelo detalhe com `?feedback=1`; isso não cria uma rota
-nova. O feedback usa `session_feedback` e é independente de `reviews` públicos.
+O encerramento definitivo usa `TESDialog`, é exclusivo do terapeuta e só fica
+disponível nos cinco minutos finais. A saída comum chama `leave(false)`, volta
+à sala de espera e preserva a reconexão; ela nunca abre feedback. O navegador
+não chama `leave(true)`: o encerramento para todos passa pelo backend, que
+valida ownership, janela e sessão ativa antes de acionar o provedor. A mesma
+tela pode reabrir o feedback pelo detalhe com `?feedback=1`; isso não cria uma
+rota nova. O feedback usa `session_feedback` e é independente de `reviews`
+públicos.
 O read model administrativo mostra respostas pendentes e divergentes sem
 editar opiniões ou alterar pagamento, repasse, reembolso, booking ou confirmação
 de serviço.
@@ -143,9 +147,17 @@ orfa protegida pelo watchdog usa `end_hard_timeout`. O navegador calcula todo
 contador visivel com `scheduled_starts_at`, `scheduled_ends_at` e `serverNow`,
 nunca com `hard_ends_at`.
 
-A janela abre em T-15. A primeira entrada do paciente e aceita ate T+15
-inclusive; depois, apenas um `session.user_joined` confiavel anterior autoriza
-reconexao. Toda entrada termina em `scheduled_ends_at`.
+A janela abre em T-15. Abrir a sala de espera autenticada registra
+`zoom_waiting_room_entered` para a versão atual da reserva até T+10 inclusive.
+Essa chegada pontual, ou um `session.user_joined` confiável anterior, preserva
+a reconexão até `scheduled_ends_at`; cada entrada ainda exige presença atual do
+terapeuta. T+10+1 ms é bloqueado sem uma dessas evidências.
+
+Somente o terapeuta pode encerrar para todos no intervalo fechado em T-5 e
+aberto no fim agendado. O encerramento confirmado nessa janela libera feedback;
+um fechamento precoce do provedor não confirma realização e aguarda
+`scheduled_ends_at`. `manual_end`, `end_scheduled` e o watchdog permanecem
+operações independentes.
 
 Se o terapeuta sair, o paciente nao recebe novo JWT durante a ausencia. A
 maintenance encerra sessoes por hard timeout, ausencia prolongada do terapeuta

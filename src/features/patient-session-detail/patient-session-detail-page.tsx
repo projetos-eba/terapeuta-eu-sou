@@ -34,7 +34,7 @@ export function PatientSessionDetailPage({
       <AppPageGrid className="gap-5 xl:grid-cols-[minmax(0,1fr)_296px] xl:items-start xl:gap-6">
         {showContextAside ? (
           <div className="order-1 grid min-w-0 gap-5 lg:order-2 xl:col-start-2 xl:row-start-1 xl:sticky xl:top-28">
-            <div className="grid grid-cols-2 gap-3 max-[370px]:grid-cols-1 xl:grid-cols-1 xl:gap-5">
+            <div className="grid grid-cols-1 gap-3 xl:gap-5">
               <QuickSupportCard bookingId={data.booking.id} />
               {typeof data.booking.minutesUntilStart === "number" ? (
                 <ReminderCard booking={data.booking} />

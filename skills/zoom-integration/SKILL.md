@@ -39,9 +39,13 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
   `hard_ends_at = actual_started_at + duração configurada` (240 minutos em HML).
   O fim normal é `scheduled_ends_at`, enfileirado como `end_scheduled`; o
   watchdog usa `end_hard_timeout`. Nenhum deles altera o horário da reserva.
-- Paciente entra pela primeira vez até T+15 inclusive. Depois, a autorização
-  consulta apenas a existência de `session.user_joined` confiável para permitir
-  reconexão até, mas não incluindo, `scheduled_ends_at`.
+- A espera autenticada registra chegada pontual da versão atual entre T-15 e
+  T+10 inclusive. Essa chegada ou `session.user_joined` confiável preserva a
+  reconexão até, mas não incluindo, `scheduled_ends_at`; todo join continua
+  exigindo presença atual do terapeuta.
+- Encerramento definitivo é exclusivo do terapeuta entre T-5 inclusive e o fim
+  agendado. O Edge valida horário do banco, ownership e sessão ativa, aciona o
+  provedor e confirma `manual_end`; o browser nunca usa `leave(true)`.
 - Enquanto a sala estiver `joined` ou `reconnecting`, o browser chama
   `POST /api/auth/session/refresh` periodicamente para manter a sessão TES
   autenticada. O endpoint só rotaciona tokens perto da expiração; uma falha de

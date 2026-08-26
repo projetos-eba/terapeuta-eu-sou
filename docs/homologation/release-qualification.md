@@ -803,3 +803,39 @@ release.
 **PHASE 2 FAIL** — a promoção permanece bloqueada até a sessão canônica HML e
 os testes em dispositivos reais comprovarem vídeo bidirecional, reconexão,
 encerramento agendado e watchdog.
+
+## Fase 2.5 — Tolerância, reconexão e encerramento final Zoom (2026-08-25)
+
+Esta rodada implementa localmente a chegada pontual em T+10, a reconexão após
+saída individual e o encerramento definitivo pelo terapeuta nos cinco minutos
+finais. Nenhuma alteração foi implantada em HML ou produção e nenhuma sessão
+real do Zoom foi aberta.
+
+| Gate | Resultado | Evidência sanitizada / pendência |
+| --- | --- | --- |
+| Tolerância e reconexão | **PASS automatizado local** | T-15, T+10 inclusivo, T+10+1 ms, versão da reserva e reconexão por chegada ou join confiável cobertos por Vitest e Deno. Lista, detalhe e sala aplicam o mesmo estado. |
+| Saída individual | **PASS automatizado local** | `Sair` usa somente `leave(false)`, retorna à espera, atualiza o acesso e não abre feedback. A corrida de `connection-change: Closed` da própria saída é ignorada. |
+| Encerramento final | **PASS automatizado local** | O controle é exclusivo do terapeuta, fica desabilitado antes de T-5, habilita pelo relógio autoritativo e usa `intent=end`; o navegador não chama `leave(true)`. Negativa mantém a chamada recuperável. |
+| Feedback e confirmação | **PASS automatizado local** | Saída comum e fechamento precoce não liberam conclusão. Encerramento final confirmado ou `scheduled_ends_at` preservam a autoridade do read model bilateral existente. |
+| Edge/Deno e Zoom focal | **PASS** | `npm run test:deno`: 201/201; `npm run test:zoom`: Deno Zoom 18/18 e Vitest Zoom 35/35. |
+| UI e contratos focados | **PASS** | Suites de booking, detalhe, lista, sala e controles: 54/54 na rodada focal inicial; regressão ampliada de booking/detalhe/lista: 50/50; regressão final de sala/lista/janela: 36/36. |
+| API mock | **PASS** | `zoom:video-sdk:api:mock` concluiu sem chamada real ao Zoom. |
+| Typecheck, lint e build | **PASS** | TypeScript sem erro; políticas visual/online-only e ESLint sem aviso; Next build concluído. O build registrou tentativas locais bloqueadas para `127.0.0.1:54321`, mas gerou as 119 páginas e terminou com sucesso. |
+| Migration e pgTAP 088 | **NOT EXECUTED** | A migration e o arquivo pgTAP com 21 asserções estão versionados, porém o daemon Docker local não respondeu a `supabase status`/`docker inspect`; os processos de diagnóstico travados foram encerrados. Nenhuma asserção de banco é declarada aprovada. |
+| `homologation:zoom:local` | **BLOCKED** | Não iniciado após a indisponibilidade do daemon, pois o orquestrador depende do Supabase/Docker e não seria seguro prosseguir para Stripe test ou Zoom real sem o gate de schema. |
+| HML e dispositivos reais | **NOT EXECUTED** | Migration, Edge Function e aplicação não foram implantadas. Safari/iPhone, Chrome/Android, desktop e tablet reais permanecem obrigatórios após os gates locais. |
+
+Antes de HML: restaurar o Docker local, executar serialmente a migration e o
+pgTAP 088, confirmar cron local inativo, rodar `homologation:zoom:local` e só
+então implantar na ordem migration → Edge Function → aplicação, comprovando
+que não há sessão ativa. Em HML, repetir saída por suporte, voltar, refresh e
+outro dispositivo, primeira chegada em T+10+1 ms, encerramento em T-5 e
+feedback bilateral.
+
+**Impacto documental:** documentação atualizada nas skills Zoom e do detalhe,
+arquitetura, testes, troubleshooting, runbook, inventário de páginas e
+qualificação de release.
+
+**PHASE 2 FAIL** — a implementação local está concluída, mas promoção continua
+bloqueada por pgTAP, homologação canônica, implantação HML controlada e aceite
+em dispositivos reais.

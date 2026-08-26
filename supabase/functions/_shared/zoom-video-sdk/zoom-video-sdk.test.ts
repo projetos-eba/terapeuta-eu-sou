@@ -84,7 +84,7 @@ Deno.test(
         roleType: 0,
         sessionName: "tesvs-session",
         userKey: "internal uuid with spaces",
-      }),
+      })
     );
   },
 );
@@ -317,7 +317,7 @@ Deno.test(
 );
 
 Deno.test(
-  "patient first join is inclusive at T+15 and reconnect remains open until scheduled end",
+  "patient first arrival is inclusive at T+10 and reconnect remains open until scheduled end",
   () => {
     const base = {
       actorRole: "patient" as const,
@@ -332,17 +332,17 @@ Deno.test(
 
     const boundary = evaluateVideoSessionAccess({
       ...base,
-      now: new Date("2026-07-26T13:15:00.000Z"),
+      now: new Date("2026-07-26T13:10:00.000Z"),
       patientHasJoined: false,
     });
     assertEquals(boundary.allowed, true);
-    assertEquals(boundary.availableUntil, "2026-07-26T13:15:00.000Z");
+    assertEquals(boundary.availableUntil, "2026-07-26T13:10:00.000Z");
     assertEquals(boundary.scheduledEndsAt, "2026-07-26T13:50:00.000Z");
 
     assertEquals(
       evaluateVideoSessionAccess({
         ...base,
-        now: new Date("2026-07-26T13:15:00.001Z"),
+        now: new Date("2026-07-26T13:10:00.001Z"),
         patientHasJoined: false,
       }).reason,
       "TOO_LATE",
@@ -351,7 +351,8 @@ Deno.test(
       evaluateVideoSessionAccess({
         ...base,
         now: new Date("2026-07-26T13:49:59.999Z"),
-        patientHasJoined: true,
+        patientHasJoined: false,
+        patientHasTimelyArrival: true,
       }).allowed,
       true,
     );
@@ -359,7 +360,8 @@ Deno.test(
       evaluateVideoSessionAccess({
         ...base,
         now: new Date("2026-07-26T13:50:00.000Z"),
-        patientHasJoined: true,
+        patientHasJoined: false,
+        patientHasTimelyArrival: true,
       }).reason,
       "TOO_LATE",
     );
@@ -479,7 +481,7 @@ Deno.test(
         secretToken: "secret",
         signature: "v0=invalid",
         timestamp: String(Math.floor(Date.now() / 1000) - 600),
-      }),
+      })
     );
   },
 );

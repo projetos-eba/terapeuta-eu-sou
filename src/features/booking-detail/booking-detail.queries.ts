@@ -91,6 +91,7 @@ export const getPatientSessionDetailPage = cache(
         rescheduleRows,
         cancellationDecisionRows,
         patientParticipationRows,
+        patientWaitingRoomEvents,
       ] = await Promise.all([
         supabaseServerRestRequest<BookingDetailTherapistRow[]>(
           config,
@@ -123,6 +124,10 @@ export const getPatientSessionDetailPage = cache(
         supabaseServerRestRequest<BookingDetailVideoParticipationRow[]>(
           config,
           `/rest/v1/video_session_participations?select=id&booking_id=eq.${booking.id}&participant_role=eq.patient&event_type=eq.session.user_joined&limit=1`,
+        ),
+        supabaseServerRestRequest<Array<{ payload: unknown }>>(
+          config,
+          `/rest/v1/booking_events?select=payload&booking_id=eq.${booking.id}&event_type=eq.zoom_waiting_room_entered&limit=20`,
         ),
       ]);
       const therapist = therapists[0];
@@ -171,7 +176,15 @@ export const getPatientSessionDetailPage = cache(
         completedBookings,
         intake: intakeRows[0] ?? null,
         patient: profile,
-        patientHasJoined: patientParticipationRows.length > 0,
+        patientHasJoined:
+          patientParticipationRows.length > 0 ||
+          patientWaitingRoomEvents.some((event) =>
+            isCurrentBookingArrival(
+              event.payload,
+              booking.version,
+              booking.starts_at,
+            ),
+          ),
         patientProfile,
         perspective: "patient",
         policy: policyRows[0] ?? null,
@@ -192,6 +205,21 @@ export const getPatientSessionDetailPage = cache(
     }
   },
 );
+
+function isCurrentBookingArrival(
+  value: unknown,
+  bookingVersion: number,
+  startsAt: string,
+) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const payload = value as Record<string, unknown>;
+
+  return (
+    Number(payload.bookingVersion) === bookingVersion &&
+    typeof payload.scheduledStartsAt === "string" &&
+    Date.parse(payload.scheduledStartsAt) === Date.parse(startsAt)
+  );
+}
 
 function createDemoBookingDetail(
   profileId: string,

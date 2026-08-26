@@ -324,7 +324,10 @@ Stack real identificada:
   Supabase.
 - Videochamada e feedback: a sala visual abre em T-15, o feedback de qualidade
   exige joins confiáveis de paciente e terapeuta, e confirmações bilaterais
-  independentes usam a política ativa de 7 dias + 1 dia de segurança. A tabela
+  independentes usam a política ativa de 7 dias + 1 dia de segurança. A chegada
+  do paciente é registrada até T+10 e preserva reconexão até o fim agendado;
+  saída individual não abre feedback. Somente o terapeuta encerra para todos,
+  pelo backend, nos cinco minutos finais. A tabela
   `session_participant_confirmations` e os RPCs de confirmação permanecem
   somente no backend; Admin lê presença, prazos, divergências e bloqueios sem
   editar respostas ou acionar efeitos financeiros diretamente.
