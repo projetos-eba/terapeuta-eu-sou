@@ -87,14 +87,14 @@ Não distribuir queries pelos componentes. A entrada única da página é
   ativas, agenda configurada, documentos obrigatórios enviados e onboarding do
   Stripe Connect concluído.
 - A transição para o dashboard normal acontece somente após a prontidão
-  essencial, o envio dos documentos obrigatórios e a conclusão do cadastro
-  Stripe Connect. A verificação externa
-  continua sendo exibida como estado do cadastro e não é tratada como aprovação
-  automática.
+  essencial, o envio dos documentos obrigatórios, a conclusão do cadastro
+  Stripe Connect e a aprovação administrativa. Enquanto a aprovação estiver
+  pendente, o checklist permanece visível mesmo com 100% de conclusão real.
 - Stripe Connect é item obrigatório. Conta inexistente, cadastro incompleto,
   requisitos pendentes, conta restrita ou desabilitada mantêm o checklist ativo.
-  Depois que o onboarding for submetido, uma análise externa em andamento pode
-  ser exibida como estado do cadastro sem bloquear a entrada.
+  Depois que o onboarding for submetido, a análise externa pode ser exibida
+  como estado do cadastro; isso não deve ser confundido com a aprovação
+  administrativa do perfil.
 - A aprovação administrativa não compõe a pendência do percentual de cadastro:
   `submitted` e `in_review` deixam o item de perfil completo, mas visivelmente
   em análise. `changes_requested` e `rejected` voltam a ser pendência em estado
@@ -127,7 +127,7 @@ Não distribuir queries pelos componentes. A entrada única da página é
 
 ## QA
 
-- `npx supabase db reset`.
+- `npx supabase start` sem resetar o banco local.
 - `npm run typecheck`.
 - `npm run lint`.
 - `npm run test`.

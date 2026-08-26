@@ -29,8 +29,8 @@ export function TherapistWeekChart({
 
   return (
     <figure aria-describedby={summaryId} className="min-w-0">
-      <div className="overflow-x-auto pb-2">
-        <div className="h-[210px] min-w-[540px] w-full">
+      <div className="min-w-0 pb-2">
+        <div className="h-[210px] min-w-0 w-full">
           <ResponsiveContainer height="100%" width="100%">
             <LineChart
               accessibilityLayer

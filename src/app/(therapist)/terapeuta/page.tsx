@@ -1,8 +1,7 @@
-import { TherapistStatus } from "@/domain/tes";
 import {
-  createEmptyTherapistDashboardData,
-  getTherapistHomeReadiness,
+  canAccessTherapistDashboard,
   getTherapistDashboardPage,
+  getTherapistHomeReadiness,
   TherapistDashboardError,
   TherapistDashboardPage,
 } from "@/features/therapist-dashboard";
@@ -30,7 +29,12 @@ export default async function TherapistHomePage({
     return <TherapistHomeError message={message} />;
   }
 
-  if (!readiness.isOperationallyReady) {
+  if (
+    !canAccessTherapistDashboard({
+      readiness,
+      therapistStatus: session.status,
+    })
+  ) {
     return (
       <TherapistGettingStartedPage
         attentionMessage={
@@ -40,14 +44,6 @@ export default async function TherapistHomePage({
         }
         readiness={readiness}
         session={session}
-      />
-    );
-  }
-
-  if (session.status !== TherapistStatus.Approved) {
-    return (
-      <TherapistDashboardPage
-        data={createEmptyTherapistDashboardData({ readiness, session })}
       />
     );
   }
