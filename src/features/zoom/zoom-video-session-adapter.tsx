@@ -129,15 +129,19 @@ const RECOVERY_DEADLINE_MS = 10_000;
 const RECONNECT_GRACE_MS = 4_000;
 const RECOVERY_RETRY_DELAYS_MS = [0, 1_500, 3_000] as const;
 const MAX_JOIN_ATTEMPTS = RECOVERY_RETRY_DELAYS_MS.length;
-const AUTOMATIC_REJOIN_ENABLED =
-  process.env.NEXT_PUBLIC_ZOOM_REJOIN_RECOVERY_V2 === "true" ||
-  process.env.NODE_ENV !== "production";
+const DESTROY_RETRY_DELAY_MS = 750;
+const MAX_DESTROY_ATTEMPTS = 2;
+
+// A transient Video SDK failure is safe to retry because every attempt reuses
+// the access payload already issued by the backend. Do not gate this on a
+// public runtime flag: production is where a singleton teardown race matters.
+const AUTOMATIC_REJOIN_ENABLED = true;
 
 // The Video SDK client is a browser singleton. Keep its teardown serialized at
 // module scope so a route remount cannot create a new client while the previous
 // component is still destroying the old one.
 let zoomCleanupQueue: Promise<void> = Promise.resolve();
-let zoomDestroyInFlight: Promise<void> | null = null;
+let zoomDestroyInFlight: Promise<unknown> | null = null;
 let zoomDestroyFailure: unknown = null;
 
 function enqueueZoomCleanup<T>(operation: () => Promise<T>) {
@@ -149,7 +153,7 @@ function enqueueZoomCleanup<T>(operation: () => Promise<T>) {
   return scheduled;
 }
 
-function trackZoomDestroy(operation: Promise<void>) {
+function trackZoomDestroy(operation: Promise<unknown>) {
   zoomDestroyFailure = null;
   zoomDestroyInFlight = operation;
   operation.then(
@@ -183,6 +187,12 @@ async function waitForPriorZoomDestroy() {
   while (zoomDestroyInFlight) {
     await zoomDestroyInFlight;
   }
+}
+
+function waitForDestroyRetry(delayMs: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, delayMs);
+  });
 }
 
 export function ZoomVideoSessionAdapter({
@@ -1459,15 +1469,12 @@ export function ZoomVideoSessionAdapter({
       const destroyClient = zoomModuleRef.current?.destroyClient;
       if (destroyClient) {
         await waitForPriorZoomDestroy();
-        const destroyPromise = trackZoomDestroy(
-          Promise.resolve().then(() => destroyClient()),
-        );
         const deadline =
           recoveryDeadlineRef.current ?? Date.now() + RECOVERY_DEADLINE_MS;
         await recordCleanupFailure(failures, "destroyClient", () =>
-          withAbortDeadline(
-            destroyPromise,
-            Math.max(1, deadline - Date.now()),
+          destroyZoomClientWithRetry(
+            destroyClient,
+            deadline,
             recoveryAbortControllerRef.current?.signal,
           ),
         );
@@ -1497,6 +1504,32 @@ export function ZoomVideoSessionAdapter({
     }
 
     return failures;
+  }
+
+  async function destroyZoomClientWithRetry(
+    destroyClient: NonNullable<ZoomVideoModule["default"]["destroyClient"]>,
+    deadline: number,
+    signal?: AbortSignal,
+  ) {
+    let lastError: unknown = null;
+
+    for (let attempt = 1; attempt <= MAX_DESTROY_ATTEMPTS; attempt += 1) {
+      try {
+        const result = await withAbortDeadline(
+          trackZoomDestroy(Promise.resolve().then(() => destroyClient())),
+          Math.max(1, deadline - Date.now()),
+          signal,
+        );
+        throwIfZoomFailure(result, "cleanup");
+        return;
+      } catch (error) {
+        lastError = error;
+        if (attempt >= MAX_DESTROY_ATTEMPTS || Date.now() >= deadline) break;
+        await waitForDestroyRetry(DESTROY_RETRY_DELAY_MS);
+      }
+    }
+
+    throw lastError ?? new Error("destroy_client_failed");
   }
 
   function registerClientListeners(
