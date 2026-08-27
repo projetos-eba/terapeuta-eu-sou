@@ -30,6 +30,13 @@ describe("PatientAppointmentCard", () => {
     const menuButton = screen.getByRole("button", {
       name: "Abrir ações do encontro",
     });
+    const card = screen.getByRole("article");
+    const columns = Array.from(card.children);
+
+    expect(columns[2]).toHaveTextContent("Confirmada");
+    expect(columns[3]?.tagName).toBe("DL");
+    expect(columns[4]).toHaveTextContent("Ver detalhes");
+    expect(columns[5]).toContainElement(menuButton);
     expect(menuButton).toHaveAttribute("aria-expanded", "false");
 
     fireEvent.click(menuButton);

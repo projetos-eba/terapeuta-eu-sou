@@ -36,6 +36,7 @@ Atualizado em 2026-08-27.
 | `[Terapeuta] Suas terapias`                      | `therapistServicesHero`       | `/terapeuta/servicos`                                |
 | `[Terapeuta] Avaliação`                          | `therapistReviewsHero`        | `/terapeuta/avaliacoes`                              |
 | `[Terapeuta] Métricas e Insights`                | `therapistMetricsHero`        | `/terapeuta/insights`                                |
+| Bloqueio de recurso Premium                      | `therapistPremiumLock`        | Dialog de upgrade de recursos do terapeuta           |
 | `[Terapeuta] Financeiro`                         | `therapistFinanceHero`        | `/terapeuta/financeiro`                              |
 | `[Terapeuta] Central de Mensagens`               | `therapistMessagesHero`       | `/terapeuta/mensagens`                               |
 

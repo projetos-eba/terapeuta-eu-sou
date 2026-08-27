@@ -73,6 +73,10 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
   valores de referência inventados.
 - Para Free, “Ver mais” abre uma explicação no próprio painel e encaminha
   somente para o plano Premium, nunca para `/terapeuta/insights`.
+- O diálogo de recurso bloqueado usa a anatomia editorial compartilhada de
+  upgrade: selo do plano, asset de apoio, título, descrição, benefícios e ações.
+  Em mobile, a imagem aparece antes do título; em desktop, ela ocupa a coluna
+  lateral sem esconder a copy ou as ações.
 
 Não distribuir queries pelos componentes. A entrada única da página é
 `getTherapistHomeReadiness({ session })`; quando o terapeuta está operacional e

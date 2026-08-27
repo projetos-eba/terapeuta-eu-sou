@@ -23,11 +23,23 @@ describe("TherapistLockedCard", () => {
     fireEvent.click(trigger);
 
     expect(
-      screen.getByRole("dialog", { name: "Um recurso para sua prática" }),
+      screen.getByRole("dialog", {
+        name: "Desbloqueie mais recursos para sua prática",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        name: "Desbloqueie mais recursos para sua prática",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Recurso Premium")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Este recurso faz parte do plano Premium. Com ele, você tem mais clareza, acompanha melhor sua prática e toma decisões com mais confiança.",
+      ),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Conhecer Premium" }),
     ).toHaveAttribute("href", "/terapeuta/plano");
   });
 });
-
