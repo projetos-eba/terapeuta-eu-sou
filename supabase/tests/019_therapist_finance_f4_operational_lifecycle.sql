@@ -15,6 +15,8 @@ insert into public.therapist_connect_accounts (
   payouts_enabled,
   stripe_transfers_status,
   operational_status,
+  payout_status,
+  payout_schedule_interval,
   last_synced_at
 ) values (
   'c1000000-0000-4000-8000-000000000001',
@@ -29,15 +31,19 @@ insert into public.therapist_connect_accounts (
   true,
   'active',
   'ready',
+  'enabled',
+  'daily',
   '2039-04-01T09:00:00Z'
 )
-on conflict (therapist_profile_id) do update
+on conflict (therapist_profile_id) where is_current do update
 set stripe_account_id = excluded.stripe_account_id,
     onboarding_status = excluded.onboarding_status,
     details_submitted = excluded.details_submitted,
     payouts_enabled = excluded.payouts_enabled,
     stripe_transfers_status = excluded.stripe_transfers_status,
     operational_status = excluded.operational_status,
+    payout_status = excluded.payout_status,
+    payout_schedule_interval = excluded.payout_schedule_interval,
     last_synced_at = excluded.last_synced_at,
     updated_at = now();
 
@@ -249,6 +255,7 @@ select
 from public.payout_batch_items as item
 join public.therapist_connect_accounts as account
   on account.therapist_profile_id = item.therapist_profile_id
+  and account.is_current
 where item.session_payment_id = 'f9000000-0000-4000-8000-000000000001';
 
 update public.payout_batch_items

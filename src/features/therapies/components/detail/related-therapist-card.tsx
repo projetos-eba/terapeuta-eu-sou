@@ -7,7 +7,6 @@ import {
   Heart,
   Sparkles,
   Star,
-  Users,
 } from "lucide-react";
 
 import { PremiumTherapistBadge, TESButton } from "@/components/tes";
@@ -116,12 +115,6 @@ export function RelatedTherapistCard({
           {therapist.averageRating
             ? `${therapist.averageRating.toFixed(1).replace(".", ",")} (${therapist.reviewCount} avaliações)`
             : "Perfil novo"}
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Users className="h-4 w-4 text-brand-primary" aria-hidden="true" />
-          {therapist.completedSessionCount > 0
-            ? `${therapist.completedSessionCount} sessões realizadas`
-            : "Sessões em breve"}
         </span>
         {therapist.nextSlotAt ? (
           <span className="flex items-center gap-1.5">

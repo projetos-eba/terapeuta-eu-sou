@@ -41,6 +41,11 @@ export function FinancialConnectAccountActions({
       return;
     }
 
+    if (result.data.accountClosed) {
+      router.refresh();
+      return;
+    }
+
     setMessage(result.data.message ?? "Dados atualizados.");
     router.refresh();
   }

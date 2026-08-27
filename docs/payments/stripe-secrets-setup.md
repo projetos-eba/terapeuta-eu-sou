@@ -107,7 +107,9 @@ Signing secret remoto: salvar como `STRIPE_CONNECT_WEBHOOK_SECRET`.
 
 ### Contas conectadas thin Accounts v2: `stripe-connect-webhook`
 
-Escopo no Dashboard: `Events on connected accounts` / `Contas conectadas`.
+Escopo no Dashboard: `Events on your account` / `Sua conta`. Apesar de a
+conta ser Connect, os eventos `v2.core.account.*` de Accounts v2 são emitidos
+nesse escopo; o destino snapshot v1 continua em `Contas conectadas`.
 Payload style: `Thin`.
 
 Use a mesma URL publica de `stripe-connect-webhook`.
@@ -134,6 +136,10 @@ Billing na conta da plataforma e repasses usam a configuracao
 `v2.core.account_link.*` nem `v2.core.account_person.*` para este endpoint.
 
 Signing secret remoto: salvar como `STRIPE_CONNECT_V2_WEBHOOK_SECRET`.
+
+O encerramento é terminal: o consumidor deve retirar a conta da seleção de
+novos Transfers, preservar os vínculos históricos e permitir uma nova conta
+corrente. O evento não autoriza redirecionar Transfers ou Payouts já vinculados.
 
 ## Desenvolvimento local com Stripe CLI
 
@@ -219,7 +225,7 @@ Nao foi identificado nos arquivos analisados o project ref publico do Supabase p
 
 ## Ambiente publicado: destino thin Accounts v2
 
-1. Crie um novo Event destination para eventos de contas conectadas.
+1. Crie um novo Event destination em `Events on your account` / `Sua conta`.
 2. Em Payload style, selecione `Thin`.
 3. Selecione somente os eventos da secao de eventos thin Accounts v2 deste
    documento.
@@ -227,6 +233,20 @@ Nao foi identificado nos arquivos analisados o project ref publico do Supabase p
 5. Armazene o signing secret próprio como
    `STRIPE_CONNECT_V2_WEBHOOK_SECRET`.
 6. Não reutilize o secret do destino snapshot.
+
+Se um destino thin canônico anterior existir no escopo incorreto, não o edite
+em produção. Primeiro promova a migration e `stripe-connect-webhook` que
+consomem `v2.core.account.closed`; depois execute o comando de substituição do
+ambiente. Ele cria o novo destino inicialmente desabilitado, atualiza o secret
+remoto da Edge Function, habilita o novo destino e somente então desabilita o
+legado. O comando exige as duas confirmações explícitas e nunca apaga outros
+destinos:
+
+```powershell
+npm run payments:webhooks:replace-thin:test
+# Somente depois da homologação aprovada:
+npm run payments:webhooks:replace-thin:live
+```
 
 Cada endpoint possui seu proprio secret `whsec_*`. Secrets gerados pela Stripe CLI e pelo Dashboard nao sao equivalentes e nao devem ser compartilhados entre ambientes.
 

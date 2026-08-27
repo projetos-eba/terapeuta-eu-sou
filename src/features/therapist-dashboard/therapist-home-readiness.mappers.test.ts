@@ -467,6 +467,7 @@ function connectFixture(
     onboardingStatus: overrides.onboardingStatus ?? "ready",
     payoutsEnabled: false,
     pendingVerification: [],
+    previousAccountClosed: false,
     therapistProfileId: profileId,
     transferCapabilityStatus: overrides.transferCapabilityStatus ?? "active",
   };

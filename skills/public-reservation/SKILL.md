@@ -55,7 +55,8 @@ revalidada no servidor antes do checkout.
   autenticado para header público, reserva e logout.
 - `/reserva` deve hidratar terapeuta, serviço e disponibilidade a partir das
   mesmas views públicas usadas em `/terapeutas/:slug`. Não criar grade local de
-  horários.
+  horários. Quando houver `slot` na URL, deve consultar e revalidar o dia local
+  específico pelo contrato autoritativo, inclusive para datas entre 31 e 90 dias.
 - O slot é um instante UTC. Resumo, dia de referência e faixa de horário devem
   ser formatados explicitamente no timezone retornado por
   `get_service_available_slots_v1`; o timezone do servidor nunca é autoridade

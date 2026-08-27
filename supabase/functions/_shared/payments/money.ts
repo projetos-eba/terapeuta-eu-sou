@@ -1,5 +1,5 @@
 export const MONEY_SCALE_BPS = 10000;
-export const DEFAULT_PLATFORM_COMMISSION_BPS = 2000;
+export const DEFAULT_PLATFORM_COMMISSION_BPS = 1500;
 
 export function calculateCommissionSnapshot(input: {
   grossAmountCents: number;

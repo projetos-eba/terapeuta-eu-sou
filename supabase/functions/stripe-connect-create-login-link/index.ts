@@ -41,7 +41,7 @@ runtime.serve(async (request) => {
     >(
       `/rest/v1/therapist_connect_accounts?select=stripe_account_id,onboarding_status,stripe_transfers_status&therapist_profile_id=eq.${encodeURIComponent(
         therapist.id,
-      )}&limit=1`,
+      )}&is_current=eq.true&limit=1`,
     );
 
     if (!rows[0]) {

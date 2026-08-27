@@ -75,16 +75,6 @@
   font-display: swap;
 }
 
-@font-face {
-  font-family: "IvyPresto Display";
-  src: url("/fonts/ivy-presto/fonnts.com-Ivy-Presto-Display-Semi-Bold.otf")
-    format("opentype");
-  /* Never expose a heavier italic cut than 600. */
-  font-weight: 600;
-  font-style: italic;
-  font-display: swap;
-}
-
 @layer base {
   :root {
     --tes-color-brand-primary: #6c3d91;
@@ -203,6 +193,8 @@
   }
 
   .font-display {
+    /* Every IvyPresto Display text uses the approved italic editorial cut. */
+    font-style: italic;
     /* Do not synthesize a heavier cut when a caller requests an unsupported weight. */
     font-synthesis: none;
   }

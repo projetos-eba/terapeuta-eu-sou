@@ -29,6 +29,10 @@ Use esta skill ao alterar a página de Avaliações do shell do terapeuta.
 - Histórico: `review_revisions`; mutações do paciente usam
   `patient_therapist_review_mutation_requests`.
 - Projeção pública segura: `public_therapist_profile_reviews_v`.
+- Agregados públicos: `public_home_therapists`, `public_therapist_search` e
+  `public_therapist_profiles_v` devem usar a projeção interna canônica
+  `public_therapist_profile_reviews_v_internal`, sem recalcular nota por
+  reserva ou pagamento.
 
 Avaliações exibidas ao terapeuta e ao público devem derivar de:
 
@@ -84,6 +88,11 @@ altera `session_payments`, confirmação bilateral, elegibilidade ou lotes.
 - Tabs `Todas`, `Recentes`, `Por nota` e `Pendentes de resposta` permanecem
   próximas dos resultados. Cada item expõe identidade limitada, terapia ou
   serviço, nota, data, comentário, estado e a próxima ação.
+- A rota é dividida em duas abas acessíveis: `Avaliações públicas`, com
+  indicadores, filtros, respostas, resumo e orientação; e `Avaliações da
+  sessão`, com feedbacks privados somente leitura e confirmações operacionais.
+  A segunda aba mostra um contador amarelo igual ao número de confirmações
+  pendentes; esses conteúdos não se misturam à lista pública.
 - O rail mostra distribuição por nota e contexto sobre avaliações. No tablet,
   ocupa a faixa de duas colunas; no mobile, segue a lista principal.
 - Na comunicação, usar “Sessão” para a operação do terapeuta e “Terapia” para

@@ -35,7 +35,7 @@ runtime.serve(async (request) => {
     const rows = await client.get<Array<{ stripe_account_id: string }>>(
       `/rest/v1/therapist_connect_accounts?select=stripe_account_id&therapist_profile_id=eq.${encodeURIComponent(
         therapist.id,
-      )}&limit=1`,
+      )}&is_current=eq.true&limit=1`,
     );
 
     if (!rows[0]) {
@@ -56,7 +56,7 @@ runtime.serve(async (request) => {
     await client.patch(
       `/rest/v1/therapist_connect_accounts?stripe_account_id=eq.${encodeURIComponent(
         rows[0].stripe_account_id,
-      )}`,
+      )}&is_current=eq.true`,
       { onboarding_status: "onboarding_started" },
       "return=minimal",
     );

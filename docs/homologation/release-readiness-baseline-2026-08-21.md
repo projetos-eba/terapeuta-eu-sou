@@ -16,6 +16,11 @@ configuração ou pré-condição externa; `NOT_TESTED` que não foi exercitado.
 Implementado não equivale a testado. Teste local não equivale a HML. HML não
 equivale a fornecedor externo real em test mode.
 
+> Atualização de política financeira em 2026-08-27: a comissão para novos
+> pagamentos passa a 15% na v8. As evidências históricas abaixo que mostram
+> R$ 24,00 de comissão sobre R$ 120,00 pertencem à política anterior de 20% e
+> permanecem inalteradas. A homologação da v8 exige evidência nova e separada.
+
 ## Atualização Fase 0.5 — Unblock Golden Path
 
 Data: 2026-08-21
@@ -133,6 +138,12 @@ para E2E, sem criar dados pessoais ou alterar a reserva pendente anterior:
 - seleção determinística: chamar o preflight HML Admin-only com `find_clean` e
   usar `slot` como candidato A e `fallbackSlots` como B/C; o seletor exige
   separação pela duração e buffers canônicos.
+
+> Pendência registrada em 2026-08-27: uma captura posterior da agenda pública
+> identifica `Reiki online E2E` com 20 minutos e R$ 120,00. Este documento
+> preserva a evidência histórica de 21/08 e não confirma a alteração. Antes de
+> reutilizar a fixture em HML, verificar a duração efetiva no ambiente e
+> atualizar a evidência correspondente.
 
 A disponibilidade de sábado, 09:00–17:00, foi adicionada pela própria tela
 autenticada de agenda do terapeuta e salva pelo comando versionado

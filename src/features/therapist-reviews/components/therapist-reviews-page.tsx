@@ -34,6 +34,8 @@ const filterLabels: Record<TherapistReviewFilter, string> = {
   recent: "Recentes",
 };
 
+type TherapistReviewsSurface = "public" | "session";
+
 export function TherapistReviewsPage({
   initialData,
 }: {
@@ -41,6 +43,8 @@ export function TherapistReviewsPage({
 }) {
   const [data, setData] = useState(initialData);
   const [filter, setFilter] = useState<TherapistReviewFilter>("all");
+  const [surface, setSurface] =
+    useState<TherapistReviewsSurface>("public");
   const [visibleCount, setVisibleCount] = useState(5);
   const [selectedReview, setSelectedReview] =
     useState<TherapistReviewItem | null>(null);
@@ -108,85 +112,117 @@ export function TherapistReviewsPage({
 
       <ReviewsHero />
 
-      <section
-        aria-label="Indicadores das avaliações"
-        className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-      >
-        {data.metricCards.map((metric) => (
-          <TherapistReviewMetricCard key={metric.key} metric={metric} />
-        ))}
-      </section>
-
-      {inlineMessage ? (
+      <nav aria-label="Visões de avaliações" className="border-b border-brand-lavender">
         <div
-          className="rounded-card border border-status-success/30 bg-status-successBg p-4 text-sm font-bold leading-6 text-status-success"
-          role="status"
+          className="flex gap-2 overflow-x-auto"
+          onKeyDown={(event) => {
+            if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+              return;
+            }
+
+            event.preventDefault();
+            const nextSurface =
+              surface === "public" ? "session" : "public";
+            setSurface(nextSurface);
+            document
+              .getElementById(`therapist-reviews-${nextSurface}-tab`)
+              ?.focus();
+          }}
+          role="tablist"
         >
-          {inlineMessage}
+          <SurfaceTab
+            active={surface === "public"}
+            id="therapist-reviews-public-tab"
+            label="Avaliações públicas"
+            onSelect={() => setSurface("public")}
+            panelId="therapist-reviews-public-panel"
+          />
+          <SurfaceTab
+            active={surface === "session"}
+            count={data.pendingConfirmations.length}
+            id="therapist-reviews-session-tab"
+            label="Avaliações da sessão"
+            onSelect={() => setSurface("session")}
+            panelId="therapist-reviews-session-panel"
+          />
         </div>
+      </nav>
+
+      {surface === "public" ? (
+        <section
+          aria-labelledby="therapist-reviews-public-tab"
+          id="therapist-reviews-public-panel"
+          role="tabpanel"
+        >
+          <section
+            aria-label="Indicadores das avaliações"
+            className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+          >
+            {data.metricCards.map((metric) => (
+              <TherapistReviewMetricCard key={metric.key} metric={metric} />
+            ))}
+          </section>
+
+          {inlineMessage ? (
+            <div
+              className="mt-5 rounded-card border border-status-success/30 bg-status-successBg p-4 text-sm font-bold leading-6 text-status-success"
+              role="status"
+            >
+              {inlineMessage}
+            </div>
+          ) : null}
+
+          <PublicReviewsPanel
+            data={data}
+            filter={filter}
+            hasMore={hasMore}
+            onLoadMore={() => setVisibleCount((current) => current + 5)}
+            onReply={setSelectedReview}
+            onSelectFilter={(value) => {
+              setFilter(value);
+              setVisibleCount(5);
+            }}
+            reviewsCount={filteredReviews.length}
+            visibleReviews={visibleReviews}
+          />
+        </section>
+      ) : (
+        <SessionReviewsPanel data={data} />
+      )}
+
+      {selectedReview ? (
+        <ReviewReplyDialog
+          onClose={() => setSelectedReview(null)}
+          onSubmit={submitReply}
+          review={selectedReview}
+        />
       ) : null}
+    </AppPageContainer>
+  );
+}
 
-      <section aria-labelledby="pending-session-confirmations" className="rounded-card border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
-        <div className="flex items-start gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-status-warningBg text-status-warning">
-            <Clock3 aria-hidden="true" size={20} />
-          </span>
-          <div>
-            <h2 className="text-xl font-extrabold text-brand-deep" id="pending-session-confirmations">Confirmações operacionais pendentes</h2>
-            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Esta obrigação existe em todos os planos. Sem sua resposta, a confirmação automática ocorre no vencimento de 30 dias.
-            </p>
-          </div>
-        </div>
-        {data.pendingConfirmations.length ? (
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
-            {data.pendingConfirmations.map((confirmation) => (
-              <article className="rounded-xl border border-border p-4" key={confirmation.bookingId}>
-                <h3 className="font-extrabold text-brand-deep">{confirmation.patientName}</h3>
-                <p className="mt-1 text-sm font-semibold text-tesText-secondary">{confirmation.serviceTitle ?? "Sessão terapêutica"}</p>
-                <p className="mt-3 text-sm font-bold text-status-warning">{remainingLabel(confirmation.remainingSeconds)}</p>
-                <a className="mt-4 inline-flex min-h-11 items-center rounded-full border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft" href={`${routes.therapist.sessionVideo(confirmation.bookingId)}?feedback=1`}>
-                  Confirmar sessão
-                </a>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-4 text-sm font-semibold text-tesText-muted">Nenhuma confirmação pendente.</p>
-        )}
-      </section>
-
-      <section aria-labelledby="private-session-feedback" className="rounded-card border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
-        <div className="flex items-start gap-3">
-          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
-            <LockKeyhole aria-hidden="true" size={20} />
-          </span>
-          <div>
-            <h2 className="text-xl font-extrabold text-brand-deep" id="private-session-feedback">Feedbacks privados das sessões</h2>
-            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">Somente participantes autorizados e a equipe administrativa acessam estes relatos. As respostas do paciente não podem ser editadas.</p>
-          </div>
-        </div>
-        {data.privateFeedback.length ? (
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
-            {data.privateFeedback.slice(0, 12).map((feedback) => (
-              <article className="rounded-xl border border-border p-4" key={feedback.id}>
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="font-extrabold text-brand-deep">{feedback.patientName}</h3>
-                  <span className="rounded-full bg-surface-soft px-3 py-1 text-xs font-extrabold text-tesText-secondary">{feedback.authorRole === "patient" ? "Paciente" : "Sua resposta"}</span>
-                </div>
-                <p className="mt-2 text-sm font-semibold text-tesText-secondary">{feedback.serviceTitle ?? "Sessão terapêutica"}</p>
-                <p className="mt-3 text-sm font-bold text-brand-deep">{feedback.outcome === "completed" ? `Realizada${feedback.rating ? ` · ${feedback.rating}/5` : ""}` : "Não realizada · análise necessária"}</p>
-                {feedback.comment ? <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">{feedback.comment}</p> : null}
-              </article>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-4 text-sm font-semibold text-tesText-muted">Os feedbacks privados aparecerão após as primeiras respostas.</p>
-        )}
-      </section>
-
-      <AppPageGrid>
-        <AppPageMain>
+function PublicReviewsPanel({
+  data,
+  filter,
+  hasMore,
+  onLoadMore,
+  onReply,
+  onSelectFilter,
+  reviewsCount,
+  visibleReviews,
+}: {
+  data: TherapistReviewsPageData;
+  filter: TherapistReviewFilter;
+  hasMore: boolean;
+  onLoadMore: () => void;
+  onReply: (review: TherapistReviewItem) => void;
+  onSelectFilter: (filter: TherapistReviewFilter) => void;
+  reviewsCount: number;
+  visibleReviews: TherapistReviewItem[];
+}) {
+  return (
+    <AppPageGrid className="mt-5">
+      <AppPageMain>
           <AppPageSection className="overflow-hidden p-0">
             <div className="border-b border-brand-lavender px-5 py-5 sm:px-6">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -199,14 +235,15 @@ export function TherapistReviewsPage({
                   </p>
                 </div>
                 <p className="text-sm font-bold text-tesText-muted">
-                  {filteredReviews.length} avaliaç
-                  {filteredReviews.length === 1 ? "ão" : "ões"}
+                  {reviewsCount} avaliaç
+                  {reviewsCount === 1 ? "ão" : "ões"}
                 </p>
               </div>
             </div>
 
             <div
               className="flex gap-2 overflow-x-auto border-b border-brand-lavender px-5 py-3 sm:px-6"
+              aria-label="Filtros de avaliações públicas"
               role="tablist"
             >
               {Object.entries(filterLabels).map(([key, label]) => {
@@ -224,8 +261,7 @@ export function TherapistReviewsPage({
                     }`}
                     key={value}
                     onClick={() => {
-                      setFilter(value);
-                      setVisibleCount(5);
+                      onSelectFilter(value);
                     }}
                     role="tab"
                     type="button"
@@ -253,7 +289,7 @@ export function TherapistReviewsPage({
                   {visibleReviews.map((review) => (
                     <TherapistReviewCard
                       key={review.id}
-                      onReply={() => setSelectedReview(review)}
+                      onReply={() => onReply(review)}
                       review={review}
                     />
                   ))}
@@ -265,7 +301,7 @@ export function TherapistReviewsPage({
               {hasMore ? (
                 <button
                   className="mx-auto inline-flex min-h-11 min-w-[260px] items-center justify-center rounded-lg border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                  onClick={() => setVisibleCount((current) => current + 5)}
+                  onClick={onLoadMore}
                   type="button"
                 >
                   Carregar mais avaliações
@@ -278,16 +314,178 @@ export function TherapistReviewsPage({
         <AppPageAside>
           <TherapistReviewsSidebar data={data} />
         </AppPageAside>
-      </AppPageGrid>
+    </AppPageGrid>
+  );
+}
 
-      {selectedReview ? (
-        <ReviewReplyDialog
-          onClose={() => setSelectedReview(null)}
-          onSubmit={submitReply}
-          review={selectedReview}
-        />
+function SurfaceTab({
+  active,
+  count,
+  id,
+  label,
+  onSelect,
+  panelId,
+}: {
+  active: boolean;
+  count?: number;
+  id: string;
+  label: string;
+  onSelect: () => void;
+  panelId: string;
+}) {
+  return (
+    <button
+      aria-controls={panelId}
+      aria-label={
+        typeof count === "number"
+          ? `${label}, ${count} confirmações pendentes`
+          : label
+      }
+      aria-selected={active}
+      className={`inline-flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-4 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary ${
+        active
+          ? "border-brand-primary text-brand-deep"
+          : "border-transparent text-tesText-secondary hover:border-brand-lavender hover:text-brand-primary"
+      }`}
+      id={id}
+      onClick={onSelect}
+      role="tab"
+      tabIndex={active ? 0 : -1}
+      type="button"
+    >
+      {label}
+      {typeof count === "number" ? (
+        <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-status-warningBg px-2 py-0.5 text-xs font-extrabold text-status-warning">
+          {count}
+        </span>
       ) : null}
-    </AppPageContainer>
+    </button>
+  );
+}
+
+function SessionReviewsPanel({ data }: { data: TherapistReviewsPageData }) {
+  return (
+    <section
+      aria-labelledby="therapist-reviews-session-tab"
+      className="grid gap-5"
+      id="therapist-reviews-session-panel"
+      role="tabpanel"
+    >
+      <section
+        aria-labelledby="pending-session-confirmations"
+        className="rounded-card border border-brand-lavender bg-white p-5 shadow-card sm:p-6"
+      >
+        <div className="flex items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-status-warningBg text-status-warning">
+            <Clock3 aria-hidden="true" size={20} />
+          </span>
+          <div>
+            <h2
+              className="text-xl font-extrabold text-brand-deep"
+              id="pending-session-confirmations"
+            >
+              Confirmações operacionais pendentes
+            </h2>
+            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+              Esta obrigação existe em todos os planos. Sem sua resposta, a
+              confirmação automática ocorre no vencimento de 30 dias.
+            </p>
+          </div>
+        </div>
+        {data.pendingConfirmations.length ? (
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {data.pendingConfirmations.map((confirmation) => (
+              <article
+                className="rounded-xl border border-border p-4"
+                key={confirmation.bookingId}
+              >
+                <h3 className="font-extrabold text-brand-deep">
+                  {confirmation.patientName}
+                </h3>
+                <p className="mt-1 text-sm font-semibold text-tesText-secondary">
+                  {confirmation.serviceTitle ?? "Sessão terapêutica"}
+                </p>
+                <p className="mt-3 text-sm font-bold text-status-warning">
+                  {remainingLabel(confirmation.remainingSeconds)}
+                </p>
+                <a
+                  className="mt-4 inline-flex min-h-11 items-center rounded-full border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft"
+                  href={`${routes.therapist.sessionVideo(confirmation.bookingId)}?feedback=1`}
+                >
+                  Confirmar sessão
+                </a>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm font-semibold text-tesText-muted">
+            Nenhuma confirmação pendente.
+          </p>
+        )}
+      </section>
+
+      <section
+        aria-labelledby="private-session-feedback"
+        className="rounded-card border border-brand-lavender bg-white p-5 shadow-card sm:p-6"
+      >
+        <div className="flex items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+            <LockKeyhole aria-hidden="true" size={20} />
+          </span>
+          <div>
+            <h2
+              className="text-xl font-extrabold text-brand-deep"
+              id="private-session-feedback"
+            >
+              Feedbacks privados das sessões
+            </h2>
+            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+              Somente participantes autorizados e a equipe administrativa
+              acessam estes relatos. As respostas do paciente não podem ser
+              editadas.
+            </p>
+          </div>
+        </div>
+        {data.privateFeedback.length ? (
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {data.privateFeedback.slice(0, 12).map((feedback) => (
+              <article
+                className="rounded-xl border border-border p-4"
+                key={feedback.id}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="font-extrabold text-brand-deep">
+                    {feedback.patientName}
+                  </h3>
+                  <span className="rounded-full bg-surface-soft px-3 py-1 text-xs font-extrabold text-tesText-secondary">
+                    {feedback.authorRole === "patient"
+                      ? "Paciente"
+                      : "Sua resposta"}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm font-semibold text-tesText-secondary">
+                  {feedback.serviceTitle ?? "Sessão terapêutica"}
+                </p>
+                <p className="mt-3 text-sm font-bold text-brand-deep">
+                  {feedback.outcome === "completed"
+                    ? `Realizada${feedback.rating ? ` · ${feedback.rating}/5` : ""}`
+                    : "Não realizada · análise necessária"}
+                </p>
+                {feedback.comment ? (
+                  <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+                    {feedback.comment}
+                  </p>
+                ) : null}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm font-semibold text-tesText-muted">
+            Os feedbacks privados aparecerão após as primeiras respostas.
+          </p>
+        )}
+      </section>
+    </section>
   );
 }
 

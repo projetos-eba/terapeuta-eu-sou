@@ -14519,6 +14519,14 @@ export type Database = {
         };
         Returns: Json;
       };
+      get_service_available_days_v1: {
+        Args: { p_month?: string; p_service_id: string };
+        Returns: Json;
+      };
+      get_service_available_day_slots_v1: {
+        Args: { p_day: string; p_service_id: string };
+        Returns: Json;
+      };
       get_service_available_slots_v1_internal: {
         Args: {
           p_limit?: number;

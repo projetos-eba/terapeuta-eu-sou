@@ -42,7 +42,11 @@ oferecia garantia transacional e interpretava os dias no timezone do runtime.
 
 ## Consequências
 
-Consumidores de reserva usam `get_service_available_slots_v1`. A UI deve tratar
+Consumidores de reserva usam `get_service_available_slots_v1`. A agenda mensal
+usa `get_service_available_days_v1` para descobrir somente datas com algum
+horário livre e `get_service_available_day_slots_v1` para detalhar uma data no
+timezone do serviço. O horizonte canônico de reserva é de 90 dias; a UI nunca
+deduz o fim desse horizonte pelo número de slots recebidos. A UI deve tratar
 `SLOT_NOT_AVAILABLE`,
 `SLOT_HELD_BY_ANOTHER_USER` e `BOOKING_CONFLICT`, permitindo nova escolha. A2
 continua sendo a barreira final contra duas reservas ativas para o mesmo

@@ -54,6 +54,8 @@ The home may read public content through REST Supabase using only public env var
 - `public_home_testimonials`
 - `public_therapist_profile_content_v` for published `Como posso te guiar` guide chips
 - `public_therapist_profile_services_v` for the public therapy/technique names shown under the therapist name
+- `public_therapist_profile_reviews_v_internal` as the canonical source of
+  aggregate rating and review count in `public_home_therapists`
 
 Rules:
 
@@ -72,6 +74,9 @@ Rules:
 - Therapy preview cards should use editorial therapy photos, not generic icons. Use `image_url` from `public_therapies_v` when present and the stable local images for Reiki, Tarô and Constelação Familiar as fallback.
 - Do not add `@supabase/supabase-js` unless the user explicitly approves a dependency change.
 - If a public view changes, update docs and this skill in the same task.
+- Rating and review count include only canonical reviews with `status =
+  published` and no replacement. Their visibility does not subsequently depend
+  on the booking or payment that originally qualified the patient relationship.
 
 ## UI Contract
 

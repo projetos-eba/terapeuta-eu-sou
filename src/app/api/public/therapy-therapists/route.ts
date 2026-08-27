@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
   const result = await getRelatedTherapists({
     interestIds,
-    limit: 12,
+    limit: 6,
     slug,
     sort,
     themeIds,

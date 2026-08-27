@@ -77,6 +77,8 @@ export type TherapistProfileContent = {
 
 export type TherapistProfileService = {
   availability: AvailabilityDay[];
+  availabilityHorizonEndsAt?: string;
+  availabilityTimezone?: string;
   bookingUrl: string;
   currency: string;
   description: string;

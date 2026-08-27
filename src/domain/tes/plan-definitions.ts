@@ -129,7 +129,7 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "premium",
     code: "reviews_testimonials",
-    description: "Avaliações publicadas e depoimentos moderados.",
+    description: "Avaliações públicas e respostas profissionais.",
     label: "Avaliações e depoimentos",
     minimumPlan: TherapistPlan.Premium,
   },

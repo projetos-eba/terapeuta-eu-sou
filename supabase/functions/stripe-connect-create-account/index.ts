@@ -20,6 +20,7 @@ import {
 } from "../_shared/payments/runtime.ts";
 
 type ConnectAccountRow = {
+  account_generation: number;
   id: string;
   onboarding_status: string;
   stripe_account_id: string;
@@ -57,7 +58,9 @@ runtime.serve(async (request) => {
     const profileRows = await client.get<Array<{ email: string | null }>>(
       `/rest/v1/profiles?select=email&id=eq.${encodeURIComponent(user.id)}&limit=1`,
     );
+    const accountGeneration = await getNextAccountGeneration(client, therapist.id);
     const account = await createRecipientAccountV2({
+      accountGeneration,
       apiKey: config.stripeApiKey,
       email: profileRows[0]?.email,
       environment: config.environment,
@@ -67,6 +70,7 @@ runtime.serve(async (request) => {
     const stripeAccountId = getAccountId(account);
     const state = deriveConnectAccountState(account);
     const inserted = await insertConnectAccount(client, {
+      account_generation: accountGeneration,
       charges_enabled: state.chargesEnabled,
       details_submitted: state.detailsSubmitted,
       disabled_reason: state.disabledReason,
@@ -96,15 +100,28 @@ function getExistingConnectAccount(
   therapistProfileId: string,
 ) {
   return client.get<ConnectAccountRow[]>(
-    `/rest/v1/therapist_connect_accounts?select=id,stripe_account_id,onboarding_status,stripe_transfers_status&therapist_profile_id=eq.${encodeURIComponent(
+    `/rest/v1/therapist_connect_accounts?select=id,stripe_account_id,onboarding_status,stripe_transfers_status,account_generation&therapist_profile_id=eq.${encodeURIComponent(
       therapistProfileId,
-    )}&limit=1`,
+    )}&is_current=eq.true&limit=1`,
   );
+}
+
+async function getNextAccountGeneration(
+  client: SupabaseRestClient,
+  therapistProfileId: string,
+) {
+  const rows = await client.get<Array<{ account_generation: number }>>(
+    `/rest/v1/therapist_connect_accounts?select=account_generation&therapist_profile_id=eq.${encodeURIComponent(
+      therapistProfileId,
+    )}&order=account_generation.desc&limit=1`,
+  );
+  return (rows[0]?.account_generation ?? 0) + 1;
 }
 
 async function insertConnectAccount(
   client: SupabaseRestClient,
   input: {
+    account_generation: number;
     charges_enabled: boolean;
     details_submitted: boolean;
     disabled_reason: string | null;

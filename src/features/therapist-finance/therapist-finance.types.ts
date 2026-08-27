@@ -166,6 +166,7 @@ export type TherapistConnectAccount = {
   onboardingStatus: TherapistConnectOnboardingStatus;
   payoutsEnabled: boolean;
   pendingVerification: string[];
+  previousAccountClosed: boolean;
   therapistProfileId: string;
   transferCapabilityStatus: string;
 };

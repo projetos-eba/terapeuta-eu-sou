@@ -127,6 +127,21 @@ function ConnectDetail({ label, value }: { label: string; value: string }) {
 
 function getConnectState(account: TherapistConnectAccount) {
   if (!account.accountExists) {
+    if (account.previousAccountClosed) {
+      return {
+        description:
+          "Sua conta de recebimento anterior foi encerrada. Crie uma nova conta para que os pr\u00f3ximos repasses possam continuar.",
+        iconClass: "bg-status-warningBg text-status-warning",
+        notice:
+          "Valores que ainda aguardam repasse ficar\u00e3o em seguran\u00e7a at\u00e9 a nova conta estar pronta.",
+        primaryAction: "create_or_continue" as const,
+        primaryLabel: "Criar nova conta de recebimento",
+        statusLabel: "Nova conta necess\u00e1ria",
+        title: "Conta de recebimento pendente",
+        tone: "warning" as const,
+      };
+    }
+
     return {
       description:
         "Informe seus dados em uma página segura para receber os valores das suas sessões.",

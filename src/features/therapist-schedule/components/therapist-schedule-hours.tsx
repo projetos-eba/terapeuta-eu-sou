@@ -500,7 +500,7 @@ export function TherapistScheduleHours({
                                 className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_44px] items-center gap-2"
                                 key={rule.id ?? `${day.dayOfWeek}-${index}`}
                               >
-                                <TimeInput
+                                <TimeSelect
                                   ariaLabel={`Início de ${day.label}`}
                                   onChange={(value) =>
                                     updateRule(rule, "startTime", value)
@@ -514,7 +514,7 @@ export function TherapistScheduleHours({
                                 >
                                   até
                                 </span>
-                                <TimeInput
+                                <TimeSelect
                                   ariaLabel={`Fim de ${day.label}`}
                                   onChange={(value) =>
                                     updateRule(rule, "endTime", value)
@@ -1161,7 +1161,11 @@ function UpcomingExceptionsCard({
   );
 }
 
-function TimeInput({
+const scheduleTimeOptions = Array.from({ length: 96 }, (_, index) =>
+  minutesToClock(index * 15),
+);
+
+function TimeSelect({
   ariaLabel,
   onBlur,
   onChange,
@@ -1172,16 +1176,24 @@ function TimeInput({
   onChange: (value: string) => void;
   value: string;
 }) {
+  const options = scheduleTimeOptions.includes(value)
+    ? scheduleTimeOptions
+    : [...scheduleTimeOptions, value].sort();
+
   return (
-    <input
+    <select
       aria-label={ariaLabel}
-      className="min-h-11 min-w-0 w-full rounded-lg border border-brand-lavender bg-white px-2 text-center text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
+      className="min-h-11 min-w-0 w-full rounded-lg border border-brand-lavender bg-white px-3 text-center text-sm font-bold text-brand-deep outline-none focus:border-brand-primary focus:ring-2 focus:ring-brand-primary/20"
       onChange={(event) => onChange(event.target.value)}
       onBlur={onBlur}
-      step={900}
-      type="time"
       value={value}
-    />
+    >
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
   );
 }
 

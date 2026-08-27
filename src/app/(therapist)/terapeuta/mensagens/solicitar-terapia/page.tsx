@@ -45,7 +45,7 @@ export default async function TherapistTherapyCatalogRequestPage({
     return (
       <main className="mx-auto w-full max-w-3xl pb-10">
         <section className="rounded-panel border border-state-danger/30 bg-white p-6 shadow-card">
-          <h1 className="font-display text-4xl text-brand-deep">
+          <h1 className="font-display text-4xl italic text-brand-deep">
             Não foi possível abrir a solicitação
           </h1>
           <p className="mt-3 text-sm leading-6 text-tesText-secondary">

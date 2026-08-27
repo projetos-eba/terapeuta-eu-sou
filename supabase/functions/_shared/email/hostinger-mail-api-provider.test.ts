@@ -36,6 +36,8 @@ Deno.test(
 
     assertEquals(authorization, "Bearer secret-test-key");
     assertEquals(requestBodies[0]?.display_name, "TES");
+    assertEquals(requestBodies[0]?.html, "<p>ok</p>");
+    assertEquals("text" in (requestBodies[0] ?? {}), false);
     assertEquals(
       JSON.stringify(requestBodies[0]?.to),
       JSON.stringify(["pessoa@example.test"]),

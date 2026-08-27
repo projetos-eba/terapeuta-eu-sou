@@ -50,6 +50,22 @@ describe("TherapistScheduleHours", () => {
     ).toBeDisabled();
   });
 
+  it("limits schedule times to a dropdown while preserving a saved legacy time", () => {
+    const initialSchedule = scheduleFixture();
+    initialSchedule.rules[0] = {
+      ...initialSchedule.rules[0]!,
+      startTime: "02:59",
+    };
+    renderSchedule(initialSchedule);
+
+    const startTime = screen.getByLabelText("Início de Segunda-feira");
+    expect(startTime).toHaveRole("combobox");
+    expect(startTime).toHaveValue("02:59");
+    expect(within(startTime).getByRole("option", { name: "02:59" })).toBeInTheDocument();
+    expect(within(startTime).getByRole("option", { name: "02:45" })).toBeInTheDocument();
+    expect(startTime).not.toHaveAttribute("type", "time");
+  });
+
   it("explains each session rule through an accessible information popover", () => {
     renderSchedule();
 
