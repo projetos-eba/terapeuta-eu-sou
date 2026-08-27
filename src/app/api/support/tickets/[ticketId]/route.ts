@@ -23,6 +23,7 @@ type TicketRow = {
   description: string | null;
   id: string;
   last_activity_at: string;
+  protocol: string;
   resolved_at: string | null;
   status: string;
   subject: string;
@@ -59,7 +60,7 @@ export async function GET(request: Request, { params }: Params) {
     const tickets = await requestSupabase<TicketRow[]>(
       context.config,
       context.accessToken,
-      `/rest/v1/support_tickets?select=id,booking_id,category,subject,description,status,created_at,last_activity_at,resolved_at&id=eq.${ticketId}&limit=1`,
+      `/rest/v1/support_tickets?select=id,protocol,booking_id,category,subject,description,status,created_at,last_activity_at,resolved_at&id=eq.${ticketId}&limit=1`,
     );
     const ticket = tickets[0];
     if (!ticket) return failure("Chamado não encontrado.", 404);
@@ -112,7 +113,7 @@ export async function GET(request: Request, { params }: Params) {
           id: ticket.id,
           lastActivityAt: ticket.last_activity_at,
           messages,
-          protocol: ticket.id.slice(0, 8).toUpperCase(),
+          protocol: ticket.protocol,
           resolvedAt: ticket.resolved_at,
           status: ticket.status,
           subject: ticket.subject,

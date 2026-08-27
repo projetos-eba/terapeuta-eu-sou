@@ -230,7 +230,7 @@ export default async function TherapistSessionsPage({
         </AppPageMain>
 
         {allItems.length > 0 ? (
-          <AppPageAside className="auto-rows-min self-start content-start grid-cols-2 gap-5 md:grid-cols-2 xl:!block">
+          <AppPageAside className="auto-rows-min self-start content-start !grid-cols-1 gap-5 lg:!grid-cols-2 xl:!block">
             <SessionsRightRail items={allItems} />
           </AppPageAside>
         ) : null}
@@ -536,7 +536,7 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
 
 function SessionsMobileList({ items }: { items: SessionReadModelItem[] }) {
   return (
-    <div className="grid grid-cols-2 gap-3 p-3 sm:gap-4 sm:p-5 xl:hidden">
+    <div className="grid grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-5 xl:hidden">
       {items.map((booking) => {
         const presentation = mapSessionPresentation(booking);
         return (

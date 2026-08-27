@@ -68,6 +68,52 @@ describe("ZoomWaitingRoom", () => {
     expect(track.stop).toHaveBeenCalled();
   });
 
+  it("passes the enabled camera and microphone state when entering the room", async () => {
+    const cameraTrack = { stop: vi.fn() };
+    const audioTrack = { stop: vi.fn() };
+    const cameraStream = {
+      getTracks: () => [cameraTrack],
+    } as unknown as MediaStream;
+    const audioStream = {
+      getTracks: () => [audioTrack],
+    } as unknown as MediaStream;
+    const getUserMedia = vi.fn(async (constraints: MediaStreamConstraints) =>
+      constraints.video ? cameraStream : audioStream,
+    );
+    const onJoin = vi.fn();
+
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      mediaDevices: { getUserMedia },
+    });
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+
+    render(
+      <ZoomWaitingRoom
+        {...baseProps}
+        kind="entry_available"
+        onJoin={onJoin}
+      />,
+    );
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Testar câmera" })[0]);
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Sua prévia de câmera está pronta.",
+    );
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Testar áudio" })[0]);
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Seu microfone está sendo testado agora.",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Entrar na sala" }));
+
+    expect(onJoin).toHaveBeenCalledWith({
+      cameraEnabled: true,
+      microphoneEnabled: true,
+    });
+  });
+
   it("releases a microphone stream when the local level meter cannot start", async () => {
     const track = { stop: vi.fn() };
     const stream = { getTracks: () => [track] } as unknown as MediaStream;

@@ -29,24 +29,27 @@ export function FinancialHeader({
   tab: TherapistFinanceTab;
 }) {
   return (
-    <header className="grid min-w-0 gap-5">
-      <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <h1 className="font-display text-[40px] font-light italic leading-tight text-brand-deep sm:text-[52px]">
+    <header className="grid min-w-0 gap-4 sm:gap-5">
+      <div className="grid min-w-0 gap-4 lg:flex lg:items-start lg:justify-between lg:gap-5">
+        <div className="min-w-0 max-w-full">
+          <h1 className="max-w-full break-words font-display text-[36px] font-light italic leading-[1.05] text-brand-deep sm:text-[52px]">
             Financeiro completo
           </h1>
-          <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
+          <p className="mt-2 max-w-[38rem] text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
             Mais clareza para acompanhar o crescimento do seu cuidado.
           </p>
         </div>
 
-        <form className="flex min-w-0 flex-col gap-2 sm:flex-row" method="get">
+        <form
+          className="grid min-w-0 w-full gap-2 sm:flex sm:w-auto lg:shrink-0"
+          method="get"
+        >
           <input name="tab" type="hidden" value={toFinanceTabQueryValue(tab)} />
           <label className="sr-only" htmlFor="finance-period">
             Período financeiro
           </label>
           <select
-            className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary sm:w-auto sm:min-w-[190px]"
+            className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary sm:w-auto sm:min-w-[190px]"
             defaultValue={dateRange.key}
             id="finance-period"
             name="period"
@@ -64,10 +67,10 @@ export function FinancialHeader({
         </form>
       </div>
 
-      <div className="border-b border-brand-lavender">
+      <div className="min-w-0 border-b border-brand-lavender">
         <nav
           aria-label="Abas do financeiro"
-          className="flex min-w-0 max-w-full gap-1 overflow-x-auto pb-0"
+          className="-mx-1 flex min-w-0 max-w-full gap-1 overflow-x-auto px-1 pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {financeTabs.map((item) => {
             const active = item.value === tab;

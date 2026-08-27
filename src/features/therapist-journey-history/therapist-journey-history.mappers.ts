@@ -6,7 +6,6 @@ import type {
   JourneyHistoryDetailData,
   JourneyHistoryPageData,
   JourneyHistoryReminder,
-  JourneyHistorySegment,
   JourneyHistorySource,
   JourneyHistorySummary,
 } from "./therapist-journey-history.types";
@@ -80,40 +79,12 @@ const COMPLETED_BOOKING_STATUSES = new Set([
 
 const RECENT_ENCOUNTER_WINDOW_DAYS = 30;
 
-const TOPIC_RULES: Array<{
-  label: string;
-  pattern: RegExp;
-  tone: JourneyHistorySegment["tone"];
-}> = [
-  { label: "Ansiedade", pattern: /ansiedade|calma|respira/i, tone: "brand" },
-  { label: "Autoestima", pattern: /autoestima|confian/i, tone: "danger" },
-  {
-    label: "Autoconhecimento",
-    pattern: /autoconhecimento|clareza|percep/i,
-    tone: "brand",
-  },
-  {
-    label: "Relacionamentos",
-    pattern: /relacionamento|v[ií]nculo|famil/i,
-    tone: "danger",
-  },
-  { label: "Família", pattern: /fam[ií]lia|familiar/i, tone: "success" },
-  { label: "Carreira", pattern: /carreira|profissional/i, tone: "info" },
-  {
-    label: "Espiritualidade",
-    pattern: /espiritual|energia|reiki/i,
-    tone: "brand",
-  },
-  { label: "Propósito", pattern: /prop[oó]sito|dire[cç][aã]o/i, tone: "brand" },
-];
-
 export function mapJourneyHistoryPage(
   input: MappingInput,
 ): JourneyHistoryPageData {
   const now = input.now ?? new Date();
   const clients = buildClients(input, now);
   const summary = buildSummary(clients);
-  const segments = buildSegments(clients);
   const reminders = buildReminders(clients, now);
 
   return {
@@ -153,7 +124,7 @@ export function mapJourneyHistoryPage(
       },
     ],
     reminders,
-    segments,
+    segments: [],
     source: input.source,
     summary,
     therapistProfileId: input.therapistProfileId,
@@ -183,12 +154,6 @@ export function mapJourneyHistoryDetail(
       const service = serviceById.get(booking.service_id);
       const summary = summaryByBooking.get(booking.id);
       const serviceTitle = service?.title ?? "Sessão TES";
-      const topicLabels = inferTopics([
-        serviceTitle,
-        summary?.title ?? "",
-        summary?.summary ?? "",
-      ]);
-
       return {
         bookingId: booking.id,
         date: booking.starts_at,
@@ -200,7 +165,7 @@ export function mapJourneyHistoryDetail(
         status: booking.status,
         serviceTitle,
         title: summary?.title ?? serviceTitle,
-        topicLabels: topicLabels.length ? topicLabels : ["Continuidade"],
+        topicLabels: [],
       };
     });
 
@@ -225,7 +190,6 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
   const serviceById = new Map(
     input.services.map((service) => [service.id, service]),
   );
-  const summariesByPatient = groupBy(input.summaries, "patient_profile_id");
   const patientIds = [
     ...new Set([
       ...input.relationships.map(
@@ -265,14 +229,6 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
           .map((booking) => serviceById.get(booking.service_id)?.title)
           .filter(isPresent),
       ).slice(0, 3);
-      const topicLabels = inferTopics([
-        ...therapyLabels,
-        ...(summariesByPatient.get(patientId) ?? []).flatMap((summary) => [
-          summary.title ?? "",
-          summary.summary ?? "",
-        ]),
-      ]);
-
       return {
         avatarUrl: patient.avatar_url,
         emailLabel: patient.timezone ?? "Cliente TES",
@@ -299,7 +255,7 @@ function buildClients(input: MappingInput, now: Date): JourneyHistoryClient[] {
         totalEncounters: countedBookings.filter((booking) =>
           COMPLETED_BOOKING_STATUSES.has(booking.status),
         ).length,
-        topicLabels: topicLabels.length ? topicLabels : ["Continuidade"],
+        topicLabels: [],
       };
     })
     .filter(isPresent)
@@ -334,29 +290,6 @@ function buildSummary(clients: JourneyHistoryClient[]): JourneyHistorySummary {
     stale: clients.filter((client) => client.status === "stale").length,
     total: clients.length,
   };
-}
-
-function buildSegments(
-  clients: JourneyHistoryClient[],
-): JourneyHistorySegment[] {
-  const counts = new Map<string, number>();
-  for (const client of clients) {
-    for (const topic of client.topicLabels) {
-      counts.set(topic, (counts.get(topic) ?? 0) + 1);
-    }
-  }
-
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "pt-BR"))
-    .slice(0, 6)
-    .map(([label, count], index) => ({
-      count,
-      id: slug(label),
-      label,
-      tone:
-        TOPIC_RULES.find((rule) => rule.label === label)?.tone ??
-        segmentTone(index),
-    }));
 }
 
 function buildReminders(
@@ -417,46 +350,10 @@ function countNewRelationships(
   ).length;
 }
 
-function inferTopics(values: string[]) {
-  const text = values.join(" ");
-  const matched = TOPIC_RULES.filter((rule) => rule.pattern.test(text)).map(
-    (rule) => rule.label,
-  );
-
-  return unique(matched).slice(0, 3);
-}
-
-function segmentTone(index: number): JourneyHistorySegment["tone"] {
-  return ["brand", "danger", "success", "info", "warning"][
-    index % 5
-  ] as JourneyHistorySegment["tone"];
-}
-
-function groupBy<T extends Record<K, string>, K extends keyof T>(
-  rows: T[],
-  key: K,
-) {
-  const grouped = new Map<string, T[]>();
-  for (const row of rows) {
-    const id = row[key];
-    grouped.set(id, [...(grouped.get(id) ?? []), row]);
-  }
-  return grouped;
-}
-
 function unique(values: string[]) {
   return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
 }
 
 function isPresent<T>(value: T | null | undefined): value is T {
   return value !== null && value !== undefined;
-}
-
-function slug(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/\p{Diacritic}/gu, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
 }

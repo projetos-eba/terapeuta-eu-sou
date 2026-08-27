@@ -6,9 +6,14 @@ import {
   AppPageHeader,
   AppPageSection,
 } from "@/components/app-page";
-import { TESBadge } from "@/components/tes/tes-badge";
 import { TESButton } from "@/components/tes/tes-button";
 import { supportTicketCategories } from "@/features/support/support-contracts";
+import {
+  formatSupportTicketProtocol,
+  getSupportTicketCategoryLabel,
+  getSupportTicketStatusPresentation,
+} from "@/features/support/support-ticket-presentation";
+import { SupportTicketStatusBadge } from "@/features/support/components/support-ticket-status-badge";
 import { routes } from "@/lib/routes";
 
 import {
@@ -110,7 +115,7 @@ export function AdminSupportInboxPage({
               label="Categoria"
               name="category"
               options={supportTicketCategories.map((value) => ({
-                label: categoryLabel(value),
+                label: getSupportTicketCategoryLabel(value),
                 value,
               }))}
               value={query.category}
@@ -239,18 +244,15 @@ function TicketRow({
             <h3 className="truncate text-base font-extrabold text-brand-deep">
               {ticket.subject}
             </h3>
-            {needsAttention ? (
-              <TESBadge tone="brand">Aguardando TES</TESBadge>
-            ) : null}
+            <SupportTicketStatusBadge status={ticket.status} viewer="admin" />
           </div>
           <p className="mt-1 text-sm font-semibold text-tesText-secondary">
-            {protocol(ticket.id)} · {ticket.requesterName ?? "Solicitante"} ·{" "}
+            {formatSupportTicketProtocol(ticket.protocol)} · {ticket.requesterName ?? "Solicitante"} ·{" "}
             {personaLabel(ticket.requesterRole)}
           </p>
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-bold text-tesText-secondary">
-          <span>{categoryLabel(ticket.category)}</span>
-          <span>{statusLabel(ticket.status)}</span>
+          <span>{getSupportTicketCategoryLabel(ticket.category)}</span>
           <span>Prioridade {priorityLabel(ticket.priority)}</span>
           {ticket.assignedAdminName ? (
             <span>Com {ticket.assignedAdminName}</span>
@@ -301,7 +303,7 @@ function FilterSelect({
 }
 function statusOptions() {
   return adminSupportStatuses.map((value) => ({
-    label: statusLabel(value),
+    label: getSupportTicketStatusPresentation(value, "admin").label,
     value,
   }));
 }
@@ -310,19 +312,6 @@ function priorityOptions() {
     label: priorityLabel(value),
     value,
   }));
-}
-function statusLabel(value: string | null) {
-  return (
-    (
-      {
-        open: "Aberto",
-        in_progress: "Em atendimento",
-        waiting_requester: "Aguardando usuário",
-        waiting_support: "Aguardando TES",
-        resolved: "Resolvido",
-      } as Record<string, string>
-    )[value ?? ""] ?? "Em acompanhamento"
-  );
 }
 function priorityLabel(value: string) {
   return (
@@ -342,25 +331,6 @@ function personaLabel(value: string | null) {
     : value === "therapist"
       ? "Terapeuta"
       : "Perfil não identificado";
-}
-function categoryLabel(value: string) {
-  return (
-    (
-      {
-        agenda_sessoes: "Agenda e sessões",
-        zoom_acesso: "Zoom e acesso",
-        pagamentos: "Pagamentos",
-        financeiro_repasses: "Financeiro e repasses",
-        plano_assinatura: "Plano e assinatura",
-        perfil_verificacao: "Perfil e verificação",
-        conta_acesso: "Conta e acesso",
-        outro: "Outro",
-      } as Record<string, string>
-    )[value] ?? value
-  );
-}
-function protocol(id: string) {
-  return `#TES-${id.replace(/-/g, "").slice(0, 5).toUpperCase()}`;
 }
 function relativeDate(value: string) {
   const date = new Date(value);

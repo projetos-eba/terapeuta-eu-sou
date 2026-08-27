@@ -26,13 +26,12 @@ describe("therapist journey history", () => {
     });
     expect(data.metrics.find((metric) => metric.id === "new")?.value).toBe(2);
     expect(data.clients[0].name).toBe("Ana Lima");
-    expect(data.clients[0].topicLabels).toContain("Autoconhecimento");
-    expect(data.segments.some((segment) => segment.label === "Ansiedade")).toBe(
-      true,
-    );
+    expect(data.clients[0].avatarUrl).toBe("https://cdn.example.test/ana.jpg");
+    expect(data.clients[0].topicLabels).toEqual([]);
+    expect(data.segments).toEqual([]);
   });
 
-  it("filters by query, status, segment and sort", () => {
+  it("filters by query, status and sort without using legacy segments", () => {
     const data = mapJourneyHistoryPage({
       ...createRows(),
       now,
@@ -41,8 +40,9 @@ describe("therapist journey history", () => {
     });
 
     const filtered = filterJourneyClients(data.clients, {
+      page: 1,
       q: "reiki",
-      segment: "Autoconhecimento",
+      segment: "segmento-legado",
       sort: "sessions",
       status: "active",
     });
@@ -109,7 +109,7 @@ describe("therapist journey history", () => {
     );
     expect(detail?.timeline[0]).toMatchObject({
       serviceTitle: "Reiki",
-      topicLabels: ["Espiritualidade"],
+      topicLabels: [],
     });
     expect(detail?.client.nextSessionServiceTitle).toBe("Reiki");
     expect(detail?.client.lastSessionServiceTitle).toBe("Reiki");
@@ -167,7 +167,7 @@ function createRows(): JourneyHistoryRows {
     ],
     patients: [
       {
-        avatar_url: null,
+        avatar_url: "https://cdn.example.test/ana.jpg",
         display_name: "Ana Lima",
         id: "b1000000-0000-4000-8000-000000000001",
         timezone: "America/Sao_Paulo",

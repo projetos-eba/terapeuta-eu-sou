@@ -67,7 +67,9 @@ for (const check of checks) {
 }
 console.log(`Evidence: ${evidenceFile}`);
 
-if (checks.some((check) => check.status === "fail" || check.status === "blocked")) {
+if (
+  checks.some((check) => check.status === "fail" || check.status === "blocked")
+) {
   process.exitCode = 1;
 }
 
@@ -162,8 +164,12 @@ async function runReadiness(config) {
 async function runBilling(config) {
   requireEnvValue("PAYMENTS_LIVE_THERAPIST_EMAIL");
   requireEnvValue("PAYMENTS_LIVE_THERAPIST_PASSWORD");
-  const therapistProfileId = requireEnvValue("PAYMENTS_LIVE_THERAPIST_PROFILE_ID");
-  const plan = parsePlan(readArg("plan", process.env.PAYMENTS_LIVE_BILLING_PLAN || "premium"));
+  const therapistProfileId = requireEnvValue(
+    "PAYMENTS_LIVE_THERAPIST_PROFILE_ID",
+  );
+  const plan = parsePlan(
+    readArg("plan", process.env.PAYMENTS_LIVE_BILLING_PLAN || "premium"),
+  );
   const price = await getBillingPrice(config, plan);
   const coupon = await getLiveSmokeCoupon(config, therapistProfileId);
   const plannedAmountCents = estimateDiscountedAmountCents({
@@ -192,21 +198,24 @@ async function runBilling(config) {
       password: process.env.PAYMENTS_LIVE_THERAPIST_PASSWORD,
       role: "terapeuta",
     });
-    const checkout = await page.evaluate(async ({ selectedPlan }) => {
-      const response = await fetch("/api/therapist/subscription-checkout", {
-        body: JSON.stringify({
-          checkoutUiMode: "hosted",
-          plan: selectedPlan,
-          requestId: crypto.randomUUID(),
-        }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
-      return {
-        payload: await response.json().catch(() => null),
-        status: response.status,
-      };
-    }, { selectedPlan: plan });
+    const checkout = await page.evaluate(
+      async ({ selectedPlan }) => {
+        const response = await fetch("/api/therapist/subscription-checkout", {
+          body: JSON.stringify({
+            checkoutUiMode: "hosted",
+            plan: selectedPlan,
+            requestId: crypto.randomUUID(),
+          }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        return {
+          payload: await response.json().catch(() => null),
+          status: response.status,
+        };
+      },
+      { selectedPlan: plan },
+    );
 
     if (!checkout.payload?.ok || !checkout.payload.checkout?.url) {
       throw new Error(`billing_checkout_failed:${checkout.status}`);
@@ -221,7 +230,11 @@ async function runBilling(config) {
       "Checkout hosted LIVE aberto no navegador visível; operador deve inserir cartão real manualmente.",
     );
 
-    const completed = await waitForPageUrl(page, /\/terapeuta\/checkout\?.*checkout=success/, 900_000);
+    const completed = await waitForPageUrl(
+      page,
+      /\/terapeuta\/checkout\?.*checkout=success/,
+      900_000,
+    );
     if (!completed) {
       addCheck(
         "billing_payment_completion",
@@ -231,11 +244,16 @@ async function runBilling(config) {
       return;
     }
 
-    const session = await config.stripe.checkout.sessions.retrieve(checkoutSessionId, {
-      expand: ["subscription", "payment_intent"],
-    });
+    const session = await config.stripe.checkout.sessions.retrieve(
+      checkoutSessionId,
+      {
+        expand: ["subscription", "payment_intent"],
+      },
+    );
     evidence.billing.stripePaymentStatus = session.payment_status;
-    evidence.billing.subscriptionId = maskStripeId(getStripeId(session.subscription));
+    evidence.billing.subscriptionId = maskStripeId(
+      getStripeId(session.subscription),
+    );
     addCheck(
       "billing_stripe_paid",
       session.payment_status === "paid" ? "pass" : "fail",
@@ -309,7 +327,11 @@ async function runSession(config) {
       "Checkout embedded LIVE aberto no navegador visível; operador deve inserir cartão real manualmente.",
     );
 
-    const completed = await waitForPageUrl(page, /\/reserva\/sucesso\?.*session_id=/, 900_000);
+    const completed = await waitForPageUrl(
+      page,
+      /\/reserva\/sucesso\?.*session_id=/,
+      900_000,
+    );
     if (!completed) {
       addCheck(
         "session_payment_completion",
@@ -319,7 +341,8 @@ async function runSession(config) {
       return;
     }
 
-    const session = await config.stripe.checkout.sessions.retrieve(checkoutSessionId);
+    const session =
+      await config.stripe.checkout.sessions.retrieve(checkoutSessionId);
     evidence.session.stripePaymentStatus = session.payment_status;
     addCheck(
       "session_stripe_paid",
@@ -336,14 +359,21 @@ async function runSession(config) {
 }
 
 async function runConnect(config) {
-  const therapistProfileId = requireEnvValue("PAYMENTS_LIVE_THERAPIST_PROFILE_ID");
+  const therapistProfileId = requireEnvValue(
+    "PAYMENTS_LIVE_THERAPIST_PROFILE_ID",
+  );
   const sessionPaymentId = requireEnvValue("PAYMENTS_LIVE_SESSION_PAYMENT_ID");
   if (!config.internalOperationsToken) {
-    throw new Error("PAYMENTS_INTERNAL_OPERATIONS_TOKEN is required for connect stage.");
+    throw new Error(
+      "PAYMENTS_INTERNAL_OPERATIONS_TOKEN is required for connect stage.",
+    );
   }
 
   const connectAccount = await getConnectAccount(config, therapistProfileId);
-  const account = await retrieveAccountV2(config, connectAccount.stripe_account_id);
+  const account = await retrieveAccountV2(
+    config,
+    connectAccount.stripe_account_id,
+  );
   const transfersStatus = getV2StripeTransfersStatus(account);
   evidence.connect = {
     connectAccountId: connectAccount.id,
@@ -384,16 +414,24 @@ async function runConnect(config) {
   const periodEnd = new Date(paidAt.getTime() + 24 * 60 * 60 * 1000)
     .toISOString()
     .slice(0, 10);
-  const batch = await invokeInternalFunction(config, "create-weekly-payout-batch", {
-    referencePeriodEnd: periodEnd,
-    referencePeriodStart: periodStart,
-  });
+  const batch = await invokeInternalFunction(
+    config,
+    "create-weekly-payout-batch",
+    {
+      referencePeriodEnd: periodEnd,
+      referencePeriodStart: periodStart,
+    },
+  );
   const batchId = batch.data?.batchId;
   if (!batchId) throw new Error("payout_batch_missing");
-  const batchRows = await supabaseGet(config, `/rest/v1/payout_batches?select=id,item_count,therapist_amount_cents,status&id=eq.${encodeURIComponent(batchId)}&limit=1`);
+  const batchRows = await supabaseGet(
+    config,
+    `/rest/v1/payout_batches?select=id,item_count,therapist_amount_cents,status&id=eq.${encodeURIComponent(batchId)}&limit=1`,
+  );
   const batchRow = batchRows[0];
   evidence.connect.payoutBatchId = batchId;
-  evidence.connect.batchTherapistAmountCents = batchRow?.therapist_amount_cents ?? null;
+  evidence.connect.batchTherapistAmountCents =
+    batchRow?.therapist_amount_cents ?? null;
   if (!batchRow || batchRow.item_count !== 1) {
     throw new Error("live_batch_item_count_not_safe");
   }
@@ -401,28 +439,46 @@ async function runConnect(config) {
     amountCents: batchRow.therapist_amount_cents,
     maxAmountCents,
   });
-  const processed = await invokeInternalFunction(config, "process-payout-batch", {
-    batchId,
-  });
-  evidence.connect.processResult = sanitizeTransferResults(processed.data?.results);
+  const processed = await invokeInternalFunction(
+    config,
+    "process-payout-batch",
+    {
+      batchId,
+    },
+  );
+  evidence.connect.processResult = sanitizeTransferResults(
+    processed.data?.results,
+  );
   await waitForStripeTransfer(config, sessionPaymentId);
 }
 
 async function runReport(config) {
-  const therapistProfileId = process.env.PAYMENTS_LIVE_THERAPIST_PROFILE_ID?.trim();
+  const therapistProfileId =
+    process.env.PAYMENTS_LIVE_THERAPIST_PROFILE_ID?.trim();
   const sessionPaymentId = process.env.PAYMENTS_LIVE_SESSION_PAYMENT_ID?.trim();
-  const checkoutSessionId = process.env.PAYMENTS_LIVE_CHECKOUT_SESSION_ID?.trim();
+  const checkoutSessionId =
+    process.env.PAYMENTS_LIVE_CHECKOUT_SESSION_ID?.trim();
 
   evidence.report = {};
   if (therapistProfileId) {
-    evidence.report.subscription = await getLatestSubscriptionEvidence(config, therapistProfileId);
-    evidence.report.connect = await getConnectReport(config, therapistProfileId);
+    evidence.report.subscription = await getLatestSubscriptionEvidence(
+      config,
+      therapistProfileId,
+    );
+    evidence.report.connect = await getConnectReport(
+      config,
+      therapistProfileId,
+    );
   }
   if (sessionPaymentId) {
-    evidence.report.sessionPayment = await getSessionPaymentReport(config, sessionPaymentId);
+    evidence.report.sessionPayment = await getSessionPaymentReport(
+      config,
+      sessionPaymentId,
+    );
   }
   if (checkoutSessionId) {
-    const session = await config.stripe.checkout.sessions.retrieve(checkoutSessionId);
+    const session =
+      await config.stripe.checkout.sessions.retrieve(checkoutSessionId);
     evidence.report.checkout = {
       id: maskStripeId(session.id),
       livemode: session.livemode,
@@ -431,7 +487,11 @@ async function runReport(config) {
       status: session.status,
     };
   }
-  addCheck("live_report_generated", "pass", "Relatório LIVE sanitizado gerado.");
+  addCheck(
+    "live_report_generated",
+    "pass",
+    "Relatório LIVE sanitizado gerado.",
+  );
 }
 
 async function checkStripeApi(config) {
@@ -441,15 +501,27 @@ async function checkStripeApi(config) {
       country: account.country ?? null,
       id: maskStripeId(account.id),
     };
-    addCheck("stripe_api_live", account.livemode !== false ? "pass" : "pass", "Stripe API LIVE respondeu.");
+    addCheck(
+      "stripe_api_live",
+      account.livemode !== false ? "pass" : "pass",
+      "Stripe API LIVE respondeu.",
+    );
   } catch (error) {
-    addCheck("stripe_api_live", "blocked", `Stripe API indisponível: ${safeError(error)}.`);
+    addCheck(
+      "stripe_api_live",
+      "blocked",
+      `Stripe API indisponível: ${safeError(error)}.`,
+    );
   }
 }
 
 async function checkBillingCatalog(config) {
   if (!config.serviceRoleKey) {
-    addCheck("billing_catalog_live", "blocked", "SUPABASE_SERVICE_ROLE_KEY ausente.");
+    addCheck(
+      "billing_catalog_live",
+      "blocked",
+      "SUPABASE_SERVICE_ROLE_KEY ausente.",
+    );
     return;
   }
   const rows = await getBillingPlanPriceRows(config);
@@ -559,11 +631,18 @@ async function checkEdgeFunctions(config) {
   const rows = [];
   for (const functionName of functions) {
     try {
-      const response = await fetch(`${config.supabaseUrl}/functions/v1/${functionName}`, {
-        method: "OPTIONS",
-        signal: AbortSignal.timeout(10_000),
+      const response = await fetch(
+        `${config.supabaseUrl}/functions/v1/${functionName}`,
+        {
+          method: "OPTIONS",
+          signal: AbortSignal.timeout(10_000),
+        },
+      );
+      rows.push({
+        functionName,
+        ok: response.status >= 200 && response.status < 500,
+        status: response.status,
       });
-      rows.push({ functionName, ok: response.status >= 200 && response.status < 500, status: response.status });
     } catch (error) {
       rows.push({ functionName, ok: false, reason: safeError(error) });
     }
@@ -582,7 +661,8 @@ async function checkLiveFixtures(config) {
     return;
   }
   const slug = process.env.PAYMENTS_LIVE_PUBLIC_THERAPIST_SLUG?.trim();
-  const therapistProfileId = process.env.PAYMENTS_LIVE_THERAPIST_PROFILE_ID?.trim();
+  const therapistProfileId =
+    process.env.PAYMENTS_LIVE_THERAPIST_PROFILE_ID?.trim();
   const patientEmail = process.env.PAYMENTS_LIVE_PATIENT_EMAIL?.trim();
   const therapistEmail = process.env.PAYMENTS_LIVE_THERAPIST_EMAIL?.trim();
   evidence.liveFixtures = {
@@ -652,7 +732,9 @@ async function login(page, { email, next = "/", password, role }) {
   await page.getByLabel(/e-?mail/i).fill(email);
   await page.getByLabel(/senha/i).fill(password);
   await page.getByRole("button", { name: /entrar/i }).click();
-  await page.waitForLoadState("networkidle", { timeout: 45_000 }).catch(() => {});
+  await page
+    .waitForLoadState("networkidle", { timeout: 45_000 })
+    .catch(() => {});
 }
 
 async function waitForPageUrl(page, pattern, timeoutMs) {
@@ -664,14 +746,18 @@ async function waitForPageUrl(page, pattern, timeoutMs) {
   }
 }
 
-async function waitForSubscriptionState(config, { expectedPlan, status, therapistProfileId }) {
+async function waitForSubscriptionState(
+  config,
+  { expectedPlan, status, therapistProfileId },
+) {
   const row = await poll(async () => {
     const rows = await supabaseGet(
       config,
       `/rest/v1/therapist_subscriptions?select=id,plan_code,status,stripe_subscription_id,stripe_checkout_session_id,updated_at&therapist_profile_id=eq.${encodeURIComponent(therapistProfileId)}&order=updated_at.desc&limit=1`,
     );
     const item = rows[0];
-    if (item && item.plan_code === expectedPlan && status.includes(item.status)) return item;
+    if (item && item.plan_code === expectedPlan && status.includes(item.status))
+      return item;
     return null;
   }, 180_000);
   evidence.billing.localSubscription = {
@@ -687,7 +773,10 @@ async function waitForSubscriptionState(config, { expectedPlan, status, therapis
   );
 }
 
-async function waitForSessionPaymentState(config, { checkoutSessionId, status }) {
+async function waitForSessionPaymentState(
+  config,
+  { checkoutSessionId, status },
+) {
   const row = await poll(async () => {
     const rows = await supabaseGet(
       config,
@@ -723,7 +812,11 @@ async function waitForStripeTransfer(config, sessionPaymentId) {
     stripeTransferId: maskStripeId(row.stripe_transfer_id),
     stripeTransferReversed: transfer?.reversed ?? null,
   };
-  addCheck("connect_transfer_created", "pass", "Transfer LIVE registrado na Stripe e no Supabase.");
+  addCheck(
+    "connect_transfer_created",
+    "pass",
+    "Transfer LIVE registrado na Stripe e no Supabase.",
+  );
 }
 
 async function poll(fn, timeoutMs) {
@@ -740,7 +833,7 @@ async function poll(fn, timeoutMs) {
 async function getBillingPrice(config, plan) {
   const [row] = await supabaseGet(
     config,
-    `/rest/v1/billing_plan_prices?select=id,unit_amount_cents,stripe_price_id,billing_plans!inner(code)&billing_plans.code=eq.${plan}&is_active=eq.true&limit=1`,
+    `/rest/v1/billing_plan_prices?select=id,unit_amount_cents,stripe_price_id,billing_plans!inner(code)&billing_plans.code=eq.${plan}&is_active=eq.true&is_public=eq.true&offer_key=is.null&interval=eq.month&limit=1`,
   );
   if (!row?.stripe_price_id) throw new Error("billing_price_not_found");
   return row;
@@ -749,7 +842,7 @@ async function getBillingPrice(config, plan) {
 async function getBillingPlanPriceRows(config) {
   return supabaseGet(
     config,
-    "/rest/v1/billing_plan_prices?select=billing_plans(code),stripe_price_id,unit_amount_cents,is_active&is_active=eq.true",
+    "/rest/v1/billing_plan_prices?select=billing_plans(code),stripe_price_id,unit_amount_cents,is_active,is_public,offer_key&is_active=eq.true",
   );
 }
 
@@ -760,7 +853,8 @@ async function getLiveSmokeCoupon(config, therapistProfileId) {
       couponId,
       enabled: process.env.PAYMENTS_LIVE_SMOKE_ENABLED,
       therapistProfileId,
-      therapistProfileIdAllowlist: process.env.PAYMENTS_LIVE_SMOKE_THERAPIST_PROFILE_ID,
+      therapistProfileIdAllowlist:
+        process.env.PAYMENTS_LIVE_SMOKE_THERAPIST_PROFILE_ID,
     })
   ) {
     return null;
@@ -824,7 +918,9 @@ async function getLatestSubscriptionEvidence(config, therapistProfileId) {
   if (!row) return null;
   let stripeStatus = null;
   if (row.stripe_subscription_id) {
-    const subscription = await config.stripe.subscriptions.retrieve(row.stripe_subscription_id);
+    const subscription = await config.stripe.subscriptions.retrieve(
+      row.stripe_subscription_id,
+    );
     stripeStatus = subscription.status;
   }
   return {
@@ -896,18 +992,28 @@ function getV2StripeTransfersStatus(account) {
   );
 }
 
-async function invokeInternalFunction(config, functionName, body, options = {}) {
-  const response = await fetch(`${config.supabaseUrl}/functions/v1/${functionName}`, {
-    body: JSON.stringify(body),
-    headers: {
-      "Content-Type": "application/json",
-      "x-tes-internal-operations-token": config.internalOperationsToken,
+async function invokeInternalFunction(
+  config,
+  functionName,
+  body,
+  options = {},
+) {
+  const response = await fetch(
+    `${config.supabaseUrl}/functions/v1/${functionName}`,
+    {
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        "x-tes-internal-operations-token": config.internalOperationsToken,
+      },
+      method: "POST",
     },
-    method: "POST",
-  });
+  );
   const payload = await response.json().catch(() => null);
   if (!response.ok && !options.acceptFailure) {
-    throw new Error(`${functionName}_failed:${response.status}:${payload?.error?.code ?? "unknown"}`);
+    throw new Error(
+      `${functionName}_failed:${response.status}:${payload?.error?.code ?? "unknown"}`,
+    );
   }
   return payload ?? { ok: response.ok };
 }
@@ -924,7 +1030,9 @@ async function supabaseGet(config, path) {
   });
   const text = await response.text();
   if (!response.ok) {
-    throw new Error(`supabase_get_failed:${response.status}:${text.slice(0, 120)}`);
+    throw new Error(
+      `supabase_get_failed:${response.status}:${text.slice(0, 120)}`,
+    );
   }
   return text ? JSON.parse(text) : [];
 }
@@ -965,7 +1073,7 @@ function sanitizeTransferResults(results) {
 
 function getStripeId(value) {
   if (!value) return null;
-  return typeof value === "string" ? value : value.id ?? null;
+  return typeof value === "string" ? value : (value.id ?? null);
 }
 
 function getTargetSupabaseUrl() {

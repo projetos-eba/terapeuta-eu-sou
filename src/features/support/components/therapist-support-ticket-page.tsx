@@ -7,6 +7,11 @@ import { Loader2, Paperclip, Send, X } from "lucide-react";
 import { TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 import { useSupportLiveRefresh } from "./support-live-refresh";
+import {
+  formatSupportTicketProtocol,
+  getSupportTicketCategoryLabel,
+} from "../support-ticket-presentation";
+import { SupportTicketStatusBadge } from "./support-ticket-status-badge";
 
 import {
   supportTicketAttachmentLimit,
@@ -151,16 +156,22 @@ export function SupportTicketPage({
         <section className="mt-5 rounded-card border border-brand-lavender bg-white shadow-card">
           <header className="border-b border-brand-lavender/70 px-5 py-6 sm:px-7">
             <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-brand-primary">
-              Protocolo {ticket.protocol}
+              Suporte TES
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <h1 className="font-display text-3xl font-light italic text-brand-deep">
-                {ticket.subject}
+                Chamado {formatSupportTicketProtocol(ticket.protocol)}
               </h1>
-              <Status status={ticket.status} />
+              <SupportTicketStatusBadge
+                status={ticket.status}
+                viewer="requester"
+              />
             </div>
+            <h2 className="mt-3 text-lg font-extrabold text-brand-deep">
+              {ticket.subject}
+            </h2>
             <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-              {categoryLabel(ticket.category)} · Aberto em{" "}
+              {getSupportTicketCategoryLabel(ticket.category)} · Aberto em{" "}
               {date(ticket.createdAt)}
               {ticket.bookingId ? " · Relacionado a uma sessão" : ""}
             </p>
@@ -233,6 +244,9 @@ export function SupportTicketPage({
               }}
             >
               <label className="grid gap-2">
+                <span className="text-xs font-semibold leading-5 text-tesText-secondary">
+                  Somente você e a equipe TES podem ver as mensagens deste chamado.
+                </span>
                 <span className="text-sm font-extrabold text-brand-deep">
                   Responder ao suporte
                 </span>
@@ -351,33 +365,6 @@ export function TherapistSupportTicketPage({ ticketId }: { ticketId: string }) {
   return <SupportTicketPage actorRole="therapist" ticketId={ticketId} />;
 }
 
-function Status({ status }: { status: string }) {
-  const labels: Record<string, string> = {
-    open: "Aberto",
-    in_progress: "Em atendimento",
-    waiting_requester: "Aguardando você",
-    waiting_support: "Aguardando TES",
-    resolved: "Resolvido",
-  };
-  return (
-    <span className="rounded-full bg-brand-lavenderSoft px-3 py-1 text-xs font-extrabold text-brand-primary">
-      {labels[status] ?? "Em atendimento"}
-    </span>
-  );
-}
-function categoryLabel(value: string) {
-  const labels: Record<string, string> = {
-    agenda_sessoes: "Agenda e sessões",
-    zoom_acesso: "Zoom e acesso à sessão",
-    pagamentos: "Pagamentos",
-    financeiro_repasses: "Financeiro e repasses",
-    plano_assinatura: "Plano e assinatura",
-    perfil_verificacao: "Perfil e verificação",
-    conta_acesso: "Conta e acesso",
-    outro: "Outro assunto",
-  };
-  return labels[value] ?? "Suporte TES";
-}
 function date(value: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",

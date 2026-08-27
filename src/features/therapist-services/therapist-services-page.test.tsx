@@ -247,6 +247,18 @@ describe("TherapistServicesPage", () => {
     fireEvent.change(screen.getByLabelText("Preço"), {
       target: { value: "120,00" },
     });
+    const duration = screen.getByLabelText("Duração");
+    expect(duration).toHaveAttribute("min", "20");
+    expect(duration).toHaveAttribute("max", "120");
+    expect(duration).toHaveAttribute("step", "1");
+    fireEvent.change(duration, { target: { value: "19" } });
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    expect(
+      screen.getByText(
+        "A duração deve ser um número inteiro entre 20 e 120 minutos.",
+      ),
+    ).toBeInTheDocument();
+    fireEvent.change(duration, { target: { value: "20" } });
     fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
     fireEvent.click(screen.getByRole("button", { name: /salvar rascunho/i }));
 
@@ -256,11 +268,97 @@ describe("TherapistServicesPage", () => {
           action: "create",
           themeIds: ["71000000-0000-4000-8000-000000000001"],
           priceCents: 12000,
+          durationMinutes: 20,
           therapyId: "22222222-2222-4222-8222-222222222229",
         }),
       );
     });
     expect(mockedCommand.mock.calls[0]?.[0]).not.toHaveProperty("therapyName");
+  });
+
+  it("explains an activation failure without creating the therapy again", async () => {
+    const created = serviceFixture({
+      serviceId: "d1000000-0000-4000-8000-000000000004",
+      title: "Aromaterapia acolhedora",
+    });
+    const onClose = vi.fn();
+    const onSaved = vi.fn();
+    mockedCommand
+      .mockResolvedValueOnce({
+        data: {
+          contractVersion: 1,
+          idempotentReplay: false,
+          service: created,
+        },
+        status: "success",
+      })
+      .mockResolvedValueOnce({
+        error: {
+          code: "internal_error",
+          message: "A ativação não ficou disponível agora.",
+        },
+        status: "error",
+      });
+
+    render(
+      <TherapistServiceForm
+        catalog={catalogFixture().items}
+        mode="create"
+        onClose={onClose}
+        onSaved={onSaved}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("option", { name: /Aromaterapia/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByLabelText(/Emoções e bem-estar/i));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.change(screen.getByLabelText("Descrição"), {
+      target: {
+        value:
+          "Experiência olfativa guiada para acolhimento, presença e bem-estar.",
+      },
+    });
+    fireEvent.change(screen.getByLabelText("Preço"), {
+      target: { value: "120,00" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar e ativar" }));
+
+    const error = await screen.findByRole("alert");
+    expect(error).toHaveTextContent(
+      "A terapia foi salva como rascunho, mas não foi possível ativá-la. A ativação não ficou disponível agora.",
+    );
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+
+    const activated = serviceFixture({
+      serviceId: created.serviceId,
+      status: "active",
+      title: created.title,
+      version: created.version + 1,
+    });
+    mockedCommand.mockResolvedValueOnce({
+      data: {
+        contractVersion: 1,
+        idempotentReplay: false,
+        service: activated,
+      },
+      status: "success",
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar e ativar" }));
+
+    await waitFor(() => {
+      expect(mockedCommand).toHaveBeenNthCalledWith(
+        3,
+        expect.objectContaining({
+          action: "activate",
+          expectedVersion: created.version,
+          serviceId: created.serviceId,
+        }),
+      );
+      expect(onClose).toHaveBeenCalledOnce();
+    });
   });
 
   it("confirms activation through the service command", async () => {
@@ -345,6 +443,61 @@ describe("TherapistServicesPage", () => {
       );
       expect(onClose).toHaveBeenCalledOnce();
     });
+  });
+
+  it("does not advance when the description is shorter than 20 characters", () => {
+    render(
+      <TherapistServiceForm
+        catalog={catalogFixture().items}
+        mode="edit"
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+        service={serviceFixture()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.change(screen.getByLabelText("Descrição"), {
+      target: { value: "Descrição curta" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(
+      screen.getByText("A descrição precisa ter pelo menos 20 caracteres."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Salvar alterações" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Descrição")).toHaveFocus();
+  });
+
+  it("keeps the dialog open and explains a final save failure", async () => {
+    const onClose = vi.fn();
+    mockedCommand.mockResolvedValueOnce({
+      error: {
+        code: "internal_error",
+        message: "Não foi possível salvar a terapia agora.",
+      },
+      status: "error",
+    });
+
+    render(
+      <TherapistServiceForm
+        catalog={catalogFixture().items}
+        mode="edit"
+        onClose={onClose}
+        onSaved={vi.fn()}
+        service={serviceFixture()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+    const error = await screen.findByRole("alert");
+    expect(error).toHaveTextContent("Não foi possível salvar a terapia agora.");
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it("bounds an unbroken description in the review step", () => {

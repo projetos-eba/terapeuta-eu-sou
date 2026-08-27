@@ -38,6 +38,9 @@ describe("ZoomVideoControls", () => {
     expect(
       screen.getByRole("button", { name: "Encerrar para todos" }),
     ).toHaveClass("bg-status-danger");
+    expect(
+      screen.getByRole("button", { name: "Sair da sessão" }),
+    ).toHaveClass("min-h-12");
   });
 
   it("keeps the patient dock to a single exit action", () => {
@@ -50,6 +53,22 @@ describe("ZoomVideoControls", () => {
       screen.queryByRole("button", { name: "Encerrar para todos" }),
     ).toBeNull();
   });
+
+  it("keeps the patient exit action available when the connection is offline", () => {
+    render(
+      <ZoomVideoControls
+        {...baseProps}
+        actorRole="patient"
+        isOnline={false}
+        roleType={0}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Sair do encontro" }),
+    ).toBeEnabled();
+  });
+
 
   it("keeps final end disabled before the last five minutes", () => {
     render(

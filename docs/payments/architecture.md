@@ -1,12 +1,12 @@
 # Arquitetura de pagamentos TES
 
-Atualizado em 2026-08-24.
+Atualizado em 2026-08-26.
 
 ## Visao geral
 
 O TES separa dois fluxos Stripe:
 
-- Stripe Billing: assinatura mensal dos terapeutas nos planos `premium` e
+- Stripe Billing: assinaturas mensais dos terapeutas nos planos `premium` e
   `premium_plus`, com Checkout incorporado como fluxo principal e Checkout
   hospedado como contingencia.
 - Stripe Connect: cobranca de sessoes na conta da plataforma, com separate charges and transfers e repasse posterior ao terapeuta.
@@ -119,7 +119,11 @@ demais regras financeiras vigentes.
 
 ## Dados principais
 
-- `billing_plans` e `billing_plan_prices`: catalogo local de planos e Price IDs Stripe.
+- `billing_plans` e `billing_plan_prices`: catálogo local mensal de planos e
+  Price IDs Stripe. O Product Premium Plus possui um Price público e pode
+  compartilhar um Price oculto de oferta. `is_public` impede ofertas especiais
+  de aparecerem no catálogo; `offer_key` só é resolvido no backend a partir de
+  metadata confiável da Stripe.
 - `stripe_customers`: Customer local por perfil, papel e ambiente.
 - `therapist_subscriptions`: assinatura paga do terapeuta.
 - `therapist_connect_accounts`: conta conectada e status operacional.
@@ -139,6 +143,7 @@ demais regras financeiras vigentes.
 > Payout automático `daily`. A associação bancária não usa metadata de Payout;
 > usa `destination_payment` e `balance_transactions?payout=...`. A política v5
 > e o cron permanecem inativos até homologação HML completa.
+
 - `financial_ledger_entries`: ledger auditavel.
 - `stripe_webhook_events`: recebimento idempotente de webhooks.
 

@@ -34,8 +34,8 @@ Consultar antes de alterar:
 - Free: `/terapeuta/cadastro?plan=free`.
 - Premium: `/terapeuta/cadastro?plan=premium`.
 - Premium Plus: `/terapeuta/cadastro?plan=premium_plus`.
-- Frontend envia somente o codigo do plano.
-- `stripePriceId` permanece `null` ate Billing ser implementado no backend.
+- Frontend envia somente o código do plano, nunca valor, Price ID ou oferta.
+- Valores canônicos: Premium R$ 79,90/mês e Premium Plus R$ 129,90/mês.
 - Nao aceitar preco, valor ou Price ID vindo do navegador.
 
 ## Copy responsavel
@@ -43,7 +43,7 @@ Consultar antes de alterar:
 - Usar “Resumo operacional automatico” ou “Sugestoes baseadas em regras”.
 - Nao usar “Resumo automatico com IA” sem IA real implementada.
 - Evitar “ilimitado”; quando necessario, escrever “recursos completos sujeitos a politica de uso”.
-- Precos pagos devem aparecer como “A partir de”.
+- Preços pagos devem informar claramente a recorrência mensal.
 - Nao prometer renda, cura, diagnostico, resultado garantido ou alteracao de comissao por plano.
 
 ## UI e responsividade
@@ -60,9 +60,8 @@ Consultar antes de alterar:
 
 ## Pendencias conhecidas
 
-- Hardening de `therapist_subscriptions`, `stripe_webhook_events`, Checkout,
-  Customer Portal e liberacao server-side de plano conforme o Gate F0.
-- Decisoes comerciais: preco final, trial, prorata, tolerancia por falha de pagamento, upgrade imediato, downgrade/cancelamento no fim do ciclo.
+- Homologar visualmente e transacionalmente os dois planos mensais no Stripe
+  Test Mode. Live Mode recebe somente configuração e verificação de leitura.
 - Assets do Figma foram substituidos por fallbacks locais em `public/for-therapists/` quando download direto nao estiver disponivel.
 
 ## QA

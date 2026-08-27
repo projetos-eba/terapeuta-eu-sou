@@ -9,10 +9,12 @@ export function ReviewsCarousel({
   average,
   count,
   reviews,
+  staticPreview = false,
 }: {
   average: number | null;
   count: number;
   reviews: TherapistProfileReview[];
+  staticPreview?: boolean;
 }) {
   const pages = useMemo(() => {
     if (!reviews.length) return [[]];
@@ -25,14 +27,14 @@ export function ReviewsCarousel({
   const [page, setPage] = useState(0);
 
   useEffect(() => {
-    if (pages.length <= 1) return;
+    if (staticPreview || pages.length <= 1) return;
 
     const id = window.setInterval(() => {
       setPage((current) => (current + 1) % pages.length);
     }, 5000);
 
     return () => window.clearInterval(id);
-  }, [pages.length]);
+  }, [pages.length, staticPreview]);
 
   const visibleReviews = pages[page] ?? [];
   const [expandedReplies, setExpandedReplies] = useState<
@@ -45,9 +47,15 @@ export function ReviewsCarousel({
         <h2 className="font-display text-[24px] font-light italic text-status-info">
           Avaliações
         </h2>
-        <button className="min-h-11 rounded-full border border-border px-5 py-2 text-sm font-medium text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary">
-          Ver todas as avaliações →
-        </button>
+        {staticPreview ? (
+          <span className="inline-flex min-h-11 items-center rounded-full border border-border px-5 py-2 text-sm font-medium text-brand-primary">
+            Ver todas as avaliações →
+          </span>
+        ) : (
+          <button className="min-h-11 rounded-full border border-border px-5 py-2 text-sm font-medium text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary">
+            Ver todas as avaliações →
+          </button>
+        )}
       </div>
 
       {count === 0 ? (
@@ -119,8 +127,8 @@ export function ReviewsCarousel({
                         ? review.reply.body
                         : getReplyPreview(review.reply.body)}
                     </p>
-                    {getReplyPreview(review.reply.body) !==
-                    review.reply.body ? (
+                    {!staticPreview &&
+                    getReplyPreview(review.reply.body) !== review.reply.body ? (
                       <button
                         type="button"
                         className="mt-2 text-xs font-extrabold text-brand-primary underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
@@ -151,7 +159,7 @@ export function ReviewsCarousel({
             ))}
           </div>
 
-          {pages.length > 1 ? (
+          {!staticPreview && pages.length > 1 ? (
             <div className="mt-4 flex justify-center gap-2">
               {pages.map((_, index) => (
                 <button

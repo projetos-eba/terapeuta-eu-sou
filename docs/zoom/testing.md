@@ -64,6 +64,11 @@ estados corretos, que o teste de câmera solicita apenas vídeo, que o teste de
 entrar ou sair. Áudio ambiente sem fonte licenciada permanece visível, porém
 inativo e sem autoplay.
 
+O teste do adapter deve cobrir os dois papéis: com câmera e microfone ligados
+na sala de espera, o `join` deve chamar a ativação das duas mídias na sala
+ativa; sem uma mídia habilitada no preflight, ela deve permanecer desligada.
+Essa preferência não é persistida e é enviada somente no clique de entrada.
+
 A sala ativa deve iniciar o SDK com `enforceMultipleVideos: true`, usar
 `video-player-container` e provar câmera bidirecional na ordem: terapeuta liga,
 paciente vê o remoto, paciente liga, terapeuta vê o remoto e as duas telas
@@ -80,7 +85,9 @@ Os testes temporais cobrem T-15, chegada em T+10, bloqueio em T+10+1 ms,
 reconexão por chegada da versão atual ou join confiável e bloqueio em
 `scheduled_ends_at`. Para 17:45–18:35, o contador mostra 7 minutos antes do
 início às 17:38, 50 minutos às 17:45 e 40 minutos às 17:55. Alterar o watchdog
-não altera esses valores.
+não altera esses valores. Na sala de vídeo ativa, o contador antes do início
+fica oculto; a contagem até o fim aparece a partir do horário agendado. A sala
+de espera mantém a contagem regressiva até a abertura.
 
 Após uma saída individual, a sala deve voltar à espera e permitir nova entrada
 enquanto o terapeuta estiver presente; suporte, voltar, refresh e troca de

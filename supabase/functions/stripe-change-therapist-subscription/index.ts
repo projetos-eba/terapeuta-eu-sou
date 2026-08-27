@@ -83,18 +83,6 @@ runtime.serve(async (request) => {
       );
     }
 
-    const [targetPrice] = await client.get<BillingPriceRow[]>(
-      `/rest/v1/billing_plan_prices?select=stripe_price_id,billing_plans!inner(code)&billing_plans.code=eq.${targetPlan}&is_active=eq.true&limit=1`,
-    );
-
-    if (!targetPrice?.stripe_price_id) {
-      throw new DomainError(
-        "stripe_price_missing",
-        409,
-        "Catalogo Stripe ainda nao sincronizado.",
-      );
-    }
-
     const subscription = await stripe.subscriptions.retrieve(
       localSubscription.stripe_subscription_id,
     );
@@ -105,6 +93,18 @@ runtime.serve(async (request) => {
         "stripe_subscription_item_missing",
         409,
         "Assinatura Stripe sem item de preco.",
+      );
+    }
+
+    const [targetPrice] = await client.get<BillingPriceRow[]>(
+      `/rest/v1/billing_plan_prices?select=stripe_price_id,billing_plans!inner(code)&billing_plans.code=eq.${targetPlan}&is_active=eq.true&is_public=eq.true&offer_key=is.null&interval=eq.month&limit=1`,
+    );
+
+    if (!targetPrice?.stripe_price_id) {
+      throw new DomainError(
+        "stripe_price_missing",
+        409,
+        "Catalogo Stripe ainda nao sincronizado.",
       );
     }
 

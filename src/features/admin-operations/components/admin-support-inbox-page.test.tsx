@@ -27,6 +27,7 @@ const data: AdminSupportInboxData = {
       createdAt: "2026-08-21T12:00:00.000Z",
       id: "11111111-1111-4111-8111-111111111111",
       lastActivityAt: "2026-08-21T12:00:00.000Z",
+      protocol: "582914730F",
       priority: "high",
       requesterName: "Ana Oliveira",
       requesterRole: "therapist",
@@ -40,7 +41,8 @@ describe("AdminSupportInboxPage", () => {
   it("prioritizes the operational attention state without KPI cards", () => {
     const html = renderToStaticMarkup(<AdminSupportInboxPage data={data} />);
     expect(html).toContain("Precisa de atenção");
-    expect(html).toContain("Aguardando TES");
+    expect(html).toContain("Aguardando resposta da equipe TES");
+    expect(html).toContain("#582914730F");
     expect(html).toContain("Dúvida sobre repasse");
     expect(html).toContain("Financeiro e repasses");
     expect(html).not.toContain("Chamados registrados");

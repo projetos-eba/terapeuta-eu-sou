@@ -64,8 +64,10 @@ export type MessageCenterPlatformItem = {
 export type MessageCenterSupportTicket = {
   category: string;
   createdAt: string;
+  excerpt: string;
   id: string;
   lastActivityAt: string;
+  protocol: string;
   status: string;
   subject: string;
 };

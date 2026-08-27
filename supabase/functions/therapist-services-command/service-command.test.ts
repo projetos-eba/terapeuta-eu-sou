@@ -103,6 +103,52 @@ Deno.test("validates optimistic updates", () => {
   assertEquals(result.action, "update");
 });
 
+Deno.test("accepts only whole service durations from 20 to 120 minutes", () => {
+  for (const durationMinutes of [20, 120]) {
+    const result = validateTherapistServicesCommand({
+      action: "create",
+      durationMinutes,
+      interestIds: [],
+      priceCents: 12000,
+      requestId,
+      themeIds: [themeId],
+      therapyId,
+      title: "Reiki online",
+    });
+
+    assertEquals(result.action, "create");
+  }
+
+  for (const durationMinutes of [19, 121, 20.5]) {
+    assertDomainError(() =>
+      validateTherapistServicesCommand({
+        action: "create",
+        durationMinutes,
+        interestIds: [],
+        priceCents: 12000,
+        requestId,
+        themeIds: [themeId],
+        therapyId,
+        title: "Reiki online",
+      }),
+    );
+  }
+});
+
+Deno.test("rejects out-of-range service durations on updates", () => {
+  for (const durationMinutes of [19, 121, 20.5]) {
+    assertDomainError(() =>
+      validateTherapistServicesCommand({
+        action: "update",
+        durationMinutes,
+        expectedVersion: 3,
+        requestId,
+        serviceId,
+      }),
+    );
+  }
+});
+
 Deno.test("rejects non-online delivery format updates", () => {
   assertDomainError(() =>
     validateTherapistServicesCommand({

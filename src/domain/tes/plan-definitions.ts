@@ -113,7 +113,8 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
   {
     category: "base",
     code: "visual_identity_customization",
-    description: "Quatro temas oficiais e ilustrações TES para a presença pública.",
+    description:
+      "Quatro temas oficiais e ilustrações TES para a presença pública.",
     label: "Temas básicos e ilustração do perfil público",
     minimumPlan: TherapistPlan.Free,
   },
@@ -266,9 +267,9 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
       messages: 100,
       services: 6,
     },
-    monthlyPriceCents: 6000,
+    monthlyPriceCents: 7990,
     name: "Premium",
-    priceLabel: "R$ 60/mês",
+    priceLabel: "R$ 79,90/mês",
     priceNote: "Cobrança mensal recorrente",
     signupHref: getPlanSignupHref(TherapistPlan.Premium),
     stripePriceId: null,
@@ -283,9 +284,9 @@ export const therapistPlanDefinitions: PlanDefinition[] = [
     limits: {
       services: undefined,
     },
-    monthlyPriceCents: 12000,
+    monthlyPriceCents: 12990,
     name: "Premium Plus",
-    priceLabel: "R$ 120/mês",
+    priceLabel: "R$ 129,90/mês",
     priceNote: "Cobrança mensal recorrente",
     signupHref: getPlanSignupHref(TherapistPlan.PremiumPlus),
     stripePriceId: null,

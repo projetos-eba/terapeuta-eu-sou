@@ -70,7 +70,7 @@ export async function syncTherapistSubscriptionFromStripe(
   >(
     `/rest/v1/billing_plan_prices?select=id,plan_id,billing_plans!inner(code)&stripe_price_id=eq.${encodeURIComponent(
       priceId,
-    )}&is_active=eq.true&limit=1`,
+    )}&limit=1`,
   );
   const planCode = normalizePlan(price?.billing_plans?.code);
 

@@ -59,6 +59,10 @@ navegador: o teste de câmera solicita somente vídeo e substitui a capa visual;
 o teste de áudio solicita somente microfone e mostra um indicador local. Esses
 streams não inicializam o Video SDK, não solicitam acesso à sala, não emitem
 JWT e são encerrados ao desligar o teste, entrar, falhar ou desmontar a tela.
+No clique de entrada, a sala envia ao adapter um snapshot das preferências de
+câmera e microfone. Depois do `join`, o adapter ativa apenas as mídias que
+estavam ligadas nesse snapshot; as demais iniciam desligadas/silenciadas. O
+snapshot é transitório no navegador e não é persistido.
 
 O encerramento definitivo usa `TESDialog`, é exclusivo do terapeuta e só fica
 disponível nos cinco minutos finais. A saída comum chama `leave(false)`, volta
@@ -73,7 +77,9 @@ editar opiniões ou alterar pagamento, repasse, reembolso, booking ou confirmaç
 de serviço.
 
 A experiência de preparação usa capa abstrata da terapia, horário, contador,
-status de entrada, preflight e estados honestos de erro/reconexão. Música de
+status de entrada, preflight e estados honestos de erro/reconexão. Na sala de
+vídeo ativa, a contagem antes do início não é exibida; após o início, aparece
+somente o tempo restante até o fim agendado. Música de
 ambiente é opcional e só pode ser reproduzida depois de uma interação explícita
 do usuário; sem asset ou fonte licenciada, o controle permanece inativo. Nenhum
 retrato fictício, áudio, vídeo, transcrição, URL privada, JWT ou identificador

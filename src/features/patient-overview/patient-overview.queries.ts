@@ -5,6 +5,7 @@ import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 
+import { resolvePatientAvatarUrl } from "./patient-overview.avatar";
 import {
   moodKeys,
   type MoodKey,
@@ -41,6 +42,7 @@ type ProfileRow = {
 };
 
 type PatientProfileRow = {
+  avatar_url: string | null;
   id: string;
 };
 
@@ -188,7 +190,7 @@ async function getSupabasePatientOverview(
     ),
     supabaseRequest<PatientProfileRow[]>(
       config,
-      `/rest/v1/patient_profiles?select=id&user_id=eq.${encodeURIComponent(profileId)}&limit=1`,
+      `/rest/v1/patient_profiles?select=id,avatar_url&user_id=eq.${encodeURIComponent(profileId)}&limit=1`,
     ),
   ]);
   const patient = patientProfiles[0];
@@ -342,7 +344,7 @@ async function getSupabasePatientOverview(
     latestMoodCheckin: toMoodCheckin(moods[0]),
     moodOptions,
     patient: {
-      avatarUrl: profile.avatar_url,
+      avatarUrl: resolvePatientAvatarUrl(patient.avatar_url, profile.avatar_url),
       id: profile.id,
       name: profile.display_name ?? "Paciente",
       patientProfileId: patient.id,

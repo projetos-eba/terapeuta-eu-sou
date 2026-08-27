@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ZoomAccessReason } from "@/domain/tes";
 
 import {
+  formatActiveSessionCountdown,
   formatScheduledSessionCountdown,
   isFinalEndAvailable,
   ZoomVideoSessionAdapter,
@@ -140,8 +141,68 @@ describe("ZoomVideoSessionAdapter", () => {
       "Paciente",
       undefined,
     );
+    expect(mockStream.muteAudio).toHaveBeenCalled();
+    expect(mockStream.unmuteAudio).not.toHaveBeenCalled();
+    expect(mockStream.startVideo).not.toHaveBeenCalled();
     expect(document.body.textContent).not.toMatch(/jwt-token|secret|token/i);
   });
+
+  it.each(["patient", "therapist"] as const)(
+    "applies both preflight media preferences for the %s in the active room",
+    async (actorRole) => {
+      const cameraTrack = { stop: vi.fn() };
+      const audioTrack = { stop: vi.fn() };
+      const cameraStream = {
+        getTracks: () => [cameraTrack],
+      } as unknown as MediaStream;
+      const audioStream = {
+        getTracks: () => [audioTrack],
+      } as unknown as MediaStream;
+      const getUserMedia = vi.fn(
+        async (constraints: MediaStreamConstraints) =>
+          constraints.video ? cameraStream : audioStream,
+      );
+
+      vi.stubGlobal("fetch", accessResponse(actorRole === "therapist" ? 1 : 0));
+      vi.stubGlobal("navigator", {
+        ...navigator,
+        mediaDevices: { getUserMedia },
+      });
+      vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+
+      render(
+        <ZoomVideoSessionAdapter
+          access={allowedAccess}
+          actorRole={actorRole}
+          bookingId="96000000-0000-4000-8000-000000000001"
+        />,
+      );
+
+      fireEvent.click(
+        screen.getAllByRole("button", { name: "Testar câmera" })[0],
+      );
+      expect(await screen.findByRole("status")).toHaveTextContent(
+        "Sua prévia de câmera está pronta.",
+      );
+      fireEvent.click(
+        screen.getAllByRole("button", { name: "Testar áudio" })[0],
+      );
+      expect(await screen.findByRole("status")).toHaveTextContent(
+        "Seu microfone está sendo testado agora.",
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: /entrar na sala/i }));
+
+      expect(
+        await screen.findByText(/voce entrou no encontro|responsavel/i),
+      ).toBeInTheDocument();
+      await waitFor(() => {
+        expect(mockStream.unmuteAudio).toHaveBeenCalled();
+        expect(mockStream.startVideo).toHaveBeenCalled();
+        expect(mockStream.attachVideo).toHaveBeenCalledWith(7, 2);
+      });
+    },
+  );
 
   it("keeps the authenticated TES session active while the encounter is open", async () => {
     const fetchMock = vi.fn((url: string) => {
@@ -872,6 +933,36 @@ describe("formatScheduledSessionCountdown", () => {
         serverClockOffsetMs: 0,
       }),
     ).toBe("Tempo restante do encontro: 40:00");
+  });
+});
+
+describe("formatActiveSessionCountdown", () => {
+  const access = {
+    ...allowedAccess,
+    scheduledEndsAt: "2026-08-25T18:35:00.000Z",
+    scheduledStartsAt: "2026-08-25T17:45:00.000Z",
+  };
+
+  it("hides the pre-start countdown in the active video room", () => {
+    expect(
+      formatActiveSessionCountdown({
+        access,
+        actorRole: "patient",
+        clientNowMs: Date.parse("2026-08-25T17:44:59.999Z"),
+        serverClockOffsetMs: 0,
+      }),
+    ).toBe("");
+  });
+
+  it("shows the scheduled end countdown after the session starts", () => {
+    expect(
+      formatActiveSessionCountdown({
+        access,
+        actorRole: "therapist",
+        clientNowMs: Date.parse("2026-08-25T17:55:00.000Z"),
+        serverClockOffsetMs: 0,
+      }),
+    ).toBe("Tempo restante da sessão: 40:00");
   });
 });
 

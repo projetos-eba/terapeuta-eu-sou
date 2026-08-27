@@ -91,10 +91,15 @@ async function getTherapyImages(therapyIds: string[]) {
   }
 }
 
+type PublicTherapistProfileQueryOptions = {
+  fresh?: boolean;
+};
+
 export async function getPublicTherapistProfile(
   slug: string,
+  options: PublicTherapistProfileQueryOptions = {},
 ): Promise<TherapistProfileData | null> {
-  const result = await getPublicTherapistProfileResult(slug);
+  const result = await getPublicTherapistProfileResult(slug, options);
 
   return result.status === "success" || result.status === "demo"
     ? result.data
@@ -103,6 +108,7 @@ export async function getPublicTherapistProfile(
 
 export async function getPublicTherapistProfileResult(
   slug: string,
+  options: PublicTherapistProfileQueryOptions = {},
 ): Promise<PublicTherapistProfileResult> {
   if (!hasSupabaseConfig()) {
     if (isPublicDemoDataEnabled()) {
@@ -126,12 +132,12 @@ export async function getPublicTherapistProfileResult(
         // Identity is mutable independently from editorial publication. A
         // stale positive match would prevent an old slug from reaching the
         // redirect resolver after a rename.
-        { fresh: true },
+        { fresh: options.fresh ?? true },
       ),
       fetchView<ContentRow>(
         "public_therapist_profile_content_v",
         `select=*&slug=eq.${slugFilter(slug)}&limit=1`,
-        { fresh: true },
+        { fresh: options.fresh ?? false },
       ),
       fetchView<ServiceRow>(
         "public_therapist_profile_services_v",
@@ -142,6 +148,7 @@ export async function getPublicTherapistProfileResult(
       fetchView<ReviewRow>(
         "public_therapist_profile_reviews_v",
         `select=*&therapist_slug=eq.${slugFilter(slug)}&order=published_at.desc&limit=12`,
+        { fresh: options.fresh ?? false },
       ),
     ]);
 

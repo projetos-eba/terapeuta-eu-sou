@@ -263,6 +263,9 @@ function CheckoutReturnWithoutSession({
           <h2 className="mt-2 text-2xl font-extrabold text-brand-deep">
             TES {planDefinition.name}
           </h2>
+          <p className="mt-2 text-sm font-extrabold text-brand-primary">
+            {planDefinition.priceLabel}
+          </p>
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
             Entre novamente para acompanhar a confirmação e acessar sua área
             profissional. Nenhum plano pago é liberado apenas por esta página.

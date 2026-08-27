@@ -88,6 +88,18 @@ describe("PublicHeader", () => {
     ).toHaveAttribute("href", "/terapeutas");
   });
 
+  it("does not look up the viewer while rendering a static preview", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<PublicHeader staticPreview />);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("link", { name: /^começar minha jornada$/i }),
+    ).toBeInTheDocument();
+  });
+
   it("uses the sidebar breakpoint for all non-large header controls", async () => {
     vi.stubGlobal(
       "fetch",
@@ -99,9 +111,9 @@ describe("PublicHeader", () => {
 
     render(<PublicHeader />);
 
-    const desktopControls = screen
-      .getByRole("link", { name: /^começar minha jornada$/i })
-      .parentElement;
+    const desktopControls = screen.getByRole("link", {
+      name: /^começar minha jornada$/i,
+    }).parentElement;
 
     expect(desktopControls).toHaveClass("hidden", "xl:flex");
     expect(screen.getByRole("button", { name: "Abrir menu" })).toHaveClass(

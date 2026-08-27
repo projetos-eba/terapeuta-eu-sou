@@ -86,10 +86,89 @@ describe("TherapistProfilePage video block", () => {
     ).toHaveClass("size-[52px]");
   });
 
+  it("renders a static preview without public actions or background requests", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <TherapistProfilePage
+        mode="preview"
+        profile={{
+          ...baseProfile,
+          isAcceptingBookings: true,
+          services: [
+            {
+              availability: [
+                {
+                  date: "2026-08-26",
+                  dateLabel: "26/08",
+                  dayLabel: "qua",
+                  slots: [
+                    {
+                      dateLabel: "26/08",
+                      dayLabel: "qua",
+                      endsAt: "2026-08-26T15:50:00.000Z",
+                      serviceId: "service-1",
+                      startsAt: "2026-08-26T15:00:00.000Z",
+                      timeLabel: "12:00",
+                    },
+                  ],
+                },
+              ],
+              bookingUrl: "/reserva?serviceId=service-1",
+              currency: "BRL",
+              description: "Atendimento online com presença.",
+              durationMinutes: 50,
+              id: "service-1",
+              imageUrl: null,
+              priceCents: 12000,
+              priceLabel: "R$ 120",
+              themeNames: [],
+              therapyId: "therapy-1",
+              therapyName: "Reiki",
+              therapySlug: "reiki",
+              title: "Reiki online",
+            },
+          ],
+          video: {
+            provider: "external",
+            thumbnailUrl: "/therapists/ana-oliveira.png",
+            title: "Vídeo de apresentação",
+            url: "https://example.com/video",
+          },
+        }}
+        reviews={[]}
+      />,
+    );
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", {
+        name: "Adicionar aos favoritos de Ana Oliveira",
+      }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Compartilhar perfil" }),
+    ).toBeNull();
+    expect(screen.queryByRole("link", { name: "Agendar" })).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "Vídeo de apresentação" }),
+    ).toBeNull();
+    expect(screen.queryByTitle("Vídeo de apresentação")).toBeNull();
+  });
+
   it("uses the plural label when the profile has zero reviews", () => {
     render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
 
     expect(screen.getByText("0 avaliações")).toBeInTheDocument();
+  });
+
+  it("does not render legacy profile tags in the public hero", () => {
+    render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
+
+    expect(
+      screen.queryByText("Reiki", { exact: true }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps an unbroken service description inside the public card", () => {

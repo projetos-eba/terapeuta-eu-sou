@@ -191,7 +191,8 @@ function mapCheckoutError(error: SupabaseFunctionError) {
   ) {
     return {
       code: "CONFIGURATION_UNAVAILABLE",
-      message: "O pagamento está temporariamente indisponível. Tente novamente.",
+      message:
+        "O pagamento está temporariamente indisponível. Tente novamente.",
       status: 503,
     };
   }

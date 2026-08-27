@@ -86,4 +86,35 @@ describe("parseTherapistServicesCommand", () => {
       }),
     ).toThrow(TherapistServicesContractError);
   });
+
+  it.each([
+    [19, false],
+    [20, true],
+    [120, true],
+    [121, false],
+    [20.5, false],
+  ])("validates service duration %s", (durationMinutes, isValid) => {
+    const command = {
+      action: "create" as const,
+      description: "Sessao complementar por video.",
+      durationMinutes,
+      interestIds: [],
+      priceCents: 12000,
+      requestId,
+      themeIds: [themeId],
+      therapyId,
+      title: "Reiki online",
+    };
+
+    if (isValid) {
+      expect(parseTherapistServicesCommand(command)).toMatchObject({
+        durationMinutes,
+      });
+      return;
+    }
+
+    expect(() => parseTherapistServicesCommand(command)).toThrow(
+      TherapistServicesContractError,
+    );
+  });
 });

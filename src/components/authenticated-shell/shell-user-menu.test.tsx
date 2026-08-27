@@ -64,4 +64,26 @@ describe("ShellUserMenu", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByRole("link", { name: "Minha conta" })).toBeNull();
   });
+
+  it("renders the patient photo from the public profile media bucket", () => {
+    render(
+      <ShellUserMenu
+        accountHref="/app/configuracoes"
+        logoutHref="/cliente/login"
+        user={{
+          avatarUrl:
+            "https://project.supabase.co/storage/v1/object/public/patient-public-media/patient-id/avatar-photo.webp",
+          email: "ana@example.test",
+          name: "Ana",
+          roleLabel: "Paciente",
+        }}
+      />,
+    );
+
+    const image = document.querySelector("img");
+    expect(image).not.toBeNull();
+    expect(decodeURIComponent(image?.getAttribute("src") ?? "")).toContain(
+      "patient-public-media/patient-id/avatar-photo.webp",
+    );
+  });
 });

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Bell,
   CalendarDays,
   CheckCircle2,
   CreditCard,
@@ -62,11 +61,22 @@ export function TherapistSettingsPage({
     tone: "error" | "success";
   } | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const successMessageRef = useRef<HTMLDivElement>(null);
 
   const hasChanges = useMemo(
     () => JSON.stringify(fields) !== JSON.stringify(savedFields),
     [fields, savedFields],
   );
+
+  useEffect(() => {
+    if (message?.tone !== "success") return;
+
+    const successMessage = successMessageRef.current;
+    if (successMessage && typeof successMessage.scrollIntoView === "function") {
+      successMessage.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    successMessage?.focus({ preventScroll: true });
+  }, [message]);
 
   async function submit() {
     const validation = validateSettingsFields(fields);
@@ -123,8 +133,10 @@ export function TherapistSettingsPage({
 
       {message?.tone === "success" ? (
         <div
-          className="rounded-card border border-status-success/30 bg-status-successBg p-4 text-sm font-bold leading-6 text-status-success"
+          ref={successMessageRef}
+          className="scroll-mt-6 rounded-card border border-status-success/30 bg-status-successBg p-4 text-sm font-bold leading-6 text-status-success"
           role="status"
+          tabIndex={-1}
         >
           {message.text}
         </div>
@@ -132,7 +144,7 @@ export function TherapistSettingsPage({
 
       <StatusGuideSection />
 
-      <AppPageGrid>
+      <AppPageGrid className="xl:items-start">
         <AppPageMain>
           <SubscriptionManagementPanel data={planData} />
           <AccountSection
@@ -184,30 +196,9 @@ export function TherapistSettingsPage({
           <PrivacySection settings={settings} />
         </AppPageMain>
 
-        <AppPageAside>
+        <AppPageAside className="content-start">
           <StatusPanel settings={settings} />
           <ProtectedDataPanel />
-          <SettingsShortcutSection
-            compact
-            items={[
-              {
-                description: "Veja avisos e peça ajuda quando precisar.",
-                href: routes.therapist.messages,
-                icon: Bell,
-                label: "Abrir mensagens",
-                title: "Notificações",
-              },
-              {
-                description:
-                  "Leia como cuidamos dos seus dados e da sua segurança.",
-                href: routes.public.privacy,
-                icon: ShieldCheck,
-                label: "Ver políticas",
-                title: "Privacidade",
-              },
-            ]}
-            title="Preferências"
-          />
         </AppPageAside>
       </AppPageGrid>
       {feedback ? (
@@ -284,28 +275,32 @@ function AccountSection({
     setCepLookup("loading");
     setCepLookupMessage(null);
 
-    void lookupTherapistAddressByCep(digits, controller.signal).then((result) => {
-      if (controller.signal.aborted) return;
-      if (result.status === "error") {
-        setCepLookup("error");
-        setCepLookupMessage(result.error.message);
-        return;
-      }
+    void lookupTherapistAddressByCep(digits, controller.signal).then(
+      (result) => {
+        if (controller.signal.aborted) return;
+        if (result.status === "error") {
+          setCepLookup("error");
+          setCepLookupMessage(result.error.message);
+          return;
+        }
 
-      const current = latestIdentity.current;
-      onChange({
-        identity: {
-          ...current,
-          city: result.data.city || current.city,
-          neighborhood: result.data.neighborhood || current.neighborhood,
-          postalCode: result.data.postalCode,
-          state: result.data.state || current.state,
-          street: result.data.street || current.street,
-        },
-      });
-      setCepLookup("idle");
-      setCepLookupMessage("Endereço localizado. Confira e edite os campos se necessário.");
-    });
+        const current = latestIdentity.current;
+        onChange({
+          identity: {
+            ...current,
+            city: result.data.city || current.city,
+            neighborhood: result.data.neighborhood || current.neighborhood,
+            postalCode: result.data.postalCode,
+            state: result.data.state || current.state,
+            street: result.data.street || current.street,
+          },
+        });
+        setCepLookup("idle");
+        setCepLookupMessage(
+          "Endereço localizado. Confira e edite os campos se necessário.",
+        );
+      },
+    );
 
     return () => controller.abort();
   }, [onChange, postalCode]);
@@ -604,12 +599,10 @@ function PrivacySection({ settings }: { settings: TherapistSettingsData }) {
 }
 
 function SettingsShortcutSection({
-  compact = false,
   description,
   items,
   title,
 }: {
-  compact?: boolean;
   description?: string;
   items: Array<{
     description: string;
@@ -630,7 +623,7 @@ function SettingsShortcutSection({
           </p>
         ) : null}
       </div>
-      <div className={compact ? "grid gap-3" : "grid gap-4"}>
+      <div className="grid gap-4">
         {items.map((item) => (
           <ShortcutItem item={item} key={item.title} />
         ))}
@@ -673,9 +666,9 @@ function ShortcutItem({
 
 function StatusPanel({ settings }: { settings: TherapistSettingsData }) {
   return (
-    <AppPageSection className="grid gap-5">
+    <AppPageSection className="h-fit self-start">
       <SectionHeading icon={CheckCircle2} title="Estado atual" />
-      <div className="grid gap-3">
+      <div className="mt-5 grid content-start gap-3">
         <ReadOnlyFact label="Plano" value={planLabel(settings.profile.plan)} />
         <ReadOnlyFact
           label="Aprovação"
@@ -702,7 +695,10 @@ function StatusPanel({ settings }: { settings: TherapistSettingsData }) {
           value={settings.profile.publicName || "Ainda sem nome público"}
         />
       </div>
-      <TESButton className="rounded-lg" href={routes.therapist.plan}>
+      <TESButton
+        className="mt-5 h-fit w-fit self-start rounded-lg"
+        href={routes.therapist.plan}
+      >
         Ver plano
       </TESButton>
     </AppPageSection>
@@ -755,9 +751,9 @@ function StatusGuideSection() {
 
 function ProtectedDataPanel() {
   return (
-    <AppPageSection className="grid gap-4">
+    <AppPageSection className="h-fit self-start">
       <SectionHeading icon={ShieldCheck} title="Dados protegidos" />
-      <ul className="grid gap-3 text-sm font-semibold leading-6 text-tesText-secondary">
+      <ul className="mt-5 grid content-start gap-4 text-sm font-semibold leading-6 text-tesText-secondary">
         <li>
           Mudanças de plano começam em Meu plano; cancelamentos e mudanças
           futuras ficam nesta área.

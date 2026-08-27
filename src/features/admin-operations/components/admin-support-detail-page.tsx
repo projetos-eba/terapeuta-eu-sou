@@ -5,6 +5,12 @@ import {
   AppPageMain,
 } from "@/components/app-page";
 import { routes } from "@/lib/routes";
+import { AdminSupportDetailLiveRefresh } from "@/features/support/components/support-live-refresh";
+import {
+  formatSupportTicketProtocol,
+  getSupportTicketCategoryLabel,
+  getSupportTicketStatusPresentation,
+} from "@/features/support/support-ticket-presentation";
 
 import type { AdminOperationDetailPageData } from "../admin-operations.types";
 import { AdminSupportConversationPanel } from "./admin-support-conversation-panel";
@@ -35,7 +41,14 @@ export function AdminSupportDetailPage({
   const ticketFields = fieldMap(ticket?.fields ?? []);
   const relationshipFields = fieldMap(relationships?.fields ?? []);
   const traceFields = fieldMap(traceability?.fields ?? []);
-  const status = formatStatusLabel(data.statusLabel);
+  const status = getSupportTicketStatusPresentation(
+    data.statusLabel ?? "",
+    "admin",
+  ).label;
+  const protocol = ticketFields.get("Protocolo");
+  const heading = protocol
+    ? `Chamado ${formatSupportTicketProtocol(protocol)}`
+    : "Detalhes do suporte";
 
   const stats = [
     statItem("Prioridade", formatPriority(ticketFields.get("Prioridade"))),
@@ -65,18 +78,23 @@ export function AdminSupportDetailPage({
 
   return (
     <AppPageContainer className="max-w-[1320px] py-5 lg:py-6">
+      <AdminSupportDetailLiveRefresh ticketId={data.id} />
       <div className="space-y-6">
         <ProductBackLink href={data.backHref} label="Voltar para suporte" />
         <div className="space-y-4">
           <ProductBreadcrumbs
             items={[
               { href: routes.admin.support, label: "Suporte" },
-              { label: data.title },
+              { label: heading },
             ]}
           />
           <EditorialHeader
-            subtitle="Acompanhe a solicitação, o contexto disponível e as ações administrativas registradas."
-            title="Detalhes do suporte"
+            subtitle={
+              ticketFields.get("Categoria")
+                ? getSupportTicketCategoryLabel(ticketFields.get("Categoria") as string)
+                : "Acompanhe a solicitação, o contexto disponível e as ações administrativas registradas."
+            }
+            title={heading}
           />
         </div>
 
@@ -112,9 +130,19 @@ export function AdminSupportDetailPage({
             traceFields.get("Criado em")
               ? [
                   {
-                    label: "Solicitação recebida",
-                    value: traceFields.get("Criado em") as string,
+                    label: protocol ? "Protocolo" : "Solicitação recebida",
+                    value: protocol
+                      ? formatSupportTicketProtocol(protocol)
+                      : (traceFields.get("Criado em") as string),
                   },
+                  ...(protocol
+                    ? [
+                        {
+                          label: "Solicitação recebida",
+                          value: traceFields.get("Criado em") as string,
+                        },
+                      ]
+                    : []),
                 ]
               : undefined
           }
@@ -176,7 +204,11 @@ function statItem(label: string, value?: string) {
 
 function statusTone(status: string) {
   if (status === "Resolvido") return "success" as const;
-  if (status === "Aberto" || status === "Em andamento")
+  if (
+    status === "Novo chamado" ||
+    status === "Em atendimento" ||
+    status === "Aguardando resposta da equipe TES"
+  )
     return "warning" as const;
   return "primary" as const;
 }

@@ -14,6 +14,7 @@ import {
 import {
   TherapistPlan,
   getPlanFeatureDefinition,
+  getPlanSignupHref,
   planIncludesFeature,
   therapistPlanDefinitions,
   therapistPlanFeatureDefinitions,
@@ -292,6 +293,18 @@ export function PlansPreviewSection() {
           <p className="mt-4 text-sm font-semibold leading-6 text-white/82">
             Recursos pensados para facilitar sua rotina e cuidar do que importa:
             suas conexões.
+          </p>
+        </div>
+
+        <div className="mx-auto mt-7 max-w-3xl rounded-[18px] border border-white/25 bg-white/10 px-5 py-4 text-center">
+          <p className="text-sm font-extrabold text-white">
+            Oferta de lançamento Premium Plus
+          </p>
+          <p className="mt-1 text-sm font-semibold leading-6 text-white/85">
+            De 1 a 10 de setembro de 2026, use{" "}
+            <strong>TERAPEUTAFUNDADOR</strong>: 3 meses grátis e depois R$ 79,90
+            por mês enquanto a assinatura permanecer ativa e sem mudança de
+            plano.
           </p>
         </div>
 

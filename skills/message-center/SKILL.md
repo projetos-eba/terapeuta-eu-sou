@@ -48,7 +48,7 @@ rotas canônicas do perfil atual, nunca para o perfil público do terapeuta.
 ## Contratos atuais
 
 - Leitura de cliente/terapeuta: `conversations` e `messages`.
-- Plataforma/suporte: `support_tickets` e `notifications`.
+- Plataforma: `notifications`. Suporte: `support_tickets` e `support_ticket_messages`, exibidos em seção própria para paciente e terapeuta.
 - Prévia server-side de mensagem: `POST /api/messages/preview-template`.
 - Envio de template entre participantes: `POST /api/messages/send-template`.
 - Abertura de chamado de suporte: `POST /api/support/tickets`.
@@ -78,6 +78,10 @@ validado contra o solicitante e `requestId` mantém idempotência. O detalhe e a
 resposta usam `/api/support/tickets/:ticketId`; a thread vive em
 `support_ticket_messages` e não compartilha tabelas, composer ou endpoint com
 participantes.
+
+Cada card de chamado apresenta categoria, assunto, última mensagem pública,
+badge de quem precisa agir, última atualização e protocolo persistido. Não usar
+UUID como protocolo e não duplicar chamados em avisos da plataforma.
 
 ## UI
 

@@ -15,19 +15,23 @@ type AvailabilitySelectorProps = {
 };
 
 export function AvailabilitySelector({
+  staticPreview = false,
   services,
   therapistSlug,
-}: AvailabilitySelectorProps) {
+}: AvailabilitySelectorProps & { staticPreview?: boolean }) {
   const [selectedServiceId, setSelectedServiceId] = useState(
     services[0]?.id ?? "",
   );
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const selectedService = useMemo(
+  const selectedInteractiveService = useMemo(
     () =>
       services.find((service) => service.id === selectedServiceId) ??
       services[0],
     [selectedServiceId, services],
   );
+  const selectedService = staticPreview
+    ? services[0]
+    : selectedInteractiveService;
   const days = selectedService?.availability ?? [];
   const compactDays = days.slice(0, 3);
 
@@ -52,20 +56,27 @@ export function AvailabilitySelector({
 
         {services.length > 1 ? (
           <div className="flex flex-wrap gap-2">
-            {services.map((service) => (
-              <button
-                key={service.id}
-                type="button"
-                onClick={() => setSelectedServiceId(service.id)}
-                className={
-                  service.id === selectedService?.id
-                    ? "min-h-11 rounded-full bg-white px-4 py-2 text-sm font-bold text-brand-primary"
-                    : "min-h-11 rounded-full border border-white/30 px-4 py-2 text-sm font-bold text-white"
-                }
-              >
-                {service.therapyName}
-              </button>
-            ))}
+            {services.map((service) => {
+              const className =
+                service.id === selectedService?.id
+                  ? "min-h-11 rounded-full bg-white px-4 py-2 text-sm font-bold text-brand-primary"
+                  : "min-h-11 rounded-full border border-white/30 px-4 py-2 text-sm font-bold text-white";
+
+              return staticPreview ? (
+                <span className={className} key={service.id}>
+                  {service.therapyName}
+                </span>
+              ) : (
+                <button
+                  key={service.id}
+                  type="button"
+                  onClick={() => setSelectedServiceId(service.id)}
+                  className={className}
+                >
+                  {service.therapyName}
+                </button>
+              );
+            })}
           </div>
         ) : null}
       </div>
@@ -81,24 +92,35 @@ export function AvailabilitySelector({
                 <p>{day.dayLabel}</p>
                 <p>{day.dateLabel}</p>
               </div>
-              <div className="grid grid-cols-5 gap-2 sm:gap-3">
-                {day.slots.slice(0, 5).map((slot) => (
-                  <TrackedBookingLink
-                    key={`${slot.serviceId}-${slot.startsAt}`}
-                    href={buildPublicReservationUrl({
-                      durationMinutes: selectedService?.durationMinutes ?? 50,
-                      priceCents: selectedService?.priceCents ?? 0,
-                      serviceId: slot.serviceId,
-                      slotStartsAt: slot.startsAt,
-                      therapistSlug,
-                    })}
-                    serviceId={slot.serviceId}
-                    therapistSlug={therapistSlug}
-                    className="min-w-0 rounded-[9px] bg-brand-primaryPressed px-1 py-3 text-center text-sm font-medium sm:px-4"
-                  >
-                    {slot.timeLabel}
-                  </TrackedBookingLink>
-                ))}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5 sm:gap-3">
+                {day.slots.slice(0, 5).map((slot, index) => {
+                  const className = `min-w-0 rounded-[9px] bg-brand-primaryPressed px-2 py-3 text-center text-sm font-medium sm:px-4 ${index >= 4 ? "hidden sm:inline-flex" : "inline-flex"}`;
+
+                  return staticPreview ? (
+                    <span
+                      className={className}
+                      key={`${slot.serviceId}-${slot.startsAt}`}
+                    >
+                      {slot.timeLabel}
+                    </span>
+                  ) : (
+                    <TrackedBookingLink
+                      key={`${slot.serviceId}-${slot.startsAt}`}
+                      href={buildPublicReservationUrl({
+                        durationMinutes: selectedService?.durationMinutes ?? 50,
+                        priceCents: selectedService?.priceCents ?? 0,
+                        serviceId: slot.serviceId,
+                        slotStartsAt: slot.startsAt,
+                        therapistSlug,
+                      })}
+                      serviceId={slot.serviceId}
+                      therapistSlug={therapistSlug}
+                      className={className}
+                    >
+                      {slot.timeLabel}
+                    </TrackedBookingLink>
+                  );
+                })}
               </div>
             </div>
           ))
@@ -109,16 +131,22 @@ export function AvailabilitySelector({
         )}
       </div>
 
-      <button
-        className="mx-auto mt-8 block w-fit text-base font-medium outline-none transition hover:text-white/80 focus-visible:ring-4 focus-visible:ring-white/20"
-        disabled={!selectedService || days.length === 0}
-        onClick={() => setIsCalendarOpen(true)}
-        type="button"
-      >
-        Ver agenda completa e mais horários →
-      </button>
+      {staticPreview ? (
+        <span className="mx-auto mt-8 block w-fit text-base font-medium">
+          Ver agenda completa e mais horários →
+        </span>
+      ) : (
+        <button
+          className="mx-auto mt-8 block w-fit text-base font-medium outline-none transition hover:text-white/80 focus-visible:ring-4 focus-visible:ring-white/20"
+          disabled={!selectedService || days.length === 0}
+          onClick={() => setIsCalendarOpen(true)}
+          type="button"
+        >
+          Ver agenda completa e mais horários →
+        </button>
+      )}
 
-      {isCalendarOpen && selectedService ? (
+      {!staticPreview && isCalendarOpen && selectedService ? (
         <AvailabilityCalendarModal
           days={days}
           onClose={() => setIsCalendarOpen(false)}

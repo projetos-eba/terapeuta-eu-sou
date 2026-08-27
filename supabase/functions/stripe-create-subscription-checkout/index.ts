@@ -8,7 +8,11 @@ import {
   success,
 } from "../_shared/payments/http.ts";
 import { createIdempotencyKey } from "../_shared/payments/idempotency.ts";
-import { getPaymentsConfig, getPaymentsRuntime } from "../_shared/payments/runtime.ts";
+import { assertFounderOfferEligibility } from "../_shared/payments/founder-offer.ts";
+import {
+  getPaymentsConfig,
+  getPaymentsRuntime,
+} from "../_shared/payments/runtime.ts";
 import { getLiveSmokeCheckoutDiscounts } from "../_shared/payments/live-smoke.ts";
 import {
   checkoutAmounts,
@@ -28,6 +32,8 @@ type Body = {
 type BillingPriceRow = {
   billing_plans: { code: string; name: string } | null;
   id: string;
+  interval: "month" | "year" | null;
+  offer_key: string | null;
   stripe_price_id: string | null;
   stripe_product_id: string | null;
   unit_amount_cents: number;
@@ -68,7 +74,9 @@ runtime.serve(async (request) => {
     const replaceCheckoutSessionId = optionalCheckoutSessionId(
       body.replaceCheckoutSessionId,
     );
-    const price = await getBillingPrice(client, plan);
+    let price = await getBillingPrice(client, {
+      plan,
+    });
     const liveSmokeDiscounts = getLiveSmokeCheckoutDiscounts({
       couponId: runtime.env.get("PAYMENTS_LIVE_SMOKE_COUPON_ID"),
       enabledValue: runtime.env.get("PAYMENTS_LIVE_SMOKE_ENABLED"),
@@ -96,43 +104,58 @@ runtime.serve(async (request) => {
     });
     const previousCheckout = replaceCheckoutSessionId
       ? await validateReplacementCheckout({
-        checkoutSessionId: replaceCheckoutSessionId,
-        customerId: customer.stripe_customer_id,
-        environment: config.environment,
-        plan,
-        stripe,
-        stripeMode: config.stripeMode,
-        therapistId: therapist.id,
-      })
+          checkoutSessionId: replaceCheckoutSessionId,
+          customerId: customer.stripe_customer_id,
+          environment: config.environment,
+          plan,
+          stripe,
+          stripeMode: config.stripeMode,
+          therapistId: therapist.id,
+        })
       : null;
     const eligibleProductId = body.promotionCode
       ? await resolveBillingProductId(stripe, price)
       : null;
     const promotion = body.promotionCode
       ? await resolvePromotionCode({
-        checkoutScope: "subscription",
-        code: body.promotionCode,
-        currency: "brl",
-        customerId: customer.stripe_customer_id,
-        eligibleProductId: eligibleProductId ?? undefined,
-        originalAmountCents: price.unit_amount_cents,
-        stripe,
-      })
+          checkoutScope: "subscription",
+          code: body.promotionCode,
+          currency: "brl",
+          customerId: customer.stripe_customer_id,
+          eligibleProductId: eligibleProductId ?? undefined,
+          originalAmountCents: price.unit_amount_cents,
+          stripe,
+        })
       : null;
+    if (promotion?.offerKey) {
+      assertFounderOfferEligibility({ plan, promotion });
+      price = await getBillingPrice(client, {
+        offerKey: promotion.offerKey,
+        plan,
+      });
+    }
+    if (!price.stripe_price_id) {
+      throw new DomainError(
+        "stripe_price_missing",
+        409,
+        "Catalogo Stripe ainda nao sincronizado.",
+      );
+    }
     const effectiveLiveSmokeDiscounts = promotion ? [] : liveSmokeDiscounts;
     const effectiveLiveSmokeCoupon = promotion ? null : liveSmokeCoupon;
     const existingOpenSession = replaceCheckoutSessionId
       ? null
       : await findReusableOpenSubscriptionCheckout({
-        customerId: customer.stripe_customer_id,
-        environment: config.environment,
-        liveSmokeCoupon: effectiveLiveSmokeCoupon,
-        mode: checkoutUiMode,
-        plan,
-        promotionCodeId: promotion?.promotionCodeId ?? null,
-        stripe,
-        therapistId: therapist.id,
-      });
+          customerId: customer.stripe_customer_id,
+          environment: config.environment,
+          billingPriceId: price.id,
+          liveSmokeCoupon: effectiveLiveSmokeCoupon,
+          mode: checkoutUiMode,
+          plan,
+          promotionCodeId: promotion?.promotionCodeId ?? null,
+          stripe,
+          therapistId: therapist.id,
+        });
 
     if (checkoutUiMode === "hosted" && existingOpenSession?.url) {
       return success({
@@ -158,10 +181,8 @@ runtime.serve(async (request) => {
 
     await assertNoActivePaidSubscription(client, therapist.id);
 
-    const successUrl =
-      `${config.siteUrl}/terapeuta/checkout?plan=${plan}&checkout=success&session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl =
-      `${config.siteUrl}/terapeuta/checkout?plan=${plan}&checkout=canceled`;
+    const successUrl = `${config.siteUrl}/terapeuta/checkout?plan=${plan}&checkout=success&session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${config.siteUrl}/terapeuta/checkout?plan=${plan}&checkout=canceled`;
     const idempotencyKey = createIdempotencyKey([
       "tes",
       config.stripeMode,
@@ -169,6 +190,7 @@ runtime.serve(async (request) => {
       checkoutUiMode,
       therapist.id,
       plan,
+      price.id,
       checkoutRequestId,
       promotion?.promotionCodeId ?? "no_promotion",
     ]);
@@ -187,13 +209,17 @@ runtime.serve(async (request) => {
       customer: customer.stripe_customer_id,
       line_items: [{ price: price.stripe_price_id, quantity: 1 }],
       metadata: {
+        billing_plan_price_id: price.id,
         checkout_request_id: checkoutRequestId,
         checkout_ui_mode: checkoutUiMode,
         environment: config.environment,
         ...(effectiveLiveSmokeCoupon
           ? { live_smoke_coupon: effectiveLiveSmokeCoupon }
           : {}),
-        ...(promotion ? { tes_promotion_code_id: promotion.promotionCodeId } : {}),
+        ...(promotion
+          ? { tes_promotion_code_id: promotion.promotionCodeId }
+          : {}),
+        ...(promotion?.offerKey ? { tes_offer_key: promotion.offerKey } : {}),
         plan_code: plan,
         ...(replaceCheckoutSessionId
           ? { replaces_checkout_session_id: replaceCheckoutSessionId }
@@ -208,13 +234,17 @@ runtime.serve(async (request) => {
       mode: "subscription" as const,
       subscription_data: {
         metadata: {
+          billing_plan_price_id: price.id,
           checkout_request_id: checkoutRequestId,
           checkout_ui_mode: checkoutUiMode,
           environment: config.environment,
           ...(effectiveLiveSmokeCoupon
             ? { live_smoke_coupon: effectiveLiveSmokeCoupon }
             : {}),
-          ...(promotion ? { tes_promotion_code_id: promotion.promotionCodeId } : {}),
+          ...(promotion
+            ? { tes_promotion_code_id: promotion.promotionCodeId }
+            : {}),
+          ...(promotion?.offerKey ? { tes_offer_key: promotion.offerKey } : {}),
           plan_code: plan,
           ...(replaceCheckoutSessionId
             ? { replaces_checkout_session_id: replaceCheckoutSessionId }
@@ -228,24 +258,25 @@ runtime.serve(async (request) => {
         },
       },
       locale: "pt-BR" as const,
+      payment_method_collection: "always" as const,
       ...(promotion
         ? { discounts: [{ promotion_code: promotion.promotionCodeId }] }
         : effectiveLiveSmokeDiscounts.length
-        ? { discounts: effectiveLiveSmokeDiscounts }
-        : {}),
+          ? { discounts: effectiveLiveSmokeDiscounts }
+          : {}),
     };
-    const params = checkoutUiMode === "embedded"
-      ? {
-        ...baseParams,
-        return_url:
-          `${config.siteUrl}/terapeuta/checkout?plan=${plan}&checkout=success&session_id={CHECKOUT_SESSION_ID}`,
-        ui_mode: "embedded_page" as const,
-      }
-      : {
-        ...baseParams,
-        cancel_url: cancelUrl,
-        success_url: successUrl,
-      };
+    const params =
+      checkoutUiMode === "embedded"
+        ? {
+            ...baseParams,
+            return_url: `${config.siteUrl}/terapeuta/checkout?plan=${plan}&checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+            ui_mode: "embedded_page" as const,
+          }
+        : {
+            ...baseParams,
+            cancel_url: cancelUrl,
+            success_url: successUrl,
+          };
     let session: Awaited<ReturnType<typeof stripe.checkout.sessions.create>>;
     try {
       session = await stripe.checkout.sessions.create(params, {
@@ -274,8 +305,8 @@ runtime.serve(async (request) => {
               candidate.metadata?.replaces_checkout_session_id ===
                 previousCheckout.id,
           );
-          const isIdempotentRetry = previousState.status === "expired" &&
-            !competingReplacement;
+          const isIdempotentRetry =
+            previousState.status === "expired" && !competingReplacement;
           if (!isIdempotentRetry) throw new Error("replacement_conflict");
         } catch {
           await expireCheckoutQuietly(stripe, session.id);
@@ -344,10 +375,9 @@ function normalizeCheckoutUiMode(value: unknown): "embedded" | "hosted" {
 }
 
 function isUuid(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-    .test(
-      value,
-    );
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
 }
 
 function optionalCheckoutSessionId(value: unknown) {
@@ -362,9 +392,18 @@ function optionalCheckoutSessionId(value: unknown) {
   return value;
 }
 
-async function getBillingPrice(client: SupabaseRestClient, plan: string) {
+async function getBillingPrice(
+  client: SupabaseRestClient,
+  input: {
+    offerKey?: string;
+    plan: string;
+  },
+) {
+  const visibilityFilter = input.offerKey
+    ? `offer_key=eq.${encodeURIComponent(input.offerKey)}`
+    : "is_public=eq.true&offer_key=is.null";
   const rows = await client.get<BillingPriceRow[]>(
-    `/rest/v1/billing_plan_prices?select=id,unit_amount_cents,stripe_price_id,stripe_product_id,billing_plans!inner(code,name)&billing_plans.code=eq.${plan}&is_active=eq.true&limit=1`,
+    `/rest/v1/billing_plan_prices?select=id,unit_amount_cents,interval,offer_key,stripe_price_id,stripe_product_id,billing_plans!inner(code,name)&billing_plans.code=eq.${input.plan}&is_active=eq.true&interval=eq.month&${visibilityFilter}&limit=1`,
   );
 
   if (!rows[0]) {
@@ -387,7 +426,7 @@ async function resolveBillingProductId(
   const stripePrice = await stripe.prices.retrieve(price.stripe_price_id);
   return typeof stripePrice.product === "string"
     ? stripePrice.product
-    : stripePrice.product?.id ?? null;
+    : (stripePrice.product?.id ?? null);
 }
 
 async function getOrCreateTherapistCustomer(input: {
@@ -398,21 +437,19 @@ async function getOrCreateTherapistCustomer(input: {
   therapist: { id: string; public_name: string };
 }) {
   const existing = await input.client.get<StripeCustomerRow[]>(
-    `/rest/v1/stripe_customers?select=id,stripe_customer_id&therapist_profile_id=eq.${
-      encodeURIComponent(
-        input.therapist.id,
-      )
-    }&role=eq.therapist&environment=eq.${
-      encodeURIComponent(input.environment)
-    }&limit=1`,
+    `/rest/v1/stripe_customers?select=id,stripe_customer_id&therapist_profile_id=eq.${encodeURIComponent(
+      input.therapist.id,
+    )}&role=eq.therapist&environment=eq.${encodeURIComponent(
+      input.environment,
+    )}&limit=1`,
   );
 
   if (existing[0]) return existing[0];
 
   const profileRows = await input.client.get<Array<{ email: string | null }>>(
-    `/rest/v1/profiles?select=email&id=eq.${
-      encodeURIComponent(input.emailUserId)
-    }&limit=1`,
+    `/rest/v1/profiles?select=email&id=eq.${encodeURIComponent(
+      input.emailUserId,
+    )}&limit=1`,
   );
   const customer = await input.stripe.customers.create({
     email: profileRows[0]?.email ?? undefined,
@@ -444,6 +481,7 @@ async function getOrCreateTherapistCustomer(input: {
 }
 
 async function findReusableOpenSubscriptionCheckout(input: {
+  billingPriceId: string;
   customerId: string;
   environment: string;
   mode: "embedded" | "hosted";
@@ -470,6 +508,7 @@ async function findReusableOpenSubscriptionCheckout(input: {
         ? Boolean(session.url)
         : Boolean(session.client_secret)) &&
       metadata.checkout_ui_mode === input.mode &&
+      metadata.billing_plan_price_id === input.billingPriceId &&
       metadata.environment === input.environment &&
       (input.liveSmokeCoupon
         ? metadata.live_smoke_coupon === input.liveSmokeCoupon
@@ -489,11 +528,9 @@ async function assertNoActivePaidSubscription(
   therapistProfileId: string,
 ) {
   const rows = await client.get<Array<{ id: string }>>(
-    `/rest/v1/therapist_subscriptions?select=id&therapist_profile_id=eq.${
-      encodeURIComponent(
-        therapistProfileId,
-      )
-    }&status=in.(trialing,active,past_due,unpaid)&limit=1`,
+    `/rest/v1/therapist_subscriptions?select=id&therapist_profile_id=eq.${encodeURIComponent(
+      therapistProfileId,
+    )}&status=in.(trialing,active,past_due,unpaid)&limit=1`,
   );
 
   if (rows[0]) {
@@ -517,9 +554,10 @@ async function validateReplacementCheckout(input: {
   const checkout = await input.stripe.checkout.sessions.retrieve(
     input.checkoutSessionId,
   );
-  const checkoutCustomer = typeof checkout.customer === "string"
-    ? checkout.customer
-    : checkout.customer?.id ?? null;
+  const checkoutCustomer =
+    typeof checkout.customer === "string"
+      ? checkout.customer
+      : (checkout.customer?.id ?? null);
 
   if (
     checkout.status !== "open" ||
