@@ -282,7 +282,7 @@ export function ZoomWaitingRoom({
       aria-label={`Sala de espera do ${audienceNoun}`}
       className="mx-auto grid w-full max-w-[1536px] gap-4 lg:gap-5"
     >
-      <div className="grid overflow-hidden rounded-[28px] border border-brand-lavender/75 bg-white shadow-soft lg:grid-cols-[minmax(0,1.02fr)_minmax(520px,0.98fr)]">
+      <div className="grid w-full min-w-0 overflow-hidden rounded-[28px] border border-brand-lavender/75 bg-white shadow-soft lg:grid-cols-[minmax(0,1.02fr)_minmax(520px,0.98fr)]">
         <WaitingRoomVisual
           cameraEnabled={cameraPreviewEnabled}
           deviceMessage={deviceMessage}
@@ -296,9 +296,9 @@ export function ZoomWaitingRoom({
           }}
         />
 
-        <div className="grid content-between gap-5 p-5 sm:p-7 lg:p-9">
-          <div className="grid gap-5">
-            <div className="grid gap-3">
+        <div className="grid min-w-0 content-between gap-5 p-5 sm:p-7 lg:p-9">
+          <div className="grid min-w-0 gap-5">
+            <div className="grid min-w-0 gap-3">
               <h2 className="max-w-[16ch] font-display text-[2.3rem] font-light italic leading-[1.02] text-brand-deep sm:text-5xl">
                 {isTooEarly
                   ? `A sala estará pronta no horário do ${audienceNoun}`
@@ -311,7 +311,7 @@ export function ZoomWaitingRoom({
               </p>
             </div>
 
-            <div className="grid gap-3 rounded-[18px] border border-brand-lavender/70 bg-surface-soft/60 p-4 sm:p-5">
+            <div className="grid min-w-0 gap-3 rounded-[18px] border border-brand-lavender/70 bg-surface-soft/60 p-4 sm:p-5">
               <div className="flex items-center gap-3">
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
                   <CalendarClock aria-hidden="true" size={22} />
@@ -338,7 +338,7 @@ export function ZoomWaitingRoom({
               ) : null}
             </div>
 
-            <div className="grid gap-3" aria-live="polite">
+            <div className="grid min-w-0 gap-3" aria-live="polite">
               {isEntryAvailable ? (
                 <button
                   className="inline-flex min-h-14 items-center justify-center gap-2 rounded-[18px] bg-brand-primary px-6 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
@@ -483,7 +483,7 @@ function WaitingRoomVisual({
   previewRef: (node: HTMLVideoElement | null) => void;
 }) {
   return (
-    <div className="relative isolate min-h-[330px] overflow-hidden bg-brand-lavenderSoft sm:min-h-[430px] lg:min-h-full">
+    <div className="relative isolate min-h-[330px] min-w-0 overflow-hidden bg-brand-lavenderSoft sm:min-h-[430px] lg:min-h-full">
       <Image
         alt=""
         className={cn(
@@ -563,11 +563,17 @@ function DeviceTestButtons({
   const isLoading = deviceTestState === "loading";
 
   return (
-    <div className={cn("grid grid-cols-2 gap-2", className)}>
+    <div
+      className={cn(
+        "grid min-w-0 grid-cols-1 gap-2 min-[420px]:grid-cols-2",
+        className,
+      )}
+      data-testid="waiting-room-device-tests"
+    >
       <button
         aria-label={cameraEnabled ? "Desligar teste da câmera" : "Testar câmera"}
         aria-pressed={cameraEnabled}
-        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[16px] border border-brand-lavender bg-white/90 px-3 text-sm font-extrabold text-brand-primary shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
+        className="inline-flex min-h-12 w-full min-w-0 items-center justify-center gap-2 rounded-[16px] border border-brand-lavender bg-white/90 px-3 text-sm font-extrabold text-brand-primary shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
         disabled={isLoading}
         onClick={onTestCamera}
         type="button"
@@ -580,7 +586,7 @@ function DeviceTestButtons({
           microphoneEnabled ? "Desligar teste do microfone" : "Testar áudio"
         }
         aria-pressed={microphoneEnabled}
-        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[16px] border border-brand-lavender bg-white/90 px-3 text-sm font-extrabold text-brand-primary shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
+        className="inline-flex min-h-12 w-full min-w-0 items-center justify-center gap-2 rounded-[16px] border border-brand-lavender bg-white/90 px-3 text-sm font-extrabold text-brand-primary shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
         disabled={isLoading}
         onClick={onTestAudio}
         type="button"

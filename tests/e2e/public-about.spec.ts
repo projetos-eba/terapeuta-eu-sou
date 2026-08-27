@@ -26,6 +26,13 @@ for (const viewport of viewports) {
     );
     await expect(heroImage).toHaveAttribute("src", /q=95/);
 
+    await expect(
+      page.getByAltText("Plataforma Terapeuta Eu Sou em notebook e celular"),
+    ).toHaveAttribute(
+      "src",
+      /platform-dashboard-2026-08-26-transparent\.png/,
+    );
+
     await expect(page.getByRole("heading", { level: 1 })).toHaveCSS(
       "font-weight",
       "300",

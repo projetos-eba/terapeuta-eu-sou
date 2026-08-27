@@ -173,6 +173,38 @@ test.describe("Zoom Video SDK session gate", () => {
         name: /Aguardando terapeuta entrar|Entrada liberada/,
       }),
     ).toBeVisible();
+
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            document.documentElement.scrollWidth -
+            document.documentElement.clientWidth,
+        ),
+      )
+      .toBeLessThanOrEqual(0);
+
+    const cameraButton = page
+      .getByRole("button", { name: "Testar câmera", exact: true })
+      .first();
+    const audioButton = page
+      .getByRole("button", { name: "Testar áudio", exact: true })
+      .first();
+    const [cameraBox, audioBox] = await Promise.all([
+      cameraButton.boundingBox(),
+      audioButton.boundingBox(),
+    ]);
+
+    expect(cameraBox).not.toBeNull();
+    expect(audioBox).not.toBeNull();
+    expect(cameraBox!.x).toBeGreaterThanOrEqual(0);
+    expect(audioBox!.x).toBeGreaterThanOrEqual(0);
+    expect(cameraBox!.x + cameraBox!.width).toBeLessThanOrEqual(390);
+    expect(audioBox!.x + audioBox!.width).toBeLessThanOrEqual(390);
+    expect(cameraBox!.height).toBeGreaterThanOrEqual(44);
+    expect(audioBox!.height).toBeGreaterThanOrEqual(44);
+    expect(audioBox!.y).toBeGreaterThanOrEqual(cameraBox!.y + cameraBox!.height);
+
     const waitingHeading = page.getByRole("heading", {
       name: "Aguardando terapeuta entrar",
     });

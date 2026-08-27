@@ -82,6 +82,9 @@ Backend:
   validade do cookie de refresh; não há logout por inatividade implementado.
 - O header público usa essa rota para trocar “Entrar | Cadastre-se” por
   “Olá, [Nome]”, com atalhos para painel, encontros e logout.
+- Após um `DELETE /api/auth/client/session` bem-sucedido, o header público deve
+  atualizar seu estado no cliente imediatamente para que “Entrar | Cadastre-se”
+  e as ações de login retornem no desktop e no mobile sem recarregar a página.
 
 Cada login bem-sucedido anuncia um marcador não sensível e estável por conta do
 papel cliente. Abas do mesmo navegador que exibem outra conta cliente são

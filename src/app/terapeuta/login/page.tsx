@@ -31,7 +31,7 @@ export default async function TherapistLoginPage({
   return (
     <TherapistAuthShell
       alwaysFallback
-      eyebrow="Acesso profissional"
+      eyebrow="Para terapeutas"
       title="Seu espaço começa aqui"
       description="Acesse sua área profissional e acompanhe sua rotina com clareza."
     >

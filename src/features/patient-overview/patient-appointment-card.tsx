@@ -20,7 +20,7 @@ export function PatientAppointmentCard({
   const isLive = appointment.status === "live";
 
   return (
-    <article className="relative grid gap-4 rounded-md border border-[var(--tes-color-border)] bg-[#fdfbff] p-3 pr-14 sm:grid-cols-[52px_minmax(150px,1fr)_minmax(135px,auto)_minmax(145px,auto)] sm:items-center sm:pr-3">
+    <article className="grid gap-4 rounded-md border border-[var(--tes-color-border)] bg-[#fdfbff] p-3 sm:grid-cols-[52px_minmax(0,1fr)_auto_minmax(135px,auto)_minmax(145px,auto)_44px] sm:items-center">
       <span className="relative inline-flex size-[52px] overflow-hidden rounded-full bg-brand-lavenderSoft">
         {appointment.professional.avatarUrl ? (
           <Image
@@ -43,6 +43,13 @@ export function PatientAppointmentCard({
           {appointment.therapyLabel}
         </p>
       </div>
+      <div className="sm:justify-self-start">
+        <span
+          className={`inline-flex min-h-7 items-center rounded-full px-3 text-[11px] font-medium whitespace-nowrap ${isLive ? "bg-[#fdebf2] text-[#ef5b7a]" : "bg-status-successBg text-status-success"}`}
+        >
+          {isLive ? "Ao vivo agora" : "Confirmada"}
+        </span>
+      </div>
       <dl className="grid gap-2 text-xs text-[var(--tes-color-text-secondary-app)] sm:block">
         <div className="flex items-center gap-2">
           <CalendarDays aria-hidden="true" className="size-4 text-black" />
@@ -64,11 +71,6 @@ export function PatientAppointmentCard({
         </div>
       </dl>
       <div className="flex flex-col gap-2 sm:items-end">
-        <span
-          className={`inline-flex min-h-7 items-center rounded-full px-3 text-[11px] font-medium ${isLive ? "bg-[#fdebf2] text-[#ef5b7a]" : "bg-status-successBg text-status-success"}`}
-        >
-          {isLive ? "Ao vivo agora" : "Confirmada"}
-        </span>
         {isLive ? (
           <>
             <Link
@@ -97,7 +99,7 @@ export function PatientAppointmentCard({
       </div>
       <EncounterActionsMenu
         bookingId={appointment.id}
-        className="absolute right-3 top-3"
+        className="relative justify-self-end"
       />
     </article>
   );

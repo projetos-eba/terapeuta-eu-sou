@@ -181,6 +181,14 @@ fantasmas. O `requestId` retornado pela emissao de acesso permite correlacionar
 o codigo sanitizado do browser com os logs da Edge Function sem persistir token
 ou mensagem interna do Zoom.
 
+A fila de limpeza vive no modulo, e nao na instancia React. Assim, navegar para
+tras e montar novamente a rota nao perde a Promise de `destroyClient` que ainda
+pertence a instancia anterior. Durante uma queda de internet, o relogio de
+recuperacao fica pausado e e retomado pelo evento `online`. Um evento
+`connection-change: Closed` so encerra o fluxo quando o codigo ou motivo indicar
+fim pelo host/remocao; fechamentos transitorios seguem a mesma recuperacao de
+`Fail`.
+
 A recuperacao automatica e controlada por
 `NEXT_PUBLIC_ZOOM_REJOIN_RECOVERY_V2`. Em build de producao ela permanece
 desabilitada quando a variavel nao for explicitamente `true`; desabilitar a

@@ -36,6 +36,19 @@ describe("Stripe promotion checkout contract", () => {
     );
   });
 
+  it("keeps the therapist checkout summary separate from the payment column", () => {
+    const checkout = read("src/app/terapeuta/checkout/page.tsx");
+
+    expect(checkout).not.toContain("<TherapistAuthShell");
+    expect(checkout).toContain("function TherapistCheckoutFrame");
+    expect(checkout).toContain(
+      "lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]",
+    );
+    expect(checkout.indexOf("checkout-plan-title")).toBeLessThan(
+      checkout.indexOf("<EmbeddedSubscriptionCheckout"),
+    );
+  });
+
   it("keeps the founder price selection server-side and collects a card", () => {
     const subscription = read(
       "supabase/functions/stripe-create-subscription-checkout/index.ts",

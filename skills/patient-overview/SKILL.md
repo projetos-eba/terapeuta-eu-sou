@@ -39,6 +39,10 @@ description: Implementar e manter a visão geral autenticada do paciente TES.
 - Ações e itens do shell só recebem link quando a página de destino está implementada; rotas planejadas sem página não devem gerar prefetch, redirect ou navegação para `404`.
 - Cards do paciente não recebem `meeting_url`; entrada no Zoom acontece sempre
   pelo detalhe do encontro e pela API autenticada de acesso ao Video SDK.
+- Na agenda da home, cada card de encontro mantém o status em uma coluna própria
+  entre a identidade do terapeuta e a data/horário; o botão principal e o menu de
+  ações ocupam áreas independentes para não se sobreporem. Em mobile, os mesmos
+  elementos seguem o fluxo vertical do card.
 - Copy de cuidado é acolhedora e não faz promessa de cura, diagnóstico ou resultado.
 
 ## QA

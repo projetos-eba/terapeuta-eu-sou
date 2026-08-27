@@ -73,6 +73,32 @@ describe("TherapistProfilePage video block", () => {
     expect(within(invitation as HTMLElement).queryByRole("link")).toBeNull();
   });
 
+  it("places the invitation copy below the video", () => {
+    render(
+      <TherapistProfilePage
+        profile={{
+          ...baseProfile,
+          video: {
+            provider: "external",
+            thumbnailUrl: "/therapists/ana-oliveira.png",
+            title: "Vídeo de apresentação",
+            url: "https://example.com/video",
+          },
+        }}
+        reviews={[]}
+      />,
+    );
+
+    const invitationCopy = screen.getByText(
+      baseProfile.content.invitationBody,
+    );
+    const videoLayout = invitationCopy.parentElement;
+
+    expect(videoLayout).toHaveClass("grid", "gap-5");
+    expect(videoLayout).not.toHaveClass("xl:grid-cols-[253px_1fr]");
+    expect(videoLayout?.children[1]).toBe(invitationCopy);
+  });
+
   it("keeps favorite and share icon buttons accessible", () => {
     render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
 

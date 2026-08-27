@@ -4,7 +4,7 @@ import { platformAssets } from "./platform-assets";
 
 describe("platformAssets", () => {
   it("keeps production assets in the dedicated public directory", () => {
-    expect(Object.values(platformAssets)).toHaveLength(18);
+    expect(Object.values(platformAssets)).toHaveLength(20);
 
     for (const asset of Object.values(platformAssets)) {
       expect(asset.src).toMatch(

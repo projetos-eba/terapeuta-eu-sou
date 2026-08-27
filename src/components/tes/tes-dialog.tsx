@@ -19,7 +19,9 @@ type TESDialogProps = {
   children: ReactNode;
   className?: string;
   description?: string;
+  hideHeader?: boolean;
   onClose: () => void;
+  overlayClassName?: string;
   title: string;
 };
 
@@ -27,7 +29,9 @@ export function TESDialog({
   children,
   className,
   description,
+  hideHeader = false,
   onClose,
+  overlayClassName,
   title,
 }: TESDialogProps) {
   const [mounted, setMounted] = useState(false);
@@ -96,51 +100,66 @@ export function TESDialog({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-overlay flex items-end justify-center bg-[var(--tes-color-overlay)] p-0 backdrop-blur-[2px] sm:items-center sm:p-6"
+      className={cn(
+        "fixed inset-0 z-overlay flex items-end justify-center bg-[var(--tes-color-overlay)] p-0 backdrop-blur-[2px] sm:items-center sm:p-6",
+        overlayClassName,
+      )}
       data-testid="tes-dialog-overlay"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onCloseRef.current();
       }}
     >
       <div
-        aria-describedby={description ? descriptionId : undefined}
-        aria-labelledby={titleId}
+        aria-describedby={!hideHeader && description ? descriptionId : undefined}
+        aria-label={hideHeader ? title : undefined}
+        aria-labelledby={!hideHeader ? titleId : undefined}
         aria-modal="true"
         className={cn(
-          "max-h-[calc(100dvh-24px)] w-full max-w-[640px] overflow-x-hidden overflow-y-auto rounded-t-[16px] border border-brand-lavender bg-white p-5 shadow-float outline-none sm:max-h-[calc(100dvh-48px)] sm:rounded-[16px] sm:p-7",
+          "relative max-h-[calc(100dvh-24px)] w-full max-w-[640px] overflow-x-hidden overflow-y-auto rounded-t-[16px] border border-brand-lavender bg-white p-5 shadow-float outline-none sm:max-h-[calc(100dvh-48px)] sm:rounded-[16px] sm:p-7",
           className,
         )}
         ref={panelRef}
         role="dialog"
         tabIndex={-1}
       >
-        <header className="flex items-start justify-between gap-4 border-b border-brand-lavender pb-5">
-          <div className="min-w-0">
-            <h2
-              className="font-display text-[28px] font-light leading-tight text-brand-deep sm:text-[32px]"
-              id={titleId}
-            >
-              {title}
-            </h2>
-            {description ? (
-              <p
-                className="mt-2 max-w-xl break-words text-sm font-semibold leading-6 text-tesText-secondary [overflow-wrap:anywhere]"
-                id={descriptionId}
-              >
-                {description}
-              </p>
-            ) : null}
-          </div>
+        {hideHeader ? (
           <button
             aria-label="Fechar"
-            className="grid size-11 shrink-0 place-items-center rounded-lg text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            className="absolute right-5 top-5 z-10 grid size-11 shrink-0 place-items-center rounded-lg text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
             onClick={onClose}
             type="button"
           >
             <X aria-hidden="true" size={20} />
           </button>
-        </header>
-        <div className="min-w-0 pt-5">{children}</div>
+        ) : (
+          <header className="flex items-start justify-between gap-4 border-b border-brand-lavender pb-5">
+            <div className="min-w-0">
+              <h2
+                className="font-display text-[28px] font-light leading-tight text-brand-deep sm:text-[32px]"
+                id={titleId}
+              >
+                {title}
+              </h2>
+              {description ? (
+                <p
+                  className="mt-2 max-w-xl break-words text-sm font-semibold leading-6 text-tesText-secondary [overflow-wrap:anywhere]"
+                  id={descriptionId}
+                >
+                  {description}
+                </p>
+              ) : null}
+            </div>
+            <button
+              aria-label="Fechar"
+              className="grid size-11 shrink-0 place-items-center rounded-lg text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              onClick={onClose}
+              type="button"
+            >
+              <X aria-hidden="true" size={20} />
+            </button>
+          </header>
+        )}
+        <div className={cn("min-w-0", !hideHeader && "pt-5")}>{children}</div>
       </div>
     </div>,
     document.body,

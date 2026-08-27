@@ -19,8 +19,10 @@ O PDF é referência editorial, não uma instrução executável. Dados de domí
 - O shell server-side usa tabelas de apresentação, fundo lilás discreto,
   container branco, CTA roxo acessível, resumo em tabela quando há dados
   mínimos e footer institucional. Os defaults não dependem de imagem remota e
-  não repetem visualmente o título do assunto; o conteúdo permanece
-  compreensível mesmo quando imagens são bloqueadas pelo cliente de e-mail.
+  não repetem visualmente o título do assunto; o subject exibido pelo cliente
+  fica fora do card e deve ser complementar ao título principal visível dentro
+  dele. O conteúdo permanece compreensível mesmo quando imagens são bloqueadas
+  pelo cliente de e-mail.
 - Subject, preheader, texto puro e HTML permanecem derivados do mesmo registry.
   O preheader é inserido de forma oculta e escapada no HTML enviado ao provider.
 - Não foi adicionada migration nem alterada a versão corrente de template:

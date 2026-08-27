@@ -293,7 +293,7 @@ function ReasonsSection() {
 
         <div className="relative order-first mx-auto aspect-[770/515] w-full max-w-4xl lg:order-none">
           <Image
-            src="/home/tablet-video-session.png"
+            src="/home/tablet-video-session-2026-08-26-transparent.png"
             alt="Sessão online em tablet"
             fill
             quality={95}

@@ -133,6 +133,58 @@ const AUTOMATIC_REJOIN_ENABLED =
   process.env.NEXT_PUBLIC_ZOOM_REJOIN_RECOVERY_V2 === "true" ||
   process.env.NODE_ENV !== "production";
 
+// The Video SDK client is a browser singleton. Keep its teardown serialized at
+// module scope so a route remount cannot create a new client while the previous
+// component is still destroying the old one.
+let zoomCleanupQueue: Promise<void> = Promise.resolve();
+let zoomDestroyInFlight: Promise<void> | null = null;
+let zoomDestroyFailure: unknown = null;
+
+function enqueueZoomCleanup<T>(operation: () => Promise<T>) {
+  const scheduled = zoomCleanupQueue.catch(() => undefined).then(operation);
+  zoomCleanupQueue = scheduled.then(
+    () => undefined,
+    () => undefined,
+  );
+  return scheduled;
+}
+
+function trackZoomDestroy(operation: Promise<void>) {
+  zoomDestroyFailure = null;
+  zoomDestroyInFlight = operation;
+  operation.then(
+    () => {
+      if (zoomDestroyInFlight === operation) zoomDestroyInFlight = null;
+    },
+    (error) => {
+      zoomDestroyFailure = error;
+      if (zoomDestroyInFlight === operation) zoomDestroyInFlight = null;
+    },
+  );
+  return operation;
+}
+
+async function waitForZoomLifecycleIdle() {
+  await zoomCleanupQueue;
+  while (zoomDestroyInFlight) {
+    await zoomDestroyInFlight;
+  }
+  if (zoomDestroyFailure) {
+    const failure: ZoomExecutedFailure = {
+      errorCode: 5012,
+      reason: "destroy_client_failed",
+      type: "INVALID_OPERATION",
+    };
+    throw failure;
+  }
+}
+
+async function waitForPriorZoomDestroy() {
+  while (zoomDestroyInFlight) {
+    await zoomDestroyInFlight;
+  }
+}
+
 export function ZoomVideoSessionAdapter({
   access,
   actorRole,
@@ -220,7 +272,6 @@ export function ZoomVideoSessionAdapter({
     Array<{ event: string; handler: (...args: unknown[]) => void }>
   >([]);
   const cleanupPromiseRef = useRef<Promise<CleanupFailure[]> | null>(null);
-  const destroyClientPromiseRef = useRef<Promise<void> | null>(null);
   const attemptGenerationRef = useRef(0);
   const reconnectTimerRef = useRef<number | null>(null);
   const recoveryDeadlineRef = useRef<number | null>(null);
@@ -483,6 +534,7 @@ export function ZoomVideoSessionAdapter({
 
   useEffect(() => {
     const handleOffline = () => {
+      isOnlineRef.current = false;
       setIsOnline(false);
       setMessage(
         clientRef.current
@@ -492,6 +544,7 @@ export function ZoomVideoSessionAdapter({
       if (clientRef.current) setState("reconnecting");
     };
     const handleOnline = () => {
+      isOnlineRef.current = true;
       setIsOnline(true);
       if (clientRef.current) {
         setState("reconnecting");
@@ -601,13 +654,14 @@ export function ZoomVideoSessionAdapter({
   }, [refreshPreviewAccess, state, waitingForTherapist]);
 
   async function joinSession(options?: {
+    initialFailure?: NormalizedZoomFailure;
     mediaPreferences?: ZoomWaitingRoomMediaPreferences;
     payload?: VideoSessionPayload;
     startAttempt?: number;
   }) {
     if (inFlight.current) return;
     if (clientRef.current && !options?.payload) return;
-    if (!isOnlineRef.current) {
+    if (!isOnlineRef.current && !options?.payload) {
       const failure = normalizeZoomFailure(new TypeError("offline"), "access");
       setLastFailure(failure);
       setState("error");
@@ -648,7 +702,8 @@ export function ZoomVideoSessionAdapter({
       }
 
       const startAttempt = Math.max(1, options?.startAttempt ?? 1);
-      let finalFailure: NormalizedZoomFailure | null = null;
+      let finalFailure: NormalizedZoomFailure | null =
+        options?.initialFailure ?? null;
 
       for (
         let attempt = startAttempt;
@@ -665,7 +720,6 @@ export function ZoomVideoSessionAdapter({
           setMessage("Reconectando à sua sessão…");
           const ready = await waitForRecoveryWindow(
             RECOVERY_RETRY_DELAYS_MS[attempt - 1],
-            deadline,
           );
           if (!ready) break;
         } else {
@@ -775,7 +829,11 @@ export function ZoomVideoSessionAdapter({
 
         throw createSdkFailure(
           response.status >= 500 ? 1 : 5013,
-          response.status === 401 ? "authentication_expired" : "access_denied",
+          response.status === 401
+            ? "authentication_expired"
+            : normalizeAccessDomainReason(
+                payload.ok ? undefined : payload.error?.code,
+              ),
           "access",
         );
       }
@@ -809,9 +867,7 @@ export function ZoomVideoSessionAdapter({
 
   async function performSdkJoin(videoPayload: VideoSessionPayload) {
     const generation = ++attemptGenerationRef.current;
-    if (destroyClientPromiseRef.current) {
-      await awaitWithinRecoveryDeadline(destroyClientPromiseRef.current);
-    }
+    await awaitWithinRecoveryDeadline(waitForZoomLifecycleIdle());
     const zoomModule =
       (await import("@zoom/videosdk")) as unknown as ZoomVideoModule;
     ensureCurrentAttempt(generation);
@@ -920,21 +976,45 @@ export function ZoomVideoSessionAdapter({
     );
   }
 
-  async function waitForRecoveryWindow(delayMs: number, deadline: number) {
+  async function waitForRecoveryWindow(delayMs: number) {
     const signal = recoveryAbortControllerRef.current?.signal;
     if (!signal || signal.aborted || !mounted.current) return false;
+    let remainingDelayMs = delayMs;
 
-    while (!isOnlineRef.current) {
-      setMessage(
-        "Sua internet caiu. Vamos retomar a conexão automaticamente quando ela voltar.",
+    while (mounted.current && !signal.aborted) {
+      while (!isBrowserOnline()) {
+        setMessage(
+          "Sua internet caiu. Vamos retomar a conexão automaticamente quando ela voltar.",
+        );
+        const offlineStartedAt = Date.now();
+        const resumed = await waitForOnline(null, signal);
+        if (!resumed) return false;
+        if (recoveryDeadlineRef.current !== null) {
+          recoveryDeadlineRef.current += Date.now() - offlineStartedAt;
+        }
+      }
+
+      const deadline = recoveryDeadlineRef.current ?? Date.now();
+      const remainingWindowMs = deadline - Date.now();
+      if (remainingWindowMs <= 0) return false;
+      if (remainingDelayMs <= 0) return true;
+
+      const delayStartedAt = Date.now();
+      const result = await waitForDelayOrOffline(
+        Math.min(remainingDelayMs, remainingWindowMs),
+        signal,
       );
-      const resumed = await waitForOnline(deadline, signal);
-      if (!resumed) return false;
+      remainingDelayMs = Math.max(
+        0,
+        remainingDelayMs - (Date.now() - delayStartedAt),
+      );
+      if (result === "aborted") return false;
+      if (result === "elapsed" && isBrowserOnline()) {
+        return true;
+      }
     }
 
-    const remainingMs = deadline - Date.now();
-    if (remainingMs <= 0) return false;
-    return await waitWithAbort(Math.min(delayMs, remainingMs), signal);
+    return false;
   }
 
   function ensureCurrentAttempt(generation: number) {
@@ -1290,7 +1370,8 @@ export function ZoomVideoSessionAdapter({
   }) {
     if (cleanupPromiseRef.current) return cleanupPromiseRef.current;
 
-    cleanupPromiseRef.current = runCleanup(input).finally(() => {
+    const scheduled = enqueueZoomCleanup(() => runCleanup(input));
+    cleanupPromiseRef.current = scheduled.finally(() => {
       cleanupPromiseRef.current = null;
     });
 
@@ -1339,19 +1420,9 @@ export function ZoomVideoSessionAdapter({
     if (input.destroyClient) {
       const destroyClient = zoomModuleRef.current?.destroyClient;
       if (destroyClient) {
-        const destroyPromise = Promise.resolve(destroyClient());
-        destroyClientPromiseRef.current = destroyPromise;
-        destroyPromise.then(
-          () => {
-            if (destroyClientPromiseRef.current === destroyPromise) {
-              destroyClientPromiseRef.current = null;
-            }
-          },
-          () => {
-            if (destroyClientPromiseRef.current === destroyPromise) {
-              destroyClientPromiseRef.current = null;
-            }
-          },
+        await waitForPriorZoomDestroy();
+        const destroyPromise = trackZoomDestroy(
+          Promise.resolve().then(() => destroyClient()),
         );
         const deadline =
           recoveryDeadlineRef.current ?? Date.now() + RECOVERY_DEADLINE_MS;
@@ -1424,9 +1495,24 @@ export function ZoomVideoSessionAdapter({
       } else if (normalized.state === "Closed") {
         clearReconnectTimer();
         if (leavingRef.current) return;
-        setState("leaving");
-        setMessage("Confirmando o encerramento do encontro...");
-        void resolveProviderClosure(normalized.reason);
+        const failure = normalizeZoomFailure(
+          createSdkFailure(
+            normalized.errorCode ?? 2,
+            normalized.reason ?? "connection_closed",
+            "connection",
+          ),
+          "connection",
+        );
+        if (isDefinitiveProviderClosure(failure)) {
+          setState("leaving");
+          setMessage("Confirmando o encerramento do encontro...");
+          void resolveProviderClosure(normalized.reason);
+        } else if (failure.retryable) {
+          void recoverConnectedSession(failure, generation);
+        } else {
+          presentJoinFailure(failure);
+          void cleanup({ destroyClient: true, endSession: false });
+        }
       } else if (normalized.state === "Fail") {
         clearReconnectTimer();
         const failure = normalizeZoomFailure(
@@ -1526,7 +1612,7 @@ export function ZoomVideoSessionAdapter({
     }
 
     setLastFailure(failure);
-    await joinSession({ payload, startAttempt: 2 });
+    await joinSession({ initialFailure: failure, payload, startAttempt: 2 });
   }
 
   function clearReconnectTimer() {
@@ -2015,6 +2101,30 @@ function createSdkFailure(
   };
 }
 
+function normalizeAccessDomainReason(code: string | undefined) {
+  if (!code) return "access_denied";
+
+  const normalized = code.trim().toLowerCase();
+  const allowedReasons = new Set([
+    "booking_not_found",
+    "role_mismatch",
+    "therapist_not_allowed",
+    "therapist_profile_not_found",
+    "therapist_receiving_account_required",
+    "therapist_suspended",
+  ]);
+
+  return allowedReasons.has(normalized) ? normalized : "access_denied";
+}
+
+function isDefinitiveProviderClosure(failure: NormalizedZoomFailure) {
+  if (failure.category === "ended") return true;
+
+  return /(?:ended|closed)[\s_-]+by[\s_-]+host|host[\s_-]+ended|session[\s_-]+ended|removed|kicked/i.test(
+    failure.reason,
+  );
+}
+
 function waitWithAbort(delayMs: number, signal: AbortSignal) {
   if (delayMs <= 0) return Promise.resolve(!signal.aborted);
 
@@ -2032,6 +2142,28 @@ function waitWithAbort(delayMs: number, signal: AbortSignal) {
       resolve(completed);
     };
 
+    signal.addEventListener("abort", handleAbort, { once: true });
+  });
+}
+
+function waitForDelayOrOffline(delayMs: number, signal: AbortSignal) {
+  return new Promise<"aborted" | "elapsed" | "offline">((resolve) => {
+    if (signal.aborted) {
+      resolve("aborted");
+      return;
+    }
+
+    const timer = window.setTimeout(() => finish("elapsed"), delayMs);
+    const handleAbort = () => finish("aborted");
+    const handleOffline = () => finish("offline");
+    const finish = (result: "aborted" | "elapsed" | "offline") => {
+      window.clearTimeout(timer);
+      window.removeEventListener("offline", handleOffline);
+      signal.removeEventListener("abort", handleAbort);
+      resolve(result);
+    };
+
+    window.addEventListener("offline", handleOffline, { once: true });
     signal.addEventListener("abort", handleAbort, { once: true });
   });
 }
@@ -2075,23 +2207,27 @@ function withAbortDeadline<T>(
   });
 }
 
-function waitForOnline(deadline: number, signal: AbortSignal) {
-  if (typeof navigator !== "undefined" && navigator.onLine !== false) {
+function waitForOnline(deadline: number | null, signal: AbortSignal) {
+  if (isBrowserOnline()) {
     return Promise.resolve(true);
   }
 
   return new Promise<boolean>((resolve) => {
-    const remainingMs = Math.max(0, deadline - Date.now());
+    const remainingMs =
+      deadline === null ? null : Math.max(0, deadline - Date.now());
     if (signal.aborted || remainingMs === 0) {
       resolve(false);
       return;
     }
 
-    const timer = window.setTimeout(() => finish(false), remainingMs);
+    const timer =
+      remainingMs === null
+        ? null
+        : window.setTimeout(() => finish(false), remainingMs);
     const handleOnline = () => finish(true);
     const handleAbort = () => finish(false);
     const finish = (completed: boolean) => {
-      window.clearTimeout(timer);
+      if (timer !== null) window.clearTimeout(timer);
       window.removeEventListener("online", handleOnline);
       signal.removeEventListener("abort", handleAbort);
       resolve(completed);
@@ -2100,6 +2236,10 @@ function waitForOnline(deadline: number, signal: AbortSignal) {
     window.addEventListener("online", handleOnline, { once: true });
     signal.addEventListener("abort", handleAbort, { once: true });
   });
+}
+
+function isBrowserOnline() {
+  return typeof navigator === "undefined" || navigator.onLine !== false;
 }
 
 function asParticipantArray(value: unknown): ZoomParticipant[] {

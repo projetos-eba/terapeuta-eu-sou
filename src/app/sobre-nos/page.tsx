@@ -177,7 +177,7 @@ export default function AboutUsPage() {
 
         <div className="relative aspect-[16/10] w-full sm:aspect-[4/3] md:col-span-2 lg:col-span-1">
           <Image
-            src="/about/figma-06-hd.png"
+            src="/about/platform-dashboard-2026-08-26-transparent.png"
             alt="Plataforma Terapeuta Eu Sou em notebook e celular"
             fill
             quality={95}

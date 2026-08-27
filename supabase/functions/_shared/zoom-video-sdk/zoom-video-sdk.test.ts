@@ -254,6 +254,24 @@ Deno.test(
     assertEquals(
       evaluateVideoSessionAccess({
         ...base,
+        actorRole: "therapist",
+        therapistProfileEligible: false,
+        therapistStatus: "approved",
+      }).reason,
+      "THERAPIST_NOT_ALLOWED",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        actorRole: "therapist",
+        therapistProfileEligible: true,
+        therapistStatus: "approved",
+      }).allowed,
+      true,
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
         videoSessionReady: false,
         videoSessionStatus: null,
       }).reason,

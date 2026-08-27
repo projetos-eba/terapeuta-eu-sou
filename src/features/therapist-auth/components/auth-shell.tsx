@@ -9,6 +9,8 @@ export function TherapistAuthShell({
   alwaysFallback = false,
   children,
   className,
+  eyebrow,
+  title,
 }: {
   alwaysFallback?: boolean;
   children: ReactNode;
@@ -32,12 +34,24 @@ export function TherapistAuthShell({
             <TESDecorativeMedia
               className="inset-0 opacity-75"
               fade="none"
-              imageClassName="scale-110 object-cover sm:scale-125 lg:scale-110"
+              imageClassName="object-cover"
               objectPosition="center"
               priority
               sizes="(min-width: 1024px) 530px, 100vw"
-              src={platformAssets.therapistLoginIcon.src}
+              src={platformAssets.therapistLoginBackground.src}
             />
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 bg-gradient-to-b from-brand-primary/55 via-brand-primary/10 to-transparent"
+            />
+            <div className="relative z-10 flex h-full flex-col items-center px-8 pt-14 text-center text-white sm:px-12 sm:pt-16 lg:px-10 lg:pt-16">
+              <p className="text-xs font-extrabold uppercase tracking-[0.24em] text-white/95">
+                {eyebrow}
+              </p>
+              <h2 className="mt-5 max-w-[12ch] font-display text-4xl font-light italic leading-[0.98] text-white sm:text-5xl lg:text-[3.5rem]">
+                {title}
+              </h2>
+            </div>
           </aside>
 
           <div

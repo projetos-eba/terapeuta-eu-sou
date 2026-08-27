@@ -164,4 +164,54 @@ describe("PublicHeader", () => {
     expect(accountPosition).toBeGreaterThanOrEqual(0);
     expect(navigationPosition).toBeGreaterThan(accountPosition);
   });
+
+  it("shows login actions in the mobile menu immediately after logout", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        json: async () => ({
+          authenticated: true,
+          patient: { displayName: "Vinicius Paciente" },
+        }),
+        ok: true,
+      })
+      .mockResolvedValueOnce({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<PublicHeader />);
+
+    const toggle = screen.getByRole("button", { name: "Abrir menu" });
+    fireEvent.click(toggle);
+
+    const mobileMenu = document.getElementById("public-mobile-menu");
+    expect(mobileMenu).not.toBeNull();
+    const mobileMenuQueries = within(mobileMenu!);
+
+    const logoutButton = await mobileMenuQueries.findByRole("button", {
+      name: "Sair",
+    });
+    fireEvent.click(logoutButton);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenLastCalledWith("/api/auth/client/session", {
+        cache: "no-store",
+        method: "DELETE",
+      });
+      expect(
+        screen.getByRole("button", { name: "Abrir menu" }),
+      ).toHaveAttribute("aria-expanded", "false");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menu" }));
+
+    const updatedMobileMenu = document.getElementById("public-mobile-menu");
+    expect(updatedMobileMenu).not.toBeNull();
+
+    expect(
+      await within(updatedMobileMenu!).findByRole("link", {
+        name: "Entrar como cliente",
+      }),
+    ).toHaveAttribute("href", "/cliente/login");
+    expect(screen.queryByText("Vinicius Paciente")).not.toBeInTheDocument();
+  });
 });
