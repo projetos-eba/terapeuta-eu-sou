@@ -88,4 +88,23 @@ describe("zoom video recovery contract", () => {
     expect(failure.category).toBe("reload_media");
     expect(failure.userMessage).not.toContain("raw provider internals");
   });
+
+  it("maps the receiving-account gate without exposing the backend message", () => {
+    const failure = normalizeZoomFailure(
+      {
+        errorCode: 5013,
+        reason: "therapist_receiving_account_required",
+        type: "INTERNAL_ERROR",
+      },
+      "access",
+    );
+
+    expect(failure).toMatchObject({
+      category: "permanent",
+      retryable: false,
+      shouldReload: false,
+      userMessage:
+        "Conclua o cadastro da sua conta de recebimento antes de iniciar o atendimento.",
+    });
+  });
 });

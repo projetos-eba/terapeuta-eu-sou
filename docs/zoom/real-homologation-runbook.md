@@ -151,6 +151,15 @@ executado com decisão explícita quando uma reconstrução completa do banco lo
 for necessária. O comando único preserva a configuração e os dados de teste
 locais por padrão.
 
+Quando o banco local contém massas persistentes que não podem ser apagadas,
+execute o harness com `ZOOM_HOMOLOGATION_DB_TEST_MODE=focused`. O lint continua
+completo, enquanto o pgTAP fica restrito aos contratos de ciclo de vida Zoom,
+idempotência da sessão paga, reentrada/finalização, confirmação bilateral,
+checkout e elegibilidade do cadastro profissional. O
+escopo é registrado no arquivo de evidências, não executa `db reset` e não
+permite ignorar falhas nesses testes. Sem a variável, a suíte completa do banco
+continua sendo o padrão.
+
 ## Ngrok
 
 Em um terminal com as Edge Functions locais ativas:
@@ -278,6 +287,14 @@ O script real tecnico cria em runtime:
 - booking confirmada dentro da janela;
 - `session_payments.financial_status = paid`;
 - `video_sessions` via RPC canonica `ensure_video_session_for_paid_booking_v1`.
+
+O perfil sintetico comprova completude e aprovacao cadastral, mas nao substitui
+uma conta Stripe Connect de recebimento realmente habilitada. Quando o ambiente
+local nao oferece esse pre-requisito, o harness deve falhar rapidamente com
+`therapist_access_prerequisite_failed:receiving_account_required`; nao se deve
+forjar capacidade de recebimento nem enfraquecer a politica de acesso. A sessao
+real fica para HML com um terapeuta aprovado, cadastro completo e conta de
+recebimento ativa.
 
 Os e-mails usam `runId` unico e as senhas existem somente em memoria. O cleanup
 remove as fixtures em bloco `finally`, respeitando FKs.

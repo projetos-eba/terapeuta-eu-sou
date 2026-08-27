@@ -159,6 +159,7 @@ runtime.serve(async (request) => {
       patientHasTimelyArrival,
       startsAt: booking.startsAt,
       therapistStatus: booking.therapistStatus,
+      therapistProfileEligible: booking.therapistProfileEligible,
       therapistPresent: booking.videoSession?.therapistPresent ?? false,
       videoSessionReady: Boolean(
         booking.videoSession &&

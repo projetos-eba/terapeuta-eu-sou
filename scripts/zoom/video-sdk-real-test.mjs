@@ -303,36 +303,79 @@ async function runRealFlow(signal) {
   );
 
   await phase("patient_first_blocked", async () => {
-    await patientPage.goto(`${baseUrl}/app/encontros/${fixture.ids.bookingId}`);
-    await expect
-      .poll(
-        async () => {
-          const bodyText = await patientPage.locator("body").innerText();
-          return (
-            /Aguardando o terapeuta iniciar o encontro|Aguardando terapeuta|Aus.ncia prolongada do terapeuta|A sala ainda n.o abriu|Aguardando participante|Sala indispon.vel|entrada fica dispon.vel|sala autenticada/i.test(
-              bodyText,
-            ) &&
-            (await patientPage
-              .getByRole("button", { name: "Entrar no encontro" })
-              .count()) === 0
-          );
-        },
-        { timeout: 30_000 },
-      )
-      .toBe(true);
+    const previewResponsePromise = patientPage.waitForResponse(
+      (response) => {
+        if (
+          response.request().method() !== "POST" ||
+          !response.url().endsWith("/api/zoom/video-session-access")
+        ) {
+          return false;
+        }
+
+        try {
+          return response.request().postDataJSON()?.intent === "preview";
+        } catch {
+          return false;
+        }
+      },
+      { timeout: 30_000 },
+    );
+
+    await patientPage.goto(
+      `${baseUrl}/app/encontros/${fixture.ids.bookingId}/video`,
+    );
+    const previewResponse = await previewResponsePromise;
+    const previewPayload = await previewResponse.json().catch(() => null);
+    const previewAccess = previewPayload?.data?.access;
+
+    if (
+      !previewResponse.ok() ||
+      previewPayload?.ok !== true ||
+      previewAccess?.allowed !== false ||
+      previewAccess?.reason !== "THERAPIST_NOT_IN_SESSION"
+    ) {
+      throw new Error(
+        `patient_waiting_room_access_failed:${JSON.stringify({
+          allowed: previewAccess?.allowed ?? null,
+          httpStatus: previewResponse.status(),
+          ok: previewPayload?.ok ?? false,
+          reason: previewAccess?.reason ?? null,
+        })}`,
+      );
+    }
+
+    await expect(
+      patientPage.getByRole("region", {
+        name: /Sala de espera do encontro/i,
+      }),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(
+      patientPage.getByText(
+        /Sua chegada foi registrada\. A entrada ser[aá] liberada quando o terapeuta estiver na sala\./i,
+      ),
+    ).toBeVisible({ timeout: 30_000 });
+    await expect(
+      patientPage.getByRole("button", {
+        name: /Entrar na sala|Entrar no encontro/i,
+      }),
+    ).toHaveCount(0);
   });
 
   await phase("therapist_join", async () => {
     await therapistPage.goto(
-      `${baseUrl}/terapeuta/sessoes/${fixture.ids.bookingId}`,
+      `${baseUrl}/terapeuta/sessoes/${fixture.ids.bookingId}/video`,
     );
     const joinButton = therapistPage.getByRole("button", {
-      name: /Entrar na sess.o|Entrar no encontro/i,
+      name: /Entrar na sala|Entrar na sess.o|Entrar no encontro/i,
     });
-    await expect(joinButton).toBeVisible({ timeout: 10 * 60_000 });
+    await waitForTherapistEntryGate({
+      joinButton,
+      page: therapistPage,
+      signal,
+    });
     await joinButton.click();
     await expect(
-      therapistPage.getByText(/Voce entrou como responsavel pelo encontro\./i),
+      therapistPage.getByText(/Voc[eê] entrou como respons[aá]vel pelo encontro\./i),
     ).toBeVisible({ timeout: 45_000 });
   });
   await phase("provider_session_capture", () =>
@@ -345,16 +388,16 @@ async function runRealFlow(signal) {
   await phase("patient_join", async () => {
     await patientPage.getByRole("button", { name: "Atualizar sala" }).click();
     await expect(
-      patientPage.getByRole("button", { name: "Entrar no encontro" }),
+      patientPage.getByRole("button", {
+        name: /Entrar na sala|Entrar no encontro/i,
+      }),
     ).toBeVisible({ timeout: 45_000 });
     await patientPage
-      .getByRole("button", { name: "Entrar no encontro" })
+      .getByRole("button", { name: /Entrar na sala|Entrar no encontro/i })
       .click();
-    await expect(patientPage.getByText(/Voce entrou no encontro/i)).toBeVisible(
-      {
-        timeout: 45_000,
-      },
-    );
+    await expect(
+      patientPage.getByText(/Voc[eê] entrou no encontro/i),
+    ).toBeVisible({ timeout: 45_000 });
   });
   throwIfAborted(signal);
 
@@ -541,7 +584,7 @@ function resolveSlowMo() {
 async function loginTherapist(page, credentials) {
   await page.goto(`${baseUrl}/terapeuta/login`);
   await page.getByLabel("E-mail").fill(credentials.email);
-  await page.getByLabel("Senha").fill(credentials.password);
+  await page.locator('input[name="password"]').fill(credentials.password);
   await submitLoginForm(page, {
     buttonName: "Entrar como terapeuta",
     endpoint: "/api/auth/therapist/login",
@@ -552,7 +595,7 @@ async function loginTherapist(page, credentials) {
 async function loginPatient(page, credentials) {
   await page.goto(`${baseUrl}/cliente/login`);
   await page.getByLabel("E-mail").fill(credentials.email);
-  await page.getByLabel("Senha").fill(credentials.password);
+  await page.locator('input[name="password"]').fill(credentials.password);
   await submitLoginForm(page, {
     buttonName: "Entrar",
     endpoint: "/api/auth/client/login",
@@ -768,6 +811,47 @@ async function poll({ intervalMs, signal, task, timeoutMs }) {
     await new Promise((resolve) => setTimeout(resolve, intervalMs));
   }
   throw lastError ?? new Error("poll_timeout");
+}
+
+async function waitForTherapistEntryGate({ joinButton, page, signal }) {
+  const deadline = Date.now() + 45_000;
+
+  while (Date.now() < deadline) {
+    throwIfAborted(signal);
+    if (await joinButton.isVisible().catch(() => false)) return;
+
+    const pageText = await page
+      .locator("body")
+      .innerText()
+      .catch(() => "");
+    const prerequisite = classifyTherapistEntryBlock(pageText);
+    if (prerequisite) {
+      throw new Error(
+        `therapist_access_prerequisite_failed:${prerequisite}`,
+      );
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+
+  throw new Error("therapist_entry_gate_timeout");
+}
+
+function classifyTherapistEntryBlock(pageText) {
+  if (/conta de recebimento/i.test(pageText)) {
+    return "receiving_account_required";
+  }
+  if (/cadastro profissional[\s\S]{0,120}(completo|aprovado|liberado)/i.test(pageText)) {
+    return "profile_not_eligible";
+  }
+  if (/acesso . sala est. bloqueado/i.test(pageText)) {
+    return "profile_suspended";
+  }
+  if (/n.o foi poss.vel validar esta sala/i.test(pageText)) {
+    return "access_denied";
+  }
+
+  return null;
 }
 
 function throwIfAborted(signal) {

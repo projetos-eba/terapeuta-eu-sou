@@ -63,6 +63,7 @@ export async function createZoomCheckoutFixtures({ admin, runId }) {
         accepts_online_sessions: true,
         city: "Sao Paulo",
         country: "BR",
+        bio: "Cadastro profissional completo para a homologacao local da sessao de video.",
         headline: "Perfil temporario para homologacao tecnica Video SDK.",
         id: ids.therapistProfileId,
         is_accepting_bookings: true,
@@ -70,6 +71,7 @@ export async function createZoomCheckoutFixtures({ admin, runId }) {
         legal_name: "Homologacao Zoom Terapeuta",
         metadata,
         plan: "premium_plus",
+        photo_url: "/therapists/ana-oliveira.png",
         public_name: "Homologacao Zoom Terapeuta",
         slug,
         state: "SP",
@@ -129,6 +131,7 @@ export async function createZoomCheckoutFixtures({ admin, runId }) {
         timezone: "America/Sao_Paulo",
       },
     ]);
+    await completeAndApproveTherapistProfile({ admin, ids });
 
     const availableSlot = await resolveCheckoutSlot({
       admin,
@@ -231,6 +234,7 @@ export async function createZoomRealFixtures({ admin, environment, runId }) {
         accepts_online_sessions: true,
         city: "Sao Paulo",
         country: "BR",
+        bio: "Cadastro profissional completo para a homologacao local da sessao de video.",
         headline: "Perfil temporario para homologacao tecnica Video SDK.",
         id: ids.therapistProfileId,
         is_accepting_bookings: true,
@@ -238,6 +242,7 @@ export async function createZoomRealFixtures({ admin, environment, runId }) {
         legal_name: "Homologacao Zoom Terapeuta",
         metadata,
         plan: "premium_plus",
+        photo_url: "/therapists/ana-oliveira.png",
         public_name: "Homologacao Zoom Terapeuta",
         slug,
         state: "SP",
@@ -279,6 +284,7 @@ export async function createZoomRealFixtures({ admin, environment, runId }) {
         timezone: "America/Sao_Paulo",
       },
     ]);
+    await completeAndApproveTherapistProfile({ admin, ids });
 
     await admin.insert("bookings", [
       {
@@ -348,6 +354,30 @@ export async function cleanupZoomRealFixtures({ admin, ids, runId }) {
       });
     }
   };
+
+  if (!ids.bookingId && ids.serviceId) {
+    const fixtureBookings = await admin
+      .select(
+        "bookings",
+        `select=id&service_id=eq.${ids.serviceId}&patient_profile_id=eq.${ids.patientProfileId}&therapist_profile_id=eq.${ids.therapistProfileId}`,
+      )
+      .catch((error) => {
+        failures.push({
+          label: "discover:bookings",
+          reason: String(error?.message ?? error).slice(0, 240),
+        });
+        return [];
+      });
+
+    if (fixtureBookings.length === 1) {
+      ids.bookingId = fixtureBookings[0].id;
+    } else if (fixtureBookings.length > 1) {
+      failures.push({
+        label: "discover:bookings",
+        reason: "mais de uma reserva temporaria encontrada para a massa",
+      });
+    }
+  }
 
   if (ids.bookingId) {
     await safeDelete("video_session_participations", () =>
@@ -495,6 +525,87 @@ export async function cleanupZoomRealFixtures({ admin, ids, runId }) {
 
 function randomPassword() {
   return `TesZoom!${crypto.randomBytes(18).toString("base64url")}`;
+}
+
+async function completeAndApproveTherapistProfile({ admin, ids }) {
+  const [adminProfile] = await admin.select(
+    "profiles",
+    "select=id&role=eq.admin&auth_deleted_at=is.null&anonymized_at=is.null&limit=1",
+  );
+  if (!adminProfile?.id) {
+    throw new Error("zoom_fixture_admin_profile_required");
+  }
+  const contentVersionId = crypto.randomUUID();
+  const verificationId = crypto.randomUUID();
+  assertUuid(adminProfile.id, "adminProfileId");
+  assertUuid(ids.therapistProfileId, "therapistProfileId");
+
+  // Raw profile tables deliberately deny REST writes even to service_role.
+  // The synthetic profile exists only in local homologation, so preserve that
+  // production boundary and seed the fully reviewed state through local SQL.
+  admin.executeLocalSql(`
+    do $$
+    begin
+    insert into public.therapist_profile_content_versions (
+      id,
+      therapist_profile_id,
+      status,
+      short_intro,
+      essence_body,
+      invitation_body,
+      profile_payload,
+      published_at
+    ) values (
+      '${contentVersionId}'::uuid,
+      '${ids.therapistProfileId}'::uuid,
+      'published',
+      'Perfil completo e aprovado para homologacao local da videochamada.',
+      'Atendimento online com escuta responsavel e cadastro profissional completo.',
+      'Este conteudo existe somente durante a homologacao local do fluxo Zoom.',
+      '{"source":"${source}"}'::jsonb,
+      now()
+    );
+
+    insert into public.therapist_profile_guide_items (
+      content_version_id,
+      icon,
+      is_active,
+      label,
+      sort_order
+    ) values (
+      '${contentVersionId}'::uuid,
+      'sparkles',
+      true,
+      'Escuta acolhedora',
+      0
+    );
+
+    insert into public.therapist_verifications (
+      id,
+      therapist_profile_id,
+      status,
+      reviewed_at,
+      reviewed_by,
+      submitted_at
+    ) values (
+      '${verificationId}'::uuid,
+      '${ids.therapistProfileId}'::uuid,
+      'approved',
+      now(),
+      '${adminProfile.id}'::uuid,
+      now() - interval '1 minute'
+    );
+    end;
+    $$;
+  `);
+
+  const eligible = await admin.rpc(
+    "is_therapist_video_session_eligible_v1",
+    { p_therapist_profile_id: ids.therapistProfileId },
+  );
+  if (eligible !== true) {
+    throw new Error("zoom_fixture_therapist_not_session_eligible");
+  }
 }
 
 async function resolveTherapyId(admin) {

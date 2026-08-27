@@ -160,6 +160,24 @@ describe("ZoomWaitingRoom", () => {
     );
   });
 
+  it("stacks device controls on narrow mobile screens without forcing overflow", () => {
+    render(<ZoomWaitingRoom {...baseProps} />);
+
+    for (const controls of screen.getAllByTestId("waiting-room-device-tests")) {
+      expect(controls).toHaveClass(
+        "min-w-0",
+        "grid-cols-1",
+        "min-[420px]:grid-cols-2",
+      );
+    }
+
+    for (const button of screen.getAllByRole("button", {
+      name: /Testar (câmera|áudio)/,
+    })) {
+      expect(button).toHaveClass("w-full", "min-w-0");
+    }
+  });
+
   it("shows the booking ID below the participant name", () => {
     render(<ZoomWaitingRoom {...baseProps} />);
 
