@@ -194,7 +194,8 @@ recuperacao fica pausado e e retomado pelo evento `online`. Um evento
 fim pelo host/remocao; fechamentos transitorios seguem a mesma recuperacao de
 `Fail`.
 
-A recuperacao automatica e controlada por
-`NEXT_PUBLIC_ZOOM_REJOIN_RECOVERY_V2`. Em build de producao ela permanece
-desabilitada quando a variavel nao for explicitamente `true`; desabilitar a
-flag mantem o classificador de erros e o fallback explicito de recarga.
+A recuperacao transitoria e sempre habilitada: reutiliza o mesmo acesso ja
+emitido, nunca pede JWT adicional e executa no maximo tres `join`s dentro da
+janela de recuperacao. Isso impede que uma flag publica deixe o ambiente de
+homologacao/producao sem recuperacao justamente quando o singleton do SDK esta
+em transicao.

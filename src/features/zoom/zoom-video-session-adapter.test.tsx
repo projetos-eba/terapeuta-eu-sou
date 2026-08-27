@@ -906,6 +906,54 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(screen.getByText(/respons[aá]vel/i)).toBeInTheDocument();
   });
 
+  it("retries a transient destroy before rejoining with the same access payload", async () => {
+    vi.useFakeTimers();
+    const fetchMock = accessResponse(1);
+    vi.stubGlobal("fetch", fetchMock);
+    mockClient.join
+      .mockResolvedValueOnce({
+        errorCode: 2,
+        reason: "internal error",
+        type: "INTERNAL_ERROR",
+      })
+      .mockResolvedValueOnce("");
+    destroyClient.mockImplementationOnce(() => {
+      calls.push("destroy");
+      return Promise.reject(new Error("destroy still settling"));
+    });
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="therapist"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(mockClient.join).toHaveBeenCalledTimes(1);
+    expect(destroyClient).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(750 + 1_500);
+    });
+
+    expect(destroyClient).toHaveBeenCalledTimes(2);
+    expect(mockClient.join).toHaveBeenCalledTimes(2);
+    expect(createClient).toHaveBeenCalledTimes(2);
+    expect(screen.getByText(/respons[aá]vel/i)).toBeInTheDocument();
+    expect(
+      fetchMock.mock.calls.filter(([, init]) =>
+        String((init as RequestInit | undefined)?.body).includes(
+          '"intent":"join"',
+        ),
+      ),
+    ).toHaveLength(1);
+  });
+
   it("waits for destroyClient from the previous route mount before creating a client", async () => {
     vi.stubGlobal("fetch", accessResponse(1));
     let releaseDestroy: () => void = () => undefined;
@@ -1554,13 +1602,14 @@ describe("ZoomVideoSessionAdapter", () => {
   });
 
   it("stops recovery after a destroyClient failure instead of issuing more join attempts", async () => {
+    vi.useFakeTimers();
     vi.stubGlobal("fetch", accessResponse(1));
     mockClient.join.mockResolvedValueOnce({
       errorCode: 2,
       reason: "internal error",
       type: "INTERNAL_ERROR",
     });
-    destroyClient.mockImplementationOnce(() => {
+    destroyClient.mockImplementation(() => {
       calls.push("destroy");
       return Promise.reject(new Error("destroy failed"));
     });
@@ -1575,12 +1624,20 @@ describe("ZoomVideoSessionAdapter", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
 
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(destroyClient).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(750);
+    });
+
     expect(
-      await screen.findByText(/recarregue esta página para reiniciar somente o vídeo/i),
+      screen.getByText(/recarregue esta página para reiniciar somente o vídeo/i),
     ).toBeInTheDocument();
     expect(mockClient.join).toHaveBeenCalledTimes(1);
     expect(createClient).toHaveBeenCalledTimes(1);
-    expect(destroyClient).toHaveBeenCalledTimes(1);
+    expect(destroyClient).toHaveBeenCalledTimes(2);
   });
 });
 

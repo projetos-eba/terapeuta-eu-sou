@@ -119,8 +119,9 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   erro de envio, resposta realizada, não realização, comentário de 500
   caracteres e reabertura por query controlada.
 - Validar que erro resolvido de áudio imediatamente após `join` mantém a sala
-  conectada, e que falha em `destroyClient` interrompe as retries automáticas e
-  exige recarga antes de novo join.
+  conectada; após falha transitória em `destroyClient`, validar a segunda
+  tentativa após 750 ms e a reentrada com o mesmo acesso. Duas falhas seguidas
+  exigem recarga antes de novo join.
 - O `userId` local vem de `ZoomVideoClient.getCurrentUserInfo()`, nunca do
   media stream. A self-view e os vídeos remotos usam `attachVideo` dentro de
   `video-player-container`; `renderVideo` em canvas não é o contrato

@@ -140,16 +140,16 @@ quando aplicavel e aguarda `destroyClient`.
 
 Uma falha resolvida nas operações iniciais de áudio depois de `join` não pode
 desconectar uma sessão já conectada: a chamada continua com áudio indisponível e
-os controles permitem nova tentativa. Se `destroyClient` falhar, o adapter não
-executa novas tentativas no mesmo processo; apresenta o fallback de recarga
-imediatamente para não repetir `join` contra um singleton inválido.
+os controles permitem nova tentativa. Após `leave(false)`, o adapter tenta
+`destroyClient` duas vezes, com 750 ms para o SDK concluir a troca de estado;
+só então recria o singleton. Se ambas falharem, apresenta o fallback de recarga
+e não repete `join` contra um singleton inválido.
 
-Com `NEXT_PUBLIC_ZOOM_REJOIN_RECOVERY_V2=true`, uma falha transitoria executa no
-maximo tres tentativas totais dentro de 10 segundos, com esperas de 1,5 e 3
-segundos. As tentativas reutilizam o acesso ja emitido e nunca executam `join`
-em paralelo. `5012`, timeout, erro interno e cliente reconectando sao
-recuperaveis; sessao encerrada, participante removido, permissao negada e
-configuracao invalida nao entram em repeticao cega.
+Uma falha transitoria executa no maximo tres tentativas totais dentro de 10
+segundos, com esperas de 1,5 e 3 segundos. As tentativas reutilizam o acesso ja
+emitido e nunca executam `join` em paralelo. `5012`, timeout, erro interno e
+cliente reconectando sao recuperaveis; sessao encerrada, participante removido,
+permissao negada e configuracao invalida nao entram em repeticao cega.
 
 Os testes de regressao tambem devem cobrir remount da rota enquanto o
 `destroyClient` anterior ainda esta pendente, pausa offline seguida de retomada
