@@ -86,7 +86,9 @@ describe("mapTherapistHomeReadiness", () => {
       },
     });
 
-    expect(readiness.checklist.find((item) => item.id === "profile")).toEqual(
+    expect(
+      readiness.checklist.find((item) => item.id === "profile"),
+    ).toEqual(
       expect.objectContaining({
         actionLabel: "Acompanhar análise",
         complete: true,
@@ -118,9 +120,7 @@ describe("mapTherapistHomeReadiness", () => {
 
     expect(readiness.completedRequiredCount).toBe(readiness.requiredCount);
     expect(readiness.isOperationallyReady).toBe(true);
-    expect(
-      readiness.checklist.find((item) => item.id === "profile"),
-    ).toEqual(
+    expect(readiness.checklist.find((item) => item.id === "profile")).toEqual(
       expect.objectContaining({
         complete: true,
         state: "in_review",
@@ -303,6 +303,37 @@ describe("mapTherapistHomeReadiness", () => {
         },
       }),
     ).toThrow("therapist_home_profile_mismatch");
+  });
+
+  it("uses the registered location and the real presentation when draft fields are blank", () => {
+    const editor = editorFixture();
+    editor.privateLocation = { city: "Campinas", state: "SP" };
+    editor.draft = {
+      ...editor.published,
+      fields: {
+        ...editor.published.fields,
+        city: "",
+        state: "",
+      },
+      status: "draft",
+    };
+
+    const readiness = mapTherapistHomeReadiness({
+      connect: null,
+      editor,
+      session: {
+        plan: TherapistPlan.Free,
+        profileId,
+        status: TherapistStatus.Draft,
+      },
+    });
+
+    expect(readiness.profileSummary).toEqual(
+      expect.objectContaining({
+        city: "Campinas",
+        state: "SP",
+      }),
+    );
   });
 });
 

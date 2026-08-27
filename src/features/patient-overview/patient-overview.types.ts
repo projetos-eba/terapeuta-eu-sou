@@ -66,11 +66,24 @@ export type PatientFavoriteProfessional = {
 
 export type PendingPatientReview = {
   appointmentId: string;
+  confirmationState:
+    | "awaiting_both"
+    | "awaiting_patient"
+    | "awaiting_therapist"
+    | "blocked_for_review"
+    | "completed"
+    | "next_batch"
+    | "safety_period";
+  endsAt: string;
   professional: {
     avatarUrl: string | null;
+    id: string;
     name: string;
   };
+  serviceLabel: string;
+  startsAt: string;
   therapyLabel: string;
+  timezone: string;
 };
 
 export type MoodOption = {

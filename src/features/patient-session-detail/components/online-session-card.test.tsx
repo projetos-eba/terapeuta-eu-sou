@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { BookingStatus, SessionFinancialStatus } from "@/domain/tes";
 import {
@@ -12,6 +12,21 @@ import { OnlineSessionCard } from "./online-session-card";
 import { SessionOverviewCard } from "./session-overview-card";
 
 describe("OnlineSessionCard", () => {
+  afterEach(cleanup);
+
+  it("keeps the camera and microphone test out of session details", () => {
+    render(
+      <OnlineSessionCard
+        data={makeData({ financialStatus: SessionFinancialStatus.Paid })}
+      />,
+    );
+
+    expect(screen.queryByText("Teste de câmera e microfone")).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: /testar dispositivos/i }),
+    ).toBeNull();
+  });
+
   it("does not enable the dedicated room when payment is not confirmed", () => {
     render(
       <OnlineSessionCard
@@ -96,7 +111,7 @@ describe("OnlineSessionCard", () => {
       />,
     );
 
-    expect(screen.getAllByText("Confirmada")).toHaveLength(2);
+    expect(screen.getAllByText("Confirmada")).toHaveLength(1);
     expect(
       screen
         .getAllByText("Confirmada")

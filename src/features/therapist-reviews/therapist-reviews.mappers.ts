@@ -71,6 +71,34 @@ export function mapTherapistReviewsPageData(
               })}%`,
       },
     ],
+    pendingConfirmations: array(row.pendingConfirmations).map((value) => {
+      const item = record(value);
+      return {
+        bookingId: string(item.bookingId),
+        dueAt: string(item.dueAt),
+        endsAt: string(item.endsAt),
+        patientName: string(item.patientName, "Paciente TES"),
+        remainingSeconds: number(item.remainingSeconds),
+        serviceTitle: nullableString(item.serviceTitle),
+        startsAt: string(item.startsAt),
+      };
+    }),
+    privateFeedback: array(row.privateFeedback).map((value) => {
+      const item = record(value);
+      return {
+        authorRole: string(item.authorRole) === "therapist" ? "therapist" : "patient",
+        bookingId: string(item.bookingId),
+        comment: string(item.comment),
+        createdAt: string(item.createdAt),
+        id: string(item.id),
+        notPerformedReason: nullableString(item.notPerformedReason),
+        outcome: string(item.outcome) === "not_performed" ? "not_performed" : "completed",
+        patientName: string(item.patientName, "Paciente TES"),
+        rating: nullableNumber(item.rating),
+        serviceTitle: nullableString(item.serviceTitle),
+        startsAt: string(item.startsAt),
+      };
+    }),
     metrics: {
       averageRating,
       distinctPatients: number(metrics.distinctPatients),

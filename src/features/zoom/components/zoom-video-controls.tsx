@@ -32,10 +32,12 @@ type ZoomVideoControlsProps = {
     | "loading"
     | "joining"
     | "joined"
+    | "recovering"
     | "reconnecting"
     | "leaving"
     | "ended"
-    | "error";
+    | "error"
+    | "reload_required";
   videoOn: boolean;
 };
 
@@ -69,16 +71,20 @@ export function ZoomVideoControls({
           type="button"
           variant="gradient"
         >
-          {state === "loading" || state === "joining" ? (
+          {state === "loading" ||
+          state === "joining" ||
+          state === "recovering" ? (
             <Loader2 aria-hidden="true" className="animate-spin" size={20} />
           ) : (
             <Video aria-hidden="true" size={20} />
           )}
           {state === "joining"
             ? "Entrando…"
-            : actorRole === "patient"
-              ? "Entrar no encontro"
-              : "Entrar na sessão"}
+            : state === "recovering"
+              ? "Reconectando…"
+              : actorRole === "patient"
+                ? "Entrar no encontro"
+                : "Entrar na sessão"}
         </TESButton>
         <TESButton
           className="flex-1"

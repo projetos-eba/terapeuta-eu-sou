@@ -90,11 +90,13 @@ confirmado, o CTA pode abrir a sala de espera mesmo antes da presença do
 terapeuta. Isso preserva o host-first: a tela de espera é acessível, mas o
 paciente só recebe acesso de join depois do evento confiável do terapeuta.
 
-O feedback de qualidade só muda para elegível quando o backend encontra entrada
-confiável de paciente e terapeuta e o encerramento efetivo ou programado da
-sessão. A query `feedback=1` apenas pede a abertura da experiência; não altera
-essa decisão. Se só um participante entrou, a interface oferece somente o
-relato de ocorrência quando o estado da sessão permitir.
+O feedback privado fica disponível após o fim programado ou encerramento
+definitivo da sessão. A query `feedback=1` apenas pede a abertura da
+experiência; não altera essa decisão. A telemetria confiável de entrada de
+paciente e terapeuta continua como evidência e sinal de risco, mas não bloqueia
+o envio manual nem os vencimentos automáticos de 7/30 dias. O participante
+informa se o encontro ocorreu; uma resposta `not_performed` exige motivo,
+bloqueia o repasse e abre revisão administrativa.
 
 Na homologacao principal, esse passo 1 deve vir de Checkout Stripe test e
 webhook assinado. Fixtures com pagamento direto sao permitidas somente para
@@ -168,3 +170,18 @@ operações independentes.
 Se o terapeuta sair, o paciente nao recebe novo JWT durante a ausencia. A
 maintenance encerra sessoes por hard timeout, ausencia prolongada do terapeuta
 ou orfandade operacional, usando locks e backoff em banco.
+
+## Ciclo de vida no navegador
+
+O cliente do Video SDK e singleton. Cada tentativa possui uma geracao; eventos
+de geracoes anteriores sao ignorados. Uma reentrada aguarda integralmente a
+limpeza e o `destroyClient` da tentativa anterior antes de chamar
+`createClient`, preservando o `user_key` deterministico e evitando participantes
+fantasmas. O `requestId` retornado pela emissao de acesso permite correlacionar
+o codigo sanitizado do browser com os logs da Edge Function sem persistir token
+ou mensagem interna do Zoom.
+
+A recuperacao automatica e controlada por
+`NEXT_PUBLIC_ZOOM_REJOIN_RECOVERY_V2`. Em build de producao ela permanece
+desabilitada quando a variavel nao for explicitamente `true`; desabilitar a
+flag mantem o classificador de erros e o fallback explicito de recarga.

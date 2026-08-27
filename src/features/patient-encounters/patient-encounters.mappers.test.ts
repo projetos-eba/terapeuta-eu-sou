@@ -290,6 +290,36 @@ describe("patient encounters mapper", () => {
     );
   });
 
+  it("places the feedback query before the history fragment", () => {
+    const booking = createBooking(
+      "95000000-0000-4000-8000-000000000008",
+      new Date(Date.now() - 3 * 60 * 60 * 1000),
+    );
+
+    const result = mapPatientEncountersPage({
+      bookings: [booking],
+      favoriteTherapistsCount: 0,
+      patient,
+      pendingFeedbackBookingIds: new Set([booking.id]),
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map([
+        [booking.id, { booking_id: booking.id, financial_status: "paid" }],
+      ]),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(result.historyEncounters[0]?.primaryAction).toMatchObject({
+      href: `/app/encontros?feedback=${booking.id}#patient-history-encounters-title`,
+      kind: "link",
+    });
+  });
+
   it("formats encounter times in the booking timezone instead of the server timezone", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-08-24T00:00:00.000Z"));

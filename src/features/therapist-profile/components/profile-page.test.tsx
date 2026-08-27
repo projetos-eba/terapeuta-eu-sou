@@ -601,4 +601,77 @@ describe("TherapistProfilePage video block", () => {
       screen.getByText(/Seguimos com presença e combinados claros/),
     ).toBeInTheDocument();
   });
+
+  it("uses compact review navigation and can show every review", () => {
+    render(
+      <TherapistProfilePage
+        profile={{
+          ...baseProfile,
+          rating: { average: 4.7, count: 3, sessionsCompleted: 3 },
+        }}
+        reviews={[
+          {
+            authorLabel: "Paciente TES",
+            body: "Primeira experiência compartilhada.",
+            createdLabel: "Hoje",
+            id: "review-1",
+            patientContext: "Sessão concluída pela plataforma",
+            rating: 5,
+            reply: null,
+          },
+          {
+            authorLabel: "Paciente TES",
+            body: "Segunda experiência compartilhada.",
+            createdLabel: "Ontem",
+            id: "review-2",
+            patientContext: "Sessão concluída pela plataforma",
+            rating: 4,
+            reply: null,
+          },
+          {
+            authorLabel: "Paciente TES",
+            body: "Terceira experiência compartilhada.",
+            createdLabel: "Há uma semana",
+            id: "review-3",
+            patientContext: "Sessão concluída pela plataforma",
+            rating: 5,
+            reply: null,
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole("navigation", { name: "Navegação das avaliações" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Ver página 1 de avaliações" }),
+    ).toHaveAttribute("aria-current", "step");
+    expect(
+      screen.queryByText("Terceira experiência compartilhada."),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver próximas avaliações" }),
+    );
+    expect(
+      screen.getByText("Terceira experiência compartilhada."),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver todas as avaliações" }),
+    );
+    expect(
+      screen.getByText("Primeira experiência compartilhada."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Segunda experiência compartilhada."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Terceira experiência compartilhada."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("navigation", { name: "Navegação das avaliações" }),
+    ).not.toBeInTheDocument();
+  });
 });

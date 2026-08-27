@@ -104,6 +104,19 @@ values
     now() - interval '9 days'
   );
 
+update public.reviews
+set status = 'hidden',
+    published_at = null,
+    superseded_at = coalesce(superseded_at, now()),
+    updated_at = now()
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'::uuid
+  and patient_profile_id in (
+    'b1000000-0000-4000-8000-000000000001'::uuid,
+    'b1000000-0000-4000-8000-000000000002'::uuid,
+    'b1000000-0000-4000-8000-000000000003'::uuid,
+    'b1000000-0000-4000-8000-000000000004'::uuid
+  );
+
 insert into public.reviews (
   id,
   booking_id,

@@ -63,6 +63,11 @@ export type TherapistPrivateDocumentSummary = {
   validationState: TherapistPrivateDocumentValidationState;
 };
 
+export type TherapistProfilePrivateLocation = {
+  city: string;
+  state: string;
+};
+
 export type TherapistProfileVerificationSummary = {
   changesRequested?: string | null;
   id: string;
@@ -158,6 +163,7 @@ export type TherapistProfileEditorData = {
   derived: TherapistProfileDerivedData;
   draft: TherapistProfileVersionedContent | null;
   privateDocuments: TherapistPrivateDocumentSummary[];
+  privateLocation?: TherapistProfilePrivateLocation | null;
   propagationNotice: string;
   publicProfileHref: string;
   publicProfileSlug: string;

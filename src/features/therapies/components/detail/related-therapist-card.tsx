@@ -1,20 +1,29 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { ArrowRight, CalendarClock, Heart, Star, Users } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarClock,
+  Heart,
+  Sparkles,
+  Star,
+  Users,
+} from "lucide-react";
 
-import { TESButton } from "@/components/tes";
+import { PremiumTherapistBadge, TESButton } from "@/components/tes";
 import { routes } from "@/lib/routes";
 import type { RelatedTherapist } from "../../types/therapy-detail";
 import { buildTherapistProfileHref } from "./detail-links";
 
 type RelatedTherapistCardProps = {
+  matchContextActive?: boolean;
   source: string;
   therapist: RelatedTherapist;
   therapySlug: string;
 };
 
 export function RelatedTherapistCard({
+  matchContextActive = false,
   source,
   therapist,
   therapySlug,
@@ -27,9 +36,12 @@ export function RelatedTherapistCard({
   const favoriteHref = `${routes.public.clientSignIn}?returnUrl=${encodeURIComponent(profileHref)}`;
 
   return (
-    <article className="flex h-full flex-col gap-4 border-border bg-white p-4 sm:p-5 lg:border-b lg:border-r">
-      <div className="grid gap-4 sm:grid-cols-[1fr_178px]">
-        <div className="flex gap-4">
+    <article className="relative flex h-full min-w-0 flex-col gap-4 border-border bg-white p-4 sm:p-5 lg:border-b lg:border-r">
+      {therapist.isPremium ? (
+        <PremiumTherapistBadge therapistName={therapist.name} />
+      ) : null}
+      <div className="grid min-w-0 gap-4 sm:grid-cols-[minmax(0,1fr)_178px]">
+        <div className="flex min-w-0 gap-4">
           <div className="relative size-[72px] shrink-0 overflow-hidden rounded-full bg-brand-lavenderSoft sm:size-[78px]">
             {therapist.photoUrl ? (
               <Image
@@ -50,20 +62,29 @@ export function RelatedTherapistCard({
             />
           </div>
 
-          <div className="min-w-0 pt-1">
-            <h3 className="text-xl font-extrabold leading-tight text-brand-primary">
+          <div className="min-w-0 flex-1 pt-1">
+            <h3 className="break-words text-lg font-extrabold leading-tight text-brand-primary sm:text-xl [overflow-wrap:anywhere]">
               {therapist.name}
             </h3>
-            <p className="mt-1 text-xs font-extrabold text-status-info">
+            {matchContextActive ? (
+              <p className="mt-1 flex items-center gap-1.5 text-sm font-extrabold text-brand-primary">
+                <Sparkles
+                  className="size-4 text-status-warning"
+                  aria-hidden="true"
+                />
+                {getCompatibilityLabel(therapist)}
+              </p>
+            ) : null}
+            <p className="mt-1 break-words text-xs font-extrabold text-status-info [overflow-wrap:anywhere]">
               {therapist.headline}
             </p>
-            <p className="mt-2 max-w-[340px] overflow-hidden text-sm font-semibold leading-6 text-tesText-secondary [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+            <p className="mt-2 max-w-[340px] break-words overflow-hidden text-sm font-semibold leading-6 text-tesText-secondary [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2] [overflow-wrap:anywhere]">
               {therapist.serviceDescription}
             </p>
           </div>
         </div>
 
-        <div className="rounded-md bg-surface-soft p-3">
+        <div className="min-w-0 rounded-md bg-surface-soft p-3">
           <p className="text-xs font-extrabold text-brand-primary">
             Temas de atuação
           </p>
@@ -88,7 +109,10 @@ export function RelatedTherapistCard({
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border pt-3 text-xs font-bold text-tesText-secondary">
         <span className="flex items-center gap-1.5">
-          <Star className="h-4 w-4 fill-current text-status-warning" aria-hidden="true" />
+          <Star
+            className="h-4 w-4 fill-current text-status-warning"
+            aria-hidden="true"
+          />
           {therapist.averageRating
             ? `${therapist.averageRating.toFixed(1).replace(".", ",")} (${therapist.reviewCount} avaliações)`
             : "Perfil novo"}
@@ -101,13 +125,16 @@ export function RelatedTherapistCard({
         </span>
         {therapist.nextSlotAt ? (
           <span className="flex items-center gap-1.5">
-            <CalendarClock className="h-4 w-4 text-brand-primary" aria-hidden="true" />
+            <CalendarClock
+              className="h-4 w-4 text-brand-primary"
+              aria-hidden="true"
+            />
             {formatNextSlot(therapist.nextSlotAt)}
           </span>
         ) : null}
       </div>
 
-      <div className="mt-auto flex items-center gap-3 border-t border-border pt-3">
+      <div className="mt-auto flex min-w-0 items-center gap-3 border-t border-border pt-3">
         <TESButton
           href={profileHref}
           variant="secondary"
@@ -138,4 +165,15 @@ function formatNextSlot(value: string) {
     minute: "2-digit",
     month: "short",
   }).format(date);
+}
+
+function getCompatibilityLabel(therapist: RelatedTherapist) {
+  if (
+    therapist.matchingInterestCount > 0 ||
+    therapist.matchingServiceThemeCount > 0
+  ) {
+    return "Mais compatível com o que você busca";
+  }
+
+  return "Trabalha com esta terapia";
 }

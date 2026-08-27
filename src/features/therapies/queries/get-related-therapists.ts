@@ -12,6 +12,11 @@ export type RelatedTherapistsResult = {
   items: RelatedTherapist[];
 };
 
+type PublicTherapistPlanRow = {
+  plan: "free" | "premium" | "premium_plus";
+  slug: string;
+};
+
 function hasSupabaseConfig() {
   return Boolean(getSupabasePublicConfig());
 }
@@ -76,9 +81,15 @@ export async function getRelatedTherapists({
     }
 
     const rows = (await response.json()) as RelatedTherapistRow[];
+    const premiumSlugs = await getPremiumTherapistSlugs(
+      config,
+      rows.map((row) => row.slug),
+    );
 
     return {
-      items: applyPublicSort(rows, sort).map(mapRelatedTherapist),
+      items: applyPublicSort(rows, sort).map((row) =>
+        mapRelatedTherapist(row, premiumSlugs),
+      ),
     };
   } catch {
     return {
@@ -88,11 +99,44 @@ export async function getRelatedTherapists({
   }
 }
 
-function applyPublicSort(rows: RelatedTherapistRow[], sort: RelatedTherapistSort) {
+async function getPremiumTherapistSlugs(
+  config: NonNullable<ReturnType<typeof getSupabasePublicConfig>>,
+  slugs: string[],
+) {
+  if (!slugs.length) return new Set<string>();
+
+  try {
+    const response = await fetch(
+      `${config.url}/rest/v1/public_therapist_profiles_v?select=slug,plan&slug=in.(${slugs.join(",")})`,
+      {
+        cache: "no-store",
+        headers: {
+          apikey: config.apiKey,
+          Authorization: `Bearer ${config.apiKey}`,
+        },
+      },
+    );
+
+    if (!response.ok) return new Set<string>();
+
+    const planRows = (await response.json()) as PublicTherapistPlanRow[];
+    return new Set(
+      planRows.filter((row) => row.plan !== "free").map((row) => row.slug),
+    );
+  } catch {
+    return new Set<string>();
+  }
+}
+
+function applyPublicSort(
+  rows: RelatedTherapistRow[],
+  sort: RelatedTherapistSort,
+) {
   if (sort === "rating") {
     return [...rows].sort(
       (first, second) =>
-        Number(second.average_rating ?? 0) - Number(first.average_rating ?? 0) ||
+        Number(second.average_rating ?? 0) -
+          Number(first.average_rating ?? 0) ||
         Number(second.review_count ?? 0) - Number(first.review_count ?? 0) ||
         compareNullableDate(first.next_slot_at, second.next_slot_at) ||
         first.slug.localeCompare(second.slug, "pt-BR"),
@@ -103,7 +147,8 @@ function applyPublicSort(rows: RelatedTherapistRow[], sort: RelatedTherapistSort
     return [...rows].sort(
       (first, second) =>
         compareNullableDate(first.next_slot_at, second.next_slot_at) ||
-        Number(second.average_rating ?? 0) - Number(first.average_rating ?? 0) ||
+        Number(second.average_rating ?? 0) -
+          Number(first.average_rating ?? 0) ||
         Number(second.review_count ?? 0) - Number(first.review_count ?? 0) ||
         first.slug.localeCompare(second.slug, "pt-BR"),
     );
@@ -119,7 +164,10 @@ function compareNullableDate(first: string | null, second: string | null) {
   return new Date(first).getTime() - new Date(second).getTime();
 }
 
-function mapRelatedTherapist(row: RelatedTherapistRow): RelatedTherapist {
+function mapRelatedTherapist(
+  row: RelatedTherapistRow,
+  premiumSlugs: Set<string>,
+): RelatedTherapist {
   return {
     averageRating:
       row.review_count && row.review_count > 0
@@ -128,6 +176,9 @@ function mapRelatedTherapist(row: RelatedTherapistRow): RelatedTherapist {
     completedSessionCount: row.completed_session_count ?? 0,
     headline: row.therapist_headline ?? "Terapeuta TES",
     isAcceptingBookings: true,
+    isPremium: premiumSlugs.has(row.slug),
+    matchingInterestCount: row.matching_interest_count ?? 0,
+    matchingServiceThemeCount: row.matching_service_theme_count ?? 0,
     name: row.public_name,
     nextSlotAt: row.next_slot_at,
     photoUrl: getTherapistAvatarUrl(row.photo_url, {

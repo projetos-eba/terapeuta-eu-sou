@@ -30,13 +30,13 @@ function Hero() {
         <p className="text-sm font-extrabold uppercase tracking-[0.48em] text-brand-primary">
           {forTherapistsHero.eyebrow}
         </p>
-        <h1 className="mt-8 max-w-full break-words text-[42px] font-semibold leading-[1.1] text-brand-deep sm:max-w-4xl sm:text-[54px]">
+        <h1 className="mt-8 max-w-[350px] break-words text-[36px] font-semibold leading-[1.08] text-brand-deep sm:max-w-4xl sm:text-[54px] sm:leading-[1.1]">
           {forTherapistsHero.title}
-          <span className="mt-2 block bg-[linear-gradient(90deg,#6C3D91_0%,#81BAE0_100%)] bg-clip-text font-display text-[50px] font-light italic leading-[1.08] text-transparent sm:text-[70px]">
+          <span className="mt-2 block bg-[linear-gradient(90deg,#6C3D91_0%,#81BAE0_100%)] bg-clip-text font-display text-[40px] font-light italic leading-[1.04] text-transparent sm:text-[70px] sm:leading-[1.08]">
             {forTherapistsHero.accent}
           </span>
         </h1>
-        <p className="mt-7 max-w-2xl text-lg font-semibold leading-8 text-tesText-secondary">
+        <p className="mt-7 max-w-2xl text-base font-semibold leading-7 text-tesText-secondary sm:text-lg sm:leading-8">
           {forTherapistsHero.body}
         </p>
 

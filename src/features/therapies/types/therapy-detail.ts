@@ -40,6 +40,9 @@ export type RelatedTherapist = {
   completedSessionCount: number;
   headline: string;
   isAcceptingBookings: boolean;
+  isPremium: boolean;
+  matchingInterestCount: number;
+  matchingServiceThemeCount: number;
   name: string;
   nextSlotAt: string | null;
   photoUrl: string | null;
@@ -79,6 +82,8 @@ export type PublicTherapyDetailRow = {
 export type RelatedTherapistRow = {
   average_rating: number | null;
   completed_session_count: number | null;
+  matching_interest_count: number | null;
+  matching_service_theme_count: number | null;
   next_slot_at: string | null;
   photo_url: string | null;
   public_name: string;

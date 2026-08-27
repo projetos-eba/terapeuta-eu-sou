@@ -148,29 +148,30 @@ select ok(
 );
 
 select is(
-  has_function_privilege('anon', 'public.confirm_session_from_review()', 'EXECUTE'),
-  false,
-  'anon cannot execute review confirmation trigger helper'
+  to_regprocedure('public.confirm_session_from_review()'),
+  null::regprocedure,
+  'legacy public-review financial confirmation helper no longer exists'
+);
+
+select is(
+  (
+    select count(*)::integer
+    from pg_trigger
+    where tgrelid = 'public.reviews'::regclass
+      and tgname = 'confirm_session_from_review_trigger'
+  ),
+  0,
+  'reviews have no trigger capable of confirming a session'
 );
 
 select is(
   has_function_privilege(
     'authenticated',
-    'public.confirm_session_from_review()',
+    'public.save_patient_therapist_review_for_actor_v1(uuid,uuid,text,integer,text,uuid)',
     'EXECUTE'
   ),
   false,
-  'authenticated cannot execute review confirmation trigger helper'
-);
-
-select is(
-  has_function_privilege(
-    'service_role',
-    'public.confirm_session_from_review()',
-    'EXECUTE'
-  ),
-  false,
-  'service_role cannot execute review confirmation trigger helper directly'
+  'authenticated clients cannot bypass the patient review command authority'
 );
 
 select is(

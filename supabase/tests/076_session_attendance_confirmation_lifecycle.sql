@@ -308,8 +308,8 @@ select is(
 
 select is(
   (select service_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000001'),
-  'confirmed_by_therapist',
-  'finalization uses the existing session confirmation authority'
+  'confirmed_bilateral',
+  'finalization uses the canonical bilateral service status'
 );
 
 select is(
@@ -375,14 +375,14 @@ select is(
 
 select is(
   (select service_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000002'),
-  'auto_confirmed',
-  'automatic bilateral confirmation uses the existing automatic service status'
+  'confirmed_bilateral',
+  'automatic bilateral confirmation uses the canonical bilateral service status'
 );
 
 select is(
   (select transfer_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000002'),
-  'waiting_safety_period',
-  'automatic confirmation does not bypass the safety period'
+  'eligible',
+  'legacy seven-day role deadlines become eligible after their one-day safety period'
 );
 
 select is(
@@ -421,7 +421,7 @@ select is(
 
 select is(
   (select transfer_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000003'),
-  'not_eligible',
+  'blocked',
   'divergent not-performed report blocks transfer eligibility'
 );
 
@@ -459,7 +459,7 @@ select is(
     from public.session_service_confirmations confirmation
     join public.financial_policy_versions policy on policy.id = confirmation.policy_version_id
     where confirmation.booking_id = '96000000-0000-4000-8000-000000000005'
-      and confirmation.source = 'automatic'
+      and confirmation.source = 'bilateral'
   ),
   'tes-payments-v1',
   'service confirmation preserves the payment policy snapshot'

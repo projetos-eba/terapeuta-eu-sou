@@ -9,8 +9,8 @@ select is(
 );
 select is(
   (select version from public.financial_policy_versions where is_active),
-  'tes-payments-v3-cancellation-operational',
-  'the operational cancellation policy is active for future payments'
+  'tes-payments-v6-bilateral-7d-30d',
+  'the bilateral operational policy is active for open future payments'
 );
 select is(
   (select free_cancellation_hours from public.financial_policy_versions where is_active),

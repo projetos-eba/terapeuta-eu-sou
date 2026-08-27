@@ -79,6 +79,7 @@ type MapPatientEncountersInput = {
   favoriteTherapistsCount: number;
   patient: PatientEncountersPatient;
   patientEntryEntitlementByBookingId?: Map<string, boolean>;
+  pendingFeedbackBookingIds?: Set<string>;
   reviews: ReviewRecord[];
   serviceById: Map<string, ServiceRecord>;
   sessionPaymentByBookingId: Map<string, SessionPaymentRecord>;
@@ -126,7 +127,9 @@ export function mapPatientEncountersPage(
   const historyEncounters = mapped
     .filter(
       (encounter) =>
-        encounter.status === "completed" || encounter.status === "cancelled",
+        encounter.status === "completed" ||
+        encounter.status === "cancelled" ||
+        encounter.status === "awaiting_confirmation",
     )
     .sort((left, right) => sortByStartsAt(right, left))
     .slice(0, MAX_HISTORY_ENCOUNTERS);
@@ -147,6 +150,7 @@ export function mapPatientEncountersPage(
     },
     nextEncounter: upcomingEncounters[0] ?? null,
     patient: input.patient,
+    pendingFeedbackSessions: [],
     recentJourneyTopics: deriveRecentJourneyTopics(input.bookings, input),
     source: "supabase",
     unreadMessagesCount: input.unreadMessagesCount,
@@ -174,6 +178,7 @@ function mapPatientEncounter(
     payment,
     reschedule,
     input.patientEntryEntitlementByBookingId?.get(booking.id) ?? false,
+    input.pendingFeedbackBookingIds?.has(booking.id) ?? false,
   );
   const summaryId = summaryBookingIds.has(booking.id) ? booking.id : null;
   const hasReview = reviewedBookingIds.has(booking.id);
@@ -217,7 +222,11 @@ function getEncounterStatus(
   payment: SessionPaymentRecord | null,
   reschedule: RescheduleRecord | null,
   patientHasEntryEntitlement: boolean,
+  feedbackPending: boolean,
 ): PatientEncounterStatus {
+  if (feedbackPending && new Date(booking.ends_at).getTime() <= Date.now()) {
+    return "awaiting_confirmation";
+  }
   if (isCompletedBookingStatus(booking.status)) return "completed";
   if (isCancelledBookingStatus(booking.status)) return "cancelled";
   if (
@@ -287,7 +296,7 @@ function getPrimaryAction(
 
     if (!hasReview) {
       return {
-        href: `${routes.patient.encounterHistory}?avaliar=${booking.id}`,
+        href: buildEncounterHistoryActionHref("avaliar", booking.id),
         kind: "link",
         label: "Avaliar encontro",
       };
@@ -297,6 +306,14 @@ function getPrimaryAction(
       href: `${routes.patient.messages}?context=suporte&booking=${booking.id}`,
       kind: "link",
       label: "Solicitar suporte",
+    };
+  }
+
+  if (status === "awaiting_confirmation") {
+    return {
+      href: buildEncounterHistoryActionHref("feedback", booking.id),
+      kind: "link",
+      label: "Confirmar encontro",
     };
   }
 
@@ -315,9 +332,19 @@ function getPrimaryAction(
   };
 }
 
+function buildEncounterHistoryActionHref(
+  action: "avaliar" | "feedback",
+  bookingId: string,
+) {
+  const [pathname, fragment] = routes.patient.encounterHistory.split("#", 2);
+  const hash = fragment ? `#${fragment}` : "";
+  return `${pathname}?${action}=${encodeURIComponent(bookingId)}${hash}`;
+}
+
 function getStatusLabel(status: PatientEncounterStatus) {
   const labels: Record<PatientEncounterStatus, string> = {
     cancelled: "Encontro cancelado",
+    awaiting_confirmation: "Confirmação pendente",
     completed: "Realizada",
     confirmed: "Confirmada",
     live: "Ao vivo agora",

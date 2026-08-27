@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { AlertCircle, MessageCircle, Star } from "lucide-react";
+import { AlertCircle, Clock3, LockKeyhole, MessageCircle, Star } from "lucide-react";
 
 import {
   AppPageAside,
@@ -11,6 +11,7 @@ import {
 } from "@/components/app-page";
 import { TESDecorativeMedia } from "@/components/tes";
 import { platformAssets } from "@/lib/platform-assets";
+import { routes } from "@/lib/routes";
 
 import {
   createStableRequestId,
@@ -125,6 +126,65 @@ export function TherapistReviewsPage({
         </div>
       ) : null}
 
+      <section aria-labelledby="pending-session-confirmations" className="rounded-card border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-status-warningBg text-status-warning">
+            <Clock3 aria-hidden="true" size={20} />
+          </span>
+          <div>
+            <h2 className="text-xl font-extrabold text-brand-deep" id="pending-session-confirmations">Confirmações operacionais pendentes</h2>
+            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+              Esta obrigação existe em todos os planos. Sem sua resposta, a confirmação automática ocorre no vencimento de 30 dias.
+            </p>
+          </div>
+        </div>
+        {data.pendingConfirmations.length ? (
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {data.pendingConfirmations.map((confirmation) => (
+              <article className="rounded-xl border border-border p-4" key={confirmation.bookingId}>
+                <h3 className="font-extrabold text-brand-deep">{confirmation.patientName}</h3>
+                <p className="mt-1 text-sm font-semibold text-tesText-secondary">{confirmation.serviceTitle ?? "Sessão terapêutica"}</p>
+                <p className="mt-3 text-sm font-bold text-status-warning">{remainingLabel(confirmation.remainingSeconds)}</p>
+                <a className="mt-4 inline-flex min-h-11 items-center rounded-full border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft" href={`${routes.therapist.sessionVideo(confirmation.bookingId)}?feedback=1`}>
+                  Confirmar sessão
+                </a>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm font-semibold text-tesText-muted">Nenhuma confirmação pendente.</p>
+        )}
+      </section>
+
+      <section aria-labelledby="private-session-feedback" className="rounded-card border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+            <LockKeyhole aria-hidden="true" size={20} />
+          </span>
+          <div>
+            <h2 className="text-xl font-extrabold text-brand-deep" id="private-session-feedback">Feedbacks privados das sessões</h2>
+            <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">Somente participantes autorizados e a equipe administrativa acessam estes relatos. As respostas do paciente não podem ser editadas.</p>
+          </div>
+        </div>
+        {data.privateFeedback.length ? (
+          <div className="mt-5 grid gap-3 md:grid-cols-2">
+            {data.privateFeedback.slice(0, 12).map((feedback) => (
+              <article className="rounded-xl border border-border p-4" key={feedback.id}>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="font-extrabold text-brand-deep">{feedback.patientName}</h3>
+                  <span className="rounded-full bg-surface-soft px-3 py-1 text-xs font-extrabold text-tesText-secondary">{feedback.authorRole === "patient" ? "Paciente" : "Sua resposta"}</span>
+                </div>
+                <p className="mt-2 text-sm font-semibold text-tesText-secondary">{feedback.serviceTitle ?? "Sessão terapêutica"}</p>
+                <p className="mt-3 text-sm font-bold text-brand-deep">{feedback.outcome === "completed" ? `Realizada${feedback.rating ? ` · ${feedback.rating}/5` : ""}` : "Não realizada · análise necessária"}</p>
+                {feedback.comment ? <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">{feedback.comment}</p> : null}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm font-semibold text-tesText-muted">Os feedbacks privados aparecerão após as primeiras respostas.</p>
+        )}
+      </section>
+
       <AppPageGrid>
         <AppPageMain>
           <AppPageSection className="overflow-hidden p-0">
@@ -229,6 +289,12 @@ export function TherapistReviewsPage({
       ) : null}
     </AppPageContainer>
   );
+}
+
+function remainingLabel(seconds: number) {
+  if (seconds <= 0) return "Prazo automático atingido; processamento horário pendente";
+  const days = Math.ceil(seconds / 86_400);
+  return `${days} ${days === 1 ? "dia restante" : "dias restantes"} até a confirmação automática`;
 }
 
 export function TherapistReviewsErrorState({

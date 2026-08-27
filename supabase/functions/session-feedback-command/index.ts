@@ -52,7 +52,7 @@ runtime.serve(async (request) => {
           p_not_performed_reason: command.notPerformedReason,
           p_outcome: command.outcome,
           p_rating: command.rating,
-          p_request_id: crypto.randomUUID(),
+          p_request_id: command.requestId,
         },
       );
 

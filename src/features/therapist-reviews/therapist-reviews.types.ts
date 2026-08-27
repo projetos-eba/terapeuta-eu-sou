@@ -59,6 +59,8 @@ export type TherapistReviewsPageData = {
     totalReviews: number;
   };
   metricCards: TherapistReviewsMetric[];
+  pendingConfirmations: TherapistPendingConfirmation[];
+  privateFeedback: TherapistPrivateSessionFeedback[];
   reviews: TherapistReviewItem[];
   therapist: {
     plan: "free" | "premium" | "premium_plus";
@@ -66,6 +68,30 @@ export type TherapistReviewsPageData = {
     publicName: string;
     publicSlug: string;
   };
+};
+
+export type TherapistPrivateSessionFeedback = {
+  authorRole: "patient" | "therapist";
+  bookingId: string;
+  comment: string;
+  createdAt: string;
+  id: string;
+  notPerformedReason: string | null;
+  outcome: "completed" | "not_performed";
+  patientName: string;
+  rating: number | null;
+  serviceTitle: string | null;
+  startsAt: string;
+};
+
+export type TherapistPendingConfirmation = {
+  bookingId: string;
+  dueAt: string;
+  endsAt: string;
+  patientName: string;
+  remainingSeconds: number;
+  serviceTitle: string | null;
+  startsAt: string;
 };
 
 export type TherapistReviewReplyCommand = {

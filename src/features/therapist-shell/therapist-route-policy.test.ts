@@ -58,3 +58,23 @@ describe("therapist finance route policy", () => {
     ).toBe(true);
   });
 });
+
+describe("therapist feedback route policies", () => {
+  it("keeps operational session confirmation available to Free therapists", () => {
+    expect(therapistRoutePolicies.sessions.capability).toBe(
+      "operation_essentials",
+    );
+    expect(
+      canUseTherapistCapability(
+        TherapistPlan.Free,
+        therapistRoutePolicies.sessions.capability,
+      ),
+    ).toBe(true);
+  });
+
+  it("keeps the feedback management center restricted to Premium", () => {
+    expect(therapistRoutePolicies.reviews.minimumPlan).toBe(
+      TherapistPlan.Premium,
+    );
+  });
+});

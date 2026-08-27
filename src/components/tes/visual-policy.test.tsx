@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { TESButton } from "./tes-button";
+import { PremiumTherapistBadge } from "./premium-therapist-badge";
 import { TherapistCard, type TherapistCardData } from "./therapist-card";
 
 const therapist: TherapistCardData = {
@@ -39,5 +40,17 @@ describe("TES shared visual policy", () => {
 
     expect(favoriteButton).toHaveAttribute("aria-pressed", "false");
     expect(favoriteButton).toHaveClass("size-11");
+  });
+
+  it("labels the premium crown without turning it into a primary action", () => {
+    render(<PremiumTherapistBadge therapistName="Ana Oliveira" />);
+
+    expect(screen.getByTestId("premium-therapist-badge")).toHaveAccessibleName(
+      "Ana Oliveira é terapeuta Premium",
+    );
+    expect(screen.getByTestId("premium-therapist-badge")).toHaveAttribute(
+      "title",
+      "Terapeuta Premium",
+    );
   });
 });
