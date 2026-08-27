@@ -3,15 +3,43 @@ import { describe, expect, it } from "vitest";
 import {
   assertZoomExecutedResult,
   assertZoomJoinResult,
+  assertZoomVideoStartResult,
   normalizeConnectionChange,
   normalizeZoomFailure,
   ZoomOperationError,
 } from "./zoom-video-recovery";
 
 describe("zoom video recovery contract", () => {
-  it("keeps non-join executed results strict", () => {
+  it("keeps generic executed results strict", () => {
     expect(() => assertZoomExecutedResult("", "join")).not.toThrow();
     expect(() => assertZoomExecutedResult(undefined, "join")).toThrow(
+      ZoomOperationError,
+    );
+  });
+
+  it("accepts void only for camera capture success, not arbitrary payloads", () => {
+    for (const result of [undefined, ""]) {
+      expect(() => assertZoomVideoStartResult(result)).not.toThrow();
+    }
+    for (const result of [
+      null,
+      {},
+      { userId: 7 },
+      false,
+      {
+        errorCode: 2,
+        reason: "failed",
+        type: "INTERNAL_ERROR",
+      },
+    ]) {
+      expect(() => assertZoomVideoStartResult(result)).toThrow(
+        ZoomOperationError,
+      );
+    }
+    expect(() => assertZoomExecutedResult(undefined, "audio")).toThrow(
+      ZoomOperationError,
+    );
+    expect(() => assertZoomExecutedResult(undefined, "init")).toThrow(
       ZoomOperationError,
     );
   });

@@ -16,6 +16,12 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
 
 ## Arquitetura
 
+- Antes de alterar adapter/retries/mocks, consultar
+  `docs/zoom/investigation-2026-08-27.md` e
+  `docs/zoom/self-view-2026-08-27.md`. No SDK 2.4.5, `join` pode retornar um
+  participante e `startVideo` retorna `undefined`; contratos específicos não
+  dispensam rejeitar falhas resolvidas. `destroyClient` preserva o receiver.
+  Falha de mídia/prévia não deve destruir uma conexão válida.
 - Browser: `@zoom/videosdk`.
 - Paciente acessa a sala dedicada por `/app/encontros/:bookingId/video`.
 - Terapeuta acessa a sala dedicada por

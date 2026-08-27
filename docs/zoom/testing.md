@@ -132,10 +132,12 @@ Runbook completo: `docs/zoom/real-homologation-runbook.md`.
 
 ## Reentrada e recuperacao do cliente
 
-O adapter mantém `init` e operações de mídia estritos (`""` como sucesso), mas
-`join` no bundle 2.4.5 também resolve o participante (`userId` positivo), em
-divergência com a declaração `ExecutedResult`. O teste precisa cobrir esse
-retorno real. Um objeto `{ type, reason, errorCode }` continua sendo falha.
+Normalizar por operação, não somente pela declaração `ExecutedResult`:
+`join` no bundle 2.4.5 também resolve o participante (`userId` positivo), e
+`startVideo` resolve `undefined` no sucesso da captura. `init`, áudio e
+`stopVideo` continuam estritos (`""`). Um objeto `{ type, reason, errorCode }`
+continua sendo falha. Os mocks precisam reproduzir esses retornos reais;
+ver [investigação de self-view](./self-view-2026-08-27.md).
 Antes de recriar o singleton, o fluxo remove listeners e videos, executa `leave`
 quando aplicavel e aguarda `destroyClient`.
 
@@ -147,6 +149,14 @@ Falha/timeout invalida o singleton até recarga e bloqueia criação de client e
 emissão de acesso inclusive após remount. Não há retry de destroy por atraso
 arbitrário. AbortController não cancela operação interna do SDK: cleanup espera
 a operação em andamento antes de destruir; timeout exige recarga.
+
+Cobrir câmera com sucesso `undefined`, falha resolvida/rejeitada, falha de
+prévia sem desligar transmissão, desligamento mesmo com falha de detach e
+unmount durante captura/attach pendentes. Prévia e transmissão são resultados
+distintos: não sugerir permissão negada quando apenas `attachVideo` falhou.
+Para ambos os papéis, testar câmera e microfone ligados na espera: tracks
+locais devem parar antes de iniciar a mídia do SDK; botões na chamada devem
+indicar câmera ligada e microfone ativo. Sem ativação prévia, não ligar mídia.
 
 Uma falha transitoria executa no maximo tres tentativas totais dentro de 10
 segundos, com esperas de 1,5 e 3 segundos. As tentativas reutilizam o acesso ja
