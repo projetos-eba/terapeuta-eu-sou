@@ -295,7 +295,7 @@ function IntroCards({
         <h2 className="font-display text-2xl font-light italic text-status-info">
           Um convite para você
         </h2>
-        <div className="mt-5 grid gap-5 xl:grid-cols-[253px_1fr]">
+        <div className="mt-5 grid gap-5">
           {profile.video && videoEmbedUrl && mode === "public" ? (
             <iframe
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -355,7 +355,7 @@ function IntroCards({
               </span>
             </div>
           )}
-          <p className="self-center text-sm font-medium leading-[1.55] text-tesText-primary">
+          <p className="text-sm font-medium leading-[1.55] text-tesText-primary">
             {profile.content.invitationBody}
           </p>
         </div>

@@ -82,8 +82,10 @@ The page should preserve these sections from Figma `13273:1844`:
   breakpoint. When the sidebar is active, show only the logo and menu control
   in the header; the authenticated account identity and its three actions stay
   above the navigation inside the sidebar. Show profile-specific login links
-  only for guests. Keep the large "Começar minha jornada" CTA in the header
-  only on large layouts.
+  only for guests. After a confirmed logout, update the authenticated/guest
+  state immediately in both desktop and mobile header instances without
+  requiring a full page reload. Keep the large "Começar minha jornada" CTA in
+  the header only on large layouts.
 - Hero with human image
 - `O que é o TES?` with the Figma-style supporting purple shape behind the trust cards
   - On large layouts the shape is capped at 50% of the viewport width; the trust
@@ -109,6 +111,10 @@ Use existing TES components before creating new equivalents:
 
 Use TES tokens through Tailwind classes and CSS variables. Do not change global tokens for a page-only issue.
 
+The motivations / online session section uses the supplied platform visual at
+`public/home/tablet-video-session-2026-08-26-transparent.png`; keep the legacy
+asset preserved for compatibility with other surfaces.
+
 ## Copy Rules
 
 - Keep language calm, human, premium, and responsible.
@@ -119,6 +125,8 @@ Use TES tokens through Tailwind classes and CSS variables. Do not change global 
 ## QA Checklist
 
 - Compare the page visually with Figma node `13273:1844` on desktop and mobile.
+- Validate authenticated header logout on desktop and mobile, including the
+  immediate return of the profile-specific login actions without a reload.
 - Check that all CTAs use `routes.public`.
 - Check unavailable rendering with missing Supabase env, and demo rendering only
   with `TES_ENABLE_DEMO_DATA=true` outside production.

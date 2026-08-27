@@ -142,6 +142,9 @@ Backend:
   mostrar/ocultar senha: ícone de olho, rótulo de ação, `aria-pressed` e alvo
   mínimo de 44px, sem mudar o payload ou a validação de autenticação.
 - O painel visual usa `brand-primary` (`#6C3D91`) e não o azul profundo.
+- O painel visual apresenta `PARA TERAPEUTAS` e `Seu espaço começa aqui` em
+  HTML semântico sobre o asset `therapistLoginBackground`; a imagem é
+  decorativa e não carrega a copy.
 - Não usar linguagem interna de desenvolvimento na UI, como “hardening” ou “onboarding”, quando houver alternativa clara para a pessoa usuária.
 - O subtítulo do login deve orientar com clareza: “Este acesso é para terapeutas. Se você está buscando atendimento, escolha o acesso correspondente.”
 - Nunca prometer renda, aprovação automática, cura, diagnóstico ou resultado garantido.
@@ -195,6 +198,8 @@ Backend:
 
 ## Assets da plataforma
 
-- O painel visual de login e cadastro usa `therapistLoginIcon` como mídia
-  decorativa ampliada, sem fade e sem copy ou checklist. Consulte
+- O painel visual de login e cadastro usa `therapistLoginBackground` como mídia
+  decorativa de fundo, sem fade de borda. A copy do painel é renderizada em
+  HTML e permanece visível também no mobile. `therapistLoginIcon` fica
+  preservado no manifesto por compatibilidade. Consulte
   `docs/design-system/platform-assets.md`.

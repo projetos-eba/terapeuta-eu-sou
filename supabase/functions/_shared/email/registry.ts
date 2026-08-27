@@ -108,6 +108,7 @@ function defaultEmailHtml(input: {
               <tbody>
                 <tr>
                   <td style="padding:32px 32px 32px">
+                    <h1 style="margin:0 0 24px;color:#14105a;font-family:Georgia,'Times New Roman',serif;font-size:32px;font-weight:400;line-height:1.15">${input.title}</h1>
                     ${input.body}
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:28px 0 0">
                       <tbody><tr><td align="center" style="border-radius:999px;background-color:#6c3d91"><a href="{{${input.ctaUrlToken}}}" style="display:inline-block;padding:14px 22px;border-radius:999px;color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:700;line-height:1.2;text-decoration:none">${input.ctaLabel}</a></td></tr></tbody>
@@ -696,7 +697,7 @@ export const emailActionRegistry: Record<
     adminConfigurable: true,
     currentTemplateVersion: "v1",
     defaults: {
-      subject: "Seu encontro foi confirmado",
+      subject: "Confirmação da sua sessão no TES",
       preheader: "Está tudo certo. Confira as informações do seu agendamento.",
       text: "Sua sessão foi confirmada.\n\nOlá, {{recipient_name}}.\n\nSua sessão com {{counterparty_name}} está confirmada. A reserva foi concluída e o horário ficou reservado na sua agenda.\n\nInformações da sessão:\nPessoa: {{counterparty_name}}\nTerapia: {{service_title}}\nData e horário: {{meeting_date_time}} ({{meeting_timezone}})\nModalidade: Online\n\nVocê poderá acompanhar todas as informações pela sua área no TES.\n\nEquipe TES\n\nVer sessão: {{encounter_url}}",
       html: defaultEmailHtml({

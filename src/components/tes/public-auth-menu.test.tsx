@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const router = {
@@ -14,6 +20,7 @@ import { PublicAuthMenu } from "./public-auth-menu";
 
 describe("PublicAuthMenu", () => {
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
     router.refresh.mockReset();
     router.replace.mockReset();
@@ -48,6 +55,9 @@ describe("PublicAuthMenu", () => {
       });
     });
 
+    await waitFor(() => {
+      expect(screen.getByText("Entrar | Cadastre-se")).toBeInTheDocument();
+    });
     expect(router.replace).toHaveBeenCalledWith("/");
     expect(router.refresh).toHaveBeenCalled();
   });
@@ -80,12 +90,18 @@ describe("PublicAuthMenu", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sair" }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenLastCalledWith("/api/auth/therapist/session", {
-        cache: "no-store",
-        method: "DELETE",
-      });
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        "/api/auth/therapist/session",
+        {
+          cache: "no-store",
+          method: "DELETE",
+        },
+      );
     });
 
+    await waitFor(() => {
+      expect(screen.getByText("Entrar | Cadastre-se")).toBeInTheDocument();
+    });
     expect(router.replace).toHaveBeenCalledWith("/");
     expect(router.refresh).toHaveBeenCalled();
   });

@@ -53,7 +53,7 @@ export default async function TherapistSignupPage({
   return (
     <TherapistAuthShell
       eyebrow="Para terapeutas"
-      title="Seu espaço profissional começa aqui."
+      title="Seu espaço começa aqui"
       description="Cadastre-se para acessar sua área profissional no TES."
     >
       <TherapistSignupForm plan={plan} />

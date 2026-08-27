@@ -1,6 +1,6 @@
 # Assets da plataforma
 
-Atualizado em 2026-08-19.
+Atualizado em 2026-08-27.
 
 ## Fonte e contrato
 
@@ -18,9 +18,10 @@ Atualizado em 2026-08-19.
 
 ## Mapa Figma → produto
 
-| Layer Figma                                      | Chave do manifesto            | Superfície                                           |
+| Layer Figma ou origem visual                     | Chave do manifesto            | Superfície                                           |
 | ------------------------------------------------ | ----------------------------- | ---------------------------------------------------- |
-| `Icone login terapeuta`                          | `therapistLoginIcon`          | Login e cadastro de terapeuta                        |
+| `Icone login terapeuta`                          | `therapistLoginIcon`          | Asset legado preservado no manifesto                |
+| Asset fornecido para auth (2026-08-27)           | `therapistLoginBackground`    | Login e cadastro de terapeuta                        |
 | `[Publico] Terapeutas`                           | `publicTherapistsHero`        | `/terapeutas`                                        |
 | `[Publico] Terapeutas - Banner inferior fundo`   | `publicTherapistsLowerBanner` | CTA inferior de `/terapeutas`                        |
 | `[Publico] Terapias`                             | `publicTherapiesHero`         | Hero de `/terapias`                                  |
@@ -40,6 +41,12 @@ Atualizado em 2026-08-19.
 
 `[Publico] Terapeutas - Banner inferior fundo e texto` não é distribuído ao
 produto: ele é referência visual. A copy do banner é sempre HTML acessível.
+
+O login e o cadastro de terapeuta usam o asset `therapistLoginBackground`,
+fornecido para esta superfície em 2026-08-27. A copy `Para terapeutas` e
+`Seu espaço começa aqui` permanece em HTML semântico sobre a imagem. O asset
+`therapistLoginIcon` continua disponível para compatibilidade, mas não é mais
+selecionado pelo shell de autenticação.
 
 ## Responsividade e acessibilidade
 

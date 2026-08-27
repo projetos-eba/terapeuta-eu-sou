@@ -302,7 +302,7 @@ Secrets das Edge Functions:
 
 Contrato Hostinger confirmado em documentacao oficial/SDK da Hostinger: `GET https://api.mail.hostinger.com/api/v1/me` retorna as mailboxes gerenciaveis; o envio usa `POST https://api.mail.hostinger.com/api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, `Content-Type: application/json`, payload com `to: string[]`, `display_name`, `subject`, `text` e `html`, e sucesso `204` sem corpo.
 
-Teste real de entrega: `npm run test:email:real` carrega `.env.local` e secrets locais das Edge Functions, usa a service role local em memoria via Supabase CLI, sincroniza mailboxes Hostinger no banco local e so envia quando `ALLOW_REAL_EMAIL_TESTS=true`, `EMAIL_E2E_RECIPIENT`, API key e sender ativo/default estiverem configurados.
+Teste real de entrega do template `booking_confirmed_therapist`: `npm run test:email:real` carrega `.env.local` e secrets locais das Edge Functions, usa a service role local em memoria via Supabase CLI, sincroniza mailboxes Hostinger no banco local e so envia quando `ALLOW_REAL_EMAIL_TESTS=true`, `EMAIL_E2E_RECIPIENT`, API key e sender ativo/default estiverem configurados.
 
 Scripts de pagamento:
 

@@ -522,6 +522,12 @@ O padrão deve deixar claro que perfil público, documentos pessoais e conta ban
 
 No mobile, o formulário de terapeuta aparece antes do painel explicativo. O painel com checklist vem abaixo para que a primeira visualização priorize a ação.
 
+A página `/terapeuta/checkout` usa a mesma moldura lavanda e marca oficial, mas
+não usa painel visual com imagem: no desktop, o resumo do plano, status e
+disponibilidade ficam à esquerda, enquanto o cupom promocional e o Checkout
+seguro ficam à direita. No mobile, as colunas empilham nessa ordem, preservando
+todos os dados e ações do fluxo.
+
 ## Padrão Auth Cliente
 
 As páginas `/cliente/login` e `/cliente/cadastro` reutilizam a linguagem visual do auth terapeuta, mas com onboarding mais simples: formulário primeiro, imagem acolhedora em painel lateral no desktop e abaixo do formulário no mobile.

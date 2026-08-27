@@ -7,11 +7,11 @@ import { TherapistAuthShell } from "./auth-shell";
 import { TherapistPlanSelection, TherapistSignupForm } from "./signup-form";
 
 describe("therapist authentication UI", () => {
-  it("uses the TES purple panel only as a larger decorative asset surface", () => {
+  it("uses the therapist background and renders its contextual copy", () => {
     const { container } = render(
       <TherapistAuthShell
         eyebrow="Para terapeutas"
-        title="Seu espaço profissional começa aqui."
+        title="Seu espaço começa aqui"
         description="Cadastre-se para acessar sua área profissional no TES."
       >
         <TherapistSignupForm plan={TherapistPlan.Free} />
@@ -20,7 +20,13 @@ describe("therapist authentication UI", () => {
 
     expect(container.querySelector("aside")).toHaveClass("bg-brand-primary");
     expect(
-      container.querySelector('aside img[src*="therapist-login-icon"]'),
+      container.querySelector(
+        'aside img[src*="therapist-login-background-2026-08-27"]',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Para terapeutas")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Seu espaço começa aqui" }),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole("heading", { name: "Conta profissional" }),

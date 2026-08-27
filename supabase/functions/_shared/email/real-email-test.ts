@@ -17,6 +17,7 @@ declare const Deno: {
 const ALLOWED_RECIPIENTS = new Set([
   "viniciusferrari.silva@gmail.com",
   "ferrarimarketing9@gmail.com",
+  "ferrarimkt9@gmail.com",
 ]);
 
 const runtime: EdgeRuntime = {
@@ -59,17 +60,20 @@ const syncedSender = await runStep("sync_hostinger_senders", () =>
 );
 const result = await runStep("send_real_email", () =>
   sendTransactionalEmail(client, provider, {
-    actionKey: "email_verification",
+    actionKey: "booking_confirmed_therapist",
     correlationId: `email-e2e-${crypto.randomUUID()}`,
     recipient: {
       email: recipient,
       name: "Teste TES",
     },
-    recipientRole: "admin",
+    recipientRole: "therapist",
     templateData: {
-      name: "Teste TES",
-      role: "admin",
-      url: "http://localhost:3000/confirmar-email?token=test-only",
+      counterparty_name: "Pessoa de teste",
+      encounter_url: "http://localhost:3000/terapeuta/sessoes/teste",
+      meeting_date_time: "27 de agosto de 2026 às 15:00",
+      meeting_timezone: "America/Sao_Paulo",
+      recipient_name: "Teste TES",
+      service_title: "Terapia de teste",
     },
   }),
 );
