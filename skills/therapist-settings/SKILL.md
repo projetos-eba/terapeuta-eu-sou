@@ -100,6 +100,11 @@ Any broader profile update requires a new security review.
 - API PATCH sends only `display_name` and `phone`.
 - UI disables the main save action until there are changes.
 - UI shows success, local validation error and safe remote error states.
+- After a successful save, the confirmation is brought into view and receives
+  focus so the therapist can immediately verify the result.
+- The aside uses intrinsic-height cards aligned to the top of the shared grid;
+  it contains only `Estado atual` and `Dados protegidos`, without a separate
+  preferences panel. The plan action remains a compact button.
 - UI renders private document upload/replacement for `identity_document` and
   `address_proof`, with no bucket/path details exposed to the therapist.
 - CEP válido, CEP inexistente, timeout/indisponibilidade e edição manual após o

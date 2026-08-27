@@ -5,6 +5,10 @@ import { CheckCircle2, Loader2, UserCheck } from "lucide-react";
 
 import { TESFeedbackDialog } from "@/components/tes";
 import { BookingReference } from "@/features/bookings";
+import {
+  notifySupportTicketRefresh,
+  useSupportTicketRefreshEvent,
+} from "@/features/support/components/support-live-refresh";
 
 type Management = {
   assignedAdminId: string | null;
@@ -68,6 +72,7 @@ export function AdminSupportManagementPanel({
   useEffect(() => {
     void load();
   }, [load]);
+  useSupportTicketRefreshEvent(ticketId, load);
 
   async function mutate(action: Action, priority?: Management["priority"]) {
     setError(null);
@@ -101,6 +106,7 @@ export function AdminSupportManagementPanel({
     requestId.current = null;
     setData(payload.data.ticket);
     await load();
+    notifySupportTicketRefresh(ticketId);
   }
 
   if (!data && !error)

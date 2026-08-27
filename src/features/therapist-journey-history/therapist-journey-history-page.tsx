@@ -6,7 +6,9 @@ import {
   CalendarClock,
   CalendarDays,
   Check,
+  ChevronLeft,
   ChevronDown,
+  ChevronRight,
   Clock3,
   Clock4,
   Download,
@@ -38,6 +40,7 @@ import type {
   JourneyHistoryFilters,
   JourneyHistoryMetric,
   JourneyHistoryPageData,
+  JourneyHistoryPagination,
   JourneyHistoryReminder,
   JourneyHistorySegment,
   JourneyHistorySummary,
@@ -51,6 +54,10 @@ export function TherapistJourneyHistoryPage({
   filters: JourneyHistoryFilters;
 }) {
   const visibleClients = filterJourneyClients(data.clients, filters);
+  const { clients: paginatedClients, pagination } = paginateJourneyClients(
+    visibleClients,
+    filters.page,
+  );
   const exportHref = buildJourneyCsvHref(visibleClients);
 
   return (
@@ -95,20 +102,31 @@ export function TherapistJourneyHistoryPage({
           <section className="min-w-0 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card">
             <JourneyFilters
               filters={filters}
-              segments={data.segments}
               statusSummary={data.summary}
             />
 
             {visibleClients.length > 0 ? (
               <>
-                <JourneyDesktopTable clients={visibleClients} />
-                <JourneyMobileList clients={visibleClients} />
-                <footer className="flex flex-col gap-2 border-t border-brand-lavender/60 px-5 py-5 text-xs font-semibold text-tesText-muted sm:flex-row sm:items-center sm:justify-between">
-                  <span>
-                    Mostrando {visibleClients.length} de {data.clients.length}{" "}
-                    pessoas
-                  </span>
-                  <span>Use os filtros para ajustar esta lista.</span>
+                <JourneyDesktopTable clients={paginatedClients} />
+                <JourneyMobileList clients={paginatedClients} />
+                <footer className="flex flex-col gap-4 border-t border-brand-lavender/60 px-5 py-5 text-sm font-semibold text-tesText-muted sm:px-6">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                    <span>
+                      Mostrando{" "}
+                      {(pagination.page - 1) * pagination.pageSize + 1}–
+                      {Math.min(
+                        pagination.page * pagination.pageSize,
+                        pagination.total,
+                      )}{" "}
+                      de {pagination.total}{" "}
+                      {pagination.total === 1 ? "pessoa" : "pessoas"}
+                    </span>
+                    <span>Use os filtros para ajustar esta lista.</span>
+                  </div>
+                  <JourneyPagination
+                    filters={filters}
+                    pagination={pagination}
+                  />
                 </footer>
               </>
             ) : (
@@ -165,8 +183,8 @@ export function TherapistJourneyDetailPage({
                 {client.name}
               </h1>
               <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-                Acompanhe as sessões compartilhadas, os temas identificados e os
-                próximos passos operacionais desta jornada.
+                Acompanhe as sessões compartilhadas e os próximos passos
+                operacionais desta jornada.
               </p>
               <div className="mt-4">
                 <ChipList items={client.therapyLabels} />
@@ -296,14 +314,6 @@ function JourneyDetailMetrics({ client }: { client: JourneyHistoryClient }) {
 }
 
 function JourneyTopics({ client }: { client: JourneyHistoryClient }) {
-  const tones = [
-    "bg-status-dangerBg text-status-danger",
-    "bg-brand-lavenderSoft text-brand-primary",
-    "bg-status-warningBg text-status-warning",
-    "bg-status-successBg text-status-success",
-    "bg-brand-cyanSoft text-status-info",
-  ];
-
   return (
     <section className="mt-6 rounded-panel border border-brand-lavender/60 bg-white p-5 shadow-card sm:p-7">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -312,38 +322,32 @@ function JourneyTopics({ client }: { client: JourneyHistoryClient }) {
             Visão da jornada
           </p>
           <h2 className="mt-2 font-display text-[30px] font-light italic leading-tight text-brand-deep sm:text-[36px]">
-            Temas identificados nos registros
+            Temas da jornada
           </h2>
         </div>
         <p className="max-w-xl text-sm font-semibold leading-6 text-tesText-secondary">
-          Identificados a partir de títulos, terapias e resumos compartilhados.
+          Só mostramos aqui temas que a pessoa compartilhou diretamente.
         </p>
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {client.topicLabels.map((topic, index) => (
-          <article
-            className="flex min-h-28 items-center gap-3 rounded-card border border-brand-lavender/60 p-4"
-            key={topic}
-          >
-            <span
-              className={`grid size-10 shrink-0 place-items-center rounded-full ${tones[index % tones.length]}`}
-            >
-              <Sparkles aria-hidden="true" size={18} />
-            </span>
-            <div>
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-tesText-muted">
-                Tema
-              </p>
-              <h3 className="mt-1 text-sm font-extrabold text-brand-deep">
-                {topic}
-              </h3>
-              <p className="mt-1 text-xs font-semibold text-tesText-secondary">
-                Registrado na jornada
-              </p>
-            </div>
-          </article>
-        ))}
+      <div className="mt-6 rounded-card border border-dashed border-brand-lavender bg-brand-lavenderSoft/40 p-5">
+        <Sparkles
+          aria-hidden="true"
+          className="text-brand-primary"
+          size={22}
+        />
+        <p className="mt-3 text-sm font-extrabold text-brand-deep">
+          {client.topicLabels.length > 0
+            ? "Temas compartilhados na jornada"
+            : "Ainda não há temas compartilhados para mostrar."}
+        </p>
+        {client.topicLabels.length === 0 ? (
+          <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+            Quando alguém compartilhar um tema, ele aparecerá aqui.
+          </p>
+        ) : (
+          <ChipList items={client.topicLabels} />
+        )}
       </div>
     </section>
   );
@@ -392,7 +396,6 @@ function JourneyMemory({
                 <tr className="border-b border-brand-lavender/60 text-[11px] font-extrabold uppercase tracking-[0.08em] text-tesText-muted">
                   <th className="w-[145px] px-5 py-4">Data e hora</th>
                   <th className="w-[150px] px-4 py-4">Terapia</th>
-                  <th className="w-[170px] px-4 py-4">Temas identificados</th>
                   <th className="px-4 py-4">Registro compartilhado</th>
                   <th className="w-[130px] px-5 py-4 text-right">Ação</th>
                 </tr>
@@ -405,9 +408,6 @@ function JourneyMemory({
                     </td>
                     <td className="px-4 py-5 text-sm font-extrabold text-brand-deep">
                       {item.serviceTitle}
-                    </td>
-                    <td className="px-4 py-5">
-                      <ChipList items={item.topicLabels} size="sm" />
                     </td>
                     <td className="px-4 py-5">
                       <strong className="block text-sm font-extrabold text-brand-deep">
@@ -449,7 +449,6 @@ function JourneyMemory({
                     Abrir
                   </Link>
                 </div>
-                <ChipList items={item.topicLabels} size="sm" />
                 <div>
                   <strong className="text-sm font-extrabold text-brand-deep">
                     {item.title}
@@ -613,19 +612,17 @@ export function JourneyHistoryState({
 
 function JourneyFilters({
   filters,
-  segments,
   statusSummary,
 }: {
   filters: JourneyHistoryFilters;
-  segments: JourneyHistorySegment[];
   statusSummary: JourneyHistorySummary;
 }) {
   return (
     <form
       action={routes.therapist.patients}
-      className="grid grid-cols-2 gap-3 border-b border-brand-lavender/60 p-4 sm:p-5 xl:grid-cols-[minmax(220px,1fr)_minmax(132px,0.58fr)_minmax(150px,0.68fr)_minmax(146px,0.62fr)_112px]"
+      className="grid grid-cols-2 gap-3 border-b border-brand-lavender/60 p-4 sm:p-5 xl:grid-cols-[minmax(220px,1fr)_minmax(132px,0.58fr)_minmax(146px,0.62fr)_112px]"
     >
-      <div className="col-span-2 flex items-center justify-between gap-3 xl:col-span-5">
+      <div className="col-span-2 flex items-center justify-between gap-3 xl:col-span-4">
         <div>
           <h2 className="text-base font-extrabold text-brand-deep">
             Pessoas acompanhadas
@@ -641,12 +638,12 @@ function JourneyFilters({
         />
       </div>
       <label className="relative col-span-2 block min-w-0 xl:col-span-1">
-        <span className="sr-only">Buscar por pessoa, terapia ou tema</span>
+        <span className="sr-only">Buscar por pessoa ou terapia</span>
         <input
           className="h-12 w-full rounded-[18px] border border-brand-lavender/70 bg-white px-4 pr-11 text-sm font-semibold text-brand-deep shadow-card outline-none placeholder:text-tesText-muted focus:border-brand-primary focus:ring-4 focus:ring-brand-lavenderSoft"
           defaultValue={filters.q}
           name="q"
-          placeholder="Buscar por pessoa, terapia ou tema..."
+          placeholder="Buscar por pessoa ou terapia..."
           type="search"
         />
         <Search
@@ -664,14 +661,6 @@ function JourneyFilters({
         <option value="active">Ativos ({statusSummary.active})</option>
         <option value="paused">Pausados ({statusSummary.paused})</option>
         <option value="stale">Sem retorno ({statusSummary.stale})</option>
-      </SelectControl>
-      <SelectControl defaultValue={filters.segment} name="segment">
-        <option value="">Segmentos</option>
-        {segments.map((segment) => (
-          <option key={segment.id} value={segment.label}>
-            {segment.label}
-          </option>
-        ))}
       </SelectControl>
       <SelectControl defaultValue={filters.sort} name="sort">
         <option value="last_session">Ordenar: Data</option>
@@ -731,9 +720,8 @@ function JourneyDesktopTable({ clients }: { clients: JourneyHistoryClient[] }) {
             <th className="w-[10%] px-2.5 py-5">Situação</th>
             <th className="w-[15%] px-2.5 py-5">Terapias</th>
             <th className="w-[12%] px-2.5 py-5">Última sessão</th>
-            <th className="w-[12%] px-2.5 py-5">Próxima sessão</th>
-            <th className="w-[19%] px-2.5 py-5">Temas identificados</th>
-            <th className="w-[9%] px-3 py-5 text-right">Ações</th>
+            <th className="w-[16%] px-2.5 py-5">Próxima sessão</th>
+            <th className="w-[10%] px-3 py-5 text-right">Ações</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-brand-lavender/60">
@@ -757,9 +745,6 @@ function JourneyDesktopTable({ clients }: { clients: JourneyHistoryClient[] }) {
               <td className="px-2.5 py-4">
                 {formatShortDateTime(client.nextSessionAt)}
               </td>
-              <td className="px-2.5 py-4">
-                <ChipList items={client.topicLabels.slice(0, 2)} size="sm" />
-              </td>
               <td className="px-3 py-4 text-right">
                 <Link
                   aria-label={`Ver jornada de ${client.name}`}
@@ -779,7 +764,7 @@ function JourneyDesktopTable({ clients }: { clients: JourneyHistoryClient[] }) {
 
 function JourneyMobileList({ clients }: { clients: JourneyHistoryClient[] }) {
   return (
-    <div className="grid grid-cols-2 gap-3 p-3 sm:gap-4 sm:p-5 xl:hidden">
+    <div className="grid grid-cols-1 gap-4 p-4 sm:p-5 xl:hidden">
       {clients.map((client) => (
         <article
           className="grid min-w-0 content-start gap-3 rounded-card border border-brand-lavender/60 bg-white p-3 shadow-card sm:p-4"
@@ -799,7 +784,7 @@ function JourneyMobileList({ clients }: { clients: JourneyHistoryClient[] }) {
               value={formatShortDateTime(client.nextSessionAt)}
             />
           </div>
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <ChipList items={client.therapyLabels.slice(0, 1)} size="sm" />
             <span className="text-xs font-extrabold text-brand-deep">
               {client.totalEncounters}{" "}
@@ -824,6 +809,104 @@ function JourneyMobileList({ clients }: { clients: JourneyHistoryClient[] }) {
         </article>
       ))}
     </div>
+  );
+}
+
+export const JOURNEY_HISTORY_PAGE_SIZE = 12;
+
+export function paginateJourneyClients(
+  clients: JourneyHistoryClient[],
+  requestedPage: number,
+): {
+  clients: JourneyHistoryClient[];
+  pagination: JourneyHistoryPagination;
+} {
+  const total = clients.length;
+  const totalPages =
+    total === 0 ? 0 : Math.ceil(total / JOURNEY_HISTORY_PAGE_SIZE);
+  const page =
+    totalPages === 0
+      ? 1
+      : Math.min(Math.max(requestedPage, 1), totalPages);
+  const start = (page - 1) * JOURNEY_HISTORY_PAGE_SIZE;
+
+  return {
+    clients: clients.slice(start, start + JOURNEY_HISTORY_PAGE_SIZE),
+    pagination: {
+      page,
+      pageSize: JOURNEY_HISTORY_PAGE_SIZE,
+      total,
+      totalPages,
+    },
+  };
+}
+
+function JourneyPagination({
+  filters,
+  pagination,
+}: {
+  filters: JourneyHistoryFilters;
+  pagination: JourneyHistoryPagination;
+}) {
+  if (pagination.totalPages <= 1) return null;
+
+  const previousHref = buildJourneyHistoryHref(
+    filters,
+    Math.max(pagination.page - 1, 1),
+  );
+  const nextHref = buildJourneyHistoryHref(
+    filters,
+    Math.min(pagination.page + 1, pagination.totalPages),
+  );
+
+  return (
+    <nav
+      aria-label="Paginação das pessoas acompanhadas"
+      className="flex flex-wrap items-center justify-between gap-3"
+    >
+      {pagination.page > 1 ? (
+        <Link
+          aria-label="Página anterior"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-brand-lavender px-3 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          href={previousHref}
+        >
+          <ChevronLeft aria-hidden="true" size={17} />
+          Anterior
+        </Link>
+      ) : (
+        <span
+          aria-disabled="true"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-brand-lavender/50 px-3 text-sm font-extrabold text-tesText-muted"
+        >
+          <ChevronLeft aria-hidden="true" size={17} />
+          Anterior
+        </span>
+      )}
+      <span
+        aria-live="polite"
+        className="text-sm font-extrabold text-brand-primary"
+      >
+        Página {pagination.page} de {pagination.totalPages}
+      </span>
+      {pagination.page < pagination.totalPages ? (
+        <Link
+          aria-label="Próxima página"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-brand-lavender px-3 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+          href={nextHref}
+        >
+          Próxima
+          <ChevronRight aria-hidden="true" size={17} />
+        </Link>
+      ) : (
+        <span
+          aria-disabled="true"
+          className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-brand-lavender/50 px-3 text-sm font-extrabold text-tesText-muted"
+        >
+          Próxima
+          <ChevronRight aria-hidden="true" size={17} />
+        </span>
+      )}
+    </nav>
   );
 }
 
@@ -955,7 +1038,7 @@ function PortfolioSummary({ summary }: { summary: JourneyHistorySummary }) {
 
 function SegmentsCard({ segments }: { segments: JourneyHistorySegment[] }) {
   return (
-    <SideCard title="Temas recorrentes">
+    <SideCard className="col-span-2 xl:col-span-1" title="Temas da jornada">
       {segments.length > 0 ? (
         <div className="grid gap-3">
           {segments.map((segment) => (
@@ -963,7 +1046,9 @@ function SegmentsCard({ segments }: { segments: JourneyHistorySegment[] }) {
               className="flex items-center justify-between gap-3"
               key={segment.id}
             >
-              <SegmentBadge segment={segment} />
+              <span className="inline-flex min-h-7 items-center rounded-lg bg-brand-lavenderSoft px-3 text-[11px] font-extrabold text-brand-primary">
+                {segment.label}
+              </span>
               <span className="grid size-7 place-items-center rounded-full bg-brand-lavenderSoft text-[11px] font-extrabold text-brand-primary">
                 {segment.count}
               </span>
@@ -971,8 +1056,8 @@ function SegmentsCard({ segments }: { segments: JourneyHistorySegment[] }) {
           ))}
         </div>
       ) : (
-        <p className="text-sm font-semibold text-tesText-secondary">
-          Nenhum segmento identificado ainda.
+        <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+          Ainda não há temas compartilhados para mostrar.
         </p>
       )}
     </SideCard>
@@ -1134,23 +1219,7 @@ function ChipList({
   );
 }
 
-function SegmentBadge({ segment }: { segment: JourneyHistorySegment }) {
-  const classes = {
-    brand: "bg-brand-lavenderSoft text-brand-primary",
-    danger: "bg-status-dangerBg text-status-danger",
-    info: "bg-status-infoBg text-status-info",
-    success: "bg-status-successBg text-status-success",
-    warning: "bg-status-warningBg text-status-warning",
-  };
 
-  return (
-    <span
-      className={`inline-flex min-h-7 items-center rounded-lg px-3 text-[11px] font-extrabold ${classes[segment.tone]}`}
-    >
-      {segment.label}
-    </span>
-  );
-}
 
 function MiniFact({ label, value }: { label: string; value: string }) {
   return (
@@ -1186,8 +1255,9 @@ export function parseJourneyHistoryFilters(
   const sort = first(searchParams.sort);
 
   return {
+    page: parseJourneyHistoryPage(first(searchParams.page)),
     q: first(searchParams.q) ?? "",
-    segment: first(searchParams.segment) ?? "",
+    segment: "",
     sort:
       sort === "name" || sort === "next_session" || sort === "sessions"
         ? sort
@@ -1199,30 +1269,48 @@ export function parseJourneyHistoryFilters(
   };
 }
 
+function parseJourneyHistoryPage(value: string | undefined) {
+  const page = Number.parseInt(value ?? "", 10);
+  return Number.isSafeInteger(page) && page > 0 ? page : 1;
+}
+
+export function buildJourneyHistoryHref(
+  filters: JourneyHistoryFilters,
+  page: number,
+) {
+  const params = new URLSearchParams();
+  const query = filters.q.trim();
+
+  if (query) params.set("q", query);
+  if (filters.status !== "all") params.set("status", filters.status);
+  if (filters.sort !== "last_session") params.set("sort", filters.sort);
+  if (page > 1) params.set("page", String(page));
+
+  const search = params.toString();
+  return search
+    ? routes.therapist.patients + "?" + search
+    : routes.therapist.patients;
+}
+
 export function filterJourneyClients(
   clients: JourneyHistoryClient[],
   filters: JourneyHistoryFilters,
 ) {
   const query = normalize(filters.q);
-  const segment = normalize(filters.segment);
   const filtered = clients.filter((client) => {
     const matchesStatus =
       filters.status === "all" || client.status === filters.status;
-    const matchesSegment =
-      !segment ||
-      client.topicLabels.some((topic) => normalize(topic) === segment);
     const matchesQuery =
       !query ||
-      normalize(
-        [
-          client.name,
-          client.emailLabel,
-          ...client.therapyLabels,
-          ...client.topicLabels,
-        ].join(" "),
-      ).includes(query);
+        normalize(
+          [
+            client.name,
+            client.emailLabel,
+            ...client.therapyLabels,
+          ].join(" "),
+        ).includes(query);
 
-    return matchesStatus && matchesSegment && matchesQuery;
+    return matchesStatus && matchesQuery;
   });
 
   return filtered.sort((a, b) => sortClients(a, b, filters.sort));
@@ -1242,7 +1330,7 @@ function sortClients(
   return dateValue(b.lastSessionAt, false) - dateValue(a.lastSessionAt, false);
 }
 
-function buildJourneyCsvHref(clients: JourneyHistoryClient[]) {
+export function buildJourneyCsvHref(clients: JourneyHistoryClient[]) {
   const header = [
     "cliente",
     "status",
@@ -1250,7 +1338,6 @@ function buildJourneyCsvHref(clients: JourneyHistoryClient[]) {
     "ultima_sessao",
     "proxima_sessao",
     "sessoes",
-    "temas",
   ];
   const rows = clients.map((client) => [
     client.name,
@@ -1259,7 +1346,6 @@ function buildJourneyCsvHref(clients: JourneyHistoryClient[]) {
     client.lastSessionAt ?? "",
     client.nextSessionAt ?? "",
     String(client.totalEncounters),
-    client.topicLabels.join(" | "),
   ]);
   const csv = [header, ...rows]
     .map((row) => row.map(escapeCsvValue).join(","))

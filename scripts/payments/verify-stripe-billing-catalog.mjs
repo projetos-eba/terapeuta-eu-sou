@@ -25,7 +25,7 @@ const supabaseUrl = getSupabaseUrl();
 assertStripeModeAllowedForSupabaseUrl({ stripeMode, supabaseUrl });
 const serviceRoleKey = requireSupabaseServiceRoleKey();
 const rows = await supabaseJson(
-  "/rest/v1/billing_plan_prices?select=unit_amount_cents,interval,stripe_price_id,stripe_lookup_key,billing_plans!inner(code,name)&unit_amount_cents=gt.0&is_active=eq.true",
+  "/rest/v1/billing_plan_prices?select=unit_amount_cents,interval,is_public,offer_key,stripe_price_id,stripe_lookup_key,billing_plans!inner(code,name)&unit_amount_cents=gt.0&is_active=eq.true",
 );
 const failures = [];
 
@@ -47,13 +47,15 @@ for (const row of rows) {
       mismatches.push("unit_amount");
     if (price.recurring?.interval !== row.interval)
       mismatches.push("recurring.interval");
+    if ((price.recurring?.interval_count ?? 1) !== 1)
+      mismatches.push("recurring.interval_count");
     if (price.lookup_key !== row.stripe_lookup_key)
       mismatches.push("lookup_key");
     if ((price.livemode ? "live" : "test") !== stripeMode)
       mismatches.push("livemode");
 
     console.log(
-      `- ${planCode}: ${row.unit_amount_cents} cents, stripe_price_id=${row.stripe_price_id}`,
+      `- ${planCode} (mensal${row.offer_key ? ", oferta" : ""}): ${row.unit_amount_cents} cents, stripe_price_id=${maskStripeId(row.stripe_price_id)}`,
     );
 
     if (mismatches.length > 0) {
@@ -64,6 +66,11 @@ for (const row of rows) {
       `${planCode}: ${error instanceof Error ? error.message : "Stripe lookup failed"}`,
     );
   }
+}
+
+function maskStripeId(value) {
+  if (!value) return "missing";
+  return `${value.slice(0, 8)}…${value.slice(-4)}`;
 }
 
 if (failures.length > 0) {

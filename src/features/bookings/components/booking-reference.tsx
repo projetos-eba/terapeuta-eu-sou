@@ -12,7 +12,7 @@ export function BookingReference({
   return (
     <p
       className={cn(
-        "mt-1 break-all text-[11px] font-semibold leading-4 text-tesText-muted sm:text-xs",
+        "mt-1 block max-w-full truncate whitespace-nowrap text-[11px] font-semibold leading-4 text-tesText-muted sm:text-xs",
         className,
       )}
       data-testid="booking-reference"

@@ -35,4 +35,21 @@ describe("Stripe promotion checkout contract", () => {
       subscription.indexOf("Pagamento seguro no TES"),
     );
   });
+
+  it("keeps the founder price selection server-side and collects a card", () => {
+    const subscription = read(
+      "supabase/functions/stripe-create-subscription-checkout/index.ts",
+    );
+    const founderOffer = read(
+      "supabase/functions/_shared/payments/founder-offer.ts",
+    );
+
+    expect(founderOffer).toContain('"TERAPEUTAFUNDADOR"');
+    expect(founderOffer).toContain('"therapist_founder"');
+    expect(subscription).toContain('payment_method_collection: "always"');
+    expect(subscription).toContain("is_public=eq.true&offer_key=is.null");
+    expect(subscription).toContain("assertFounderOfferEligibility");
+    expect(subscription).toContain("checkout_replacement_conflict");
+    expect(subscription).toContain("billing_plan_price_id");
+  });
 });

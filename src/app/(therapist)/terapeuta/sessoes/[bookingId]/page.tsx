@@ -127,7 +127,7 @@ export default async function TherapistSessionDetailPage({
           <SessionAdditionalLinks booking={booking} />
         </AppPageMain>
 
-        <AppPageAside className="auto-rows-min self-start content-start grid-cols-1 md:grid-cols-2 xl:!block">
+        <AppPageAside className="auto-rows-min self-start content-start !grid-cols-1 lg:!grid-cols-2 xl:!block">
           <SessionActionRail booking={booking} presentation={presentation} />
         </AppPageAside>
       </AppPageGrid>

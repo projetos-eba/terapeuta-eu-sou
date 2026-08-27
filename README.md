@@ -310,6 +310,12 @@ Scripts de pagamento:
 - `npm run payments:env -- catalog`: valida o minimo para sincronizar catalogo.
 - `npm run payments:catalog:sync`: sincroniza Stripe Billing pelo `STRIPE_SECRET_KEY` e grava Product/Price IDs no Supabase.
 - `npm run payments:catalog:verify`: compara catalogo local com Stripe real.
+- `npm run payments:bootstrap:test`: provisiona o catálogo mensal, mantém
+  `TERAPEUTAFUNDADOR` ativo, sincroniza o Supabase local e verifica webhooks.
+- `npm run payments:bootstrap:live`: configura somente recursos Stripe Live e
+  webhooks, mantendo o código fundador inativo; não cria transações.
+- `npm run payments:verify:test` e `npm run payments:verify:live`: verificações
+  somente leitura com saída sanitizada.
 - `npm run payments:webhooks:listen`: inicia forwarding local dos eventos Stripe
   da plataforma para `stripe-billing-webhook` e de `account.updated` das contas
   conectadas para `stripe-connect-webhook`. A lista completa para configurar no

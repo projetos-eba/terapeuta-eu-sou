@@ -2,6 +2,7 @@ export * from "./filter-button";
 export * from "./auth-back-button";
 export * from "./journey-banner";
 export * from "./password-visibility-toggle";
+export * from "./premium-therapist-badge";
 export * from "./public-footer";
 export * from "./public-header";
 export * from "./tes-badge";

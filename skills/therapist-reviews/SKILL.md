@@ -24,23 +24,38 @@ Use esta skill ao alterar a página de Avaliações do shell do terapeuta.
 - Mutação autenticada: `/api/therapist/reviews`.
 - RPC de resposta: `upsert_therapist_review_reply_v1`.
 - Idempotência: `therapist_review_reply_mutation_requests`.
+- Criação/edição do paciente: `/api/patient/reviews`, Edge Function
+  `patient-reviews-command` e `save_patient_therapist_review_for_actor_v1`.
+- Histórico: `review_revisions`; mutações do paciente usam
+  `patient_therapist_review_mutation_requests`.
 - Projeção pública segura: `public_therapist_profile_reviews_v`.
 
 Avaliações exibidas ao terapeuta e ao público devem derivar de:
 
 - `reviews.status = published`;
-- `bookings.status = completed`;
-- `session_payments.financial_status = paid`;
-- sessão online TES;
+- uma única avaliação canônica por relação paciente–terapeuta;
+- ao menos uma confirmação `completed` do paciente naquela relação para a
+  criação inicial;
 - perfil público aprovado quando o consumidor é público.
+
+Depois de criada, a visibilidade da avaliação não depende de mudanças futuras
+em booking ou pagamento. Inserir, editar, ocultar ou republicar `reviews` não
+altera `session_payments`, confirmação bilateral, elegibilidade ou lotes.
 
 ## Regras De Produto
 
 - O terapeuta não cria avaliações.
 - O terapeuta responde apenas avaliações próprias e elegíveis.
+- O paciente pode criar, editar, ocultar e republicar sua avaliação canônica;
+  nota é obrigatória para publicar e comentário é opcional.
+- Versões anteriores são append-only em `review_revisions`.
 - Resposta pública deve ser breve, responsável e sem dados privados.
 - Comentários ocultos, reportados ou removidos não entram na tela nem no perfil público.
 - Métricas são agregadas, nunca editáveis.
+- Confirmação operacional pós-sessão fica disponível para todos os planos. O
+  centro de feedbacks/analytics desta rota é Premium e Premium Plus.
+- Feedback privado das próprias sessões e pendências podem aparecer na gestão,
+  mas a resposta do paciente é imutável e somente leitura para o terapeuta.
 - Não inventar deltas percentuais quando não houver base confiável.
 - TES é exclusivamente online; não sugerir atendimento fora do fluxo online da
   plataforma.
@@ -49,6 +64,8 @@ Avaliações exibidas ao terapeuta e ao público devem derivar de:
 
 - `TherapistReviewsPage`.
 - `TherapistReviewMetricCard`.
+- `PrivateSessionFeedbackCard`.
+- `PendingConfirmationCard`.
 - `TherapistReviewCard`.
 - `TherapistReviewsSidebar`.
 - `ReviewReplyDialog`.

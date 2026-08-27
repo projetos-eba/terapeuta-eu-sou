@@ -68,6 +68,7 @@ const therapistEmail = `${runId}.therapist_free@example.test`.toLowerCase();
 let browser;
 let cachedTherapistUserId;
 let subscriptionId = null;
+let hostedCheckoutSessionId = null;
 
 try {
   logStage("cleanup_existing_e2e_stripe_subscriptions");
@@ -86,7 +87,7 @@ try {
     )}`,
   );
   await page.getByLabel("E-mail").fill(therapistEmail);
-  await page.getByLabel("Senha").fill(password);
+  await page.locator('input[name="password"]').fill(password);
   logStage("submit_login");
   await page.getByRole("button", { name: "Entrar como terapeuta" }).click();
   await page.waitForURL(
@@ -105,7 +106,63 @@ try {
     .first()
     .waitFor({ state: "visible", timeout: 45_000 });
 
-  if (scenario === "canceled") {
+  if (scenario === "founder") {
+    if (plan !== "premium_plus") {
+      throw new Error("founder_scenario_requires_premium_plus");
+    }
+    logStage("apply_remove_reapply_founder_code");
+    await exerciseFounderPromotionReplacement(page);
+  }
+
+  if (scenario === "hosted") {
+    logStage("open_authenticated_hosted_checkout_fallback");
+    const hostedCheckout = await page.evaluate(async (selectedPlan) => {
+      const response = await fetch("/api/therapist/subscription-checkout", {
+        body: JSON.stringify({
+          checkoutUiMode: "hosted",
+          plan: selectedPlan,
+          promotionCode: null,
+          replaceCheckoutSessionId: null,
+          requestId: crypto.randomUUID(),
+        }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
+      });
+      return response.json();
+    }, plan);
+    if (
+      !hostedCheckout?.ok ||
+      hostedCheckout.checkout?.mode !== "hosted" ||
+      !hostedCheckout.checkout?.url ||
+      !hostedCheckout.checkout?.checkoutSessionId
+    ) {
+      throw new Error("hosted_checkout_fallback_missing");
+    }
+    hostedCheckoutSessionId = hostedCheckout.checkout.checkoutSessionId;
+    await page.goto(hostedCheckout.checkout.url);
+    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 30_000 });
+    logStage("return_from_hosted_checkout");
+    await page.goto(
+      `${baseUrl}/terapeuta/checkout?plan=${plan}&checkout=canceled`,
+    );
+    await page.waitForURL(/\/terapeuta\/checkout\?.*checkout=canceled/, {
+      timeout: 30_000,
+    });
+    await page
+      .getByRole("heading", { name: "Código promocional", exact: true })
+      .waitFor({ timeout: 30_000 });
+    await assertTherapistPlan("free", "after_hosted_checkout_return");
+    console.log(
+      JSON.stringify({
+        authenticatedReturnObserved: true,
+        finalPlan: "free",
+        hostedCheckoutObserved: true,
+        ok: true,
+        plan,
+        scenario,
+      }),
+    );
+  } else if (scenario === "canceled") {
     logStage("cancel_stripe_checkout");
     await cancelStripeCheckout(page);
     await page.waitForURL(/\/terapeuta\/checkout\?.*checkout=canceled/, {
@@ -158,6 +215,14 @@ try {
     logStage("retrieve_stripe_subscription");
     const checkoutSession =
       await stripe.checkout.sessions.retrieve(checkoutSessionId);
+    if (
+      scenario === "founder" &&
+      (checkoutSession.amount_subtotal !== 7_990 ||
+        checkoutSession.amount_total !== 0 ||
+        checkoutSession.total_details?.amount_discount !== 7_990)
+    ) {
+      throw new Error("founder_checkout_amounts_diverge");
+    }
     subscriptionId =
       typeof checkoutSession.subscription === "string"
         ? checkoutSession.subscription
@@ -180,6 +245,13 @@ try {
     if (!webhookResponse.ok) {
       throw new Error(`webhook_failed:${webhookResponse.status}`);
     }
+    logStage("repost_duplicate_signed_webhook_event");
+    const duplicateWebhookResponse = await postSignedStripeEvent(event);
+    if (!duplicateWebhookResponse.ok) {
+      throw new Error(
+        `duplicate_webhook_failed:${duplicateWebhookResponse.status}`,
+      );
+    }
 
     let invoiceEvent = null;
     if (latestInvoiceId) {
@@ -192,6 +264,31 @@ try {
         throw new Error(
           `invoice_webhook_failed:${invoiceWebhookResponse.status}`,
         );
+      }
+    }
+
+    let founderPaymentMethodRegistered;
+    let founderFirstInvoiceAmountDue;
+    if (scenario === "founder") {
+      if (!latestInvoiceId) throw new Error("founder_invoice_missing");
+      const firstInvoice = await stripe.invoices.retrieve(latestInvoiceId);
+      founderFirstInvoiceAmountDue = firstInvoice.amount_due;
+      if (firstInvoice.amount_due !== 0 || firstInvoice.total !== 0) {
+        throw new Error("founder_first_invoice_not_zero");
+      }
+
+      const customerId = getStripeObjectId(subscription.customer);
+      const customer = customerId
+        ? await stripe.customers.retrieve(customerId)
+        : null;
+      founderPaymentMethodRegistered = Boolean(
+        getStripeObjectId(subscription.default_payment_method) ||
+          (customer &&
+            !customer.deleted &&
+            getStripeObjectId(customer.invoice_settings.default_payment_method)),
+      );
+      if (!founderPaymentMethodRegistered) {
+        throw new Error("founder_payment_method_not_registered");
       }
     }
 
@@ -213,11 +310,16 @@ try {
         redirectReturnObserved: true,
         serverSideReconciliationObserved: planAfterRedirect === plan,
         eventProcessed: evidence.webhook?.processing_status === "processed",
+        duplicateWebhookAccepted: duplicateWebhookResponse.ok,
         finalPlan: evidence.therapist?.plan,
         invoiceEventProcessed: invoiceEvent
           ? evidence.invoice?.status === "paid"
           : undefined,
         invoiceStatus: evidence.invoice?.status ?? null,
+        initialInvoiceAmountCents:
+          scenario === "founder" ? checkoutSession.amount_total : undefined,
+        founderFirstInvoiceAmountDue,
+        founderPaymentMethodRegistered,
         localSubscriptionStatus: evidence.subscription?.status ?? null,
         ok: true,
         plan,
@@ -231,6 +333,11 @@ try {
 } finally {
   if (subscriptionId && !shouldKeepSubscription) {
     await stripe.subscriptions.cancel(subscriptionId).catch(() => undefined);
+  }
+  if (hostedCheckoutSessionId) {
+    await stripe.checkout.sessions
+      .expire(hostedCheckoutSessionId)
+      .catch(() => undefined);
   }
 
   if (browser) await browser.close();
@@ -248,14 +355,48 @@ function normalizePaidPlan(value) {
 }
 
 function normalizeScenario(value) {
-  if (value === "approved" || value === "declined" || value === "canceled") {
+  if (
+    value === "approved" ||
+    value === "declined" ||
+    value === "canceled" ||
+    value === "founder" ||
+    value === "hosted"
+  ) {
     return value;
   }
 
   console.error(
-    "PAYMENTS_E2E_SCENARIO must be approved, declined or canceled.",
+    "PAYMENTS_E2E_SCENARIO must be approved, declined, canceled, founder or hosted.",
   );
   process.exit(1);
+}
+
+async function exerciseFounderPromotionReplacement(page) {
+  const input = page.locator("#tes-promotion-code");
+  await input.fill("TERAPEUTAFUNDADOR");
+  await page.getByRole("button", { name: "Aplicar" }).click();
+  await page.getByText("Código aplicado").waitFor({ timeout: 30_000 });
+  await page
+    .getByText(/Seus 3 primeiros meses ficam grátis/i)
+    .waitFor({ timeout: 30_000 });
+  await page.getByText("R$ 0,00", { exact: true }).waitFor({
+    timeout: 30_000,
+  });
+
+  await page.getByRole("button", { name: "Remover" }).click();
+  await page.getByRole("button", { name: "Aplicar" }).waitFor({
+    timeout: 30_000,
+  });
+  await input.fill("TERAPEUTAFUNDADOR");
+  await page.getByRole("button", { name: "Aplicar" }).click();
+  await page.getByText("Código aplicado").waitFor({ timeout: 30_000 });
+  await page
+    .getByText(/Seus 3 primeiros meses ficam grátis/i)
+    .waitFor({ timeout: 30_000 });
+  await page
+    .locator("#subscription-embedded-checkout iframe")
+    .first()
+    .waitFor({ state: "visible", timeout: 45_000 });
 }
 
 async function fillStripeCard(page, cardNumber) {
@@ -378,13 +519,12 @@ async function fillOptionalStripeField(page, label, value, selectors = []) {
 
 async function clickStripeButton(page, label) {
   const locator =
-    (await findFirstSelectorInPageOrFrames(page, [
-      'button[type="submit"]',
-      '[data-testid="hosted-payment-submit-button"]',
-    ])) ??
     (await findLocatorInPageOrFrames(page, (scope) =>
       scope.getByRole("button", { name: label }).first(),
     )) ??
+    (await findFirstSelectorInPageOrFrames(page, [
+      '[data-testid="hosted-payment-submit-button"]',
+    ])) ??
     (await findFirstEnabledButtonInPageOrFrames(page));
 
   if (!locator) throw new Error("stripe_submit_button_not_found");

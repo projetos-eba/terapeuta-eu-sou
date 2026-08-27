@@ -3,6 +3,7 @@
 import type {
   PatientAccountData,
   PatientAccountEditableFields,
+  PatientAddressLookupResult,
 } from "./patient-account.types";
 
 type ApiEnvelope<T> =
@@ -12,6 +13,50 @@ type ApiEnvelope<T> =
 type AccountCommandResult<T> =
   | { data: T; status: "success" }
   | { error: { code: string; message: string; status?: number }; status: "error" };
+
+export type PatientAddressLookupCommandResult =
+  | { data: PatientAddressLookupResult; status: "success" }
+  | { error: { code: string; message: string; status?: number }; status: "error" };
+
+export async function lookupPatientAddressByCep(
+  cep: string,
+  signal?: AbortSignal,
+): Promise<PatientAddressLookupCommandResult> {
+  try {
+    const response = await fetch(
+      `/api/therapist/address/cep?cep=${encodeURIComponent(cep)}`,
+      { cache: "no-store", signal },
+    );
+    const envelope = (await response
+      .json()
+      .catch(() => null)) as ApiEnvelope<PatientAddressLookupResult> | null;
+
+    if (!response.ok || !envelope || envelope.ok !== true) {
+      const error = envelope?.ok === false ? envelope.error : undefined;
+      return {
+        error: {
+          code: error?.code ?? "CEP_UNAVAILABLE",
+          message:
+            error?.message ??
+            "Não foi possível consultar este CEP. Você pode preencher o endereço manualmente.",
+          status: response.status,
+        },
+        status: "error",
+      };
+    }
+
+    return { data: envelope.data, status: "success" };
+  } catch {
+    return {
+      error: {
+        code: "CEP_UNAVAILABLE",
+        message:
+          "Não foi possível consultar este CEP. Você pode preencher o endereço manualmente.",
+      },
+      status: "error",
+    };
+  }
+}
 
 export async function updatePatientAccount(
   fields: PatientAccountEditableFields,

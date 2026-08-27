@@ -44,9 +44,14 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
   microfone, câmera, suporte e saída. O adapter continua sendo a autoridade
   de lifecycle do Video SDK.
 - Sair é individual: usa `leave(false)`, volta à espera e preserva reconexão.
-  Somente encerramento definitivo confirmado pelo backend, ou fim programado,
-  libera feedback na mesma rota. O detalhe pode reabrir a experiência por
-  `?feedback=1`; não criar rota canônica nova.
+  O controle de saída permanece acionável mesmo quando a conexão caiu, para
+  que a mídia local possa ser limpa; a operação remota pode ser concluída na
+  próxima reconexão. Uma chegada pontual ou participação confiável persistida
+  preserva a autorização de reentrada até o fim agendado, desde que a presença
+  atual do terapeuta continue válida. Somente encerramento definitivo
+  confirmado pelo backend, ou fim programado, libera feedback na mesma rota. O
+  detalhe pode reabrir a experiência por `?feedback=1`; não criar rota
+  canônica nova.
 - Antes de T-15, renderizar somente preparação e horário de abertura. Em T-15,
   renderizar sala visual de espera com capa abstrata, contador, preflight e
   estado host-first; nunca liberar JWT do paciente apenas por query string.
@@ -60,10 +65,16 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
 - O contador visível usa somente `scheduledStartsAt`, `scheduledEndsAt` e
   `serverNow`. `hardEndsAt` é watchdog interno e nunca representa duração do
   encontro.
+- Na sala de espera, a contagem regressiva até o início permanece visível. Na
+  sala de vídeo ativa, não exibir contagem antes do horário agendado; depois do
+  início, exibir somente o tempo restante até o fim da sessão/encontro.
 - A prévia de câmera é local ao navegador e usa `getUserMedia({ video: true,
-  audio: false })`; o teste de áudio usa somente `getUserMedia({ audio: true,
-  video: false })` e um indicador local de nível. Ambos encerram tracks ao
-  desligar o teste, entrar, falhar ou desmontar a tela.
+audio: false })`; o teste de áudio usa somente `getUserMedia({ audio: true,
+video: false })` e um indicador local de nível. Ambos encerram tracks ao
+  desligar o teste, entrar, falhar ou desmontar a tela. Ao clicar para entrar,
+  a sala de espera envia ao adapter as duas preferências atuais: cada mídia
+  testada e ligada é ativada após o `join`; qualquer mídia não ligada continua
+  desligada. Essa preferência é transitória no navegador e não é persistida.
 - A qualidade do encontro só fica elegível após `session.user_joined` confiável
   para paciente e terapeuta e encerramento efetivo/programado. Um único join
   direciona para ocorrência, não para avaliação de qualidade.
@@ -98,7 +109,8 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
   encerramento conforme o papel.
 - Validar bloqueio antes de T-15, espera com terapeuta ausente, liberação do
   paciente após join do terapeuta, ambos os joins, saída e estados de ocorrência.
-- Validar `leave -> espera -> reentrada`, `final end -> feedback`, feedback já enviado, erro de leitura,
+- Validar `leave -> espera -> reentrada`, inclusive com a saída disponível sem
+  conexão, `final end -> feedback`, feedback já enviado, erro de leitura,
   erro de envio, resposta realizada, não realização, comentário de 500
   caracteres e reabertura por query controlada.
 - O `userId` local vem de `ZoomVideoClient.getCurrentUserInfo()`, nunca do
@@ -118,6 +130,9 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
 - Validar câmera inicialmente desligada, ativação após o join, desligamento e
   visualização bidirecional real. Exercitar também permissão negada, nova
   concessão e recuperação sem recriar booking ou relaxar autorização.
+- Validar para paciente e terapeuta que câmera e microfone ligados na sala de
+  espera entram ligados na sala ativa e que, sem teste habilitado, ambos entram
+  desligados/silenciados.
 - Validar que as capas aparecem até o vídeo correspondente, que a prévia local
   substitui apenas a capa de espera, que câmera e microfone são pedidos de modo
   independente e que nenhum track permanece ativo após a navegação.
@@ -131,7 +146,7 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
 - Executar testes focados, `npm run typecheck`, `npm run lint` e
   `npm run build`.
 - Executar `npm run test:deno`, `npm run zoom:video-sdk:test`, `npx supabase
-  db reset`, `npx supabase db lint --schema public` e `npx supabase test db`
+db reset`, `npx supabase db lint --schema public` e `npx supabase test db`
   quando o ambiente local estiver disponível.
 - Homologações reais devem usar Playwright headed, contexts isolados, Zoom real
   e confirmação final no Supabase.

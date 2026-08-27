@@ -20,6 +20,7 @@ type BillingPriceRow = {
   } | null;
   id: string;
   interval: "month" | "year" | null;
+  offer_key: string | null;
   stripe_lookup_key: string | null;
   unit_amount_cents: number;
 };
@@ -46,7 +47,7 @@ runtime.serve(async (request) => {
 
     const stripe = createStripeClient(config.stripeApiKey);
     const rows = await client.get<BillingPriceRow[]>(
-      "/rest/v1/billing_plan_prices?select=id,unit_amount_cents,interval,stripe_lookup_key,billing_plans!inner(code,name)&unit_amount_cents=gt.0&is_active=eq.true",
+      "/rest/v1/billing_plan_prices?select=id,unit_amount_cents,interval,offer_key,stripe_lookup_key,billing_plans!inner(code,name)&unit_amount_cents=gt.0&is_active=eq.true",
     );
     const synced = [];
 
@@ -76,12 +77,15 @@ runtime.serve(async (request) => {
           metadata: {
             entity: "therapist_plan_price",
             environment: config.environment,
+            ...(row.offer_key ? { offer_key: row.offer_key } : {}),
             stripe_mode: config.stripeMode,
             plan_code: row.billing_plans.code,
             system: "tes",
           },
           product: product.id,
-          recurring: { interval: row.interval },
+          recurring: {
+            interval: row.interval,
+          },
           unit_amount: row.unit_amount_cents,
         });
       }
@@ -90,6 +94,7 @@ runtime.serve(async (request) => {
         price.currency !== "brl" ||
         price.unit_amount !== row.unit_amount_cents ||
         price.recurring?.interval !== row.interval ||
+        (price.recurring?.interval_count ?? 1) !== 1 ||
         (price.livemode ? "live" : "test") !== config.stripeMode
       ) {
         throw new DomainError(

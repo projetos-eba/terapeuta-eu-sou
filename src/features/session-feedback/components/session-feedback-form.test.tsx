@@ -45,6 +45,9 @@ describe("SessionFeedbackForm", () => {
     );
 
     await screen.findByText("Como foi seu encontro?");
+    fireEvent.click(screen.getByRole("button", { name: "Sim, foi realizado" }));
+    expect(screen.getByText("Como você avalia este encontro?")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Compartilhe algo importante sobre este encontro…")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "4 estrelas" }));
     fireEvent.change(screen.getByLabelText(/observações/i), {
       target: { value: "Boa qualidade de áudio." },
@@ -52,23 +55,20 @@ describe("SessionFeedbackForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /enviar feedback/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        "/api/session-feedback",
-        expect.objectContaining({
-          body: JSON.stringify({
-            bookingId,
-            comment: "Boa qualidade de áudio.",
-            notPerformedReason: null,
-            outcome: "completed",
-            rating: 4,
-          }),
-          method: "POST",
-        }),
-      );
+      const call = fetchMock.mock.calls.find(([url]) => url === "/api/session-feedback");
+      expect(call?.[1]).toEqual(expect.objectContaining({ method: "POST" }));
+      expect(JSON.parse(String(call?.[1]?.body))).toEqual({
+        bookingId,
+        comment: "Boa qualidade de áudio.",
+        notPerformedReason: null,
+        outcome: "completed",
+        rating: 4,
+        requestId: expect.stringMatching(/^[0-9a-f-]{36}$/i),
+      });
     });
 
     expect(document.body.textContent).not.toMatch(/actorRole|requestId/);
-    expect(await screen.findByText("Feedback registrado")).toBeInTheDocument();
+    expect(await screen.findByText("Sua confirmação foi registrada")).toBeInTheDocument();
   });
 
   it("requires a non-completion reason and preserves the 500 character limit", async () => {
@@ -86,6 +86,7 @@ describe("SessionFeedbackForm", () => {
     );
 
     await screen.findByText("Como foi sua sessão?");
+    expect(screen.getByPlaceholderText("Compartilhe algo importante sobre esta sessão…")).toBeInTheDocument();
     const comment = screen.getByLabelText(/observações/i);
     fireEvent.change(comment, { target: { value: "x".repeat(600) } });
 

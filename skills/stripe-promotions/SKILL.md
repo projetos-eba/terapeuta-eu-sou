@@ -46,6 +46,13 @@ may supersede its composition and any divergence must be reported.
   `duration_in_months=3`; it is not a trial.
 - Future start uses an inactive Promotion Code activated manually. Do not invent
   `starts_at` or a scheduler.
+- Founder launch contract: exact code `TERAPEUTAFUNDADOR`, Premium
+  Plus monthly only, 100% for three monthly invoices, first transaction only,
+  redemptions from 2026-09-01 through 2026-09-10 in Brasília, then hidden
+  recurring Price R$ 79,90. Resolve `offer_key=therapist_founder` server-side;
+  never expose or accept the hidden Price from the browser. Keep Test Mode
+  active for homologation and provision Live Mode inactive for manual
+  activation on 2026-09-01.
 
 ## Implementation map
 
@@ -100,11 +107,16 @@ booking. Accept the first real paid attempt and expire open siblings.
    the Code field), and set exactly `tes_checkout_scope=session` or
    `tes_checkout_scope=subscription`. If Dashboard metadata editing is not
    available, use `stripe promotion_codes update promo_xxx -d
-   "metadata[tes_checkout_scope]=session"` in Test mode.
+"metadata[tes_checkout_scope]=session"` in Test mode.
 5. Test visibly through TES and signed webhook processing.
 6. Repeat deliberately in Live mode only after the full release gate.
 7. Disable the Promotion Code to stop a campaign; no TES database write is
    required.
+
+For the founder campaign use only the versioned commands
+`payments:founder-offer:test`, `payments:founder-offer:activate:test` and
+`payments:founder-offer:deactivate:test`. They must fail closed outside Stripe
+Test Mode. Do not activate before the Brasília launch window.
 
 ## QA gate
 

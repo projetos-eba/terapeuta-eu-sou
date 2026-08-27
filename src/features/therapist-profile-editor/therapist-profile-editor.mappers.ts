@@ -14,6 +14,7 @@ import type {
   TherapistPrivateDocumentKind,
   TherapistPrivateDocumentStatus,
   TherapistPrivateDocumentValidationState,
+  TherapistProfilePrivateLocation,
   TherapistProfilePublicStatus,
   TherapistProfileVerificationSummary,
   TherapistProfileVerificationStatus,
@@ -39,6 +40,7 @@ export function mapTherapistProfileEditorContract(
     privateDocuments: array(value.privateDocuments).map((item) =>
       mapPrivateDocument(item),
     ),
+    privateLocation: mapPrivateLocation(value.privateLocation),
     propagationNotice: stringOr(
       value.propagationNotice,
       "Depois da aprovação, as alterações podem levar até 2 a 3 horas para aparecer para todas as pessoas.",
@@ -305,6 +307,16 @@ function mapPrivateDocument(input: unknown) {
     updatedAt: requiredString(value.updatedAt),
     validationState: privateDocumentValidationState(value.validationState),
   };
+}
+
+function mapPrivateLocation(
+  input: unknown,
+): TherapistProfilePrivateLocation | null {
+  const value = asObject(input);
+  const city = stringOr(value.city, "").trim();
+  const state = stringOr(value.state, "").trim();
+
+  return city || state ? { city, state } : null;
 }
 
 function mapVerificationSummary(

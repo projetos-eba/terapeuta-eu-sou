@@ -36,6 +36,7 @@ Paciente e terapeuta podem comunicar somente texto previamente aprovado pelo TES
 Suporte é a relação entre o solicitante e o TES. Texto livre é permitido somente dentro de ticket autorizado; nunca reutiliza a API, tabela ou UI de mensagens entre participantes.
 
 - Paciente e terapeuta abrem e leem somente tickets próprios.
+- Cada ticket recebe um protocolo persistido e imutável no formato `#582914730P`: nove dígitos e uma letra da categoria. As letras são `A` (agenda e sessões), `Z` (acesso à sala), `P` (pagamentos), `F` (financeiro), `S` (plano), `V` (perfil e verificação), `C` (conta e acesso) e `O` (outro). O protocolo identifica o atendimento; autorização continua baseada no ticket e na sessão autenticada.
 - `requester_profile_id` e papel são derivados da sessão; o navegador não pode escolher outro solicitante.
 - `booking_id`, quando aceito, precisa pertencer ao solicitante segundo a relação canônica de booking.
 - Conteúdo é plain text, sem interpretação HTML ou Markdown e sem conteúdo em logs operacionais.
@@ -139,6 +140,12 @@ trabalho pendente, prioridade vem antes e a atividade pendente mais antiga é
 atendida primeiro. `assigned_admin_id` é aditivo em `support_tickets`, tem uso
 operacional real e nunca entra em DTO/RLS do solicitante.
 
+As telas de suporte atualizam por SSE mediado pelo servidor. Ao perder a conexão,
+usam atualização periódica temporária e tentam reconectar com espera progressiva;
+ao recuperar o canal, o polling para. O retorno para uma aba visível força uma
+atualização imediata. O navegador recebe somente um sinal de atualização, nunca
+mensagens internas, dados de outros tickets ou credenciais.
+
 ## Lifecycle de suporte vigente
 
 | Evento autorizado                     | Estado resultante   | `waiting_on` | Efeito                                                 |
@@ -150,11 +157,18 @@ operacional real e nunca entra em DTO/RLS do solicitante.
 | Admin resolve                         | `resolved`          | nulo         | Define `resolved_at` e atualiza atividade.             |
 | Admin reabre                          | `open`              | `support`    | Limpa `resolved_at` e atualiza atividade.              |
 
+Copy dos estados: para solicitante, `open` é “Recebemos seu chamado”,
+`in_progress` é “Em atendimento pelo TES”, `waiting_support` é “Aguardando
+resposta do TES”, `waiting_requester` é “Aguardando sua resposta” e `resolved`
+é “Resolvido”. Para Admin, os mesmos estados explicam a fila: “Novo chamado”,
+“Em atendimento”, “Aguardando resposta da equipe TES”, “Aguardando resposta do
+solicitante” e “Resolvido”.
+
 Nota interna, alteração de prioridade e atribuição atualizam `last_activity_at`, mas não podem expor conteúdo ou autor administrativo ao solicitante. Admin só pode iniciar atendimento a partir de `open` ou `waiting_support`; resposta pública só é aceita em `open`, `in_progress` ou `waiting_support`; resolução exige ticket ainda não resolvido; reabertura administrativa exige `resolved`.
 
 ## Dados, RLS e compatibilidade da Fase 2
 
-`support_ticket_messages` contém `id`, `ticket_id`, `author_profile_id` derivado, papel do autor, `body`, `visibility` (`requester` ou `internal`), `created_at` e `request_id`. A constraint `(ticket_id, author_profile_id, request_id)` bloqueia retries duplicados. A descrição inicial nova é materializada como primeira mensagem pública, portanto a thread é a fonte canônica da conversa. Tickets históricos sem thread retornam a descrição legada como primeira mensagem conceitual, sem backfill destrutivo.
+`support_ticket_messages` contém `id`, `ticket_id`, `author_profile_id` derivado, papel do autor, `body`, `visibility` (`requester` ou `internal`), `created_at` e `request_id`. A constraint `(ticket_id, author_profile_id, request_id)` bloqueia retries duplicados. A descrição inicial nova é materializada como primeira mensagem pública, portanto a thread é a fonte canônica da conversa. Tickets históricos sem thread retornam a descrição legada como primeira mensagem conceitual, sem backfill destrutivo. A migration de protocolos preenche chamados existentes antes de tornar `support_tickets.protocol` obrigatório e único.
 
 Campos de `support_tickets` só serão adicionados com uso: `assigned_admin_id`, `last_activity_at` e `resolved_at`. `waiting_on` continua redundante com o estado e não existe. A migration da Fase 3 adiciona somente `assigned_admin_id`, índices de Inbox e boundaries Admin-only; registros atuais permanecem compatíveis. Os comandos legados `support.resolve`/`support.reopen` agora delegam à mesma state machine da Inbox.
 

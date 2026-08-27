@@ -30,6 +30,14 @@ describe("therapist auth routing", () => {
     },
   );
 
+  it("strips obsolete billing-cycle parameters from checkout continuations", () => {
+    const checkout = `${getTherapistCheckoutHref(TherapistPlan.PremiumPlus)}&billing=unsupported`;
+
+    expect(getSafeTherapistContinuation(checkout)).toBe(
+      `${routes.public.therapistCheckout}?plan=premium_plus`,
+    );
+  });
+
   it("accepts only paid checkout continuations", () => {
     const checkout = getTherapistCheckoutHref(TherapistPlan.Premium);
 

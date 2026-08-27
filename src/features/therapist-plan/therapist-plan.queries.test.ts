@@ -46,7 +46,7 @@ describe("getTherapistPlanPageData", () => {
     expect(result.effectivePlan).toBe("premium_plus");
     expect(result.subscription?.scheduledPlan).toBe("premium");
     expect(result.catalog.map((item) => item.unitAmountCents)).toEqual([
-      0, 6000, 12000,
+      0, 7990, 12990,
     ]);
     expect(String(fetchMock.mock.calls[1]?.[0])).toContain(
       "status=in.%28active%2Ctrialing%2Cpast_due%2Cunpaid%2Cpaused%2Cincomplete%29",
@@ -84,7 +84,8 @@ function catalogRows() {
           currency: "BRL",
           interval: "month",
           is_active: true,
-          unit_amount_cents: 6000,
+          is_public: true,
+          unit_amount_cents: 7990,
         },
       ],
     },
@@ -97,7 +98,8 @@ function catalogRows() {
           currency: "BRL",
           interval: "month",
           is_active: true,
-          unit_amount_cents: 12000,
+          is_public: true,
+          unit_amount_cents: 12990,
         },
       ],
     },

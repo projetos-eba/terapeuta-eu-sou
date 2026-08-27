@@ -1,6 +1,6 @@
 # Stripe Phase 3 Homologation
 
-Last updated: 2026-08-10
+Last updated: 2026-08-26
 
 ## Scope
 
@@ -10,6 +10,24 @@ Phase 3 validates Stripe in two stages:
 - **3B LIVE readiness**: configuration-only validation for live mode. No live charge, payout, refund or onboarding completion is executed without a separate go/no-go.
 
 Browser redirects never activate plans or bookings by themselves. The accepted source of truth remains Stripe server-side plus signed webhook/reconciliation and persisted Supabase state.
+
+## Bootstrap mensal
+
+O catálogo de assinaturas é exclusivamente mensal: Premium R$ 79,90 e Premium
+Plus R$ 129,90. A oferta `TERAPEUTAFUNDADOR` usa o mesmo Product Premium Plus,
+um Price oculto de R$ 79,90 e Coupon de 100% por três meses.
+
+```bash
+npm run payments:bootstrap:test
+npm run payments:verify:test
+npm run payments:bootstrap:live
+npm run payments:verify:live
+```
+
+Test Mode fica ativo para homologação. Live Mode recebe somente configuração e
+leitura de confirmação; o Promotion Code fica inativo até ativação manual em
+01/09/2026 e expira em 11/09/2026 00:00 America/Sao_Paulo. Não executar
+Checkout, assinatura, fatura, pagamento, ping ou simulação em Live.
 
 ## Required Environment
 

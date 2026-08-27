@@ -97,7 +97,7 @@ export function validateTherapistServicesCommand(
       !isUuid(body.therapyId) ||
       !isBoundedString(title, 1, 120) ||
       !isOptionalDescription(body.description) ||
-      !isInteger(body.durationMinutes, 15, 240) ||
+      !isInteger(body.durationMinutes, 20, 120) ||
       !isInteger(body.priceCents, 1000, 2000000) ||
       !isUuidList(body.themeIds, 1, 3) ||
       !isUuidList(body.interestIds, 0, 9) ||
@@ -148,7 +148,7 @@ export function validateTherapistServicesCommand(
       payload.description = normalizeDescription(body.description);
     }
     if (body.durationMinutes !== undefined) {
-      if (!isInteger(body.durationMinutes, 15, 240)) invalid();
+      if (!isInteger(body.durationMinutes, 20, 120)) invalid();
       payload.durationMinutes = body.durationMinutes;
     }
     if (body.priceCents !== undefined) {
@@ -239,6 +239,16 @@ export function mapTherapistServiceDatabaseError(error: unknown) {
       "idempotency_conflict",
       409,
       "Esta operação já foi usada com outros dados.",
+    );
+  }
+  if (
+    details.includes("THERAPIST_SERVICE_INVALID_DURATION") ||
+    details.includes("therapist_services_duration_range")
+  ) {
+    return new DomainError(
+      "invalid_payload",
+      422,
+      "A duração deve ser um número inteiro entre 20 e 120 minutos.",
     );
   }
   if (details.includes("THERAPIST_SERVICE_VERSION_CONFLICT")) {

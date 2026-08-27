@@ -183,7 +183,7 @@ describe("MessageCenterPage", () => {
         ok: true,
         ticket: {
           id: "30000000-0000-4000-8000-000000000001",
-          protocol: "30000000",
+          protocol: "582914730O",
           status: "open",
         },
       }),
@@ -245,7 +245,7 @@ describe("MessageCenterPage", () => {
           data={createData({ actorRole: "patient", source: "supabase" })}
         />,
       );
-      fireEvent.click(screen.getByRole("button", { name: /nova mensagem/i }));
+      fireEvent.click(screen.getByRole("button", { name: /novo chamado/i }));
       fireEvent.change(screen.getByLabelText(/assunto/i), {
         target: { value: "Dúvida sobre meu acesso" },
       });
@@ -262,7 +262,7 @@ describe("MessageCenterPage", () => {
       expect(fetchMock).toHaveBeenCalledWith(
         "/api/support/tickets",
         expect.objectContaining({
-          body: expect.stringContaining('"category":"financeiro_repasses"'),
+          body: expect.stringContaining('"category":"outro"'),
           method: "POST",
         }),
       );

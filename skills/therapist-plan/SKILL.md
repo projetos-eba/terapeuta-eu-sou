@@ -42,6 +42,9 @@ Read `AGENTS.md`, `docs/product/sitemap.md`,
   therapist session.
 - Catalog and real prices: `billing_plans` plus active
   `billing_plan_prices`.
+- Public paid catalog: Premium R$ 79,90/month and Premium Plus
+  R$ 129,90/month. Hidden rows with `is_public=false` are campaign Prices and
+  must never appear in this page.
 - Subscription lifecycle: `therapist_subscriptions` and Stripe Billing.
 - Features and entitlements: `src/domain/tes/plan-definitions.ts`,
   `src/domain/tes/plans.ts`, `src/domain/tes/permissions.ts` and
@@ -52,6 +55,8 @@ Read `AGENTS.md`, `docs/product/sitemap.md`,
 ## Billing Contract
 
 - Free to paid uses the existing authenticated Checkout flow.
+- Free chooses a paid plan and the server resolves its monthly public Price;
+  the browser never sends a Price ID, value or offer key.
 - Premium to Premium Plus is immediate with proration and preserves the old
   plan if payment confirmation is incomplete.
 - Premium Plus to Premium uses a Subscription Schedule and takes effect at the

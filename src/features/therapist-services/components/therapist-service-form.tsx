@@ -11,6 +11,10 @@ import {
   createStableRequestId,
   sendTherapistServicesCommand,
 } from "../therapist-services.commands";
+import {
+  THERAPIST_SERVICE_DURATION_MAX_MINUTES,
+  THERAPIST_SERVICE_DURATION_MIN_MINUTES,
+} from "../therapist-services.constants";
 import type {
   TherapistServiceDeliveryFormat,
   TherapistServiceSummary,
@@ -78,6 +82,8 @@ export function TherapistServiceForm({
   const [submitting, setSubmitting] = useState<"activate" | "draft" | null>(
     null,
   );
+  const [createdDraft, setCreatedDraft] =
+    useState<TherapistServiceSummary | null>(null);
   const firstErrorRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(
     null,
   );
@@ -95,12 +101,69 @@ export function TherapistServiceForm({
     }
   }, [fieldErrors]);
 
+  function handleContinue() {
+    const errors = validateStep(values, priceCents, mode, step);
+    setFieldErrors(errors);
+    setSubmitError(
+      Object.keys(errors).length > 0
+        ? "Revise os campos destacados antes de continuar."
+        : null,
+    );
+
+    if (Object.keys(errors).length > 0) return;
+    setStep((current) => current + 1);
+  }
+
+  async function activateDraft(draft: TherapistServiceSummary) {
+    setSubmitting("activate");
+    const activateResult = await sendTherapistServicesCommand({
+      action: "activate",
+      expectedVersion: draft.version,
+      requestId: createStableRequestId(),
+      serviceId: draft.serviceId,
+    });
+    setSubmitting(null);
+
+    if (activateResult.status === "error") {
+      setSubmitError(
+        `A terapia foi salva como rascunho, mas não foi possível ativá-la. ${activateResult.error.message}`,
+      );
+      return;
+    }
+
+    if ("service" in activateResult.data) {
+      onSaved(activateResult.data.service, "Terapia criada e ativada.");
+      onClose();
+      return;
+    }
+
+    setSubmitError(
+      "A terapia foi salva como rascunho, mas não foi possível ativá-la agora.",
+    );
+  }
+
   async function handleSubmit(nextStatus: "active" | "draft") {
     const errors = validate(values, priceCents, mode);
     setFieldErrors(errors);
+
+    if (Object.keys(errors).length > 0 || priceCents === null) {
+      setSubmitError(buildValidationError(errors));
+      setStep(firstInvalidStep(errors, mode));
+      return;
+    }
     setSubmitError(null);
 
-    if (Object.keys(errors).length > 0 || priceCents === null) return;
+    if (mode === "create" && createdDraft) {
+      if (nextStatus === "draft") {
+        onSaved(createdDraft, "Terapia salva como rascunho.");
+        onClose();
+        return;
+      }
+
+      await activateDraft(createdDraft);
+      return;
+    }
+
     setSubmitting(nextStatus === "active" ? "activate" : "draft");
 
     if (mode === "edit" && service) {
@@ -176,29 +239,8 @@ export function TherapistServiceForm({
     }
 
     const created = createResult.data.service;
-    const activateResult = await sendTherapistServicesCommand({
-      action: "activate",
-      expectedVersion: created.version,
-      requestId: createStableRequestId(),
-      serviceId: created.serviceId,
-    });
-    setSubmitting(null);
-
-    if (activateResult.status === "error") {
-      onSaved(
-        created,
-        `Rascunho salvo. Não foi possível ativar a terapia: ${activateResult.error.message}`,
-      );
-      return;
-    }
-
-    if ("service" in activateResult.data) {
-      onSaved(activateResult.data.service, "Terapia criada e ativada.");
-      onClose();
-      return;
-    }
-
-    setSubmitError("Não foi possível ativar esta terapia agora.");
+    setCreatedDraft(created);
+    await activateDraft(created);
   }
 
   const title = mode === "edit" ? "Editar terapia" : "Nova terapia";
@@ -220,7 +262,11 @@ export function TherapistServiceForm({
       <StepIndicator mode={mode} step={step} />
 
       {submitError ? (
-        <div className="mt-4 rounded-lg border border-status-danger/30 bg-status-dangerBg p-4 text-sm font-bold text-status-danger">
+        <div
+          aria-live="assertive"
+          className="mt-4 rounded-lg border border-status-danger/30 bg-status-dangerBg p-4 text-sm font-bold text-status-danger"
+          role="alert"
+        >
           {submitError}
         </div>
       ) : null}
@@ -285,16 +331,7 @@ export function TherapistServiceForm({
           {step < 4 ? (
             <TESButton
               disabled={submitting !== null}
-              onClick={() => {
-                if (step === 1 && !values.therapy) {
-                  setFieldErrors({
-                    therapy: "Escolha uma terapia da plataforma.",
-                  });
-                  return;
-                }
-                setFieldErrors({});
-                setStep((current) => current + 1);
-              }}
+              onClick={handleContinue}
               type="button"
             >
               Continuar
@@ -409,26 +446,30 @@ function OfferFields({
           id="service-duration"
           label="Duração"
         >
-          <select
+          <input
             aria-describedby={
               errors.durationMinutes ? "service-duration-error" : undefined
             }
             className="h-12 w-full rounded-lg border border-brand-lavender px-4 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary"
             id="service-duration"
+            inputMode="numeric"
+            max={THERAPIST_SERVICE_DURATION_MAX_MINUTES}
+            min={THERAPIST_SERVICE_DURATION_MIN_MINUTES}
             onChange={(event) =>
               onChange((current) => ({
                 ...current,
-                durationMinutes: Number(event.target.value),
+                durationMinutes:
+                  event.target.value === "" ? 0 : Number(event.target.value),
               }))
             }
+            step={1}
             value={values.durationMinutes}
-          >
-            {[30, 45, 60, 75, 90, 120].map((duration) => (
-              <option key={duration} value={duration}>
-                {duration} min
-              </option>
-            ))}
-          </select>
+            type="number"
+          />
+          <p className="mt-1 text-sm font-semibold text-tesText-secondary">
+            Digite um valor inteiro entre {THERAPIST_SERVICE_DURATION_MIN_MINUTES} e{" "}
+            {THERAPIST_SERVICE_DURATION_MAX_MINUTES} minutos.
+          </p>
         </Field>
         <Field error={errors.price} id="service-price" label="Preço">
           <input
@@ -739,18 +780,74 @@ function validate(
     errors.title = "Informe um título com pelo menos 3 caracteres.";
   }
   if (values.description.trim().length < 20) {
-    errors.description = "Explique a proposta em pelo menos 20 caracteres.";
+    errors.description = "A descrição precisa ter pelo menos 20 caracteres.";
   }
   if (values.description.trim().length > 200) {
     errors.description = "Use no máximo 200 caracteres.";
   }
-  if (values.durationMinutes < 15 || values.durationMinutes > 240) {
-    errors.durationMinutes = "A duração deve ficar entre 15 e 240 minutos.";
+  if (
+    !Number.isInteger(values.durationMinutes) ||
+    values.durationMinutes < THERAPIST_SERVICE_DURATION_MIN_MINUTES ||
+    values.durationMinutes > THERAPIST_SERVICE_DURATION_MAX_MINUTES
+  ) {
+    errors.durationMinutes = `A duração deve ser um número inteiro entre ${THERAPIST_SERVICE_DURATION_MIN_MINUTES} e ${THERAPIST_SERVICE_DURATION_MAX_MINUTES} minutos.`;
   }
   if (priceCents === null || priceCents < 1000) {
     errors.price = "Informe um preço válido a partir de R$ 10,00.";
   }
   return errors;
+}
+
+function validateStep(
+  values: ServiceFormValues,
+  priceCents: number | null,
+  mode: "create" | "edit",
+  step: number,
+) {
+  const errors = validate(values, priceCents, mode);
+
+  if (step === 1) {
+    return pickErrors(errors, ["therapy"]);
+  }
+
+  if (step === 2) {
+    return pickErrors(errors, ["matching"]);
+  }
+
+  if (step === 3) {
+    return pickErrors(errors, [
+      "title",
+      "description",
+      "durationMinutes",
+      "price",
+    ]);
+  }
+
+  return {};
+}
+
+function pickErrors(errors: Record<string, string>, keys: string[]) {
+  return Object.fromEntries(
+    keys.filter((key) => errors[key]).map((key) => [key, errors[key]]),
+  );
+}
+
+function buildValidationError(errors: Record<string, string>) {
+  const messages = Object.values(errors);
+  if (messages.length === 0) {
+    return "Não foi possível salvar. Revise os campos destacados.";
+  }
+
+  return `Não foi possível salvar. Revise os campos destacados: ${messages.join(" ")}`;
+}
+
+function firstInvalidStep(
+  errors: Record<string, string>,
+  mode: "create" | "edit",
+) {
+  if (mode === "create" && errors.therapy) return 1;
+  if (errors.matching) return 2;
+  return 3;
 }
 
 export function parsePriceToCents(value: string) {

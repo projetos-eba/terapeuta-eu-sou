@@ -278,3 +278,28 @@
     transform: translateY(0);
   }
 }
+
+@keyframes tes-therapist-tags-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.tes-therapist-tags-marquee {
+  animation: tes-therapist-tags-marquee 20s linear infinite;
+}
+
+.tes-therapist-tags-marquee:hover,
+.tes-therapist-tags-marquee:focus-within {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tes-therapist-tags-marquee {
+    animation: none;
+  }
+}

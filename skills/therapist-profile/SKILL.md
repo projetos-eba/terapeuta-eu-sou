@@ -37,6 +37,10 @@ description: Use when implementing, refactoring, auditing, or documenting the th
 - `TherapistProfilePublicDetail` via views públicas existentes
 - `TherapistSearchCard` via `public_therapist_search`
 
+Na rota `/terapeuta/perfil`, a prévia publicada lê o mesmo contrato de
+`/terapeutas/:slug` (`getPublicTherapistProfileResult`). Ela não usa o mapper
+editorial local como aproximação visual.
+
 Não passar linhas cruas do Supabase para React.
 
 ## Banco
@@ -132,6 +136,19 @@ que possível. A publicação continua sendo uma ação separada.
   `supabase/audits/therapist_public_slug_preflight.sql`; colisão entre
   profissionais interrompe a aplicação.
 - Sem mocks silenciosos em produção.
+- A prévia autenticada da versão publicada é uma composição estática do próprio
+  perfil público, em canvas desktop de 1440 px reduzido proporcionalmente. Ela
+  não é screenshot persistido, não executa reserva, favoritos, compartilhamento,
+  vídeo, carrossel ou telemetria e não permite foco, clique, seleção ou cópia.
+  Quando a leitura pública falhar, estiver ausente ou não houver publicação,
+  mostrar indisponibilidade/estado de publicação honesto; nunca reconstruir o
+  perfil com dados do editor nem aceitar `demo` nessa superfície.
+- Em um perfil já publicado, `Salvar rascunho` não altera a prévia nem o
+  perfil público. A interface deve informar esse efeito, oferecer a publicação
+  como próximo passo e comunicar que a propagação pode levar até 2 a 3 horas.
+  Depois de publicar, limpar o cache de rotas do navegador antes de voltar a
+  `/terapeuta/perfil`; a leitura autenticada da prévia usa o contrato público
+  canônico em modo fresco para não reutilizar conteúdo editorial antigo.
 - Links de vídeo externos são limitados a YouTube/Vimeo no contrato de edição;
   o perfil público converte esses links para os hosts de embed allowlisted. Não
   transformar URL arbitrária em `iframe`.
@@ -169,7 +186,8 @@ que possível. A publicação continua sendo uma ação separada.
 rascunho` como ação concorrente quando o perfil ainda não tem versão
   publicada.
 - Rascunhos só aparecem como aviso na rota principal; a versão pública
-  publicada continua sendo a prévia renderizada.
+  publicada continua sendo a prévia renderizada. A página de edição preserva
+  sua prévia de rascunho, pois ela não representa o que já está público.
 - Upload público deve usar `therapist-public-media`; documentos permanecem fora
   do preview.
 - Ao escolher uma foto de perfil, o editor deve mostrar imediatamente uma
@@ -220,11 +238,17 @@ do objeto quando a persistência falhar. A publicação deve continuar separada.
 - Draft/discard: não invalidar público.
 - Publish/unpublish/update_slug: revalidar `therapist-profile`, `therapist-search`, `/`,
   `/terapeutas` e `/terapeutas/:slug`.
+- Após publicar no editor, executar `router.refresh()` para invalidar a cache
+  de rotas do cliente e impedir que a volta para `/terapeuta/perfil` mostre a
+  miniatura anterior.
 
 ## QA
 
 - Typecheck, lint, build.
 - Vitest para parsers, mappers e componente.
+- Vitest para a fonte pública da prévia, seus estados `published`,
+  `not_published`, `not_found` e `unavailable`, ausência de interações/telemetria
+  no modo estático e escala integral do canvas em desktop, tablet e mobile.
 - Vitest para upload client-side e falha sem fallback.
 - Vitest para rota `/api/therapist/profile/media`: sessão, validação,
   capability, path público protegido e falha sanitizada de Storage.

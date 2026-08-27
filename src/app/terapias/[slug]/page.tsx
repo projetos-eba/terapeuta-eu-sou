@@ -90,7 +90,10 @@ export default async function PublicTherapyDetailRoute({
       ? queryParams?.source[0]
       : queryParams?.source,
   );
-  const sort = parseRelatedTherapistSort(queryParams?.sort);
+  const sort =
+    source === "match"
+      ? "relevance"
+      : parseRelatedTherapistSort(queryParams?.sort);
   const related = await getRelatedTherapists({
     slug: therapy.slug,
     sort,

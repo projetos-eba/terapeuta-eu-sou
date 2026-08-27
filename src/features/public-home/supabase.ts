@@ -41,6 +41,11 @@ type PublicHomeTherapistRow = {
   average_rating: number | null;
 };
 
+type PublicHomeTherapistPlanRow = {
+  plan: "free" | "premium" | "premium_plus";
+  slug: string;
+};
+
 type PublicHomeTherapistContentRow = {
   guide_items: Array<{ label?: string | null }> | null;
   slug: string;
@@ -152,6 +157,7 @@ function mapTherapist(row: PublicHomeTherapistRow): PublicHomeTherapist {
   return {
     headline: row.headline ?? "Terapeuta TES",
     href: routes.public.therapistProfile(row.slug),
+    isPremium: false,
     name: row.public_name,
     photoUrl:
       getTherapistAvatarUrl(row.photo_url, {
@@ -164,6 +170,20 @@ function mapTherapist(row: PublicHomeTherapistRow): PublicHomeTherapist {
     serviceTitle: row.service_title ?? "Sessão online",
     slug: row.slug,
   };
+}
+
+function applyTherapistPremiumStatus(
+  therapists: PublicHomeTherapist[],
+  planRows: PublicHomeTherapistPlanRow[],
+) {
+  const premiumSlugs = new Set(
+    planRows.filter((row) => row.plan !== "free").map((row) => row.slug),
+  );
+
+  return therapists.map((therapist) => ({
+    ...therapist,
+    isPremium: premiumSlugs.has(therapist.slug),
+  }));
 }
 
 function mapTestimonial(row: PublicHomeTestimonialRow): PublicHomeTestimonial {
@@ -270,10 +290,22 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
           `select=therapist_slug,therapy_id,therapy_name,therapy_slug,sort_order&therapist_slug=in.(${therapistSlugs.join(",")})&order=sort_order.asc`,
         )
       : [];
+    const therapistPlanRows = therapistSlugs.length
+      ? await fetchPublicHomeRows<PublicHomeTherapistPlanRow>(
+          "public_therapist_profiles_v",
+          `select=slug,plan&slug=in.(${therapistSlugs.join(",")})`,
+        )
+      : [];
 
-    const mappedTherapists = applyTherapistServices(
-      applyTherapistContent(therapistRows.map(mapTherapist), therapistContentRows),
-      therapistServiceRows,
+    const mappedTherapists = applyTherapistPremiumStatus(
+      applyTherapistServices(
+        applyTherapistContent(
+          therapistRows.map(mapTherapist),
+          therapistContentRows,
+        ),
+        therapistServiceRows,
+      ),
+      therapistPlanRows,
     );
 
     return {

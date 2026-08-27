@@ -32,8 +32,12 @@ O node Figma `13366:8765` define:
 
 - Título visual `Clientes` dentro da navegação `Histórico da Jornada`.
 - Métricas no topo: total de clientes, ativos, novos no mês, sem sessão recente.
-- Lista de clientes com busca, filtros, ordenação, situação, terapias, última/próxima sessão e temas recorrentes. A contagem de sessões fica disponível somente nos cartões compactos e no detalhe da jornada, não como coluna da tabela.
-- Rail lateral com resumo da carteira, segmentos e lembretes.
+- Lista de clientes com busca, filtros de situação, ordenação, terapias,
+  última/próxima sessão e paginação. A contagem de sessões fica disponível nos
+  cartões compactos e no detalhe da jornada, não como coluna da tabela.
+- Rail lateral com resumo da carteira, temas da jornada e lembretes. Temas só
+  podem aparecer quando forem compartilhados por uma fonte estruturada; a tela
+  não infere temas a partir de nomes de terapias, títulos ou resumos.
 - Visual claro, premium, bordas lavanda, sombra suave, tipografia display IvyPresto para títulos.
 
 No detalhe `/terapeuta/pacientes/[patientId]`, a composição segue a leitura
@@ -43,8 +47,9 @@ operacional da jornada:
   sessões e templates aprovados;
 - faixa de resumo com início da jornada, sessões registradas, próxima e última
   sessão;
-- temas identificados nos registros, sem afirmar diagnóstico ou frequência que
-  não exista na fonte;
+- temas compartilhados diretamente na jornada, sem inferir informação a partir
+  de texto livre e sem afirmar diagnóstico ou frequência que não exista na
+  fonte;
 - memória das sessões em tabela no desktop e cartões cronológicos no mobile,
   com link canônico para a sessão;
 - cards finais para preferências de acolhimento e próximo encontro. Quando não
@@ -68,17 +73,28 @@ Regras:
 - Links de comunicação devem apontar para `/terapeuta/mensagens`, que usa templates.
 - Links de sessões devem usar `/terapeuta/sessoes?patient=<patientProfileId>`.
 - Detalhes de sessão devem usar `/terapeuta/sessoes/[bookingId]`.
-- Os títulos de terapia e temas por sessão podem ser derivados dos mesmos
-  `bookings`, `therapist_services` e `booking_session_summaries` já autorizados
-  pela feature; não adicionar uma fonte paralela para enriquecer a tela.
+- Os títulos de terapia por sessão podem ser derivados dos mesmos `bookings`,
+  `therapist_services` e `booking_session_summaries` já autorizados pela
+  feature; não adicionar uma fonte paralela para enriquecer a tela.
+- Não inferir temas com palavras-chave do nome da terapia, título, resumo ou
+  qualquer outro texto livre. Enquanto não houver uma fonte estruturada,
+  consentida e específica, `segments` e `topicLabels` devem permanecer vazios.
+- O parâmetro legado `segment` pode continuar sendo aceito pela URL por
+  compatibilidade, mas é ignorado e não pode filtrar a lista.
 
 ## Responsividade
 
-- Desktop: lista com título editorial, métricas, tabela larga e rail de resumo,
-  temas e lembretes.
-- Tablet/mobile: métricas e cartões compactos de pessoas em duas colunas; tabela
-  vira cards estruturados e o exportador conserva somente o ícone ao lado do
-  título no mobile.
+- Desktop: lista com título editorial, métricas, tabela semântica paginada e
+  rail de resumo, temas e lembretes.
+- Tablet/mobile: métricas e cartões compactos de pessoas em uma única coluna;
+  a tabela vira cards estruturados e paginados. O tamanho padrão é de 12
+  pessoas por página.
+- Filtros e ordenação são aplicados antes da paginação. Os links de página
+  preservam busca, situação e ordenação; a exportação usa todas as pessoas
+  filtradas, não somente a página atual.
+- O contador deve informar o intervalo exibido e o total, por exemplo,
+  “Mostrando 1–12 de 27 pessoas”. A navegação deve ter foco visível, nomes
+  acessíveis e estados desabilitados para os limites.
 - No desktop, o rail deve empilhar seus cards em fluxo de bloco; em tablet e
   mobile, pode usar duas colunas. O rail e seus cards usam altura de conteúdo
   (`auto-rows-min`, `h-auto`, `self-start` e `content-start`), sem esticar os
@@ -114,9 +130,22 @@ Regra de acompanhamento:
 - Rodar `npm run lint`.
 - Rodar `npm run test`.
 - Rodar `npm run build` quando o ambiente permitir.
-- Para alteração visual, validar desktop e mobile em `/terapeuta/pacientes` com terapeuta Premium Plus local quando houver Supabase/dev server disponível.
+- Testar paginação com 0, 1, 12, 13 e mais resultados; páginas inválidas,
+  negativas e além do total devem ser normalizadas.
+- Verificar preservação de busca, situação e ordenação nos links de paginação,
+  exportação completa do conjunto filtrado e igualdade dos registros entre a
+  tabela desktop e os cards mobile.
+- Para alteração visual, validar desktop e mobile em `/terapeuta/pacientes`
+  com terapeuta Premium Plus local quando houver Supabase/dev server disponível.
+  Confirmar uma coluna e ausência de overflow em 320, 375, 390 e 430 px,
+  inclusive com fotos reais de `patient_profiles.avatar_url` e fallback por
+  iniciais.
+- Confirmar que nomes como “Reiki”, títulos e resumos não criam o tema
+  “Espiritualidade” e que o estado vazio informa “Ainda não há temas
+  compartilhados para mostrar.”.
 
 ## Pendências Conhecidas
 
 - O Figma mostra e-mail do cliente, mas a implementação atual usa rótulo seguro (`timezone`/`Cliente TES`) para respeitar as policies existentes.
-- Segmentos são inferidos de títulos/resumos/serviços, sem criar taxonomia clínica nova.
+- Não há fonte estruturada e consentida de temas da jornada nesta etapa; não
+  inferir temas de títulos, resumos ou serviços.

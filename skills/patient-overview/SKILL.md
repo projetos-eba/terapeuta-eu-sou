@@ -24,6 +24,7 @@ description: Implementar e manter a visão geral autenticada do paciente TES.
 
 - Query unica: `getPatientOverview(profileId, accessToken)` em `patient-overview.queries.ts`.
 - A query server-side usa token do paciente e RLS, nunca `SUPABASE_SERVICE_ROLE_KEY` no app Next.
+- A foto do paciente usa `patient_profiles.avatar_url` como fonte principal, com `profiles.avatar_url` como compatibilidade para contas legadas; o shell e a página de conta devem apresentar a mesma foto.
 - Tabelas lidas pela visao geral precisam de grants/policies para `authenticated`; quando for necessario privilegio administrativo, mover a operacao para Supabase Edge Function.
 - Dados de demonstração: `supabase/seed.sql` usando IDs estáveis.
 - Estrutura: `supabase/migrations/20260723110000_patient_authenticated_overview.sql`.

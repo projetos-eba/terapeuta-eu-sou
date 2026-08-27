@@ -59,11 +59,11 @@ export function TherapistServiceCard({
       as="article"
       className="overflow-visible rounded-[14px] border-brand-lavender/70 shadow-none"
     >
-      <div className="grid gap-5 p-5 md:grid-cols-[minmax(0,1fr)_220px]">
-        <div className="grid gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
+      <div className="grid gap-5 p-4 sm:p-5 md:grid-cols-[minmax(0,1fr)_220px]">
+        <div className="grid min-w-0 grid-cols-[88px_minmax(0,1fr)] items-start gap-4 sm:grid-cols-[112px_minmax(0,1fr)]">
           <div
             className={cn(
-              "size-24 overflow-hidden rounded-lg sm:size-28",
+              "size-[88px] overflow-hidden rounded-lg sm:size-28",
               !service.therapy.imageUrl
                 ? identityTones[
                     Math.abs(hashString(service.therapyId)) %
@@ -82,22 +82,22 @@ export function TherapistServiceCard({
             ) : null}
           </div>
           <div className="min-w-0">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 flex-col gap-3">
               <div className="min-w-0">
-                <p className="text-xs font-extrabold text-brand-primary">
+                <p className="break-words text-xs font-extrabold text-brand-primary [overflow-wrap:anywhere]">
                   {service.category.name}
                 </p>
-                <h3 className="mt-1 font-display text-2xl font-light italic leading-tight text-brand-deep">
+                <h3 className="mt-1 break-words font-display text-2xl font-light italic leading-tight text-brand-deep [overflow-wrap:anywhere]">
                   {service.therapy.name}
                 </h3>
               </div>
-              <div className="relative z-10 flex items-center gap-2">
+              <div className="relative z-10 flex flex-wrap items-center gap-2">
                 <TherapistServiceStatusBadge status={service.status} />
                 <button
                   aria-label={`${service.status === "active" ? "Pausar" : "Ativar"} ${service.title}`}
                   aria-pressed={service.status === "active"}
                   className={cn(
-                    "relative h-11 w-[62px] rounded-full p-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary",
+                    "relative h-11 w-[62px] shrink-0 rounded-full p-1 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary",
                     service.status === "active"
                       ? "bg-brand-primary"
                       : "bg-brand-lavender",
@@ -252,7 +252,7 @@ function ServiceThemeBadges({
             +{hiddenThemes.length}
           </button>
           <div
-            className={`absolute bottom-full left-0 z-30 mb-2 w-64 rounded-xl border border-brand-lavender bg-white p-3 text-left text-sm font-semibold leading-5 text-tesText-secondary shadow-card ${tooltipOpen ? "block" : "hidden"}`}
+            className={`absolute bottom-full right-0 z-30 mb-2 w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-brand-lavender bg-white p-3 text-left text-sm font-semibold leading-5 text-tesText-secondary shadow-card ${tooltipOpen ? "block" : "hidden"}`}
             id={tooltipId}
             role="tooltip"
           >

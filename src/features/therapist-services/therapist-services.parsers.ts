@@ -7,6 +7,10 @@ import {
   type TherapistServiceDeliveryFormat,
   type TherapistServiceStatus,
 } from "./therapist-services.types";
+import {
+  THERAPIST_SERVICE_DURATION_MAX_MINUTES,
+  THERAPIST_SERVICE_DURATION_MIN_MINUTES,
+} from "./therapist-services.constants";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -33,7 +37,11 @@ export function parseTherapistServicesCommand(
       currency: optionalCurrency(value.currency),
       deliveryFormat: optionalDeliveryFormat(value.deliveryFormat),
       description: optionalNullableString(value.description, 200),
-      durationMinutes: boundedInteger(value.durationMinutes, 15, 240),
+      durationMinutes: boundedInteger(
+        value.durationMinutes,
+        THERAPIST_SERVICE_DURATION_MIN_MINUTES,
+        THERAPIST_SERVICE_DURATION_MAX_MINUTES,
+      ),
       interestIds: uuidArray(value.interestIds, 0, 9),
       priceCents: boundedInteger(value.priceCents, 1000, 2000000),
       requestId: uuid(value.requestId),
@@ -49,7 +57,11 @@ export function parseTherapistServicesCommand(
       currency: optionalCurrency(value.currency),
       deliveryFormat: optionalDeliveryFormat(value.deliveryFormat),
       description: optionalNullableString(value.description, 200),
-      durationMinutes: optionalInteger(value.durationMinutes, 15, 240),
+      durationMinutes: optionalInteger(
+        value.durationMinutes,
+        THERAPIST_SERVICE_DURATION_MIN_MINUTES,
+        THERAPIST_SERVICE_DURATION_MAX_MINUTES,
+      ),
       expectedVersion: boundedInteger(value.expectedVersion, 1, 999999999),
       interestIds:
         value.interestIds === undefined

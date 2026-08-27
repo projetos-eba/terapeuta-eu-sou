@@ -412,7 +412,7 @@ function getDetailSections(
   if (module === "support") {
     return [
       section("Solicitação", [
-        field("Referência", asText(record.id)),
+        field("Protocolo", asText(record.protocol)),
         field("Assunto", asText(record.subject)),
         field("Categoria", asText(record.category)),
         field("Status", asText(record.status)),

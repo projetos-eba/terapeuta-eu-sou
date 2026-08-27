@@ -16,7 +16,11 @@ import {
 
 import { routes } from "@/lib/routes";
 
-import { PublicAuthMenu, usePublicAuthState } from "./public-auth-menu";
+import {
+  PublicAuthMenu,
+  type PublicAuthState,
+  usePublicAuthState,
+} from "./public-auth-menu";
 import { TESButton } from "./tes-button";
 
 function Logo({ header = false }: { header?: boolean }) {
@@ -42,9 +46,18 @@ function Logo({ header = false }: { header?: boolean }) {
   );
 }
 
-export function PublicHeader({ showMobileSearch = false }: { showMobileSearch?: boolean } = {}) {
+export function PublicHeader({
+  showMobileSearch = false,
+  staticPreview = false,
+}: {
+  showMobileSearch?: boolean;
+  staticPreview?: boolean;
+} = {}) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const authState = usePublicAuthState();
+  const resolvedAuthState = usePublicAuthState(!staticPreview);
+  const authState: PublicAuthState = staticPreview
+    ? { status: "guest" }
+    : resolvedAuthState;
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
   const nav: Array<[string, Route]> = [
     ["O que é o TES?", routes.public.about as Route],

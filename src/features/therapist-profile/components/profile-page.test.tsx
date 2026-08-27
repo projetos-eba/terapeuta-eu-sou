@@ -86,10 +86,89 @@ describe("TherapistProfilePage video block", () => {
     ).toHaveClass("size-[52px]");
   });
 
+  it("renders a static preview without public actions or background requests", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <TherapistProfilePage
+        mode="preview"
+        profile={{
+          ...baseProfile,
+          isAcceptingBookings: true,
+          services: [
+            {
+              availability: [
+                {
+                  date: "2026-08-26",
+                  dateLabel: "26/08",
+                  dayLabel: "qua",
+                  slots: [
+                    {
+                      dateLabel: "26/08",
+                      dayLabel: "qua",
+                      endsAt: "2026-08-26T15:50:00.000Z",
+                      serviceId: "service-1",
+                      startsAt: "2026-08-26T15:00:00.000Z",
+                      timeLabel: "12:00",
+                    },
+                  ],
+                },
+              ],
+              bookingUrl: "/reserva?serviceId=service-1",
+              currency: "BRL",
+              description: "Atendimento online com presença.",
+              durationMinutes: 50,
+              id: "service-1",
+              imageUrl: null,
+              priceCents: 12000,
+              priceLabel: "R$ 120",
+              themeNames: [],
+              therapyId: "therapy-1",
+              therapyName: "Reiki",
+              therapySlug: "reiki",
+              title: "Reiki online",
+            },
+          ],
+          video: {
+            provider: "external",
+            thumbnailUrl: "/therapists/ana-oliveira.png",
+            title: "Vídeo de apresentação",
+            url: "https://example.com/video",
+          },
+        }}
+        reviews={[]}
+      />,
+    );
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", {
+        name: "Adicionar aos favoritos de Ana Oliveira",
+      }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Compartilhar perfil" }),
+    ).toBeNull();
+    expect(screen.queryByRole("link", { name: "Agendar" })).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "Vídeo de apresentação" }),
+    ).toBeNull();
+    expect(screen.queryByTitle("Vídeo de apresentação")).toBeNull();
+  });
+
   it("uses the plural label when the profile has zero reviews", () => {
     render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
 
     expect(screen.getByText("0 avaliações")).toBeInTheDocument();
+  });
+
+  it("does not render legacy profile tags in the public hero", () => {
+    render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
+
+    expect(
+      screen.queryByText("Reiki", { exact: true }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps an unbroken service description inside the public card", () => {
@@ -521,5 +600,78 @@ describe("TherapistProfilePage video block", () => {
     expect(
       screen.getByText(/Seguimos com presença e combinados claros/),
     ).toBeInTheDocument();
+  });
+
+  it("uses compact review navigation and can show every review", () => {
+    render(
+      <TherapistProfilePage
+        profile={{
+          ...baseProfile,
+          rating: { average: 4.7, count: 3, sessionsCompleted: 3 },
+        }}
+        reviews={[
+          {
+            authorLabel: "Paciente TES",
+            body: "Primeira experiência compartilhada.",
+            createdLabel: "Hoje",
+            id: "review-1",
+            patientContext: "Sessão concluída pela plataforma",
+            rating: 5,
+            reply: null,
+          },
+          {
+            authorLabel: "Paciente TES",
+            body: "Segunda experiência compartilhada.",
+            createdLabel: "Ontem",
+            id: "review-2",
+            patientContext: "Sessão concluída pela plataforma",
+            rating: 4,
+            reply: null,
+          },
+          {
+            authorLabel: "Paciente TES",
+            body: "Terceira experiência compartilhada.",
+            createdLabel: "Há uma semana",
+            id: "review-3",
+            patientContext: "Sessão concluída pela plataforma",
+            rating: 5,
+            reply: null,
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      screen.getByRole("navigation", { name: "Navegação das avaliações" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Ver página 1 de avaliações" }),
+    ).toHaveAttribute("aria-current", "step");
+    expect(
+      screen.queryByText("Terceira experiência compartilhada."),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver próximas avaliações" }),
+    );
+    expect(
+      screen.getByText("Terceira experiência compartilhada."),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ver todas as avaliações" }),
+    );
+    expect(
+      screen.getByText("Primeira experiência compartilhada."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Segunda experiência compartilhada."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Terceira experiência compartilhada."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("navigation", { name: "Navegação das avaliações" }),
+    ).not.toBeInTheDocument();
   });
 });

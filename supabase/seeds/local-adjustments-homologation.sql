@@ -122,3 +122,21 @@ set
   base_profile_version = excluded.base_profile_version,
   public_profile_theme = excluded.public_profile_theme,
   updated_at = now();
+
+-- Cron contracts are versioned by migrations, but persistent execution must
+-- remain disabled in every local reset unless a bounded cron scenario opts in.
+-- pg_cron owns cron.job through supabase_admin; alter_job is the supported
+-- owner-aware API for the postgres-owned local jobs created by migrations.
+do $$
+declare
+  local_job record;
+begin
+  for local_job in
+    select jobid
+    from cron.job
+    where active
+  loop
+    perform cron.alter_job(local_job.jobid, active := false);
+  end loop;
+end;
+$$;

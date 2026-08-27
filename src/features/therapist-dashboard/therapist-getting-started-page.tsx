@@ -462,15 +462,6 @@ function ProfileSummary({ readiness }: { readiness: TherapistHomeReadiness }) {
           label="Situação do cadastro"
           value={therapistStatusLabel(readiness.therapistStatus)}
         />
-        <div className="sm:col-span-2 lg:col-span-3">
-          <SummaryDatum
-            label="Apresentação"
-            value={
-              profile.headline ||
-              "Adicione uma breve apresentação ao seu perfil."
-            }
-          />
-        </div>
       </div>
     </div>
   );
@@ -540,7 +531,7 @@ function progressSummary({
 }) {
   const totalPending = pendingDocuments.length + pendingSteps.length;
   if (totalPending === 0) {
-    return "Seu cadastro está completo. Acompanhe a análise na situação ao lado.";
+    return "Seu cadastro está completo. O TES está analisando e logo você terá um retorno.";
   }
   if (totalPending === 1) {
     return "Falta apenas uma etapa para você concluir o cadastro.";

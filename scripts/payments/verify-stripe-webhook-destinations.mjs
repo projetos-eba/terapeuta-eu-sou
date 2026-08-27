@@ -2,126 +2,110 @@
 
 import Stripe from "stripe";
 
-import {
-  getStripeMode,
-  getStripeSecretKey,
-  loadEnvFiles,
-} from "./env-utils.mjs";
+import { getStripeMode, getStripeSecretKey } from "./env-utils.mjs";
 import {
   connectSnapshotEvents,
   connectThinEvents,
   platformSnapshotEvents,
 } from "./stripe-webhook-events.mjs";
 
-loadEnvFiles();
+const targetArgument = process.argv.find((value) =>
+  value.startsWith("--target="),
+);
+const target = targetArgument?.split("=")[1];
+if (target !== "test" && target !== "live") {
+  throw new Error("Use --target=test or --target=live.");
+}
+
 const stripeKey = getStripeSecretKey();
-if (!stripeKey || getStripeMode(stripeKey) !== "test") {
-  throw new Error(
-    "Webhook destination verification requires Stripe test mode.",
-  );
+if (!stripeKey || getStripeMode(stripeKey) !== target) {
+  throw new Error(`Stripe key does not match requested ${target} target.`);
 }
 
 const stripe = new Stripe(stripeKey, { apiVersion: "2026-06-24.dahlia" });
-const destinations = await stripe.v2.core.eventDestinations.list({
+const page = await stripe.v2.core.eventDestinations.list({
   include: ["webhook_endpoint.url"],
   limit: 100,
 });
+const suffix = target === "test" ? "homolog" : "live";
+const contracts = [
+  {
+    events: platformSnapshotEvents,
+    name:
+      target === "test"
+        ? "stripe-billing-webhook-homolog"
+        : "stripe-billing-webhook",
+    path: "/functions/v1/stripe-billing-webhook",
+    payload: "snapshot",
+    scope: "@self",
+  },
+  {
+    events: connectSnapshotEvents,
+    name: `stripe-connect-webhook-snapshot-${suffix}`,
+    path: "/functions/v1/stripe-connect-webhook",
+    payload: "snapshot",
+    scope: "@accounts",
+  },
+  {
+    events: connectThinEvents,
+    name: `stripe-connect-webhook-thin-${suffix}`,
+    path: "/functions/v1/stripe-connect-webhook",
+    payload: "thin",
+    scope: "@accounts",
+  },
+];
 
-const canonicalNames = new Set([
-  "stripe-billing-webhook-homolog",
-  "stripe-connect-webhook-snapshot-homolog",
-  "stripe-connect-webhook-thin-homolog",
-]);
-const unexpectedRelevantDestinations = destinations.data.filter(
+const relevantEnabled = page.data.filter(
   (destination) =>
     destination.status === "enabled" &&
-    destination.livemode === false &&
-    isRemoteRelevantUrl(destination.webhook_endpoint?.url) &&
-    !canonicalNames.has(destination.name),
+    isRemoteUrl(destination.webhook_endpoint?.url) &&
+    contracts.some((contract) =>
+      destination.webhook_endpoint?.url?.endsWith(contract.path),
+    ),
 );
-
-if (unexpectedRelevantDestinations.length > 0) {
+if (relevantEnabled.length !== 3) {
   throw new Error(
-    "Unexpected enabled remote destination targets a canonical TES payment webhook.",
+    "Expected exactly three enabled canonical payment destinations.",
   );
 }
 
-const checks = [
-  checkDestination({
-    destinations: destinations.data,
-    eventPayload: "snapshot",
-    events: platformSnapshotEvents,
-    eventsFrom: "@self",
-    name: "stripe-billing-webhook-homolog",
-    path: "/functions/v1/stripe-billing-webhook",
-  }),
-  checkDestination({
-    destinations: destinations.data,
-    eventPayload: "snapshot",
-    events: connectSnapshotEvents,
-    eventsFrom: "@accounts",
-    name: "stripe-connect-webhook-snapshot-homolog",
-    path: "/functions/v1/stripe-connect-webhook",
-  }),
-  checkDestination({
-    destinations: destinations.data,
-    eventPayload: "thin",
-    events: connectThinEvents,
-    eventsFrom: "@accounts",
-    name: "stripe-connect-webhook-thin-homolog",
-    path: "/functions/v1/stripe-connect-webhook",
-  }),
-];
+const checks = contracts.map((contract) => {
+  const matches = relevantEnabled.filter(
+    (destination) =>
+      destination.name === contract.name &&
+      destination.event_payload === contract.payload &&
+      destination.events_from?.includes(contract.scope) &&
+      destination.webhook_endpoint?.url?.endsWith(contract.path),
+  );
+  if (matches.length !== 1) {
+    throw new Error(`Expected one canonical destination: ${contract.name}.`);
+  }
+  const actual = [...matches[0].enabled_events].sort();
+  const expected = [...contract.events].sort();
+  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+    throw new Error(`${contract.name} event matrix diverges.`);
+  }
+  return {
+    eventCount: expected.length,
+    name: contract.name,
+    payload: contract.payload,
+    scope: contract.scope,
+  };
+});
 
 console.log(
   JSON.stringify({
     destinations: checks,
-    mode: "test",
-    relevantRemoteDestinationCount: checks.length,
+    relevantRemoteDestinationCount: relevantEnabled.length,
+    target,
     verified: true,
   }),
 );
 
-function checkDestination(input) {
-  const matches = input.destinations.filter(
-    (destination) =>
-      destination.name === input.name &&
-      destination.status === "enabled" &&
-      destination.livemode === false &&
-      destination.event_payload === input.eventPayload &&
-      destination.events_from?.includes(input.eventsFrom) &&
-      destination.webhook_endpoint?.url?.endsWith(input.path),
-  );
-  if (matches.length !== 1) {
-    throw new Error(
-      `Expected one enabled ${input.name} destination in test mode.`,
-    );
-  }
-  const actual = [...matches[0].enabled_events].sort();
-  const expected = [...input.events].sort();
-  if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-    throw new Error(`${input.name} event matrix is incomplete or divergent.`);
-  }
-  return {
-    eventCount: expected.length,
-    name: input.name,
-    payload: input.eventPayload,
-    scope: input.eventsFrom,
-  };
-}
-
-function isRemoteRelevantUrl(value) {
+function isRemoteUrl(value) {
   if (!value) return false;
   try {
-    const url = new URL(value);
-    const isLocal = ["127.0.0.1", "localhost", "::1"].includes(url.hostname);
-    return (
-      !isLocal &&
-      [
-        "/functions/v1/stripe-billing-webhook",
-        "/functions/v1/stripe-connect-webhook",
-      ].some((path) => url.pathname.endsWith(path))
-    );
+    return !["127.0.0.1", "localhost", "::1"].includes(new URL(value).hostname);
   } catch {
     return false;
   }

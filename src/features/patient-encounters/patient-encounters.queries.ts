@@ -17,6 +17,7 @@ import {
 import type {
   PatientEncountersPageData,
   PatientEncountersPatient,
+  PatientPendingFeedbackSession,
 } from "./patient-encounters.types";
 
 const DEMO_PATIENT_PROFILE_ID = "91000000-0000-4000-8000-000000000001";
@@ -115,7 +116,7 @@ async function getSupabasePatientEncountersPage(
     patientProfileId: patientProfile.id,
   };
 
-  const [bookings, favorites, conversations, notifications] = await Promise.all(
+  const [bookings, favorites, conversations, notifications, feedbackQueue] = await Promise.all(
     [
       supabaseRequest<BookingRecord[]>(
         config,
@@ -132,6 +133,11 @@ async function getSupabasePatientEncountersPage(
       supabaseRequest<NotificationRow[]>(
         config,
         `/rest/v1/notifications?select=id&profile_id=eq.${encodeURIComponent(profileId)}&read_at=is.null`,
+      ),
+      supabaseRequest<PatientPendingFeedbackSession[]>(
+        config,
+        "/rest/v1/rpc/get_patient_session_feedback_queue_v1",
+        { body: {}, method: "POST" },
       ),
     ],
   );
@@ -216,6 +222,9 @@ async function getSupabasePatientEncountersPage(
     bookings,
     favoriteTherapistsCount: favorites.length,
     patient,
+    pendingFeedbackBookingIds: new Set(
+      feedbackQueue.map((session) => session.bookingId),
+    ),
     patientEntryEntitlementByBookingId: buildPatientEntryEntitlements(
       bookings,
       patientParticipations,
@@ -238,7 +247,7 @@ async function getSupabasePatientEncountersPage(
     unreadNotificationsCount: notifications.length,
   });
 
-  return { ...page, source: "supabase" };
+  return { ...page, pendingFeedbackSessions: feedbackQueue, source: "supabase" };
 }
 
 function buildPatientEntryEntitlements(
@@ -315,14 +324,17 @@ async function getRowsByIds<T>(
 async function supabaseRequest<T>(
   config: SupabaseServerConfig,
   path: string,
+  options: { body?: unknown; method?: "GET" | "POST" } = {},
 ): Promise<T> {
   const response = await fetch(`${config.url}${path}`, {
+    body: options.body ? JSON.stringify(options.body) : undefined,
     cache: "no-store",
     headers: {
       apikey: config.apiKey,
       Authorization: `Bearer ${config.accessToken}`,
       "Content-Type": "application/json",
     },
+    method: options.method ?? "GET",
   });
 
   if (!response.ok) throw new PatientEncountersDataError();

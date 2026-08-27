@@ -2,6 +2,10 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import {
+  buildJourneyHistoryHref,
+  buildJourneyCsvHref,
+  paginateJourneyClients,
+  parseJourneyHistoryFilters,
   TherapistJourneyDetailPage,
   TherapistJourneyHistoryPage,
 } from "./therapist-journey-history-page";
@@ -19,8 +23,11 @@ describe("TherapistJourneyDetailPage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", {
-        name: "Temas identificados nos registros",
+        name: "Temas da jornada",
       }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Ainda não há temas compartilhados para mostrar."),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Memória das sessões" }),
@@ -39,7 +46,13 @@ describe("TherapistJourneyHistoryPage", () => {
     const view = render(
       <TherapistJourneyHistoryPage
         data={pageFixture()}
-        filters={{ q: "", segment: "", sort: "last_session", status: "all" }}
+        filters={{
+          page: 1,
+          q: "",
+          segment: "",
+          sort: "last_session",
+          status: "all",
+        }}
       />,
     );
 
@@ -75,6 +88,149 @@ describe("TherapistJourneyHistoryPage", () => {
       view.container.querySelector("svg.lucide-chevron-down"),
     ).toHaveClass("pointer-events-none");
   });
+
+  it("paginates the same clients in the desktop table and mobile cards", () => {
+    const clients = Array.from({ length: 13 }, (_, index) => ({
+      ...detailFixture().client,
+      id: `patient-${index + 1}`,
+      name: `Cliente ${index + 1}`,
+      timelineHref: `/terapeuta/pacientes/patient-${index + 1}`,
+    }));
+
+    render(
+      <TherapistJourneyHistoryPage
+        data={pageFixture(clients)}
+        filters={{
+          page: 1,
+          q: "",
+          segment: "",
+          sort: "last_session",
+          status: "all",
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("navigation", { name: /paginação/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Mostrando 1–12 de 13 pessoas"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Próxima página" }),
+    ).toHaveAttribute("href", "/terapeuta/pacientes?page=2");
+    expect(screen.queryByText("Cliente 13")).not.toBeInTheDocument();
+    expect(decodeURIComponent(buildJourneyCsvHref(clients))).toContain(
+      '"Cliente 13"',
+    );
+  });
+
+  it("normalizes pagination input and preserves active filters in links", () => {
+    expect(
+      parseJourneyHistoryFilters({
+        page: "-2",
+        q: "Ana",
+        segment: "legacy",
+        sort: "name",
+        status: "active",
+      }),
+    ).toMatchObject({
+      page: 1,
+      q: "Ana",
+      segment: "",
+      sort: "name",
+      status: "active",
+    });
+
+    expect(
+      buildJourneyHistoryHref(
+        {
+          page: 1,
+          q: "Ana",
+          segment: "legacy",
+          sort: "name",
+          status: "active",
+        },
+        2,
+      ),
+    ).toBe("/terapeuta/pacientes?q=Ana&status=active&sort=name&page=2");
+  });
+
+  it.each([
+    {
+      count: 0,
+      expectedLength: 0,
+      expectedPage: 1,
+      expectedTotalPages: 0,
+      name: "zero",
+      requestedPage: 1,
+    },
+    {
+      count: 1,
+      expectedLength: 1,
+      expectedPage: 1,
+      expectedTotalPages: 1,
+      name: "one",
+      requestedPage: 1,
+    },
+    {
+      count: 12,
+      expectedLength: 12,
+      expectedPage: 1,
+      expectedTotalPages: 1,
+      name: "twelve",
+      requestedPage: 1,
+    },
+    {
+      count: 13,
+      expectedLength: 1,
+      expectedPage: 2,
+      expectedTotalPages: 2,
+      name: "next page",
+      requestedPage: 2,
+    },
+    {
+      count: 13,
+      expectedLength: 12,
+      expectedPage: 1,
+      expectedTotalPages: 2,
+      name: "negative page",
+      requestedPage: -3,
+    },
+    {
+      count: 13,
+      expectedLength: 1,
+      expectedPage: 2,
+      expectedTotalPages: 2,
+      name: "page beyond total",
+      requestedPage: 99,
+    },
+  ])(
+    "handles $name result sets and page values",
+    ({
+      count,
+      expectedLength,
+      expectedPage,
+      expectedTotalPages,
+      requestedPage,
+    }) => {
+      const clients = Array.from({ length: count }, (_, index) => ({
+        ...detailFixture().client,
+        id: `patient-${index + 1}`,
+        name: `Cliente ${index + 1}`,
+      }));
+
+      const result = paginateJourneyClients(clients, requestedPage);
+
+      expect(result.pagination).toMatchObject({
+        page: expectedPage,
+        pageSize: 12,
+        total: count,
+        totalPages: expectedTotalPages,
+      });
+      expect(result.clients).toHaveLength(expectedLength);
+    },
+  );
 });
 
 function detailFixture(): JourneyHistoryDetailData {
@@ -93,7 +249,7 @@ function detailFixture(): JourneyHistoryDetailData {
       status: "active",
       therapyLabels: ["Reiki", "Aromaterapia"],
       timelineHref: "/terapeuta/pacientes/patient-1",
-      topicLabels: ["Autoconhecimento", "Espiritualidade"],
+      topicLabels: [],
       totalEncounters: 3,
     },
     source: "supabase",
@@ -108,17 +264,17 @@ function detailFixture(): JourneyHistoryDetailData {
         serviceTitle: "Reiki",
         status: "completed",
         title: "Clareza para o próximo encontro",
-        topicLabels: ["Autoconhecimento"],
+        topicLabels: [],
       },
     ],
   };
 }
 
-function pageFixture(): JourneyHistoryPageData {
-  const client = detailFixture().client;
-
+function pageFixture(
+  clients: JourneyHistoryPageData["clients"] = [detailFixture().client],
+): JourneyHistoryPageData {
   return {
-    clients: [client],
+    clients,
     metrics: [
       {
         description: "Todas as pessoas registradas",
@@ -151,14 +307,7 @@ function pageFixture(): JourneyHistoryPageData {
       },
     ],
     reminders: [],
-    segments: [
-      {
-        count: 1,
-        id: "autoconhecimento",
-        label: "Autoconhecimento",
-        tone: "brand",
-      },
-    ],
+    segments: [],
     source: "supabase",
     summary: { active: 1, paused: 0, stale: 0, total: 1 },
     therapistProfileId: "therapist-1",

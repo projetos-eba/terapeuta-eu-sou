@@ -96,10 +96,11 @@ Não criar enums equivalentes dentro de features.
 - O ID completo da reserva aparece como referência operacional logo abaixo do
   nome do paciente na tabela, nos cards e no detalhe da sessão, usando o mesmo
   `bookingId` da navegação.
-- Desktop usa tabela operacional com right rail. Tablet e mobile usam cards
-  cronológicos em duas colunas quando houver largura, filtros em largura total
-  e os mesmos links de detalhe. No rail, cards mantêm altura de conteúdo e são
-  empilhados em fluxo de bloco no desktop.
+- Desktop usa tabela operacional com right rail. Mobile usa cards cronológicos
+  em uma coluna, com filtros em largura total e os mesmos links de detalhe;
+  tablet pode promover o rail para duas colunas somente quando houver largura
+  suficiente para preservar a leitura. No rail, cards mantêm altura de
+  conteúdo e são empilhados em fluxo de bloco no desktop.
 - O detalhe `/terapeuta/sessoes/:bookingId` preserva o mesmo grid `AppPage*`:
   breadcrumb, título IvyPresto, resumo de identidade/estado, superfícies de
   pagamento e sala, preparação e ContextRail compacto. A referência raster da
@@ -218,7 +219,7 @@ Não criar enums equivalentes dentro de features.
 - O comando de criação usa `create_therapist_block_v2` na Edge Function. Além
   dos impactos A4 já registrados, ele retorna somente as sessões confirmadas
   cuja fonte financeira canônica está em `session_payments.financial_status =
-  'paid'`, com data, horário, pessoa, terapia e fuso para o alerta imediato.
+'paid'`, com data, horário, pessoa, terapia e fuso para o alerta imediato.
   A criação continua sem cancelar ou reagendar booking.
 - `availability_exceptions` é a autoridade dos intervalos materializados;
   `availability_exception_series` representa recorrência e não substitui as

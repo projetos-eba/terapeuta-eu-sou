@@ -67,7 +67,7 @@ export function ProfileSaveBar({
                   size={18}
                 />
               ) : null}
-              Salvar alterações
+              Salvar rascunho
             </TESButton>
           )}
           {hasDraft ? (
@@ -157,14 +157,14 @@ function getSaveBarMessage({
 
   if (hasDraft) {
     return {
-      description: propagationNotice,
+      description: `Publique o rascunho para atualizar o que pacientes veem. ${propagationNotice}`,
       title: "Existe um rascunho salvo aguardando publicação.",
     };
   }
 
   return {
     description:
-      "A versão enviada fica em análise antes de voltar a aparecer para pacientes.",
-    title: "Sua atualização está aguardando a revisão da equipe TES.",
+      "Faça alterações, salve um rascunho e publique quando quiser atualizar o perfil público.",
+    title: "Sua versão publicada está atualizada.",
   };
 }

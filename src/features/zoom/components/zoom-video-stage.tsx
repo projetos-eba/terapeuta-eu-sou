@@ -21,10 +21,12 @@ type ZoomVideoStageProps = {
     | "loading"
     | "joining"
     | "joined"
+    | "recovering"
     | "reconnecting"
     | "leaving"
     | "ended"
-    | "error";
+    | "error"
+    | "reload_required";
   videoOn: boolean;
 };
 
@@ -41,7 +43,8 @@ export function ZoomVideoStage({
   state,
   videoOn,
 }: ZoomVideoStageProps) {
-  const remoteLabel = participantLabel.replace(/^Com\s+/i, "") || "Outra pessoa";
+  const remoteLabel =
+    participantLabel.replace(/^Com\s+/i, "") || "Outra pessoa";
   const isConnected = state === "joined" || state === "reconnecting";
 
   return (
@@ -193,7 +196,9 @@ function VideoTile({
         ref: containerRef,
       })}
       <div className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-2 rounded-[14px] bg-brand-deep/75 px-3 py-2 text-white backdrop-blur md:inset-x-3 md:bottom-3">
-        <span className="truncate text-xs font-extrabold sm:text-sm">{label}</span>
+        <span className="truncate text-xs font-extrabold sm:text-sm">
+          {label}
+        </span>
         <span className="flex shrink-0 items-center gap-2 text-[11px] font-semibold text-white/85 sm:text-xs">
           {kind === "local" && audioMuted ? (
             <MicOff aria-label="Microfone desativado" size={15} />

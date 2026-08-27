@@ -45,6 +45,15 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
 - Webhook reservation must be atomic; failed/stale leases may be retried.
 - Checkout completion only confirms a session when `payment_status` is paid.
 - Subscription plan comes from the effective Stripe Price mapping.
+- Paid catalog Prices are monthly only. Public catalog reads require
+  `is_public=true`; hidden offers require a server-resolved `offer_key` and
+  are never browser-selectable.
+- `TERAPEUTAFUNDADOR` is a Premium Plus monthly campaign: three
+  invoices at 100% discount followed by the hidden R$ 79,90 monthly Price.
+  Checkout always collects a payment method. Test Mode stays active for
+  homologation; Live Mode is provisioned inactive for manual activation.
+  Plan changes select a normal public Price and do not preserve the founder
+  Price.
 - Subscription upgrade is immediate and prorated; Premium Plus to Premium uses
   a Subscription Schedule at period end; cancellation uses
   `cancel_at_period_end` and can be reversed without removing already-paid

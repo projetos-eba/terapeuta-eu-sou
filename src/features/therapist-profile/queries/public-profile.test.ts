@@ -24,7 +24,7 @@ describe("public therapist profile query", () => {
     vi.unstubAllGlobals();
   });
 
-  it("does not cache mutable identity, content, availability, or booking conflicts", async () => {
+  it("reads every preview surface freshly when requested", async () => {
     const fetchMock = vi.fn(
       async (_input: RequestInfo | URL, _init?: RequestInit) =>
         new Response(JSON.stringify([]), {
@@ -34,13 +34,19 @@ describe("public therapist profile query", () => {
     );
     vi.stubGlobal("fetch", fetchMock);
 
-    await getPublicTherapistProfileResult("terapeuta-hml");
+    await getPublicTherapistProfileResult("terapeuta-hml", { fresh: true });
 
     const serviceCall = fetchMock.mock.calls.find(([url]) =>
       String(url).includes("public_therapist_profile_services_v"),
     );
     const profileCall = fetchMock.mock.calls.find(([url]) =>
       String(url).includes("public_therapist_profiles_v"),
+    );
+    const contentCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes("public_therapist_profile_content_v"),
+    );
+    const reviewsCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes("public_therapist_profile_reviews_v"),
     );
 
     expect(serviceCall?.[1]).toEqual(
@@ -51,6 +57,12 @@ describe("public therapist profile query", () => {
       expect.objectContaining({ cache: "no-store" }),
     );
     expect(profileCall?.[1]).not.toHaveProperty("next");
+    expect(contentCall?.[1]).toEqual(
+      expect.objectContaining({ cache: "no-store" }),
+    );
+    expect(reviewsCall?.[1]).toEqual(
+      expect.objectContaining({ cache: "no-store" }),
+    );
   });
 
   it("uses the authoritative timezone-aware slots for every public service", async () => {
