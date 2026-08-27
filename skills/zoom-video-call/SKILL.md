@@ -80,6 +80,16 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   a sala de espera envia ao adapter as duas preferências atuais: cada mídia
   testada e ligada é ativada após o `join`; qualquer mídia não ligada continua
   desligada. Essa preferência é transitória no navegador e não é persistida.
+- Captura e prévia própria têm estados independentes: `videoOn` reflete
+  publicação; `localPreviewUnavailable` reflete falha de exibição. Não chamar
+  `stopVideo` nem informar permissão negada porque `attachVideo` falhou.
+  O SDK 2.4.5 resolve `startVideo` com `undefined`; preservar o normalizador
+  específico e os testes com esse retorno. Cleanup espera captura/attach
+  pendentes; desligar câmera para a publicação antes do detach.
+- Antes de alterar integração ou mocks, ler
+  `docs/zoom/investigation-2026-08-27.md` e
+  `docs/zoom/self-view-2026-08-27.md`: contêm causas comprovadas e invariantes
+  para não reintroduzir falhas de join, destroy e self-view.
 - A qualidade do encontro só fica elegível após `session.user_joined` confiável
   para paciente e terapeuta e encerramento efetivo/programado. Um único join
   direciona para ocorrência, não para avaliação de qualidade.

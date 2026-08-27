@@ -18,6 +18,7 @@ import {
 import {
   assertZoomExecutedResult,
   assertZoomJoinResult,
+  assertZoomVideoStartResult,
   normalizeConnectionChange,
   normalizeZoomFailure,
   throwIfZoomFailure,
@@ -102,7 +103,7 @@ type ZoomMediaStream = {
   startAudio?: (options?: {
     mute?: boolean;
   }) => Promise<"" | ZoomExecutedFailure>;
-  startVideo?: () => Promise<"" | ZoomExecutedFailure>;
+  startVideo?: () => Promise<void | "" | ZoomExecutedFailure>;
   stopAudio?: () => Promise<"" | ZoomExecutedFailure>;
   stopVideo?: () => Promise<"" | ZoomExecutedFailure>;
   unmuteAudio?: () => Promise<"" | ZoomExecutedFailure>;
@@ -264,6 +265,7 @@ export function ZoomVideoSessionAdapter({
   const mounted = useRef(true);
   const inFlight = useRef(false);
   const sdkOperationInFlightRef = useRef<Promise<unknown> | null>(null);
+  const videoStartedRef = useRef(false);
   const sdkJoinedRef = useRef(false);
   const audioStartedRef = useRef(false);
   const connectionStateRef = useRef("disconnected");
@@ -1302,92 +1304,121 @@ export function ZoomVideoSessionAdapter({
       return;
 
     try {
-      if (videoOn) {
+      if (videoStartedRef.current) {
         await disableVideoForSession(stream);
         return;
       }
 
       await enableVideoForSession(stream, container);
     } catch (error) {
-      setMessage(formatMediaError(error, "camera"));
+      if (!mounted.current || leavingRef.current) return;
+      setMessage(
+        videoStartedRef.current
+          ? "Não conseguimos desligar a câmera. Tente novamente ou saia do encontro."
+          : formatMediaError(error, "a câmera"),
+      );
     }
   }
 
-  async function enableVideoForSession(
+  // Retain ownership through capture AND attachment: cleanup must await both,
+  // even when React unmounts before the SDK resolves. Repeated clicks cannot race.
+  function runLocalVideoOperation(
+    operation: (generation: number) => Promise<void>,
+  ) {
+    const generation = attemptGenerationRef.current;
+    const pending = Promise.resolve().then(() => {
+      ensureCurrentAttempt(generation);
+      return operation(generation);
+    });
+    sdkOperationInFlightRef.current = pending;
+    return pending.finally(() => {
+      if (sdkOperationInFlightRef.current === pending)
+        sdkOperationInFlightRef.current = null;
+    });
+  }
+
+  function enableVideoForSession(
     stream: ZoomMediaStream,
     container = localVideoRef.current,
   ) {
-    let started = false;
-
-    try {
-      if (stream.startVideo) {
-        assertZoomExecutedResult(await stream.startVideo(), "video");
+    return runLocalVideoOperation(async (generation) => {
+      try {
+        if (!stream.startVideo) throw new Error("video_start_unavailable");
+        assertZoomVideoStartResult(await stream.startVideo());
+      } catch (error) {
+        logClientFailure(
+          { ...normalizeZoomFailure(error, "video"), operation: "video.start" },
+          0,
+        );
+        throw error;
       }
-      started = true;
-      const userId =
-        localUserIdRef.current ??
-        clientRef.current?.getCurrentUserInfo?.().userId;
-      if (!userId) throw new Error("participant_not_ready");
-
-      localUserIdRef.current = userId;
-      if (!container) {
-        setVideoOn(true);
-        setLocalPreviewUnavailable(true);
-        mediaPreferencesRef.current.cameraEnabled = true;
-        return;
-      }
-
-      const attached = throwIfZoomFailure(
-        await stream.attachVideo?.(userId, 2),
-        "video",
-      );
-      const elements = normalizeVideoElements(attached);
-      if (elements.length === 0) {
-        setVideoOn(true);
-        setLocalPreviewUnavailable(true);
-        mediaPreferencesRef.current.cameraEnabled = true;
-        return;
-      }
-
-      for (const element of elements) {
-        styleVideoElement(element);
-        container.appendChild(element);
-      }
-      localUserElementsRef.current = elements;
+      videoStartedRef.current = true;
+      ensureCurrentAttempt(generation);
       setVideoOn(true);
-      setLocalPreviewUnavailable(false);
       mediaPreferencesRef.current.cameraEnabled = true;
-    } catch (error) {
-      if (started) {
-        removeVideoElements(localUserElementsRef.current);
-        localUserElementsRef.current = [];
-        try {
-          await stream.stopVideo?.();
-        } catch {
-          // Preserve the original media error for the user-facing message.
+
+      // Publishing and displaying our own preview are separate outcomes.
+      // Never stop a working camera or report permission denial for attach failure.
+      try {
+        const userId =
+          localUserIdRef.current ??
+          clientRef.current?.getCurrentUserInfo?.().userId;
+        if (!userId || !container) throw new Error("local_preview_unavailable");
+        localUserIdRef.current = userId;
+        const attached = throwIfZoomFailure(
+          await stream.attachVideo?.(userId, 2),
+          "video",
+        );
+        const elements = normalizeVideoElements(attached);
+        localUserElementsRef.current = elements;
+        ensureCurrentAttempt(generation);
+        for (const element of elements) {
+          styleVideoElement(element);
+          container.appendChild(element);
         }
+        setLocalPreviewUnavailable(elements.length === 0);
+      } catch (error) {
+        ensureCurrentAttempt(generation);
+        logClientFailure(
+          {
+            ...normalizeZoomFailure(error, "video"),
+            operation: "video.attach.local",
+          },
+          0,
+        );
+        setLocalPreviewUnavailable(true);
       }
-      setVideoOn(false);
-      setLocalPreviewUnavailable(false);
-      throw error;
-    }
+    });
   }
 
-  async function disableVideoForSession(stream: ZoomMediaStream) {
-    const userId =
-      localUserIdRef.current ??
-      clientRef.current?.getCurrentUserInfo?.().userId;
-    if (userId) {
-      throwIfZoomFailure(await stream.detachVideo?.(userId), "video");
-    }
-    removeVideoElements(localUserElementsRef.current);
-    localUserElementsRef.current = [];
-    if (stream.stopVideo) {
+  function disableVideoForSession(stream: ZoomMediaStream) {
+    return runLocalVideoOperation(async (generation) => {
+      // Privacy: stop publishing before detaching; failed rendering cleanup
+      // must not leave a camera transmitting after the user switches it off.
+      if (!stream.stopVideo) throw new Error("video_stop_unavailable");
       assertZoomExecutedResult(await stream.stopVideo(), "video");
-    }
-    setVideoOn(false);
-    setLocalPreviewUnavailable(false);
-    mediaPreferencesRef.current.cameraEnabled = false;
+      videoStartedRef.current = false;
+      ensureCurrentAttempt(generation);
+      setVideoOn(false);
+      setLocalPreviewUnavailable(false);
+      mediaPreferencesRef.current.cameraEnabled = false;
+      const userId = localUserIdRef.current;
+      try {
+        if (userId)
+          throwIfZoomFailure(await stream.detachVideo?.(userId), "video");
+      } catch (error) {
+        logClientFailure(
+          {
+            ...normalizeZoomFailure(error, "video"),
+            operation: "video.detach.local",
+          },
+          0,
+        );
+      } finally {
+        removeVideoElements(localUserElementsRef.current);
+        localUserElementsRef.current = [];
+      }
+    });
   }
 
   async function leaveSession(endSession = false) {
@@ -1606,7 +1637,7 @@ export function ZoomVideoSessionAdapter({
     }
     removeVideoElements(localUserElementsRef.current);
     localUserElementsRef.current = [];
-    if (hadAttachedLocalVideo || videoOn) {
+    if (hadAttachedLocalVideo || videoStartedRef.current) {
       await recordCleanupFailure(failures, "stopVideo", () =>
         detectCleanupFailure(stream?.stopVideo?.()),
       );
@@ -1652,6 +1683,7 @@ export function ZoomVideoSessionAdapter({
     setRemoteParticipantPresent(false);
     setRemoteVideoState("off");
     setVideoOn(false);
+    videoStartedRef.current = false;
     setLocalPreviewUnavailable(false);
     setAudioMuted(true);
     audioStartedRef.current = false;

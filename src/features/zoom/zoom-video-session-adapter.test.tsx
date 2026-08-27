@@ -67,7 +67,8 @@ const mockStream = {
   detachVideo: vi.fn(async () => undefined),
   muteAudio: vi.fn(async () => "" as const),
   startAudio: vi.fn(async (): Promise<"" | MockExecutedFailure> => "" as const),
-  startVideo: vi.fn(async () => "" as const),
+  // SDK 2.4.5 resolves capture success without a value (not ExecutedResult).
+  startVideo: vi.fn(async (): Promise<unknown> => undefined),
   stopAudio: vi.fn(async () => "" as const),
   stopRenderVideo: vi.fn(async () => undefined),
   stopVideo: vi.fn(async () => "" as const),
@@ -484,7 +485,24 @@ describe("ZoomVideoSessionAdapter", () => {
         expect(mockStream.unmuteAudio).toHaveBeenCalled();
         expect(mockStream.startVideo).toHaveBeenCalled();
         expect(mockStream.attachVideo).toHaveBeenCalledWith(7, 2);
+        expect(screen.getByTestId("zoom-local-video")).toContainElement(
+          localElement,
+        );
+        expect(
+          screen.getByRole("button", { name: /silenciar microfone/i }),
+        ).toBeEnabled();
+        expect(
+          screen.getByRole("button", { name: /desligar câmera/i }),
+        ).toBeEnabled();
       });
+      expect(cameraTrack.stop).toHaveBeenCalled();
+      expect(audioTrack.stop).toHaveBeenCalled();
+      expect(cameraTrack.stop.mock.invocationCallOrder[0]).toBeLessThan(
+        mockStream.startVideo.mock.invocationCallOrder[0],
+      );
+      expect(audioTrack.stop.mock.invocationCallOrder[0]).toBeLessThan(
+        mockStream.startAudio.mock.invocationCallOrder[0],
+      );
     },
   );
   it("keeps the active mount generation valid under React Strict Mode", async () => {
@@ -777,6 +795,147 @@ describe("ZoomVideoSessionAdapter", () => {
       expect(mockStream.stopVideo).toHaveBeenCalled();
     });
   });
+
+  it.each(["resolved", "rejected"])(
+    "does not mistake a %s capture failure for a working camera or a failed join",
+    async (kind) => {
+      vi.stubGlobal("fetch", accessResponse(0));
+      const failure = {
+        errorCode: 103,
+        reason: "camera denied",
+        type: "VIDEO_ERROR",
+      };
+      if (kind === "resolved")
+        mockStream.startVideo.mockResolvedValueOnce(failure);
+      else mockStream.startVideo.mockRejectedValueOnce(failure);
+      render(
+        <ZoomVideoSessionAdapter
+          access={allowedAccess}
+          actorRole="patient"
+          bookingId="96000000-0000-4000-8000-000000000001"
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+      await screen.findByText(/voc[eê] entrou no encontro/i);
+      expect(mockStream.startVideo).not.toHaveBeenCalled();
+      expect(mockStream.unmuteAudio).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: /ativar câmera/i }));
+      expect(
+        await screen.findByText(/permiss[aã]o|permissões/i),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /ativar câmera/i }),
+      ).toBeEnabled();
+      expect(mockStream.attachVideo).not.toHaveBeenCalledWith(7, 2);
+      expect(mockClient.leave).not.toHaveBeenCalled();
+      expect(mockClient.join).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("keeps publishing with an honest local-preview state if attachment fails, and can switch the camera off", async () => {
+    vi.stubGlobal("fetch", accessResponse(0));
+    mockStream.attachVideo.mockRejectedValueOnce({
+      errorCode: 2,
+      reason: "attach failed",
+      type: "INTERNAL_ERROR",
+    });
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/voc[eê] entrou no encontro/i);
+    fireEvent.click(screen.getByRole("button", { name: /ativar câmera/i }));
+    await screen.findByText(/sem prévia neste dispositivo/i);
+    expect(
+      screen.getByRole("button", { name: /desligar câmera/i }),
+    ).toBeEnabled();
+    expect(mockStream.stopVideo).not.toHaveBeenCalled();
+    expect(mockClient.leave).not.toHaveBeenCalled();
+    expect(
+      screen.queryByText(/verifique as permissões/i),
+    ).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /desligar câmera/i }));
+    await waitFor(() => expect(mockStream.stopVideo).toHaveBeenCalledTimes(1));
+    await screen.findByRole("button", { name: /ativar câmera/i });
+  });
+
+  it("stops publishing even when local detachment fails", async () => {
+    vi.stubGlobal("fetch", accessResponse(0));
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/voc[eê] entrou no encontro/i);
+    fireEvent.click(screen.getByRole("button", { name: /ativar câmera/i }));
+    await waitFor(() =>
+      expect(screen.getByTestId("zoom-local-video")).toContainElement(
+        localElement,
+      ),
+    );
+    mockStream.detachVideo.mockRejectedValueOnce(new Error("detach failed"));
+    fireEvent.click(screen.getByRole("button", { name: /desligar câmera/i }));
+    await screen.findByRole("button", { name: /ativar câmera/i });
+    expect(mockStream.stopVideo).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(localElement.isConnected).toBe(false));
+    expect(mockClient.leave).not.toHaveBeenCalled();
+  });
+
+  it.each(["capture", "attachment"])(
+    "serializes camera clicks and unmount cleanup behind pending %s",
+    async (phase) => {
+      vi.stubGlobal("fetch", accessResponse(0));
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      if (phase === "capture")
+        mockStream.startVideo.mockImplementationOnce(() => gate);
+      else
+        mockStream.attachVideo.mockImplementationOnce(async () => {
+          await gate;
+          return localElement;
+        });
+      const view = render(
+        <ZoomVideoSessionAdapter
+          access={allowedAccess}
+          actorRole="patient"
+          bookingId="96000000-0000-4000-8000-000000000001"
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+      await screen.findByText(/voc[eê] entrou no encontro/i);
+      fireEvent.click(screen.getByRole("button", { name: /ativar câmera/i }));
+      await waitFor(() =>
+        expect(mockStream.startVideo).toHaveBeenCalledTimes(1),
+      );
+      fireEvent.click(screen.getByRole("button", { name: /câmera/i }));
+      if (phase === "attachment")
+        await waitFor(() =>
+          expect(mockStream.attachVideo).toHaveBeenCalledWith(7, 2),
+        );
+      view.unmount();
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(destroyClient).not.toHaveBeenCalled();
+      await act(async () => {
+        release();
+      });
+      await waitFor(() => expect(destroyClient).toHaveBeenCalledTimes(1));
+      expect(mockStream.startVideo).toHaveBeenCalledTimes(1);
+      expect(mockStream.stopVideo).toHaveBeenCalledTimes(1);
+      expect(mockClient.leave).toHaveBeenCalledWith(false);
+      expect(localElement.isConnected).toBe(false);
+    },
+  );
 
   it("keeps the therapist video attached when the patient enables their own camera", async () => {
     vi.stubGlobal("fetch", accessResponse(0));

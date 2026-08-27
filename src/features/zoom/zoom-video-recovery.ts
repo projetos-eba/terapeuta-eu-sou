@@ -64,7 +64,7 @@ export class ZoomOperationError extends Error {
 }
 
 // The shipped 2.4.5 join resolves ADD_CURRENT_USER_PARTICIPANT_ATTRIBUTE,
-// despite its declaration using ExecutedResult. Other operations remain strict.
+// despite its declaration using ExecutedResult. Normalize each operation explicitly.
 export function assertZoomJoinResult(result: unknown) {
   throwIfZoomFailure(result, "join");
   if (result === "") return;
@@ -98,6 +98,13 @@ export function assertZoomExecutedResult(
       phase,
     ),
   );
+}
+
+// SDK 2.4.5 startVideo's capture-success callback has no return statement.
+// Do not accept void for init/join/audio or treat resolved failure objects as success.
+export function assertZoomVideoStartResult(result: unknown) {
+  if (result === undefined) return;
+  assertZoomExecutedResult(result, "video");
 }
 
 export function throwIfZoomFailure(result: unknown, phase: ZoomOperationPhase) {
