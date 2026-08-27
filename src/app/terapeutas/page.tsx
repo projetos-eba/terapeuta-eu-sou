@@ -32,10 +32,7 @@ import {
   type TherapistSearchFilters,
   type TherapistSearchOption,
 } from "@/features/public-therapist-search";
-import {
-  PublicSearchMetricsTracker,
-  TrackedBookingLink,
-} from "@/features/public-metrics";
+import { PublicSearchMetricsTracker } from "@/features/public-metrics";
 import { TherapyBadgeList } from "@/features/public-therapist-search/components/therapy-badge-list";
 import { routes } from "@/lib/routes";
 import { platformAssets } from "@/lib/platform-assets";
@@ -276,11 +273,9 @@ function Rating({
 
 function TherapistResultCard({
   position,
-  trackMetrics,
   therapist,
 }: {
   position: number;
-  trackMetrics: boolean;
   therapist: TherapistSearchCard;
 }) {
   const isVerified = therapist.highlightTone === "verified";
@@ -369,33 +364,15 @@ function TherapistResultCard({
                 {therapist.priceLabel}
               </p>
             </div>
-            <div className="flex w-full flex-col gap-2 sm:w-[160px]">
+            <div className="w-full sm:w-[160px]">
               <TESButton
                 href={therapist.href}
                 size="lg"
                 className="h-16 min-h-16 w-full rounded-[18px] px-4 py-0 text-sm leading-5"
               >
-                Ver perfil completo
+                Ver perfil
                 <ArrowRight className="size-5" />
               </TESButton>
-              {trackMetrics ? (
-                <TrackedBookingLink
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-lavender bg-white px-4 text-center text-sm font-bold leading-5 text-brand-primary transition hover:border-brand-lavender focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                  href={`${routes.public.reservation}?therapist=${therapist.slug}&service=${therapist.serviceId}`}
-                  serviceId={therapist.serviceId}
-                  sourceSurface="therapist_search"
-                  therapistSlug={therapist.slug}
-                >
-                  Agendar sessão
-                </TrackedBookingLink>
-              ) : (
-                <Link
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-lavender bg-white px-4 text-center text-sm font-bold leading-5 text-brand-primary transition hover:border-brand-lavender focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                  href={routes.public.reservation as Route}
-                >
-                  Agendar sessão
-                </Link>
-              )}
             </div>
           </div>
         </div>
@@ -547,7 +524,6 @@ export default async function TherapistsPage({
                 position={
                   (result.currentPage - 1) * result.pageSize + index + 1
                 }
-                trackMetrics={result.source === "live"}
                 therapist={therapist}
               />
             ))}

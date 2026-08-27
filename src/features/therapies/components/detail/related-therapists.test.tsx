@@ -70,6 +70,7 @@ describe("RelatedTherapists", () => {
       screen.getByLabelText("Ana Oliveira é terapeuta Premium"),
     ).toBeInTheDocument();
     expect(screen.queryByLabelText("Ordenar por:")).not.toBeInTheDocument();
+    expect(screen.queryByText("Sessões em breve")).not.toBeInTheDocument();
   });
 
   it("não apresenta uma pontuação nula como correspondência", () => {

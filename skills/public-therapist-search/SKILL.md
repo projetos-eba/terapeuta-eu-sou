@@ -26,7 +26,9 @@ Antes de alterar `/terapeutas`, consultar:
 - Server Component orientado por `searchParams`.
 - Query params suportados: `q`, `therapy`, `theme`, `availability`, `price`, `rating`, `sort`, `page`.
 - Links dos cards: `routes.public.therapistProfile(slug)`.
-- CTA de reserva: `routes.public.reservation`.
+- CTA único do card de resultado: `Ver perfil` para
+  `routes.public.therapistProfile(slug)`. A reserva começa no perfil, não na
+  busca.
 - Não criar `/terapeutas/:slug` dentro desta skill; registrar como pendência até a página de perfil ser implementada.
 
 ## Dados
@@ -42,8 +44,10 @@ Antes de alterar `/terapeutas`, consultar:
 - A busca deve preservar o serviço principal retornado por
   `public_therapist_search` para preço, duração e reserva, mas enriquecer o
   card com todas as terapias reais de `public_therapist_profile_services_v`.
-  A apresentação mostra até duas terapias e um badge `+N`; os nomes restantes
-  devem estar disponíveis em hover, foco e clique, com tooltip acessível.
+  A apresentação mostra até duas terapias e um badge `+N` visualmente pequeno
+  sobreposto à última etiqueta visível; o alvo interativo continua com no
+  mínimo `44px`, e os nomes restantes devem estar disponíveis em hover, foco e
+  clique, com tooltip acessível e fechamento por `Escape`.
 - `next_slot_at` é derivado pelo mesmo RPC autoritativo usado pela agenda pública:
   `get_service_available_slots_v1`. A view não pode estimar o próximo horário
   apenas pela regra semanal, porque isso ignora antecedência, buffers,
@@ -70,6 +74,8 @@ Regra de apresentação dos cards:
 - O card público não exibe tags de cuidado ou temas derivadas de
   `therapist.tags`. Os chips visíveis junto ao nome ficam restritos às terapias
   publicadas, com no máximo duas e o contador acessível das demais.
+- O card tem somente o CTA `Ver perfil`; não exibe `Agendar sessão` nem o texto
+  “Ver perfil completo”.
 
 ## Componentes Esperados
 
@@ -77,7 +83,7 @@ Regra de apresentação dos cards:
 - hero público com copy acolhedora
 - formulário de busca e filtros linkáveis por URL
 - contagem de resultados e ordenação
-- cards de terapeuta com foto, terapias, avaliação, preço, próxima disponibilidade e CTAs
+- cards de terapeuta com foto, terapias, avaliação, preço, próxima disponibilidade e CTA único de perfil
 - estado sem resultados
 - paginação
 - `JourneyBanner`
@@ -119,8 +125,10 @@ Não substituir esses padrões por cards editoriais grandes, hero alternativo, c
 - Validar responsividade desktop/mobile contra o Figma `13273:3587`.
 - Confirmar que a view não expõe email, telefone, dados internos de paciente, dados sensíveis, `meeting_url` ou campos privados.
 - Confirmar que um terapeuta com três ou mais terapias mostra duas etiquetas,
-  o contador das restantes e os nomes completos no tooltip, sem misturar temas
-  de cuidado com terapias.
+  o contador sobreposto à última etiqueta, alvo de toque de 44px e os nomes
+  completos no tooltip; validar foco, clique e `Escape`, sem misturar temas de
+  cuidado com terapias.
+- Confirmar que a busca não exibe `Agendar sessão` ou “Ver perfil completo”.
 
 ## Pendências Conhecidas
 
