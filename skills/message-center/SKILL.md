@@ -57,6 +57,12 @@ rotas canônicas do perfil atual, nunca para o perfil público do terapeuta.
 - Templates permitidos ficam em
   `src/features/message-center/message-center.templates.ts`.
 
+Uma conversa é única por par paciente-terapeuta. O banco a cria e faz backfill
+para todo booking `confirmed` ou `completed`; a Central não limita a lista de
+destinatários. `booking_id` preserva apenas o contexto autorizado mais relevante
+para templates que exigem sessão — não transforma a conversa em um chat por
+sessoes individuais.
+
 `/api/messages/preview-template` e `/api/messages/send-template` aceitam apenas
 `actorRole`, `conversationId`, `bookingId`, `templateKey` e parâmetros fechados.
 Campos `body`, `message`, `description`, `html`, Markdown, URLs e texto livre são

@@ -108,7 +108,12 @@ function TemplateDialog({
     Boolean(conversationId && templateKey && selectedThread);
 
   async function previewTemplate() {
-    if (!selectedTemplate || !conversationId || props.source === "demo") {
+    if (
+      !selectedTemplate ||
+      !conversationId ||
+      !selectedThread ||
+      props.source === "demo"
+    ) {
       setError("Conecte-se novamente para preparar uma mensagem real.");
       return;
     }
@@ -117,6 +122,7 @@ function TemplateDialog({
     const response = await fetch("/api/messages/preview-template", {
       body: JSON.stringify({
         actorRole: props.actorRole,
+        bookingId: selectedThread.bookingId ?? undefined,
         conversationId,
         templateKey,
         parameters,
@@ -141,7 +147,12 @@ function TemplateDialog({
   }
 
   async function sendTemplate() {
-    if (!selectedTemplate || !conversationId || props.source === "demo") {
+    if (
+      !selectedTemplate ||
+      !conversationId ||
+      !selectedThread ||
+      props.source === "demo"
+    ) {
       setError("Conecte-se novamente para enviar uma mensagem real.");
       return;
     }
@@ -150,6 +161,7 @@ function TemplateDialog({
     const response = await fetch("/api/messages/send-template", {
       body: JSON.stringify({
         actorRole: props.actorRole,
+        bookingId: selectedThread.bookingId ?? undefined,
         conversationId,
         templateKey,
         parameters,

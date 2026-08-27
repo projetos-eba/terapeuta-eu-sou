@@ -155,9 +155,36 @@ describe("MessageCenterPage", () => {
         "/api/messages/send-template",
         expect.objectContaining({ method: "POST" }),
       );
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/messages/preview-template",
+        expect.objectContaining({
+          body: expect.stringContaining(
+            '"bookingId":"f2000000-0000-4000-8000-000000000001"',
+          ),
+          method: "POST",
+        }),
+      );
     } finally {
       global.fetch = originalFetch;
     }
+  });
+
+  it("offers every eligible participant as a recipient without a UI limit", () => {
+    const base = createData();
+    const threads = Array.from({ length: 10 }, (_, index) => ({
+      ...base.threads[0],
+      conversationId: `eb000000-0000-4000-8000-${String(index + 10).padStart(12, "0")}`,
+      id: `thread-${index + 1}`,
+      name: `Cliente ${index + 1}`,
+    }));
+
+    render(<MessageCenterPage data={{ ...base, threads }} />);
+    fireEvent.click(screen.getByRole("button", { name: /escolher mensagem/i }));
+
+    expect(screen.getAllByRole("option")).toHaveLength(10);
+    expect(
+      screen.getByRole("option", { name: "Cliente 10" }),
+    ).toBeInTheDocument();
   });
 
   it("selects the hero asset for the active profile", () => {
@@ -269,6 +296,27 @@ describe("MessageCenterPage", () => {
     } finally {
       global.fetch = originalFetch;
     }
+  });
+
+  it("shows the persisted support protocol separately from participant messages", () => {
+    const data = createData();
+    data.supportTickets = [
+      {
+        category: "pagamentos",
+        createdAt: "2026-08-21T12:00:00.000Z",
+        excerpt: "Preciso confirmar o pagamento.",
+        id: "30000000-0000-4000-8000-000000000001",
+        lastActivityAt: "2026-08-21T12:00:00.000Z",
+        protocol: "582914730P",
+        status: "open",
+        subject: "Pagamento em análise",
+      },
+    ];
+
+    render(<MessageCenterPage data={data} />);
+
+    expect(screen.getByText(/582914730P/)).toBeInTheDocument();
+    expect(screen.getByText("Pagamento em análise")).toBeInTheDocument();
   });
 });
 

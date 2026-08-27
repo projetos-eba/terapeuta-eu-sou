@@ -139,7 +139,7 @@ async function getSupabaseMessageCenter(
 
   const conversations = await supabaseRequest<ConversationRow[]>(
     config,
-    `/rest/v1/conversations?select=id,patient_profile_id,therapist_profile_id,booking_id,last_message_at&${input.actorRole === "patient" ? "patient_profile_id" : "therapist_profile_id"}=eq.${encodeURIComponent(participantProfileId)}&order=last_message_at.desc.nullslast&limit=8`,
+    `/rest/v1/conversations?select=id,patient_profile_id,therapist_profile_id,booking_id,last_message_at&${input.actorRole === "patient" ? "patient_profile_id" : "therapist_profile_id"}=eq.${encodeURIComponent(participantProfileId)}&order=last_message_at.desc.nullslast`,
   );
   const conversationIds = conversations.map((conversation) => conversation.id);
   const [
@@ -158,7 +158,7 @@ async function getSupabaseMessageCenter(
       : Promise.resolve([]),
     supabaseRequest<SupportTicketRow[]>(
       config,
-      `/rest/v1/support_tickets?select=id,protocol,category,subject,description,status,resolution_summary,created_at,last_activity_at&requester_profile_id=eq.${encodeURIComponent(input.profileId)}&order=last_activity_at.desc.nullslast&limit=8`,
+      `/rest/v1/support_tickets?select=id,protocol,category,subject,description,status,resolution_summary,created_at,last_activity_at&requester_profile_id=eq.${encodeURIComponent(input.profileId)}&order=last_activity_at.desc.nullslast`,
     ),
     supabaseRequest<NotificationRow[]>(
       config,
