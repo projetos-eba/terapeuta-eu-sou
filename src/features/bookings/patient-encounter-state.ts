@@ -21,6 +21,8 @@ export type PatientEncounterPaymentKind =
 export type PatientEncounterWaitingRoomKind =
   | "entry_available"
   | "ended"
+  | "arrival_expired"
+  | "schedule_ended"
   | "operational_unavailable"
   | "payment_required"
   | "therapist_present"
@@ -335,16 +337,43 @@ function getWaitingRoomState({
     };
   }
 
+  if (zoomAccess?.reason === ZoomAccessReason.ArrivalWindowExpired) {
+    return {
+      kind: "arrival_expired",
+      title: "Prazo de chegada encerrado",
+      message:
+        "O prazo de chegada de 10 minutos terminou. Se precisar de ajuda, fale com o suporte.",
+    };
+  }
   if (
-    zoomAccess?.reason === ZoomAccessReason.TooLate ||
+    zoomAccess?.reason === ZoomAccessReason.SessionEnded ||
+    zoomAccess?.videoSessionStatus === ZoomVideoSessionStatus.Ended ||
     zoomAccess?.reason === ZoomAccessReason.HardTimeout ||
-    (Number.isFinite(endsAtMs) && nowMs >= endsAtMs)
+    zoomAccess?.videoSessionStatus === ZoomVideoSessionStatus.Canceled
   ) {
     return {
       kind: "ended",
+      title: "Encontro encerrado",
+      message: "Este encontro foi encerrado e não permite nova entrada.",
+    };
+  }
+  if (
+    zoomAccess?.reason === ZoomAccessReason.TooLate ||
+    (Number.isFinite(endsAtMs) && nowMs >= endsAtMs)
+  ) {
+    return {
+      kind: "schedule_ended",
+      message: "O horário deste encontro terminou e não permite nova entrada.",
+      title: "Horário encerrado",
+    };
+  }
+
+  if (zoomAccess && !zoomAccess.allowed) {
+    return {
+      kind: "operational_unavailable",
+      title: "Sala indisponível",
       message:
-        "A tolerância de entrada de 10 minutos foi encerrada. Se precisar de ajuda, fale com o suporte.",
-      title: "Janela encerrada",
+        "Não foi possível confirmar a disponibilidade da sala. Tente atualizar.",
     };
   }
 
@@ -479,6 +508,15 @@ export function getZoomWaitingRoomStatusFromAccess(
   }
 
   if (access.reason === ZoomAccessReason.TooEarly) return "too_early";
+  if (
+    access.reason === ZoomAccessReason.SessionEnded ||
+    access.videoSessionStatus === ZoomVideoSessionStatus.Ended ||
+    access.videoSessionStatus === ZoomVideoSessionStatus.Canceled
+  )
+    return "ended";
+  if (access.reason === ZoomAccessReason.ArrivalWindowExpired)
+    return "arrival_expired";
+  if (access.reason === ZoomAccessReason.TooLate) return "schedule_ended";
   if (access.reason === ZoomAccessReason.TherapistNotInSession) {
     const availableFromMs = access.availableFrom
       ? Date.parse(access.availableFrom)
@@ -493,11 +531,7 @@ export function getZoomWaitingRoomStatusFromAccess(
       ? "therapist_absent_prolonged"
       : "waiting_therapist";
   }
-  if (
-    access.reason === ZoomAccessReason.TooLate ||
-    access.reason === ZoomAccessReason.HardTimeout ||
-    access.videoSessionStatus === ZoomVideoSessionStatus.Ended
-  ) {
+  if (access.reason === ZoomAccessReason.HardTimeout) {
     return "ended";
   }
 
@@ -513,7 +547,8 @@ export function getZoomRecoveryActionLabels(
     return [...base, "Copiar referência", "Falar com suporte"];
   }
 
-  if (kind === "ended") return ["Voltar à sala de espera", "Copiar referência"];
+  if (["ended", "arrival_expired", "schedule_ended"].includes(kind))
+    return ["Voltar à sala de espera", "Copiar referência"];
 
   return [...base, "Renovar acesso"];
 }

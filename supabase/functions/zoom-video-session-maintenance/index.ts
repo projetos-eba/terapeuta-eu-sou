@@ -9,6 +9,7 @@ import {
 import { getPaymentsRuntime } from "../_shared/payments/runtime.ts";
 import { ZoomVideoSdkApiClient } from "../_shared/zoom-video-sdk/api-client.ts";
 import { getZoomVideoSdkConfig } from "../_shared/zoom-video-sdk/config.ts";
+import { hasConfirmedProviderClosure } from "../_shared/zoom-video-sdk/session-lifecycle.ts";
 import {
   sanitizeProviderMessage,
   ZoomVideoSdkError,
@@ -147,6 +148,22 @@ async function processJob(input: {
     }
 
     if (!input.job.provider_session_id) {
+      const [session] = await input.client.get<
+        Array<{ metadata: unknown; provider_session_id: string | null }>
+      >(
+        `/rest/v1/video_sessions?select=metadata,provider_session_id&id=eq.${encodeURIComponent(input.job.video_session_id)}&limit=1`,
+      );
+      if (
+        session?.provider_session_id === null &&
+        hasConfirmedProviderClosure(session.metadata)
+      ) {
+        await input.client.rpc("mark_video_session_termination_confirmed_v1", {
+          p_reason: reason,
+          p_video_session_id: input.job.video_session_id,
+        });
+        await completeJob(input.client, input.job.id, true);
+        return { ok: true, operation: input.job.operation };
+      }
       await completeJob(input.client, input.job.id, false, {
         code: "provider_session_id_missing",
         message: "Sessao ativa sem ID de provedor para encerramento REST.",

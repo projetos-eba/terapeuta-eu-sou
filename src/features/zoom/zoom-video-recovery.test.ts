@@ -2,15 +2,33 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertZoomExecutedResult,
+  assertZoomJoinResult,
   normalizeConnectionChange,
   normalizeZoomFailure,
   ZoomOperationError,
 } from "./zoom-video-recovery";
 
 describe("zoom video recovery contract", () => {
-  it("accepts only the official empty executed result as success", () => {
+  it("keeps non-join executed results strict", () => {
     expect(() => assertZoomExecutedResult("", "join")).not.toThrow();
     expect(() => assertZoomExecutedResult(undefined, "join")).toThrow(
+      ZoomOperationError,
+    );
+  });
+
+  it("accepts the installed SDK participant result only for join, never masking failures", () => {
+    expect(() => assertZoomJoinResult({ userId: 7 })).not.toThrow();
+    expect(() => assertZoomJoinResult("")).not.toThrow();
+    for (const result of [
+      null,
+      undefined,
+      {},
+      { userId: 0 },
+      { userId: 7, errorCode: 2, reason: "failed", type: "INTERNAL_ERROR" },
+    ]) {
+      expect(() => assertZoomJoinResult(result)).toThrow(ZoomOperationError);
+    }
+    expect(() => assertZoomExecutedResult({ userId: 7 }, "audio")).toThrow(
       ZoomOperationError,
     );
   });

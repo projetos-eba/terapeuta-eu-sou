@@ -23,6 +23,7 @@ export type ZoomExecutedFailure = {
 };
 
 export type NormalizedZoomFailure = {
+  operation?: string;
   category: ZoomRecoveryCategory;
   code: number | null;
   phase: ZoomOperationPhase;
@@ -60,6 +61,21 @@ export class ZoomOperationError extends Error {
     this.name = "ZoomOperationError";
     this.failure = failure;
   }
+}
+
+// The shipped 2.4.5 join resolves ADD_CURRENT_USER_PARTICIPANT_ATTRIBUTE,
+// despite its declaration using ExecutedResult. Other operations remain strict.
+export function assertZoomJoinResult(result: unknown) {
+  throwIfZoomFailure(result, "join");
+  if (result === "") return;
+  if (
+    isRecord(result) &&
+    typeof result.userId === "number" &&
+    Number.isSafeInteger(result.userId) &&
+    result.userId > 0
+  )
+    return;
+  assertZoomExecutedResult(result, "join");
 }
 
 export function assertZoomExecutedResult(
@@ -152,7 +168,9 @@ export function normalizeZoomFailure(
   }
 
   const accessDomainMessage =
-    phase === "access" ? ACCESS_DOMAIN_MESSAGES[reason.toLowerCase()] : undefined;
+    phase === "access"
+      ? ACCESS_DOMAIN_MESSAGES[reason.toLowerCase()]
+      : undefined;
   if (accessDomainMessage) {
     return buildFailure({
       category: "permanent",

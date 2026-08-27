@@ -69,6 +69,9 @@ export const ZoomAccessReason = {
   HardTimeout: "HARD_TIMEOUT",
   TooEarly: "TOO_EARLY",
   TooLate: "TOO_LATE",
+  SessionEnded: "SESSION_ENDED",
+  ArrivalWindowExpired: "ARRIVAL_WINDOW_EXPIRED",
+  TechnicalUnavailable: "TECHNICAL_UNAVAILABLE",
   Unknown: "UNKNOWN",
 } as const;
 

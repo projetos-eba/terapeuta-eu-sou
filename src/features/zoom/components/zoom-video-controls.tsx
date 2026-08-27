@@ -32,6 +32,9 @@ type ZoomVideoControlsProps = {
     | "loading"
     | "joining"
     | "joined"
+    | "media_initializing"
+    | "media_degraded"
+    | "disconnected"
     | "recovering"
     | "reconnecting"
     | "leaving"
@@ -58,14 +61,21 @@ export function ZoomVideoControls({
   state,
   videoOn,
 }: ZoomVideoControlsProps) {
-  const isLive = state === "joined" || state === "reconnecting";
+  const isLive = [
+    "joined",
+    "media_initializing",
+    "media_degraded",
+    "reconnecting",
+  ].includes(state);
+  const mediaBusy =
+    isBusy || state === "media_initializing" || state === "reconnecting";
 
   if (!isLive) {
     return (
       <div className="flex flex-col gap-2 sm:flex-row">
         <TESButton
           className="flex-1"
-          disabled={isBusy || !isOnline}
+          disabled={isBusy || !isOnline || state === "reload_required"}
           onClick={onJoin}
           size="lg"
           type="button"
@@ -106,6 +116,7 @@ export function ZoomVideoControls({
       <div className="flex flex-wrap items-center justify-center gap-2 rounded-[24px] border border-brand-lavender/70 bg-white/95 p-2.5 shadow-card sm:gap-3 sm:p-3">
         <ControlButton
           active={!audioMuted}
+          disabled={mediaBusy}
           label={audioMuted ? "Ativar microfone" : "Silenciar microfone"}
           onClick={onToggleAudio}
         >
@@ -117,6 +128,7 @@ export function ZoomVideoControls({
         </ControlButton>
         <ControlButton
           active={videoOn}
+          disabled={mediaBusy}
           label={videoOn ? "Desligar câmera" : "Ativar câmera"}
           onClick={onToggleVideo}
         >
@@ -192,11 +204,13 @@ export function ZoomVideoControls({
 
 function ControlButton({
   active = false,
+  disabled = false,
   children,
   label,
   onClick,
 }: {
   active?: boolean;
+  disabled?: boolean;
   children: ReactNode;
   label: string;
   onClick: () => void;
@@ -205,6 +219,7 @@ function ControlButton({
     <button
       aria-label={label}
       aria-pressed={active}
+      disabled={disabled}
       className="grid min-h-12 min-w-12 place-items-center rounded-full bg-brand-lavenderSoft px-3 text-brand-primary transition hover:bg-brand-lavender focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
       onClick={onClick}
       title={label}

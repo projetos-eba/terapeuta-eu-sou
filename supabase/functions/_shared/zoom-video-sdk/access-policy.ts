@@ -13,6 +13,9 @@ export type VideoAccessReason =
   | "HARD_TIMEOUT"
   | "TOO_EARLY"
   | "TOO_LATE"
+  | "SESSION_ENDED"
+  | "ARRIVAL_WINDOW_EXPIRED"
+  | "TECHNICAL_UNAVAILABLE"
   | "UNKNOWN";
 
 export type VideoAccessState = {
@@ -40,6 +43,8 @@ export function evaluateVideoSessionAccess(input: {
   therapistStatus?: string;
   therapistProfileEligible?: boolean;
   therapistPresent?: boolean;
+  terminationRequestedAt?: string | null;
+  terminationConfirmedAt?: string | null;
   videoSessionReady: boolean;
   videoSessionStatus: string | null;
 }): VideoAccessState {
@@ -57,9 +62,10 @@ export function evaluateVideoSessionAccess(input: {
   const patientEntryEntitled = Boolean(
     input.patientHasJoined || input.patientHasTimelyArrival,
   );
-  const availableUntil = input.actorRole === "patient" && !patientEntryEntitled
-    ? firstPatientJoinUntil
-    : endsAt;
+  const availableUntil =
+    input.actorRole === "patient" && !patientEntryEntitled
+      ? firstPatientJoinUntil
+      : endsAt;
   const hardEndsAt = input.hardEndsAt ? new Date(input.hardEndsAt) : null;
   let reason: VideoAccessReason | null = null;
 
@@ -68,9 +74,10 @@ export function evaluateVideoSessionAccess(input: {
     (input.therapistStatus !== "approved" ||
       input.therapistProfileEligible === false)
   ) {
-    reason = input.therapistStatus === "suspended"
-      ? "THERAPIST_SUSPENDED"
-      : "THERAPIST_NOT_ALLOWED";
+    reason =
+      input.therapistStatus === "suspended"
+        ? "THERAPIST_SUSPENDED"
+        : "THERAPIST_NOT_ALLOWED";
   } else if (
     [
       "cancelled_by_patient",
@@ -88,20 +95,22 @@ export function evaluateVideoSessionAccess(input: {
   } else if (now >= endsAt) {
     reason = "TOO_LATE";
   } else if (
+    input.terminationRequestedAt ||
+    input.terminationConfirmedAt ||
+    input.videoSessionStatus === "ended" ||
+    input.videoSessionStatus === "canceled"
+  ) {
+    reason = "SESSION_ENDED";
+  } else if (
     input.actorRole === "patient" &&
     !patientEntryEntitled &&
     now > firstPatientJoinUntil
   ) {
-    reason = "TOO_LATE";
+    reason = "ARRIVAL_WINDOW_EXPIRED";
   } else if (hardEndsAt && now >= hardEndsAt) {
     reason = "HARD_TIMEOUT";
-  } else if (
-    input.videoSessionStatus === "ended" ||
-    input.videoSessionStatus === "canceled"
-  ) {
-    reason = "TOO_LATE";
   } else if (input.videoSessionStatus === "failed") {
-    reason = "UNKNOWN";
+    reason = "TECHNICAL_UNAVAILABLE";
   } else if (!input.videoSessionReady) {
     reason = "VIDEO_SESSION_NOT_READY";
   } else if (input.actorRole === "patient" && !input.therapistPresent) {
@@ -132,6 +141,10 @@ export function getVideoAccessMessage(reason: VideoAccessReason) {
     HARD_TIMEOUT: "O limite seguro desta sessao foi atingido.",
     TOO_EARLY: "A entrada fica disponivel perto do horario.",
     TOO_LATE: "A janela de acesso desta sessao foi encerrada.",
+    SESSION_ENDED: "Esta sessão foi encerrada e não permite nova entrada.",
+    ARRIVAL_WINDOW_EXPIRED: "O prazo de chegada de 10 minutos terminou.",
+    TECHNICAL_UNAVAILABLE:
+      "Não foi possível preparar o vídeo agora. Tente atualizar a sala.",
     UNKNOWN: "Nao foi possivel liberar o acesso agora.",
   };
 

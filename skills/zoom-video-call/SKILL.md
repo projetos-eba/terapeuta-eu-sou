@@ -118,10 +118,16 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   conexão, `final end -> feedback`, feedback já enviado, erro de leitura,
   erro de envio, resposta realizada, não realização, comentário de 500
   caracteres e reabertura por query controlada.
-- Validar que erro resolvido de áudio imediatamente após `join` mantém a sala
-  conectada; após falha transitória em `destroyClient`, validar a segunda
-  tentativa após 750 ms e a reentrada com o mesmo acesso. Duas falhas seguidas
-  exigem recarga antes de novo join.
+- Validar o retorno participante de `join` no SDK instalado, além de `""`.
+  Erro resolvido ou rejeitado de áudio após join mantém `media_degraded`, sem
+  sair da sessão. Distinguir `joining`, `joined`, `media_initializing`,
+  `media_degraded` e `disconnected` nos testes.
+- Chamar `ZoomVideo.destroyClient()` preservando o receiver. Uma falha ou
+  timeout de destroy invalida o singleton até recarga; não tentar reutilizá-lo
+  nem emitir outro JWT. Retry de sessão exige cleanup concluído, client novo
+  e o mesmo acesso; reconexão nativa bem-sucedida preserva o client existente.
+- Atualizar access em cada dispositivo na espera, inclusive após a liberação;
+  resposta tardia de preview não substitui estado/mensagem da chamada.
 - O `userId` local vem de `ZoomVideoClient.getCurrentUserInfo()`, nunca do
   media stream. A self-view e os vídeos remotos usam `attachVideo` dentro de
   `video-player-container`; `renderVideo` em canvas não é o contrato
