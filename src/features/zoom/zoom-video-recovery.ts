@@ -37,6 +37,20 @@ const PERMISSION_CODES = new Set([103, 203]);
 const RELOAD_MEDIA_CODES = new Set([101, 102, 104, 201, 202, 204, 205, 206]);
 const ENDED_CODES = new Set([3009, 4004]);
 const PERMANENT_CODES = new Set([200, 3010, 5000, 5001, 5013]);
+const ACCESS_DOMAIN_MESSAGES: Record<string, string> = {
+  booking_not_found:
+    "Não foi possível localizar este encontro para a sua conta.",
+  role_mismatch:
+    "Este encontro deve ser acessado com a conta correspondente ao seu papel na sessão.",
+  therapist_not_allowed:
+    "Seu cadastro profissional ainda não está completo e aprovado para iniciar atendimentos.",
+  therapist_profile_not_found:
+    "Seu cadastro profissional ainda não está completo e aprovado para iniciar atendimentos.",
+  therapist_receiving_account_required:
+    "Conclua o cadastro da sua conta de recebimento antes de iniciar o atendimento.",
+  therapist_suspended:
+    "O acesso à sala está bloqueado para este perfil. Fale com o suporte.",
+};
 
 export class ZoomOperationError extends Error {
   readonly failure: NormalizedZoomFailure;
@@ -134,6 +148,20 @@ export function normalizeZoomFailure(
       shouldReload: false,
       userMessage:
         "Sua sessão de acesso expirou. Entre novamente na sua conta para voltar ao encontro.",
+    });
+  }
+
+  const accessDomainMessage =
+    phase === "access" ? ACCESS_DOMAIN_MESSAGES[reason.toLowerCase()] : undefined;
+  if (accessDomainMessage) {
+    return buildFailure({
+      category: "permanent",
+      code,
+      phase,
+      reason,
+      retryable: false,
+      shouldReload: false,
+      userMessage: accessDomainMessage,
     });
   }
 

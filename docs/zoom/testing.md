@@ -145,6 +145,13 @@ em paralelo. `5012`, timeout, erro interno e cliente reconectando sao
 recuperaveis; sessao encerrada, participante removido, permissao negada e
 configuracao invalida nao entram em repeticao cega.
 
+Os testes de regressao tambem devem cobrir remount da rota enquanto o
+`destroyClient` anterior ainda esta pendente, pausa offline seguida de retomada
+por `online`, e a diferenca entre `Closed` transitorio e encerramento definitivo
+pelo host. Respostas de acesso devem preservar somente codigos de dominio
+permitidos, como `therapist_receiving_account_required`, e nunca renderizar a
+mensagem bruta do backend.
+
 Ao homologar, manter o terapeuta na sala e cobrir queda de rede, voltar pelo
 navegador, fechar/reabrir aba e reentrada pela espera. Confirmar que existe um
 unico participante remoto, que a recuperacao automatica ocorre antes do

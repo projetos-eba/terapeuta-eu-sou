@@ -10,6 +10,7 @@ export type AuthorizedVideoBooking = {
   patientHasTimelyArrival: boolean;
   startsAt: string;
   therapistProfileId: string;
+  therapistProfileEligible: boolean;
   therapistStatus: string;
   timezone: string;
   videoSession: {
@@ -122,6 +123,12 @@ export async function getAuthorizedVideoBooking(input: {
       }&participant_role=eq.patient&event_type=eq.session.user_joined&limit=1`,
     )
     : [];
+  const therapistProfileEligible = input.role === "therapist"
+    ? await input.client.rpc<boolean>(
+      "is_therapist_video_session_eligible_v1",
+      { p_therapist_profile_id: booking.therapist_profile_id },
+    )
+    : true;
   const patientArrivalEvents = input.role === "patient"
     ? await input.client.get<Array<{ payload: unknown }>>(
       `/rest/v1/booking_events?select=payload&booking_id=eq.${
@@ -142,6 +149,7 @@ export async function getAuthorizedVideoBooking(input: {
     patientHasTimelyArrival,
     startsAt: booking.starts_at,
     therapistProfileId: booking.therapist_profile_id,
+    therapistProfileEligible: therapistProfileEligible === true,
     therapistStatus: booking.therapist_profiles?.status ?? "unknown",
     timezone: booking.timezone,
     videoSession: videoSession
