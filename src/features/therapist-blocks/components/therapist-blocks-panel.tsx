@@ -629,7 +629,7 @@ function BlocksSummary({
   ];
   return (
     <article className="rounded-[16px] border border-brand-lavender/80 bg-white p-5 shadow-card">
-      <h2 className="font-display text-[22px] font-light text-brand-deep">
+      <h2 className="font-display text-[22px] font-light italic text-brand-deep">
         Resumo dos bloqueios
       </h2>
       <p className="mt-1 text-xs font-semibold text-tesText-secondary">
@@ -672,7 +672,7 @@ function ImpactsCard({
 }) {
   return (
     <article className="rounded-[16px] border border-brand-lavender/80 bg-white p-5 shadow-card">
-      <h2 className="font-display text-[22px] font-light text-brand-deep">
+      <h2 className="font-display text-[22px] font-light italic text-brand-deep">
         Próximos impactos
       </h2>
       <p className="mt-1 text-xs font-semibold text-tesText-secondary">
@@ -755,7 +755,7 @@ function TesTip() {
         <span className="grid size-11 place-items-center rounded-full bg-brand-primary text-white">
           <Sparkles aria-hidden="true" size={19} />
         </span>
-        <h2 className="font-display text-[22px] font-light text-brand-deep">
+        <h2 className="font-display text-[22px] font-light italic text-brand-deep">
           Dica TES
         </h2>
       </div>
@@ -941,7 +941,7 @@ function EmptyBlocks({ onCreate }: { onCreate: () => void }) {
       <span className="mx-auto grid size-12 place-items-center rounded-xl bg-brand-lavenderSoft text-brand-primary">
         <Ban aria-hidden="true" size={23} />
       </span>
-      <h3 className="mt-4 font-display text-2xl font-light text-brand-deep">
+      <h3 className="mt-4 font-display text-2xl font-light italic text-brand-deep">
         Nenhum bloqueio encontrado
       </h3>
       <p className="mx-auto mt-2 max-w-md text-sm font-semibold leading-6 text-tesText-secondary">

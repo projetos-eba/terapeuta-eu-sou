@@ -190,7 +190,7 @@ Figma:
 - Variáveis atualizadas: `font/family/display` e `font/family/accent`.
 - Styles preparados: `TES/Display/IvyPresto/2XL`, `TES/Display/IvyPresto/XL`, `TES/Display/IvyPresto/LG` e `TES/Accent/IvyPresto`.
 - Observação operacional: IvyPresto Display precisa estar instalada/listada no Figma para aplicar os styles aos componentes sem gerar fonte ausente. O CSS registra cortes locais de `IvyPresto Headline` e `IvyPresto Display` até o peso máximo `600` em `/public/fonts/ivy-presto`; pesos superiores não são declarados nem sintetizados. Enquanto o Figma não listar a família, os styles legados `TES/Display/*` permanecem em `Cormorant Garamond` como fallback visual seguro.
-- Nas áreas autenticadas de terapeuta, paciente e admin, `font-display` é sempre itálica; quando não há peso explícito, usa `600`, preserva pesos de `100` a `500` declarados pelo componente e limita pesos superiores a `600`. As telas públicas mantêm sua composição tipográfica atual.
+- A utility `font-display` aplica sempre `font-style: italic`, garantindo o corte editorial itálico da IvyPresto Display em qualquer superfície que a utilize. Nas áreas autenticadas de terapeuta, paciente e admin, quando não há peso explícito, usa `600`, preserva pesos de `100` a `500` declarados pelo componente e limita pesos superiores a `600`; UI/body continua no token sans. As telas públicas mantêm sua composição restante.
 
 | Token                   | Tamanho | Line-height |  Peso | Uso               |
 | ----------------------- | ------: | ----------: | ----: | ----------------- |

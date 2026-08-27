@@ -14,7 +14,9 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   Checkout Session/Subscription.
 - Patient session payments use Stripe Checkout/PaymentIntent and `session_payments` as the canonical financial source.
 - TES revenue is subscription revenue plus platform commission. Therapist share is a payable obligation until transfer.
-- Stripe fees are TES cost and must not reduce the therapist 80% share.
+- Stripe fees are TES cost and must not reduce the therapist 85% share for
+  new payments under the active 15% policy; historical snapshots retain their
+  own contracted split.
 - Connect transfer and bank payout are different events.
 - Connect Accounts v2 creation must send the Brazilian identity country plus
   the recipient transfer capability and the merchant card payment capability
@@ -31,7 +33,9 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   status as sufficient evidence; recover the object from Stripe and validate
   therapist ownership before syncing.
 - Use integer cents and basis points only.
-- Preserve policy snapshots through `financial_policy_versions`.
+- Preserve policy snapshots through `financial_policy_versions`; commission
+  changes create a new policy version and never rewrite existing payments,
+  ledger entries, payout batches or transfers.
 - Use Separate Charges and Transfers; never transfer at charge time.
 - Use Stripe idempotency keys for creating checkout sessions, refunds, schedules, and transfers.
 - Webhooks must read raw body and verify Stripe signature.

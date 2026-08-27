@@ -129,8 +129,9 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
   contrato interno quando necessário.
 - Nos cards, a categoria da terapia permanece visível e os temas selecionados
   pelo terapeuta aparecem em um badge circular `+N`, limitado a `+2`. O badge
-  abre um tooltip acessível por mouse, foco, clique e teclado com os nomes dos
-  temas selecionados.
+  aparece visualmente menor e sobreposto ao chip de categoria, mantendo área de
+  toque mínima de 44px, e abre um tooltip acessível por mouse, foco, clique e
+  teclado com os nomes dos temas selecionados.
 - Validar a composição do card em 320, 375, 390 e 430 px, incluindo categoria
   e temas distintos, status, ativação, menu e tooltip `+N`, sem texto cortado ou
   área de ação isolada.

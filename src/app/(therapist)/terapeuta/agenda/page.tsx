@@ -67,7 +67,7 @@ export default async function TherapistAgendaPage({
               className="mx-auto text-status-danger"
               size={28}
             />
-            <h2 className="mt-4 font-display text-3xl font-light text-brand-deep">
+            <h2 className="mt-4 font-display text-3xl font-light italic text-brand-deep">
               Horários temporariamente indisponíveis
             </h2>
             <p className="mt-3 text-sm font-semibold text-tesText-secondary">
@@ -159,7 +159,7 @@ export default async function TherapistAgendaPage({
           className="mt-6 rounded-[14px] border border-status-danger/30 bg-white p-8 text-center shadow-card"
           role="alert"
         >
-          <h2 className="font-display text-3xl font-light text-brand-deep">
+          <h2 className="font-display text-3xl font-light italic text-brand-deep">
             Agenda temporariamente indisponível
           </h2>
           <p className="mt-3 text-sm font-semibold text-tesText-secondary">
@@ -182,7 +182,7 @@ export default async function TherapistAgendaPage({
             className="mx-auto text-brand-primary"
             size={28}
           />
-          <h2 className="mt-4 font-display text-3xl font-light text-brand-deep">
+          <h2 className="mt-4 font-display text-3xl font-light italic text-brand-deep">
             Sua agenda está pronta para começar
           </h2>
           <p className="mx-auto mt-3 max-w-lg text-sm font-semibold leading-6 text-tesText-secondary">
@@ -228,7 +228,7 @@ function BlocksErrorState({
           className="mx-auto text-status-danger"
           size={28}
         />
-        <h2 className="mt-4 font-display text-3xl font-light text-brand-deep">
+        <h2 className="mt-4 font-display text-3xl font-light italic text-brand-deep">
           Bloqueios temporariamente indisponíveis
         </h2>
         <p className="mt-3 text-sm font-semibold text-tesText-secondary">

@@ -65,7 +65,7 @@ values
     '92000000-0000-4000-8000-000000000011',
     '93000000-0000-4000-8000-000000000020',
     (select id from public.financial_policy_versions where is_active),
-    17000, 2000, 3400, 13600, 'BRL',
+    17000, 1500, 2550, 14450, 'BRL',
     'paid', 'occurred_pending_confirmation', 'waiting_confirmation',
     'ch_local_feedback_browser_1', 'txn_local_feedback_browser_1', now() - interval '31 hours'
   ),
@@ -76,7 +76,7 @@ values
     'c1000000-0000-4000-8000-000000000004',
     '93000000-0000-4000-8000-000000000017',
     (select id from public.financial_policy_versions where is_active),
-    15000, 2000, 3000, 12000, 'BRL',
+    15000, 1500, 2250, 12750, 'BRL',
     'paid', 'occurred_pending_confirmation', 'waiting_confirmation',
     'ch_local_feedback_browser_2', 'txn_local_feedback_browser_2', now() - interval '36 hours'
   );

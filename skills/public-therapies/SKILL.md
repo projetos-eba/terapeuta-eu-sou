@@ -66,7 +66,10 @@ Escopo editorial atual:
 Para profissionais relacionados:
 
 - consultar `public_therapist_search?therapy_slug=eq.<slug>&limit=6`;
-- avaliações e sessões contam apenas bookings `completed` e `paid`;
+- sessões concluídas podem usar bookings `completed` e `paid`, mas avaliações
+  públicas usam exclusivamente a avaliação canônica `published` e não
+  substituída; após a publicação, ela não depende novamente do booking ou
+  pagamento que qualificou a relação.
 - ordenação não pode considerar plano do terapeuta;
 - se o perfil for novo, mostrar “Novo”, nunca `0,0`.
 

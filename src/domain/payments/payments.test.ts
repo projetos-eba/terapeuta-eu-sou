@@ -6,13 +6,13 @@ import {
 } from ".";
 
 describe("payment money rules", () => {
-  it("calculates a 20 percent platform commission and keeps 80 percent for the therapist", () => {
+  it("calculates a 15 percent platform commission and keeps 85 percent for the therapist", () => {
     expect(calculateCommissionSnapshot({ grossAmountCents: 20_000 })).toEqual({
       currency: "BRL",
       grossAmountCents: 20_000,
-      platformCommissionBps: 2_000,
-      platformGrossCommissionCents: 4_000,
-      therapistAmountCents: 16_000,
+      platformCommissionBps: 1_500,
+      platformGrossCommissionCents: 3_000,
+      therapistAmountCents: 17_000,
     });
   });
 
@@ -20,11 +20,11 @@ describe("payment money rules", () => {
     expect(
       calculateCommissionSnapshot({
         grossAmountCents: 10_001,
-        platformCommissionBps: 2_000,
+        platformCommissionBps: 1_500,
       }),
     ).toMatchObject({
-      platformGrossCommissionCents: 2_001,
-      therapistAmountCents: 8_000,
+      platformGrossCommissionCents: 1_501,
+      therapistAmountCents: 8_500,
     });
   });
 });

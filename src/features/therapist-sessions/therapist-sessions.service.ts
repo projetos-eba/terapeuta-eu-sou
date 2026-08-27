@@ -19,6 +19,7 @@ import { SupabaseServerRestError } from "@/lib/supabase/server-rest";
 import {
   queryTherapistPendingReschedule,
   queryTherapistSessionDetail,
+  queryTherapistSessionFeedback,
   queryTherapistSessions,
 } from "./therapist-sessions.queries";
 
@@ -32,6 +33,12 @@ export type TherapistSessionPendingReschedule = {
   requestedByCurrentUser: boolean;
   status: "pending";
 };
+
+export type TherapistSessionFeedbackStatus =
+  | "before_session"
+  | "eligible"
+  | "submitted"
+  | "unavailable";
 
 export async function getTherapistSessionsPage(input: {
   accessToken: string;
@@ -98,6 +105,27 @@ export async function getTherapistSessionPendingReschedule(input: {
   }
 }
 
+export async function getTherapistSessionFeedbackStatus(input: {
+  accessToken: string;
+  bookingId: string;
+}): Promise<TherapistSessionFeedbackStatus> {
+  try {
+    const payload = await queryTherapistSessionFeedback(
+      input.accessToken,
+      input.bookingId,
+    );
+    const status = getFeedbackStatus(payload);
+
+    if (status === "eligible") return status;
+    if (status === "submitted") return status;
+    if (status === "before_session") return status;
+
+    return "unavailable";
+  } catch {
+    return "unavailable";
+  }
+}
+
 async function runReadOperation<T>(input: {
   accessToken: string;
   bookingId?: string;
@@ -154,6 +182,12 @@ function getResponseProfileId(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const profileId = Reflect.get(value, "therapistProfileId");
   return typeof profileId === "string" ? profileId : null;
+}
+
+function getFeedbackStatus(value: unknown) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const status = Reflect.get(value, "status");
+  return typeof status === "string" ? status : null;
 }
 
 function getReadModelErrorCode(error: unknown): ReadModelErrorCode {

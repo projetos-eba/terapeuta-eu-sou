@@ -67,6 +67,9 @@ All derive the therapist from `auth.uid()`. Do not accept
 
 - Four tabs only: Resumo, Recebimentos, Repasses, Conta de recebimento.
 - Values are integer cents from read models; frontend only formats.
+- Commission totals and receipt values come from each payment snapshot. New
+  payments use the active 15% TES policy; historical records can legitimately
+  show the prior 20% split and must not be recalculated in the UI.
 - Formula: Valor bruto das sessões - Comissão TES - Reembolsos ao cliente when
   present = Valor líquido do terapeuta.
 - Do not show Stripe fees as therapist discounts.

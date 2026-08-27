@@ -135,7 +135,7 @@ export function TESDialog({
           <header className="flex items-start justify-between gap-4 border-b border-brand-lavender pb-5">
             <div className="min-w-0">
               <h2
-                className="font-display text-[28px] font-light leading-tight text-brand-deep sm:text-[32px]"
+                className="font-display text-[28px] font-light italic leading-tight text-brand-deep sm:text-[32px]"
                 id={titleId}
               >
                 {title}

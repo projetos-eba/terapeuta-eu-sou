@@ -132,6 +132,11 @@ describe("TherapistServicesPage", () => {
       name: /ver mais 2 temas/i,
     });
     expect(moreThemes).toHaveTextContent("+2");
+    expect(moreThemes).toHaveClass("min-h-11", "min-w-11");
+    expect(moreThemes.querySelector("span")).toHaveClass(
+      "size-6",
+      "text-[11px]",
+    );
     expect(screen.getByRole("tooltip")).toHaveClass("hidden");
 
     fireEvent.mouseEnter(moreThemes);

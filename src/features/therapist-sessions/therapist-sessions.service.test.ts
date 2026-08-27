@@ -1,19 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { queryTherapistSessionDetail, queryTherapistSessions } = vi.hoisted(
+const {
+  queryTherapistSessionDetail,
+  queryTherapistSessionFeedback,
+  queryTherapistSessions,
+} = vi.hoisted(
   () => ({
     queryTherapistSessionDetail: vi.fn(),
+    queryTherapistSessionFeedback: vi.fn(),
     queryTherapistSessions: vi.fn(),
   }),
 );
 
 vi.mock("./therapist-sessions.queries", () => ({
   queryTherapistSessionDetail,
+  queryTherapistSessionFeedback,
   queryTherapistSessions,
 }));
 
 import {
   getTherapistSessionDetail,
+  getTherapistSessionFeedbackStatus,
   getTherapistSessionsPage,
 } from "./therapist-sessions.service";
 
@@ -75,6 +82,30 @@ describe("therapist sessions service results", () => {
     });
 
     expect(result.status).toBe("empty");
+  });
+
+  it("uses the participant-scoped feedback status without exposing its payload", async () => {
+    queryTherapistSessionFeedback.mockResolvedValueOnce({
+      status: "eligible",
+    });
+
+    await expect(
+      getTherapistSessionFeedbackStatus({
+        accessToken: "test-token",
+        bookingId: "f2000000-0000-4000-8000-000000000001",
+      }),
+    ).resolves.toBe("eligible");
+  });
+
+  it("keeps an unknown feedback state unavailable to the session detail", async () => {
+    queryTherapistSessionFeedback.mockResolvedValueOnce({ status: "internal" });
+
+    await expect(
+      getTherapistSessionFeedbackStatus({
+        accessToken: "test-token",
+        bookingId: "f2000000-0000-4000-8000-000000000001",
+      }),
+    ).resolves.toBe("unavailable");
   });
 });
 

@@ -1326,7 +1326,7 @@ function TesScheduleTip({ demand }: { demand: TherapistCalendarDemandItem[] }) {
     <article className="mt-7 border-l-2 border-brand-primary bg-brand-lavenderSoft/70 px-5 py-6 text-left sm:px-6">
       <div className="inline-flex items-center gap-2">
         <Sparkles aria-hidden="true" className="text-brand-primary" size={19} />
-        <h2 className="font-display text-[24px] font-light text-brand-deep">
+        <h2 className="font-display text-[24px] font-light italic text-brand-deep">
           Dica do TES
         </h2>
       </div>

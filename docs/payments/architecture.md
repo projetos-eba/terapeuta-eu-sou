@@ -44,14 +44,14 @@ webhook. O parametro `checkout=success` continua sem autoridade propria.
   sessoes continuam como cobranca na plataforma com separate charges and
   transfers, e o terapeuta nao recebe formulario local de cobranca.
 
-Essa configuracao permite reter fundos antes de liberar repasse. Como a plataforma paga as taxas Stripe nesse fluxo, a taxa nao e descontada dos 80% devidos ao terapeuta.
+Essa configuracao permite reter fundos antes de liberar repasse. Como a plataforma paga as taxas Stripe nesse fluxo, a taxa nao e descontada dos 85% devidos ao terapeuta em novos pagamentos sob a política vigente.
 
 ## Modelo financeiro inicial
 
 - Moeda: BRL.
 - Dinheiro em centavos inteiros.
-- Comissao TES: `2000` basis points.
-- Terapeuta: `floor(gross_amount_cents * 8000 / 10000)`.
+- Comissao TES para novos pagamentos: `1500` basis points (15%).
+- Terapeuta: `floor(gross_amount_cents * 8500 / 10000)`.
 - TES: valor bruto menos valor do terapeuta.
 - Taxa Stripe: custo da TES, conciliado posteriormente por Charge/Balance Transaction.
 
@@ -79,8 +79,9 @@ homologação estão em `docs/payments/promotion-codes.md`.
 
 As regras ficam em `financial_policy_versions`. As versões financeiras são
 preservadas no snapshot de cada pagamento. A versão operacional vigente para
-pagamentos abertos é `tes-payments-v7-bilateral-weekly-transfer-daily-payout`; versões anteriores
-continuam disponíveis para interpretar pagamentos já criados:
+novos pagamentos é `tes-payments-v8-commission-15-percent`; as versões
+anteriores, inclusive a v7 com 20%, continuam disponíveis para interpretar
+pagamentos já criados:
 
 - cancelamento gratuito ate 24h antes da sessao;
 - cancelamento com menos de 24h: não há obrigação de reembolso; situações
@@ -99,8 +100,7 @@ continuam disponíveis para interpretar pagamentos já criados:
   downgrade e preserva o plano efetivo ate o fim pago; a mesma funcao aceita
   reversao autenticada e idempotente com `cancel_at_period_end = false`.
 
-A política ativa para novas confirmações de realização é
-`tes-payments-v7-bilateral-weekly-transfer-daily-payout`. Ela exige respostas independentes do
+A política v8 herda da v7 as regras de confirmação bilateral. Ela exige respostas independentes do
 paciente e do terapeuta. O prazo de cada papel começa em `bookings.ends_at`:
 o paciente vence em 7 dias e o terapeuta em 30 dias. A confirmação automática
 usa o vencimento contratual como `confirmed_at`, mesmo quando o job recupera

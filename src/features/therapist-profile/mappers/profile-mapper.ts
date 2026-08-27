@@ -173,9 +173,15 @@ export function mapServiceRow(
   availability: AvailabilityDay[] = [],
   imageUrl: string | null = null,
   themeNames: string[] = [],
+  availabilityMetadata: {
+    horizonEndsAt: string;
+    timezone: string;
+  } | null = null,
 ): TherapistProfileService {
   return {
     availability,
+    availabilityHorizonEndsAt: availabilityMetadata?.horizonEndsAt,
+    availabilityTimezone: availabilityMetadata?.timezone,
     bookingUrl: buildPublicReservationUrl({
       durationMinutes: row.duration_minutes,
       priceCents: row.price_cents,

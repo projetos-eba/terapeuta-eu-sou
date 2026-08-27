@@ -49,15 +49,20 @@ Consultar antes de alterar:
 - Slugs antigos resolvem por `public_therapist_slug_redirects_v`. A projeção
   nunca expõe `free_public_slug`, IDs de histórico ou proprietário de slug.
 - Terapias e serviços são gerenciados pela plataforma/Admin, não pela copy livre do terapeuta.
-- Avaliações públicas devem estar vinculadas a booking `completed` e `paid`.
-- Disponibilidade deve vir do RPC autoritativo `get_service_available_slots_v1`, que deriva regras semanais, exceções, bookings existentes, buffers, antecedência mínima, duração e timezone do serviço. Não recalcular slots públicos no runtime Next.
+- Avaliações públicas derivam da avaliação canônica `published` e não
+  substituída da relação paciente–terapeuta. A criação inicial exige uma
+  confirmação `completed` da pessoa paciente; depois de publicada, sua
+  visibilidade não volta a depender de booking ou pagamento.
+- Disponibilidade deve vir dos RPCs autoritativos `get_service_available_slots_v1`, `get_service_available_days_v1` e `get_service_available_day_slots_v1`, que derivam regras semanais, exceções, bookings existentes, buffers, antecedência mínima, duração e timezone do serviço. Não recalcular slots públicos no runtime Next.
 - A lista pública `/terapeutas` usa a mesma autoridade: `next_slot_at` da view
   `public_therapist_search` é projetado a partir do primeiro slot do RPC e
   `schedule_timezone` deve ser respeitado na apresentação. Uma previsão de
   regra semanal não é uma fonte válida de disponibilidade.
 - Cada serviço deve carregar sua própria grade de horários calculada; Reiki 50min, Tarô 60min e Constelação Familiar 60min não podem compartilhar uma lista fixa de slots.
 - O painel compacto de disponibilidade mostra somente os próximos 3 dias com horários disponíveis; dias corridos sem slot não devem aparecer como linhas vazias.
-- A agenda mensal usa o mesmo payload calculado por serviço e destaca apenas dias disponíveis, listando horários após a seleção do dia.
+- O painel compacto consulta somente a primeira semana. A agenda mensal consulta dias livres por mês e busca os horários somente depois da seleção do dia; o limite de slots detalhados não pode limitar a navegação mensal.
+- O horizonte canônico é de 90 dias por serviço. O modal usa `horizonEndsAt` retornado pelo banco para desabilitar a navegação apenas após o último mês parcialmente coberto e usa `TESDialog` para foco, `Escape`, overlay e retorno de foco.
+- Falha de disponibilidade deve aparecer como falha acionável, nunca como mês sem horários.
 - As views de perfil público devem usar o status atual do catálogo público: `therapies.status = 'published'` e `therapies.is_public_visible = true`.
 
 ## UI

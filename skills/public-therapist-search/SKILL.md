@@ -51,6 +51,11 @@ Antes de alterar `/terapeutas`, consultar:
 - `schedule_timezone` acompanha a projeção pública e deve ser usado para
   classificar e formatar “Hoje”, “Amanhã” e dias da semana; instantes continuam
   persistidos como UTC.
+- Nota, contagem e trecho de avaliação usam somente avaliações canônicas
+  `published` e não substituídas de
+  `public_therapist_profile_reviews_v_internal`. Depois de publicada, a
+  avaliação não volta a depender da reserva ou pagamento que qualificou a
+  relação; a elegibilidade pública do perfil continua no wrapper da view.
 - A consulta que alimenta os cards usa `no-store`, porque bookings e holds
   podem mudar o próximo horário sem uma publicação editorial do perfil. Não
   reintroduzir cache de 15 minutos nessa projeção sem um mecanismo equivalente

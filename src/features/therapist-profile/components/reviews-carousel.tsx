@@ -91,8 +91,8 @@ export function ReviewsCarousel({
               Este perfil ainda não tem avaliações publicadas.
             </p>
             <p className="mt-3 text-base font-medium leading-7 text-brand-primary">
-              As avaliações aparecem somente após sessão paga, concluída e
-              aprovada pela moderação.
+              As avaliações aparecem quando uma pessoa que confirmou uma
+              sessão realizada compartilha sua experiência publicamente.
             </p>
           </div>
         </div>

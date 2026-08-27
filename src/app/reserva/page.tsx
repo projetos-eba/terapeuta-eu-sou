@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 
 import { getClientSessionSummary } from "@/features/client-auth/session-summary";
-import { getPublicServiceAvailability } from "@/features/availability/queries/public-service-availability";
+import {
+  formatAvailabilityDateKey,
+  getPublicServiceAvailability,
+  getPublicServiceAvailabilityForDay,
+} from "@/features/availability/queries/public-service-availability";
 import {
   mergeReservationContextWithPublicProfile,
   reconcileReservationContextWithAvailability,
@@ -54,9 +58,22 @@ export default async function PublicReservationPage({
         ) ??
         profile.services[0];
 
-      const availabilityResult = selectedService
+      let availabilityResult = selectedService
         ? await getPublicServiceAvailability(selectedService.id)
         : null;
+      if (
+        selectedService &&
+        context.selectedSlot &&
+        availabilityResult?.status === "success"
+      ) {
+        availabilityResult = await getPublicServiceAvailabilityForDay(
+          selectedService.id,
+          formatAvailabilityDateKey(
+            new Date(context.selectedSlot),
+            availabilityResult.data.timezone,
+          ),
+        );
+      }
       availabilityDays =
         availabilityResult?.status === "success"
           ? availabilityResult.data.days
@@ -90,5 +107,7 @@ export default async function PublicReservationPage({
     }
   }
 
-  return <ReservationPage availabilityDays={availabilityDays} context={context} />;
+  return (
+    <ReservationPage availabilityDays={availabilityDays} context={context} />
+  );
 }

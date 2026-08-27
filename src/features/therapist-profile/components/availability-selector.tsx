@@ -148,7 +148,7 @@ export function AvailabilitySelector({
 
       {!staticPreview && isCalendarOpen && selectedService ? (
         <AvailabilityCalendarModal
-          days={days}
+          initialDays={days}
           onClose={() => setIsCalendarOpen(false)}
           service={selectedService}
           therapistSlug={therapistSlug}
