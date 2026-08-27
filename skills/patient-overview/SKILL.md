@@ -40,9 +40,10 @@ description: Implementar e manter a visão geral autenticada do paciente TES.
 - Cards do paciente não recebem `meeting_url`; entrada no Zoom acontece sempre
   pelo detalhe do encontro e pela API autenticada de acesso ao Video SDK.
 - Na agenda da home, cada card de encontro mantém o status em uma coluna própria
-  entre a identidade do terapeuta e a data/horário; o botão principal e o menu de
-  ações ocupam áreas independentes para não se sobreporem. Em mobile, os mesmos
-  elementos seguem o fluxo vertical do card.
+  entre a identidade do terapeuta e a data/horário. O menu de ações fica ancorado
+  no canto superior direito, com espaço reservado para não se sobrepor ao conteúdo.
+  Sessões confirmadas ficam disponíveis como "Ao vivo" de 15 minutos antes do
+  início até o encerramento, com atualização enquanto o card permanece aberto.
 - Copy de cuidado é acolhedora e não faz promessa de cura, diagnóstico ou resultado.
 
 ## QA

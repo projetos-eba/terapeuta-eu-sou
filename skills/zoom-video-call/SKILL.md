@@ -52,6 +52,11 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
   confirmado pelo backend, ou fim programado, libera feedback na mesma rota. O
   detalhe pode reabrir a experiência por `?feedback=1`; não criar rota
   canônica nova.
+- Se `session.ended` chegar antes do fim agendado sem uma solicitação de
+  encerramento autorizada, tratar como término da instância remota, não da
+  sessão lógica: manter reentrada, limpar a referência remota e deixar a grace
+  do terapeuta/watchdog decidir o encerramento. Um novo join deve aceitar o
+  novo identificador remoto da mesma sala lógica.
 - Antes de T-15, renderizar somente preparação e horário de abertura. Em T-15,
   renderizar sala visual de espera com capa abstrata, contador, preflight e
   estado host-first; nunca liberar JWT do paciente apenas por query string.
@@ -113,6 +118,9 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   conexão, `final end -> feedback`, feedback já enviado, erro de leitura,
   erro de envio, resposta realizada, não realização, comentário de 500
   caracteres e reabertura por query controlada.
+- Validar que erro resolvido de áudio imediatamente após `join` mantém a sala
+  conectada, e que falha em `destroyClient` interrompe as retries automáticas e
+  exige recarga antes de novo join.
 - O `userId` local vem de `ZoomVideoClient.getCurrentUserInfo()`, nunca do
   media stream. A self-view e os vídeos remotos usam `attachVideo` dentro de
   `video-player-container`; `renderVideo` em canvas não é o contrato

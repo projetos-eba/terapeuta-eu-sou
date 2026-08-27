@@ -66,7 +66,7 @@ const mockStream = {
   ),
   detachVideo: vi.fn(async () => undefined),
   muteAudio: vi.fn(async () => "" as const),
-  startAudio: vi.fn(async () => "" as const),
+  startAudio: vi.fn(async (): Promise<"" | MockExecutedFailure> => "" as const),
   startVideo: vi.fn(async () => "" as const),
   stopAudio: vi.fn(async () => "" as const),
   stopRenderVideo: vi.fn(async () => undefined),
@@ -93,9 +93,13 @@ const allowedAccess = {
 };
 
 describe("ZoomVideoSessionAdapter", () => {
-  afterEach(() => {
+  afterEach(async () => {
     vi.useRealTimers();
     cleanup();
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
     calls.length = 0;
     handlers.clear();
     remoteElement.remove();
@@ -176,6 +180,33 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(mockStream.unmuteAudio).not.toHaveBeenCalled();
     expect(mockStream.startVideo).not.toHaveBeenCalled();
     expect(document.body.textContent).not.toMatch(/jwt-token|secret|token/i);
+  });
+
+  it("keeps the therapist in the room when initial audio setup resolves with a transient failure", async () => {
+    vi.stubGlobal("fetch", accessResponse(1));
+    mockStream.startAudio.mockResolvedValueOnce({
+      errorCode: 2,
+      reason: "internal error",
+      type: "INTERNAL_ERROR",
+    });
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="therapist"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+
+    expect(
+      await screen.findByText(/você entrou na sessão, mas não foi possível preparar o áudio/i),
+    ).toBeInTheDocument();
+    expect(mockClient.join).toHaveBeenCalledTimes(1);
+    expect(mockClient.leave).not.toHaveBeenCalled();
+    expect(destroyClient).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /sair da sessão/i })).toBeEnabled();
   });
 
   it.each(["patient", "therapist"] as const)(
@@ -1494,6 +1525,62 @@ describe("ZoomVideoSessionAdapter", () => {
         /n[aã]o foi poss[ií]vel concluir todas as etapas/i,
       ),
     ).toBeInTheDocument();
+  });
+
+  it("lets the therapist leave with leave(false) and reenter the same logical session", async () => {
+    vi.stubGlobal("fetch", accessResponse(1));
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="therapist"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/respons[aá]vel/i);
+
+    fireEvent.click(screen.getByRole("button", { name: /sair da sessão/i }));
+    expect(await screen.findByText(/você saiu da sessão/i)).toBeInTheDocument();
+    expect(mockClient.leave).toHaveBeenCalledWith(false);
+    expect(mockClient.leave).not.toHaveBeenCalledWith(true);
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    expect(
+      await screen.findByText(/você entrou como responsável/i),
+    ).toBeInTheDocument();
+    expect(mockClient.join).toHaveBeenCalledTimes(2);
+  });
+
+  it("stops recovery after a destroyClient failure instead of issuing more join attempts", async () => {
+    vi.stubGlobal("fetch", accessResponse(1));
+    mockClient.join.mockResolvedValueOnce({
+      errorCode: 2,
+      reason: "internal error",
+      type: "INTERNAL_ERROR",
+    });
+    destroyClient.mockImplementationOnce(() => {
+      calls.push("destroy");
+      return Promise.reject(new Error("destroy failed"));
+    });
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="therapist"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+
+    expect(
+      await screen.findByText(/recarregue esta página para reiniciar somente o vídeo/i),
+    ).toBeInTheDocument();
+    expect(mockClient.join).toHaveBeenCalledTimes(1);
+    expect(createClient).toHaveBeenCalledTimes(1);
+    expect(destroyClient).toHaveBeenCalledTimes(1);
   });
 });
 

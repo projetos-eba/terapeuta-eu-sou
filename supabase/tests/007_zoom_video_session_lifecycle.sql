@@ -1,6 +1,6 @@
 begin;
 
-select plan(14);
+select plan(21);
 
 select has_column(
   'public',
@@ -156,6 +156,98 @@ select is(
   'therapist leaving locks patient access again'
 );
 
+select public.apply_zoom_video_session_event_v1(
+  session_name,
+  'provider-session-pgtap',
+  'session.ended',
+  now() - interval '9 minutes',
+  null,
+  null,
+  null,
+  45,
+  30
+)
+from public.video_sessions
+where booking_id = 'f2000000-0000-4000-8000-000000000001';
+
+select is(
+  (
+    select status::text
+    from public.video_sessions
+    where booking_id = 'f2000000-0000-4000-8000-000000000001'
+  ),
+  'active',
+  'early provider end preserves the logical session for reentry'
+);
+
+select is(
+  (
+    select provider_session_id
+    from public.video_sessions
+    where booking_id = 'f2000000-0000-4000-8000-000000000001'
+  ),
+  null,
+  'early provider end clears the remote instance identifier'
+);
+
+select is(
+  (
+    select termination_confirmed_at::text
+    from public.video_sessions
+    where booking_id = 'f2000000-0000-4000-8000-000000000001'
+  ),
+  null,
+  'early provider end does not confirm a terminal session'
+);
+
+select public.apply_zoom_video_session_event_v1(
+  session_name,
+  'provider-session-pgtap-rejoin',
+  'session.user_joined',
+  now() - interval '8 minutes',
+  'provider-user-therapist',
+  'tes-v1-t-aaaaaaaaaaaaaaaaaaaaaaaa',
+  null,
+  45,
+  30
+)
+from public.video_sessions
+where booking_id = 'f2000000-0000-4000-8000-000000000001';
+
+select is(
+  (
+    select therapist_present::text
+    from public.video_sessions
+    where booking_id = 'f2000000-0000-4000-8000-000000000001'
+  ),
+  'true',
+  'therapist rejoin restores provider-confirmed presence'
+);
+
+select is(
+  (
+    select provider_session_id
+    from public.video_sessions
+    where booking_id = 'f2000000-0000-4000-8000-000000000001'
+  ),
+  'provider-session-pgtap-rejoin',
+  'therapist rejoin stores the new remote instance identifier'
+);
+
+select public.apply_zoom_video_session_event_v1(
+  session_name,
+  'provider-session-pgtap-rejoin',
+  'session.user_left',
+  now() - interval '7 minutes',
+  'provider-user-therapist',
+  'tes-v1-t-aaaaaaaaaaaaaaaaaaaaaaaa',
+  null,
+  45,
+  30
+)
+from public.video_sessions
+where booking_id = 'f2000000-0000-4000-8000-000000000001';
+
 select cmp_ok(
   (
     select public.enqueue_due_video_session_control_jobs_v1(
@@ -196,6 +288,45 @@ select cmp_ok(
   '>=',
   1,
   'maintenance can reserve queued lifecycle jobs'
+);
+
+update public.video_sessions
+set termination_reason = 'manual_end',
+    termination_requested_at = now()
+where booking_id = 'f2000000-0000-4000-8000-000000000001';
+
+select public.apply_zoom_video_session_event_v1(
+  session_name,
+  'provider-session-pgtap-rejoin',
+  'session.ended',
+  now(),
+  null,
+  null,
+  null,
+  45,
+  30
+)
+from public.video_sessions
+where booking_id = 'f2000000-0000-4000-8000-000000000001';
+
+select is(
+  (
+    select status::text
+    from public.video_sessions
+    where booking_id = 'f2000000-0000-4000-8000-000000000001'
+  ),
+  'ended',
+  'authorized final end remains terminal'
+);
+
+select isnt(
+  (
+    select termination_confirmed_at::text
+    from public.video_sessions
+    where booking_id = 'f2000000-0000-4000-8000-000000000001'
+  ),
+  null,
+  'authorized final end is confirmed by the provider event'
 );
 
 select * from finish();
