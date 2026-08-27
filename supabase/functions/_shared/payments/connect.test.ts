@@ -152,6 +152,7 @@ Deno.test("closed Connect v2 account is disabled", () => {
 
 Deno.test("Connect v2 recipient payload includes required identity country", () => {
   const payload = buildRecipientAccountV2Payload({
+    accountGeneration: 1,
     email: "ana.oliveira@example.test",
     environment: "test",
     therapistId: "c1000000-0000-4000-8000-000000000001",
@@ -189,15 +190,16 @@ Deno.test("Connect v2 recipient payload includes required identity country", () 
   assertEquals(payload.include?.includes("identity"), true);
 });
 
-Deno.test("Connect v2 account creation idempotency key is stable per therapist environment", () => {
+Deno.test("Connect v2 account creation idempotency key is stable per therapist environment and generation", () => {
   const key = buildRecipientAccountIdempotencyKey({
+    accountGeneration: 2,
     environment: "test",
     therapistId: "c1000000-0000-4000-8000-000000000001",
   });
 
   assertEquals(
     key,
-    "tes-connect-recipient-v3-test-c1000000-0000-4000-8000-000000000001",
+    "tes-connect-recipient-v4-test-c1000000-0000-4000-8000-000000000001-2",
   );
 });
 

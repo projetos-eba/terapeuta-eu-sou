@@ -114,6 +114,15 @@ Eventos duplicados e reconciliações repetidas não duplicam alocações, ledge
 e-mails ou notificações. `paid → failed` é aceito, reabre o estado financeiro,
 gera incidente e comunicação corretiva.
 
+## Encerramento de conta de recebimento
+
+O evento `v2.core.account.closed` retira a conta da seleção de novos lotes,
+mantendo-a como referência histórica de Transfers e Payouts. Itens somente
+reservados, sem qualquer registro de Transfer, voltam com auditoria para
+`eligible` e aguardam a nova conta corrente pronta. Itens que já possuem
+Transfer permanecem vinculados à conta original e exigem reconciliação; nunca
+são retentados contra uma conta nova.
+
 ## Eventos obrigatórios
 
 Snapshot Connect, escopo `@accounts`:
@@ -149,7 +158,10 @@ clínico. Ausência de admin elegível reprova preflight.
 1. Aplicar migrations e tipos; manter a política v5 inativa.
 2. Implantar as Edge Functions afetadas.
 3. Confirmar Balance Settings diário e Payouts habilitados em todas as contas.
-4. Confirmar os três destinos webhook de Test Mode e seus signing secrets.
+4. Confirmar os três destinos webhook de Test Mode e seus signing secrets. Se
+   o destino thin Accounts v2 estiver no escopo errado, substituir somente após
+   o deploy da migration e das Edge Functions; a substituição atualiza o secret
+   remoto antes de habilitar o novo destino e desabilita o legado depois.
 5. Executar Transfer real pequeno com `source_transaction` no Sandbox.
 6. Aguardar Payout automático padrão e `reconciliation_status=completed`.
 7. Provar associação, `payout.paid`, duplicidade, fora de ordem, falha e

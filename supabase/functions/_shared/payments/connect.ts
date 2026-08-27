@@ -25,6 +25,7 @@ export function assertConnectAccountOwnership(
 }
 
 export function createRecipientAccountV2(input: {
+  accountGeneration: number;
   apiKey: string;
   email?: string | null;
   environment: string;
@@ -43,13 +44,15 @@ export function createRecipientAccountV2(input: {
 }
 
 export function buildRecipientAccountIdempotencyKey(input: {
+  accountGeneration: number;
   environment: string;
   therapistId: string;
 }) {
-  return `tes-connect-recipient-v3-${input.environment}-${input.therapistId}`;
+  return `tes-connect-recipient-v4-${input.environment}-${input.therapistId}-${input.accountGeneration}`;
 }
 
 export function buildRecipientAccountV2Payload(input: {
+  accountGeneration: number;
   email?: string | null;
   environment: string;
   therapistId: string;
@@ -96,6 +99,7 @@ export function buildRecipientAccountV2Payload(input: {
       "future_requirements",
     ],
     metadata: {
+      account_generation: String(input.accountGeneration),
       environment: input.environment,
       system: "tes",
       tes_therapist_id: input.therapistId,

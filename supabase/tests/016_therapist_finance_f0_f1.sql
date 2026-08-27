@@ -321,10 +321,19 @@ insert into public.session_disputes (
   '2038-01-15T10:00:00Z'
 );
 
+-- This lifecycle fixture owns the current account identity used by its historical Transfer.
+update public.therapist_connect_accounts
+set is_current = false,
+    closed_at = coalesce(closed_at, now()),
+    updated_at = now()
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+  and is_current;
+
 insert into public.therapist_connect_accounts (
   id,
   therapist_profile_id,
   stripe_account_id,
+  account_generation,
   onboarding_status,
   details_submitted,
   payouts_enabled,
@@ -337,6 +346,7 @@ insert into public.therapist_connect_accounts (
   'f6300000-0000-4000-8000-000000000001',
   'c1000000-0000-4000-8000-000000000001',
   'acct_1234567890abcdef',
+  2000,
   'ready',
   true,
   true,
@@ -345,7 +355,18 @@ insert into public.therapist_connect_accounts (
   '{"currentlyDue":[],"eventuallyDue":["business_profile.url"],"pendingVerification":[]}'::jsonb,
   'ready',
   '2038-01-12T15:00:00Z'
-);
+)
+on conflict (therapist_profile_id) where is_current do update
+set stripe_account_id = excluded.stripe_account_id,
+    onboarding_status = excluded.onboarding_status,
+    details_submitted = excluded.details_submitted,
+    payouts_enabled = excluded.payouts_enabled,
+    charges_enabled = excluded.charges_enabled,
+    stripe_transfers_status = excluded.stripe_transfers_status,
+    pending_requirements = excluded.pending_requirements,
+    operational_status = excluded.operational_status,
+    last_synced_at = excluded.last_synced_at,
+    updated_at = now();
 
 insert into public.payout_batches (
   id,

@@ -90,9 +90,15 @@ recebimento`; provider and reconciliation terminology stays in the service
   `identity.country = br`, `identity.entity_type = individual`,
   recipient `stripe_balance.stripe_transfers` and merchant `card_payments`.
   Keep session charges on the platform with separate charges and transfers.
-- Connect creation is idempotent by therapist and environment; onboarding
-  retries reuse the persisted account and create a fresh Account Link. Login
-  Link is only allowed after synchronized readiness.
+- Connect creation is idempotent by therapist, environment and account
+  generation; onboarding retries reuse the current account and create a fresh
+  Account Link. A closed account becomes historical and a later creation uses a
+  new generation. Login Link is only allowed after synchronized readiness of
+  the current account.
+- `v2.core.account.closed` is terminal for the current account. The UI requests
+  a new receiving account, never shows the historical identifier as current,
+  and keeps platform-held eligible values waiting for the new account. Transfers
+  or Payouts already bound to the historical account are never redirected.
 - Operation is available to Free, Premium and Premium Plus.
 - F2 summary metrics use `advanced_metrics` and are available to Premium and
   Premium Plus. Free keeps the F0/F1 operational summary plus an upgrade card.

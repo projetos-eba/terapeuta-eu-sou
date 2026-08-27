@@ -21,6 +21,8 @@ const target = targetArgument?.split("=")[1];
 if (target !== "test" && target !== "live") {
   throw new Error("Use --target=test or --target=live.");
 }
+const replaceConnectThin = process.argv.includes("--replace-connect-thin");
+const confirmSecretRotation = process.argv.includes("--confirm-secret-rotation");
 
 const stripeKey = getStripeSecretKey();
 if (!stripeKey || getStripeMode(stripeKey) !== target) {
@@ -35,6 +37,7 @@ const listed = await stripe.v2.core.eventDestinations.list({
 const contracts = destinationContracts(target);
 const selected = [];
 const createdSecrets = {};
+const legacyDestinations = [];
 
 for (const contract of contracts) {
   const exact = listed.data.filter((destination) =>
@@ -47,17 +50,16 @@ for (const contract of contracts) {
   }
 
   if (!destination) {
-    if (target !== "live" || contract.scope !== "@accounts") {
+    const legacy = legacyThinDestination(listed.data, contract);
+    if (!legacy) {
       throw new Error(`Canonical destination is missing: ${contract.name}.`);
     }
-    const source = listed.data.find(
-      (candidate) =>
-        candidate.event_payload === contract.payload &&
-        candidate.webhook_endpoint?.url?.endsWith(contract.path) &&
-        isRemoteUrl(candidate.webhook_endpoint.url),
-    );
-    if (!source?.webhook_endpoint?.url) {
-      throw new Error(`No remote URL available for ${contract.name}.`);
+    if (!replaceConnectThin || !confirmSecretRotation) {
+      throw new Error(
+        `The thin Connect destination ${contract.name} has the wrong scope. ` +
+          "Deploy the compatible migration and Edge Function first; then rerun with " +
+          "--replace-connect-thin --confirm-secret-rotation.",
+      );
     }
 
     destination = await stripe.v2.core.eventDestinations.create({
@@ -70,7 +72,7 @@ for (const contract of contracts) {
       snapshot_api_version:
         contract.payload === "snapshot" ? "2026-06-24.dahlia" : undefined,
       type: "webhook_endpoint",
-      webhook_endpoint: { url: source.webhook_endpoint.url },
+      webhook_endpoint: { url: legacy.webhook_endpoint.url },
     });
     await stripe.v2.core.eventDestinations.disable(destination.id);
     const signingSecret = destination.webhook_endpoint?.signing_secret;
@@ -78,6 +80,7 @@ for (const contract of contracts) {
       throw new Error(`Signing secret was not returned for ${contract.name}.`);
     }
     createdSecrets[contract.secretName] = signingSecret;
+    legacyDestinations.push(legacy);
   } else {
     destination = await stripe.v2.core.eventDestinations.update(
       destination.id,
@@ -91,10 +94,7 @@ for (const contract of contracts) {
 }
 
 if (Object.keys(createdSecrets).length > 0) {
-  if (target !== "live") {
-    throw new Error("Unexpected webhook secret rotation outside Live Mode.");
-  }
-  persistLiveWebhookSecrets(createdSecrets, selected);
+  persistWebhookSecrets({ createdSecrets, selected });
 }
 
 for (const { destination } of selected) {
@@ -107,19 +107,12 @@ for (const { destination } of selected) {
   }
 }
 
-const selectedIds = new Set(selected.map(({ destination }) => destination.id));
-for (const destination of listed.data) {
-  if (
-    selectedIds.has(destination.id) ||
-    !isRelevantDestination(destination) ||
-    !isRemoteUrl(destination.webhook_endpoint?.url)
-  ) {
-    continue;
-  }
-  if (target === "live") {
-    await stripe.v2.core.eventDestinations.del(destination.id);
-  } else if (destination.status === "enabled") {
-    throw new Error("Unexpected enabled Test Mode payment destination.");
+for (const legacy of legacyDestinations) {
+  const current = await stripe.v2.core.eventDestinations.retrieve(legacy.id, {
+    include: ["webhook_endpoint.url"],
+  });
+  if (current.status === "enabled") {
+    await stripe.v2.core.eventDestinations.disable(current.id);
   }
 }
 
@@ -132,6 +125,7 @@ console.log(
       scope: contract.scope,
     })),
     secretsRotated: Object.keys(createdSecrets).length,
+    thinDestinationsReplaced: legacyDestinations.length,
     target,
   }),
 );
@@ -163,7 +157,7 @@ function destinationContracts(mode) {
       name: `stripe-connect-webhook-thin-${suffix}`,
       path: "/functions/v1/stripe-connect-webhook",
       payload: "thin",
-      scope: "@accounts",
+      scope: "@self",
       secretName: "STRIPE_CONNECT_V2_WEBHOOK_SECRET",
     },
   ];
@@ -186,6 +180,22 @@ function isRelevantDestination(destination) {
   ].some((suffix) => destination.webhook_endpoint?.url?.endsWith(suffix));
 }
 
+function legacyThinDestination(destinations, contract) {
+  if (contract.payload !== "thin" || contract.scope !== "@self") return null;
+
+  const candidates = destinations.filter(
+    (destination) =>
+      destination.name === contract.name &&
+      destination.event_payload === contract.payload &&
+      destination.webhook_endpoint?.url?.endsWith(contract.path) &&
+      isRemoteUrl(destination.webhook_endpoint.url),
+  );
+  if (candidates.length > 1) {
+    throw new Error(`Duplicate legacy thin destination: ${contract.name}.`);
+  }
+  return candidates[0] ?? null;
+}
+
 function isRemoteUrl(value) {
   if (!value) return false;
   try {
@@ -195,25 +205,8 @@ function isRemoteUrl(value) {
   }
 }
 
-function persistLiveWebhookSecrets(secrets, destinations) {
-  const envPath = path.resolve("supabase/functions/.env.production");
-  if (!fs.existsSync(envPath)) {
-    throw new Error(
-      "supabase/functions/.env.production is required for Live secret rotation.",
-    );
-  }
-
-  let content = fs.readFileSync(envPath, "utf8");
-  for (const [name, value] of Object.entries(secrets)) {
-    const line = `${name}=${value}`;
-    const pattern = new RegExp(`^${name}=.*$`, "m");
-    content = pattern.test(content)
-      ? content.replace(pattern, line)
-      : `${content.trimEnd()}\n${line}\n`;
-  }
-  fs.writeFileSync(envPath, content, { mode: 0o600 });
-
-  const endpointUrl = destinations
+function persistWebhookSecrets({ createdSecrets, selected }) {
+  const endpointUrl = selected
     .map(({ destination }) => destination.webhook_endpoint?.url)
     .find(Boolean);
   const projectRef = projectRefFromUrl(endpointUrl);
@@ -225,7 +218,7 @@ function persistLiveWebhookSecrets(secrets, destinations) {
   try {
     fs.writeFileSync(
       temporaryEnv,
-      Object.entries(secrets)
+      Object.entries(createdSecrets)
         .map(([name, value]) => `${name}=${value}`)
         .join("\n") + "\n",
       { mode: 0o600 },

@@ -42,7 +42,7 @@ runtime.serve(async (request) => {
     >(
       `/rest/v1/therapist_connect_accounts?select=id,stripe_account_id&therapist_profile_id=eq.${encodeURIComponent(
         therapist.id,
-      )}&limit=1`,
+      )}&is_current=eq.true&limit=1`,
     );
 
     if (!rows[0]) {
@@ -57,6 +57,22 @@ runtime.serve(async (request) => {
       config.stripeApiKey,
       rows[0].stripe_account_id,
     );
+    if (account.closed === true) {
+      await client.rpc("retire_therapist_connect_account_v1", {
+        p_closed_at: new Date().toISOString(),
+        p_stripe_account_id: rows[0].stripe_account_id,
+        p_stripe_event_created_at: new Date().toISOString(),
+        p_stripe_event_id: `sync:${rows[0].stripe_account_id}:closed`,
+      });
+      return success({
+        accountClosed: true,
+        onboardingStatus: "not_started",
+        pendingRequirements: { currentlyDue: [], eventuallyDue: [] },
+        payoutScheduleInterval: null,
+        payoutStatus: "disabled",
+        stripeTransfersStatus: "inactive",
+      });
+    }
     const stripe = createStripeClient(config.stripeApiKey);
     const balanceSettings = await retrieveBalanceSettings(
       stripe,

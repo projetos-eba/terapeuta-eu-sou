@@ -373,7 +373,7 @@ values (
   'active',
   'ready'
 )
-on conflict (therapist_profile_id) do nothing;
+on conflict (therapist_profile_id) where is_current do nothing;
 
 insert into public.payout_batches (
   id,

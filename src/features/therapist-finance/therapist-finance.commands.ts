@@ -5,6 +5,7 @@ import type { TherapistFinanceConnectAction } from "./therapist-finance.types";
 type ConnectApiEnvelope =
   | {
       data: {
+        accountClosed?: boolean;
         message?: string;
         url?: string;
       };
@@ -22,6 +23,7 @@ type ConnectApiEnvelope =
 export type TherapistFinanceConnectResult =
   | {
       data: {
+        accountClosed?: boolean;
         message?: string;
         url?: string;
       };
