@@ -297,6 +297,9 @@ export function getZoomAccessLabel(access: SessionReadModelItem["zoomAccess"]) {
     [ZoomAccessReason.HardTimeout]: "Tempo encerrado",
     [ZoomAccessReason.TooEarly]: `Disponível ${BOOKING_JOIN_WINDOW_BEFORE_MINUTES} min antes`,
     [ZoomAccessReason.TooLate]: "Janela de acesso encerrada",
+    [ZoomAccessReason.SessionEnded]: "Sessão encerrada",
+    [ZoomAccessReason.ArrivalWindowExpired]: "Prazo de chegada encerrado",
+    [ZoomAccessReason.TechnicalUnavailable]: "Vídeo indisponível no momento",
     [ZoomAccessReason.Unknown]: "Acesso indisponível",
   };
 

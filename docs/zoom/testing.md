@@ -132,18 +132,21 @@ Runbook completo: `docs/zoom/real-homologation-runbook.md`.
 
 ## Reentrada e recuperacao do cliente
 
-O adapter trata `init`, `join`, `leave` e operacoes de midia conforme o contrato
-`ExecutedResult` do Video SDK 2.4.5: somente a string vazia representa sucesso;
-um objeto `{ type, reason, errorCode }` resolvido pela Promise representa falha.
+O adapter mantém `init` e operações de mídia estritos (`""` como sucesso), mas
+`join` no bundle 2.4.5 também resolve o participante (`userId` positivo), em
+divergência com a declaração `ExecutedResult`. O teste precisa cobrir esse
+retorno real. Um objeto `{ type, reason, errorCode }` continua sendo falha.
 Antes de recriar o singleton, o fluxo remove listeners e videos, executa `leave`
 quando aplicavel e aguarda `destroyClient`.
 
-Uma falha resolvida nas operações iniciais de áudio depois de `join` não pode
+Uma falha resolvida ou rejeitada nas operações iniciais de áudio depois de `join` não pode
 desconectar uma sessão já conectada: a chamada continua com áudio indisponível e
-os controles permitem nova tentativa. Após `leave(false)`, o adapter tenta
-`destroyClient` duas vezes, com 750 ms para o SDK concluir a troca de estado;
-só então recria o singleton. Se ambas falharem, apresenta o fallback de recarga
-e não repete `join` contra um singleton inválido.
+os controles permitem nova tentativa de mídia. Após `leave(false)`, o adapter
+chama `ZoomVideo.destroyClient()` com o receiver intacto e aguarda sua conclusão.
+Falha/timeout invalida o singleton até recarga e bloqueia criação de client e
+emissão de acesso inclusive após remount. Não há retry de destroy por atraso
+arbitrário. AbortController não cancela operação interna do SDK: cleanup espera
+a operação em andamento antes de destruir; timeout exige recarga.
 
 Uma falha transitoria executa no maximo tres tentativas totais dentro de 10
 segundos, com esperas de 1,5 e 3 segundos. As tentativas reutilizam o acesso ja
@@ -163,6 +166,13 @@ mensagem bruta do backend.
 Ao homologar, manter o terapeuta na sala e cobrir queda de rede, voltar pelo
 navegador, fechar/reabrir aba e reentrada pela espera. Confirmar que existe um
 unico participante remoto, que a recuperacao automatica ocorre antes do
-fallback e que o botao `Recarregar sala` nao altera booking, feedback, presenca
-ou financeiro. Registrar apenas `requestId`, fase, tentativa e codigo
-normalizado; nunca copiar JWT, nome da sessao ou mensagem bruta do provedor.
+fallback e que o botao `Recarregar sala` nao altera booking, feedback
+ou financeiro; a presença deve ser reconfirmada pelo provider. Registrar apenas `requestId`, fase, tentativa e codigo
+normalizado, operação, confirmação de join e estado de conexão; nunca copiar
+JWT, nome da sessão ou mensagem bruta do provedor.
+
+A regressão `060_zoom_provider_lifecycle_fences.sql` verifica eventos fora de
+ordem, aposentadoria de instância, grace 119/120s, fim explícito e temporal,
+watchdog não renovável, revalidação de jobs e fence transacional antes do REST.
+O teste de dois dispositivos usa duas montagens isoladas da espera e respostas
+controladas de access; não representa dois dispositivos físicos nem Zoom real.

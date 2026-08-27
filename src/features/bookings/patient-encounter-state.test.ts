@@ -7,7 +7,10 @@ import {
   ZoomVideoSessionStatus,
 } from "@/domain/tes";
 
-import { getPatientEncounterPresentationState } from "./patient-encounter-state";
+import {
+  getPatientEncounterPresentationState,
+  getZoomWaitingRoomStatusFromAccess,
+} from "./patient-encounter-state";
 
 const baseInput = {
   bookingStatus: BookingStatus.Confirmed,
@@ -17,6 +20,32 @@ const baseInput = {
 };
 
 describe("getPatientEncounterPresentationState", () => {
+  it.each([
+    [ZoomAccessReason.TooLate, "schedule_ended"],
+    [ZoomAccessReason.SessionEnded, "ended"],
+    [ZoomAccessReason.ArrivalWindowExpired, "arrival_expired"],
+    [ZoomAccessReason.TechnicalUnavailable, "operational_unavailable"],
+  ] as const)(
+    "maps %s without disguising it as an arrival timeout",
+    (reason, kind) => {
+      const zoomAccess = {
+        allowed: false,
+        reason,
+        videoSessionStatus: ZoomVideoSessionStatus.Ready,
+        availableFrom: baseInput.startsAt,
+        availableUntil: baseInput.endsAt,
+      };
+      expect(getZoomWaitingRoomStatusFromAccess(zoomAccess)).toBe(kind);
+      const result = getPatientEncounterPresentationState({
+        ...baseInput,
+        financialStatus: SessionFinancialStatus.Paid,
+        now: new Date("2026-08-01T14:05:00Z"),
+        zoomAccess,
+      });
+      expect(result.waitingRoom.kind).toBe(kind);
+      expect(result.actions).not.toContain("join_zoom");
+    },
+  );
   it("derives honest copy when the detail has not fetched Zoom access yet", () => {
     const before = getPatientEncounterPresentationState({
       ...baseInput,

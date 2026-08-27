@@ -33,7 +33,9 @@ type ZoomWaitingRoomProps = {
     | "therapist_absent_prolonged"
     | "too_early"
     | "waiting_therapist"
-    | "ended";
+    | "ended"
+    | "arrival_expired"
+    | "schedule_ended";
   message?: string | null;
   participantLabel: string;
   previewLoading: boolean;
@@ -111,7 +113,9 @@ export function ZoomWaitingRoom({
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setDeviceTestState("error");
-      setDeviceMessage("Seu navegador não oferece teste de câmera nesta página.");
+      setDeviceMessage(
+        "Seu navegador não oferece teste de câmera nesta página.",
+      );
       return;
     }
 
@@ -153,7 +157,9 @@ export function ZoomWaitingRoom({
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setDeviceTestState("error");
-      setDeviceMessage("Seu navegador não oferece teste de áudio nesta página.");
+      setDeviceMessage(
+        "Seu navegador não oferece teste de áudio nesta página.",
+      );
       return;
     }
 
@@ -255,27 +261,39 @@ export function ZoomWaitingRoom({
 
   const statusTitle = isEntryAvailable
     ? "Entrada liberada"
-    : isTooEarly
-      ? "A sala será liberada em breve"
-      : isEnded
-        ? "Sala encerrada"
-        : isProlongedAbsence
-          ? "Ainda estamos aguardando"
-          : isOperationalUnavailable
-            ? "Vamos atualizar a sala"
-            : actorRole === "patient"
-              ? "Aguardando terapeuta entrar"
-              : "Aguardando paciente entrar";
+    : kind === "arrival_expired"
+      ? "Prazo de chegada encerrado"
+      : kind === "schedule_ended"
+        ? "Horário encerrado"
+        : isTooEarly
+          ? "A sala será liberada em breve"
+          : isEnded
+            ? "Sala encerrada"
+            : isProlongedAbsence
+              ? "Ainda estamos aguardando"
+              : isOperationalUnavailable
+                ? "Vamos atualizar a sala"
+                : actorRole === "patient"
+                  ? "Aguardando terapeuta entrar"
+                  : "Aguardando paciente entrar";
   const statusMessage = !isOnline
     ? "Sem conexão com a internet. Reconecte-se para atualizar a sala."
     : message ||
-      (isTooEarly
-        ? "O acesso à sala é liberado 15 minutos antes. A entrada na chamada será permitida no horário agendado."
-        : kind === "waiting_therapist"
-          ? actorRole === "patient"
-            ? "Você já está no lugar certo. A entrada será liberada assim que a presença do terapeuta for confirmada."
-            : "Você já está no lugar certo. A entrada será liberada assim que a presença da pessoa atendida for confirmada."
-          : "Estamos confirmando a disponibilidade da sala.");
+      (kind === "arrival_expired"
+        ? "O prazo de chegada de 10 minutos terminou. Se precisar de ajuda, fale com o suporte."
+        : kind === "schedule_ended"
+          ? "O horário deste encontro terminou e não permite nova entrada."
+          : isEnded
+            ? "Este encontro foi encerrado e não permite nova entrada."
+            : isTooEarly
+              ? "O acesso à sala é liberado 15 minutos antes. A entrada na chamada será permitida no horário agendado."
+              : kind === "waiting_therapist"
+                ? actorRole === "patient"
+                  ? "Você já está no lugar certo. A entrada será liberada assim que a presença do terapeuta for confirmada."
+                  : "Você já está no lugar certo. A entrada será liberada assim que a presença da pessoa atendida for confirmada."
+                : isOperationalUnavailable
+                  ? "Não foi possível confirmar a disponibilidade da sala. Tente atualizar."
+                  : "Estamos confirmando a disponibilidade da sala.");
 
   return (
     <section
@@ -343,9 +361,7 @@ export function ZoomWaitingRoom({
                 <button
                   className="inline-flex min-h-14 items-center justify-center gap-2 rounded-[18px] bg-brand-primary px-6 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
                   disabled={
-                    previewLoading ||
-                    !isOnline ||
-                    deviceTestState === "loading"
+                    previewLoading || !isOnline || deviceTestState === "loading"
                   }
                   onClick={() => onJoin(getMediaPreferences())}
                   type="button"
@@ -388,7 +404,9 @@ export function ZoomWaitingRoom({
                     <Music2 aria-hidden="true" size={19} />
                   </span>
                   <div>
-                    <p className="text-sm font-extrabold text-brand-deep">Áudio ambiente</p>
+                    <p className="text-sm font-extrabold text-brand-deep">
+                      Áudio ambiente
+                    </p>
                     <p className="mt-0.5 text-sm font-semibold leading-5 text-tesText-secondary">
                       Música suave para um momento de calma
                     </p>
@@ -408,7 +426,11 @@ export function ZoomWaitingRoom({
                   onClick={() => void toggleMusic()}
                   type="button"
                 >
-                  {isMusicPlaying ? <Pause aria-hidden="true" size={20} /> : <Play aria-hidden="true" size={20} />}
+                  {isMusicPlaying ? (
+                    <Pause aria-hidden="true" size={20} />
+                  ) : (
+                    <Play aria-hidden="true" size={20} />
+                  )}
                 </button>
                 {ambientAudioSrc ? (
                   <audio
@@ -435,13 +457,23 @@ export function ZoomWaitingRoom({
             </p>
             <div className="flex items-center gap-2">
               <button
-                aria-label={previewLoading ? "Atualizando sala" : "Atualizar sala"}
+                aria-label={
+                  previewLoading ? "Atualizando sala" : "Atualizar sala"
+                }
                 className="grid min-h-11 min-w-11 place-items-center rounded-full border border-brand-lavender bg-white text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
                 disabled={previewLoading || !isOnline}
                 onClick={onRefresh}
                 type="button"
               >
-                {previewLoading ? <Loader2 aria-hidden="true" className="animate-spin" size={18} /> : <RefreshCw aria-hidden="true" size={18} />}
+                {previewLoading ? (
+                  <Loader2
+                    aria-hidden="true"
+                    className="animate-spin"
+                    size={18}
+                  />
+                ) : (
+                  <RefreshCw aria-hidden="true" size={18} />
+                )}
               </button>
               {isProlongedAbsence && supportHref ? (
                 <a
@@ -571,14 +603,20 @@ function DeviceTestButtons({
       data-testid="waiting-room-device-tests"
     >
       <button
-        aria-label={cameraEnabled ? "Desligar teste da câmera" : "Testar câmera"}
+        aria-label={
+          cameraEnabled ? "Desligar teste da câmera" : "Testar câmera"
+        }
         aria-pressed={cameraEnabled}
         className="inline-flex min-h-12 w-full min-w-0 items-center justify-center gap-2 rounded-[16px] border border-brand-lavender bg-white/90 px-3 text-sm font-extrabold text-brand-primary shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
         disabled={isLoading}
         onClick={onTestCamera}
         type="button"
       >
-        {isLoading ? <Loader2 aria-hidden="true" className="animate-spin" size={18} /> : <Video aria-hidden="true" size={18} />}
+        {isLoading ? (
+          <Loader2 aria-hidden="true" className="animate-spin" size={18} />
+        ) : (
+          <Video aria-hidden="true" size={18} />
+        )}
         Testar câmera
       </button>
       <button
@@ -600,7 +638,10 @@ function DeviceTestButtons({
 
 function AudioLevelIndicator({ level }: { level: number }) {
   return (
-    <div aria-label="Nível do microfone" className="flex items-center gap-3 rounded-[16px] bg-surface-soft px-4 py-3">
+    <div
+      aria-label="Nível do microfone"
+      className="flex items-center gap-3 rounded-[16px] bg-surface-soft px-4 py-3"
+    >
       <Volume2 aria-hidden="true" className="text-brand-primary" size={18} />
       <div className="h-2 flex-1 overflow-hidden rounded-full bg-brand-lavenderSoft">
         <div
@@ -608,7 +649,9 @@ function AudioLevelIndicator({ level }: { level: number }) {
           style={{ width: `${Math.max(4, level)}%` }}
         />
       </div>
-      <span className="text-sm font-extrabold text-brand-deep">Microfone ativo</span>
+      <span className="text-sm font-extrabold text-brand-deep">
+        Microfone ativo
+      </span>
     </div>
   );
 }
