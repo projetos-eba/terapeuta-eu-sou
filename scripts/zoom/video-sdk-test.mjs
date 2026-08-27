@@ -11,7 +11,10 @@ const commands = [
       "supabase/functions/_shared/zoom-video-sdk",
     ],
   ],
-  ["npx", ["vitest", "run", "src/features/zoom"]],
+  [
+    process.execPath,
+    ["node_modules/vitest/vitest.mjs", "run", "src/features/zoom"],
+  ],
 ];
 
 let failed = false;

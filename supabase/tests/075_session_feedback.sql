@@ -354,8 +354,8 @@ select is(
 
 select is(
   (select transfer_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000001'),
-  'not_eligible',
-  'feedback does not mutate transfer state'
+  'blocked',
+  'negative feedback blocks the transfer for administrative review'
 );
 
 select is(

@@ -168,7 +168,7 @@ runtime.serve(async (request) => {
     });
 
     if (intent === "preview") {
-      return withNoStore(success({ access }));
+      return withNoStore(success({ access, requestId }));
     }
 
     if (!access.allowed) {
@@ -238,6 +238,7 @@ runtime.serve(async (request) => {
     return withNoStore(
       success({
         access,
+        requestId,
         roleType,
         sdkKey: config.sdkKey,
         sessionName: booking.videoSession.sessionName,

@@ -8,6 +8,11 @@ export type PatientAddress = {
   streetNumber: string;
 };
 
+export type PatientAddressLookupResult = Pick<
+  PatientAddress,
+  "city" | "neighborhood" | "postalCode" | "state" | "street"
+>;
+
 export type PatientAccountPaymentStatus =
   | "failed"
   | "paid"

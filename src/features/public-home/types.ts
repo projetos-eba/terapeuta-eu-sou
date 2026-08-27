@@ -12,6 +12,7 @@ export type PublicHomeTherapist = {
   guideItems?: string[];
   headline: string;
   href: string;
+  isPremium: boolean;
   name: string;
   photoUrl: string;
   priceLabel: string;

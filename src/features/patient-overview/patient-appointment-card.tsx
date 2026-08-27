@@ -1,10 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { CalendarDays, Clock3, EllipsisVertical } from "lucide-react";
+import { CalendarDays, Clock3 } from "lucide-react";
 
 import { routes } from "@/lib/routes";
 
+import { EncounterActionsMenu } from "../patient-encounters/components/encounter-actions-menu";
 import {
   formatAppointmentDate,
   formatTimeRange,
@@ -19,7 +20,7 @@ export function PatientAppointmentCard({
   const isLive = appointment.status === "live";
 
   return (
-    <article className="grid gap-4 rounded-md border border-[var(--tes-color-border)] bg-[#fdfbff] p-3 sm:grid-cols-[52px_minmax(150px,1fr)_minmax(135px,auto)_minmax(145px,auto)_20px] sm:items-center">
+    <article className="relative grid gap-4 rounded-md border border-[var(--tes-color-border)] bg-[#fdfbff] p-3 pr-14 sm:grid-cols-[52px_minmax(150px,1fr)_minmax(135px,auto)_minmax(145px,auto)] sm:items-center sm:pr-3">
       <span className="relative inline-flex size-[52px] overflow-hidden rounded-full bg-brand-lavenderSoft">
         {appointment.professional.avatarUrl ? (
           <Image
@@ -94,13 +95,10 @@ export function PatientAppointmentCard({
           </Link>
         )}
       </div>
-      <button
-        aria-label={`Mais opções para o encontro com ${appointment.professional.name}`}
-        className="inline-flex size-8 items-center justify-center self-start rounded-sm text-brand-primary outline-none hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20 sm:self-center"
-        type="button"
-      >
-        <EllipsisVertical aria-hidden="true" className="size-4" />
-      </button>
+      <EncounterActionsMenu
+        bookingId={appointment.id}
+        className="absolute right-3 top-3"
+      />
     </article>
   );
 }

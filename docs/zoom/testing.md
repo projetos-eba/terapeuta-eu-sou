@@ -53,10 +53,11 @@ presenca; paciente e liberado por `preview` e so entao consome um token.
 
 A matriz local também cobre a janela anterior a T-15, a sala visual em T-15,
 terapeuta ausente, terapeuta presente aguardando paciente, ambos presentes,
-encerramento, reconexão e indisponibilidade de rede. O acesso por
-`feedback=1` é exercitado antes, durante e depois da sessão para confirmar que
-somente a evidência server-side de ambos os joins torna o feedback de qualidade
-elegível.
+encerramento, reconexão e indisponibilidade de rede. O acesso por `feedback=1`
+é exercitado antes, durante e depois da sessão para confirmar que o fim
+programado ou encerramento definitivo libera o formulário, sem transformar a
+query em autoridade. Os joins continuam sendo evidência operacional, mas a
+ausência de telemetria não bloqueia a resposta nem os prazos automáticos.
 
 A sala de espera também deve comprovar que as três capas locais aparecem nos
 estados corretos, que o teste de câmera solicita apenas vídeo, que o teste de
@@ -94,10 +95,13 @@ ausentes, parciais, completas e conflitantes no detalhe da sessão, sem editar
 opiniões e sem alterar estado financeiro ou de realização.
 
 A confirmação bilateral é testada separadamente do feedback: replay idempotente,
-confirmação manual por cada papel, confirmação automática após sete dias do fim
-programado e elegibilidade um dia depois. Divergência, ausência, reembolso,
-disputa, Connect não apto ou qualquer bloqueio financeiro não podem ser
-convertidos em repasse pela tela de feedback.
+confirmação manual por cada papel em ambas as ordens, paciente automático no
+dia 7, terapeuta automático no dia 30 e elegibilidade somente 24 horas após a
+segunda confirmação. O teste inclui execução sem telemetria, recuperação
+atrasada, concorrência/repetição, cutoff do lote e auditoria do scheduler.
+Divergência, cancelamento, reembolso, disputa, Connect não apto ou qualquer
+bloqueio financeiro não podem ser convertidos em repasse pela tela de feedback.
+Criar ou editar avaliação pública também não altera esse estado.
 
 O QA visual deve registrar evidência em `1440x900`, `1024x768`, `390x844` e
 `360x800` quando necessário, cobrindo preparação antes de T-15, espera, sala
@@ -118,3 +122,25 @@ uma sessao ativa unica no cleanup. A rotina operacional
 caso e recusa ambiguidades.
 
 Runbook completo: `docs/zoom/real-homologation-runbook.md`.
+
+## Reentrada e recuperacao do cliente
+
+O adapter trata `init`, `join`, `leave` e operacoes de midia conforme o contrato
+`ExecutedResult` do Video SDK 2.4.5: somente a string vazia representa sucesso;
+um objeto `{ type, reason, errorCode }` resolvido pela Promise representa falha.
+Antes de recriar o singleton, o fluxo remove listeners e videos, executa `leave`
+quando aplicavel e aguarda `destroyClient`.
+
+Com `NEXT_PUBLIC_ZOOM_REJOIN_RECOVERY_V2=true`, uma falha transitoria executa no
+maximo tres tentativas totais dentro de 10 segundos, com esperas de 1,5 e 3
+segundos. As tentativas reutilizam o acesso ja emitido e nunca executam `join`
+em paralelo. `5012`, timeout, erro interno e cliente reconectando sao
+recuperaveis; sessao encerrada, participante removido, permissao negada e
+configuracao invalida nao entram em repeticao cega.
+
+Ao homologar, manter o terapeuta na sala e cobrir queda de rede, voltar pelo
+navegador, fechar/reabrir aba e reentrada pela espera. Confirmar que existe um
+unico participante remoto, que a recuperacao automatica ocorre antes do
+fallback e que o botao `Recarregar sala` nao altera booking, feedback, presenca
+ou financeiro. Registrar apenas `requestId`, fase, tentativa e codigo
+normalizado; nunca copiar JWT, nome da sessao ou mensagem bruta do provedor.

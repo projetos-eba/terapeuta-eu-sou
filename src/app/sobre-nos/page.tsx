@@ -71,11 +71,11 @@ export default function AboutUsPage() {
             <p className="text-sm font-extrabold uppercase tracking-[0.12em] text-brand-primary/55">
               QUEM É O TES
             </p>
-            <h1 className="mt-8 font-display text-[2.25rem] font-light italic leading-[1.06] tracking-[-0.025em] text-tesText-primary sm:text-[3.25rem] xl:text-[56px] xl:leading-[1.01]">
+            <h1 className="mt-8 font-display text-[2rem] font-light italic leading-[1.06] tracking-[-0.025em] text-tesText-primary sm:text-[3.25rem] xl:text-[56px] xl:leading-[1.01]">
               <span className="block">Entre quem procura</span>
               <span className="block">um caminho e quem</span>
               <span className="block">dedica sua prática a&nbsp;ele,</span>
-              <span className="mt-2 block bg-gradient-to-r from-brand-primary to-brand-cyan bg-clip-text font-bold italic text-transparent">
+              <span className="mt-2 block font-bold italic text-brand-primary sm:bg-gradient-to-r sm:from-brand-primary sm:to-brand-cyan sm:bg-clip-text sm:text-transparent">
                 existe um encontro.
               </span>
             </h1>

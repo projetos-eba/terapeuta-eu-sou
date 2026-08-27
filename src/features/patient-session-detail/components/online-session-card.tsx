@@ -13,7 +13,6 @@ import { TESButton } from "@/components/tes/tes-button";
 import { routes } from "@/lib/routes";
 
 import type { PatientSessionDetailPageData } from "../patient-session-detail.types";
-import { PreEncounterDeviceCheck } from "./pre-encounter-device-check";
 
 export function OnlineSessionCard({
   data,
@@ -155,11 +154,6 @@ export function OnlineSessionCard({
           </div>
         ) : null}
       </div>
-
-      <PreEncounterDeviceCheck
-        countdownLabel={data.encounterState.preparation.countdownLabel}
-        enabled={data.encounterState.preparation.deviceCheckRecommended}
-      />
 
       {data.onlineSession.provider === "zoom" &&
       data.encounterState.payment.kind === "confirmed" ? (

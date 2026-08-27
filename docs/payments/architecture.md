@@ -1,6 +1,6 @@
 # Arquitetura de pagamentos TES
 
-Atualizado em 2026-08-24.
+Atualizado em 2026-08-26.
 
 ## Visao geral
 
@@ -79,8 +79,8 @@ homologação estão em `docs/payments/promotion-codes.md`.
 
 As regras ficam em `financial_policy_versions`. As versões financeiras são
 preservadas no snapshot de cada pagamento. A versão operacional vigente para
-novas contratações é `tes-payments-v3-cancellation-operational`; versões
-anteriores continuam disponíveis para interpretar pagamentos já criados:
+pagamentos abertos é `tes-payments-v6-bilateral-7d-30d`; versões anteriores
+continuam disponíveis para interpretar pagamentos já criados:
 
 - cancelamento gratuito ate 24h antes da sessao;
 - cancelamento com menos de 24h: não há obrigação de reembolso; situações
@@ -88,8 +88,9 @@ anteriores continuam disponíveis para interpretar pagamentos já criados:
 - não comparecimento: não há obrigação de reembolso, ressalvadas situações
   excepcionais analisadas pelo TES;
 - reembolsos antes de lote/transferencia podem ser automaticos; casos ja loteados, transferidos, disputados ou contestados entram em revisao manual;
-- confirmacao automatica da sessao apos 30 dias;
-- confirmação automática após 7 dias quando faltarem respostas bilaterais e prazo de segurança de 1 dia completo após a confirmação antes da elegibilidade;
+- confirmação automática da resposta ausente do paciente após 7 dias;
+- confirmação automática da resposta ausente do terapeuta após 30 dias;
+- prazo de segurança de 24 horas completas após a segunda confirmação válida;
 - lote semanal terca-feira 10:00 America/Sao_Paulo, com cutoff explicito e periodo unico por indice idempotente;
 - upgrades de assinatura cobram prorrata imediatamente; downgrades e cancelamentos entram no fim do periodo.
 - Premium Plus para Premium cria Subscription Schedule e registra o plano/data
@@ -98,24 +99,45 @@ anteriores continuam disponíveis para interpretar pagamentos já criados:
   downgrade e preserva o plano efetivo ate o fim pago; a mesma funcao aceita
   reversao autenticada e idempotente com `cancel_at_period_end = false`.
 
-A política ativa para novas confirmações de realização é versionada como
-`tes-payments-v3-cancellation-operational`. Ela exige confirmação independente do
-paciente e do terapeuta, manual ou automática. Para essa versão, o prazo de
-cada confirmação começa no fim programado em `bookings.ends_at`: uma resposta
-ausente pode ser confirmada automaticamente após 7 dias. Quando as duas
-confirmações necessárias estiverem concluídas, a elegibilidade financeira só
-ocorre depois de mais 1 dia de segurança. Bookings e pagamentos já criados
-continuam usando o snapshot da política gravado no pagamento; a migration não
-reescreve retroativamente decisões financeiras. Após a aprovação, o
-processamento de reembolso deve começar em até 7 dias úteis, sem garantir o
-prazo de crédito do meio de pagamento.
+A política ativa para novas confirmações de realização é
+`tes-payments-v6-bilateral-7d-30d`. Ela exige respostas independentes do
+paciente e do terapeuta. O prazo de cada papel começa em `bookings.ends_at`:
+o paciente vence em 7 dias e o terapeuta em 30 dias. A confirmação automática
+usa o vencimento contratual como `confirmed_at`, mesmo quando o job recupera
+uma execução atrasada; `created_at` preserva o instante real da execução.
+
+`service_confirmed_at` é o instante da segunda confirmação com resultado
+`completed`, calculado pelo maior `confirmed_at` entre os dois papéis. Somente
+então `eligible_at` é definido para 24 horas completas depois. O pagamento não
+é transferido nesse instante: ele apenas pode entrar no próximo lote cujo
+`cutoff_at` seja igual ou posterior a `eligible_at`.
+
+Se qualquer participante responder `not_performed`, o feedback privado fica
+imutável, o repasse é bloqueado e uma ocorrência administrativa é aberta. O
+job não cria respostas automáticas enquanto houver relato negativo ou
+cancelamento, reembolso, disputa, contestação ou bloqueio administrativo. A
+contraparte ainda pode responder manualmente. Uma decisão administrativa
+`performed_confirmed` inicia uma nova segurança de 24 horas na data da decisão;
+`not_performed_confirmed` mantém o bloqueio e segue o contrato de
+cancelamento/reembolso.
+
+Pagamentos abertos, ainda não confirmados e não reservados em lote recebem a
+nova política. Confirmações, lotes e transferências históricas são preservados.
+Após a aprovação, o processamento de reembolso deve começar em até 7 dias
+úteis, sem garantir o prazo de crédito do meio de pagamento.
 
 A presença confirmada pelos eventos confiáveis do Zoom é evidência operacional
-para a realização, não é pagamento nem autorização de repasse. Feedback,
-confirmações e divergências não escrevem diretamente em ledger, transferências
-ou lotes. Mesmo após a confirmação bilateral, o lote exige pagamento confirmado,
-ausência de reembolso/disputa/bloqueio, conta Connect apta, valor positivo e as
-demais regras financeiras vigentes.
+e sinal de risco, não é requisito para o prazo automático nem autorização de
+repasse. Feedback, confirmações e divergências não escrevem diretamente em
+ledger, transferências ou lotes. Mesmo após a confirmação bilateral, o lote
+exige pagamento confirmado, ausência de reembolso/disputa/bloqueio, conta
+Connect apta, valor positivo e as demais regras financeiras vigentes.
+
+O feedback privado da sessão e a avaliação pública do terapeuta são contratos
+distintos. A avaliação pública é uma relação paciente–terapeuta editável,
+enquanto o feedback privado é uma resposta imutável por participante e sessão.
+Criar, editar, ocultar ou republicar `reviews` não altera `bookings`,
+`session_payments`, elegibilidade ou lotes.
 
 ## Dados principais
 
@@ -127,6 +149,11 @@ demais regras financeiras vigentes.
 - `session_payment_attempts`: tentativas idempotentes de cobranca.
 - `session_refunds`, `session_cancellation_decisions` e `session_disputes`: eventos compensatorios, decisoes de politica e bloqueios. Cancelamento usa `request_id` único e o RPC `claim_session_cancellation_decision_v1` (somente `service_role`) para registrar uma única decisão antes de chamar Stripe; retries reutilizam a decisão, a chave de idempotência do refund e a transição do booking.
 - `session_service_confirmations`: prova de realizacao da sessao.
+- `session_participant_confirmations`: respostas canônicas por papel, com
+  `source`, `due_at`, `confirmed_at` e snapshot da política.
+- `session_feedback`: retorno privado e imutável por participante/sessão.
+- `session_confirmation_incidents`: divergências e decisões administrativas.
+- `session_confirmation_scheduler_runs`: auditoria horária por papel e falhas.
 - `payout_batches`, `payout_batch_therapists`, `payout_batch_items`: lote semanal.
 - `stripe_transfers` e `stripe_transfer_reversals`: Transfer da plataforma para o saldo conectado e compensações.
 - `stripe_payouts`: Payout automático criado pela Stripe, separado do ledger.
@@ -171,7 +198,10 @@ Pagamento da sessao:
 
 Realizacao do servico:
 
-- `scheduled`, `occurred_pending_confirmation`, `confirmed_by_patient_review`, `confirmed_by_therapist`, `auto_confirmed`, `contested`, `canceled`, `not_performed`.
+- canônico novo: `scheduled`, `occurred_pending_confirmation`,
+  `confirmed_bilateral`, `contested`, `canceled`, `not_performed`;
+- somente para leitura histórica: `confirmed_by_patient_review`,
+  `confirmed_by_therapist` e `auto_confirmed`.
 
 Repasse:
 
@@ -221,8 +251,11 @@ sequenceDiagram
   T->>TES: confirma realizacao
   P->>TES: confirma realizacao ou envia feedback
   TES->>DB: registra confirmacoes independentes por participante
-  TES->>DB: confirma automaticamente respostas ausentes apos +7 dias
-  TES->>DB: calcula eligible_at apos +1 dia de seguranca
+  TES->>DB: confirma paciente ausente em +7 dias
+  TES->>DB: confirma terapeuta ausente em +30 dias
+  TES->>DB: service_confirmed_at = segunda confirmacao valida
+  TES->>DB: calcula eligible_at apos 24 horas completas
+  TES->>DB: reserva somente no proximo lote com cutoff aplicavel
   TES->>S: cria Transfer no processamento do lote
   Note over TES,S: Transfer usa source_transaction = Charge da sessão
 ```

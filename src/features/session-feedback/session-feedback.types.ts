@@ -20,6 +20,15 @@ export type SessionFeedbackStatus =
   | "sent"
   | "error";
 
+export type SessionConfirmationState =
+  | "awaiting_both"
+  | "awaiting_patient"
+  | "awaiting_therapist"
+  | "blocked_for_review"
+  | "completed"
+  | "next_batch"
+  | "safety_period";
+
 export type SessionFeedbackServerStatus = Exclude<
   SessionFeedbackStatus,
   "loading" | "sent" | "error"
@@ -37,8 +46,10 @@ export type SessionFeedbackAttendance = {
 
 export type SessionFeedbackConfirmation = {
   confirmedAt: string;
+  createdAt?: string;
   dueAt: string;
   outcome: SessionFeedbackOutcome;
+  policyVersionId?: string;
   source: "manual" | "automatic";
 };
 
@@ -53,11 +64,46 @@ export type SessionFeedbackRecord = {
 };
 
 export type SessionFeedbackReadPayload = {
+  actorConfirmation?: SessionFeedbackConfirmation | null;
+  actorRole?: "patient" | "therapist";
   attendance?: SessionFeedbackAttendance;
   confirmation: SessionFeedbackConfirmation | null;
+  confirmationState?: SessionConfirmationState;
+  counterpartConfirmation?: SessionFeedbackConfirmation | null;
   feedback: SessionFeedbackRecord | null;
+  financial?: {
+    eligibleAt: string | null;
+    nextBatchAt: string | null;
+    serviceConfirmedAt: string | null;
+    serviceStatus: string;
+    transferBlockedReason: string | null;
+    transferStatus: string;
+  };
+  patientConfirmation?: SessionFeedbackConfirmation | null;
+  policy?: {
+    patientAutoConfirmationDays: number;
+    therapistAutoConfirmationDays: number;
+    transferSafetyHours: number;
+  };
   reason?: string;
   status: SessionFeedbackServerStatus;
+  therapistConfirmation?: SessionFeedbackConfirmation | null;
+};
+
+export type PatientTherapistReview = {
+  comment: string;
+  createdAt: string;
+  id: string;
+  publishedAt: string | null;
+  rating: number;
+  status: "hidden" | "published";
+  updatedAt: string;
+};
+
+export type PatientTherapistReviewReadPayload = {
+  eligible: boolean;
+  review: PatientTherapistReview | null;
+  therapistProfileId: string;
 };
 
 export const SESSION_FEEDBACK_REASONS: Array<{

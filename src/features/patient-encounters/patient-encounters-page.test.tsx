@@ -126,6 +126,7 @@ function createPageData(
       name: "Carlos",
       patientProfileId: "patient-profile",
     },
+    pendingFeedbackSessions: [],
     recentJourneyTopics: [],
     source: "supabase",
     unreadMessagesCount: 0,

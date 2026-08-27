@@ -70,7 +70,7 @@ export function RelatedTherapistsMatchClient({
           body: JSON.stringify({
             interestIds: matchContext.interestIds,
             slug: therapy.slug,
-            sort,
+            sort: "relevance",
             themeIds: matchContext.themeIds,
           }),
           cache: "no-store",
@@ -79,7 +79,9 @@ export function RelatedTherapistsMatchClient({
           },
           method: "POST",
         });
-        const payload = (await response.json().catch(() => null)) as ApiEnvelope;
+        const payload = (await response
+          .json()
+          .catch(() => null)) as ApiEnvelope;
 
         if (!response.ok || !payload?.ok) {
           return;

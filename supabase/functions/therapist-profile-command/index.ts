@@ -294,15 +294,20 @@ async function readEnrichedEditor(client: SupabaseRestClient, userId: string) {
     return {
       ...editor,
       privateDocuments: [],
+      privateLocation: null,
       verificationSummary: null,
     };
   }
 
-  const [privateDocumentsResult, verificationSummaryResult] =
-    await Promise.allSettled([
-      readPrivateDocuments(client, therapistProfileId),
-      readVerificationSummary(client, therapistProfileId),
-    ]);
+  const [
+    privateDocumentsResult,
+    privateLocationResult,
+    verificationSummaryResult,
+  ] = await Promise.allSettled([
+    readPrivateDocuments(client, therapistProfileId),
+    readPrivateLocation(client, therapistProfileId),
+    readVerificationSummary(client, therapistProfileId),
+  ]);
 
   if (privateDocumentsResult.status === "rejected") {
     throw new EnrichedEditorReadError(
@@ -321,7 +326,26 @@ async function readEnrichedEditor(client: SupabaseRestClient, userId: string) {
   return {
     ...editor,
     privateDocuments: privateDocumentsResult.value,
+    privateLocation:
+      privateLocationResult.status === "fulfilled"
+        ? privateLocationResult.value
+        : null,
     verificationSummary: verificationSummaryResult.value,
+  };
+}
+
+async function readPrivateLocation(
+  client: SupabaseRestClient,
+  therapistProfileId: string,
+) {
+  const rows = await client.get<PrivateIdentityRecord[]>(
+    `/rest/v1/therapist_private_identity?therapist_profile_id=eq.${encodeURIComponent(therapistProfileId)}&select=city,state&limit=1`,
+  );
+  const identity = rows[0];
+
+  return {
+    city: normalizeNullableText(identity?.city) ?? "",
+    state: normalizeNullableText(identity?.state) ?? "",
   };
 }
 

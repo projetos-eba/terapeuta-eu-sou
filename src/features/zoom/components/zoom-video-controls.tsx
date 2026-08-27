@@ -32,10 +32,12 @@ type ZoomVideoControlsProps = {
     | "loading"
     | "joining"
     | "joined"
+    | "recovering"
     | "reconnecting"
     | "leaving"
     | "ended"
-    | "error";
+    | "error"
+    | "reload_required";
   videoOn: boolean;
 };
 
@@ -69,16 +71,20 @@ export function ZoomVideoControls({
           type="button"
           variant="gradient"
         >
-          {state === "loading" || state === "joining" ? (
+          {state === "loading" ||
+          state === "joining" ||
+          state === "recovering" ? (
             <Loader2 aria-hidden="true" className="animate-spin" size={20} />
           ) : (
             <Video aria-hidden="true" size={20} />
           )}
           {state === "joining"
             ? "Entrando…"
-            : actorRole === "patient"
-              ? "Entrar no encontro"
-              : "Entrar na sessão"}
+            : state === "recovering"
+              ? "Reconectando…"
+              : actorRole === "patient"
+                ? "Entrar no encontro"
+                : "Entrar na sessão"}
         </TESButton>
         <TESButton
           className="flex-1"
@@ -140,7 +146,9 @@ export function ZoomVideoControls({
       </div>
 
       <button
-        aria-label={actorRole === "patient" ? "Sair do encontro" : "Sair da sessão"}
+        aria-label={
+          actorRole === "patient" ? "Sair do encontro" : "Sair da sessão"
+        }
         className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[24px] border border-status-danger/40 bg-white px-5 text-sm font-extrabold text-status-danger shadow-card transition hover:bg-status-dangerBg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-status-danger disabled:pointer-events-none disabled:opacity-60"
         disabled={isBusy || !isOnline}
         onClick={onLeave}

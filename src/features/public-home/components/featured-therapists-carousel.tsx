@@ -6,7 +6,7 @@ import type { Route } from "next";
 import { ArrowLeft, ArrowRight, Star } from "lucide-react";
 import { useRef } from "react";
 
-import { TESButton, TESCard } from "@/components/tes";
+import { PremiumTherapistBadge, TESButton, TESCard } from "@/components/tes";
 import type { PublicHomeTherapist } from "@/features/public-home";
 import { buildPublicTherapistTherapyChips } from "@/features/public-therapists/therapy-presentation";
 import { routes } from "@/lib/routes";
@@ -43,7 +43,7 @@ function FeaturedTherapistCard({
   const therapyChips = getTherapyChips(therapist);
 
   return (
-    <TESCard className="w-[292px] shrink-0 snap-start rounded-[28px] p-5 shadow-soft sm:w-[315px] xl:w-[220px] min-[1360px]:w-[240px] min-[1500px]:w-[268px] 2xl:w-[292px]">
+    <TESCard className="flex h-full w-[292px] shrink-0 snap-start flex-col rounded-[28px] p-5 shadow-soft sm:w-[315px] xl:w-[220px] min-[1360px]:w-[240px] min-[1500px]:w-[268px] 2xl:w-[292px]">
       <div className="relative min-h-[252px] overflow-hidden rounded-[28px] bg-brand-lavender xl:min-h-[220px] min-[1360px]:min-h-[232px] min-[1500px]:min-h-[238px] 2xl:min-h-[252px]">
         <Image
           src={therapist.photoUrl}
@@ -54,62 +54,76 @@ function FeaturedTherapistCard({
           className="object-cover"
         />
         <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-brand-deep/28 to-transparent" />
+        {therapist.isPremium ? (
+          <PremiumTherapistBadge therapistName={therapist.name} />
+        ) : null}
       </div>
 
-      <div className="px-1 pb-2 pt-6 min-[1360px]:px-2">
-        <h3 className="text-[1.45rem] font-extrabold leading-tight text-brand-deep min-[1360px]:text-[1.55rem] 2xl:text-[1.65rem]">
+      <div className="flex flex-1 flex-col px-1 pb-2 pt-6 min-[1360px]:px-2">
+        <h3 className="min-h-[3.5rem] text-[1.45rem] font-extrabold leading-tight text-brand-deep min-[1360px]:text-[1.55rem] 2xl:text-[1.65rem]">
           {therapist.name}
         </h3>
-        {therapyChips.length ? (
-          <ul
-            aria-label={`Terapias oferecidas por ${therapist.name}`}
-            className="mt-3 flex min-h-[34px] flex-wrap gap-2"
-          >
-            {therapyChips.map((therapy) => (
-              <li key={therapy.id}>
-                <span
-                  className="block max-w-[180px] truncate rounded-full bg-brand-lavenderSoft px-3 py-1.5 text-[11px] font-extrabold leading-4 text-brand-primary"
-                  title={therapy.label}
-                >
-                  {therapy.label}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-2 min-h-[34px] text-xs font-extrabold leading-snug text-tesText-muted min-[1360px]:text-[0.82rem]">
-            Terapias publicadas no perfil
-          </p>
-        )}
+        <div className="mt-3 min-h-[34px]">
+          {therapyChips.length ? (
+            <ul
+              aria-label={`Terapias oferecidas por ${therapist.name}`}
+              className="flex min-h-[34px] flex-wrap gap-2"
+            >
+              {therapyChips.map((therapy) => (
+                <li key={therapy.id}>
+                  <span
+                    className="block max-w-[180px] truncate rounded-full bg-brand-lavenderSoft px-3 py-1.5 text-[11px] font-extrabold leading-4 text-brand-primary"
+                    title={therapy.label}
+                  >
+                    {therapy.label}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="min-h-[34px] text-xs font-extrabold leading-snug text-tesText-muted min-[1360px]:text-[0.82rem]">
+              Terapias publicadas no perfil
+            </p>
+          )}
+        </div>
 
-        {tags.length ? (
-          <div className="group mt-5 overflow-hidden border-y border-brand-lavender/35 py-3">
-            <div className="flex min-w-max gap-3 transition-transform duration-700 group-hover:-translate-x-10">
-              {tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-full border border-brand-lavender/40 bg-white px-4 py-2 text-sm font-extrabold text-brand-primary shadow-[0_8px_24px_rgba(108,61,145,0.08)] xl:text-xs min-[1500px]:text-sm"
+        <div className="mt-5 h-[60px] min-h-[60px] overflow-hidden border-y border-brand-lavender/35 py-3">
+          {tags.length ? (
+            <div className="tes-therapist-tags-marquee flex w-max">
+              {[0, 1].map((copy) => (
+                <div
+                  key={copy}
+                  aria-hidden={copy === 1}
+                  className="flex shrink-0 gap-3 pr-3"
                 >
-                  {tag}
-                </span>
+                  {tags.map((tag, index) => (
+                    <span
+                      key={`${copy}-${tag}-${index}`}
+                      className="whitespace-nowrap rounded-full border border-brand-lavender/40 bg-white px-4 py-2 text-sm font-extrabold text-brand-primary shadow-[0_8px_24px_rgba(108,61,145,0.08)] xl:text-xs min-[1500px]:text-sm"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               ))}
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
 
-        <div className="mt-5 flex h-12 items-center gap-2 rounded-full border border-brand-lavender/40 bg-white px-4 text-sm font-extrabold text-tesText-muted shadow-[0_8px_24px_rgba(108,61,145,0.08)] xl:text-xs min-[1500px]:text-sm">
+        <div className="mt-auto flex h-12 items-center gap-2 rounded-full border border-brand-lavender/40 bg-white px-4 text-sm font-extrabold text-tesText-muted shadow-[0_8px_24px_rgba(108,61,145,0.08)] xl:text-xs min-[1500px]:text-sm">
           <Star className="size-5 fill-status-warning text-status-warning" />
           <span className="text-status-warning">{therapist.ratingLabel}</span>
           <span>{therapist.reviewCountLabel}</span>
         </div>
 
-        <Link
-          href={therapist.href as Route}
-          className="mt-5 flex h-16 items-center justify-center gap-3 rounded-[18px] bg-brand-primary px-5 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover min-[1500px]:text-base"
+        <TESButton
+          href={therapist.href}
+          size="lg"
+          className="mt-5 h-16 min-h-16 w-full rounded-[18px] px-5 py-0 shadow-card min-[1500px]:text-base"
         >
           Ver perfil completo
           <ArrowRight className="size-5" />
-        </Link>
+        </TESButton>
       </div>
     </TESCard>
   );
@@ -168,7 +182,10 @@ export function FeaturedTherapistsCarousel({
               className="flex snap-x gap-5 overflow-x-auto scroll-smooth px-8 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] xl:gap-4 xl:px-0 [&::-webkit-scrollbar]:hidden"
             >
               {therapists.map((therapist) => (
-                <FeaturedTherapistCard key={therapist.slug} therapist={therapist} />
+                <FeaturedTherapistCard
+                  key={therapist.slug}
+                  therapist={therapist}
+                />
               ))}
             </div>
             <button

@@ -19,6 +19,7 @@ export type SessionFeedbackCommandBody = {
   notPerformedReason?: string | null;
   outcome?: string;
   rating?: number | null;
+  requestId?: string;
 };
 
 export type ValidSessionFeedbackCommand = {
@@ -27,6 +28,7 @@ export type ValidSessionFeedbackCommand = {
   notPerformedReason: string | null;
   outcome: "completed" | "not_performed";
   rating: number | null;
+  requestId: string;
 };
 
 export function validateSessionFeedbackCommand(
@@ -39,7 +41,7 @@ export function validateSessionFeedbackCommand(
   const reason = body.notPerformedReason ?? null;
   const rating = body.rating ?? null;
 
-  if (!isUuid(body.bookingId) || comment.length > 500) invalid();
+  if (!isUuid(body.bookingId) || !isUuid(body.requestId) || comment.length > 500) invalid();
 
   if (outcome === "completed") {
     if (
@@ -66,6 +68,7 @@ export function validateSessionFeedbackCommand(
     notPerformedReason: reason,
     outcome,
     rating,
+    requestId: body.requestId,
   };
 }
 

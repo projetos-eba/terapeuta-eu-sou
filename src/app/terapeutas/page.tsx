@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
 import {
+  ArrowRight,
   CalendarDays,
   ChevronDown,
   Filter,
@@ -13,6 +14,7 @@ import {
 import {
   PublicFooter,
   PublicHeader,
+  PremiumTherapistBadge,
   TESButton,
   TESCard,
   TESDecorativeMedia,
@@ -281,10 +283,11 @@ function TherapistResultCard({
 
   return (
     <div
+      className="h-full"
       data-metric-result-position={position}
       data-metric-therapist-slug={therapist.slug}
     >
-      <TESCard className="grid gap-5 overflow-hidden rounded-[18px] border border-brand-lavender bg-white p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-soft sm:grid-cols-[180px_minmax(0,1fr)]">
+      <TESCard className="flex h-full flex-col gap-5 overflow-hidden rounded-[18px] border border-brand-lavender bg-white p-4 shadow-card transition hover:-translate-y-0.5 hover:shadow-soft sm:grid sm:grid-cols-[180px_minmax(0,1fr)]">
         <div className="relative min-h-[220px] overflow-hidden rounded-[12px] bg-surface-soft sm:min-h-full">
           <Image
             src={therapist.image}
@@ -294,9 +297,12 @@ function TherapistResultCard({
             sizes="(min-width: 1280px) 180px, 100vw"
             className="object-cover object-center"
           />
+          {therapist.highlightTone === "featured" ? (
+            <PremiumTherapistBadge therapistName={therapist.name} />
+          ) : null}
         </div>
 
-        <div className="grid min-w-0 gap-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex min-w-0 flex-wrap gap-2">
               <span
@@ -347,7 +353,7 @@ function TherapistResultCard({
             {therapist.reviewsLabel}
           </p>
 
-          <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div className="mt-auto grid gap-3 border-t border-border pt-4 sm:grid-cols-[1fr_auto] sm:items-end">
             <div>
               <p className="text-xs font-semibold leading-5 text-tesText-muted">
                 Próximo horário
@@ -359,13 +365,15 @@ function TherapistResultCard({
                 {therapist.priceLabel}
               </p>
             </div>
-            <div className="flex flex-col gap-2 sm:w-[160px]">
-              <Link
-                href={therapist.href as Route}
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-primary px-4 text-center text-sm font-bold leading-5 text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            <div className="flex w-full flex-col gap-2 sm:w-[160px]">
+              <TESButton
+                href={therapist.href}
+                size="lg"
+                className="h-16 min-h-16 w-full rounded-[18px] px-4 py-0 text-sm leading-5"
               >
-                Conhecer terapeuta
-              </Link>
+                Ver perfil completo
+                <ArrowRight className="size-5" />
+              </TESButton>
               {trackMetrics ? (
                 <TrackedBookingLink
                   className="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-lavender bg-white px-4 text-center text-sm font-bold leading-5 text-brand-primary transition hover:border-brand-lavender focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"

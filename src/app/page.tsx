@@ -153,8 +153,8 @@ function IntroSection() {
   return (
     <section className="relative overflow-hidden py-12 lg:py-16">
       <div className="pointer-events-none absolute right-0 top-[90px] hidden h-[286px] w-1/2 rounded-l-[38px] bg-brand-primary lg:block" />
-      <div className="relative mx-auto grid max-w-[1680px] gap-9 px-5 sm:px-8 lg:grid-cols-[minmax(0,610px)_minmax(0,1fr)] lg:items-start lg:px-12">
-        <div className="relative z-10 lg:pt-4">
+      <div className="relative mx-auto grid max-w-[1680px] gap-9 px-5 sm:px-8 lg:grid-cols-[minmax(0,440px)_minmax(0,1fr)] lg:items-start lg:gap-12 lg:px-12">
+        <div className="relative z-10 max-w-[28rem] lg:pt-4">
           <SectionHeading
             centered={false}
             eyebrow="O que é o TES?"
@@ -182,22 +182,22 @@ function IntroSection() {
           />
         </div>
         <div className="relative min-h-[312px] lg:min-h-[292px]">
-          <div className="relative z-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-2 lg:pr-4 xl:grid-cols-4 xl:gap-5 xl:pl-[54px]">
+          <div className="relative z-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-2 lg:pr-4 xl:grid-cols-4 xl:gap-4 xl:pl-4 2xl:gap-5">
             {homeIntroCards.map((card, index) => {
               const Icon = introIcons[index] ?? Heart;
 
               return (
                 <TESCard
                   key={card.title}
-                  className="min-h-[236px] rounded-[16px] border-[#E0D6F0] p-5 text-center shadow-soft lg:min-h-[260px]"
+                  className="min-h-[236px] rounded-[16px] border-[#E0D6F0] p-4 text-center shadow-soft lg:min-h-[252px]"
                 >
-                  <span className="mx-auto grid size-[78px] place-items-center rounded-full bg-[#EDE3F5] text-brand-primary">
-                    <Icon className="size-[40px]" strokeWidth={1.8} />
+                  <span className="mx-auto grid size-[64px] place-items-center rounded-full bg-[#EDE3F5] text-brand-primary">
+                    <Icon className="size-[32px]" strokeWidth={1.8} />
                   </span>
-                  <h3 className="mt-5 text-[0.95rem] font-extrabold leading-normal text-brand-deep">
+                  <h3 className="mt-4 text-[0.95rem] font-extrabold leading-normal text-brand-deep">
                     {card.title}
                   </h3>
-                  <p className="mt-3 text-[0.8rem] font-medium leading-5 text-tesText-muted">
+                  <p className="mt-2 text-[0.8rem] font-medium leading-5 text-tesText-muted">
                     {card.body}
                   </p>
                 </TESCard>
@@ -469,32 +469,31 @@ function JourneyCta() {
   return (
     <section className="mx-auto max-w-[1680px] px-5 py-10 sm:px-8 lg:px-12">
       <div
-        className="relative isolate min-h-[720px] overflow-hidden rounded-hero bg-brand-primary p-7 text-white sm:p-10 md:min-h-[310px] md:p-12"
+        className="relative isolate min-h-[610px] overflow-hidden rounded-hero bg-brand-primary p-7 text-white sm:p-10 md:min-h-[310px] md:p-12"
         data-testid="home-journey-cta"
       >
         <TESDecorativeMedia
-          className="absolute inset-0 hidden md:block"
+          className="absolute inset-y-0 right-0 hidden w-1/2 md:block"
           fade="left"
           fadeTone="brand"
-          imageClassName="object-[62%_center]"
-          objectPosition="right center"
+          objectPosition="right 8%"
           sizes="(min-width: 1024px) 90vw, 100vw"
           src={platformAssets.publicJourneyCta.src}
         />
         <TESDecorativeMedia
-          className="absolute inset-x-0 bottom-0 top-[280px] block md:hidden"
+          className="absolute inset-x-0 bottom-0 top-[360px] block md:hidden"
           fade="none"
-          imageClassName="object-[80%_center]"
-          objectPosition="80% center"
+          imageClassName="object-contain"
+          objectPosition="right bottom"
           sizes="100vw"
           src={platformAssets.publicJourneyCta.src}
         />
-        <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(to_bottom,var(--tes-color-brand-primary)_0%,var(--tes-color-brand-primary)_52%,transparent_78%)] md:hidden" />
+        <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(to_bottom,var(--tes-color-brand-primary)_0%,var(--tes-color-brand-primary)_47%,transparent_74%)] md:hidden" />
         <div className="relative z-20 max-w-2xl">
-          <h2 className="max-w-[9ch] font-display text-[clamp(3.1rem,15vw,4rem)] font-light italic leading-[0.96] md:max-w-none md:text-5xl md:leading-tight">
+          <h2 className="max-w-[10ch] font-display text-[clamp(2.75rem,12vw,3.5rem)] font-light italic leading-[0.98] md:max-w-[18ch] md:text-4xl md:leading-tight lg:text-5xl">
             Comece pela sua jornada
           </h2>
-          <p className="mt-6 max-w-[18ch] text-[1.25rem] font-medium leading-8 text-white/90 md:mt-4 md:max-w-xl md:text-base md:font-semibold md:leading-7 md:text-white/85">
+          <p className="mt-5 max-w-[25ch] text-base font-medium leading-7 text-white/90 md:mt-4 md:max-w-[42ch] md:font-semibold md:leading-6 md:text-white/85">
             Responda algumas perguntas com calma e veja caminhos terapêuticos
             que podem conversar com o seu momento.
           </p>
@@ -502,7 +501,7 @@ function JourneyCta() {
             href={routes.public.journey}
             size="lg"
             variant="secondary"
-            className="mt-8 min-h-14 w-full justify-center rounded-full bg-white px-5 text-base sm:max-w-[360px] md:mt-7 md:w-auto md:justify-start"
+            className="mt-6 min-h-12 w-full justify-center rounded-full bg-white px-5 text-sm sm:max-w-[320px] md:mt-6 md:w-auto md:justify-start"
           >
             Começar minha jornada
             <CalendarDays className="size-4" />

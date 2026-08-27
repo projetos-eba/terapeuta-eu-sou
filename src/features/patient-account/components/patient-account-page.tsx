@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -41,6 +42,7 @@ import { routes } from "@/lib/routes";
 
 import {
   changePatientPassword,
+  lookupPatientAddressByCep,
   updatePatientAccount,
   uploadPatientAvatar,
 } from "../patient-account.commands";
@@ -374,19 +376,107 @@ function AddressSection({
   address: PatientAddress;
   onChange: (address: PatientAddress) => void;
 }) {
+  const latestAddress = useRef(address);
+  const lookupCepRef = useRef<string | null>(null);
+  const [cepLookup, setCepLookup] = useState<"idle" | "loading" | "error">(
+    "idle",
+  );
+  const [cepLookupMessage, setCepLookupMessage] = useState<string | null>(null);
+  const postalCode = address.postalCode;
+
+  latestAddress.current = address;
+
+  useEffect(() => {
+    const digits = postalCode.replace(/\D/g, "");
+    if (digits.length !== 8) {
+      lookupCepRef.current = null;
+      setCepLookup("idle");
+      setCepLookupMessage(null);
+      return;
+    }
+    if (lookupCepRef.current === digits) return;
+
+    lookupCepRef.current = digits;
+    const controller = new AbortController();
+    const addressAtLookup = latestAddress.current;
+    setCepLookup("loading");
+    setCepLookupMessage(null);
+
+    void lookupPatientAddressByCep(digits, controller.signal).then((result) => {
+      if (controller.signal.aborted) return;
+      if (result.status === "error") {
+        setCepLookup("error");
+        setCepLookupMessage(result.error.message);
+        return;
+      }
+
+      const current = latestAddress.current;
+      onChange({
+        ...current,
+        city:
+          current.city === addressAtLookup.city
+            ? result.data.city || current.city
+            : current.city,
+        neighborhood:
+          current.neighborhood === addressAtLookup.neighborhood
+            ? result.data.neighborhood || current.neighborhood
+            : current.neighborhood,
+        postalCode: result.data.postalCode,
+        state:
+          current.state === addressAtLookup.state
+            ? result.data.state || current.state
+            : current.state,
+        street:
+          current.street === addressAtLookup.street
+            ? result.data.street || current.street
+            : current.street,
+      });
+      setCepLookup("idle");
+      setCepLookupMessage(
+        "Endereço localizado. Confira e edite os campos se necessário.",
+      );
+    });
+
+    return () => controller.abort();
+  }, [onChange, postalCode]);
+
   function update(key: keyof PatientAddress, value: string) {
     onChange({ ...address, [key]: value });
   }
 
   return (
-    <AppPageSection>
+    <AppPageSection className="min-w-0">
       <SectionHeading
         description="Se quiser, deixe um endereço salvo para agilizar informações futuras da sua conta."
         icon={MapPin}
         title="Seu endereço"
       />
-      <div className="mt-6 grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
+      <div className="mt-6 grid min-w-0 gap-4 md:grid-cols-[180px_minmax(0,1fr)]">
         <AccountField
+          autoComplete="postal-code"
+          id="patient-postal-code"
+          label="CEP"
+          onChange={(value) =>
+            update("postalCode", formatPatientPostalCode(value))
+          }
+          placeholder="00000-000"
+          value={address.postalCode}
+        />
+        <div className="flex min-w-0 items-end" aria-live="polite">
+          {cepLookup === "loading" ? (
+            <p className="pb-1 text-sm font-semibold text-tesText-secondary">
+              Consultando o endereço...
+            </p>
+          ) : cepLookupMessage ? (
+            <p className="pb-1 text-sm font-semibold text-tesText-secondary">
+              {cepLookupMessage}
+            </p>
+          ) : null}
+        </div>
+      </div>
+      <div className="mt-4 grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
+        <AccountField
+          autoComplete="address-line1"
           id="patient-street"
           label="Rua ou avenida"
           onChange={(value) => update("street", value)}
@@ -399,8 +489,9 @@ function AddressSection({
           value={address.streetNumber}
         />
       </div>
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
+      <div className="mt-4 grid min-w-0 gap-4 md:grid-cols-2">
         <AccountField
+          autoComplete="address-line2"
           id="patient-complement"
           label="Complemento"
           onChange={(value) => update("complement", value)}
@@ -413,21 +504,16 @@ function AddressSection({
           value={address.neighborhood}
         />
       </div>
-      <div className="mt-4 grid gap-4 md:grid-cols-[180px_minmax(0,1fr)_100px]">
+      <div className="mt-4 grid min-w-0 gap-4 md:grid-cols-[minmax(0,1fr)_100px]">
         <AccountField
-          id="patient-postal-code"
-          label="CEP"
-          onChange={(value) => update("postalCode", formatPatientPostalCode(value))}
-          placeholder="00000-000"
-          value={address.postalCode}
-        />
-        <AccountField
+          autoComplete="address-level2"
           id="patient-city"
           label="Cidade"
           onChange={(value) => update("city", value)}
           value={address.city}
         />
         <AccountField
+          autoComplete="address-level1"
           id="patient-state"
           label="UF"
           maxLength={2}
@@ -678,6 +764,7 @@ function SectionHeading({
 }
 
 function AccountField({
+  autoComplete,
   disabled,
   hint,
   id,
@@ -688,6 +775,7 @@ function AccountField({
   required,
   value,
 }: {
+  autoComplete?: string;
   disabled?: boolean;
   hint?: string;
   id: string;
@@ -699,10 +787,14 @@ function AccountField({
   value: string;
 }) {
   return (
-    <label className="grid gap-2 text-sm font-extrabold text-brand-deep" htmlFor={id}>
+    <label
+      className="grid min-w-0 gap-2 text-sm font-extrabold text-brand-deep"
+      htmlFor={id}
+    >
       <span>{label}</span>
       <input
-        className="min-h-12 rounded-md border border-border bg-white px-4 text-base font-semibold text-brand-deep outline-none transition placeholder:text-tesText-subtle focus:border-brand-primary focus:ring-4 focus:ring-ring/20 disabled:cursor-not-allowed disabled:bg-surface-soft disabled:text-tesText-secondary"
+        className="min-h-12 w-full min-w-0 rounded-md border border-border bg-white px-4 text-base font-semibold text-brand-deep outline-none transition placeholder:text-tesText-subtle focus:border-brand-primary focus:ring-4 focus:ring-ring/20 disabled:cursor-not-allowed disabled:bg-surface-soft disabled:text-tesText-secondary"
+        autoComplete={autoComplete}
         disabled={disabled}
         id={id}
         maxLength={maxLength}
