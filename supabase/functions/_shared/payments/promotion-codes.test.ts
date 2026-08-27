@@ -31,46 +31,58 @@ const baseCoupon = {
   valid: true,
 };
 
-Deno.test("promotion resolver accepts a scoped session percentage code", async () => {
-  const result = await resolvePromotionCode({
-    checkoutScope: "session",
-    code: " tes20 ",
-    currency: "BRL",
-    customerId: "cus_patient",
-    originalAmountCents: 12_000,
-    stripe: stripeMock(basePromotion, baseCoupon),
-  });
+Deno.test(
+  "promotion resolver accepts a scoped session percentage code",
+  async () => {
+    const result = await resolvePromotionCode({
+      checkoutScope: "session",
+      code: " tes20 ",
+      currency: "BRL",
+      customerId: "cus_patient",
+      originalAmountCents: 12_000,
+      stripe: stripeMock(basePromotion, baseCoupon),
+    });
 
-  assertEquals(result.summary.percentOff, 20);
-  assertEquals(result.summary.code, "TES20");
-});
+    assertEquals(result.summary.percentOff, 20);
+    assertEquals(result.summary.code, "TES20");
+  },
+);
 
-Deno.test("promotion resolver accepts only an explicitly eligible subscription product", async () => {
-  const promotion = {
-    ...basePromotion,
-    metadata: { tes_checkout_scope: "subscription" },
-  };
-  const coupon = {
-    ...baseCoupon,
-    applies_to: { products: ["prod_premium"] },
-    duration: "repeating",
-    duration_in_months: 3,
-    percent_off: 100,
-  };
-  const result = await resolvePromotionCode({
-    checkoutScope: "subscription",
-    code: "TES20",
-    currency: "brl",
-    customerId: "cus_therapist",
-    eligibleProductId: "prod_premium",
-    originalAmountCents: 6_000,
-    stripe: stripeMock(promotion, coupon),
-  });
+Deno.test(
+  "promotion resolver accepts only an explicitly eligible subscription product",
+  async () => {
+    const promotion = {
+      ...basePromotion,
+      code: "TERAPEUTAFUNDADOR",
+      metadata: {
+        billing_cycle: "monthly",
+        offer_key: "therapist_founder",
+        tes_checkout_scope: "subscription",
+      },
+    };
+    const coupon = {
+      ...baseCoupon,
+      applies_to: { products: ["prod_premium"] },
+      duration: "repeating",
+      duration_in_months: 3,
+      percent_off: 100,
+    };
+    const result = await resolvePromotionCode({
+      checkoutScope: "subscription",
+      code: "TES20",
+      currency: "brl",
+      customerId: "cus_therapist",
+      eligibleProductId: "prod_premium",
+      originalAmountCents: 6_000,
+      stripe: stripeMock(promotion, coupon),
+    });
 
-  assertEquals(result.summary.duration, "repeating");
-  assertEquals(result.summary.durationInMonths, 3);
-  assertEquals(result.summary.percentOff, 100);
-});
+    assertEquals(result.summary.duration, "repeating");
+    assertEquals(result.summary.durationInMonths, 3);
+    assertEquals(result.summary.percentOff, 100);
+    assertEquals(result.offerKey, "therapist_founder");
+  },
+);
 
 Deno.test("promotion resolver fails closed for scope and product", async () => {
   await assertDomainCode(
@@ -107,6 +119,45 @@ Deno.test("promotion resolver fails closed for scope and product", async () => {
   );
 });
 
+Deno.test("promotion resolver rejects missing and inactive codes", async () => {
+  await assertDomainCode(
+    () =>
+      resolvePromotionCode({
+        checkoutScope: "subscription",
+        code: "MISSING",
+        currency: "brl",
+        customerId: "cus_therapist",
+        eligibleProductId: "prod_premium",
+        originalAmountCents: 7_990,
+        stripe: stripeMock(null, baseCoupon),
+      }),
+    "promotion_invalid",
+  );
+  await assertDomainCode(
+    () =>
+      resolvePromotionCode({
+        checkoutScope: "subscription",
+        code: "INACTIVE",
+        currency: "brl",
+        customerId: "cus_therapist",
+        eligibleProductId: "prod_premium",
+        originalAmountCents: 7_990,
+        stripe: stripeMock({ ...basePromotion, active: false }, baseCoupon),
+      }),
+    "promotion_invalid",
+  );
+});
+
+Deno.test("maps expired provider redemption to a safe domain error", () => {
+  assertEquals(
+    mapPromotionStripeError({
+      message: "This promotion code has expired.",
+      param: "discounts[0][promotion_code]",
+    })?.code,
+    "promotion_expired",
+  );
+});
+
 Deno.test("promotion resolver accepts a 100% session discount", async () => {
   const result = await resolvePromotionCode({
     checkoutScope: "session",
@@ -120,60 +171,69 @@ Deno.test("promotion resolver accepts a 100% session discount", async () => {
   assertEquals(result.summary.percentOff, 100);
 });
 
-Deno.test("promotion resolver accepts a fixed discount equal to the session amount", async () => {
-  const result = await resolvePromotionCode({
-    checkoutScope: "session",
-    code: "TES20",
-    currency: "brl",
-    customerId: "cus_patient",
-    originalAmountCents: 12_000,
-    stripe: stripeMock(basePromotion, {
-      ...baseCoupon,
-      amount_off: 12_000,
+Deno.test(
+  "promotion resolver accepts a fixed discount equal to the session amount",
+  async () => {
+    const result = await resolvePromotionCode({
+      checkoutScope: "session",
+      code: "TES20",
       currency: "brl",
-      percent_off: null,
-    }),
-  });
-
-  assertEquals(result.summary.amountOffCents, 12_000);
-});
-
-Deno.test("promotion resolver rejects a fixed discount that would make a session negative", async () => {
-  await assertDomainCode(
-    () =>
-      resolvePromotionCode({
-        checkoutScope: "session",
-        code: "TES20",
-        currency: "brl",
-        customerId: "cus_patient",
-        originalAmountCents: 12_000,
-        stripe: stripeMock(basePromotion, {
-          ...baseCoupon,
-          amount_off: 12_001,
-          currency: "brl",
-          percent_off: null,
-        }),
-      }),
-    "promotion_amount_exceeds_total",
-  );
-});
-
-Deno.test("checkout amount summary stays authoritative to Stripe values", () => {
-  assertEquals(
-    checkoutAmounts({
-      amount_subtotal: 12_000,
-      amount_total: 9_600,
-      currency: "brl",
-      total_details: { amount_discount: 2_400 },
-    }),
-    {
-      currency: "brl",
-      discountAmountCents: 2_400,
+      customerId: "cus_patient",
       originalAmountCents: 12_000,
-      totalAmountCents: 9_600,
-    },
-  );
-});
+      stripe: stripeMock(basePromotion, {
+        ...baseCoupon,
+        amount_off: 12_000,
+        currency: "brl",
+        percent_off: null,
+      }),
+    });
+
+    assertEquals(result.summary.amountOffCents, 12_000);
+  },
+);
+
+Deno.test(
+  "promotion resolver rejects a fixed discount that would make a session negative",
+  async () => {
+    await assertDomainCode(
+      () =>
+        resolvePromotionCode({
+          checkoutScope: "session",
+          code: "TES20",
+          currency: "brl",
+          customerId: "cus_patient",
+          originalAmountCents: 12_000,
+          stripe: stripeMock(basePromotion, {
+            ...baseCoupon,
+            amount_off: 12_001,
+            currency: "brl",
+            percent_off: null,
+          }),
+        }),
+      "promotion_amount_exceeds_total",
+    );
+  },
+);
+
+Deno.test(
+  "checkout amount summary stays authoritative to Stripe values",
+  () => {
+    assertEquals(
+      checkoutAmounts({
+        amount_subtotal: 12_000,
+        amount_total: 9_600,
+        currency: "brl",
+        total_details: { amount_discount: 2_400 },
+      }),
+      {
+        currency: "brl",
+        discountAmountCents: 2_400,
+        originalAmountCents: 12_000,
+        totalAmountCents: 9_600,
+      },
+    );
+  },
+);
 
 Deno.test("maps Stripe minimum amount rejections to a safe user error", () => {
   const error = mapPromotionStripeError({
@@ -185,25 +245,34 @@ Deno.test("maps Stripe minimum amount rejections to a safe user error", () => {
 
   assertEquals(error?.code, "promotion_minimum_amount");
   assertEquals(error?.status, 422);
-  assertEquals(error?.message, "Este código promocional exige um valor mínimo para esta compra.");
+  assertEquals(
+    error?.message,
+    "Este código promocional exige um valor mínimo para esta compra.",
+  );
 });
 
-Deno.test("maps redemption limits and ignores unrelated provider failures", () => {
-  assertEquals(
-    mapPromotionStripeError({
-      message: "This promotion code has reached its maximum redemptions.",
-      param: "discounts[0][promotion_code]",
-    })?.code,
-    "promotion_redemption_limit",
-  );
-  assertEquals(mapPromotionStripeError({ message: "network unavailable" }), null);
-});
+Deno.test(
+  "maps redemption limits and ignores unrelated provider failures",
+  () => {
+    assertEquals(
+      mapPromotionStripeError({
+        message: "This promotion code has reached its maximum redemptions.",
+        param: "discounts[0][promotion_code]",
+      })?.code,
+      "promotion_redemption_limit",
+    );
+    assertEquals(
+      mapPromotionStripeError({ message: "network unavailable" }),
+      null,
+    );
+  },
+);
 
 function stripeMock(promotion: unknown, coupon: unknown) {
   return {
     coupons: { retrieve: () => Promise.resolve(coupon) },
     promotionCodes: {
-      list: () => Promise.resolve({ data: [promotion] }),
+      list: () => Promise.resolve({ data: promotion ? [promotion] : [] }),
     },
   } as never;
 }

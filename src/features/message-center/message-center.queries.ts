@@ -75,9 +75,16 @@ type SupportTicketRow = {
   description: string | null;
   id: string;
   last_activity_at: string | null;
+  protocol: string;
   resolution_summary: string | null;
   status: string;
   subject: string;
+};
+
+type SupportTicketMessageRow = {
+  body: string;
+  created_at: string;
+  ticket_id: string;
 };
 
 type NotificationRow = {
@@ -151,7 +158,7 @@ async function getSupabaseMessageCenter(
       : Promise.resolve([]),
     supabaseRequest<SupportTicketRow[]>(
       config,
-      `/rest/v1/support_tickets?select=id,category,subject,description,status,resolution_summary,created_at,last_activity_at&requester_profile_id=eq.${encodeURIComponent(input.profileId)}&order=last_activity_at.desc.nullslast&limit=8`,
+      `/rest/v1/support_tickets?select=id,protocol,category,subject,description,status,resolution_summary,created_at,last_activity_at&requester_profile_id=eq.${encodeURIComponent(input.profileId)}&order=last_activity_at.desc.nullslast&limit=8`,
     ),
     supabaseRequest<NotificationRow[]>(
       config,
@@ -180,11 +187,19 @@ async function getSupabaseMessageCenter(
     bookings,
     viewerProfileId: input.profileId,
   });
-  const platformItems = mapPlatformItems(
-    input.actorRole,
-    supportTickets,
-    notifications,
-  );
+  const platformItems = mapPlatformItems(notifications);
+  const supportMessages = supportTickets.length
+    ? await supabaseRequest<SupportTicketMessageRow[]>(
+        config,
+        `/rest/v1/support_ticket_messages?select=ticket_id,body,created_at&ticket_id=in.(${supportTickets.map((ticket) => ticket.id).join(",")})&visibility=eq.requester&order=created_at.desc`,
+      )
+    : [];
+  const latestMessageByTicket = new Map<string, SupportTicketMessageRow>();
+  for (const message of supportMessages) {
+    if (!latestMessageByTicket.has(message.ticket_id)) {
+      latestMessageByTicket.set(message.ticket_id, message);
+    }
+  }
   return {
     ...createMessageCenterShell(input.actorRole),
     metrics: {
@@ -195,8 +210,14 @@ async function getSupabaseMessageCenter(
     supportTickets: supportTickets.map((ticket) => ({
       category: ticket.category,
       createdAt: ticket.created_at,
+      excerpt:
+        latestMessageByTicket.get(ticket.id)?.body ??
+        ticket.resolution_summary ??
+        ticket.description ??
+        "A equipe TES está acompanhando este chamado.",
       id: ticket.id,
       lastActivityAt: ticket.last_activity_at ?? ticket.created_at,
+      protocol: ticket.protocol,
       status: ticket.status,
       subject: ticket.subject,
     })),
@@ -413,34 +434,8 @@ function formatSessionDate(value: string) {
 }
 
 function mapPlatformItems(
-  actorRole: MessageCenterActorRole,
-  tickets: SupportTicketRow[],
   notifications: NotificationRow[],
 ): MessageCenterPlatformItem[] {
-  const ticketItems = tickets.map<MessageCenterPlatformItem>((ticket) => {
-    const category = ticket.category === "payment" ? "financeiro" : "suporte";
-
-    return {
-      body:
-        ticket.resolution_summary ??
-        ticket.description ??
-        "A equipe TES está acompanhando este chamado.",
-      category,
-      categoryLabel: getCategoryLabel(category),
-      id: ticket.id,
-      isNotification: false,
-      isUnread: ticket.status !== "resolved",
-      timeLabel: formatRelativeTime(ticket.created_at),
-      title: ticket.subject,
-      cta: {
-        href:
-          actorRole === "patient"
-            ? `/app/mensagens/suporte/${ticket.id}`
-            : `/terapeuta/mensagens/suporte/${ticket.id}`,
-        label: "Abrir conversa",
-      },
-    };
-  });
   const notificationItems = notifications.map<MessageCenterPlatformItem>(
     (notification) => {
       const category =
@@ -459,7 +454,7 @@ function mapPlatformItems(
     },
   );
 
-  return [...notificationItems, ...ticketItems].slice(0, 5);
+  return notificationItems.slice(0, 5);
 }
 
 function createMessageCenterShell(

@@ -64,8 +64,9 @@ Read in this order, only as needed:
 - Reference screen: Figma `Projeto TES - Copy`, node `14845:668`. The approved
   Figma assets live in `public/about/figma-*.png`; use the original assets and
   preserve their edge fade treatment when they sit against a page surface. The
-  low-resolution `figma-06.png` remains preserved as source; use its restored
-  high-resolution sibling `figma-06-hd.png` for the platform mockup. Set
+  legacy platform mockup sources remain preserved; the current platform mockup
+  uses the supplied `public/about/platform-dashboard-2026-08-26-transparent.png`
+  asset. Set
   `next/image` quality to `95` for these editorial images so the WebP response
   does not introduce visible compression in soft gradients.
 - From `xl`, the hero image is clipped by its section, begins at the top of the

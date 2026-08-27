@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   if (!config || !accessToken) return failure("Entre na sua conta para continuar.", 401);
 
   try {
-    const response = await fetch(`${config.url}/rest/v1/rpc/get_session_feedback_v1`, {
+    const response = await fetch(`${config.url}/rest/v1/rpc/get_session_feedback_v2`, {
       body: JSON.stringify({ p_booking_id: bookingId }),
       cache: "no-store",
       headers: {
@@ -62,6 +62,7 @@ export async function POST(request: Request) {
         notPerformedReason: body.notPerformedReason,
         outcome: body.outcome,
         rating: body.rating,
+        requestId: body.requestId,
       }),
       cache: "no-store",
       headers: {

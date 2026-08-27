@@ -21,6 +21,7 @@ type SupportTicketRow = {
   created_at: string;
   id: string;
   last_activity_at: string;
+  protocol: string;
   status: string;
   subject: string;
 };
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
     const tickets = await supabaseRequest<SupportTicketRow[]>(
       context.config,
       context.accessToken,
-      "/rest/v1/support_tickets?select=id,category,subject,status,created_at,last_activity_at&order=last_activity_at.desc",
+      "/rest/v1/support_tickets?select=id,protocol,category,subject,status,created_at,last_activity_at&order=last_activity_at.desc",
     );
 
     return NextResponse.json(
@@ -46,7 +47,7 @@ export async function GET(request: Request) {
           createdAt: ticket.created_at,
           id: ticket.id,
           lastActivityAt: ticket.last_activity_at,
-          protocol: ticket.id.slice(0, 8).toUpperCase(),
+          protocol: ticket.protocol,
           status: ticket.status,
           subject: ticket.subject,
         })),
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
             ok: true,
             ticket: {
               id: existingTicket.id,
-              protocol: existingTicket.id.slice(0, 8).toUpperCase(),
+              protocol: existingTicket.protocol,
               status: existingTicket.status,
             },
           },
@@ -156,7 +157,7 @@ export async function POST(request: Request) {
         ok: true,
         ticket: {
           id: ticket.id,
-          protocol: ticket.id.slice(0, 8).toUpperCase(),
+          protocol: ticket.protocol,
           status: ticket.status,
         },
       },
@@ -213,10 +214,12 @@ async function findExistingTicket(
   accessToken: string,
   requestId: string,
 ) {
-  const tickets = await supabaseRequest<Array<{ id: string; status: string }>>(
+  const tickets = await supabaseRequest<
+    Array<{ id: string; protocol: string; status: string }>
+  >(
     config,
     accessToken,
-    `/rest/v1/support_tickets?select=id,status&request_id=eq.${encodeURIComponent(requestId)}&limit=1`,
+    `/rest/v1/support_tickets?select=id,protocol,status&request_id=eq.${encodeURIComponent(requestId)}&limit=1`,
   );
   return tickets[0] ?? null;
 }
@@ -278,7 +281,11 @@ async function callCreateTicket(
     },
   );
   if (!response.ok) throw await response.json().catch(() => null);
-  return (await response.json()) as { id: string; status: string };
+  return (await response.json()) as {
+    id: string;
+    protocol: string;
+    status: string;
+  };
 }
 
 async function attachTicketAttachments(

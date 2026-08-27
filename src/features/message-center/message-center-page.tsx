@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 import { TESDecorativeMedia } from "@/components/tes";
-import { TherapistSupportSection } from "@/features/support/components/therapist-support-section";
+import { SupportTicketSection } from "@/features/support/components/therapist-support-section";
 import { MessageCenterLiveRefresh } from "@/features/support/components/support-live-refresh";
 import { platformAssets } from "@/lib/platform-assets";
 
@@ -91,38 +91,29 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
           actorRole={data.actorRole}
         />
 
-        {data.actorRole === "therapist" ? (
-          <TherapistSupportSection
-            actorRole={data.actorRole}
-            tickets={data.supportTickets}
-          />
-        ) : (
-          <PlatformCard
-            action={
-              <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto sm:justify-end">
-                <MarkNotificationsReadButton
-                  actorRole={data.actorRole}
-                  unreadCount={
-                    data.platformItems.filter(
-                      (item) => item.isNotification && item.isUnread,
-                    ).length
-                  }
-                />
-                <MessageCenterActions
-                  actorRole={data.actorRole}
-                  source={data.source}
-                  templates={data.templates.support}
-                  threads={data.threads}
-                  variant="support"
-                />
-              </div>
-            }
-            description={data.platformSection.description}
-            items={data.platformItems}
-            title={data.platformSection.title}
-          />
-        )}
+        <SupportTicketSection
+          actorRole={data.actorRole}
+          tickets={data.supportTickets}
+        />
       </section>
+
+      {data.actorRole === "patient" && data.platformItems.length > 0 ? (
+        <PlatformCard
+          action={
+            <MarkNotificationsReadButton
+              actorRole={data.actorRole}
+              unreadCount={
+                data.platformItems.filter(
+                  (item) => item.isNotification && item.isUnread,
+                ).length
+              }
+            />
+          }
+          description={data.platformSection.description}
+          items={data.platformItems}
+          title={data.platformSection.title}
+        />
+      ) : null}
 
       <section className="rounded-card border border-brand-lavender bg-white p-5 shadow-card">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

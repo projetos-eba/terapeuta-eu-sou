@@ -61,38 +61,40 @@ export function RelatedTherapists({
             </div>
             <p className="mt-2 max-w-3xl text-sm font-semibold leading-6 text-tesText-secondary">
               {matchContextActive
-                ? `Terapeutas publicados em ${therapy.name}, ordenados pelo contexto da sua jornada.`
+                ? "Esses terapeutas têm mais compatibilidade com o que você está buscando."
                 : "Terapeutas publicados com serviço online ativo relacionado a esta terapia."}
             </p>
           </div>
 
-          <form
-            action={routes.public.therapyDetail(therapy.slug)}
-            className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center"
-          >
-            <input type="hidden" name="source" value={source} />
-            <label
-              htmlFor="related-sort"
-              className="text-sm font-bold text-tesText-secondary"
+          {source !== "match" ? (
+            <form
+              action={routes.public.therapyDetail(therapy.slug)}
+              className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center"
             >
-              Ordenar por:
-            </label>
-            <select
-              id="related-sort"
-              name="sort"
-              defaultValue={sort}
-              className="min-h-11 w-full rounded-md border border-border bg-white px-4 text-sm font-bold text-tesText-primary outline-none focus:ring-4 focus:ring-ring/20 sm:w-[210px]"
-            >
-              {Object.entries(sortLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-            <button className="min-h-11 rounded-full bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover">
-              Aplicar
-            </button>
-          </form>
+              <input type="hidden" name="source" value={source} />
+              <label
+                htmlFor="related-sort"
+                className="text-sm font-bold text-tesText-secondary"
+              >
+                Ordenar por:
+              </label>
+              <select
+                id="related-sort"
+                name="sort"
+                defaultValue={sort}
+                className="min-h-11 w-full rounded-md border border-border bg-white px-4 text-sm font-bold text-tesText-primary outline-none focus:ring-4 focus:ring-ring/20 sm:w-[210px]"
+              >
+                {Object.entries(sortLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <button className="min-h-11 rounded-full bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover">
+                Aplicar
+              </button>
+            </form>
+          ) : null}
         </div>
 
         {errorMessage ? (
@@ -111,6 +113,7 @@ export function RelatedTherapists({
             {therapists.map((therapist) => (
               <RelatedTherapistCard
                 key={therapist.slug}
+                matchContextActive={matchContextActive}
                 source={source}
                 therapist={therapist}
                 therapySlug={therapy.slug}
@@ -151,7 +154,7 @@ export function RelatedTherapists({
         {therapists.length > 0 ? (
           <Link
             href={therapistsHref as Route<string>}
-            className="mx-auto mt-5 flex min-h-12 w-fit items-center gap-2 rounded-full px-5 text-base font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
+            className="mx-auto mt-5 flex min-h-12 w-full max-w-full flex-wrap items-center justify-center gap-2 rounded-full px-5 text-center text-base font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20 sm:w-fit"
           >
             Ver todos os terapeutas deste caminho
             <ArrowRight className="h-5 w-5" aria-hidden="true" />

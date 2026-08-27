@@ -51,6 +51,9 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
   passa por análise e nunca cria uma terapia ou serviço automaticamente.
 - Ao criar/editar serviço, terapeuta escolhe de 1 a 3 temas entre os temas
   vinculados administrativamente à terapia e até 3 refinamentos por tema.
+- Ao criar/editar serviço, a duração é informada em minutos inteiros entre 20 e
+  120, inclusive. O valor salvo é a fonte usada nos cards públicos e no
+  snapshot de duração da reserva.
 - Refinamentos pertencem ao serviço específico, não ao perfil genérico.
 - Backend valida que tema pertence à terapia e refinamento pertence a tema
   escolhido no serviço; navegador não é fonte de autoridade.
@@ -88,6 +91,10 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
   conflito de versao e terapia indisponivel.
 - Responsividade minima: 320, 375, 768, 1024 e 1440px. Mobile nao usa tabela
   horizontal; cards e metricas colapsam em uma coluna/grid compacto.
+- Em larguras pequenas, cada card mantém imagem, categoria, terapia, status,
+  ativação e menu de ações em uma composição compacta e alinhada. Descrição,
+  indicadores e badges quebram linha com segurança, sem overflow; o toggle e o
+  menu mantêm área mínima de toque de 44 px.
 - Strings sem espaços (por exemplo, uma palavra com 200 caracteres) devem usar
   quebra segura dentro do card, da seção e do `TESDialog`, sem overflow
   horizontal da página ou do modal. A descrição da revisão deve permanecer em
@@ -97,8 +104,15 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
   composição.
 - Formulario de criacao tem 3 passos: catalogo canonico, configuracao da oferta
   e revisao. O dado preenchido deve persistir ao voltar.
+- Cada etapa valida os campos necessários antes de permitir `Continuar`; o erro
+  aparece na própria etapa e o foco retorna ao primeiro campo inválido.
+- No salvamento final, a validação impede a mutação, leva o terapeuta à primeira
+  etapa com erro e explica o que precisa ser corrigido. Falhas do servidor ou da
+  rede permanecem visíveis no diálogo para permitir uma nova tentativa.
 - Formulario informa “Atendimento online” como regra fixa, sem seletor de
   formato.
+- O campo “Duração” permite digitação livre de 20 a 120 minutos e mostra erro
+  antes de avançar ou salvar quando o valor estiver fora do intervalo.
 - CTA "Nao encontrou sua terapia?" e apenas informativo/futuro; nunca cria
   terapia.
 - Catalogo permitido nao inclui terapia `draft`, `deprecated`, `archived` ou
@@ -117,6 +131,9 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
   pelo terapeuta aparecem em um badge circular `+N`, limitado a `+2`. O badge
   abre um tooltip acessível por mouse, foco, clique e teclado com os nomes dos
   temas selecionados.
+- Validar a composição do card em 320, 375, 390 e 430 px, incluindo categoria
+  e temas distintos, status, ativação, menu e tooltip `+N`, sem texto cortado ou
+  área de ação isolada.
 
 Rodar:
 

@@ -15,6 +15,7 @@ export type PromotionSummary = {
 };
 
 export type ResolvedPromotionCode = {
+  offerKey: string | null;
   promotionCodeId: string;
   summary: PromotionSummary;
 };
@@ -26,22 +27,28 @@ export type ResolvedPromotionCode = {
  */
 export function mapPromotionStripeError(error: unknown): DomainError | null {
   const errorRecord = isRecord(error) ? error : null;
-  const rawRecord = errorRecord && isRecord(errorRecord.raw)
-    ? errorRecord.raw
-    : null;
-  const message = [errorRecord?.message, rawRecord?.message]
-    .find((value): value is string => typeof value === "string")
-    ?.toLowerCase() ?? "";
-  const code = [errorRecord?.code, rawRecord?.code]
-    .find((value): value is string => typeof value === "string")
-    ?.toLowerCase() ?? "";
-  const param = [errorRecord?.param, rawRecord?.param]
-    .find((value): value is string => typeof value === "string")
-    ?.toLowerCase() ?? "";
-  const providerPromotionError = param.includes("promotion") ||
-    param.includes("discount") || param.includes("coupon") ||
-    message.includes("promotion code") || message.includes("coupon") ||
-    code.includes("promotion") || code.includes("coupon");
+  const rawRecord =
+    errorRecord && isRecord(errorRecord.raw) ? errorRecord.raw : null;
+  const message =
+    [errorRecord?.message, rawRecord?.message]
+      .find((value): value is string => typeof value === "string")
+      ?.toLowerCase() ?? "";
+  const code =
+    [errorRecord?.code, rawRecord?.code]
+      .find((value): value is string => typeof value === "string")
+      ?.toLowerCase() ?? "";
+  const param =
+    [errorRecord?.param, rawRecord?.param]
+      .find((value): value is string => typeof value === "string")
+      ?.toLowerCase() ?? "";
+  const providerPromotionError =
+    param.includes("promotion") ||
+    param.includes("discount") ||
+    param.includes("coupon") ||
+    message.includes("promotion code") ||
+    message.includes("coupon") ||
+    code.includes("promotion") ||
+    code.includes("coupon");
 
   if (!providerPromotionError) return null;
 
@@ -62,7 +69,8 @@ export function mapPromotionStripeError(error: unknown): DomainError | null {
   }
 
   if (
-    message.includes("redemption") || message.includes("redeem") ||
+    message.includes("redemption") ||
+    message.includes("redeem") ||
     message.includes("maximum")
   ) {
     return new DomainError(
@@ -83,10 +91,7 @@ export function mapPromotionStripeError(error: unknown): DomainError | null {
   return invalidPromotion();
 }
 
-type PromotionStripeClient = Pick<
-  Stripe,
-  "coupons" | "promotionCodes"
->;
+type PromotionStripeClient = Pick<Stripe, "coupons" | "promotionCodes">;
 
 export async function resolvePromotionCode(input: {
   checkoutScope: PromotionCheckoutScope;
@@ -106,14 +111,12 @@ export async function resolvePromotionCode(input: {
       limit: 100,
     });
     const candidates = page.data.filter((promotionCode) =>
-      isEligibleForCustomer(promotionCode.customer, input.customerId)
+      isEligibleForCustomer(promotionCode.customer, input.customerId),
     );
-    const promotionCode = candidates.find((candidate) =>
-      customerId(candidate.customer) === input.customerId
-    ) ??
-      candidates.find((candidate) =>
-        candidate.customer === null
-      );
+    const promotionCode =
+      candidates.find(
+        (candidate) => customerId(candidate.customer) === input.customerId,
+      ) ?? candidates.find((candidate) => candidate.customer === null);
 
     if (!promotionCode || !promotionCode.active) {
       throw invalidPromotion();
@@ -128,11 +131,12 @@ export async function resolvePromotionCode(input: {
     }
 
     const couponReference = promotionCode.promotion.coupon;
-    const coupon = typeof couponReference === "string"
-      ? await input.stripe.coupons.retrieve(couponReference, {
-        expand: ["applies_to"],
-      })
-      : couponReference;
+    const coupon =
+      typeof couponReference === "string"
+        ? await input.stripe.coupons.retrieve(couponReference, {
+            expand: ["applies_to"],
+          })
+        : couponReference;
 
     if (!coupon || "deleted" in coupon || !coupon.valid) {
       throw invalidPromotion();
@@ -155,7 +159,10 @@ export async function resolvePromotionCode(input: {
       );
     } else {
       const products = coupon.applies_to?.products ?? [];
-      if (!input.eligibleProductId || !products.includes(input.eligibleProductId)) {
+      if (
+        !input.eligibleProductId ||
+        !products.includes(input.eligibleProductId)
+      ) {
         throw new DomainError(
           "promotion_product_mismatch",
           422,
@@ -166,16 +173,21 @@ export async function resolvePromotionCode(input: {
 
     const resolvedAmountOff = amountOffForCurrency(coupon, input.currency);
     return {
+      offerKey: metadataValue(promotionCode.metadata, "offer_key"),
       promotionCodeId: promotionCode.id,
       summary: {
-        ...(resolvedAmountOff !== null ? { amountOffCents: resolvedAmountOff } : {}),
+        ...(resolvedAmountOff !== null
+          ? { amountOffCents: resolvedAmountOff }
+          : {}),
         code: promotionCode.code,
         couponId: coupon.id,
         duration: coupon.duration,
         ...(coupon.duration_in_months !== null
           ? { durationInMonths: coupon.duration_in_months }
           : {}),
-        ...(coupon.percent_off !== null ? { percentOff: coupon.percent_off } : {}),
+        ...(coupon.percent_off !== null
+          ? { percentOff: coupon.percent_off }
+          : {}),
         promotionCodeId: promotionCode.id,
       },
     };
@@ -188,6 +200,14 @@ export async function resolvePromotionCode(input: {
       "Não foi possível validar o código promocional agora. Tente novamente.",
     );
   }
+}
+
+function metadataValue(
+  metadata: Stripe.Metadata | null | undefined,
+  key: string,
+) {
+  const value = metadata?.[key]?.trim();
+  return value || null;
 }
 
 export function normalizePromotionCode(value: unknown) {
@@ -224,7 +244,9 @@ function isEligibleForCustomer(
   expectedCustomerId: string,
 ) {
   const restrictedCustomerId = customerId(customer);
-  return restrictedCustomerId === null || restrictedCustomerId === expectedCustomerId;
+  return (
+    restrictedCustomerId === null || restrictedCustomerId === expectedCustomerId
+  );
 }
 
 function customerId(customer: Stripe.PromotionCode["customer"]) {

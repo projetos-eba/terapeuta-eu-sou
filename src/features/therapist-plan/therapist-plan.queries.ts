@@ -30,7 +30,7 @@ export async function getTherapistPlanPageData({
     is_active: "eq.true",
     order: "code.asc",
     select:
-      "code,name,description,prices:billing_plan_prices(unit_amount_cents,currency,interval,is_active)",
+      "code,name,description,prices:billing_plan_prices(unit_amount_cents,currency,interval,is_active,is_public)",
   });
   const subscriptionQuery = new URLSearchParams({
     limit: "1",
@@ -75,9 +75,12 @@ export async function getTherapistPlanPageData({
 function mapCatalogItem(input: unknown) {
   const row = object(input);
   const prices = Array.isArray(row.prices) ? row.prices.map(object) : [];
-  const price =
+  const monthlyPrice =
     prices.find(
-      (item) => item.is_active !== false && item.interval === "month",
+      (item) =>
+        item.is_active !== false &&
+        item.is_public !== false &&
+        item.interval === "month",
     ) ??
     prices.find((item) => item.is_active !== false) ??
     {};
@@ -86,11 +89,11 @@ function mapCatalogItem(input: unknown) {
 
   return {
     code,
-    currency: text(price.currency, "BRL"),
+    currency: text(monthlyPrice.currency, "BRL"),
     description: text(row.description, ""),
-    interval: billingInterval(price.interval),
+    interval: billingInterval(monthlyPrice.interval),
     name: text(row.name, "Free"),
-    unitAmountCents: number(price.unit_amount_cents),
+    unitAmountCents: number(monthlyPrice.unit_amount_cents),
   };
 }
 

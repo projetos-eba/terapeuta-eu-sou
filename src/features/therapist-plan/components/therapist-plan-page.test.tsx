@@ -13,7 +13,7 @@ vi.mock("next/navigation", () => ({
 describe("TherapistPlanPage", () => {
   afterEach(cleanup);
 
-  it("offers both paid plans to a Free therapist using real catalog prices", () => {
+  it("offers both monthly paid plans to a Free therapist using real catalog prices", () => {
     render(<TherapistPlanPage data={fixture("free")} />);
 
     expect(
@@ -22,11 +22,11 @@ describe("TherapistPlanPage", () => {
     expect(
       within(screen.getByLabelText("Resumo do plano atual")).getByText("Free"),
     ).toBeInTheDocument();
-    expect(screen.getAllByText("R$ 60,00").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("R$ 120,00").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("R$ 79,90").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("R$ 129,90").length).toBeGreaterThan(0);
     expect(
       screen
-        .getAllByRole("link", { name: /Escolher/ })
+        .getAllByRole("link", { name: /Assinar/ })
         .map((link) => link.getAttribute("href")),
     ).toEqual(
       expect.arrayContaining([
@@ -83,7 +83,7 @@ function fixture(effectivePlan: TherapistPlan): TherapistPlanPageData {
         description: "",
         interval: "month",
         name: "Premium",
-        unitAmountCents: 6000,
+        unitAmountCents: 7990,
       },
       {
         code: "premium_plus",
@@ -91,7 +91,7 @@ function fixture(effectivePlan: TherapistPlan): TherapistPlanPageData {
         description: "",
         interval: "month",
         name: "Premium Plus",
-        unitAmountCents: 12000,
+        unitAmountCents: 12990,
       },
     ],
     effectivePlan,

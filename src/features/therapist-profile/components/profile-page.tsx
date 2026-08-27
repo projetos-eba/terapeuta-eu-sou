@@ -7,6 +7,7 @@ import {
   Heart,
   Leaf,
   Play,
+  Share2,
   Sparkles,
   Star,
 } from "lucide-react";
@@ -26,6 +27,8 @@ import { ReviewsCarousel } from "./reviews-carousel";
 import type { PublicTherapistProfile, TherapistProfileReview } from "../types";
 import { getPublicVideoEmbedUrl } from "../video-embed";
 
+export type TherapistProfilePageMode = "preview" | "public";
+
 function IconByName({ name }: { name: string }) {
   const className = "mx-auto size-[30px] text-status-info";
   if (name === "heart") return <Heart className={className} />;
@@ -40,7 +43,13 @@ function IconByName({ name }: { name: string }) {
   return <Sparkles className={className} />;
 }
 
-function Hero({ profile }: { profile: PublicTherapistProfile }) {
+function Hero({
+  mode,
+  profile,
+}: {
+  mode: TherapistProfilePageMode;
+  profile: PublicTherapistProfile;
+}) {
   const primaryService = profile.services[0];
   const theme = publicProfileThemeById[profile.publicProfileTheme];
 
@@ -111,17 +120,6 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
           <h1 className="mt-3 text-center font-display text-[48px] font-light italic leading-[1.05] text-brand-deep md:text-left md:text-[54px] lg:text-[64px]">
             {profile.name}
           </h1>
-          <div className="mt-3 flex flex-wrap justify-center gap-4 md:justify-start md:gap-5">
-            {profile.tags.map((tag) => (
-              <span
-                key={tag}
-                className="font-display text-[20px] font-light italic text-[var(--profile-accent)]"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3 md:justify-start">
             <p className="text-2xl font-semibold text-brand-deep">
               {profile.rating.average
@@ -146,35 +144,84 @@ function Hero({ profile }: { profile: PublicTherapistProfile }) {
             {profile.headline}
           </p>
 
-          <div className="mt-7 flex w-full flex-wrap items-center justify-center gap-4 md:justify-start">
-            {profile.isAcceptingBookings && primaryService ? (
-              <TrackedBookingLink
-                href={primaryService.bookingUrl}
-                serviceId={primaryService.id}
-                therapistSlug={profile.slug}
-                className="inline-flex h-[52px] w-full items-center justify-center gap-3 rounded-[15px] bg-brand-primary text-sm font-extrabold text-white sm:w-[204px]"
-              >
-                Agendar sessão
-                <span>→</span>
-              </TrackedBookingLink>
-            ) : (
-              <span className="inline-flex min-h-[52px] items-center justify-center rounded-[15px] bg-brand-lavenderSoft px-6 text-sm font-extrabold text-brand-primary">
-                Agenda temporariamente indisponível
-              </span>
-            )}
-            <FavoriteTherapistButton
-              therapistName={profile.name}
-              therapistProfileId={profile.id}
-            />
-            <ProfileShareButton profilePath={profile.profileUrl} />
-          </div>
+          <ProfileActions
+            mode={mode}
+            primaryService={primaryService}
+            profile={profile}
+          />
         </div>
       </div>
     </section>
   );
 }
 
-function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
+function ProfileActions({
+  mode,
+  primaryService,
+  profile,
+}: {
+  mode: TherapistProfilePageMode;
+  primaryService: PublicTherapistProfile["services"][number] | undefined;
+  profile: PublicTherapistProfile;
+}) {
+  const hasAvailableBooking = profile.isAcceptingBookings && primaryService;
+
+  if (mode === "preview") {
+    return (
+      <div className="mt-7 flex w-full flex-wrap items-center justify-center gap-4 md:justify-start">
+        {hasAvailableBooking ? (
+          <span className="inline-flex h-[52px] w-full items-center justify-center gap-3 rounded-[15px] bg-brand-primary text-sm font-extrabold text-white sm:w-[204px]">
+            Agendar sessão
+            <span>→</span>
+          </span>
+        ) : (
+          <span className="inline-flex min-h-[52px] items-center justify-center rounded-[15px] bg-brand-lavenderSoft px-6 text-sm font-extrabold text-brand-primary">
+            Agenda temporariamente indisponível
+          </span>
+        )}
+        <span className="grid size-[52px] place-items-center rounded-full border border-border bg-white text-brand-primary">
+          <Heart aria-hidden="true" className="size-5" />
+        </span>
+        <span className="grid size-[52px] place-items-center rounded-full border border-border bg-white text-brand-primary">
+          <Share2 aria-hidden="true" className="size-5" />
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-7 flex w-full flex-wrap items-center justify-center gap-4 md:justify-start">
+      {hasAvailableBooking ? (
+        <TrackedBookingLink
+          href={primaryService.bookingUrl}
+          serviceId={primaryService.id}
+          therapistSlug={profile.slug}
+          className="inline-flex h-[52px] w-full items-center justify-center gap-3 rounded-[15px] bg-brand-primary text-sm font-extrabold text-white sm:w-[204px]"
+        >
+          Agendar sessão
+          <span>→</span>
+        </TrackedBookingLink>
+      ) : (
+        <span className="inline-flex min-h-[52px] items-center justify-center rounded-[15px] bg-brand-lavenderSoft px-6 text-sm font-extrabold text-brand-primary">
+          Agenda temporariamente indisponível
+        </span>
+      )}
+      <FavoriteTherapistButton
+        therapistName={profile.name}
+        therapistProfileId={profile.id}
+      />
+      <ProfileShareButton profilePath={profile.profileUrl} />
+    </div>
+  );
+}
+
+function IntroCards({
+  mode,
+  profile,
+}: {
+  mode: TherapistProfilePageMode;
+  profile: PublicTherapistProfile;
+}) {
   const videoEmbedUrl = getPublicVideoEmbedUrl(profile.video);
   const guideItems = profile.content.guideItems.slice(0, 4);
 
@@ -248,8 +295,8 @@ function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
         <h2 className="font-display text-2xl font-light italic text-status-info">
           Um convite para você
         </h2>
-        <div className="mt-5 grid gap-5 xl:grid-cols-[253px_1fr]">
-          {profile.video && videoEmbedUrl ? (
+        <div className="mt-5 grid gap-5">
+          {profile.video && videoEmbedUrl && mode === "public" ? (
             <iframe
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
@@ -260,7 +307,7 @@ function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
               src={videoEmbedUrl}
               title={profile.video.title}
             />
-          ) : profile.video?.provider === "upload" ? (
+          ) : profile.video?.provider === "upload" && mode === "public" ? (
             <video
               className="h-[184px] w-full rounded-[12px] bg-brand-deep object-cover"
               controls
@@ -270,6 +317,17 @@ function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
             >
               Seu navegador não conseguiu carregar este vídeo.
             </video>
+          ) : profile.video && mode === "preview" ? (
+            <div className="relative grid h-[184px] place-items-center overflow-hidden rounded-[12px] bg-brand-deep text-white">
+              <Image
+                src={profile.video.thumbnailUrl}
+                alt={profile.video.title}
+                fill
+                sizes="253px"
+                className="object-cover opacity-75"
+              />
+              <Play className="relative z-10 size-12 fill-current" />
+            </div>
           ) : profile.video ? (
             <a
               href={profile.video.url}
@@ -297,7 +355,7 @@ function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
               </span>
             </div>
           )}
-          <p className="self-center text-sm font-medium leading-[1.55] text-tesText-primary">
+          <p className="text-sm font-medium leading-[1.55] text-tesText-primary">
             {profile.content.invitationBody}
           </p>
         </div>
@@ -306,7 +364,13 @@ function IntroCards({ profile }: { profile: PublicTherapistProfile }) {
   );
 }
 
-function Services({ profile }: { profile: PublicTherapistProfile }) {
+function Services({
+  mode,
+  profile,
+}: {
+  mode: TherapistProfilePageMode;
+  profile: PublicTherapistProfile;
+}) {
   if (!profile.services.length) {
     return null;
   }
@@ -371,14 +435,20 @@ function Services({ profile }: { profile: PublicTherapistProfile }) {
                 <p className="text-xl font-extrabold text-brand-deep">
                   {service.priceLabel}
                 </p>
-                <TrackedBookingLink
-                  href={service.bookingUrl}
-                  serviceId={service.id}
-                  therapistSlug={profile.slug}
-                  className="inline-flex min-h-11 items-center rounded-[12px] border border-status-info px-5 py-2 text-sm font-medium text-status-info transition hover:bg-status-infoBg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                >
-                  Agendar
-                </TrackedBookingLink>
+                {mode === "preview" ? (
+                  <span className="inline-flex min-h-11 items-center rounded-[12px] border border-status-info px-5 py-2 text-sm font-medium text-status-info">
+                    Agendar
+                  </span>
+                ) : (
+                  <TrackedBookingLink
+                    href={service.bookingUrl}
+                    serviceId={service.id}
+                    therapistSlug={profile.slug}
+                    className="inline-flex min-h-11 items-center rounded-[12px] border border-status-info px-5 py-2 text-sm font-medium text-status-info transition hover:bg-status-infoBg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                  >
+                    Agendar
+                  </TrackedBookingLink>
+                )}
               </div>
             </div>
           </article>
@@ -389,22 +459,27 @@ function Services({ profile }: { profile: PublicTherapistProfile }) {
 }
 
 export function TherapistProfilePage({
+  mode = "public",
   profile,
   reviews,
 }: {
+  mode?: TherapistProfilePageMode;
   profile: PublicTherapistProfile;
   reviews: TherapistProfileReview[];
 }) {
+  const Root = mode === "preview" ? "div" : "main";
+
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,var(--tes-color-surface-default)_0%,var(--tes-color-surface-soft)_42%,var(--tes-color-surface-default)_100%)] text-tesText-primary">
-      <PublicHeader showMobileSearch />
-      <Hero profile={profile} />
-      <IntroCards profile={profile} />
+    <Root className="min-h-screen bg-[linear-gradient(180deg,var(--tes-color-surface-default)_0%,var(--tes-color-surface-soft)_42%,var(--tes-color-surface-default)_100%)] text-tesText-primary">
+      <PublicHeader showMobileSearch staticPreview={mode === "preview"} />
+      <Hero mode={mode} profile={profile} />
+      <IntroCards mode={mode} profile={profile} />
       <div className="hidden md:block">
-        <Services profile={profile} />
+        <Services mode={mode} profile={profile} />
       </div>
       <section className="mx-auto mt-8 grid max-w-[1348px] items-start gap-8 px-5 pb-10 sm:px-8 lg:grid-cols-[1.05fr_0.95fr]">
         <AvailabilitySelector
+          staticPreview={mode === "preview"}
           services={profile.services}
           therapistSlug={profile.slug}
         />
@@ -412,9 +487,10 @@ export function TherapistProfilePage({
           average={profile.rating.average}
           count={profile.rating.count}
           reviews={reviews}
+          staticPreview={mode === "preview"}
         />
       </section>
       <PublicFooter variant="profile" />
-    </main>
+    </Root>
   );
 }

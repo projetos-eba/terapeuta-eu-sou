@@ -62,6 +62,13 @@ export type JourneyHistoryPageData = {
   therapistProfileId: string;
 };
 
+export type JourneyHistoryPagination = {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
 export type JourneyHistoryDetailData = {
   client: JourneyHistoryClient;
   source: JourneyHistorySource;
@@ -80,6 +87,7 @@ export type JourneyHistoryDetailData = {
 };
 
 export type JourneyHistoryFilters = {
+  page: number;
   q: string;
   segment: string;
   sort: "last_session" | "name" | "next_session" | "sessions";

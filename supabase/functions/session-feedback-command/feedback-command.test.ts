@@ -7,8 +7,9 @@ import { DomainError } from "../_shared/payments/http.ts";
 import { validateSessionFeedbackCommand } from "./feedback-command.ts";
 
 const bookingId = "96000000-0000-4000-8000-000000000001";
+const requestId = "96000000-0000-4000-8000-000000000099";
 
-Deno.test("validates a completed feedback without actor role or request id", () => {
+Deno.test("validates a completed feedback with a caller request id", () => {
   assertEquals(
     validateSessionFeedbackCommand({
       bookingId,
@@ -16,6 +17,7 @@ Deno.test("validates a completed feedback without actor role or request id", () 
       notPerformedReason: null,
       outcome: "completed",
       rating: 5,
+      requestId,
     }),
     {
       bookingId,
@@ -23,6 +25,7 @@ Deno.test("validates a completed feedback without actor role or request id", () 
       notPerformedReason: null,
       outcome: "completed",
       rating: 5,
+      requestId,
     },
   );
 });
@@ -34,6 +37,7 @@ Deno.test("validates a non-performed feedback reason", () => {
     notPerformedReason: "internet_problem",
     outcome: "not_performed",
     rating: null,
+    requestId,
   });
 
   assertEquals(result.outcome, "not_performed");
@@ -48,6 +52,7 @@ Deno.test("rejects missing outcome requirements and long comments", () => {
       notPerformedReason: null,
       outcome: "completed",
       rating: null,
+      requestId,
     }),
   );
 
@@ -58,6 +63,7 @@ Deno.test("rejects missing outcome requirements and long comments", () => {
       notPerformedReason: "internet_problem",
       outcome: "not_performed",
       rating: null,
+      requestId,
     }),
   );
 });

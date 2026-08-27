@@ -16,7 +16,11 @@ import {
 
 import { routes } from "@/lib/routes";
 
-import { PublicAuthMenu, usePublicAuthState } from "./public-auth-menu";
+import {
+  PublicAuthMenu,
+  type PublicAuthState,
+  usePublicAuthState,
+} from "./public-auth-menu";
 import { TESButton } from "./tes-button";
 
 function Logo({ header = false }: { header?: boolean }) {
@@ -42,9 +46,20 @@ function Logo({ header = false }: { header?: boolean }) {
   );
 }
 
-export function PublicHeader({ showMobileSearch = false }: { showMobileSearch?: boolean } = {}) {
+export function PublicHeader({
+  showMobileSearch = false,
+  staticPreview = false,
+}: {
+  showMobileSearch?: boolean;
+  staticPreview?: boolean;
+} = {}) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const authState = usePublicAuthState();
+  const resolvedAuthState = usePublicAuthState(!staticPreview);
+  const [authStateOverride, setAuthStateOverride] =
+    useState<PublicAuthState | null>(null);
+  const authState: PublicAuthState = staticPreview
+    ? { status: "guest" }
+    : (authStateOverride ?? resolvedAuthState);
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
   const nav: Array<[string, Route]> = [
     ["O que é o TES?", routes.public.about as Route],
@@ -71,7 +86,11 @@ export function PublicHeader({ showMobileSearch = false }: { showMobileSearch?: 
             ))}
           </nav>
           <div className="hidden items-center gap-3 xl:flex">
-            <PublicAuthMenu authState={authState} className="block" />
+            <PublicAuthMenu
+              authState={authState}
+              className="block"
+              onAuthStateChange={setAuthStateOverride}
+            />
             <TESButton
               href={routes.public.journey}
               variant="gradient"
@@ -115,6 +134,7 @@ export function PublicHeader({ showMobileSearch = false }: { showMobileSearch?: 
           >
             <PublicAuthMenu
               authState={authState}
+              onAuthStateChange={setAuthStateOverride}
               onNavigate={closeMobileMenu}
               variant="mobile-account"
             />

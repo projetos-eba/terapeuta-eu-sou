@@ -88,6 +88,18 @@ describe("PublicHeader", () => {
     ).toHaveAttribute("href", "/terapeutas");
   });
 
+  it("does not look up the viewer while rendering a static preview", () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<PublicHeader staticPreview />);
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("link", { name: /^começar minha jornada$/i }),
+    ).toBeInTheDocument();
+  });
+
   it("uses the sidebar breakpoint for all non-large header controls", async () => {
     vi.stubGlobal(
       "fetch",
@@ -99,9 +111,9 @@ describe("PublicHeader", () => {
 
     render(<PublicHeader />);
 
-    const desktopControls = screen
-      .getByRole("link", { name: /^começar minha jornada$/i })
-      .parentElement;
+    const desktopControls = screen.getByRole("link", {
+      name: /^começar minha jornada$/i,
+    }).parentElement;
 
     expect(desktopControls).toHaveClass("hidden", "xl:flex");
     expect(screen.getByRole("button", { name: "Abrir menu" })).toHaveClass(
@@ -151,5 +163,55 @@ describe("PublicHeader", () => {
     const navigationPosition = mobileMenu!.textContent!.indexOf("Navega");
     expect(accountPosition).toBeGreaterThanOrEqual(0);
     expect(navigationPosition).toBeGreaterThan(accountPosition);
+  });
+
+  it("shows login actions in the mobile menu immediately after logout", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        json: async () => ({
+          authenticated: true,
+          patient: { displayName: "Vinicius Paciente" },
+        }),
+        ok: true,
+      })
+      .mockResolvedValueOnce({ ok: true });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<PublicHeader />);
+
+    const toggle = screen.getByRole("button", { name: "Abrir menu" });
+    fireEvent.click(toggle);
+
+    const mobileMenu = document.getElementById("public-mobile-menu");
+    expect(mobileMenu).not.toBeNull();
+    const mobileMenuQueries = within(mobileMenu!);
+
+    const logoutButton = await mobileMenuQueries.findByRole("button", {
+      name: "Sair",
+    });
+    fireEvent.click(logoutButton);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenLastCalledWith("/api/auth/client/session", {
+        cache: "no-store",
+        method: "DELETE",
+      });
+      expect(
+        screen.getByRole("button", { name: "Abrir menu" }),
+      ).toHaveAttribute("aria-expanded", "false");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menu" }));
+
+    const updatedMobileMenu = document.getElementById("public-mobile-menu");
+    expect(updatedMobileMenu).not.toBeNull();
+
+    expect(
+      await within(updatedMobileMenu!).findByRole("link", {
+        name: "Entrar como cliente",
+      }),
+    ).toHaveAttribute("href", "/cliente/login");
+    expect(screen.queryByText("Vinicius Paciente")).not.toBeInTheDocument();
   });
 });

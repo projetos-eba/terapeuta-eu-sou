@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
-import { Headphones, Loader2, MessageSquarePlus } from "lucide-react";
+import { ChevronRight, Headphones, Loader2, MessageSquarePlus } from "lucide-react";
 
 import { TESDialog, TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
@@ -13,32 +13,29 @@ import {
   supportTicketCategories,
   type SupportTicketCategory,
 } from "../support-contracts";
+import {
+  formatSupportTicketActivity,
+  formatSupportTicketProtocol,
+  getSupportTicketCategoryLabel,
+} from "../support-ticket-presentation";
+import { SupportTicketStatusBadge } from "./support-ticket-status-badge";
 
 type Ticket = {
   category: string;
   createdAt: string;
+  excerpt: string;
   id: string;
   lastActivityAt: string;
+  protocol: string;
   status: string;
   subject: string;
 };
 
-const categoryLabels: Record<SupportTicketCategory, string> = {
-  agenda_sessoes: "Agenda e sessões",
-  zoom_acesso: "Zoom e acesso à sessão",
-  pagamentos: "Pagamentos",
-  financeiro_repasses: "Financeiro e repasses",
-  plano_assinatura: "Plano e assinatura",
-  perfil_verificacao: "Perfil e verificação",
-  conta_acesso: "Conta e acesso",
-  outro: "Outro assunto",
-};
-
-export function TherapistSupportSection({
+export function SupportTicketSection({
   actorRole,
   tickets,
 }: {
-  actorRole: "therapist";
+  actorRole: "patient" | "therapist";
   tickets: Ticket[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -69,7 +66,11 @@ export function TherapistSupportSection({
           {tickets.map((ticket) => (
             <Link
               className="grid min-h-[106px] grid-cols-[44px_minmax(0,1fr)] gap-3 px-5 py-4 transition hover:bg-brand-lavenderSoft/45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-primary sm:grid-cols-[44px_minmax(0,1fr)_auto]"
-              href={routes.therapist.supportTicketDetail(ticket.id)}
+              href={
+                actorRole === "patient"
+                  ? routes.patient.supportTicketDetail(ticket.id)
+                  : routes.therapist.supportTicketDetail(ticket.id)
+              }
               key={ticket.id}
             >
               <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
@@ -80,19 +81,24 @@ export function TherapistSupportSection({
                   <strong className="truncate text-sm text-brand-deep">
                     {ticket.subject}
                   </strong>
-                  <Status status={ticket.status} />
+                  <SupportTicketStatusBadge
+                    status={ticket.status}
+                    viewer="requester"
+                  />
                 </span>
                 <span className="mt-1 block text-sm font-semibold text-tesText-secondary">
-                  {categoryLabels[ticket.category as SupportTicketCategory] ??
-                    "Suporte TES"}
+                  {getSupportTicketCategoryLabel(ticket.category)}
+                </span>
+                <span className="mt-1 line-clamp-2 block text-sm font-semibold leading-6 text-tesText-secondary">
+                  {ticket.excerpt}
                 </span>
                 <span className="mt-2 block text-xs font-semibold text-tesText-secondary">
-                  Protocolo {ticket.id.slice(0, 8).toUpperCase()} ·{" "}
-                  {formatDate(ticket.lastActivityAt)}
+                  {formatSupportTicketActivity(ticket.lastActivityAt)} ·{" "}
+                  {formatSupportTicketProtocol(ticket.protocol)}
                 </span>
               </span>
-              <span className="col-start-2 text-sm font-extrabold text-brand-primary sm:col-start-auto sm:self-center">
-                Acompanhar
+              <span className="col-start-2 inline-flex items-center gap-1 text-sm font-extrabold text-brand-primary sm:col-start-auto sm:self-center">
+                Acompanhar <ChevronRight aria-hidden="true" size={16} />
               </span>
             </Link>
           ))}
@@ -118,11 +124,19 @@ export function TherapistSupportSection({
   );
 }
 
+export function TherapistSupportSection({
+  tickets,
+}: {
+  tickets: Ticket[];
+}) {
+  return <SupportTicketSection actorRole="therapist" tickets={tickets} />;
+}
+
 function NewTicketDialog({
   actorRole,
   onClose,
 }: {
-  actorRole: "therapist";
+  actorRole: "patient" | "therapist";
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -158,7 +172,7 @@ function NewTicketDialog({
     const payload = (await response.json().catch(() => null)) as {
       error?: { message?: string };
       ok?: boolean;
-      ticket?: { id: string };
+      ticket?: { id: string; protocol: string };
     } | null;
     setIsSubmitting(false);
     if (!response.ok || !payload?.ok || !payload.ticket) {
@@ -167,7 +181,11 @@ function NewTicketDialog({
       );
       return;
     }
-    router.push(routes.therapist.supportTicketDetail(payload.ticket.id));
+    router.push(
+      actorRole === "patient"
+        ? routes.patient.supportTicketDetail(payload.ticket.id)
+        : routes.therapist.supportTicketDetail(payload.ticket.id),
+    );
     router.refresh();
     onClose();
   }
@@ -192,7 +210,7 @@ function NewTicketDialog({
           >
             {supportTicketCategories.map((value) => (
               <option key={value} value={value}>
-                {categoryLabels[value]}
+                {getSupportTicketCategoryLabel(value)}
               </option>
             ))}
           </select>
@@ -254,28 +272,4 @@ function NewTicketDialog({
       </form>
     </TESDialog>
   );
-}
-
-function Status({ status }: { status: string }) {
-  const labels: Record<string, string> = {
-    open: "Aberto",
-    in_progress: "Em atendimento",
-    waiting_requester: "Aguardando você",
-    waiting_support: "Aguardando TES",
-    resolved: "Resolvido",
-  };
-  return (
-    <span className="rounded-full bg-brand-lavenderSoft px-2.5 py-1 text-[11px] font-extrabold text-brand-primary">
-      {labels[status] ?? "Em atendimento"}
-    </span>
-  );
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
 }

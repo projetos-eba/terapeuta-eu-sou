@@ -11,7 +11,6 @@ export function getTherapistDashboardHref(_plan: TherapistPlan) {
 
 export function getTherapistCheckoutHref(plan: TherapistPlan) {
   if (!isPaidTherapistPlan(plan)) return routes.therapist.home;
-
   return `${routes.public.therapistCheckout}?plan=${plan}`;
 }
 

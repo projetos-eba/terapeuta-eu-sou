@@ -39,12 +39,17 @@ type ZoomWaitingRoomProps = {
   previewLoading: boolean;
   scheduleLabel?: string;
   sessionTitle?: string;
-  onJoin: () => void;
+  onJoin: (mediaPreferences: ZoomWaitingRoomMediaPreferences) => void;
   onRefresh: () => void;
   supportHref?: string;
 };
 
 type DeviceTestState = "audio" | "camera" | "error" | "idle" | "loading";
+
+export type ZoomWaitingRoomMediaPreferences = {
+  cameraEnabled: boolean;
+  microphoneEnabled: boolean;
+};
 
 export function ZoomWaitingRoom({
   actorRole,
@@ -72,6 +77,9 @@ export function ZoomWaitingRoom({
     useState<DeviceTestState>("idle");
   const [deviceMessage, setDeviceMessage] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [cameraPreviewEnabled, setCameraPreviewEnabled] = useState(false);
+  const [microphonePreviewEnabled, setMicrophonePreviewEnabled] =
+    useState(false);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
 
   const audienceNoun = actorRole === "patient" ? "encontro" : "sessão";
@@ -80,7 +88,7 @@ export function ZoomWaitingRoom({
   const isOperationalUnavailable = kind === "operational_unavailable";
   const isProlongedAbsence = kind === "therapist_absent_prolonged";
   const isEnded = kind === "ended";
-  const hasCameraPreview = Boolean(cameraStreamRef.current);
+  const hasCameraPreview = cameraPreviewEnabled;
   const hasAmbientAudio = Boolean(ambientAudioSrc);
 
   useEffect(() => {
@@ -96,7 +104,7 @@ export function ZoomWaitingRoom({
   async function startCameraPreview() {
     if (cameraStreamRef.current) {
       stopCameraPreview();
-      setDeviceTestState("idle");
+      setDeviceTestState(getDeviceTestStateAfterPreviewChange());
       setDeviceMessage("A prévia da câmera foi encerrada.");
       return;
     }
@@ -117,6 +125,7 @@ export function ZoomWaitingRoom({
       });
 
       cameraStreamRef.current = stream;
+      setCameraPreviewEnabled(true);
       const preview = cameraPreviewRef.current;
       if (preview) {
         preview.srcObject = stream;
@@ -137,7 +146,7 @@ export function ZoomWaitingRoom({
   async function startAudioPreview() {
     if (audioStreamRef.current) {
       stopAudioPreview();
-      setDeviceTestState("idle");
+      setDeviceTestState(getDeviceTestStateAfterPreviewChange());
       setDeviceMessage("O teste de áudio foi encerrado.");
       return;
     }
@@ -157,6 +166,7 @@ export function ZoomWaitingRoom({
         video: false,
       });
       audioStreamRef.current = stream;
+      setMicrophonePreviewEnabled(true);
       startAudioMeter(stream);
       setDeviceTestState("audio");
       setDeviceMessage("Seu microfone está sendo testado agora.");
@@ -195,6 +205,7 @@ export function ZoomWaitingRoom({
   function stopCameraPreview() {
     cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
     cameraStreamRef.current = null;
+    setCameraPreviewEnabled(false);
     if (cameraPreviewRef.current) cameraPreviewRef.current.srcObject = null;
   }
 
@@ -205,9 +216,23 @@ export function ZoomWaitingRoom({
     }
     audioStreamRef.current?.getTracks().forEach((track) => track.stop());
     audioStreamRef.current = null;
+    setMicrophonePreviewEnabled(false);
     void audioContextRef.current?.close();
     audioContextRef.current = null;
     setAudioLevel(0);
+  }
+
+  function getDeviceTestStateAfterPreviewChange(): DeviceTestState {
+    if (audioStreamRef.current) return "audio";
+    if (cameraStreamRef.current) return "camera";
+    return "idle";
+  }
+
+  function getMediaPreferences(): ZoomWaitingRoomMediaPreferences {
+    return {
+      cameraEnabled: Boolean(cameraStreamRef.current),
+      microphoneEnabled: Boolean(audioStreamRef.current),
+    };
   }
 
   async function toggleMusic() {
@@ -257,11 +282,13 @@ export function ZoomWaitingRoom({
       aria-label={`Sala de espera do ${audienceNoun}`}
       className="mx-auto grid w-full max-w-[1536px] gap-4 lg:gap-5"
     >
-      <div className="grid overflow-hidden rounded-[28px] border border-brand-lavender/75 bg-white shadow-soft lg:grid-cols-[minmax(0,1.02fr)_minmax(520px,0.98fr)]">
+      <div className="grid w-full min-w-0 overflow-hidden rounded-[28px] border border-brand-lavender/75 bg-white shadow-soft lg:grid-cols-[minmax(0,1.02fr)_minmax(520px,0.98fr)]">
         <WaitingRoomVisual
+          cameraEnabled={cameraPreviewEnabled}
           deviceMessage={deviceMessage}
           deviceTestState={deviceTestState}
           hasCameraPreview={hasCameraPreview}
+          microphoneEnabled={microphonePreviewEnabled}
           onTestAudio={() => void startAudioPreview()}
           onTestCamera={() => void startCameraPreview()}
           previewRef={(node) => {
@@ -269,9 +296,9 @@ export function ZoomWaitingRoom({
           }}
         />
 
-        <div className="grid content-between gap-5 p-5 sm:p-7 lg:p-9">
-          <div className="grid gap-5">
-            <div className="grid gap-3">
+        <div className="grid min-w-0 content-between gap-5 p-5 sm:p-7 lg:p-9">
+          <div className="grid min-w-0 gap-5">
+            <div className="grid min-w-0 gap-3">
               <h2 className="max-w-[16ch] font-display text-[2.3rem] font-light italic leading-[1.02] text-brand-deep sm:text-5xl">
                 {isTooEarly
                   ? `A sala estará pronta no horário do ${audienceNoun}`
@@ -284,7 +311,7 @@ export function ZoomWaitingRoom({
               </p>
             </div>
 
-            <div className="grid gap-3 rounded-[18px] border border-brand-lavender/70 bg-surface-soft/60 p-4 sm:p-5">
+            <div className="grid min-w-0 gap-3 rounded-[18px] border border-brand-lavender/70 bg-surface-soft/60 p-4 sm:p-5">
               <div className="flex items-center gap-3">
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
                   <CalendarClock aria-hidden="true" size={22} />
@@ -311,12 +338,16 @@ export function ZoomWaitingRoom({
               ) : null}
             </div>
 
-            <div className="grid gap-3" aria-live="polite">
+            <div className="grid min-w-0 gap-3" aria-live="polite">
               {isEntryAvailable ? (
                 <button
                   className="inline-flex min-h-14 items-center justify-center gap-2 rounded-[18px] bg-brand-primary px-6 text-sm font-extrabold text-white shadow-card transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
-                  disabled={previewLoading || !isOnline}
-                  onClick={onJoin}
+                  disabled={
+                    previewLoading ||
+                    !isOnline ||
+                    deviceTestState === "loading"
+                  }
+                  onClick={() => onJoin(getMediaPreferences())}
                   type="button"
                 >
                   <Video aria-hidden="true" size={19} />
@@ -341,11 +372,13 @@ export function ZoomWaitingRoom({
 
               <DeviceTestButtons
                 className="hidden lg:grid"
+                cameraEnabled={cameraPreviewEnabled}
                 deviceTestState={deviceTestState}
+                microphoneEnabled={microphonePreviewEnabled}
                 onTestAudio={() => void startAudioPreview()}
                 onTestCamera={() => void startCameraPreview()}
               />
-              {deviceTestState === "audio" ? (
+              {microphonePreviewEnabled ? (
                 <AudioLevelIndicator level={audioLevel} />
               ) : null}
 
@@ -431,22 +464,26 @@ export function ZoomWaitingRoom({
 }
 
 function WaitingRoomVisual({
+  cameraEnabled,
   deviceMessage,
   deviceTestState,
   hasCameraPreview,
+  microphoneEnabled,
   onTestAudio,
   onTestCamera,
   previewRef,
 }: {
+  cameraEnabled: boolean;
   deviceMessage: string | null;
   deviceTestState: DeviceTestState;
   hasCameraPreview: boolean;
+  microphoneEnabled: boolean;
   onTestAudio: () => void;
   onTestCamera: () => void;
   previewRef: (node: HTMLVideoElement | null) => void;
 }) {
   return (
-    <div className="relative isolate min-h-[330px] overflow-hidden bg-brand-lavenderSoft sm:min-h-[430px] lg:min-h-full">
+    <div className="relative isolate min-h-[330px] min-w-0 overflow-hidden bg-brand-lavenderSoft sm:min-h-[430px] lg:min-h-full">
       <Image
         alt=""
         className={cn(
@@ -491,7 +528,9 @@ function WaitingRoomVisual({
 
         <div className="lg:hidden">
           <DeviceTestButtons
+            cameraEnabled={cameraEnabled}
             deviceTestState={deviceTestState}
+            microphoneEnabled={microphoneEnabled}
             onTestAudio={onTestAudio}
             onTestCamera={onTestCamera}
           />
@@ -507,23 +546,34 @@ function WaitingRoomVisual({
 }
 
 function DeviceTestButtons({
+  cameraEnabled,
   className,
   deviceTestState,
+  microphoneEnabled,
   onTestAudio,
   onTestCamera,
 }: {
+  cameraEnabled: boolean;
   className?: string;
   deviceTestState: DeviceTestState;
+  microphoneEnabled: boolean;
   onTestAudio: () => void;
   onTestCamera: () => void;
 }) {
   const isLoading = deviceTestState === "loading";
 
   return (
-    <div className={cn("grid grid-cols-2 gap-2", className)}>
+    <div
+      className={cn(
+        "grid min-w-0 grid-cols-1 gap-2 min-[420px]:grid-cols-2",
+        className,
+      )}
+      data-testid="waiting-room-device-tests"
+    >
       <button
-        aria-pressed={deviceTestState === "camera"}
-        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[16px] border border-brand-lavender bg-white/90 px-3 text-sm font-extrabold text-brand-primary shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
+        aria-label={cameraEnabled ? "Desligar teste da câmera" : "Testar câmera"}
+        aria-pressed={cameraEnabled}
+        className="inline-flex min-h-12 w-full min-w-0 items-center justify-center gap-2 rounded-[16px] border border-brand-lavender bg-white/90 px-3 text-sm font-extrabold text-brand-primary shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
         disabled={isLoading}
         onClick={onTestCamera}
         type="button"
@@ -532,8 +582,11 @@ function DeviceTestButtons({
         Testar câmera
       </button>
       <button
-        aria-pressed={deviceTestState === "audio"}
-        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-[16px] border border-brand-lavender bg-white/90 px-3 text-sm font-extrabold text-brand-primary shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
+        aria-label={
+          microphoneEnabled ? "Desligar teste do microfone" : "Testar áudio"
+        }
+        aria-pressed={microphoneEnabled}
+        className="inline-flex min-h-12 w-full min-w-0 items-center justify-center gap-2 rounded-[16px] border border-brand-lavender bg-white/90 px-3 text-sm font-extrabold text-brand-primary shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-wait disabled:opacity-70"
         disabled={isLoading}
         onClick={onTestAudio}
         type="button"

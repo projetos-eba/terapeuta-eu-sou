@@ -14,6 +14,7 @@ vi.mock("@/lib/supabase/public-config", () => ({
 import { GET, POST } from "./route";
 
 const bookingId = "96000000-0000-4000-8000-000000000001";
+const requestId = "96000000-0000-4000-8000-000000000099";
 
 describe("session feedback API", () => {
   beforeEach(() => {
@@ -48,7 +49,7 @@ describe("session feedback API", () => {
 
     expect(response.status).toBe(200);
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://tes.supabase.test/rest/v1/rpc/get_session_feedback_v1",
+      "https://tes.supabase.test/rest/v1/rpc/get_session_feedback_v2",
       expect.objectContaining({
         body: JSON.stringify({ p_booking_id: bookingId }),
         headers: expect.objectContaining({
@@ -59,7 +60,7 @@ describe("session feedback API", () => {
     );
   });
 
-  it("forwards only the answer to the authenticated server command", async () => {
+  it("forwards the idempotent answer without accepting an actor role", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ ok: true, data: { feedback: { id: "feedback-1" } } }), {
         headers: { "Content-Type": "application/json" },
@@ -76,6 +77,7 @@ describe("session feedback API", () => {
           notPerformedReason: null,
           outcome: "completed",
           rating: 5,
+          requestId,
         }),
         headers: { "Content-Type": "application/json" },
         method: "POST",
@@ -92,6 +94,7 @@ describe("session feedback API", () => {
           notPerformedReason: null,
           outcome: "completed",
           rating: 5,
+          requestId,
         }),
         headers: expect.objectContaining({
           Authorization: "Bearer patient-access-token",
@@ -99,6 +102,6 @@ describe("session feedback API", () => {
         method: "POST",
       }),
     );
-    expect(JSON.stringify(fetchMock.mock.calls[0])).not.toMatch(/actorRole|requestId|service_role/i);
+    expect(JSON.stringify(fetchMock.mock.calls[0])).not.toMatch(/actorRole|service_role/i);
   });
 });

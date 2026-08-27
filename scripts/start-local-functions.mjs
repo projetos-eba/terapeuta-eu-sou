@@ -6,6 +6,13 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 const root = process.cwd();
+const supabaseCliPath = path.join(
+  root,
+  "node_modules",
+  "supabase",
+  "dist",
+  "supabase.js",
+);
 const runtimeSecrets = [
   "STRIPE_WEBHOOK_SECRET",
   "STRIPE_PLATFORM_WEBHOOK_SECRET",
@@ -19,7 +26,7 @@ const runtimeOverrides = [
   "TES_FINANCE_TEST_CONTROLS_ENABLED",
 ];
 
-const status = spawnSync("npx", ["supabase", "status", "-o", "env"], {
+const status = spawnSync(process.execPath, [supabaseCliPath, "status", "-o", "env"], {
   cwd: root,
   encoding: "utf8",
 });
@@ -97,9 +104,9 @@ const containerName = `supabase_edge_runtime_${path.basename(root)}`;
 spawnSync("docker", ["stop", containerName], { cwd: root, stdio: "ignore" });
 
 const child = spawn(
-  "npx",
+  process.execPath,
   [
-    "supabase",
+    supabaseCliPath,
     "functions",
     "serve",
     "--env-file",

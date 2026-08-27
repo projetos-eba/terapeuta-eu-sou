@@ -38,6 +38,9 @@ export const platformAssets = {
   therapistFinanceHero: {
     src: "/assets/plataforma/therapist-finance-hero.png",
   },
+  therapistLoginBackground: {
+    src: "/assets/plataforma/therapist-login-background-2026-08-27.png",
+  },
   therapistLoginIcon: {
     src: "/assets/plataforma/therapist-login-icon.png",
   },
@@ -46,6 +49,9 @@ export const platformAssets = {
   },
   therapistMetricsHero: {
     src: "/assets/plataforma/therapist-metrics-hero.png",
+  },
+  therapistPremiumLock: {
+    src: "/assets/plataforma/therapist-premium-lock.png",
   },
   therapistReviewsHero: {
     src: "/assets/plataforma/therapist-reviews-hero.png",

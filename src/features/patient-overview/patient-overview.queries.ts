@@ -5,6 +5,8 @@ import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 
+import { resolvePatientAvatarUrl } from "./patient-overview.avatar";
+import { isPatientAppointmentLive } from "./patient-overview.live";
 import {
   moodKeys,
   type MoodKey,
@@ -41,6 +43,7 @@ type ProfileRow = {
 };
 
 type PatientProfileRow = {
+  avatar_url: string | null;
   id: string;
 };
 
@@ -108,8 +111,19 @@ type SupportTicketRow = {
   subject: string;
 };
 
-type ReviewRow = {
-  booking_id: string;
+type FeedbackQueueRow = {
+  bookingId: string;
+  confirmationState: PendingPatientReview["confirmationState"];
+  endsAt: string;
+  serviceLabel: string;
+  startsAt: string;
+  therapist: {
+    avatarUrl: string | null;
+    id: string;
+    name: string;
+  };
+  therapyLabel: string;
+  timezone: string;
 };
 
 export class PatientOverviewDataError extends Error {
@@ -188,7 +202,7 @@ async function getSupabasePatientOverview(
     ),
     supabaseRequest<PatientProfileRow[]>(
       config,
-      `/rest/v1/patient_profiles?select=id&user_id=eq.${encodeURIComponent(profileId)}&limit=1`,
+      `/rest/v1/patient_profiles?select=id,avatar_url&user_id=eq.${encodeURIComponent(profileId)}&limit=1`,
     ),
   ]);
   const patient = patientProfiles[0];
@@ -243,7 +257,7 @@ async function getSupabasePatientOverview(
     favoriteProfessionalDetails,
     services,
     unreadMessages,
-    reviews,
+    feedbackQueue,
   ] = await Promise.all([
     getRowsByIds<ProfessionalRow>(
       config,
@@ -269,9 +283,10 @@ async function getSupabasePatientOverview(
           `/rest/v1/messages?select=id&conversation_id=in.(${conversationIds.join(",")})&sender_profile_id=neq.${encodeURIComponent(profileId)}&read_at=is.null`,
         )
       : Promise.resolve([]),
-    supabaseRequest<ReviewRow[]>(
+    supabaseRequest<FeedbackQueueRow[]>(
       config,
-      `/rest/v1/reviews?select=booking_id&patient_profile_id=eq.${patient.id}`,
+      "/rest/v1/rpc/get_patient_session_feedback_queue_v1",
+      { body: {}, method: "POST" },
     ),
   ]);
   const therapyIds = unique(services.map((service) => service.therapy_id));
@@ -289,9 +304,6 @@ async function getSupabasePatientOverview(
   );
   const serviceById = new Map(services.map((item) => [item.id, item]));
   const therapyById = new Map(therapies.map((item) => [item.id, item]));
-  const reviewedBookingIds = new Set(
-    reviews.map((review) => review.booking_id),
-  );
   const upcomingAppointments = bookings
     .filter(
       (booking) =>
@@ -342,18 +354,29 @@ async function getSupabasePatientOverview(
     latestMoodCheckin: toMoodCheckin(moods[0]),
     moodOptions,
     patient: {
-      avatarUrl: profile.avatar_url,
+      avatarUrl: resolvePatientAvatarUrl(patient.avatar_url, profile.avatar_url),
       id: profile.id,
       name: profile.display_name ?? "Paciente",
       patientProfileId: patient.id,
     },
-    pendingReview: toPendingReview(
-      bookings,
-      reviewedBookingIds,
-      professionalById,
-      serviceById,
-      therapyById,
-    ),
+    pendingReview: feedbackQueue[0]
+      ? {
+          appointmentId: feedbackQueue[0].bookingId,
+          confirmationState: feedbackQueue[0].confirmationState,
+          endsAt: feedbackQueue[0].endsAt,
+          professional: {
+            avatarUrl: getTherapistAvatarUrl(feedbackQueue[0].therapist.avatarUrl, {
+              name: feedbackQueue[0].therapist.name,
+            }),
+            id: feedbackQueue[0].therapist.id,
+            name: feedbackQueue[0].therapist.name,
+          },
+          serviceLabel: feedbackQueue[0].serviceLabel,
+          startsAt: feedbackQueue[0].startsAt,
+          therapyLabel: feedbackQueue[0].therapyLabel,
+          timezone: feedbackQueue[0].timezone,
+        }
+      : null,
     source: "supabase",
     supportTickets: supportTickets
       .map(toSupportTicket)
@@ -420,10 +443,10 @@ function toAppointment(
   service: ServiceRow,
   therapy: TherapyRow,
 ): PatientAppointment {
-  const now = Date.now();
-  const isLive =
-    new Date(booking.starts_at).getTime() <= now &&
-    new Date(booking.ends_at).getTime() >= now;
+  const isLive = isPatientAppointmentLive({
+    endsAt: booking.ends_at,
+    startsAt: booking.starts_at,
+  });
 
   return {
     endsAt: booking.ends_at,
@@ -459,44 +482,6 @@ function toFavoriteProfessional(
     summary: details?.short_intro ?? details?.published_headline ?? null,
     specialty: details?.published_headline ?? professional.headline ?? null,
     techniques: details?.tags?.filter(Boolean).slice(0, 4) ?? [],
-  };
-}
-
-function toPendingReview(
-  bookings: BookingRow[],
-  reviewedBookingIds: Set<string>,
-  professionalById: Map<string, ProfessionalRow>,
-  serviceById: Map<string, ServiceRow>,
-  therapyById: Map<string, TherapyRow>,
-): PendingPatientReview | null {
-  const booking = bookings
-    .filter(
-      (item) =>
-        item.status === "completed" &&
-        !reviewedBookingIds.has(item.id) &&
-        item.completed_at,
-    )
-    .sort(
-      (left, right) =>
-        new Date(right.completed_at ?? 0).getTime() -
-        new Date(left.completed_at ?? 0).getTime(),
-    )[0];
-  if (!booking) return null;
-
-  const professional = professionalById.get(booking.therapist_profile_id);
-  const service = serviceById.get(booking.service_id);
-  const therapy = service ? therapyById.get(service.therapy_id) : undefined;
-  if (!professional || !therapy) return null;
-
-  return {
-    appointmentId: booking.id,
-    professional: {
-      avatarUrl: getTherapistAvatarUrl(professional.photo_url, {
-        name: professional.public_name,
-      }),
-      name: professional.public_name,
-    },
-    therapyLabel: therapy.name,
   };
 }
 
@@ -603,11 +588,17 @@ function createDemoPatientOverview(profileId: string): PatientOverview {
     },
     pendingReview: {
       appointmentId: "94000000-0000-4000-8000-000000000014",
+      confirmationState: "awaiting_both",
+      endsAt: new Date(now.getTime() - 23 * 60 * 60 * 1000).toISOString(),
       professional: {
         avatarUrl: "/therapists/juliana-costa.png",
+        id: "92000000-0000-4000-8000-000000000011",
         name: "Juliane Moore",
       },
+      serviceLabel: "Terapia Holística",
+      startsAt: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
       therapyLabel: "Reiki",
+      timezone: "America/Sao_Paulo",
     },
     source: "demo",
     supportTickets: [

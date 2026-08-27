@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, Clock3 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import {
   AppPageAside,
@@ -51,6 +52,7 @@ export function TherapistProfileEditorPage({
 }: {
   editor: TherapistProfileEditorData;
 }) {
+  const router = useRouter();
   const [editor, setEditor] = useState(initialEditor);
   const [fields, setFields] = useState(() =>
     buildInitialEditorFields(initialEditor),
@@ -69,6 +71,7 @@ export function TherapistProfileEditorPage({
   const [liveMessage, setLiveMessage] = useState("");
   const [publicationResult, setPublicationResult] =
     useState<PublicationResult | null>(null);
+  const [draftSavedNotice, setDraftSavedNotice] = useState(false);
 
   const baselineFields = useMemo(
     () => buildInitialEditorFields(editor),
@@ -218,6 +221,13 @@ export function TherapistProfileEditorPage({
 
     if (action === "publish") {
       setPublicationResult(getPublicationResult(nextEditor));
+      // The server has revalidated the public profile. Clear the client route
+      // cache too, so returning to "Meu perfil" does not reuse an older preview.
+      router.refresh();
+    }
+
+    if (action === "save_draft") {
+      setDraftSavedNotice(true);
     }
 
     const message = getSuccessMessage(
@@ -249,7 +259,7 @@ export function TherapistProfileEditorPage({
           (isFirstConfiguration ? false : !hasUnsavedChanges)
         }
         primaryLabel={
-          isFirstConfiguration ? "Publicar alterações" : "Salvar alterações"
+          isFirstConfiguration ? "Publicar alterações" : "Salvar rascunho"
         }
         primaryLoading={
           isFirstConfiguration
@@ -360,7 +370,18 @@ export function TherapistProfileEditorPage({
       {publicationResult ? (
         <PublicationResultDialog
           onClose={() => setPublicationResult(null)}
+          propagationNotice={editor.propagationNotice}
           result={publicationResult}
+        />
+      ) : null}
+
+      {draftSavedNotice ? (
+        <DraftSavedDialog
+          onClose={() => setDraftSavedNotice(false)}
+          onPublish={() => {
+            setDraftSavedNotice(false);
+            requestPublishConfirmation();
+          }}
         />
       ) : null}
     </AppPageContainer>
@@ -450,9 +471,11 @@ function ConfirmDialog({
 
 function PublicationResultDialog({
   onClose,
+  propagationNotice,
   result,
 }: {
   onClose: () => void;
+  propagationNotice: string;
   result: PublicationResult;
 }) {
   const isInReview = result === "in_review";
@@ -481,7 +504,7 @@ function PublicationResultDialog({
           <p>
             {isInReview
               ? "Recebemos suas alterações. A equipe TES vai analisar o perfil antes de liberar a nova versão para o público."
-              : "Suas alterações foram publicadas. Pode levar alguns instantes para a nova versão aparecer em todas as superfícies públicas."}
+              : `Suas alterações foram publicadas. ${propagationNotice}`}
           </p>
         </div>
         <TESButton
@@ -491,6 +514,38 @@ function PublicationResultDialog({
         >
           Entendi
         </TESButton>
+      </div>
+    </TESDialog>
+  );
+}
+
+function DraftSavedDialog({
+  onClose,
+  onPublish,
+}: {
+  onClose: () => void;
+  onPublish: () => void;
+}) {
+  return (
+    <TESDialog
+      description="A prévia e a página pública continuam mostrando a versão anterior enquanto o rascunho não for publicado."
+      onClose={onClose}
+      title="Alterações salvas como rascunho"
+    >
+      <div className="grid gap-5">
+        <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+          Para que pacientes vejam o novo tema e as demais mudanças, publique as
+          alterações. Depois da publicação, a atualização pode levar até 2 a 3
+          horas para aparecer em todas as superfícies públicas.
+        </p>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <TESButton onClick={onClose} type="button" variant="secondary">
+            Continuar editando
+          </TESButton>
+          <TESButton onClick={onPublish} type="button">
+            Publicar alterações
+          </TESButton>
+        </div>
       </div>
     </TESDialog>
   );
@@ -728,7 +783,5 @@ function getPublicationResult(
   const verificationStatus =
     editor?.verificationSummary?.status ?? editor?.derived.verificationStatus;
 
-  return verificationStatus === "approved"
-    ? "published"
-    : "in_review";
+  return verificationStatus === "approved" ? "published" : "in_review";
 }

@@ -115,16 +115,31 @@ export function usePublicAuthState(enabled = true): PublicAuthState {
 export function PublicAuthMenu({
   authState,
   className,
+  onAuthStateChange,
   onNavigate,
   variant = "desktop",
 }: {
   authState?: PublicAuthState;
   className?: string;
+  onAuthStateChange?: (state: PublicAuthState) => void;
   onNavigate?: () => void;
   variant?: PublicAuthMenuVariant;
 }) {
   const internalState = usePublicAuthState(!authState);
-  const state = authState ?? internalState;
+  const [localAuthState, setLocalAuthState] = useState<PublicAuthState | null>(
+    null,
+  );
+
+  useEffect(() => {
+    setLocalAuthState(null);
+  }, [authState]);
+
+  const state = localAuthState ?? authState ?? internalState;
+  const handleLogoutSuccess = () => {
+    const guestState: PublicAuthState = { status: "guest" };
+    setLocalAuthState(guestState);
+    onAuthStateChange?.(guestState);
+  };
 
   if (variant === "mobile-account") {
     if (state.status !== "authenticated") return null;
@@ -133,6 +148,7 @@ export function PublicAuthMenu({
       return (
         <TherapistPopover
           onNavigate={onNavigate}
+          onLogoutSuccess={handleLogoutSuccess}
           therapist={state.therapist}
           variant="mobile"
         />
@@ -142,6 +158,7 @@ export function PublicAuthMenu({
     return (
       <PatientPopover
         onNavigate={onNavigate}
+        onLogoutSuccess={handleLogoutSuccess}
         patient={state.patient}
         variant="mobile"
       />
@@ -154,6 +171,7 @@ export function PublicAuthMenu({
         <TherapistPopover
           className={className}
           onNavigate={onNavigate}
+          onLogoutSuccess={handleLogoutSuccess}
           therapist={state.therapist}
         />
       );
@@ -163,6 +181,7 @@ export function PublicAuthMenu({
       <PatientPopover
         className={className}
         onNavigate={onNavigate}
+        onLogoutSuccess={handleLogoutSuccess}
         patient={state.patient}
       />
     );
@@ -179,10 +198,12 @@ export function PublicAuthMenu({
 function TherapistPopover({
   className,
   onNavigate,
+  onLogoutSuccess,
   therapist,
   variant = "popover",
 }: {
   className?: string;
+  onLogoutSuccess: () => void;
   onNavigate?: () => void;
   therapist: TherapistSummary;
   variant?: "popover" | "mobile";
@@ -211,6 +232,7 @@ function TherapistPopover({
         throw new Error("logout_failed");
       }
 
+      onLogoutSuccess();
       onNavigate?.();
       router.replace(routes.public.home);
       router.refresh();
@@ -297,10 +319,12 @@ function TherapistPopover({
 function PatientPopover({
   className,
   onNavigate,
+  onLogoutSuccess,
   patient,
   variant = "popover",
 }: {
   className?: string;
+  onLogoutSuccess: () => void;
   onNavigate?: () => void;
   patient: PatientSummary;
   variant?: "popover" | "mobile";
@@ -329,6 +353,7 @@ function PatientPopover({
         throw new Error("logout_failed");
       }
 
+      onLogoutSuccess();
       onNavigate?.();
       router.replace(routes.public.home);
       router.refresh();

@@ -27,7 +27,6 @@ export type TherapistHomeDocument = {
 
 export type TherapistHomeProfileSummary = {
   city: string;
-  headline: string;
   publicName: string;
   state: string;
 };

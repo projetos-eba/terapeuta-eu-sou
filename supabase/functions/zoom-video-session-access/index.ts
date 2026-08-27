@@ -159,6 +159,7 @@ runtime.serve(async (request) => {
       patientHasTimelyArrival,
       startsAt: booking.startsAt,
       therapistStatus: booking.therapistStatus,
+      therapistProfileEligible: booking.therapistProfileEligible,
       therapistPresent: booking.videoSession?.therapistPresent ?? false,
       videoSessionReady: Boolean(
         booking.videoSession &&
@@ -168,7 +169,7 @@ runtime.serve(async (request) => {
     });
 
     if (intent === "preview") {
-      return withNoStore(success({ access }));
+      return withNoStore(success({ access, requestId }));
     }
 
     if (!access.allowed) {
@@ -238,6 +239,7 @@ runtime.serve(async (request) => {
     return withNoStore(
       success({
         access,
+        requestId,
         roleType,
         sdkKey: config.sdkKey,
         sessionName: booking.videoSession.sessionName,

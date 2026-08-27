@@ -38,6 +38,9 @@ export function mapTherapistHomeReadiness({
   const completedRequiredCount =
     requiredItems.filter((item) => item.complete).length +
     documents.filter((item) => item.complete).length;
+  const draftFields = editor.draft?.fields;
+  const publishedFields = editor.published.fields;
+  const privateLocation = editor.privateLocation;
 
   return {
     checklist,
@@ -47,18 +50,30 @@ export function mapTherapistHomeReadiness({
     plan: session.plan,
     profileCompleteness: editor.completeness.percent,
     profileSummary: {
-      city: editor.draft?.fields.city ?? editor.published.fields.city,
-      headline:
-        editor.draft?.fields.headline ?? editor.published.fields.headline,
-      publicName:
-        editor.draft?.fields.publicName ?? editor.published.fields.publicName,
-      state: editor.draft?.fields.state ?? editor.published.fields.state,
+      city: firstNonBlank(
+        privateLocation?.city,
+        draftFields?.city,
+        publishedFields.city,
+      ),
+      publicName: firstNonBlank(
+        draftFields?.publicName,
+        publishedFields.publicName,
+      ),
+      state: firstNonBlank(
+        privateLocation?.state,
+        draftFields?.state,
+        publishedFields.state,
+      ),
     },
     profilePublicStatus: editor.derived.publicStatus,
     requiredCount,
     therapistStatus: session.status,
     verificationStatus,
   };
+}
+
+function firstNonBlank(...values: Array<string | null | undefined>) {
+  return values.find((value) => value?.trim())?.trim() ?? "";
 }
 
 export function canAccessTherapistDashboard({

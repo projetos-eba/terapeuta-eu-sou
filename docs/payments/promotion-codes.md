@@ -1,6 +1,6 @@
 # Códigos promocionais Stripe no TES
 
-Atualizado em 2026-08-24.
+Atualizado em 2026-08-26.
 
 ## Autoridade e arquitetura
 
@@ -60,7 +60,7 @@ a versão do Dashboard:
    Se a versão do Dashboard não exibir a edição de metadata, atualize o objeto
    salvo pela Stripe CLI/API em **Test mode**, usando o ID exibido nos detalhes:
    `stripe promotion_codes update promo_xxx -d
-   "metadata[tes_checkout_scope]=session"` (ou `subscription`).
+"metadata[tes_checkout_scope]=session"` (ou `subscription`).
 5. Valide a campanha em Test mode, com navegador visível e webhook assinado,
    antes de repetir a configuração em Live mode.
 
@@ -109,6 +109,54 @@ apta para a primeira cobrança após o período integralmente descontado.
 Para início futuro, crie o Promotion Code inativo e ative-o manualmente no
 Dashboard na data planejada. Após a ativação, o TES o aceita imediatamente. Não
 há scheduler TES nesta fase.
+
+## Campanha de lançamento — TERAPEUTAFUNDADOR
+
+Esta campanha usa o Product canônico do Premium Plus. Não existe Product
+paralelo de fundador. Test Mode permanece ativo para homologação; Live Mode é
+provisionado inativo e não recebe transações ou eventos de teste.
+
+- código público exato: `TERAPEUTAFUNDADOR`;
+- oferta: Premium Plus mensal;
+- período para novos resgates: de 01/09/2026 00:00 até 10/09/2026 23:59:59,
+  no horário de Brasília;
+- expiração técnica: 11/09/2026 00:00 em Brasília;
+- restrição: primeira transação do Customer;
+- benefício: Coupon de 100%, `duration=repeating` e
+  `duration_in_months=3`;
+- forma de pagamento: obrigatoriamente coletada no Checkout, mesmo com total
+  inicial igual a zero;
+- após as três cobranças integralmente descontadas: R$ 79,90 por mês no
+  Premium Plus enquanto a assinatura permanecer ativa e sem mudança de plano.
+
+O preço público normal do Premium Plus permanece R$ 129,90 por mês. Para a
+campanha, o backend resolve `offer_key=therapist_founder` a partir da metadata
+da Stripe e troca para um Price mensal oculto de R$ 79,90 antes de criar o
+Checkout. O navegador nunca envia esse Price nem escolhe o valor promocional.
+O Coupon é limitado ao mesmo Product Premium Plus, portanto o código não pode
+ser aplicado ao Premium.
+
+O bootstrap idempotente de Test Mode mantém o Promotion Code ativo para
+homologação. O bootstrap Live cria o código inativo; a ativação é manual no
+Dashboard em 01/09/2026 00:00 America/Sao_Paulo. A expiração nativa é
+11/09/2026 00:00 no mesmo fuso.
+
+```bash
+npm run payments:bootstrap:test
+npm run payments:verify:test
+npm run payments:bootstrap:live
+npm run payments:verify:live
+```
+
+O comando Live exige uma chave Live explícita, só cria/configura objetos e
+executa leituras de confirmação. Ele não cria Customer, Checkout, assinatura,
+fatura, pagamento nem evento de teste.
+
+Ao trocar de plano, o próximo Price é sempre o Price público normal, sem
+preservar o Price fundador. Depois do encerramento definitivo, uma
+nova assinatura não recupera a oferta porque a Stripe aplica a restrição de
+primeira transação. Cancelamento ao fim do período preserva apenas o período já
+contratado; não cria direito futuro ao preço fundador após o encerramento.
 
 ## Tentativas, webhooks e reconciliação
 
@@ -160,6 +208,11 @@ cartão.
       cobrança, com confirmação somente por webhook.
 - [ ] Premium, Premium Plus e ambos respeitam Products explícitos.
 - [ ] 100% repeating por três meses mantém forma de pagamento futura.
+- [ ] `TERAPEUTAFUNDADOR` funciona somente no Premium Plus mensal, dentro da
+      janela e em primeira transação.
+- [ ] Após a terceira cobrança zerada, a assinatura gera R$ 79,90 por mês.
+- [ ] Premium, mudança de plano e nova assinatura após encerramento não herdam
+      o Price fundador.
 - [ ] Inexistente, inativo, expirado, esgotado, outro escopo/produto, cliente,
       primeira compra e mínimo falham com copy sanitizada.
 - [ ] Aplicar, remover, reaplicar, trocar código e trocar plano.

@@ -438,7 +438,7 @@ Componentes refinados:
 | `Data/AuraMonthlyComparison` | `12829:648` | `530x380` | Comparativo mês atual vs. anterior |
 | `Data/ProfileTrafficPaths` | `12829:682` | `530x380` | Caminhos que levam ao perfil |
 | `Product/PatientHeroProfile` | `12829:715` | `530x420` | Hero resumido de paciente em acompanhamento |
-| `Product/SessionMemoryTable` | `12829:753` | `800x420` | Memória dos encontros e temas recorrentes |
+| `Product/SessionMemoryTable` | `12829:753` | `800x420` | Memória dos encontros e temas compartilhados |
 | `Product/UpcomingAppointments` | `12829:784` | `530x420` | Próximos encontros agendados |
 | `Data/RevenueEvolutionChart` | `12829:815` | `800x400` | Evolução de faturamento |
 | `Product/FinancialTransactionsTable` | `12829:831` | `800x400` | Transações recentes |

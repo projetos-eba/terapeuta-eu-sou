@@ -25,7 +25,7 @@ description: Manter tickets e threads de suporte de pacientes e terapeutas sem m
 
 ## Dados e segurança
 
-- `support_tickets` guarda protocolo, requester derivado, status e contexto autorizado.
+- `support_tickets.protocol` é persistido e imutável no formato `#` + nove dígitos + letra da categoria; nunca derivar um protocolo do UUID na UI.
 - `support_ticket_messages` é a thread plain text. `visibility=requester` é legível pelo solicitante; `visibility=internal` é exclusivamente TES/Admin.
 - Nunca usar `messages`, `conversations` ou o endpoint participante para suporte. Nunca adicionar texto livre ao fluxo paciente ↔ terapeuta.
 - `requestId` é obrigatório para criação e resposta, protegendo contra retry.
@@ -35,6 +35,8 @@ description: Manter tickets e threads de suporte de pacientes e terapeutas sem m
 - A thread Admin usa exclusivamente a RPC administrativa
   `admin_get_support_ticket_thread_v1`; somente ela pode incluir
   `visibility=internal`. A API e o DTO do solicitante não podem usar essa RPC.
+- O detalhe e a lista usam SSE mediado pelo servidor. Em queda, usar polling temporário com reconexão progressiva, retomar SSE quando disponível e atualizar ao voltar para a aba visível.
+- Badges do solicitante precisam dizer quem age: “Recebemos seu chamado”, “Em atendimento pelo TES”, “Aguardando resposta do TES”, “Aguardando sua resposta” ou “Resolvido”.
 
 ## QA
 
@@ -44,4 +46,5 @@ description: Manter tickets e threads de suporte de pacientes e terapeutas sem m
   interna criada pelo Admin não aparece após o reload do detalhe do terapeuta.
 - Validar desktop, tablet e mobile sem overflow do textarea.
 - Validar que o paciente consegue criar o chamado e abrir a thread pública.
+- Validar protocolo persistido, estado após resposta do TES/solicitante e atualização entre duas sessões autenticadas.
 - Rodar testes API/Vitest, pgTAP de suporte e o teste de bypass de participante.

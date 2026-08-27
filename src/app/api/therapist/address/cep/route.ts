@@ -8,7 +8,9 @@ const viaCepTimeoutMs = 5000;
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
-  const accessToken = cookieStore.get("tes_therapist_access_token")?.value;
+  const accessToken =
+    cookieStore.get("tes_therapist_access_token")?.value ??
+    cookieStore.get("tes_patient_access_token")?.value;
   const config = getSupabasePublicConfig();
 
   if (!config || !accessToken || !(await isAuthenticated(config, accessToken))) {

@@ -59,6 +59,10 @@ navegador: o teste de câmera solicita somente vídeo e substitui a capa visual;
 o teste de áudio solicita somente microfone e mostra um indicador local. Esses
 streams não inicializam o Video SDK, não solicitam acesso à sala, não emitem
 JWT e são encerrados ao desligar o teste, entrar, falhar ou desmontar a tela.
+No clique de entrada, a sala envia ao adapter um snapshot das preferências de
+câmera e microfone. Depois do `join`, o adapter ativa apenas as mídias que
+estavam ligadas nesse snapshot; as demais iniciam desligadas/silenciadas. O
+snapshot é transitório no navegador e não é persistido.
 
 O encerramento definitivo usa `TESDialog`, é exclusivo do terapeuta e só fica
 disponível nos cinco minutos finais. A saída comum chama `leave(false)`, volta
@@ -73,7 +77,9 @@ editar opiniões ou alterar pagamento, repasse, reembolso, booking ou confirmaç
 de serviço.
 
 A experiência de preparação usa capa abstrata da terapia, horário, contador,
-status de entrada, preflight e estados honestos de erro/reconexão. Música de
+status de entrada, preflight e estados honestos de erro/reconexão. Na sala de
+vídeo ativa, a contagem antes do início não é exibida; após o início, aparece
+somente o tempo restante até o fim agendado. Música de
 ambiente é opcional e só pode ser reproduzida depois de uma interação explícita
 do usuário; sem asset ou fonte licenciada, o controle permanece inativo. Nenhum
 retrato fictício, áudio, vídeo, transcrição, URL privada, JWT ou identificador
@@ -84,11 +90,13 @@ confirmado, o CTA pode abrir a sala de espera mesmo antes da presença do
 terapeuta. Isso preserva o host-first: a tela de espera é acessível, mas o
 paciente só recebe acesso de join depois do evento confiável do terapeuta.
 
-O feedback de qualidade só muda para elegível quando o backend encontra entrada
-confiável de paciente e terapeuta e o encerramento efetivo ou programado da
-sessão. A query `feedback=1` apenas pede a abertura da experiência; não altera
-essa decisão. Se só um participante entrou, a interface oferece somente o
-relato de ocorrência quando o estado da sessão permitir.
+O feedback privado fica disponível após o fim programado ou encerramento
+definitivo da sessão. A query `feedback=1` apenas pede a abertura da
+experiência; não altera essa decisão. A telemetria confiável de entrada de
+paciente e terapeuta continua como evidência e sinal de risco, mas não bloqueia
+o envio manual nem os vencimentos automáticos de 7/30 dias. O participante
+informa se o encontro ocorreu; uma resposta `not_performed` exige motivo,
+bloqueia o repasse e abre revisão administrativa.
 
 Na homologacao principal, esse passo 1 deve vir de Checkout Stripe test e
 webhook assinado. Fixtures com pagamento direto sao permitidas somente para
@@ -156,9 +164,38 @@ terapeuta. T+10+1 ms é bloqueado sem uma dessas evidências.
 Somente o terapeuta pode encerrar para todos no intervalo fechado em T-5 e
 aberto no fim agendado. O encerramento confirmado nessa janela libera feedback;
 um fechamento precoce do provedor não confirma realização e aguarda
-`scheduled_ends_at`. `manual_end`, `end_scheduled` e o watchdog permanecem
-operações independentes.
+`scheduled_ends_at`. Se o Zoom emitir `session.ended` porque o último
+participante saiu antes desse horário, a sessão lógica permanece `active`, a
+instância remota é descartada e a reentrada cria uma nova instância para o mesmo
+`session_name`. A presença fica falsa nesse intervalo e o watchdog aplica a
+grace de ausência do terapeuta antes de encerrar. `manual_end`,
+`end_scheduled` e o watchdog permanecem operações independentes e continuam
+terminais quando já houver solicitação de encerramento.
 
 Se o terapeuta sair, o paciente nao recebe novo JWT durante a ausencia. A
 maintenance encerra sessoes por hard timeout, ausencia prolongada do terapeuta
 ou orfandade operacional, usando locks e backoff em banco.
+
+## Ciclo de vida no navegador
+
+O cliente do Video SDK e singleton. Cada tentativa possui uma geracao; eventos
+de geracoes anteriores sao ignorados. Uma reentrada aguarda integralmente a
+limpeza e o `destroyClient` da tentativa anterior antes de chamar
+`createClient`, preservando o `user_key` deterministico e evitando participantes
+fantasmas. O `requestId` retornado pela emissao de acesso permite correlacionar
+o codigo sanitizado do browser com os logs da Edge Function sem persistir token
+ou mensagem interna do Zoom.
+
+A fila de limpeza vive no modulo, e nao na instancia React. Assim, navegar para
+tras e montar novamente a rota nao perde a Promise de `destroyClient` que ainda
+pertence a instancia anterior. Durante uma queda de internet, o relogio de
+recuperacao fica pausado e e retomado pelo evento `online`. Um evento
+`connection-change: Closed` so encerra o fluxo quando o codigo ou motivo indicar
+fim pelo host/remocao; fechamentos transitorios seguem a mesma recuperacao de
+`Fail`.
+
+A recuperacao transitoria e sempre habilitada: reutiliza o mesmo acesso ja
+emitido, nunca pede JWT adicional e executa no maximo tres `join`s dentro da
+janela de recuperacao. Isso impede que uma flag publica deixe o ambiente de
+homologacao/producao sem recuperacao justamente quando o singleton do SDK esta
+em transicao.

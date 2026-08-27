@@ -72,17 +72,25 @@ update public.session_payments
 set financial_status = 'pending'
 where booking_id = 'f2000000-0000-4000-8000-000000000004';
 
+-- Keep the unpaid assertion isolated from dynamic local fixtures while still
+-- proving that an overlapping confirmed booking is excluded when unpaid.
+update public.bookings
+set
+  starts_at = ((current_date + 3650)::date + time '10:00') at time zone 'America/Sao_Paulo',
+  ends_at = ((current_date + 3650)::date + time '11:00') at time zone 'America/Sao_Paulo'
+where id = 'f2000000-0000-4000-8000-000000000004';
+
 create temporary table unpaid_block_result as
 select public.create_therapist_block_v2(
   'aaaaaaaa-0000-4000-8000-000000000001',
   'a4500000-0000-4000-8000-000000000002',
   'America/Sao_Paulo',
-  (current_date + 2)::date,
+  (current_date + 3650)::date,
   null,
   null,
   true,
   'none',
-  (current_date + 2)::date,
+  (current_date + 3650)::date,
   null,
   'personal',
   'Unpaid conflict contract'

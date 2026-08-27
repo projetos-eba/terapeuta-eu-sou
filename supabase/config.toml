@@ -242,5 +242,8 @@ verify_jwt = false
 [functions.therapist-reviews-command]
 verify_jwt = false
 
+[functions.patient-reviews-command]
+verify_jwt = false
+
 [functions.therapy-catalog-request-command]
 verify_jwt = true

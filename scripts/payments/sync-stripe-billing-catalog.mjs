@@ -25,7 +25,7 @@ const supabaseUrl = getSupabaseUrl();
 assertStripeModeAllowedForSupabaseUrl({ stripeMode, supabaseUrl });
 const serviceRoleKey = requireSupabaseServiceRoleKey();
 const rows = await supabaseJson(
-  "/rest/v1/billing_plan_prices?select=id,unit_amount_cents,interval,stripe_lookup_key,billing_plans!inner(code,name)&unit_amount_cents=gt.0&is_active=eq.true",
+  "/rest/v1/billing_plan_prices?select=id,unit_amount_cents,interval,is_public,offer_key,stripe_lookup_key,billing_plans!inner(code,name)&unit_amount_cents=gt.0&is_active=eq.true",
 );
 const synced = [];
 
@@ -53,12 +53,15 @@ for (const row of rows) {
       metadata: {
         entity: "therapist_plan_price",
         environment: stripeMode,
+        ...(row.offer_key ? { offer_key: row.offer_key } : {}),
         plan_code: plan.code,
         stripe_mode: stripeMode,
         system: "tes",
       },
       product: product.id,
-      recurring: { interval: row.interval },
+      recurring: {
+        interval: row.interval,
+      },
       unit_amount: row.unit_amount_cents,
     });
   }
@@ -79,6 +82,7 @@ for (const row of rows) {
   );
   synced.push({
     planCode: plan.code,
+    offerKey: row.offer_key ?? null,
     priceId: price.id,
     productId,
     reused: Boolean(existingPrices.data[0]),
@@ -88,7 +92,7 @@ for (const row of rows) {
 console.log(`Stripe billing catalog sync complete (${stripeMode}).`);
 for (const item of synced) {
   console.log(
-    `- ${item.planCode}: product=${item.productId ?? "missing"} price=${item.priceId} reused=${item.reused}`,
+    `- ${item.planCode} (mensal${item.offerKey ? ", oferta" : ""}): product=${maskStripeId(item.productId)} price=${maskStripeId(item.priceId)} reused=${item.reused}`,
   );
 }
 
@@ -119,6 +123,8 @@ function assertPriceMatches(row, price) {
     mismatches.push("unit_amount");
   if (price.recurring?.interval !== row.interval)
     mismatches.push("recurring.interval");
+  if ((price.recurring?.interval_count ?? 1) !== 1)
+    mismatches.push("recurring.interval_count");
   if ((price.livemode ? "live" : "test") !== stripeMode)
     mismatches.push("livemode");
 
@@ -127,6 +133,11 @@ function assertPriceMatches(row, price) {
       `Stripe price ${price.id} diverges from ${row.billing_plans?.code}: ${mismatches.join(", ")}.`,
     );
   }
+}
+
+function maskStripeId(value) {
+  if (!value) return "missing";
+  return `${value.slice(0, 8)}…${value.slice(-4)}`;
 }
 
 async function supabaseJson(path, init = {}) {

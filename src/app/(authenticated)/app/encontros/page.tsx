@@ -4,8 +4,16 @@ import {
 } from "@/features/patient-encounters";
 import { requirePatientSession } from "@/lib/auth/patient-session";
 
-export default async function PatientEncountersRoute() {
+export default async function PatientEncountersRoute({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await requirePatientSession();
+  const params = searchParams ? await searchParams : {};
+  const requestedBooking = firstString(
+    params.feedback ?? params.avaliar ?? params.review,
+  );
 
   try {
     const data = await getPatientEncountersPage(
@@ -13,7 +21,12 @@ export default async function PatientEncountersRoute() {
       session.accessToken,
     );
 
-    return <PatientEncountersPage data={data} />;
+    return (
+      <PatientEncountersPage
+        data={data}
+        initialFeedbackBookingId={requestedBooking}
+      />
+    );
   } catch {
     return (
       <main className="mx-auto grid w-full max-w-[840px] gap-4 pb-12 pt-8 text-tesText-primary">
@@ -30,4 +43,8 @@ export default async function PatientEncountersRoute() {
       </main>
     );
   }
+}
+
+function firstString(value: string | string[] | undefined) {
+  return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
 }

@@ -10,7 +10,10 @@ import {
 } from "lucide-react";
 
 import { TESFeedbackDialog } from "@/components/tes";
-import { useSupportLiveRefresh } from "@/features/support/components/support-live-refresh";
+import {
+  notifySupportTicketRefresh,
+  useSupportTicketRefreshEvent,
+} from "@/features/support/components/support-live-refresh";
 
 import { AdminSupportReplyPanel } from "./admin-support-reply-panel";
 
@@ -62,10 +65,11 @@ export function AdminSupportConversationPanel({
   useEffect(() => {
     void load();
   }, [load, refreshVersion]);
-  useSupportLiveRefresh({ actorRole: "admin", onRefresh: load, ticketId });
+  useSupportTicketRefreshEvent(ticketId, load);
 
   function refresh() {
     setRefreshVersion((version) => version + 1);
+    notifySupportTicketRefresh(ticketId);
   }
 
   return (

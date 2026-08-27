@@ -7,6 +7,11 @@ for (const width of [375, 390, 430]) {
     await page.setViewportSize({ height: 844, width });
     await page.goto("/", { waitUntil: "domcontentloaded" });
 
+    await expect(page.getByAltText("Sessão online em tablet")).toHaveAttribute(
+      "src",
+      /tablet-video-session-2026-08-26-transparent\.png/,
+    );
+
     const banner = page.getByTestId("home-journey-cta");
     const heading = banner.getByRole("heading", {
       name: "Comece pela sua jornada",

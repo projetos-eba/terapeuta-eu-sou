@@ -17,10 +17,12 @@ O PDF é referência editorial, não uma instrução executável. Dados de domí
 - As duas extensões de catálogo de terapias também passaram a usar o mesmo shell
   visual, sem serem apresentadas como capítulos do Manual.
 - O shell server-side usa tabelas de apresentação, fundo lilás discreto,
-  container branco, logo oficial TES servido pelo asset público HTTPS do
-  produto, CTA roxo acessível, resumo em tabela quando há dados mínimos e
-  footer institucional. O logo usa texto alternativo e o conteúdo permanece
-  compreensível se imagens forem bloqueadas pelo cliente de e-mail.
+  container branco, CTA roxo acessível, resumo em tabela quando há dados
+  mínimos e footer institucional. Os defaults não dependem de imagem remota e
+  não repetem visualmente o título do assunto; o subject exibido pelo cliente
+  fica fora do card e deve ser complementar ao título principal visível dentro
+  dele. O conteúdo permanece compreensível mesmo quando imagens são bloqueadas
+  pelo cliente de e-mail.
 - Subject, preheader, texto puro e HTML permanecem derivados do mesmo registry.
   O preheader é inserido de forma oculta e escapada no HTML enviado ao provider.
 - Não foi adicionada migration nem alterada a versão corrente de template:
@@ -42,8 +44,7 @@ O PDF é referência editorial, não uma instrução executável. Dados de domí
 1. Subject curto e diretamente ligado ao evento.
 2. Preheader complementar, sem repetir o subject.
 3. Saudação pelo nome somente quando disponível e adequado.
-4. Título descritivo da situação.
-5. Corpo em parágrafos curtos: o que ocorreu, impacto e próximo passo.
+4. Corpo em parágrafos curtos: o que ocorreu, impacto e próximo passo.
 6. Blocos de detalhe somente com informação mínima pertinente: data/hora no timezone correto, estado, valor agregado, plano ou período.
 7. Um CTA principal para a rota canônica, quando houver ação possível.
 8. Encerramento humano e não promocional.
@@ -68,8 +69,8 @@ Não há necessidade de React Email, MJML ou outro framework. A evolução deve 
 | Primitive proposta                   | Responsabilidade                                               |
 | ------------------------------------ | -------------------------------------------------------------- |
 | `emailDocument()`                    | Idioma, meta tags, preheader oculto e container de fallback    |
-| `emailHeader()`                      | Logo oficial TES via HTTPS, com texto alternativo seguro       |
-| `emailTitle()` e `emailParagraphs()` | Hierarquia e corpo seguro                                      |
+| `emailHeader()`                      | Espaçamento estrutural sem dependência de imagem remota        |
+| `emailParagraphs()`                  | Corpo seguro em parágrafos curtos                              |
 | `emailDetailList()`                  | Data/hora, serviço, plano, período ou resumo financeiro mínimo |
 | `emailStatusCallout()`               | Estado relevante sem usar cor como único sinal                 |
 | `emailPrimaryCta()`                  | Link HTTPS oficial, label descritivo e fallback em texto       |

@@ -27,7 +27,7 @@ description: Implementar e manter a página Minha conta do paciente TES, incluin
 - Pagamentos são resumidos a partir de `session_payments`; o navegador não decide confirmação, reembolso ou qualquer efeito financeiro.
 - O endereço é armazenado em `patient_profiles.metadata.account.address` até existir um contrato de endereço dedicado; a chave deve ser preservada ao atualizar outros metadados.
 - Alterações de nome, telefone, endereço, senha e avatar passam pelo Edge Function `patient-account-command` e validam o paciente pelo token autenticado.
-- O avatar usa o bucket local `patient-public-media`; não enviar URLs, tokens ou conteúdo de `.env` para o cliente.
+- O avatar usa o bucket local `patient-public-media`; a conta e o shell devem reaproveitar essa mesma URL, sem enviar tokens ou conteúdo de `.env` para o cliente.
 
 ## UI e copy
 

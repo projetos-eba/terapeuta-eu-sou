@@ -42,10 +42,19 @@ ocorrência.
 
 ## Política e scheduler
 
-- Política inativa: `tes-payments-v5-weekly-transfer-daily-automatic-payout`.
-- Confirmação bilateral preservada; ausências são concluídas automaticamente
-  após 7 dias.
-- Segurança: um dia completo após `service_confirmed_at`.
+- Política financeira ativa local: `tes-payments-v6-bilateral-7d-30d`, que
+  preserva as regras de lote da v5 e muda apenas a confirmação bilateral.
+- Paciente ausente é confirmado no vencimento de 7 dias; terapeuta ausente,
+  no vencimento de 30 dias. Sem nenhuma resposta manual, a segunda confirmação
+  ocorre no dia 30.
+- `service_confirmed_at` é o instante da segunda confirmação válida.
+- Segurança: 24 horas completas após `service_confirmed_at`.
+- O job horário `tes-session-confirmation-hourly-v1` está registrado, auditado
+  e **inativo** até homologação financeira. Ele é idempotente, recupera atrasos
+  com o vencimento contratual e não depende da telemetria Zoom.
+- Relato `not_performed`, cancelamento, reembolso, disputa, contestação ou
+  bloqueio administrativo impede confirmação automática e inclusão no lote.
+- Avaliações públicas do terapeuta não confirmam sessão nem alteram repasse.
 - Início: terça, 02:00 inclusive a 04:00 exclusivo, em
   `America/Sao_Paulo`.
 - Cutoff fixo: terça às 02:00 locais.

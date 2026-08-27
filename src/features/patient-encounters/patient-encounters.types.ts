@@ -6,11 +6,34 @@ export type PatientEncountersPageData = {
   metrics: PatientEncounterMetrics;
   nextEncounter: PatientEncounter | null;
   patient: PatientEncountersPatient;
+  pendingFeedbackSessions: PatientPendingFeedbackSession[];
   recentJourneyTopics: string[];
   source: "demo" | "supabase";
   unreadMessagesCount: number;
   unreadNotificationsCount: number;
   upcomingEncounters: PatientEncounter[];
+};
+
+export type PatientPendingFeedbackSession = {
+  bookingId: string;
+  confirmationState:
+    | "awaiting_both"
+    | "awaiting_patient"
+    | "awaiting_therapist"
+    | "blocked_for_review"
+    | "completed"
+    | "next_batch"
+    | "safety_period";
+  endsAt: string;
+  serviceLabel: string;
+  startsAt: string;
+  therapist: {
+    avatarUrl: string | null;
+    id: string;
+    name: string;
+  };
+  therapyLabel: string;
+  timezone: string;
 };
 
 export type PatientEncountersPatient = {
@@ -55,6 +78,7 @@ export type PatientEncounterStatus =
   | "live"
   | "confirmed"
   | "pending_payment"
+  | "awaiting_confirmation"
   | "reschedule_requested"
   | "completed"
   | "cancelled";

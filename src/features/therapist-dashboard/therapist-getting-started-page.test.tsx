@@ -27,6 +27,7 @@ describe("TherapistGettingStartedPage", () => {
     expect(screen.getByText("Etapas do cadastro")).toBeInTheDocument();
     expect(screen.getByText("Pendências para análise")).toBeInTheDocument();
     expect(screen.getByText("Resumo do seu perfil")).toBeInTheDocument();
+    expect(screen.queryByText("Apresentação", { exact: true })).toBeNull();
     expect(screen.getByText("Como funciona")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "Continuar cadastro" }),
@@ -90,7 +91,7 @@ describe("TherapistGettingStartedPage", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Seu cadastro está completo. Acompanhe a análise na situação ao lado.",
+        "Seu cadastro está completo. O TES está analisando e logo você terá um retorno.",
       ),
     ).toBeInTheDocument();
   });
@@ -161,7 +162,6 @@ const readinessFixture: TherapistHomeReadiness = {
   profileCompleteness: 17,
   profileSummary: {
     city: "",
-    headline: "",
     publicName: "Antonio Silva",
     state: "",
   },

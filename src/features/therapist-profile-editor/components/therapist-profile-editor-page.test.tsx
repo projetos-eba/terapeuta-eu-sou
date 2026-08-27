@@ -17,7 +17,14 @@ const commandMocks = vi.hoisted(() => ({
   uploadTherapistProfileMedia: vi.fn(),
 }));
 
+const navigationMocks = vi.hoisted(() => ({
+  refresh: vi.fn(),
+}));
+
 vi.mock("../therapist-profile-editor.commands", () => commandMocks);
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: navigationMocks.refresh }),
+}));
 
 type EditorOverrides = Omit<
   Partial<TherapistProfileEditorData>,
@@ -159,6 +166,7 @@ describe("TherapistProfileEditorPage", () => {
     );
     commandMocks.sendTherapistProfileCommand.mockReset();
     commandMocks.uploadTherapistProfileMedia.mockReset();
+    navigationMocks.refresh.mockReset();
   });
 
   it("renders the profile editor with real read-only derived data", () => {
@@ -351,15 +359,13 @@ describe("TherapistProfileEditorPage", () => {
     expect(screen.queryByText(/documento privado/i)).not.toBeInTheDocument();
   });
 
-  it("communicates publication propagation and disables publish without a draft", () => {
+  it("communicates the published state and disables publish without a draft", () => {
     const editor = makeEditor();
 
     render(<TherapistProfileEditorPage editor={editor} />);
 
     expect(
-      screen.getByText(
-        "Sua atualização está aguardando a revisão da equipe TES.",
-      ),
+      screen.getByText("Sua versão publicada está atualizada."),
     ).toBeInTheDocument();
     screen
       .getAllByRole("button", { name: /Publicar alterações/ })
@@ -393,7 +399,7 @@ describe("TherapistProfileEditorPage", () => {
       target: { value: "Ana Rascunho" },
     });
     fireEvent.click(
-      screen.getAllByRole("button", { name: "Salvar alterações" })[0],
+      screen.getAllByRole("button", { name: "Salvar rascunho" })[0],
     );
 
     await waitFor(() => {
@@ -410,6 +416,13 @@ describe("TherapistProfileEditorPage", () => {
     });
     expect(screen.getByText("Rascunho salvo.")).toBeInTheDocument();
     expect(
+      await screen.findByRole("dialog", {
+        name: "Alterações salvas como rascunho",
+      }),
+    ).toHaveTextContent(
+      "Para que pacientes vejam o novo tema e as demais mudanças",
+    );
+    expect(
       screen.getByText("Existe um rascunho salvo aguardando publicação."),
     ).toBeInTheDocument();
   });
@@ -420,7 +433,7 @@ describe("TherapistProfileEditorPage", () => {
     );
 
     expect(
-      screen.queryByRole("button", { name: "Salvar alterações" }),
+      screen.queryByRole("button", { name: "Salvar rascunho" }),
     ).not.toBeInTheDocument();
     expect(
       screen.getAllByRole("button", { name: "Publicar alterações" }).length,
@@ -573,6 +586,7 @@ describe("TherapistProfileEditorPage", () => {
         name: "Publicação enviada com sucesso",
       }),
     ).toBeInTheDocument();
+    expect(navigationMocks.refresh).toHaveBeenCalledTimes(1);
   });
 
   it("creates a draft before publishing a complete first profile without local edits", async () => {
@@ -787,14 +801,14 @@ describe("TherapistProfileEditorPage", () => {
       target: { value: "Ana em conflito" },
     });
     fireEvent.click(
-      screen.getAllByRole("button", { name: "Salvar alterações" })[0],
+      screen.getAllByRole("button", { name: "Salvar rascunho" })[0],
     );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Seu perfil foi alterado em outra aba. Recarregue antes de continuar.",
     );
     expect(
-      screen.getAllByRole("button", { name: "Salvar alterações" })[0],
+      screen.getAllByRole("button", { name: "Salvar rascunho" })[0],
     ).not.toBeDisabled();
   });
 
@@ -815,7 +829,7 @@ describe("TherapistProfileEditorPage", () => {
       target: { value: "Ana com vídeo inválido" },
     });
     fireEvent.click(
-      screen.getAllByRole("button", { name: "Salvar alterações" })[0],
+      screen.getAllByRole("button", { name: "Salvar rascunho" })[0],
     );
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
@@ -830,7 +844,7 @@ describe("TherapistProfileEditorPage", () => {
       target: { value: "" },
     });
     fireEvent.click(
-      screen.getAllByRole("button", { name: "Salvar alterações" })[0],
+      screen.getAllByRole("button", { name: "Salvar rascunho" })[0],
     );
 
     expect(screen.getByRole("alert")).toHaveTextContent(

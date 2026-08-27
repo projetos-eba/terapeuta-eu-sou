@@ -45,6 +45,10 @@ const contract = {
     status: "draft",
     updatedAt: "2026-07-28T12:00:00.000Z",
   },
+  privateLocation: {
+    city: "Campinas",
+    state: "SP",
+  },
   propagationNotice: "Propaga em ate 2 a 3 horas.",
   publicProfileHref: "/terapeutas/ana-oliveira",
   published: {
@@ -79,6 +83,7 @@ describe("therapist profile editor mappers", () => {
     );
     expect(editor.derived.startingPriceCents).toBe(17000);
     expect(editor.completeness.percent).toBe(80);
+    expect(editor.privateLocation).toEqual({ city: "Campinas", state: "SP" });
   });
 
   it("maps the administrative correction reason without exposing other review data", () => {

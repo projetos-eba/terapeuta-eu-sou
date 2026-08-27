@@ -43,6 +43,42 @@ describe("therapist CEP route", () => {
     await expect(response.json()).resolves.toMatchObject({ ok: false });
   });
 
+  it("accepts an authenticated patient session for the shared lookup", async () => {
+    headerMocks.cookieGet.mockImplementation((name: string) =>
+      name === "tes_patient_access_token"
+        ? { value: "patient-token" }
+        : undefined,
+    );
+    vi.stubGlobal(
+      "fetch",
+      vi.fn()
+        .mockResolvedValueOnce(new Response(null, { status: 200 }))
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              localidade: "Campinas",
+              logradouro: "Rua de teste",
+              uf: "SP",
+            }),
+            { status: 200 },
+          ),
+        ),
+    );
+
+    const response = await GET(makeRequest("13060240"));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      data: {
+        city: "Campinas",
+        postalCode: "13060-240",
+        state: "SP",
+        street: "Rua de teste",
+      },
+      ok: true,
+    });
+  });
+
   it("rejects a CEP that does not contain eight digits", async () => {
     const fetchMock = vi.fn();
     fetchMock.mockResolvedValue(new Response(null, { status: 200 }));

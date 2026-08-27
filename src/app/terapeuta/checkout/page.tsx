@@ -7,15 +7,15 @@ import {
 } from "lucide-react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 
-import { TESButton } from "@/components/tes";
+import { AuthBackButton, PublicLogo, TESButton } from "@/components/tes";
 import { getTherapistPlanDefinition, TherapistPlan } from "@/domain/tes";
 import {
   getTherapistDashboardHref,
   getTherapistLoginHref,
   isPaidTherapistPlan,
   normalizeTherapistPlan,
-  TherapistAuthShell,
 } from "@/features/therapist-auth";
 import {
   EmbeddedSubscriptionCheckout,
@@ -81,95 +81,70 @@ export default async function TherapistCheckoutPage({
     params?.checkout === "success" && Boolean(params.session_id);
 
   return (
-    <TherapistAuthShell
-      className="lg:px-14"
-      eyebrow="Assinatura TES"
-      title="Seu próximo passo, com segurança."
-      description="Revise o plano escolhido antes de seguir para o pagamento."
-    >
-      <div className="w-full space-y-6">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
-            {params?.created === "1" ? "Conta criada" : "Plano profissional"}
-          </p>
-          <h1 className="mt-3 font-display text-4xl font-light italic leading-tight text-brand-deep sm:text-5xl">
-            {hasActivePaidPlan
-              ? "Seu plano já está ativo"
-              : "Finalize sua assinatura"}
-          </h1>
-          <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
-            {hasActivePaidPlan
-              ? `Você está no plano ${getTherapistPlanDefinition(session.plan).name}.`
-              : `Sua conta está pronta. Falta confirmar o plano ${plan.name}.`}
-          </p>
-        </div>
-
-        <section
-          aria-labelledby="checkout-plan-title"
-          className="rounded-card border border-brand-lavender bg-brand-lavenderSoft p-5 sm:p-6"
-        >
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
-                Plano escolhido
-              </p>
-              <h2
-                id="checkout-plan-title"
-                className="mt-2 text-2xl font-extrabold text-brand-deep"
-              >
-                TES {plan.name}
-              </h2>
-              <p className="mt-2 max-w-md text-sm font-semibold leading-6 text-tesText-secondary">
-                {plan.description}
-              </p>
-            </div>
-            <div className="shrink-0 sm:text-right">
-              <p className="text-2xl font-extrabold text-brand-primary">
-                {plan.priceLabel}
-              </p>
-              <p className="mt-1 text-xs font-bold text-tesText-muted">
-                {plan.priceNote}
-              </p>
-            </div>
+    <TherapistCheckoutFrame>
+      <div className="grid items-start gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-10 lg:p-10">
+        <div className="min-w-0 space-y-6">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
+              {params?.created === "1" ? "Conta criada" : "Plano profissional"}
+            </p>
+            <h1 className="mt-3 font-display text-4xl font-light italic leading-[1.02] text-brand-deep sm:text-[3.25rem]">
+              {hasActivePaidPlan
+                ? "Seu plano já está ativo"
+                : "Finalize sua assinatura"}
+            </h1>
+            <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
+              {hasActivePaidPlan
+                ? `Você está no plano ${getTherapistPlanDefinition(session.plan).name}.`
+                : `Sua conta está pronta. Falta confirmar o plano ${plan.name}.`}
+            </p>
           </div>
-        </section>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <StatusItem icon={CheckCircle2} label="Conta" value="Criada" />
-          <StatusItem
-            icon={CreditCard}
-            label="Plano atual"
-            value={getTherapistPlanDefinition(session.plan).name}
-          />
-          <StatusItem
-            icon={ShieldCheck}
-            label="Plano escolhido"
-            value={plan.name}
-          />
-        </div>
+          <section
+            aria-labelledby="checkout-plan-title"
+            className="rounded-card border border-brand-lavender bg-brand-lavenderSoft p-5 sm:p-6"
+          >
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
+                  Plano escolhido
+                </p>
+                <h2
+                  id="checkout-plan-title"
+                  className="mt-2 text-2xl font-extrabold text-brand-deep"
+                >
+                  TES {plan.name}
+                </h2>
+                <p className="mt-2 max-w-md text-sm font-semibold leading-6 text-tesText-secondary">
+                  {plan.description}
+                </p>
+              </div>
+              <div className="shrink-0 sm:text-right">
+                <p className="text-2xl font-extrabold text-brand-primary">
+                  {plan.priceLabel}
+                </p>
+                <p className="mt-1 text-xs font-bold text-tesText-muted">
+                  {plan.priceNote}
+                </p>
+              </div>
+            </div>
+          </section>
 
-        {hasActivePaidPlan ? (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <TESButton
-              href={getTherapistDashboardHref(session.plan)}
-              size="lg"
-              variant="gradient"
-              className="min-h-12 w-full rounded-2xl text-base"
-            >
-              Acessar minha área
-            </TESButton>
-            <form action={openBillingPortalAction}>
-              <button
-                type="submit"
-                className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-brand-primary/30 bg-white px-7 py-3 text-base font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
-              >
-                <CreditCard className="size-5" aria-hidden="true" />
-                Gerenciar assinatura
-              </button>
-            </form>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <StatusItem icon={CheckCircle2} label="Conta" value="Criada" />
+            <StatusItem
+              icon={CreditCard}
+              label="Plano atual"
+              value={getTherapistPlanDefinition(session.plan).name}
+            />
+            <StatusItem
+              icon={ShieldCheck}
+              label="Plano escolhido"
+              value={plan.name}
+            />
           </div>
-        ) : (
-          <>
+
+          {!hasActivePaidPlan ? (
             <div
               id="checkout-availability"
               className="rounded-card border border-border bg-surface-soft px-5 py-4"
@@ -189,38 +164,64 @@ export default async function TherapistCheckoutPage({
                 </div>
               </div>
             </div>
+          ) : null}
+        </div>
 
-            {isSuccessfulCheckoutReturn && params?.session_id ? (
-              <SubscriptionCheckoutReturnStatus
-                plan={requestedPlan}
-                sessionId={params.session_id}
-              />
-            ) : params?.checkout === "success" ? (
-              <CheckoutReturnMissingSessionId plan={requestedPlan} />
-            ) : (
-              <EmbeddedSubscriptionCheckout
-                key={requestedPlan}
-                plan={requestedPlan}
-              />
-            )}
-
-            <TESButton
-              href={routes.therapist.home}
-              size="lg"
-              variant="secondary"
-              className="min-h-12 w-full rounded-2xl text-base"
-            >
-              Acessar o plano Free
-            </TESButton>
-          </>
-        )}
-
-        <p className="flex items-center justify-center gap-2 text-center text-xs font-bold text-tesText-muted">
-          <ShieldCheck className="size-4" aria-hidden="true" />O pagamento da
-          assinatura será processado em ambiente seguro de pagamento.
-        </p>
+        <div className="min-w-0">
+          {hasActivePaidPlan ? (
+            <div className="grid gap-3 rounded-card border border-border bg-white p-5 shadow-soft sm:grid-cols-2 sm:p-6">
+              <TESButton
+                href={getTherapistDashboardHref(session.plan)}
+                size="lg"
+                variant="gradient"
+                className="min-h-12 w-full rounded-2xl text-base"
+              >
+                Acessar minha área
+              </TESButton>
+              <form action={openBillingPortalAction}>
+                <button
+                  type="submit"
+                  className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl border border-brand-primary/30 bg-white px-7 py-3 text-base font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
+                >
+                  <CreditCard className="size-5" aria-hidden="true" />
+                  Gerenciar assinatura
+                </button>
+              </form>
+            </div>
+          ) : isSuccessfulCheckoutReturn && params?.session_id ? (
+            <SubscriptionCheckoutReturnStatus
+              plan={requestedPlan}
+              sessionId={params.session_id}
+            />
+          ) : params?.checkout === "success" ? (
+            <CheckoutReturnMissingSessionId plan={requestedPlan} />
+          ) : (
+            <EmbeddedSubscriptionCheckout
+              key={requestedPlan}
+              plan={requestedPlan}
+            />
+          )}
+        </div>
       </div>
-    </TherapistAuthShell>
+
+      {!hasActivePaidPlan ? (
+        <div className="border-t border-border px-6 py-6 sm:px-8 lg:px-10">
+          <TESButton
+            href={routes.therapist.home}
+            size="lg"
+            variant="secondary"
+            className="min-h-12 w-full rounded-2xl text-base"
+          >
+            Acessar o plano Free
+          </TESButton>
+        </div>
+      ) : null}
+
+      <p className="flex items-center justify-center gap-2 border-t border-border px-6 py-5 text-center text-xs font-bold text-tesText-muted sm:px-8 lg:px-10">
+        <ShieldCheck className="size-4" aria-hidden="true" />O pagamento da
+        assinatura será processado em ambiente seguro de pagamento.
+      </p>
+    </TherapistCheckoutFrame>
   );
 }
 
@@ -237,13 +238,8 @@ function CheckoutReturnWithoutSession({
   const copy = getCheckoutStatusCopy(checkoutStatus);
 
   return (
-    <TherapistAuthShell
-      className="lg:px-14"
-      eyebrow="Assinatura TES"
-      title="Seu plano segue seguro."
-      description="A liberação do plano acontece somente após a confirmação segura do pagamento."
-    >
-      <div className="w-full space-y-6">
+    <TherapistCheckoutFrame>
+      <div className="grid items-start gap-8 p-6 sm:p-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)] lg:gap-10 lg:p-10">
         <div>
           <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-brand-primary">
             Retorno do pagamento
@@ -254,22 +250,25 @@ function CheckoutReturnWithoutSession({
           <p className="mt-3 text-base font-semibold leading-7 text-tesText-secondary">
             {copy.description}
           </p>
+
+          <section className="mt-6 rounded-card border border-brand-lavender bg-brand-lavenderSoft p-5 sm:p-6">
+            <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
+              Plano escolhido
+            </p>
+            <h2 className="mt-2 text-2xl font-extrabold text-brand-deep">
+              TES {planDefinition.name}
+            </h2>
+            <p className="mt-2 text-sm font-extrabold text-brand-primary">
+              {planDefinition.priceLabel}
+            </p>
+            <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+              Entre novamente para acompanhar a confirmação e acessar sua área
+              profissional. Nenhum plano pago é liberado apenas por esta página.
+            </p>
+          </section>
         </div>
 
-        <section className="rounded-card border border-brand-lavender bg-brand-lavenderSoft p-5 sm:p-6">
-          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-primary">
-            Plano escolhido
-          </p>
-          <h2 className="mt-2 text-2xl font-extrabold text-brand-deep">
-            TES {planDefinition.name}
-          </h2>
-          <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            Entre novamente para acompanhar a confirmação e acessar sua área
-            profissional. Nenhum plano pago é liberado apenas por esta página.
-          </p>
-        </section>
-
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 self-center">
           <TESButton
             href={getTherapistLoginHref(checkoutContinuation)}
             size="lg"
@@ -288,7 +287,23 @@ function CheckoutReturnWithoutSession({
           </TESButton>
         </div>
       </div>
-    </TherapistAuthShell>
+    </TherapistCheckoutFrame>
+  );
+}
+
+function TherapistCheckoutFrame({ children }: { children: ReactNode }) {
+  return (
+    <main className="relative min-h-screen bg-surface-soft px-5 py-8 text-brand-deep sm:px-8">
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-6xl flex-col items-center justify-center gap-8">
+        <div className="relative flex w-full justify-center">
+          <AuthBackButton fallbackHref={routes.public.home} />
+          <PublicLogo />
+        </div>
+        <section className="w-full overflow-hidden rounded-hero border border-border bg-surface-default shadow-float">
+          {children}
+        </section>
+      </div>
+    </main>
   );
 }
 

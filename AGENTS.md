@@ -287,6 +287,13 @@ Stack real identificada:
   cancelamento ao fim do período e reversão. O plano efetivo continua vindo de
   `therapist_profiles.plan`, sincronizado pelo billing; não desbloquear recurso
   por retorno do navegador nem remover benefício antes de `current_period_end`.
+  O catálogo pago usa exclusivamente Prices mensais públicos: Premium por
+  R$ 79,90 e Premium Plus por R$ 129,90. A campanha
+  `TERAPEUTAFUNDADOR` usa um Price oculto do Premium Plus de R$ 79,90/mês,
+  Coupon de 100% por três meses e primeira transação somente; o navegador nunca
+  escolhe esse Price. Test Mode permanece ativo para homologação. Live Mode é
+  provisionado inativo, com ativação manual em 01/09/2026 e expiração em
+  11/09/2026 00:00 America/Sao_Paulo.
 - Agenda A2 implementada com snapshots imutáveis em `bookings`,
   `booking_holds` com TTL e idempotência, intervalo ocupado indexável,
   exclusão GiST por terapeuta, locks transacionais, transições auditadas e

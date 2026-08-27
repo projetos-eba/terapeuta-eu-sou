@@ -71,6 +71,7 @@ describe("support tickets route", () => {
           });
           return Response.json({
             id: "30000000-0000-4000-8000-000000000001",
+            protocol: "582914730F",
             status: "open",
           });
         }
@@ -85,7 +86,7 @@ describe("support tickets route", () => {
     expect(response.status).toBe(201);
     expect(payload.ticket).toEqual({
       id: "30000000-0000-4000-8000-000000000001",
-      protocol: "30000000",
+      protocol: "582914730F",
       status: "open",
     });
   });
@@ -105,6 +106,7 @@ describe("support tickets route", () => {
       if (url.includes("/rpc/create_support_ticket_v1")) {
         return Response.json({
           id: "30000000-0000-4000-8000-000000000002",
+          protocol: "582914731O",
           status: "open",
         });
       }

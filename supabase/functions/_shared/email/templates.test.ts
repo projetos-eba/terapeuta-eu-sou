@@ -26,12 +26,8 @@ Deno.test("every registered event renders the TES email shell from its controlle
     const rendered = renderEmailTemplate(entry.actionKey, entry.previewFixture);
     assertEquals(rendered.html.includes("{{"), false);
     assert(rendered.html.includes('role="presentation"'));
-    assert(
-      rendered.html.includes(
-        'src="https://terapeutaeusou.com.br/logo-oficial-terapeuta-eu-sou.png"',
-      ),
-    );
-    assert(rendered.html.includes('alt="Terapeuta Eu Sou"'));
+    assertEquals(rendered.html.includes("<img"), false);
+    assert(rendered.html.includes("<h1"));
     assert(rendered.html.includes("Central de Ajuda"));
     assert(rendered.html.includes("display:none"));
   }
@@ -103,6 +99,17 @@ Deno.test(
       recipient_name: "Pessoa de exemplo",
       service_title: "Terapia de exemplo",
     });
+    const therapistConfirmation = renderEmailTemplate(
+      "booking_confirmed_therapist",
+      {
+        counterparty_name: "Pessoa de exemplo",
+        encounter_url: "https://example.test/terapeuta/sessoes/exemplo",
+        meeting_date_time: "20 de agosto de 2026 às 15:00",
+        meeting_timezone: "America/Sao_Paulo",
+        recipient_name: "Terapeuta de exemplo",
+        service_title: "Terapia de exemplo",
+      },
+    );
     const therapistCancellation = renderEmailTemplate(
       "booking_cancelled_therapist",
       {
@@ -116,6 +123,15 @@ Deno.test(
     );
 
     assertEquals(patientConfirmation.subject, "Seu encontro foi confirmado");
+    assertEquals(
+      therapistConfirmation.subject,
+      "Confirmação da sua sessão no TES",
+    );
+    assert(therapistConfirmation.html.includes("<h1"));
+    assert(therapistConfirmation.html.includes("Sua sessão foi confirmada</h1>"));
+    assert(
+      !therapistConfirmation.subject.includes("Sua sessão foi confirmada"),
+    );
     assert(patientConfirmation.html.includes("Está tudo certo."));
     assert(patientConfirmation.text.includes("Ver encontro"));
     assert(therapistCancellation.text.includes("Ver sessões"));

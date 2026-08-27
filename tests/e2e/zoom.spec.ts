@@ -80,7 +80,7 @@ test.describe("Zoom Video SDK session gate", () => {
 
     await expect.poll(() => accessRequests.length).toBeGreaterThanOrEqual(2);
     await expect(
-      page.getByText(/Preparando sua sala|A sala ainda esta|Nao conseguimos/i),
+      page.getByText(/Preparando sua sala|Não foi possível validar esta sala/i),
     ).toBeVisible();
     expect(accessRequests[0]).toMatchObject({
       actorRole: "patient",
@@ -129,6 +129,7 @@ test.describe("Zoom Video SDK session gate", () => {
     });
 
     let previewCount = 0;
+    let joinCount = 0;
     await page.route("**/api/zoom/video-session-access", async (route) => {
       const body = route.request().postDataJSON();
 
@@ -151,11 +152,13 @@ test.describe("Zoom Video SDK session gate", () => {
         return;
       }
 
+      joinCount += 1;
       await route.fulfill({
         json: {
           error: {
             code: "expired_token",
             message: "Token expirado.",
+            requestId: "request-mobile-safe-12345678",
           },
           ok: false,
         },
@@ -170,6 +173,38 @@ test.describe("Zoom Video SDK session gate", () => {
         name: /Aguardando terapeuta entrar|Entrada liberada/,
       }),
     ).toBeVisible();
+
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            document.documentElement.scrollWidth -
+            document.documentElement.clientWidth,
+        ),
+      )
+      .toBeLessThanOrEqual(0);
+
+    const cameraButton = page
+      .getByRole("button", { name: "Testar câmera", exact: true })
+      .first();
+    const audioButton = page
+      .getByRole("button", { name: "Testar áudio", exact: true })
+      .first();
+    const [cameraBox, audioBox] = await Promise.all([
+      cameraButton.boundingBox(),
+      audioButton.boundingBox(),
+    ]);
+
+    expect(cameraBox).not.toBeNull();
+    expect(audioBox).not.toBeNull();
+    expect(cameraBox!.x).toBeGreaterThanOrEqual(0);
+    expect(audioBox!.x).toBeGreaterThanOrEqual(0);
+    expect(cameraBox!.x + cameraBox!.width).toBeLessThanOrEqual(390);
+    expect(audioBox!.x + audioBox!.width).toBeLessThanOrEqual(390);
+    expect(cameraBox!.height).toBeGreaterThanOrEqual(44);
+    expect(audioBox!.height).toBeGreaterThanOrEqual(44);
+    expect(audioBox!.y).toBeGreaterThanOrEqual(cameraBox!.y + cameraBox!.height);
+
     const waitingHeading = page.getByRole("heading", {
       name: "Aguardando terapeuta entrar",
     });
@@ -180,11 +215,20 @@ test.describe("Zoom Video SDK session gate", () => {
       page.getByRole("button", { name: "Entrar na sala" }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Entrar na sala" }).click();
-    await expect(page.getByText("Token expirado.")).toBeVisible({
+    await expect.poll(() => joinCount).toBe(2);
+    await expect(page.getByText(/Sua sessão de acesso expirou/i)).toBeVisible({
       timeout: 20_000,
     });
-    await page.getByRole("button", { name: "Revisar permissões" }).click();
-    await expect(page.getByText(/Permissoes liberadas/i)).toBeVisible();
+    await expect(page.getByText("Token expirado.")).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Recarregar sala" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: "Tentar novamente" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Entrar novamente" }),
+    ).toHaveAttribute("href", "/cliente/login");
 
     await page.getByRole("button", { name: "Copiar referência" }).focus();
     await page.keyboard.press("Enter");

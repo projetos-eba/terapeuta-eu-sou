@@ -283,6 +283,20 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
           }}
           value={promotionCode}
         />
+        {promotionAmounts?.promotion?.code.toUpperCase() ===
+          "TERAPEUTAFUNDADOR" &&
+        promotionAmounts.promotion.percentOff === 100 &&
+        promotionAmounts.promotion.durationInMonths === 3 ? (
+          <p className="mt-3 rounded-2xl bg-status-successBg px-4 py-3 text-sm font-bold leading-6 text-brand-deep">
+            Seus 3 primeiros meses ficam grátis. Depois, a assinatura Premium
+            Plus continua por{" "}
+            {formatMoney(
+              promotionAmounts.originalAmountCents,
+              promotionAmounts.currency,
+            )}{" "}
+            por mês, enquanto permanecer ativa e sem mudança de plano.
+          </p>
+        ) : null}
       </section>
 
       <section
@@ -389,6 +403,13 @@ export function EmbeddedSubscriptionCheckout({ plan }: { plan: PaidPlan }) {
       </section>
     </div>
   );
+}
+
+function formatMoney(amountCents: number, currency: string) {
+  return new Intl.NumberFormat("pt-BR", {
+    currency: currency.toUpperCase(),
+    style: "currency",
+  }).format(amountCents / 100);
 }
 
 async function parseCheckoutResponse(response: Response) {

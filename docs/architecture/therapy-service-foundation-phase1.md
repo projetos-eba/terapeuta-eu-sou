@@ -39,6 +39,8 @@ Regras:
   `is_available_for_services = true`;
 - criação e edição de serviço exigem 1 a 3 temas válidos da terapia e
   refinamentos opcionais limitados a 3 por tema;
+- criação e edição de serviço exigem duração em minutos inteiros entre 20 e 120,
+  inclusive; a duração salva alimenta os slots e o snapshot da reserva;
 - a quantidade de serviços cadastrados é ilimitada para os planos `free`,
   `premium` e `premium_plus`; o campo de limite permanece apenas por
   compatibilidade histórica;

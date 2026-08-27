@@ -64,7 +64,8 @@ Consultar antes de alterar:
 
 Preservar o padrão do node:
 
-- Hero com foto grande, badges, tags, avaliação, CTA e ações favoritar/compartilhar.
+- Hero com foto grande, badges, avaliação, CTA e ações favoritar/compartilhar;
+  não exibir chips derivados de `therapist.tags` no perfil público.
   Favoritos são exclusivos de paciente autenticado, persistem em
   `favorite_therapists` e sincronizam com `/app/favoritos/terapeutas`; sem
   sessão, a ação encaminha ao login de cliente e retorna ao mesmo perfil.
@@ -77,6 +78,9 @@ Preservar o padrão do node:
   composição. Fundo e arte são decorativos (`alt=""`) e aparecem somente no
   hero.
 - Cards `Minha essência`, `Como posso te guiar` e `Um convite para você`.
+- No card `Um convite para você`, o vídeo ocupa a primeira linha e o texto de
+  convite aparece abaixo dele em todos os breakpoints; não usar composição
+  lateral para esse conteúdo.
 - No tablet, o hero deve preservar a leitura lado a lado: foto em uma coluna e a apresentação/bio com badges, avaliação e CTA na coluna vizinha. No mobile, o conteúdo volta a uma coluna; no desktop, mantém a composição ampla do Figma.
 - No mobile, o hero usa banner no topo com retrato circular sobreposto, ações
   de busca/menu no cabeçalho, CTA em largura total e ações circulares de
@@ -86,8 +90,10 @@ Preservar o padrão do node:
   suficiente entre ícones e textos.
 - No mobile, serviços ficam fora do fluxo principal da referência e continuam
   disponíveis no desktop; disponibilidade e avaliações aparecem em sequência,
-  com cinco horários por linha, estado vazio de avaliações ilustrado e rodapé
-  em card com grupos institucionais, para terapeutas e suporte/legal.
+  com quatro horários visíveis por dia em uma grade 2x2 e o quinto horário
+  preservado a partir do breakpoint de tablet, estado vazio de avaliações
+  ilustrado e rodapé em card com grupos institucionais, para terapeutas e
+  suporte/legal.
 - O registro compartilhado de temas alimenta editor, hero e snapshots; não
   duplicar componentes de perfil. O `photoShape` é determinístico por `themeId`.
 - Seção `Vivências e terapias` com serviços, duração, preço e CTA.
@@ -107,10 +113,13 @@ Preservar o padrão do node:
 - `npx supabase db lint`
 - Se Docker estiver disponível: `npx supabase db reset`
 - Validar `/terapeutas/ana-oliveira`, `/terapeuta/ana-oliveira`, perfil inexistente, sem avaliações, agenda indisponível e slots diferentes para 50min vs 60min.
+- Validar no card `Um convite para você` que o texto permanece abaixo do vídeo
+  em desktop e mobile.
 - Validar o perfil em viewport mobile, conferindo banner/retrato sobreposto,
-  três cards editoriais, painel de cinco horários por linha, estado vazio de
-  avaliações e rodapé em card; confirmar que o cabeçalho padrão e o rodapé
-  padrão permanecem inalterados nas demais páginas públicas.
+  três cards editoriais, painel com quatro horários por dia em grade 2x2,
+  estado vazio de avaliações e rodapé em card; confirmar que o quinto horário
+  reaparece no tablet/desktop e que o cabeçalho padrão e o rodapé padrão
+  permanecem inalterados nas demais páginas públicas.
 - Validar favorito sem sessão, favorito/remover com paciente autenticado e
   sincronização com o painel de Favoritos. Validar Web Share e fallback de
   cópia com a URL canônica sem query string.

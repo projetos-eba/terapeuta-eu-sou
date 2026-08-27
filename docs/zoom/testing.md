@@ -53,16 +53,22 @@ presenca; paciente e liberado por `preview` e so entao consome um token.
 
 A matriz local também cobre a janela anterior a T-15, a sala visual em T-15,
 terapeuta ausente, terapeuta presente aguardando paciente, ambos presentes,
-encerramento, reconexão e indisponibilidade de rede. O acesso por
-`feedback=1` é exercitado antes, durante e depois da sessão para confirmar que
-somente a evidência server-side de ambos os joins torna o feedback de qualidade
-elegível.
+encerramento, reconexão e indisponibilidade de rede. O acesso por `feedback=1`
+é exercitado antes, durante e depois da sessão para confirmar que o fim
+programado ou encerramento definitivo libera o formulário, sem transformar a
+query em autoridade. Os joins continuam sendo evidência operacional, mas a
+ausência de telemetria não bloqueia a resposta nem os prazos automáticos.
 
 A sala de espera também deve comprovar que as três capas locais aparecem nos
 estados corretos, que o teste de câmera solicita apenas vídeo, que o teste de
 áudio solicita apenas microfone, e que os tracks de prévia são liberados ao
 entrar ou sair. Áudio ambiente sem fonte licenciada permanece visível, porém
 inativo e sem autoplay.
+
+O teste do adapter deve cobrir os dois papéis: com câmera e microfone ligados
+na sala de espera, o `join` deve chamar a ativação das duas mídias na sala
+ativa; sem uma mídia habilitada no preflight, ela deve permanecer desligada.
+Essa preferência não é persistida e é enviada somente no clique de entrada.
 
 A sala ativa deve iniciar o SDK com `enforceMultipleVideos: true`, usar
 `video-player-container` e provar câmera bidirecional na ordem: terapeuta liga,
@@ -80,7 +86,9 @@ Os testes temporais cobrem T-15, chegada em T+10, bloqueio em T+10+1 ms,
 reconexão por chegada da versão atual ou join confiável e bloqueio em
 `scheduled_ends_at`. Para 17:45–18:35, o contador mostra 7 minutos antes do
 início às 17:38, 50 minutos às 17:45 e 40 minutos às 17:55. Alterar o watchdog
-não altera esses valores.
+não altera esses valores. Na sala de vídeo ativa, o contador antes do início
+fica oculto; a contagem até o fim aparece a partir do horário agendado. A sala
+de espera mantém a contagem regressiva até a abertura.
 
 Após uma saída individual, a sala deve voltar à espera e permitir nova entrada
 enquanto o terapeuta estiver presente; suporte, voltar, refresh e troca de
@@ -94,10 +102,13 @@ ausentes, parciais, completas e conflitantes no detalhe da sessão, sem editar
 opiniões e sem alterar estado financeiro ou de realização.
 
 A confirmação bilateral é testada separadamente do feedback: replay idempotente,
-confirmação manual por cada papel, confirmação automática após sete dias do fim
-programado e elegibilidade um dia depois. Divergência, ausência, reembolso,
-disputa, Connect não apto ou qualquer bloqueio financeiro não podem ser
-convertidos em repasse pela tela de feedback.
+confirmação manual por cada papel em ambas as ordens, paciente automático no
+dia 7, terapeuta automático no dia 30 e elegibilidade somente 24 horas após a
+segunda confirmação. O teste inclui execução sem telemetria, recuperação
+atrasada, concorrência/repetição, cutoff do lote e auditoria do scheduler.
+Divergência, cancelamento, reembolso, disputa, Connect não apto ou qualquer
+bloqueio financeiro não podem ser convertidos em repasse pela tela de feedback.
+Criar ou editar avaliação pública também não altera esse estado.
 
 O QA visual deve registrar evidência em `1440x900`, `1024x768`, `390x844` e
 `360x800` quando necessário, cobrindo preparação antes de T-15, espera, sala
@@ -118,3 +129,40 @@ uma sessao ativa unica no cleanup. A rotina operacional
 caso e recusa ambiguidades.
 
 Runbook completo: `docs/zoom/real-homologation-runbook.md`.
+
+## Reentrada e recuperacao do cliente
+
+O adapter trata `init`, `join`, `leave` e operacoes de midia conforme o contrato
+`ExecutedResult` do Video SDK 2.4.5: somente a string vazia representa sucesso;
+um objeto `{ type, reason, errorCode }` resolvido pela Promise representa falha.
+Antes de recriar o singleton, o fluxo remove listeners e videos, executa `leave`
+quando aplicavel e aguarda `destroyClient`.
+
+Uma falha resolvida nas operações iniciais de áudio depois de `join` não pode
+desconectar uma sessão já conectada: a chamada continua com áudio indisponível e
+os controles permitem nova tentativa. Após `leave(false)`, o adapter tenta
+`destroyClient` duas vezes, com 750 ms para o SDK concluir a troca de estado;
+só então recria o singleton. Se ambas falharem, apresenta o fallback de recarga
+e não repete `join` contra um singleton inválido.
+
+Uma falha transitoria executa no maximo tres tentativas totais dentro de 10
+segundos, com esperas de 1,5 e 3 segundos. As tentativas reutilizam o acesso ja
+emitido e nunca executam `join` em paralelo. `5012`, timeout, erro interno e
+cliente reconectando sao recuperaveis; sessao encerrada, participante removido,
+permissao negada e configuracao invalida nao entram em repeticao cega.
+
+Os testes de regressao tambem devem cobrir remount da rota enquanto o
+`destroyClient` anterior ainda esta pendente, pausa offline seguida de retomada
+por `online`, e a diferenca entre `Closed` transitorio e encerramento definitivo
+autorizado pelo host. O pgTAP deve cobrir `session.user_left` seguido de
+`session.ended` precoce, reentrada com novo `provider_session_id`, manutenção
+após a grace e encerramento terminal autorizado. Respostas de acesso devem preservar somente codigos de dominio
+permitidos, como `therapist_receiving_account_required`, e nunca renderizar a
+mensagem bruta do backend.
+
+Ao homologar, manter o terapeuta na sala e cobrir queda de rede, voltar pelo
+navegador, fechar/reabrir aba e reentrada pela espera. Confirmar que existe um
+unico participante remoto, que a recuperacao automatica ocorre antes do
+fallback e que o botao `Recarregar sala` nao altera booking, feedback, presenca
+ou financeiro. Registrar apenas `requestId`, fase, tentativa e codigo
+normalizado; nunca copiar JWT, nome da sessao ou mensagem bruta do provedor.

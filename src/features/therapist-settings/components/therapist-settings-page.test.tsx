@@ -16,6 +16,8 @@ const commandMocks = vi.hoisted(() => ({
   updateTherapistSettings: vi.fn(),
 }));
 
+let scrollIntoViewDescriptor: PropertyDescriptor | undefined;
+
 vi.mock("../therapist-settings.commands", () => ({
   lookupTherapistAddressByCep: commandMocks.lookupTherapistAddressByCep,
   updateTherapistSettings: commandMocks.updateTherapistSettings,
@@ -60,6 +62,17 @@ describe("TherapistSettingsPage", () => {
 
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
+    if (scrollIntoViewDescriptor) {
+      Object.defineProperty(
+        HTMLElement.prototype,
+        "scrollIntoView",
+        scrollIntoViewDescriptor,
+      );
+    } else {
+      Reflect.deleteProperty(HTMLElement.prototype, "scrollIntoView");
+    }
+    scrollIntoViewDescriptor = undefined;
   });
 
   it("renders account, privacy and operational settings shortcuts", () => {
@@ -86,6 +99,9 @@ describe("TherapistSettingsPage", () => {
       "href",
       "/terapeuta/plano",
     );
+    expect(
+      screen.queryByRole("heading", { name: "Preferências" }),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Plano e assinatura" }),
     ).toBeInTheDocument();
@@ -136,6 +152,39 @@ describe("TherapistSettingsPage", () => {
       });
     });
     expect(screen.getByText("Configurações salvas.")).toBeInTheDocument();
+  });
+
+  it("brings the save confirmation into view after saving", async () => {
+    scrollIntoViewDescriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "scrollIntoView",
+    );
+    const scrollIntoView = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scrollIntoView,
+    });
+
+    render(
+      <TherapistSettingsPage
+        planData={planFixture("premium_plus")}
+        settings={settingsFixture()}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Telefone"), {
+      target: { value: "+55 11 99999-9999" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Configurações salvas.")).toBeInTheDocument();
+    });
+
+    expect(scrollIntoView).toHaveBeenCalledWith({
+      behavior: "smooth",
+      block: "start",
+    });
   });
 
   it("shows local validation before sending invalid settings", () => {
@@ -295,7 +344,7 @@ function planFixture(
         description: "",
         interval: "month",
         name: "Premium",
-        unitAmountCents: 6000,
+        unitAmountCents: 7990,
       },
       {
         code: "premium_plus",
@@ -303,7 +352,7 @@ function planFixture(
         description: "",
         interval: "month",
         name: "Premium Plus",
-        unitAmountCents: 12000,
+        unitAmountCents: 12990,
       },
     ],
     effectivePlan,

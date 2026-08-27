@@ -107,17 +107,8 @@ function defaultEmailHtml(input: {
             <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;border-collapse:separate;border:1px solid #e7daf2;border-radius:24px;background-color:#ffffff">
               <tbody>
                 <tr>
-                  <td style="padding:28px 32px 0">
-                    <img src="https://terapeutaeusou.com.br/logo-oficial-terapeuta-eu-sou.png" alt="Terapeuta Eu Sou" width="156" style="display:block;height:auto;max-width:156px;width:100%">
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:20px 32px 8px">
-                    <h1 style="margin:0;color:#14105a;font-family:Georgia,serif;font-size:32px;font-weight:400;line-height:1.2">${input.title}</h1>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding:20px 32px 32px">
+                  <td style="padding:32px 32px 32px">
+                    <h1 style="margin:0 0 24px;color:#14105a;font-family:Georgia,'Times New Roman',serif;font-size:32px;font-weight:400;line-height:1.15">${input.title}</h1>
                     ${input.body}
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;margin:28px 0 0">
                       <tbody><tr><td align="center" style="border-radius:999px;background-color:#6c3d91"><a href="{{${input.ctaUrlToken}}}" style="display:inline-block;padding:14px 22px;border-radius:999px;color:#ffffff;font-family:Arial,sans-serif;font-size:15px;font-weight:700;line-height:1.2;text-decoration:none">${input.ctaLabel}</a></td></tr></tbody>
@@ -706,7 +697,7 @@ export const emailActionRegistry: Record<
     adminConfigurable: true,
     currentTemplateVersion: "v1",
     defaults: {
-      subject: "Seu encontro foi confirmado",
+      subject: "Confirmação da sua sessão no TES",
       preheader: "Está tudo certo. Confira as informações do seu agendamento.",
       text: "Sua sessão foi confirmada.\n\nOlá, {{recipient_name}}.\n\nSua sessão com {{counterparty_name}} está confirmada. A reserva foi concluída e o horário ficou reservado na sua agenda.\n\nInformações da sessão:\nPessoa: {{counterparty_name}}\nTerapia: {{service_title}}\nData e horário: {{meeting_date_time}} ({{meeting_timezone}})\nModalidade: Online\n\nVocê poderá acompanhar todas as informações pela sua área no TES.\n\nEquipe TES\n\nVer sessão: {{encounter_url}}",
       html: defaultEmailHtml({

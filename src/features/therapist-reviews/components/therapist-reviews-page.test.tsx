@@ -165,6 +165,8 @@ function pageFixture(
       respondedReviews: 1,
       totalReviews: 2,
     },
+    pendingConfirmations: [],
+    privateFeedback: [],
     reviews: [
       reviewFixture({ patientName: "Marina Souza" }),
       reviewFixture({

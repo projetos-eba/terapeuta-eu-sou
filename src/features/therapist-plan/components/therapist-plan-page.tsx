@@ -445,13 +445,15 @@ function PlanAction({
 
   if (currentPlan === TherapistPlan.Free) {
     return (
-      <TESButton
-        className="mt-5 w-full rounded-lg"
-        href={`${routes.public.therapistCheckout}?plan=${item.code}`}
-        variant="gradient"
-      >
-        Escolher plano <ArrowRight aria-hidden="true" size={18} />
-      </TESButton>
+      <div className="mt-5 grid gap-2">
+        <TESButton
+          className="w-full rounded-lg"
+          href={`${routes.public.therapistCheckout}?plan=${item.code}`}
+          variant="gradient"
+        >
+          Assinar <ArrowRight aria-hidden="true" size={18} />
+        </TESButton>
+      </div>
     );
   }
   if (!subscription) {
@@ -730,12 +732,14 @@ function Price({ item }: { item: TherapistPlanCatalogItem }) {
   if (item.unitAmountCents === 0)
     return <p className="text-3xl font-extrabold text-brand-deep">Gratuito</p>;
   return (
-    <p className="text-lg font-semibold text-brand-deep">
-      <strong className="text-3xl">
-        {formatMoney(item.unitAmountCents, item.currency)}
-      </strong>{" "}
-      <span className="text-base">/mês</span>
-    </p>
+    <div>
+      <p className="text-lg font-semibold text-brand-deep">
+        <strong className="text-3xl">
+          {formatMoney(item.unitAmountCents, item.currency)}
+        </strong>{" "}
+        <span className="text-base">/mês</span>
+      </p>
+    </div>
   );
 }
 

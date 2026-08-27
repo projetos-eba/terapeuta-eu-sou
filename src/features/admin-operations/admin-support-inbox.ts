@@ -42,6 +42,7 @@ export type AdminSupportInboxRow = {
   createdAt: string;
   id: string;
   lastActivityAt: string;
+  protocol: string;
   priority: string;
   requesterName: string | null;
   requesterRole: "patient" | "therapist" | null;
@@ -202,6 +203,7 @@ function mapRow(value: UnknownRecord): AdminSupportInboxRow | null {
     createdAt: text(value.createdAt),
     id,
     lastActivityAt: text(value.lastActivityAt),
+    protocol: text(value.protocol),
     priority: text(value.priority),
     requesterName: nullableText(value.requesterName),
     requesterRole: role === "patient" || role === "therapist" ? role : null,

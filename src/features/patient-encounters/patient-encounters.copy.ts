@@ -4,6 +4,8 @@ import type {
 } from "./patient-encounters.types";
 
 const STATUS_GUIDANCE: Record<PatientEncounterStatus, string> = {
+  awaiting_confirmation:
+    "Confirme se este encontro aconteceu. A resposta é privada e separada da avaliação pública.",
   cancelled:
     "Este encontro foi cancelado. Consulte os detalhes para acompanhar o reembolso, quando aplicável.",
   completed:
