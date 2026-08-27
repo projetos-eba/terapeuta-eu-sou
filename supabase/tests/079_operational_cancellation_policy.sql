@@ -9,7 +9,7 @@ select is(
 );
 select is(
   (select version from public.financial_policy_versions where is_active),
-  'tes-payments-v6-bilateral-7d-30d',
+  'tes-payments-v7-bilateral-weekly-transfer-daily-payout',
   'the bilateral operational policy is active for open future payments'
 );
 select is(

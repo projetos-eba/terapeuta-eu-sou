@@ -55,12 +55,12 @@ Mensagens puramente informativas podem omitir CTA, mas nunca devem substituir um
 
 ## Preheader como contrato de template
 
-Hoje o provider Hostinger recebe `subject`, `text` e `html`; ele não possui campo separado de preheader. A evolução proposta é tornar `preheader` obrigatório no tipo de template/registry e renderizá-lo duas vezes:
+O renderer produz `subject`, `text` e `html`, e o provider Hostinger não possui campo separado de preheader. No envio HTML, o adaptador transmite `subject` e `html`, sem `text`: a combinação dos dois corpos fez a primeira linha textual aparecer antes do shell formatado em clientes como Gmail. A versão `text` permanece disponível no contrato interno para preview, testes e compatibilidade futura. O `preheader` obrigatório no tipo de template/registry é renderizado:
 
 1. como texto semântico no resultado interno do renderer, para validação e testes; e
 2. no topo do HTML, antes do conteúdo visual, em elemento oculto compatível com clientes de e-mail (`display:none`, `max-height:0`, `max-width:0`, `opacity:0`, `overflow:hidden`, `mso-hide:all`), escapado e seguido de preenchimento seguro para não puxar o primeiro parágrafo.
 
-O preheader não será gravado como dado de negócio nem enviado para logs. O texto puro não receberá markup oculto. O renderer continua a entregar somente `subject`, `text` e `html` ao provider.
+O preheader não é gravado como dado de negócio nem enviado para logs. O texto puro não recebe markup oculto. O renderer continua a produzir `subject`, `text` e `html`; o limite do adaptador decide quais corpos o provider recebe.
 
 ## Evolução incremental de `baseHtml()`
 

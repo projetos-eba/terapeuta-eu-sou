@@ -42,8 +42,9 @@ ocorrência.
 
 ## Política e scheduler
 
-- Política financeira ativa local: `tes-payments-v6-bilateral-7d-30d`, que
-  preserva as regras de lote da v5 e muda apenas a confirmação bilateral.
+- Política financeira ativa: `tes-payments-v7-bilateral-weekly-transfer-daily-payout`,
+  que preserva a confirmação bilateral da v6 e corrige o lote para terça às
+  02:00 com Transfer semanal e Payout automático diário da Stripe.
 - Paciente ausente é confirmado no vencimento de 7 dias; terapeuta ausente,
   no vencimento de 30 dias. Sem nenhuma resposta manual, a segunda confirmação
   ocorre no dia 30.

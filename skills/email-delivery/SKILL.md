@@ -69,6 +69,8 @@ habilitacao por acao continuam configuracao operacional do ambiente.
 - `CONFIRMED_AUTOMATICALLY_EMAIL`: somente Edge Functions; ausente/vazio equivale a `false`; aceita apenas `true` ou `false`; valor invalido deve falhar fechado e nunca ativar bypass.
 - `ALLOW_REAL_EMAIL_TESTS`: opt-in local para `npm run test:email:real`.
 - `EMAIL_E2E_RECIPIENT`: deve ser exatamente um dos destinatários autorizados para o teste real: `viniciusferrari.silva@gmail.com` ou `ferrarimarketing9@gmail.com`.
+- `EMAIL_E2E_ACTION_KEYS`: filtro opcional, separado por vírgulas, para repetir somente eventos explicitamente recusados pelo provider; ausente envia todo o registry.
+- `EMAIL_E2E_SENDER_EMAIL`: caixa gerenciada opcional para o harness real; a seleção usa snapshot local e não altera o remetente padrão nem settings por evento.
 
 `EMAIL_PUBLIC_SITE_URL` pode ser informado com protocolo ou apenas dominio. Dominio sem protocolo vira `https://`; `localhost` e `127.0.0.1` viram `http://`.
 
@@ -82,7 +84,8 @@ Provider inicial: Hostinger Mail API.
 
 - Base esperada: `https://api.mail.hostinger.com`.
 - Listagem confirmada: `GET /api/v1/me`, bearer token, retorna account com `data.mailboxes[]`, `resource_id` e `address`.
-- Envio confirmado: `POST /api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, `Content-Type: application/json`, payload com `to: string[]`, `display_name`, `subject`, `text` e `html`.
+- Envio confirmado: `POST /api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, `Content-Type: application/json`, payload HTML com `to: string[]`, `display_name`, `subject` e `html`.
+- O renderer continua produzindo a versão `text` para preview, testes e compatibilidade futura, mas o adaptador Hostinger não a envia junto do HTML. O provider apresentou a primeira linha de `text` como conteúdo visível antes do shell HTML em clientes como Gmail.
 - Sucesso de envio: `204` sem corpo.
 
 Fonte consultada: documentacao oficial/SDK Hostinger Mail API em 2026-07-24.
@@ -123,7 +126,7 @@ Fonte consultada: documentacao oficial/SDK Hostinger Mail API em 2026-07-24.
 - Definir um remetente ativo como padrao em `email_sender_profiles`.
 - Opcionalmente definir remetente especifico em `email_action_settings`.
 - Confirmar SPF, DKIM e DMARC no dominio de envio.
-- Rodar `npm run test:email:real` somente com opt-in e destinatario aprovado. Em Windows/local, o runner `scripts/run-real-email-test.ps1` captura a service role local em memoria pela Supabase CLI e nao deve imprimir secrets.
+- Rodar `npm run test:email:real` somente com opt-in e destinatario aprovado. Em Windows/local, o runner `scripts/run-real-email-test.ps1` captura a service role local em memoria pela Supabase CLI, envia sequencialmente todos os eventos registrados com fixtures ficticias, reduz rajadas com 65 segundos entre mensagens e nao deve imprimir secrets. Esse intervalo nao supera a quota movel do plano Hostinger; conferir a capacidade atual no hPanel antes de um catalogo completo. Um retry seletivo por `EMAIL_E2E_ACTION_KEYS` so e seguro para entregas explicitamente nao aceitas; nunca repetir resultado ambiguo.
 
 ## QA
 

@@ -79,7 +79,7 @@ homologação estão em `docs/payments/promotion-codes.md`.
 
 As regras ficam em `financial_policy_versions`. As versões financeiras são
 preservadas no snapshot de cada pagamento. A versão operacional vigente para
-pagamentos abertos é `tes-payments-v6-bilateral-7d-30d`; versões anteriores
+pagamentos abertos é `tes-payments-v7-bilateral-weekly-transfer-daily-payout`; versões anteriores
 continuam disponíveis para interpretar pagamentos já criados:
 
 - cancelamento gratuito ate 24h antes da sessao;
@@ -100,7 +100,7 @@ continuam disponíveis para interpretar pagamentos já criados:
   reversao autenticada e idempotente com `cancel_at_period_end = false`.
 
 A política ativa para novas confirmações de realização é
-`tes-payments-v6-bilateral-7d-30d`. Ela exige respostas independentes do
+`tes-payments-v7-bilateral-weekly-transfer-daily-payout`. Ela exige respostas independentes do
 paciente e do terapeuta. O prazo de cada papel começa em `bookings.ends_at`:
 o paciente vence em 7 dias e o terapeuta em 30 dias. A confirmação automática
 usa o vencimento contratual como `confirmed_at`, mesmo quando o job recupera
