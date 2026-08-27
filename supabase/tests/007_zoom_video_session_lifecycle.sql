@@ -53,6 +53,14 @@ select public.ensure_video_session_for_paid_booking_v1(
   'pgtap-lifecycle'
 );
 
+-- Keep this lifecycle scenario inside an active scheduled window. The shared
+-- seed date is intentionally historical and would now exercise end_scheduled
+-- before the therapist-absence branch introduced by the newer watchdog policy.
+update public.video_sessions
+set scheduled_starts_at = now() - interval '15 minutes',
+    scheduled_ends_at = now() + interval '45 minutes'
+where booking_id = 'f2000000-0000-4000-8000-000000000001';
+
 select public.apply_zoom_video_session_event_v1(
   session_name,
   'provider-session-pgtap',

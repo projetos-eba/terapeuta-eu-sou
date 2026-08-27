@@ -123,9 +123,7 @@ try {
   await phase("supabase_lint", () =>
     run("npx", ["supabase", "db", "lint"], { timeoutMs: 120_000 }),
   );
-  await phase("supabase_tests", () =>
-    run("npx", ["supabase", "test", "db"], { timeoutMs: 180_000 }),
-  );
+  await phase("supabase_tests", runSupabaseDatabaseTests);
   await phase("next", () => startNext({ timeoutMs: 120_000 }));
   const stripeWebhookSecret = await phase("stripe_listener", () =>
     startStripeListener({ timeoutMs: 45_000 }),
@@ -296,6 +294,35 @@ async function prepareSupabaseSchema() {
     item: "ZOOM_HOMOLOGATION_RESET_DB",
     where: "scripts/homologation/zoom-local.mjs",
   });
+}
+
+async function runSupabaseDatabaseTests() {
+  if (process.env.ZOOM_HOMOLOGATION_DB_TEST_MODE !== "focused") {
+    await run("npx", ["supabase", "test", "db"], { timeoutMs: 180_000 });
+    return;
+  }
+
+  const files = [
+    "supabase/tests/007_zoom_video_session_lifecycle.sql",
+    "supabase/tests/048_zoom_video_session_paid_booking_idempotency.sql",
+    "supabase/tests/088_zoom_rejoin_and_final_end_policy.sql",
+    "supabase/tests/089_bilateral_confirmation_and_relationship_reviews.sql",
+    "supabase/tests/092_booking_checkout_intake_privileges.sql",
+    "supabase/tests/093_zoom_therapist_profile_eligibility.sql",
+  ];
+  evidence.checks.push({
+    at: new Date().toISOString(),
+    files,
+    mode: "focused-preserve-local-data",
+    phase: "supabase_tests_scope",
+  });
+  await writeEvidence();
+
+  for (const file of files) {
+    await run("npx", ["supabase", "test", "db", "--local", file], {
+      timeoutMs: 60_000,
+    });
+  }
 }
 
 async function startFunctions({ stripeWebhookSecret, timeoutMs }) {
@@ -560,7 +587,7 @@ async function runCanonicalStripePaymentE2E() {
       .getByLabel("E-mail")
       .fill(canonicalFixture.credentials.patient.email);
     await page
-      .getByLabel("Senha")
+      .locator('input[name="password"]')
       .fill(canonicalFixture.credentials.patient.password);
     await page.getByRole("button", { name: "Entrar" }).click();
     await page.waitForURL(/\/reserva/, { timeout: 45_000 });

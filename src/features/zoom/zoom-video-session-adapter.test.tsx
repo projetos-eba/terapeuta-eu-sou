@@ -793,6 +793,47 @@ describe("ZoomVideoSessionAdapter", () => {
     ).toHaveLength(1);
   });
 
+  it("recovers the therapist initial entry when SDK init resolves with a transient failure", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", accessResponse(1));
+    mockClient.init
+      .mockResolvedValueOnce({
+        errorCode: 2,
+        reason: "internal error",
+        type: "INTERNAL_ERROR",
+      })
+      .mockImplementationOnce(async () => {
+        calls.push("init");
+        return "" as const;
+      });
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="therapist"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(mockClient.join).not.toHaveBeenCalled();
+    expect(destroyClient).toHaveBeenCalled();
+    expect(screen.getByText(/tentativa 2 de 3/i)).toBeInTheDocument();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_500);
+    });
+
+    expect(mockClient.init).toHaveBeenCalledTimes(2);
+    expect(mockClient.join).toHaveBeenCalledTimes(1);
+    expect(createClient).toHaveBeenCalledTimes(2);
+    expect(screen.getByText(/respons[aá]vel/i)).toBeInTheDocument();
+  });
+
   it("waits for destroyClient before creating the recovery client", async () => {
     vi.useFakeTimers();
     vi.stubGlobal("fetch", accessResponse(0));
@@ -832,6 +873,153 @@ describe("ZoomVideoSessionAdapter", () => {
 
     expect(createClient).toHaveBeenCalledTimes(2);
     expect(screen.getByText(/respons[aá]vel/i)).toBeInTheDocument();
+  });
+
+  it("waits for destroyClient from the previous route mount before creating a client", async () => {
+    vi.stubGlobal("fetch", accessResponse(1));
+    let releaseDestroy: () => void = () => undefined;
+    destroyClient.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseDestroy = resolve;
+        }),
+    );
+
+    const firstMount = render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="therapist"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/respons[aá]vel/i);
+    firstMount.unmount();
+    await waitFor(() => expect(destroyClient).toHaveBeenCalledTimes(1));
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="therapist"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+
+    await Promise.resolve();
+    expect(createClient).toHaveBeenCalledTimes(1);
+    releaseDestroy();
+
+    await waitFor(() => expect(createClient).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText(/respons[aá]vel/i)).toBeInTheDocument();
+  });
+
+  it("pauses a connected-session recovery while offline and resumes on online", async () => {
+    vi.useFakeTimers();
+    let online = true;
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      get onLine() {
+        return online;
+      },
+    });
+    vi.stubGlobal("fetch", accessResponse(0));
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByText(/voc[eê] entrou no encontro/i)).toBeInTheDocument();
+
+    online = false;
+    fireEvent(window, new Event("offline"));
+    act(() => {
+      handlers.get("connection-change")?.({
+        errorCode: 5003,
+        reason: "temporary network closure",
+        state: "Closed",
+      });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(20_000);
+    });
+    expect(createClient).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/retomar a conexão automaticamente/i)).toBeInTheDocument();
+
+    online = true;
+    fireEvent(window, new Event("online"));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_500);
+    });
+
+    expect(createClient).toHaveBeenCalledTimes(2);
+    expect(mockClient.join).toHaveBeenCalledTimes(2);
+    expect(screen.getByText(/voc[eê] entrou no encontro/i)).toBeInTheDocument();
+  });
+
+  it("recovers a transient Closed event instead of treating it as session end", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal("fetch", accessResponse(0));
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    act(() => {
+      handlers.get("connection-change")?.({
+        errorCode: 5003,
+        reason: "session temporarily closed",
+        state: "Closed",
+      });
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_500);
+    });
+
+    expect(mockClient.join).toHaveBeenCalledTimes(2);
+    expect(screen.getByText(/voc[eê] entrou no encontro/i)).toBeInTheDocument();
+  });
+
+  it("does not retry when Closed means the host ended the session", async () => {
+    vi.stubGlobal("fetch", accessResponse(0));
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/voc[eê] entrou no encontro/i);
+
+    act(() => {
+      handlers.get("connection-change")?.({
+        errorCode: 4004,
+        reason: "session ended by host",
+        state: "Closed",
+      });
+    });
+
+    expect(mockClient.join).toHaveBeenCalledTimes(1);
+    expect(
+      await screen.findByText(/confirmação do encontro ficará disponível/i),
+    ).toBeInTheDocument();
   });
 
   it("stops after three SDK attempts and explains the reload fallback", async () => {
@@ -1015,6 +1203,46 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
       expect.stringMatching(/5013-12345678/i),
     );
+  });
+
+  it("shows the receiving-account prerequisite returned by access policy", async () => {
+    const fetchMock = vi.fn((url: string) => {
+      if (url === "/api/auth/session/refresh") {
+        return Promise.resolve({ ok: true, status: 200 });
+      }
+
+      return Promise.resolve({
+        json: async () => ({
+          error: {
+            code: "therapist_receiving_account_required",
+            message: "raw backend details must stay private",
+            requestId: "request-receiving-0001",
+          },
+          ok: false,
+        }),
+        ok: false,
+        status: 403,
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="therapist"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+
+    expect(
+      await screen.findByText(/conclua o cadastro da sua conta de recebimento/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/raw backend details/i)).not.toBeInTheDocument();
+    expect(mockClient.join).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", { name: /recarregar sala/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps patient waiting without issuing a join token until therapist is present", async () => {

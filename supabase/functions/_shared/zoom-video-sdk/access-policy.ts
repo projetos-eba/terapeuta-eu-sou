@@ -38,6 +38,7 @@ export function evaluateVideoSessionAccess(input: {
   patientHasTimelyArrival?: boolean;
   startsAt: string;
   therapistStatus?: string;
+  therapistProfileEligible?: boolean;
   therapistPresent?: boolean;
   videoSessionReady: boolean;
   videoSessionStatus: string | null;
@@ -64,8 +65,8 @@ export function evaluateVideoSessionAccess(input: {
 
   if (
     input.actorRole === "therapist" &&
-    (input.therapistStatus === "suspended" ||
-      input.therapistStatus === "rejected")
+    (input.therapistStatus !== "approved" ||
+      input.therapistProfileEligible === false)
   ) {
     reason = input.therapistStatus === "suspended"
       ? "THERAPIST_SUSPENDED"
