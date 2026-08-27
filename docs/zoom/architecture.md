@@ -164,8 +164,13 @@ terapeuta. T+10+1 ms é bloqueado sem uma dessas evidências.
 Somente o terapeuta pode encerrar para todos no intervalo fechado em T-5 e
 aberto no fim agendado. O encerramento confirmado nessa janela libera feedback;
 um fechamento precoce do provedor não confirma realização e aguarda
-`scheduled_ends_at`. `manual_end`, `end_scheduled` e o watchdog permanecem
-operações independentes.
+`scheduled_ends_at`. Se o Zoom emitir `session.ended` porque o último
+participante saiu antes desse horário, a sessão lógica permanece `active`, a
+instância remota é descartada e a reentrada cria uma nova instância para o mesmo
+`session_name`. A presença fica falsa nesse intervalo e o watchdog aplica a
+grace de ausência do terapeuta antes de encerrar. `manual_end`,
+`end_scheduled` e o watchdog permanecem operações independentes e continuam
+terminais quando já houver solicitação de encerramento.
 
 Se o terapeuta sair, o paciente nao recebe novo JWT durante a ausencia. A
 maintenance encerra sessoes por hard timeout, ausencia prolongada do terapeuta

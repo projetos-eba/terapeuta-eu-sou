@@ -727,7 +727,17 @@ export function ZoomVideoSessionAdapter({
           setMessage("Carregando vídeo...");
         }
 
-        await cleanup({ destroyClient: true, endSession: false });
+        const priorCleanupFailures = await cleanup({
+          destroyClient: true,
+          endSession: false,
+        });
+        if (hasDestroyClientFailure(priorCleanupFailures)) {
+          finalFailure = normalizeZoomFailure(
+            createSdkFailure(5012, "destroy_client_failed", "join"),
+            "join",
+          );
+          break;
+        }
         if (!mounted.current) return;
 
         try {
@@ -736,11 +746,15 @@ export function ZoomVideoSessionAdapter({
         } catch (error) {
           finalFailure = normalizeZoomFailure(error, "join");
           logClientFailure(finalFailure, attempt);
-          await cleanup({ destroyClient: true, endSession: false });
+          const cleanupFailures = await cleanup({
+            destroyClient: true,
+            endSession: false,
+          });
 
           if (
             !AUTOMATIC_REJOIN_ENABLED ||
             !finalFailure.retryable ||
+            isDestroyedZoomClientFailure(finalFailure, cleanupFailures) ||
             attempt >= MAX_JOIN_ATTEMPTS
           ) {
             break;
@@ -913,16 +927,22 @@ export function ZoomVideoSessionAdapter({
     const stream = client.getMediaStream();
     streamRef.current = stream;
     localUserIdRef.current = client.getCurrentUserInfo?.().userId ?? null;
-    if (stream.startAudio) {
-      await awaitExecutedZoomOperation(stream.startAudio(), "audio");
-    }
-    if (stream.muteAudio) {
-      await awaitExecutedZoomOperation(stream.muteAudio(), "audio");
-    }
-
     let microphoneEnabled = false;
     let initialMediaMessage: string | null = null;
-    if (mediaPreferencesRef.current.microphoneEnabled) {
+    let audioReady = true;
+    try {
+      if (stream.startAudio) {
+        await awaitExecutedZoomOperation(stream.startAudio(), "audio");
+      }
+      if (stream.muteAudio) {
+        await awaitExecutedZoomOperation(stream.muteAudio(), "audio");
+      }
+    } catch (error) {
+      audioReady = false;
+      initialMediaMessage = formatInitialAudioError(error);
+    }
+
+    if (audioReady && mediaPreferencesRef.current.microphoneEnabled) {
       try {
         if (stream.unmuteAudio) {
           await awaitExecutedZoomOperation(stream.unmuteAudio(), "audio");
@@ -1094,8 +1114,17 @@ export function ZoomVideoSessionAdapter({
   async function backToWaitingRoom() {
     recoveryAbortControllerRef.current?.abort();
     clearReconnectTimer();
-    await cleanup({ destroyClient: true, endSession: false });
+    const failures = await cleanup({ destroyClient: true, endSession: false });
     if (!mounted.current) return;
+    if (hasDestroyClientFailure(failures)) {
+      presentJoinFailure(
+        normalizeZoomFailure(
+          createSdkFailure(5012, "destroy_client_failed", "cleanup"),
+          "cleanup",
+        ),
+      );
+      return;
+    }
     setState("idle");
     setMessage(null);
     setRecoveryMessage(null);
@@ -1252,6 +1281,15 @@ export function ZoomVideoSessionAdapter({
     leavingRef.current = false;
 
     if (!mounted.current) return;
+    if (hasDestroyClientFailure(failures)) {
+      presentJoinFailure(
+        normalizeZoomFailure(
+          createSdkFailure(5012, "destroy_client_failed", "cleanup"),
+          "cleanup",
+        ),
+      );
+      return;
+    }
     if (failures.length > 0) {
       setState("error");
       setMessage(
@@ -2089,10 +2127,24 @@ async function detectCleanupFailure(operation: Promise<unknown> | unknown) {
   return result;
 }
 
+function hasDestroyClientFailure(failures: CleanupFailure[]) {
+  return failures.some((failure) => failure.operation === "destroyClient");
+}
+
+function isDestroyedZoomClientFailure(
+  failure: NormalizedZoomFailure,
+  cleanupFailures: CleanupFailure[],
+) {
+  return (
+    hasDestroyClientFailure(cleanupFailures) ||
+    failure.reason === "destroy_client_failed"
+  );
+}
+
 function createSdkFailure(
   errorCode: number,
   reason: string,
-  _phase: "access" | "init" | "join" | "connection",
+  _phase: ZoomOperationPhase,
 ): ZoomExecutedFailure {
   return {
     errorCode,
@@ -2297,6 +2349,13 @@ function formatMediaError(error: unknown, target: string) {
   if (failure.category !== "permanent") return failure.userMessage;
 
   return `Não conseguimos ativar ${target}. Verifique as permissões e o dispositivo selecionado.`;
+}
+
+function formatInitialAudioError(error: unknown) {
+  const failure = normalizeZoomFailure(error, "audio");
+  if (failure.category === "permission") return failure.userMessage;
+
+  return "Você entrou na sessão, mas não foi possível preparar o áudio agora. Tente ativá-lo nos controles.";
 }
 
 export function formatScheduledSessionCountdown(input: {

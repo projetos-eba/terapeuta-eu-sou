@@ -138,6 +138,12 @@ um objeto `{ type, reason, errorCode }` resolvido pela Promise representa falha.
 Antes de recriar o singleton, o fluxo remove listeners e videos, executa `leave`
 quando aplicavel e aguarda `destroyClient`.
 
+Uma falha resolvida nas operações iniciais de áudio depois de `join` não pode
+desconectar uma sessão já conectada: a chamada continua com áudio indisponível e
+os controles permitem nova tentativa. Se `destroyClient` falhar, o adapter não
+executa novas tentativas no mesmo processo; apresenta o fallback de recarga
+imediatamente para não repetir `join` contra um singleton inválido.
+
 Com `NEXT_PUBLIC_ZOOM_REJOIN_RECOVERY_V2=true`, uma falha transitoria executa no
 maximo tres tentativas totais dentro de 10 segundos, com esperas de 1,5 e 3
 segundos. As tentativas reutilizam o acesso ja emitido e nunca executam `join`
@@ -148,7 +154,9 @@ configuracao invalida nao entram em repeticao cega.
 Os testes de regressao tambem devem cobrir remount da rota enquanto o
 `destroyClient` anterior ainda esta pendente, pausa offline seguida de retomada
 por `online`, e a diferenca entre `Closed` transitorio e encerramento definitivo
-pelo host. Respostas de acesso devem preservar somente codigos de dominio
+autorizado pelo host. O pgTAP deve cobrir `session.user_left` seguido de
+`session.ended` precoce, reentrada com novo `provider_session_id`, manutenção
+após a grace e encerramento terminal autorizado. Respostas de acesso devem preservar somente codigos de dominio
 permitidos, como `therapist_receiving_account_required`, e nunca renderizar a
 mensagem bruta do backend.
 

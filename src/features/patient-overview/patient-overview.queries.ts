@@ -6,6 +6,7 @@ import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 
 import { resolvePatientAvatarUrl } from "./patient-overview.avatar";
+import { isPatientAppointmentLive } from "./patient-overview.live";
 import {
   moodKeys,
   type MoodKey,
@@ -442,10 +443,10 @@ function toAppointment(
   service: ServiceRow,
   therapy: TherapyRow,
 ): PatientAppointment {
-  const now = Date.now();
-  const isLive =
-    new Date(booking.starts_at).getTime() <= now &&
-    new Date(booking.ends_at).getTime() >= now;
+  const isLive = isPatientAppointmentLive({
+    endsAt: booking.ends_at,
+    startsAt: booking.starts_at,
+  });
 
   return {
     endsAt: booking.ends_at,

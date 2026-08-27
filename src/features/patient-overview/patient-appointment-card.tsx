@@ -1,7 +1,10 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
 import { CalendarDays, Clock3 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { routes } from "@/lib/routes";
 
@@ -10,6 +13,7 @@ import {
   formatAppointmentDate,
   formatTimeRange,
 } from "./patient-overview.formatters";
+import { isPatientAppointmentLive } from "./patient-overview.live";
 import type { PatientAppointment } from "./patient-overview.types";
 
 export function PatientAppointmentCard({
@@ -17,10 +21,21 @@ export function PatientAppointmentCard({
 }: {
   appointment: PatientAppointment;
 }) {
-  const isLive = appointment.status === "live";
+  const [isLive, setIsLive] = useState(appointment.status === "live");
+
+  useEffect(() => {
+    const updateLiveState = () => {
+      setIsLive(isPatientAppointmentLive(appointment));
+    };
+
+    updateLiveState();
+    const intervalId = window.setInterval(updateLiveState, 30_000);
+
+    return () => window.clearInterval(intervalId);
+  }, [appointment]);
 
   return (
-    <article className="grid gap-4 rounded-md border border-[var(--tes-color-border)] bg-[#fdfbff] p-3 sm:grid-cols-[52px_minmax(0,1fr)_auto_minmax(135px,auto)_minmax(145px,auto)_44px] sm:items-center">
+    <article className="relative grid gap-4 rounded-md border border-[var(--tes-color-border)] bg-[#fdfbff] p-3 pr-14 sm:grid-cols-[52px_minmax(0,1fr)_auto_minmax(135px,auto)_minmax(145px,auto)] sm:items-center sm:pr-14">
       <span className="relative inline-flex size-[52px] overflow-hidden rounded-full bg-brand-lavenderSoft">
         {appointment.professional.avatarUrl ? (
           <Image
@@ -43,12 +58,15 @@ export function PatientAppointmentCard({
           {appointment.therapyLabel}
         </p>
       </div>
-      <div className="sm:justify-self-start">
-        <span
-          className={`inline-flex min-h-7 items-center rounded-full px-3 text-[11px] font-medium whitespace-nowrap ${isLive ? "bg-[#fdebf2] text-[#ef5b7a]" : "bg-status-successBg text-status-success"}`}
-        >
-          {isLive ? "Ao vivo agora" : "Confirmada"}
+      <div className="flex flex-wrap items-center gap-2 sm:justify-self-start">
+        <span className="inline-flex min-h-7 items-center rounded-full bg-status-successBg px-3 text-[11px] font-medium whitespace-nowrap text-status-success">
+          Confirmada
         </span>
+        {isLive ? (
+          <span className="inline-flex min-h-7 items-center rounded-full bg-status-dangerBg px-3 text-[11px] font-medium whitespace-nowrap text-status-danger">
+            Ao vivo
+          </span>
+        ) : null}
       </div>
       <dl className="grid gap-2 text-xs text-[var(--tes-color-text-secondary-app)] sm:block">
         <div className="flex items-center gap-2">
@@ -99,7 +117,7 @@ export function PatientAppointmentCard({
       </div>
       <EncounterActionsMenu
         bookingId={appointment.id}
-        className="relative justify-self-end"
+        className="absolute right-3 top-3"
       />
     </article>
   );
