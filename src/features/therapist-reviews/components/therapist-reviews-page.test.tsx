@@ -52,6 +52,83 @@ describe("TherapistReviewsPage", () => {
     expect(screen.queryByText("Beatriz Lima")).not.toBeInTheDocument();
   });
 
+  it("separates session feedback from public reviews and exposes the pending count", () => {
+    render(
+      <TherapistReviewsPage
+        initialData={pageFixture({
+          pendingConfirmations: [
+            {
+              bookingId: "a0000000-0000-4000-8000-000000000001",
+              dueAt: "2026-08-27T16:00:00.000Z",
+              endsAt: "2026-08-27T15:00:00.000Z",
+              patientName: "Marina Souza",
+              remainingSeconds: 86_400,
+              serviceTitle: "Reiki online",
+              startsAt: "2026-08-27T14:30:00.000Z",
+            },
+            {
+              bookingId: "a0000000-0000-4000-8000-000000000002",
+              dueAt: "2026-08-28T16:00:00.000Z",
+              endsAt: "2026-08-28T15:00:00.000Z",
+              patientName: "Beatriz Lima",
+              remainingSeconds: 172_800,
+              serviceTitle: "Reiki online",
+              startsAt: "2026-08-28T14:30:00.000Z",
+            },
+          ],
+          privateFeedback: [
+            {
+              authorRole: "patient",
+              bookingId: "a0000000-0000-4000-8000-000000000003",
+              comment: "A sessão transcorreu bem.",
+              createdAt: "2026-08-20T15:00:00.000Z",
+              id: "a0000000-0000-4000-8000-000000000004",
+              notPerformedReason: null,
+              outcome: "completed",
+              patientName: "Carolina Lima",
+              rating: 5,
+              serviceTitle: "Reiki online",
+              startsAt: "2026-08-20T14:30:00.000Z",
+            },
+          ],
+        })}
+      />,
+    );
+
+    const sessionTab = screen.getByRole("tab", {
+      name: "Avaliações da sessão, 2 confirmações pendentes",
+    });
+    expect(sessionTab).toBeInTheDocument();
+
+    fireEvent.click(sessionTab);
+
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Confirmações operacionais pendentes",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Feedbacks privados das sessões",
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Carolina Lima")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        level: 2,
+        name: "Avaliações recebidas",
+      }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        level: 2,
+        name: "Resumo das avaliações",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
   it("publishes a therapist reply and updates the list", async () => {
     mockedCommand.mockResolvedValueOnce({
       data: {

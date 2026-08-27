@@ -653,7 +653,7 @@ function PaymentSummary({ data }: { data: PatientAccountData }) {
             <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-tesText-secondary">
               Total confirmado
             </p>
-            <p className="mt-1 font-display text-3xl font-light text-brand-deep">
+            <p className="mt-1 font-display text-3xl font-light italic text-brand-deep">
               {formatCurrency(data.paymentSummary.totalPaidCents, data.payments[0].currency)}
             </p>
             <p className="mt-1 text-xs font-semibold text-tesText-secondary">

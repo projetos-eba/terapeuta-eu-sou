@@ -4,8 +4,14 @@ import {
   SupabaseRestClient,
 } from "../auth/supabase-rest.ts";
 import { HostingerMailApiProvider } from "./hostinger-mail-api-provider.ts";
+import { emailActionRegistry } from "./registry.ts";
 import { sendTransactionalEmail } from "./service.ts";
-import type { EmailProviderSender, SenderProfileRow } from "./types.ts";
+import type {
+  EmailActionKey,
+  EmailProviderSender,
+  SenderProfileRow,
+  UserRole,
+} from "./types.ts";
 
 declare const Deno: {
   env: {
@@ -19,6 +25,7 @@ const ALLOWED_RECIPIENTS = new Set([
   "ferrarimarketing9@gmail.com",
   "ferrarimkt9@gmail.com",
 ]);
+const SEND_INTERVAL_MS = 65000;
 
 const runtime: EdgeRuntime = {
   env: Deno.env,
@@ -58,33 +65,96 @@ const provider = new HostingerMailApiProvider({ apiKey });
 const syncedSender = await runStep("sync_hostinger_senders", () =>
   syncHostingerSenders(client, provider),
 );
-const result = await runStep("send_real_email", () =>
-  sendTransactionalEmail(client, provider, {
-    actionKey: "booking_confirmed_therapist",
-    correlationId: `email-e2e-${crypto.randomUUID()}`,
-    recipient: {
-      email: recipient,
-      name: "Teste TES",
-    },
-    recipientRole: "therapist",
-    templateData: {
-      counterparty_name: "Pessoa de teste",
-      encounter_url: "http://localhost:3000/terapeuta/sessoes/teste",
-      meeting_date_time: "27 de agosto de 2026 às 15:00",
-      meeting_timezone: "America/Sao_Paulo",
-      recipient_name: "Teste TES",
-      service_title: "Terapia de teste",
-    },
-  }),
-);
+const entries = resolveRequestedEntries();
+const failures: EmailActionKey[] = [];
 
-if (result.status !== "success") {
-  fail("Real email test did not complete successfully.");
+for (const [index, entry] of entries.entries()) {
+  const result = await runStep(`send_real_email:${entry.actionKey}`, () =>
+    sendTransactionalEmail(client, provider, {
+      actionKey: entry.actionKey,
+      correlationId: `email-e2e-${entry.actionKey}-${crypto.randomUUID()}`,
+      deliverySnapshot: {
+        senderProfileId: syncedSender.id,
+        templateOverrides: {},
+        templateVersion: entry.currentTemplateVersion,
+      },
+      dispatchMode: "manual",
+      recipient: {
+        email: recipient,
+        name: "Teste TES",
+      },
+      recipientRole: recipientRoleFor(entry.actionKey),
+      templateData: entry.previewFixture,
+    }),
+  );
+
+  console.log(
+    `[${index + 1}/${entries.length}] ${entry.actionKey}: ${result.status}`,
+  );
+
+  if (result.status !== "success") {
+    failures.push(entry.actionKey);
+  }
+
+  if (index < entries.length - 1) {
+    await delay(SEND_INTERVAL_MS);
+  }
+}
+
+if (failures.length > 0) {
+  fail(
+    `Real email test failed for ${failures.length} action(s): ${failures.join(", ")}.`,
+  );
 }
 
 console.log(
-  `Real email test sent to the approved recipient from ${syncedSender.mailbox_address}.`,
+  `Real email test accepted ${entries.length}/${entries.length} messages for the approved recipient from ${syncedSender.mailbox_address}.`,
 );
+
+function recipientRoleFor(actionKey: EmailActionKey): UserRole | null {
+  if (actionKey === "payout_operational_alert_admin") return "admin";
+  if (
+    actionKey.includes("therapist") ||
+    actionKey.startsWith("therapy_catalog_request_")
+  ) {
+    return "therapist";
+  }
+  if (
+    actionKey.includes("patient") ||
+    actionKey.startsWith("session_") ||
+    actionKey === "patient_welcome"
+  ) {
+    return "patient";
+  }
+  return null;
+}
+
+function resolveRequestedEntries() {
+  const requested = Deno.env.get("EMAIL_E2E_ACTION_KEYS")?.trim();
+  if (!requested) return Object.values(emailActionRegistry);
+
+  const actionKeys = [...new Set(
+    requested
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  )];
+
+  if (actionKeys.length === 0) {
+    fail("EMAIL_E2E_ACTION_KEYS did not contain any action key.");
+  }
+
+  return actionKeys.map((actionKey) => {
+    if (!(actionKey in emailActionRegistry)) {
+      fail(`EMAIL_E2E_ACTION_KEYS contains an unsupported action: ${actionKey}.`);
+    }
+    return emailActionRegistry[actionKey as EmailActionKey];
+  });
+}
+
+function delay(milliseconds: number) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
 
 async function syncHostingerSenders(
   client: SupabaseRestClient,
@@ -115,6 +185,24 @@ async function syncHostingerSenders(
   const existing = await client.get<SenderProfileRow[]>(
     "/rest/v1/email_sender_profiles?select=*&provider=eq.hostinger_mail_api&active=eq.true",
   );
+  const requested = Deno.env
+    .get("EMAIL_E2E_SENDER_EMAIL")
+    ?.trim()
+    .toLowerCase();
+  const requestedSender = requested
+    ? existing.find(
+      (sender) => sender.mailbox_address.toLowerCase() === requested,
+    )
+    : null;
+
+  if (requested && !requestedSender) {
+    fail("EMAIL_E2E_SENDER_EMAIL is not an active managed mailbox.");
+  }
+
+  if (requestedSender) {
+    return requestedSender;
+  }
+
   const currentDefault = existing.find((sender) => sender.is_default);
 
   if (currentDefault) {

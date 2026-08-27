@@ -164,9 +164,9 @@ Gradiente canônico para CTA premium:
 
 Fallbacks técnicos: enquanto a fonte IvyPresto Display não estiver disponível em algum ambiente, usar `Cormorant Garamond`, `Playfair Display` e `serif` nessa ordem. No Figma, os styles `TES/Display/IvyPresto/*` e `TES/Accent/IvyPresto` foram criados. A aplicação visual real em componentes depende da fonte estar instalada/listada no arquivo; até lá, os styles legados `TES/Display/*` seguem em Cormorant para evitar fontes ausentes.
 
-Nota técnica: os arquivos locais de `IvyPresto Display` no projeto são itálicos. Para manter o nome de família definido no design system sem quebrar títulos retos no produto, o CSS declara `IvyPresto Display` com os cortes retos de `IvyPresto Headline` e os cortes itálicos de `IvyPresto Display`, todos servidos por `/public/fonts/ivy-presto`.
+Nota técnica: os arquivos locais de `IvyPresto Display` no projeto são itálicos. O CSS mantém os cortes retos de `IvyPresto Headline` e os cortes itálicos de `IvyPresto Display`, todos servidos por `/public/fonts/ivy-presto`, para preservar a família tipográfica e sua compatibilidade. A utility `font-display` aplica sempre `font-style: italic`, portanto todo texto que usa IvyPresto Display no produto recebe o corte editorial itálico; UI/body continua no token sans.
 
-Nas áreas autenticadas de terapeuta, paciente e admin, títulos com `font-display` usam sempre a variação itálica. Quando o componente não declara um peso, o padrão é `600`; pesos mais leves continuam disponíveis e qualquer peso acima de `600` é limitado. As telas públicas permanecem fora desse escopo.
+Nas áreas autenticadas de terapeuta, paciente e admin, títulos com `font-display` usam sempre a variação itálica e, quando o componente não declara um peso, o padrão é `600`; pesos mais leves continuam disponíveis e qualquer peso acima de `600` é limitado. As telas públicas preservam sua composição restante, sem alterar a tipografia UI/body.
 
 Uso:
 

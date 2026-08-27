@@ -8,6 +8,8 @@ vi.mock("@/lib/supabase/public-config", () => ({
 }));
 
 import {
+  getPublicServiceAvailabilityForDay,
+  getPublicServiceAvailabilityMonth,
   getPublicServiceAvailability,
   mapAvailableSlots,
 } from "./public-service-availability";
@@ -45,7 +47,11 @@ describe("public service availability", () => {
     const fetchMock = vi.fn(
       async (_input: RequestInfo | URL, _init?: RequestInit) =>
         new Response(
-          JSON.stringify({ slots: [], timezone: "America/Sao_Paulo" }),
+          JSON.stringify({
+            horizonEndsAt: "2026-11-09T12:00:00.000Z",
+            slots: [],
+            timezone: "America/Sao_Paulo",
+          }),
           { status: 200 },
         ),
     );
@@ -56,11 +62,70 @@ describe("public service availability", () => {
     );
 
     expect(result).toEqual({
-      data: { days: [], timezone: "America/Sao_Paulo" },
+      data: {
+        days: [],
+        horizonEndsAt: "2026-11-09T12:00:00.000Z",
+        timezone: "America/Sao_Paulo",
+      },
       status: "success",
     });
     expect(fetchMock.mock.calls[0]?.[1]).toEqual(
       expect.objectContaining({ cache: "no-store", method: "POST" }),
     );
+  });
+
+  it("reads available local dates by month without loading every slot", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              days: [{ date: "2026-10-14" }, { date: "2026-10-21" }],
+              horizonEndsAt: "2026-11-09T12:00:00.000Z",
+              timezone: "America/Sao_Paulo",
+            }),
+            { status: 200 },
+          ),
+      ),
+    );
+
+    await expect(
+      getPublicServiceAvailabilityMonth(
+        "e2e10000-0000-4000-8000-000000000001",
+        "2026-10",
+      ),
+    ).resolves.toEqual({
+      data: {
+        dates: ["2026-10-14", "2026-10-21"],
+        horizonEndsAt: "2026-11-09T12:00:00.000Z",
+        timezone: "America/Sao_Paulo",
+      },
+      status: "success",
+    });
+  });
+
+  it("loads one local day for a selected reservation slot", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(
+            JSON.stringify({
+              horizonEndsAt: "2026-11-09T12:00:00.000Z",
+              slots: [],
+              timezone: "America/Sao_Paulo",
+            }),
+            { status: 200 },
+          ),
+      ),
+    );
+
+    await expect(
+      getPublicServiceAvailabilityForDay(
+        "e2e10000-0000-4000-8000-000000000001",
+        "2026-10-14",
+      ),
+    ).resolves.toMatchObject({ status: "success" });
   });
 });

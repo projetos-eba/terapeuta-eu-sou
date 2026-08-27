@@ -42,7 +42,9 @@ View pública:
 - `public_therapies_v`
 - `public_therapy_details_v`
 - `public_matching_therapies_v` para candidatos elegíveis no Match
-- `public_therapist_search` para profissionais relacionados por `therapy_slug`
+- `get_public_therapy_therapists_v1` para profissionais relacionados por
+  `therapy_slug`; a RPC consulta os serviços elegíveis daquela terapia
+  diretamente e consolida no máximo um serviço relevante por terapeuta.
 
 As views devem expor somente terapias com `therapies.status = published`, visíveis publicamente e com categoria ativa. O Match usa `public_matching_therapies_v` como projeção única de candidatos; uma terapia só entra no Match se também estiver publicada, com detalhe público elegível e ativa em `matching_therapy_settings`. Elas podem retornar dados editoriais, categoria, contagem de terapeutas disponíveis, sinalizadores de popularidade e novidade. Não expor pesos do Match, dados internos de admin, terapeutas não aprovados, perfis privados ou serviços inativos.
 
@@ -65,9 +67,15 @@ Escopo editorial atual:
 
 Para profissionais relacionados:
 
-- consultar `public_therapist_search?therapy_slug=eq.<slug>&limit=6`;
-- avaliações e sessões contam apenas bookings `completed` e `paid`;
-- ordenação não pode considerar plano do terapeuta;
+- consultar `get_public_therapy_therapists_v1` com limite máximo de 6;
+- a elegibilidade e a contagem pública usam o mesmo critério: serviço ativo,
+  online, reservável, não arquivado, terapia/categoria publicadas e perfil
+  publicável;
+- sessões concluídas não são exibidas no card relacionado; avaliações públicas
+  usam exclusivamente a avaliação canônica `published` e não substituída;
+- fora do Match, a ordenação não considera plano. Com `source=match`, interesses
+  e temas compatíveis vêm antes e o plano é apenas desempate (`premium_plus`,
+  `premium`, `free`);
 - se o perfil for novo, mostrar “Novo”, nunca `0,0`.
 
 ## Componentes Esperados
@@ -123,6 +131,8 @@ Para profissionais relacionados:
 - Links para `/terapias/:slug`
 - Links de detalhe para `/terapeutas?therapy=:slug&source=*`
 - Links de card para `/terapeutas/:slug?therapy=:slug&source=*`
+- Conferir que o detalhe vindo do Match mostra no máximo 6 profissionais, ou
+  somente os existentes quando houver menos, sem placeholders.
 - Favoritar anônimo encaminha para login de cliente
 - Verificar que só Reiki, Tarô e Constelação Familiar aparecem como `published` e visíveis no Match nesta fase.
 

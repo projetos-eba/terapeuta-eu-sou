@@ -48,6 +48,7 @@ const users = [
     plan: "premium_plus",
     name: "TES E2E Connect Apto",
   },
+  { key: "admin", role: "admin", name: "TES E2E Admin" },
   { key: "client_one", role: "patient", name: "TES E2E Cliente Um" },
   { key: "client_two", role: "patient", name: "TES E2E Cliente Dois" },
 ].map((user) => ({
@@ -408,7 +409,11 @@ async function createService(therapistId, therapyId, key) {
         duration_minutes: 50,
         is_bookable: true,
         online_only: true,
-        price_cents: key.includes("plus") ? 24000 : 18000,
+        price_cents: key.includes("plus")
+          ? 24000
+          : key === "therapist_connect_ready"
+            ? 20000
+            : 18000,
         status: "active",
         therapist_profile_id: therapistId,
         therapy_id: therapyId,

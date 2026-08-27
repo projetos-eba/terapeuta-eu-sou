@@ -190,7 +190,7 @@ values (
   'active',
   'ready'
 )
-on conflict (therapist_profile_id) do update
+on conflict (therapist_profile_id) where is_current do update
 set onboarding_status = excluded.onboarding_status,
     details_submitted = excluded.details_submitted,
     charges_enabled = excluded.charges_enabled,

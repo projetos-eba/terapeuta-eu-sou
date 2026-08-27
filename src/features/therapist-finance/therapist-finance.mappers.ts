@@ -198,6 +198,7 @@ export function mapTherapistConnectAccount(
       onboardingStatus: connectStatus(value.onboardingStatus),
       payoutsEnabled: boolean(value.payoutsEnabled),
       pendingVerification: array(value.pendingVerification).map(nonEmptyString),
+      previousAccountClosed: boolean(value.previousAccountClosed),
       therapistProfileId: nonEmptyString(value.therapistProfileId),
       transferCapabilityStatus: nonEmptyString(value.transferCapabilityStatus),
     };

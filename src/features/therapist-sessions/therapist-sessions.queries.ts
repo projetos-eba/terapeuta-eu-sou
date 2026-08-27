@@ -47,6 +47,18 @@ export async function queryTherapistSessionDetail(
   );
 }
 
+export async function queryTherapistSessionFeedback(
+  accessToken: string,
+  bookingId: string,
+) {
+  const config = getSupabaseServerRestConfig(accessToken);
+  if (!config) throw new Error("SUPABASE_CONFIG_UNAVAILABLE");
+
+  return supabaseServerRestRpc<unknown>(config, "get_session_feedback_v2", {
+    p_booking_id: bookingId,
+  });
+}
+
 export type TherapistPendingRescheduleRow = {
   expires_at: string | null;
   id: string;

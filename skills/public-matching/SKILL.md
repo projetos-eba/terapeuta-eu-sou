@@ -62,6 +62,10 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
   nome/slug estavel.
 - Refinamentos selecionados sao preservados para a pagina da terapia, mas nao
   alteram score ou ordenacao de terapias.
+- No detalhe da terapia aberto com `source=match`, profissionais relacionados
+  continuam ordenados primeiro por interesses e temas compatíveis do serviço.
+  Apenas em empate, o plano é aplicado como desempate: `premium_plus` (2),
+  `premium` (1), `free` (0). Isso não altera a recomendação de terapias.
 - No desktop, retornar ate 5 terapias; no mobile, exibir as 3 primeiras.
 
 ## Frontend
@@ -112,6 +116,9 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
   - cada tema permite ate 3 interesses; desmarcar o tema remove seus interesses.
   - refinamentos nao alteram ranking de terapias.
   - resultado aponta para `/terapias/:slug`.
+  - no detalhe vindo do Match, até 6 profissionais relacionados são exibidos;
+    compatibilidade prevalece sobre plano e o desempate é Premium Plus,
+    Premium, Free.
   - resultado retorna apenas terapias existentes em `public_matching_therapies_v`.
   - sem Supabase, erro de consulta ou ausencia de versao publicada retorna
     indisponibilidade honesta; demo so ativa com `TES_ENABLE_DEMO_DATA=true`

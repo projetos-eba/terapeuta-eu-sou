@@ -14,7 +14,7 @@ insert into public.therapist_connect_accounts (
   'ready', true, true, true, 'active', 'ready', 'enabled', 'daily', now(),
   '[]'::jsonb, '{"fixture":"weekly_payout_local"}'::jsonb
 )
-on conflict (therapist_profile_id) do update
+on conflict (therapist_profile_id) where is_current do update
 set stripe_account_id = excluded.stripe_account_id,
     onboarding_status = excluded.onboarding_status,
     details_submitted = excluded.details_submitted,

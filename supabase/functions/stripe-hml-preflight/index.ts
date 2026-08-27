@@ -235,6 +235,7 @@ runtime.serve(async (request) => {
         (candidate) =>
           candidate.status === "enabled" &&
           candidate.event_payload === "thin" &&
+          candidate.events_from?.includes("@self") &&
           candidate.webhook_endpoint?.url?.includes(
             "/functions/v1/stripe-connect-webhook",
           ) &&

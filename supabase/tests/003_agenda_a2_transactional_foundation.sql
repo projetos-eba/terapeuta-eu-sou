@@ -23,7 +23,7 @@ values (
   15,
   15,
   0,
-  30,
+  90,
   30
 )
 on conflict (service_id) do update

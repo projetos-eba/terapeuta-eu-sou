@@ -288,6 +288,32 @@ describe("TherapistFinancePage", () => {
     expect(screen.queryByLabelText(/cnpj/i)).not.toBeInTheDocument();
   });
 
+  it("asks for a new receiving account after the prior account is closed", () => {
+    renderPage("account", {
+      account: {
+        ...fixture().account,
+        accountExists: false,
+        maskedAccountId: null,
+        onboardingStatus: "not_started",
+        previousAccountClosed: true,
+      },
+    });
+
+    expect(
+      screen.getByRole("heading", { name: "Conta de recebimento pendente" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Criar nova conta de recebimento" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Sua conta de recebimento anterior foi encerrada. Crie uma nova conta para que os pr\u00f3ximos repasses possam continuar.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/prÃ³ximos repasses/i)).not.toBeInTheDocument();
+    expect(screen.queryByText("acct_...cdef")).not.toBeInTheDocument();
+  });
+
   it("shows the next payout card with the scheduled batch date instead of duplicating the eligible amount", () => {
     renderPage("payouts", {
       payouts: {
@@ -352,6 +378,7 @@ function fixture(): TherapistFinancePageData {
       onboardingStatus: "ready",
       payoutsEnabled: true,
       pendingVerification: [],
+      previousAccountClosed: false,
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
       transferCapabilityStatus: "active",
     },

@@ -47,7 +47,6 @@ export class HostingerMailApiProvider implements EmailProvider {
           display_name: input.from.displayName,
           html: input.html,
           subject: input.subject,
-          text: input.text,
           to: [input.to.email],
         },
         method: "POST",

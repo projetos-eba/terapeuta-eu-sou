@@ -61,6 +61,9 @@ Do not send generic `select *` payloads to React.
   present in `data.metrics`, `data.rows` or `data.query`.
 - Payment rows must stay anchored to the sanitized mapper contract already in
   use by `src/features/admin-finance/admin-finance.mappers.ts`.
+- Commission amounts are snapshot values: new session payments use the active
+  15% TES policy while historical 20% records remain immutable and visible as
+  their original financial evidence.
 - Frontend copy for `/admin/pagamentos` must avoid technical labels such as
   read model, Stripe payloads, ledger, DTOs, internal guardrails or
   configuration failures.

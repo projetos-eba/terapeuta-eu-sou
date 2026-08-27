@@ -1,6 +1,6 @@
 begin;
 
-select plan(51);
+select plan(55);
 
 select is(
   (select patient_auto_confirmation_days from public.financial_policy_versions where is_active),
@@ -44,15 +44,18 @@ grant select on review_revision_baseline to service_role;
 insert into public.therapist_connect_accounts (
   id, therapist_profile_id, stripe_account_id, onboarding_status,
   details_submitted, charges_enabled, payouts_enabled,
-  stripe_transfers_status, operational_status
+  stripe_transfers_status, operational_status, payout_status,
+  payout_schedule_interval
 ) values (
   'b8900000-0000-4000-8000-000000000001',
   '92000000-0000-4000-8000-000000000011',
-  'acct_bilateral_contract_test', 'ready', true, true, true, 'active', 'ready'
+  'acct_bilateral_contract_test', 'ready', true, true, true, 'active', 'ready',
+  'enabled', 'daily'
 )
-on conflict (therapist_profile_id) do update
+on conflict (therapist_profile_id) where is_current do update
 set stripe_transfers_status = 'active', operational_status = 'ready',
-    charges_enabled = true, payouts_enabled = true, details_submitted = true;
+    charges_enabled = true, payouts_enabled = true, details_submitted = true,
+    payout_status = 'enabled', payout_schedule_interval = 'daily';
 
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id,
@@ -438,6 +441,47 @@ select ok(
   (select count(*)::integer from public.review_revisions revision join public.reviews review on review.id = revision.review_id where review.patient_profile_id = '91000000-0000-4000-8000-000000000001' and review.therapist_profile_id = '92000000-0000-4000-8000-000000000011')
     > (select total from review_revision_baseline),
   'review edit stores the previous revision in append-only history'
+);
+
+select is(
+  public.save_patient_therapist_review_for_actor_v1(
+    '90000000-0000-4000-8000-000000000001',
+    '92000000-0000-4000-8000-000000000011',
+    'hide', null, null,
+    'b8200000-0000-4000-8000-000000000008'
+  )->'review'->>'status',
+  'hidden',
+  'patient can hide the canonical public review'
+);
+select is(
+  (
+    select count(*)::integer
+    from public.public_therapist_profile_reviews_v_internal
+    where therapist_slug = 'juliane-moore'
+      and body = 'Texto revisado.'
+  ),
+  0,
+  'a hidden review leaves the canonical public projection immediately'
+);
+select is(
+  public.save_patient_therapist_review_for_actor_v1(
+    '90000000-0000-4000-8000-000000000001',
+    '92000000-0000-4000-8000-000000000011',
+    'publish', 4, 'Texto republicado.',
+    'b8200000-0000-4000-8000-000000000009'
+  )->'review'->>'status',
+  'published',
+  'patient can republish the canonical public review'
+);
+select is(
+  (
+    select count(*)::integer
+    from public.public_therapist_profile_reviews_v_internal
+    where therapist_slug = 'juliane-moore'
+      and body = 'Texto republicado.'
+  ),
+  1,
+  'a republished review returns to the canonical public projection immediately'
 );
 
 rollback;

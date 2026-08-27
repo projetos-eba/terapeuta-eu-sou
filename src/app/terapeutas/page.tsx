@@ -32,10 +32,7 @@ import {
   type TherapistSearchFilters,
   type TherapistSearchOption,
 } from "@/features/public-therapist-search";
-import {
-  PublicSearchMetricsTracker,
-  TrackedBookingLink,
-} from "@/features/public-metrics";
+import { PublicSearchMetricsTracker } from "@/features/public-metrics";
 import { TherapyBadgeList } from "@/features/public-therapist-search/components/therapy-badge-list";
 import { routes } from "@/lib/routes";
 import { platformAssets } from "@/lib/platform-assets";
@@ -75,7 +72,7 @@ function SelectField({
   value?: string;
 }) {
   return (
-    <label className="relative flex h-[52px] min-w-[158px] shrink-0 items-center rounded-[16px] border border-border bg-white text-[16px] font-medium text-tesText-muted focus-within:ring-4 focus-within:ring-ring/20">
+    <label className="relative flex h-[52px] w-full shrink-0 items-center rounded-[16px] border border-border bg-white text-[16px] font-medium text-tesText-muted focus-within:ring-4 focus-within:ring-ring/20 sm:min-w-[158px] sm:w-auto">
       <span className="sr-only">{label}</span>
       <select
         name={name}
@@ -155,7 +152,7 @@ function SearchFilters({
           <input type="hidden" name="sort" value={filters.sort} />
           <Link
             href={routes.public.therapists as Route}
-            className="inline-flex h-[52px] w-[177px] items-center justify-center gap-2 rounded-full bg-brand-primary px-4 text-[15px] font-semibold text-white transition hover:bg-brand-primaryHover focus:outline-none focus:ring-4 focus:ring-ring/20"
+            className="inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-full bg-brand-primary px-4 text-[15px] font-semibold text-white transition hover:bg-brand-primaryHover focus:outline-none focus:ring-4 focus:ring-ring/20 sm:w-[177px]"
           >
             Limpar Filtros
             <Filter className="size-[17px]" />
@@ -170,10 +167,12 @@ function SearchFilters({
 function ResultsHeader({
   activeFilterCount,
   filters,
+  isUnavailable = false,
   totalCount,
 }: {
   activeFilterCount: number;
   filters: TherapistSearchFilters;
+  isUnavailable?: boolean;
   totalCount: number;
 }) {
   return (
@@ -183,9 +182,9 @@ function ResultsHeader({
           Caminhos que podem fazer sentido para você
         </h2>
         <p className="mt-1 max-w-[600px] text-[15px] font-semibold leading-6 text-tesText-secondary">
-          Conheça diferentes terapeutras, suas histórias e formas de cuidado.
+          Conheça diferentes terapeutas, suas histórias e formas de cuidado.
           <br />
-          Escolha com tranquiilidade quem faz sentido para o momento que você
+          Escolha com tranquilidade quem faz sentido para o momento que você
           está vivendo.
         </p>
         {activeFilterCount > 0 ? (
@@ -196,7 +195,8 @@ function ResultsHeader({
         ) : null}
       </div>
 
-      <div className="space-y-3 lg:text-right">
+      {!isUnavailable ? (
+        <div className="space-y-3 lg:text-right">
         <p className="text-[16px] font-semibold leading-7 text-tesText-secondary">
           Encontramos {totalCount} terapeuta{totalCount === 1 ? "" : "s"}
         </p>
@@ -240,7 +240,8 @@ function ResultsHeader({
           </label>
           <button className="sr-only">Ordenar</button>
         </form>
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -272,11 +273,9 @@ function Rating({
 
 function TherapistResultCard({
   position,
-  trackMetrics,
   therapist,
 }: {
   position: number;
-  trackMetrics: boolean;
   therapist: TherapistSearchCard;
 }) {
   const isVerified = therapist.highlightTone === "verified";
@@ -365,33 +364,15 @@ function TherapistResultCard({
                 {therapist.priceLabel}
               </p>
             </div>
-            <div className="flex w-full flex-col gap-2 sm:w-[160px]">
+            <div className="w-full sm:w-[160px]">
               <TESButton
                 href={therapist.href}
                 size="lg"
                 className="h-16 min-h-16 w-full rounded-[18px] px-4 py-0 text-sm leading-5"
               >
-                Ver perfil completo
+                Ver perfil
                 <ArrowRight className="size-5" />
               </TESButton>
-              {trackMetrics ? (
-                <TrackedBookingLink
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-lavender bg-white px-4 text-center text-sm font-bold leading-5 text-brand-primary transition hover:border-brand-lavender focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                  href={`${routes.public.reservation}?therapist=${therapist.slug}&service=${therapist.serviceId}`}
-                  serviceId={therapist.serviceId}
-                  sourceSurface="therapist_search"
-                  therapistSlug={therapist.slug}
-                >
-                  Agendar sessão
-                </TrackedBookingLink>
-              ) : (
-                <Link
-                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-brand-lavender bg-white px-4 text-center text-sm font-bold leading-5 text-brand-primary transition hover:border-brand-lavender focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                  href={routes.public.reservation as Route}
-                >
-                  Agendar sessão
-                </Link>
-              )}
             </div>
           </div>
         </div>
@@ -528,6 +509,7 @@ export default async function TherapistsPage({
         <ResultsHeader
           activeFilterCount={result.activeFilterCount}
           filters={result.filters}
+          isUnavailable={result.status === "degraded"}
           totalCount={result.totalCount}
         />
 
@@ -542,7 +524,6 @@ export default async function TherapistsPage({
                 position={
                   (result.currentPage - 1) * result.pageSize + index + 1
                 }
-                trackMetrics={result.source === "live"}
                 therapist={therapist}
               />
             ))}

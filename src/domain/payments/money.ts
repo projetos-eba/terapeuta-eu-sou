@@ -1,5 +1,5 @@
 export const MONEY_SCALE_BPS = 10_000;
-export const DEFAULT_PLATFORM_COMMISSION_BPS = 2_000;
+export const DEFAULT_PLATFORM_COMMISSION_BPS = 1_500;
 export const DEFAULT_CURRENCY = "BRL";
 
 export type CommissionSnapshot = {

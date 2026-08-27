@@ -175,6 +175,12 @@ export async function getPublicTherapistProfileResult(
           : [],
         therapyImages.get(service.therapy_id)?.imageUrl ?? null,
         therapyImages.get(service.therapy_id)?.themeNames ?? [],
+        availabilityResults[index]?.status === "success"
+          ? {
+              horizonEndsAt: availabilityResults[index].data.horizonEndsAt,
+              timezone: availabilityResults[index].data.timezone,
+            }
+          : null,
       ),
     );
 

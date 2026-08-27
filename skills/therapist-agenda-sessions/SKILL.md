@@ -114,6 +114,12 @@ Não criar enums equivalentes dentro de features.
   janela, pagamento, perfil responsável e elegibilidade são revalidados no
   backend a cada acesso. Reagendar e cancelar reutilizam
   `SessionOperationActions`, sem atalhos paralelos.
+- Depois de `endsAt`, o detalhe não oferece mais ações de acompanhar sala nem
+  status da sala. Se `get_session_feedback_v2` retornar `eligible`, o CTA é
+  `Confirmar sessão` para `/terapeuta/sessoes/:bookingId/video?feedback=1`;
+  `submitted` e `unavailable` mostram somente o estado honesto. A autorização
+  final permanece no backend e esta rota operacional continua disponível para
+  Free, Premium e Premium Plus.
 - Quando o booking, o pagamento ou a realização já estiverem encerrados
   (incluindo pagamento cancelado, reembolso ou sessão não realizada),
   `SessionOperationActions` mantém cancelamento e reagendamento desabilitados e
@@ -179,6 +185,10 @@ Não criar enums equivalentes dentro de features.
   `get_therapist_calendar_v1`.
 - A UI edita faixas em escopo geral ou por terapia e preserva regras dos
   outros escopos no comando atômico.
+- Os horários das faixas são escolhidos exclusivamente em listas suspensas de
+  15 minutos; não usar campo de horário digitável. Valores históricos fora do
+  intervalo devem continuar visíveis como opção para que uma edição não os
+  descarte silenciosamente.
 - Na aba Horários, a navegação entre Calendário / Horários / Bloqueios segue o
   padrão de controle segmentado. O resumo de disponibilidade usa os dados
   reais de horas e dias configurados, com ícone contextual e sem estimar horas
@@ -229,7 +239,13 @@ Não criar enums equivalentes dentro de features.
 - Cancelamento/reagendamento de booking continuam nos comandos próprios.
 - O preview TypeScript não confirma reserva nem deve alimentar novos fluxos.
 - A5 usa `get_service_available_slots_v1` como endpoint público autoritativo e
-  repete a validação no trigger de `booking_holds`.
+  repete a validação no trigger de `booking_holds`. A agenda pública usa ainda
+  `get_service_available_days_v1` para navegação mensal e
+  `get_service_available_day_slots_v1` para o detalhe de um dia, sem expor
+  ocupação ou participantes.
+- `max_days_ahead` tem default canônico de 90 dias e todas as configurações de
+  serviço existentes são normalizadas para 90; o hold continua rejeitando um
+  início fora desse horizonte.
 - `therapies.calendar_color_key` é a chave canônica de cor. Nunca persistir
   classe Tailwind ou valor visual arbitrário no banco.
 - Booking do terapeuta bloqueia todos os serviços no mesmo intervalo.

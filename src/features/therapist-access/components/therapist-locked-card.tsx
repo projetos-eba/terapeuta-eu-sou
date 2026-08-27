@@ -135,7 +135,7 @@ export function TherapistLockedCard({
             </div>
             <div className="mt-5 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(300px,0.72fr)] lg:items-start lg:gap-8">
               <div className="order-2 min-w-0 lg:order-1">
-                <h2 className="max-w-[620px] font-display text-[2.7rem] font-light leading-[0.98] text-brand-deep sm:text-[3.6rem]">
+                <h2 className="max-w-[620px] font-display text-[2.7rem] font-light italic leading-[0.98] text-brand-deep sm:text-[3.6rem]">
                   {dialogTitle}
                 </h2>
                 <span

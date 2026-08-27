@@ -28,6 +28,10 @@ describe("TherapyBadgeList", () => {
     expect(
       screen.getByRole("button", { name: /ver mais 2 terapias/i }),
     ).toHaveTextContent("+2");
+    expect(screen.getByRole("button", { name: /ver mais 2 terapias/i })).toHaveClass(
+      "min-h-11",
+      "min-w-11",
+    );
     expect(screen.getByRole("tooltip")).toHaveClass("hidden");
 
     fireEvent.mouseEnter(

@@ -36,8 +36,11 @@ import { SessionOperationActions } from "@/features/session-actions/session-oper
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import {
   getTherapistSessionDetail,
+  getTherapistSessionFeedbackStatus,
   getTherapistSessionPendingReschedule,
+  type TherapistSessionFeedbackStatus,
 } from "@/features/therapist-sessions";
+import { getTherapistPostSessionAction } from "@/features/therapist-sessions/session-feedback-action";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 import { routes } from "@/lib/routes";
 
@@ -66,11 +69,17 @@ export default async function TherapistSessionDetailPage({
 
   const booking = result.data;
   const presentation = mapSessionPresentation(booking);
-  const pendingReschedule = await getTherapistSessionPendingReschedule({
-    accessToken: therapist.accessToken,
-    bookingId: booking.bookingId,
-    userId: therapist.userId,
-  });
+  const [pendingReschedule, feedbackStatus] = await Promise.all([
+    getTherapistSessionPendingReschedule({
+      accessToken: therapist.accessToken,
+      bookingId: booking.bookingId,
+      userId: therapist.userId,
+    }),
+    getTherapistSessionFeedbackStatus({
+      accessToken: therapist.accessToken,
+      bookingId: booking.bookingId,
+    }),
+  ]);
 
   return (
     <AppPageContainer className="gap-6 lg:gap-8">
@@ -88,7 +97,7 @@ export default async function TherapistSessionDetailPage({
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-primary">
               Rotina de atendimento
             </p>
-            <h1 className="font-display text-4xl leading-[0.98] text-brand-deep sm:text-5xl">
+            <h1 className="font-display text-4xl italic leading-[0.98] text-brand-deep sm:text-5xl">
               Detalhes da sessão
             </h1>
             <p className="max-w-2xl text-sm leading-6 text-tesText-secondary sm:text-base">
@@ -97,7 +106,11 @@ export default async function TherapistSessionDetailPage({
           </header>
 
           <SessionOverview booking={booking} presentation={presentation} />
-          <SessionReadiness booking={booking} presentation={presentation} />
+          <SessionReadiness
+            booking={booking}
+            feedbackStatus={feedbackStatus}
+            presentation={presentation}
+          />
 
           <div className="grid gap-5 lg:grid-cols-2">
             <SessionAbout booking={booking} presentation={presentation} />
@@ -128,7 +141,11 @@ export default async function TherapistSessionDetailPage({
         </AppPageMain>
 
         <AppPageAside className="auto-rows-min self-start content-start !grid-cols-1 lg:!grid-cols-2 xl:!block">
-          <SessionActionRail booking={booking} presentation={presentation} />
+          <SessionActionRail
+            booking={booking}
+            feedbackStatus={feedbackStatus}
+            presentation={presentation}
+          />
         </AppPageAside>
       </AppPageGrid>
     </AppPageContainer>
@@ -204,11 +221,18 @@ function SessionOverview({
 
 function SessionReadiness({
   booking,
+  feedbackStatus,
   presentation,
 }: {
   booking: TherapistSessionDetailReadModel;
+  feedbackStatus: TherapistSessionFeedbackStatus;
   presentation: SessionPresentation;
 }) {
+  const postSessionAction = getTherapistPostSessionAction({
+    endsAt: booking.endsAt,
+    feedbackStatus,
+  });
+  const sessionEnded = postSessionAction !== "room";
   const canOpenRoom = presentation.actions.canAccessZoom;
 
   return (
@@ -222,6 +246,7 @@ function SessionReadiness({
       />
       <StatusSurface
         action={
+          sessionEnded ? undefined : (
           <Link
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-control border border-brand-lavender px-3 text-sm font-semibold text-brand-primary transition-colors hover:border-brand-primary hover:text-brand-deep"
             href={routes.therapist.sessionVideo(booking.bookingId)}
@@ -229,35 +254,40 @@ function SessionReadiness({
             <Video aria-hidden="true" className="size-4" />
             {canOpenRoom ? "Abrir sala" : "Ver status da sala"}
           </Link>
+          )
         }
-        description="O acesso é avaliado novamente ao abrir a sala."
+        description={
+          sessionEnded
+            ? "O horário agendado foi encerrado. A confirmação da sessão segue disponível conforme o seu estado atual."
+            : "O acesso é avaliado novamente ao abrir a sala."
+        }
         icon={Video}
         label="Sala de atendimento"
-        tone={canOpenRoom ? "success" : "brand"}
-        value={getZoomAccessLabel(booking.zoomAccess)}
+        tone={sessionEnded ? "brand" : canOpenRoom ? "success" : "brand"}
+        value={sessionEnded ? "Horário encerrado" : getZoomAccessLabel(booking.zoomAccess)}
       />
-      {canReviewFeedback(booking.bookingStatus) ? (
-        <Link
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-control border border-brand-lavender px-3 text-sm font-semibold text-brand-primary transition-colors hover:border-brand-primary hover:text-brand-deep"
-          href={`${routes.therapist.sessionVideo(booking.bookingId)}?feedback=1`}
-        >
-          <Star aria-hidden="true" className="size-4" />
-          Avaliar sessão
-        </Link>
+      {sessionEnded ? (
+        <StatusSurface
+          action={
+            postSessionAction === "confirm" ? (
+              <Link
+                className="inline-flex min-h-10 items-center justify-center gap-2 rounded-control border border-brand-lavender px-3 text-sm font-semibold text-brand-primary transition-colors hover:border-brand-primary hover:text-brand-deep"
+                href={`${routes.therapist.sessionVideo(booking.bookingId)}?feedback=1`}
+              >
+                <Star aria-hidden="true" className="size-4" />
+                Confirmar sessão
+              </Link>
+            ) : undefined
+          }
+          description={feedbackStatusDescription(postSessionAction)}
+          icon={CheckCheck}
+          label="Confirmação da sessão"
+          tone={postSessionAction === "confirm" ? "success" : "brand"}
+          value={feedbackStatusLabel(postSessionAction)}
+        />
       ) : null}
     </section>
   );
-}
-
-function canReviewFeedback(status: TherapistSessionDetailReadModel["bookingStatus"]) {
-  return [
-    "completed",
-    "cancelled_by_patient",
-    "cancelled_by_therapist",
-    "no_show_patient",
-    "no_show_therapist",
-    "refunded",
-  ].includes(status);
 }
 
 function SessionAbout({
@@ -273,7 +303,7 @@ function SessionAbout({
         <span className="grid size-10 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
           <Info aria-hidden="true" className="size-5" />
         </span>
-        <h2 className="font-display text-3xl leading-none text-brand-deep">Sobre esta sessão</h2>
+        <h2 className="font-display text-3xl italic leading-none text-brand-deep">Sobre esta sessão</h2>
       </div>
       <p className="mt-5 text-sm leading-6 text-tesText-secondary">
         Esta sessão faz parte do acompanhamento com {booking.patientName}. As informações abaixo ajudam a organizar o atendimento, sem expor registros privados da pessoa.
@@ -301,7 +331,7 @@ function SessionPreparation() {
         <span className="grid size-10 place-items-center rounded-full bg-state-successSoft text-state-success">
           <Check aria-hidden="true" className="size-5" />
         </span>
-        <h2 className="font-display text-3xl leading-none text-brand-deep">Preparação antes do encontro</h2>
+        <h2 className="font-display text-3xl italic leading-none text-brand-deep">Preparação antes do encontro</h2>
       </div>
       <ul className="mt-5 space-y-4">
         {items.map((item) => (
@@ -350,11 +380,18 @@ function SessionAdditionalLinks({ booking }: { booking: TherapistSessionDetailRe
 
 function SessionActionRail({
   booking,
+  feedbackStatus,
   presentation,
 }: {
   booking: TherapistSessionDetailReadModel;
+  feedbackStatus: TherapistSessionFeedbackStatus;
   presentation: SessionPresentation;
 }) {
+  const postSessionAction = getTherapistPostSessionAction({
+    endsAt: booking.endsAt,
+    feedbackStatus,
+  });
+  const sessionEnded = postSessionAction !== "room";
   const canOpenRoom = presentation.actions.canAccessZoom;
 
   return (
@@ -364,7 +401,7 @@ function SessionActionRail({
           <span className="grid size-10 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
             <Clock3 aria-hidden="true" className="size-5" />
           </span>
-          <h2 className="font-display text-3xl leading-none text-brand-deep">Próximas ações</h2>
+          <h2 className="font-display text-3xl italic leading-none text-brand-deep">Próximas ações</h2>
         </div>
         <p className="mt-5 text-sm font-semibold text-brand-deep">{presentation.label}</p>
         <p className="mt-1 text-sm leading-5 text-tesText-secondary">{presentation.description}</p>
@@ -372,13 +409,29 @@ function SessionActionRail({
           <CalendarDays aria-hidden="true" className="size-4 text-brand-primary" />
           {formatSessionDateTime(booking.startsAt, booking.timezone)}
         </p>
-        <Link
-          className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-control bg-brand-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-deep"
-          href={routes.therapist.sessionVideo(booking.bookingId)}
-        >
-          <Video aria-hidden="true" className="size-4" />
-          {canOpenRoom ? "Abrir sala" : "Acompanhar a sala"}
-        </Link>
+        {sessionEnded ? (
+          postSessionAction === "confirm" ? (
+            <Link
+              className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-control bg-brand-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-deep"
+              href={`${routes.therapist.sessionVideo(booking.bookingId)}?feedback=1`}
+            >
+              <CheckCheck aria-hidden="true" className="size-4" />
+              Confirmar sessão
+            </Link>
+          ) : (
+            <p className="mt-5 rounded-control bg-brand-lavenderSoft px-4 py-3 text-sm font-semibold leading-5 text-tesText-secondary">
+              {feedbackStatusDescription(postSessionAction)}
+            </p>
+          )
+        ) : (
+          <Link
+            className="mt-5 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-control bg-brand-primary px-4 text-sm font-semibold text-white transition-colors hover:bg-brand-deep"
+            href={routes.therapist.sessionVideo(booking.bookingId)}
+          >
+            <Video aria-hidden="true" className="size-4" />
+            {canOpenRoom ? "Abrir sala" : "Acompanhar a sala"}
+          </Link>
+        )}
         <Link
           className="mt-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-control border border-brand-lavender px-3 text-sm font-semibold text-brand-primary transition-colors hover:border-brand-primary hover:text-brand-deep"
           href={routes.therapist.agenda}
@@ -392,7 +445,7 @@ function SessionActionRail({
           <span className="grid size-10 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
             <CircleHelp aria-hidden="true" className="size-5" />
           </span>
-          <h2 className="font-display text-3xl leading-none text-brand-deep">Suporte rápido</h2>
+          <h2 className="font-display text-3xl italic leading-none text-brand-deep">Suporte rápido</h2>
         </div>
         <p className="mt-4 text-sm leading-6 text-tesText-secondary">
           Se algo não sair como o esperado, envie uma mensagem para o suporte.
@@ -410,7 +463,7 @@ function SessionActionRail({
           <span className="grid size-10 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
             <Laptop aria-hidden="true" className="size-5" />
           </span>
-          <h2 className="font-display text-3xl leading-none text-brand-deep">Orientações rápidas</h2>
+          <h2 className="font-display text-3xl italic leading-none text-brand-deep">Orientações rápidas</h2>
         </div>
         <ul className="mt-5 space-y-3 text-sm leading-5 text-tesText-secondary">
           <li>O acesso à sala é revalidado sempre que ela é aberta.</li>
@@ -427,6 +480,22 @@ function SessionActionRail({
       </section>
     </>
   );
+}
+
+function feedbackStatusLabel(status: ReturnType<typeof getTherapistPostSessionAction>) {
+  if (status === "confirm") return "Confirmação disponível";
+  if (status === "submitted") return "Confirmação registrada";
+  return "Confirmação indisponível";
+}
+
+function feedbackStatusDescription(status: ReturnType<typeof getTherapistPostSessionAction>) {
+  if (status === "confirm") {
+    return "Registre como a sessão aconteceu para concluir sua confirmação operacional.";
+  }
+  if (status === "submitted") {
+    return "Sua confirmação desta sessão já foi registrada.";
+  }
+  return "A confirmação desta sessão não está disponível no momento.";
 }
 
 function StatusSurface({
@@ -536,7 +605,7 @@ function SessionDetailErrorState({ error }: { error: { correlationId: string } }
   return (
     <AppPageContainer>
       <section className="max-w-2xl rounded-panel border border-state-danger/30 bg-white p-6 shadow-card">
-        <h1 className="font-display text-4xl text-brand-deep">Não foi possível carregar esta sessão</h1>
+        <h1 className="font-display text-4xl italic text-brand-deep">Não foi possível carregar esta sessão</h1>
         <p className="mt-3 text-sm leading-6 text-tesText-secondary">
           Tente novamente em instantes. Se o problema continuar, entre em contato com o suporte.
         </p>

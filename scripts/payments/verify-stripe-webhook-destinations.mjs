@@ -51,7 +51,7 @@ const contracts = [
     name: `stripe-connect-webhook-thin-${suffix}`,
     path: "/functions/v1/stripe-connect-webhook",
     payload: "thin",
-    scope: "@accounts",
+    scope: "@self",
   },
 ];
 

@@ -28,6 +28,7 @@ Deno.test("every registered event renders the TES email shell from its controlle
     assert(rendered.html.includes('role="presentation"'));
     assertEquals(rendered.html.includes("<img"), false);
     assert(rendered.html.includes("<h1"));
+    assertEquals(rendered.html.match(/<h1\b/g)?.length, 1);
     assert(rendered.html.includes("Central de Ajuda"));
     assert(rendered.html.includes("display:none"));
   }

@@ -228,7 +228,7 @@ export function TherapyCatalogRequestPage({
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-brand-primary">
                   Catálogo da plataforma
                 </p>
-                <h1 className="mt-2 font-display text-4xl leading-none text-brand-deep sm:text-5xl">
+                <h1 className="mt-2 font-display text-4xl italic leading-none text-brand-deep sm:text-5xl">
                   Sugerir uma nova prática
                 </h1>
               </div>
@@ -357,7 +357,7 @@ function Intro({ onStart }: { onStart: () => void }) {
         <span className="mx-auto grid size-16 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
           <Leaf aria-hidden="true" className="size-8" />
         </span>
-        <h1 className="mt-6 font-display text-5xl leading-[0.95] text-brand-deep sm:text-6xl">
+        <h1 className="mt-6 font-display text-5xl italic leading-[0.95] text-brand-deep sm:text-6xl">
           Sugerir uma nova prática
         </h1>
         <div className="mx-auto mt-6 max-w-xl space-y-4 text-sm leading-7 text-tesText-secondary sm:text-base">
@@ -398,7 +398,7 @@ function Success() {
         <span className="mx-auto grid size-16 place-items-center rounded-full bg-state-successSoft text-state-success">
           <Check aria-hidden="true" className="size-9" />
         </span>
-        <h1 className="mt-6 font-display text-5xl leading-[0.95] text-brand-deep sm:text-6xl">
+        <h1 className="mt-6 font-display text-5xl italic leading-[0.95] text-brand-deep sm:text-6xl">
           Recebemos sua solicitação
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-tesText-secondary sm:text-base">
@@ -430,7 +430,7 @@ function RequestAside() {
   return (
     <aside className="hidden bg-brand-lavenderSoft/45 p-8 lg:block">
       <Leaf aria-hidden="true" className="size-12 text-brand-primary" />
-      <h2 className="mt-8 font-display text-4xl leading-none text-brand-deep">
+      <h2 className="mt-8 font-display text-4xl italic leading-none text-brand-deep">
         Sugerir uma nova prática
       </h2>
       <p className="mt-6 text-sm leading-7 text-tesText-secondary">
@@ -821,7 +821,7 @@ function MaterialsStep({
 function RequestStatus({ request }: { request: TherapyRequestSummary }) {
   return (
     <div className="mt-8 rounded-card border border-brand-lavender bg-brand-lavenderSoft/40 p-6">
-      <h2 className="font-display text-3xl text-brand-deep">
+      <h2 className="font-display text-3xl italic text-brand-deep">
         Solicitação em acompanhamento
       </h2>
       <p className="mt-3 text-sm leading-6 text-tesText-secondary">
@@ -845,7 +845,7 @@ function RequestStatus({ request }: { request: TherapyRequestSummary }) {
 function Step({ children, title }: { children: ReactNode; title: string }) {
   return (
     <section>
-      <h2 className="font-display text-4xl text-brand-deep">{title}</h2>
+      <h2 className="font-display text-4xl italic text-brand-deep">{title}</h2>
       <div className="mt-6 space-y-5">{children}</div>
     </section>
   );

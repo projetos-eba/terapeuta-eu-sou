@@ -119,6 +119,7 @@ describe("public therapist profile query", () => {
               startsAt: "2026-08-11T19:45:00.000Z",
             },
           ],
+          horizonEndsAt: "2026-11-09T12:00:00.000Z",
           timezone: "America/Sao_Paulo",
         });
       }
@@ -206,7 +207,11 @@ describe("public therapist profile query", () => {
         ]);
       }
       if (url.includes("get_service_available_slots_v1")) {
-        return jsonResponse({ slots: [], timezone: "America/Sao_Paulo" });
+        return jsonResponse({
+          horizonEndsAt: "2026-11-09T12:00:00.000Z",
+          slots: [],
+          timezone: "America/Sao_Paulo",
+        });
       }
       return jsonResponse([]);
     });

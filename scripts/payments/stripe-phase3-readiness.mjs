@@ -288,7 +288,7 @@ async function checkWebhookEndpoints(stripe, supabaseRef) {
     {
       check: "connect_thin_webhook_endpoint",
       events: connectThinEvents,
-      eventsFrom: "@accounts",
+      eventsFrom: "@self",
       name: "stripe-connect-webhook-thin-homolog",
       path: "/functions/v1/stripe-connect-webhook",
       payload: "thin",
