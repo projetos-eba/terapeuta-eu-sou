@@ -136,7 +136,7 @@ async function syncConnectAccount(
 ) {
   const stripeAccountId = getAccountId(account);
   const rows = await client.get<Array<{ id: string }>>(
-    `/rest/v1/therapist_connect_accounts?select=id&stripe_account_id=eq.${encodeURIComponent(stripeAccountId)}&limit=1`,
+    `/rest/v1/therapist_connect_accounts?select=id&stripe_account_id=eq.${encodeURIComponent(stripeAccountId)}&is_current=eq.true&limit=1`,
   );
   if (!rows[0]) return;
   const balanceSettings = await retrieveBalanceSettings(stripe, stripeAccountId);
@@ -177,24 +177,12 @@ async function disableClosedAccount(
   eventId: string,
   eventTime: string,
 ) {
-  await client.patch(
-    `/rest/v1/therapist_connect_accounts?stripe_account_id=eq.${encodeURIComponent(stripeAccountId)}`,
-    {
-      disabled_reason: "account_closed",
-      charges_enabled: false,
-      details_submitted: false,
-      last_synced_at: new Date().toISOString(),
-      onboarding_status: "disabled",
-      operational_status: "disabled",
-      payout_schedule_interval: null,
-      payout_status: "disabled",
-      payouts_enabled: false,
-      stripe_event_created_at: eventTime,
-      stripe_event_id: eventId,
-      stripe_transfers_status: "inactive",
-    },
-    "return=minimal",
-  );
+  await client.rpc("retire_therapist_connect_account_v1", {
+    p_closed_at: eventTime,
+    p_stripe_account_id: stripeAccountId,
+    p_stripe_event_created_at: eventTime,
+    p_stripe_event_id: eventId,
+  });
 }
 
 function isAccountOrBalanceEvent(type: string) {

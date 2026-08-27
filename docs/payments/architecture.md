@@ -450,7 +450,9 @@ Configuracao detalhada para o Dashboard Stripe:
 
 - `account.updated`
 
-`stripe-connect-webhook`, escopo `Contas conectadas`, payload thin Accounts v2:
+`stripe-connect-webhook`, escopo `Sua conta`, payload thin Accounts v2. Para
+Accounts v2 que representam contas Connect, esse é o escopo emissor de
+`v2.core.account.*`; o destino snapshot v1 permanece em `Contas conectadas`:
 
 - `v2.core.account.created`
 - `v2.core.account.updated`
@@ -463,6 +465,16 @@ Configuracao detalhada para o Dashboard Stripe:
 - `v2.core.account[identity].updated`
 - `v2.core.account[requirements].updated`
 - `v2.core.account[future_requirements].updated`
+
+### Encerramento de conta Connect
+
+`v2.core.account.closed` é terminal para a conta corrente do terapeuta. O
+webhook a torna histórica e mantém seus snapshots, Transfers e Payouts para
+reconciliação. Somente itens reservados que ainda não possuem Transfer voltam
+para elegibilidade na plataforma; eles aguardam uma nova conta corrente pronta.
+Nunca há redirecionamento automático de Transfer, Payout ou saldo entre contas
+Connect. Eventos posteriores de atualização da conta histórica não podem
+reativá-la.
 
 ## Secrets Stripe
 

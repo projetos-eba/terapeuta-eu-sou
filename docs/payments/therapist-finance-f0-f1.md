@@ -253,6 +253,16 @@ Fluxo aprovado:
 O TES não persiste Account Link, não envia link por e-mail, não aceita account
 ID do navegador e não armazena dados bancários completos.
 
+### Encerramento de conta Express
+
+`v2.core.account.closed` torna a conta atual histórica. O TES preserva seus
+Transfers, Payouts e snapshots para conciliação, mas a tela deixa de tratá-la
+como conta de recebimento atual e pede uma nova vinculação. Valores que ainda
+estavam apenas elegíveis no saldo da plataforma aguardam a nova conta pronta;
+nenhum Transfer ou Payout já criado é redirecionado. A Stripe não permite
+encerrar conta Express com saldo remanescente, portanto saldo Connect anterior
+deve ser liquidado para a conta externa anterior antes do encerramento.
+
 ### Diagnostico Connect Accounts v2 em homologacao
 
 Na homologacao local de 2026-07-30, a criacao inicial da conta falhava antes do
@@ -270,8 +280,8 @@ TES em direct charge nem permite formulario local de pagamento. O padrao de
 sessoes permanece separate charges and transfers, com repasse posterior por
 Transfer Connect.
 
-A criacao da conta usa idempotencia por terapeuta e ambiente. Repetir ou
-continuar onboarding deve reutilizar a mesma linha de
+A criacao da conta usa idempotencia por terapeuta, ambiente e geração. Repetir
+ou continuar onboarding deve reutilizar a mesma linha corrente de
 `therapist_connect_accounts` e gerar sempre um Account Link novo, sem persistir
 URL temporaria. Login Link so deve ser gerado quando a conta sincronizada
 estiver pronta para repasses.

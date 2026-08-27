@@ -44,15 +44,18 @@ grant select on review_revision_baseline to service_role;
 insert into public.therapist_connect_accounts (
   id, therapist_profile_id, stripe_account_id, onboarding_status,
   details_submitted, charges_enabled, payouts_enabled,
-  stripe_transfers_status, operational_status
+  stripe_transfers_status, operational_status, payout_status,
+  payout_schedule_interval
 ) values (
   'b8900000-0000-4000-8000-000000000001',
   '92000000-0000-4000-8000-000000000011',
-  'acct_bilateral_contract_test', 'ready', true, true, true, 'active', 'ready'
+  'acct_bilateral_contract_test', 'ready', true, true, true, 'active', 'ready',
+  'enabled', 'daily'
 )
-on conflict (therapist_profile_id) do update
+on conflict (therapist_profile_id) where is_current do update
 set stripe_transfers_status = 'active', operational_status = 'ready',
-    charges_enabled = true, payouts_enabled = true, details_submitted = true;
+    charges_enabled = true, payouts_enabled = true, details_submitted = true,
+    payout_status = 'enabled', payout_schedule_interval = 'daily';
 
 insert into public.bookings (
   id, patient_profile_id, therapist_profile_id, service_id,

@@ -9,6 +9,7 @@ const noStoreHeaders = { "Cache-Control": "no-store" };
 type EdgeEnvelope =
   | {
       data?: {
+        accountClosed?: boolean;
         url?: string;
       };
       httpStatus?: number;
@@ -57,7 +58,16 @@ export async function POST(request: Request) {
       if (!sync.ok) return relayFailure(sync, 502);
 
       return NextResponse.json(
-        { ok: true, data: { message: "Conta sincronizada." } },
+        {
+          ok: true,
+          data: {
+            accountClosed: sync.data?.accountClosed === true,
+            message:
+              sync.data?.accountClosed === true
+                ? undefined
+                : "Conta sincronizada.",
+          },
+        },
         { headers: noStoreHeaders },
       );
     }
