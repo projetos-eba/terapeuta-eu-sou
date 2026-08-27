@@ -147,7 +147,8 @@ runtime.serve(async (request) => {
           p_patient_profile_id: actor.profile.id,
         },
       );
-      patientHasTimelyArrival = patientHasTimelyArrival || Boolean(arrival?.entitled);
+      patientHasTimelyArrival =
+        patientHasTimelyArrival || Boolean(arrival?.entitled);
     }
     const access = evaluateVideoSessionAccess({
       actorRole: actor.role,
@@ -155,6 +156,10 @@ runtime.serve(async (request) => {
       endsAt: booking.endsAt,
       financialStatus: booking.financialStatus,
       hardEndsAt: booking.videoSession?.hardEndsAt ?? null,
+      terminationRequestedAt:
+        booking.videoSession?.terminationRequestedAt ?? null,
+      terminationConfirmedAt:
+        booking.videoSession?.terminationConfirmedAt ?? null,
       patientHasJoined: booking.patientHasJoined,
       patientHasTimelyArrival,
       startsAt: booking.startsAt,
@@ -163,7 +168,7 @@ runtime.serve(async (request) => {
       therapistPresent: booking.videoSession?.therapistPresent ?? false,
       videoSessionReady: Boolean(
         booking.videoSession &&
-          ["ready", "active"].includes(booking.videoSession.status),
+        ["ready", "active"].includes(booking.videoSession.status),
       ),
       videoSessionStatus: booking.videoSession?.status ?? null,
     });
@@ -253,11 +258,12 @@ runtime.serve(async (request) => {
       JSON.stringify({
         actorRole: actorRole ?? "unknown",
         bookingId,
-        code: error instanceof DomainError
-          ? error.code
-          : error instanceof ZoomVideoSdkError
-          ? error.code
-          : "ZOOM_VIDEO_ACCESS_UNKNOWN",
+        code:
+          error instanceof DomainError
+            ? error.code
+            : error instanceof ZoomVideoSdkError
+              ? error.code
+              : "ZOOM_VIDEO_ACCESS_UNKNOWN",
         durationMs: Date.now() - startedAt,
         requestId,
       }),
@@ -319,7 +325,9 @@ function videoAccessFailure(access: VideoAccessState, requestId: string) {
       },
       ok: false,
     },
-    reason === "THERAPIST_NOT_ALLOWED" || reason === "THERAPIST_SUSPENDED" ? 403 : 409,
+    reason === "THERAPIST_NOT_ALLOWED" || reason === "THERAPIST_SUSPENDED"
+      ? 403
+      : 409,
   );
 }
 
@@ -402,11 +410,12 @@ async function endVideoSession(input: {
 
   if (!authorization?.allowed) {
     const reason = authorization?.reason ?? "VIDEO_SESSION_NOT_READY";
-    const message = reason === "FINAL_END_TOO_EARLY"
-      ? "O encerramento para todos ficará disponível nos 5 minutos finais."
-      : reason === "TOO_LATE"
-      ? "O horário programado do encontro terminou."
-      : "Não foi possível encerrar o encontro agora.";
+    const message =
+      reason === "FINAL_END_TOO_EARLY"
+        ? "O encerramento para todos ficará disponível nos 5 minutos finais."
+        : reason === "TOO_LATE"
+          ? "O horário programado do encontro terminou."
+          : "Não foi possível encerrar o encontro agora.";
 
     console.warn(
       JSON.stringify({

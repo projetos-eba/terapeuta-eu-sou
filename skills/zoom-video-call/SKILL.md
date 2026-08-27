@@ -80,6 +80,16 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   a sala de espera envia ao adapter as duas preferências atuais: cada mídia
   testada e ligada é ativada após o `join`; qualquer mídia não ligada continua
   desligada. Essa preferência é transitória no navegador e não é persistida.
+- Captura e prévia própria têm estados independentes: `videoOn` reflete
+  publicação; `localPreviewUnavailable` reflete falha de exibição. Não chamar
+  `stopVideo` nem informar permissão negada porque `attachVideo` falhou.
+  O SDK 2.4.5 resolve `startVideo` com `undefined`; preservar o normalizador
+  específico e os testes com esse retorno. Cleanup espera captura/attach
+  pendentes; desligar câmera para a publicação antes do detach.
+- Antes de alterar integração ou mocks, ler
+  `docs/zoom/investigation-2026-08-27.md` e
+  `docs/zoom/self-view-2026-08-27.md`: contêm causas comprovadas e invariantes
+  para não reintroduzir falhas de join, destroy e self-view.
 - A qualidade do encontro só fica elegível após `session.user_joined` confiável
   para paciente e terapeuta e encerramento efetivo/programado. Um único join
   direciona para ocorrência, não para avaliação de qualidade.
@@ -118,10 +128,16 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   conexão, `final end -> feedback`, feedback já enviado, erro de leitura,
   erro de envio, resposta realizada, não realização, comentário de 500
   caracteres e reabertura por query controlada.
-- Validar que erro resolvido de áudio imediatamente após `join` mantém a sala
-  conectada; após falha transitória em `destroyClient`, validar a segunda
-  tentativa após 750 ms e a reentrada com o mesmo acesso. Duas falhas seguidas
-  exigem recarga antes de novo join.
+- Validar o retorno participante de `join` no SDK instalado, além de `""`.
+  Erro resolvido ou rejeitado de áudio após join mantém `media_degraded`, sem
+  sair da sessão. Distinguir `joining`, `joined`, `media_initializing`,
+  `media_degraded` e `disconnected` nos testes.
+- Chamar `ZoomVideo.destroyClient()` preservando o receiver. Uma falha ou
+  timeout de destroy invalida o singleton até recarga; não tentar reutilizá-lo
+  nem emitir outro JWT. Retry de sessão exige cleanup concluído, client novo
+  e o mesmo acesso; reconexão nativa bem-sucedida preserva o client existente.
+- Atualizar access em cada dispositivo na espera, inclusive após a liberação;
+  resposta tardia de preview não substitui estado/mensagem da chamada.
 - O `userId` local vem de `ZoomVideoClient.getCurrentUserInfo()`, nunca do
   media stream. A self-view e os vídeos remotos usam `attachVideo` dentro de
   `video-player-container`; `renderVideo` em canvas não é o contrato

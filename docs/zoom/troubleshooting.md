@@ -1,5 +1,24 @@
 # Troubleshooting Zoom Video SDK
 
+## Outro participante vê minha câmera, mas eu não me vejo
+
+Não concluir que é permissão negada: se o outro participante recebe imagem,
+a captura está funcionando. No SDK 2.4.5, `startVideo()` resolve `undefined`;
+validar somente `""` fabrica erro 2 e impede o `attachVideo` local. Usar o
+normalizador específico de captura, sem relaxar contratos de init/áudio.
+Ver [causa, regressões e continuidade da espera](./self-view-2026-08-27.md).
+Falha real de attach deve mostrar câmera ligada sem prévia, não câmera
+desligada; desligar/ligar a câmera permite repetir a exibição local.
+
+## Entrada falha com código 2, cleanup parcial e depois 5012
+
+Consultar a [investigação anterior](./investigation-2026-08-27.md) antes de
+mudar retries ou lifecycle. O bundle pode resolver `join` com participante,
+e `ZoomVideo.destroyClient()` depende do receiver. Não extrair esse método,
+reutilizar singleton cujo destroy falhou ou emitir novos JWTs para resolver
+erro de mídia. Áudio pós-join não invalida uma conexão já estabelecida.
+Fim técnico `session.ended` não é automaticamente fim lógico do encontro.
+
 ## O teste real foi bloqueado antes de abrir a sessao
 
 Isso e esperado quando qualquer gate estiver incompleto. Corrija apenas o item

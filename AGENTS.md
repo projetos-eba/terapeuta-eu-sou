@@ -329,6 +329,11 @@ Stack real identificada:
   uma única sessão curta, usa Playwright visível com contexts separados para
   terapeuta e paciente, e a emissão de JWT passa por rate limit distribuído no
   Supabase.
+- Antes de mudar Zoom, ler `docs/zoom/investigation-2026-08-27.md` e
+  `docs/zoom/self-view-2026-08-27.md`: registram divergências do SDK 2.4.5
+  (`join` resolve participante; `startVideo` resolve `undefined`), receiver de
+  destroy, separação entre mídia/conexão e fim técnico/lógico. Preservar os
+  normalizadores por operação e regressões; não generalizar sucesso vazio.
 - Videochamada e feedback: a sala visual abre em T-15, o feedback de qualidade
   exige joins confiáveis de paciente e terapeuta, e confirmações bilaterais
   independentes usam a política ativa de 7 dias + 1 dia de segurança. A chegada

@@ -25,6 +25,7 @@ import {
 } from "./webhook.ts";
 import {
   computeVideoSessionHardEndsAt,
+  hasConfirmedProviderClosure,
   parseZoomVideoMaxDurationMinutes,
 } from "./session-lifecycle.ts";
 
@@ -84,7 +85,7 @@ Deno.test(
         roleType: 0,
         sessionName: "tesvs-session",
         userKey: "internal uuid with spaces",
-      })
+      }),
     );
   },
 );
@@ -363,7 +364,7 @@ Deno.test(
         now: new Date("2026-07-26T13:10:00.001Z"),
         patientHasJoined: false,
       }).reason,
-      "TOO_LATE",
+      "ARRIVAL_WINDOW_EXPIRED",
     );
     assertEquals(
       evaluateVideoSessionAccess({
@@ -382,6 +383,108 @@ Deno.test(
         patientHasTimelyArrival: true,
       }).reason,
       "TOO_LATE",
+    );
+  },
+);
+
+Deno.test(
+  "access distinguishes arrival, schedule, logical end and technical failure",
+  () => {
+    const base = {
+      actorRole: "therapist" as const,
+      bookingStatus: "confirmed",
+      financialStatus: "paid",
+      therapistStatus: "approved",
+      startsAt: "2026-07-26T13:00:00Z",
+      endsAt: "2026-07-26T14:00:00Z",
+      now: new Date("2026-07-26T13:15:00Z"),
+      videoSessionReady: true,
+      videoSessionStatus: "active",
+    };
+    assertEquals(evaluateVideoSessionAccess(base).allowed, true);
+    assertEquals(
+      evaluateVideoSessionAccess({ ...base, videoSessionStatus: "ended" })
+        .reason,
+      "SESSION_ENDED",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        terminationRequestedAt: "2026-07-26T13:14:00Z",
+      }).reason,
+      "SESSION_ENDED",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        terminationConfirmedAt: "2026-07-26T13:14:00Z",
+      }).reason,
+      "SESSION_ENDED",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({ ...base, videoSessionStatus: "failed" })
+        .reason,
+      "TECHNICAL_UNAVAILABLE",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({ ...base, now: new Date(base.endsAt) })
+        .reason,
+      "TOO_LATE",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        actorRole: "patient",
+        patientHasJoined: false,
+      }).reason,
+      "ARRIVAL_WINDOW_EXPIRED",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        actorRole: "patient",
+        patientHasTimelyArrival: true,
+        therapistPresent: false,
+      }).reason,
+      "THERAPIST_NOT_IN_SESSION",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        actorRole: "patient",
+        patientHasTimelyArrival: true,
+        therapistPresent: true,
+      }).allowed,
+      true,
+    );
+  },
+);
+
+Deno.test(
+  "only trusted technical closure metadata allows finalizing a missing provider ID",
+  () => {
+    assertEquals(hasConfirmedProviderClosure(null), false);
+    assertEquals(hasConfirmedProviderClosure({}), false);
+    assertEquals(
+      hasConfirmedProviderClosure({
+        zoom_provider_closed_at: "invalid",
+        zoom_closed_provider_hashes: ["a".repeat(64)],
+      }),
+      false,
+    );
+    assertEquals(
+      hasConfirmedProviderClosure({
+        zoom_provider_closed_at: "2026-08-27T06:00:00Z",
+        zoom_closed_provider_hashes: [],
+      }),
+      false,
+    );
+    assertEquals(
+      hasConfirmedProviderClosure({
+        zoom_provider_closed_at: "2026-08-27T06:00:00Z",
+        zoom_closed_provider_hashes: ["a".repeat(64)],
+      }),
+      true,
     );
   },
 );
@@ -499,7 +602,7 @@ Deno.test(
         secretToken: "secret",
         signature: "v0=invalid",
         timestamp: String(Math.floor(Date.now() / 1000) - 600),
-      })
+      }),
     );
   },
 );

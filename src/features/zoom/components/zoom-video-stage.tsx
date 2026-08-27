@@ -21,6 +21,9 @@ type ZoomVideoStageProps = {
     | "loading"
     | "joining"
     | "joined"
+    | "media_initializing"
+    | "media_degraded"
+    | "disconnected"
     | "recovering"
     | "reconnecting"
     | "leaving"
@@ -45,7 +48,12 @@ export function ZoomVideoStage({
 }: ZoomVideoStageProps) {
   const remoteLabel =
     participantLabel.replace(/^Com\s+/i, "") || "Outra pessoa";
-  const isConnected = state === "joined" || state === "reconnecting";
+  const isConnected = [
+    "joined",
+    "media_initializing",
+    "media_degraded",
+    "reconnecting",
+  ].includes(state);
 
   return (
     <div

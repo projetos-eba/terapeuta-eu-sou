@@ -9,6 +9,21 @@ export const ZOOM_VIDEO_RECONNECT = {
   therapistGraceSeconds: 120,
 } as const;
 
+// Written exclusively by the trusted provider-event RPC; never a browser claim.
+export function hasConfirmedProviderClosure(metadata: unknown): boolean {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata))
+    return false;
+  const value = metadata as Record<string, unknown>;
+  return (
+    typeof value.zoom_provider_closed_at === "string" &&
+    Number.isFinite(Date.parse(value.zoom_provider_closed_at)) &&
+    Array.isArray(value.zoom_closed_provider_hashes) &&
+    value.zoom_closed_provider_hashes.some(
+      (hash) => typeof hash === "string" && /^[a-f0-9]{64}$/.test(hash),
+    )
+  );
+}
+
 export type ZoomVideoLifecycleConfig = {
   maxDurationMinutes: number;
   therapistReconnectGraceSeconds: number;

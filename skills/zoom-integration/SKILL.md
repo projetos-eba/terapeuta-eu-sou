@@ -16,6 +16,12 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
 
 ## Arquitetura
 
+- Antes de alterar adapter/retries/mocks, consultar
+  `docs/zoom/investigation-2026-08-27.md` e
+  `docs/zoom/self-view-2026-08-27.md`. No SDK 2.4.5, `join` pode retornar um
+  participante e `startVideo` retorna `undefined`; contratos específicos não
+  dispensam rejeitar falhas resolvidas. `destroyClient` preserva o receiver.
+  Falha de mídia/prévia não deve destruir uma conexão válida.
 - Browser: `@zoom/videosdk`.
 - Paciente acessa a sala dedicada por `/app/encontros/:bookingId/video`.
 - Terapeuta acessa a sala dedicada por
@@ -30,6 +36,12 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
 - `video_session_participations` registra eventos operacionais minimos.
 - `zoom_video_webhook_events` guarda idempotencia e payload sanitizado.
 - `video_session_control_jobs` guarda jobs duraveis de encerramento/reconcile.
+- Fim técnico precoce aposenta a instância remota em metadata interna, sem
+  encerrar o encontro. Presença considera somente a instância atual; eventos
+  antigos não reabrem uma instância encerrada. Reconcile também respeita 120s.
+- A reserva de maintenance revalida os motivos e marca o pedido de fim sob
+  lock da sessão antes de chamar o provider. Pedido/confirmacão de fim bloqueia
+  novos acessos, assim como fim agendado e watchdog; cron local fica inativo.
 - Stripe confirma pagamento; Zoom nunca confirma pagamento, repasse ou servico.
 - Nao ha criacao remota previa de sala. A sessao nasce no primeiro `join`.
 - Paciente so recebe JWT apos webhook confiavel de `session.user_joined` do

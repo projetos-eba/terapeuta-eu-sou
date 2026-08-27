@@ -23,6 +23,7 @@ export type ZoomExecutedFailure = {
 };
 
 export type NormalizedZoomFailure = {
+  operation?: string;
   category: ZoomRecoveryCategory;
   code: number | null;
   phase: ZoomOperationPhase;
@@ -62,6 +63,21 @@ export class ZoomOperationError extends Error {
   }
 }
 
+// The shipped 2.4.5 join resolves ADD_CURRENT_USER_PARTICIPANT_ATTRIBUTE,
+// despite its declaration using ExecutedResult. Normalize each operation explicitly.
+export function assertZoomJoinResult(result: unknown) {
+  throwIfZoomFailure(result, "join");
+  if (result === "") return;
+  if (
+    isRecord(result) &&
+    typeof result.userId === "number" &&
+    Number.isSafeInteger(result.userId) &&
+    result.userId > 0
+  )
+    return;
+  assertZoomExecutedResult(result, "join");
+}
+
 export function assertZoomExecutedResult(
   result: unknown,
   phase: ZoomOperationPhase,
@@ -82,6 +98,13 @@ export function assertZoomExecutedResult(
       phase,
     ),
   );
+}
+
+// SDK 2.4.5 startVideo's capture-success callback has no return statement.
+// Do not accept void for init/join/audio or treat resolved failure objects as success.
+export function assertZoomVideoStartResult(result: unknown) {
+  if (result === undefined) return;
+  assertZoomExecutedResult(result, "video");
 }
 
 export function throwIfZoomFailure(result: unknown, phase: ZoomOperationPhase) {
@@ -152,7 +175,9 @@ export function normalizeZoomFailure(
   }
 
   const accessDomainMessage =
-    phase === "access" ? ACCESS_DOMAIN_MESSAGES[reason.toLowerCase()] : undefined;
+    phase === "access"
+      ? ACCESS_DOMAIN_MESSAGES[reason.toLowerCase()]
+      : undefined;
   if (accessDomainMessage) {
     return buildFailure({
       category: "permanent",
