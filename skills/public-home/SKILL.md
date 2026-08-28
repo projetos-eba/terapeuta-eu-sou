@@ -75,7 +75,7 @@ Rules:
 - Do not add `@supabase/supabase-js` unless the user explicitly approves a dependency change.
 - If a public view changes, update docs and this skill in the same task.
 - Rating and review count include only canonical reviews with `status =
-  published` and no replacement. Their visibility does not subsequently depend
+published` and no replacement. Their visibility does not subsequently depend
   on the booking or payment that originally qualified the patient relationship.
 
 ## UI Contract
@@ -100,8 +100,9 @@ The page should preserve these sections from Figma `13273:1844`:
 - Therapy marquee
 - Motivations / online session section
 - Therapies preview
-- Featured therapists as a horizontal carousel on all viewports, with desktop navigation arrows and compact Figma-style cards. Cards should avoid long descriptions and prioritize therapist photo, name, public therapies/techniques, published guide-theme chips, rating/reviews and profile CTA. Do not show availability badges or verification icons over photos unless the public Home data contract exposes the corresponding real state.
-- Testimonials
+- Featured therapists as a horizontal carousel on all viewports, without directional controls. It advances automatically only when the unique cards exceed the available viewport width; when they do not, do not duplicate cards or start horizontal movement. It pauses while hovered, focused or directly interacted with and loops without a visible gap after the final paginated result. The initial server page and subsequent client pages prioritize `premium` and `premium_plus`; while fewer than five paid public profiles exist, each page is completed with `free` profiles. Do not render repeated presentation identities (same public name and photo), even when separate public records originate from technical homologation. Cards should avoid long descriptions and prioritize therapist photo, name, public therapies/techniques, published guide-theme chips, rating/reviews and profile CTA. Do not show availability badges or verification icons over photos unless the public Home data contract exposes the corresponding real state. Do not render the section when no real profile is returned.
+- Testimonials remain implemented but are intentionally hidden from the public
+  Home until a new product decision re-enables their rendering.
 - Journey CTA using `platformAssets.publicJourneyCta`; keep the CTA below the text and do not add the old `Sessão online` hat. On mobile, reserve a dedicated lower media region inside the banner so the editorial subject remains visible after the copy and CTA; do not reduce the image to a thin strip.
 - FAQ
 - FAQ cards use native independent disclosure. At the two-column tablet and

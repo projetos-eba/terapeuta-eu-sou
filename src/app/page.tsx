@@ -549,8 +549,11 @@ export default async function HomePage() {
       <TherapyMarquee therapies={data.therapies} />
       <ReasonsSection />
       <TherapySection therapies={data.therapies} />
-      <FeaturedTherapistsCarousel therapists={data.therapists} />
-      <TestimonialsSection testimonials={data.testimonials} />
+      <FeaturedTherapistsCarousel
+        initialPage={data.featuredTherapistsPage}
+        therapists={data.therapists}
+      />
+      {/* TestimonialsSection is intentionally kept out of the public home. */}
       <JourneyCta />
       <FaqSection />
       <PublicFooter />
