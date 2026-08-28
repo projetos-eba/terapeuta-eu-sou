@@ -194,6 +194,10 @@ describe("TherapistProfileEditorPage", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText("Dados derivados")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Conteúdos / Reflexões" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Adicionar conteúdo" })).not.toBeInTheDocument();
   });
 
   it("opens the library and keeps theme selection in the draft state", () => {
@@ -459,13 +463,7 @@ describe("TherapistProfileEditorPage", () => {
       },
     );
 
-    render(
-      <TherapistProfileEditorPage
-        editor={makeEditor({
-          capabilities: { canUseAdvancedSections: true },
-        })}
-      />,
-    );
+    render(<TherapistProfileEditorPage editor={makeEditor()} />);
 
     fireEvent.change(screen.getByLabelText("Nome do perfil"), {
       target: { value: "Ana com rascunho automático" },
@@ -481,10 +479,6 @@ describe("TherapistProfileEditorPage", () => {
         '[data-guide-theme="autoconhecimento-transformacao"]',
       ) as HTMLButtonElement,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Adicionar conteúdo" }));
-    fireEvent.change(screen.getByPlaceholderText("Novo conteúdo"), {
-      target: { value: "Uma reflexão salva no rascunho" },
-    });
     fireEvent.change(screen.getByLabelText("Inserir link do vídeo"), {
       target: { value: "https://www.youtube.com/watch?v=rascunho" },
     });
@@ -509,9 +503,6 @@ describe("TherapistProfileEditorPage", () => {
           publicProfileTheme: "natural",
           guideItems: expect.arrayContaining([
             expect.objectContaining({ icon: "mind" }),
-          ]),
-          reflections: expect.arrayContaining([
-            expect.objectContaining({ minutesToRead: 3 }),
           ]),
           shortIntro: "Uma apresentação salva automaticamente.",
           videoProvider: "youtube",

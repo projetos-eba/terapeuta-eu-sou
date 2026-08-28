@@ -135,7 +135,7 @@ export function TherapistMetricsOccupancyNotice() {
         Ocupação da agenda
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-        Ainda não exibimos este percentual. A oferta histórica precisa ser
+        Ainda não exibimos este percentual. A capacidade histórica precisa ser
         versionada para que mudanças de horários e bloqueios não distorçam o
         resultado.
       </p>

@@ -10,7 +10,7 @@ import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 const noStoreHeaders = { "Cache-Control": "no-store" };
 const maxDocumentBytes = 10 * 1024 * 1024;
 const documentSizeExceededMessage =
-  "Não foi possível concluir a operação. Tamanho do arquivo excede o limite de 10 MB.";
+  "Não foi possível concluir a operação, o tamanho do documento excede o limite de 10 MB.";
 
 export async function GET() {
   return forwardJsonRequest({ action: "therapist.read" });

@@ -563,6 +563,38 @@ describe("TherapistProfilePage video block", () => {
     ).toHaveAttribute("role", "status");
   });
 
+  it("rolls back and explains when the favorite request cannot reach the server", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === "POST") {
+          throw new Error("network unavailable");
+        }
+        return Response.json({ isFavorite: false, ok: true });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Adicionar aos favoritos de Ana Oliveira",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", {
+          name: "Adicionar aos favoritos de Ana Oliveira",
+        }),
+      ).toHaveAttribute("aria-pressed", "false"),
+    );
+    expect(
+      screen.getByText(
+        "Não foi possível atualizar favoritos agora. Tente novamente.",
+      ),
+    ).toHaveAttribute("role", "status");
+  });
+
   it("shows public services by canonical therapy name without operational labels", () => {
     render(
       <TherapistProfilePage

@@ -5,9 +5,12 @@ import type {
 } from "./therapist-settings.types";
 
 export class TherapistSettingsContractError extends Error {
-  constructor(message = "Invalid therapist settings payload.") {
-    super(message);
+  readonly reason: string;
+
+  constructor(reason = "invalid_payload") {
+    super(reason);
     this.name = "TherapistSettingsContractError";
+    this.reason = reason;
   }
 }
 
@@ -75,7 +78,7 @@ function parsePrivateIdentity(input: unknown): TherapistPrivateIdentityFields {
     documentType,
   );
   if (documentType === "cpf" && !isValidCpf(documentNumber)) {
-    throw invalid("document_number");
+    throw invalid("cpf_invalid");
   }
   if (documentType === "rg" && !/^[0-9]{7,14}$/.test(documentNumber)) {
     throw invalid("document_number");

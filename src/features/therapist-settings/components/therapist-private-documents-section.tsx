@@ -40,7 +40,7 @@ export const requiredPrivateDocuments: Array<{
 ];
 
 const documentSizeExceededMessage =
-  "Não foi possível concluir a operação. Tamanho do arquivo excede o limite de 10 MB.";
+  "Não foi possível concluir a operação, o tamanho do documento excede o limite de 10 MB.";
 
 export function TherapistPrivateDocumentsSection({
   initialDocuments,

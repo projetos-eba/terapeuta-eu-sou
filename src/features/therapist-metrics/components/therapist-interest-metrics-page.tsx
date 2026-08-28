@@ -314,7 +314,7 @@ function TherapyReturn({ data }: { data: TherapistInterestMetricsReady }) {
       </h2>
       <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
         Mostra apenas terapias com pelo menos 10 pessoas atendidas no período e
-        compara o retorno com a própria oferta.
+        compara o retorno com a própria terapia.
       </p>
       {data.therapyReturn.status === "ready" ? (
         <TherapyBarsChart

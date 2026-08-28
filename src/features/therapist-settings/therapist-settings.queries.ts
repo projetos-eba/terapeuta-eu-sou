@@ -3,9 +3,11 @@ import "server-only";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 export class TherapistSettingsQueryError extends Error {
-  code: "forbidden" | "unavailable";
+  code: "cpf_in_use" | "cpf_invalid" | "forbidden" | "unavailable";
 
-  constructor(code: "forbidden" | "unavailable") {
+  constructor(
+    code: "cpf_in_use" | "cpf_invalid" | "forbidden" | "unavailable",
+  ) {
     super(code);
     this.name = "TherapistSettingsQueryError";
     this.code = code;
@@ -142,10 +144,9 @@ export async function updateTherapistAccountSettings({
     );
 
     if (!identityResponse.ok) {
+      const identityError = await identityResponse.json().catch(() => null);
       throw new TherapistSettingsQueryError(
-        identityResponse.status === 401 || identityResponse.status === 403
-          ? "forbidden"
-          : "unavailable",
+        classifyIdentitySaveError(identityResponse.status, identityError),
       );
     }
 
@@ -154,6 +155,25 @@ export async function updateTherapistAccountSettings({
   }
 
   return { ...row, identity: {} };
+}
+
+function classifyIdentitySaveError(status: number, payload: unknown) {
+  if (status === 401 || status === 403) return "forbidden" as const;
+
+  const value =
+    payload && typeof payload === "object" && !Array.isArray(payload)
+      ? (payload as Record<string, unknown>)
+      : {};
+  const code = typeof value.code === "string" ? value.code : "";
+  const message = typeof value.message === "string" ? value.message : "";
+
+  if (code === "23505" || message === "CPF_ALREADY_IN_USE") {
+    return "cpf_in_use" as const;
+  }
+  if (code === "22023" && message === "invalid cpf") {
+    return "cpf_invalid" as const;
+  }
+  return "unavailable" as const;
 }
 
 async function fetchPrivateIdentity({

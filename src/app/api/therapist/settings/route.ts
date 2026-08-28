@@ -42,7 +42,9 @@ export async function PATCH(request: Request) {
   } catch (error) {
     if (error instanceof TherapistSettingsContractError) {
       return failure(
-        "Revise os dados das configurações antes de continuar.",
+        error.reason === "cpf_invalid"
+          ? "Não foi possível concluir a operação, o CPF não é válido."
+          : "Revise os dados das configurações antes de continuar.",
         422,
         "VALIDATION_ERROR",
       );
@@ -97,6 +99,20 @@ export async function PATCH(request: Request) {
     );
   } catch (error) {
     if (error instanceof TherapistSettingsQueryError) {
+      if (error.code === "cpf_in_use") {
+        return failure(
+          "Este documento já está em uso em outra conta.",
+          409,
+          "CPF_IN_USE",
+        );
+      }
+      if (error.code === "cpf_invalid") {
+        return failure(
+          "Não foi possível concluir a operação, o CPF não é válido.",
+          422,
+          "VALIDATION_ERROR",
+        );
+      }
       return failure(
         error.code === "forbidden"
           ? "Use uma conta de terapeuta para continuar."

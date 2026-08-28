@@ -129,6 +129,9 @@ revalidada no servidor antes do checkout.
   pública de terapeutas.
 - Cliente autenticado deve ver dados de conta no fluxo e no pagamento, sem
   campos editáveis nesta etapa.
+- No momento da reserva, o quadro verde de conta conectada ocupa toda a coluna
+  de informações em telas grandes, quebra o e-mail com segurança e não exibe
+  o status textual “Celular confirmado”.
 - Cliente autenticado deve conseguir chamar `/api/public/reservation/checkout`
   somente com `termsAccepted: true`.
 - Slot inexistente/indisponível deve retornar erro seguro.

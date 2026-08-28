@@ -85,40 +85,51 @@ export function FavoriteTherapistButton({
     setIsFavorite(nextFavorite);
     setFeedback(null);
 
-    const response = await fetch("/api/patient/favorite-therapists", {
-      body: JSON.stringify({ therapistProfileId }),
-      headers: { "Content-Type": "application/json" },
-      method: nextFavorite ? "POST" : "DELETE",
-    });
-    const payload = (await response.json().catch(() => null)) as
-      | ApiFailure
-      | { ok: true }
-      | null;
+    try {
+      const response = await fetch("/api/patient/favorite-therapists", {
+        body: JSON.stringify({ therapistProfileId }),
+        headers: { "Content-Type": "application/json" },
+        method: nextFavorite ? "POST" : "DELETE",
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | ApiFailure
+        | { ok: true }
+        | null;
 
-    setIsSubmitting(false);
+      setIsSubmitting(false);
 
-    if (response.status === 401) {
-      window.location.assign(
-        getFavoriteLoginHref(window.location.pathname, window.location.search),
+      if (response.status === 401) {
+        window.location.assign(
+          getFavoriteLoginHref(
+            window.location.pathname,
+            window.location.search,
+          ),
+        );
+        return;
+      }
+
+      if (!response.ok || payload?.ok !== true) {
+        setIsFavorite(!nextFavorite);
+        setFeedback(
+          payload?.ok === false && payload.error?.message
+            ? payload.error.message
+            : "Não foi possível atualizar favoritos agora.",
+        );
+        return;
+      }
+
+      setFeedback(
+        nextFavorite
+          ? `${therapistName} foi adicionado aos favoritos.`
+          : `${therapistName} foi removido dos favoritos.`,
       );
-      return;
-    }
-
-    if (!response.ok || payload?.ok !== true) {
+    } catch {
+      setIsSubmitting(false);
       setIsFavorite(!nextFavorite);
       setFeedback(
-        payload?.ok === false && payload.error?.message
-          ? payload.error.message
-          : "Não foi possível atualizar favoritos agora.",
+        "Não foi possível atualizar favoritos agora. Tente novamente.",
       );
-      return;
     }
-
-    setFeedback(
-      nextFavorite
-        ? `${therapistName} foi adicionado aos favoritos.`
-        : `${therapistName} foi removido dos favoritos.`,
-    );
   }
 
   return (

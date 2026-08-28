@@ -6,7 +6,6 @@ import {
   CalendarDays,
   ChevronDown,
   Filter,
-  Heart,
   Search,
   Star,
 } from "lucide-react";
@@ -14,6 +13,7 @@ import {
 import {
   PublicFooter,
   PublicHeader,
+  PublicTherapistsLowerBanner,
   PremiumTherapistBadge,
   TESButton,
   TESCard,
@@ -33,6 +33,7 @@ import {
   type TherapistSearchOption,
 } from "@/features/public-therapist-search";
 import { PublicSearchMetricsTracker } from "@/features/public-metrics";
+import { FavoriteTherapistButton } from "@/features/therapist-profile/components/favorite-therapist-button";
 import { TherapyBadgeList } from "@/features/public-therapist-search/components/therapy-badge-list";
 import { routes } from "@/lib/routes";
 import { platformAssets } from "@/lib/platform-assets";
@@ -197,49 +198,49 @@ function ResultsHeader({
 
       {!isUnavailable ? (
         <div className="space-y-3 lg:text-right">
-        <p className="text-[16px] font-semibold leading-7 text-tesText-secondary">
-          Encontramos {totalCount} terapeuta{totalCount === 1 ? "" : "s"}
-        </p>
-        <form action={routes.public.therapists}>
-          {filters.q ? (
-            <input type="hidden" name="q" value={filters.q} />
-          ) : null}
-          {filters.therapy ? (
-            <input type="hidden" name="therapy" value={filters.therapy} />
-          ) : null}
-          {filters.theme ? (
-            <input type="hidden" name="theme" value={filters.theme} />
-          ) : null}
-          {filters.availability ? (
-            <input
-              type="hidden"
-              name="availability"
-              value={filters.availability}
-            />
-          ) : null}
-          {filters.price ? (
-            <input type="hidden" name="price" value={filters.price} />
-          ) : null}
-          {filters.rating ? (
-            <input type="hidden" name="rating" value={filters.rating} />
-          ) : null}
-          <label className="relative inline-flex min-h-11 w-full max-w-[310px] items-center rounded-full border border-brand-lavender bg-white text-sm font-bold text-tesText-secondary shadow-card sm:w-[270px]">
-            <span className="sr-only">Ordenar terapeutas</span>
-            <select
-              name="sort"
-              defaultValue={filters.sort}
-              className="h-full w-full appearance-none truncate rounded-full bg-transparent px-[15px] pr-10 text-sm font-bold outline-none"
-            >
-              {sortOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  Ordenar por: {option.label}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-4 size-4 text-brand-primary" />
-          </label>
-          <button className="sr-only">Ordenar</button>
-        </form>
+          <p className="text-[16px] font-semibold leading-7 text-tesText-secondary">
+            Encontramos {totalCount} terapeuta{totalCount === 1 ? "" : "s"}
+          </p>
+          <form action={routes.public.therapists}>
+            {filters.q ? (
+              <input type="hidden" name="q" value={filters.q} />
+            ) : null}
+            {filters.therapy ? (
+              <input type="hidden" name="therapy" value={filters.therapy} />
+            ) : null}
+            {filters.theme ? (
+              <input type="hidden" name="theme" value={filters.theme} />
+            ) : null}
+            {filters.availability ? (
+              <input
+                type="hidden"
+                name="availability"
+                value={filters.availability}
+              />
+            ) : null}
+            {filters.price ? (
+              <input type="hidden" name="price" value={filters.price} />
+            ) : null}
+            {filters.rating ? (
+              <input type="hidden" name="rating" value={filters.rating} />
+            ) : null}
+            <label className="relative inline-flex min-h-11 w-full max-w-[310px] items-center rounded-full border border-brand-lavender bg-white text-sm font-bold text-tesText-secondary shadow-card sm:w-[270px]">
+              <span className="sr-only">Ordenar terapeutas</span>
+              <select
+                name="sort"
+                defaultValue={filters.sort}
+                className="h-full w-full appearance-none truncate rounded-full bg-transparent px-[15px] pr-10 text-sm font-bold outline-none"
+              >
+                {sortOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    Ordenar por: {option.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-4 size-4 text-brand-primary" />
+            </label>
+            <button className="sr-only">Ordenar</button>
+          </form>
         </div>
       ) : null}
     </div>
@@ -335,14 +336,10 @@ function TherapistResultCard({
                 therapies={therapist.therapies}
               />
             </div>
-            <button
-              type="button"
-              aria-label={`Favoritar ${therapist.name}`}
-              aria-pressed="false"
-              className="grid size-11 shrink-0 place-items-center rounded-full text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            >
-              <Heart className="size-5" />
-            </button>
+            <FavoriteTherapistButton
+              therapistName={therapist.name}
+              therapistProfileId={therapist.therapistProfileId}
+            />
           </div>
 
           <p className="text-sm font-semibold leading-6 text-tesText-secondary">
@@ -536,30 +533,7 @@ export default async function TherapistsPage({
       </section>
 
       <section className="mx-auto max-w-[1440px] px-5 pb-[62px] sm:px-8 lg:px-[68px]">
-        <div className="relative isolate overflow-hidden rounded-[18px] bg-surface-soft px-6 py-8 sm:px-10 lg:min-h-[178px] lg:px-12">
-          <TESDecorativeMedia
-            className="absolute inset-0"
-            fade="left"
-            fadeTone="soft"
-            imageClassName="object-right"
-            objectPosition="right center"
-            quality={95}
-            sizes="(min-width: 1024px) 90vw, 100vw"
-            src={platformAssets.publicTherapistsLowerBanner.src}
-          />
-          <div className="relative z-10 max-w-xl">
-            <h2 className="font-display text-3xl font-light italic leading-tight text-brand-deep sm:text-4xl">
-              Encontre um caminho que faça sentido para você
-            </h2>
-            <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
-              Explore perfis, conheça abordagens e escolha com calma quem pode
-              acompanhar o seu momento.
-            </p>
-            <TESButton className="mt-5" href={routes.public.therapists}>
-              Ver terapeutas
-            </TESButton>
-          </div>
-        </div>
+        <PublicTherapistsLowerBanner />
       </section>
 
       <PublicFooter />
