@@ -1,10 +1,60 @@
 begin;
 
-select plan(7);
+select plan(9);
 
 select ok(
-  to_regclass('public.therapist_private_identity_cpf_unique_idx') is not null,
-  'a partial unique index protects CPF only'
+  to_regclass('public.therapist_private_identity_cpf_unique_idx') is not null
+    or to_regclass('public.therapist_private_identity_cpf_lookup_idx') is not null,
+  'CPF has a production unique index or the transitional lookup index'
+);
+
+select ok(
+  exists (
+    select 1
+    from pg_trigger
+    where tgrelid = 'public.therapist_private_identity'::regclass
+      and tgname = 'reject_new_duplicate_therapist_cpf_v1'
+      and not tgisinternal
+      and tgenabled <> 'D'
+  ),
+  'the transitional trigger rejects new duplicate CPF writes'
+);
+
+-- Exercise the HML transition path even when the local database already has
+-- the production unique index from an earlier application of the migration.
+drop index if exists public.therapist_private_identity_cpf_unique_idx;
+
+delete from public.therapist_private_identity
+where therapist_profile_id in (
+  'c1000000-0000-4000-8000-000000000001',
+  'c1000000-0000-4000-8000-000000000002'
+);
+
+alter table public.therapist_private_identity
+  disable trigger reject_new_duplicate_therapist_cpf_v1;
+
+insert into public.therapist_private_identity (
+  therapist_profile_id, document_type, document_number, postal_code,
+  street, street_number, neighborhood, city, state, country
+) values
+  (
+    'c1000000-0000-4000-8000-000000000001', 'cpf', '84371926509',
+    '05409000', 'Rua dos Pinheiros', '100', 'Pinheiros', 'Sao Paulo', 'SP', 'BR'
+  ),
+  (
+    'c1000000-0000-4000-8000-000000000002', 'cpf', '84371926509',
+    '05409000', 'Rua dos Pinheiros', '200', 'Pinheiros', 'Sao Paulo', 'SP', 'BR'
+  );
+
+alter table public.therapist_private_identity
+  enable trigger reject_new_duplicate_therapist_cpf_v1;
+
+select lives_ok(
+  $$update public.therapist_private_identity
+    set document_number = document_number,
+        street_number = '201'
+    where therapist_profile_id = 'c1000000-0000-4000-8000-000000000002'$$,
+  'legacy duplicate holders can update unrelated private fields'
 );
 
 delete from public.therapist_private_identity

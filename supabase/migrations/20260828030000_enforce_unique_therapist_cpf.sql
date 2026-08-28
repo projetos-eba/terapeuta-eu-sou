@@ -1,6 +1,7 @@
--- CPF identifies one private therapist identity at a time. RG and passport
--- remain non-unique because they are not a reliable cross-account identifier.
-create unique index if not exists therapist_private_identity_cpf_unique_idx
+-- Keep CPF lookups indexed without blocking this migration on legacy duplicate
+-- rows. New duplicate CPF writes are rejected by the forward compatibility
+-- migration; legacy rows require a separate, explicitly reviewed reconciliation.
+create index if not exists therapist_private_identity_cpf_lookup_idx
   on public.therapist_private_identity (document_number)
   where document_type = 'cpf';
 

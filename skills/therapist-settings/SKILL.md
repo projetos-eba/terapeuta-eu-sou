@@ -103,10 +103,15 @@ Required grant/policy:
 
 Any broader profile update requires a new security review.
 
-CPF normalization is protected by the partial unique index
-`therapist_private_identity_cpf_unique_idx`. The private-identity RPC converts
-that conflict to `CPF_ALREADY_IN_USE` (`23505`) and never identifies the other
-account.
+CPF normalization keeps the same external uniqueness contract. Production
+retains the partial unique index
+`therapist_private_identity_cpf_unique_idx`. In environments with legacy
+duplicate groups, `therapist_private_identity_cpf_lookup_idx` supports lookups
+and the transaction-serialized trigger
+`reject_new_duplicate_therapist_cpf_v1` rejects new collisions without changing
+existing rows. The private-identity RPC converts either enforcement path to
+`CPF_ALREADY_IN_USE` (`23505`) and never identifies the other account. Restoring
+the unique index after reconciliation requires a separate reviewed migration.
 
 ## QA
 
