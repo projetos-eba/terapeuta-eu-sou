@@ -92,6 +92,10 @@ terapeuta e passa `actor_user_id` derivado da sessão, não do navegador.
 - `public_therapist_profile_services_v`: serviços do perfil público.
 - `public_matching_therapies_v`: Match, mantida separada via settings.
 
+No editor administrativo, os temas ativos e os vínculos canônicos da terapia
+vêm de `admin_list_therapy_catalog_v1`. A view pública de temas do Match tem
+regras de exposição próprias e não é uma dependência do fluxo de edição.
+
 ## Plano de Migração
 
 1. Expandir enums sem remover valores legados.

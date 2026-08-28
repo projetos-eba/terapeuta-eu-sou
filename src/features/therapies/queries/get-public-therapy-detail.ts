@@ -95,7 +95,10 @@ function mapTherapyDetail(row: PublicTherapyDetailRow): PublicTherapyDetail {
     complementaryDescription: row.complementary_description,
     description: row.description ?? "",
     heroFocalPoint: parseHeroFocalPoint(row.hero_focal_point),
-    heroImageUrl: row.hero_image_url,
+    // Uploads administrativos preenchem `image_url` como imagem canônica. O
+    // hero é opcional e, quando ausente, deve manter a mesma apresentação da
+    // imagem usada no catálogo público.
+    heroImageUrl: row.hero_image_url ?? row.image_url,
     highlights: parseItems(row.highlights),
     id: row.id,
     introduction: row.introduction ?? row.description ?? "",
