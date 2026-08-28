@@ -225,7 +225,7 @@ describe("patient encounters mapper", () => {
     expect(result.upcomingEncounters).toHaveLength(5);
   });
 
-  it("keeps a bounded recent history for the scrollable list", () => {
+  it("keeps a bounded and paginated recent history for the scrollable list", () => {
     const bookings = Array.from({ length: 55 }, (_, index) => {
       const startsAt = new Date(Date.now() - (index + 1) * 24 * 60 * 60 * 1000);
       return {
@@ -253,7 +253,62 @@ describe("patient encounters mapper", () => {
       unreadNotificationsCount: 0,
     });
 
-    expect(result.historyEncounters).toHaveLength(50);
+    expect(result.historyEncounters).toHaveLength(10);
+    expect(result.historyPagination).toMatchObject({
+      hasNext: true,
+      page: 1,
+      pageSize: 10,
+      total: 50,
+      totalPages: 5,
+    });
+
+    const secondPage = mapPatientEncountersPage({
+      bookings,
+      favoriteTherapistsCount: 0,
+      historyPage: 2,
+      patient,
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map(),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(secondPage.historyEncounters[0]?.id).toBe(bookings[10]?.id);
+    expect(secondPage.historyPagination.page).toBe(2);
+  });
+
+  it("labels a completed encounter as already performed", () => {
+    const booking = {
+      ...createBooking(
+        "95000000-0000-4000-8000-000000000009",
+        new Date(Date.now() - 72 * 60 * 60 * 1000),
+      ),
+      completed_at: new Date(Date.now() - 70 * 60 * 60 * 1000).toISOString(),
+      status: "completed",
+    };
+
+    const result = mapPatientEncountersPage({
+      bookings: [booking],
+      favoriteTherapistsCount: 0,
+      patient,
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map(),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(result.historyEncounters[0]?.status).toBe("completed");
+    expect(result.historyEncounters[0]?.statusLabel).toBe("Já realizada");
   });
 
   it("keeps cancelled encounters in history with refund-oriented action", () => {

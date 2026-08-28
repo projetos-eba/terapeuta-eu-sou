@@ -13,6 +13,7 @@ import type { TherapistSettingsData } from "../therapist-settings.types";
 
 const commandMocks = vi.hoisted(() => ({
   lookupTherapistAddressByCep: vi.fn(),
+  uploadTherapistPrivateDocument: vi.fn(),
   updateTherapistSettings: vi.fn(),
 }));
 
@@ -22,6 +23,13 @@ vi.mock("../therapist-settings.commands", () => ({
   lookupTherapistAddressByCep: commandMocks.lookupTherapistAddressByCep,
   updateTherapistSettings: commandMocks.updateTherapistSettings,
 }));
+
+vi.mock(
+  "@/features/therapist-profile-editor/therapist-profile-editor.commands",
+  () => ({
+    uploadTherapistPrivateDocument: commandMocks.uploadTherapistPrivateDocument,
+  }),
+);
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
@@ -57,6 +65,15 @@ describe("TherapistSettingsPage", () => {
         },
       },
       status: "success",
+    });
+    commandMocks.uploadTherapistPrivateDocument.mockReset();
+    commandMocks.uploadTherapistPrivateDocument.mockResolvedValue({
+      error: {
+        code: "VALIDATION_ERROR",
+        message:
+          "Não foi possível concluir a operação, o tamanho do documento excede o limite de 10 MB.",
+      },
+      status: "error",
     });
   });
 
@@ -119,6 +136,28 @@ describe("TherapistSettingsPage", () => {
     expect(
       screen.getAllByRole("button", { name: "Enviar documento" }),
     ).toHaveLength(2);
+    expect(
+      screen.queryByRole("button", { name: "Salvar alterações" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Salvar meus dados" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps CEP before the street in the responsive address grid", () => {
+    render(
+      <TherapistSettingsPage
+        planData={planFixture("premium_plus")}
+        settings={settingsFixture()}
+      />,
+    );
+
+    const addressGrid =
+      screen.getByLabelText("CEP").parentElement?.parentElement;
+    expect(addressGrid).toHaveClass(
+      "md:grid-cols-[minmax(120px,152px)_minmax(0,1fr)_180px]",
+    );
+    expect(addressGrid).toContainElement(screen.getByLabelText("Endereço"));
   });
 
   it("saves edited account settings through the authenticated command", async () => {
@@ -132,7 +171,7 @@ describe("TherapistSettingsPage", () => {
     fireEvent.change(screen.getByLabelText("Telefone"), {
       target: { value: "+55 11 99999-9999" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar meus dados" }));
 
     await waitFor(() => {
       expect(commandMocks.updateTherapistSettings).toHaveBeenCalledWith({
@@ -175,7 +214,7 @@ describe("TherapistSettingsPage", () => {
     fireEvent.change(screen.getByLabelText("Telefone"), {
       target: { value: "+55 11 99999-9999" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar meus dados" }));
 
     await waitFor(() => {
       expect(screen.getByText("Configurações salvas.")).toBeInTheDocument();
@@ -198,12 +237,59 @@ describe("TherapistSettingsPage", () => {
     fireEvent.change(screen.getByLabelText("Telefone"), {
       target: { value: "telefone<script>" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Salvar alterações" }));
+    fireEvent.click(screen.getByRole("button", { name: "Salvar meus dados" }));
 
     expect(commandMocks.updateTherapistSettings).not.toHaveBeenCalled();
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Informe um telefone válido ou deixe o campo vazio.",
     );
+  });
+
+  it.each([
+    [
+      "VALIDATION_ERROR",
+      "Não foi possível concluir a operação, o CPF não é válido.",
+    ],
+    ["CPF_IN_USE", "Este documento já está em uso em outra conta."],
+  ])("shows the safe settings error for %s", async (code, message) => {
+    commandMocks.updateTherapistSettings.mockResolvedValueOnce({
+      error: { code, message },
+      status: "error",
+    });
+    render(
+      <TherapistSettingsPage
+        planData={planFixture("premium_plus")}
+        settings={settingsFixture()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Salvar meus dados" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(message);
+    });
+  });
+
+  it("explains the 10 MB limit in the document error dialog", async () => {
+    render(
+      <TherapistSettingsPage
+        planData={planFixture("premium_plus")}
+        settings={settingsFixture()}
+      />,
+    );
+
+    const file = new File(["too-large"], "rg.pdf", {
+      type: "application/pdf",
+    });
+    fireEvent.change(screen.getByLabelText("Enviar Documento de identidade"), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "Não foi possível concluir a operação, o tamanho do documento excede o limite de 10 MB.",
+      );
+    });
   });
 
   it("offers cancellation and the next upgrade to a Premium therapist", () => {

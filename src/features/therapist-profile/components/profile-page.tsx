@@ -59,7 +59,7 @@ function Hero({
       data-profile-theme={theme.id}
       style={theme.style}
     >
-      <div className="absolute inset-x-0 top-0 h-[350px] overflow-hidden rounded-b-[36px] md:inset-0 md:h-full md:rounded-none">
+      <div className="absolute inset-x-0 top-0 h-[260px] overflow-hidden rounded-b-[36px] md:inset-0 md:h-full md:rounded-none">
         {(theme.backgroundAsset ?? theme.heroBackgroundSrc) ? (
           <Image
             aria-hidden="true"
@@ -87,9 +87,9 @@ function Hero({
           />
         ) : null}
       </div>
-      <div className="relative z-20 mx-auto grid max-w-[1440px] gap-6 px-5 pb-10 pt-6 sm:px-8 md:items-center md:pb-8 md:pt-6 md:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)] lg:grid-cols-[520px_1fr] lg:gap-8 lg:px-[56px]">
+      <div className="relative z-20 mx-auto grid max-w-[1440px] gap-6 px-5 pb-10 pt-6 sm:px-8 md:grid-cols-[minmax(252px,0.9fr)_minmax(0,1.1fr)] md:items-center md:pb-8 md:pt-6 lg:grid-cols-[364px_1fr] lg:gap-8 lg:px-[56px]">
         <div
-          className={`relative z-10 mx-auto mt-[116px] size-[300px] overflow-hidden max-md:!rounded-full sm:mt-[128px] sm:size-[320px] md:mx-0 md:mt-0 md:h-auto md:min-h-[360px] md:w-auto lg:min-h-[410px] ${profilePhotoShapeClassName(theme.photoShape)}`}
+          className={`relative z-10 mx-auto mt-[88px] size-[210px] overflow-hidden max-md:!rounded-full sm:mt-[96px] sm:size-[224px] md:mx-0 md:mt-0 md:size-[252px] lg:size-[287px] ${profilePhotoShapeClassName(theme.photoShape)}`}
         >
           <Image
             src={profile.heroImage}
@@ -102,15 +102,15 @@ function Hero({
         </div>
 
         <div className="flex min-w-0 flex-col items-center justify-center md:items-start">
-          <div className="flex flex-wrap justify-center gap-3 md:justify-start">
+          <div className="flex w-full flex-nowrap justify-center gap-1 md:justify-start md:gap-2">
             {profile.isVerified ? (
-              <span className="inline-flex min-h-9 items-center gap-2 rounded-full border border-border bg-status-infoBg px-6 py-2 text-sm font-semibold text-status-info">
+              <span className="inline-flex min-h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-border bg-status-infoBg px-2 py-1 text-xs font-semibold text-status-info sm:gap-2 sm:px-3 sm:text-sm">
                 <BadgeCheck className="size-4" />
                 Perfil verificado
               </span>
             ) : null}
             {profile.plan === "premium_plus" ? (
-              <span className="inline-flex min-h-9 items-center gap-2 rounded-full border border-status-warning/30 bg-status-warningBg px-6 py-2 text-sm font-semibold text-brand-deep">
+              <span className="inline-flex min-h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-status-warning/30 bg-status-warningBg px-2 py-1 text-xs font-semibold text-brand-deep sm:gap-2 sm:px-3 sm:text-sm">
                 <Crown className="size-4" />
                 Terapeuta Plus
               </span>

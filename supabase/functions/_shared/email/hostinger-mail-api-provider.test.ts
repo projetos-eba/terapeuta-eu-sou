@@ -35,7 +35,8 @@ Deno.test(
     });
 
     assertEquals(authorization, "Bearer secret-test-key");
-    assertEquals(requestBodies[0]?.display_name, "TES");
+    assertEquals(requestBodies[0]?.displayName, "TES");
+    assertEquals("display_name" in (requestBodies[0] ?? {}), false);
     assertEquals(requestBodies[0]?.html, "<p>ok</p>");
     assertEquals("text" in (requestBodies[0] ?? {}), false);
     assertEquals(
@@ -137,8 +138,36 @@ Deno.test(
     const senders = await provider.listSenders();
 
     assertEquals(senders.length, 1);
+    assertEquals(senders[0]?.displayName, "TES - Terapeuta Eu Sou");
     assertEquals(senders[0]?.mailboxAddress, "contato@example.test");
     assertEquals(senders[0]?.mailboxResourceId, "mailbox-1");
+  },
+);
+
+Deno.test(
+  "HostingerMailApiProvider preserves a sender name returned by Hostinger",
+  async () => {
+    const provider = new HostingerMailApiProvider({
+      apiKey: "secret-test-key",
+      fetcher: () =>
+        Promise.resolve(
+          jsonResponse({
+            data: {
+              mailboxes: [
+                {
+                  address: "contato@example.test",
+                  display_name: "Hostinger configured name",
+                  resource_id: "mailbox-1",
+                },
+              ],
+            },
+          }),
+        ),
+    });
+
+    const senders = await provider.listSenders();
+
+    assertEquals(senders[0]?.displayName, "Hostinger configured name");
   },
 );
 

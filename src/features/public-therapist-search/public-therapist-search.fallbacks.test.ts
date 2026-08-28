@@ -78,7 +78,7 @@ describe("public therapist search fallback contract", () => {
             review_count: 0,
             review_quote: null,
             search_text: "Ana Oliveira apresentação Reiki",
-            service_description: "Descrição da oferta de Reiki.",
+            service_description: "Descrição da prática de Reiki.",
             service_id: "service-1",
             service_price_cents: 12000,
             service_title: "Reiki online",
@@ -87,6 +87,7 @@ describe("public therapist search fallback contract", () => {
             tags: ["Autoconhecimento"],
             theme_names: ["Autoconhecimento"],
             theme_slugs: ["autoconhecimento"],
+            therapist_profile_id: "c1000000-0000-4000-8000-000000000001",
             therapist_headline: "Acolhimento online com escuta cuidadosa.",
             therapy_id: "therapy-1",
             therapy_name: "Reiki",
@@ -103,7 +104,10 @@ describe("public therapist search fallback contract", () => {
       "Acolhimento online com escuta cuidadosa.",
     );
     expect(result.therapists[0]?.description).not.toBe(
-      "Descrição da oferta de Reiki.",
+      "Descrição da prática de Reiki.",
+    );
+    expect(result.therapists[0]?.therapistProfileId).toBe(
+      "c1000000-0000-4000-8000-000000000001",
     );
   });
 
@@ -130,7 +134,7 @@ describe("public therapist search fallback contract", () => {
               review_count: 0,
               review_quote: null,
               search_text: "Brunna P apresentação Tarô",
-              service_description: "Descrição da oferta de Tarô.",
+              service_description: "Descrição da prática de Tarô.",
               service_id: "service-taro",
               service_price_cents: 12000,
               service_title: "Tarô online",
@@ -139,6 +143,7 @@ describe("public therapist search fallback contract", () => {
               tags: ["Autoconhecimento"],
               theme_names: ["Autoconhecimento"],
               theme_slugs: ["autoconhecimento"],
+              therapist_profile_id: "c1000000-0000-4000-8000-000000000006",
               therapist_headline: "Acolhimento online com escuta cuidadosa.",
               therapy_id: "therapy-taro",
               therapy_name: "Tarô",

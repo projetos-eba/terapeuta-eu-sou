@@ -158,6 +158,8 @@ demo.
 - `npm run lint`: lint do Next.js.
 - `npm run lint:online-only`: valida a política de produto que impede opções de
   formato não-online fora da allowlist documentada.
+- `npm run lint:migrations`: valida nomes e versões únicas das migrations do
+  Supabase antes de qualquer deploy.
 - `npm run typecheck`: valida TypeScript.
 - `npm run dev:functions`: sobe Supabase Edge Functions locais usando secrets de `supabase/functions/.env.local`, `supabase/functions/.env` ou `.env.local`, nesta ordem. As chaves locais do Supabase sao injetadas em memoria pela CLI e nao devem ser salvas na raiz do app.
 - `npm run test:auth:flows`: valida fluxo auth completo via Edge Functions, incluindo senha normal, `MASTER_PASSWORD`, confirmacao normal/automatica, reset e redirecionamentos.
@@ -232,7 +234,8 @@ Functions:
 - `zoom-webhook`: valida assinatura/challenge e processa eventos operacionais
   `session.*`.
 - `zoom-video-session-maintenance`: processa jobs duraveis de encerramento por
-  hard timeout, ausencia do terapeuta e reconciliacao operacional.
+  fim agendado, hard timeout ou encerramento manual previamente autorizado.
+  Ausencia temporaria e fechamento precoce do provider permanecem reentrantes.
 
 Scripts:
 
@@ -300,9 +303,9 @@ Secrets das Edge Functions:
 - `MASTER_PASSWORD`: senha master opcional para testes locais. Quando preenchida no runtime das Edge Functions, os logins `client-auth-login` e `therapist-auth-login` aceitam essa senha para gerar uma sessao do usuario informado sem expor o segredo ao app Next.js. A validacao de perfil e e-mail confirmado continua obrigatoria. Nunca configurar em producao.
 - `ADMIN_MASTER_PASSWORD_BYPASS_ENABLED`: aceita somente `true` ou `false`; ausente/vazio equivale a `false`. O login `admin-auth-login` so aceita `MASTER_PASSWORD` quando esta flag esta `true` e `SUPABASE_URL` aponta para `localhost` ou `127.0.0.1`; em ambientes remotos o bypass administrativo permanece desativado.
 
-Contrato Hostinger confirmado em documentacao oficial/SDK da Hostinger: `GET https://api.mail.hostinger.com/api/v1/me` retorna as mailboxes gerenciaveis; o envio usa `POST https://api.mail.hostinger.com/api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, `Content-Type: application/json`, payload com `to: string[]`, `display_name`, `subject`, `text` e `html`, e sucesso `204` sem corpo.
+Contrato Hostinger confirmado em documentacao oficial/SDK da Hostinger: `GET https://api.mail.hostinger.com/api/v1/me` retorna as mailboxes gerenciaveis; o envio usa `POST https://api.mail.hostinger.com/api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, `Content-Type: application/json`, payload HTML com `to: string[]`, `displayName`, `subject` e `html`, e sucesso `204` sem corpo. A propriedade Python `display_name` possui alias JSON `displayName`; enviar snake_case e silenciosamente ignorado. A versao textual continua no renderer interno, mas nao e enviada junto do HTML. Quando a listagem nao informa nome, o fallback enviado e `TES - Terapeuta Eu Sou`.
 
-Teste real de entrega do template `booking_confirmed_therapist`: `npm run test:email:real` carrega `.env.local` e secrets locais das Edge Functions, usa a service role local em memoria via Supabase CLI, sincroniza mailboxes Hostinger no banco local e so envia quando `ALLOW_REAL_EMAIL_TESTS=true`, `EMAIL_E2E_RECIPIENT`, API key e sender ativo/default estiverem configurados.
+Teste real de entrega do template `booking_confirmed_therapist`: `npm run test:email:real` carrega `.env.local` e secrets locais das Edge Functions, usa a service role local em memoria via Supabase CLI, sincroniza mailboxes Hostinger no banco local e so envia quando `ALLOW_REAL_EMAIL_TESTS=true`, `EMAIL_E2E_RECIPIENT`, exatamente uma `EMAIL_E2E_ACTION_KEYS`, API key e sender ativo/default estiverem configurados. O harness faz no maximo uma chamada de envio por execucao, sem retry, e aplica gate persistente de 120 segundos antes do POST.
 
 Scripts de pagamento:
 

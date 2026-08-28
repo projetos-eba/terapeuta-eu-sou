@@ -42,6 +42,8 @@ select public.ensure_video_session_for_paid_booking_v1(
 
 update public.video_sessions
 set provider_session_id = 'provider-session-unique-pgtap',
+    scheduled_starts_at = now() - interval '30 minutes',
+    scheduled_ends_at = now() + interval '30 minutes',
     status = 'ready',
     actual_started_at = null,
     actual_ended_at = null,
@@ -104,6 +106,8 @@ select public.ensure_video_session_for_paid_booking_v1(
 
 update public.video_sessions
 set provider_session_id = 'provider-session-shared-cross-env',
+    scheduled_starts_at = now() - interval '30 minutes',
+    scheduled_ends_at = now() + interval '30 minutes',
     status = 'ready',
     actual_started_at = null,
     actual_ended_at = null,

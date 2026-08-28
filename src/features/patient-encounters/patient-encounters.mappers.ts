@@ -21,6 +21,7 @@ import type {
 } from "./patient-encounters.types";
 
 const MAX_HISTORY_ENCOUNTERS = 50;
+export const HISTORY_PAGE_SIZE = 10;
 
 export type BookingRecord = {
   cancelled_at: string | null;
@@ -80,6 +81,7 @@ type MapPatientEncountersInput = {
   patient: PatientEncountersPatient;
   patientEntryEntitlementByBookingId?: Map<string, boolean>;
   pendingFeedbackBookingIds?: Set<string>;
+  historyPage?: number;
   reviews: ReviewRecord[];
   serviceById: Map<string, ServiceRecord>;
   sessionPaymentByBookingId: Map<string, SessionPaymentRecord>;
@@ -124,7 +126,7 @@ export function mapPatientEncountersPage(
   const currentJourneyTherapistIds = new Set(
     upcomingEncounters.map((encounter) => encounter.therapist.id),
   );
-  const historyEncounters = mapped
+  const allHistoryEncounters = mapped
     .filter(
       (encounter) =>
         encounter.status === "completed" ||
@@ -133,6 +135,19 @@ export function mapPatientEncountersPage(
     )
     .sort((left, right) => sortByStartsAt(right, left))
     .slice(0, MAX_HISTORY_ENCOUNTERS);
+  const historyTotalPages = Math.max(
+    1,
+    Math.ceil(allHistoryEncounters.length / HISTORY_PAGE_SIZE),
+  );
+  const historyPage = Math.min(
+    normalizeHistoryPage(input.historyPage),
+    historyTotalPages,
+  );
+  const historyStart = (historyPage - 1) * HISTORY_PAGE_SIZE;
+  const historyEncounters = allHistoryEncounters.slice(
+    historyStart,
+    historyStart + HISTORY_PAGE_SIZE,
+  );
   const completedCount = input.bookings.filter((booking) =>
     isCompletedBookingStatus(booking.status),
   ).length;
@@ -143,6 +158,13 @@ export function mapPatientEncountersPage(
   return {
     favoriteTherapistsCount: input.favoriteTherapistsCount,
     historyEncounters,
+    historyPagination: {
+      hasNext: historyPage < historyTotalPages,
+      page: historyPage,
+      pageSize: HISTORY_PAGE_SIZE,
+      total: allHistoryEncounters.length,
+      totalPages: historyTotalPages,
+    },
     metrics: {
       activeCount,
       completedCount,
@@ -345,7 +367,7 @@ function getStatusLabel(status: PatientEncounterStatus) {
   const labels: Record<PatientEncounterStatus, string> = {
     cancelled: "Encontro cancelado",
     awaiting_confirmation: "Confirmação pendente",
-    completed: "Realizada",
+    completed: "Já realizada",
     confirmed: "Confirmada",
     live: "Ao vivo agora",
     pending_payment: "Pagamento pendente",
@@ -353,6 +375,12 @@ function getStatusLabel(status: PatientEncounterStatus) {
   };
 
   return labels[status];
+}
+
+function normalizeHistoryPage(value: number | undefined) {
+  if (!Number.isFinite(value) || (value ?? 0) <= 0) return 1;
+
+  return Math.min(Math.floor(value ?? 1), 10_000);
 }
 
 function getApproachLabel(slug: string) {

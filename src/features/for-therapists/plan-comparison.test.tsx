@@ -25,4 +25,19 @@ describe("PlansPreviewSection", () => {
       expect(header).toHaveClass("text-brand-deep");
     });
   });
+
+  it("does not render the retired launch offer card", () => {
+    render(<PlansPreviewSection />);
+
+    expect(screen.queryByText("Oferta de lançamento Premium Plus")).toBeNull();
+    expect(screen.queryByText("TERAPEUTAFUNDADOR")).toBeNull();
+    expect(
+      screen.getByRole("heading", { name: "Escolha o plano ideal para você" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("table", {
+        name: "Comparativo de recursos dos planos para terapeutas",
+      }),
+    ).toBeInTheDocument();
+  });
 });

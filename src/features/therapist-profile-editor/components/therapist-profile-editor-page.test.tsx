@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -158,6 +159,7 @@ function makeFirstConfigurationEditor(
 describe("TherapistProfileEditorPage", () => {
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
   });
 
   beforeEach(() => {
@@ -192,6 +194,10 @@ describe("TherapistProfileEditorPage", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText("Dados derivados")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Conteúdos / Reflexões" }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Adicionar conteúdo" })).not.toBeInTheDocument();
   });
 
   it("opens the library and keeps theme selection in the draft state", () => {
@@ -425,6 +431,92 @@ describe("TherapistProfileEditorPage", () => {
     expect(
       screen.getByText("Existe um rascunho salvo aguardando publicação."),
     ).toBeInTheDocument();
+  });
+
+  it("automatically saves the editable profile fields as a private draft", async () => {
+    vi.useFakeTimers();
+    commandMocks.sendTherapistProfileCommand.mockImplementation(
+      async (command) => {
+        if (command.action !== "save_draft") {
+          throw new Error("Expected an automatic draft save.");
+        }
+
+        const savedFields =
+          command.payload as unknown as TherapistProfileEditorData["published"]["fields"];
+        return {
+          data: {
+            editor: makeEditor({
+              draft: {
+                baseProfileVersion: 4,
+                contentVersionId: "autosaved-draft-version",
+                fields: savedFields,
+                publishedAt: null,
+                status: "draft",
+                updatedAt: "2026-08-27T14:00:00.000Z",
+              },
+              version: 5,
+            }),
+            idempotentReplay: false,
+          },
+          status: "success",
+        };
+      },
+    );
+
+    render(<TherapistProfileEditorPage editor={makeEditor()} />);
+
+    fireEvent.change(screen.getByLabelText("Nome do perfil"), {
+      target: { value: "Ana com rascunho automático" },
+    });
+    fireEvent.change(screen.getByLabelText("Sua apresentação"), {
+      target: { value: "Uma apresentação salva automaticamente." },
+    });
+    fireEvent.change(screen.getByLabelText("Minha essência"), {
+      target: { value: "Uma essência que continua disponível ao retornar." },
+    });
+    fireEvent.click(
+      document.querySelector(
+        '[data-guide-theme="autoconhecimento-transformacao"]',
+      ) as HTMLButtonElement,
+    );
+    fireEvent.change(screen.getByLabelText("Inserir link do vídeo"), {
+      target: { value: "https://www.youtube.com/watch?v=rascunho" },
+    });
+    fireEvent.change(screen.getByLabelText("Título do vídeo"), {
+      target: { value: "Vídeo salvo no rascunho" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Alterar tema" }));
+    fireEvent.click(screen.getByRole("button", { name: /Natural/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Aplicar tema" }));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1_200);
+    });
+    expect(commandMocks.sendTherapistProfileCommand).toHaveBeenCalledTimes(1);
+    expect(commandMocks.sendTherapistProfileCommand).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "save_draft",
+        expectedVersion: 4,
+        payload: expect.objectContaining({
+          essenceBody: "Uma essência que continua disponível ao retornar.",
+          publicName: "Ana com rascunho automático",
+          publicProfileTheme: "natural",
+          guideItems: expect.arrayContaining([
+            expect.objectContaining({ icon: "mind" }),
+          ]),
+          shortIntro: "Uma apresentação salva automaticamente.",
+          videoProvider: "youtube",
+          videoTitle: "Vídeo salvo no rascunho",
+          videoUrl: "https://www.youtube.com/watch?v=rascunho",
+        }),
+      }),
+    );
+    expect(screen.getAllByText("Rascunho salvo automaticamente.")).toHaveLength(
+      2,
+    );
+    expect(
+      screen.queryByRole("dialog", { name: "Alterações salvas como rascunho" }),
+    ).not.toBeInTheDocument();
   });
 
   it("uses publication as the primary action during first profile setup", () => {

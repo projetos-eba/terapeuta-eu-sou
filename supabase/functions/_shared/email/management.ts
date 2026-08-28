@@ -70,6 +70,7 @@ const options: sanitizeHtml.IOptions = {
   },
   disallowedTagsMode: "discard",
   enforceHtmlBoundary: true,
+  nonTextTags: ["script", "style", "textarea", "option", "title"],
 };
 
 export function sanitizeEmailHtml(value: string) {

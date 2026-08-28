@@ -72,8 +72,20 @@ Session summaries are stored in `booking_session_summaries`, linked to `bookings
 - The temporal groups retain their real data and actions while using the
   patient-facing labels `Próximos encontros` and `Histórico de encontros`.
 - Experience density: `Balanced`, with a `Comfortable` empty state when useful.
-- Information order is: page orientation → next encounter/next action → other
-  future encounters → history.
+- Information order is: page orientation → next encounter/next action → pending
+  confirmations → other future encounters → history.
+- `PendingSessionFeedbackSection` is a local action surface that follows the
+  next encounter. It uses one column below `lg` and two columns at `lg` and
+  above; it shows four cards before an internal vertical scroll begins. The
+  mobile/tablet limit is four stacked cards, while desktop shows two rows of
+  two cards. Keep the confirmation action and dialog behavior unchanged.
+- `EncounterHistorySection` keeps its bounded internal vertical scroll and
+  paginates the history in groups of ten through the existing `/app/encontros`
+  route using `historyPage`; the pagination controls must remain outside the
+  scroll region and preserve the history anchor. Completed encounters use the
+  green status badge `Já realizada`. After a private confirmation succeeds,
+  refresh the server composition so the item leaves the pending state and the
+  history reflects the authoritative booking status.
 - The next encounter may use one tokenized accent surface because it groups the
   dominant entity, state and action. Do not nest cards inside it.
 - Other future encounters and history use open `TemporalGroup`/`EntityList`
@@ -107,6 +119,9 @@ Session summaries are stored in `booking_session_summaries`, linked to `bookings
 - Check desktop (about 1440px), tablet (768–1024px) and mobile (375–430px).
 - Check populated, empty, payment attention, pending reschedule, live entry,
   completed, cancelled, loading and honest error states when fixtures allow.
+- With five pending confirmations, confirm the next encounter appears first,
+  the pending region has two columns at 1440px, one column at 900px and 390px,
+  and the fifth card is reachable through the internal scroll without clipping.
 - Confirm the page has no horizontal overflow, raw `meeting_url`, raw Zoom URL,
   new patient copy using “Sessão”, hidden state-aware CTA or item-level card.
 - Confirm keyboard focus reaches the dominant action and every target remains

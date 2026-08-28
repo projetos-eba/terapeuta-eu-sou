@@ -69,7 +69,7 @@ habilitacao por acao continuam configuracao operacional do ambiente.
 - `CONFIRMED_AUTOMATICALLY_EMAIL`: somente Edge Functions; ausente/vazio equivale a `false`; aceita apenas `true` ou `false`; valor invalido deve falhar fechado e nunca ativar bypass.
 - `ALLOW_REAL_EMAIL_TESTS`: opt-in local para `npm run test:email:real`.
 - `EMAIL_E2E_RECIPIENT`: deve ser exatamente um dos destinatários autorizados para o teste real: `viniciusferrari.silva@gmail.com` ou `ferrarimarketing9@gmail.com`.
-- `EMAIL_E2E_ACTION_KEYS`: filtro opcional, separado por vírgulas, para repetir somente eventos explicitamente recusados pelo provider; ausente envia todo o registry.
+- `EMAIL_E2E_ACTION_KEYS`: obrigatório no teste real e deve conter exatamente uma action key.
 - `EMAIL_E2E_SENDER_EMAIL`: caixa gerenciada opcional para o harness real; a seleção usa snapshot local e não altera o remetente padrão nem settings por evento.
 
 `EMAIL_PUBLIC_SITE_URL` pode ser informado com protocolo ou apenas dominio. Dominio sem protocolo vira `https://`; `localhost` e `127.0.0.1` viram `http://`.
@@ -84,8 +84,10 @@ Provider inicial: Hostinger Mail API.
 
 - Base esperada: `https://api.mail.hostinger.com`.
 - Listagem confirmada: `GET /api/v1/me`, bearer token, retorna account com `data.mailboxes[]`, `resource_id` e `address`.
-- Envio confirmado: `POST /api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, `Content-Type: application/json`, payload HTML com `to: string[]`, `display_name`, `subject` e `html`.
-- O renderer continua produzindo a versão `text` para preview, testes e compatibilidade futura, mas o adaptador Hostinger não a envia junto do HTML. O provider apresentou a primeira linha de `text` como conteúdo visível antes do shell HTML em clientes como Gmail.
+- Envio confirmado: `POST /api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, `Content-Type: application/json`, payload HTML com `to: string[]`, `displayName`, `subject` e `html`. Embora a propriedade Python seja `display_name`, o SDK oficial declara `alias="displayName"` e serializa o JSON em camelCase.
+- O renderer continua produzindo a versão `text` para preview, testes e compatibilidade futura, mas o adaptador Hostinger não a envia junto do HTML.
+- O `.eml` recebido em 2026-08-27 comprovou que a linha visual solta no Gmail era texto remanescente de `<title>`: o sanitizer descartava a tag e preservava o conteúdo dentro de `<head>`. O shell padrão não usa `<title>` e o sanitizer descarta integralmente tag e conteúdo de qualquer `<title>` customizado.
+- A listagem `/api/v1/me` pode retornar somente endereço e ID da mailbox. Quando não houver nome explícito, o provider envia `TES - Terapeuta Eu Sou` em `displayName`; um nome fornecido pela Hostinger continua tendo precedência.
 - Sucesso de envio: `204` sem corpo.
 
 Fonte consultada: documentacao oficial/SDK Hostinger Mail API em 2026-07-24.
@@ -121,12 +123,21 @@ Fonte consultada: documentacao oficial/SDK Hostinger Mail API em 2026-07-24.
 
 - Aplicar migrations no Supabase remoto.
 - Configurar secrets das Edge Functions.
-- Deploy das functions novas e alteradas.
+- Alterações em `_shared/email` são incorporadas ao bundle de cada consumer;
+  portanto, publicar em conjunto `email-outbox-dispatch`,
+  `client-auth-signup`, `therapist-auth-signup`, `request-password-reset`,
+  `resend-email-verification`, `sync-email-senders` e
+  `admin-email-management-command`. Deploy isolado de outra Edge Function não
+  atualiza esses bundles.
+- Para a normalização do nome do remetente, publicar primeiro os consumers
+  acima e depois aplicar a migration versionada. A migration altera somente
+  perfis sem nome ou cujo `display_name` ainda seja igual à mailbox; nomes
+  personalizados são preservados.
 - Rodar `sync-email-senders` com usuario admin.
 - Definir um remetente ativo como padrao em `email_sender_profiles`.
 - Opcionalmente definir remetente especifico em `email_action_settings`.
 - Confirmar SPF, DKIM e DMARC no dominio de envio.
-- Rodar `npm run test:email:real` somente com opt-in e destinatario aprovado. Em Windows/local, o runner `scripts/run-real-email-test.ps1` captura a service role local em memoria pela Supabase CLI, envia sequencialmente todos os eventos registrados com fixtures ficticias, reduz rajadas com 65 segundos entre mensagens e nao deve imprimir secrets. Esse intervalo nao supera a quota movel do plano Hostinger; conferir a capacidade atual no hPanel antes de um catalogo completo. Um retry seletivo por `EMAIL_E2E_ACTION_KEYS` so e seguro para entregas explicitamente nao aceitas; nunca repetir resultado ambiguo.
+- Rodar `npm run test:email:real` somente com opt-in, destinatário aprovado e exatamente uma `EMAIL_E2E_ACTION_KEYS`. Em Windows/local, o runner captura a service role local em memória, usa fixture fictícia, limita o provider a uma tentativa e mantém um gate persistente de 120 segundos gravado antes do POST. A execução nunca percorre o catálogo, nunca espera para disparar automaticamente e nunca repete rejeição, timeout ou resultado ambíguo.
 
 ## QA
 
@@ -135,7 +146,7 @@ Fonte consultada: documentacao oficial/SDK Hostinger Mail API em 2026-07-24.
 - `npm run build`.
 - `deno test --config supabase/functions/deno.json supabase/functions/_shared/auth supabase/functions/_shared/email` quando Deno estiver disponivel.
 - `npx supabase db lint`.
-- `npx supabase db reset`.
+- Não executar `supabase db reset` apenas para homologação de e-mail real.
 
 Validar manualmente:
 

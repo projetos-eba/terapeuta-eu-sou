@@ -82,6 +82,51 @@ test.describe("therapist profile editor", () => {
     await expect(page.getByText(/documento/i)).toHaveCount(0);
   });
 
+  test("automatically persists a valid draft across navigation without publishing", async ({
+    page,
+  }) => {
+    await gotoShellRoute(page, "/terapeuta/perfil/editar");
+    await page.waitForTimeout(1_000);
+
+    const introInput = page.getByRole("textbox", {
+      name: "Sua apresentação",
+    });
+    const originalIntro = await introInput.inputValue();
+    const hadDraft =
+      (await page
+        .getByText("Existe um rascunho salvo aguardando publicação.")
+        .count()) > 0;
+    const updatedIntro = `Rascunho automático local ${Date.now()}.`;
+
+    await introInput.fill(updatedIntro);
+    await expect(
+      page.getByText("Rascunho salvo automaticamente.").last(),
+    ).toBeVisible();
+
+    await gotoShellRoute(page, "/terapeuta/perfil");
+    await gotoShellRoute(page, "/terapeuta/perfil/editar");
+    await expect(
+      page.getByRole("textbox", { name: "Sua apresentação" }),
+    ).toHaveValue(updatedIntro);
+
+    await page
+      .getByRole("textbox", { name: "Sua apresentação" })
+      .fill(originalIntro);
+    await expect(
+      page.getByText("Rascunho salvo automaticamente.").last(),
+    ).toBeVisible();
+
+    if (!hadDraft) {
+      await page.getByRole("button", { name: "Descartar rascunho" }).click();
+      const discardDialog = page.getByRole("dialog", {
+        name: "Descartar rascunho?",
+      });
+      await discardDialog
+        .getByRole("button", { name: "Descartar rascunho" })
+        .click();
+    }
+  });
+
   test("updates a Premium slug and keeps the previous URL redirecting", async ({
     page,
   }) => {

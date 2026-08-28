@@ -9,7 +9,10 @@ import {
 import { getPaymentsRuntime } from "../_shared/payments/runtime.ts";
 import { ZoomVideoSdkApiClient } from "../_shared/zoom-video-sdk/api-client.ts";
 import { getZoomVideoSdkConfig } from "../_shared/zoom-video-sdk/config.ts";
-import { hasConfirmedProviderClosure } from "../_shared/zoom-video-sdk/session-lifecycle.ts";
+import {
+  hasConfirmedProviderClosure,
+  isLegacyReentrantControlOperation,
+} from "../_shared/zoom-video-sdk/session-lifecycle.ts";
 import {
   sanitizeProviderMessage,
   ZoomVideoSdkError,
@@ -127,6 +130,21 @@ async function processJob(input: {
   job: ControlJob;
   zoom: ZoomVideoSdkApiClient;
 }) {
+  if (isLegacyReentrantControlOperation(input.job.operation)) {
+    await completeJob(input.client, input.job.id, true);
+    console.info(
+      JSON.stringify({
+        code: "ZOOM_VIDEO_CONTROL_JOB_SUPERSEDED",
+        operation: input.job.operation,
+      }),
+    );
+    return {
+      ok: true,
+      operation: input.job.operation,
+      superseded: true,
+    };
+  }
+
   const reason = getTerminationReason(input.job.operation);
 
   try {
@@ -135,10 +153,7 @@ async function processJob(input: {
       p_video_session_id: input.job.video_session_id,
     });
 
-    if (
-      input.job.operation === "confirm_end" ||
-      input.job.operation === "reconcile_orphan"
-    ) {
+    if (input.job.operation === "confirm_end") {
       await input.client.rpc("mark_video_session_termination_confirmed_v1", {
         p_reason: reason,
         p_video_session_id: input.job.video_session_id,

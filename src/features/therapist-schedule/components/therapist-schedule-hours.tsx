@@ -817,8 +817,9 @@ function SessionRulesCard({
               className="mt-0.5 shrink-0 text-brand-primary"
               size={18}
             />
-            Selecione uma terapia para ajustar duração, oferta e antecedência.
-            As faixas gerais continuam disponíveis para todas as terapias.
+            Selecione uma terapia para ajustar duração, atendimento e
+            antecedência. As faixas gerais continuam disponíveis para todas as
+            terapias.
           </p>
         </div>
       )}

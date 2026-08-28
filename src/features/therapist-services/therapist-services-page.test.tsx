@@ -220,6 +220,63 @@ describe("TherapistServicesPage", () => {
     expect(mockedCommand).not.toHaveBeenCalled();
   });
 
+  it("uses clear attendance copy in the create dialog", () => {
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: /adicionar terapia/i }));
+    fireEvent.click(screen.getByRole("option", { name: /Aromaterapia/i }));
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+    fireEvent.click(screen.getByLabelText(/Emoções e bem-estar/i));
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+
+    expect(
+      screen.getByRole("heading", { name: "Novo serviço" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Crie um atendimento para uma terapia já aprovada no TES.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Como esse atendimento vai aparecer?"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Escolha um nome simples, que ajude a pessoa a entender o atendimento.",
+      ),
+    ).toBeInTheDocument();
+    const titleInput = screen.getByLabelText("Nome do atendimento");
+    expect(titleInput).toHaveValue("");
+    expect(titleInput).toHaveAttribute(
+      "placeholder",
+      "Exemplo: Sessão individual de Reiki — 45 min",
+    );
+    expect(screen.getByLabelText("Descrição")).toHaveAttribute(
+      "placeholder",
+      expect.stringContaining("Exemplo de descrição:"),
+    );
+    expect(
+      screen.getByText(
+        /Conte como funciona o atendimento e o que a pessoa pode esperar/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Duração")).toHaveAttribute(
+      "placeholder",
+      "Exemplo: 45 min",
+    );
+    expect(screen.getByLabelText("Preço")).toHaveAttribute(
+      "placeholder",
+      "Exemplo: R$ 185",
+    );
+    expect(
+      screen.getByText(
+        "Este atendimento acontece online, pelo fluxo seguro do TES.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("3. Atendimento")).toBeInTheDocument();
+    expect(screen.queryByText(/oferta/i)).not.toBeInTheDocument();
+  });
+
   it("creates a draft with therapyId and price in cents", async () => {
     mockedCommand.mockResolvedValueOnce({
       data: {
@@ -240,7 +297,7 @@ describe("TherapistServicesPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
     fireEvent.click(screen.getByLabelText(/Emoções e bem-estar/i));
     fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
-    fireEvent.change(screen.getByLabelText("Título da oferta"), {
+    fireEvent.change(screen.getByLabelText("Nome do atendimento"), {
       target: { value: "Aromaterapia acolhedora" },
     });
     fireEvent.change(screen.getByLabelText("Descrição"), {
@@ -318,6 +375,9 @@ describe("TherapistServicesPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
     fireEvent.click(screen.getByLabelText(/Emoções e bem-estar/i));
     fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    fireEvent.change(screen.getByLabelText("Nome do atendimento"), {
+      target: { value: "Aromaterapia acolhedora" },
+    });
     fireEvent.change(screen.getByLabelText("Descrição"), {
       target: {
         value:

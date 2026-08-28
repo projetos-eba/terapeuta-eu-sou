@@ -14,11 +14,13 @@ export default async function PatientEncountersRoute({
   const requestedBooking = firstString(
     params.feedback ?? params.avaliar ?? params.review,
   );
+  const requestedHistoryPage = parsePage(firstString(params.historyPage));
 
   try {
     const data = await getPatientEncountersPage(
       session.profileId,
       session.accessToken,
+      { historyPage: requestedHistoryPage },
     );
 
     return (
@@ -47,4 +49,9 @@ export default async function PatientEncountersRoute({
 
 function firstString(value: string | string[] | undefined) {
   return Array.isArray(value) ? (value[0] ?? null) : (value ?? null);
+}
+
+function parsePage(value: string | null) {
+  const parsed = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 10_000) : 1;
 }

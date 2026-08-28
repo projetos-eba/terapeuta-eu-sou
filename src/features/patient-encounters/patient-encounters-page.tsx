@@ -19,17 +19,20 @@ export function PatientEncountersPage({
   return (
     <AppPageContainer className="max-w-[1080px] gap-9 pb-12 sm:gap-11">
       <PatientEncountersHero />
+      <NextEncounterSpotlight encounter={data.nextEncounter} />
       <PendingSessionFeedbackSection
         initialBookingId={initialFeedbackBookingId}
         sessions={data.pendingFeedbackSessions}
       />
-      <NextEncounterSpotlight encounter={data.nextEncounter} />
 
       {followingEncounters.length > 0 ? (
         <UpcomingEncountersSection encounters={followingEncounters} />
       ) : null}
 
-      <EncounterHistorySection encounters={data.historyEncounters} />
+      <EncounterHistorySection
+        encounters={data.historyEncounters}
+        pagination={data.historyPagination}
+      />
     </AppPageContainer>
   );
 }

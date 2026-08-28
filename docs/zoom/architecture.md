@@ -167,14 +167,17 @@ um fechamento precoce do provedor não confirma realização e aguarda
 `scheduled_ends_at`. Se o Zoom emitir `session.ended` porque o último
 participante saiu antes desse horário, a sessão lógica permanece `active`, a
 instância remota é descartada e a reentrada cria uma nova instância para o mesmo
-`session_name`. A presença fica falsa nesse intervalo e o watchdog aplica a
-grace de ausência do terapeuta antes de encerrar. `manual_end`,
-`end_scheduled` e o watchdog permanecem operações independentes e continuam
-terminais quando já houver solicitação de encerramento.
+`session_name`. A presença fica falsa nesse intervalo e a regra host-first
+continua válida até o terapeuta reentrar. A grace de 120 segundos permanece
+somente como parâmetro de compatibilidade e reconciliação técnica: não expira o
+encontro. `manual_end`, `end_scheduled` e `end_hard_timeout` são operações
+terminais independentes.
 
 Se o terapeuta sair, o paciente nao recebe novo JWT durante a ausencia. A
-maintenance encerra sessoes por hard timeout, ausencia prolongada do terapeuta
-ou orfandade operacional, usando locks e backoff em banco.
+maintenance encerra sessoes somente no fim agendado, por hard timeout ou para
+confirmar um encerramento manual previamente autorizado. Jobs legados de
+ausencia/orfandade sao concluídos como superseded e nunca chamam a REST API do
+provider. Sessões já confirmadas como `ended` não são reabertas automaticamente.
 
 ## Ciclo de vida no navegador
 

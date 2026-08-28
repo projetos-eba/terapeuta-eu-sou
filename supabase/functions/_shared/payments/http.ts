@@ -194,7 +194,7 @@ export async function requireTherapist(
     >(
       `/rest/v1/therapist_connect_accounts?select=details_submitted,onboarding_status,pending_requirements,stripe_transfers_status&therapist_profile_id=eq.${encodeURIComponent(
         rows[0].id,
-      )}&limit=1`,
+      )}&is_current=eq.true&limit=1`,
     );
     const account = accounts[0];
     if (!isTherapistReceivingAccountReady(account)) {

@@ -7,7 +7,10 @@ vi.mock("@/lib/supabase/public-config", () => ({
   }),
 }));
 
-import { queryTherapistSettings } from "./therapist-settings.queries";
+import {
+  queryTherapistSettings,
+  updateTherapistAccountSettings,
+} from "./therapist-settings.queries";
 
 const userId = "c1000000-0000-4000-8000-000000000001";
 const therapistProfileId = "d1000000-0000-4000-8000-000000000001";
@@ -73,11 +76,55 @@ describe("queryTherapistSettings", () => {
       ),
     ).toBe(true);
   });
+
+  it("classifies a CPF conflict returned by the private identity command", async () => {
+    const fetchMock = vi.fn(async (input: string | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("/rest/v1/profiles?") && init?.method === "PATCH") {
+        return jsonResponse([{ display_name: "Ana Oliveira", phone: null }]);
+      }
+      if (url.includes("save_therapist_private_identity_v1")) {
+        return jsonResponse(
+          { code: "23505", message: "CPF_ALREADY_IN_USE" },
+          { status: 409 },
+        );
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      updateTherapistAccountSettings({
+        accessToken: "session-token",
+        displayName: "Ana Oliveira",
+        identity: identityFixture(),
+        phone: "",
+        userId,
+      }),
+    ).rejects.toMatchObject({
+      code: "cpf_in_use",
+    });
+  });
 });
 
-function jsonResponse(body: unknown) {
+function identityFixture() {
+  return {
+    city: "São Paulo",
+    complement: "",
+    documentNumber: "52998224725",
+    documentType: "cpf" as const,
+    neighborhood: "Pinheiros",
+    postalCode: "05409000",
+    state: "SP",
+    street: "Rua dos Pinheiros",
+    streetNumber: "100",
+  };
+}
+
+function jsonResponse(body: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(body), {
     headers: { "Content-Type": "application/json" },
     status: 200,
+    ...init,
   });
 }

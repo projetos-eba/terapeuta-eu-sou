@@ -89,9 +89,7 @@ describe("TherapistProfilePage video block", () => {
       />,
     );
 
-    const invitationCopy = screen.getByText(
-      baseProfile.content.invitationBody,
-    );
+    const invitationCopy = screen.getByText(baseProfile.content.invitationBody);
     const videoLayout = invitationCopy.parentElement;
 
     expect(videoLayout).toHaveClass("grid", "gap-5");
@@ -110,6 +108,25 @@ describe("TherapistProfilePage video block", () => {
     expect(
       screen.getByRole("button", { name: "Compartilhar perfil" }),
     ).toHaveClass("size-[52px]");
+  });
+
+  it("keeps the public profile hero compact on mobile", () => {
+    render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
+
+    expect(
+      screen.getByAltText("Retrato de Ana Oliveira").parentElement,
+    ).toHaveClass("size-[210px]");
+    expect(screen.getByText("Perfil verificado")).toHaveClass(
+      "shrink-0",
+      "whitespace-nowrap",
+    );
+    expect(screen.getByText("Terapeuta Plus")).toHaveClass(
+      "shrink-0",
+      "whitespace-nowrap",
+    );
+    expect(screen.getByText("Perfil verificado").parentElement).toHaveClass(
+      "flex-nowrap",
+    );
   });
 
   it("renders a static preview without public actions or background requests", () => {
@@ -332,7 +349,7 @@ describe("TherapistProfilePage video block", () => {
     const heroLayout = hero?.querySelector(":scope > div.relative");
 
     expect(heroLayout).toHaveClass(
-      "md:grid-cols-[minmax(280px,0.9fr)_minmax(0,1.1fr)]",
+      "md:grid-cols-[minmax(252px,0.9fr)_minmax(0,1.1fr)]",
     );
   });
 
@@ -543,6 +560,38 @@ describe("TherapistProfilePage video block", () => {
     );
     expect(
       screen.getByText("Não foi possível salvar favorito."),
+    ).toHaveAttribute("role", "status");
+  });
+
+  it("rolls back and explains when the favorite request cannot reach the server", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, init?: RequestInit) => {
+        if (init?.method === "POST") {
+          throw new Error("network unavailable");
+        }
+        return Response.json({ isFavorite: false, ok: true });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Adicionar aos favoritos de Ana Oliveira",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", {
+          name: "Adicionar aos favoritos de Ana Oliveira",
+        }),
+      ).toHaveAttribute("aria-pressed", "false"),
+    );
+    expect(
+      screen.getByText(
+        "Não foi possível atualizar favoritos agora. Tente novamente.",
+      ),
     ).toHaveAttribute("role", "status");
   });
 

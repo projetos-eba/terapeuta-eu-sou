@@ -83,6 +83,27 @@ describe("therapist profile documents route", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("states the 10 MB limit clearly before forwarding oversized documents", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      makeRequest({
+        file: new File([new Uint8Array(10 * 1024 * 1024 + 1)], "rg.pdf", {
+          type: "application/pdf",
+        }),
+        kind: "identity_document",
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(payload.error.message).toBe(
+      "Não foi possível concluir a operação, o tamanho do documento excede o limite de 10 MB.",
+    );
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("forwards valid documents to the therapist profile command function", async () => {
     const fetchMock = vi.fn(async () =>
       jsonResponse({

@@ -80,9 +80,10 @@ export async function parseTherapistPrivateDocumentsAction(
     };
   }
 
-  const payload = (await request.json().catch(() => null)) as
-    | Record<string, unknown>
-    | null;
+  const payload = (await request.json().catch(() => null)) as Record<
+    string,
+    unknown
+  > | null;
 
   if (!payload || typeof payload.action !== "string") invalid();
 
@@ -145,7 +146,7 @@ export async function validatePrivateDocumentUpload(file: File) {
     throw new DomainError(
       "VALIDATION_ERROR",
       422,
-      "O arquivo deve ter no máximo 10 MB.",
+      "Não foi possível concluir a operação, o tamanho do documento excede o limite de 10 MB.",
     );
   }
 

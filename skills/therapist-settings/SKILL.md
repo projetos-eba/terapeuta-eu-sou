@@ -68,6 +68,10 @@ access token and Supabase RLS.
 - Never log cookies, Authorization headers, Supabase keys or personal secrets.
 - Validation errors must be specific enough for the therapist to correct the
   form, but must not expose internal database details.
+- CPF is validated by format, repeated digits and checksum before the account
+  save. CPF is unique across therapist accounts; a collision returns only
+  `Este documento já está em uso em outra conta.`. RG and passport remain
+  outside this uniqueness rule.
 - Erros de salvamento e upload usam `TESFeedbackDialog`; mensagens inline ficam
   reservadas para sucesso, carregamento e validações diretamente relacionadas ao
   campo.
@@ -80,6 +84,13 @@ access token and Supabase RLS.
 - The page must make the three states understandable: `Perfil completo` is the
   editorial content, `Cadastro aprovado` is the administrative review, and
   `Perfil publicado` is the public visibility.
+- When a private document is rejected for size, its `TESFeedbackDialog` must
+  state `Não foi possível concluir a operação, o tamanho do documento excede o
+  limite de 10 MB.` without exposing implementation details.
+- On desktop, CEP precedes street in one address row. It reserves 120–152 px
+  for `00000-000`, keeps the street flexible and stacks naturally on mobile.
+- `Salvar meus dados` is the sole account and identity save command; do not
+  duplicate that action in the page header.
 
 ## Database
 
@@ -92,13 +103,18 @@ Required grant/policy:
 
 Any broader profile update requires a new security review.
 
+CPF normalization is protected by the partial unique index
+`therapist_private_identity_cpf_unique_idx`. The private-identity RPC converts
+that conflict to `CPF_ALREADY_IN_USE` (`23505`) and never identifies the other
+account.
+
 ## QA
 
 - Parser rejects invalid names and phone values.
 - Mapper accepts Supabase embeds as object or array.
 - API rejects unauthenticated and non-therapist users.
 - API PATCH sends only `display_name` and `phone`.
-- UI disables the main save action until there are changes.
+- UI exposes one `Salvar meus dados` command for account and identity fields.
 - UI shows success, local validation error and safe remote error states.
 - After a successful save, the confirmation is brought into view and receives
   focus so the therapist can immediately verify the result.
@@ -112,6 +128,13 @@ Any broader profile update requires a new security review.
 - Documentos já enviados aparecem no primeiro carregamento e mantêm o botão
   `Substituir documento` após remount/navegação.
 - Links point to the canonical shell routes.
+- An oversized private document is not forwarded and its error dialog states
+  the exact 10 MB document-size limit.
+- Parser and API distinguish an invalid CPF from a CPF already used by another
+  account; the latter is verified by pgTAP without applying uniqueness to RG
+  or passport.
+- Desktop CEP and street share an address row in the intended order; mobile
+  preserves readable stacking.
 - Free sees `Conhecer planos`; Premium can open Premium Plus and cancel;
   Premium Plus can schedule Premium or cancel; a scheduled cancellation can be
   reversed.

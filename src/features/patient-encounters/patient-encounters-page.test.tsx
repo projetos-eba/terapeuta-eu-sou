@@ -1,11 +1,15 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { PatientEncountersPage } from "./patient-encounters-page";
 import type {
   PatientEncounter,
   PatientEncountersPageData,
 } from "./patient-encounters.types";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
 
 describe("PatientEncountersPage", () => {
   it("prioritizes the next encounter without rendering dashboard metrics", () => {
@@ -30,6 +34,7 @@ describe("PatientEncountersPage", () => {
       <PatientEncountersPage
         data={createPageData({
           nextEncounter: next,
+          pendingFeedbackSessions: [pendingSession("pending-1", "Bruna")],
           upcomingEncounters: [next, following],
         })}
       />,
@@ -45,6 +50,9 @@ describe("PatientEncountersPage", () => {
     expect(html).toContain("Histórico de encontros");
     expect(html).toContain("Sofia Mendes");
     expect(html).toContain("ID: encounter-next");
+    expect(html.indexOf('id="patient-next-encounter-title"')).toBeLessThan(
+      html.indexOf('id="pending-feedback-title"'),
+    );
     expect(html.match(/Ana Oliveira/g)).toHaveLength(1);
     expect(html).not.toContain("Sua jornada");
     expect(html).not.toContain("Favoritos");
@@ -56,6 +64,7 @@ describe("PatientEncountersPage", () => {
       <PatientEncountersPage
         data={createPageData({
           nextEncounter: null,
+          pendingFeedbackSessions: [pendingSession("pending-1", "Bruna")],
           upcomingEncounters: [],
         })}
       />,
@@ -64,6 +73,9 @@ describe("PatientEncountersPage", () => {
     expect(html).toContain("Você ainda não tem encontros agendados");
     expect(html).toContain("Fazer meu Match TES");
     expect(html).toContain("Explorar terapeutas");
+    expect(html.indexOf('id="patient-next-encounter-title"')).toBeLessThan(
+      html.indexOf('id="pending-feedback-title"'),
+    );
     expect(html).not.toContain("sessão");
   });
 
@@ -106,6 +118,31 @@ describe("PatientEncountersPage", () => {
     expect(html).toContain(state.action);
     expect(html).not.toContain("meeting_url");
   });
+
+  it("shows completed history with the green already-performed badge", () => {
+    const html = renderToStaticMarkup(
+      <PatientEncountersPage
+        data={createPageData({
+          historyEncounters: [
+            createEncounter({
+              status: "completed",
+              statusLabel: "Já realizada",
+            }),
+          ],
+          historyPagination: {
+            hasNext: false,
+            page: 1,
+            pageSize: 10,
+            total: 1,
+            totalPages: 1,
+          },
+        })}
+      />,
+    );
+
+    expect(html).toContain("Já realizada");
+    expect(html).toContain("bg-status-successBg");
+  });
 });
 
 function createPageData(
@@ -114,6 +151,13 @@ function createPageData(
   return {
     favoriteTherapistsCount: 0,
     historyEncounters: [],
+    historyPagination: {
+      hasNext: false,
+      page: 1,
+      pageSize: 10,
+      total: 0,
+      totalPages: 1,
+    },
     metrics: {
       activeCount: 1,
       completedCount: 0,
@@ -166,5 +210,18 @@ function createEncounter(
     therapyLabel: "Reiki",
     timezone: "America/Sao_Paulo",
     ...overrides,
+  };
+}
+
+function pendingSession(bookingId: string, name: string) {
+  return {
+    bookingId,
+    confirmationState: "awaiting_patient" as const,
+    endsAt: "2026-08-25T15:00:00.000Z",
+    serviceLabel: "Reiki online",
+    startsAt: "2026-08-25T14:00:00.000Z",
+    therapist: { avatarUrl: null, id: `therapist-${bookingId}`, name },
+    therapyLabel: "Reiki",
+    timezone: "America/Sao_Paulo",
   };
 }

@@ -30,13 +30,13 @@ export function ProfileThemeSummary({
   fields: TherapistProfileEditableFields;
   onOpen: () => void;
 }) {
-  const theme = publicProfileThemes.find(
-    (candidate) => candidate.id === fields.publicProfileTheme,
-  ) ?? publicProfileThemes[0];
+  const theme =
+    publicProfileThemes.find(
+      (candidate) => candidate.id === fields.publicProfileTheme,
+    ) ?? publicProfileThemes[0];
   const plan = editor.derived.plan;
   const isDowngradePending =
-    plan === "free" &&
-    !canUsePublicProfileTheme(TherapistPlan.Free, theme);
+    plan === "free" && !canUsePublicProfileTheme(TherapistPlan.Free, theme);
 
   return (
     <div className="grid gap-4 sm:grid-cols-[minmax(180px,260px)_1fr] sm:items-center">
@@ -86,9 +86,13 @@ export function ProfileThemeLibraryDialog({
   fields: TherapistProfileEditableFields;
   onClose: () => void;
   onLockedTheme: (theme: PublicProfileThemeDefinition) => void;
-  onSelect: (themeId: TherapistProfileEditableFields["publicProfileTheme"]) => void;
+  onSelect: (
+    themeId: TherapistProfileEditableFields["publicProfileTheme"],
+  ) => void;
 }) {
-  const [pendingThemeId, setPendingThemeId] = useState(fields.publicProfileTheme);
+  const [pendingThemeId, setPendingThemeId] = useState(
+    fields.publicProfileTheme,
+  );
   const plan = editor.derived.plan;
   const selectedTheme = publicProfileThemes.find(
     (theme) => theme.id === pendingThemeId,
@@ -109,7 +113,9 @@ export function ProfileThemeLibraryDialog({
             onSelect={setPendingThemeId}
             plan={plan}
             selectedThemeId={pendingThemeId}
-            themes={publicProfileThemes.filter((theme) => theme.tier === "free")}
+            themes={publicProfileThemes.filter(
+              (theme) => theme.tier === "free",
+            )}
             title="Disponíveis no seu plano"
           />
         ) : null}
@@ -128,9 +134,11 @@ export function ProfileThemeLibraryDialog({
           title={plan === "free" ? "Temas Premium" : "Temas disponíveis"}
         />
 
-        <div className="sticky bottom-0 -mx-4 -mb-4 flex flex-col-reverse gap-3 border-t border-brand-lavender bg-white/95 px-4 pb-1 pt-4 backdrop-blur sm:-mx-7 sm:-mb-7 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:pb-7">
+        <div className="sticky bottom-[-16px] -mx-4 -mb-4 flex flex-col-reverse gap-3 border-t border-brand-lavender bg-white/95 px-4 pb-4 pt-4 shadow-[0_-8px_20px_rgba(20,16,90,0.06)] backdrop-blur sm:bottom-[-28px] sm:-mx-7 sm:-mb-7 sm:flex-row sm:items-center sm:justify-between sm:px-7 sm:pb-7">
           <p className="text-sm font-semibold text-tesText-secondary">
-            {selectedTheme ? `Selecionado: ${selectedTheme.label}` : "Escolha uma opção"}
+            {selectedTheme
+              ? `Selecionado: ${selectedTheme.label}`
+              : "Escolha uma opção"}
           </p>
           <div className="flex flex-col-reverse gap-3 sm:flex-row">
             <TESButton onClick={onClose} type="button" variant="ghost">
@@ -139,10 +147,7 @@ export function ProfileThemeLibraryDialog({
             <TESButton
               disabled={
                 !selectedTheme ||
-                !canUsePublicProfileTheme(
-                  planToDomainPlan(plan),
-                  selectedTheme,
-                )
+                !canUsePublicProfileTheme(planToDomainPlan(plan), selectedTheme)
               }
               onClick={() => {
                 if (selectedTheme) onSelect(selectedTheme.id);
@@ -170,7 +175,9 @@ function ThemeGroup({
 }: {
   fields: TherapistProfileEditableFields;
   onLockedTheme: (theme: PublicProfileThemeDefinition) => void;
-  onSelect: (themeId: TherapistProfileEditableFields["publicProfileTheme"]) => void;
+  onSelect: (
+    themeId: TherapistProfileEditableFields["publicProfileTheme"],
+  ) => void;
   plan: TherapistProfilePlan;
   selectedThemeId: TherapistProfileEditableFields["publicProfileTheme"];
   themes: PublicProfileThemeDefinition[];

@@ -12,6 +12,7 @@ import { AdminTherapyEditor } from "./admin-therapy-editor";
 describe("AdminTherapyEditor", () => {
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
   });
 
   it("submits semantic color, structured benefits and structured FAQs", async () => {
@@ -144,5 +145,75 @@ describe("AdminTherapyEditor", () => {
         themeIds: ["theme-1", "theme-2", "theme-3"],
       }),
     );
+  });
+
+  it("uploads a therapy image and fills fallback and hero URLs", async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          data: { publicUrl: "https://media.test/therapies/reiki.png" },
+          ok: true,
+        }),
+        { headers: { "Content-Type": "application/json" }, status: 200 },
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <AdminTherapyEditor
+        categories={[]}
+        isSaving={false}
+        matchingThemes={[]}
+        onCancel={() => undefined}
+        onSave={onSave}
+        therapy={null}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Selecionar imagem da terapia"), {
+      target: {
+        files: [
+          new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], "reiki.png", {
+            type: "image/png",
+          }),
+        ],
+      },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Imagem fallback")).toHaveValue(
+        "https://media.test/therapies/reiki.png",
+      );
+      expect(screen.getByLabelText("Imagem hero")).toHaveValue(
+        "https://media.test/therapies/reiki.png",
+      );
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/media",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(screen.getByAltText("Prévia da imagem da terapia")).toHaveAttribute(
+      "src",
+      "https://media.test/therapies/reiki.png",
+    );
+
+    const dropzone = screen
+      .getByText("Escolha uma imagem ou arraste e solte aqui")
+      .closest("label");
+    expect(dropzone).not.toBeNull();
+    fireEvent.drop(dropzone!, {
+      dataTransfer: {
+        files: [
+          new File([new Uint8Array([0x52, 0x49, 0x46, 0x46])], "reiki.webp", {
+            type: "image/webp",
+          }),
+        ],
+      },
+    });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
   });
 });

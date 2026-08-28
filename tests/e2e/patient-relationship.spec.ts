@@ -25,6 +25,22 @@ test.describe("patient relationship flows", () => {
     );
   });
 
+  test("requires a patient login before a public search card can be favorited", async ({
+    page,
+  }) => {
+    await page.goto("/terapeutas?therapy=reiki");
+    const favoriteButton = page
+      .getByRole("button", { name: /Adicionar aos favoritos de/i })
+      .first();
+
+    await expect(favoriteButton).toBeVisible();
+    await favoriteButton.click();
+
+    await expect(page).toHaveURL(
+      /\/cliente\/login\?next=%2Fterapeutas%3Ftherapy%3Dreiki$/,
+    );
+  });
+
   test("favorites a public therapist, syncs the patient panel and removes it", async ({
     page,
   }) => {

@@ -9,6 +9,8 @@ import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 const noStoreHeaders = { "Cache-Control": "no-store" };
 const maxDocumentBytes = 10 * 1024 * 1024;
+const documentSizeExceededMessage =
+  "Não foi possível concluir a operação, o tamanho do documento excede o limite de 10 MB.";
 
 export async function GET() {
   return forwardJsonRequest({ action: "therapist.read" });
@@ -112,7 +114,7 @@ async function validateFile(file: File) {
     return "Envie um arquivo em PDF, JPG ou PNG.";
   }
   if (file.size < 1 || file.size > maxDocumentBytes) {
-    return "O documento deve ter no máximo 10 MB.";
+    return documentSizeExceededMessage;
   }
   if (!(await hasValidUploadSignature(file))) {
     return "O conteúdo do arquivo não corresponde ao formato informado.";

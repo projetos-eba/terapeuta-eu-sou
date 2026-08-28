@@ -5,6 +5,7 @@ export * from "./password-visibility-toggle";
 export * from "./premium-therapist-badge";
 export * from "./public-footer";
 export * from "./public-header";
+export * from "./public-therapists-lower-banner";
 export * from "./tes-badge";
 export * from "./tes-button";
 export * from "./tes-card";

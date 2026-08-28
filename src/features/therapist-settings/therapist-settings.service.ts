@@ -39,7 +39,10 @@ export const getTherapistSettingsPage = cache(
         await queryTherapistSettings({ accessToken, userId }),
       );
 
-      if (data.profile.profileId !== profileId || data.account.userId !== userId) {
+      if (
+        data.profile.profileId !== profileId ||
+        data.account.userId !== userId
+      ) {
         return {
           code: "forbidden",
           message: getTherapistSettingsErrorMessage("forbidden"),
@@ -50,7 +53,8 @@ export const getTherapistSettingsPage = cache(
       return { data, status: "success" };
     } catch (error) {
       const code =
-        error instanceof TherapistSettingsQueryError
+        error instanceof TherapistSettingsQueryError &&
+        error.code === "forbidden"
           ? error.code
           : "unavailable";
 

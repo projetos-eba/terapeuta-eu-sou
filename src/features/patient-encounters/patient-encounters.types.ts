@@ -3,6 +3,7 @@ import type { BookingPrimaryAction } from "@/features/bookings/booking.types";
 export type PatientEncountersPageData = {
   favoriteTherapistsCount: number;
   historyEncounters: PatientEncounter[];
+  historyPagination: PatientEncountersPagination;
   metrics: PatientEncounterMetrics;
   nextEncounter: PatientEncounter | null;
   patient: PatientEncountersPatient;
@@ -12,6 +13,14 @@ export type PatientEncountersPageData = {
   unreadMessagesCount: number;
   unreadNotificationsCount: number;
   upcomingEncounters: PatientEncounter[];
+};
+
+export type PatientEncountersPagination = {
+  hasNext: boolean;
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
 };
 
 export type PatientPendingFeedbackSession = {

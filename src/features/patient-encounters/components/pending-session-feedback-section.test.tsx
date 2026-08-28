@@ -3,13 +3,38 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PendingSessionFeedbackSection } from "./pending-session-feedback-section";
 
+const routerRefresh = vi.hoisted(() => vi.fn());
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: routerRefresh }),
+}));
+
 vi.mock("@/features/session-feedback", () => ({
-  PatientSessionFeedbackDialog: ({ session }: { session: { bookingId: string } }) => (
-    <div data-testid="feedback-dialog">{session.bookingId}</div>
+  PatientSessionFeedbackDialog: ({
+    onClose,
+    onSessionSubmitted,
+    session,
+  }: {
+    onClose: () => void;
+    onSessionSubmitted: () => void;
+    session: { bookingId: string };
+  }) => (
+    <div data-testid="feedback-dialog">
+      {session.bookingId}
+      <button onClick={onSessionSubmitted} type="button">
+        Simular confirmação
+      </button>
+      <button onClick={onClose} type="button">
+        Fechar confirmação
+      </button>
+    </div>
   ),
 }));
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  routerRefresh.mockReset();
+});
 
 describe("PendingSessionFeedbackSection", () => {
   const sessions = [
@@ -22,8 +47,36 @@ describe("PendingSessionFeedbackSection", () => {
 
     expect(screen.getByText("Ana")).toBeInTheDocument();
     expect(screen.getByText("Beatriz")).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole("button", { name: "Confirmar encontro" })[1]);
-    expect(screen.getByTestId("feedback-dialog")).toHaveTextContent("booking-2");
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Confirmar encontro" })[1],
+    );
+    expect(screen.getByTestId("feedback-dialog")).toHaveTextContent(
+      "booking-2",
+    );
+  });
+
+  it("uses the responsive two-column grid and scroll region for larger queues", () => {
+    const manySessions = Array.from({ length: 5 }, (_, index) =>
+      session(`booking-${index + 1}`, `Terapeuta ${index + 1}`),
+    );
+
+    render(<PendingSessionFeedbackSection sessions={manySessions} />);
+
+    const scrollRegion = screen.getByRole("region", {
+      name: "Lista de confirmações pendentes",
+    });
+    expect(scrollRegion).toHaveAttribute(
+      "data-testid",
+      "pending-feedback-scroll",
+    );
+    expect(scrollRegion).toHaveClass(
+      "grid-cols-1",
+      "lg:grid-cols-2",
+      "max-h-[34rem]",
+      "lg:max-h-[20rem]",
+      "overflow-y-auto",
+    );
+    expect(screen.getAllByRole("article")).toHaveLength(5);
   });
 
   it("honors an explicit feedback query target", () => {
@@ -33,7 +86,24 @@ describe("PendingSessionFeedbackSection", () => {
         sessions={sessions}
       />,
     );
-    expect(screen.getByTestId("feedback-dialog")).toHaveTextContent("booking-1");
+    expect(screen.getByTestId("feedback-dialog")).toHaveTextContent(
+      "booking-1",
+    );
+  });
+
+  it("refreshes the history after a confirmation is submitted", () => {
+    render(
+      <PendingSessionFeedbackSection
+        initialBookingId="booking-1"
+        sessions={sessions}
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Simular confirmação" }),
+    );
+
+    expect(routerRefresh).toHaveBeenCalledTimes(1);
   });
 
   it("reacts when client navigation selects another query target", () => {
@@ -48,7 +118,9 @@ describe("PendingSessionFeedbackSection", () => {
       />,
     );
 
-    expect(screen.getByTestId("feedback-dialog")).toHaveTextContent("booking-2");
+    expect(screen.getByTestId("feedback-dialog")).toHaveTextContent(
+      "booking-2",
+    );
   });
 });
 

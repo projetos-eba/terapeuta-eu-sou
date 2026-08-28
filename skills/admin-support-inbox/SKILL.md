@@ -25,10 +25,10 @@ uma segunda implementação da thread.
   responsável. O browser não escolhe requester, autor ou outro Admin.
 - Ações permitidas: `assign_self`, `unassign`, `set_priority`, `start`,
   `resolve`, `reopen`. Mudanças são auditadas.
-- `waiting_support` significa que TES precisa agir e deve ter prioridade visual.
+- `waiting_support` significa que TES precisa agir e deve ter prioridade visual, sem alterar a ordenação padrão por recência.
 - Exibir o protocolo persistido, nunca UUID: nove dígitos e a letra da categoria. A busca por protocolo é resolvida somente na RPC administrativa.
 - Os estados Admin são “Novo chamado”, “Em atendimento”, “Aguardando resposta da equipe TES”, “Aguardando resposta do solicitante” e “Resolvido”.
-- Lista, detalhe, triagem e conversa usam SSE mediado pelo servidor; quando ele cair, o polling é temporário e a reconexão usa espera progressiva.
+- Lista, detalhe, triagem e conversa usam SSE mediado pelo servidor; a Inbox relê pelo evento de `support_tickets` e ordena por `last_activity_at DESC`, `created_at DESC`, `id DESC`. Quando ele cair, o polling é temporário e a reconexão usa espera progressiva.
 
 ## UX
 
@@ -42,7 +42,7 @@ uma segunda implementação da thread.
 
 ## QA
 
-- Testar URL filters, busca, paginação e ordenação `waiting_support` primeiro.
+- Testar URL filters, busca, paginação e ordenação por atividade mais recente primeiro, inclusive desempates estáveis.
 - Testar atribuição, prioridade, transições válidas/inválidas e audit.
 - Testar que resposta pública, nota interna e triagem atualizam cabeçalho, status e conversa sem recarregar manualmente.
 - Repetir isolamento requester/internal note e `PARTICIPANT FREE TEXT BYPASS = BLOCKED`.

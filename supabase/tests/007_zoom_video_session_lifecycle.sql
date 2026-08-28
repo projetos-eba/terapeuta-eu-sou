@@ -248,17 +248,10 @@ select public.apply_zoom_video_session_event_v1(
 from public.video_sessions
 where booking_id = 'f2000000-0000-4000-8000-000000000001';
 
-select cmp_ok(
-  (
-    select public.enqueue_due_video_session_control_jobs_v1(
-      'development',
-      10,
-      30
-    )
-  ),
-  '>=',
-  1,
-  'maintenance enqueue detects therapist absence'
+select is(
+  public.enqueue_due_video_session_control_jobs_v1('development', 10, 30),
+  0,
+  'temporary therapist absence does not enqueue logical termination'
 );
 
 select is(
@@ -272,22 +265,17 @@ select is(
     )
       and operation = 'end_therapist_absent'
   ),
-  '1',
-  'therapist absence job is idempotently stored'
+  '0',
+  'therapist absence remains reentrant throughout the scheduled window'
 );
 
-select cmp_ok(
+select is(
   (
     select count(*)::integer
-    from public.reserve_video_session_control_jobs_v1(
-      'development',
-      10,
-      60
-    )
+    from public.reserve_video_session_control_jobs_v1('development', 10, 60)
   ),
-  '>=',
-  1,
-  'maintenance can reserve queued lifecycle jobs'
+  0,
+  'maintenance does not reserve a terminal job for temporary absence'
 );
 
 update public.video_sessions

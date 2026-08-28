@@ -41,9 +41,43 @@ test.describe("therapist Agenda and Sessions foundation", () => {
     await sessionLink.click();
 
     await expect(page).toHaveURL(/\/terapeuta\/sessoes\/[0-9a-f-]+$/);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Detalhes da sessão" }),
+    ).toBeVisible();
     await expect(page.getByText("Pagamento", { exact: true })).toBeVisible();
-    await expect(page.getByText("Segurança da sala")).toBeVisible();
+    await expect(
+      page.getByText("Sala de atendimento", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("Sessão", { exact: true })).toBeVisible();
+    await expectNoHorizontalPageOverflow(page);
+    await page.screenshot({
+      fullPage: true,
+      path: testInfo.outputPath("session-detail-desktop.png"),
+    });
 
+    await page.setViewportSize({ height: 1180, width: 820 });
+    await page.reload();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Detalhes da sessão" }),
+    ).toBeVisible();
+    await expectNoHorizontalPageOverflow(page);
+    await page.screenshot({
+      fullPage: true,
+      path: testInfo.outputPath("session-detail-tablet.png"),
+    });
+
+    await page.setViewportSize({ height: 844, width: 390 });
+    await page.reload();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Detalhes da sessão" }),
+    ).toBeVisible();
+    await expectNoHorizontalPageOverflow(page);
+    await page.screenshot({
+      fullPage: true,
+      path: testInfo.outputPath("session-detail-mobile.png"),
+    });
+
+    await page.setViewportSize({ height: 900, width: 1440 });
     await page.goto("/terapeuta/agenda?aba=calendario");
     await page.getByRole("link", { exact: true, name: "Mês" }).click();
     await expect(page).toHaveURL(/visao=month/);
@@ -111,7 +145,7 @@ test.describe("therapist Agenda and Sessions foundation", () => {
     });
     await expect(saveButton).toBeDisabled();
 
-    const slotStep = page.getByLabel("Intervalo de oferta dos horários");
+    const slotStep = page.getByLabel("Intervalo das sessões");
     const originalSlotStep = await slotStep.inputValue();
     const temporarySlotStep = originalSlotStep === "45" ? "30" : "45";
     await slotStep.selectOption(temporarySlotStep);
