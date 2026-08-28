@@ -44,6 +44,7 @@ export async function runPayoutBatchWorker(input: {
   client: SupabaseRestClient;
   maxPayouts?: number;
   maxTransfers?: number;
+  operationInstant?: string;
   stripe: StripeClient;
   stripeApiKey: string;
   stripeMode: "live" | "test";
@@ -146,7 +147,6 @@ async function assertTransferClaimIsReady(
     }&limit=1`,
   );
   const account = accountRows[0];
-  const now = Date.now();
 
   if (
     !payment ||
@@ -159,8 +159,7 @@ async function assertTransferClaimIsReady(
     !payment.stripe_balance_transaction_id ||
     payment.therapist_amount_cents !== claim.amount_cents ||
     payment.therapist_amount_cents <= 0 ||
-    !payment.eligible_at ||
-    new Date(payment.eligible_at).getTime() > now ||
+    !isEligibleAtOperationInstant(payment.eligible_at, input.operationInstant) ||
     !account ||
     account.therapist_profiles?.status !== "approved" ||
     account.operational_status !== "ready" ||
@@ -196,4 +195,18 @@ async function assertTransferClaimIsReady(
       statusCode: 422,
     });
   }
+}
+
+export function isEligibleAtOperationInstant(
+  eligibleAt: string | null,
+  operationInstant?: string,
+) {
+  if (!eligibleAt) return false;
+  const eligibleEpoch = Date.parse(eligibleAt);
+  const operationEpoch = operationInstant ? Date.parse(operationInstant) : Date.now();
+  return (
+    Number.isFinite(eligibleEpoch) &&
+    Number.isFinite(operationEpoch) &&
+    eligibleEpoch <= operationEpoch
+  );
 }

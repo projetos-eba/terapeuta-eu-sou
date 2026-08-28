@@ -22,7 +22,12 @@ if (target !== "test" && target !== "live") {
   throw new Error("Use --target=test or --target=live.");
 }
 const replaceConnectThin = process.argv.includes("--replace-connect-thin");
-const confirmSecretRotation = process.argv.includes("--confirm-secret-rotation");
+const recoverIncompleteConnectThin = process.argv.includes(
+  "--recover-incomplete-connect-thin",
+);
+const confirmSecretRotation = process.argv.includes(
+  "--confirm-secret-rotation",
+);
 
 const stripeKey = getStripeSecretKey();
 if (!stripeKey || getStripeMode(stripeKey) !== target) {
@@ -44,13 +49,42 @@ for (const contract of contracts) {
     matchesContract(destination, contract),
   );
   let destination = exact[0] ?? null;
+  const legacy = legacyThinDestination(listed.data, contract);
 
   if (exact.length > 1) {
     throw new Error(`Duplicate canonical destination: ${contract.name}.`);
   }
 
+  if (
+    destination &&
+    legacy &&
+    destination.status === "disabled" &&
+    legacy.status === "enabled"
+  ) {
+    if (!recoverIncompleteConnectThin) {
+      throw new Error(
+        `The canonical thin destination ${contract.name} is disabled while the legacy destination is enabled. ` +
+          "Do not enable it because its signing secret may not have been persisted. " +
+          "Inspect both destinations, then rerun with --recover-incomplete-connect-thin.",
+      );
+    }
+    if (!replaceConnectThin || !confirmSecretRotation) {
+      throw new Error(
+        "Incomplete thin destination recovery also requires " +
+          "--replace-connect-thin --confirm-secret-rotation.",
+      );
+    }
+    if (destination.webhook_endpoint?.url !== legacy.webhook_endpoint?.url) {
+      throw new Error(
+        `Refusing to recover ${contract.name}: canonical and legacy URLs differ.`,
+      );
+    }
+
+    await stripe.v2.core.eventDestinations.del(destination.id);
+    destination = null;
+  }
+
   if (!destination) {
-    const legacy = legacyThinDestination(listed.data, contract);
     if (!legacy) {
       throw new Error(`Canonical destination is missing: ${contract.name}.`);
     }
@@ -81,7 +115,7 @@ for (const contract of contracts) {
     }
     createdSecrets[contract.secretName] = signingSecret;
     legacyDestinations.push(legacy);
-  } else {
+  } else if (!sameEvents(destination.enabled_events, contract.events)) {
     destination = await stripe.v2.core.eventDestinations.update(
       destination.id,
       {
@@ -94,7 +128,7 @@ for (const contract of contracts) {
 }
 
 if (Object.keys(createdSecrets).length > 0) {
-  persistWebhookSecrets({ createdSecrets, selected });
+  persistWebhookSecrets({ createdSecrets, selected, target });
 }
 
 for (const { destination } of selected) {
@@ -173,6 +207,11 @@ function matchesContract(destination, contract) {
   );
 }
 
+function sameEvents(actual, expected) {
+  return JSON.stringify([...actual].sort()) ===
+    JSON.stringify([...expected].sort());
+}
+
 function isRelevantDestination(destination) {
   return [
     "/functions/v1/stripe-billing-webhook",
@@ -187,6 +226,7 @@ function legacyThinDestination(destinations, contract) {
     (destination) =>
       destination.name === contract.name &&
       destination.event_payload === contract.payload &&
+      !destination.events_from?.includes(contract.scope) &&
       destination.webhook_endpoint?.url?.endsWith(contract.path) &&
       isRemoteUrl(destination.webhook_endpoint.url),
   );
@@ -205,17 +245,28 @@ function isRemoteUrl(value) {
   }
 }
 
-function persistWebhookSecrets({ createdSecrets, selected }) {
+function persistWebhookSecrets({ createdSecrets, selected, target }) {
   const endpointUrl = selected
     .map(({ destination }) => destination.webhook_endpoint?.url)
     .find(Boolean);
   const projectRef = projectRefFromUrl(endpointUrl);
+  const localEnvFile = path.resolve(
+    "supabase",
+    "functions",
+    target === "live" ? ".env.production" : ".env.homolog",
+  );
+  if (!fs.existsSync(localEnvFile)) {
+    throw new Error(`Local Functions env file was not found for ${target}.`);
+  }
+  const previousLocalEnv = fs.readFileSync(localEnvFile, "utf8");
+  const nextLocalEnv = replaceEnvSecrets(previousLocalEnv, createdSecrets);
   const temporaryDirectory = fs.mkdtempSync(
     path.join(os.tmpdir(), "tes-stripe-secrets-"),
   );
   const temporaryEnv = path.join(temporaryDirectory, "webhook.env");
 
   try {
+    fs.writeFileSync(localEnvFile, nextLocalEnv, { mode: 0o600 });
     fs.writeFileSync(
       temporaryEnv,
       Object.entries(createdSecrets)
@@ -223,10 +274,19 @@ function persistWebhookSecrets({ createdSecrets, selected }) {
         .join("\n") + "\n",
       { mode: 0o600 },
     );
+    const supabaseCliEntry = path.resolve(
+      "node_modules",
+      "supabase",
+      "dist",
+      "supabase.js",
+    );
+    if (!fs.existsSync(supabaseCliEntry)) {
+      throw new Error("Local Supabase CLI entrypoint was not found.");
+    }
     execFileSync(
-      "npx",
+      process.execPath,
       [
-        "supabase",
+        supabaseCliEntry,
         "secrets",
         "set",
         "--env-file",
@@ -237,9 +297,28 @@ function persistWebhookSecrets({ createdSecrets, selected }) {
       ],
       { stdio: ["ignore", "pipe", "pipe"] },
     );
+  } catch (error) {
+    fs.writeFileSync(localEnvFile, previousLocalEnv, { mode: 0o600 });
+    throw error;
   } finally {
     fs.rmSync(temporaryDirectory, { force: true, recursive: true });
   }
+}
+
+function replaceEnvSecrets(content, secrets) {
+  const newline = content.includes("\r\n") ? "\r\n" : "\n";
+  let next = content;
+
+  for (const [name, value] of Object.entries(secrets)) {
+    const pattern = new RegExp(`^${name}=.*$`, "m");
+    if (pattern.test(next)) {
+      next = next.replace(pattern, `${name}=${value}`);
+    } else {
+      next = `${next.replace(/\s*$/, "")}${newline}${name}=${value}${newline}`;
+    }
+  }
+
+  return next;
 }
 
 function projectRefFromUrl(value) {

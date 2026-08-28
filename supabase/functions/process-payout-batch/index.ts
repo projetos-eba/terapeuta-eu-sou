@@ -7,11 +7,17 @@ import {
   requireInternalOperationsAccess,
   success,
 } from "../_shared/payments/http.ts";
+import { resolveFinanceOperationInstant } from "../_shared/payments/finance-lifecycle.ts";
 import { runPayoutBatchWorker } from "../_shared/payments/payout-worker.ts";
 import { getPaymentsConfig, getPaymentsRuntime } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 
-type Body = { batchId?: string; maxPayouts?: number; maxTransfers?: number };
+type Body = {
+  batchId?: string;
+  maxPayouts?: number;
+  maxTransfers?: number;
+  nowOverride?: string;
+};
 
 const runtime = getPaymentsRuntime("process-payout-batch");
 
@@ -31,11 +37,18 @@ runtime.serve(async (request) => {
     const body = await parseJsonBody<Body>(request);
     const batchId = requireUuid(body.batchId);
     const config = getPaymentsConfig(runtime);
+    const operationInstant = resolveFinanceOperationInstant({
+      config,
+      defaultInstant: new Date().toISOString(),
+      fieldName: "now_override",
+      override: body.nowOverride,
+    });
     const result = await runPayoutBatchWorker({
       batchId,
       client: new SupabaseRestClient(config.supabaseUrl, config.serviceRoleKey),
       maxPayouts: boundedLimit(body.maxPayouts),
       maxTransfers: boundedLimit(body.maxTransfers),
+      operationInstant,
       stripe: createStripeClient(config.stripeApiKey),
       stripeApiKey: config.stripeApiKey,
       stripeMode: config.stripeMode,
