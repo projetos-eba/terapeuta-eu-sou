@@ -112,6 +112,10 @@ recebimento`; provider and reconciliation terminology stays in the service
 - Realized, contracted and estimated values must remain visually separated.
 - Potential agenda revenue is an estimate, not guaranteed revenue, and never
   affects ledger, payouts or balances.
+- Agenda capacity must merge equal and partially overlapping availability
+  windows across services. Scoped exceptions reduce only their service;
+  therapist-global booking occupancy uses the immutable before/after buffer
+  snapshots. Never sum repeated service windows as parallel capacity.
 - Benchmark must be anonymized and suppressed below 20 therapists or 100
   sessions aggregated.
 - Insight TES financial copy must be generated from deterministic rules and

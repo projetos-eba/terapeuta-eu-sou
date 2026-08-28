@@ -6,7 +6,7 @@ export type ScheduleRule = {
   endTime: string;
   id: string | null;
   isActive: boolean;
-  serviceId: string | null;
+  serviceId: string;
   startTime: string;
 };
 
@@ -61,7 +61,7 @@ export function validateScheduleCommand(
   for (const rule of body.rules) {
     if (
       (rule.id !== null && !isUuid(rule.id)) ||
-      (rule.serviceId !== null && !isUuid(rule.serviceId)) ||
+      !isUuid(rule.serviceId) ||
       !Number.isInteger(rule.dayOfWeek) ||
       rule.dayOfWeek < 0 ||
       rule.dayOfWeek > 6 ||

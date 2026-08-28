@@ -22,9 +22,9 @@ test.describe("admin therapy catalog", () => {
     ).toBeVisible();
     await expect(page.getByRole("heading", { name: "Reiki" })).toBeVisible();
 
-    await page.getByPlaceholder("Nome, slug, alias").fill("taro");
+    await page.getByPlaceholder("Nome, descrição ou endereço").fill("taro");
     await expect(page.getByRole("heading", { name: "Tarô" })).toBeVisible();
-    await page.getByPlaceholder("Nome, slug, alias").fill("");
+    await page.getByPlaceholder("Nome, descrição ou endereço").fill("");
 
     await page.getByRole("button", { name: "Criar rascunho" }).click();
     await expect(
@@ -33,6 +33,7 @@ test.describe("admin therapy catalog", () => {
     await expect(
       page.getByAltText("Previa visual de Emoções e Bem-Estar"),
     ).toBeVisible();
+    await expect(page.getByText("FAQs")).not.toBeVisible();
     await page.getByLabel("Nome canônico").fill(name);
     await page.getByLabel("Slug").fill(slug);
     await page.getByLabel("Resumo").fill("Resumo administrativo seguro.");
@@ -45,10 +46,6 @@ test.describe("admin therapy catalog", () => {
       .getByLabel("Benefício 2")
       .fill("Cuidado energético complementar");
     await page.getByLabel("Ícone visual 2").selectOption("energy");
-    await page.getByLabel("Pergunta 1").fill("Como acontece online?");
-    await page
-      .getByLabel("Resposta")
-      .fill("A sessão acontece por vídeo, com orientação do terapeuta.");
     await page
       .getByRole("group", {
         name: "Selecione de 1 a 3 temas do Match para recomendar esta terapia",

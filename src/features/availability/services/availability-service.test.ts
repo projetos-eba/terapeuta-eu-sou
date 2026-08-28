@@ -26,9 +26,15 @@ describe("buildAvailabilityDays", () => {
     expect(starts?.some((date) => date.getHours() === 10)).toBe(false);
     expect(
       starts?.some(
-        (date) => date.getHours() === 11 && date.getMinutes() === 10,
+        (date) => date.getHours() === 11 && date.getMinutes() === 30,
       ),
     ).toBe(true);
+  });
+
+  it("anchors the first session start to the availability window", () => {
+    const result = buildAvailabilityDays(input());
+
+    expect(result[0]?.slots[0]?.timeLabel).toBe("09:00");
   });
 
   it("uses available exceptions when no weekly rule exists", () => {
@@ -62,7 +68,7 @@ describe("buildAvailabilityDays", () => {
               dayOfWeek: 1,
               endTime: "09:00",
               isActive: true,
-              serviceId: null,
+              serviceId: "service-1",
               startTime: "10:00",
               timezone: "America/Sao_Paulo",
             },
@@ -123,7 +129,7 @@ function weeklyRule(
     dayOfWeek: 1,
     endTime,
     isActive: true,
-    serviceId: null,
+    serviceId: "service-1",
     startTime,
     timezone: "America/Sao_Paulo",
   };

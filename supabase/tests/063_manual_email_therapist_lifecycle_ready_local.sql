@@ -2,6 +2,16 @@ begin;
 
 select plan(16);
 
+delete from public.email_outbox
+where action_key in (
+  'therapist_profile_submitted_for_review',
+  'therapist_documents_requested',
+  'therapist_profile_approved',
+  'therapist_profile_rejected',
+  'therapist_profile_suspended',
+  'therapist_profile_reactivated'
+);
+
 select has_trigger('public', 'therapist_verifications', 'enqueue_therapist_verification_email', 'verification transitions enqueue after persistence');
 select has_trigger('public', 'therapist_profiles', 'enqueue_therapist_profile_lifecycle_email', 'profile lifecycle transitions enqueue after persistence');
 select is(has_function_privilege('anon', 'public.enqueue_therapist_verification_email_v1()', 'EXECUTE'), false, 'anonymous users cannot invoke the verification e-mail trigger');

@@ -33,7 +33,7 @@ F2. Premium Plus acessa F2 e F3 via capability `advanced_financials`.
 | Versão                           | Uso                         | Regra central                                                                                           |
 | -------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------- |
 | `tes-financial-forecast-v1`      | Previsão do mês             | Separa realizado líquido, receita contratada futura e potencial estimado.                               |
-| `tes-agenda-potential-v1`        | Potencial da agenda         | Deduplica janelas de disponibilidade, subtrai bloqueios/reservas pagas e usa preço histórico quando há. |
+| `tes-agenda-potential-v1`        | Potencial da agenda         | Une janelas entre terapias, aplica bloqueios no escopo global ou da terapia, subtrai a ocupação global das reservas com buffers snapshot e usa preço histórico quando há. |
 | `tes-financial-opportunities-v1` | Oportunidades e Insight TES | Gera ações por regras determinísticas a partir de evidências retornadas no contrato.                    |
 | `tes-retention-v1`               | Retenção avançada           | Usa primeira sessão concluída, retorno pago em até 90 dias e censura janelas incompletas.               |
 

@@ -278,6 +278,73 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
       "Acesso administrativo necessario.",
     );
   }
+  if (details.includes("ADMIN_THERAPY_CATALOG_INVALID_PAYLOAD")) {
+    return new DomainError(
+      "invalid_payload",
+      422,
+      "Revise os campos obrigatórios da terapia e tente novamente.",
+    );
+  }
+  if (details.includes("ADMIN_THERAPY_CATALOG_CATEGORY_NOT_FOUND")) {
+    return new DomainError(
+      "category_not_found",
+      422,
+      "Escolha uma categoria válida para a terapia.",
+    );
+  }
+  if (details.includes("ADMIN_THERAPY_CATALOG_INVALID_SLUG")) {
+    return new DomainError(
+      "invalid_slug",
+      422,
+      "Use um endereço com letras minúsculas, números e hífens.",
+    );
+  }
+  if (details.includes("ADMIN_THERAPY_CATALOG_SHORT_DESCRIPTION_TOO_LONG")) {
+    return new DomainError(
+      "short_description_too_long",
+      422,
+      "O resumo deve ter no máximo 100 caracteres.",
+    );
+  }
+  if (details.includes("ADMIN_THERAPY_CATALOG_DESCRIPTION_TOO_LONG")) {
+    return new DomainError(
+      "description_too_long",
+      422,
+      "A abordagem deve ter no máximo 200 caracteres.",
+    );
+  }
+  if (details.includes("ADMIN_THERAPY_CATALOG_INTRODUCTION_TOO_LONG")) {
+    return new DomainError(
+      "introduction_too_long",
+      422,
+      "O campo O que é deve ter no máximo 160 caracteres.",
+    );
+  }
+  if (
+    details.includes(
+      "ADMIN_THERAPY_CATALOG_COMPLEMENTARY_DESCRIPTION_TOO_LONG",
+    )
+  ) {
+    return new DomainError(
+      "complementary_description_too_long",
+      422,
+      "A descrição complementar deve ter no máximo 200 caracteres.",
+    );
+  }
+  if (details.includes("ADMIN_THERAPY_CATALOG_SAFETY_NOTE_TOO_LONG")) {
+    return new DomainError(
+      "safety_note_too_long",
+      422,
+      "A nota responsável deve ter no máximo 150 caracteres.",
+    );
+  }
+  if (details.includes("ADMIN_THERAPY_CATALOG_BENEFIT_DESCRIPTION_TOO_LONG")) {
+    return new DomainError(
+      "benefit_description_too_long",
+      422,
+      "A descrição opcional do benefício deve ter no máximo 100 caracteres.",
+    );
+  }
   if (details.includes("ADMIN_THERAPY_CATALOG_SLUG_CONFLICT")) {
     return new DomainError(
       "slug_conflict",

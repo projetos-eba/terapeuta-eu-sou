@@ -9,8 +9,8 @@ select is(
 );
 select is(
   (select version from public.financial_policy_versions where is_active),
-  'tes-payments-v7-bilateral-weekly-transfer-daily-payout',
-  'the bilateral operational policy is active for open future payments'
+  'tes-payments-v8-commission-15-percent',
+  'the current 15 percent commission policy is active for open future payments'
 );
 select is(
   (select free_cancellation_hours from public.financial_policy_versions where is_active),

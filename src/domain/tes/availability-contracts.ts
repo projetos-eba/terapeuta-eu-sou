@@ -30,7 +30,7 @@ export type TherapistScheduleRule = {
   endTime: string;
   id: UUID;
   isActive: boolean;
-  serviceId: UUID | null;
+  serviceId: UUID;
   startTime: string;
 };
 

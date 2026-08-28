@@ -35,7 +35,6 @@ Fonte central:
 - `therapy_public_content`
 - `therapy_highlights`
 - `therapy_benefits`
-- `therapy_faqs`
 
 View pública:
 
@@ -54,7 +53,6 @@ Campos editoriais do detalhe:
 - `approach_icon_key`
 - `visual_theme_key` (`energy`, `oracle`, `systemic`)
 - `hero_focal_point` (`left`, `center`, `right`)
-- `faqs`
 
 Não salvar classes CSS/Tailwind no banco. `visual_theme_key` deve ser mapeado para tokens seguros no frontend.
 
@@ -103,9 +101,9 @@ Para profissionais relacionados:
 - Títulos editoriais do detalhe, especialmente o nome da terapia no hero, devem usar `font-display` (`IvyPresto Display`) com tamanho responsivo seguro para nomes longos. UI, formulários, descrições e cards usam Manrope via `font-sans`.
 - Cores de títulos devem usar `text-brand-deep`/`text-tesText-primary`; o valor canônico é `#14105A`. Não usar hex hardcoded como `#261433` ou variações próximas em títulos.
 - Benefícios do detalhe devem ser cards compactos com ícone e título, sem descrição visível; descrições podem existir no banco para uso futuro/admin, mas a UI pública simplifica o preenchimento.
-- A nota de segurança não deve aparecer como card destacado no bloco “O que é”; a responsabilidade editorial deve ficar no texto, FAQ, metadata ou conteúdo administrado apropriado.
+- A nota de segurança não deve aparecer como card destacado no bloco “O que é”; a responsabilidade editorial deve ficar no texto, metadata ou conteúdo administrado apropriado.
 - Profissionais relacionados devem ser cards/lista compacta em duas colunas no desktop quando houver múltiplos resultados, evitando áreas vazias grandes.
-- O detalhe substitui os antigos quadros laterais de CTA e FAQ pelo `PublicTherapistsLowerBanner`, compartilhado com a faixa inferior de `/terapeutas`.
+- O detalhe termina com o `PublicTherapistsLowerBanner`, compartilhado com a faixa inferior de `/terapeutas`; não há FAQ de terapia.
 
 ## Copy Responsável
 
@@ -149,7 +147,7 @@ Rodar:
 - Persistência real de favoritos de terapias para usuário autenticado.
 - Métricas reais separadas para “Mais procuradas” e “Mais populares”.
 - Drawer/bottom sheet mobile completo caso a lista de categorias cresça muito.
-- Auditar `/admin/terapias` para editar `therapy_public_content`, highlights, benefícios e FAQs sem alterar pesos do Match.
+- Auditar `/admin/terapias` para editar `therapy_public_content`, highlights e benefícios sem alterar pesos do Match.
 - Criar interface admin para `approach_label`, `approach_icon_key`, `visual_theme_key` e `hero_focal_point`.
 
 ## Assets da plataforma

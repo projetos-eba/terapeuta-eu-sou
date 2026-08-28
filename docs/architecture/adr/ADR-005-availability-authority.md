@@ -2,7 +2,7 @@
 
 Data: 2026-07-25
 
-Status: aceito.
+Status: aceito. Revisado em 2026-08-28.
 
 Implementação: invariantes transacionais concluídos na A2 em 2026-07-26;
 configuração versionada concluída em A3.0/A3.1 conforme ADR-006; composição
@@ -22,7 +22,11 @@ oferecia garantia transacional e interpretava os dias no timezone do runtime.
 - Um reembolso integral na fonte financeira canônica sincroniza o booking para
   `refunded`, preservando o registro e liberando o intervalo protegido.
 - Reembolso parcial e disputa não liberam disponibilidade automaticamente.
-- Buffers fazem parte do intervalo ocupado.
+- Buffers fazem parte do intervalo ocupado. O buffer anterior não desloca o
+  primeiro início da faixa; duração e buffer posterior precisam caber até o
+  fim configurado.
+- Cada faixa semanal exige `availability_rules.service_id`; disponibilidade
+  geral histórica é migrada para regras explícitas de cada terapia.
 - Faixas inválidas ou sobrepostas falham com erro de domínio.
 - Exceções disponíveis e indisponíveis permanecem explícitas.
 - Holds e bookings usam Postgres/RPC, TTL, idempotência, advisory lock e

@@ -46,10 +46,6 @@ export type AdminTherapyPublicContent = {
     title: string;
   }>;
   complementaryDescription: string | null;
-  faqs: Array<{
-    answer: string;
-    question: string;
-  }>;
   heroFocalPoint: "center" | "left" | "right";
   heroImageUrl: string | null;
   highlights: Array<{
@@ -145,7 +141,6 @@ export type AdminTherapyDraftCommand = {
   description: string | null;
   highlights: AdminTherapyPublicContent["highlights"];
   benefits: AdminTherapyPublicContent["benefits"];
-  faqs: AdminTherapyPublicContent["faqs"];
   imageUrl: string | null;
   isAvailableForServices: boolean;
   isFeatured: boolean;
@@ -155,7 +150,7 @@ export type AdminTherapyDraftCommand = {
   name: string;
   publicContent: Omit<
     AdminTherapyPublicContent,
-    "benefits" | "faqs" | "highlights"
+    "benefits" | "highlights"
   >;
   reason: string;
   shortDescription: string;

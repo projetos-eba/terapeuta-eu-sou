@@ -5,10 +5,10 @@ import {
   Archive,
   Eye,
   FileClock,
+  MoreHorizontal,
   Pencil,
   Plus,
   Search,
-  Send,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -19,6 +19,7 @@ import {
   createStableRequestId,
   fetchAdminTherapyCatalogRequests,
   getAdminCatalogRequestMaterialUrl,
+  getAdminTherapyCatalogUserMessage,
   sendAdminTherapyCatalogCommand,
 } from "../admin-therapy-catalog.commands";
 import type {
@@ -168,7 +169,7 @@ export function AdminTherapyCatalogPage({
     setIsMutating(false);
 
     if (result.status === "error") {
-      setFeedback("Não foi possível salvar a terapia agora. Tente novamente.");
+      setFeedback(getAdminTherapyCatalogUserMessage(result.error));
       return;
     }
 
@@ -195,7 +196,7 @@ export function AdminTherapyCatalogPage({
     setIsMutating(false);
 
     if (result.status === "error") {
-      setFeedback("Não foi possível concluir esta ação agora. Tente novamente.");
+      setFeedback(getAdminTherapyCatalogUserMessage(result.error));
       return;
     }
 
@@ -229,9 +230,7 @@ export function AdminTherapyCatalogPage({
     });
     setIsMutating(false);
     if (result.status === "error") {
-      setFeedback(
-        "Não foi possível registrar a decisão agora. Tente novamente.",
-      );
+      setFeedback(getAdminTherapyCatalogUserMessage(result.error));
       return;
     }
     setCatalog(result.catalog);
@@ -652,34 +651,7 @@ function TherapyCard({
 
       <ImpactSummary therapy={therapy} />
 
-      <div className="mt-4 flex flex-wrap gap-2 border-t border-brand-lavender pt-4">
-        <ActionButton
-          action="review"
-          label="Revisar"
-          onTransition={onTransition}
-        />
-        <ActionButton
-          action="publish"
-          label="Publicar"
-          onTransition={onTransition}
-        />
-        <ActionButton
-          action="unpublish"
-          label="Despublicar"
-          onTransition={onTransition}
-        />
-        <ActionButton
-          action="deprecate"
-          label="Descontinuar"
-          onTransition={onTransition}
-        />
-        <ActionButton
-          action="archive"
-          icon={<Archive aria-hidden="true" className="size-4" />}
-          label="Arquivar"
-          onTransition={onTransition}
-        />
-      </div>
+      <ContextualActions onTransition={onTransition} therapy={therapy} />
 
       <details className="mt-4 rounded-xl bg-surface-soft p-3">
         <summary className="flex cursor-pointer items-center gap-2 text-sm font-extrabold text-brand-deep">
@@ -711,24 +683,110 @@ function TherapyCard({
   );
 }
 
+function ContextualActions({
+  onTransition,
+  therapy,
+}: {
+  onTransition: (action: AdminTherapyTransition) => void;
+  therapy: AdminTherapy;
+}) {
+  const secondaryActions = getSecondaryActions(therapy.status);
+  const primaryAction = getPrimaryAction(therapy.status);
+
+  if (!primaryAction && secondaryActions.length === 0) return null;
+
+  return (
+    <div className="mt-4 flex flex-col gap-2 border-t border-brand-lavender pt-4 sm:flex-row sm:flex-wrap sm:items-start">
+      {primaryAction ? (
+        <ActionButton
+          action={primaryAction.action}
+          label={primaryAction.label}
+          onTransition={onTransition}
+          variant="primary"
+        />
+      ) : null}
+      {secondaryActions.length > 0 ? (
+        <details className="relative">
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-brand-lavender px-3 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus:outline-none focus-visible:ring-4 focus-visible:ring-ring/20">
+            <MoreHorizontal aria-hidden="true" className="size-4" />
+            Mais ações
+          </summary>
+          <div className="mt-2 grid gap-2 rounded-xl border border-brand-lavender bg-white p-2 shadow-card sm:absolute sm:right-0 sm:z-10 sm:min-w-52">
+            {secondaryActions.map((item) => (
+              <ActionButton
+                action={item.action}
+                icon={item.action === "archive" ? <Archive aria-hidden="true" className="size-4" /> : undefined}
+                key={item.action}
+                label={item.label}
+                onTransition={onTransition}
+              />
+            ))}
+          </div>
+        </details>
+      ) : null}
+    </div>
+  );
+}
+
+function getPrimaryAction(status: AdminTherapy["status"]) {
+  if (status === "draft" || status === "in_review" || status === "active" || status === "inactive") {
+    return { action: "publish" as const, label: "Publicar" };
+  }
+  return null;
+}
+
+function getSecondaryActions(status: AdminTherapy["status"]): Array<{
+  action: AdminTherapyTransition;
+  label: string;
+}> {
+  if (status === "draft") {
+    return [
+      { action: "review", label: "Enviar para revisão" },
+      { action: "deprecate", label: "Descontinuar" },
+      { action: "archive", label: "Arquivar" },
+    ];
+  }
+  if (status === "in_review") {
+    return [
+      { action: "deprecate", label: "Descontinuar" },
+      { action: "archive", label: "Arquivar" },
+    ];
+  }
+  if (status === "published") {
+    return [
+      { action: "unpublish", label: "Retirar publicação" },
+      { action: "deprecate", label: "Descontinuar" },
+      { action: "archive", label: "Arquivar" },
+    ];
+  }
+  if (status === "deprecated") return [{ action: "archive", label: "Arquivar" }];
+  return [];
+}
+
 function ActionButton({
   action,
   icon,
   label,
   onTransition,
+  variant = "secondary",
 }: {
   action: AdminTherapyTransition;
   icon?: React.ReactNode;
   label: string;
   onTransition: (action: AdminTherapyTransition) => void;
+  variant?: "primary" | "secondary";
 }) {
   return (
     <button
-      className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-brand-lavender px-3 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+      className={
+        variant === "primary"
+          ? "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-deep focus-visible:ring-4 focus-visible:ring-ring/20"
+          : "inline-flex min-h-11 items-center gap-2 rounded-xl border border-brand-lavender px-3 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+      }
       onClick={() => onTransition(action)}
       type="button"
     >
-      {icon ?? <Send aria-hidden="true" className="size-4" />}
+      {icon}
       {label}
     </button>
   );
