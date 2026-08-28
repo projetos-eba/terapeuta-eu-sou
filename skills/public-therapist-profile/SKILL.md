@@ -93,6 +93,10 @@ Preservar o padrão do node:
   guia e convite; o guia exibe no máximo quatro temas com ícones. Quando houver
   quatro escolhas, a composição usa duas colunas e duas linhas, com respiro
   suficiente entre ícones e textos.
+- O hero público usa composição compacta: o fundo temático ocupa menos altura, o
+  retrato é reduzido em 30% em cada breakpoint principal e os badges de
+  verificação/plano permanecem lado a lado, com tipografia compacta e sem
+  overflow horizontal em larguras móveis usuais.
 - No mobile, serviços ficam fora do fluxo principal da referência e continuam
   disponíveis no desktop; disponibilidade e avaliações aparecem em sequência,
   com quatro horários visíveis por dia em uma grade 2x2 e o quinto horário
@@ -120,8 +124,9 @@ Preservar o padrão do node:
 - Validar `/terapeutas/ana-oliveira`, `/terapeuta/ana-oliveira`, perfil inexistente, sem avaliações, agenda indisponível e slots diferentes para 50min vs 60min.
 - Validar no card `Um convite para você` que o texto permanece abaixo do vídeo
   em desktop e mobile.
-- Validar o perfil em viewport mobile, conferindo banner/retrato sobreposto,
-  três cards editoriais, painel com quatro horários por dia em grade 2x2,
+- Validar o perfil em viewport mobile, conferindo banner temático compacto,
+  retrato reduzido, badges lado a lado, três cards editoriais, painel com
+  quatro horários por dia em grade 2x2,
   estado vazio de avaliações e rodapé em card; confirmar que o quinto horário
   reaparece no tablet/desktop e que o cabeçalho padrão e o rodapé padrão
   permanecem inalterados nas demais páginas públicas.

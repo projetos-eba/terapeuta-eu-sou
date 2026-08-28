@@ -13,6 +13,7 @@ import type { TherapistSettingsData } from "../therapist-settings.types";
 
 const commandMocks = vi.hoisted(() => ({
   lookupTherapistAddressByCep: vi.fn(),
+  uploadTherapistPrivateDocument: vi.fn(),
   updateTherapistSettings: vi.fn(),
 }));
 
@@ -21,6 +22,10 @@ let scrollIntoViewDescriptor: PropertyDescriptor | undefined;
 vi.mock("../therapist-settings.commands", () => ({
   lookupTherapistAddressByCep: commandMocks.lookupTherapistAddressByCep,
   updateTherapistSettings: commandMocks.updateTherapistSettings,
+}));
+
+vi.mock("@/features/therapist-profile-editor/therapist-profile-editor.commands", () => ({
+  uploadTherapistPrivateDocument: commandMocks.uploadTherapistPrivateDocument,
 }));
 
 vi.mock("next/navigation", () => ({
@@ -57,6 +62,15 @@ describe("TherapistSettingsPage", () => {
         },
       },
       status: "success",
+    });
+    commandMocks.uploadTherapistPrivateDocument.mockReset();
+    commandMocks.uploadTherapistPrivateDocument.mockResolvedValue({
+      error: {
+        code: "VALIDATION_ERROR",
+        message:
+          "Não foi possível concluir a operação. Tamanho do arquivo excede o limite de 10 MB.",
+      },
+      status: "error",
     });
   });
 
@@ -204,6 +218,30 @@ describe("TherapistSettingsPage", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Informe um telefone válido ou deixe o campo vazio.",
     );
+  });
+
+  it("explains the 10 MB limit in the document error dialog", async () => {
+    render(
+      <TherapistSettingsPage
+        planData={planFixture("premium_plus")}
+        settings={settingsFixture()}
+      />,
+    );
+
+    const file = new File(["too-large"], "rg.pdf", {
+      type: "application/pdf",
+    });
+    fireEvent.change(screen.getByLabelText("Enviar Documento de identidade"), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole("alert"),
+      ).toHaveTextContent(
+        "Não foi possível concluir a operação. Tamanho do arquivo excede o limite de 10 MB.",
+      );
+    });
   });
 
   it("offers cancellation and the next upgrade to a Premium therapist", () => {

@@ -166,6 +166,14 @@ runtime.serve(async (request) => {
       }
 
       if (command.action === "save_draft") {
+        if (command.preserveLegacyVideoUrl) {
+          await assertLegacyVideoUrlIsUnchanged(
+            client,
+            user.id,
+            command.payload,
+          );
+        }
+
         const result = await client.rpc<PublishCommandResult>(
           "save_therapist_profile_draft_v1",
           {
@@ -332,6 +340,53 @@ async function readEnrichedEditor(client: SupabaseRestClient, userId: string) {
         : null,
     verificationSummary: verificationSummaryResult.value,
   };
+}
+
+async function assertLegacyVideoUrlIsUnchanged(
+  client: SupabaseRestClient,
+  userId: string,
+  payload: { videoProvider: string; videoUrl: string | null },
+) {
+  const editor = (await client.rpc<EditorReadResult>(
+    "get_private_therapist_profile_editor_v1",
+    { p_actor_user_id: userId },
+  )) as EditorReadResult;
+  const source =
+    readEditorVideo(editor.draft) ?? readEditorVideo(editor.published);
+
+  if (
+    payload.videoProvider !== "external" ||
+    !payload.videoUrl ||
+    !isHttpsUrl(payload.videoUrl) ||
+    !source ||
+    source.videoProvider !== "external" ||
+    source.videoUrl !== payload.videoUrl
+  ) {
+    throw new DomainError(
+      "VALIDATION_ERROR",
+      422,
+      "Use um link https:// do YouTube ou Vimeo, ou envie um vídeo válido.",
+    );
+  }
+}
+
+function readEditorVideo(value: unknown) {
+  if (!value || typeof value !== "object") return null;
+  const fields = (value as { fields?: unknown }).fields;
+  if (!fields || typeof fields !== "object") return null;
+  const videoUrl = (fields as { videoUrl?: unknown }).videoUrl;
+  const videoProvider = (fields as { videoProvider?: unknown }).videoProvider;
+  return typeof videoUrl === "string" && typeof videoProvider === "string"
+    ? { videoProvider, videoUrl }
+    : null;
+}
+
+function isHttpsUrl(value: string) {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 async function readPrivateLocation(
@@ -717,7 +772,7 @@ async function validatePrivateDocument(file: File) {
     throw new DomainError(
       "VALIDATION_ERROR",
       422,
-      "O documento deve ter no máximo 10 MB.",
+      "Não foi possível concluir a operação. Tamanho do arquivo excede o limite de 10 MB.",
     );
   }
 

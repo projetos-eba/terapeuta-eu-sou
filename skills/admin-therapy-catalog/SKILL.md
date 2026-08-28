@@ -88,8 +88,10 @@ admin autenticado, sem `service_role` no frontend.
   existir.
 - Terapias podem selecionar de 1 a 3 temas do Match. `category_id` permanece
   uma categoria canônica singular da terapia.
-- Edição de imagem de tema aceita URL e upload de arquivo JPG, PNG ou WebP,
-  com preview antes de salvar.
+- Edição de imagem de tema e de terapia aceita URL e upload de arquivo JPG, PNG
+  ou WebP, com arraste/soltura, limite de 5 MB e preview antes de salvar. O
+  upload de terapia usa o contexto `therapy-image` em `/api/admin/media` e
+  preenche a imagem fallback e, se vazia, a imagem hero.
 - Toda ação de governança exige motivo e gera auditoria.
 - Remover tema do Match de uma terapia deve identificar servicos e
   refinamentos afetados e bloquear a alteracao enquanto houver configuracao
@@ -105,8 +107,11 @@ admin autenticado, sem `service_role` no frontend.
 - Testar clique real em login/admin, modal de tema, foco durante digitação,
   slug automático, lista de temas ativa no cadastro de terapia e payload
   estruturado de benefícios/FAQs.
-- Testar preview das imagens de temas no cadastro de terapia e upload de
-  imagem no modal de tema sem salvar alterações destrutivas durante QA.
+- Testar preview das imagens de temas no cadastro de terapia, upload de imagem
+  no editor de terapia e upload no modal de tema sem salvar alterações
+  destrutivas durante QA. Cobrir seleção de arquivo, arraste/soltura, MIME
+  permitido, assinatura do arquivo, limite de 5 MB e preenchimento dos campos
+  fallback/hero.
 - Testar seleção de três temas do Match e bloqueio visual de novas seleções ao
   atingir o limite.
 - Validar RLS admin, terapeuta e visitante em pgTAP.

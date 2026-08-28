@@ -1,6 +1,6 @@
 begin;
 
-select plan(20);
+select plan(21);
 
 select has_column('public', 'support_tickets', 'assigned_admin_id', 'support inbox persists administrative assignment');
 select has_function('public', 'admin_get_support_inbox_v1', array['jsonb'], 'admin inbox read boundary exists');
@@ -44,6 +44,28 @@ select lives_ok(
   'requester transitions own ticket to waiting_support before triage'
 );
 
+select set_config('request.jwt.claims', '{"sub":"e1000000-0000-4000-8000-000000000002","role":"authenticated"}', true);
+select lives_ok(
+  $$ select public.create_support_ticket_v1(
+    'e2000000-0000-4000-8000-000000000010'::uuid,
+    'outro',
+    'Chamado mais recente da Inbox',
+    'Este chamado precisa aparecer no topo da lista.',
+    null,
+    'message_center'
+  ) $$,
+  'a second requester creates a newer support ticket'
+);
+select set_config('test.inbox_newer_ticket_id', (
+  select id::text from public.support_tickets
+  where request_id = 'e2000000-0000-4000-8000-000000000010'::uuid
+), true);
+set local role postgres;
+update public.support_tickets
+set last_activity_at = clock_timestamp() + interval '1 minute'
+where id = current_setting('test.inbox_newer_ticket_id')::uuid;
+set local role authenticated;
+
 select set_config('request.jwt.claims', '{"sub":"e1000000-0000-4000-8000-000000000003","role":"authenticated"}', true);
 select is(
   (select (public.admin_get_support_inbox_v1('{}'::jsonb)->>'attentionCount')::integer),
@@ -52,8 +74,8 @@ select is(
 );
 select is(
   (select public.admin_get_support_inbox_v1('{}'::jsonb)->'rows'->0->>'id'),
-  current_setting('test.inbox_ticket_id'),
-  'admin inbox orders waiting_support ticket before lower-priority work'
+  current_setting('test.inbox_newer_ticket_id'),
+  'admin inbox orders the most recently active ticket first regardless of status'
 );
 select lives_ok(
   $$ select public.admin_manage_support_ticket_v1(

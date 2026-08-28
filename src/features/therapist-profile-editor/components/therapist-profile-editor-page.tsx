@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, Clock3 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -46,6 +46,13 @@ import { UnsavedChangesDialog } from "./unsaved-changes-dialog";
 type PendingAction = "discard_draft" | "publish" | "save_draft" | "unpublish";
 type ConfirmAction = "discard_draft" | "publish" | "reset" | "unpublish";
 type PublicationResult = "published" | "in_review";
+type AutoSaveState =
+  | { status: "idle" }
+  | { status: "saving" }
+  | { status: "saved" }
+  | { message: string; status: "error" };
+
+const autoSaveDelayMs = 1_200;
 
 export function TherapistProfileEditorPage({
   editor: initialEditor,
@@ -72,6 +79,9 @@ export function TherapistProfileEditorPage({
   const [publicationResult, setPublicationResult] =
     useState<PublicationResult | null>(null);
   const [draftSavedNotice, setDraftSavedNotice] = useState(false);
+  const [autoSaveState, setAutoSaveState] = useState<AutoSaveState>({
+    status: "idle",
+  });
 
   const baselineFields = useMemo(
     () => buildInitialEditorFields(editor),
@@ -87,6 +97,57 @@ export function TherapistProfileEditorPage({
   const mustSaveBeforePublishing =
     hasUnsavedChanges || (isFirstConfiguration && !hasDraft);
   const reviewReason = getTherapistProfileReviewReason(editor);
+
+  useEffect(() => {
+    if (!hasUnsavedChanges || pendingAction !== null) return;
+
+    // Publication has stricter completeness rules. A draft is saved as soon as
+    // its current values meet the existing draft contract, without interrupting
+    // someone while they are still typing.
+    if (validateDraftFields(fields)) {
+      setAutoSaveState({ status: "idle" });
+      return;
+    }
+
+    let active = true;
+    const fieldsSnapshot = fields;
+    const sourceEditor = editor;
+    const timeout = window.setTimeout(async () => {
+      if (!active) return;
+      setAutoSaveState({ status: "saving" });
+
+      const result = await sendMutationCommand(
+        "save_draft",
+        sourceEditor,
+        fieldsSnapshot,
+      );
+      if (!active) return;
+
+      if (!result) {
+        setAutoSaveState({
+          message:
+            "Não foi possível salvar o rascunho automaticamente. Suas alterações continuam neste editor.",
+          status: "error",
+        });
+        return;
+      }
+
+      const nextEditor = result.editor;
+      setEditor(nextEditor);
+      setFields((currentFields) =>
+        JSON.stringify(currentFields) === JSON.stringify(fieldsSnapshot)
+          ? buildInitialEditorFields(nextEditor)
+          : currentFields,
+      );
+      setAutoSaveState({ status: "saved" });
+      setLiveMessage("Rascunho salvo automaticamente.");
+    }, autoSaveDelayMs);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+    };
+  }, [editor, fields, hasUnsavedChanges, pendingAction]);
 
   function updateField<K extends keyof TherapistProfileEditableFields>(
     key: K,
@@ -191,6 +252,9 @@ export function TherapistProfileEditorPage({
             action,
             expectedVersion: sourceEditor.version,
             payload: serializeEditorPayload(sourceFields),
+            ...(canPreserveLegacyVideoUrl(sourceFields)
+              ? { preserveLegacyVideoUrl: true as const }
+              : {}),
             requestId: createStableRequestId(),
           }
         : {
@@ -256,6 +320,7 @@ export function TherapistProfileEditorPage({
         }
         primaryDisabled={
           pendingAction !== null ||
+          autoSaveState.status === "saving" ||
           (isFirstConfiguration ? false : !hasUnsavedChanges)
         }
         primaryLabel={
@@ -293,6 +358,7 @@ export function TherapistProfileEditorPage({
             updateField={updateField}
           />
           <ProfileSaveBar
+            autoSaveState={autoSaveState}
             firstConfiguration={isFirstConfiguration}
             hasDraft={hasDraft}
             hasUnsavedChanges={hasUnsavedChanges}
@@ -673,7 +739,10 @@ function validateDraftFields(
       message: "Envie uma capa válida ou use uma URL pública da imagem.",
     };
   }
-  if (hasInvalidVideoUrl(fields.videoUrl, fields.videoProvider)) {
+  if (
+    hasInvalidVideoUrl(fields.videoUrl, fields.videoProvider) &&
+    !canPreserveLegacyVideoUrl(fields)
+  ) {
     return {
       focusId: "videoUrl",
       message:
@@ -694,6 +763,13 @@ function validatePublishFields(
 ): FieldValidationError | null {
   const draftError = validateDraftFields(fields);
   if (draftError) return draftError;
+
+  if (hasInvalidVideoUrl(fields.videoUrl, fields.videoProvider)) {
+    return {
+      focusId: "videoUrl",
+      message: "Use um link https:// do YouTube ou Vimeo antes de publicar.",
+    };
+  }
 
   const missingFields: Array<{
     focusId: keyof TherapistProfileEditableFields;
@@ -736,7 +812,11 @@ function hasInvalidMediaUrl(value: string, mode: "https" | "public") {
   if (!normalized) return false;
   if (/\s/.test(normalized)) return true;
   if (mode === "https") return !normalized.startsWith("https://");
-  return !(normalized.startsWith("https://") || normalized.startsWith("/"));
+  return !(
+    normalized.startsWith("https://") ||
+    normalized.startsWith("http://") ||
+    normalized.startsWith("/")
+  );
 }
 
 function hasInvalidVideoUrl(
@@ -759,6 +839,22 @@ function hasInvalidVideoUrl(
   }
 
   return true;
+}
+
+function canPreserveLegacyVideoUrl(fields: TherapistProfileEditableFields) {
+  return (
+    fields.videoProvider === "external" &&
+    Boolean(fields.videoUrl) &&
+    isHttpsUrl(fields.videoUrl)
+  );
+}
+
+function isHttpsUrl(value: string) {
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 function getSuccessMessage(

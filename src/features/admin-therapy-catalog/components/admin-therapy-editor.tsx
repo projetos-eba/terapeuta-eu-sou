@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Trash2 } from "lucide-react";
+import { ImagePlus, Loader2, Plus, Trash2, UploadCloud, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { TESButton } from "@/components/tes";
@@ -41,6 +41,15 @@ export function AdminTherapyEditor({
   const [faqCount, setFaqCount] = useState(() =>
     Math.max(1, initialFaqs.length),
   );
+  const [imageUrl, setImageUrl] = useState(therapy?.imageUrl ?? "");
+  const [heroImageUrl, setHeroImageUrl] = useState(
+    therapy?.publicContent.heroImageUrl ?? "",
+  );
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const [imageUploadStatus, setImageUploadStatus] = useState<string | null>(
+    null,
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -59,7 +68,7 @@ export function AdminTherapyEditor({
           title,
         }),
       ),
-      imageUrl: nullable(String(form.get("imageUrl") ?? "")),
+      imageUrl: nullable(imageUrl),
       isAvailableForServices: form.get("isAvailableForServices") === "on",
       isFeatured: form.get("isFeatured") === "on",
       isPubliclyVisible: form.get("isPubliclyVisible") === "on",
@@ -75,7 +84,7 @@ export function AdminTherapyEditor({
         heroFocalPoint: parseFocalPoint(
           String(form.get("heroFocalPoint") ?? ""),
         ),
-        heroImageUrl: nullable(String(form.get("heroImageUrl") ?? "")),
+        heroImageUrl: nullable(heroImageUrl),
         introduction: nullable(String(form.get("introduction") ?? "")),
         safetyNote: nullable(String(form.get("safetyNote") ?? "")),
         seoDescription: nullable(String(form.get("seoDescription") ?? "")),
@@ -154,17 +163,76 @@ export function AdminTherapyEditor({
             label="Subtítulo"
             name="subtitle"
           />
-          <Field
-            defaultValue={therapy?.imageUrl}
-            label="Imagem fallback"
-            name="imageUrl"
-            placeholder="/therapies/reiki.png"
-          />
-          <Field
-            defaultValue={therapy?.publicContent.heroImageUrl}
-            label="Imagem hero"
-            name="heroImageUrl"
-          />
+          <div className="md:col-span-2">
+            <TherapyImageField
+              heroImageUrl={heroImageUrl}
+              imageUploadError={imageUploadError}
+              imageUploadStatus={imageUploadStatus}
+              imageUrl={imageUrl}
+              isUploading={isUploadingImage}
+              onHeroImageChange={setHeroImageUrl}
+              onImageChange={setImageUrl}
+              onUpload={async (file) => {
+                setImageUploadError(null);
+                setImageUploadStatus(null);
+
+                if (
+                  !["image/jpeg", "image/png", "image/webp"].includes(file.type)
+                ) {
+                  setImageUploadError("Use uma imagem JPG, PNG ou WebP.");
+                  return;
+                }
+
+                if (file.size > 5 * 1024 * 1024) {
+                  setImageUploadError("A imagem deve ter no máximo 5 MB.");
+                  return;
+                }
+
+                setIsUploadingImage(true);
+
+                try {
+                  const body = new FormData();
+                  body.set("context", "therapy-image");
+                  body.set("file", file);
+
+                  const response = await fetch("/api/admin/media", {
+                    body,
+                    method: "POST",
+                  });
+                  const payload = (await response.json()) as {
+                    data?: { publicUrl?: string };
+                    error?: { message?: string };
+                    ok?: boolean;
+                  };
+
+                  if (
+                    !response.ok ||
+                    !payload.ok ||
+                    typeof payload.data?.publicUrl !== "string"
+                  ) {
+                    setImageUploadError(
+                      payload.error?.message ??
+                        "Não foi possível enviar a imagem agora.",
+                    );
+                    return;
+                  }
+
+                  const publicUrl = payload.data.publicUrl;
+                  setImageUrl(publicUrl);
+                  setHeroImageUrl((current) => current || publicUrl);
+                  setImageUploadStatus(
+                    "Imagem carregada. Salve o rascunho para aplicar a alteração.",
+                  );
+                } catch {
+                  setImageUploadError(
+                    "Não foi possível enviar a imagem agora. Tente novamente.",
+                  );
+                } finally {
+                  setIsUploadingImage(false);
+                }
+              }}
+            />
+          </div>
           <Field
             defaultValue={therapy?.publicContent.approachLabel}
             label="Rótulo de abordagem"
@@ -444,6 +512,171 @@ export function AdminTherapyEditor({
   );
 }
 
+function TherapyImageField({
+  heroImageUrl,
+  imageUploadError,
+  imageUploadStatus,
+  imageUrl,
+  isUploading,
+  onHeroImageChange,
+  onImageChange,
+  onUpload,
+}: {
+  heroImageUrl: string;
+  imageUploadError: string | null;
+  imageUploadStatus: string | null;
+  imageUrl: string;
+  isUploading: boolean;
+  onHeroImageChange: (value: string) => void;
+  onImageChange: (value: string) => void;
+  onUpload: (file: File) => Promise<void>;
+}) {
+  const [isDragActive, setIsDragActive] = useState(false);
+  const previewUrl = imageUrl || heroImageUrl;
+
+  function handleDrop(event: React.DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    setIsDragActive(false);
+    if (isUploading) return;
+    const file = event.dataTransfer.files[0];
+    if (file) void onUpload(file);
+  }
+
+  return (
+    <div className="space-y-4 rounded-2xl border border-brand-lavender bg-surface-soft p-4">
+      <div>
+        <h4 className="text-base font-extrabold text-brand-deep">
+          Imagem da terapia
+        </h4>
+        <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+          Envie uma imagem para preencher a imagem fallback e, quando ainda
+          estiver vazio, a imagem hero.
+        </p>
+      </div>
+
+      <label
+        className={`group grid min-h-40 cursor-pointer place-items-center rounded-xl border-2 border-dashed px-4 py-6 text-center transition focus-within:ring-4 focus-within:ring-ring/20 ${
+          isDragActive
+            ? "border-brand-primary bg-brand-lavenderSoft"
+            : "border-brand-lavender bg-white hover:border-brand-primary hover:bg-brand-lavenderSoft"
+        } ${isUploading ? "cursor-wait opacity-70" : ""}`}
+        onDragEnter={(event) => {
+          event.preventDefault();
+          setIsDragActive(true);
+        }}
+        onDragLeave={(event) => {
+          event.preventDefault();
+          setIsDragActive(false);
+        }}
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={handleDrop}
+      >
+        <input
+          accept="image/jpeg,image/png,image/webp"
+          aria-label="Selecionar imagem da terapia"
+          className="sr-only"
+          disabled={isUploading}
+          onChange={(event) => {
+            const file = event.currentTarget.files?.[0];
+            event.currentTarget.value = "";
+            if (file) void onUpload(file);
+          }}
+          type="file"
+        />
+        <span className="grid justify-items-center gap-2">
+          {isUploading ? (
+            <Loader2
+              aria-hidden="true"
+              className="size-8 animate-spin text-brand-primary"
+            />
+          ) : (
+            <UploadCloud
+              aria-hidden="true"
+              className="size-8 text-brand-primary"
+            />
+          )}
+          <span className="text-base font-extrabold text-brand-deep">
+            {isUploading
+              ? "Enviando imagem..."
+              : "Escolha uma imagem ou arraste e solte aqui"}
+          </span>
+          <span className="text-sm font-semibold text-tesText-secondary">
+            JPG, PNG ou WebP · até 5 MB
+          </span>
+          {!isUploading ? (
+            <span className="mt-1 inline-flex min-h-11 items-center rounded-full bg-brand-primary px-4 text-sm font-extrabold text-white">
+              Escolher arquivo
+            </span>
+          ) : null}
+        </span>
+      </label>
+
+      {imageUploadError ? (
+        <p
+          aria-live="assertive"
+          className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-800"
+        >
+          {imageUploadError}
+        </p>
+      ) : null}
+      {imageUploadStatus ? (
+        <p
+          aria-live="polite"
+          className="rounded-xl bg-white px-3 py-2 text-sm font-bold text-brand-primary"
+        >
+          {imageUploadStatus}
+        </p>
+      ) : null}
+
+      <div className="grid gap-4 md:grid-cols-[minmax(0,0.32fr)_minmax(0,0.68fr)]">
+        <div className="relative overflow-hidden rounded-xl border border-brand-lavender bg-white">
+          {previewUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt="Prévia da imagem da terapia"
+              className="aspect-[16/9] h-full w-full object-cover"
+              src={previewUrl}
+            />
+          ) : (
+            <div className="grid aspect-[16/9] place-items-center gap-2 bg-brand-lavenderSoft p-4 text-center text-sm font-bold text-brand-primary">
+              <ImagePlus aria-hidden="true" className="size-6" />
+              Sem imagem selecionada
+            </div>
+          )}
+          {previewUrl ? (
+            <button
+              aria-label="Remover imagens da terapia"
+              className="absolute right-2 top-2 grid size-11 place-items-center rounded-full bg-white/95 text-brand-primary shadow-card transition hover:bg-white focus:outline-none focus:ring-4 focus:ring-ring/20"
+              onClick={() => {
+                onImageChange("");
+                onHeroImageChange("");
+              }}
+              type="button"
+            >
+              <X aria-hidden="true" className="size-4" />
+            </button>
+          ) : null}
+        </div>
+        <div className="grid gap-4">
+          <Field
+            label="Imagem fallback"
+            name="imageUrl"
+            onChange={onImageChange}
+            placeholder="/therapies/reiki.png"
+            value={imageUrl}
+          />
+          <Field
+            label="Imagem hero"
+            name="heroImageUrl"
+            onChange={onHeroImageChange}
+            value={heroImageUrl}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ThemePreviewOption({
   disabled,
   onChange,
@@ -560,14 +793,18 @@ function Field({
   defaultValue,
   label,
   name,
+  onChange,
   placeholder,
   required,
+  value,
 }: {
   defaultValue?: string | null;
   label: string;
   name: string;
+  onChange?: (value: string) => void;
   placeholder?: string;
   required?: boolean;
+  value?: string;
 }) {
   return (
     <label>
@@ -578,8 +815,12 @@ function Field({
         className="min-h-11 w-full rounded-xl border border-brand-lavender px-3 text-sm font-bold text-brand-deep outline-none focus:ring-4 focus:ring-ring/20"
         defaultValue={defaultValue ?? ""}
         name={name}
+        onChange={
+          onChange ? (event) => onChange(event.target.value) : undefined
+        }
         placeholder={placeholder}
         required={required}
+        value={value}
       />
     </label>
   );

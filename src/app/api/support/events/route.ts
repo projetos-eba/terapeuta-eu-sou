@@ -5,10 +5,14 @@ import { createClient } from "@supabase/supabase-js";
 import { canUseAdminPermission } from "@/lib/auth/admin-permissions";
 import { readAdminSessionFromAccessToken } from "@/lib/auth/admin-session";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
+import {
+  getSupportEventSubscriptions,
+  type SupportEventActorRole,
+} from "@/features/support/support-event-subscriptions";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-type ActorRole = "admin" | "patient" | "therapist";
+type ActorRole = SupportEventActorRole;
 
 export async function GET(request: Request) {
   const search = new URL(request.url).searchParams;
@@ -57,46 +61,19 @@ export async function GET(request: Request) {
     start(controller) {
       controllerRef = controller;
       controller.enqueue(encoder.encode(": connected\n\n"));
-      const ticketFilter = ticketId ? `ticket_id=eq.${ticketId}` : undefined;
-      const requesterFilter =
-        role !== "admin" && !ticketId
-          ? `requester_profile_id=eq.${context.userId}`
-          : undefined;
-
-      channel.on(
-        "postgres_changes",
-        {
-          event: "*",
-          filter: ticketFilter ?? requesterFilter,
-          schema: "public",
-          table: "support_tickets",
-        },
-        emit,
-      );
-      channel.on(
-        "postgres_changes",
-        {
-          event: "*",
-          filter: ticketFilter,
-          schema: "public",
-          table: "support_ticket_messages",
-        },
-        emit,
-      );
-      channel.on(
-        "postgres_changes",
-        {
-          event: "*",
-          filter: ticketFilter,
-          schema: "public",
-          table: "support_ticket_message_attachments",
-        },
-        emit,
-      );
-      if (!ticketId) {
+      for (const subscription of getSupportEventSubscriptions({
+        role,
+        ticketId,
+        userId: context.userId,
+      })) {
         channel.on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "messages" },
+          {
+            event: "*",
+            filter: subscription.filter,
+            schema: "public",
+            table: subscription.table,
+          },
           emit,
         );
       }

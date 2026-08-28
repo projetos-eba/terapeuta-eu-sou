@@ -107,6 +107,25 @@ describe("therapist profile editor parsers", () => {
     ).toThrow(TherapistProfileContractError);
   });
 
+  it("accepts a HTTPS legacy video URL only when preservation is requested", () => {
+    expect(
+      parseTherapistProfileCommand({
+        action: "save_draft",
+        expectedVersion: 2,
+        payload: {
+          publicName: "Ana Oliveira",
+          videoProvider: "external",
+          videoUrl: "https://example.test/legacy-video",
+        },
+        preserveLegacyVideoUrl: true,
+        requestId,
+      }),
+    ).toMatchObject({
+      action: "save_draft",
+      preserveLegacyVideoUrl: true,
+    });
+  });
+
   it("keeps the invalid field reason for a helpful save error", () => {
     try {
       parseEditorPayload({

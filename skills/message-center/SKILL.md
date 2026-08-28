@@ -89,6 +89,14 @@ Cada card de chamado apresenta categoria, assunto, última mensagem pública,
 badge de quem precisa agir, última atualização e protocolo persistido. Não usar
 UUID como protocolo e não duplicar chamados em avisos da plataforma.
 
+Conversas e chamados são tabelas independentes e paginadas de dez em dez itens
+por `conversationPage` e `supportPage`, preservando a página da outra coleção.
+Conversas com mensagem recebida não lida usam ponto vermelho. Ao abrir a thread,
+`POST /api/messages/mark-read` chama a RPC autenticada
+`mark_structured_participant_messages_read_v1`; ela marca somente mensagens de
+terceiros da conversa autorizada, remove o ponto e atualiza o contador sem
+aguardar recarregamento manual.
+
 ## UI
 
 - Seguir o Figma `13366:7083`: hero com imagem à direita no desktop, métricas
@@ -145,6 +153,11 @@ UUID como protocolo e não duplicar chamados em avisos da plataforma.
 - Verificar que o popover do sino usa a camada global do shell e permanece acima
   do conteúdo da página, sem vazamento de texto ou sobreposição de stacking.
 - Verificar marcação de notificações como lidas por clique real.
+- Verificar abertura de conversa com mensagem não lida: o ponto vermelho e o
+  contador somem após a confirmação, persistem após revalidação e nunca marcam
+  mensagens enviadas pela própria pessoa.
+- Verificar paginação independente de conversas e chamados em `/app/mensagens`
+  e `/terapeuta/mensagens`, inclusive desktop e mobile.
 - Verificar que o popover apresenta ícone coerente para cada tipo de aviso e
   mantém o título e o ponto de não lida legíveis em desktop e mobile.
 - Verificar que aviso temporário aparece apenas para encontro confirmado e

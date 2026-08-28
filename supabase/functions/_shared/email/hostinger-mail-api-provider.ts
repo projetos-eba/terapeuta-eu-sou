@@ -17,6 +17,7 @@ type HostingerProviderOptions = {
 };
 
 const DEFAULT_BASE_URL = "https://api.mail.hostinger.com";
+const DEFAULT_SENDER_DISPLAY_NAME = "TES - Terapeuta Eu Sou";
 
 export class HostingerMailApiProvider implements EmailProvider {
   private readonly baseUrl: string;
@@ -44,7 +45,7 @@ export class HostingerMailApiProvider implements EmailProvider {
       `/api/v1/mailboxes/${encodeURIComponent(input.from.mailboxResourceId)}/send`,
       {
         body: {
-          display_name: input.from.displayName,
+          displayName: input.from.displayName,
           html: input.html,
           subject: input.subject,
           to: [input.to.email],
@@ -196,7 +197,7 @@ function parseSenderList(value: unknown): EmailProviderSender[] {
     senders.push({
       displayName:
         firstString(item, "displayName", "display_name", "name") ??
-        mailboxAddress,
+        DEFAULT_SENDER_DISPLAY_NAME,
       mailboxAddress,
       mailboxResourceId,
       replyToEmail: firstString(item, "replyToEmail", "reply_to_email"),

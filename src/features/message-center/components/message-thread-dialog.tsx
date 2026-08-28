@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { MessageCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-import { TESButton, TESDialog } from "@/components/tes";
+import { TESButton, TESDialog, TESFeedbackDialog } from "@/components/tes";
 
 import type {
   MessageCenterActorRole,
@@ -12,16 +13,21 @@ import type {
 
 export function MessageThreadDialogButton({
   actorRole,
+  onMarkedRead,
   thread,
   trigger = "action",
 }: {
   actorRole: MessageCenterActorRole;
+  onMarkedRead?: (conversationId: string, unreadCount: number) => void;
   thread: MessageCenterThread;
   trigger?: "action" | "title";
 }) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [readFeedback, setReadFeedback] = useState<string | null>(null);
   useEffect(() => {
-    if (!isOpen || !thread.conversationId) return;
+    if (!isOpen || !thread.conversationId || !thread.isUnread) return;
+    let active = true;
     void fetch("/api/messages/mark-read", {
       body: JSON.stringify({
         actorRole,
@@ -29,8 +35,31 @@ export function MessageThreadDialogButton({
       }),
       headers: { "Content-Type": "application/json" },
       method: "POST",
-    }).catch(() => undefined);
-  }, [actorRole, isOpen, thread.conversationId]);
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("message-read-failed");
+        if (active) {
+          onMarkedRead?.(thread.conversationId!, thread.unreadCount);
+          router.refresh();
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setReadFeedback("Não foi possível marcar esta mensagem como lida.");
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [
+    actorRole,
+    isOpen,
+    onMarkedRead,
+    router,
+    thread.conversationId,
+    thread.isUnread,
+    thread.unreadCount,
+  ]);
   const isTitleTrigger = trigger === "title";
 
   return (
@@ -101,6 +130,12 @@ export function MessageThreadDialogButton({
             ) : null}
           </div>
         </TESDialog>
+      ) : null}
+      {readFeedback ? (
+        <TESFeedbackDialog
+          message={readFeedback}
+          onClose={() => setReadFeedback(null)}
+        />
       ) : null}
     </>
   );

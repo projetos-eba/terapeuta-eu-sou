@@ -48,6 +48,83 @@ describe("MessageCenterPage", () => {
     expect(screen.getAllByText("Você").length).toBeGreaterThan(0);
   });
 
+  it("marks a conversation as read immediately after it is opened", async () => {
+    const originalFetch = global.fetch;
+    const fetchMock = vi.fn(async () => Response.json({ ok: true }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    try {
+      render(<MessageCenterPage data={createData({ source: "supabase" })} />);
+      expect(screen.getByLabelText("Mensagem não lida")).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: /ver mensagens/i }));
+
+      await waitFor(() =>
+        expect(fetchMock).toHaveBeenCalledWith(
+          "/api/messages/mark-read",
+          expect.objectContaining({ method: "POST" }),
+        ),
+      );
+      expect(
+        screen.queryByLabelText("Mensagem não lida"),
+      ).not.toBeInTheDocument();
+      expect(refreshMock).toHaveBeenCalled();
+      expect(
+        screen.getByText("Mensagens não lidas").parentElement,
+      ).toHaveTextContent("0");
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  it("renders independent paginated tables for conversations and tickets", () => {
+    const data = createData();
+    data.participantPagination = {
+      hasNext: true,
+      page: 1,
+      pageSize: 10,
+      total: 11,
+    };
+    data.supportPagination = {
+      hasNext: true,
+      page: 2,
+      pageSize: 10,
+      total: 21,
+    };
+    data.supportTickets = [
+      {
+        category: "outro",
+        createdAt: "2026-08-27T12:00:00.000Z",
+        excerpt: "Precisamos de uma atualização.",
+        id: "30000000-0000-4000-8000-000000000001",
+        lastActivityAt: "2026-08-27T12:00:00.000Z",
+        protocol: "582914730P",
+        status: "open",
+        subject: "Chamado paginado",
+      },
+    ];
+
+    render(<MessageCenterPage data={data} />);
+
+    expect(
+      screen.getByRole("table", { name: "Tabela de conversas" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("table", { name: "Tabela de chamados" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("navigation", { name: "Paginação de conversas" }),
+    ).toHaveTextContent("1-10 de 11 conversas");
+    expect(
+      within(
+        screen.getByRole("navigation", { name: "Paginação de conversas" }),
+      ).getByRole("link", { name: "Próxima" }),
+    ).toHaveAttribute(
+      "href",
+      "/terapeuta/mensagens?conversationPage=2&supportPage=2",
+    );
+  });
+
   it("keeps the history action beside the participant row and opens from its title", () => {
     render(<MessageCenterPage data={createData()} />);
 
@@ -331,6 +408,7 @@ function createData(
       title: "Central de mensagens",
     },
     metrics: { openSupportTicketsCount: 1, unreadMessagesCount: 1 },
+    participantPagination: { hasNext: false, page: 1, pageSize: 10, total: 1 },
     participantSection: {
       description: "Comunicações por templates.",
       title: "Mensagens dos clientes",
@@ -347,6 +425,7 @@ function createData(
       },
     ],
     supportTickets: [],
+    supportPagination: { hasNext: false, page: 1, pageSize: 10, total: 0 },
     platformSection: {
       description: "Comunicados da plataforma.",
       title: "Plataforma e suporte TES",
@@ -386,6 +465,7 @@ function createData(
         conversationId: "eb000000-0000-4000-8000-000000000001",
         id: "thread-1",
         isUnread: true,
+        unreadCount: 1,
         name: "Beatriz Lima",
         timeLabel: "Hoje · 10:32",
         title: "Confirmação de presença na sessão",

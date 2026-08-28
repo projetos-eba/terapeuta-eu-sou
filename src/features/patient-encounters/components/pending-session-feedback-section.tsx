@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { CheckCircle2, Clock3 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { TESButton } from "@/components/tes";
@@ -16,6 +17,7 @@ export function PendingSessionFeedbackSection({
   initialBookingId?: string | null;
   sessions: PatientPendingFeedbackSession[];
 }) {
+  const router = useRouter();
   const [sessions, setSessions] = useState(initialSessions);
   const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() =>
@@ -40,44 +42,76 @@ export function PendingSessionFeedbackSection({
   if (sessions.length === 0) return null;
 
   return (
-    <section aria-labelledby="pending-feedback-title" className="rounded-card border border-brand-lavender bg-white p-5 shadow-card sm:p-6">
+    <section
+      aria-labelledby="pending-feedback-title"
+      className="rounded-card border border-brand-lavender bg-white p-5 shadow-card sm:p-6"
+    >
       <div className="max-w-[720px]">
         <span className="inline-flex items-center gap-2 rounded-full bg-brand-lavenderSoft px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.08em] text-brand-primary">
           <CheckCircle2 aria-hidden="true" size={16} />
           Ação necessária
         </span>
-        <h2 className="mt-3 font-display text-[1.8rem] font-light italic leading-tight text-brand-deep sm:text-[2.1rem]" id="pending-feedback-title">
+        <h2
+          className="mt-3 font-display text-[1.8rem] font-light italic leading-tight text-brand-deep sm:text-[2.1rem]"
+          id="pending-feedback-title"
+        >
           Encontros aguardando sua confirmação
         </h2>
         <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-          Confirme cada encontro separadamente. A confirmação privada é diferente da avaliação pública do terapeuta.
+          Confirme cada encontro separadamente. A confirmação privada é
+          diferente da avaliação pública do terapeuta.
         </p>
       </div>
 
-      <div className="mt-5 grid gap-3">
+      <div
+        aria-label="Lista de confirmações pendentes"
+        className="mt-5 grid max-h-[34rem] grid-cols-1 gap-3 overflow-y-auto overscroll-contain pr-2 [scrollbar-width:thin] lg:max-h-[20rem] lg:grid-cols-2"
+        data-testid="pending-feedback-scroll"
+        role="region"
+      >
         {sessions.map((session) => {
           const labels = formatSessionDate(session.startsAt, session.timezone);
           return (
-            <article className="grid gap-4 rounded-xl border border-border p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center" key={session.bookingId}>
+            <article
+              className="grid h-full gap-4 rounded-xl border border-border p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+              key={session.bookingId}
+            >
               <div className="flex min-w-0 items-center gap-3">
                 {session.therapist.avatarUrl ? (
-                  <Image alt="" className="size-12 shrink-0 rounded-full object-cover" height={48} src={session.therapist.avatarUrl} width={48} />
+                  <Image
+                    alt=""
+                    className="size-12 shrink-0 rounded-full object-cover"
+                    height={48}
+                    src={session.therapist.avatarUrl}
+                    width={48}
+                  />
                 ) : (
                   <span className="grid size-12 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft font-extrabold text-brand-primary">
                     {session.therapist.name.charAt(0)}
                   </span>
                 )}
                 <div className="min-w-0">
-                  <h3 className="truncate text-sm font-extrabold text-brand-deep">{session.therapist.name}</h3>
-                  <p className="mt-1 text-sm font-semibold text-tesText-secondary">{session.serviceLabel} · {session.therapyLabel}</p>
+                  <h3 className="truncate text-sm font-extrabold text-brand-deep">
+                    {session.therapist.name}
+                  </h3>
+                  <p className="mt-1 text-sm font-semibold text-tesText-secondary">
+                    {session.serviceLabel} · {session.therapyLabel}
+                  </p>
                   <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-tesText-muted">
                     <Clock3 aria-hidden="true" size={15} />
                     {labels.dateLabel}, {labels.timeLabel}
                   </p>
-                  <p className="mt-2 text-xs font-extrabold text-status-warning">{confirmationLabel(session.confirmationState)}</p>
+                  <p className="mt-2 text-xs font-extrabold text-status-warning">
+                    {confirmationLabel(session.confirmationState)}
+                  </p>
                 </div>
               </div>
-              <TESButton className="w-full sm:w-auto" onClick={() => setSelectedId(session.bookingId)} type="button" variant="gradient">
+              <TESButton
+                className="w-full sm:w-auto"
+                onClick={() => setSelectedId(session.bookingId)}
+                type="button"
+                variant="gradient"
+              >
                 Confirmar encontro
               </TESButton>
             </article>
@@ -90,17 +124,27 @@ export function PendingSessionFeedbackSection({
           onClose={() => {
             setSelectedId(null);
             if (submittedId) {
-              setSessions((current) => current.filter((session) => session.bookingId !== submittedId));
+              setSessions((current) =>
+                current.filter((session) => session.bookingId !== submittedId),
+              );
               setSubmittedId(null);
             }
           }}
-          onSessionSubmitted={() => setSubmittedId(selected.bookingId)}
+          onSessionSubmitted={() => {
+            setSubmittedId(selected.bookingId);
+            router.refresh();
+          }}
           session={{
             bookingId: selected.bookingId,
-            dateLabel: formatSessionDate(selected.startsAt, selected.timezone).dateLabel,
+            dateLabel: formatSessionDate(selected.startsAt, selected.timezone)
+              .dateLabel,
             serviceLabel: selected.serviceLabel,
-            therapist: { id: selected.therapist.id, name: selected.therapist.name },
-            timeLabel: formatSessionDate(selected.startsAt, selected.timezone).timeLabel,
+            therapist: {
+              id: selected.therapist.id,
+              name: selected.therapist.name,
+            },
+            timeLabel: formatSessionDate(selected.startsAt, selected.timezone)
+              .timeLabel,
           }}
         />
       ) : null}
@@ -108,8 +152,13 @@ export function PendingSessionFeedbackSection({
   );
 }
 
-function confirmationLabel(state: PatientPendingFeedbackSession["confirmationState"]) {
-  const labels: Record<PatientPendingFeedbackSession["confirmationState"], string> = {
+function confirmationLabel(
+  state: PatientPendingFeedbackSession["confirmationState"],
+) {
+  const labels: Record<
+    PatientPendingFeedbackSession["confirmationState"],
+    string
+  > = {
     awaiting_both: "Aguardando paciente e terapeuta",
     awaiting_patient: "Aguardando sua confirmação",
     awaiting_therapist: "Aguardando confirmação do terapeuta",

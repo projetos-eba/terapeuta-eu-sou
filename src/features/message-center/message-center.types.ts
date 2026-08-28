@@ -21,6 +21,7 @@ export type MessageCenterThread = {
   conversationId: string | null;
   id: string;
   isUnread: boolean;
+  unreadCount: number;
   messages: MessageCenterMessage[];
   name: string;
   timeLabel: string;
@@ -72,6 +73,13 @@ export type MessageCenterSupportTicket = {
   subject: string;
 };
 
+export type MessageCenterPagination = {
+  hasNext: boolean;
+  page: number;
+  pageSize: number;
+  total: number;
+};
+
 export type MessageCenterTemplate = {
   body: string;
   category: MessageCenterCategory;
@@ -97,6 +105,7 @@ export type MessageCenterPageData = {
     openSupportTicketsCount: number;
     unreadMessagesCount: number;
   };
+  participantPagination: MessageCenterPagination;
   participantSection: {
     description: string;
     title: string;
@@ -108,6 +117,7 @@ export type MessageCenterPageData = {
   platformItems: MessageCenterPlatformItem[];
   supportTickets: MessageCenterSupportTicket[];
   source: "demo" | "supabase";
+  supportPagination: MessageCenterPagination;
   templates: {
     participant: MessageCenterTemplate[];
     support: MessageCenterTemplate[];
