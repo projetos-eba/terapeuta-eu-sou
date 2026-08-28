@@ -146,11 +146,19 @@ tentativas limitadas apos join, eventos de usuario/video e reconexao. Em
 dispositivo limitado a um render, o video remoto tem prioridade.
 
 Se o remoto desaparece exatamente quando a camera local e ligada, confirme que
-`user-added` e `user-updated` estao sendo tratados como deltas. Esses eventos
-podem conter somente o participante alterado; usar o payload como roster
-completo faz a aplicacao desconectar incorretamente todos os remotos ausentes
-do evento. Somente `getAllUser()` pode alimentar a reconciliacao completa, e a
-ausencia de `bVideoOn` em uma atualizacao nao significa camera desligada.
+os eventos de usuário/vídeo estão sendo tratados apenas como gatilhos. Esses
+eventos podem conter somente o participante alterado; usar o payload como
+roster completo faz a aplicação desconectar incorretamente os remotos ausentes
+do evento. Somente `getAllUser()` alimenta a reconciliação completa, e a
+ausência de `bVideoOn` em uma atualização não significa câmera desligada.
+
+Se a câmera local aparece no quadro nomeado como remoto, confirme que a
+identidade retornada por `join()` foi armazenada antes da mídia e que nenhum
+attach remoto ocorre enquanto o `userId` local estiver indeterminado. Um
+segundo dispositivo com o mesmo `userKey` local deve ser excluído. Em uma sala
+1:1, duas identidades remotas distintas são ambíguas e devem falhar fechado;
+duas instâncias da mesma contraparte produzem somente um player estável.
+Ver [incidente de roteamento de câmera](./camera-routing-2026-08-28.md).
 
 ## O contador mostra a duracao errada
 
