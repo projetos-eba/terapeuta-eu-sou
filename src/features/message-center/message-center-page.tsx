@@ -1,6 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import {
   BellDot,
   Headphones,
@@ -12,6 +14,7 @@ import { TESDecorativeMedia } from "@/components/tes";
 import { SupportTicketSection } from "@/features/support/components/therapist-support-section";
 import { MessageCenterLiveRefresh } from "@/features/support/components/support-live-refresh";
 import { platformAssets } from "@/lib/platform-assets";
+import { routes } from "@/lib/routes";
 
 import { MessageCenterActions } from "./components/message-center-actions";
 import { MarkNotificationsReadButton } from "./components/mark-notifications-read-button";
@@ -25,6 +28,35 @@ import type {
 } from "./message-center.types";
 
 export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
+  const [readConversationCounts, setReadConversationCounts] = useState<
+    Record<string, number>
+  >({});
+  const threads = useMemo(
+    () =>
+      data.threads.map((thread) =>
+        readConversationCounts[thread.conversationId ?? thread.id]
+          ? { ...thread, isUnread: false, unreadCount: 0 }
+          : thread,
+      ),
+    [data.threads, readConversationCounts],
+  );
+  const locallyReadCount = Object.values(readConversationCounts).reduce(
+    (total, count) => total + count,
+    0,
+  );
+  const unreadMessagesCount = Math.max(
+    0,
+    data.metrics.unreadMessagesCount - locallyReadCount,
+  );
+  const markConversationRead = (
+    conversationId: string,
+    unreadCount: number,
+  ) => {
+    setReadConversationCounts((current) => ({
+      ...current,
+      [conversationId]: unreadCount,
+    }));
+  };
   const heroAsset =
     data.actorRole === "patient"
       ? platformAssets.patientMessagesHero
@@ -50,7 +82,7 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
                 icon={<MessageSquareDot aria-hidden="true" size={15} />}
                 label="Mensagens não lidas"
                 tone="danger"
-                value={data.metrics.unreadMessagesCount}
+                value={unreadMessagesCount}
               />
               <MetricPill
                 icon={<BellDot aria-hidden="true" size={15} />}
@@ -80,19 +112,29 @@ export function MessageCenterPage({ data }: { data: MessageCenterPageData }) {
               actorRole={data.actorRole}
               source={data.source}
               templates={data.templates.participant}
-              threads={data.threads}
+              threads={threads}
               variant="participant"
             />
           }
           description={data.participantSection.description}
           emptyLabel="Nenhuma comunicação de sessão por enquanto."
-          items={data.threads}
+          items={threads}
+          onMarkedRead={markConversationRead}
+          pagination={data.participantPagination}
+          paginationBaseHref={
+            data.actorRole === "patient"
+              ? routes.patient.messages
+              : routes.therapist.messages
+          }
+          supportPage={data.supportPagination.page}
           title={data.participantSection.title}
           actorRole={data.actorRole}
         />
 
         <SupportTicketSection
           actorRole={data.actorRole}
+          conversationPage={data.participantPagination.page}
+          pagination={data.supportPagination}
           tickets={data.supportTickets}
         />
       </section>
@@ -143,6 +185,10 @@ function MessageCard({
   description,
   emptyLabel,
   items,
+  pagination,
+  paginationBaseHref,
+  onMarkedRead,
+  supportPage,
   title,
 }: {
   actorRole: MessageCenterPageData["actorRole"];
@@ -150,20 +196,42 @@ function MessageCard({
   description: string;
   emptyLabel: string;
   items: MessageCenterThread[];
+  pagination: MessageCenterPageData["participantPagination"];
+  paginationBaseHref: string;
+  onMarkedRead: (conversationId: string, unreadCount: number) => void;
+  supportPage: number;
   title: string;
 }) {
   return (
     <section className="rounded-card border border-brand-lavender bg-white shadow-card">
       <CardHeader action={action} description={description} title={title} />
-      <div className="divide-y divide-brand-lavender/70">
+      <div
+        aria-label="Tabela de conversas"
+        className="divide-y divide-brand-lavender/70"
+        role="table"
+      >
         {items.length > 0 ? (
           items.map((item) => (
-            <ThreadRow actorRole={actorRole} item={item} key={item.id} />
+            <ThreadRow
+              actorRole={actorRole}
+              item={item}
+              key={item.id}
+              onMarkedRead={onMarkedRead}
+            />
           ))
         ) : (
           <EmptyRow label={emptyLabel} />
         )}
       </div>
+      <CollectionPagination
+        baseHref={paginationBaseHref}
+        currentPage={pagination.page}
+        label="conversas"
+        otherPage={supportPage}
+        otherPageParam="supportPage"
+        pageParam="conversationPage"
+        pagination={pagination}
+      />
     </section>
   );
 }
@@ -220,12 +288,17 @@ function CardHeader({
 function ThreadRow({
   actorRole,
   item,
+  onMarkedRead,
 }: {
   actorRole: MessageCenterPageData["actorRole"];
   item: MessageCenterThread;
+  onMarkedRead: (conversationId: string, unreadCount: number) => void;
 }) {
   return (
-    <article className="grid min-h-[86px] grid-cols-[52px_minmax(0,1fr)] gap-x-4 gap-y-3 px-5 py-4 sm:grid-cols-[52px_minmax(0,1fr)_auto]">
+    <article
+      className="grid min-h-[86px] grid-cols-[52px_minmax(0,1fr)] gap-x-4 gap-y-3 px-5 py-4 sm:grid-cols-[52px_minmax(0,1fr)_auto]"
+      role="row"
+    >
       <Avatar name={item.name} src={item.avatarUrl} />
       <div className="min-w-0">
         <p className="truncate text-xs font-bold text-tesText-secondary">
@@ -234,6 +307,7 @@ function ThreadRow({
         <h3 className="mt-1 min-w-0 truncate">
           <MessageThreadDialogButton
             actorRole={actorRole}
+            onMarkedRead={onMarkedRead}
             thread={item}
             trigger="title"
           />
@@ -248,7 +322,9 @@ function ThreadRow({
         ) : null}
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <CategoryBadge category={item.category} label={item.categoryLabel} />
-          {item.isUnread ? <UnreadDot /> : null}
+          {item.isUnread ? (
+            <UnreadDot label="Mensagem não lida" tone="danger" />
+          ) : null}
         </div>
         {item.cta && item.cta.action !== "view_session" ? (
           <div className="mt-3">
@@ -265,7 +341,11 @@ function ThreadRow({
         <p className="text-xs font-semibold text-tesText-secondary sm:text-right">
           {item.timeLabel}
         </p>
-        <MessageThreadDialogButton actorRole={actorRole} thread={item} />
+        <MessageThreadDialogButton
+          actorRole={actorRole}
+          onMarkedRead={onMarkedRead}
+          thread={item}
+        />
       </div>
     </article>
   );
@@ -380,11 +460,17 @@ function CategoryBadge({
   );
 }
 
-function UnreadDot() {
+function UnreadDot({
+  label = "Não lida",
+  tone = "primary",
+}: {
+  label?: string;
+  tone?: "danger" | "primary";
+}) {
   return (
     <span
-      aria-label="Não lida"
-      className="inline-block size-2.5 rounded-full bg-brand-primary"
+      aria-label={label}
+      className={`inline-block size-2.5 rounded-full ${tone === "danger" ? "bg-status-danger" : "bg-brand-primary"}`}
     />
   );
 }
@@ -394,5 +480,77 @@ function EmptyRow({ label }: { label: string }) {
     <div className="px-5 py-10 text-center text-sm font-semibold text-tesText-secondary">
       {label}
     </div>
+  );
+}
+
+export function CollectionPagination({
+  baseHref,
+  currentPage,
+  label,
+  otherPage,
+  otherPageParam,
+  pageParam,
+  pagination,
+}: {
+  baseHref: string;
+  currentPage: number;
+  label: string;
+  otherPage: number;
+  otherPageParam: "conversationPage" | "supportPage";
+  pageParam: "conversationPage" | "supportPage";
+  pagination: MessageCenterPageData["participantPagination"];
+}) {
+  const first =
+    pagination.total === 0 ? 0 : (currentPage - 1) * pagination.pageSize + 1;
+  const last = Math.min(pagination.total, currentPage * pagination.pageSize);
+  const makeHref = (page: number) => {
+    const params = new URLSearchParams();
+    if (page > 1) params.set(pageParam, String(page));
+    if (otherPage > 1) params.set(otherPageParam, String(otherPage));
+    const query = params.toString();
+    return query ? `${baseHref}?${query}` : baseHref;
+  };
+
+  return (
+    <nav
+      aria-label={`Paginação de ${label}`}
+      className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-lavender/70 px-5 py-4"
+    >
+      <p className="text-xs font-semibold text-tesText-secondary">
+        {first}-{last} de {pagination.total} {label}
+      </p>
+      <div className="flex items-center gap-2">
+        {currentPage > 1 ? (
+          <Link
+            className="inline-flex min-h-10 items-center rounded-full border border-brand-lavender px-4 text-xs font-extrabold text-brand-primary"
+            href={makeHref(currentPage - 1)}
+          >
+            Anterior
+          </Link>
+        ) : (
+          <span
+            aria-disabled="true"
+            className="inline-flex min-h-10 items-center rounded-full border border-brand-lavender px-4 text-xs font-extrabold text-tesText-secondary/60"
+          >
+            Anterior
+          </span>
+        )}
+        {pagination.hasNext ? (
+          <Link
+            className="inline-flex min-h-10 items-center rounded-full bg-brand-primary px-4 text-xs font-extrabold text-white"
+            href={makeHref(currentPage + 1)}
+          >
+            Próxima
+          </Link>
+        ) : (
+          <span
+            aria-disabled="true"
+            className="inline-flex min-h-10 items-center rounded-full bg-brand-primary/40 px-4 text-xs font-extrabold text-white"
+          >
+            Próxima
+          </span>
+        )}
+      </div>
+    </nav>
   );
 }

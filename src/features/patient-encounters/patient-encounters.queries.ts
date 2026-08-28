@@ -69,19 +69,24 @@ export const getPatientEncountersPage = cache(
   async function getPatientEncountersPage(
     profileId: string,
     accessToken: string | null = null,
+    options: { historyPage?: number } = {},
   ): Promise<PatientEncountersPageData> {
     const config = getSupabaseServerConfig(accessToken);
 
     if (!config) {
       if (process.env.NODE_ENV === "development") {
-        return createDemoPatientEncountersPage(profileId);
+        return createDemoPatientEncountersPage(profileId, options.historyPage);
       }
 
       throw new PatientEncountersDataError();
     }
 
     try {
-      return await getSupabasePatientEncountersPage(config, profileId);
+      return await getSupabasePatientEncountersPage(
+        config,
+        profileId,
+        options.historyPage,
+      );
     } catch {
       throw new PatientEncountersDataError();
     }
@@ -91,6 +96,7 @@ export const getPatientEncountersPage = cache(
 async function getSupabasePatientEncountersPage(
   config: SupabaseServerConfig,
   profileId: string,
+  historyPage?: number,
 ): Promise<PatientEncountersPageData> {
   const [profiles, patientProfiles] = await Promise.all([
     supabaseRequest<ProfileRow[]>(
@@ -116,8 +122,8 @@ async function getSupabasePatientEncountersPage(
     patientProfileId: patientProfile.id,
   };
 
-  const [bookings, favorites, conversations, notifications, feedbackQueue] = await Promise.all(
-    [
+  const [bookings, favorites, conversations, notifications, feedbackQueue] =
+    await Promise.all([
       supabaseRequest<BookingRecord[]>(
         config,
         `/rest/v1/bookings?select=id,patient_profile_id,therapist_profile_id,service_id,starts_at,ends_at,timezone,status,cancellation_reason,cancelled_at,completed_at,version&patient_profile_id=eq.${patientProfile.id}&order=starts_at.asc`,
@@ -139,8 +145,7 @@ async function getSupabasePatientEncountersPage(
         "/rest/v1/rpc/get_patient_session_feedback_queue_v1",
         { body: {}, method: "POST" },
       ),
-    ],
-  );
+    ]);
   const conversationIds = conversations.map((conversation) => conversation.id);
   const therapistIds = unique(
     bookings.map((booking) => booking.therapist_profile_id),
@@ -221,6 +226,7 @@ async function getSupabasePatientEncountersPage(
   const page = mapPatientEncountersPage({
     bookings,
     favoriteTherapistsCount: favorites.length,
+    historyPage,
     patient,
     pendingFeedbackBookingIds: new Set(
       feedbackQueue.map((session) => session.bookingId),
@@ -247,7 +253,11 @@ async function getSupabasePatientEncountersPage(
     unreadNotificationsCount: notifications.length,
   });
 
-  return { ...page, pendingFeedbackSessions: feedbackQueue, source: "supabase" };
+  return {
+    ...page,
+    pendingFeedbackSessions: feedbackQueue,
+    source: "supabase",
+  };
 }
 
 function buildPatientEntryEntitlements(
@@ -344,6 +354,7 @@ async function supabaseRequest<T>(
 
 function createDemoPatientEncountersPage(
   profileId: string,
+  historyPage?: number,
 ): PatientEncountersPageData {
   const now = new Date();
   const liveStart = new Date(now.getTime() - 15 * 60 * 1000);
@@ -508,6 +519,7 @@ function createDemoPatientEncountersPage(
   return mapPatientEncountersPage({
     bookings,
     favoriteTherapistsCount: 3,
+    historyPage,
     patient,
     reviews: [],
     rescheduleByBookingId: new Map(),

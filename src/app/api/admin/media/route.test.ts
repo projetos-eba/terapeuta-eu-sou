@@ -100,11 +100,41 @@ describe("admin media route", () => {
       }),
     );
   });
+
+  it("uploads therapy images to the public therapy media namespace", async () => {
+    const fetchMock = makeFetchMock();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      makeRequest({
+        context: "therapy-image",
+        file: makePngFile("therapy.png"),
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload.data.publicUrl).toContain(
+      `/storage/v1/object/public/admin-public-media/therapies/${adminUserId}-`,
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        `/storage/v1/object/admin-public-media/therapies/${adminUserId}-`,
+      ),
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
 });
 
-function makeRequest({ file }: { file: File }) {
+function makeRequest({
+  context = "matching-theme",
+  file,
+}: {
+  context?: "matching-theme" | "therapy-image";
+  file: File;
+}) {
   const formData = new FormData();
-  formData.set("context", "matching-theme");
+  formData.set("context", context);
   formData.set("file", file);
 
   return {

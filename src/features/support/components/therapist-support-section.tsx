@@ -3,10 +3,16 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useRef, useState } from "react";
-import { ChevronRight, Headphones, Loader2, MessageSquarePlus } from "lucide-react";
+import {
+  ChevronRight,
+  Headphones,
+  Loader2,
+  MessageSquarePlus,
+} from "lucide-react";
 
 import { TESDialog, TESFeedbackDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
+import type { MessageCenterPagination } from "@/features/message-center/message-center.types";
 
 import {
   supportTicketBodyLimit,
@@ -33,9 +39,13 @@ type Ticket = {
 
 export function SupportTicketSection({
   actorRole,
+  conversationPage = 1,
+  pagination,
   tickets,
 }: {
   actorRole: "patient" | "therapist";
+  conversationPage?: number;
+  pagination?: MessageCenterPagination;
   tickets: Ticket[];
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -62,7 +72,11 @@ export function SupportTicketSection({
       </header>
 
       {tickets.length ? (
-        <div className="divide-y divide-brand-lavender/70">
+        <div
+          aria-label="Tabela de chamados"
+          className="divide-y divide-brand-lavender/70"
+          role="table"
+        >
           {tickets.map((ticket) => (
             <Link
               className="grid min-h-[106px] grid-cols-[44px_minmax(0,1fr)] gap-3 px-5 py-4 transition hover:bg-brand-lavenderSoft/45 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-primary sm:grid-cols-[44px_minmax(0,1fr)_auto]"
@@ -72,6 +86,7 @@ export function SupportTicketSection({
                   : routes.therapist.supportTicketDetail(ticket.id)
               }
               key={ticket.id}
+              role="row"
             >
               <span className="grid size-11 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
                 <Headphones aria-hidden="true" size={19} />
@@ -114,6 +129,13 @@ export function SupportTicketSection({
           </p>
         </div>
       )}
+      {pagination ? (
+        <SupportTicketPagination
+          actorRole={actorRole}
+          conversationPage={conversationPage}
+          pagination={pagination}
+        />
+      ) : null}
       {isOpen ? (
         <NewTicketDialog
           actorRole={actorRole}
@@ -125,11 +147,97 @@ export function SupportTicketSection({
 }
 
 export function TherapistSupportSection({
+  conversationPage,
+  pagination,
   tickets,
 }: {
+  conversationPage?: number;
+  pagination?: MessageCenterPagination;
   tickets: Ticket[];
 }) {
-  return <SupportTicketSection actorRole="therapist" tickets={tickets} />;
+  return (
+    <SupportTicketSection
+      actorRole="therapist"
+      conversationPage={conversationPage}
+      pagination={pagination}
+      tickets={tickets}
+    />
+  );
+}
+
+function SupportTicketPagination({
+  actorRole,
+  conversationPage,
+  pagination,
+}: {
+  actorRole: "patient" | "therapist";
+  conversationPage: number;
+  pagination: MessageCenterPagination;
+}) {
+  const baseHref =
+    actorRole === "patient"
+      ? routes.patient.messages
+      : routes.therapist.messages;
+  const first =
+    pagination.total === 0
+      ? 0
+      : (pagination.page - 1) * pagination.pageSize + 1;
+  const last = Math.min(
+    pagination.total,
+    pagination.page * pagination.pageSize,
+  );
+  const makeHref = (supportPage: number) => {
+    const params = new URLSearchParams();
+    if (conversationPage > 1) {
+      params.set("conversationPage", String(conversationPage));
+    }
+    if (supportPage > 1) params.set("supportPage", String(supportPage));
+    const query = params.toString();
+    return query ? `${baseHref}?${query}` : baseHref;
+  };
+
+  return (
+    <nav
+      aria-label="Paginação de chamados"
+      className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-lavender/70 px-5 py-4"
+    >
+      <p className="text-xs font-semibold text-tesText-secondary">
+        {first}-{last} de {pagination.total} chamados
+      </p>
+      <div className="flex items-center gap-2">
+        {pagination.page > 1 ? (
+          <Link
+            className="inline-flex min-h-10 items-center rounded-full border border-brand-lavender px-4 text-xs font-extrabold text-brand-primary"
+            href={makeHref(pagination.page - 1)}
+          >
+            Anterior
+          </Link>
+        ) : (
+          <span
+            aria-disabled="true"
+            className="inline-flex min-h-10 items-center rounded-full border border-brand-lavender px-4 text-xs font-extrabold text-tesText-secondary/60"
+          >
+            Anterior
+          </span>
+        )}
+        {pagination.hasNext ? (
+          <Link
+            className="inline-flex min-h-10 items-center rounded-full bg-brand-primary px-4 text-xs font-extrabold text-white"
+            href={makeHref(pagination.page + 1)}
+          >
+            Próxima
+          </Link>
+        ) : (
+          <span
+            aria-disabled="true"
+            className="inline-flex min-h-10 items-center rounded-full bg-brand-primary/40 px-4 text-xs font-extrabold text-white"
+          >
+            Próxima
+          </span>
+        )}
+      </div>
+    </nav>
+  );
 }
 
 function NewTicketDialog({

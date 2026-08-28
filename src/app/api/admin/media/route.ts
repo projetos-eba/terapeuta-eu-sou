@@ -13,6 +13,19 @@ const bucket = "admin-public-media";
 const maxImageBytes = 5 * 1024 * 1024;
 const noStoreHeaders = { "Cache-Control": "no-store" };
 
+const uploadContexts = {
+  "matching-theme": {
+    objectPrefix: "matching/themes",
+    permission: "admin.matching.manage",
+  },
+  "therapy-image": {
+    objectPrefix: "therapies",
+    permission: "admin.therapies.manage",
+  },
+} as const;
+
+type UploadContext = keyof typeof uploadContexts;
+
 export async function POST(request: Request) {
   const config = getSupabasePublicConfig();
   const cookieStore = await cookies();
@@ -32,8 +45,8 @@ export async function POST(request: Request) {
   const context = formData.get("context");
   const file = formData.get("file");
 
-  if (context !== "matching-theme" || !isUploadedFile(file)) {
-    return failure("Envie uma imagem válida para o tema.", 400);
+  if (!isUploadContext(context) || !isUploadedFile(file)) {
+    return failure("Envie uma imagem válida para o contexto informado.", 400);
   }
 
   const validation = await validateImage(file);
@@ -42,13 +55,16 @@ export async function POST(request: Request) {
   const session = await readAdminApiSession(config, accessToken);
   if (
     !session ||
-    !canUseAdminPermission(session.permissions, "admin.matching.manage")
+    !canUseAdminPermission(
+      session.permissions,
+      uploadContexts[context].permission,
+    )
   ) {
     return failure("Acesso administrativo necessário.", 403);
   }
 
   const extension = extensionFor(file.type);
-  const objectPath = `matching/themes/${session.userId}-${crypto.randomUUID()}${extension}`;
+  const objectPath = `${uploadContexts[context].objectPrefix}/${session.userId}-${crypto.randomUUID()}${extension}`;
   const uploadResponse = await fetch(
     `${config.url}/storage/v1/object/${bucket}/${objectPath}`,
     {
@@ -122,6 +138,15 @@ function isUploadedFile(value: FormDataEntryValue | null): value is File {
     "arrayBuffer" in value &&
     "type" in value &&
     "size" in value,
+  );
+}
+
+function isUploadContext(
+  value: FormDataEntryValue | null,
+): value is UploadContext {
+  return (
+    typeof value === "string" &&
+    Object.prototype.hasOwnProperty.call(uploadContexts, value)
   );
 }
 

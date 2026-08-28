@@ -134,17 +134,25 @@ solicitante, filtros de status, prioridade, categoria, persona e atribuição
 executada somente dentro da RPC Admin-only e o e-mail não entra no DTO da
 listagem.
 
-A ordenação autoritativa evita starvation: `waiting_support` vem primeiro,
-seguido de `open`, `in_progress`, `waiting_requester` e `resolved`; dentro do
-trabalho pendente, prioridade vem antes e a atividade pendente mais antiga é
-atendida primeiro. `assigned_admin_id` é aditivo em `support_tickets`, tem uso
-operacional real e nunca entra em DTO/RLS do solicitante.
+A ordenação autoritativa da Inbox é `last_activity_at DESC`, `created_at DESC`
+e `id DESC`. Portanto, uma abertura, resposta, nota ou decisão mais recente
+retorna o chamado ao topo; status e prioridade continuam disponíveis para
+filtro e `waiting_support` recebe destaque visual, mas não reordena a lista.
+`assigned_admin_id` é aditivo em `support_tickets`, tem uso operacional real e
+nunca entra em DTO/RLS do solicitante.
 
 As telas de suporte atualizam por SSE mediado pelo servidor. Ao perder a conexão,
 usam atualização periódica temporária e tentam reconectar com espera progressiva;
 ao recuperar o canal, o polling para. O retorno para uma aba visível força uma
 atualização imediata. O navegador recebe somente um sinal de atualização, nunca
 mensagens internas, dados de outros tickets ou credenciais.
+
+No detalhe, o SSE observa `support_tickets.id`, as mensagens por `ticket_id` e
+seus anexos por `ticket_id`. Na lista de paciente/terapeuta, observa somente os
+próprios `support_tickets` por `requester_profile_id`; a alteração de
+`last_activity_at` é o sinal autoritativo para reler e ordenar. A Central de
+Mensagens mantém a assinatura separada de `messages` para conversas estruturadas
+entre participantes.
 
 ## Lifecycle de suporte vigente
 
@@ -165,6 +173,17 @@ resposta do TES”, `waiting_requester` é “Aguardando sua resposta” e `reso
 solicitante” e “Resolvido”.
 
 Nota interna, alteração de prioridade e atribuição atualizam `last_activity_at`, mas não podem expor conteúdo ou autor administrativo ao solicitante. Admin só pode iniciar atendimento a partir de `open` ou `waiting_support`; resposta pública só é aceita em `open`, `in_progress` ou `waiting_support`; resolução exige ticket ainda não resolvido; reabertura administrativa exige `resolved`.
+
+## Leitura e paginação da Central
+
+As conversas estruturadas de participante e os chamados do solicitante são
+listas independentes, paginadas em blocos de 10 na rota de Central (`conversationPage`
+e `supportPage`). Cada controle preserva a página da outra lista. Uma conversa
+com mensagens recebidas não lidas mostra ponto vermelho; ao ser aberta, a rota
+autenticada chama `mark_structured_participant_messages_read_v1(uuid)`, que
+valida a participação e atualiza apenas mensagens de terceiros. Depois da
+confirmação, o ponto e o contador são atualizados imediatamente e a página é
+revalidada.
 
 ## Dados, RLS e compatibilidade da Fase 2
 

@@ -13,6 +13,7 @@ import type {
   MessageCenterActorRole,
   MessageCenterCategory,
   MessageCenterMessage,
+  MessageCenterPagination,
   MessageCenterPageData,
   MessageCenterPlatformItem,
   MessageCenterThread,
@@ -27,8 +28,18 @@ type SupabaseServerConfig = {
 type MessageCenterInput = {
   accessToken: string | null;
   actorRole: MessageCenterActorRole;
+  conversationPage?: number;
   profileId: string;
+  supportPage?: number;
   therapistProfileId?: string;
+};
+
+type RawSearchParams = Record<string, string | string[] | undefined>;
+const messageCenterPageSize = 10;
+
+export type MessageCenterPageQuery = {
+  conversationPage: number;
+  supportPage: number;
 };
 
 type PatientProfileRow = {
@@ -109,7 +120,7 @@ export const getMessageCenterPage = cache(async function getMessageCenterPage(
 
   if (!config) {
     if (process.env.NODE_ENV === "development") {
-      return createDemoMessageCenter(input.actorRole);
+      return createDemoMessageCenter(input.actorRole, input);
     }
 
     throw new MessageCenterDataError();
@@ -119,7 +130,7 @@ export const getMessageCenterPage = cache(async function getMessageCenterPage(
     return await getSupabaseMessageCenter(config, input);
   } catch {
     if (process.env.NODE_ENV === "development") {
-      return createDemoMessageCenter(input.actorRole);
+      return createDemoMessageCenter(input.actorRole, input);
     }
 
     throw new MessageCenterDataError();
@@ -137,10 +148,14 @@ async function getSupabaseMessageCenter(
 
   if (!participantProfileId) throw new MessageCenterDataError();
 
-  const conversations = await supabaseRequest<ConversationRow[]>(
+  const conversationPage = normalizeMessageCenterPage(input.conversationPage);
+  const supportPage = normalizeMessageCenterPage(input.supportPage);
+  const conversationResult = await supabasePage<ConversationRow>(
     config,
-    `/rest/v1/conversations?select=id,patient_profile_id,therapist_profile_id,booking_id,last_message_at&${input.actorRole === "patient" ? "patient_profile_id" : "therapist_profile_id"}=eq.${encodeURIComponent(participantProfileId)}&order=last_message_at.desc.nullslast`,
+    `/rest/v1/conversations?select=id,patient_profile_id,therapist_profile_id,booking_id,last_message_at&${input.actorRole === "patient" ? "patient_profile_id" : "therapist_profile_id"}=eq.${encodeURIComponent(participantProfileId)}&order=last_message_at.desc.nullslast,id.desc`,
+    conversationPage,
   );
+  const conversations = conversationResult.rows;
   const conversationIds = conversations.map((conversation) => conversation.id);
   const [
     messages,
@@ -156,9 +171,10 @@ async function getSupabaseMessageCenter(
           `/rest/v1/messages?select=id,conversation_id,sender_profile_id,body,metadata,read_at,created_at&conversation_id=in.(${conversationIds.join(",")})&order=created_at.desc`,
         )
       : Promise.resolve([]),
-    supabaseRequest<SupportTicketRow[]>(
+    supabasePage<SupportTicketRow>(
       config,
-      `/rest/v1/support_tickets?select=id,protocol,category,subject,description,status,resolution_summary,created_at,last_activity_at&requester_profile_id=eq.${encodeURIComponent(input.profileId)}&order=last_activity_at.desc.nullslast`,
+      `/rest/v1/support_tickets?select=id,protocol,category,subject,description,status,resolution_summary,created_at,last_activity_at&requester_profile_id=eq.${encodeURIComponent(input.profileId)}&order=last_activity_at.desc.nullslast,id.desc`,
+      supportPage,
     ),
     supabaseRequest<NotificationRow[]>(
       config,
@@ -188,10 +204,10 @@ async function getSupabaseMessageCenter(
     viewerProfileId: input.profileId,
   });
   const platformItems = mapPlatformItems(notifications);
-  const supportMessages = supportTickets.length
+  const supportMessages = supportTickets.rows.length
     ? await supabaseRequest<SupportTicketMessageRow[]>(
         config,
-        `/rest/v1/support_ticket_messages?select=ticket_id,body,created_at&ticket_id=in.(${supportTickets.map((ticket) => ticket.id).join(",")})&visibility=eq.requester&order=created_at.desc`,
+        `/rest/v1/support_ticket_messages?select=ticket_id,body,created_at&ticket_id=in.(${supportTickets.rows.map((ticket) => ticket.id).join(",")})&visibility=eq.requester&order=created_at.desc`,
       )
     : [];
   const latestMessageByTicket = new Map<string, SupportTicketMessageRow>();
@@ -206,8 +222,10 @@ async function getSupabaseMessageCenter(
       openSupportTicketsCount,
       unreadMessagesCount,
     },
+    participantPagination: conversationResult.pagination,
     platformItems,
-    supportTickets: supportTickets.map((ticket) => ({
+    supportPagination: supportTickets.pagination,
+    supportTickets: supportTickets.rows.map((ticket) => ({
       category: ticket.category,
       createdAt: ticket.created_at,
       excerpt:
@@ -353,6 +371,10 @@ function toThread(input: {
     id: item.id,
     isFromViewer: item.sender_profile_id === input.viewerProfileId,
   }));
+  const unreadCount = input.messages.filter(
+    (item) =>
+      item.read_at === null && item.sender_profile_id !== input.viewerProfileId,
+  ).length;
 
   return {
     avatarUrl: input.avatarUrl,
@@ -362,11 +384,8 @@ function toThread(input: {
     categoryLabel: getCategoryLabel(category),
     conversationId: input.conversation.id,
     id: input.conversation.id,
-    isUnread: input.messages.some(
-      (item) =>
-        item.read_at === null &&
-        item.sender_profile_id !== input.viewerProfileId,
-    ),
+    isUnread: unreadCount > 0,
+    unreadCount,
     messages: threadMessages,
     name: input.name,
     timeLabel: formatRelativeTime(
@@ -457,11 +476,30 @@ function mapPlatformItems(
   return notificationItems.slice(0, 5);
 }
 
+export function parseMessageCenterPageQuery(
+  searchParams: RawSearchParams = {},
+): MessageCenterPageQuery {
+  return {
+    conversationPage: normalizeMessageCenterPage(
+      firstSearchParam(searchParams.conversationPage),
+    ),
+    supportPage: normalizeMessageCenterPage(
+      firstSearchParam(searchParams.supportPage),
+    ),
+  };
+}
+
 function createMessageCenterShell(
   actorRole: MessageCenterActorRole,
 ): Omit<
   MessageCenterPageData,
-  "metrics" | "platformItems" | "source" | "supportTickets" | "threads"
+  | "metrics"
+  | "participantPagination"
+  | "platformItems"
+  | "source"
+  | "supportPagination"
+  | "supportTickets"
+  | "threads"
 > {
   const isTherapist = actorRole === "therapist";
 
@@ -495,6 +533,7 @@ function createMessageCenterShell(
 
 function createDemoMessageCenter(
   actorRole: MessageCenterActorRole,
+  input: Pick<MessageCenterInput, "conversationPage" | "supportPage">,
 ): MessageCenterPageData {
   const shell = createMessageCenterShell(actorRole);
   const isTherapist = actorRole === "therapist";
@@ -521,9 +560,47 @@ function createDemoMessageCenter(
     "feedback",
   ];
 
+  const conversationPage = normalizeMessageCenterPage(input.conversationPage);
+  const supportPage = normalizeMessageCenterPage(input.supportPage);
+  const allThreads = people.map((name, index) => {
+    const category = categories[index] ?? "acompanhamento";
+
+    return {
+      avatarUrl: null,
+      bookingId: null,
+      body:
+        shell.templates.participant[index % shell.templates.participant.length]
+          ?.body ?? "",
+      category,
+      categoryLabel: getCategoryLabel(category),
+      conversationId: `demo-conversation-${index + 1}`,
+      id: `demo-thread-${index + 1}`,
+      isUnread: index < 3,
+      unreadCount: index < 3 ? 1 : 0,
+      name,
+      timeLabel:
+        index < 2 ? `Hoje · ${10 - index}:32` : `${16 + index} Jun · 14:10`,
+      title: getThreadTitle(category),
+      cta: null,
+      sessionContext: null,
+      messages: [
+        {
+          body:
+            shell.templates.participant[
+              index % shell.templates.participant.length
+            ]?.body ?? "",
+          createdAt: new Date().toISOString(),
+          id: `demo-message-${index + 1}`,
+          isFromViewer: false,
+        },
+      ],
+    };
+  });
+
   return {
     ...shell,
     metrics: { openSupportTicketsCount: 5, unreadMessagesCount: 8 },
+    participantPagination: paginationFor(allThreads.length, conversationPage),
     platformItems: [
       {
         body: "Implementamos melhorias para agilizar o processo.",
@@ -559,41 +636,12 @@ function createDemoMessageCenter(
       },
     ],
     supportTickets: [],
+    supportPagination: paginationFor(0, supportPage),
     source: "demo",
-    threads: people.map((name, index) => {
-      const category = categories[index] ?? "acompanhamento";
-
-      return {
-        avatarUrl: null,
-        bookingId: null,
-        body:
-          shell.templates.participant[
-            index % shell.templates.participant.length
-          ]?.body ?? "",
-        category,
-        categoryLabel: getCategoryLabel(category),
-        conversationId: `demo-conversation-${index + 1}`,
-        id: `demo-thread-${index + 1}`,
-        isUnread: index < 3,
-        name,
-        timeLabel:
-          index < 2 ? `Hoje · ${10 - index}:32` : `${16 + index} Jun · 14:10`,
-        title: getThreadTitle(category),
-        cta: null,
-        sessionContext: null,
-        messages: [
-          {
-            body:
-              shell.templates.participant[
-                index % shell.templates.participant.length
-              ]?.body ?? "",
-            createdAt: new Date().toISOString(),
-            id: `demo-message-${index + 1}`,
-            isFromViewer: false,
-          },
-        ],
-      };
-    }),
+    threads: allThreads.slice(
+      (conversationPage - 1) * messageCenterPageSize,
+      conversationPage * messageCenterPageSize,
+    ),
   };
 }
 
@@ -640,6 +688,52 @@ async function supabaseCount(config: SupabaseServerConfig, path: string) {
   const contentRange = response.headers.get("content-range") ?? "";
   const count = Number(contentRange.split("/").at(-1));
   return Number.isFinite(count) ? count : 0;
+}
+
+async function supabasePage<T>(
+  config: SupabaseServerConfig,
+  path: string,
+  page: number,
+): Promise<{ pagination: MessageCenterPagination; rows: T[] }> {
+  const start = (page - 1) * messageCenterPageSize;
+  const response = await fetch(`${config.url}${path}`, {
+    cache: "no-store",
+    headers: {
+      apikey: config.apiKey,
+      Authorization: `Bearer ${config.accessToken}`,
+      Prefer: "count=exact",
+      Range: `${start}-${start + messageCenterPageSize - 1}`,
+    },
+  });
+  if (!response.ok) throw new MessageCenterDataError();
+
+  const rows = (await response.json()) as T[];
+  const contentRange = response.headers.get("content-range") ?? "";
+  const total = Number(contentRange.split("/").at(-1));
+  const resolvedTotal = Number.isFinite(total) ? total : rows.length;
+  return {
+    pagination: paginationFor(resolvedTotal, page),
+    rows,
+  };
+}
+
+function paginationFor(total: number, page: number): MessageCenterPagination {
+  return {
+    hasNext: total > page * messageCenterPageSize,
+    page,
+    pageSize: messageCenterPageSize,
+    total,
+  };
+}
+
+function normalizeMessageCenterPage(value: number | string | undefined) {
+  const parsed =
+    typeof value === "number" ? value : Number.parseInt(value ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? Math.min(parsed, 10_000) : 1;
+}
+
+function firstSearchParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 async function getRowsByIds<T>(
