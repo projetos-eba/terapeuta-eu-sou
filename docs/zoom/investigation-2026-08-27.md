@@ -1,5 +1,10 @@
 # Investigação local Zoom — 2026-08-27
 
+> Atualização de lifecycle em 2026-08-28: a conclusão histórica deste relatório
+> de que a grace de 120s poderia encerrar ausência/orfandade foi substituída
+> pela regra de reentrada até `scheduled_ends_at`. Consulte
+> [reentry-lifecycle-2026-08-28.md](./reentry-lifecycle-2026-08-28.md).
+
 ## Evidência antes da correção
 
 - HML foi apenas evidência já capturada: código 2 / fase `join`, falha de

@@ -38,10 +38,13 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
 - `video_session_control_jobs` guarda jobs duraveis de encerramento/reconcile.
 - Fim técnico precoce aposenta a instância remota em metadata interna, sem
   encerrar o encontro. Presença considera somente a instância atual; eventos
-  antigos não reabrem uma instância encerrada. Reconcile também respeita 120s.
+  antigos não reabrem uma instância encerrada. Ausência e orphaning não são
+  terminais antes de `scheduled_ends_at`; a grace de 120s é compatibilidade
+  técnica, não prazo de expiração.
 - A reserva de maintenance revalida os motivos e marca o pedido de fim sob
-  lock da sessão antes de chamar o provider. Pedido/confirmacão de fim bloqueia
-  novos acessos, assim como fim agendado e watchdog; cron local fica inativo.
+  lock da sessão antes de chamar o provider. Somente fim manual autorizado, fim
+  agendado e hard timeout bloqueiam novos acessos. Jobs legados de ausência ou
+  orphaning são no-op auditável; cron local fica inativo.
 - Stripe confirma pagamento; Zoom nunca confirma pagamento, repasse ou servico.
 - Nao ha criacao remota previa de sala. A sessao nasce no primeiro `join`.
 - Paciente so recebe JWT apos webhook confiavel de `session.user_joined` do

@@ -315,9 +315,11 @@ Stack real identificada:
   senha de fixture em variável de ambiente. O acesso é host-first: paciente só
   recebe JWT após webhook confiável de `session.user_joined` do terapeuta.
   `ZOOM_VIDEO_SESSION_MAX_DURATION_MINUTES` é obrigatório no runtime real; o
-  limite duro fica em `video_sessions.hard_ends_at`. Encerramentos por timeout,
-  ausência do terapeuta e reconciliação usam `video_session_control_jobs` e a
-  Edge Function `zoom-video-session-maintenance`.
+  limite duro fica em `video_sessions.hard_ends_at`. Encerramentos por fim
+  agendado, hard timeout e confirmação manual autorizada usam
+  `video_session_control_jobs` e a Edge Function
+  `zoom-video-session-maintenance`. Ausência temporária e
+  `session.ended` precoce são estados técnicos reentrantes até o fim agendado.
   A homologação local completa deve usar `npm run homologation:zoom:local`,
   que orquestra gates de Supabase local, Edge Functions, Stripe CLI, Next,
   webhooks e Zoom real. Sessão real de Zoom só pode avançar após evidência de

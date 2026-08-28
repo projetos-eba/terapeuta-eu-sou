@@ -26,8 +26,17 @@ import {
 import {
   computeVideoSessionHardEndsAt,
   hasConfirmedProviderClosure,
+  isLegacyReentrantControlOperation,
   parseZoomVideoMaxDurationMinutes,
 } from "./session-lifecycle.ts";
+
+Deno.test("legacy absence and orphan jobs are reentrant no-ops", () => {
+  assertEquals(isLegacyReentrantControlOperation("end_therapist_absent"), true);
+  assertEquals(isLegacyReentrantControlOperation("reconcile_orphan"), true);
+  assertEquals(isLegacyReentrantControlOperation("end_scheduled"), false);
+  assertEquals(isLegacyReentrantControlOperation("end_hard_timeout"), false);
+  assertEquals(isLegacyReentrantControlOperation("confirm_end"), false);
+});
 
 Deno.test(
   "parseStrictBoolean fails closed for absent, empty, and invalid values",

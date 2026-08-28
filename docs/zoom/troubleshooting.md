@@ -19,6 +19,22 @@ reutilizar singleton cujo destroy falhou ou emitir novos JWTs para resolver
 erro de mídia. Áudio pós-join não invalida uma conexão já estabelecida.
 Fim técnico `session.ended` não é automaticamente fim lógico do encontro.
 
+## Sala encerrada após todos saírem antes do fim agendado
+
+Ausência do terapeuta por 120 segundos e `session.ended` do Zoom são sinais
+técnicos, não autorização para encerrar o encontro TES. Durante a janela
+T-15 até `scheduled_ends_at` exclusivo, o terapeuta continua elegível para
+reentrar. O paciente previamente legitimado permanece host-first: recebe
+`THERAPIST_NOT_IN_SESSION` enquanto o terapeuta está fora e volta a ser
+liberado depois de um novo `session.user_joined` confiável do host.
+
+Se a sessão ficar `ended` com `termination_reason=therapist_absent` ou
+`reconcile_orphan`, comparar `termination_confirmed_at` com
+`scheduled_ends_at` e a fila de maintenance. Isso indica o lifecycle legado;
+não reparar dados manualmente e não reabrir sessões já confirmadas. Corrigir por
+migration versionada e validar localmente conforme
+[lifecycle de reentrada](./reentry-lifecycle-2026-08-28.md).
+
 ## O teste real foi bloqueado antes de abrir a sessao
 
 Isso e esperado quando qualquer gate estiver incompleto. Corrija apenas o item
