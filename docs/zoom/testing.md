@@ -169,7 +169,8 @@ Os testes de regressao tambem devem cobrir remount da rota enquanto o
 por `online`, e a diferenca entre `Closed` transitorio e encerramento definitivo
 autorizado pelo host. O pgTAP deve cobrir `session.user_left` seguido de
 `session.ended` precoce, reentrada com novo `provider_session_id`, manutenção
-após a grace e encerramento terminal autorizado. Respostas de acesso devem preservar somente codigos de dominio
+após a antiga grace sem encerramento lógico, job legado não reservável e
+encerramento terminal autorizado. Respostas de acesso devem preservar somente codigos de dominio
 permitidos, como `therapist_receiving_account_required`, e nunca renderizar a
 mensagem bruta do backend.
 
@@ -182,7 +183,12 @@ normalizado, operação, confirmação de join e estado de conexão; nunca copia
 JWT, nome da sessão ou mensagem bruta do provedor.
 
 A regressão `060_zoom_provider_lifecycle_fences.sql` verifica eventos fora de
-ordem, aposentadoria de instância, grace 119/120s, fim explícito e temporal,
-watchdog não renovável, revalidação de jobs e fence transacional antes do REST.
+ordem, aposentadoria de instância, ausência por 119/120s sem fim lógico, fim
+explícito e temporal, watchdog não renovável, rejeição de jobs legados e fences
+defensivos. Ela também reproduz a corrida em que o timestamp de
+`session.ended` antecede a grace, mas o processamento ocorre depois dela.
+A regressão `099_zoom_reentry_terminal_fences.sql` prova que jobs legados já
+enfileirados não são reservados e que fim agendado, hard timeout e fim manual
+previamente autorizado continuam terminais.
 O teste de dois dispositivos usa duas montagens isoladas da espera e respostas
 controladas de access; não representa dois dispositivos físicos nem Zoom real.

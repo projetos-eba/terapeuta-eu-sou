@@ -39,11 +39,27 @@ no CTA “Não encontrou sua terapia?” do diálogo de Novo serviço.
 notificação interna e tenta enviar e-mail transacional. Falha de e-mail não
 desfaz a decisão.
 
+## Confirmação de envio
+
+- Ao concluir a quinta etapa válida, abrir `TESDialog` de confirmação antes de
+  executar o comando autenticado.
+- A confirmação exige aceite explícito da responsabilidade pelas informações,
+  da ausência de promessas de cura ou resultados e da possibilidade de não
+  aprovação. O botão de envio permanece indisponível sem esse aceite.
+- Após resposta positiva do comando (e materiais enviados), abrir o diálogo de
+  sucesso. Erros de envio permanecem no diálogo de confirmação e não podem
+  produzir uma tela de sucesso.
+- Não comunicar prazo de análise não documentado nem prometer aprovação,
+  publicação ou disponibilidade automática da prática.
+
 ## QA
 
 - Verificar as cinco etapas em desktop, tablet e mobile; no mobile a coluna é
   única e o progresso e a ação principal permanecem acessíveis.
 - Validar dados obrigatórios, temas ativos, compatibilidade de categoria legada,
   duplicidade, idempotência, reenvio, 1 a 3 temas do Match e limites de arquivo.
+- Validar que a confirmação aparece antes de qualquer chamada de envio, exige
+  aceite explícito, mantém erro sem falso sucesso e exibe sucesso somente após
+  resposta positiva.
 - Validar acesso cruzado entre terapeutas, URL temporária para admin e ausência
   de publicação automática após aprovação.

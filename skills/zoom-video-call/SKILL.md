@@ -54,9 +54,10 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
   canônica nova.
 - Se `session.ended` chegar antes do fim agendado sem uma solicitação de
   encerramento autorizada, tratar como término da instância remota, não da
-  sessão lógica: manter reentrada, limpar a referência remota e deixar a grace
-  do terapeuta/watchdog decidir o encerramento. Um novo join deve aceitar o
-  novo identificador remoto da mesma sala lógica.
+  sessão lógica: manter reentrada e limpar a referência remota. A grace de 120s
+  não encerra o encontro; um novo join deve aceitar o novo identificador remoto
+  da mesma sala lógica. Somente fim manual autorizado, fim agendado ou hard
+  timeout são terminais.
 - Antes de T-15, renderizar somente preparação e horário de abertura. Em T-15,
   renderizar sala visual de espera com capa abstrata, contador, preflight e
   estado host-first; nunca liberar JWT do paciente apenas por query string.

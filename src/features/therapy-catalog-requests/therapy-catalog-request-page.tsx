@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
 
+import { TESDialog } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 export type TherapyRequestTheme = {
@@ -119,12 +121,15 @@ export function TherapyCatalogRequestPage({
   initialRequestId: string | null;
   requests: TherapyRequestSummary[];
 }) {
+  const router = useRouter();
   const existingRequest = useMemo(
     () => requests.find((item) => item.id === initialRequestId) ?? null,
     [initialRequestId, requests],
   );
   const canResubmit = existingRequest?.status === "needs_information";
-  const [screen, setScreen] = useState<"form" | "intro" | "success">(
+  const [screen, setScreen] = useState<
+    "form" | "intro" | "confirmation" | "success"
+  >(
     existingRequest ? "form" : "intro",
   );
   const [step, setStep] = useState(1);
@@ -152,6 +157,13 @@ export function TherapyCatalogRequestPage({
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length === 0)
       setStep((current) => Math.min(5, current + 1));
+  }
+
+  function requestConfirmation() {
+    const nextErrors = validateStep(5, values);
+    setErrors(nextErrors);
+    setSubmissionError(null);
+    if (Object.keys(nextErrors).length === 0) setScreen("confirmation");
   }
 
   async function submit() {
@@ -211,10 +223,6 @@ export function TherapyCatalogRequestPage({
 
   if (screen === "intro") {
     return <Intro onStart={() => setScreen("form")} />;
-  }
-
-  if (screen === "success") {
-    return <Success />;
   }
 
   return (
@@ -286,7 +294,7 @@ export function TherapyCatalogRequestPage({
                     />
                   ) : null}
                 </div>
-                {submissionError ? (
+                {submissionError && screen !== "confirmation" ? (
                   <p
                     className="mt-5 rounded-control bg-state-dangerSoft px-4 py-3 text-sm font-semibold text-state-danger"
                     role="alert"
@@ -325,19 +333,11 @@ export function TherapyCatalogRequestPage({
                   ) : (
                     <button
                       className="inline-flex min-h-11 items-center gap-2 rounded-control bg-brand-primary px-5 text-sm font-semibold text-white hover:bg-brand-deep disabled:cursor-not-allowed disabled:opacity-60"
-                      disabled={isSubmitting}
-                      onClick={() => void submit()}
+                      onClick={requestConfirmation}
                       type="button"
                     >
-                      {isSubmitting ? (
-                        <Loader2
-                          aria-hidden="true"
-                          className="size-4 animate-spin"
-                        />
-                      ) : (
-                        <Sparkles aria-hidden="true" className="size-4" />
-                      )}
-                      {isSubmitting ? "Enviando…" : "Enviar solicitação"}
+                      <Sparkles aria-hidden="true" className="size-4" />
+                      Enviar solicitação
                     </button>
                   )}
                 </div>
@@ -346,6 +346,31 @@ export function TherapyCatalogRequestPage({
           </div>
         </div>
       </section>
+      {screen === "confirmation" ? (
+        <SubmissionConfirmationDialog
+          error={submissionError}
+          isSubmitting={isSubmitting}
+          onBack={() => {
+            setSubmissionError(null);
+            setScreen("form");
+          }}
+          onClose={() => {
+            if (!isSubmitting) {
+              setSubmissionError(null);
+              setScreen("form");
+            }
+          }}
+          onConfirm={() => void submit()}
+        />
+      ) : null}
+      {screen === "success" ? (
+        <SuccessDialog
+          onClose={() => {
+            setSubmittedRequestId(null);
+            router.push(routes.therapist.services);
+          }}
+        />
+      ) : null}
     </main>
   );
 }
@@ -391,38 +416,225 @@ function Intro({ onStart }: { onStart: () => void }) {
   );
 }
 
-function Success() {
+function SubmissionConfirmationDialog({
+  error,
+  isSubmitting,
+  onBack,
+  onClose,
+  onConfirm,
+}: {
+  error: string | null;
+  isSubmitting: boolean;
+  onBack: () => void;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const [accepted, setAccepted] = useState(false);
+  const statements = [
+    {
+      icon: ShieldCheck,
+      text: "as informações fornecidas sobre a prática são verdadeiras e de sua responsabilidade;",
+    },
+    {
+      icon: Sparkles,
+      text: "a prática não envolve promessas ou garantias de cura ou resultados;",
+    },
+    {
+      icon: ShieldCheck,
+      text: "ela não incentiva condutas ilegais, abusivas ou que possam colocar alguém em risco;",
+    },
+    {
+      icon: Heart,
+      text: "as informações apresentadas não substituem orientações ou cuidados de profissionais habilitados quando forem necessários;",
+    },
+    {
+      icon: Info,
+      text: "você está ciente de que a prática será analisada pelo TES e poderá não ser aprovada.",
+    },
+  ];
+
   return (
-    <main className="mx-auto grid min-h-[620px] max-w-3xl place-items-center px-4 pb-10 text-center">
-      <section className="w-full rounded-panel border border-brand-lavender/60 bg-white px-6 py-10 shadow-card sm:px-12">
-        <span className="mx-auto grid size-16 place-items-center rounded-full bg-state-successSoft text-state-success">
+    <TESDialog
+      className="max-w-[760px] p-5 sm:p-8"
+      hideHeader
+      onClose={onClose}
+      title="Confirme sua solicitação"
+    >
+      <div className="text-center">
+        <span className="mx-auto grid size-16 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+          <ShieldCheck aria-hidden="true" className="size-8" />
+        </span>
+        <h2 className="mt-5 font-display text-4xl italic leading-none text-brand-deep sm:text-5xl">
+          Antes de enviar sua sugestão
+        </h2>
+        <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-tesText-secondary sm:text-base">
+          Queremos que as práticas sugeridas ao TES sejam apresentadas com
+          responsabilidade, clareza e respeito às pessoas.
+        </p>
+      </div>
+
+      <section className="mt-6 rounded-card border border-brand-lavender/70 bg-brand-lavenderSoft/45 p-4 sm:p-5">
+        <div className="flex items-center gap-3 text-left">
+          <Sparkles aria-hidden="true" className="size-5 text-brand-primary" />
+          <h3 className="text-sm font-bold text-brand-deep sm:text-base">
+            Ao enviar esta solicitação, você declara que:
+          </h3>
+        </div>
+        <ul className="mt-3 divide-y divide-brand-lavender/70">
+          {statements.map(({ icon: Icon, text }) => (
+            <li
+              className="flex gap-3 py-3 text-left text-sm leading-6 text-tesText-secondary"
+              key={text}
+            >
+              <Icon
+                aria-hidden="true"
+                className="mt-0.5 size-5 shrink-0 text-brand-primary"
+              />
+              <span>{text}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-card p-1 text-sm font-semibold leading-6 text-brand-deep">
+        <input
+          checked={accepted}
+          className="mt-0.5 size-5 shrink-0 rounded border-brand-primary text-brand-primary focus:ring-brand-primary"
+          onChange={(event) => setAccepted(event.target.checked)}
+          type="checkbox"
+        />
+        <span>
+          Li e estou de acordo com as informações acima e confirmo minha
+          responsabilidade pela sugestão enviada.
+          <span aria-hidden="true" className="text-state-danger">
+            {" "}*
+          </span>
+        </span>
+      </label>
+
+      {error ? (
+        <p
+          className="mt-4 rounded-control bg-state-dangerSoft px-4 py-3 text-sm font-semibold text-state-danger"
+          role="alert"
+        >
+          {error}
+        </p>
+      ) : null}
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        <button
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-control border border-brand-lavender px-5 text-sm font-semibold text-brand-primary hover:bg-brand-lavenderSoft disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isSubmitting}
+          onClick={onBack}
+          type="button"
+        >
+          <ArrowLeft aria-hidden="true" className="size-4" />
+          Voltar e revisar
+        </button>
+        <button
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-control bg-brand-primary px-5 text-sm font-semibold text-white hover:bg-brand-deep disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={!accepted || isSubmitting}
+          onClick={onConfirm}
+          type="button"
+        >
+          {isSubmitting ? (
+            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+          ) : (
+            <Sparkles aria-hidden="true" className="size-4" />
+          )}
+          {isSubmitting ? "Enviando…" : "Confirmar e enviar"}
+        </button>
+      </div>
+      <p className="mt-5 flex items-start gap-2 border-t border-brand-lavender/70 pt-4 text-sm leading-6 text-tesText-muted">
+        <ShieldCheck
+          aria-hidden="true"
+          className="mt-0.5 size-4 shrink-0 text-brand-primary"
+        />
+        O envio da solicitação não garante que a prática será disponibilizada
+        no TES.
+      </p>
+    </TESDialog>
+  );
+}
+
+function SuccessDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <TESDialog
+      className="max-w-[720px] p-5 sm:p-8"
+      hideHeader
+      onClose={onClose}
+      title="Solicitação enviada"
+    >
+      <div className="text-center">
+        <span className="mx-auto grid size-16 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
           <Check aria-hidden="true" className="size-9" />
         </span>
-        <h1 className="mt-6 font-display text-5xl italic leading-[0.95] text-brand-deep sm:text-6xl">
-          Recebemos sua solicitação
-        </h1>
-        <p className="mx-auto mt-5 max-w-xl text-sm leading-7 text-tesText-secondary sm:text-base">
-          Obrigado por contribuir com a evolução do TES. Quando houver uma
-          atualização, você receberá um aviso na Central de Mensagens e, quando
-          disponível, por e-mail.
+        <h2 className="mt-5 font-display text-4xl italic leading-none text-brand-deep sm:text-5xl">
+          Recebemos sua solicitação!
+        </h2>
+        <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-tesText-secondary sm:text-base">
+          Obrigado por contribuir com a evolução do TES. Nossa equipe analisará
+          as informações com cuidado e você receberá uma atualização na Central
+          de Mensagens e, quando disponível, por e-mail.
         </p>
-        <p className="mx-auto mt-7 flex max-w-xl items-start gap-3 rounded-card bg-brand-lavenderSoft/60 p-4 text-left text-sm leading-6 text-tesText-secondary">
-          <Heart
-            aria-hidden="true"
-            className="mt-0.5 size-5 shrink-0 text-brand-primary"
-          />
-          A aprovação não publica automaticamente a prática. A criação e
-          publicação seguem a revisão administrativa do catálogo.
-        </p>
-        <Link
-          className="mt-8 inline-flex min-h-12 items-center gap-2 rounded-control bg-brand-primary px-6 text-sm font-semibold text-white hover:bg-brand-deep"
-          href={routes.therapist.services}
-        >
-          Voltar a serviços
-          <ArrowRight aria-hidden="true" className="size-4" />
-        </Link>
-      </section>
-    </main>
+      </div>
+
+      <p className="mt-6 flex items-start gap-3 rounded-card bg-brand-lavenderSoft/60 p-4 text-left text-sm leading-6 text-tesText-secondary">
+        <Sparkles
+          aria-hidden="true"
+          className="mt-0.5 size-5 shrink-0 text-brand-primary"
+        />
+        Caso a prática seja aprovada, ela seguirá para as etapas
+        administrativas do catálogo. A aprovação não a disponibiliza
+        automaticamente.
+      </p>
+
+      <div className="mt-6 grid divide-y divide-brand-lavender border-y border-brand-lavender sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        <SuccessDetail
+          icon={Heart}
+          text="Você receberá uma atualização quando houver novidade."
+          title="Central de Mensagens"
+        />
+        <SuccessDetail
+          icon={ShieldCheck}
+          text="A solicitação será avaliada conforme os princípios do TES."
+          title="Análise responsável"
+        />
+        <SuccessDetail
+          icon={Sparkles}
+          text="Uma aprovação não disponibiliza a prática automaticamente."
+          title="Catálogo da plataforma"
+        />
+      </div>
+
+      <Link
+        className="mt-7 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-control bg-brand-primary px-6 text-sm font-semibold text-white hover:bg-brand-deep"
+        href={routes.therapist.services}
+      >
+        Fechar
+        <ArrowRight aria-hidden="true" className="size-4" />
+      </Link>
+    </TESDialog>
+  );
+}
+
+function SuccessDetail({
+  icon: Icon,
+  text,
+  title,
+}: {
+  icon: typeof Heart;
+  text: string;
+  title: string;
+}) {
+  return (
+    <div className="px-4 py-5 text-center sm:px-3">
+      <span className="mx-auto grid size-10 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
+        <Icon aria-hidden="true" className="size-5" />
+      </span>
+      <h3 className="mt-3 text-sm font-bold text-brand-deep">{title}</h3>
+      <p className="mt-1 text-sm leading-6 text-tesText-secondary">{text}</p>
+    </div>
   );
 }
 

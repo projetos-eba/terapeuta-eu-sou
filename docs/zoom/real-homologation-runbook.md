@@ -350,7 +350,9 @@ liberacao do paciente depende de `therapist_first_joined_at`,
 
 A Edge Function `zoom-video-session-maintenance` enfileira e processa jobs
 duraveis em `video_session_control_jobs`: `end_hard_timeout`,
-`end_therapist_absent`, `reconcile_orphan` e `confirm_end`. O cron versionado em
+`end_scheduled` e `confirm_end`. Os enums legados `end_therapist_absent` e
+`reconcile_orphan` permanecem somente por compatibilidade e são no-op
+auditável durante a janela reentrante. O cron versionado em
 `supabase/schedules/zoom-video-session-maintenance.sql` usa pg_cron, pg_net e
 Vault, sem segredo hardcoded.
 

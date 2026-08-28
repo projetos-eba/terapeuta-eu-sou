@@ -234,7 +234,8 @@ Functions:
 - `zoom-webhook`: valida assinatura/challenge e processa eventos operacionais
   `session.*`.
 - `zoom-video-session-maintenance`: processa jobs duraveis de encerramento por
-  hard timeout, ausencia do terapeuta e reconciliacao operacional.
+  fim agendado, hard timeout ou encerramento manual previamente autorizado.
+  Ausencia temporaria e fechamento precoce do provider permanecem reentrantes.
 
 Scripts:
 

@@ -9,6 +9,17 @@ export const ZOOM_VIDEO_RECONNECT = {
   therapistGraceSeconds: 120,
 } as const;
 
+const LEGACY_REENTRANT_CONTROL_OPERATIONS = new Set([
+  "end_therapist_absent",
+  "reconcile_orphan",
+]);
+
+// These operation names remain in the database enum for compatibility only.
+// They must never become a logical termination while reentry is supported.
+export function isLegacyReentrantControlOperation(operation: string): boolean {
+  return LEGACY_REENTRANT_CONTROL_OPERATIONS.has(operation);
+}
+
 // Written exclusively by the trusted provider-event RPC; never a browser claim.
 export function hasConfirmedProviderClosure(metadata: unknown): boolean {
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata))

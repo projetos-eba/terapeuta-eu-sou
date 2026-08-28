@@ -43,10 +43,10 @@ select pg_temp.emit('instance-a', 'session.ended', 100);
 select ok((select therapist_present and provider_session_id = 'instance-b' from target_video), 'old instance cannot end current one');
 select pg_temp.emit('instance-b', 'session.user_left', 119, 'tes-v1-t-host');
 select public.enqueue_due_video_session_control_jobs_v1('development', 50, 120);
-select ok(not exists(select 1 from public.video_session_control_jobs where video_session_id = (select id from target_video) and operation = 'end_therapist_absent'), '119 seconds is inside reconnect grace');
+select ok(not exists(select 1 from public.video_session_control_jobs where video_session_id = (select id from target_video) and operation = 'end_therapist_absent'), '119 seconds of absence remains reentrant');
 update public.video_sessions set therapist_last_left_at = now() - interval '120 seconds' where id = (select id from target_video);
 select public.enqueue_due_video_session_control_jobs_v1('development', 50, 120);
-select ok(exists(select 1 from public.video_session_control_jobs where video_session_id = (select id from target_video) and operation = 'end_therapist_absent'), '120 seconds schedules absence control');
+select ok(not exists(select 1 from public.video_session_control_jobs where video_session_id = (select id from target_video) and operation = 'end_therapist_absent'), '120-second grace is not a logical expiration deadline');
 
 -- The authoritative request fence applies before provider confirmation.
 update public.video_sessions set termination_requested_at = now() - interval '60 seconds', termination_reason = 'manual_end', therapist_present = false where id = (select id from target_video);
@@ -79,20 +79,22 @@ where id = (select id from target_video);
 select pg_temp.emit('instance-d', 'session.user_left', 119, 'tes-v1-t-host');
 select pg_temp.emit('instance-d', 'session.ended', 118);
 select public.enqueue_due_video_session_control_jobs_v1('development', 50, 120);
-select ok(not exists(select 1 from public.video_session_control_jobs where video_session_id = (select id from target_video)), 'orphan reconciliation cannot bypass 120s reconnect grace');
+select ok(not exists(select 1 from public.video_session_control_jobs where video_session_id = (select id from target_video)), 'recent provider closure does not enqueue logical termination');
 update public.video_sessions set therapist_last_left_at = now() - interval '120 seconds',
   metadata = metadata || jsonb_build_object('zoom_provider_closed_at', now() - interval '120 seconds')
 where id = (select id from target_video);
 select public.enqueue_due_video_session_control_jobs_v1('development', 50, 120);
-select ok(exists(select 1 from public.video_session_control_jobs where video_session_id = (select id from target_video) and operation = 'reconcile_orphan'), 'closed provider can be finalized after grace without a REST session ID');
+select ok(not exists(select 1 from public.video_session_control_jobs where video_session_id = (select id from target_video) and operation = 'reconcile_orphan'), 'provider closure remains reentrant after the legacy grace');
 create temporary table reserved_jobs as select * from public.reserve_video_session_control_jobs_v1('development', 50, 60);
-select ok(exists(select 1 from reserved_jobs where video_session_id = (select id from target_video)), 'due closure is reserved locally');
-select ok((select termination_requested_at is not null from target_video), 'reservation fences reentry atomically before external maintenance');
+select ok(not exists(select 1 from reserved_jobs where video_session_id = (select id from target_video)), 'provider closure has no terminal job to reserve');
+select public.mark_video_session_termination_requested_v1((select id from target_video), 'reconcile_orphan');
+select ok((select termination_requested_at is null and termination_reason is null from target_video), 'legacy orphan request cannot create a terminal fence');
 delete from public.video_session_control_jobs where video_session_id = (select id from target_video);
 update public.video_sessions set termination_requested_at = null, termination_reason = null,
   provider_session_id = 'instance-e', therapist_present = true where id = (select id from target_video);
 select public.enqueue_video_session_control_job_v1((select id from target_video), 'end_therapist_absent', 'test-stale-absence-job', now(), '{}');
 select ok(not exists(select 1 from public.reserve_video_session_control_jobs_v1('development', 50, 60) where video_session_id = (select id from target_video)), 'stale absence job cannot reserve a returned host');
-select ok((select termination_requested_at is null from target_video), 'stale maintenance leaves the rejoined session open');
+select public.mark_video_session_termination_confirmed_v1((select id from target_video), 'therapist_absent');
+select ok((select status = 'active' and termination_requested_at is null and termination_confirmed_at is null from target_video), 'legacy absence confirmation leaves the rejoined session open');
 select * from finish();
 rollback;
