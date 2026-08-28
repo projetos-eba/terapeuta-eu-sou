@@ -1,4 +1,4 @@
-import { readdir } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 
 const migrationsDirectory = path.join(process.cwd(), "supabase", "migrations");
@@ -11,6 +11,7 @@ const migrationFiles = entries
   .sort((left, right) => left.localeCompare(right));
 
 const invalidFiles = [];
+const invalidLockTransactions = [];
 const filesByVersion = new Map();
 
 for (const filename of migrationFiles) {
@@ -23,13 +24,35 @@ for (const filename of migrationFiles) {
   const versionFiles = filesByVersion.get(match.groups.version) ?? [];
   versionFiles.push(filename);
   filesByVersion.set(match.groups.version, versionFiles);
+
+  const migration = await readFile(
+    path.join(migrationsDirectory, filename),
+    "utf8",
+  );
+  const lockMatch = /^\s*lock\s+table\b/im.exec(migration);
+  if (lockMatch) {
+    const transactionBegin = /^\s*begin\s*;/im.exec(migration);
+    const endsWithCommit = /(?:^|\r?\n)\s*commit\s*;\s*$/i.test(migration);
+
+    if (
+      !transactionBegin ||
+      transactionBegin.index > lockMatch.index ||
+      !endsWithCommit
+    ) {
+      invalidLockTransactions.push(filename);
+    }
+  }
 }
 
 const duplicateVersions = [...filesByVersion.entries()].filter(
   ([, files]) => files.length > 1,
 );
 
-if (invalidFiles.length || duplicateVersions.length) {
+if (
+  invalidFiles.length ||
+  duplicateVersions.length ||
+  invalidLockTransactions.length
+) {
   console.error("Supabase migration version validation failed.");
 
   if (invalidFiles.length) {
@@ -41,6 +64,13 @@ if (invalidFiles.length || duplicateVersions.length) {
     console.error("Duplicate migration versions:");
     for (const [version, files] of duplicateVersions) {
       console.error(`- ${version}: ${files.join(", ")}`);
+    }
+  }
+
+  if (invalidLockTransactions.length) {
+    console.error("LOCK TABLE outside an explicit transaction:");
+    for (const filename of invalidLockTransactions) {
+      console.error(`- ${filename}`);
     }
   }
 
