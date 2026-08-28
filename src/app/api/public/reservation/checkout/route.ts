@@ -7,6 +7,8 @@ import {
   SupabaseFunctionError,
 } from "@/lib/supabase/edge-functions";
 
+import { mapCheckoutError } from "./checkout-errors";
+
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_SHARED_NOTE_LENGTH = 600;
@@ -160,7 +162,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     if (error instanceof SupabaseFunctionError) {
-      const mapped = mapCheckoutError(error.status);
+      const mapped = mapCheckoutError(error);
       return NextResponse.json(
         {
           code: mapped.code,
@@ -303,45 +305,4 @@ function asString(value: unknown) {
 function isIsoInstant(value: string) {
   const date = new Date(value);
   return Boolean(value && !Number.isNaN(date.getTime()));
-}
-
-function mapCheckoutError(status: number) {
-  if (status === 401) {
-    return {
-      code: "UNAUTHENTICATED",
-      message: "Entre na sua conta de cliente para continuar.",
-    };
-  }
-  if (status === 403) {
-    return {
-      code: "FORBIDDEN",
-      message: "Use o acesso correspondente ao seu perfil.",
-    };
-  }
-  if (status === 409) {
-    return {
-      code: "SLOT_CONFLICT",
-      message: "Este horário não está mais disponível. Escolha outro momento.",
-    };
-  }
-  if (status === 422) {
-    return { code: "INVALID_REQUEST", message: "Revise os dados da reserva." };
-  }
-  if (status === 428) {
-    return {
-      code: "LEGAL_DOCUMENTS_REQUIRED",
-      message: "Não foi possível iniciar a reserva agora.",
-    };
-  }
-  if (status === 503) {
-    return {
-      code: "STRIPE_CONFIGURATION_ERROR",
-      message:
-        "O pagamento está temporariamente indisponível. Tente novamente.",
-    };
-  }
-  return {
-    code: "INTERNAL_ERROR",
-    message: "Não conseguimos iniciar o pagamento agora.",
-  };
 }

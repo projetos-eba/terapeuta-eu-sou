@@ -26,6 +26,9 @@ agenda e métricas usando as mesmas fontes de verdade.
 1. Admin entra em `/admin-login` e recebe sessão admin em cookie HTTP-only.
 2. `/admin/terapias` carrega catálogo, categorias, requests, impacto e eventos
    recentes por `/api/admin/therapies`.
+   A mesma resposta administrativa inclui os temas ativos do Match e os vínculos
+   canônicos já selecionados por terapia; o editor não usa projeção pública
+   restritiva como fonte para criar ou editar rascunhos.
 3. Criação de rascunho chama `admin_upsert_therapy_draft_v1` com identidade e
    conteúdo inicial; nenhuma tela de terapeuta cria terapia canônica.
 4. Edição salva identidade, editorial e disponibilidade usando chaves
@@ -78,6 +81,10 @@ Serviços preservam os estados da Fase 1: `draft`, `active`, `paused`,
   - adiciona RPCs admin de listagem, impacto, edição, transição e decisão;
   - ajusta `public_matching_therapies_v` para exigir terapia publicada,
     settings ativos e pesos de versão publicada.
+- `20260828120000_admin_therapy_catalog_embedded_matching_themes.sql`
+  - incorpora temas ativos e vínculos `therapy_matching_themes` no contrato
+    administrativo de listagem;
+  - evita que falha de uma consulta auxiliar oculte os temas do editor.
 
 ## APIs
 

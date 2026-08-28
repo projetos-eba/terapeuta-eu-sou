@@ -57,6 +57,11 @@ revalidada no servidor antes do checkout.
   mesmas views públicas usadas em `/terapeutas/:slug`. Não criar grade local de
   horários. Quando houver `slot` na URL, deve consultar e revalidar o dia local
   específico pelo contrato autoritativo, inclusive para datas entre 31 e 90 dias.
+- Para cliente autenticado, `/reserva` lê no servidor, com o bearer do próprio
+  paciente e RLS, apenas `starts_at`/`ends_at` de bookings ativos e holds ativos
+  não expirados. Slots que sobrepõem `[starts_at, ends_at)` são ocultados.
+- Falha nessa leitura nunca confirma agenda livre: mostrar indisponibilidade
+  honesta e manter o trigger/checkout como autoridade final.
 - O slot é um instante UTC. Resumo, dia de referência e faixa de horário devem
   ser formatados explicitamente no timezone retornado por
   `get_service_available_slots_v1`; o timezone do servidor nunca é autoridade
@@ -66,6 +71,9 @@ revalidada no servidor antes do checkout.
   endpoint deve falhar antes de criar hold, booking ou pagamento.
 - `session-booking-checkout` revalida slot, cria hold/booking, consome hold e
   chama `stripe-create-session-payment`.
+- `PATIENT_SCHEDULE_CONFLICT` deve virar `patient_schedule_conflict` 409 na
+  Edge e voltar como `PATIENT_SCHEDULE_CONFLICT` na API Next, com copy TES. A
+  Stripe não pode ser iniciada após esse erro.
 - A experiência de pagamento usa Stripe Embedded Checkout. O backend retorna
   apenas o `clientSecret` da Checkout Session incorporada; dados de cartão ficam
   nos componentes oficiais da Stripe.
@@ -135,6 +143,12 @@ revalidada no servidor antes do checkout.
 - Cliente autenticado deve conseguir chamar `/api/public/reservation/checkout`
   somente com `termsAccepted: true`.
 - Slot inexistente/indisponível deve retornar erro seguro.
+- Slots que coincidem com encontros do paciente ficam ocultos e exibem a nota
+  explicativa somente quando ao menos um slot foi removido. Um slot exatamente
+  consecutivo permanece disponível.
+- URL antiga em `preparar`/`pagamento` com conflito do paciente volta para
+  `momento`, mostra “Você já tem outro encontro nesse horário. Escolha outro
+  momento.” e mantém o CTA bloqueado.
 - Cupom percentual/fixo válido deve exibir subtotal, desconto e total da
   resposta Stripe; total zero por desconto autorizado deve concluir pelo
   webhook assinado, enquanto outro escopo, código inválido, desconto acima do
@@ -165,3 +179,7 @@ revalidada no servidor antes do checkout.
   vez de usar dados demonstrativos silenciosos.
 - Homologar externamente campanhas e corridas de substituição em Stripe test
   mode antes de produção; consulte `skills/stripe-promotions`.
+- A exclusão GiST redundante por paciente fica para janela posterior após
+  auditoria de volume/lock; o hotfix usa advisory lock namespaced e trigger.
+- O Figma `13273:3114` exigiu reautenticação durante o hotfix de 2026-08-28.
+  Detalhe visual adicional: `Não identificado nos arquivos analisados.`

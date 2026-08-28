@@ -65,7 +65,7 @@ values (
   'SP',
   'BR'
 )
-on conflict (therapist_profile_id) where is_current do update
+on conflict (therapist_profile_id) do update
 set
   document_type = excluded.document_type,
   document_number = excluded.document_number,

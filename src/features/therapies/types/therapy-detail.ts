@@ -60,6 +60,7 @@ export type PublicTherapyDetailRow = {
   description: string | null;
   hero_focal_point: string | null;
   hero_image_url: string | null;
+  image_url: string | null;
   highlights: unknown;
   id: string;
   introduction: string | null;

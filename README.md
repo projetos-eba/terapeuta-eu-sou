@@ -177,6 +177,9 @@ A estrutura local fica em `supabase/`:
 - `supabase/seeds/local-e2e-fixtures.sql`: renova somente as janelas de tempo das fixtures locais usadas por fluxos reais de browser (reserva, remarcação e Zoom simulado); não é migration nem deve ser aplicada em homologação ou produção.
 - `supabase/seeds/local-zoom-browser-fixture.sql`: prepara, por RPC canônica, a sessão lógica da reserva paga usada exclusivamente em `tests/e2e/zoom.spec.ts`. Executar manualmente contra o Supabase local imediatamente antes desse teste; ela fica fora de `[db.seed].sql_paths` para não contaminar a lifecycle do pgTAP.
 - `supabase/seeds/local-zoom-browser-fixture-cleanup.sql`: desfaz somente essa fixture Zoom local e restaura a reserva base antes de rodar o pgTAP; também fica fora de `[db.seed].sql_paths`.
+- `supabase/seeds/local-patient-schedule-hotfix-fixture.sql` e seu cleanup:
+  massa idempotente, fora de `[db.seed].sql_paths`, para validar no navegador a
+  ocultação de colisões do paciente e o limite consecutivo permitido.
 - `supabase/seed.sql`: nota de compatibilidade; a CLI carrega os seeds por `[db.seed].sql_paths`.
 - `supabase/functions/match-therapies`: primeira Edge Function determinística.
 

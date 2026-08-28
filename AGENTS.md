@@ -300,6 +300,11 @@ Stack real identificada:
   reagendamento versionado. RPCs de escrita são `service_role` only e devem ser
   orquestrados por Edge Functions autenticadas. A5 concluiu o slot engine
   autoritativo e o calendário privado; o checkout integrado pertence a A6.
+  O hotfix de 2026-08-28 serializa também por paciente, sempre após o lock do
+  terapeuta, e rejeita sobreposição real de booking/hold ativo com
+  `PATIENT_SCHEDULE_CONFLICT`; buffers continuam exclusivos da agenda do
+  terapeuta e horários consecutivos do paciente permanecem válidos. A GiST por
+  paciente foi adiada para janela controlada de hardening.
 - Zoom: arquitetura Video SDK implementada com `video_sessions`,
   `video_session_participations`, `zoom_video_webhook_events`, Edge Function
   `zoom-video-session-access`, webhook `zoom-webhook`, rota

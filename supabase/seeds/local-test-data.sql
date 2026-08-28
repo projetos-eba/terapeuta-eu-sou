@@ -1068,8 +1068,8 @@ values
   ('94000000-0000-4000-8000-000000000012', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000012', '93000000-0000-4000-8000-000000000012', current_date + interval '1 day' + time '10:30', current_date + interval '1 day' + time '11:30', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/marcus', null),
   ('94000000-0000-4000-8000-000000000013', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000013', '93000000-0000-4000-8000-000000000013', current_date + ((9 - extract(dow from current_date)::integer) % 7) + time '16:00', current_date + ((9 - extract(dow from current_date)::integer) % 7) + time '17:00', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/beatriz', null),
   ('94000000-0000-4000-8000-000000000014', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', '93000000-0000-4000-8000-000000000011', now() - interval '2 days', now() - interval '2 days' + interval '60 minutes', 'America/Sao_Paulo', 'completed', 'paid', 'zoom', 'https://example.test/meeting/juliane-last', now() - interval '2 days' + interval '60 minutes'),
-  ('94000000-0000-4000-8000-000000000021', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000014', '93000000-0000-4000-8000-000000000014', now() - interval '5 minutes', now() + interval '55 minutes', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/andre-live', null),
-  ('94000000-0000-4000-8000-000000000022', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000015', '93000000-0000-4000-8000-000000000015', now() + interval '2 hours', now() + interval '3 hours', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/sofia', null),
+  ('94000000-0000-4000-8000-000000000021', 'b1000000-0000-4000-8000-000000000002', '92000000-0000-4000-8000-000000000014', '93000000-0000-4000-8000-000000000014', now() - interval '5 minutes', now() + interval '55 minutes', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/andre-live', null),
+  ('94000000-0000-4000-8000-000000000022', 'b1000000-0000-4000-8000-000000000003', '92000000-0000-4000-8000-000000000015', '93000000-0000-4000-8000-000000000015', now() + interval '2 hours', now() + interval '3 hours', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/sofia', null),
   ('94000000-0000-4000-8000-000000000023', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000016', '93000000-0000-4000-8000-000000000016', current_date + interval '1 day' + time '09:00', current_date + interval '1 day' + time '10:00', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/roberto', null),
   ('94000000-0000-4000-8000-000000000024', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000014', '93000000-0000-4000-8000-000000000014', current_date + interval '3 days' + time '11:00', current_date + interval '3 days' + time '12:00', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/andre-followup', null),
   ('94000000-0000-4000-8000-000000000025', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000015', '93000000-0000-4000-8000-000000000015', current_date + interval '5 days' + time '15:00', current_date + interval '5 days' + time '16:00', 'America/Sao_Paulo', 'confirmed', 'paid', 'zoom', 'https://example.test/meeting/sofia-followup', null),
@@ -1215,11 +1215,12 @@ insert into public.reviews (
   published_at
 )
 values
-  ('96500000-0000-4000-8000-000000000002', '96000000-0000-4000-8000-000000000002', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', 5, 'Sessão acolhedora e conduzida com presença.', 'published', '2024-05-08 16:00:00-03'),
-  ('96500000-0000-4000-8000-000000000003', '96000000-0000-4000-8000-000000000003', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', 5, 'Senti clareza para organizar minhas reflexões.', 'published', '2024-05-15 16:00:00-03'),
   ('96500000-0000-4000-8000-000000000004', '96000000-0000-4000-8000-000000000004', '91000000-0000-4000-8000-000000000001', '92000000-0000-4000-8000-000000000011', 5, 'Foi um encontro cuidadoso para seguir minha jornada.', 'published', '2024-05-22 16:00:00-03')
-on conflict (booking_id) do update
+on conflict (patient_profile_id, therapist_profile_id)
+where superseded_at is null
+do update
 set
+  booking_id = excluded.booking_id,
   patient_profile_id = excluded.patient_profile_id,
   therapist_profile_id = excluded.therapist_profile_id,
   rating = excluded.rating,
@@ -1337,7 +1338,7 @@ insert into public.reviews (
 )
 values
   ('90000000-0000-4000-8000-000000000006', 'f1000000-0000-4000-8000-000000000006', 'b1000000-0000-4000-8000-000000000002', 'c1000000-0000-4000-8000-000000000001', 5, 'As sessões online me deram o acolhimento que eu precisava, no meu tempo e no meu espaço.', 'published', now() - interval '2 days'),
-  ('90000000-0000-4000-8000-000000000007', 'f1000000-0000-4000-8000-000000000007', 'b1000000-0000-4000-8000-000000000003', 'c1000000-0000-4000-8000-000000000001', 5, 'Senti clareza e cuidado durante toda a conversa.', 'published', now() - interval '6 days'),
+  ('e8000000-0000-4000-8000-000000000001', 'f1000000-0000-4000-8000-000000000007', 'b1000000-0000-4000-8000-000000000003', 'c1000000-0000-4000-8000-000000000001', 5, 'Senti clareza e cuidado durante toda a conversa.', 'published', now() - interval '6 days'),
   ('90000000-0000-4000-8000-000000000008', 'f1000000-0000-4000-8000-000000000008', 'b1000000-0000-4000-8000-000000000004', 'c1000000-0000-4000-8000-000000000001', 4, 'Experiência acolhedora e bem conduzida.', 'published', now() - interval '3 days'),
   ('90000000-0000-4000-8000-000000000009', 'f1000000-0000-4000-8000-000000000009', 'b1000000-0000-4000-8000-000000000005', 'c1000000-0000-4000-8000-000000000001', 5, 'Comentário ocultado pela moderação.', 'hidden', null)
 on conflict (id) do update
@@ -1941,8 +1942,11 @@ values
   ('e8000000-0000-4000-8000-000000000002', 'f2000000-0000-4000-8000-000000000008', 'b1000000-0000-4000-8000-000000000008', 'c1000000-0000-4000-8000-000000000001', 5, 'Encontrei um espaço acolhedor para organizar minhas escolhas.', 'published', now() - interval '4 days'),
   ('e8000000-0000-4000-8000-000000000003', 'f2000000-0000-4000-8000-000000000009', 'b1000000-0000-4000-8000-000000000009', 'c1000000-0000-4000-8000-000000000001', 4, 'Conversa atenta e respeitosa com o meu momento.', 'published', now() - interval '7 days'),
   ('e8000000-0000-4000-8000-000000000004', 'f2000000-0000-4000-8000-000000000011', 'b1000000-0000-4000-8000-000000000006', 'c1000000-0000-4000-8000-000000000001', 5, 'A condução foi clara e acolhedora.', 'published', date_trunc('month', now()) + interval '3 days')
-on conflict (booking_id) do update
+on conflict (patient_profile_id, therapist_profile_id)
+where superseded_at is null
+do update
 set
+  booking_id = excluded.booking_id,
   rating = excluded.rating,
   comment = excluded.comment,
   status = excluded.status,

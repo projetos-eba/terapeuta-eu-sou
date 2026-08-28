@@ -8,6 +8,16 @@ export type ReservationPatientSummary = {
   timezone: string;
 };
 
+export type PatientScheduleCheckStatus =
+  | "available"
+  | "not_applicable"
+  | "unavailable";
+
+export type PatientScheduleInterval = {
+  endsAt: string;
+  startsAt: string;
+};
+
 export type ReservationContext = {
   canPrepareEncounter: boolean;
   currentPath: string;
@@ -15,13 +25,16 @@ export type ReservationContext = {
   hasRequiredCheckoutData: boolean;
   isPatientAuthenticated: boolean;
   marketingConsent: boolean;
+  hiddenPatientConflictCount: number;
   nextStepHref: string;
   patient: ReservationPatientSummary | null;
   paymentStepHref: string;
   priceCents: number | null;
   priceLabel: string;
+  patientScheduleCheckStatus: PatientScheduleCheckStatus;
   prepareStepHref: string;
   selectedSlot: string | null;
+  selectedSlotHasPatientConflict: boolean;
   serviceId: string | null;
   serviceLabel: string;
   serviceSummary: string;

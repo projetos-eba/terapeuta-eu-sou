@@ -8,11 +8,14 @@ import {
   getPublicServiceAvailabilityForDay,
 } from "@/features/availability/queries/public-service-availability";
 import {
+  applyPatientScheduleConflicts,
+  getReservationScheduleWindow,
   mergeReservationContextWithPublicProfile,
   reconcileReservationContextWithAvailability,
   ReservationPage,
   resolveReservationContext,
 } from "@/features/public-reservation";
+import { getPatientScheduleIntervals } from "@/features/public-reservation/queries/patient-schedule";
 import { getPublicTherapistProfileResult } from "@/features/therapist-profile/queries/public-profile";
 import type { AvailabilityDay } from "@/features/therapist-profile/types";
 
@@ -98,6 +101,30 @@ export default async function PublicReservationPage({
             ? availabilityResult.data.timezone
             : undefined,
       });
+      const scheduleWindow = getReservationScheduleWindow(
+        availabilityDays,
+        context,
+      );
+      if (accessToken && patient && scheduleWindow) {
+        const patientSchedule = await getPatientScheduleIntervals({
+          accessToken,
+          ...scheduleWindow,
+        });
+        if (patientSchedule.status === "success") {
+          const filtered = applyPatientScheduleConflicts({
+            availabilityDays,
+            context,
+            intervals: patientSchedule.intervals,
+          });
+          availabilityDays = filtered.availabilityDays;
+          context = filtered.context;
+        } else {
+          context = {
+            ...context,
+            patientScheduleCheckStatus: "unavailable",
+          };
+        }
+      }
       context = reconcileReservationContextWithAvailability(
         context,
         availabilityDays,
