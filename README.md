@@ -158,6 +158,8 @@ demo.
 - `npm run lint`: lint do Next.js.
 - `npm run lint:online-only`: valida a política de produto que impede opções de
   formato não-online fora da allowlist documentada.
+- `npm run lint:migrations`: valida nomes e versões únicas das migrations do
+  Supabase antes de qualquer deploy.
 - `npm run typecheck`: valida TypeScript.
 - `npm run dev:functions`: sobe Supabase Edge Functions locais usando secrets de `supabase/functions/.env.local`, `supabase/functions/.env` ou `.env.local`, nesta ordem. As chaves locais do Supabase sao injetadas em memoria pela CLI e nao devem ser salvas na raiz do app.
 - `npm run test:auth:flows`: valida fluxo auth completo via Edge Functions, incluindo senha normal, `MASTER_PASSWORD`, confirmacao normal/automatica, reset e redirecionamentos.

@@ -105,6 +105,11 @@ Não criar enums equivalentes dentro de features.
   breadcrumb, título IvyPresto, resumo de identidade/estado, superfícies de
   pagamento e sala, preparação e ContextRail compacto. A referência raster da
   rotina de atendimento serve à composição, não para inventar dados ou ações.
+- O detalhe acompanha a anatomia do detalhe de encontro do paciente sem
+  reproduzir seu domínio: cabeçalho aberto, hero com identidade / horário e
+  sala / estado e ação, faixa de três estados e sequência responsiva de
+  contexto, sala, gestão e apoio. Em desktop, suporte e orientações ficam no
+  rail; em mobile, entram no fluxo após o contexto crítico.
 - O detalhe só renderiza o DTO de `get_therapist_session_detail_v1`. Não exibir
   objetivo clínico, observações, prontuário, URL da sala, credenciais ou
   supostos resultados de teste técnico. A preparação pode orientar a pessoa

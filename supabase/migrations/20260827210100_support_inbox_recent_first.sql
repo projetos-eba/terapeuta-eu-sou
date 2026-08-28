@@ -84,8 +84,7 @@ begin
         or (v_assignment = 'me' and tickets.assigned_admin_id = auth.uid()))
       and (v_search = '' or tickets.subject ilike '%' || v_search || '%'
         or tickets.protocol ilike v_search || '%'
-        or coalesce(requester.display_name, '') ilike '%' || v_search || '%'
-        or coalesce(requester.email, '') ilike '%' || v_search || '%')
+        or coalesce(requester.display_name, '') ilike '%' || v_search || '%')
   ),
   ordered_rows as (
     select

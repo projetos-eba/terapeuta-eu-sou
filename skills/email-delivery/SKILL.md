@@ -123,7 +123,16 @@ Fonte consultada: documentacao oficial/SDK Hostinger Mail API em 2026-07-24.
 
 - Aplicar migrations no Supabase remoto.
 - Configurar secrets das Edge Functions.
-- Deploy das functions novas e alteradas.
+- Alterações em `_shared/email` são incorporadas ao bundle de cada consumer;
+  portanto, publicar em conjunto `email-outbox-dispatch`,
+  `client-auth-signup`, `therapist-auth-signup`, `request-password-reset`,
+  `resend-email-verification`, `sync-email-senders` e
+  `admin-email-management-command`. Deploy isolado de outra Edge Function não
+  atualiza esses bundles.
+- Para a normalização do nome do remetente, publicar primeiro os consumers
+  acima e depois aplicar a migration versionada. A migration altera somente
+  perfis sem nome ou cujo `display_name` ainda seja igual à mailbox; nomes
+  personalizados são preservados.
 - Rodar `sync-email-senders` com usuario admin.
 - Definir um remetente ativo como padrao em `email_sender_profiles`.
 - Opcionalmente definir remetente especifico em `email_action_settings`.
