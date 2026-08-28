@@ -4,8 +4,9 @@ import path from "node:path";
 
 let supabaseStatusEnvCache = null;
 
-export function loadEnvFiles() {
+export function loadEnvFiles(additionalFiles = []) {
   for (const file of [
+    ...additionalFiles,
     path.join("supabase", "functions", ".env.local"),
     path.join("supabase", "functions", ".env"),
     ".env.local",

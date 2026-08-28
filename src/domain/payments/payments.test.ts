@@ -65,6 +65,22 @@ describe("session transfer eligibility", () => {
     });
   });
 
+  it("recognizes the canonical bilateral confirmation state", () => {
+    expect(
+      evaluateSessionTransferEligibility({
+        connectTransfersActive: true,
+        financialStatus: "paid",
+        now: new Date("2026-08-18T12:00:00.000Z"),
+        serviceConfirmedAt: confirmedAt,
+        serviceStatus: "confirmed_bilateral",
+        therapistAmountCents: 16_000,
+      }),
+    ).toMatchObject({
+      reason: "eligible",
+      status: "eligible",
+    });
+  });
+
   it("blocks disputed payments", () => {
     expect(
       evaluateSessionTransferEligibility({

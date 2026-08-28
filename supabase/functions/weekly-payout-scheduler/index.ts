@@ -58,6 +58,7 @@ runtime.serve(async (request) => {
     const result = await runPayoutBatchWorker({
       batchId: claim.batchId,
       client,
+      operationInstant: now,
       stripe: createStripeClient(config.stripeApiKey),
       stripeApiKey: config.stripeApiKey,
       stripeMode: config.stripeMode,

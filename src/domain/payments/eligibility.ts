@@ -11,6 +11,7 @@ export type SessionFinancialStatus =
 export type SessionServiceStatus =
   | "scheduled"
   | "occurred_pending_confirmation"
+  | "confirmed_bilateral"
   | "confirmed_by_patient_review"
   | "confirmed_by_therapist"
   | "auto_confirmed"
@@ -136,6 +137,7 @@ export function addDays(date: Date, days: number) {
 
 function isServiceConfirmed(status: SessionServiceStatus) {
   return (
+    status === "confirmed_bilateral" ||
     status === "confirmed_by_patient_review" ||
     status === "confirmed_by_therapist" ||
     status === "auto_confirmed"

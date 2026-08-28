@@ -66,7 +66,7 @@ runtime.serve(async (request) => {
     const accounts = await client.get<
       Array<{ id: string; stripe_account_id: string; therapist_profile_id: string }>
     >(
-      `/rest/v1/therapist_connect_accounts?select=id,stripe_account_id,therapist_profile_id${filter}&order=created_at.asc&limit=${limit}`,
+      `/rest/v1/therapist_connect_accounts?select=id,stripe_account_id,therapist_profile_id&is_current=eq.true${filter}&order=created_at.asc&limit=${limit}`,
     );
     const results = [];
 

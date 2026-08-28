@@ -10,8 +10,8 @@ select is(
 
 select is(
   (select version from public.financial_policy_versions where is_active),
-  'tes-payments-v7-bilateral-weekly-transfer-daily-payout',
-  'the corrected bilateral weekly payout policy is active'
+  'tes-payments-v8-commission-15-percent',
+  'the current bilateral weekly payout policy is active'
 );
 
 select is(

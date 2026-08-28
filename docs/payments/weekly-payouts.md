@@ -1,8 +1,8 @@
 # Repasses semanais — Transfer semanal + Payout automático
 
-Status: implementado localmente, desativado e pronto para homologação externa
-em Stripe Test Mode. Produção permanece bloqueada até o preflight HML e a
-ativação explícita da política/cron.
+Status: política v8 e schedulers ativados em HML e produção em 2026-08-28,
+após preflight Connect, prova de Transfer idempotente em Stripe Test, readiness
+Stripe Live e verificação remota dos crons, Vault, Edge Functions e webhooks.
 
 ## Decisão para contas brasileiras
 
@@ -52,8 +52,8 @@ ocorrência.
 - `service_confirmed_at` é o instante da segunda confirmação válida.
 - Segurança: 24 horas completas após `service_confirmed_at`.
 - O job horário `tes-session-confirmation-hourly-v1` está registrado, auditado
-  e **inativo** até homologação financeira. Ele é idempotente, recupera atrasos
-  com o vencimento contratual e não depende da telemetria Zoom.
+  e ativo em HML e produção. Ele é idempotente, recupera atrasos com o
+  vencimento contratual e não depende da telemetria Zoom.
 - Relato `not_performed`, cancelamento, reembolso, disputa, contestação ou
   bloqueio administrativo impede confirmação automática e inclusão no lote.
 - Avaliações públicas do terapeuta não confirmam sessão nem alteram repasse.
@@ -63,11 +63,15 @@ ocorrência.
 - Todo backlog elegível até o cutoff é incluído.
 - O scheduler encerra quando os Transfers estão resolvidos. O lote financeiro
   permanece `processing` até a cobertura bancária.
-- SQL desativado: `supabase/schedules/weekly-payout-scheduler.sql`.
+- Ativação operacional versionada:
+  `supabase/schedules/weekly-payout-scheduler.sql`. O job
+  `tes-weekly-payout-scheduler-v2` está ativo em HML e produção a cada 15
+  minutos; fora da janela financeira responde sem adquirir lote.
 
 ## Prontidão Connect
 
-Antes do Transfer, revalidar:
+Antes do Transfer, revalidar somente as contas Connect correntes do projeto
+Supabase alvo:
 
 - terapeuta aprovado e ownership da conta íntegro;
 - capability v2 `stripe_transfers.status=active`;
@@ -77,10 +81,18 @@ Antes do Transfer, revalidar:
 - pagamento, Charge e Balance Transaction da cobrança reconciliados;
 - BRL, valor positivo, sem disputa, refund pendente ou bloqueio.
 
-`stripe-connect-payout-schedule` permanece uma operação interna separada. O
-modo `dry_run` apenas audita. `apply` configura `daily`, exige token interno e
+`stripe-connect-payout-schedule` permanece uma operação interna separada e
+consulta somente contas `is_current=true`. O modo `dry_run` não altera a Stripe,
+mas atualiza o snapshot local e grava auditoria no Supabase. `apply` configura
+`daily`, exige token interno e
 `TES_CONNECT_PAYOUT_SCHEDULE_CHANGES_ENABLED=true`; o scheduler nunca corrige
 cronograma durante o lote.
+
+Conta corrente restrita pode ser isolada sem bloquear as demais somente quando
+o estado remoto e o snapshot local coincidem e não existe histórico financeiro
+positivo para o terapeuta. Divergência de ownership, snapshot desatualizado ou
+qualquer histórico financeiro positivo falha fechado. Contas históricas nunca
+participam do preflight nem da atualização de snapshots correntes.
 
 ## Transfer e reconciliação
 
@@ -155,9 +167,12 @@ clínico. Ausência de admin elegível reprova preflight.
 
 ## Homologação e ativação
 
-1. Aplicar migrations e tipos; manter a política v5 inativa.
+1. Aplicar migrations e tipos pelo fluxo versionado de PR; manter o scheduler
+   semanal inativo até concluir a prova externa.
 2. Implantar as Edge Functions afetadas.
-3. Confirmar Balance Settings diário e Payouts habilitados em todas as contas.
+3. Confirmar Accounts v2 e Balance Settings nas contas correntes: capability de
+   Transfer ativa, Payout habilitado e agenda diária. Conta restrita sem
+   histórico financeiro positivo deve aparecer explicitamente como isolada.
 4. Confirmar os três destinos webhook de Test Mode e seus signing secrets. Se
    o destino thin Accounts v2 estiver no escopo errado, substituir somente após
    o deploy da migration e das Edge Functions; a substituição atualiza o secret
@@ -172,6 +187,55 @@ clínico. Ausência de admin elegível reprova preflight.
 
 O Test Mode pode comprovar API, eventos e reconciliação, mas não garante prazo
 ou liquidação bancária real. Produção exige evidência separada.
+
+### Registro de liberação de 2026-08-28
+
+- HML: 13 contas Connect correntes auditadas; 12 prontas e 1 isolada sem
+  histórico financeiro positivo; nenhum bloqueio ou snapshot divergente.
+- HML: Transfer Test único de R$ 102,00 comprovado com
+  `source_transaction`, destination payment, Balance Transaction, uma baixa
+  no ledger e replay idempotente sem nova Transfer.
+- O saldo Test permanece sujeito ao `available_on` calculado pela Stripe. A
+  ausência de Payout antes dessa disponibilidade não bloqueia a ativação do
+  código nem comprova prazo bancário real.
+- Produção: Stripe Live, três preços pagos, proteções contra controles de teste
+  e Edge Functions financeiras aprovados. Não havia conta Connect corrente no
+  momento da ativação, portanto não existia destinatário elegível para lote.
+- Cron: a primeira chamada de HML e produção em 2026-08-28 10:00 BRT concluiu
+  com HTTP 200, token do Vault aceito e `outside_start_window`, sem criar lote
+  ou movimentação financeira.
+- Webhooks HML e Live: exatamente três destinos habilitados em cada modo, nas
+  matrizes 25/8/11. Plataforma snapshot usa `@self`, Connect snapshot usa
+  `@accounts` e Connect thin Accounts v2 usa `@self`. O destino thin Live
+  legado em `@accounts` foi substituído e somente
+  `STRIPE_CONNECT_V2_WEBHOOK_SECRET` foi rotacionado; o arquivo local e o
+  secret remoto foram validados por digest sem exposição do valor.
+
+### Controle temporal HML
+
+O avanço temporal controlado existe somente para Stripe Test e exige
+`TES_FINANCE_TEST_CONTROLS_ENABLED=true`. O valor normal, local e remoto, é
+`false`. Toda janela remota deve usar `try/finally`, restaurar `false` e confirmar
+depois que um override volta a responder `finance_test_control_not_allowed`.
+
+O fluxo rastreável de HML é:
+
+1. `npm run payments:finance:prepare:hml -- --booking-id=<uuid> --dry-run`;
+2. preparar apenas o fixture dedicado com
+   `--confirm-controlled-hml-time-advance`;
+3. `npm run payments:finance:transfer:hml -- --booking-id=<uuid> --stage=verify-closed`;
+4. abrir a flag temporária e executar `--stage=prepare-batch`;
+5. exigir exatamente um elegível, um item, um terapeuta e valor abaixo do teto
+   do harness;
+6. abrir nova janela temporária e executar `--stage=transfer`;
+7. repetir com `--stage=verify-idempotency` e exigir zero novas Transfers;
+8. `npm run payments:finance:payout:observe:hml -- --booking-id=<uuid>` até a
+   Stripe criar o Payout automático e a alocação local convergir.
+
+O `nowOverride` de `process-payout-batch` chega ao worker somente depois da
+validação central que exige Test Mode e a flag explícita. O scheduler usa a
+mesma validação. O harness nunca cria Payout manual: saldo `pending` e
+`available_on` futuro mantêm o gate externo em espera.
 
 ## Evidência local
 
