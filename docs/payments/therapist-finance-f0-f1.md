@@ -334,3 +334,16 @@ Validações obrigatórias da fase:
 - F4: pgTAP de lifecycle operacional com comprovante, confirmação de sessão,
   segurança controlada, elegibilidade, lote, Transfer com `source_transaction`,
   conciliação e read models privados atualizados.
+
+### Fixture local da conta de recebimento
+
+`supabase/seeds/local-therapist-connect-ready-fixture.sql` permite validar a
+aba Conta de recebimento com o estado não sensível de uma conta pronta. O
+arquivo exige que `tes.local_fixture.therapist_email` seja definido na mesma
+sessão do Postgres, preserva uma conta local anterior como histórica e cria um
+identificador determinístico que não existe no provider.
+
+A fixture nunca copia `stripe_account_id`, banco, agência, conta, Pix,
+documentos ou dados de KYC de HML. Ela serve somente para read model e UI. Login
+Link, sincronização Stripe, Transfer e Payout reais exigem uma conta Connect de
+teste criada especificamente pelo ambiente local.

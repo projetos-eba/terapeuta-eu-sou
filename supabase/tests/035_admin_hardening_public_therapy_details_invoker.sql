@@ -229,14 +229,13 @@ select ok(
 
 select results_eq(
   $$
-    select slug, subtitle, jsonb_array_length(highlights), jsonb_array_length(benefits), jsonb_array_length(faqs)
+    select slug, subtitle, jsonb_array_length(highlights), jsonb_array_length(benefits)
     from public.public_therapy_details_v
     where id = 'df000000-0000-4000-8000-000000000001'::uuid
   $$,
   $$ values (
     'therapy-detail-public-candidate'::text,
     'Subtitulo publico'::text,
-    1,
     1,
     1
   ) $$,
@@ -292,8 +291,8 @@ select ok(
 );
 
 select ok(
-  has_column_privilege('anon', 'public.therapy_faqs', 'answer', 'SELECT'),
-  'anon can select public faq answer column needed by detail view'
+  not has_column_privilege('anon', 'public.therapy_faqs', 'answer', 'SELECT'),
+  'anon cannot select the retired faq answer column'
 );
 
 select ok(
@@ -417,8 +416,8 @@ select results_eq(
       and roles && array['anon', 'authenticated']::name[]
       and cmd = 'SELECT'
   $$,
-  $$ values (true) $$,
-  'therapy_faqs has explicit public select policy'
+  $$ values (false) $$,
+  'therapy_faqs no longer has a public select policy'
 );
 
 select ok(

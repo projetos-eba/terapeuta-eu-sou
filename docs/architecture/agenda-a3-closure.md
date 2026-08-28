@@ -35,7 +35,7 @@ Página /terapeuta/agenda?aba=horarios
   -> requireTherapistSession
   -> get_therapist_schedule_v1() com auth.uid()
   -> parser TypeScript versionado
-  -> formulário por escopo geral ou terapia
+  -> formulário por terapia, sem escopo geral
   -> POST /api/therapist/schedule
   -> Edge therapist-schedule-update
   -> valida access token, papel e status
@@ -54,6 +54,7 @@ o access token autenticado para a Edge Function.
 - versão obsoleta retorna `schedule_version_conflict`;
 - o mesmo `requestId` retorna `idempotentReplay = true`;
 - replay não incrementa versão e não duplica evento;
+- cada regra exige uma terapia existente e não arquivada;
 - regras gerais e específicas sobrepostas são rejeitadas;
 - serviços de outro terapeuta são rejeitados.
 

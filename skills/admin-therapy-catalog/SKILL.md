@@ -78,8 +78,8 @@ admin autenticado, sem `service_role` no frontend.
 - Não persistir classes CSS/Tailwind no banco; usar chaves semânticas.
 - Chave semântica de cor deve ser selecionada em lista fechada alinhada a
   tokens TES, não como texto livre.
-- Benefícios e FAQs devem ser editados em campos estruturados; FAQ separa
-  pergunta e resposta.
+- Benefícios devem ser editados em campos estruturados. Não existe cadastro ou
+  payload de FAQ de terapias.
 - Benefícios devem selecionar `iconKey` por lista fechada compartilhada com a
   página pública da terapia; não aceitar chaves livres que a página pública não
   renderiza.
@@ -106,7 +106,7 @@ admin autenticado, sem `service_role` no frontend.
   conteúdo incompleto, despublicação, descontinuação e decisão de request.
 - Testar clique real em login/admin, modal de tema, foco durante digitação,
   slug automático, lista de temas ativa no cadastro de terapia e payload
-  estruturado de benefícios/FAQs.
+  estruturado de benefícios, sem FAQ de terapia.
 - Testar preview das imagens de temas no cadastro de terapia, upload de imagem
   no editor de terapia e upload no modal de tema sem salvar alterações
   destrutivas durante QA. Cobrir seleção de arquivo, arraste/soltura, MIME

@@ -21,10 +21,6 @@ export type PublicTherapyDetail = {
   id: string;
   introduction: string;
   name: string;
-  faqs: Array<{
-    answer: string;
-    question: string;
-  }>;
   safetyNote: string | null;
   seoDescription: string | null;
   seoTitle: string | null;
@@ -62,7 +58,6 @@ export type PublicTherapyDetailRow = {
   category_slug: string;
   complementary_description: string | null;
   description: string | null;
-  faqs: unknown;
   hero_focal_point: string | null;
   hero_image_url: string | null;
   highlights: unknown;

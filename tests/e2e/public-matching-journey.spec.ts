@@ -1,6 +1,34 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("public matching journey", () => {
+  for (const viewport of [
+    { height: 900, width: 1_440 },
+    { height: 900, width: 1_024 },
+    { height: 900, width: 768 },
+    { height: 844, width: 390 },
+    { height: 844, width: 375 },
+    { height: 844, width: 320 },
+  ]) {
+    test(`therapy detail stays usable without FAQ at ${viewport.width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(viewport);
+      await page.goto("/terapias/reiki", { waitUntil: "domcontentloaded" });
+
+      await expect(
+        page.getByRole("heading", {
+          name: "Profissionais que trabalham com Reiki",
+        }),
+      ).toBeVisible();
+      await expect(page.getByText("Perguntas frequentes")).not.toBeVisible();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth - window.innerWidth,
+        ),
+      ).toBeLessThanOrEqual(1);
+    });
+  }
+
   test("keeps Match context through therapy, profile, and reservation", async ({
     page,
   }) => {

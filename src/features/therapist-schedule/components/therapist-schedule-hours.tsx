@@ -84,6 +84,14 @@ export function TherapistScheduleHours({
     setRules(toEditableRules(initialSchedule.rules));
     setServices(initialSchedule.services);
     setTimezone(initialSchedule.timezone);
+    setScope((currentScope) =>
+      initialSchedule.services.some((service) => service.id === currentScope)
+        ? currentScope
+        : findDefaultScheduleScope(
+            initialSchedule.services,
+            initialSchedule.rules,
+          ),
+    );
     setScheduleVersion(initialSchedule.scheduleVersion);
     setIsDirty(false);
   }, [initialSchedule, scheduleVersion]);
@@ -120,11 +128,6 @@ export function TherapistScheduleHours({
       }),
     [agenda, referenceNow, scope, timezone],
   );
-  const inheritedRuleCount =
-    scope === "all"
-      ? 0
-      : rules.filter((rule) => rule.serviceId === null && rule.isActive).length;
-
   function markChanged() {
     setIsDirty(true);
     setFeedback(null);
@@ -157,7 +160,7 @@ export function TherapistScheduleHours({
       dayRules.length === 0
         ? [...rules, createRule(scope, dayOfWeek, "09:00", "17:00")]
         : rules.map((rule) =>
-            rule.serviceId === toServiceId(scope) &&
+            rule.serviceId === scope &&
             rule.dayOfWeek === dayOfWeek
               ? { ...rule, isActive: shouldActivate }
               : rule,
@@ -219,7 +222,7 @@ export function TherapistScheduleHours({
     const nextRules = [
       ...rules.filter(
         (rule) =>
-          rule.serviceId !== toServiceId(scope) ||
+          rule.serviceId !== scope ||
           !copyTargetDays.includes(rule.dayOfWeek),
       ),
       ...copyTargetDays.flatMap((dayOfWeek) =>
@@ -275,9 +278,7 @@ export function TherapistScheduleHours({
       requestId: crypto.randomUUID(),
       rules: rules
         .filter(
-          (rule) =>
-            rule.serviceId === null ||
-            schedulableServiceIds.has(rule.serviceId),
+          (rule) => schedulableServiceIds.has(rule.serviceId),
         )
         .map((rule) => ({
           ...rule,
@@ -344,6 +345,37 @@ export function TherapistScheduleHours({
     });
   }
 
+  if (services.length === 0) {
+    return (
+      <main className="mx-auto min-w-0 w-full max-w-[1210px] pb-14 text-tesText-primary">
+        <TherapistAgendaHeader activeTab="horarios" />
+        <section className="mt-5 rounded-[14px] border border-brand-lavender bg-white p-6 shadow-card sm:p-8">
+          <div className="max-w-2xl">
+            <CalendarDays
+              aria-hidden="true"
+              className="text-brand-primary"
+              size={30}
+            />
+            <h2 className="mt-4 text-xl font-extrabold text-brand-deep">
+              Cadastre uma terapia para configurar seus horários
+            </h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+              Cada terapia tem sua própria disponibilidade. Depois do cadastro,
+              você poderá definir dias, faixas e regras de agendamento por aqui.
+            </p>
+            <Link
+              className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+              href={routes.therapist.services}
+            >
+              Ir para Suas terapias
+              <ArrowRight aria-hidden="true" size={17} />
+            </Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto min-w-0 w-full max-w-[1210px] pb-14 text-tesText-primary">
       <form id="therapist-schedule-form" onSubmit={saveSchedule}>
@@ -402,7 +434,7 @@ export function TherapistScheduleHours({
                     Disponibilidade semanal
                   </h2>
                   <p className="mt-1 text-sm font-semibold leading-5 text-tesText-secondary">
-                    Defina as faixas em que novas sessões podem ser oferecidos.
+                    Defina as faixas em que novas sessões podem ser oferecidas.
                   </p>
                 </div>
                 <button
@@ -428,25 +460,12 @@ export function TherapistScheduleHours({
                   onChange={(event) => setScope(event.target.value)}
                   value={scope}
                 >
-                  <option value="all">Todas as terapias</option>
                   {services.map((service) => (
                     <option key={service.id} value={service.id}>
                       {service.title}
                     </option>
                   ))}
                 </select>
-                {inheritedRuleCount > 0 ? (
-                  <p className="mt-2 flex items-start gap-2 text-xs font-semibold leading-5 text-tesText-secondary">
-                    <Info
-                      aria-hidden="true"
-                      className="mt-0.5 shrink-0 text-brand-primary"
-                      size={15}
-                    />
-                    Esta terapia também herda {inheritedRuleCount}{" "}
-                    {inheritedRuleCount === 1 ? "faixa geral" : "faixas gerais"}
-                    .
-                  </p>
-                ) : null}
               </div>
 
               <div className="divide-y divide-brand-lavender">
@@ -1236,7 +1255,7 @@ function createRule(
     endTime,
     id: null,
     isActive: true,
-    serviceId: toServiceId(scope),
+    serviceId: scope,
     startTime,
   };
 }
@@ -1247,10 +1266,6 @@ function toEditableRules(rules: TherapistScheduleRule[]): EditableRule[] {
     endTime: normalizeClock(rule.endTime),
     startTime: normalizeClock(rule.startTime),
   }));
-}
-
-function toServiceId(scope: ScheduleScope) {
-  return scope === "all" ? null : scope;
 }
 
 function findNextAvailableRange({
@@ -1266,7 +1281,7 @@ function findNextAvailableRange({
   const scopedRangeEnds = rules
     .filter(
       (rule) =>
-        rule.serviceId === toServiceId(scope) &&
+        rule.serviceId === scope &&
         rule.dayOfWeek === dayOfWeek &&
         rule.isActive,
     )

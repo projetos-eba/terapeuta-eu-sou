@@ -8,7 +8,7 @@ export type AvailabilityRuleInput = {
   dayOfWeek: number;
   endTime: string;
   isActive: boolean;
-  serviceId: string | null;
+  serviceId: string;
   startTime: string;
   timezone: string;
 };
@@ -46,7 +46,7 @@ export type AvailabilityServiceInput = {
   settings?: BookingSettingsInput;
 };
 
-const blockedStatuses = new Set(["confirmed", "pending_payment", "completed"]);
+const blockedStatuses = new Set(["draft", "pending_payment", "confirmed"]);
 
 const defaultBookingSettings = {
   bufferAfterMinutes: 10,
@@ -123,7 +123,10 @@ function formatTimeLabel(date: Date) {
   });
 }
 
-function matchesService(serviceId: string | null, selectedServiceId: string) {
+function matchesExceptionService(
+  serviceId: string | null,
+  selectedServiceId: string,
+) {
   return !serviceId || serviceId === selectedServiceId;
 }
 
@@ -151,7 +154,6 @@ function uniqueSlots(slots: AvailabilitySlot[]) {
 function buildSlotsForWindow({
   bookings,
   date,
-  durationWithBuffers,
   earliestStart,
   exceptions,
   now,
@@ -162,7 +164,6 @@ function buildSlotsForWindow({
 }: {
   bookings: BookingConflictInput[];
   date: Date;
-  durationWithBuffers: number;
   earliestStart: Date;
   exceptions: AvailabilityExceptionInput[];
   now: Date;
@@ -175,12 +176,12 @@ function buildSlotsForWindow({
 
   for (
     let cursor = new Date(window.start);
-    cursor.getTime() + durationWithBuffers * 60_000 <= window.end.getTime();
+    cursor.getTime() +
+        (serviceDurationMinutes + settings.bufferAfterMinutes) * 60_000 <=
+      window.end.getTime();
     cursor = new Date(cursor.getTime() + settings.intervalMinutes * 60_000)
   ) {
-    const startsAt = new Date(
-      cursor.getTime() + settings.bufferBeforeMinutes * 60_000,
-    );
+    const startsAt = new Date(cursor);
     const endsAt = new Date(
       startsAt.getTime() + serviceDurationMinutes * 60_000,
     );
@@ -195,7 +196,9 @@ function buildSlotsForWindow({
 
     const blockedByException = exceptions.some((exception) => {
       if (exception.isAvailable) return false;
-      if (!matchesService(exception.serviceId, selectedServiceId)) return false;
+      if (!matchesExceptionService(exception.serviceId, selectedServiceId)) {
+        return false;
+      }
 
       return overlaps(
         occupiedStartsAt,
@@ -258,10 +261,6 @@ export function buildAvailabilityDays({
   const earliestStart = new Date(
     now.getTime() + resolvedSettings.minNoticeMinutes * 60_000,
   );
-  const durationWithBuffers =
-    serviceDurationMinutes +
-    resolvedSettings.bufferBeforeMinutes +
-    resolvedSettings.bufferAfterMinutes;
   const days: AvailabilityDay[] = [];
 
   for (let dayOffset = 0; dayOffset < horizonDays; dayOffset += 1) {
@@ -271,7 +270,7 @@ export function buildAvailabilityDays({
       (rule) =>
         rule.isActive &&
         rule.dayOfWeek === date.getDay() &&
-        matchesService(rule.serviceId, selectedServiceId),
+        rule.serviceId === selectedServiceId,
     );
     const ruleWindows = matchingRules.map((rule) => ({
       end: parseClock(date, rule.endTime),
@@ -281,7 +280,7 @@ export function buildAvailabilityDays({
       .filter(
         (exception) =>
           exception.isAvailable &&
-          matchesService(exception.serviceId, selectedServiceId),
+          matchesExceptionService(exception.serviceId, selectedServiceId),
       )
       .flatMap((exception) => {
         const start = new Date(exception.startsAt);
@@ -302,7 +301,6 @@ export function buildAvailabilityDays({
           buildSlotsForWindow({
             bookings,
             date,
-            durationWithBuffers,
             earliestStart,
             exceptions,
             now,
@@ -401,7 +399,7 @@ function validateAvailabilityInput({
 
   const relevantRules = rules.filter(
     (rule) =>
-      rule.isActive && matchesService(rule.serviceId, settings.serviceId),
+      rule.isActive && rule.serviceId === settings.serviceId,
   );
   const hasOverlappingRule = relevantRules.some((rule, index) => {
     const anchor = new Date(2026, 0, 4);

@@ -114,7 +114,7 @@ export type TherapistAgendaReadModel = {
       endTime: string;
       id: string;
       isActive: boolean;
-      serviceId: string | null;
+      serviceId: string;
       startTime: string;
       timezone: string;
     }>;

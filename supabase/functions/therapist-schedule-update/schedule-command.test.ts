@@ -74,6 +74,20 @@ Deno.test("schedule command rejects duplicate rule identifiers", () => {
   assertEquals(error.code, "duplicate_schedule_rule");
 });
 
+Deno.test("schedule command rejects retired general availability rules", () => {
+  const body = commandFixture();
+  body.rules = [
+    { ...body.rules![0], serviceId: null as unknown as string },
+  ];
+
+  const error = assertThrows(
+    () => validateScheduleCommand(body),
+    DomainError,
+  );
+
+  assertEquals(error.code, "invalid_availability_range");
+});
+
 Deno.test("schedule command rejects duplicate service settings", () => {
   const body = commandFixture();
   body.serviceSettings = [

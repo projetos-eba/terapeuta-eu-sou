@@ -61,7 +61,7 @@ export function parseSaveTherapistScheduleInput(
       endTime,
       id,
       isActive: requiredBoolean(rule.isActive),
-      serviceId: rule.serviceId === null ? null : requiredUuid(rule.serviceId),
+      serviceId: requiredUuid(rule.serviceId),
       startTime,
     };
   });
@@ -115,7 +115,7 @@ function parseRule(value: unknown): TherapistScheduleRule {
     endTime,
     id: requiredUuid(row.id),
     isActive: requiredBoolean(row.isActive),
-    serviceId: row.serviceId === null ? null : requiredUuid(row.serviceId),
+    serviceId: requiredUuid(row.serviceId),
     startTime,
   };
 }

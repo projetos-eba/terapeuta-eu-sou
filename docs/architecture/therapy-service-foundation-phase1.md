@@ -18,7 +18,7 @@ Data: 2026-07-28
 | --------------------- | ---------------------------------------------------- | ------------------------------- | ------------------------------------------------------ |
 | Terapia da plataforma | `therapies`                                          | Plataforma/Admin                | Não nasce por texto livre do terapeuta.                |
 | Categoria             | `therapy_categories`                                 | Plataforma/Admin                | Categoria precisa estar ativa para criação de serviço. |
-| Conteúdo editorial    | `therapy_public_content`, highlights, benefits, FAQs | Plataforma/Admin                | Não é duplicado em serviço.                            |
+| Conteúdo editorial    | `therapy_public_content`, highlights, benefits       | Plataforma/Admin                | Não é duplicado em serviço; FAQ de terapia não faz parte do contrato ativo. |
 | Match                 | `matching_therapy_settings`, `matching_weights`      | Plataforma/Admin                | Independente de publicação e de novos serviços.        |
 | Serviço do terapeuta  | `therapist_services`                                 | Edge Function autenticada + RPC | Pertence ao terapeuta e aponta para `therapy_id`.      |
 | Temas do serviço      | `therapist_service_matching_themes`                  | Terapeuta via RPC transacional  | Subconjunto dos temas administrados da terapia.        |
@@ -57,7 +57,7 @@ therapy_categories 1---n therapies 1---n therapist_services 1---n bookings
                               |                  |
                               |                  +--- therapist_service_booking_settings
                               +--- matching_therapy_settings
-                              +--- therapy_public_content/highlights/benefits/faqs
+                              +--- therapy_public_content/highlights/benefits
 ```
 
 ## APIs e RPCs

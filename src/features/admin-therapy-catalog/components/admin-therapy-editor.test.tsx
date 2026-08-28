@@ -15,7 +15,7 @@ describe("AdminTherapyEditor", () => {
     vi.unstubAllGlobals();
   });
 
-  it("submits semantic color, structured benefits and structured FAQs", async () => {
+  it("submits semantic color and structured benefits without FAQ fields", async () => {
     const onSave = vi.fn().mockResolvedValue(undefined);
 
     render(
@@ -77,7 +77,7 @@ describe("AdminTherapyEditor", () => {
     fireEvent.change(screen.getByLabelText("Slug"), {
       target: { value: "reiki" },
     });
-    fireEvent.change(screen.getByLabelText("Resumo"), {
+    fireEvent.change(document.querySelector<HTMLTextAreaElement>('textarea[name="shortDescription"]')!, {
       target: { value: "Prática complementar de cuidado energético." },
     });
     fireEvent.change(
@@ -98,14 +98,7 @@ describe("AdminTherapyEditor", () => {
     fireEvent.change(screen.getByLabelText("Ícone visual 2"), {
       target: { value: "energy" },
     });
-    fireEvent.change(screen.getByLabelText("Pergunta 1"), {
-      target: { value: "Como acontece online?" },
-    });
-    fireEvent.change(screen.getByLabelText("Resposta"), {
-      target: {
-        value: "A sessão acontece por vídeo, com orientação do terapeuta.",
-      },
-    });
+    expect(screen.queryByText("FAQs")).not.toBeInTheDocument();
     fireEvent.click(screen.getByLabelText("Emoções e Bem-Estar"));
     fireEvent.click(screen.getByLabelText("Relacionamentos"));
     fireEvent.click(screen.getByLabelText("Autoconhecimento e Transformação"));
@@ -136,15 +129,50 @@ describe("AdminTherapyEditor", () => {
           },
         ],
         calendarColorKey: "green",
-        faqs: [
-          {
-            answer: "A sessão acontece por vídeo, com orientação do terapeuta.",
-            question: "Como acontece online?",
-          },
-        ],
         themeIds: ["theme-1", "theme-2", "theme-3"],
       }),
     );
+  });
+
+  it("shows the configured limits and blocks an overlong field", async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <AdminTherapyEditor
+        categories={[
+          {
+            id: "category-1",
+            isActive: true,
+            name: "Energia",
+            slug: "energia",
+            sortOrder: 1,
+          },
+        ]}
+        isSaving={false}
+        matchingThemes={[{ id: "theme-1", imageUrl: null, name: "Tema", slug: "tema", sortOrder: 1 }]}
+        onCancel={() => undefined}
+        onSave={onSave}
+        therapy={null}
+      />,
+    );
+
+    expect(document.querySelector('textarea[name="shortDescription"]')).toHaveAttribute("maxLength", "100");
+    expect(document.querySelector('textarea[name="description"]')).toHaveAttribute("maxLength", "200");
+    expect(document.querySelector('textarea[name="introduction"]')).toHaveAttribute("maxLength", "160");
+    expect(document.querySelector('textarea[name="complementaryDescription"]')).toHaveAttribute("maxLength", "200");
+    expect(document.querySelector('textarea[name="safetyNote"]')).toHaveAttribute("maxLength", "150");
+    expect(document.querySelector('input[name="benefitDescription"]')).toHaveAttribute("maxLength", "100");
+
+    fireEvent.change(screen.getByLabelText("Nome canônico"), { target: { value: "Reiki" } });
+    fireEvent.change(screen.getByLabelText("Slug"), { target: { value: "reiki" } });
+    fireEvent.change(screen.getByLabelText("Benefício 1"), { target: { value: "Pausa" } });
+    fireEvent.change(screen.getByLabelText("Benefício 2"), { target: { value: "Cuidado" } });
+    fireEvent.change(document.querySelector<HTMLTextAreaElement>('textarea[name="reason"]')!, { target: { value: "Cadastro inicial." } });
+    fireEvent.change(document.querySelector<HTMLTextAreaElement>('textarea[name="shortDescription"]')!, { target: { value: "r".repeat(101) } });
+    fireEvent.click(screen.getByRole("button", { name: "Salvar rascunho" }));
+
+    expect(await screen.findByText("O resumo deve ter no máximo 100 caracteres.")).toBeInTheDocument();
+    expect(onSave).not.toHaveBeenCalled();
   });
 
   it("uploads a therapy image and fills fallback and hero URLs", async () => {

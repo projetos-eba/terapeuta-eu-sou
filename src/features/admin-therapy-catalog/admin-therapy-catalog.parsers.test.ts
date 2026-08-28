@@ -62,7 +62,6 @@ describe("admin therapy catalog parsers", () => {
             approachLabel: "Energia",
             benefits: [],
             complementaryDescription: null,
-            faqs: [],
             heroFocalPoint: "center",
             heroImageUrl: null,
             highlights: [],

@@ -46,8 +46,8 @@ export async function getPublicTherapyDetail(
   try {
     const rows = await fetchPublicView<PublicTherapyDetailRow>(
       [
-        "public_therapy_details_v",
-        "?select=*",
+      "public_therapy_details_v",
+        "?select=id,slug,name,short_description,description,hero_image_url,image_url,therapist_count,category_slug,category_name,subtitle,introduction,complementary_description,safety_note,seo_title,seo_description,approach_label,approach_icon_key,visual_theme_key,hero_focal_point,highlights,benefits,published_at,updated_at,theme_names",
         `&slug=eq.${slugFilter(slug)}`,
         "&limit=1",
       ].join(""),
@@ -94,7 +94,6 @@ function mapTherapyDetail(row: PublicTherapyDetailRow): PublicTherapyDetail {
     },
     complementaryDescription: row.complementary_description,
     description: row.description ?? "",
-    faqs: parseFaqs(row.faqs),
     heroFocalPoint: parseHeroFocalPoint(row.hero_focal_point),
     heroImageUrl: row.hero_image_url,
     highlights: parseItems(row.highlights),
@@ -126,22 +125,6 @@ function parseItems<T extends { iconKey: string; title: string }>(
         "iconKey" in item &&
         typeof item.title === "string" &&
         typeof item.iconKey === "string",
-    )
-    .map((item) => ({ ...item }));
-}
-
-function parseFaqs(value: unknown): PublicTherapyDetail["faqs"] {
-  if (!Array.isArray(value)) return [];
-
-  return value
-    .filter(
-      (item): item is { answer: string; question: string } =>
-        Boolean(item) &&
-        typeof item === "object" &&
-        "question" in item &&
-        "answer" in item &&
-        typeof item.question === "string" &&
-        typeof item.answer === "string",
     )
     .map((item) => ({ ...item }));
 }

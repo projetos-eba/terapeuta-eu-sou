@@ -15,6 +15,15 @@ import type {
   AdminTherapyDraftCommand,
 } from "../admin-therapy-catalog.types";
 
+const contentLimits = {
+  complementaryDescription: 200,
+  description: 200,
+  introduction: 160,
+  safetyNote: 150,
+  shortDescription: 100,
+  benefitDescription: 100,
+} as const;
+
 export function AdminTherapyEditor({
   categories,
   isSaving,
@@ -31,15 +40,11 @@ export function AdminTherapyEditor({
   therapy: AdminTherapy | null;
 }) {
   const initialBenefits = therapy?.publicContent.benefits ?? [];
-  const initialFaqs = therapy?.publicContent.faqs ?? [];
   const [benefitCount, setBenefitCount] = useState(() =>
     Math.max(2, initialBenefits.length),
   );
   const [selectedThemeIds, setSelectedThemeIds] = useState(() =>
     (therapy?.matchingThemeIds ?? []).slice(0, 3),
-  );
-  const [faqCount, setFaqCount] = useState(() =>
-    Math.max(1, initialFaqs.length),
   );
   const [imageUrl, setImageUrl] = useState(therapy?.imageUrl ?? "");
   const [heroImageUrl, setHeroImageUrl] = useState(
@@ -50,10 +55,23 @@ export function AdminTherapyEditor({
   const [imageUploadStatus, setImageUploadStatus] = useState<string | null>(
     null,
   );
+  const [formError, setFormError] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setFormError(null);
     const form = new FormData(event.currentTarget);
+
+    const lengthError = validateContentLengths(form);
+    if (lengthError) {
+      setFormError(lengthError);
+      return;
+    }
+
+    if (selectedThemeIds.length < 1 || selectedThemeIds.length > 3) {
+      setFormError("Selecione de 1 a 3 temas do Match antes de salvar.");
+      return;
+    }
 
     await onSave({
       aliases: splitLines(String(form.get("aliases") ?? "")),
@@ -61,7 +79,6 @@ export function AdminTherapyEditor({
       calendarColorKey: String(form.get("calendarColorKey") || "neutral"),
       categoryId: String(form.get("categoryId") ?? ""),
       description: nullable(String(form.get("description") ?? "")),
-      faqs: collectFaqs(form),
       highlights: splitLines(String(form.get("highlights") ?? "")).map(
         (title) => ({
           iconKey: "sparkles",
@@ -103,6 +120,15 @@ export function AdminTherapyEditor({
 
   return (
     <form className="space-y-6" onSubmit={handleSubmit}>
+      {formError ? (
+        <p
+          aria-live="assertive"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-800"
+        >
+          {formError}
+        </p>
+      ) : null}
+
       <Section title="Identidade">
         <div className="grid gap-4 md:grid-cols-2">
           <Field
@@ -140,12 +166,14 @@ export function AdminTherapyEditor({
         <Textarea
           defaultValue={therapy?.shortDescription}
           label="Resumo"
+          maxLength={contentLimits.shortDescription}
           name="shortDescription"
           required
         />
         <Textarea
           defaultValue={therapy?.description}
           label="Abordagem / descrição editorial"
+          maxLength={contentLimits.description}
           name="description"
         />
         <Textarea
@@ -276,16 +304,19 @@ export function AdminTherapyEditor({
         <Textarea
           defaultValue={therapy?.publicContent.introduction}
           label="O que é"
+          maxLength={contentLimits.introduction}
           name="introduction"
         />
         <Textarea
           defaultValue={therapy?.publicContent.complementaryDescription}
           label="Descrição complementar"
+          maxLength={contentLimits.complementaryDescription}
           name="complementaryDescription"
         />
         <Textarea
           defaultValue={therapy?.publicContent.safetyNote}
           label="Nota responsável"
+          maxLength={contentLimits.safetyNote}
           name="safetyNote"
         />
         <Textarea
@@ -328,8 +359,10 @@ export function AdminTherapyEditor({
                 <Field
                   defaultValue={benefit?.description}
                   label="Descrição opcional"
+                  maxLength={contentLimits.benefitDescription}
                   name="benefitDescription"
                   placeholder="Ex.: Apoia um momento de escuta e organização interna."
+                  showCounter
                 />
                 {index === benefitCount - 1 && benefitCount > 2 ? (
                   <button
@@ -353,57 +386,6 @@ export function AdminTherapyEditor({
           >
             <Plus className="size-4" aria-hidden="true" />
             Adicionar benefício
-          </button>
-        </div>
-        <div className="space-y-3">
-          <div>
-            <h4 className="text-sm font-extrabold text-brand-deep">FAQs</h4>
-            <p className="mt-1 text-xs font-bold text-tesText-secondary">
-              Separe pergunta e resposta para revisar a experiência editorial
-              com mais clareza.
-            </p>
-          </div>
-          {Array.from({ length: faqCount }).map((_, index) => {
-            const faq = initialFaqs[index];
-
-            return (
-              <div
-                className="grid gap-3 rounded-xl border border-brand-lavender bg-surface-soft p-3 md:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)_auto]"
-                key={`faq-${index}`}
-              >
-                <Field
-                  defaultValue={faq?.question}
-                  label={`Pergunta ${index + 1}`}
-                  name="faqQuestion"
-                  placeholder="Ex.: Como acontece uma sessão online?"
-                />
-                <Textarea
-                  defaultValue={faq?.answer}
-                  label="Resposta"
-                  name="faqAnswer"
-                />
-                {index === faqCount - 1 && faqCount > 1 ? (
-                  <button
-                    aria-label={`Remover FAQ ${index + 1}`}
-                    className="mt-7 grid size-11 place-items-center rounded-full border border-brand-lavender text-brand-primary transition hover:bg-white"
-                    onClick={() => setFaqCount((current) => current - 1)}
-                    type="button"
-                  >
-                    <Trash2 className="size-4" aria-hidden="true" />
-                  </button>
-                ) : (
-                  <span aria-hidden="true" className="hidden md:block" />
-                )}
-              </div>
-            );
-          })}
-          <button
-            className="inline-flex min-h-11 items-center gap-2 rounded-full border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
-            onClick={() => setFaqCount((current) => current + 1)}
-            type="button"
-          >
-            <Plus className="size-4" aria-hidden="true" />
-            Adicionar FAQ
           </button>
         </div>
       </Section>
@@ -795,7 +777,9 @@ function Field({
   name,
   onChange,
   placeholder,
+  maxLength,
   required,
+  showCounter = false,
   value,
 }: {
   defaultValue?: string | null;
@@ -803,7 +787,9 @@ function Field({
   name: string;
   onChange?: (value: string) => void;
   placeholder?: string;
+  maxLength?: number;
   required?: boolean;
+  showCounter?: boolean;
   value?: string;
 }) {
   return (
@@ -813,15 +799,21 @@ function Field({
       </span>
       <input
         className="min-h-11 w-full rounded-xl border border-brand-lavender px-3 text-sm font-bold text-brand-deep outline-none focus:ring-4 focus:ring-ring/20"
-        defaultValue={defaultValue ?? ""}
+        defaultValue={value === undefined ? defaultValue ?? "" : undefined}
         name={name}
         onChange={
           onChange ? (event) => onChange(event.target.value) : undefined
         }
         placeholder={placeholder}
+        maxLength={maxLength}
         required={required}
         value={value}
       />
+      {showCounter && maxLength ? (
+        <span className="mt-1 block text-right text-xs font-bold text-tesText-secondary">
+          Limite de {maxLength} caracteres
+        </span>
+      ) : null}
     </label>
   );
 }
@@ -867,15 +859,21 @@ function Textarea({
   defaultValue,
   hint,
   label,
+  maxLength,
   name,
   required,
+  showCounter = true,
 }: {
   defaultValue?: string | null;
   hint?: string;
   label: string;
+  maxLength?: number;
   name: string;
   required?: boolean;
+  showCounter?: boolean;
 }) {
+  const [length, setLength] = useState(() => (defaultValue ?? "").length);
+
   return (
     <label>
       <span className="mb-2 block text-sm font-extrabold text-brand-deep">
@@ -884,12 +882,21 @@ function Textarea({
       <textarea
         className="min-h-24 w-full rounded-xl border border-brand-lavender px-3 py-2 text-sm font-semibold text-brand-deep outline-none focus:ring-4 focus:ring-ring/20"
         defaultValue={defaultValue ?? ""}
+        maxLength={maxLength}
         name={name}
+        onChange={(event) => setLength(event.target.value.length)}
         required={required}
       />
       {hint ? (
         <span className="mt-1 block text-xs font-bold text-tesText-secondary">
           {hint}
+        </span>
+      ) : null}
+      {showCounter && maxLength ? (
+        <span
+          className={`mt-1 block text-right text-xs font-bold ${length > maxLength ? "text-red-700" : "text-tesText-secondary"}`}
+        >
+          {length}/{maxLength}
         </span>
       ) : null}
     </label>
@@ -941,16 +948,32 @@ function collectBenefits(form: FormData) {
     .filter((benefit) => benefit.title.length > 0);
 }
 
-function collectFaqs(form: FormData) {
-  const questions = form.getAll("faqQuestion").map(String);
-  const answers = form.getAll("faqAnswer").map(String);
+function validateContentLengths(form: FormData) {
+  const fields = [
+    ["shortDescription", contentLimits.shortDescription, "O resumo"],
+    ["description", contentLimits.description, "A abordagem"],
+    ["introduction", contentLimits.introduction, "O campo O que é"],
+    [
+      "complementaryDescription",
+      contentLimits.complementaryDescription,
+      "A descrição complementar",
+    ],
+    ["safetyNote", contentLimits.safetyNote, "A nota responsável"],
+  ] as const;
 
-  return questions
-    .map((question, index) => ({
-      answer: answers[index]?.trim() ?? "",
-      question: question.trim(),
-    }))
-    .filter((faq) => faq.question.length > 0 && faq.answer.length > 0);
+  for (const [name, limit, label] of fields) {
+    if (String(form.get(name) ?? "").length > limit) {
+      return `${label} deve ter no máximo ${limit} caracteres.`;
+    }
+  }
+
+  for (const description of form.getAll("benefitDescription")) {
+    if (String(description).length > contentLimits.benefitDescription) {
+      return `A descrição opcional do benefício deve ter no máximo ${contentLimits.benefitDescription} caracteres.`;
+    }
+  }
+
+  return null;
 }
 
 function nullable(value: string) {
