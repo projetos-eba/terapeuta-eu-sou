@@ -50,6 +50,7 @@ const completableFulfillmentStatuses: ReadonlySet<FulfillmentStatus | null> =
 
 const completedFulfillmentStatuses: ReadonlySet<FulfillmentStatus> = new Set([
   FulfillmentStatus.AutoConfirmed,
+  FulfillmentStatus.ConfirmedBilateral,
   FulfillmentStatus.ConfirmedByPatientReview,
   FulfillmentStatus.ConfirmedByTherapist,
 ]);

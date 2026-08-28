@@ -22,6 +22,17 @@ describe("parseTherapistCalendarReadModel", () => {
       SessionReadModelContractError,
     );
   });
+
+  it("accepts the canonical bilateral fulfillment state", () => {
+    const payload = calendarPayload();
+    payload.bookings[0].fulfillmentStatus = "confirmed_bilateral";
+
+    const result = parseTherapistCalendarReadModel(payload);
+
+    expect(result.bookings[0]?.fulfillmentStatus).toBe(
+      "confirmed_bilateral",
+    );
+  });
 });
 
 function calendarPayload() {
