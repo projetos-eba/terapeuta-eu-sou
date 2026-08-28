@@ -5,6 +5,8 @@
 -- first offered start away from the configured range start. The after buffer
 -- still has to fit inside the configured range end.
 
+begin;
+
 lock table public.availability_rules in share row exclusive mode;
 
 create temporary table migrated_global_availability_therapists
@@ -383,3 +385,5 @@ begin
   execute v_updated_definition;
 end;
 $$;
+
+commit;
