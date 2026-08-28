@@ -156,4 +156,8 @@ Rodar:
   preservam as imagens editoriais oficiais de cada terapia (`imageUrl`); a
   ilustração `publicTherapiesCard` fica somente no quadro “Não encontrou o que
   procura?”, sem alterar o contrato do catálogo.
+- Uploads administrativos de terapia usam o bucket público
+  `admin-public-media`. A imagem do detalhe prioriza `hero_image_url`, mas usa
+  `image_url` como fallback quando não houver hero dedicado, preservando a
+  mesma experiência das imagens editoriais locais.
 - Consulte `docs/design-system/platform-assets.md`.

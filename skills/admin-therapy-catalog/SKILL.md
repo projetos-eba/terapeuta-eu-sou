@@ -59,6 +59,9 @@ Dados vêm de `admin_list_therapy_catalog_v1`, `admin_therapy_impact_v1`,
 `admin_decide_therapy_catalog_request_v1`. Temas e refinamentos do Match vêm
 do contrato admin `admin_list_matching_v1`; páginas administrativas não devem
 depender exclusivamente de views públicas como `public_matching_config`.
+O contrato de listagem administrativa já inclui os temas ativos e os vínculos
+canônicos da terapia; não completar o editor com
+`public_matching_therapy_themes_v`, pois ela omite rascunhos por design.
 Imagens administrativas públicas, como prévias de temas do Match, usam o
 bucket `admin-public-media` e são enviadas por `/api/admin/media` com token do
 admin autenticado, sem `service_role` no frontend.
