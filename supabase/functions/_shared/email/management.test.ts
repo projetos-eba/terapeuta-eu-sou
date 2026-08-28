@@ -33,6 +33,16 @@ Deno.test("custom HTML removes executable content", () => {
   assertEquals(sanitized.includes("javascript:"), false);
 });
 
+Deno.test("custom HTML discards document titles and their visible text", () => {
+  const sanitized = sanitizeEmailHtml(
+    '<html><head><meta charset="utf-8"><title>Loose title</title></head><body><h1>Visible title</h1></body></html>',
+  );
+
+  assertEquals(sanitized.includes("<title"), false);
+  assertEquals(sanitized.includes("Loose title"), false);
+  assertEquals(sanitized.includes("<h1>Visible title</h1>"), true);
+});
+
 Deno.test("email-safe table and button styling survives sanitization", () => {
   const sanitized = sanitizeEmailHtml(
     '<table role="presentation" width="100%" style="width:100%;border-collapse:collapse"><tr><td align="center" style="padding:16px 12px;border:1px solid #e7daf2"><a href="https://example.test" style="display:inline-block;border-radius:999px;background-color:#6c3d91;text-decoration:none">Acessar</a></td></tr></table>',

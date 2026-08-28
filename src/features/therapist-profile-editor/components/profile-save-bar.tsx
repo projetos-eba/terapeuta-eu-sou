@@ -6,8 +6,14 @@ import { AppPageActions, AppStickySaveBar } from "@/components/app-page";
 import { TESButton } from "@/components/tes";
 
 type PendingAction = "discard_draft" | "publish" | "save_draft" | "unpublish";
+type AutoSaveState =
+  | { status: "idle" }
+  | { status: "saving" }
+  | { status: "saved" }
+  | { message: string; status: "error" };
 
 export function ProfileSaveBar({
+  autoSaveState,
   firstConfiguration,
   hasDraft,
   hasUnsavedChanges,
@@ -19,6 +25,7 @@ export function ProfileSaveBar({
   propagationNotice,
   published,
 }: {
+  autoSaveState: AutoSaveState;
   firstConfiguration: boolean;
   hasDraft: boolean;
   hasUnsavedChanges: boolean;
@@ -32,6 +39,7 @@ export function ProfileSaveBar({
 }) {
   const publishDisabled =
     pendingAction !== null ||
+    autoSaveState.status === "saving" ||
     (firstConfiguration ? false : !hasDraft || hasUnsavedChanges);
   const message = getSaveBarMessage({
     firstConfiguration,
@@ -50,12 +58,40 @@ export function ProfileSaveBar({
           <p className="text-sm font-semibold leading-6 text-tesText-secondary">
             {message.description}
           </p>
+          {autoSaveState.status === "saving" ? (
+            <p
+              className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary"
+              role="status"
+            >
+              Salvando rascunho automaticamente…
+            </p>
+          ) : null}
+          {autoSaveState.status === "saved" ? (
+            <p
+              className="mt-1 text-sm font-semibold leading-6 text-status-success"
+              role="status"
+            >
+              Rascunho salvo automaticamente.
+            </p>
+          ) : null}
+          {autoSaveState.status === "error" ? (
+            <p
+              className="mt-1 text-sm font-semibold leading-6 text-status-danger"
+              role="alert"
+            >
+              {autoSaveState.message}
+            </p>
+          ) : null}
         </div>
         <AppPageActions className="justify-end">
           {firstConfiguration ? null : (
             <TESButton
               className="min-h-11 rounded-lg"
-              disabled={!hasUnsavedChanges || pendingAction !== null}
+              disabled={
+                !hasUnsavedChanges ||
+                pendingAction !== null ||
+                autoSaveState.status === "saving"
+              }
               onClick={onSaveDraft}
               type="button"
               variant="secondary"
@@ -73,7 +109,9 @@ export function ProfileSaveBar({
           {hasDraft ? (
             <TESButton
               className="min-h-11 rounded-lg"
-              disabled={pendingAction !== null}
+              disabled={
+                pendingAction !== null || autoSaveState.status === "saving"
+              }
               onClick={onDiscardDraft}
               type="button"
               variant="secondary"
@@ -85,7 +123,9 @@ export function ProfileSaveBar({
           {published ? (
             <TESButton
               className="min-h-11 rounded-lg"
-              disabled={pendingAction !== null}
+              disabled={
+                pendingAction !== null || autoSaveState.status === "saving"
+              }
               onClick={onUnpublish}
               type="button"
               variant="secondary"

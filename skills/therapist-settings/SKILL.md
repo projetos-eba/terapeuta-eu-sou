@@ -80,6 +80,8 @@ access token and Supabase RLS.
 - The page must make the three states understandable: `Perfil completo` is the
   editorial content, `Cadastro aprovado` is the administrative review, and
   `Perfil publicado` is the public visibility.
+- When a private document is rejected for size, its `TESFeedbackDialog` must
+  state the actionable 10 MB limit without exposing implementation details.
 
 ## Database
 
@@ -112,6 +114,8 @@ Any broader profile update requires a new security review.
 - Documentos já enviados aparecem no primeiro carregamento e mantêm o botão
   `Substituir documento` após remount/navegação.
 - Links point to the canonical shell routes.
+- An oversized private document is not forwarded and its error dialog states
+  the 10 MB file-size limit.
 - Free sees `Conhecer planos`; Premium can open Premium Plus and cancel;
   Premium Plus can schedule Premium or cancel; a scheduled cancellation can be
   reversed.

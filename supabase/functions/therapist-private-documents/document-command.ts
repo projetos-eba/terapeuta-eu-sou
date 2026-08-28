@@ -145,7 +145,7 @@ export async function validatePrivateDocumentUpload(file: File) {
     throw new DomainError(
       "VALIDATION_ERROR",
       422,
-      "O arquivo deve ter no máximo 10 MB.",
+      "Não foi possível concluir a operação. Tamanho do arquivo excede o limite de 10 MB.",
     );
   }
 

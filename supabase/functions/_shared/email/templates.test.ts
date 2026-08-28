@@ -31,6 +31,12 @@ Deno.test("every registered event renders the TES email shell from its controlle
     assertEquals(rendered.html.match(/<h1\b/g)?.length, 1);
     assert(rendered.html.includes("Central de Ajuda"));
     assert(rendered.html.includes("display:none"));
+    assertEquals(rendered.html.includes("<title"), false);
+    const head = rendered.html.match(/<head>([\s\S]*?)<\/head>/)?.[1] ?? "";
+    assertEquals(
+      head.replace(/<meta\b[^>]*>/g, "").trim(),
+      "",
+    );
   }
 });
 

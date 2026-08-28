@@ -39,6 +39,9 @@ export const requiredPrivateDocuments: Array<{
   },
 ];
 
+const documentSizeExceededMessage =
+  "Não foi possível concluir a operação. Tamanho do arquivo excede o limite de 10 MB.";
+
 export function TherapistPrivateDocumentsSection({
   initialDocuments,
   initialVerificationStatus,
@@ -81,7 +84,11 @@ export function TherapistPrivateDocumentsSection({
     setUploadingKind(null);
 
     if (result.status === "error") {
-      setFeedback(result.error.message);
+      setFeedback(
+        result.error.message.includes("10 MB")
+          ? documentSizeExceededMessage
+          : result.error.message,
+      );
       return;
     }
 
@@ -176,6 +183,7 @@ function PrivateDocumentCard({
     <div className="rounded-[24px] border border-border bg-white p-5">
       <input
         accept=".pdf,image/jpeg,image/png"
+        aria-label={`Enviar ${title}`}
         className="sr-only"
         onChange={(event) => {
           const file = event.currentTarget.files?.[0];
