@@ -2,7 +2,7 @@
 
 Data: 2026-07-26
 
-Status: aceito e implementado; A3.0-A3.3 concluídos.
+Status: aceito e implementado; A3.0-A3.3 concluídos. Revisado em 2026-08-28.
 
 ## Contexto
 
@@ -13,7 +13,7 @@ porém, esses valores não possuem a mesma autoridade:
 - a duração pertence ao serviço;
 - buffers, antecedência, horizonte e cadência são configurações do serviço;
 - o fuso é uma configuração de negócio do terapeuta;
-- as faixas semanais podem ser gerais ou específicas por serviço;
+- as faixas semanais pertencem a uma terapia específica;
 - o preview não pode confirmar disponibilidade transacional.
 
 O schema anterior também não possuía uma versão única para impedir que duas
@@ -28,9 +28,12 @@ abas sobrescrevessem a configuração de horários simultaneamente.
   compatibilidade e é exposto no contrato como `slotStepMinutes`.
 - Descanso e ocupação ao redor da sessão continuam representados por
   `buffer_before_minutes` e `buffer_after_minutes`.
-- `availability_rules` continua armazenando as faixas semanais; `service_id`
-  nulo representa a regra geral.
-- Regras gerais e específicas para um serviço não podem se sobrepor.
+- `availability_rules` continua armazenando as faixas semanais e exige
+  `service_id`; não existe disponibilidade geral editável.
+- A migration de 2026-08-28 copia cada regra geral histórica para todas as
+  terapias existentes do profissional antes de tornar `service_id` obrigatório.
+- Regras ativas da mesma terapia não podem se sobrepor. Terapias distintas
+  podem ter faixas iguais ou diferentes.
 - A gravação substitui atomicamente o conjunto de regras e atualiza somente as
   configurações de serviço enviadas.
 - Toda gravação exige `expectedVersion` e `requestId`.
@@ -45,16 +48,27 @@ abas sobrescrevessem a configuração de horários simultaneamente.
 
 ## Contrato de interface
 
-O formulário de A3.2 deixa claro se o escopo é geral ou de uma terapia. A
-cópia implementada atua entre dias do mesmo escopo; uma futura alteração em
-massa entre terapias deverá usar uma ação explícita como "Aplicar a todos os
-serviços".
+O formulário de A3.2 exige a seleção de uma terapia. A opção "Todas as
+terapias" foi retirada; sem terapias cadastradas, a tela apresenta um estado
+vazio com acesso a `/terapeuta/servicos`. A cópia implementada atua entre dias
+da mesma terapia; uma futura alteração em massa deverá usar uma ação explícita
+e não poderá reintroduzir regra geral implícita.
 
 O campo visual "Duração da sessão" é somente leitura. "Intervalo entre
 sessões" não é usado como sinônimo de `slotStepMinutes`; a interface usa
 "Intervalo de oferta". Os buffers continuam preservados no contrato e no motor
 de disponibilidade, mas não são expostos como controles na interface para
-reduzir complexidade operacional.
+reduzir complexidade operacional. `buffer_before_minutes` amplia a ocupação
+antes da sessão sem deslocar o primeiro início configurado; por exemplo, uma
+faixa 09:00-17:00 continua oferecendo 09:00. A sessão e o buffer posterior
+precisam caber até o fim da faixa.
+
+No resumo geral do terapeuta, faixas iguais ou parcialmente sobrepostas de
+terapias diferentes são unidas antes do cálculo de minutos semanais. A mesma
+faixa não representa capacidade paralela. Projeções financeiras usam essa
+união, aplicam exceções no escopo global ou da terapia e descontam somente a
+ocupação de reservas financeiramente confirmadas, incluindo os buffers do
+snapshot imutável.
 
 ## Segurança e concorrência
 

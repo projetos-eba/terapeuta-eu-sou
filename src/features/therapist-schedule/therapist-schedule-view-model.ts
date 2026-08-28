@@ -11,13 +11,13 @@ export const scheduleWeekDays = [
   { dayOfWeek: 0, label: "Domingo", shortLabel: "Dom" },
 ] as const;
 
-export type ScheduleScope = string | "all";
+export type ScheduleScope = string;
 
 type ScheduleRuleView = {
   dayOfWeek: number;
   endTime: string;
   isActive: boolean;
-  serviceId: string | null;
+  serviceId: string;
   startTime: string;
 };
 
@@ -29,20 +29,7 @@ export function getRulesForScope<Rule extends ScheduleRuleView>(
   rules: Rule[],
   scope: ScheduleScope,
 ) {
-  return rules.filter((rule) =>
-    scope === "all" ? rule.serviceId === null : rule.serviceId === scope,
-  );
-}
-
-export function getApplicableRules<Rule extends ScheduleRuleView>(
-  rules: Rule[],
-  scope: ScheduleScope,
-) {
-  if (scope === "all") return getRulesForScope(rules, scope);
-
-  return rules.filter(
-    (rule) => rule.serviceId === null || rule.serviceId === scope,
-  );
+  return rules.filter((rule) => rule.serviceId === scope);
 }
 
 export function hasOverlappingAvailabilityRules<Rule extends ScheduleRuleView>(
@@ -69,10 +56,7 @@ export function availabilityRulesOverlap(
     return false;
   }
 
-  const scopesConflict =
-    leftRule.serviceId === null ||
-    rightRule.serviceId === null ||
-    leftRule.serviceId === rightRule.serviceId;
+  const scopesConflict = leftRule.serviceId === rightRule.serviceId;
   const leftStart = normalizeClock(leftRule.startTime);
   const leftEnd = normalizeClock(leftRule.endTime);
   const rightStart = normalizeClock(rightRule.startTime);
@@ -89,7 +73,7 @@ export function calculateWeeklyAvailability(
   rules: ScheduleRuleView[],
   scope: ScheduleScope,
 ) {
-  const applicableRules = getApplicableRules(rules, scope).filter(
+  const applicableRules = getRulesForScope(rules, scope).filter(
     (rule) => rule.isActive,
   );
   const configuredDays = new Set(applicableRules.map((rule) => rule.dayOfWeek))
@@ -134,7 +118,7 @@ export function buildPopularScheduleTimes(input: {
     if (
       startsAt < periodStart ||
       startsAt > now ||
-      (input.scope !== "all" && booking.serviceId !== input.scope)
+      booking.serviceId !== input.scope
     ) {
       continue;
     }
@@ -167,9 +151,7 @@ export function buildUpcomingExceptions(input: {
     .filter(
       (exception) =>
         new Date(exception.endsAt) > now &&
-        (exception.serviceId === null ||
-          input.scope === "all" ||
-          exception.serviceId === input.scope),
+        (exception.serviceId === null || exception.serviceId === input.scope),
     )
     .sort(
       (left, right) =>
@@ -203,7 +185,7 @@ export function findDefaultScheduleScope(
       rules.some((rule) => rule.serviceId === service.id),
     )?.id ??
     services[0]?.id ??
-    "all"
+    ""
   );
 }
 

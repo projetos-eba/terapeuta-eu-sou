@@ -2,6 +2,15 @@ begin;
 
 select plan(22);
 
+delete from public.email_outbox
+where action_key in (
+  'session_payment_approved',
+  'session_payment_declined',
+  'session_payment_pending',
+  'session_refund_approved',
+  'therapist_payout_completed'
+);
+
 select has_trigger(
   'public',
   'session_payments',

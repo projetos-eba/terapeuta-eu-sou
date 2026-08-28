@@ -111,7 +111,7 @@ describe("TherapistCalendar", () => {
             endTime: "06:00",
             id: "e1000000-0000-4000-8000-000000000001",
             isActive: true,
-            serviceId: null,
+            serviceId: fixture.services[0]!.id,
             startTime: "00:00",
           },
         ]}

@@ -39,6 +39,9 @@ describe("TherapistScheduleHours", () => {
     expect(screen.getByLabelText("Configuração aplicada a")).toHaveValue(
       serviceId,
     );
+    expect(
+      screen.queryByRole("option", { name: "Todas as terapias" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Duração da sessão")).toBeInTheDocument();
     expect(screen.getByText("50 min")).toBeInTheDocument();
     expect(screen.queryByText("Tempo de preparo")).not.toBeInTheDocument();
@@ -179,7 +182,7 @@ describe("TherapistScheduleHours", () => {
     const [, request] = fetchMock.mock.calls[0] as [string, RequestInit];
     const payload = JSON.parse(String(request.body)) as {
       expectedVersion: number;
-      rules: Array<{ serviceId: string | null }>;
+      rules: Array<{ serviceId: string }>;
       serviceSettings: Array<{
         bufferAfterMinutes: number;
         bufferBeforeMinutes: number;
@@ -197,6 +200,29 @@ describe("TherapistScheduleHours", () => {
       }),
     );
     expect(navigationMocks.refresh).toHaveBeenCalledOnce();
+  });
+
+  it("guides therapists without a therapy before showing schedule controls", () => {
+    const initialSchedule = scheduleFixture();
+    initialSchedule.rules = [];
+    initialSchedule.services = [];
+
+    renderSchedule(initialSchedule);
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Cadastre uma terapia para configurar seus horários",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Ir para Suas terapias" }),
+    ).toHaveAttribute("href", "/terapeuta/servicos");
+    expect(
+      screen.queryByRole("button", { name: "Salvar alterações" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Adicionar faixa" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows an optimistic concurrency conflict instead of success", async () => {

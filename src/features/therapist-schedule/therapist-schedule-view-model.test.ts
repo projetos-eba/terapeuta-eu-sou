@@ -11,7 +11,6 @@ import {
   calculateWeeklyAvailability,
   findDefaultScheduleScope,
   formatDuration,
-  getApplicableRules,
   getRulesForScope,
   hasOverlappingAvailabilityRules,
 } from "./therapist-schedule-view-model";
@@ -20,23 +19,19 @@ const serviceId = "d1000000-0000-4000-8000-000000000001";
 const secondServiceId = "d1000000-0000-4000-8000-000000000002";
 
 describe("therapist schedule view model", () => {
-  it("separates editable scope from inherited general rules", () => {
-    const generalRule = ruleFixture({
+  it("keeps availability isolated by therapy", () => {
+    const otherServiceRule = ruleFixture({
       id: "a1000000-0000-4000-8000-000000000001",
-      serviceId: null,
+      serviceId: secondServiceId,
     });
     const serviceRule = ruleFixture({
       dayOfWeek: 3,
       id: "a1000000-0000-4000-8000-000000000002",
       serviceId,
     });
-    const rules = [generalRule, serviceRule];
+    const rules = [otherServiceRule, serviceRule];
 
     expect(getRulesForScope(rules, serviceId)).toEqual([serviceRule]);
-    expect(getApplicableRules(rules, serviceId)).toEqual([
-      generalRule,
-      serviceRule,
-    ]);
   });
 
   it("calculates weekly minutes and configured days from active applicable rules", () => {
@@ -45,7 +40,7 @@ describe("therapist schedule view model", () => {
         ruleFixture({
           dayOfWeek: 1,
           endTime: "12:00",
-          serviceId: null,
+          serviceId,
           startTime: "09:00",
         }),
         ruleFixture({
@@ -89,8 +84,8 @@ describe("therapist schedule view model", () => {
     ).toBe(serviceId);
   });
 
-  it("falls back to general availability when no service exists", () => {
-    expect(findDefaultScheduleScope([], [])).toBe("all");
+  it("returns an empty scope when no therapy exists", () => {
+    expect(findDefaultScheduleScope([], [])).toBe("");
   });
 
   it("formats duration without displaying invented decimal hours", () => {
@@ -103,7 +98,7 @@ describe("therapist schedule view model", () => {
     const exceptions = buildUpcomingExceptions({
       agenda: agendaFixture(),
       referenceNow: "2026-08-15T12:00:00.000Z",
-      scope: "all",
+      scope: serviceId,
       timezone: "America/Sao_Paulo",
     });
 
@@ -120,18 +115,6 @@ describe("therapist schedule view model", () => {
           endTime: "19:00",
           id: "a1000000-0000-4000-8000-000000000004",
           startTime: "07:00",
-        }),
-      ]),
-    ).toBe(true);
-
-    expect(
-      hasOverlappingAvailabilityRules([
-        ruleFixture({ serviceId: null }),
-        ruleFixture({
-          endTime: "12:00",
-          id: "a1000000-0000-4000-8000-000000000005",
-          serviceId: secondServiceId,
-          startTime: "10:00",
         }),
       ]),
     ).toBe(true);

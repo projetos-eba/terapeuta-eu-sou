@@ -61,6 +61,20 @@ describe("therapist schedule contracts", () => {
     );
   });
 
+  it("rejects retired general availability rules", () => {
+    const readModel = readModelFixture();
+    readModel.rules[0].serviceId = null as unknown as string;
+    const saveInput = saveInputFixture();
+    saveInput.rules[0].serviceId = null as unknown as string;
+
+    expect(() => parseTherapistScheduleReadModel(readModel)).toThrow(
+      TherapistScheduleContractError,
+    );
+    expect(() => parseSaveTherapistScheduleInput(saveInput)).toThrow(
+      TherapistScheduleContractError,
+    );
+  });
+
   it("parses idempotent command results explicitly", () => {
     expect(
       parseSaveTherapistScheduleResult({

@@ -15,12 +15,6 @@ const therapy: PublicTherapyDetail = {
   category: { name: "Bem-estar", slug: "bem-estar" },
   complementaryDescription: null,
   description: "Descrição",
-  faqs: [
-    {
-      answer: "Resposta",
-      question: "Pergunta que não deve aparecer no detalhe",
-    },
-  ],
   heroFocalPoint: "center",
   heroImageUrl: null,
   highlights: [],

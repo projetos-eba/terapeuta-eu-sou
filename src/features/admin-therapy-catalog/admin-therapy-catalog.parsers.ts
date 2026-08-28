@@ -133,13 +133,6 @@ function parsePublicContent(value: unknown): AdminTherapyPublicContent {
       };
     }),
     complementaryDescription: asNullableString(record.complementaryDescription),
-    faqs: parseArray(record.faqs, (item) => {
-      const row = asRecord(item);
-      return {
-        answer: asString(row.answer),
-        question: asString(row.question),
-      };
-    }),
     heroFocalPoint: parseFocalPoint(record.heroFocalPoint),
     heroImageUrl: asNullableString(record.heroImageUrl),
     highlights: parseArray(record.highlights, (item) => {

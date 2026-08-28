@@ -114,7 +114,7 @@ export function parseTherapistAgendaReadModel(
           endTime: requiredString(rule.endTime),
           id: requiredString(rule.id),
           isActive: requiredBoolean(rule.isActive),
-          serviceId: nullableString(rule.serviceId),
+          serviceId: requiredString(rule.serviceId),
           startTime: requiredString(rule.startTime),
           timezone: requiredString(rule.timezone),
         };

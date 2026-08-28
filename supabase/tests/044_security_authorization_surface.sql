@@ -52,6 +52,8 @@ select ok(
       and p.oid::regprocedure::text not in (
         'get_public_therapy_therapists_v1(text,uuid[],uuid[],integer)',
         'get_service_available_slots_v1(uuid,timestamp with time zone,timestamp with time zone,integer)',
+        'get_service_available_days_v1(uuid,date)',
+        'get_service_available_day_slots_v1(uuid,date)',
         'record_public_therapist_metric_events_v1(uuid,jsonb)',
         'is_therapist_publication_eligible_v1(uuid)',
         'is_public_service_booking_eligible_v1(uuid)',

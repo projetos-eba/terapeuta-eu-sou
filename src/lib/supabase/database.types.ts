@@ -7,6 +7,31 @@ export type Json =
   | Json[];
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   public: {
     Tables: {
       admin_audit_events: {
@@ -1130,7 +1155,7 @@ export type Database = {
           end_time: string;
           id: string;
           is_active: boolean;
-          service_id: string | null;
+          service_id: string;
           start_time: string;
           therapist_profile_id: string;
           timezone: string;
@@ -1142,7 +1167,7 @@ export type Database = {
           end_time: string;
           id?: string;
           is_active?: boolean;
-          service_id?: string | null;
+          service_id: string;
           start_time: string;
           therapist_profile_id: string;
           timezone?: string;
@@ -1154,7 +1179,7 @@ export type Database = {
           end_time?: string;
           id?: string;
           is_active?: boolean;
-          service_id?: string | null;
+          service_id?: string;
           start_time?: string;
           therapist_profile_id?: string;
           timezone?: string;
@@ -7516,14 +7541,19 @@ export type Database = {
       therapist_connect_accounts: {
         Row: {
           account_api_version: string;
+          account_generation: number;
           balance_settings_synced_at: string | null;
           charges_enabled: boolean;
+          closed_at: string | null;
+          closed_stripe_event_created_at: string | null;
+          closed_stripe_event_id: string | null;
           created_at: string;
           dashboard_type: string;
           details_submitted: boolean;
           disabled_reason: string | null;
           fees_collector: string;
           id: string;
+          is_current: boolean;
           last_synced_at: string | null;
           losses_collector: string;
           metadata: Json;
@@ -7542,14 +7572,19 @@ export type Database = {
         };
         Insert: {
           account_api_version?: string;
+          account_generation?: number;
           balance_settings_synced_at?: string | null;
           charges_enabled?: boolean;
+          closed_at?: string | null;
+          closed_stripe_event_created_at?: string | null;
+          closed_stripe_event_id?: string | null;
           created_at?: string;
           dashboard_type?: string;
           details_submitted?: boolean;
           disabled_reason?: string | null;
           fees_collector?: string;
           id?: string;
+          is_current?: boolean;
           last_synced_at?: string | null;
           losses_collector?: string;
           metadata?: Json;
@@ -7568,14 +7603,19 @@ export type Database = {
         };
         Update: {
           account_api_version?: string;
+          account_generation?: number;
           balance_settings_synced_at?: string | null;
           charges_enabled?: boolean;
+          closed_at?: string | null;
+          closed_stripe_event_created_at?: string | null;
+          closed_stripe_event_id?: string | null;
           created_at?: string;
           dashboard_type?: string;
           details_submitted?: boolean;
           disabled_reason?: string | null;
           fees_collector?: string;
           id?: string;
+          is_current?: boolean;
           last_synced_at?: string | null;
           losses_collector?: string;
           metadata?: Json;
@@ -7596,49 +7636,49 @@ export type Database = {
           {
             foreignKeyName: "therapist_connect_accounts_therapist_profile_id_fkey";
             columns: ["therapist_profile_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "public_home_therapists";
             referencedColumns: ["id"];
           },
           {
             foreignKeyName: "therapist_connect_accounts_therapist_profile_id_fkey";
             columns: ["therapist_profile_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "public_home_therapists_internal";
             referencedColumns: ["id"];
           },
           {
             foreignKeyName: "therapist_connect_accounts_therapist_profile_id_fkey";
             columns: ["therapist_profile_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "public_therapist_profiles_v";
             referencedColumns: ["id"];
           },
           {
             foreignKeyName: "therapist_connect_accounts_therapist_profile_id_fkey";
             columns: ["therapist_profile_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "public_therapist_profiles_v_internal";
             referencedColumns: ["id"];
           },
           {
             foreignKeyName: "therapist_connect_accounts_therapist_profile_id_fkey";
             columns: ["therapist_profile_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "public_therapist_search";
             referencedColumns: ["therapist_profile_id"];
           },
           {
             foreignKeyName: "therapist_connect_accounts_therapist_profile_id_fkey";
             columns: ["therapist_profile_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "public_therapist_search_internal";
             referencedColumns: ["therapist_profile_id"];
           },
           {
             foreignKeyName: "therapist_connect_accounts_therapist_profile_id_fkey";
             columns: ["therapist_profile_id"];
-            isOneToOne: true;
+            isOneToOne: false;
             referencedRelation: "therapist_profiles";
             referencedColumns: ["id"];
           },
@@ -12728,7 +12768,6 @@ export type Database = {
           category_slug: string | null;
           complementary_description: string | null;
           description: string | null;
-          faqs: Json | null;
           hero_focal_point: string | null;
           hero_image_url: string | null;
           highlights: Json | null;
@@ -13254,6 +13293,10 @@ export type Database = {
       };
       admin_assert_responsible_therapy_text_v1: {
         Args: { p_value: string };
+        Returns: undefined;
+      };
+      admin_assert_therapy_content_lengths_v1: {
+        Args: { p_payload: Json };
         Returns: undefined;
       };
       admin_audit_json_object_v1: { Args: { p_value: Json }; Returns: Json };
@@ -14510,6 +14553,14 @@ export type Database = {
         };
         Returns: Json;
       };
+      get_service_available_day_slots_v1: {
+        Args: { p_day: string; p_service_id: string };
+        Returns: Json;
+      };
+      get_service_available_days_v1: {
+        Args: { p_month?: string; p_service_id: string };
+        Returns: Json;
+      };
       get_service_available_slots_v1: {
         Args: {
           p_limit?: number;
@@ -14517,14 +14568,6 @@ export type Database = {
           p_range_start?: string;
           p_service_id: string;
         };
-        Returns: Json;
-      };
-      get_service_available_days_v1: {
-        Args: { p_month?: string; p_service_id: string };
-        Returns: Json;
-      };
-      get_service_available_day_slots_v1: {
-        Args: { p_day: string; p_service_id: string };
         Returns: Json;
       };
       get_service_available_slots_v1_internal: {
@@ -14769,6 +14812,10 @@ export type Database = {
         Args: { p_therapist_profile_id: string };
         Returns: boolean;
       };
+      is_therapist_video_session_eligible_v1: {
+        Args: { p_therapist_profile_id: string };
+        Returns: boolean;
+      };
       is_valid_timezone_v1: { Args: { p_timezone: string }; Returns: boolean };
       list_private_therapist_services_v1: {
         Args: { p_actor_user_id: string };
@@ -14796,6 +14843,10 @@ export type Database = {
       mark_payout_window_incomplete_v1: {
         Args: { p_now: string; p_run_id: string };
         Returns: boolean;
+      };
+      mark_structured_participant_messages_read_v1: {
+        Args: { p_conversation_id: string };
+        Returns: number;
       };
       mark_video_session_termination_confirmed_v1: {
         Args: { p_reason?: string; p_video_session_id: string };
@@ -14839,6 +14890,20 @@ export type Database = {
           p_template_key: string;
         };
         Returns: Json;
+      };
+      private_therapist_agenda_capacity_v1: {
+        Args: {
+          p_range_end: string;
+          p_range_start: string;
+          p_therapist_profile_id: string;
+          p_timezone: string;
+        };
+        Returns: {
+          available_minutes: number;
+          committed_minutes: number;
+          exception_minutes: number;
+          scheduled_minutes: number;
+        }[];
       };
       private_therapist_finance_advanced_comparison_v1: {
         Args: { p_current: number; p_previous: number };
@@ -15366,6 +15431,15 @@ export type Database = {
         };
         Returns: Json;
       };
+      retire_therapist_connect_account_v1: {
+        Args: {
+          p_closed_at?: string;
+          p_stripe_account_id: string;
+          p_stripe_event_created_at: string;
+          p_stripe_event_id: string;
+        };
+        Returns: Json;
+      };
       run_booking_reminder_scheduler_v1: {
         Args: { p_limit?: number; p_now?: string };
         Returns: Json;
@@ -15851,6 +15925,10 @@ export type Database = {
         };
         Returns: Json;
       };
+      upsert_participant_conversation_for_booking_v1: {
+        Args: { p_booking_id: string };
+        Returns: string;
+      };
       upsert_therapist_review_reply_for_actor_v1: {
         Args: {
           p_actor_user_id: string;
@@ -16234,6 +16312,9 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       auth_action_purpose: ["email_verification", "password_reset"],

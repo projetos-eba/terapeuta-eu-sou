@@ -10,7 +10,6 @@ const therapy = {
   category: { name: "Bem-estar", slug: "bem-estar" },
   complementaryDescription: null,
   description: "Descrição",
-  faqs: [],
   heroFocalPoint: "center" as const,
   heroImageUrl: null,
   highlights: [],

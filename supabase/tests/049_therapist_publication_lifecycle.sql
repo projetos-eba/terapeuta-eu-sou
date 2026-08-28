@@ -15,6 +15,11 @@ set status = 'submitted'::public.therapist_status,
 where id = 'c1000000-0000-4000-8000-000000000001';
 
 update public.therapist_services
+set status = 'archived',
+    is_bookable = false
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001';
+
+update public.therapist_services
 set status = 'active', is_bookable = true, online_only = true, archived_at = null
 where id = 'd1000000-0000-4000-8000-000000000001';
 

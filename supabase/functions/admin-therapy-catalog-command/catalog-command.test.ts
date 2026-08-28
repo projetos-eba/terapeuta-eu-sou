@@ -143,3 +143,19 @@ Deno.test("maps blocked Match theme removal to a stable domain error", () => {
   assertEquals(mapped.code, "matching_theme_removal_blocked");
   assertEquals(mapped.status, 409);
 });
+
+Deno.test("maps therapy content limits to clear product messages", () => {
+  const mapped = mapAdminTherapyCatalogDatabaseError(
+    new SupabaseHttpError(
+      400,
+      "ADMIN_THERAPY_CATALOG_SHORT_DESCRIPTION_TOO_LONG",
+    ),
+  );
+
+  if (!(mapped instanceof DomainError)) {
+    throw new Error("Expected DomainError.");
+  }
+
+  assertEquals(mapped.code, "short_description_too_long");
+  assertEquals(mapped.message, "O resumo deve ter no máximo 100 caracteres.");
+});

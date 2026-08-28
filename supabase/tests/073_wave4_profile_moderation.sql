@@ -61,7 +61,11 @@ select is(
 );
 
 delete from public.therapist_private_identity
-where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001';
+where therapist_profile_id = 'c1000000-0000-4000-8000-000000000001'
+   or (
+     document_type = 'cpf'
+     and document_number = '52998224725'
+   );
 
 set local role authenticated;
 select set_config(

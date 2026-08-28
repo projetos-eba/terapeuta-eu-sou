@@ -194,8 +194,11 @@ histórica.
 - O Calendário possui filtros locais por busca, terapia e estado, além de lista
   cronológica mobile dedicada. Esses filtros não alteram o contrato
   `get_therapist_calendar_v1`.
-- A UI edita faixas em escopo geral ou por terapia e preserva regras dos
-  outros escopos no comando atômico.
+- A UI edita faixas somente por terapia e preserva regras das outras terapias
+  no comando atômico. Não oferecer "Todas as terapias" nem enviar
+  `availability_rules.service_id` nulo.
+- Sem terapia cadastrada, mostrar estado vazio com acesso a "Suas terapias";
+  não renderizar controles de edição sem um escopo válido.
 - Os horários das faixas são escolhidos exclusivamente em listas suspensas de
   15 minutos; não usar campo de horário digitável. Valores históricos fora do
   intervalo devem continuar visíveis como opção para que uma edição não os
@@ -212,8 +215,8 @@ histórica.
   em desktop. Horários e Bloqueios não podem introduzir cabeçalho, tab bar ou
   largura paralelos ao Calendário.
 - O editor permite digitar e manter temporariamente uma faixa sobreposta no
-  mesmo dia, inclusive quando uma faixa geral conflita com a faixa específica
-  de uma terapia. Ao sair do campo, exibe o aviso de sobreposição; enquanto o
+  mesmo dia da mesma terapia. Faixas de terapias diferentes são independentes.
+  Ao sair do campo, exibe o aviso de sobreposição; enquanto o
   conflito existir, o salvamento permanece bloqueado. O comando transacional e
   o banco continuam sendo a autoridade final contra concorrência, replay e
   escrita fora da interface.
@@ -225,6 +228,12 @@ histórica.
   na interface. O nome técnico permanece no contrato para compatibilidade.
   `bufferBeforeMinutes` e `bufferAfterMinutes` continuam preservados no domínio
   e no cálculo autoritativo, mas não são controles expostos na UI de Horários.
+  O buffer anterior amplia a ocupação sem deslocar o primeiro slot da faixa; a
+  duração e o buffer posterior devem caber antes do fim configurado.
+- O resumo geral une faixas iguais ou parcialmente sobrepostas de terapias
+  diferentes antes de somar minutos. O potencial financeiro F3 aplica
+  bloqueios no escopo correto e desconta a ocupação global de bookings pagos
+  com os buffers snapshot; nunca tratar terapias como capacidade paralela.
 - Não exibir toggle de reagendamento automático antes do domínio e dos
   comandos correspondentes.
 - A aba Bloqueios usa o frame Figma `13366:8393`, o read model
@@ -327,7 +336,7 @@ histórica.
   madrugada.
 - Validar que todo diálogo cobre sidebar e topbar, bloqueia scroll, fecha por
   `Escape`, confina e devolve foco.
-- Testar seleção de terapia, herança de faixas gerais, ativação por dia,
+- Testar seleção de terapia, ausência de opção geral, ativação por dia,
   cópia entre dias, conflito de versão e falha real distinta de vazio.
 - O script `npm run test:deno` deve incluir
   `supabase/functions/therapist-schedule-update` e
@@ -344,11 +353,15 @@ histórica.
 - O pgTAP A5 deve cobrir privacidade pública, slots, bloqueios, bookings, holds,
   RLS, identidade, terapeuta suspenso e calendário versionado.
 - Testar conflito entre serviços, buffers, exceções e período vazio.
-- Testar a prevenção local de faixa sobreposta, incluindo intervalos contíguos,
-  escopo geral e escopos de terapias distintas.
+- Testar a prevenção local de faixa sobreposta, incluindo intervalos contíguos
+  na mesma terapia e faixas independentes de terapias distintas.
+- Testar três terapias com durações e buffers distintos começando exatamente no
+  início configurado, além de bloqueio global por hold/booking e liberação por
+  expiração/cancelamento.
 - Testar transições permitidas e proibidas.
 - Testar paciente e terapeuta com o mesmo horário e serviço.
 - Testar RLS entre terapeutas.
-- Rodar `npx supabase db reset`, `npx supabase db lint --schema public` e
-  `npx supabase test db`.
+- Preservar o volume local: rodar `npx supabase db push --local --dry-run`,
+  `npx supabase db push --local`, `npx supabase db lint --schema public` e os
+  pgTAP focados. Não usar `db reset` sem autorização explícita.
 - Rodar typecheck, lint, Vitest e build.

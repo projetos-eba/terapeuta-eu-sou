@@ -309,9 +309,9 @@ select throws_ok(
       'a3000000-0000-4000-8000-000000000003'
     )
   $$,
-  '23P01',
-  'overlapping_availability_rule',
-  'overlapping general and service rules are rejected'
+  '42501',
+  'schedule_service_forbidden',
+  'retired general availability rules are rejected'
 );
 
 select throws_ok(

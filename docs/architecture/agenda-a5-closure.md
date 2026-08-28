@@ -29,6 +29,11 @@ pagamento, realizacao, presenca, cancelamento ou reagendamento.
 
 `bookings.payment_status` permanece somente como projecao de compatibilidade.
 
+Cada faixa semanal pertence obrigatoriamente a uma terapia. O início dos slots
+é ancorado no começo configurado da faixa: o buffer anterior amplia somente a
+ocupação global do profissional e não desloca 09:00 para 09:10. Duração e
+buffer posterior precisam caber antes do fim da faixa.
+
 ## Fluxo de dados
 
 ```text
@@ -48,6 +53,11 @@ terapeuta + servico
 O endpoint publico `get_service_available_slots_v1` recebe somente o servico e
 o intervalo desejado. Ele nao retorna paciente, terapeuta, motivo de bloqueio,
 hold, pagamento ou qualquer dado clinico.
+
+Bookings em `draft`, `pending_payment` ou `confirmed` e holds ativos ocupam o
+terapeuta em todas as terapias. As exclusões GiST e os advisory locks usam
+`therapist_profile_id`, não `service_id`; cancelamento, reembolso integral ou
+expiração liberam o intervalo conforme seus fluxos canônicos.
 
 Desde 2026-08-25, reembolso integral em
 `session_payments.financial_status = 'refunded'` sincroniza o booking para o

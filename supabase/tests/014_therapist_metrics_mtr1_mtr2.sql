@@ -2,6 +2,15 @@ begin;
 
 select plan(33);
 
+-- The local stack intentionally preserves data between runs. Isolate the two
+-- fixture therapists inside this transaction so historical aggregates cannot
+-- change RLS counts or the expected complete-day empty state.
+delete from public.therapist_metric_daily_aggregates
+where therapist_profile_id in (
+  'c1000000-0000-4000-8000-000000000001',
+  'c1000000-0000-4000-8000-000000000002'
+);
+
 select ok(
   has_function_privilege(
     'anon',

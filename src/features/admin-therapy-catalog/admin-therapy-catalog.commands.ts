@@ -57,6 +57,45 @@ export type AdminTherapyCatalogCommandResult =
       status: "error";
     };
 
+const userMessages: Record<string, string> = {
+  admin_required: "Você não tem permissão para realizar esta ação.",
+  archive_blocked_by_usage:
+    "Esta terapia possui serviços ativos ou sessões futuras. Descontinue-a antes de arquivar.",
+  catalog_command_failed:
+    "Não foi possível atualizar a terapia agora. Tente novamente.",
+  incomplete_public_content:
+    "Complete o conteúdo público, incluindo imagem e pelo menos um destaque e dois benefícios, antes de publicar.",
+  inactive_category: "Escolha uma categoria ativa antes de publicar.",
+  invalid_payload: "Revise os campos obrigatórios da terapia e tente novamente.",
+  invalid_theme: "Selecione apenas temas ativos do Match.",
+  matching_theme_removal_blocked:
+    "Não é possível remover este tema porque ele está em uso por serviços ou refinamentos.",
+  network_error: "Não foi possível conectar agora. Tente novamente.",
+  not_found: "A terapia não foi encontrada. Atualize a página e tente novamente.",
+  reason_required: "Informe o motivo desta alteração.",
+  safe_copy: "Revise o conteúdo para remover promessas de cura, diagnóstico ou resultado garantido.",
+  slug_conflict: "Este endereço já está em uso no catálogo.",
+  theme_limit: "Selecione de 1 a 3 temas do Match.",
+  theme_required: "Selecione pelo menos um tema do Match.",
+  unsafe_copy:
+    "Revise o conteúdo para remover promessas de cura, diagnóstico ou resultado garantido.",
+  short_description_too_long: "O resumo deve ter no máximo 100 caracteres.",
+  description_too_long: "A abordagem deve ter no máximo 200 caracteres.",
+  introduction_too_long: "O campo O que é deve ter no máximo 160 caracteres.",
+  complementary_description_too_long:
+    "A descrição complementar deve ter no máximo 200 caracteres.",
+  safety_note_too_long: "A nota responsável deve ter no máximo 150 caracteres.",
+  benefit_description_too_long:
+    "A descrição opcional do benefício deve ter no máximo 100 caracteres.",
+};
+
+export function getAdminTherapyCatalogUserMessage(error: {
+  code: string;
+  message: string;
+}) {
+  return userMessages[error.code] ?? userMessages.catalog_command_failed;
+}
+
 export async function sendAdminTherapyCatalogCommand(
   command: AdminCommand,
 ): Promise<AdminTherapyCatalogCommandResult> {

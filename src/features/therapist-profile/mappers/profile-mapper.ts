@@ -105,7 +105,7 @@ export type ServiceRow = {
     dayOfWeek: number;
     endTime: string;
     isActive: boolean;
-    serviceId: string | null;
+    serviceId: string;
     startTime: string;
     timezone: string;
   }> | null;

@@ -1,6 +1,6 @@
 begin;
 
-select plan(126);
+select plan(125);
 
 select ok(
   has_table_privilege('anon', 'public.therapies', 'SELECT'),
@@ -109,8 +109,7 @@ from (
   values
     ('public.therapy_public_content'),
     ('public.therapy_highlights'),
-    ('public.therapy_benefits'),
-    ('public.therapy_faqs')
+    ('public.therapy_benefits')
 ) as checks(table_name);
 
 select is(

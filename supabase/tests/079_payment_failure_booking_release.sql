@@ -7,12 +7,12 @@ select
   (
     current_date
     + (21 + ((2 - extract(dow from current_date)::integer + 7) % 7))
-    + time '19:10'
+    + time '19:00'
   ) at time zone 'America/Sao_Paulo' as starts_at,
   (
     current_date
     + (21 + ((2 - extract(dow from current_date)::integer + 7) % 7))
-    + time '20:00'
+    + time '19:50'
   ) at time zone 'America/Sao_Paulo' as ends_at;
 
 insert into public.bookings (
