@@ -102,8 +102,10 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - O ranking “Serviços mais agendados” exibe a imagem da terapia administrada no
   catálogo; quando a imagem estiver ausente, usa fallback visual sem quebrar a
   composição.
-- Formulario de criacao tem 3 passos: catalogo canonico, configuracao da oferta
-  e revisao. O dado preenchido deve persistir ao voltar.
+- Formulario de criacao tem 3 passos: catalogo canonico, configuracao do
+  atendimento e revisao. Na interface, a etapa de configuracao aparece como
+  “Atendimento” e a revisão identifica o nome como “Prática”. O dado preenchido
+  deve persistir ao voltar.
 - Cada etapa valida os campos necessários antes de permitir `Continuar`; o erro
   aparece na própria etapa e o foco retorna ao primeiro campo inválido.
 - No salvamento final, a validação impede a mutação, leva o terapeuta à primeira
@@ -124,9 +126,10 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - Paciente nao acessa a projecao privada.
 - Serviço pausado não aparece em views públicas reserváveis.
 - Motivos técnicos de bloqueio devem ser traduzidos para texto de produto na UI.
-- A UI fala em `Suas terapias`, `Adicionar terapia`, `Ativar terapia` e
-  `Terapias mais agendadas`. `serviço` permanece apenas como nome de domínio ou
-  contrato interno quando necessário.
+- A UI fala em `Suas terapias`, `Adicionar terapia`, `Ativar terapia`,
+  `Terapias mais agendadas`, `Novo serviço` e `Editar serviço`. A etapa de
+  configuração usa `Atendimento` e a revisão usa `Prática`; identificadores
+  técnicos como `service` e `therapist_services` permanecem no contrato interno.
 - Nos cards, a categoria da terapia permanece visível e os temas selecionados
   pelo terapeuta aparecem em um badge circular `+N`, limitado a `+2`. O badge
   aparece visualmente menor e sobreposto ao chip de categoria, mantendo área de

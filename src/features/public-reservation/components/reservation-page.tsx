@@ -734,23 +734,18 @@ function PatientConnectedCard({ context }: { context: ReservationContext }) {
   const patient = context.patient;
 
   return (
-    <div className="rounded-[20px] border border-status-success bg-status-successBg p-5 text-status-success">
+    <div className="w-full rounded-[20px] border border-status-success bg-status-successBg p-5 text-status-success xl:col-span-2">
       <ShieldCheck className="size-8" aria-hidden="true" />
       <p className="mt-3 text-base font-extrabold">
         {patient
           ? `Olá, ${getFirstName(patient.displayName)}`
           : "Conta conectada"}
       </p>
-      <p className="mt-1 text-sm font-bold">
+      <p className="mt-1 max-w-2xl break-words text-sm font-bold leading-6">
         {patient?.email
           ? `Vamos usar ${patient.email} para enviar as orientações do encontro.`
           : "Você pode seguir para preparar o encontro."}
       </p>
-      {patient?.phone ? (
-        <p className="mt-2 text-xs font-extrabold uppercase tracking-[0.14em]">
-          Celular confirmado
-        </p>
-      ) : null}
     </div>
   );
 }

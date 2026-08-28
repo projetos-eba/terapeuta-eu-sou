@@ -1,3 +1,4 @@
+import { PublicTherapistsLowerBanner } from "@/components/tes";
 import type {
   PublicTherapyDetail,
   RelatedTherapist,
@@ -5,8 +6,6 @@ import type {
 } from "../../types/therapy-detail";
 import { RelatedTherapistsMatchClient } from "./related-therapists-match-client";
 import { TherapyBenefits } from "./therapy-benefits";
-import { TherapyClosingCta } from "./therapy-closing-cta";
-import { TherapyFaq } from "./therapy-faq";
 import { TherapyHero, TherapyHeroImage } from "./therapy-hero";
 import { TherapyOverview } from "./therapy-overview";
 
@@ -50,9 +49,8 @@ export function TherapyDetailPage({
           />
         </div>
 
-        <section className="mt-8 grid gap-6 lg:grid-cols-[0.46fr_0.54fr]">
-          <TherapyClosingCta therapy={therapy} />
-          <TherapyFaq therapy={therapy} />
+        <section className="mt-8">
+          <PublicTherapistsLowerBanner />
         </section>
       </div>
     </div>

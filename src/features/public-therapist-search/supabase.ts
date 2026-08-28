@@ -27,6 +27,7 @@ import type {
 } from "./types";
 
 type PublicTherapistSearchRow = {
+  therapist_profile_id: string;
   average_rating: number | null;
   city: string | null;
   duration_minutes: number | null;
@@ -170,6 +171,7 @@ function mapTherapistRow(
         slug: row.slug,
       }) || "/therapists/ana-oliveira.png",
     name: row.public_name,
+    therapistProfileId: row.therapist_profile_id,
     nextSlotAt: row.next_slot_at,
     nextSlotLabel: formatNextSlotLabel(row.next_slot_at, row.schedule_timezone),
     priceCents: row.service_price_cents,

@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 import { TESButton } from "@/components/tes";
 import { routes } from "@/lib/routes";
@@ -10,12 +10,10 @@ import type {
   TherapistProfileEditorData,
 } from "../therapist-profile-editor.types";
 import {
-  ProfileChipInput,
   ProfileFieldGroup,
   ProfileTextarea,
   ProfileTextField,
 } from "./profile-field-group";
-import { ProfileCapabilityGate } from "./profile-capability-gate";
 import { ProfileGuideThemePicker } from "./profile-guide-theme-picker";
 import { ProfileSection } from "./profile-section";
 
@@ -110,42 +108,6 @@ export function ProfileEditorForm({
           items={fields.guideItems}
           onChange={(items) => updateField("guideItems", items)}
         />
-      </ProfileFieldGroup>
-
-      <ProfileFieldGroup
-        description="Adicione conteúdos/reflexões para aparecer no seu perfil."
-        number={6}
-        title="Conteúdos / Reflexões"
-      >
-        {editor.capabilities.canUseAdvancedSections ? (
-          <ProfileChipInput
-            addLabel="Adicionar conteúdo"
-            items={fields.reflections.map((item) => item.title)}
-            label="Conteúdos e reflexões"
-            max={6}
-            onChange={(items) =>
-              updateField(
-                "reflections",
-                items.map((item, index) => ({
-                  excerpt: fields.reflections[index]?.excerpt ?? "",
-                  href: fields.reflections[index]?.href ?? "",
-                  imageUrl: fields.reflections[index]?.imageUrl ?? "",
-                  minutesToRead: fields.reflections[index]?.minutesToRead ?? 3,
-                  title: item,
-                })),
-              )
-            }
-            placeholder="Novo conteúdo"
-          />
-        ) : (
-          <ProfileCapabilityGate
-            allowed={false}
-            message="Seus conteúdos ficam guardados, mas novas edições avançadas fazem parte do Premium Plus."
-            title="Conteúdos e reflexões"
-          >
-            <BookOpen aria-hidden="true" />
-          </ProfileCapabilityGate>
-        )}
       </ProfileFieldGroup>
 
       <div className="rounded-lg border border-brand-lavender bg-brand-lavenderSoft p-4">

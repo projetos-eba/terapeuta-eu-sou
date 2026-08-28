@@ -243,11 +243,11 @@ export function TherapistServiceForm({
     await activateDraft(created);
   }
 
-  const title = mode === "edit" ? "Editar terapia" : "Nova terapia";
+  const title = mode === "edit" ? "Editar serviço" : "Novo serviço";
   const description =
     mode === "edit"
-      ? "Atualize preço, duração e descrição sem perder o histórico desta terapia."
-      : "Escolha uma terapia disponível e informe como você trabalha.";
+      ? "Atualize os detalhes do atendimento sem perder o histórico desta terapia."
+      : "Crie um atendimento para uma terapia já aprovada no TES.";
 
   return (
     <TESDialog
@@ -282,7 +282,6 @@ export function TherapistServiceForm({
                   interestIds: [],
                   themeIds: [],
                   therapy,
-                  title: current.title || therapy.name,
                 }))
               }
               selectedTherapyId={values.therapy?.therapyId ?? null}
@@ -391,7 +390,19 @@ function OfferFields({
 }) {
   return (
     <div className="grid gap-4">
-      <Field error={errors.title} id="service-title" label="Título da oferta">
+      <div>
+        <h2 className="text-xl font-extrabold text-brand-deep">
+          Como esse atendimento vai aparecer?
+        </h2>
+        <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+          Escolha um nome simples, que ajude a pessoa a entender o atendimento.
+        </p>
+      </div>
+      <Field
+        error={errors.title}
+        id="service-title"
+        label="Nome do atendimento"
+      >
         <input
           aria-describedby={errors.title ? "service-title-error" : undefined}
           className="h-12 w-full rounded-lg border border-brand-lavender px-4 text-sm font-bold text-brand-deep outline-none focus:border-brand-primary"
@@ -406,6 +417,7 @@ function OfferFields({
                 }
               : undefined
           }
+          placeholder="Exemplo: Sessão individual de Reiki — 45 min"
           value={values.title}
         />
       </Field>
@@ -414,6 +426,11 @@ function OfferFields({
         id="service-description"
         label="Descrição"
       >
+        <p className="mb-2 text-sm font-semibold leading-6 text-tesText-secondary">
+          Conte como funciona o atendimento e o que a pessoa pode esperar da
+          experiência. Use uma linguagem simples, acolhedora e sem prometer
+          resultados.
+        </p>
         <textarea
           aria-describedby={
             errors.description ? "service-description-error" : undefined
@@ -427,6 +444,14 @@ function OfferFields({
               description: event.target.value,
             }))
           }
+          placeholder={`Exemplo de descrição:
+
+Sessão individual de Reiki, realizada online, com duração de 45 minutos.
+
+Começamos com uma breve conversa para entender como você está chegando e alinhar o foco do encontro.
+Depois, conduzo a prática de Reiki em um ambiente tranquilo, respeitando seu momento e seus limites.
+Ao final, teremos alguns minutos para conversar sobre a experiência e encerrar o atendimento com calma.
+Se esta for sua primeira sessão, explicarei como o encontro funciona antes de começarmos.`}
           ref={
             errors.description
               ? (node) => {
@@ -462,12 +487,14 @@ function OfferFields({
                   event.target.value === "" ? 0 : Number(event.target.value),
               }))
             }
+            placeholder="Exemplo: 45 min"
             step={1}
             value={values.durationMinutes}
             type="number"
           />
           <p className="mt-1 text-sm font-semibold text-tesText-secondary">
-            Digite um valor inteiro entre {THERAPIST_SERVICE_DURATION_MIN_MINUTES} e{" "}
+            Digite um valor inteiro entre{" "}
+            {THERAPIST_SERVICE_DURATION_MIN_MINUTES} e{" "}
             {THERAPIST_SERVICE_DURATION_MAX_MINUTES} minutos.
           </p>
         </Field>
@@ -480,7 +507,7 @@ function OfferFields({
             onChange={(event) =>
               onChange((current) => ({ ...current, price: event.target.value }))
             }
-            placeholder="120,00"
+            placeholder="Exemplo: R$ 185"
             ref={
               errors.price
                 ? (node) => {
@@ -496,8 +523,7 @@ function OfferFields({
             Atendimento online
           </span>
           <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-            Todas as ofertas do TES acontecem online pelo fluxo seguro da
-            plataforma.
+            Este atendimento acontece online, pelo fluxo seguro do TES.
           </p>
         </div>
       </div>
@@ -684,7 +710,7 @@ function ReviewStep({
     <div className="grid min-w-0 gap-3 rounded-lg bg-brand-lavenderSoft/50 p-4">
       {[
         ["Terapia", values.therapy?.name ?? "Não selecionada"],
-        ["Oferta", values.title || "Sem título"],
+        ["Prática", values.title || "Sem título"],
         [
           "Preço",
           priceCents === null ? "Revise o preço" : formatCurrency(priceCents),
@@ -727,8 +753,8 @@ function StepIndicator({
 }) {
   const labels =
     mode === "edit"
-      ? ["Temas", "Oferta", "Revisão"]
-      : ["Escolha da terapia", "Temas", "Oferta", "Revisão"];
+      ? ["Temas", "Atendimento", "Revisão"]
+      : ["Escolha da terapia", "Temas", "Atendimento", "Revisão"];
   const effectiveStep = mode === "edit" ? step - 1 : step;
 
   return (

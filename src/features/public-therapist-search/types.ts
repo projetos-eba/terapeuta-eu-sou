@@ -43,6 +43,7 @@ export type TherapistSearchCard = {
   href: string;
   image: string;
   name: string;
+  therapistProfileId: string;
   nextSlotAt: string | null;
   nextSlotLabel: string;
   priceCents: number;

@@ -145,7 +145,7 @@ test.describe("therapist Agenda and Sessions foundation", () => {
     });
     await expect(saveButton).toBeDisabled();
 
-    const slotStep = page.getByLabel("Intervalo de oferta dos horários");
+    const slotStep = page.getByLabel("Intervalo das sessões");
     const originalSlotStep = await slotStep.inputValue();
     const temporarySlotStep = originalSlotStep === "45" ? "30" : "45";
     await slotStep.selectOption(temporarySlotStep);

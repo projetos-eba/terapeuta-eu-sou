@@ -26,9 +26,14 @@ Antes de alterar `/terapeutas`, consultar:
 - Server Component orientado por `searchParams`.
 - Query params suportados: `q`, `therapy`, `theme`, `availability`, `price`, `rating`, `sort`, `page`.
 - Links dos cards: `routes.public.therapistProfile(slug)`.
-- CTA único do card de resultado: `Ver perfil` para
+- CTA primário do card de resultado: `Ver perfil` para
   `routes.public.therapistProfile(slug)`. A reserva começa no perfil, não na
-  busca.
+  busca. O card também oferece o affordance secundário de favorito com
+  `FavoriteTherapistButton`.
+- Favoritos usam o `therapist_profile_id` da projeção pública e o contrato
+  autenticado `/api/patient/favorite-therapists`. Sem sessão, o componente
+  preserva a URL atual no redirecionamento para login; com sessão, a mudança é
+  otimista, reversível e sincronizada com `/app/favoritos/terapeutas`.
 - Não criar `/terapeutas/:slug` dentro desta skill; registrar como pendência até a página de perfil ser implementada.
 
 ## Dados
@@ -74,8 +79,9 @@ Regra de apresentação dos cards:
 - O card público não exibe tags de cuidado ou temas derivadas de
   `therapist.tags`. Os chips visíveis junto ao nome ficam restritos às terapias
   publicadas, com no máximo duas e o contador acessível das demais.
-- O card tem somente o CTA `Ver perfil`; não exibe `Agendar sessão` nem o texto
-  “Ver perfil completo”.
+- O card tem somente o CTA primário `Ver perfil`; não exibe `Agendar sessão`
+  nem o texto “Ver perfil completo”. O favorito é uma ação secundária,
+  disponível apenas para a pessoa paciente autenticada.
 
 ## Componentes Esperados
 
@@ -83,7 +89,7 @@ Regra de apresentação dos cards:
 - hero público com copy acolhedora
 - formulário de busca e filtros linkáveis por URL
 - contagem de resultados e ordenação
-- cards de terapeuta com foto, terapias, avaliação, preço, próxima disponibilidade e CTA único de perfil
+- cards de terapeuta com foto, terapias, avaliação, preço, próxima disponibilidade, favorito e CTA de perfil
 - estado sem resultados
 - paginação
 - `JourneyBanner`
@@ -112,7 +118,9 @@ Não substituir esses padrões por cards editoriais grandes, hero alternativo, c
 - Usar linguagem acolhedora, clara e sem pressão.
 - Não prometer cura, diagnóstico, melhora garantida ou resultado terapêutico.
 - Evitar comparação agressiva entre terapeutas.
-- Favoritos públicos podem aparecer como affordance visual, mas persistência autenticada deve ficar pendente enquanto não houver backend dedicado.
+- Favoritos aparecem como ação secundária nos cards e persistem somente para a
+  pessoa paciente autenticada pelo contrato de favoritos existente. O estado
+  anônimo nunca é apresentado como salvo.
 
 ## Checklist de QA
 
@@ -129,10 +137,12 @@ Não substituir esses padrões por cards editoriais grandes, hero alternativo, c
   completos no tooltip; validar foco, clique e `Escape`, sem misturar temas de
   cuidado com terapias.
 - Confirmar que a busca não exibe `Agendar sessão` ou “Ver perfil completo”.
+- Validar o favorito em cada card: leitura do estado autenticado, adicionar,
+  remover, rollback em erro e redirecionamento para login sem sessão,
+  preservando os filtros da URL.
 
 ## Pendências Conhecidas
 
-- Persistir favoritos apenas para usuário autenticado.
 - Conectar reserva real ao serviço/horário escolhido.
 - Validar continuamente a equivalência entre `public_therapist_search.next_slot_at`
   e o primeiro slot de `get_service_available_slots_v1` quando o contrato de

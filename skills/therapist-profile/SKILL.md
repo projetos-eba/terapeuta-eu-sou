@@ -182,6 +182,10 @@ que possível. A publicação continua sendo uma ação separada.
 - `/terapeuta/perfil/editar` deve conter header, progresso, formulário
   numerado, temas, link público, upload de mídia pública, módulos gerenciados,
   aviso importante e save bar. Não deve conter upload de documento privado.
+- A seção de edição `Conteúdos / Reflexões` está temporariamente fora da
+  superfície visível do editor. Os campos legados permanecem nos contratos para
+  preservar dados já existentes, mas não há CTA para criar ou editar novos
+  conteúdos até decisão posterior do produto.
 - Evitar CTAs conflitantes na primeira configuração: não mostrar `Salvar
 rascunho` como ação concorrente quando o perfil ainda não tem versão
   publicada.

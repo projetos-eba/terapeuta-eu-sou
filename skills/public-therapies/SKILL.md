@@ -88,7 +88,7 @@ Para profissionais relacionados:
 - `TherapyGrid`
 - `TherapyCard`
 - CTA para `/sua-jornada`
-- Detalhe: `TherapyHero`, `TherapyHeroImage`, `TherapyOverview`, `TherapyBenefits`, `RelatedTherapists`, `RelatedTherapistCard`, `TherapyClosingCta`, `TherapyFaq`
+- Detalhe: `TherapyHero`, `TherapyHeroImage`, `TherapyOverview`, `TherapyBenefits`, `RelatedTherapists`, `RelatedTherapistCard`, `PublicTherapistsLowerBanner`
 - `PublicFooter`
 
 ## Responsividade
@@ -98,13 +98,14 @@ Para profissionais relacionados:
 - Tablet: grid de 2 colunas, filtros acima da listagem.
 - Mobile: hero reduzido, busca primeiro, filtros em accordion, grid em 1 coluna quando a descrição precisar respirar.
 - Cards do catálogo devem seguir o padrão visual compacto do Figma `13273:1439`: imagem editorial no topo, nome centralizado, descrição com `line-clamp` de 3 linhas e CTA “Saiba mais”.
-- Detalhe desktop: grade editorial única; coluna esquerda com abordagem, nome, subtítulo, três destaques e “O que é”; coluna direita com imagem hero e benefícios; profissionais em largura total; CTA da jornada e FAQ lado a lado.
-- Detalhe mobile: blocos empilhados, FAQ em accordion, profissionais em uma coluna e sem posicionamento absoluto estrutural.
+- Detalhe desktop: grade editorial única; coluna esquerda com abordagem, nome, subtítulo, três destaques e “O que é”; coluna direita com imagem hero e benefícios; profissionais e banner inferior de descoberta de terapeutas em largura total.
+- Detalhe mobile: blocos empilhados, profissionais em uma coluna, banner de descoberta em largura total e sem posicionamento absoluto estrutural.
 - Títulos editoriais do detalhe, especialmente o nome da terapia no hero, devem usar `font-display` (`IvyPresto Display`) com tamanho responsivo seguro para nomes longos. UI, formulários, descrições e cards usam Manrope via `font-sans`.
 - Cores de títulos devem usar `text-brand-deep`/`text-tesText-primary`; o valor canônico é `#14105A`. Não usar hex hardcoded como `#261433` ou variações próximas em títulos.
 - Benefícios do detalhe devem ser cards compactos com ícone e título, sem descrição visível; descrições podem existir no banco para uso futuro/admin, mas a UI pública simplifica o preenchimento.
 - A nota de segurança não deve aparecer como card destacado no bloco “O que é”; a responsabilidade editorial deve ficar no texto, FAQ, metadata ou conteúdo administrado apropriado.
 - Profissionais relacionados devem ser cards/lista compacta em duas colunas no desktop quando houver múltiplos resultados, evitando áreas vazias grandes.
+- O detalhe substitui os antigos quadros laterais de CTA e FAQ pelo `PublicTherapistsLowerBanner`, compartilhado com a faixa inferior de `/terapeutas`.
 
 ## Copy Responsável
 
