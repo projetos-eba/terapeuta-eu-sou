@@ -34,6 +34,7 @@ export type TherapistProfileCommandBody =
       action?: "save_draft";
       expectedVersion?: number;
       payload?: unknown;
+      preserveLegacyVideoUrl?: boolean;
       requestId?: string;
     }
   | {
@@ -97,6 +98,7 @@ export type ValidTherapistProfileCommand =
       action: "save_draft";
       expectedVersion: number;
       payload: TherapistProfileEditorPayload;
+      preserveLegacyVideoUrl?: true;
       requestId: string;
     }
   | {
@@ -132,10 +134,19 @@ export function validateTherapistProfileCommand(
       invalid("request");
     }
 
+    const preserveLegacyVideoUrl = body.preserveLegacyVideoUrl === true;
+    if (
+      body.preserveLegacyVideoUrl !== undefined &&
+      body.preserveLegacyVideoUrl !== true
+    ) {
+      invalid("preserve_legacy_video_url");
+    }
+
     return {
       action: "save_draft",
       expectedVersion: body.expectedVersion,
-      payload: validatePayload(body.payload),
+      payload: validatePayload(body.payload, { preserveLegacyVideoUrl }),
+      ...(preserveLegacyVideoUrl ? { preserveLegacyVideoUrl: true } : {}),
       requestId: body.requestId,
     };
   }
@@ -152,9 +163,7 @@ export function validateTherapistProfileCommand(
     const mediaUrl = boundedString(body.mediaUrl, 1, 500, "photo_url");
     if (
       !isPublicProfileMediaUrl(mediaUrl) ||
-      !mediaUrl.includes(
-        "/storage/v1/object/public/therapist-public-media/",
-      )
+      !mediaUrl.includes("/storage/v1/object/public/therapist-public-media/")
     ) {
       invalid("photo_url");
     }
@@ -293,7 +302,10 @@ export function mapTherapistProfileDatabaseError(error: unknown) {
   return error;
 }
 
-function validatePayload(input: unknown): TherapistProfileEditorPayload {
+function validatePayload(
+  input: unknown,
+  options: { preserveLegacyVideoUrl?: boolean } = {},
+): TherapistProfileEditorPayload {
   if (!input || typeof input !== "object") invalid();
   const value = input as Record<string, unknown>;
   const publicName = boundedString(value.publicName, 2, 120, "public_name");
@@ -304,7 +316,12 @@ function validatePayload(input: unknown): TherapistProfileEditorPayload {
     parsedVideoUrl &&
     ((parsedVideoProvider === "upload" && !isHttpsUrl(parsedVideoUrl)) ||
       (parsedVideoProvider !== "upload" &&
-        !isAllowedExternalVideoUrl(parsedVideoUrl)))
+        !isAllowedExternalVideoUrl(parsedVideoUrl) &&
+        !(
+          options.preserveLegacyVideoUrl &&
+          parsedVideoProvider === "external" &&
+          isHttpsUrl(parsedVideoUrl)
+        )))
   ) {
     invalid("video_url");
   }

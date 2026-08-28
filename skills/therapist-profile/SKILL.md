@@ -233,6 +233,21 @@ QA adicional: validar o comando `save_media_draft` com perfil incompleto,
 idempotência, conflito de versão, remount após navegação e limpeza best-effort
 do objeto quando a persistência falhar. A publicação deve continuar separada.
 
+## Salvamento automático
+
+- Campos editoriais, seleção de tema e mídia de apresentação elegível devem
+  salvar automaticamente como rascunho após uma breve pausa de edição. Esse
+  salvamento não abre modal, não publica o perfil e preserva alterações feitas
+  enquanto uma gravação anterior está em curso. Erros mantêm o conteúdo no
+  editor e aparecem de forma acionável na barra de rascunho.
+- Um link HTTPS legado fora de YouTube/Vimeo pode ser preservado apenas quando
+  já existe na versão ativa do editor; ele não libera novos domínios nem pode
+  ser publicado. O terapeuta deve substituí-lo por YouTube, Vimeo ou vídeo
+  enviado antes da publicação.
+- URLs HTTP legadas de foto/capa podem permanecer no rascunho para não bloquear
+  edições de conteúdo existentes. Todo novo upload público continua vindo do
+  adaptador autenticado e usa URL HTTPS.
+
 ## Cache
 
 - Draft/discard: não invalidar público.

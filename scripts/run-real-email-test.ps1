@@ -31,7 +31,13 @@ try {
     "supabase/functions/.env.local"
   ) | Where-Object { Test-Path -LiteralPath $_ }
 
-  $denoArgs = @("run", "--allow-env", "--allow-net")
+  $denoArgs = @(
+    "run",
+    "--allow-env",
+    "--allow-net",
+    "--allow-read=.tmp",
+    "--allow-write=.tmp"
+  )
   foreach ($envFile in $envFiles) {
     $denoArgs += "--env-file=$envFile"
   }

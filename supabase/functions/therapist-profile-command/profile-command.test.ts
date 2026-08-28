@@ -83,25 +83,28 @@ Deno.test("validates slug availability and update commands", () => {
   );
 });
 
-Deno.test("validates a photo media draft without requiring profile content", () => {
-  const result = validateTherapistProfileCommand({
-    action: "save_media_draft",
-    expectedVersion: 7,
-    kind: "photo",
-    mediaUrl:
-      "https://example.supabase.co/storage/v1/object/public/therapist-public-media/a6000000-0000-4000-8000-000000000001/profile/photo-1.webp",
-    requestId,
-  });
+Deno.test(
+  "validates a photo media draft without requiring profile content",
+  () => {
+    const result = validateTherapistProfileCommand({
+      action: "save_media_draft",
+      expectedVersion: 7,
+      kind: "photo",
+      mediaUrl:
+        "https://example.supabase.co/storage/v1/object/public/therapist-public-media/a6000000-0000-4000-8000-000000000001/profile/photo-1.webp",
+      requestId,
+    });
 
-  assertEquals(result, {
-    action: "save_media_draft",
-    expectedVersion: 7,
-    kind: "photo",
-    mediaUrl:
-      "https://example.supabase.co/storage/v1/object/public/therapist-public-media/a6000000-0000-4000-8000-000000000001/profile/photo-1.webp",
-    requestId,
-  });
-});
+    assertEquals(result, {
+      action: "save_media_draft",
+      expectedVersion: 7,
+      kind: "photo",
+      mediaUrl:
+        "https://example.supabase.co/storage/v1/object/public/therapist-public-media/a6000000-0000-4000-8000-000000000001/profile/photo-1.webp",
+      requestId,
+    });
+  },
+);
 
 Deno.test("maps slug collisions without exposing another therapist", () => {
   const result = mapTherapistProfileDatabaseError(
@@ -158,6 +161,28 @@ Deno.test(
         requestId,
       }),
     );
+  },
+);
+
+Deno.test(
+  "accepts a requested HTTPS legacy video URL for draft preservation",
+  () => {
+    const result = validateTherapistProfileCommand({
+      action: "save_draft",
+      expectedVersion: 1,
+      payload: {
+        publicName: "Ana Oliveira",
+        videoProvider: "external",
+        videoUrl: "https://example.test/legacy-video",
+      },
+      preserveLegacyVideoUrl: true,
+      requestId,
+    });
+
+    assertEquals(result.action, "save_draft");
+    if (result.action === "save_draft") {
+      assertEquals(result.preserveLegacyVideoUrl, true);
+    }
   },
 );
 

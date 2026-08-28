@@ -268,7 +268,7 @@ Stack real identificada:
   antes de criar containers próprios.
 - `supabase/` possui migrations, seeds idempotentes, testes pgTAP e Edge
   Functions para autenticação, e-mail, Match, Stripe e Zoom.
-- Hostinger Mail API: contrato confirmado em 2026-07-24. `GET https://api.mail.hostinger.com/api/v1/me` lista mailboxes; envio usa `POST https://api.mail.hostinger.com/api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, payload `to: string[]`, `display_name`, `subject`, `text`, `html`, e sucesso `204` sem corpo.
+- Hostinger Mail API: wire contract revalidado em 2026-08-28. `GET https://api.mail.hostinger.com/api/v1/me` lista mailboxes; envio HTML usa `POST https://api.mail.hostinger.com/api/v1/mailboxes/{mailboxResourceId}/send`, bearer token, payload `to: string[]`, `displayName`, `subject`, `html`, e sucesso `204` sem corpo. No SDK oficial, a propriedade Python `display_name` serializa com alias JSON `displayName`; snake_case é ignorado pelo provider.
 - `CONFIRMED_AUTOMATICALLY_EMAIL` e secrets de e-mail pertencem somente a Supabase Edge Functions. Ausente/vazio equivale a `false`; aceita apenas `true` ou `false`; valor inválido deve falhar fechado e nunca ativar bypass. Quando `true`, cadastro confirma Auth via Admin API, não envia e-mail, não cria token e redireciona para login com `verified=1&automatic=1`.
 - Stripe Billing, Checkout de sessões, Promotion Codes, Connect Accounts v2,
   ledger e lotes de repasse concluíram o Gate F0 de hardening. O Checkout usa

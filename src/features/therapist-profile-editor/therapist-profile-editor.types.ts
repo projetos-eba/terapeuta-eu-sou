@@ -230,6 +230,7 @@ export type SaveTherapistProfileDraftCommand = {
   action: "save_draft";
   expectedVersion: number;
   payload: TherapistProfileEditorPayload;
+  preserveLegacyVideoUrl?: true;
   requestId: string;
 };
 

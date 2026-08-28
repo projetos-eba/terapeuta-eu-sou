@@ -69,3 +69,29 @@ Deno.test("rejects unsupported therapist private document payloads", async () =>
     throw new Error("Expected pdf extension.");
   }
 });
+
+Deno.test("explains the 10 MB private document limit", async () => {
+  let uploadError: unknown = null;
+  try {
+    await validateUpload(
+      new File(
+        [new Uint8Array(10 * 1024 * 1024 + 1)],
+        "documento.pdf",
+        { type: "application/pdf" },
+      ),
+    );
+  } catch (error) {
+    uploadError = error;
+  }
+
+  if (!(uploadError instanceof DomainError)) {
+    throw new Error("Expected oversized document to fail validation.");
+  }
+
+  if (
+    uploadError.message !==
+      "Não foi possível concluir a operação. Tamanho do arquivo excede o limite de 10 MB."
+  ) {
+    throw new Error("Expected explicit 10 MB document limit message.");
+  }
+});

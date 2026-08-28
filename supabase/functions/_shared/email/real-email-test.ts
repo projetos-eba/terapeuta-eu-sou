@@ -4,6 +4,10 @@ import {
   SupabaseRestClient,
 } from "../auth/supabase-rest.ts";
 import { HostingerMailApiProvider } from "./hostinger-mail-api-provider.ts";
+import {
+  realEmailCooldownRemainingMs,
+  resolveSingleRealEmailActionKey,
+} from "./real-email-test-policy.ts";
 import { emailActionRegistry } from "./registry.ts";
 import { sendTransactionalEmail } from "./service.ts";
 import type {
@@ -18,14 +22,21 @@ declare const Deno: {
     get(name: string): string | undefined;
   };
   exit(code?: number): never;
+  mkdir(path: string, options?: { recursive?: boolean }): Promise<void>;
+  readTextFile(path: string): Promise<string>;
+  remove(path: string): Promise<void>;
+  writeTextFile(
+    path: string,
+    data: string,
+    options?: { createNew?: boolean },
+  ): Promise<void>;
 };
 
 const ALLOWED_RECIPIENTS = new Set([
   "viniciusferrari.silva@gmail.com",
   "ferrarimarketing9@gmail.com",
-  "ferrarimkt9@gmail.com",
 ]);
-const SEND_INTERVAL_MS = 65000;
+const SEND_GATE_PATH = ".tmp/email-real-test-send-gate.json";
 
 const runtime: EdgeRuntime = {
   env: Deno.env,
@@ -61,54 +72,40 @@ if (!apiKey) {
 }
 
 const client = new SupabaseRestClient(supabaseUrl, serviceRoleKey);
-const provider = new HostingerMailApiProvider({ apiKey });
+const provider = new HostingerMailApiProvider({ apiKey, maxAttempts: 1 });
+const actionKey = resolveRequestedActionKey();
 const syncedSender = await runStep("sync_hostinger_senders", () =>
   syncHostingerSenders(client, provider),
 );
-const entries = resolveRequestedEntries();
-const failures: EmailActionKey[] = [];
+const entry = emailActionRegistry[actionKey];
+await acquirePersistentSendGate(actionKey);
+const result = await runStep(`send_real_email:${entry.actionKey}`, () =>
+  sendTransactionalEmail(client, provider, {
+    actionKey: entry.actionKey,
+    correlationId: `email-e2e-${entry.actionKey}-${crypto.randomUUID()}`,
+    deliverySnapshot: {
+      senderProfileId: syncedSender.id,
+      templateOverrides: {},
+      templateVersion: entry.currentTemplateVersion,
+    },
+    dispatchMode: "manual",
+    recipient: {
+      email: recipient,
+      name: "Teste TES",
+    },
+    recipientRole: recipientRoleFor(entry.actionKey),
+    templateData: entry.previewFixture,
+  }),
+);
 
-for (const [index, entry] of entries.entries()) {
-  const result = await runStep(`send_real_email:${entry.actionKey}`, () =>
-    sendTransactionalEmail(client, provider, {
-      actionKey: entry.actionKey,
-      correlationId: `email-e2e-${entry.actionKey}-${crypto.randomUUID()}`,
-      deliverySnapshot: {
-        senderProfileId: syncedSender.id,
-        templateOverrides: {},
-        templateVersion: entry.currentTemplateVersion,
-      },
-      dispatchMode: "manual",
-      recipient: {
-        email: recipient,
-        name: "Teste TES",
-      },
-      recipientRole: recipientRoleFor(entry.actionKey),
-      templateData: entry.previewFixture,
-    }),
-  );
+console.log(`${entry.actionKey}: ${result.status}`);
 
-  console.log(
-    `[${index + 1}/${entries.length}] ${entry.actionKey}: ${result.status}`,
-  );
-
-  if (result.status !== "success") {
-    failures.push(entry.actionKey);
-  }
-
-  if (index < entries.length - 1) {
-    await delay(SEND_INTERVAL_MS);
-  }
-}
-
-if (failures.length > 0) {
-  fail(
-    `Real email test failed for ${failures.length} action(s): ${failures.join(", ")}.`,
-  );
+if (result.status !== "success") {
+  fail(`Real email test was not accepted for ${entry.actionKey}.`);
 }
 
 console.log(
-  `Real email test accepted ${entries.length}/${entries.length} messages for the approved recipient from ${syncedSender.mailbox_address}.`,
+  `Real email test accepted exactly one message for the approved recipient from ${syncedSender.mailbox_address}.`,
 );
 
 function recipientRoleFor(actionKey: EmailActionKey): UserRole | null {
@@ -129,31 +126,61 @@ function recipientRoleFor(actionKey: EmailActionKey): UserRole | null {
   return null;
 }
 
-function resolveRequestedEntries() {
-  const requested = Deno.env.get("EMAIL_E2E_ACTION_KEYS")?.trim();
-  if (!requested) return Object.values(emailActionRegistry);
-
-  const actionKeys = [...new Set(
-    requested
-      .split(",")
-      .map((value) => value.trim())
-      .filter(Boolean),
-  )];
-
-  if (actionKeys.length === 0) {
-    fail("EMAIL_E2E_ACTION_KEYS did not contain any action key.");
+function resolveRequestedActionKey() {
+  try {
+    return resolveSingleRealEmailActionKey(
+      Deno.env.get("EMAIL_E2E_ACTION_KEYS"),
+      Object.keys(emailActionRegistry),
+    ) as EmailActionKey;
+  } catch (error) {
+    fail(error instanceof Error ? error.message : "Invalid real email action.");
   }
-
-  return actionKeys.map((actionKey) => {
-    if (!(actionKey in emailActionRegistry)) {
-      fail(`EMAIL_E2E_ACTION_KEYS contains an unsupported action: ${actionKey}.`);
-    }
-    return emailActionRegistry[actionKey as EmailActionKey];
-  });
 }
 
-function delay(milliseconds: number) {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+async function acquirePersistentSendGate(actionKey: EmailActionKey) {
+  await Deno.mkdir(".tmp", { recursive: true });
+  const attemptedAt = new Date().toISOString();
+  const gate = JSON.stringify({ actionKey, attemptedAt });
+
+  try {
+    await Deno.writeTextFile(SEND_GATE_PATH, gate, { createNew: true });
+    return;
+  } catch {
+    // An existing gate must be inspected before any provider send call.
+  }
+
+  let existing: { attemptedAt?: unknown };
+  try {
+    existing = JSON.parse(await Deno.readTextFile(SEND_GATE_PATH)) as {
+      attemptedAt?: unknown;
+    };
+  } catch {
+    fail("The persistent real email send gate could not be verified. No email was sent.");
+  }
+
+  if (typeof existing.attemptedAt !== "string") {
+    fail("The persistent real email send gate is invalid. No email was sent.");
+  }
+
+  let remainingMs: number;
+  try {
+    remainingMs = realEmailCooldownRemainingMs(existing.attemptedAt);
+  } catch {
+    fail("The persistent real email send gate is invalid. No email was sent.");
+  }
+
+  if (remainingMs > 0) {
+    fail(
+      `The 120 second real email cooldown is active for another ${Math.ceil(remainingMs / 1000)} second(s). No email was sent.`,
+    );
+  }
+
+  try {
+    await Deno.remove(SEND_GATE_PATH);
+    await Deno.writeTextFile(SEND_GATE_PATH, gate, { createNew: true });
+  } catch {
+    fail("Another real email test acquired the send gate. No email was sent.");
+  }
 }
 
 async function syncHostingerSenders(

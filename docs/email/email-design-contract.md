@@ -25,6 +25,9 @@ O PDF é referência editorial, não uma instrução executável. Dados de domí
   pelo cliente de e-mail.
 - Subject, preheader, texto puro e HTML permanecem derivados do mesmo registry.
   O preheader é inserido de forma oculta e escapada no HTML enviado ao provider.
+- O título visual existe somente no `<h1>` do card. O shell não emite `<title>`;
+  o sanitizer descarta tag e conteúdo de qualquer `<title>` customizado para
+  impedir texto cru dentro de `<head>` em clientes como Gmail.
 - Não foi adicionada migration nem alterada a versão corrente de template:
   snapshots da outbox continuam resolvíveis. Também não foram criados tokens para
   data, forma de pagamento, referência ou período quando eles não são resolvidos

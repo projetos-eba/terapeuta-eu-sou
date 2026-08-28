@@ -48,6 +48,14 @@ export function parseTherapistProfileCommand(
   }
 
   if (action === "save_draft") {
+    const preserveLegacyVideoUrl = value.preserveLegacyVideoUrl === true;
+    if (
+      value.preserveLegacyVideoUrl !== undefined &&
+      value.preserveLegacyVideoUrl !== true
+    ) {
+      throw invalid("preserve_legacy_video_url");
+    }
+
     return {
       action,
       expectedVersion: integer(
@@ -56,7 +64,8 @@ export function parseTherapistProfileCommand(
         999999999,
         "expected_version",
       ),
-      payload: parseEditorPayload(value.payload),
+      payload: parseEditorPayload(value.payload, { preserveLegacyVideoUrl }),
+      ...(preserveLegacyVideoUrl ? { preserveLegacyVideoUrl: true } : {}),
       requestId: uuid(value.requestId, "request_id"),
     };
   }
@@ -83,6 +92,7 @@ export function parseTherapistProfileCommand(
 
 export function parseEditorPayload(
   input: unknown,
+  options: { preserveLegacyVideoUrl?: boolean } = {},
 ): TherapistProfileEditorPayload {
   const value = object(input);
   const parsedVideoProvider = videoProvider(value.videoProvider);
@@ -92,7 +102,12 @@ export function parseEditorPayload(
     parsedVideoUrl &&
     ((parsedVideoProvider === "upload" && !isHttpsUrl(parsedVideoUrl)) ||
       (parsedVideoProvider !== "upload" &&
-        !isAllowedExternalVideoUrl(parsedVideoUrl)))
+        !isAllowedExternalVideoUrl(parsedVideoUrl) &&
+        !(
+          options.preserveLegacyVideoUrl &&
+          parsedVideoProvider === "external" &&
+          isHttpsUrl(parsedVideoUrl)
+        )))
   ) {
     throw invalid("video_url");
   }
