@@ -155,6 +155,22 @@ describe("mapSessionPresentation", () => {
     expect(result.state).toBe("completed");
     expect(result.label).toBe("Realizada");
   });
+
+  it("treats bilateral confirmation as a completed session", () => {
+    const result = mapSessionPresentation(
+      sessionFixture({
+        bookingStatus: BookingStatus.Completed,
+        endsAt: "2026-07-26T12:00:00.000Z",
+        fulfillmentStatus: FulfillmentStatus.ConfirmedBilateral,
+        startsAt: "2026-07-26T11:00:00.000Z",
+      }),
+      now,
+    );
+
+    expect(result.state).toBe("completed");
+    expect(result.label).toBe("Realizada");
+    expect(result.actions.canComplete).toBe(false);
+  });
 });
 
 function sessionFixture(

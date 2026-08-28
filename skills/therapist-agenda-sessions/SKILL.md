@@ -54,6 +54,12 @@ description: Implementar e manter Agenda, disponibilidade, bookings e Sessões d
 
 Não criar enums equivalentes dentro de features.
 
+`confirmed_bilateral` é o estado canônico de realização concluída após as
+duas confirmações. Os parsers de Agenda e Sessões devem aceitá-lo e
+apresentá-lo como `Realizada`; os estados `confirmed_by_patient_review`,
+`confirmed_by_therapist` e `auto_confirmed` permanecem somente para leitura
+histórica.
+
 ## Leitura
 
 - Agenda usa `get_therapist_agenda_v1`.

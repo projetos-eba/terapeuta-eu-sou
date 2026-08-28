@@ -5,6 +5,7 @@ import type { CurrencyCode, ISODateTimeString, UUID } from "./types";
 export const FulfillmentStatus = {
   AutoConfirmed: "auto_confirmed",
   Cancelled: "canceled",
+  ConfirmedBilateral: "confirmed_bilateral",
   ConfirmedByPatientReview: "confirmed_by_patient_review",
   ConfirmedByTherapist: "confirmed_by_therapist",
   Contested: "contested",
