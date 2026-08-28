@@ -77,10 +77,20 @@ permanecem anexadas. Presença do participante e vídeo remoto anexado são
 asserts diferentes. Safari/iPhone e Chrome/Android reais são obrigatórios em
 HML; emulação de viewport Chromium não substitui esses gates.
 
-O teste de adapter deve reproduzir também o `user-updated` incremental emitido
-quando o paciente liga a própria câmera. Um payload contendo apenas o usuário
-local, ou uma atualização remota sem `bVideoOn`, não pode chamar `detachVideo`
-para o terapeuta nem substituir o tile remoto por “Aguardando”.
+O teste de adapter deve reproduzir também os eventos incrementais emitidos
+quando o paciente liga a própria câmera. Os payloads são somente gatilhos: a
+decisão de render usa o roster de `getAllUser()`. Um evento contendo apenas o
+usuário local, ou uma atualização remota sem `bVideoOn`, não pode chamar
+`detachVideo` para o terapeuta nem substituir o tile remoto por “Aguardando”.
+
+As regressões de identidade e ownership devem cobrir: participante local vindo
+do retorno de `join` antes de `getCurrentUserInfo`; bloqueio de attach enquanto
+a identidade estiver incompleta; segundo dispositivo com o mesmo `userKey`;
+seleção única e estável entre duas instâncias da contraparte; conflito entre
+identidades remotas distintas; reconexão com `userId` preservado e renovado;
+detach pelo elemento exato; colisão entre elemento local e remoto; e attach de
+geração anterior resolvendo após cleanup/rejoin. O aceite exige no máximo um
+player por container e nenhum movimento do self-view para o quadro remoto.
 
 Os testes temporais cobrem T-15, chegada em T+10, bloqueio em T+10+1 ms,
 reconexão por chegada da versão atual ou join confiável e bloqueio em
@@ -137,7 +147,10 @@ Normalizar por operação, não somente pela declaração `ExecutedResult`:
 `startVideo` resolve `undefined` no sucesso da captura. `init`, áudio e
 `stopVideo` continuam estritos (`""`). Um objeto `{ type, reason, errorCode }`
 continua sendo falha. Os mocks precisam reproduzir esses retornos reais;
-ver [investigação de self-view](./self-view-2026-08-27.md).
+ver [investigação de self-view](./self-view-2026-08-27.md) e
+[incidente de roteamento de câmera](./camera-routing-2026-08-28.md). O
+normalizador de `join` precisa devolver `userId`/`userKey`, não apenas aceitar o
+resultado.
 Antes de recriar o singleton, o fluxo remove listeners e videos, executa `leave`
 quando aplicavel e aguarda `destroyClient`.
 

@@ -48,11 +48,19 @@ câmera e conexão em desktop e mobile; `ZoomVideoControls` concentra preflight,
 áudio, vídeo, suporte e saída. Em mobile, o remoto é dominante, o self-view é
 contido e o dock respeita `100dvh`.
 
-Os eventos `user-added` e `user-updated` do SDK são deltas de participantes,
-não snapshots completos da sala. O adapter aplica esses deltas somente aos
-usuários presentes no payload; a lista completa de `getAllUser()` fica
-reservada para a reconciliação após join e reconexão. Assim, uma atualização do
-usuário local ao ligar sua câmera nunca remove o vídeo remoto já anexado.
+O participante devolvido por `join()` é a primeira identidade local
+autoritativa. `getCurrentUserInfo()` é fallback e fonte de renovação em
+`connection-change: Connected`; enquanto nenhuma dessas fontes fornecer
+`userId` válido, o adapter não anexa remoto. O `userKey` determinístico agrupa
+conexões da mesma pessoa e impede que um segundo dispositivo local seja
+classificado como contraparte.
+
+Os eventos `user-added`, `user-removed`, `user-updated` e
+`peer-video-state-change` são deltas e apenas disparam reconciliação. O roster
+autoritativo vem de `getAllUser()`. Como a sala é 1:1, o adapter seleciona uma
+única identidade remota e um único player estável; instâncias duplicadas do
+mesmo `userKey` não são empilhadas, e identidades remotas conflitantes falham
+fechado. Ver [incidente de roteamento de câmera](./camera-routing-2026-08-28.md).
 
 Antes do join, a sala de espera pode abrir uma prévia exclusivamente local no
 navegador: o teste de câmera solicita somente vídeo e substitui a capa visual;
@@ -188,6 +196,13 @@ limpeza e o `destroyClient` da tentativa anterior antes de chamar
 fantasmas. O `requestId` retornado pela emissao de acesso permite correlacionar
 o codigo sanitizado do browser com os logs da Edge Function sem persistir token
 ou mensagem interna do Zoom.
+
+Timers e operações de vídeo remoto pertencem ao conjunto
+`generation + client + stream`. O cleanup invalida a geração, aguarda attaches
+pendentes dentro do deadline e desanexa pelo par `userId + element`; uma
+operação antiga nunca pode anexar ou remover elementos da tentativa nova. Cada
+container mantém no máximo um player, e um elemento já pertencente ao self-view
+ou ao remoto não pode ser movido para o outro quadro.
 
 A fila de limpeza vive no modulo, e nao na instancia React. Assim, navegar para
 tras e montar novamente a rota nao perde a Promise de `destroyClient` que ainda

@@ -89,8 +89,10 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   pendentes; desligar câmera para a publicação antes do detach.
 - Antes de alterar integração ou mocks, ler
   `docs/zoom/investigation-2026-08-27.md` e
-  `docs/zoom/self-view-2026-08-27.md`: contêm causas comprovadas e invariantes
-  para não reintroduzir falhas de join, destroy e self-view.
+  `docs/zoom/self-view-2026-08-27.md` e
+  `docs/zoom/camera-routing-2026-08-28.md`: contêm causas comprovadas e
+  invariantes para não reintroduzir falhas de join, destroy, self-view e
+  roteamento entre os quadros.
 - A qualidade do encontro só fica elegível após `session.user_joined` confiável
   para paciente e terapeuta e encerramento efetivo/programado. Um único join
   direciona para ocorrência, não para avaliação de qualidade.
@@ -139,18 +141,24 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   e o mesmo acesso; reconexão nativa bem-sucedida preserva o client existente.
 - Atualizar access em cada dispositivo na espera, inclusive após a liberação;
   resposta tardia de preview não substitui estado/mensagem da chamada.
-- O `userId` local vem de `ZoomVideoClient.getCurrentUserInfo()`, nunca do
-  media stream. A self-view e os vídeos remotos usam `attachVideo` dentro de
+- O `userId`/`userKey` local vem primeiro do participante retornado por
+  `join()`; `getCurrentUserInfo()` é fallback e renovação em `Connected`, nunca
+  o media stream. Sem identidade local autoritativa, bloquear attach remoto. A
+  self-view e os vídeos remotos usam `attachVideo` dentro de
   `video-player-container`; `renderVideo` em canvas não é o contrato
   preferencial.
 - Inicializar o SDK com `enforceMultipleVideos: true`. Separar presença do
   participante do estado do vídeo remoto (`off`, `attaching`, `on`, `error`) e
   ressincronizar após join, atualização, câmera do peer e reconexão. Em limite
   de render, priorizar o remoto e informar que a prévia local está indisponível.
-- Tratar `user-added` e `user-updated` como deltas de participantes. Nunca usar
-  a ausência de um usuário nesses payloads para removê-lo, nem converter
-  `bVideoOn` ausente em câmera desligada; a reconciliação completa usa somente
-  `getAllUser()` após join e reconexão.
+- Tratar eventos de usuário e vídeo como deltas/gatilhos, nunca como roster. A
+  reconciliação completa usa somente `getAllUser()`. Excluir IDs com o mesmo
+  `userKey` local, selecionar apenas uma instância estável da contraparte e
+  falhar fechado diante de identidades remotas conflitantes.
+- Vincular timers e operações de vídeo a `generation + client + stream`,
+  revalidar ownership após cada `await` e desanexar pelo par
+  `detachVideo(userId, element)`. Cada container tem no máximo um player e um
+  elemento nunca muda do self-view para o remoto, nem no sentido inverso.
 - Ícones comunicam o estado atual: `MicOff`/`VideoOff` desligado e
   `Mic`/`Video` ligado; o nome acessível descreve a próxima ação.
 - Validar câmera inicialmente desligada, ativação após o join, desligamento e

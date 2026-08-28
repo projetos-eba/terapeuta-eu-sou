@@ -45,8 +45,13 @@ describe("zoom video recovery contract", () => {
   });
 
   it("accepts the installed SDK participant result only for join, never masking failures", () => {
-    expect(() => assertZoomJoinResult({ userId: 7 })).not.toThrow();
-    expect(() => assertZoomJoinResult("")).not.toThrow();
+    expect(
+      assertZoomJoinResult({
+        userId: 7,
+        userKey: "tes-v1-p-local-participant",
+      }),
+    ).toEqual({ userId: 7, userKey: "tes-v1-p-local-participant" });
+    expect(assertZoomJoinResult("")).toBeNull();
     for (const result of [
       null,
       undefined,

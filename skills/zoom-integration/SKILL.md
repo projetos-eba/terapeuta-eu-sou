@@ -18,9 +18,11 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
 
 - Antes de alterar adapter/retries/mocks, consultar
   `docs/zoom/investigation-2026-08-27.md` e
-  `docs/zoom/self-view-2026-08-27.md`. No SDK 2.4.5, `join` pode retornar um
-  participante e `startVideo` retorna `undefined`; contratos específicos não
-  dispensam rejeitar falhas resolvidas. `destroyClient` preserva o receiver.
+  `docs/zoom/self-view-2026-08-27.md` e
+  `docs/zoom/camera-routing-2026-08-28.md`. No SDK 2.4.5, `join` pode retornar
+  um participante e `startVideo` retorna `undefined`; contratos específicos
+  não dispensam rejeitar falhas resolvidas. A identidade devolvida pelo join
+  deve ser preservada antes da mídia. `destroyClient` preserva o receiver.
   Falha de mídia/prévia não deve destruir uma conexão válida.
 - Browser: `@zoom/videosdk`.
 - Paciente acessa a sala dedicada por `/app/encontros/:bookingId/video`.
@@ -133,6 +135,10 @@ Com `ALLOW_REAL_ZOOM=false`, nao fazer chamada externa nem entrar em sessao real
 - A prova bidirecional liga primeiro a câmera do terapeuta, confirma o remoto
   no paciente, liga a câmera do paciente e confirma que ambos mantêm self-view
   e remoto. Safari/iPhone e Chrome/Android reais permanecem gates separados.
+- O aceite 1:1 exige uma única identidade remota selecionada por roster
+  autoritativo, no máximo um player por container, exclusão de segundo
+  dispositivo com o mesmo `userKey` local, detach pelo elemento exato e
+  invalidação de timers/attaches de gerações anteriores.
 - O harness HML falha fechado sem fixture canônica resolvida, sem `_vercel_share`,
   com `provider_session_id` preexistente, com qualquer sessao Zoom ativa antes
   do teste, ou se o pagamento canonico estiver ausente. Ele nao cria fixture
