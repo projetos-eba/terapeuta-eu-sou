@@ -137,7 +137,13 @@ test.describe("therapist Agenda and Sessions foundation", () => {
     await expect(
       page.getByRole("heading", { name: "Disponibilidade semanal" }),
     ).toBeVisible();
-    await expect(page.getByLabel("Configuração aplicada a")).toBeVisible();
+    const serviceSelector = page.getByLabel("Configuração aplicada a", {
+      exact: true,
+    });
+    await expect(serviceSelector).toBeVisible();
+    expect(
+      await serviceSelector.locator("option").allTextContents(),
+    ).not.toContain("Todas as terapias");
     await expect(page.getByText("Reagendamento automático")).toHaveCount(0);
 
     const saveButton = page.getByRole("button", {
@@ -145,7 +151,7 @@ test.describe("therapist Agenda and Sessions foundation", () => {
     });
     await expect(saveButton).toBeDisabled();
 
-    const slotStep = page.getByLabel("Intervalo das sessões");
+    const slotStep = page.getByLabel("Intervalo das sessões", { exact: true });
     const originalSlotStep = await slotStep.inputValue();
     const temporarySlotStep = originalSlotStep === "45" ? "30" : "45";
     await slotStep.selectOption(temporarySlotStep);
@@ -189,6 +195,138 @@ test.describe("therapist Agenda and Sessions foundation", () => {
       fullPage: true,
       path: testInfo.outputPath("agenda-horarios-mobile.png"),
     });
+  });
+
+  test("isolates multiple therapies and blocks an overlapping schedule draft", async ({
+    page,
+  }) => {
+    await page.goto("/terapeuta/agenda?aba=horarios");
+
+    const serviceSelector = page.getByLabel("Configuração aplicada a", {
+      exact: true,
+    });
+    const serviceOptions = await serviceSelector
+      .locator("option")
+      .evaluateAll((options) =>
+        options.map((option) => ({
+          label: option.textContent?.trim() ?? "",
+          value: (option as HTMLOptionElement).value,
+        })),
+      );
+
+    expect(serviceOptions).toHaveLength(2);
+    expect(serviceOptions.map((option) => option.label)).not.toContain(
+      "Todas as terapias",
+    );
+
+    const [primaryService, secondaryService] = serviceOptions;
+    expect(primaryService).toBeDefined();
+    expect(secondaryService).toBeDefined();
+
+    await serviceSelector.selectOption(primaryService!.value);
+    await expect(
+      page.getByRole("button", { name: "Ativar Segunda-feira" }),
+    ).toBeVisible();
+
+    await page
+      .getByRole("button", { exact: true, name: "Adicionar faixa" })
+      .click();
+    const addDialog = page.getByRole("dialog", {
+      name: "Adicionar faixa de horário",
+    });
+    await addDialog.getByLabel("Dia da semana").selectOption("1");
+    await addDialog
+      .getByRole("button", { exact: true, name: "Adicionar faixa" })
+      .click();
+
+    const mondayRow = page
+      .getByRole("heading", { name: "Segunda-feira" })
+      .locator("..")
+      .locator("..")
+      .locator("..");
+    await mondayRow.getByRole("button", { name: "Adicionar horário" }).click();
+
+    const mondayStarts = page.getByLabel("Início de Segunda-feira", {
+      exact: true,
+    });
+    const mondayEnds = page.getByLabel("Fim de Segunda-feira", {
+      exact: true,
+    });
+    await expect(mondayStarts).toHaveCount(2);
+    await mondayStarts.nth(1).selectOption("10:00");
+    await mondayEnds.nth(1).selectOption("12:00");
+    await mondayEnds.nth(1).focus();
+    await mondayEnds.nth(1).blur();
+
+    const overlapAlert = page.getByRole("alert").filter({
+      hasText: "Essa faixa se sobrepõe",
+    });
+    await expect(overlapAlert).toContainText(
+      "Essa faixa se sobrepõe a outro horário disponível no mesmo dia.",
+    );
+
+    let scheduleWriteCount = 0;
+    page.on("request", (request) => {
+      if (
+        request.method() === "POST" &&
+        request.url().includes("/api/therapist/schedule")
+      ) {
+        scheduleWriteCount += 1;
+      }
+    });
+    await page.getByRole("button", { name: "Salvar alterações" }).click();
+    await expect(overlapAlert).toContainText(
+      "Ajuste os horários antes de continuar.",
+    );
+    expect(scheduleWriteCount).toBe(0);
+
+    await page.reload();
+    await serviceSelector.selectOption(secondaryService!.value);
+    let secondarySaved = false;
+
+    try {
+      await page
+        .getByRole("button", { name: "Tornar disponível" })
+        .first()
+        .click();
+      await page
+        .getByLabel("Fim de Segunda-feira", { exact: true })
+        .selectOption("11:00");
+      await page.getByRole("button", { name: "Salvar alterações" }).click();
+      await expect(
+        page.getByText("Horários salvos com sucesso."),
+      ).toBeVisible();
+      secondarySaved = true;
+
+      await page.reload();
+      await serviceSelector.selectOption(secondaryService!.value);
+      await expect(
+        page.getByLabel("Início de Segunda-feira", { exact: true }),
+      ).toHaveValue("09:00");
+      await expect(
+        page.getByLabel("Fim de Segunda-feira", { exact: true }),
+      ).toHaveValue("11:00");
+
+      await serviceSelector.selectOption(primaryService!.value);
+      await expect(
+        page.getByLabel("Início de Terça-feira", { exact: true }),
+      ).toHaveValue("10:00");
+    } finally {
+      if (secondarySaved) {
+        await page.reload();
+        await serviceSelector.selectOption(secondaryService!.value);
+        const removeMonday = page.getByRole("button", {
+          name: "Excluir faixa 1 de Segunda-feira",
+        });
+        if (await removeMonday.isVisible()) {
+          await removeMonday.click();
+          await page.getByRole("button", { name: "Salvar alterações" }).click();
+          await expect(
+            page.getByText("Horários salvos com sucesso."),
+          ).toBeVisible();
+        }
+      }
+    }
   });
 
   test("creates and removes a real availability block responsively", async ({
