@@ -28,6 +28,15 @@ export type PublicHomeTherapist = {
   therapyNames?: string[];
 };
 
+export type PublicHomeFeaturedTherapistsPage = {
+  hasMore: boolean;
+  nextCursor: {
+    freeOffset: number;
+    paidOffset: number;
+  } | null;
+  therapists: PublicHomeTherapist[];
+};
+
 export type PublicHomeTestimonial = {
   author: string;
   body: string;
@@ -57,6 +66,7 @@ export type PublicHomeData = {
   reason?: "configuration_missing" | "query_failed";
   source: "demo" | "supabase";
   status: "degraded" | "demo" | "empty" | "success";
+  featuredTherapistsPage?: PublicHomeFeaturedTherapistsPage;
   testimonials: PublicHomeTestimonial[];
   therapies: PublicHomeTherapy[];
   therapists: PublicHomeTherapist[];
