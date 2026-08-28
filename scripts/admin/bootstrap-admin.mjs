@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import path from "node:path";
 
 const projectRef = requiredArgument("--project-ref");
 const email = requiredEnv("TES_ADMIN_BOOTSTRAP_EMAIL").toLowerCase();
@@ -123,30 +124,29 @@ async function request(path, init) {
 }
 
 function resolveServiceRoleKey(ref) {
-  const executable =
-    process.platform === "win32" ? process.env.ComSpec || "cmd.exe" : "npx";
-  const argumentsList =
-    process.platform === "win32"
-      ? [
-          "/d",
-          "/s",
-          "/c",
-          `npx.cmd supabase projects api-keys --project-ref ${ref} --reveal --output json`,
-        ]
-      : [
-          "supabase",
-          "projects",
-          "api-keys",
-          "--project-ref",
-          ref,
-          "--reveal",
-          "--output",
-          "json",
-        ];
-  const output = execFileSync(executable, argumentsList, {
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-  });
+  const supabaseCliEntry = path.resolve(
+    "node_modules",
+    "supabase",
+    "dist",
+    "supabase.js",
+  );
+  const output = execFileSync(
+    process.execPath,
+    [
+      supabaseCliEntry,
+      "projects",
+      "api-keys",
+      "--project-ref",
+      ref,
+      "--reveal",
+      "--output",
+      "json",
+    ],
+    {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    },
+  );
   const payload = JSON.parse(output);
   const keys = Array.isArray(payload)
     ? payload

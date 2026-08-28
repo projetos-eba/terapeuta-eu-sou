@@ -16,6 +16,17 @@ import {
 } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 import {
+  assertConnectAccountOwnership,
+  deriveConnectAccountState,
+  derivePayoutSettingsState,
+  retrieveAccountV2,
+  retrieveBalanceSettings,
+} from "../_shared/payments/connect.ts";
+import {
+  evaluateConnectReadiness,
+  type ConnectReadinessState,
+} from "./connect-readiness.ts";
+import {
   fingerprintStripeIdentifier,
   parseStripeEventId,
 } from "./webhook-inspection.ts";
@@ -32,11 +43,14 @@ type BillingPriceRow = {
 };
 
 type ConnectAccountRow = {
-  charges_enabled: boolean | null;
+  id: string;
   operational_status: string | null;
   payout_schedule_interval: string | null;
   payout_status: string | null;
   payouts_enabled: boolean | null;
+  stripe_account_id: string;
+  stripe_transfers_status: string | null;
+  therapist_profile_id: string;
 };
 
 type ServiceBookingSettingsRow = {
@@ -289,17 +303,60 @@ runtime.serve(async (request) => {
     });
     await addCheck(checks, "connect_account_state", async () => {
       const rows = await client.get<ConnectAccountRow[]>(
-        "/rest/v1/therapist_connect_accounts?select=operational_status,charges_enabled,payouts_enabled,payout_status,payout_schedule_interval",
+        "/rest/v1/therapist_connect_accounts?select=id,therapist_profile_id,stripe_account_id,operational_status,stripe_transfers_status,payouts_enabled,payout_status,payout_schedule_interval&is_current=eq.true&order=created_at.asc",
       );
       if (!rows.length) throw new Error("connect_account_missing");
-      const readyAccounts = rows.filter(
-        (row) => row.charges_enabled === true && row.payouts_enabled === true &&
-          row.payout_status === "enabled" && row.payout_schedule_interval === "daily",
-      ).length;
-      if (readyAccounts !== rows.length) {
+
+      const decisions = [];
+      for (const row of rows) {
+        const remoteAccount = await retrieveAccountV2(
+          config.stripeApiKey,
+          row.stripe_account_id,
+        );
+        assertConnectAccountOwnership(remoteAccount, {
+          environment: config.stripeMode,
+          therapistProfileId: row.therapist_profile_id,
+        });
+        const remoteSettings = derivePayoutSettingsState(
+          await retrieveBalanceSettings(stripe, row.stripe_account_id) as unknown as
+            Record<string, unknown>,
+        );
+        const remoteAccountState = deriveConnectAccountState(
+          remoteAccount,
+          remoteSettings,
+        );
+        const positiveFinancialHistory = await client.get<Array<{ id: string }>>(
+          `/rest/v1/session_payments?select=id&therapist_profile_id=eq.${encodeURIComponent(
+            row.therapist_profile_id,
+          )}&therapist_amount_cents=gt.0&limit=1`,
+        );
+
+        decisions.push(evaluateConnectReadiness({
+          hasPositiveFinancialHistory: positiveFinancialHistory.length > 0,
+          local: toLocalConnectState(row),
+          remote: {
+            operationalStatus: remoteAccountState.operationalStatus,
+            payoutScheduleInterval: remoteAccountState.payoutScheduleInterval,
+            payoutStatus: remoteAccountState.payoutStatus,
+            payoutsEnabled: remoteAccountState.payoutsEnabled,
+            transfersStatus: remoteAccountState.transfersStatus,
+          },
+        }));
+      }
+
+      const blockedAccounts = decisions.filter((decision) =>
+        decision.kind === "blocked"
+      );
+      if (blockedAccounts.length > 0) {
         throw new Error("connect_accounts_not_ready_for_daily_automatic_payout");
       }
-      return `${rows.length} conta(s) Connect observada(s); ${readyAccounts} pronta(s) para repasse.`;
+      const readyAccounts = decisions.filter((decision) =>
+        decision.kind === "ready"
+      ).length;
+      const isolatedAccounts = decisions.filter((decision) =>
+        decision.kind === "isolated"
+      ).length;
+      return `${rows.length} conta(s) Connect corrente(s) observada(s); ${readyAccounts} pronta(s) e ${isolatedAccounts} isolada(s) sem historico financeiro positivo.`;
     });
     await addCheck(checks, "payout_operations", async () => {
       if (!runtime.env.get("PAYMENTS_INTERNAL_OPERATIONS_TOKEN")?.trim()) {
@@ -383,6 +440,16 @@ function assertHmlRuntime(supabaseUrl: string) {
       "A qualificacao transacional so pode executar em HML.",
     );
   }
+}
+
+function toLocalConnectState(row: ConnectAccountRow): ConnectReadinessState {
+  return {
+    operationalStatus: row.operational_status,
+    payoutScheduleInterval: row.payout_schedule_interval,
+    payoutStatus: row.payout_status,
+    payoutsEnabled: row.payouts_enabled === true,
+    transfersStatus: row.stripe_transfers_status,
+  };
 }
 
 async function findCleanGoldenPathFixture(
@@ -472,11 +539,16 @@ async function findCleanGoldenPathFixture(
 
   for (const service of candidates) {
     const [connect] = await client.get<ConnectAccountRow[]>(
-      `/rest/v1/therapist_connect_accounts?select=charges_enabled,payouts_enabled,operational_status&therapist_profile_id=eq.${encodeURIComponent(
+      `/rest/v1/therapist_connect_accounts?select=id,therapist_profile_id,stripe_account_id,operational_status,stripe_transfers_status,payouts_enabled,payout_status,payout_schedule_interval&therapist_profile_id=eq.${encodeURIComponent(
         service.therapist_profile_id,
-      )}&limit=1`,
+      )}&is_current=eq.true&limit=1`,
     );
-    if (!connect?.charges_enabled || !connect?.payouts_enabled) continue;
+    if (
+      connect?.operational_status !== "ready" ||
+      connect?.stripe_transfers_status !== "active" ||
+      !connect?.payouts_enabled || connect?.payout_status !== "enabled" ||
+      connect?.payout_schedule_interval !== "daily"
+    ) continue;
     const [bookingSettings] = await client.get<ServiceBookingSettingsRow[]>(
       `/rest/v1/therapist_service_booking_settings?select=buffer_before_minutes,buffer_after_minutes&service_id=eq.${encodeURIComponent(
         service.id,

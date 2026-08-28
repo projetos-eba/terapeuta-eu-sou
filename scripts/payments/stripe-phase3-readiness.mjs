@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
+import { execFileSync } from "node:child_process";
 import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 import process from "node:process";
 import Stripe from "stripe";
 
@@ -73,7 +75,10 @@ async function run() {
   const supabaseRef = supabaseProjectRef(supabaseUrl);
   const stripeSecretKey = getStripeSecretKey();
   const stripeMode = getStripeMode(stripeSecretKey);
-  const serviceRoleKey = getSupabaseServiceRoleKey();
+  const serviceRoleKey =
+    target === "hml" && supabaseRef === expectedHmlRef
+      ? getLinkedProjectServiceRoleKey(supabaseRef)
+      : getSupabaseServiceRoleKey();
 
   evidence.environment = {
     stripeMode: stripeMode ?? "missing",
@@ -148,6 +153,35 @@ async function run() {
       supabaseUrl,
     });
   }
+}
+
+function getLinkedProjectServiceRoleKey(projectRef) {
+  const supabaseCliEntry = path.resolve(
+    "node_modules",
+    "supabase",
+    "dist",
+    "supabase.js",
+  );
+  const raw = execFileSync(
+    process.execPath,
+    [
+      supabaseCliEntry,
+      "projects",
+      "api-keys",
+      "--project-ref",
+      projectRef,
+      "-o",
+      "json",
+    ],
+    { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] },
+  );
+  const keys = JSON.parse(raw);
+  const serviceRole = keys.find(
+    (key) =>
+      key.name === "service_role" && key.disabled !== true && key.api_key,
+  );
+
+  return serviceRole?.api_key ?? null;
 }
 
 async function checkStripeApi(stripe) {
@@ -398,12 +432,18 @@ async function checkPublicTherapistFixture({
         therapySlug: fixture.therapy_slug,
       }
     : null;
+  const fixtureReady = Boolean(fixture?.service_id && fixture?.next_slot_at);
+  const fixtureSummary = !fixture
+    ? `Fixture pública HML não encontrada para slug ${slug}.`
+    : !fixture.service_id
+      ? "Fixture pública HML encontrada, mas sem serviço elegível."
+      : !fixture.next_slot_at
+        ? "Fixture pública HML encontrada, mas sem próximo horário disponível."
+        : "Fixture pública HML encontrada com serviço e próximo horário.";
   addCheck(
     "public_therapist_fixture",
-    fixture?.service_id && fixture?.next_slot_at ? "pass" : "fail",
-    fixture
-      ? "Fixture pública HML encontrada com serviço e próximo horário."
-      : `Fixture pública HML não encontrada para slug ${slug}.`,
+    fixtureReady ? "pass" : "fail",
+    fixtureSummary,
   );
 }
 
