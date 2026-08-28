@@ -3,11 +3,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { ArrowLeft, ArrowRight, Star } from "lucide-react";
-import { useRef } from "react";
+import { ArrowRight, Star } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { PremiumTherapistBadge, TESButton, TESCard } from "@/components/tes";
-import type { PublicHomeTherapist } from "@/features/public-home";
+import type {
+  PublicHomeFeaturedTherapistsPage,
+  PublicHomeTherapist,
+} from "@/features/public-home";
 import { buildPublicTherapistTherapyChips } from "@/features/public-therapists/therapy-presentation";
 import { routes } from "@/lib/routes";
 
@@ -34,6 +37,10 @@ function getTherapyChips(therapist: PublicHomeTherapist) {
   );
 }
 
+function getFeaturedTherapistIdentity(therapist: PublicHomeTherapist) {
+  return `${therapist.name.trim().toLocaleLowerCase("pt-BR")}|${therapist.photoUrl}`;
+}
+
 function FeaturedTherapistCard({
   therapist,
 }: {
@@ -43,7 +50,7 @@ function FeaturedTherapistCard({
   const therapyChips = getTherapyChips(therapist);
 
   return (
-    <TESCard className="flex h-full w-[292px] shrink-0 snap-start flex-col rounded-[28px] p-5 shadow-soft sm:w-[315px] xl:w-[220px] min-[1360px]:w-[240px] min-[1500px]:w-[268px] 2xl:w-[292px]">
+    <TESCard className="flex h-full w-[292px] shrink-0 flex-col rounded-[28px] p-5 shadow-soft sm:w-[315px] xl:w-[220px] min-[1360px]:w-[240px] min-[1500px]:w-[268px] 2xl:w-[292px]">
       <div className="relative min-h-[252px] overflow-hidden rounded-[28px] bg-brand-lavender xl:min-h-[220px] min-[1360px]:min-h-[232px] min-[1500px]:min-h-[238px] 2xl:min-h-[252px]">
         <Image
           src={therapist.photoUrl}
@@ -130,23 +137,155 @@ function FeaturedTherapistCard({
 }
 
 export function FeaturedTherapistsCarousel({
+  initialPage,
   therapists,
 }: {
+  initialPage?: PublicHomeFeaturedTherapistsPage;
   therapists: PublicHomeTherapist[];
 }) {
   const carouselRef = useRef<HTMLDivElement>(null);
+  const pausedRef = useRef(false);
+  const [loadedTherapists, setLoadedTherapists] = useState(therapists);
+  const [nextCursor, setNextCursor] = useState(initialPage?.nextCursor ?? null);
+  const [hasMore, setHasMore] = useState(initialPage?.hasMore ?? false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [canOverflow, setCanOverflow] = useState(false);
+  const [hasMeasuredOverflow, setHasMeasuredOverflow] = useState(false);
 
-  function scrollByCard(direction: "left" | "right") {
+  const isLooping = !hasMore && canOverflow;
+
+  const carouselTherapists = useMemo(
+    () =>
+      isLooping ? [...loadedTherapists, ...loadedTherapists] : loadedTherapists,
+    [isLooping, loadedTherapists],
+  );
+
+  const loadMore = useCallback(async () => {
+    if (!hasMore || !nextCursor || isLoadingMore) {
+      return;
+    }
+
+    setIsLoadingMore(true);
+
+    try {
+      const searchParams = new URLSearchParams({
+        freeOffset: String(nextCursor.freeOffset),
+        paidOffset: String(nextCursor.paidOffset),
+      });
+      const response = await fetch(
+        `/api/public/home/featured-therapists?${searchParams.toString()}`,
+      );
+
+      if (!response.ok) {
+        setHasMore(false);
+        setNextCursor(null);
+        return;
+      }
+
+      const page = (await response.json()) as PublicHomeFeaturedTherapistsPage;
+
+      setLoadedTherapists((current) => {
+        const knownIdentities = new Set(
+          current.map(getFeaturedTherapistIdentity),
+        );
+        return [
+          ...current,
+          ...page.therapists.filter(
+            (therapist) =>
+              !knownIdentities.has(getFeaturedTherapistIdentity(therapist)),
+          ),
+        ];
+      });
+      setHasMore(page.hasMore);
+      setNextCursor(page.nextCursor);
+    } catch {
+      setHasMore(false);
+      setNextCursor(null);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [hasMore, isLoadingMore, nextCursor]);
+
+  useEffect(() => {
     const carousel = carouselRef.current;
 
     if (!carousel) {
       return;
     }
 
-    carousel.scrollBy({
-      behavior: "smooth",
-      left: direction === "left" ? -340 : 340,
-    });
+    const measureOverflow = () => {
+      const gap = Number.parseFloat(getComputedStyle(carousel).columnGap) || 0;
+      const contentWidth = isLooping
+        ? (carousel.scrollWidth - gap) / 2
+        : carousel.scrollWidth;
+
+      setCanOverflow(contentWidth > carousel.clientWidth + 1);
+      setHasMeasuredOverflow(true);
+    };
+    const observer = new ResizeObserver(measureOverflow);
+
+    measureOverflow();
+    observer.observe(carousel);
+
+    return () => observer.disconnect();
+  }, [isLooping, loadedTherapists.length]);
+
+  useEffect(() => {
+    if (hasMeasuredOverflow && hasMore && !canOverflow) {
+      void loadMore();
+    }
+  }, [canOverflow, hasMeasuredOverflow, hasMore, loadMore]);
+
+  useEffect(() => {
+    if (
+      !loadedTherapists.length ||
+      !canOverflow ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+
+    let animationFrame = 0;
+    let previousTime = performance.now();
+    const animate = (now: number) => {
+      const carousel = carouselRef.current;
+
+      if (carousel && !pausedRef.current) {
+        // scrollLeft is rounded to whole pixels by several browsers. Keeping a
+        // one-pixel minimum prevents low per-frame deltas from becoming zero.
+        const distance = Math.max(1, ((now - previousTime) * 36) / 1000);
+        const cycleWidth = carousel.scrollWidth / (isLooping ? 2 : 1);
+
+        if (isLooping && cycleWidth > 0 && carousel.scrollLeft >= cycleWidth) {
+          carousel.scrollLeft -= cycleWidth;
+        }
+
+        carousel.scrollLeft += distance;
+      }
+
+      previousTime = now;
+      animationFrame = window.requestAnimationFrame(animate);
+    };
+
+    animationFrame = window.requestAnimationFrame(animate);
+
+    return () => window.cancelAnimationFrame(animationFrame);
+  }, [canOverflow, isLooping, loadedTherapists.length]);
+
+  function handleScroll() {
+    const carousel = carouselRef.current;
+
+    if (
+      carousel &&
+      hasMore &&
+      carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth - 720
+    ) {
+      void loadMore();
+    }
+  }
+
+  if (!loadedTherapists.length) {
+    return null;
   }
 
   return (
@@ -167,47 +306,40 @@ export function FeaturedTherapistsCarousel({
       </div>
 
       <div className="relative mt-9">
-        {therapists.length ? (
-          <>
-            <button
-              type="button"
-              aria-label="Ver terapeutas anteriores"
-              onClick={() => scrollByCard("left")}
-              className="absolute -left-6 top-1/2 z-20 hidden size-12 -translate-y-1/2 place-items-center rounded-full border border-brand-lavender/50 bg-white text-brand-primary shadow-card transition hover:-translate-x-0.5 hover:border-brand-primary md:grid 2xl:-left-8"
-            >
-              <ArrowLeft className="size-5" />
-            </button>
-            <div
-              ref={carouselRef}
-              className="flex snap-x gap-5 overflow-x-auto scroll-smooth px-8 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] xl:gap-4 xl:px-0 [&::-webkit-scrollbar]:hidden"
-            >
-              {therapists.map((therapist) => (
-                <FeaturedTherapistCard
-                  key={therapist.slug}
-                  therapist={therapist}
-                />
-              ))}
-            </div>
-            <button
-              type="button"
-              aria-label="Ver próximos terapeutas"
-              onClick={() => scrollByCard("right")}
-              className="absolute -right-6 top-1/2 z-20 hidden size-12 -translate-y-1/2 place-items-center rounded-full border border-brand-lavender/50 bg-white text-brand-primary shadow-card transition hover:translate-x-0.5 hover:border-brand-primary md:grid 2xl:-right-8"
-            >
-              <ArrowRight className="size-5" />
-            </button>
-          </>
-        ) : (
-          <TESCard className="p-8 text-center">
-            <p className="text-base font-extrabold text-brand-deep">
-              Ainda não há terapeutas reais para destacar.
-            </p>
-            <p className="mx-auto mt-3 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-              Você pode explorar o catálogo de terapias enquanto novos perfis
-              aprovados entram na plataforma.
-            </p>
-          </TESCard>
-        )}
+        <div
+          ref={carouselRef}
+          aria-label="Carrossel de terapeutas em destaque"
+          className="flex gap-5 overflow-x-auto px-8 pb-4 [-ms-overflow-style:none] [scrollbar-width:none] xl:gap-4 xl:px-0 [&::-webkit-scrollbar]:hidden"
+          onBlurCapture={() => {
+            pausedRef.current = false;
+          }}
+          onFocusCapture={() => {
+            pausedRef.current = true;
+          }}
+          onMouseEnter={() => {
+            pausedRef.current = true;
+          }}
+          onMouseLeave={() => {
+            pausedRef.current = false;
+          }}
+          onPointerDown={() => {
+            pausedRef.current = true;
+          }}
+          onPointerUp={() => {
+            pausedRef.current = false;
+          }}
+          onPointerCancel={() => {
+            pausedRef.current = false;
+          }}
+          onScroll={handleScroll}
+        >
+          {carouselTherapists.map((therapist, index) => (
+            <FeaturedTherapistCard
+              key={`${therapist.slug}-${index}`}
+              therapist={therapist}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );
