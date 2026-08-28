@@ -8,6 +8,7 @@
 begin;
 
 lock table public.availability_rules in share row exclusive mode;
+lock table public.therapist_services in share mode;
 
 create temporary table migrated_global_availability_therapists
 on commit drop
@@ -15,6 +16,17 @@ as
 select distinct rule.therapist_profile_id
 from public.availability_rules as rule
 where rule.service_id is null;
+
+-- A legacy general rule owned by a profile with no therapy cannot be mapped to
+-- an offer and has never represented a reservable slot. Retire only those
+-- orphan rows before backfilling the remaining rules to every existing therapy.
+delete from public.availability_rules as global_rule
+where global_rule.service_id is null
+  and not exists (
+    select 1
+    from public.therapist_services as service
+    where service.therapist_profile_id = global_rule.therapist_profile_id
+  );
 
 do $$
 begin
@@ -28,7 +40,7 @@ begin
         where service.therapist_profile_id = global_rule.therapist_profile_id
       )
   ) then
-    raise exception 'GLOBAL_AVAILABILITY_RULE_WITHOUT_SERVICE'
+    raise exception 'GLOBAL_AVAILABILITY_ORPHAN_CLEANUP_FAILED'
       using errcode = 'P0001';
   end if;
 

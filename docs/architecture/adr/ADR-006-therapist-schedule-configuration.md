@@ -32,6 +32,10 @@ abas sobrescrevessem a configuração de horários simultaneamente.
   `service_id`; não existe disponibilidade geral editável.
 - A migration de 2026-08-28 copia cada regra geral histórica para todas as
   terapias existentes do profissional antes de tornar `service_id` obrigatório.
+- Na mesma migração, regras gerais legadas de perfis sem nenhuma terapia são
+  removidas: não existe oferta à qual possam ser vinculadas e elas nunca podem
+  produzir um slot reservável. Quando a configuração de agenda existe, sua
+  versão também é incrementada para invalidar leituras anteriores.
 - Regras ativas da mesma terapia não podem se sobrepor. Terapias distintas
   podem ter faixas iguais ou diferentes.
 - A gravação substitui atomicamente o conjunto de regras e atualiza somente as
