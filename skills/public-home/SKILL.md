@@ -104,6 +104,9 @@ The page should preserve these sections from Figma `13273:1844`:
 - Testimonials
 - Journey CTA using `platformAssets.publicJourneyCta`; keep the CTA below the text and do not add the old `Sessão online` hat. On mobile, reserve a dedicated lower media region inside the banner so the editorial subject remains visible after the copy and CTA; do not reduce the image to a thin strip.
 - FAQ
+- FAQ cards use native independent disclosure. At the two-column tablet and
+  desktop breakpoints, an expanded answer must not stretch a neighboring closed
+  card or expose an empty surface.
 - Public footer
 
 Use existing TES components before creating new equivalents:
@@ -130,6 +133,8 @@ asset preserved for compatibility with other surfaces.
 ## QA Checklist
 
 - Compare the page visually with Figma node `13273:1844` on desktop and mobile.
+- Open a FAQ on tablet and desktop and verify its neighbor remains closed at
+  its intrinsic height.
 - Validate authenticated header logout on desktop and mobile, including the
   immediate return of the profile-specific login actions without a reload.
 - Check that all CTAs use `routes.public`.

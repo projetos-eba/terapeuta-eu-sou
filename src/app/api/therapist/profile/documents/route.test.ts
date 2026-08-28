@@ -99,7 +99,7 @@ describe("therapist profile documents route", () => {
 
     expect(response.status).toBe(422);
     expect(payload.error.message).toBe(
-      "Não foi possível concluir a operação. Tamanho do arquivo excede o limite de 10 MB.",
+      "Não foi possível concluir a operação, o tamanho do documento excede o limite de 10 MB.",
     );
     expect(fetchMock).not.toHaveBeenCalled();
   });

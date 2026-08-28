@@ -116,24 +116,19 @@ describe("therapist settings parsers", () => {
     expect(formatPostalCode("05409000")).toBe("05409-000");
   });
 
-  it("rejects invalid CPF, document and address values", () => {
+  it("rejects malformed, repeated and checksum-invalid CPF values", () => {
     expect(() =>
-      parseTherapistSettingsUpdatePayload({
-        displayName: "Ana Oliveira",
-        phone: "",
-        identity: {
-          city: "São Paulo",
-          complement: "",
-          documentNumber: "11111111111",
-          documentType: "cpf",
-          neighborhood: "Centro",
-          postalCode: "01001-000",
-          state: "SP",
-          street: "Rua Direita",
-          streetNumber: "10",
-        },
-      }),
-    ).toThrow(TherapistSettingsContractError);
+      parseIdentityWithDocumentNumber("1234567890"),
+    ).toThrow("cpf_invalid");
+    expect(() => parseIdentityWithDocumentNumber("11111111111")).toThrow(
+      "cpf_invalid",
+    );
+    expect(() => parseIdentityWithDocumentNumber("52998224726")).toThrow(
+      "cpf_invalid",
+    );
+  });
+
+  it("rejects invalid non-CPF document values", () => {
     expect(() =>
       parseTherapistSettingsUpdatePayload({
         displayName: "Ana Oliveira",
@@ -153,3 +148,21 @@ describe("therapist settings parsers", () => {
     ).toThrow(TherapistSettingsContractError);
   });
 });
+
+function parseIdentityWithDocumentNumber(documentNumber: string) {
+  return parseTherapistSettingsUpdatePayload({
+    displayName: "Ana Oliveira",
+    phone: "",
+    identity: {
+      city: "São Paulo",
+      complement: "",
+      documentNumber,
+      documentType: "cpf",
+      neighborhood: "Centro",
+      postalCode: "01001-000",
+      state: "SP",
+      street: "Rua Direita",
+      streetNumber: "10",
+    },
+  });
+}
