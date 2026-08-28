@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CalendarDays,
   CheckCircle2,
@@ -63,11 +63,6 @@ export function TherapistSettingsPage({
   const [feedback, setFeedback] = useState<string | null>(null);
   const successMessageRef = useRef<HTMLDivElement>(null);
 
-  const hasChanges = useMemo(
-    () => JSON.stringify(fields) !== JSON.stringify(savedFields),
-    [fields, savedFields],
-  );
-
   useEffect(() => {
     if (message?.tone !== "success") return;
 
@@ -102,31 +97,7 @@ export function TherapistSettingsPage({
 
   return (
     <AppPageContainer className="gap-5">
-      <AppPageHeader
-        actions={
-          <AppPageActions>
-            <TESButton
-              className="rounded-lg"
-              disabled={!hasChanges || pending}
-              onClick={() => void submit()}
-              type="button"
-            >
-              {pending ? (
-                <Loader2
-                  aria-hidden="true"
-                  className="animate-spin"
-                  size={18}
-                />
-              ) : (
-                <Save aria-hidden="true" size={18} />
-              )}
-              Salvar alterações
-            </TESButton>
-          </AppPageActions>
-        }
-        eyebrow="Minha conta"
-        title="Configurações"
-      >
+      <AppPageHeader eyebrow="Minha conta" title="Configurações">
         Mantenha seus dados e documentos em dia para concluir a análise e
         publicar seu perfil no TES.
       </AppPageHeader>
@@ -341,7 +312,7 @@ function AccountSection({
               no seu perfil público.
             </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2">
             <SelectField
               id="documentType"
               label="Tipo de documento"
@@ -379,6 +350,8 @@ function AccountSection({
               required
               value={fields.identity.documentNumber}
             />
+          </div>
+          <div className="grid gap-4 md:grid-cols-[minmax(120px,152px)_minmax(0,1fr)_180px]">
             <TextField
               id="postalCode"
               label="CEP"
@@ -394,19 +367,6 @@ function AccountSection({
               required
               value={fields.identity.postalCode}
             />
-            <div className="md:col-span-3" aria-live="polite">
-              {cepLookup === "loading" ? (
-                <p className="text-sm font-semibold text-tesText-secondary">
-                  Consultando o endereço...
-                </p>
-              ) : cepLookupMessage ? (
-                <p className="text-sm font-semibold text-tesText-secondary">
-                  {cepLookupMessage}
-                </p>
-              ) : null}
-            </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_180px]">
             <TextField
               id="street"
               label="Endereço"
@@ -429,6 +389,17 @@ function AccountSection({
               required
               value={fields.identity.streetNumber}
             />
+            <div className="md:col-span-3" aria-live="polite">
+              {cepLookup === "loading" ? (
+                <p className="text-sm font-semibold text-tesText-secondary">
+                  Consultando o endereço...
+                </p>
+              ) : cepLookupMessage ? (
+                <p className="text-sm font-semibold text-tesText-secondary">
+                  {cepLookupMessage}
+                </p>
+              ) : null}
+            </div>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             <TextField

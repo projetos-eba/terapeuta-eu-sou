@@ -445,7 +445,7 @@ function FaqSection() {
         title="Como podemos te ajudar?"
       />
 
-      <div className="mt-10 grid gap-4 md:grid-cols-2">
+      <div className="mt-10 grid items-start gap-4 md:grid-cols-2">
         {homeFaqs.map((faq) => (
           <details
             key={faq.question}

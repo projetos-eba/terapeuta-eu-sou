@@ -68,6 +68,29 @@ describe("therapist settings route", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("returns the CPF validity message before calling Supabase", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await PATCH(
+      makeRequest({
+        ...validSettingsPayload(),
+        identity: {
+          ...validSettingsPayload().identity,
+          documentNumber: "11111111111",
+        },
+      }),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(422);
+    expect(payload.error).toEqual({
+      code: "VALIDATION_ERROR",
+      message: "Não foi possível concluir a operação, o CPF não é válido.",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("rejects authenticated non-therapist users", async () => {
     vi.stubGlobal("fetch", makeFetchMock({ role: "patient" }));
 
@@ -125,7 +148,39 @@ describe("therapist settings route", () => {
       phone: "+55 11 99999-9999",
     });
   });
+
+  it("maps an already used CPF to a safe conflict response", async () => {
+    const fetchMock = makeFetchMock({ identityError: "CPF_ALREADY_IN_USE" });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await PATCH(makeRequest(validSettingsPayload()));
+    const payload = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(payload.error).toEqual({
+      code: "CPF_IN_USE",
+      message: "Este documento já está em uso em outra conta.",
+    });
+  });
 });
+
+function validSettingsPayload() {
+  return {
+    displayName: "Ana Oliveira",
+    identity: {
+      city: "São Paulo",
+      complement: "",
+      documentNumber: "52998224725",
+      documentType: "cpf",
+      neighborhood: "Pinheiros",
+      postalCode: "05409-000",
+      state: "SP",
+      street: "Rua dos Pinheiros",
+      streetNumber: "100",
+    },
+    phone: "",
+  };
+}
 
 function makeRequest(body: unknown) {
   return new Request("https://tes.example.test/api/therapist/settings", {
@@ -135,7 +190,13 @@ function makeRequest(body: unknown) {
   });
 }
 
-function makeFetchMock({ role = "therapist" }: { role?: string } = {}) {
+function makeFetchMock({
+  identityError,
+  role = "therapist",
+}: {
+  identityError?: "CPF_ALREADY_IN_USE";
+  role?: string;
+} = {}) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
 
@@ -154,6 +215,16 @@ function makeFetchMock({ role = "therapist" }: { role?: string } = {}) {
           phone: "+55 11 99999-9999",
         },
       ]);
+    }
+
+    if (url.includes("save_therapist_private_identity_v1")) {
+      if (identityError) {
+        return jsonResponse(
+          { code: "23505", message: identityError },
+          { status: 409 },
+        );
+      }
+      return jsonResponse({});
     }
 
     return new Response(null, { status: 404 });
