@@ -1,6 +1,7 @@
 import type {
   ReservationContext,
   ReservationDay,
+  PatientScheduleInterval,
   ReservationPatientSummary,
   ReservationSchedule,
   ReservationStep,
@@ -93,13 +94,18 @@ export function resolveReservationContext(input: {
     hasRequiredCheckoutData: Boolean(serviceId && selectedSlot),
     isPatientAuthenticated: input.isPatientAuthenticated,
     marketingConsent: params.get("marketing") === "1",
+    hiddenPatientConflictCount: 0,
     nextStepHref: step === "momento" ? prepareStepHref : paymentStepHref,
     patient: input.patient ?? null,
     paymentStepHref,
     prepareStepHref,
     priceCents,
     priceLabel: formatCurrency(priceCents),
+    patientScheduleCheckStatus: input.isPatientAuthenticated
+      ? "unavailable"
+      : "not_applicable",
     selectedSlot,
+    selectedSlotHasPatientConflict: false,
     serviceId,
     serviceLabel,
     serviceSummary:
@@ -122,6 +128,98 @@ export function resolveReservationContext(input: {
     timezone,
     time,
   };
+}
+
+export function applyPatientScheduleConflicts(input: {
+  availabilityDays: AvailabilityDay[];
+  context: ReservationContext;
+  intervals: PatientScheduleInterval[];
+}) {
+  let hiddenPatientConflictCount = 0;
+  const availabilityDays = input.availabilityDays.map((day) => ({
+    ...day,
+    slots: day.slots.filter((slot) => {
+      const conflicts = input.intervals.some((interval) =>
+        intervalsOverlap(slot, interval),
+      );
+      if (conflicts) hiddenPatientConflictCount += 1;
+      return !conflicts;
+    }),
+  }));
+  const selectedEndsAt =
+    input.context.selectedSlot && input.context.durationMinutes
+      ? new Date(
+          new Date(input.context.selectedSlot).getTime() +
+            input.context.durationMinutes * 60_000,
+        ).toISOString()
+      : null;
+  const selectedSlotHasPatientConflict = Boolean(
+    input.context.selectedSlot &&
+    selectedEndsAt &&
+    input.intervals.some((interval) =>
+      intervalsOverlap(
+        { endsAt: selectedEndsAt, startsAt: input.context.selectedSlot! },
+        interval,
+      ),
+    ),
+  );
+
+  return {
+    availabilityDays,
+    context: {
+      ...input.context,
+      canPrepareEncounter:
+        input.context.canPrepareEncounter && !selectedSlotHasPatientConflict,
+      hiddenPatientConflictCount,
+      patientScheduleCheckStatus: "available" as const,
+      selectedSlotHasPatientConflict,
+    },
+  };
+}
+
+export function getReservationScheduleWindow(
+  availabilityDays: AvailabilityDay[],
+  context: ReservationContext,
+) {
+  const intervals = availabilityDays.flatMap((day) =>
+    day.slots.map((slot) => ({
+      endsAt: new Date(slot.endsAt).getTime(),
+      startsAt: new Date(slot.startsAt).getTime(),
+    })),
+  );
+
+  if (context.selectedSlot && context.durationMinutes) {
+    const startsAt = new Date(context.selectedSlot).getTime();
+    intervals.push({
+      endsAt: startsAt + context.durationMinutes * 60_000,
+      startsAt,
+    });
+  }
+
+  const valid = intervals.filter(
+    (interval) =>
+      Number.isFinite(interval.startsAt) &&
+      Number.isFinite(interval.endsAt) &&
+      interval.startsAt < interval.endsAt,
+  );
+  if (valid.length === 0) return null;
+
+  return {
+    end: new Date(Math.max(...valid.map((interval) => interval.endsAt))),
+    start: new Date(Math.min(...valid.map((interval) => interval.startsAt))),
+  };
+}
+
+function intervalsOverlap(
+  left: { endsAt: string; startsAt: string },
+  right: { endsAt: string; startsAt: string },
+) {
+  const leftStart = new Date(left.startsAt).getTime();
+  const leftEnd = new Date(left.endsAt).getTime();
+  const rightStart = new Date(right.startsAt).getTime();
+  const rightEnd = new Date(right.endsAt).getTime();
+
+  return leftStart < rightEnd && rightStart < leftEnd;
 }
 
 export function buildReservationSchedule(

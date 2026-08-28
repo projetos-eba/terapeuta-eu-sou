@@ -1,5 +1,10 @@
-export { ReservationPage, ReservationSuccessPage } from "./components/reservation-page";
 export {
+  ReservationPage,
+  ReservationSuccessPage,
+} from "./components/reservation-page";
+export {
+  applyPatientScheduleConflicts,
+  getReservationScheduleWindow,
   mergeReservationContextWithPublicProfile,
   reconcileReservationContextWithAvailability,
   resolveReservationContext,

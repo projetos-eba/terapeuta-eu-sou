@@ -177,10 +177,18 @@ Deno.test("booking checkout command maps A2 and A5 database errors", () => {
   const conflict = mapBookingCheckoutDatabaseError(
     new SupabaseHttpError(400, "BOOKING_CONFLICT"),
   );
+  const patientConflict = mapBookingCheckoutDatabaseError(
+    new SupabaseHttpError(400, "PATIENT_SCHEDULE_CONFLICT"),
+  );
 
   assertEquals((unavailable as DomainError).code, "slot_not_available");
   assertEquals((held as DomainError).code, "slot_held_by_another_user");
   assertEquals((conflict as DomainError).code, "booking_conflict");
+  assertEquals(
+    (patientConflict as DomainError).code,
+    "patient_schedule_conflict",
+  );
+  assertEquals((patientConflict as DomainError).status, 409);
 });
 
 Deno.test("booking checkout command maps missing legal publication", () => {
