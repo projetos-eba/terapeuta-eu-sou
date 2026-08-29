@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
 import {
@@ -16,7 +17,6 @@ import {
 } from "lucide-react";
 
 import { AppPageContainer, AppPageSection } from "@/components/app-page";
-import { TESDecorativeMedia } from "@/components/tes";
 import { platformAssets } from "@/lib/platform-assets";
 import { routes } from "@/lib/routes";
 
@@ -57,38 +57,38 @@ export function TherapistAuraPage({ data }: { data: TherapistAuraPageData }) {
 
   return (
     <AppPageContainer className="gap-5">
-      <section className="relative isolate overflow-hidden rounded-panel border border-brand-lavender bg-gradient-to-r from-white via-brand-lavenderSoft to-brand-lavender shadow-card">
-        <TESDecorativeMedia
-          className="absolute inset-y-0 right-0 w-[58%] sm:w-[53%]"
-          fade="left"
-          fadeTone="soft"
-          imageClassName="object-contain object-right-bottom"
+      <section className="relative isolate min-h-[342px] overflow-hidden rounded-hero border border-border bg-white">
+        <Image
+          alt=""
+          aria-hidden="true"
+          className="object-cover object-[68%_center] sm:object-center"
+          fill
           priority
-          sizes="(min-width: 1024px) 56vw, 70vw"
-          src={platformAssets.therapistAuraCharacter.src}
+          sizes="(min-width: 1280px) 1210px, (min-width: 640px) calc(100vw - 6rem), 100vw"
+          src={platformAssets.therapistAuraHero.src}
         />
-        <div className="relative z-10 grid min-h-[296px] max-w-[630px] gap-5 p-6 sm:min-h-[320px] sm:p-9 lg:p-11">
+        <div className="relative z-10 flex min-h-[342px] max-w-[610px] flex-col items-start justify-center px-6 py-10 sm:px-12 sm:py-14">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="font-display text-[42px] font-light italic leading-none text-brand-deep sm:text-[54px]">
+              <h1 className="font-display text-[42px] font-light leading-[1.1] text-brand-deep sm:text-[46px]">
                 Assessora Aura
               </h1>
               <span className="inline-flex min-h-9 items-center rounded-full border border-brand-lavender bg-brand-lavenderSoft px-4 text-sm font-extrabold text-brand-primary">
-                leitura por regras
+                sua assistente inteligente
               </span>
             </div>
-            <p className="mt-6 max-w-[520px] text-sm font-semibold leading-6 text-brand-primary sm:text-base">
-              A Assessora Aura analisa dados operacionais agregados da TES e
-              organiza sinais práticos para você agir com mais clareza.
+            <p className="mt-4 max-w-[520px] text-sm font-semibold leading-6 text-brand-primary sm:text-[15px]">
+              A Aura analisa dados operacionais agregados da TES e entrega
+              insights práticos para você agir com mais clareza.
             </p>
           </div>
-          <span className="inline-flex min-h-9 w-fit items-center gap-2 rounded-full border border-brand-lavender bg-white/90 px-4 text-sm font-extrabold text-tesText-secondary">
+          <span className="mt-5 inline-flex min-h-9 w-fit items-center gap-2 rounded-full border border-brand-lavender bg-white px-4 text-sm font-extrabold text-tesText-secondary">
             <Sparkles
               aria-hidden="true"
               className="text-brand-primary"
               size={16}
             />
-            Sinais calculados automaticamente
+            Sinais calculados automaticamente por regras
           </span>
         </div>
       </section>

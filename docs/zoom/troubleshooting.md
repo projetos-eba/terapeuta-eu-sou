@@ -8,7 +8,54 @@ validar somente `""` fabrica erro 2 e impede o `attachVideo` local. Usar o
 normalizador específico de captura, sem relaxar contratos de init/áudio.
 Ver [causa, regressões e continuidade da espera](./self-view-2026-08-27.md).
 Falha real de attach deve mostrar câmera ligada sem prévia, não câmera
-desligada; desligar/ligar a câmera permite repetir a exibição local.
+desligada. A prévia é reconciliada quando a identidade fica disponível, por
+timers/eventos e reconexão, com até três tentativas de attach. “Tentar mostrar
+minha câmera” repete apenas a exibição, sem desligar publicação nem refazer join.
+Ver [identidade tardia e recuperação](./patient-preview-recovery-2026-08-28.md).
+
+Se isso ocorre somente depois que o aparelho fecha ou desliga abruptamente,
+verifique `operation=video.attach.local`, `captureState`, `captureEpoch` e
+`localPreviewTrigger` no log sanitizado. O evento
+`video-capturing-change: Started` deve reabrir as tentativas do ciclo atual,
+inclusive quando chega depois de 1.200 ms ou durante um attach pendente. A
+instância antiga com o mesmo `userKey` não pode ser escolhida como remoto. Ver
+[self-view após reentrada abrupta](./abrupt-reentry-self-view-2026-08-28.md).
+
+Se a falha for exclusiva do mobile e o remoto receber a câmera local, separar
+quatro fatos: captura iniciada, vídeo publicado, roster (`bVideoOn`) e player
+vinculado (`node-id=localUserId`). Um `<video-player>` apenas conectado ao DOM
+não comprova vínculo. Procurar os códigos sanitizados
+`LOCAL_RENDER_ROSTER_LAG`, `LOCAL_RENDER_BOUND` e `LOCAL_RENDER_TIMEOUT`.
+Após `startVideo`, roster local atrasado não pode bloquear `attachVideo` do
+participante atual; `TIMEOUT` deve desanexar somente o player local e preservar
+publicação e vídeo remoto. Ver
+[vinculação tardia da prévia mobile](./mobile-self-view-binding-2026-08-28.md).
+
+Se o defeito ocorrer apenas quando câmera ou microfone já foram testados na
+sala de espera, verificar também a ordem React: o `<video-player>` local deve
+estar montado antes de iniciar a captura pré-ativada. A montagem tardia deve
+refazer somente o attach local; não depender de novo prompt de permissão nem
+de clique em microfone/câmera.
+
+Quando o usuário aciona a recuperação manual enquanto a câmera já foi publicada,
+o adapter refaz somente o vínculo da self-view. O roster pode ser relido como
+diagnóstico, mas não bloqueia o attach nem repete captura, `join` ou emissão de
+JWT. Os timers são cancelados ao desligar a câmera, sair ou desmontar a sala.
+
+Se o `node-id` do player persistente expirar no Safari mobile, o adapter faz uma
+única tentativa complementar com um `video-player` criado pelo próprio SDK no
+mesmo container. Essa rota reutiliza a captura e a sessão ativas, exige o mesmo
+vínculo de participante e desanexa o elemento se o vínculo não for confirmado.
+
+## Aviso de encerramento durante uma chamada conectada
+
+Não interpretar esse aviso isolado como desconexão. A versão anterior misturava
+falhas de detach de renderização ativa com falhas de saída. Agora
+`ZOOM_VIDEO_RENDER_CLEANUP_PARTIAL_FAILURE` é diagnóstico de renderização;
+`ZOOM_VIDEO_CLEANUP_PARTIAL_FAILURE` pertence à saída. O aviso visual de
+encerramento fica restrito à saída/erro de recuperação, nunca a um detach de
+reconciliação ativa. Conferir operação sanitizada e estado da conexão antes de
+atribuir o problema a join, permissão ou backend.
 
 ## Entrada falha com código 2, cleanup parcial e depois 5012
 
@@ -146,11 +193,19 @@ tentativas limitadas apos join, eventos de usuario/video e reconexao. Em
 dispositivo limitado a um render, o video remoto tem prioridade.
 
 Se o remoto desaparece exatamente quando a camera local e ligada, confirme que
-`user-added` e `user-updated` estao sendo tratados como deltas. Esses eventos
-podem conter somente o participante alterado; usar o payload como roster
-completo faz a aplicacao desconectar incorretamente todos os remotos ausentes
-do evento. Somente `getAllUser()` pode alimentar a reconciliacao completa, e a
-ausencia de `bVideoOn` em uma atualizacao nao significa camera desligada.
+os eventos de usuário/vídeo estão sendo tratados apenas como gatilhos. Esses
+eventos podem conter somente o participante alterado; usar o payload como
+roster completo faz a aplicação desconectar incorretamente os remotos ausentes
+do evento. Somente `getAllUser()` alimenta a reconciliação completa, e a
+ausência de `bVideoOn` em uma atualização não significa câmera desligada.
+
+Se a câmera local aparece no quadro nomeado como remoto, confirme que a
+identidade retornada por `join()` foi armazenada antes da mídia e que nenhum
+attach remoto ocorre enquanto o `userId` local estiver indeterminado. Um
+segundo dispositivo com o mesmo `userKey` local deve ser excluído. Em uma sala
+1:1, duas identidades remotas distintas são ambíguas e devem falhar fechado;
+duas instâncias da mesma contraparte produzem somente um player estável.
+Ver [incidente de roteamento de câmera](./camera-routing-2026-08-28.md).
 
 ## O contador mostra a duracao errada
 

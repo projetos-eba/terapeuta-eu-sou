@@ -25,14 +25,12 @@ const contentLimits = {
 } as const;
 
 export function AdminTherapyEditor({
-  categories,
   isSaving,
   matchingThemes,
   onCancel,
   onSave,
   therapy,
 }: {
-  categories: AdminTherapyCatalogContract["categories"];
   isSaving: boolean;
   matchingThemes: AdminTherapyCatalogContract["matchingThemes"];
   onCancel: () => void;
@@ -77,7 +75,6 @@ export function AdminTherapyEditor({
       aliases: splitLines(String(form.get("aliases") ?? "")),
       benefits: collectBenefits(form),
       calendarColorKey: String(form.get("calendarColorKey") || "neutral"),
-      categoryId: String(form.get("categoryId") ?? ""),
       description: nullable(String(form.get("description") ?? "")),
       highlights: splitLines(String(form.get("highlights") ?? "")).map(
         (title) => ({
@@ -143,24 +140,6 @@ export function AdminTherapyEditor({
             name="slug"
             required
           />
-          <label>
-            <span className="mb-2 block text-sm font-extrabold text-brand-deep">
-              Categoria
-            </span>
-            <select
-              className="min-h-11 w-full rounded-xl border border-brand-lavender px-3 text-sm font-bold text-brand-deep"
-              defaultValue={therapy?.categoryId ?? categories[0]?.id}
-              name="categoryId"
-              required
-            >
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                  {category.isActive ? "" : " (inativa)"}
-                </option>
-              ))}
-            </select>
-          </label>
           <ColorSelect defaultValue={therapy?.calendarColorKey} />
         </div>
         <Textarea
@@ -266,11 +245,11 @@ export function AdminTherapyEditor({
             label="Rótulo de abordagem"
             name="approachLabel"
           />
-          <Field
+          <TherapyIconSelect
             defaultValue={therapy?.publicContent.approachIconKey}
+            fallbackIconKey="sparkles"
             label="Ícone semântico"
             name="approachIconKey"
-            placeholder="sparkles"
           />
           <label>
             <span className="mb-2 block text-sm font-extrabold text-brand-deep">
@@ -352,9 +331,10 @@ export function AdminTherapyEditor({
                   placeholder="Ex.: Pausa de presença"
                   required={isRequired}
                 />
-                <BenefitIconSelect
+                <TherapyIconSelect
                   defaultValue={benefit?.iconKey}
-                  index={index}
+                  label={`Ícone visual ${index + 1}`}
+                  name="benefitIconKey"
                 />
                 <Field
                   defaultValue={benefit?.description}
@@ -421,8 +401,7 @@ export function AdminTherapyEditor({
             Selecione de 1 a 3 temas do Match para recomendar esta terapia
           </legend>
           <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-            Categoria continua sendo uma classificação única da terapia. Temas
-            do Match podem ser múltiplos e conectam esta terapia à jornada do
+            Os temas podem ser múltiplos e conectam esta terapia à jornada do
             paciente.
           </p>
           <p
@@ -471,8 +450,9 @@ export function AdminTherapyEditor({
           required
         />
         <div className="rounded-xl bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-          Publicar exige categoria ativa e conteúdo público mínimo. Disponível
-          no Match exige de um a três temas canônicos. Refinamentos são
+          Publicar e disponibilizar para novos serviços exige de um a três temas
+          ativos e conteúdo público mínimo. A presença no Match é independente.
+          Refinamentos são
           escolhidos somente nos serviços dos terapeutas.
         </div>
       </Section>
@@ -693,20 +673,24 @@ function ThemePreviewOption({
   );
 }
 
-function BenefitIconSelect({
+function TherapyIconSelect({
   defaultValue,
-  index,
+  fallbackIconKey = "heart",
+  label,
+  name,
 }: {
   defaultValue?: string | null;
-  index: number;
+  fallbackIconKey?: string;
+  label: string;
+  name: string;
 }) {
-  const normalizedDefault = normalizeTherapyIconKey(defaultValue);
+  const normalizedDefault = normalizeTherapyIconKey(defaultValue, fallbackIconKey);
   const [selectedIconKey, setSelectedIconKey] = useState(normalizedDefault);
 
   return (
     <label>
       <span className="mb-2 block text-sm font-extrabold text-brand-deep">
-        Ícone visual {index + 1}
+        {label}
       </span>
       <div className="flex min-h-11 items-center gap-2 rounded-xl border border-brand-lavender bg-white px-3 focus-within:ring-4 focus-within:ring-ring/20">
         <span className="text-brand-primary" aria-hidden="true">
@@ -714,7 +698,7 @@ function BenefitIconSelect({
         </span>
         <select
           className="min-w-0 flex-1 bg-transparent text-sm font-bold text-brand-deep outline-none"
-          name="benefitIconKey"
+          name={name}
           onChange={(event) => setSelectedIconKey(event.target.value)}
           value={selectedIconKey}
         >
@@ -988,11 +972,11 @@ function normalizeColorKey(value?: string | null) {
     : "neutral";
 }
 
-function normalizeTherapyIconKey(value?: string | null) {
+function normalizeTherapyIconKey(value?: string | null, fallbackIconKey = "heart") {
   return typeof value === "string" &&
     therapyDetailIconOptions.some((option) => option.key === value)
     ? value
-    : "heart";
+    : fallbackIconKey;
 }
 
 function parseFocalPoint(value: string): "center" | "left" | "right" {

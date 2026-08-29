@@ -41,7 +41,6 @@ export type TherapyRequestSummary = {
   }>;
   status: string;
   submission: Record<string, unknown>;
-  suggestedCategoryId: string | null;
   updatedAt: string;
 };
 

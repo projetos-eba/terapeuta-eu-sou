@@ -4,7 +4,7 @@ import { SearchX } from "lucide-react";
 import { TESButton, TESCard } from "@/components/tes";
 import { routes } from "@/lib/routes";
 
-import { buildHref } from "./category-filter";
+import { buildHref } from "./theme-filter";
 import { TherapyCard } from "./therapy-card";
 import type { PublicTherapiesResult, TherapySearchParams } from "../types";
 
@@ -17,7 +17,7 @@ export function TherapyGrid({ params, result }: TherapyGridProps) {
   if (result.items.length === 0) {
     return (
       <EmptyState
-        hasFilters={Boolean(params.q || params.category)}
+        hasFilters={Boolean(params.q || params.theme)}
         source={result.source}
       />
     );

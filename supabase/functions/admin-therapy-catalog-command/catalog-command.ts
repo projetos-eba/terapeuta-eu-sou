@@ -285,13 +285,6 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
       "Revise os campos obrigatórios da terapia e tente novamente.",
     );
   }
-  if (details.includes("ADMIN_THERAPY_CATALOG_CATEGORY_NOT_FOUND")) {
-    return new DomainError(
-      "category_not_found",
-      422,
-      "Escolha uma categoria válida para a terapia.",
-    );
-  }
   if (details.includes("ADMIN_THERAPY_CATALOG_INVALID_SLUG")) {
     return new DomainError(
       "invalid_slug",
@@ -357,13 +350,6 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
       "incomplete_public_content",
       422,
       "Complete o conteudo publico antes de publicar.",
-    );
-  }
-  if (details.includes("ADMIN_THERAPY_CATALOG_INACTIVE_CATEGORY")) {
-    return new DomainError(
-      "inactive_category",
-      422,
-      "A categoria precisa estar ativa para publicar.",
     );
   }
   if (details.includes("ADMIN_THERAPY_CATALOG_THEME_REQUIRED")) {
@@ -468,7 +454,7 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
   return new DomainError(
     "catalog_command_failed",
     400,
-    "Nao foi possivel atualizar o catalogo agora.",
+    "Nao foi possivel salvar a terapia. Verifique os temas do Match e os campos obrigatorios e tente novamente.",
   );
 }
 

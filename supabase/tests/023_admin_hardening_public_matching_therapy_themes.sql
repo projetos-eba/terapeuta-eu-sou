@@ -4,7 +4,6 @@ select plan(19);
 
 insert into public.therapies (
   id,
-  category_id,
   name,
   slug,
   short_description,
@@ -15,7 +14,6 @@ insert into public.therapies (
 )
 select
   fixture.id,
-  category.id,
   fixture.name,
   fixture.slug,
   'Fixture publica para hardening do Match.',
@@ -57,13 +55,7 @@ from (
       true,
       null::timestamptz
     )
-) as fixture(id, slug, name, status, is_public_visible, archived_at)
-cross join lateral (
-  select id
-  from public.therapy_categories
-  order by sort_order, name
-  limit 1
-) as category;
+) as fixture(id, slug, name, status, is_public_visible, archived_at);
 
 insert into public.matching_therapy_settings (
   therapy_id,
@@ -328,17 +320,22 @@ select isnt_empty(
   'anon can read the public base relation row through explicit RLS'
 );
 
-select is_empty(
+select results_eq(
   $$
-    select 1
+    select therapy_id
     from public.therapy_matching_themes
     where therapy_id in (
       'dc000000-0000-4000-8000-000000000002',
       'dc000000-0000-4000-8000-000000000003',
       'dc000000-0000-4000-8000-000000000004'
     )
+    order by therapy_id
   $$,
-  'anon cannot read draft, hidden, or unweighted base relation rows'
+  $$ values
+    ('dc000000-0000-4000-8000-000000000003'::uuid),
+    ('dc000000-0000-4000-8000-000000000004'::uuid)
+  $$,
+  'catalog theme RLS exposes public links independently from Match settings and weights, but hides drafts'
 );
 
 select throws_ok(

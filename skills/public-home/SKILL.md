@@ -59,11 +59,16 @@ The home may read public content through REST Supabase using only public env var
 
 Rules:
 
+- A prateleira de terapias consome `public_therapies_v.theme_names`, uma lista
+  ordenada; o primeiro tema é o rótulo resumido do card. Não consultar o campo
+  singular legado `theme_name` nesse contrato.
+
 - Never expose operational therapist fields, private patient data, payment data, intake data, Zoom links, or secrets.
 - Keep local demo content in `src/features/public-home/content.ts`, but never
   activate it silently. Demo data requires `TES_ENABLE_DEMO_DATA=true` on the
   server and must be visible in the UI.
 - Therapy fallback content must stay aligned with the current public catalog phase: `reiki`, `taro` and `constelacao-familiar`. Do not link fallback cards to therapy slugs that are `draft`, not visible, or missing public detail content.
+- Public Home therapy data is cached under the `public-home` tag. Administrative therapy mutations must invalidate that tag and the `/` and `/sitemap.xml` paths so a despublication or republication is reflected across the marquee and preview shelf immediately.
 - Featured therapist photos must use the stable local assets in `public/therapists/`, shared with `/terapeutas`, `/terapeutas/:slug`, therapy detail cards and patient session cards.
 - The featured therapists carousel should show five real profiles on desktop
   when possible. If the public view returns zero rows, show an honest empty
@@ -75,7 +80,7 @@ Rules:
 - Do not add `@supabase/supabase-js` unless the user explicitly approves a dependency change.
 - If a public view changes, update docs and this skill in the same task.
 - Rating and review count include only canonical reviews with `status =
-  published` and no replacement. Their visibility does not subsequently depend
+published` and no replacement. Their visibility does not subsequently depend
   on the booking or payment that originally qualified the patient relationship.
 
 ## UI Contract
@@ -100,8 +105,9 @@ The page should preserve these sections from Figma `13273:1844`:
 - Therapy marquee
 - Motivations / online session section
 - Therapies preview
-- Featured therapists as a horizontal carousel on all viewports, with desktop navigation arrows and compact Figma-style cards. Cards should avoid long descriptions and prioritize therapist photo, name, public therapies/techniques, published guide-theme chips, rating/reviews and profile CTA. Do not show availability badges or verification icons over photos unless the public Home data contract exposes the corresponding real state.
-- Testimonials
+- Featured therapists as a horizontal carousel on all viewports, without directional controls. It advances automatically only when the unique cards exceed the available viewport width; when they do not, do not duplicate cards or start horizontal movement. It pauses while hovered, focused or directly interacted with and loops without a visible gap after the final paginated result. The initial server page and subsequent client pages prioritize `premium` and `premium_plus`; while fewer than five paid public profiles exist, each page is completed with `free` profiles. Do not render repeated presentation identities (same public name and photo), even when separate public records originate from technical homologation. Cards should avoid long descriptions and prioritize therapist photo, name, public therapies/techniques, published guide-theme chips, rating/reviews and profile CTA. Do not show availability badges or verification icons over photos unless the public Home data contract exposes the corresponding real state. Do not render the section when no real profile is returned.
+- Testimonials remain implemented but are intentionally hidden from the public
+  Home until a new product decision re-enables their rendering.
 - Journey CTA using `platformAssets.publicJourneyCta`; keep the CTA below the text and do not add the old `Sessão online` hat. On mobile, reserve a dedicated lower media region inside the banner so the editorial subject remains visible after the copy and CTA; do not reduce the image to a thin strip.
 - FAQ
 - FAQ cards use native independent disclosure. At the two-column tablet and

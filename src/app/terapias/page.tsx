@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { ArrowRight, Search } from "lucide-react";
 
 import {
@@ -8,7 +9,7 @@ import {
   TESDecorativeMedia,
 } from "@/components/tes";
 import {
-  CategoryFilter,
+  ThemeFilter,
   TherapyFilters,
   TherapyGrid,
   getPublicTherapiesFromSearchParams,
@@ -28,7 +29,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Terapias | Terapeuta Eu Sou",
     description:
-      "Explore terapias publicadas, filtre por categoria e siga para profissionais relacionados.",
+      "Explore terapias publicadas, filtre por temas e siga para profissionais relacionados.",
     url: routes.public.therapies,
     type: "website",
   },
@@ -42,6 +43,16 @@ export default async function TherapiesPage({
   searchParams,
 }: TherapiesPageProps) {
   const queryParams = await searchParams;
+  if (queryParams?.category) {
+    const legacy = new URLSearchParams();
+    for (const key of ["q", "sort", "page", "pageSize"]) {
+      const value = queryParams[key];
+      const first = Array.isArray(value) ? value[0] : value;
+      if (first) legacy.set(key, first);
+    }
+    const suffix = legacy.toString();
+    redirect(suffix ? `${routes.public.therapies}?${suffix}` : routes.public.therapies);
+  }
   const { params, result } =
     await getPublicTherapiesFromSearchParams(queryParams);
 
@@ -75,8 +86,8 @@ export default async function TherapiesPage({
                 placeholder="Busque por uma terapia"
                 className="min-h-12 flex-1 bg-transparent text-base font-bold text-brand-deep outline-none placeholder:text-tesText-muted sm:text-lg"
               />
-              {params.category ? (
-                <input type="hidden" name="category" value={params.category} />
+              {params.theme ? (
+                <input type="hidden" name="theme" value={params.theme} />
               ) : null}
               {params.sort !== "relevance" ? (
                 <input type="hidden" name="sort" value={params.sort} />
@@ -105,11 +116,11 @@ export default async function TherapiesPage({
       <TherapyFilters params={params} totalCount={result.totalCount} />
 
       <section className="bg-[#FBF8FF] pb-16">
-        <div className="mx-auto grid max-w-[1440px] gap-6 px-5 sm:px-8 lg:grid-cols-[285px_1fr] lg:px-[68px]">
-          <div className="space-y-5">
-            <CategoryFilter
-              activeCategory={params.category}
-              categories={result.categories}
+        <div className="mx-auto grid max-w-[1440px] gap-6 px-5 sm:px-8 lg:grid-cols-[minmax(0,285px)_minmax(0,1fr)] lg:px-[68px]">
+          <div className="min-w-0 space-y-5">
+            <ThemeFilter
+              activeTheme={params.theme}
+              themes={result.themes}
               params={params}
               totalCount={result.totalCount}
             />

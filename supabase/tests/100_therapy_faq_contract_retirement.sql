@@ -50,7 +50,6 @@ select ok(
       jsonb_build_object(
         'name', 'Terapia sem FAQ pgTAP',
         'slug', 'terapia-sem-faq-pgtap',
-        'categoryId', (select id from public.therapy_categories order by sort_order, id limit 1),
         'shortDescription', 'Resumo de teste sem FAQ.',
         'description', 'Abordagem editorial segura para teste.',
         'imageUrl', '/therapies/reiki.png',
@@ -109,8 +108,8 @@ select is(
 
 select is(
   (select is_available_for_services from public.therapies where slug = 'terapia-sem-faq-pgtap'),
-  true,
-  'publication automatically enables the therapist service catalog'
+  false,
+  'publication preserves the configured therapist service availability'
 );
 
 select is(
@@ -119,8 +118,8 @@ select is(
     from public.therapist_service_allowed_catalog_v1
     where therapy_slug = 'terapia-sem-faq-pgtap'
   ),
-  true,
-  'published therapy appears in the catalog used by therapists'
+  false,
+  'published therapy remains outside the therapist service catalog when that availability is disabled'
 );
 
 select is(

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Route } from "next";
 import {
-  BrainCircuit,
   CalendarDays,
   ChartNoAxesCombined,
   CircleHelp,
@@ -12,10 +11,12 @@ import {
   Crown,
   Heart,
   House,
+  Lightbulb,
   MessageSquareDot,
   Route as RouteIcon,
   Search,
   Settings,
+  Shield,
   Sparkles,
   Star,
   UserRound,
@@ -28,7 +29,6 @@ import { cn } from "@/lib/utils";
 import type { ShellNavigationItem } from "./authenticated-shell";
 
 export const shellIcons = {
-  brain: BrainCircuit,
   calendar: CalendarDays,
   chart: ChartNoAxesCombined,
   "credit-card": CreditCard,
@@ -36,10 +36,12 @@ export const shellIcons = {
   heart: Heart,
   help: CircleHelp,
   home: House,
+  lightbulb: Lightbulb,
   message: MessageSquareDot,
   route: RouteIcon,
   search: Search,
   settings: Settings,
+  shield: Shield,
   sparkles: Sparkles,
   star: Star,
   user: UserRound,

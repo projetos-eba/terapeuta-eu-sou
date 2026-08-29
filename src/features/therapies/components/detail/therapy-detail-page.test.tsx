@@ -12,7 +12,7 @@ const therapy: PublicTherapyDetail = {
   approachIconKey: "sparkles",
   approachLabel: "Terapia",
   benefits: [],
-  category: { name: "Bem-estar", slug: "bem-estar" },
+  themes: [{ name: "Bem-estar", slug: "bem-estar" }],
   complementaryDescription: null,
   description: "Descrição",
   heroFocalPoint: "center",

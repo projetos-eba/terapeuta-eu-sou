@@ -306,7 +306,7 @@ export function AdminEmailEventEditor({ actionKey }: { actionKey: string }) {
               <option value="">Remetente padrão da plataforma</option>
               {activeSenders.map((sender) => (
                 <option key={sender.id} value={sender.id}>
-                  {sender.display_name}
+                  {sender.mailbox_address}
                   {sender.is_default ? " (padrão)" : ""}
                 </option>
               ))}

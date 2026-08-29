@@ -1,5 +1,5 @@
 export type PublicHomeTherapy = {
-  categoryName: string;
+  themeName: string;
   href: string;
   imageUrl?: string | null;
   isFeatured: boolean;
@@ -26,6 +26,15 @@ export type PublicHomeTherapist = {
     slug: string;
   }>;
   therapyNames?: string[];
+};
+
+export type PublicHomeFeaturedTherapistsPage = {
+  hasMore: boolean;
+  nextCursor: {
+    freeOffset: number;
+    paidOffset: number;
+  } | null;
+  therapists: PublicHomeTherapist[];
 };
 
 export type PublicHomeTestimonial = {
@@ -57,6 +66,7 @@ export type PublicHomeData = {
   reason?: "configuration_missing" | "query_failed";
   source: "demo" | "supabase";
   status: "degraded" | "demo" | "empty" | "success";
+  featuredTherapistsPage?: PublicHomeFeaturedTherapistsPage;
   testimonials: PublicHomeTestimonial[];
   therapies: PublicHomeTherapy[];
   therapists: PublicHomeTherapist[];

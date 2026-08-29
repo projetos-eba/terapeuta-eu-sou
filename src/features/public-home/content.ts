@@ -98,7 +98,7 @@ export const fallbackTherapies: PublicHomeTherapy[] = [
   {
     name: "Reiki",
     slug: "reiki",
-    categoryName: "Energia e Equilíbrio Energético",
+    themeName: "Energia e Equilíbrio Energético",
     imageUrl: "/therapies/reiki-editorial.png",
     shortDescription:
       "Uma prática complementar para desacelerar e reservar um tempo de presença.",
@@ -108,7 +108,7 @@ export const fallbackTherapies: PublicHomeTherapy[] = [
   {
     name: "Tarô",
     slug: "taro",
-    categoryName: "Autoconhecimento e Transformação",
+    themeName: "Autoconhecimento e Transformação",
     imageUrl: "/therapies/taro-editorial.png",
     shortDescription:
       "Uma leitura simbólica para refletir sobre escolhas, caminhos e perguntas internas.",
@@ -118,7 +118,7 @@ export const fallbackTherapies: PublicHomeTherapy[] = [
   {
     name: "Constelação Familiar",
     slug: "constelacao-familiar",
-    categoryName: "Relacionamentos",
+    themeName: "Relacionamentos",
     imageUrl: "/therapies/constelacao-familiar-editorial.png",
     shortDescription:
       "Uma experiência simbólica para observar vínculos e padrões com cuidado.",

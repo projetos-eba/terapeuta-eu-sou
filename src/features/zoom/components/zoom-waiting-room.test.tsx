@@ -35,7 +35,9 @@ describe("ZoomWaitingRoom", () => {
 
     render(<ZoomWaitingRoom {...baseProps} />);
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Testar câmera" })[0]);
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Testar câmera" })[0],
+    );
 
     expect(getUserMedia).toHaveBeenCalledWith({ audio: false, video: true });
     expect(await screen.findByRole("status")).toHaveTextContent(
@@ -80,7 +82,10 @@ describe("ZoomWaitingRoom", () => {
     const getUserMedia = vi.fn(async (constraints: MediaStreamConstraints) =>
       constraints.video ? cameraStream : audioStream,
     );
-    const onJoin = vi.fn();
+    const onJoin = vi.fn(() => {
+      expect(cameraTrack.stop).toHaveBeenCalledTimes(1);
+      expect(audioTrack.stop).toHaveBeenCalledTimes(1);
+    });
 
     vi.stubGlobal("navigator", {
       ...navigator,
@@ -89,14 +94,12 @@ describe("ZoomWaitingRoom", () => {
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
 
     render(
-      <ZoomWaitingRoom
-        {...baseProps}
-        kind="entry_available"
-        onJoin={onJoin}
-      />,
+      <ZoomWaitingRoom {...baseProps} kind="entry_available" onJoin={onJoin} />,
     );
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Testar câmera" })[0]);
+    fireEvent.click(
+      screen.getAllByRole("button", { name: "Testar câmera" })[0],
+    );
     expect(await screen.findByRole("status")).toHaveTextContent(
       "Sua prévia de câmera está pronta.",
     );
@@ -112,6 +115,8 @@ describe("ZoomWaitingRoom", () => {
       cameraEnabled: true,
       microphoneEnabled: true,
     });
+    expect(cameraTrack.stop).toHaveBeenCalledTimes(1);
+    expect(audioTrack.stop).toHaveBeenCalledTimes(1);
   });
 
   it("releases a microphone stream when the local level meter cannot start", async () => {
@@ -146,7 +151,9 @@ describe("ZoomWaitingRoom", () => {
     expect(
       screen.getByRole("button", { name: "Áudio ambiente indisponível" }),
     ).toBeDisabled();
-    expect(screen.getByText("Música suave para um momento de calma")).toBeVisible();
+    expect(
+      screen.getByText("Música suave para um momento de calma"),
+    ).toBeVisible();
   });
 
   it("keeps the waiting-room mark centered over the supplied cover", () => {
@@ -186,8 +193,25 @@ describe("ZoomWaitingRoom", () => {
     );
   });
 
+  it("truncates the booking ID within the card and reveals it on interaction", () => {
+    render(<ZoomWaitingRoom {...baseProps} />);
+
+    const reference = screen.getByRole("button", {
+      name: /pressione para ver o identificador completo/i,
+    });
+    expect(reference).toHaveClass("w-full", "truncate");
+
+    fireEvent.click(reference);
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "ID: f2000000-0000-4000-8000-000000000001",
+    );
+  });
+
   it("enables the play control only when an ambient audio source is provided", () => {
-    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => undefined);
+    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(
+      () => undefined,
+    );
 
     render(
       <ZoomWaitingRoom

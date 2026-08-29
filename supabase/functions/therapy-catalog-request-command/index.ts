@@ -26,7 +26,7 @@ const allowedMimeTypes = new Set([
 ]);
 
 type Action =
-  | { action: "categories" }
+  | { action: "themes" }
   | { action: "list" }
   | { action: "submit"; payload: Record<string, unknown>; requestId: string }
   | {
@@ -70,7 +70,7 @@ runtime.serve(async (request) => {
     });
     const action = validateAction(await parseJsonBody<unknown>(request));
 
-    if (action.action === "categories") {
+    if (action.action === "themes") {
       return success({ themes: await listThemes(client) });
     }
 
@@ -165,7 +165,7 @@ runtime.serve(async (request) => {
 
 function validateAction(value: unknown): Action {
   if (!isRecord(value) || typeof value.action !== "string") invalid();
-  if (value.action === "categories" || value.action === "list")
+  if (value.action === "themes" || value.action === "list")
     return { action: value.action };
   if (
     value.action === "submit" &&
@@ -307,7 +307,7 @@ async function listThemes(client: SupabaseRestClient) {
 
 async function listOwnRequests(client: SupabaseRestClient, userId: string) {
   const requests = await client.get<Array<RequestRow>>(
-    `/rest/v1/therapy_catalog_requests?select=id,informed_name,status,decision,submission,suggested_category_id,created_at,updated_at,resubmitted_at&requester_profile_id=eq.${encodeURIComponent(userId)}&order=updated_at.desc`,
+    `/rest/v1/therapy_catalog_requests?select=id,informed_name,status,decision,submission,created_at,updated_at,resubmitted_at&requester_profile_id=eq.${encodeURIComponent(userId)}&order=updated_at.desc`,
   );
 
   return Promise.all(
@@ -319,7 +319,6 @@ async function listOwnRequests(client: SupabaseRestClient, userId: string) {
       materials: await listMaterials(client, item.id),
       status: item.status,
       submission: item.submission,
-      suggestedCategoryId: item.suggested_category_id,
       updatedAt: item.updated_at,
     })),
   );
@@ -496,7 +495,6 @@ type RequestRow = {
   informed_name?: string;
   status: string;
   submission?: Record<string, unknown>;
-  suggested_category_id?: string | null;
   updated_at?: string;
 };
 

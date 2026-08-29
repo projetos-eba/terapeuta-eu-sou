@@ -21,8 +21,9 @@ no CTA “Não encontrou sua terapia?” do diálogo de Novo serviço.
 - `therapy_catalog_requests` guarda o payload versionado e idempotente.
 - O payload v2 usa os temas ativos do Match como classificação principal da
   prática, com seleção obrigatória de 1 a 3 temas em `submission.themeIds`.
-- `suggested_category_id` permanece apenas como compatibilidade histórica; não é
-  mais a classificação principal exigida na solicitação do terapeuta.
+- A solicitação aceita exclusivamente de um a três temas ativos do Match.
+  Referências históricas de categoria permanecem somente no JSON de auditoria
+  da solicitação e não são lidas pelo produto.
 - `therapy_catalog_request_materials` guarda somente metadados; arquivos ficam
   no bucket privado `therapy-catalog-request-materials`.
 - Aceitar somente PDF, JPG, PNG, WEBP, DOC e DOCX de até 10 MB por arquivo.
@@ -56,8 +57,8 @@ desfaz a decisão.
 
 - Verificar as cinco etapas em desktop, tablet e mobile; no mobile a coluna é
   única e o progresso e a ação principal permanecem acessíveis.
-- Validar dados obrigatórios, temas ativos, compatibilidade de categoria legada,
-  duplicidade, idempotência, reenvio, 1 a 3 temas do Match e limites de arquivo.
+- Validar dados obrigatórios, temas ativos, duplicidade, idempotência, reenvio,
+  1 a 3 temas do Match e limites de arquivo.
 - Validar que a confirmação aparece antes de qualquer chamada de envio, exige
   aceite explícito, mantém erro sem falso sucesso e exibe sucesso somente após
   resposta positiva.

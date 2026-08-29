@@ -177,6 +177,9 @@ A estrutura local fica em `supabase/`:
 - `supabase/seeds/local-e2e-fixtures.sql`: renova somente as janelas de tempo das fixtures locais usadas por fluxos reais de browser (reserva, remarcação e Zoom simulado); não é migration nem deve ser aplicada em homologação ou produção.
 - `supabase/seeds/local-zoom-browser-fixture.sql`: prepara, por RPC canônica, a sessão lógica da reserva paga usada exclusivamente em `tests/e2e/zoom.spec.ts`. Executar manualmente contra o Supabase local imediatamente antes desse teste; ela fica fora de `[db.seed].sql_paths` para não contaminar a lifecycle do pgTAP.
 - `supabase/seeds/local-zoom-browser-fixture-cleanup.sql`: desfaz somente essa fixture Zoom local e restaura a reserva base antes de rodar o pgTAP; também fica fora de `[db.seed].sql_paths`.
+- `supabase/seeds/local-patient-schedule-hotfix-fixture.sql` e seu cleanup:
+  massa idempotente, fora de `[db.seed].sql_paths`, para validar no navegador a
+  ocultação de colisões do paciente e o limite consecutivo permitido.
 - `supabase/seed.sql`: nota de compatibilidade; a CLI carrega os seeds por `[db.seed].sql_paths`.
 - `supabase/functions/match-therapies`: primeira Edge Function determinística.
 
@@ -241,6 +244,15 @@ Scripts:
 
 - `npm run zoom:video-sdk:env`: audita variaveis sem imprimir valores.
 - `npm run zoom:video-sdk:test`: roda testes Deno e Vitest da integracao.
+- `npx playwright test tests/e2e/zoom-preview.spec.ts --project=chromium --workers=1`:
+  regressão isolada de prévia, identidade tardia, refresh, reentrada abrupta,
+  captura móvel tardia e vínculo assíncrono do player, com
+  componentes reais e SDK/acesso simulados. Não usa Supabase, HML ou Zoom real;
+  não substitui homologação de câmera em aparelhos físicos. Diagnóstico em
+  `docs/zoom/patient-preview-recovery-2026-08-28.md` e
+  `docs/zoom/abrupt-reentry-self-view-2026-08-28.md` e
+  `docs/zoom/mobile-self-view-binding-2026-08-28.md`. Repetir com
+  `--project=webkit-mobile` para a regressão local emulada de iPhone/WebKit.
 - `npm run zoom:video-sdk:webhook:smoke`: envia payloads locais assinados.
 - `npm run zoom:video-sdk:webhook:tunnel`: abre tunel ngrok local para validar
   webhook real, sem alterar o Zoom Marketplace, e grava metadados nao secretos

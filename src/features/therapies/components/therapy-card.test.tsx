@@ -8,7 +8,6 @@ describe("TherapyCard", () => {
     render(
       <TherapyCard
         therapy={{
-          category: { name: "Energia", slug: "energia" },
           id: "therapy-1",
           imageUrl: "/therapies/reiki-editorial.png",
           isNew: false,
@@ -25,5 +24,6 @@ describe("TherapyCard", () => {
       decodeURIComponent(screen.getByAltText("").getAttribute("src")!),
     ).toContain("/therapies/reiki-editorial.png");
     expect(screen.queryByText("Reiki")).toBeInTheDocument();
+    expect(screen.queryByText("Energia e equilíbrio")).not.toBeInTheDocument();
   });
 });

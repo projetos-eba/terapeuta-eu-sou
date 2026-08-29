@@ -62,10 +62,9 @@ const userMessages: Record<string, string> = {
   archive_blocked_by_usage:
     "Esta terapia possui serviços ativos ou sessões futuras. Descontinue-a antes de arquivar.",
   catalog_command_failed:
-    "Não foi possível atualizar a terapia agora. Tente novamente.",
+    "Não foi possível salvar a terapia. Verifique os temas do Match e os campos obrigatórios e tente novamente.",
   incomplete_public_content:
     "Complete o conteúdo público, incluindo imagem e pelo menos um destaque e dois benefícios, antes de publicar.",
-  inactive_category: "Escolha uma categoria ativa antes de publicar.",
   invalid_payload: "Revise os campos obrigatórios da terapia e tente novamente.",
   invalid_theme: "Selecione apenas temas ativos do Match.",
   matching_theme_removal_blocked:
@@ -192,7 +191,6 @@ function parseRequestDetail(value: unknown): AdminTherapyCatalogRequestDetail[] 
     relatedTherapyId: typeof value.relatedTherapyId === "string" ? value.relatedTherapyId : null,
     status: status as AdminTherapyCatalogRequestDetail["status"],
     submission: isRecord(value.submission) ? value.submission : {},
-    suggestedCategoryId: typeof value.suggestedCategoryId === "string" ? value.suggestedCategoryId : null,
     updatedAt: typeof value.updatedAt === "string" ? value.updatedAt : "",
   }];
 }

@@ -13,7 +13,7 @@ agenda e métricas usando as mesmas fontes de verdade.
 | Área                   | Fonte de verdade                                                                   | Mutação                                   | Exposição                                               |
 | ---------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------- |
 | Terapia canônica       | `therapies`                                                                        | Admin via `admin-therapy-catalog-command` | Views públicas e catálogo privado filtrados             |
-| Categoria              | `therapy_categories`                                                               | Admin/plataforma                          | Pública somente quando ativa                            |
+| Temas da terapia       | `therapy_matching_themes`, `matching_themes`                                       | Admin/plataforma                          | De 1 a 3 temas ativos, ordenados                        |
 | Conteúdo público       | `therapy_public_content`, `therapy_highlights`, `therapy_benefits`              | Admin                                     | `/terapias` e `/terapias/:slug`; sem FAQ de terapia    |
 | Match                  | `matching_therapy_settings`, `therapy_matching_themes`, `matching_versions`, `matching_weights` | Admin/Match                               | `public_matching_config`, `public_matching_therapies_v` |
 | Serviço do terapeuta   | `therapist_services`                                                               | Terapeuta via autoridade da Fase 1        | Perfil, busca, agenda e reserva                         |
@@ -24,16 +24,21 @@ agenda e métricas usando as mesmas fontes de verdade.
 ## Fluxos Administrativos
 
 1. Admin entra em `/admin-login` e recebe sessão admin em cookie HTTP-only.
-2. `/admin/terapias` carrega catálogo, categorias, requests, impacto e eventos
+2. `/admin/terapias` carrega catálogo, temas, requests, impacto e eventos
    recentes por `/api/admin/therapies`.
+   A mesma resposta administrativa inclui os temas ativos do Match e os vínculos
+   canônicos já selecionados por terapia; o editor não usa projeção pública
+   restritiva como fonte para criar ou editar rascunhos.
 3. Criação de rascunho chama `admin_upsert_therapy_draft_v1` com identidade e
    conteúdo inicial; nenhuma tela de terapeuta cria terapia canônica.
 4. Edição salva identidade, editorial e disponibilidade usando chaves
    semânticas, sem classes Tailwind/CSS no banco.
-5. Publicação chama `admin_transition_therapy_v1` e valida categoria ativa,
-   slug único, conteúdo mínimo, copy responsável, ao menos um tema canônico do
-   Match e integridade editorial.
-6. Despublicação remove a superfície pública sem apagar histórico.
+5. Publicação chama `admin_transition_therapy_v1` e valida slug único,
+   conteúdo mínimo, copy responsável, de 1 a 3 temas ativos do Match e
+   integridade editorial.
+6. Despublicação remove a terapia de todas as superfícies sem apagar histórico
+   nem alterar as configurações de disponibilidade; republicar restaura a
+   matriz configurada.
 7. Descontinuação impede novos serviços, preserva serviços existentes,
    bookings, snapshots e pagamentos.
 8. Arquivamento é bloqueado quando houver serviços vinculados.
@@ -78,6 +83,16 @@ Serviços preservam os estados da Fase 1: `draft`, `active`, `paused`,
   - adiciona RPCs admin de listagem, impacto, edição, transição e decisão;
   - ajusta `public_matching_therapies_v` para exigir terapia publicada,
     settings ativos e pesos de versão publicada.
+- `20260828120000_admin_therapy_catalog_embedded_matching_themes.sql`
+  - incorpora temas ativos e vínculos `therapy_matching_themes` no contrato
+    administrativo de listagem;
+  - evita que falha de uma consulta auxiliar oculte os temas do editor.
+- `20260829054038_restore_therapy_theme_contracts.sql`
+  - recupera contratos completos após a retirada física de Categoria;
+  - restaura auditoria, idempotência, avaliações, disponibilidade, grants e
+    views `security_invoker` sem recriar tabela ou colunas legadas;
+  - aplica a matriz única de elegibilidade por status, disponibilidade e ao
+    menos um Tema do Match ativo.
 
 ## APIs
 

@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ZoomVideoStage } from "./zoom-video-stage";
 
@@ -9,6 +9,7 @@ describe("ZoomVideoStage", () => {
       <ZoomVideoStage
         actorRole="patient"
         audioMuted
+        localVideoPlayerRef={{ current: null }}
         localVideoRef={{ current: null }}
         participantLabel="Com Juliane Moore"
         remoteParticipantPresent={false}
@@ -31,6 +32,34 @@ describe("ZoomVideoStage", () => {
     );
     expect(screen.getByText("Sua câmera está")).toBeVisible();
     expect(screen.getByText("terapeuta entrar")).toBeVisible();
+    expect(
+      screen.getByTestId("zoom-local-video").querySelector("video-player"),
+    ).toBeInTheDocument();
+  });
+
+  it("signals when the persistent local renderer is mounted", () => {
+    const onLocalRendererReady = vi.fn();
+    const localVideoPlayerRef = { current: null as HTMLElement | null };
+    const localVideoRef = { current: null as HTMLElement | null };
+
+    render(
+      <ZoomVideoStage
+        actorRole="patient"
+        audioMuted
+        localVideoPlayerRef={localVideoPlayerRef}
+        localVideoRef={localVideoRef}
+        onLocalRendererReady={onLocalRendererReady}
+        participantLabel="Com Juliane Moore"
+        remoteParticipantPresent={false}
+        remoteVideoState="off"
+        remoteVideoRef={{ current: null }}
+        state="media_initializing"
+        videoOn={false}
+      />,
+    );
+
+    expect(localVideoRef.current).toContainElement(localVideoPlayerRef.current);
+    expect(onLocalRendererReady).toHaveBeenCalled();
   });
 
   it("offers explicit recovery when a remote camera cannot be attached", () => {
@@ -38,6 +67,7 @@ describe("ZoomVideoStage", () => {
       <ZoomVideoStage
         actorRole="patient"
         audioMuted
+        localVideoPlayerRef={{ current: null }}
         localVideoRef={{ current: null }}
         onRetryRemoteVideo={() => undefined}
         participantLabel="Com Juliane Moore"

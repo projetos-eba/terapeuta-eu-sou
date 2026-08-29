@@ -149,6 +149,13 @@ export function mapBookingCheckoutDatabaseError(error: unknown) {
 
   const details = error.safeDetails ?? "";
 
+  if (details.includes("PATIENT_SCHEDULE_CONFLICT")) {
+    return new DomainError(
+      "patient_schedule_conflict",
+      409,
+      "Voce ja tem outro encontro nesse horario. Escolha outro momento.",
+    );
+  }
   if (details.includes("SLOT_HELD_BY_ANOTHER_USER")) {
     return new DomainError(
       "slot_held_by_another_user",

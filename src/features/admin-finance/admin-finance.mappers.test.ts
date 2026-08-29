@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  formatTransferStatus,
   mapAdminFinanceDetail,
   mapAdminFinanceRows,
 } from "./admin-finance.mappers";
@@ -46,6 +47,36 @@ describe("admin finance mappers", () => {
       "Reembolso pendente",
       "Atualizado",
     ]);
+  });
+
+  it("normalizes every transfer lifecycle status for administration", () => {
+    expect(
+      Object.fromEntries(
+        [
+          "not_eligible",
+          "waiting_confirmation",
+          "waiting_safety_period",
+          "eligible",
+          "batched",
+          "transfer_pending",
+          "transferred",
+          "blocked",
+          "reversed",
+          "failed",
+        ].map((status) => [status, formatTransferStatus(status)]),
+      ),
+    ).toEqual({
+      batched: "Em processamento",
+      blocked: "Bloqueado",
+      eligible: "Disponível para repasse",
+      failed: "Falhou",
+      not_eligible: "Ainda não elegível",
+      reversed: "Repasse revertido",
+      transfer_pending: "Em processamento",
+      transferred: "Transferido",
+      waiting_confirmation: "Aguardando confirmação",
+      waiting_safety_period: "Período de segurança",
+    });
   });
 
   it("maps subscriptions without leaking billing provider references", () => {

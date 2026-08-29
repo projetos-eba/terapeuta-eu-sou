@@ -300,6 +300,11 @@ Stack real identificada:
   reagendamento versionado. RPCs de escrita são `service_role` only e devem ser
   orquestrados por Edge Functions autenticadas. A5 concluiu o slot engine
   autoritativo e o calendário privado; o checkout integrado pertence a A6.
+  O hotfix de 2026-08-28 serializa também por paciente, sempre após o lock do
+  terapeuta, e rejeita sobreposição real de booking/hold ativo com
+  `PATIENT_SCHEDULE_CONFLICT`; buffers continuam exclusivos da agenda do
+  terapeuta e horários consecutivos do paciente permanecem válidos. A GiST por
+  paciente foi adiada para janela controlada de hardening.
 - Zoom: arquitetura Video SDK implementada com `video_sessions`,
   `video_session_participations`, `zoom_video_webhook_events`, Edge Function
   `zoom-video-session-access`, webhook `zoom-webhook`, rota
@@ -331,11 +336,24 @@ Stack real identificada:
   uma única sessão curta, usa Playwright visível com contexts separados para
   terapeuta e paciente, e a emissão de JWT passa por rate limit distribuído no
   Supabase.
-- Antes de mudar Zoom, ler `docs/zoom/investigation-2026-08-27.md` e
-  `docs/zoom/self-view-2026-08-27.md`: registram divergências do SDK 2.4.5
+- Antes de mudar Zoom, ler `docs/zoom/investigation-2026-08-27.md`,
+  `docs/zoom/self-view-2026-08-27.md` e
+  `docs/zoom/camera-routing-2026-08-28.md`: registram divergências do SDK 2.4.5
   (`join` resolve participante; `startVideo` resolve `undefined`), receiver de
-  destroy, separação entre mídia/conexão e fim técnico/lógico. Preservar os
+  destroy, separação entre mídia/conexão e fim técnico/lógico, identidade local
+  antes da mídia, seleção remota 1:1 e ownership por geração. Preservar os
   normalizadores por operação e regressões; não generalizar sucesso vazio.
+- Recuperação de self-view: ler também
+  `docs/zoom/patient-preview-recovery-2026-08-28.md` e
+  `docs/zoom/abrupt-reentry-self-view-2026-08-28.md` e
+  `docs/zoom/mobile-self-view-binding-2026-08-28.md`. Identidade tardia
+  `null → userId` deve recuperar prévia sem reiniciar captura/join; o attach
+  local pertence à geração/ciclo de captura e integra o cleanup. O evento
+  `video-capturing-change: Started` recupera a prévia após reentrada móvel
+  abrupta. A prévia mobile usa um único `<video-player>` persistente, aguarda
+  `bVideoOn=true` e confirma vínculo pelo `node-id`; estar no DOM não confirma
+  frames. Timeout desanexa o elemento exato sem repetir captura, join ou JWT.
+  Não misturar falhas de detach durante chamada ativa com aviso de encerramento.
 - Videochamada e feedback: a sala visual abre em T-15, o feedback de qualidade
   exige joins confiáveis de paciente e terapeuta, e confirmações bilaterais
   independentes usam a política ativa de 7 dias + 1 dia de segurança. A chegada

@@ -27,11 +27,6 @@ export type TherapistServiceDeliveryFormat =
   (typeof therapistServiceDeliveryFormats)[number];
 
 export type TherapyCatalogOption = {
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-  };
   isAvailableForServices: boolean;
   isPubliclyVisible: boolean;
   isVisibleInMatching: boolean;
@@ -59,11 +54,6 @@ export type TherapyCatalogOption = {
 export type TherapistServiceSummary = {
   archivedAt: string | null;
   blockingReason: string | null;
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-  };
   createdAt: string;
   currency: "BRL";
   deliveryFormat: TherapistServiceDeliveryFormat;

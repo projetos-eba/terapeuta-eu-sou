@@ -76,11 +76,13 @@ export function ReservationPage({
     context.therapist.slug,
   );
   const [currentStep, setCurrentStep] = useState<ReservationStep>(() =>
-    context.step === "pagamento"
-      ? context.hasRequiredCheckoutData
-        ? "preparar"
-        : "momento"
-      : context.step,
+    context.selectedSlotHasPatientConflict
+      ? "momento"
+      : context.step === "pagamento"
+        ? context.hasRequiredCheckoutData
+          ? "preparar"
+          : "momento"
+        : context.step,
   );
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [marketingConsent, setMarketingConsent] = useState(false);
@@ -97,9 +99,11 @@ export function ReservationPage({
   const [checkoutReady, setCheckoutReady] = useState(false);
   const previousReservationKeyRef = useRef(reservationKey);
   const [journeyError, setJourneyError] = useState<string | null>(
-    context.step === "pagamento"
-      ? "Aceite os termos antes de seguir para o pagamento."
-      : null,
+    context.selectedSlotHasPatientConflict
+      ? "Você já tem outro encontro nesse horário. Escolha outro momento."
+      : context.step === "pagamento"
+        ? "Aceite os termos antes de seguir para o pagamento."
+        : null,
   );
 
   useEffect(() => {
@@ -115,33 +119,62 @@ export function ReservationPage({
     setPromotionPending(false);
     setCheckoutReady(false);
     setJourneyError(
-      context.step === "pagamento"
-        ? "Aceite os termos antes de seguir para o pagamento."
-        : null,
+      context.selectedSlotHasPatientConflict
+        ? "Você já tem outro encontro nesse horário. Escolha outro momento."
+        : context.step === "pagamento"
+          ? "Aceite os termos antes de seguir para o pagamento."
+          : null,
     );
     setCurrentStep(
-      context.step === "pagamento"
-        ? context.hasRequiredCheckoutData
-          ? "preparar"
-          : "momento"
-        : context.step,
+      context.selectedSlotHasPatientConflict
+        ? "momento"
+        : context.step === "pagamento"
+          ? context.hasRequiredCheckoutData
+            ? "preparar"
+            : "momento"
+          : context.step,
     );
-  }, [context.hasRequiredCheckoutData, context.step, reservationKey]);
+  }, [
+    context.hasRequiredCheckoutData,
+    context.selectedSlotHasPatientConflict,
+    context.step,
+    reservationKey,
+  ]);
 
   useEffect(() => {
+    if (context.selectedSlotHasPatientConflict) {
+      setCurrentStep("momento");
+      return;
+    }
     if (context.step === "pagamento" && !acceptedTerms) {
       setCurrentStep(context.hasRequiredCheckoutData ? "preparar" : "momento");
       return;
     }
 
     setCurrentStep(context.step);
-  }, [acceptedTerms, context.hasRequiredCheckoutData, context.step]);
+  }, [
+    acceptedTerms,
+    context.hasRequiredCheckoutData,
+    context.selectedSlotHasPatientConflict,
+    context.step,
+  ]);
 
   useEffect(() => {
+    if (context.selectedSlotHasPatientConflict) {
+      router.replace(momentStepHref);
+      return;
+    }
     if (context.step === "pagamento" && !acceptedTerms) {
       router.replace(prepareStepHref);
     }
-  }, [acceptedTerms, context.step, prepareStepHref, router]);
+  }, [
+    acceptedTerms,
+    context.selectedSlotHasPatientConflict,
+    context.step,
+    momentStepHref,
+    prepareStepHref,
+    router,
+  ]);
 
   const canPrepare =
     context.canPrepareEncounter && context.isPatientAuthenticated;
@@ -437,6 +470,19 @@ function MomentStep({
             <span aria-hidden="true">→</span>
           </Link>
         </div>
+
+        {context.hiddenPatientConflictCount > 0 ? (
+          <p className="mt-5 rounded-2xl bg-brand-lavenderSoft px-4 py-3 text-sm font-bold text-brand-deep">
+            Horários que coincidem com seus encontros atuais não são exibidos.
+          </p>
+        ) : null}
+        {context.patientScheduleCheckStatus === "unavailable" &&
+        context.isPatientAuthenticated ? (
+          <p className="mt-5 rounded-2xl border border-status-warning/30 bg-status-warningBg px-4 py-3 text-sm font-bold text-brand-deep">
+            Não conseguimos comparar estes horários com seus outros encontros
+            agora. A confirmação será feita antes do pagamento.
+          </p>
+        ) : null}
 
         <div className="mt-6 grid gap-4 md:grid-cols-5">
           {schedule.days.map((day) => (

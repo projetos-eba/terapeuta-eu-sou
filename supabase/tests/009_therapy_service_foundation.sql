@@ -132,14 +132,12 @@ select set_config(
 select throws_ok(
   $$
     insert into public.therapies (
-      category_id,
       name,
       slug,
       short_description,
       status
     )
     values (
-      '11111111-1111-4111-8111-111111111117',
       'Livre',
       'livre-pgtap',
       'Nao pode nascer por cliente autenticado.',
@@ -300,7 +298,7 @@ select throws_ok(
       )
     )
   $$,
-  'P0001',
+  'P0002',
   'THERAPY_NOT_AVAILABLE_FOR_SERVICE',
   'deprecated therapies reject new services'
 );

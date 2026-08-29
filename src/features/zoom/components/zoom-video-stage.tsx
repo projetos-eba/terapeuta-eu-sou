@@ -2,15 +2,17 @@
 
 import { MicOff, UserRound, UserRoundX } from "lucide-react";
 import Image from "next/image";
-import { createElement } from "react";
+import { createElement, useCallback } from "react";
 
 import { cn } from "@/lib/utils";
 
 type ZoomVideoStageProps = {
   actorRole: "patient" | "therapist";
   audioMuted: boolean;
+  localVideoPlayerRef: React.MutableRefObject<HTMLElement | null>;
   localVideoRef: React.MutableRefObject<HTMLElement | null>;
   localPreviewUnavailable?: boolean;
+  onLocalRendererReady?: () => void;
   onRetryRemoteVideo?: () => void;
   participantLabel: string;
   remoteParticipantPresent: boolean;
@@ -36,8 +38,10 @@ type ZoomVideoStageProps = {
 export function ZoomVideoStage({
   actorRole,
   audioMuted,
+  localVideoPlayerRef,
   localVideoRef,
   localPreviewUnavailable = false,
+  onLocalRendererReady,
   onRetryRemoteVideo,
   participantLabel,
   remoteParticipantPresent,
@@ -68,7 +72,9 @@ export function ZoomVideoStage({
         isConnected={isConnected}
         kind="local"
         label="Você"
+        localVideoPlayerRef={localVideoPlayerRef}
         localPreviewUnavailable={localPreviewUnavailable}
+        onLocalRendererReady={onLocalRendererReady}
         videoOn={videoOn}
       />
       <VideoTile
@@ -105,7 +111,9 @@ function VideoTile({
   isConnected,
   kind,
   label,
+  localVideoPlayerRef,
   localPreviewUnavailable = false,
+  onLocalRendererReady,
   onRetryRemoteVideo,
   remoteParticipantPresent = false,
   remoteVideoState = "off",
@@ -119,13 +127,36 @@ function VideoTile({
   isConnected: boolean;
   kind: "local" | "remote";
   label: string;
+  localVideoPlayerRef?: React.MutableRefObject<HTMLElement | null>;
   localPreviewUnavailable?: boolean;
+  onLocalRendererReady?: () => void;
   onRetryRemoteVideo?: () => void;
   remoteParticipantPresent?: boolean;
   remoteVideoState?: "off" | "attaching" | "on" | "error";
   videoOn?: boolean;
   waitingLabel?: string;
 }) {
+  const setVideoContainer = useCallback(
+    (node: HTMLElement | null) => {
+      containerRef.current = node;
+      if (
+        kind === "local" &&
+        node?.contains(localVideoPlayerRef?.current ?? null)
+      ) {
+        onLocalRendererReady?.();
+      }
+    },
+    [containerRef, kind, localVideoPlayerRef, onLocalRendererReady],
+  );
+  const setLocalVideoPlayer = useCallback(
+    (node: HTMLElement | null) => {
+      if (localVideoPlayerRef) localVideoPlayerRef.current = node;
+      if (node && containerRef.current?.contains(node)) {
+        onLocalRendererReady?.();
+      }
+    },
+    [containerRef, localVideoPlayerRef, onLocalRendererReady],
+  );
   const showsVideo =
     kind === "local"
       ? videoOn && !localPreviewUnavailable
@@ -198,11 +229,20 @@ function VideoTile({
           </div>
         </div>
       ) : null}
-      {createElement("video-player-container", {
-        "aria-hidden": !showsVideo,
-        class: "absolute inset-0 block h-full w-full overflow-hidden",
-        ref: containerRef,
-      })}
+      {createElement(
+        "video-player-container",
+        {
+          "aria-hidden": !showsVideo,
+          class: "absolute inset-0 block h-full w-full overflow-hidden",
+          ref: setVideoContainer,
+        },
+        kind === "local"
+          ? createElement("video-player", {
+              class: "block h-full w-full object-cover",
+              ref: setLocalVideoPlayer,
+            })
+          : null,
+      )}
       <div className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-2 rounded-[14px] bg-brand-deep/75 px-3 py-2 text-white backdrop-blur md:inset-x-3 md:bottom-3">
         <span className="truncate text-xs font-extrabold sm:text-sm">
           {label}

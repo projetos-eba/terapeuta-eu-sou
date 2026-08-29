@@ -22,6 +22,7 @@ vi.mock("@/lib/supabase/public-config", () => ({
 }));
 
 import { POST } from "./route";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 describe("admin therapies route", () => {
   beforeEach(() => {
@@ -29,6 +30,8 @@ describe("admin therapies route", () => {
     headerMocks.cookieGet.mockReset();
     headerMocks.cookies.mockReset();
     configMocks.getSupabasePublicConfig.mockReset();
+    vi.mocked(revalidatePath).mockReset();
+    vi.mocked(revalidateTag).mockReset();
 
     headerMocks.cookieGet.mockReturnValue({ value: "admin-token" });
     headerMocks.cookies.mockResolvedValue({ get: headerMocks.cookieGet });
@@ -73,6 +76,21 @@ describe("admin therapies route", () => {
         String(input).includes("/functions/v1/admin-therapy-catalog-command"),
       ),
     ).toBe(false);
+  });
+
+  it("invalidates the public home after a therapy mutation", async () => {
+    const fetchMock = makeFetchMock({ profileRole: "admin" });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      makeJsonRequest({ action: "transition", therapyId: "therapy-1" }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(revalidateTag).toHaveBeenCalledWith("public-home");
+    expect(revalidateTag).toHaveBeenCalledWith("therapies");
+    expect(revalidatePath).toHaveBeenCalledWith("/");
+    expect(revalidatePath).toHaveBeenCalledWith("/sitemap.xml");
   });
 });
 

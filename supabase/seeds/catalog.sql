@@ -2,35 +2,8 @@
 -- Safe to run manually in homologation/producao-like environments.
 -- This file intentionally contains no auth users, profiles, therapist services, bookings, payments or mock data.
 
-insert into public.therapy_categories (id, name, slug, description, sort_order, is_active)
-values
-  (
-    '11111111-1111-4111-8111-111111111111',
-    'Terapias Integrativas',
-    'terapias-integrativas',
-    'Caminhos terapêuticos complementares, apresentados com linguagem cuidadosa e sem promessa de resultado.',
-    1,
-    true
-  ),
-  (
-    '11111111-1111-4111-8111-111111111112',
-    'Práticas de Presença',
-    'praticas-de-presenca',
-    'Práticas voltadas a presença, respiração e escuta de si.',
-    2,
-    true
-  )
-on conflict (slug) do update
-set
-  name = excluded.name,
-  description = excluded.description,
-  sort_order = excluded.sort_order,
-  is_active = excluded.is_active,
-  updated_at = now();
-
 insert into public.therapies (
   id,
-  category_id,
   name,
   slug,
   short_description,
@@ -42,7 +15,6 @@ insert into public.therapies (
 values
   (
     '22222222-2222-4222-8222-222222222221',
-    '11111111-1111-4111-8111-111111111111',
     'Terapia Integrativa',
     'terapia-integrativa',
     'Um caminho amplo para organizar sentimentos, escolhas e momentos de transição.',
@@ -53,7 +25,6 @@ values
   ),
   (
     '22222222-2222-4222-8222-222222222222',
-    '11111111-1111-4111-8111-111111111111',
     'Terapia Floral',
     'terapia-floral',
     'Uma possibilidade para quem busca apoio em equilíbrio emocional e autoconhecimento.',
@@ -64,7 +35,6 @@ values
   ),
   (
     '22222222-2222-4222-8222-222222222223',
-    '11111111-1111-4111-8111-111111111112',
     'Meditação Guiada',
     'meditacao-guiada',
     'Uma prática para cultivar presença, pausa e percepção do próprio ritmo.',
@@ -75,7 +45,6 @@ values
   ),
   (
     '22222222-2222-4222-8222-222222222224',
-    '11111111-1111-4111-8111-111111111111',
     'Cristaloterapia',
     'cristaloterapia',
     'Terapia inativa usada apenas para validar exclusão no match.',
@@ -87,7 +56,6 @@ values
 on conflict (id) do update
 set
   slug = excluded.slug,
-  category_id = excluded.category_id,
   name = excluded.name,
   short_description = excluded.short_description,
   description = excluded.description,
@@ -244,31 +212,8 @@ set
   updated_at = now();
 
 
-insert into public.therapy_categories (id, name, slug, description, sort_order, is_active)
-values
-  ('11111111-1111-4111-8111-111111111113', 'Emoções e bem-estar', 'emocional', 'Terapias voltadas a acolhimento emocional, presença e equilíbrio.', 1, true),
-  ('11111111-1111-4111-8111-111111111114', 'Relacionamentos', 'relacionamentos', 'Abordagens para vínculos, família, comunicação e convivência.', 2, true),
-  ('11111111-1111-4111-8111-111111111115', 'Autoconhecimento', 'autoconhecimento', 'Caminhos para ampliar percepção, sentido e relação consigo.', 3, true),
-  ('11111111-1111-4111-8111-111111111116', 'Espiritualidade', 'espiritualidade', 'Práticas de conexão interior, presença e espiritualidade responsável.', 4, true),
-  ('11111111-1111-4111-8111-111111111117', 'Energia e proteção', 'energia-protecao', 'Práticas energéticas complementares, sem promessa de cura.', 5, true),
-  ('11111111-1111-4111-8111-111111111118', 'Corpo e bem-estar', 'corpo-bem-estar', 'Práticas corporais, relaxamento e bem-estar.', 6, true),
-  ('11111111-1111-4111-8111-111111111119', 'Propósito e direção', 'proposito-direcao', 'Caminhos para clareza, escolhas e próximos passos.', 7, true),
-  ('11111111-1111-4111-8111-111111111120', 'Carreira e trabalho', 'carreira-trabalho', 'Práticas para fases profissionais e relação com trabalho.', 8, true),
-  ('11111111-1111-4111-8111-111111111121', 'Família e ancestralidade', 'familia-ancestralidade', 'Abordagens para histórias familiares e pertencimento.', 9, true),
-  ('11111111-1111-4111-8111-111111111122', 'Criatividade e expressão', 'criatividade-expressao', 'Caminhos para expressão, sensibilidade e criação.', 10, true),
-  ('11111111-1111-4111-8111-111111111123', 'Finanças e prosperidade', 'financas-prosperidade', 'Práticas para relação simbólica com prosperidade e escolhas.', 11, true),
-  ('11111111-1111-4111-8111-111111111124', 'Natureza e elementos', 'natureza-elementos', 'Práticas inspiradas em natureza, ciclos e elementos.', 12, true)
-on conflict (slug) do update
-set
-  name = excluded.name,
-  description = excluded.description,
-  sort_order = excluded.sort_order,
-  is_active = excluded.is_active,
-  updated_at = now();
-
 insert into public.therapies (
   id,
-  category_id,
   name,
   slug,
   short_description,
@@ -283,18 +228,17 @@ insert into public.therapies (
   is_public_visible
 )
 values
-  ('22222222-2222-4222-8222-222222222225', '11111111-1111-4111-8111-111111111117', 'Reiki', 'reiki', 'Prática integrativa de presença e equilíbrio energético.', 'Reiki é apresentado no TES como prática integrativa complementar, sem promessa de cura, diagnóstico ou resultado garantido.', 'published', true, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/reiki.png', now() - interval '80 days', 96, array['energia', 'equilibrio energético', 'espiritualidade'], true),
-  ('22222222-2222-4222-8222-222222222227', '11111111-1111-4111-8111-111111111118', 'Mindfulness', 'mindfulness', 'Prática de atenção plena para cultivar presença e pausa.', 'Mindfulness é apresentado como prática de atenção plena e autocuidado, sem substituir acompanhamento profissional quando necessário.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/mindfulness.png', null, 82, array['atenção plena', 'presença', 'meditacao'], false),
-  ('22222222-2222-4222-8222-222222222228', '11111111-1111-4111-8111-111111111115', 'Tarô', 'taro', 'Leitura simbólica para reflexão, escolhas e autoconhecimento.', 'Tarô usa símbolos como convite de reflexão e não deve ser comunicado como previsão determinista.', 'published', false, 'Este conteúdo é informativo e não substitui diagnóstico, tratamento ou orientação profissional especializada.', '/therapies/taro-editorial.png', now() - interval '38 days', 76, array['taro', 'tarot', 'oraculo', 'autoconhecimento'], true),
-  ('22222222-2222-4222-8222-222222222226', '11111111-1111-4111-8111-111111111113', 'Aromaterapia', 'aromaterapia', 'Uso cuidadoso de óleos essenciais em práticas de acolhimento e bem-estar.', 'Aromaterapia é apresentada no TES como prática complementar e deve ser comunicada sem promessa terapêutica garantida.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/aromaterapia.png', null, 88, array['oleos essenciais', 'aromas', 'relaxamento'], false),
-  ('22222222-2222-4222-8222-222222222223', '11111111-1111-4111-8111-111111111118', 'Meditação Guiada', 'meditacao-guiada', 'Uma prática para cultivar presença, pausa e percepção do próprio ritmo.', 'A Meditação Guiada ajuda a criar um espaço de presença e observação, sem substituir cuidados profissionais quando necessários.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/meditacao-guiada.png', null, 84, array['meditacao', 'presença', 'respiracao'], false),
-  ('22222222-2222-4222-8222-222222222229', '11111111-1111-4111-8111-111111111116', 'Apometria', 'apometria', 'Prática espiritualista complementar para reflexão e cuidado energético.', 'Apometria é apresentada no TES com linguagem responsável, como prática complementar e sem promessa de cura.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/apometria.png', null, 72, array['espiritualidade', 'energia', 'campo energético'], false),
-  ('22222222-2222-4222-8222-222222222222', '11111111-1111-4111-8111-111111111113', 'Florais', 'terapia-floral', 'Uma possibilidade para quem busca apoio em equilíbrio emocional e autoconhecimento.', 'Florais podem ser apresentados como prática complementar, sempre sem promessa de cura ou resultado garantido.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/florais.png', null, 79, array['terapia floral', 'florais de bach', 'emocional'], false),
-  ('22222222-2222-4222-8222-222222222224', '11111111-1111-4111-8111-111111111117', 'Cristaloterapia', 'cristaloterapia', 'Prática complementar com cristais, presença e intenção simbólica.', 'Cristaloterapia é apresentada como prática complementar e simbólica, sem promessa de cura, diagnóstico ou resultado garantido.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/cristaloterapia.png', null, 70, array['cristais', 'energia', 'equilibrio'], false)
+  ('22222222-2222-4222-8222-222222222225', 'Reiki', 'reiki', 'Prática integrativa de presença e equilíbrio energético.', 'Reiki é apresentado no TES como prática integrativa complementar, sem promessa de cura, diagnóstico ou resultado garantido.', 'published', true, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/reiki.png', now() - interval '80 days', 96, array['energia', 'equilibrio energético', 'espiritualidade'], true),
+  ('22222222-2222-4222-8222-222222222227', 'Mindfulness', 'mindfulness', 'Prática de atenção plena para cultivar presença e pausa.', 'Mindfulness é apresentado como prática de atenção plena e autocuidado, sem substituir acompanhamento profissional quando necessário.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/mindfulness.png', null, 82, array['atenção plena', 'presença', 'meditacao'], false),
+  ('22222222-2222-4222-8222-222222222228', 'Tarô', 'taro', 'Leitura simbólica para reflexão, escolhas e autoconhecimento.', 'Tarô usa símbolos como convite de reflexão e não deve ser comunicado como previsão determinista.', 'published', false, 'Este conteúdo é informativo e não substitui diagnóstico, tratamento ou orientação profissional especializada.', '/therapies/taro-editorial.png', now() - interval '38 days', 76, array['taro', 'tarot', 'oraculo', 'autoconhecimento'], true),
+  ('22222222-2222-4222-8222-222222222226', 'Aromaterapia', 'aromaterapia', 'Uso cuidadoso de óleos essenciais em práticas de acolhimento e bem-estar.', 'Aromaterapia é apresentada no TES como prática complementar e deve ser comunicada sem promessa terapêutica garantida.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/aromaterapia.png', null, 88, array['oleos essenciais', 'aromas', 'relaxamento'], false),
+  ('22222222-2222-4222-8222-222222222223', 'Meditação Guiada', 'meditacao-guiada', 'Uma prática para cultivar presença, pausa e percepção do próprio ritmo.', 'A Meditação Guiada ajuda a criar um espaço de presença e observação, sem substituir cuidados profissionais quando necessários.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/meditacao-guiada.png', null, 84, array['meditacao', 'presença', 'respiracao'], false),
+  ('22222222-2222-4222-8222-222222222229', 'Apometria', 'apometria', 'Prática espiritualista complementar para reflexão e cuidado energético.', 'Apometria é apresentada no TES com linguagem responsável, como prática complementar e sem promessa de cura.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/apometria.png', null, 72, array['espiritualidade', 'energia', 'campo energético'], false),
+  ('22222222-2222-4222-8222-222222222222', 'Florais', 'terapia-floral', 'Uma possibilidade para quem busca apoio em equilíbrio emocional e autoconhecimento.', 'Florais podem ser apresentados como prática complementar, sempre sem promessa de cura ou resultado garantido.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/florais.png', null, 79, array['terapia floral', 'florais de bach', 'emocional'], false),
+  ('22222222-2222-4222-8222-222222222224', 'Cristaloterapia', 'cristaloterapia', 'Prática complementar com cristais, presença e intenção simbólica.', 'Cristaloterapia é apresentada como prática complementar e simbólica, sem promessa de cura, diagnóstico ou resultado garantido.', 'draft', false, 'Este conteúdo é informativo e não substitui acompanhamento médico, psicológico ou diagnóstico profissional.', '/therapies/cristaloterapia.png', null, 70, array['cristais', 'energia', 'equilibrio'], false)
 on conflict (id) do update
 set
   slug = excluded.slug,
-  category_id = excluded.category_id,
   name = excluded.name,
   short_description = excluded.short_description,
   description = excluded.description,
@@ -667,7 +611,6 @@ where id = '22222222-2222-4222-8222-222222222228'
 
 insert into public.therapies (
   id,
-  category_id,
   name,
   slug,
   short_description,
@@ -684,7 +627,6 @@ insert into public.therapies (
 values
   (
     '22222222-2222-4222-8222-222222222225',
-    '11111111-1111-4111-8111-111111111117',
     'Reiki',
     'reiki',
     'Prática complementar de imposição ou aproximação das mãos, associada a relaxamento e cuidado energético.',
@@ -700,7 +642,6 @@ values
   ),
   (
     '22222222-2222-4222-8222-222222222228',
-    '11111111-1111-4111-8111-111111111115',
     'Tarô',
     'taro',
     'Leitura simbólica de cartas como ferramenta de reflexão sobre situações e possibilidades.',
@@ -716,7 +657,6 @@ values
   ),
   (
     '22222222-2222-4222-8222-222222222230',
-    '11111111-1111-4111-8111-111111111114',
     'Constelação Familiar',
     'constelacao-familiar',
     'Prática vivencial e simbólica voltada a observação de vínculos e dinâmicas familiares.',
@@ -733,7 +673,6 @@ values
 on conflict (id) do update
 set
   slug = excluded.slug,
-  category_id = excluded.category_id,
   name = excluded.name,
   short_description = excluded.short_description,
   description = excluded.description,

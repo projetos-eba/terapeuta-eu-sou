@@ -29,7 +29,7 @@ export default async function TherapistTherapyCatalogRequestPage({
       config.url,
       session.accessToken,
       {
-        action: "categories",
+        action: "themes",
       },
     ),
     callRequestCommand<{ requests: TherapyRequestSummary[] }>(

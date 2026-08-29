@@ -10,7 +10,6 @@ where id = 'c1000000-0000-4000-8000-000000000001'::uuid;
 
 insert into public.therapies (
   id,
-  category_id,
   name,
   slug,
   short_description,
@@ -21,7 +20,6 @@ insert into public.therapies (
 )
 select
   fixture.id,
-  category.id,
   fixture.name,
   fixture.slug,
   'Fixture publica para hardening do catalogo.',
@@ -52,13 +50,18 @@ from (
       'published',
       false
     )
-) as fixture(id, slug, name, status, is_public_visible)
+) as fixture(id, slug, name, status, is_public_visible);
+
+insert into public.therapy_matching_themes (therapy_id, theme_id, sort_order)
+select fixture.therapy_id, theme.id, 1
+from (values
+  ('de000000-0000-4000-8000-000000000001'::uuid),
+  ('de000000-0000-4000-8000-000000000002'::uuid),
+  ('de000000-0000-4000-8000-000000000003'::uuid)
+) fixture(therapy_id)
 cross join lateral (
-  select id
-  from public.therapy_categories
-  order by sort_order, name
-  limit 1
-) as category;
+  select id from public.matching_themes where is_active order by sort_order, name limit 1
+) theme;
 
 insert into public.therapist_services (
   id,

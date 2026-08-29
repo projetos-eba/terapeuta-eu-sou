@@ -280,6 +280,52 @@ export function mapTherapistAuraPage(
   };
 }
 
+export function reconcileTherapistDashboardProfile({
+  data,
+  profileCompleteness,
+}: {
+  data: TherapistDashboardPageData;
+  profileCompleteness: number;
+}): TherapistDashboardPageData {
+  const canonicalProfileCompleteness = Math.min(
+    100,
+    Math.max(0, Math.round(profileCompleteness)),
+  );
+
+  return {
+    ...data,
+    attentionItems: data.attentionItems
+      .map((item) => {
+        if (!isProfileAttentionItem(item)) return item;
+
+        const tone: TherapistDashboardPageData["attentionItems"][number]["tone"] =
+          canonicalProfileCompleteness < 100 ? "warning" : "info";
+
+        return {
+          ...item,
+          label: `Perfil ${canonicalProfileCompleteness}% completo`,
+          tone,
+        };
+      })
+      .filter(
+        (item) =>
+          !isProfileAttentionItem(item) || canonicalProfileCompleteness < 100,
+      ),
+    therapist: {
+      ...data.therapist,
+      profileCompleteness: canonicalProfileCompleteness,
+    },
+  };
+}
+
+function isProfileAttentionItem(
+  item: TherapistDashboardPageData["attentionItems"][number],
+) {
+  return (
+    item.id === "profile-completeness" || item.id === "base-dashboard-profile"
+  );
+}
+
 function mapKpi(value: unknown): TherapistDashboardKpi {
   const row = record(value);
   const trend = record(row.trend);

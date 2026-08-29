@@ -102,7 +102,7 @@ export default async function PublicTherapyDetailRoute({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Service",
-    category: therapy.category.name,
+    keywords: therapy.themes.map((theme) => theme.name),
     description: therapy.shortDescription,
     image: therapy.heroImageUrl,
     name: therapy.name,

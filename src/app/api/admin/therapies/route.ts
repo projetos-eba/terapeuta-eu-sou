@@ -120,6 +120,7 @@ function isMutatingAction(value: unknown) {
 
 function revalidateTherapyCatalogSurfaces() {
   for (const tag of [
+    "public-home",
     "therapies",
     "matching-config",
     "therapist-profile",
@@ -130,6 +131,8 @@ function revalidateTherapyCatalogSurfaces() {
 
   revalidatePath("/terapias");
   revalidatePath("/terapias/[slug]", "page");
+  revalidatePath("/");
+  revalidatePath("/sitemap.xml");
   revalidatePath("/terapeutas");
   revalidatePath("/terapeutas/[slug]", "page");
   revalidatePath("/sua-jornada");

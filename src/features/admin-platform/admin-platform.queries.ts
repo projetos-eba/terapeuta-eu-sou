@@ -2,14 +2,9 @@ import "server-only";
 
 import { cache } from "react";
 
-import { adminModuleRegistry } from "@/features/admin-shell/admin-shell-config";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
-import {
-  buildIntegrationHealth,
-  buildModuleSignals,
-  buildSecurityReviewItems,
-} from "./admin-platform.mappers";
+import { buildIntegrationHealth } from "./admin-platform.mappers";
 import type {
   AdminIntegrationsPageData,
   AdminOperationalSignal,
@@ -48,6 +43,8 @@ type IntegrationHealthReadModel = {
   signals?: Record<string, number | null | undefined> | null;
 };
 
+const ADMIN_AUDIT_PAGE_SIZE = 8;
+
 export const getAdminIntegrationsPage = cache(
   async function getAdminIntegrationsPage({
     accessToken,
@@ -63,7 +60,10 @@ export const getAdminIntegrationsPage = cache(
       };
     }
 
-    const readModel = await fetchIntegrationHealthReadModel(config, accessToken);
+    const readModel = await fetchIntegrationHealthReadModel(
+      config,
+      accessToken,
+    );
     const countResults = readModel.countResults;
 
     const signal = createSignalLookup(countResults);
@@ -87,11 +87,13 @@ export const getAdminIntegrationsPage = cache(
         signals: [signal("restricted-connect-accounts")],
       }),
       buildIntegrationHealth({
-        description:
-          "Sessões online e participação nos encontros.",
+        description: "Sessões online e participação nos encontros.",
         key: "zoom",
         label: "Encontros online",
-        signals: [signal("failed-zoom-webhooks"), signal("failed-video-sessions")],
+        signals: [
+          signal("failed-zoom-webhooks"),
+          signal("failed-video-sessions"),
+        ],
       }),
       buildIntegrationHealth({
         description:
@@ -115,35 +117,31 @@ export const getAdminIntegrationsPage = cache(
 
 export const getAdminSecurityPage = cache(async function getAdminSecurityPage({
   accessToken,
+  searchParams,
 }: {
   accessToken: string;
+  searchParams?: Record<string, string | string[] | undefined>;
 }): Promise<AdminPlatformPageResult<AdminSecurityPageData>> {
   const config = getSupabasePublicConfig();
 
   if (!config) {
     return {
-        message: "Não foi possível carregar a segurança agora.",
+      message: "Não foi possível carregar a segurança agora.",
       status: "error",
     };
   }
 
-  const [auditEventsResult] = await Promise.all([
-    fetchRecentAuditEvents(config, accessToken),
-  ]);
-  const enabledCount = adminModuleRegistry.filter(
-    (module) => module.status === "enabled",
-  ).length;
-  const hiddenCount = adminModuleRegistry.filter(
-    (module) => module.status === "hidden",
-  ).length;
-
+  const page = parseAuditPage(searchParams?.page);
+  const auditEventsResult = await fetchRecentAuditEvents(
+    config,
+    accessToken,
+    page,
+  );
   return {
     data: {
+      auditPage: auditEventsResult.page,
       auditEvents: auditEventsResult.events,
       auditEventsStatus: auditEventsResult.status,
-      generatedAt: new Date().toISOString(),
-      moduleSignals: buildModuleSignals({ enabledCount, hiddenCount }),
-      reviewItems: buildSecurityReviewItems(),
     },
     status: "success",
   };
@@ -214,15 +212,19 @@ async function fetchIntegrationHealthReadModel(
 async function fetchRecentAuditEvents(
   config: { apiKey: string; url: string },
   accessToken: string,
+  page: number,
 ) {
+  const offset = (page - 1) * ADMIN_AUDIT_PAGE_SIZE;
+
   try {
     const response = await fetch(
-      `${config.url}/rest/v1/admin_audit_events?select=id,actor_role,permission,action,entity_type,reason,source,created_at&order=created_at.desc&limit=8`,
+      `${config.url}/rest/v1/admin_audit_events?select=id,actor_role,permission,action,entity_type,reason,source,created_at&order=created_at.desc%2Cid.desc&limit=${ADMIN_AUDIT_PAGE_SIZE}&offset=${offset}`,
       {
         cache: "no-store",
         headers: {
           apikey: config.apiKey,
           Authorization: `Bearer ${accessToken}`,
+          Prefer: "count=exact",
         },
       },
     );
@@ -230,6 +232,7 @@ async function fetchRecentAuditEvents(
     if (!response.ok) {
       return {
         events: [],
+        page: emptyAuditPage(page),
         status: "unavailable" as const,
       };
     }
@@ -251,14 +254,63 @@ async function fetchRecentAuditEvents(
           source: row.source ?? "admin",
         }))
         .filter((event) => event.createdAt),
+      page: buildAuditPage(
+        response.headers.get("content-range"),
+        page,
+        rows.length,
+      ),
       status: "available" as const,
     };
   } catch {
     return {
       events: [],
+      page: emptyAuditPage(page),
       status: "unavailable" as const,
     };
   }
+}
+
+function parseAuditPage(value: string | string[] | undefined) {
+  const rawValue = Array.isArray(value) ? value[0] : value;
+  if (!rawValue || !/^\d+$/.test(rawValue)) return 1;
+
+  const parsed = Number.parseInt(rawValue, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+}
+
+function buildAuditPage(
+  contentRange: string | null,
+  page: number,
+  rowCount: number,
+) {
+  const total = parseAuditTotal(
+    contentRange,
+    (page - 1) * ADMIN_AUDIT_PAGE_SIZE + rowCount,
+  );
+
+  return {
+    hasNext: page * ADMIN_AUDIT_PAGE_SIZE < total,
+    page,
+    pageSize: ADMIN_AUDIT_PAGE_SIZE,
+    total,
+  };
+}
+
+function emptyAuditPage(page: number) {
+  return {
+    hasNext: false,
+    page,
+    pageSize: ADMIN_AUDIT_PAGE_SIZE,
+    total: 0,
+  };
+}
+
+function parseAuditTotal(contentRange: string | null, fallback: number) {
+  const match = contentRange?.match(/\/(\d+)$/);
+  if (!match) return fallback;
+
+  const total = Number.parseInt(match[1], 10);
+  return Number.isFinite(total) && total >= 0 ? total : fallback;
 }
 
 function createSignalLookup(countResults: CountResult[]) {

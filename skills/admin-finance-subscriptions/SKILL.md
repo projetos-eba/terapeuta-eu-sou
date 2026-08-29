@@ -83,6 +83,11 @@ Do not send generic `select *` payloads to React.
   page rather than a platform-wide total.
 - Payment, transfer, subscription and invoice statuses must be translated to
   product language before rendering. Provider identifiers remain internal.
+- Os dez estados de `session_transfer_status` são normalizados no mapper antes
+  da renderização: não elegível, aguardando confirmação, período de segurança,
+  disponível para repasse, em processamento, transferido, bloqueado, repasse
+  revertido e falhou. O valor técnico não aparece na coluna `Transferência` nem
+  no detalhe do pagamento.
 - Empty, forbidden and unavailable states use fixed product copy and never
   expose backend error messages.
 - `/admin/pagamentos/[paymentId]` uses `AdminPaymentDetailPage` and follows the

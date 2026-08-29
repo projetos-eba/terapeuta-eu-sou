@@ -39,6 +39,9 @@ describe("buildTherapistNavigation", () => {
     expect(navigation.find((item) => item.label === "Mensagens")?.badge).toBe(
       4,
     );
+    expect(
+      navigation.find((item) => item.label === "Assessora Aura")?.icon,
+    ).toBe("lightbulb");
   });
 
   it("locks Plus capabilities for Premium without creating alternate routes", () => {

@@ -22,6 +22,11 @@ export type ZoomExecutedFailure = {
   type: string;
 };
 
+export type ZoomJoinParticipantIdentity = {
+  userId: number;
+  userKey?: string;
+};
+
 export type NormalizedZoomFailure = {
   operation?: string;
   category: ZoomRecoveryCategory;
@@ -65,17 +70,25 @@ export class ZoomOperationError extends Error {
 
 // The shipped 2.4.5 join resolves ADD_CURRENT_USER_PARTICIPANT_ATTRIBUTE,
 // despite its declaration using ExecutedResult. Normalize each operation explicitly.
-export function assertZoomJoinResult(result: unknown) {
+export function assertZoomJoinResult(
+  result: unknown,
+): ZoomJoinParticipantIdentity | null {
   throwIfZoomFailure(result, "join");
-  if (result === "") return;
+  if (result === "") return null;
   if (
     isRecord(result) &&
     typeof result.userId === "number" &&
     Number.isSafeInteger(result.userId) &&
     result.userId > 0
-  )
-    return;
+  ) {
+    const userKey = normalizeParticipantUserKey(result.userKey);
+    return {
+      userId: result.userId,
+      ...(userKey ? { userKey } : {}),
+    };
+  }
   assertZoomExecutedResult(result, "join");
+  return null;
 }
 
 export function assertZoomExecutedResult(
@@ -326,6 +339,12 @@ function isAbortError(error: unknown) {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function normalizeParticipantUserKey(value: unknown) {
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  return normalized.length > 0 ? normalized : null;
 }
 
 function toFiniteNumber(value: unknown) {

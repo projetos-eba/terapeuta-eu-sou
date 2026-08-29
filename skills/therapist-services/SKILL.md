@@ -40,7 +40,7 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - Terapeuta nunca cria terapia por texto livre.
 - Criacao de servico exige `therapyId` valido, `requestId` UUID e validacao
   server-side.
-- A terapia precisa estar `published`, com categoria ativa e
+- A terapia precisa estar `published`, com ao menos um Tema do Match ativo e
   `is_available_for_services = true`.
 - Terapia sem visibilidade pública não deve ficar disponível para criação de
   novos serviços. Serviços históricos/arquivados podem permanecer para
@@ -54,6 +54,8 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - Ao criar/editar serviço, a duração é informada em minutos inteiros entre 20 e
   120, inclusive. O valor salvo é a fonte usada nos cards públicos e no
   snapshot de duração da reserva.
+- Ao criar/editar serviço, a descrição aceita no máximo 135 caracteres; o limite
+  aparece no campo e também é validado nas entradas do comando.
 - Refinamentos pertencem ao serviço específico, não ao perfil genérico.
 - Backend valida que tema pertence à terapia e refinamento pertence a tema
   escolhido no serviço; navegador não é fonte de autoridade.
@@ -68,7 +70,8 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 ## Dados
 
 - `therapies`: catalogo canonico da plataforma.
-- `therapy_categories`: categoria canonica.
+- `therapy_matching_themes` e `matching_themes`: classificação canônica da
+  terapia.
 - `therapist_services`: oferta comercial do terapeuta.
 - `therapist_service_booking_settings`: regras de reserva do servico.
 - `therapist_service_mutation_requests`: idempotencia.
@@ -91,7 +94,7 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
   conflito de versao e terapia indisponivel.
 - Responsividade minima: 320, 375, 768, 1024 e 1440px. Mobile nao usa tabela
   horizontal; cards e metricas colapsam em uma coluna/grid compacto.
-- Em larguras pequenas, cada card mantém imagem, categoria, terapia, status,
+- Em larguras pequenas, cada card mantém imagem, tema principal, terapia, status,
   ativação e menu de ações em uma composição compacta e alinhada. Descrição,
   indicadores e badges quebram linha com segurança, sem overflow; o toggle e o
   menu mantêm área mínima de toque de 44 px.
@@ -118,7 +121,7 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - CTA "Nao encontrou sua terapia?" e apenas informativo/futuro; nunca cria
   terapia.
 - Catalogo permitido nao inclui terapia `draft`, `deprecated`, `archived` ou
-  com categoria inativa.
+  sem ao menos um Tema do Match ativo.
 - Criacao por `therapyName` falha.
 - Replay com mesmo `requestId` e mesmo payload retorna replay idempotente.
 - Mesmo `requestId` com payload diferente retorna conflito.
@@ -130,13 +133,11 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
   `Terapias mais agendadas`, `Novo serviço` e `Editar serviço`. A etapa de
   configuração usa `Atendimento` e a revisão usa `Prática`; identificadores
   técnicos como `service` e `therapist_services` permanecem no contrato interno.
-- Nos cards, a categoria da terapia permanece visível e os temas selecionados
-  pelo terapeuta aparecem em um badge circular `+N`, limitado a `+2`. O badge
-  aparece visualmente menor e sobreposto ao chip de categoria, mantendo área de
-  toque mínima de 44px, e abre um tooltip acessível por mouse, foco, clique e
-  teclado com os nomes dos temas selecionados.
-- Validar a composição do card em 320, 375, 390 e 430 px, incluindo categoria
-  e temas distintos, status, ativação, menu e tooltip `+N`, sem texto cortado ou
+- Nos cards, o primeiro tema aparece uma única vez como rótulo resumido. Temas
+  adicionais aparecem em um badge circular `+N`, limitado a `+2`, com área de
+  toque mínima de 44px e tooltip acessível por mouse, foco, clique e teclado.
+- Validar a composição do card em 320, 375, 390 e 430 px, incluindo tema
+  principal e temas adicionais, status, ativação, menu e tooltip `+N`, sem texto cortado ou
   área de ação isolada.
 
 Rodar:

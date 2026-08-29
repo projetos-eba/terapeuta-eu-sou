@@ -18,7 +18,6 @@ export type ShellNavigationItem = {
   children?: ShellNavigationItem[];
   href: string;
   icon:
-    | "brain"
     | "calendar"
     | "chart"
     | "credit-card"
@@ -26,10 +25,12 @@ export type ShellNavigationItem = {
     | "heart"
     | "help"
     | "home"
+    | "lightbulb"
     | "message"
     | "route"
     | "search"
     | "settings"
+    | "shield"
     | "sparkles"
     | "star"
     | "user"
@@ -96,59 +97,59 @@ export function AuthenticatedShell({
     <>
       <AuthSessionGuard loginHref={resolvedLogoutHref} role={variant} />
       <div className="tes-authenticated-surface min-h-screen overflow-x-hidden bg-[var(--tes-color-background)] text-tesText-primary">
-      <aside
-        aria-label="Navegação principal"
-        className={cn(
-          "fixed inset-y-0 left-0 z-overlay w-[var(--tes-layout-auth-sidebar-width)] border-r border-[var(--tes-color-border)] bg-white transition-transform lg:z-sticky lg:translate-x-0",
-          isNavigationOpen ? "translate-x-0" : "-translate-x-full",
-        )}
-      >
-        <ShellSidebar
-          helpCardVariant={helpCardVariant}
-          helpHref={helpHref}
-          helpLabel={helpLabel}
-          homeHref={routes.public.home}
-          logoutAction={logoutAction}
-          logoutHref={resolvedLogoutHref}
-          navigation={navigation}
-          onNavigate={() => setIsNavigationOpen(false)}
-        />
-      </aside>
-
-      {isNavigationOpen ? (
-        <button
-          aria-label="Fechar menu"
-          className="fixed inset-0 z-sticky bg-brand-deep/20 lg:hidden"
-          onClick={() => setIsNavigationOpen(false)}
-          type="button"
-        />
-      ) : null}
-
-      <div className="lg:pl-[var(--tes-layout-auth-sidebar-width)]">
-        <ShellTopbar
-          accountHref={getDefaultAccountHref(variant)}
-          logoutAction={logoutAction}
-          logoutHref={resolvedLogoutHref}
-          notificationHref={
-            notificationHref ?? getDefaultNotificationHref(variant)
-          }
-          notificationCount={notificationCount}
-          planLabel={planLabel}
-          user={user}
-          variant={variant}
-          onOpenNavigation={() => setIsNavigationOpen(true)}
-        />
-        <main
+        <aside
+          aria-label="Navegação principal"
           className={cn(
-            "tes-authenticated-surface px-4 py-5 sm:px-6",
-            variant === "therapist"
-              ? "min-h-[calc(100vh-96px)] lg:px-7 lg:py-6"
-              : "min-h-[calc(100vh-var(--tes-layout-auth-topbar-height))] lg:px-4 lg:py-0",
+            "fixed inset-y-0 left-0 z-overlay w-[var(--tes-layout-auth-sidebar-width)] border-r border-[var(--tes-color-border)] bg-white transition-transform lg:z-sticky lg:translate-x-0",
+            isNavigationOpen ? "translate-x-0" : "-translate-x-full",
           )}
         >
-          {children}
-        </main>
-      </div>
+          <ShellSidebar
+            helpCardVariant={helpCardVariant}
+            helpHref={helpHref}
+            helpLabel={helpLabel}
+            homeHref={routes.public.home}
+            logoutAction={logoutAction}
+            logoutHref={resolvedLogoutHref}
+            navigation={navigation}
+            onNavigate={() => setIsNavigationOpen(false)}
+          />
+        </aside>
+
+        {isNavigationOpen ? (
+          <button
+            aria-label="Fechar menu"
+            className="fixed inset-0 z-sticky bg-brand-deep/20 lg:hidden"
+            onClick={() => setIsNavigationOpen(false)}
+            type="button"
+          />
+        ) : null}
+
+        <div className="lg:pl-[var(--tes-layout-auth-sidebar-width)]">
+          <ShellTopbar
+            accountHref={getDefaultAccountHref(variant)}
+            logoutAction={logoutAction}
+            logoutHref={resolvedLogoutHref}
+            notificationHref={
+              notificationHref ?? getDefaultNotificationHref(variant)
+            }
+            notificationCount={notificationCount}
+            planLabel={planLabel}
+            user={user}
+            variant={variant}
+            onOpenNavigation={() => setIsNavigationOpen(true)}
+          />
+          <main
+            className={cn(
+              "tes-authenticated-surface px-4 py-5 sm:px-6",
+              variant === "therapist"
+                ? "min-h-[calc(100vh-96px)] lg:px-7 lg:py-6"
+                : "min-h-[calc(100vh-var(--tes-layout-auth-topbar-height))] lg:px-4 lg:py-0",
+            )}
+          >
+            {children}
+          </main>
+        </div>
       </div>
     </>
   );

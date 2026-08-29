@@ -4,12 +4,17 @@ import {
 } from "@/features/admin-platform";
 import { requireAdminSession } from "@/lib/auth/admin-session";
 
-export default async function AdminSecurityRoute() {
+export default async function AdminSecurityRoute({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await requireAdminSession({
     permissions: ["admin.security.read", "admin.audit.read"],
   });
   const result = await getAdminSecurityPage({
     accessToken: session.accessToken,
+    searchParams: await searchParams,
   });
 
   if (result.status === "error") {

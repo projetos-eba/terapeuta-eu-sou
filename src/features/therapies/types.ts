@@ -1,7 +1,7 @@
 export type TherapySort = "relevance" | "most_searched" | "popular" | "newest" | "az";
 
 export type TherapySearchParams = {
-  category?: string;
+  theme?: string;
   page: number;
   pageSize: number;
   q?: string;
@@ -9,10 +9,6 @@ export type TherapySearchParams = {
 };
 
 export type PublicTherapyListItem = {
-  category: {
-    name: string;
-    slug: string;
-  };
   id: string;
   imageUrl: string | null;
   isNew: boolean;
@@ -23,14 +19,14 @@ export type PublicTherapyListItem = {
   therapistCount: number;
 };
 
-export type PublicTherapyCategory = {
+export type PublicTherapyTheme = {
   count: number;
   name: string;
   slug: string;
 };
 
 export type PublicTherapiesResult = {
-  categories: PublicTherapyCategory[];
+  themes: PublicTherapyTheme[];
   errorMessage?: string;
   items: PublicTherapyListItem[];
   page: number;
@@ -41,9 +37,6 @@ export type PublicTherapiesResult = {
 };
 
 export type PublicTherapyRow = {
-  category_name: string;
-  category_slug: string;
-  category_sort_order: number;
   id: string;
   image_url: string | null;
   is_new: boolean;
@@ -54,4 +47,6 @@ export type PublicTherapyRow = {
   short_description: string;
   slug: string;
   therapist_count: number | null;
+  theme_names: string[] | null;
+  theme_slugs: string[] | null;
 };

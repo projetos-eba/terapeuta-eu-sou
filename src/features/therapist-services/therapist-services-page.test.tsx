@@ -97,15 +97,10 @@ describe("TherapistServicesPage", () => {
     ).toHaveAttribute("src", "https://cdn.example.test/reiki-ranking.jpg");
   });
 
-  it("shows the service category and selected themes in an accessible tooltip", () => {
+  it("shows the primary theme once and the remaining themes accessibly", () => {
     renderPage({
       items: [
         serviceFixture({
-          category: {
-            id: "c1000000-0000-4000-8000-000000000005",
-            name: "Energia e proteção",
-            slug: "energia-protecao",
-          },
           matching: {
             interestIds: [],
             themeIds: [
@@ -127,21 +122,16 @@ describe("TherapistServicesPage", () => {
       ],
     });
 
-    expect(screen.getAllByText("Energia e proteção")).toHaveLength(2);
+    expect(screen.getAllByText("Autoconhecimento")).toHaveLength(1);
     const moreThemes = screen.getByRole("button", {
-      name: /ver mais 2 temas/i,
+      name: /ver mais 1 tema/i,
     });
-    expect(moreThemes).toHaveTextContent("+2");
-    expect(moreThemes).toHaveClass("min-h-11", "min-w-11");
-    expect(moreThemes.querySelector("span")).toHaveClass(
-      "size-6",
-      "text-[11px]",
-    );
+    expect(moreThemes).toHaveTextContent("+1");
+    expect(moreThemes).toHaveClass("min-h-11");
     expect(screen.getByRole("tooltip")).toHaveClass("hidden");
 
     fireEvent.mouseEnter(moreThemes);
 
-    expect(screen.getByRole("tooltip")).toHaveTextContent("Autoconhecimento");
     expect(screen.getByRole("tooltip")).toHaveTextContent("Espiritualidade");
   });
 
@@ -536,6 +526,27 @@ describe("TherapistServicesPage", () => {
     expect(screen.getByLabelText("Descrição")).toHaveFocus();
   });
 
+  it("limits the description field to 135 characters", () => {
+    render(
+      <TherapistServiceForm
+        catalog={catalogFixture().items}
+        mode="edit"
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+        service={serviceFixture()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    const description = screen.getByLabelText("Descrição");
+    fireEvent.change(description, { target: { value: "x".repeat(136) } });
+
+    expect(description).toHaveAttribute("maxlength", "135");
+    expect(description).toHaveValue("x".repeat(135));
+    expect(screen.getByText("135/135 caracteres")).toBeInTheDocument();
+  });
+
   it("keeps the dialog open and explains a final save failure", async () => {
     const onClose = vi.fn();
     mockedCommand.mockResolvedValueOnce({
@@ -565,30 +576,6 @@ describe("TherapistServicesPage", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("bounds an unbroken description in the review step", () => {
-    const longWord = "d".repeat(200);
-
-    render(
-      <TherapistServiceForm
-        catalog={catalogFixture().items}
-        mode="edit"
-        onClose={vi.fn()}
-        onSaved={vi.fn()}
-        service={serviceFixture()}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
-    fireEvent.change(screen.getByLabelText("Descrição"), {
-      target: { value: longWord },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
-
-    expect(screen.getByText(longWord)).toHaveClass(
-      "overflow-y-auto",
-      "break-words",
-    );
-  });
 });
 
 describe("parsePriceToCents", () => {
@@ -631,11 +618,6 @@ function serviceFixture(
   return {
     archivedAt: null,
     blockingReason: null,
-    category: {
-      id: "c1000000-0000-4000-8000-000000000001",
-      name: "Terapias Energéticas",
-      slug: "terapias-energeticas",
-    },
     createdAt: "2026-07-28T10:00:00.000Z",
     currency: "BRL",
     deliveryFormat: "online",
@@ -680,11 +662,6 @@ function catalogFixture(): TherapyCatalogContract {
     contractVersion: 1,
     items: [
       {
-        category: {
-          id: "c1000000-0000-4000-8000-000000000001",
-          name: "Terapias Energéticas",
-          slug: "terapias-energeticas",
-        },
         isAvailableForServices: true,
         isPubliclyVisible: true,
         isVisibleInMatching: true,

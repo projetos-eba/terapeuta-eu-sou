@@ -18,10 +18,28 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
 
 - Antes de alterar adapter/retries/mocks, consultar
   `docs/zoom/investigation-2026-08-27.md` e
-  `docs/zoom/self-view-2026-08-27.md`. No SDK 2.4.5, `join` pode retornar um
-  participante e `startVideo` retorna `undefined`; contratos específicos não
-  dispensam rejeitar falhas resolvidas. `destroyClient` preserva o receiver.
+  `docs/zoom/self-view-2026-08-27.md` e
+  `docs/zoom/camera-routing-2026-08-28.md`. No SDK 2.4.5, `join` pode retornar
+  um participante e `startVideo` retorna `undefined`; contratos específicos
+  não dispensam rejeitar falhas resolvidas. A identidade devolvida pelo join
+  deve ser preservada antes da mídia. `destroyClient` preserva o receiver.
   Falha de mídia/prévia não deve destruir uma conexão válida.
+- Identidade tardia também precisa recuperar self-view já publicado. Não
+  limitar reconciliação ao remoto nem repetir `startVideo`/join por falha de
+  prévia. Preservar Promise de attach por geração e separar render cleanup
+  de teardown. Em reentrada móvel abrupta, usar
+  `video-capturing-change: Started` para reconciliar o ciclo atual depois que
+  o pipeline local estiver pronto; ver
+  `docs/zoom/patient-preview-recovery-2026-08-28.md` e
+  `docs/zoom/abrupt-reentry-self-view-2026-08-28.md` e
+  `docs/zoom/mobile-self-view-binding-2026-08-28.md`.
+- Prévia mobile usa um `<video-player>` persistente montado pelo React. Quando
+  a câmera vem pré-ativada, aguardar esse renderer antes de `startVideo`; sua
+  montagem tardia deve reconciliar a prévia automaticamente. Depois da captura,
+  `bVideoOn` é diagnóstico, não bloqueio: passar o nó ao terceiro argumento de
+  `attachVideo` e só confirmar sucesso quando `node-id` corresponder ao
+  participante local. Elemento conectado não basta. Timeout e cleanup usam
+  `detachVideo(userId, element)` sem repetir publicação, join, access ou JWT.
 - Browser: `@zoom/videosdk`.
 - Paciente acessa a sala dedicada por `/app/encontros/:bookingId/video`.
 - Terapeuta acessa a sala dedicada por
@@ -85,6 +103,12 @@ regressao pgTAP para as duas assinaturas.
 - Validar que a sala dedicada não renderiza sidebar nem topbar.
 - Validar encontro de 75 a 90 minutos para paciente e terapeuta, incluindo
   renovação do access token, atualização de página e queda/retorno de rede.
+- Validar descarte abrupto do processo do paciente sem cleanup observável,
+  reentrada com novo `userId`/mesmo `userKey`, captura tardia e recuperação da
+  prévia sem nova publicação ou JWT. `pagehide` continua limpando a mídia.
+- Validar renderer local montado antes da câmera pré-ativada e vínculo tardio
+  do player em Chromium e WebKit mobile: `bVideoOn` atrasado, `node-id` tardio,
+  timeout com detach exato e operação antiga incapaz de alterar a geração nova.
 - Validar desktop e mobile, foco visível, nomes acessíveis e retorno ao detalhe.
 - `npm run zoom:video-sdk:env`
 - `npm run zoom:video-sdk:test`
@@ -133,6 +157,10 @@ Com `ALLOW_REAL_ZOOM=false`, nao fazer chamada externa nem entrar em sessao real
 - A prova bidirecional liga primeiro a câmera do terapeuta, confirma o remoto
   no paciente, liga a câmera do paciente e confirma que ambos mantêm self-view
   e remoto. Safari/iPhone e Chrome/Android reais permanecem gates separados.
+- O aceite 1:1 exige uma única identidade remota selecionada por roster
+  autoritativo, no máximo um player por container, exclusão de segundo
+  dispositivo com o mesmo `userKey` local, detach pelo elemento exato e
+  invalidação de timers/attaches de gerações anteriores.
 - O harness HML falha fechado sem fixture canônica resolvida, sem `_vercel_share`,
   com `provider_session_id` preexistente, com qualquer sessao Zoom ativa antes
   do teste, ou se o pagamento canonico estiver ausente. Ele nao cria fixture

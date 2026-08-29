@@ -258,6 +258,14 @@ histórica.
   `availability_exception_booking_impacts` e exigem resolução explícita.
 - Cancelamento/reagendamento de booking continuam nos comandos próprios.
 - O preview TypeScript não confirma reserva nem deve alimentar novos fluxos.
+- O read model `public_therapist_search_internal` calcula `next_slot_at` como o
+  menor slot autoritativo entre todos os serviços ativos online do terapeuta;
+  o serviço-resumo continua responsável apenas por preço e terapia exibidos no
+  cartão. Como o slot engine aplica o limite antes de excluir bookings e holds,
+  a busca de descoberta divide o horizonte em janelas de cinco dias e pede 500
+  candidatos por janela. A cadência canônica mínima de 15 minutos mantém cada
+  janela integralmente coberta; limitar em um candidato bruto pode produzir
+  `Horários em breve` apesar de haver disponibilidade real.
 - A5 usa `get_service_available_slots_v1` como endpoint público autoritativo e
   repete a validação no trigger de `booking_holds`. A agenda pública usa ainda
   `get_service_available_days_v1` para navegação mensal e
@@ -273,7 +281,21 @@ histórica.
 - O Postgres protege holds e bookings e compõe slots autoritativos com regras,
   exceções, timezone, duração, cadência, buffers, antecedência e horizonte.
 - `booking_holds` usa TTL, idempotência, snapshots e advisory lock por
-  terapeuta.
+  terapeuta. O checkout público chama `reservation-abandon` ao ser deixado sem
+  conclusão; a Edge Function expira antes o Checkout Stripe ainda aberto e só
+  então cancela bookings `draft`/`pending_payment` sem pagamento confirmado,
+  com idempotência e autorização do paciente. Checkout concluído não pode ser
+  liberado pelo navegador: o webhook continua sendo a autoridade do pagamento.
+- Na comparação visual de conflitos da pessoa paciente, só entram bookings
+  `confirmed`/`completed` que possuam pagamento canônico
+  `session_payments.financial_status = 'paid'`. Holds e reservas sem pagamento
+  não podem esconder um horário como se fossem outro encontro. Eles continuam
+  sendo protegidos pelo PostgreSQL para a disponibilidade do terapeuta até a
+  expiração ou o abandono autorizado; o banco permanece a autoridade final
+  contra sobreposição. Os gatilhos de escrita aplicam a mesma regra: o conflito
+  `PATIENT_SCHEDULE_CONFLICT` só considera sessão confirmada/concluída com
+  pagamento `paid`; tentativas `draft`/`pending_payment` e holds do paciente
+  nunca bloqueiam um novo checkout.
 - `occupied_during` e constraints GiST impedem conflito entre serviços.
 - Um reembolso integral confirmado na fonte canônica
   `session_payments.financial_status = 'refunded'` move o booking para

@@ -61,18 +61,12 @@ export function mapTherapistServiceSummary(
 ): TherapistServiceSummary {
   const value = record(input);
   const therapy = record(value.therapy);
-  const category = record(value.category);
   const metrics = record(value.metrics);
   const matching = optionalRecord(value.matching);
 
   return {
     archivedAt: nullableString(value.archivedAt),
     blockingReason: nullableString(value.blockingReason),
-    category: {
-      id: string(category.id),
-      name: string(category.name),
-      slug: string(category.slug),
-    },
     createdAt: string(value.createdAt),
     currency: currency(value.currency),
     deliveryFormat: deliveryFormat(value.deliveryFormat),
@@ -121,14 +115,8 @@ export function mapTherapistServiceSummary(
 
 function mapTherapyCatalogOption(input: unknown): TherapyCatalogOption {
   const value = record(input);
-  const category = record(value.category);
 
   return {
-    category: {
-      id: string(category.id),
-      name: string(category.name),
-      slug: string(category.slug),
-    },
     isAvailableForServices: boolean(value.isAvailableForServices),
     isPubliclyVisible: boolean(value.isPubliclyVisible),
     isVisibleInMatching: boolean(value.isVisibleInMatching),

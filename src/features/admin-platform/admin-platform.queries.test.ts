@@ -136,7 +136,9 @@ describe("admin platform queries", () => {
             reason: "Validacao.",
             source: "therapy_catalog_events",
           },
-        ]);
+        ], {
+          headers: { "Content-Range": "0-0/1" },
+        });
       }
 
       return new Response(null, { status: 404 });
@@ -157,12 +159,27 @@ describe("admin platform queries", () => {
       }),
     ]);
     expect(result.data.auditEventsStatus).toBe("available");
+    expect(result.data.auditPage).toEqual({
+      hasNext: false,
+      page: 1,
+      pageSize: 8,
+      total: 1,
+    });
 
     const auditCall = fetchMock.mock.calls.find(([input]) =>
       String(input).includes("/rest/v1/admin_audit_events"),
     );
     expect(String(auditCall?.[0])).toContain(
       "select=id,actor_role,permission,action,entity_type,reason,source,created_at",
+    );
+    expect(String(auditCall?.[0])).toContain(
+      "order=created_at.desc%2Cid.desc&limit=8&offset=0",
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/rest/v1/admin_audit_events"),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Prefer: "count=exact" }),
+      }),
     );
     expect(String(auditCall?.[0])).not.toContain("previous_state");
     expect(String(auditCall?.[0])).not.toContain("next_state");
@@ -193,6 +210,12 @@ describe("admin platform queries", () => {
     if (result.status !== "success") return;
 
     expect(result.data.auditEvents).toEqual([]);
+    expect(result.data.auditPage).toEqual({
+      hasNext: false,
+      page: 1,
+      pageSize: 8,
+      total: 0,
+    });
     expect(result.data.auditEventsStatus).toBe("unavailable");
   });
 });

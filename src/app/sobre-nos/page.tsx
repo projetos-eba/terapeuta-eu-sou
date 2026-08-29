@@ -87,7 +87,7 @@ export default function AboutUsPage() {
           </div>
         </div>
 
-        <div className="relative mx-5 mt-8 aspect-[16/9] min-h-[300px] overflow-hidden sm:mx-8 sm:min-h-[390px] lg:mx-[60px] xl:absolute xl:inset-y-auto xl:left-[max(620px,calc((100vw-1440px)/2+620px))] xl:right-0 xl:top-0 xl:mx-0 xl:mt-0 xl:min-h-0">
+        <div className="relative mx-5 mt-8 aspect-[16/9] min-h-0 overflow-hidden bg-surface-page sm:mx-8 sm:min-h-[390px] lg:mx-[60px] xl:absolute xl:inset-y-auto xl:left-[max(620px,calc((100vw-1440px)/2+620px))] xl:right-0 xl:top-0 xl:mx-0 xl:mt-0 xl:min-h-0">
           <Image
             src="/about/figma-02.png"
             alt="Duas mulheres em ambientes de cuidado e trabalho conectadas pelo Terapeuta Eu Sou"
@@ -95,7 +95,7 @@ export default function AboutUsPage() {
             priority
             quality={95}
             sizes="(min-width: 1440px) calc(100vw - max(620px, calc((100vw - 1440px) / 2 + 620px))), (min-width: 1024px) calc(100vw - 620px), 100vw"
-            className="object-cover object-center"
+            className="object-contain object-center"
           />
           <div className="pointer-events-none absolute inset-y-0 left-0 w-[10%] bg-gradient-to-r from-surface-page to-transparent" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[16%] bg-gradient-to-t from-surface-page to-transparent" />
@@ -232,27 +232,20 @@ export default function AboutUsPage() {
       </section>
 
       <section className="mx-auto max-w-[1320px] px-5 pb-10 sm:px-8 lg:pb-14">
-        <div className="relative isolate overflow-hidden rounded-hero bg-brand-deep text-tesText-inverse">
-          <Image
-            src="/about/figma-10.png"
-            alt="Portal iluminado representando o encontro promovido pelo TES"
-            fill
-            quality={95}
-            sizes="(min-width: 1024px) 1320px, 100vw"
-            className="-z-20 object-cover object-center"
-          />
-          <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-r from-brand-deep via-brand-deep/55 to-transparent" />
-
-          <div className="grid min-h-[440px] items-center gap-8 px-7 py-10 sm:px-12 sm:py-12 lg:min-h-[260px] lg:grid-cols-[390px_1fr] lg:px-12 lg:py-8">
-            <h2 className="max-w-[390px] font-display text-[clamp(1.9rem,7.5vw,2.2rem)] font-light italic leading-[1.1] tracking-[-0.025em] text-tesText-inverse sm:text-[2.45rem]">
-              Para quem busca.
-              <br />
-              Para quem atende.
-              <br />
-              Para tudo o que existe entre esses dois lados.
-            </h2>
-            <div className="max-w-[380px] lg:ml-12">
-              <p className="text-lg font-medium leading-8 text-tesText-inverse sm:text-xl">
+        <div
+          className="overflow-hidden rounded-hero bg-brand-deep text-tesText-inverse"
+          data-testid="about-connection-banner"
+        >
+          <div className="grid lg:grid-cols-[minmax(0,0.8fr)_minmax(500px,1.2fr)] lg:items-stretch">
+            <div className="flex flex-col items-start px-7 py-10 sm:px-12 sm:py-12 lg:justify-center lg:py-10">
+              <h2 className="max-w-[390px] font-display text-[clamp(1.9rem,7.5vw,2.2rem)] font-light italic leading-[1.1] tracking-[-0.025em] text-tesText-inverse sm:text-[2.45rem]">
+                Para quem busca.
+                <br />
+                Para quem atende.
+                <br />
+                Para tudo o que existe entre esses dois lados.
+              </h2>
+              <p className="mt-7 max-w-[380px] text-lg font-medium leading-8 text-tesText-inverse sm:text-xl">
                 O TES reúne pessoas, práticas, terapeutas e ferramentas em um
                 mesmo espaço.
               </p>
@@ -265,6 +258,18 @@ export default function AboutUsPage() {
                 Conheça o TES
                 <ArrowRight className="size-5" aria-hidden="true" />
               </TESButton>
+            </div>
+
+            <div className="relative aspect-[1756/896] overflow-hidden border-t border-white/15 lg:aspect-auto lg:min-h-[340px] lg:border-l lg:border-t-0">
+              <Image
+                src="/about/tes-connection-banner.png"
+                alt="Duas pessoas se encontrando diante de um portal iluminado"
+                fill
+                quality={95}
+                sizes="(min-width: 1024px) 760px, 100vw"
+                className="object-contain object-center lg:object-cover lg:object-right"
+              />
+              <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[38%] bg-gradient-to-r from-brand-deep via-brand-deep/75 to-transparent lg:block" />
             </div>
           </div>
         </div>

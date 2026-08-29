@@ -77,10 +77,60 @@ permanecem anexadas. Presença do participante e vídeo remoto anexado são
 asserts diferentes. Safari/iPhone e Chrome/Android reais são obrigatórios em
 HML; emulação de viewport Chromium não substitui esses gates.
 
-O teste de adapter deve reproduzir também o `user-updated` incremental emitido
-quando o paciente liga a própria câmera. Um payload contendo apenas o usuário
-local, ou uma atualização remota sem `bVideoOn`, não pode chamar `detachVideo`
-para o terapeuta nem substituir o tile remoto por “Aguardando”.
+O teste de adapter deve reproduzir também os eventos incrementais emitidos
+quando o paciente liga a própria câmera. Os payloads são somente gatilhos: a
+decisão de render usa o roster de `getAllUser()`. Um evento contendo apenas o
+usuário local, ou uma atualização remota sem `bVideoOn`, não pode chamar
+`detachVideo` para o terapeuta nem substituir o tile remoto por “Aguardando”.
+
+As regressões de identidade e ownership devem cobrir: participante local vindo
+do retorno de `join` antes de `getCurrentUserInfo`; bloqueio de attach enquanto
+a identidade estiver incompleta; segundo dispositivo com o mesmo `userKey`;
+seleção única e estável entre duas instâncias da contraparte; conflito entre
+identidades remotas distintas; reconexão com `userId` preservado e renovado;
+detach pelo elemento exato; colisão entre elemento local e remoto; e attach de
+geração anterior resolvendo após cleanup/rejoin. O aceite exige no máximo um
+player por container e nenhum movimento do self-view para o quadro remoto.
+
+Cobrir também publicação já ativa com identidade local inicialmente nula:
+`Connected` e timers devem recuperar o self-view sem novo `startVideo`
+ou JWT. Exercitar retry limitado/manual, stop e unmount durante attach de
+recuperação e avisos separados para detach ativo versus teardown real.
+Eventos locais não anunciam entrada/saída da contraparte.
+
+Cobrir reentrada abrupta sem `leave/pagehide`: novo `userId` com o mesmo
+`userKey`, instância antiga ainda no roster, remoto anexado primeiro e captura
+local pronta somente depois das tentativas provisórias. O evento
+`video-capturing-change: Started` deve recuperar o self-view mesmo se chegar
+durante um attach pendente. O retorno à visibilidade recupera apenas a
+renderização, sem novo `startVideo`, `join` ou JWT; `pagehide` preserva o
+cleanup de mídia. Ver
+[reentrada abrupta](./abrupt-reentry-self-view-2026-08-28.md).
+
+No mobile, separar também prontidão do provider e vínculo do player. O teste
+deve manter um único `<video-player>` local já montado, impedir attach enquanto
+`getUser(localId).bVideoOn` não for `true`, devolver esse elemento
+imediatamente de `attachVideo` e escrever seu `node-id` somente depois. O
+estado visual só pode concluir após o `node-id` correto. Cobrir timeout,
+detach pelo elemento exato, retry sem nova captura/join/JWT e callback antigo
+após cleanup. Ver
+[vinculação tardia mobile](./mobile-self-view-binding-2026-08-28.md).
+
+Browser isolado, sem Supabase ou Zoom real:
+
+```bash
+npx playwright test tests/e2e/zoom-preview.spec.ts --project=chromium --workers=1
+npx playwright test tests/e2e/zoom-preview.spec.ts --project=webkit-mobile --workers=1
+```
+
+Esse harness serve somente o adapter/componentes reais pelo Vite local, sem
+ler .env; simula SDK/acesso, usa mídia falsa e bloqueia requisições externas.
+O projeto `webkit-mobile` usa o perfil iPhone 13 do Playwright e continua sendo
+emulação, não evidência de aparelho físico.
+Não substitui testes de Auth, webhooks, host-first real ou aparelhos físicos.
+Detalhes em [recuperação de prévia](./patient-preview-recovery-2026-08-28.md)
+e [reentrada abrupta](./abrupt-reentry-self-view-2026-08-28.md) e
+[vinculação tardia mobile](./mobile-self-view-binding-2026-08-28.md).
 
 Os testes temporais cobrem T-15, chegada em T+10, bloqueio em T+10+1 ms,
 reconexão por chegada da versão atual ou join confiável e bloqueio em
@@ -137,7 +187,10 @@ Normalizar por operação, não somente pela declaração `ExecutedResult`:
 `startVideo` resolve `undefined` no sucesso da captura. `init`, áudio e
 `stopVideo` continuam estritos (`""`). Um objeto `{ type, reason, errorCode }`
 continua sendo falha. Os mocks precisam reproduzir esses retornos reais;
-ver [investigação de self-view](./self-view-2026-08-27.md).
+ver [investigação de self-view](./self-view-2026-08-27.md) e
+[incidente de roteamento de câmera](./camera-routing-2026-08-28.md). O
+normalizador de `join` precisa devolver `userId`/`userKey`, não apenas aceitar o
+resultado.
 Antes de recriar o singleton, o fluxo remove listeners e videos, executa `leave`
 quando aplicavel e aguarda `destroyClient`.
 

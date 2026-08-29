@@ -10,14 +10,6 @@ export const adminTherapyStatuses = [
 
 export type AdminTherapyStatus = (typeof adminTherapyStatuses)[number];
 
-export type AdminTherapyCategory = {
-  id: string;
-  isActive: boolean;
-  name: string;
-  slug: string;
-  sortOrder: number;
-};
-
 export type AdminMatchingTheme = {
   id: string;
   imageUrl: string | null;
@@ -64,10 +56,6 @@ export type AdminTherapy = {
   aliases: string[];
   archivedAt: string | null;
   calendarColorKey: string;
-  categoryId: string;
-  categoryIsActive: boolean;
-  categoryName: string;
-  categorySlug: string;
   deprecatedAt: string | null;
   description: string | null;
   hasPublishedMatchWeights: boolean;
@@ -122,12 +110,10 @@ export type AdminTherapyCatalogRequestDetail = AdminTherapyCatalogRequest & {
     mimeType: string;
   }>;
   submission: Record<string, unknown>;
-  suggestedCategoryId: string | null;
   updatedAt: string;
 };
 
 export type AdminTherapyCatalogContract = {
-  categories: AdminTherapyCategory[];
   contractVersion: 1;
   items: AdminTherapy[];
   matchingThemes: AdminMatchingTheme[];
@@ -137,7 +123,6 @@ export type AdminTherapyCatalogContract = {
 export type AdminTherapyDraftCommand = {
   aliases: string[];
   calendarColorKey: string;
-  categoryId: string;
   description: string | null;
   highlights: AdminTherapyPublicContent["highlights"];
   benefits: AdminTherapyPublicContent["benefits"];

@@ -12,6 +12,7 @@ import {
   mapUpcomingTherapistSessions,
   mapTherapistDashboardResponse,
   mapTherapistAuraPage,
+  reconcileTherapistDashboardProfile,
 } from "./therapist-dashboard.mappers";
 
 describe("dashboard calculations", () => {
@@ -103,6 +104,85 @@ describe("dashboard calculations", () => {
 });
 
 describe("dashboard mapper", () => {
+  it("uses the canonical profile readiness when the dashboard RPC is stale", () => {
+    const result = reconcileTherapistDashboardProfile({
+      data: {
+        ...mapTherapistDashboardResponse({
+          attentionItems: [
+            {
+              id: "profile-completeness",
+              label: "Perfil 40% concluído",
+              href: "/plus/perfil",
+              tone: "info",
+            },
+          ],
+          history: {},
+          kpis: {},
+          recentReviews: [],
+          therapist: {
+            name: "Vinicius Terapeuta Premium",
+            plan: "premium_plus",
+            profileCompleteness: 40,
+            profileId: "therapist-1",
+          },
+          today: {},
+          unreadMessagesCount: 0,
+          unreadNotificationsCount: 0,
+          upcomingSessions: [],
+          week: { days: [], rangeLabel: "" },
+        }),
+        aura: null,
+        auraState: "empty",
+        recommendedActions: [],
+      },
+      profileCompleteness: 100,
+    });
+
+    expect(result.therapist.profileCompleteness).toBe(100);
+    expect(result.attentionItems).toEqual([]);
+  });
+
+  it("rewrites an incomplete profile attention item with canonical readiness", () => {
+    const result = reconcileTherapistDashboardProfile({
+      data: {
+        ...mapTherapistDashboardResponse({
+          attentionItems: [
+            {
+              id: "profile-completeness",
+              label: "Perfil 40% concluído",
+              href: "/plus/perfil",
+              tone: "info",
+            },
+          ],
+          history: {},
+          kpis: {},
+          recentReviews: [],
+          therapist: {
+            name: "Terapeuta",
+            plan: "premium_plus",
+            profileCompleteness: 40,
+            profileId: "therapist-1",
+          },
+          today: {},
+          unreadMessagesCount: 0,
+          unreadNotificationsCount: 0,
+          upcomingSessions: [],
+          week: { days: [], rangeLabel: "" },
+        }),
+        aura: null,
+        auraState: "empty",
+        recommendedActions: [],
+      },
+      profileCompleteness: 60,
+    });
+
+    expect(result.therapist.profileCompleteness).toBe(60);
+    expect(result.attentionItems[0]).toMatchObject({
+      label: "Perfil 60% completo",
+      tone: "warning",
+    });
+  });
+
   it("maps empty periods without inventing data", () => {
     const result = mapTherapistDashboardResponse({
       attentionItems: [],

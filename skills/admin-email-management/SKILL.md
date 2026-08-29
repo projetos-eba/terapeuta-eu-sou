@@ -24,6 +24,10 @@ manter o seletor de remetente atualizado. A sincronização nunca é feita no
 browser, não revela credenciais e não deve apagar o último remetente conhecido
 se a Hostinger estiver indisponível.
 
+No seletor `Remetente do evento`, cada opção visível usa o endereço da caixa
+(`mailbox_address`), com o marcador de padrão quando aplicável. A seleção e a
+persistência continuam usando apenas o ID do perfil de remetente.
+
 Checklist de QA: entrada visível em `/admin/configuracoes`; central com estados
 loading/erro/vazio/provider indisponível; evento allowlisted; destinatário
 resolvido; preview sem execução de script; salvar/restaurar/reload; desktop,

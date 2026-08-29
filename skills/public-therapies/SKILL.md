@@ -21,7 +21,9 @@ Use esta skill ao criar, revisar ou refatorar a página pública `/terapias`, o 
 - Rota canônica: `/terapias`
 - Detalhe: `/terapias/:slug`
 - API: `GET /api/public/therapies`
-- Query params: `q`, `category`, `sort`, `page`, `pageSize`
+- Query params: `q`, `theme`, `sort`, `page`, `pageSize`
+- Links legados com `category` são normalizados para `/terapias` sem filtro,
+  preservando `q`, `sort`, `page` e `pageSize` compatíveis.
 - Sorts públicos: `relevance`, `most_searched`, `popular`, `newest`, `az`
 - Match deve apontar para `/terapias/:slug?source=match`
 - Detalhe deve usar `routes.public.therapyDetail(slug)` e preservar `source=match` nos links seguintes.
@@ -31,7 +33,7 @@ Use esta skill ao criar, revisar ou refatorar a página pública `/terapias`, o 
 Fonte central:
 
 - `therapies`
-- `therapy_categories`
+- `therapy_matching_themes`, `matching_themes`
 - `therapy_public_content`
 - `therapy_highlights`
 - `therapy_benefits`
@@ -45,7 +47,14 @@ View pública:
   `therapy_slug`; a RPC consulta os serviços elegíveis daquela terapia
   diretamente e consolida no máximo um serviço relevante por terapeuta.
 
-As views devem expor somente terapias com `therapies.status = published`, visíveis publicamente e com categoria ativa. O Match usa `public_matching_therapies_v` como projeção única de candidatos; uma terapia só entra no Match se também estiver publicada, com detalhe público elegível e ativa em `matching_therapy_settings`. Elas podem retornar dados editoriais, categoria, contagem de terapeutas disponíveis, sinalizadores de popularidade e novidade. Não expor pesos do Match, dados internos de admin, terapeutas não aprovados, perfis privados ou serviços inativos.
+As views devem expor somente terapias com `therapies.status = published`,
+visíveis publicamente e com ao menos um Tema do Match ativo. O Match usa
+`public_matching_therapies_v` como projeção única de candidatos; uma terapia só
+entra no Match se também estiver publicada, com detalhe público elegível e
+ativa em `matching_therapy_settings`. Elas podem retornar dados editoriais,
+temas ordenados, contagem de terapeutas disponíveis, sinalizadores de
+popularidade e novidade. Não expor pesos do Match, dados internos de admin,
+terapeutas não aprovados, perfis privados ou serviços inativos.
 
 Campos editoriais do detalhe:
 
@@ -67,7 +76,7 @@ Para profissionais relacionados:
 
 - consultar `get_public_therapy_therapists_v1` com limite máximo de 6;
 - a elegibilidade e a contagem pública usam o mesmo critério: serviço ativo,
-  online, reservável, não arquivado, terapia/categoria publicadas e perfil
+  online, reservável, não arquivado, terapia pública com tema ativo e perfil
   publicável;
 - sessões concluídas não são exibidas no card relacionado; avaliações públicas
   usam exclusivamente a avaliação canônica `published` e não substituída;
@@ -82,7 +91,7 @@ Para profissionais relacionados:
 - Hero com imagem `public/therapies/hero-therapies.png`
 - Busca ampla por URL
 - `TherapyFilters`
-- `CategoryFilter`
+- `ThemeFilter`
 - `TherapyGrid`
 - `TherapyCard`
 - CTA para `/sua-jornada`
@@ -91,11 +100,12 @@ Para profissionais relacionados:
 
 ## Responsividade
 
-- Desktop: hero com imagem lateral, filtros horizontais, sidebar de categorias e grid de 4 colunas.
+- Desktop: hero com imagem lateral, filtros horizontais, sidebar de Temas do Match e grid de 4 colunas.
 - Desktop: manter o conteúdo em container central de até `1440px`, com margens laterais de `68px` a partir de `lg`; o cabeçalho público ocupa uma faixa branca própria, separada dos assets do hero.
 - Tablet: grid de 2 colunas, filtros acima da listagem.
 - Mobile: hero reduzido, busca primeiro, filtros em accordion, grid em 1 coluna quando a descrição precisar respirar.
-- Cards do catálogo devem seguir o padrão visual compacto do Figma `13273:1439`: imagem editorial no topo, nome centralizado, descrição com `line-clamp` de 3 linhas e CTA “Saiba mais”.
+- Cards do catálogo devem seguir o padrão visual compacto do Figma `13273:1439`: imagem editorial no topo, nome centralizado, descrição com `line-clamp` de 3 linhas e CTA “Saiba mais”. As imagens usam `object-contain`, preservando a composição integral no mobile e em larguras intermediárias; não aplicar zoom de hover que corte a imagem.
+- Cards do catálogo não exibem badges de temas acima do nome da terapia; os temas permanecem disponíveis no filtro e nos contratos de detalhe quando necessários.
 - Detalhe desktop: grade editorial única; coluna esquerda com abordagem, nome, subtítulo, três destaques e “O que é”; coluna direita com imagem hero e benefícios; profissionais e banner inferior de descoberta de terapeutas em largura total.
 - Detalhe mobile: blocos empilhados, profissionais em uma coluna, banner de descoberta em largura total e sem posicionamento absoluto estrutural.
 - Títulos editoriais do detalhe, especialmente o nome da terapia no hero, devem usar `font-display` (`IvyPresto Display`) com tamanho responsivo seguro para nomes longos. UI, formulários, descrições e cards usam Manrope via `font-sans`.
@@ -116,7 +126,9 @@ Para profissionais relacionados:
 
 - `/terapias`
 - `/terapias?q=reiki`
-- `/terapias?category=emocional`
+- `/terapias?theme=emocoes-bem-estar`
+- `/terapias?category=emocional` normaliza para `/terapias` sem o filtro
+  legado e preserva os demais parâmetros compatíveis
 - `/terapias?sort=newest&page=2`
 - `/terapias/reiki`
 - `/terapias/reiki?source=match`
@@ -146,7 +158,7 @@ Rodar:
 
 - Persistência real de favoritos de terapias para usuário autenticado.
 - Métricas reais separadas para “Mais procuradas” e “Mais populares”.
-- Drawer/bottom sheet mobile completo caso a lista de categorias cresça muito.
+- Drawer/bottom sheet mobile completo caso a lista de temas cresça muito.
 - Auditar `/admin/terapias` para editar `therapy_public_content`, highlights e benefícios sem alterar pesos do Match.
 - Criar interface admin para `approach_label`, `approach_icon_key`, `visual_theme_key` e `hero_focal_point`.
 
@@ -156,4 +168,8 @@ Rodar:
   preservam as imagens editoriais oficiais de cada terapia (`imageUrl`); a
   ilustração `publicTherapiesCard` fica somente no quadro “Não encontrou o que
   procura?”, sem alterar o contrato do catálogo.
+- Uploads administrativos de terapia usam o bucket público
+  `admin-public-media`. A imagem do detalhe prioriza `hero_image_url`, mas usa
+  `image_url` como fallback quando não houver hero dedicado, preservando a
+  mesma experiência das imagens editoriais locais.
 - Consulte `docs/design-system/platform-assets.md`.

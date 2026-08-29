@@ -20,15 +20,6 @@ describe("AdminTherapyEditor", () => {
 
     render(
       <AdminTherapyEditor
-        categories={[
-          {
-            id: "category-1",
-            isActive: true,
-            name: "Energia",
-            slug: "energia",
-            sortOrder: 1,
-          },
-        ]}
         isSaving={false}
         matchingThemes={[
           {
@@ -86,6 +77,13 @@ describe("AdminTherapyEditor", () => {
         target: { value: "green" },
       },
     );
+    const semanticIcon = document.querySelector<HTMLSelectElement>(
+      'select[name="approachIconKey"]',
+    );
+    expect(semanticIcon).not.toBeNull();
+    expect(semanticIcon).toHaveAttribute("name", "approachIconKey");
+    expect(semanticIcon).toHaveValue("sparkles");
+    fireEvent.change(semanticIcon!, { target: { value: "compass" } });
     fireEvent.change(screen.getByLabelText("Benefício 1"), {
       target: { value: "Pausa de presença" },
     });
@@ -129,6 +127,7 @@ describe("AdminTherapyEditor", () => {
           },
         ],
         calendarColorKey: "green",
+        publicContent: expect.objectContaining({ approachIconKey: "compass" }),
         themeIds: ["theme-1", "theme-2", "theme-3"],
       }),
     );
@@ -139,15 +138,6 @@ describe("AdminTherapyEditor", () => {
 
     render(
       <AdminTherapyEditor
-        categories={[
-          {
-            id: "category-1",
-            isActive: true,
-            name: "Energia",
-            slug: "energia",
-            sortOrder: 1,
-          },
-        ]}
         isSaving={false}
         matchingThemes={[{ id: "theme-1", imageUrl: null, name: "Tema", slug: "tema", sortOrder: 1 }]}
         onCancel={() => undefined}
@@ -190,7 +180,6 @@ describe("AdminTherapyEditor", () => {
 
     render(
       <AdminTherapyEditor
-        categories={[]}
         isSaving={false}
         matchingThemes={[]}
         onCancel={() => undefined}

@@ -47,7 +47,7 @@ export async function getPublicTherapyDetail(
     const rows = await fetchPublicView<PublicTherapyDetailRow>(
       [
       "public_therapy_details_v",
-        "?select=id,slug,name,short_description,description,hero_image_url,image_url,therapist_count,category_slug,category_name,subtitle,introduction,complementary_description,safety_note,seo_title,seo_description,approach_label,approach_icon_key,visual_theme_key,hero_focal_point,highlights,benefits,published_at,updated_at,theme_names",
+        "?select=id,slug,name,short_description,description,hero_image_url,image_url,therapist_count,theme_slugs,theme_names,subtitle,introduction,complementary_description,safety_note,seo_title,seo_description,approach_label,approach_icon_key,visual_theme_key,hero_focal_point,highlights,benefits,published_at,updated_at",
         `&slug=eq.${slugFilter(slug)}`,
         "&limit=1",
       ].join(""),
@@ -86,16 +86,19 @@ export async function resolvePublicTherapySlug(slug: string) {
 function mapTherapyDetail(row: PublicTherapyDetailRow): PublicTherapyDetail {
   return {
     approachIconKey: row.approach_icon_key ?? "sparkles",
-    approachLabel: row.approach_label ?? row.category_name,
+    approachLabel: row.approach_label ?? row.theme_names?.[0] ?? "Terapia",
     benefits: parseItems(row.benefits),
-    category: {
-      name: row.category_name,
-      slug: row.category_slug,
-    },
+    themes: (row.theme_slugs ?? []).flatMap((slug, index) => {
+      const name = row.theme_names?.[index];
+      return name ? [{ name, slug }] : [];
+    }),
     complementaryDescription: row.complementary_description,
     description: row.description ?? "",
     heroFocalPoint: parseHeroFocalPoint(row.hero_focal_point),
-    heroImageUrl: row.hero_image_url,
+    // Uploads administrativos preenchem `image_url` como imagem canônica. O
+    // hero é opcional e, quando ausente, deve manter a mesma apresentação da
+    // imagem usada no catálogo público.
+    heroImageUrl: row.hero_image_url ?? row.image_url,
     highlights: parseItems(row.highlights),
     id: row.id,
     introduction: row.introduction ?? row.description ?? "",

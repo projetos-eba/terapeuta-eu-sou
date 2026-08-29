@@ -38,7 +38,9 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
   controles, reconexão e encerramento.
 - O cabeçalho da sala e o cartão da sala de espera exibem o ID completo da
   reserva logo abaixo do participante. A referência é o `bookingId` já
-  autorizado pela rota e não é um identificador do provedor Zoom.
+  autorizado pela rota e não é um identificador do provedor Zoom. No cartão
+  responsivo, o ID nunca pode extrapolar o container: truncar com reticências
+  e permitir revelar o valor completo por foco, hover ou toque.
 - A apresentação fica separada da integração: `ZoomVideoStage` concentra a
   composição desktop/mobile e `ZoomVideoControls` concentra preflight,
   microfone, câmera, suporte e saída. O adapter continua sendo a autoridade
@@ -87,10 +89,37 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   O SDK 2.4.5 resolve `startVideo` com `undefined`; preservar o normalizador
   específico e os testes com esse retorno. Cleanup espera captura/attach
   pendentes; desligar câmera para a publicação antes do detach.
+- Prévia deve recuperar também identidade `null → userId`, não só mudança
+  entre dois IDs. Preservar reconciliação idempotente por geração, retries
+  limitados e “Tentar mostrar minha câmera” sem repetir captura/JWT. Após
+  `startVideo`, `bVideoOn` atrasado é apenas diagnóstico: a ação manual refaz o
+  vínculo local, sem depender de nova leitura positiva do roster. Falha de
+  detach ativo é diagnóstico de renderização, nunca aviso de encerramento.
+  Em reentrada abrupta, `video-capturing-change: Started` reabre o orçamento de
+  attach do ciclo de captura atual, inclusive se chega durante uma operação
+  pendente. Retorno à visibilidade reconcilia somente a prévia; `pagehide`
+  continua limpando a mídia. Consultar
+  `docs/zoom/patient-preview-recovery-2026-08-28.md` e
+  `docs/zoom/abrupt-reentry-self-view-2026-08-28.md` e
+  `docs/zoom/mobile-self-view-binding-2026-08-28.md`.
+- No mobile, montar um único `<video-player>` local persistente. A câmera
+  pré-ativada deve aguardar a montagem desse renderer antes de
+  `startVideo`; a montagem tardia também reconcilia o attach sem interação.
+  Depois de `startVideo` e da identidade local autoritativa, chamar
+  `attachVideo` mesmo se `bVideoOn` ainda estiver falso; não usar esse campo nem
+  `isConnected` como prova de prévia. Passar o player como terceiro argumento e
+  confirmar o vínculo pelo `node-id` do participante local. Timeout desanexa
+  exatamente esse player e permite retry sem nova captura, join ou JWT. Observer, timer e Promise
+  pertencem a `generation + client + stream + captureEpoch + localUserId`. Se o
+  vínculo do player persistente expirar no Safari móvel, uma única tentativa
+  complementar usa o player criado pelo próprio SDK no mesmo container; ela
+  também exige `node-id` e é desanexada integralmente em caso de falha.
 - Antes de alterar integração ou mocks, ler
   `docs/zoom/investigation-2026-08-27.md` e
-  `docs/zoom/self-view-2026-08-27.md`: contêm causas comprovadas e invariantes
-  para não reintroduzir falhas de join, destroy e self-view.
+  `docs/zoom/self-view-2026-08-27.md` e
+  `docs/zoom/camera-routing-2026-08-28.md`: contêm causas comprovadas e
+  invariantes para não reintroduzir falhas de join, destroy, self-view e
+  roteamento entre os quadros.
 - A qualidade do encontro só fica elegível após `session.user_joined` confiável
   para paciente e terapeuta e encerramento efetivo/programado. Um único join
   direciona para ocorrência, não para avaliação de qualidade.
@@ -125,6 +154,8 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   encerramento conforme o papel.
 - Validar bloqueio antes de T-15, espera com terapeuta ausente, liberação do
   paciente após join do terapeuta, ambos os joins, saída e estados de ocorrência.
+- Confirmar que a mensagem “O terapeuta iniciou o encontro” aparece somente
+  para paciente quando a entrada é liberada; terapeuta não recebe essa copy.
 - Validar `leave -> espera -> reentrada`, inclusive com a saída disponível sem
   conexão, `final end -> feedback`, feedback já enviado, erro de leitura,
   erro de envio, resposta realizada, não realização, comentário de 500
@@ -139,23 +170,36 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   e o mesmo acesso; reconexão nativa bem-sucedida preserva o client existente.
 - Atualizar access em cada dispositivo na espera, inclusive após a liberação;
   resposta tardia de preview não substitui estado/mensagem da chamada.
-- O `userId` local vem de `ZoomVideoClient.getCurrentUserInfo()`, nunca do
-  media stream. A self-view e os vídeos remotos usam `attachVideo` dentro de
+- O `userId`/`userKey` local vem primeiro do participante retornado por
+  `join()`; `getCurrentUserInfo()` é fallback e renovação em `Connected`, nunca
+  o media stream. Sem identidade local autoritativa, bloquear attach remoto. A
+  self-view e os vídeos remotos usam `attachVideo` dentro de
   `video-player-container`; `renderVideo` em canvas não é o contrato
   preferencial.
 - Inicializar o SDK com `enforceMultipleVideos: true`. Separar presença do
   participante do estado do vídeo remoto (`off`, `attaching`, `on`, `error`) e
   ressincronizar após join, atualização, câmera do peer e reconexão. Em limite
   de render, priorizar o remoto e informar que a prévia local está indisponível.
-- Tratar `user-added` e `user-updated` como deltas de participantes. Nunca usar
-  a ausência de um usuário nesses payloads para removê-lo, nem converter
-  `bVideoOn` ausente em câmera desligada; a reconciliação completa usa somente
-  `getAllUser()` após join e reconexão.
+- Tratar eventos de usuário e vídeo como deltas/gatilhos, nunca como roster. A
+  reconciliação completa usa somente `getAllUser()`. Excluir IDs com o mesmo
+  `userKey` local, selecionar apenas uma instância estável da contraparte e
+  falhar fechado diante de identidades remotas conflitantes.
+- Vincular timers e operações de vídeo a `generation + client + stream`,
+  revalidar ownership após cada `await` e desanexar pelo par
+  `detachVideo(userId, element)`. Cada container tem no máximo um player e um
+  elemento nunca muda do self-view para o remoto, nem no sentido inverso.
+- Validar separadamente publicação, `bVideoOn`, criação do player e vínculo por
+  `node-id`. Cobrir retorno imediato de `attachVideo` com vínculo tardio,
+  timeout e callback antigo após cleanup em Chromium e WebKit mobile.
 - Ícones comunicam o estado atual: `MicOff`/`VideoOff` desligado e
   `Mic`/`Video` ligado; o nome acessível descreve a próxima ação.
 - Validar câmera inicialmente desligada, ativação após o join, desligamento e
   visualização bidirecional real. Exercitar também permissão negada, nova
   concessão e recuperação sem recriar booking ou relaxar autorização.
+- Validar processo móvel descartado sem `leave/pagehide`, novo `userId` com o
+  mesmo `userKey`, instância antiga ainda no roster, remoto anexado primeiro e
+  `video-capturing-change: Started` tardio. A recuperação não repete
+  `startVideo`, join nem JWT.
 - Validar para paciente e terapeuta que câmera e microfone ligados na sala de
   espera entram ligados na sala ativa e que, sem teste habilitado, ambos entram
   desligados/silenciados.

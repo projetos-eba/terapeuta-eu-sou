@@ -32,7 +32,7 @@ import type {
 import { AdminTherapyEditor } from "./admin-therapy-editor";
 
 type FilterState = {
-  categoryId: string;
+  themeId: string;
   match: "all" | "hidden" | "visible";
   publicVisibility: "all" | "hidden" | "visible";
   query: string;
@@ -41,7 +41,7 @@ type FilterState = {
 };
 
 const initialFilters: FilterState = {
-  categoryId: "all",
+  themeId: "all",
   match: "all",
   publicVisibility: "all",
   query: "",
@@ -99,15 +99,21 @@ export function AdminTherapyCatalogPage({
             therapy.slug,
             therapy.shortDescription,
             therapy.aliases.join(" "),
-            therapy.categoryName,
+            therapy.matchingThemeIds
+              .map(
+                (id) =>
+                  catalog.matchingThemes.find((theme) => theme.id === id)?.name,
+              )
+              .filter(Boolean)
+              .join(" "),
           ].join(" "),
         ).includes(query)
       ) {
         return false;
       }
       if (
-        filters.categoryId !== "all" &&
-        therapy.categoryId !== filters.categoryId
+        filters.themeId !== "all" &&
+        !therapy.matchingThemeIds.includes(filters.themeId)
       ) {
         return false;
       }
@@ -143,7 +149,7 @@ export function AdminTherapyCatalogPage({
       }
       return true;
     });
-  }, [catalog.items, filters]);
+  }, [catalog.items, catalog.matchingThemes, filters]);
   const publishedCount = catalog.items.filter(
     (therapy) => therapy.status === "published",
   ).length;
@@ -303,7 +309,7 @@ export function AdminTherapyCatalogPage({
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
         <main className="space-y-4">
           <Filters
-            categories={catalog.categories}
+            matchingThemes={catalog.matchingThemes}
             filters={filters}
             onChange={setFilters}
           />
@@ -408,7 +414,6 @@ export function AdminTherapyCatalogPage({
           title={editingTherapy === "new" ? "Criar rascunho" : "Editar terapia"}
         >
           <AdminTherapyEditor
-            categories={catalog.categories}
             isSaving={isMutating}
             matchingThemes={catalog.matchingThemes}
             onCancel={() => setEditingTherapy(null)}
@@ -467,11 +472,11 @@ export function AdminTherapyCatalogPage({
 }
 
 function Filters({
-  categories,
+  matchingThemes,
   filters,
   onChange,
 }: {
-  categories: AdminTherapyCatalogContract["categories"];
+  matchingThemes: AdminTherapyCatalogContract["matchingThemes"];
   filters: FilterState;
   onChange: (filters: FilterState) => void;
 }) {
@@ -495,16 +500,16 @@ function Filters({
           </span>
         </label>
         <Select
-          label="Categoria"
-          onChange={(value) => onChange({ ...filters, categoryId: value })}
+          label="Tema"
+          onChange={(value) => onChange({ ...filters, themeId: value })}
           options={[
             { label: "Todas", value: "all" },
-            ...categories.map((category) => ({
-              label: category.name,
-              value: category.id,
+            ...matchingThemes.map((theme) => ({
+              label: theme.name,
+              value: theme.id,
             })),
           ]}
-          value={filters.categoryId}
+          value={filters.themeId}
         />
         <Select
           label="Status"
@@ -615,9 +620,6 @@ function TherapyCard({
             <span className="rounded-full bg-brand-lavenderSoft px-3 py-1 text-xs font-extrabold text-brand-primary">
               {statusLabels[therapy.status]}
             </span>
-            <span className="rounded-full bg-surface-soft px-3 py-1 text-xs font-bold text-tesText-secondary">
-              {therapy.categoryName}
-            </span>
             {therapy.isVisibleInMatching ? (
               <span className="rounded-full bg-status-successBg px-3 py-1 text-xs font-extrabold text-status-success">
                 Match
@@ -692,8 +694,9 @@ function ContextualActions({
 }) {
   const secondaryActions = getSecondaryActions(therapy.status);
   const primaryAction = getPrimaryAction(therapy.status);
+  const publicationAction = getPublicationAction(therapy.status);
 
-  if (!primaryAction && secondaryActions.length === 0) return null;
+  if (!primaryAction && !publicationAction && secondaryActions.length === 0) return null;
 
   return (
     <div className="mt-4 flex flex-col gap-2 border-t border-brand-lavender pt-4 sm:flex-row sm:flex-wrap sm:items-start">
@@ -703,6 +706,13 @@ function ContextualActions({
           label={primaryAction.label}
           onTransition={onTransition}
           variant="primary"
+        />
+      ) : null}
+      {publicationAction ? (
+        <ActionButton
+          action={publicationAction.action}
+          label={publicationAction.label}
+          onTransition={onTransition}
         />
       ) : null}
       {secondaryActions.length > 0 ? (
@@ -735,6 +745,13 @@ function getPrimaryAction(status: AdminTherapy["status"]) {
   return null;
 }
 
+function getPublicationAction(status: AdminTherapy["status"]) {
+  if (status === "published") {
+    return { action: "unpublish" as const, label: "Despublicar" };
+  }
+  return null;
+}
+
 function getSecondaryActions(status: AdminTherapy["status"]): Array<{
   action: AdminTherapyTransition;
   label: string;
@@ -754,7 +771,6 @@ function getSecondaryActions(status: AdminTherapy["status"]): Array<{
   }
   if (status === "published") {
     return [
-      { action: "unpublish", label: "Retirar publicação" },
       { action: "deprecate", label: "Descontinuar" },
       { action: "archive", label: "Arquivar" },
     ];

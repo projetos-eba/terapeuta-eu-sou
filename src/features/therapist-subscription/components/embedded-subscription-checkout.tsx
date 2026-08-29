@@ -14,6 +14,7 @@ declare global {
     Stripe?: (publishableKey: string) => {
       initEmbeddedCheckout: (options: {
         fetchClientSecret: () => Promise<string>;
+        onComplete?: () => void;
       }) => Promise<{
         destroy: () => void;
         mount: (selector: string) => void;
