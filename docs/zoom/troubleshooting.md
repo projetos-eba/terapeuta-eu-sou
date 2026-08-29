@@ -31,6 +31,12 @@ conectado ao DOM não comprova vínculo. Procurar os códigos sanitizados
 remoto. Ver
 [vinculação tardia da prévia mobile](./mobile-self-view-binding-2026-08-28.md).
 
+Quando o usuário aciona a recuperação manual enquanto a câmera já foi publicada,
+o adapter faz uma janela curta e limitada de novas leituras do roster. Isso cobre
+o atraso móvel entre `startVideo()` e `bVideoOn=true`, sem repetir a captura, o
+`join` ou a emissão de JWT. Os timers são cancelados ao desligar a câmera, sair
+ou desmontar a sala.
+
 ## Aviso de encerramento durante uma chamada conectada
 
 Não interpretar esse aviso isolado como desconexão. A versão anterior misturava

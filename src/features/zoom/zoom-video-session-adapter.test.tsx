@@ -584,6 +584,48 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(countAccessRequests(fetchMock, "join")).toBe(1);
   });
 
+  it("keeps a manual self-view retry alive until a delayed mobile roster reflects published video", async () => {
+    const fetchMock = accessResponse(0);
+    vi.stubGlobal("fetch", fetchMock);
+    let providerReflectsVideo = false;
+    mockClient.getCurrentUserInfo.mockImplementation(() => ({
+      bVideoOn: providerReflectsVideo,
+      userId: 7,
+      userKey: "tes-v1-p-local-participant",
+    }));
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/voc[eê] entrou no encontro/i);
+    fireEvent.click(screen.getByRole("button", { name: /ativar c.mera/i }));
+    const retry = await screen.findByRole("button", {
+      name: /tentar mostrar minha c.mera/i,
+    });
+
+    fireEvent.click(retry);
+    // Some mobile SDK pipelines publish first and expose bVideoOn only after
+    // the local attach request has already returned. No new user event follows.
+    providerReflectsVideo = true;
+
+    await waitFor(
+      () =>
+        expect(screen.getByTestId("zoom-local-video")).toContainElement(
+          localElement,
+        ),
+      { timeout: 2_000 },
+    );
+    expect(mockStream.startVideo).toHaveBeenCalledTimes(1);
+    expect(mockClient.join).toHaveBeenCalledTimes(1);
+    expect(countAccessRequests(fetchMock, "join")).toBe(1);
+  });
+
   it("recovers the patient self-view when capture becomes ready after an abrupt reentry", async () => {
     const fetchMock = accessResponse(0);
     vi.stubGlobal("fetch", fetchMock);
