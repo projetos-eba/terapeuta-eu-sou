@@ -98,6 +98,15 @@ ou JWT. Exercitar retry limitado/manual, stop e unmount durante attach de
 recuperação e avisos separados para detach ativo versus teardown real.
 Eventos locais não anunciam entrada/saída da contraparte.
 
+Cobrir reentrada abrupta sem `leave/pagehide`: novo `userId` com o mesmo
+`userKey`, instância antiga ainda no roster, remoto anexado primeiro e captura
+local pronta somente depois das tentativas provisórias. O evento
+`video-capturing-change: Started` deve recuperar o self-view mesmo se chegar
+durante um attach pendente. O retorno à visibilidade recupera apenas a
+renderização, sem novo `startVideo`, `join` ou JWT; `pagehide` preserva o
+cleanup de mídia. Ver
+[reentrada abrupta](./abrupt-reentry-self-view-2026-08-28.md).
+
 Browser isolado, sem Supabase ou Zoom real:
 
 ```bash
@@ -107,7 +116,8 @@ npx playwright test tests/e2e/zoom-preview.spec.ts --project=chromium --workers=
 Esse harness serve somente o adapter/componentes reais pelo Vite local, sem
 ler .env; simula SDK/acesso, usa mídia falsa e bloqueia requisições externas.
 Não substitui testes de Auth, webhooks, host-first real ou aparelhos físicos.
-Detalhes em [recuperação de prévia](./patient-preview-recovery-2026-08-28.md).
+Detalhes em [recuperação de prévia](./patient-preview-recovery-2026-08-28.md)
+e [reentrada abrupta](./abrupt-reentry-self-view-2026-08-28.md).
 
 Os testes temporais cobrem T-15, chegada em T+10, bloqueio em T+10+1 ms,
 reconexão por chegada da versão atual ou join confiável e bloqueio em

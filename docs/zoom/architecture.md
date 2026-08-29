@@ -67,7 +67,12 @@ Publicação e prévia local têm recuperação independente. Identidade tardia
 sem repetir captura ou join. O attach local é idempotente por geração e sua
 Promise integra o cleanup; retries são limitados, com recuperação explícita
 sem novo JWT. Falhas de renderização ativa não alimentam o aviso de teardown.
-Ver [recuperação da prévia do paciente](./patient-preview-recovery-2026-08-28.md).
+Em reentrada móvel fria, `video-capturing-change: Started` reabre o orçamento
+de attach do ciclo atual; o sinal pode chegar depois das tentativas provisórias
+sem repetir publicação. O retorno à visibilidade também reconcilia a prévia
+pelo mesmo ownership; `pagehide` continua limpando a mídia por privacidade. Ver
+[recuperação da prévia do paciente](./patient-preview-recovery-2026-08-28.md) e
+[reentrada abrupta](./abrupt-reentry-self-view-2026-08-28.md).
 
 Antes do join, a sala de espera pode abrir uma prévia exclusivamente local no
 navegador: o teste de câmera solicita somente vídeo e substitui a capa visual;

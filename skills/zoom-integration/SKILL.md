@@ -27,7 +27,11 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
 - Identidade tardia também precisa recuperar self-view já publicado. Não
   limitar reconciliação ao remoto nem repetir `startVideo`/join por falha de
   prévia. Preservar Promise de attach por geração e separar render cleanup
-  de teardown; ver `docs/zoom/patient-preview-recovery-2026-08-28.md`.
+  de teardown. Em reentrada móvel abrupta, usar
+  `video-capturing-change: Started` para reconciliar o ciclo atual depois que
+  o pipeline local estiver pronto; ver
+  `docs/zoom/patient-preview-recovery-2026-08-28.md` e
+  `docs/zoom/abrupt-reentry-self-view-2026-08-28.md`.
 - Browser: `@zoom/videosdk`.
 - Paciente acessa a sala dedicada por `/app/encontros/:bookingId/video`.
 - Terapeuta acessa a sala dedicada por
@@ -91,6 +95,9 @@ regressao pgTAP para as duas assinaturas.
 - Validar que a sala dedicada não renderiza sidebar nem topbar.
 - Validar encontro de 75 a 90 minutos para paciente e terapeuta, incluindo
   renovação do access token, atualização de página e queda/retorno de rede.
+- Validar descarte abrupto do processo do paciente sem cleanup observável,
+  reentrada com novo `userId`/mesmo `userKey`, captura tardia e recuperação da
+  prévia sem nova publicação ou JWT. `pagehide` continua limpando a mídia.
 - Validar desktop e mobile, foco visível, nomes acessíveis e retorno ao detalhe.
 - `npm run zoom:video-sdk:env`
 - `npm run zoom:video-sdk:test`

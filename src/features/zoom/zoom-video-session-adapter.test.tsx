@@ -532,6 +532,132 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(countAccessRequests(fetchMock, "join")).toBe(1);
   });
 
+  it("recovers the patient self-view when capture becomes ready after an abrupt reentry", async () => {
+    const fetchMock = accessResponse(0);
+    vi.stubGlobal("fetch", fetchMock);
+    const reenteredLocalUserId = 17;
+    const localUserKey = "tes-v1-p-local-participant";
+    let captureReady = false;
+
+    mockClient.join.mockImplementation(async () => {
+      calls.push("join");
+      return { userId: reenteredLocalUserId, userKey: localUserKey };
+    });
+    mockClient.getCurrentUserInfo.mockReturnValue({
+      userId: reenteredLocalUserId,
+      userKey: localUserKey,
+    });
+    mockClient.getAllUser.mockReturnValue([
+      // The provider may retain the connection that disappeared without leave.
+      { bVideoOn: true, userId: 7, userKey: localUserKey },
+      {
+        bVideoOn: true,
+        userId: reenteredLocalUserId,
+        userKey: localUserKey,
+      },
+      { bVideoOn: true, userId: 9, userKey: "tes-v1-t-remote" },
+    ]);
+    mockStream.attachVideo.mockImplementation(async (userId: number) => {
+      if (userId === reenteredLocalUserId) {
+        if (!captureReady) {
+          throw { errorCode: 2, type: "INTERNAL_ERROR" };
+        }
+        return localElement;
+      }
+      return remoteElement;
+    });
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    // A full browser restart loses the transient waiting-room media snapshot.
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/voc[eê] entrou no encontro/i);
+    await waitFor(() =>
+      expect(screen.getByTestId("zoom-remote-video")).toContainElement(
+        remoteElement,
+      ),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /ativar câmera/i }));
+    await screen.findByText(/sem prévia neste dispositivo/i);
+    await waitFor(
+      () => {
+        expect(
+          mockStream.attachVideo.mock.calls.filter(
+            ([userId]) => userId === reenteredLocalUserId,
+          ),
+        ).toHaveLength(3);
+      },
+      { timeout: 2_000 },
+    );
+
+    captureReady = true;
+    act(() => {
+      handlers.get("video-capturing-change")?.({ state: "Started" });
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("zoom-local-video")).toContainElement(
+        localElement,
+      ),
+    );
+    expect(screen.getByTestId("zoom-remote-video")).toContainElement(
+      remoteElement,
+    );
+    expect(mockStream.startVideo).toHaveBeenCalledTimes(1);
+    expect(mockClient.join).toHaveBeenCalledTimes(1);
+    expect(countAccessRequests(fetchMock, "join")).toBe(1);
+    expect(mockStream.attachVideo).not.toHaveBeenCalledWith(7, 2);
+  });
+
+  it("retries after capture readiness when the provisional self-view attach is still pending", async () => {
+    vi.stubGlobal("fetch", accessResponse(0));
+    let rejectProvisional!: (reason: unknown) => void;
+    const provisionalAttach = new Promise<HTMLVideoElement>(
+      (_resolve, reject) => {
+        rejectProvisional = reject;
+      },
+    );
+    let localAttempts = 0;
+    mockStream.attachVideo.mockImplementation(async (userId: number) => {
+      if (userId !== 7) return remoteElement;
+      localAttempts += 1;
+      if (localAttempts === 1) return provisionalAttach;
+      return localElement;
+    });
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/voc[eê] entrou no encontro/i);
+    fireEvent.click(screen.getByRole("button", { name: /ativar câmera/i }));
+    await waitFor(() => expect(localAttempts).toBe(1));
+
+    act(() => {
+      handlers.get("video-capturing-change")?.({ state: "Started" });
+      rejectProvisional({ errorCode: 2, type: "INTERNAL_ERROR" });
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("zoom-local-video")).toContainElement(
+        localElement,
+      ),
+    );
+    expect(localAttempts).toBe(2);
+    expect(mockStream.startVideo).toHaveBeenCalledTimes(1);
+    expect(mockClient.join).toHaveBeenCalledTimes(1);
+  });
+
   it.each(["stop", "unmount"] as const)(
     "discards a pending recovery self-view on %s and never duplicates its attach",
     async (action) => {

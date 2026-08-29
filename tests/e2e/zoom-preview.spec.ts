@@ -107,6 +107,14 @@ async function joinWithCamera(page: Page) {
     page.getByRole("region", { name: "Sala de video" }),
   ).toHaveAttribute("data-session-state", "joined");
 }
+async function joinWithoutPreflightMedia(page: Page) {
+  await page
+    .getByRole("button", { name: "Entrar na sala", exact: true })
+    .click();
+  await expect(
+    page.getByRole("region", { name: "Sala de video" }),
+  ).toHaveAttribute("data-session-state", "joined");
+}
 function tile(page: Page, kind: "local" | "remote", userId: number) {
   return page
     .getByTestId(`zoom-${kind}-video`)
@@ -182,6 +190,70 @@ test("patient late identity recovers self-view beside therapist, then survives c
     ).toBe(2);
   } finally {
     await patientContext.close();
+    await therapistContext.close();
+  }
+});
+
+test("patient regains self-view after an abrupt device loss and delayed mobile capture", async ({
+  browser,
+}) => {
+  const therapistContext = await browser.newContext({
+    permissions: ["camera", "microphone"],
+  });
+  let firstPatientContext: BrowserContext | null = await browser.newContext({
+    permissions: ["camera", "microphone"],
+    viewport: { width: 390, height: 844 },
+  });
+  let reentryContext: BrowserContext | null = null;
+  try {
+    await isolate(therapistContext, "therapist");
+    await isolate(firstPatientContext, "patient");
+    const therapist = await therapistContext.newPage();
+    const firstPatient = await firstPatientContext.newPage();
+    await therapist.goto(`${origin}/preview-harness?role=therapist`);
+    await joinWithCamera(therapist);
+    await firstPatient.goto(`${origin}/preview-harness?role=patient`);
+    await joinWithCamera(firstPatient);
+    await firstPatient.evaluate(() => {
+      window.__zoomPreviewHarness.identityReady = true;
+      window.__zoomPreviewHarness.emit("video-capturing-change", {
+        state: "Started",
+      });
+    });
+    await expect(tile(firstPatient, "local", 7)).toBeVisible();
+
+    // A new context models a restarted browser process. The replacement
+    // provider roster deliberately retains the old same-user participant.
+    await firstPatientContext.close();
+    firstPatientContext = null;
+    reentryContext = await browser.newContext({
+      permissions: ["camera", "microphone"],
+      viewport: { width: 390, height: 844 },
+    });
+    await isolate(reentryContext, "patient");
+    const reenteredPatient = await reentryContext.newPage();
+    await reenteredPatient.goto(
+      `${origin}/preview-harness?role=patient&abruptReentry=1&delayedCapture=1`,
+    );
+    await joinWithoutPreflightMedia(reenteredPatient);
+    await expect(tile(reenteredPatient, "remote", 9)).toBeVisible();
+    await reenteredPatient
+      .getByRole("button", { name: "Ativar câmera", exact: true })
+      .click();
+    await expect(
+      reenteredPatient.getByText("sem prévia neste dispositivo"),
+    ).toBeVisible();
+    await expect(tile(reenteredPatient, "local", 17)).toBeVisible({
+      timeout: 5_000,
+    });
+    await expect(tile(reenteredPatient, "remote", 9)).toBeVisible();
+    await expect(tile(reenteredPatient, "remote", 7)).toHaveCount(0);
+    expect(
+      await reenteredPatient.evaluate(() => window.__zoomPreviewHarness.stats),
+    ).toMatchObject({ joins: 1, starts: 1, stops: 0 });
+  } finally {
+    await reentryContext?.close();
+    await firstPatientContext?.close();
     await therapistContext.close();
   }
 });

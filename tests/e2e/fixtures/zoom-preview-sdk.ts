@@ -3,12 +3,18 @@
 type Participant = { userId: number; userKey: string; bVideoOn: boolean };
 const listeners = new Map<string, (...args: unknown[]) => void>();
 const players = new Map<HTMLElement, MediaStream>();
-const role = new URLSearchParams(location.search).get("role") ?? "patient";
-const localId = role === "patient" ? 7 : 9;
+const searchParams = new URLSearchParams(location.search);
+const role = searchParams.get("role") ?? "patient";
+const isAbruptReentry = searchParams.get("abruptReentry") === "1";
+const hasDelayedCapture = searchParams.get("delayedCapture") === "1";
+const localId = role === "patient" ? (isAbruptReentry ? 17 : 7) : 9;
 const remoteId = role === "patient" ? 9 : 7;
 const participant = (userId: number): Participant => ({
   userId,
-  userKey: userId === 7 ? "local-patient-fixture" : "local-therapist-fixture",
+  userKey:
+    userId === 7 || userId === 17
+      ? "local-patient-fixture"
+      : "local-therapist-fixture",
   bVideoOn: true,
 });
 const stats = {
@@ -19,10 +25,14 @@ const stats = {
   remoteAttaches: 0,
 };
 export const harness = {
-  identityReady: role === "therapist",
+  captureReady: !hasDelayedCapture,
+  identityReady: role === "therapist" || isAbruptReentry,
   failLocalPreview: false,
   failDetach: false,
-  roster: [participant(localId), participant(remoteId)],
+  roster:
+    role === "patient" && isAbruptReentry
+      ? [participant(7), participant(localId), participant(remoteId)]
+      : [participant(localId), participant(remoteId)],
   stats,
   emit: (name: string, payload: unknown) => listeners.get(name)?.(payload),
 };
@@ -40,6 +50,12 @@ const stream = {
   stopAudio: async () => "",
   startVideo: async () => {
     stats.starts += 1;
+    if (hasDelayedCapture) {
+      window.setTimeout(() => {
+        harness.captureReady = true;
+        listeners.get("video-capturing-change")?.({ state: "Started" });
+      }, 1_700);
+    }
   },
   stopVideo: async () => {
     stats.stops += 1;
@@ -48,7 +64,7 @@ const stream = {
   attachVideo: async (userId: number) => {
     if (userId === localId) {
       stats.localAttaches += 1;
-      if (harness.failLocalPreview)
+      if (harness.failLocalPreview || !harness.captureReady)
         throw { errorCode: 2, type: "INTERNAL_ERROR" };
     } else stats.remoteAttaches += 1;
     const canvas = document.createElement("canvas");
