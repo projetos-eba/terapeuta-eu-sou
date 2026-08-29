@@ -260,6 +260,34 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(document.body.textContent).not.toMatch(/jwt-token|secret|token/i);
   });
 
+  it("defers mobile camera publication until the in-room activation click", async () => {
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)",
+      vendor: "Apple Computer, Inc.",
+      maxTouchPoints: 5,
+    });
+    vi.stubGlobal("fetch", accessResponse(0));
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByRole("button", { name: "Ativar minha câmera" });
+    expect(mockStream.startVideo).not.toHaveBeenCalled();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ativar minha câmera" }),
+    );
+    await waitFor(() => expect(mockStream.startVideo).toHaveBeenCalledTimes(1));
+    expect(screen.getByText("Câmera ativada.")).toBeInTheDocument();
+  });
+
   it("keeps the therapist in the room when initial audio setup resolves with a transient failure", async () => {
     vi.stubGlobal("fetch", accessResponse(1));
     mockStream.startAudio.mockResolvedValueOnce({

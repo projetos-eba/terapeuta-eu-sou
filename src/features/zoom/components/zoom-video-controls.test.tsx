@@ -120,4 +120,22 @@ describe("ZoomVideoControls", () => {
       screen.getByRole("button", { name: "Desligar câmera" }).querySelector(".lucide-video"),
     ).not.toBeNull();
   });
+
+  it("offers a direct mobile camera activation action", () => {
+    const onActivateCamera = vi.fn();
+    render(
+      <ZoomVideoControls
+        {...baseProps}
+        actorRole="patient"
+        isMobileDevice
+        onActivateCamera={onActivateCamera}
+        roleType={0}
+      />,
+    );
+
+    const button = screen.getByRole("button", { name: "Ativar minha câmera" });
+    expect(button).toBeVisible();
+    button.click();
+    expect(onActivateCamera).toHaveBeenCalledTimes(1);
+  });
 });

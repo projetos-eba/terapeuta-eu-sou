@@ -1,5 +1,20 @@
 # Vinculação tardia da prévia local no mobile — 2026-08-28
 
+## Ativação após a entrada
+
+Em navegadores móveis, a câmera escolhida na sala de espera não é publicada
+automaticamente ao entrar na sala ativa. O paciente vê o botão **Ativar minha
+câmera** somente depois que o container da sala foi montado; o clique chama
+`startVideo()` diretamente no gesto do usuário e, em seguida, reconcilia o
+self-view. Isso evita que o `join`, a rede ou a renderização React consumam a
+janela de ativação exigida pelo Safari/iOS.
+
+Se a câmera já estiver publicada, a ação manual apenas refaz o vínculo do
+self-view. O navegador não permite revogar programaticamente uma permissão já
+concedida; `stopVideo()` libera a captura, mas não redefine a permissão do
+site. Em caso de permissão negada/resetada, a interface orienta a revisão nas
+configurações do Safari/iOS, sem repetir tentativas em loop.
+
 ## Sintoma e isolamento
 
 No mobile, o paciente publicava a câmera e era visto pelo terapeuta, mas não
