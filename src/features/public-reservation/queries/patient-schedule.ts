@@ -6,7 +6,13 @@ import type { PatientScheduleInterval } from "../types";
 
 type ScheduleRow = {
   ends_at?: unknown;
+  service_id?: unknown;
   starts_at?: unknown;
+};
+
+type CurrentReservation = {
+  serviceId: string;
+  startsAt: string;
 };
 
 export type PatientScheduleResult =
@@ -15,6 +21,7 @@ export type PatientScheduleResult =
 
 export async function getPatientScheduleIntervals(input: {
   accessToken: string;
+  currentReservation?: CurrentReservation;
   end: Date;
   now?: Date;
   start: Date;
@@ -47,7 +54,13 @@ export async function getPatientScheduleIntervals(input: {
       return { intervals: null, status: "error" };
     }
 
-    const intervals = [...bookings, ...holds].map(mapScheduleRow);
+    const intervals = [
+      ...bookings.filter(
+        (booking) =>
+          !isCurrentReservationBooking(booking, input.currentReservation),
+      ),
+      ...holds,
+    ].map(mapScheduleRow);
     if (intervals.some((interval) => interval === null)) {
       return { intervals: null, status: "error" };
     }
@@ -75,7 +88,7 @@ async function requestRows(
   const params = new URLSearchParams({
     ends_at: `gt.${filters.start}`,
     order: "starts_at.asc",
-    select: "starts_at,ends_at",
+    select: "starts_at,ends_at,service_id",
     starts_at: `lt.${filters.end}`,
     status: filters.status,
   });
@@ -95,6 +108,25 @@ async function requestRows(
   if (!response.ok) return null;
   const rows = (await response.json()) as unknown;
   return Array.isArray(rows) ? (rows as ScheduleRow[]) : null;
+}
+
+function isCurrentReservationBooking(
+  row: ScheduleRow,
+  currentReservation: CurrentReservation | undefined,
+) {
+  if (
+    !currentReservation ||
+    row.service_id !== currentReservation.serviceId ||
+    typeof row.starts_at !== "string"
+  ) {
+    return false;
+  }
+
+  const startsAt = new Date(row.starts_at);
+  return (
+    Number.isFinite(startsAt.getTime()) &&
+    startsAt.toISOString() === currentReservation.startsAt
+  );
 }
 
 function mapScheduleRow(row: ScheduleRow): PatientScheduleInterval | null {

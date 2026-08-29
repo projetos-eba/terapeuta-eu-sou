@@ -280,6 +280,10 @@ histórica.
   terapeuta. O checkout público chama `reservation-abandon` ao ser deixado sem
   conclusão; a Edge Function cancela somente bookings `draft`/`pending_payment`
   sem pagamento confirmado, com idempotência e autorização do paciente.
+- Durante a transição concorrente para o checkout, a reserva provisória do
+  próprio serviço e horário não pode ser tratada como outro encontro da pessoa
+  paciente. Os demais bookings e holds ativos continuam bloqueando conflitos;
+  o Postgres permanece a autoridade final contra sobreposição.
 - `occupied_during` e constraints GiST impedem conflito entre serviços.
 - Um reembolso integral confirmado na fonte canônica
   `session_payments.financial_status = 'refunded'` move o booking para
