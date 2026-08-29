@@ -65,6 +65,15 @@ Uma navegação que dispara `pagehide` continua executando cleanup por
 privacidade. A correção não mantém câmera ativa em uma página armazenada em
 BFCache; a reentrada posterior cria um novo ciclo normal.
 
+## Complemento: vínculo tardio do player
+
+Esta correção tratou identidade e prontidão tardias da captura. Uma corrida
+posterior foi isolada entre o retorno de `attachVideo()` e a vinculação interna
+do `<video-player>` no mobile. O adapter agora espera `bVideoOn=true`, reutiliza
+um player local persistente e só confirma a prévia quando seu `node-id`
+corresponde ao participante local. Ver
+[vinculação tardia da prévia mobile](./mobile-self-view-binding-2026-08-28.md).
+
 ## Segurança e escopo
 
 Os logs permanecem sanitizados e agora distinguem estado/ciclo da captura,

@@ -31,7 +31,13 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
   `video-capturing-change: Started` para reconciliar o ciclo atual depois que
   o pipeline local estiver pronto; ver
   `docs/zoom/patient-preview-recovery-2026-08-28.md` e
-  `docs/zoom/abrupt-reentry-self-view-2026-08-28.md`.
+  `docs/zoom/abrupt-reentry-self-view-2026-08-28.md` e
+  `docs/zoom/mobile-self-view-binding-2026-08-28.md`.
+- Prévia mobile usa um `<video-player>` persistente montado pelo React. Aguardar
+  roster local com `bVideoOn=true`, passar esse nó ao terceiro argumento de
+  `attachVideo` e só confirmar sucesso quando `node-id` corresponder ao
+  participante local. Elemento conectado não basta. Timeout e cleanup usam
+  `detachVideo(userId, element)` sem repetir publicação, join, access ou JWT.
 - Browser: `@zoom/videosdk`.
 - Paciente acessa a sala dedicada por `/app/encontros/:bookingId/video`.
 - Terapeuta acessa a sala dedicada por
@@ -98,6 +104,9 @@ regressao pgTAP para as duas assinaturas.
 - Validar descarte abrupto do processo do paciente sem cleanup observável,
   reentrada com novo `userId`/mesmo `userKey`, captura tardia e recuperação da
   prévia sem nova publicação ou JWT. `pagehide` continua limpando a mídia.
+- Validar vínculo tardio do player em Chromium e WebKit mobile: nenhuma
+  tentativa antes de `bVideoOn`, `node-id` tardio, timeout com detach exato e
+  operação antiga incapaz de alterar a geração nova.
 - Validar desktop e mobile, foco visível, nomes acessíveis e retorno ao detalhe.
 - `npm run zoom:video-sdk:env`
 - `npm run zoom:video-sdk:test`

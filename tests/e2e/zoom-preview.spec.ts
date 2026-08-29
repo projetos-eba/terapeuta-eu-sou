@@ -8,12 +8,7 @@ import type { ViteDevServer } from "vite";
 let server: ViteDevServer;
 let origin: string;
 test.use({
-  launchOptions: {
-    args: [
-      "--use-fake-device-for-media-stream",
-      "--use-fake-ui-for-media-stream",
-    ],
-  },
+  viewport: { width: 390, height: 844 },
 });
 test.beforeAll(async () => {
   const { createServer } = await import("vite");
@@ -62,6 +57,18 @@ test.afterAll(async () => {
 });
 
 async function isolate(context: BrowserContext, role: "patient" | "therapist") {
+  await context.addInitScript(() => {
+    Object.defineProperty(HTMLMediaElement.prototype, "play", {
+      configurable: true,
+      value: async () => undefined,
+    });
+    Object.defineProperty(navigator, "mediaDevices", {
+      configurable: true,
+      value: {
+        getUserMedia: async () => new MediaStream(),
+      },
+    });
+  });
   await context.route("**/*", async (route) => {
     const url = new URL(route.request().url());
     if (url.origin !== origin) return route.abort();
@@ -118,7 +125,11 @@ async function joinWithoutPreflightMedia(page: Page) {
 function tile(page: Page, kind: "local" | "remote", userId: number) {
   return page
     .getByTestId(`zoom-${kind}-video`)
-    .locator(`video-player-container > video[data-participant-id="${userId}"]`);
+    .locator(
+      kind === "local"
+        ? `video-player-container > video-player[node-id="${userId}"]`
+        : `video-player-container > video[data-participant-id="${userId}"]`,
+    );
 }
 
 test("patient late identity recovers self-view beside therapist, then survives camera off, refresh and reentry", async ({
@@ -151,9 +162,9 @@ test("patient late identity recovers self-view beside therapist, then survives c
     });
     await expect(tile(patient, "local", 7)).toBeVisible();
     await expect(tile(patient, "remote", 9)).toBeVisible();
-    await expect(patient.locator("video-player-container > video")).toHaveCount(
-      2,
-    );
+    await expect(
+      patient.locator("video-player-container > :is(video, video-player)"),
+    ).toHaveCount(2);
     await patient.evaluate(() => {
       window.__zoomPreviewHarness.failDetach = true;
       window.__zoomPreviewHarness.roster[1].bVideoOn = false;
@@ -305,6 +316,61 @@ test("preview retry recovers only rendering and never requests another join", as
     await expect(page.getByText(/Algumas etapas de encerramento/)).toHaveCount(
       0,
     );
+  } finally {
+    await context.close();
+  }
+});
+
+test("mobile preview waits for provider readiness and delayed player binding without rejoining", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({
+    permissions: ["camera", "microphone"],
+    viewport: { width: 390, height: 844 },
+  });
+  try {
+    await isolate(context, "patient");
+    const page = await context.newPage();
+    await page.goto(`${origin}/preview-harness?role=patient&delayedBinding=1`);
+    await page.waitForFunction(() => Boolean(window.__zoomPreviewHarness));
+    await page.evaluate(() => {
+      window.__zoomPreviewHarness.identityReady = true;
+    });
+
+    await joinWithoutPreflightMedia(page);
+    await page
+      .getByRole("button", { name: "Ativar câmera", exact: true })
+      .click();
+    await expect(page.getByText("sem prévia neste dispositivo")).toBeVisible();
+    await expect(tile(page, "remote", 9)).toBeVisible();
+
+    await expect
+      .poll(() =>
+        page.evaluate(() => window.__zoomPreviewHarness.stats.localAttaches),
+      )
+      .toBe(0);
+    await expect
+      .poll(() =>
+        page.evaluate(() => window.__zoomPreviewHarness.providerVideoReady),
+      )
+      .toBe(true);
+    await expect
+      .poll(() =>
+        page.evaluate(() => window.__zoomPreviewHarness.stats.localAttaches),
+      )
+      .toBe(1);
+    await expect(page.getByText("sem prévia neste dispositivo")).toBeVisible();
+    await expect(tile(page, "local", 7)).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText("sem prévia neste dispositivo")).toHaveCount(0);
+    await expect(
+      page
+        .getByTestId("zoom-local-video")
+        .locator("video-player-container > video-player"),
+    ).toHaveCount(1);
+    await expect(tile(page, "remote", 9)).toBeVisible();
+    expect(
+      await page.evaluate(() => window.__zoomPreviewHarness.stats),
+    ).toMatchObject({ joins: 1, localAttaches: 1, starts: 1, stops: 0 });
   } finally {
     await context.close();
   }

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 type ZoomVideoStageProps = {
   actorRole: "patient" | "therapist";
   audioMuted: boolean;
+  localVideoPlayerRef: React.MutableRefObject<HTMLElement | null>;
   localVideoRef: React.MutableRefObject<HTMLElement | null>;
   localPreviewUnavailable?: boolean;
   onRetryRemoteVideo?: () => void;
@@ -36,6 +37,7 @@ type ZoomVideoStageProps = {
 export function ZoomVideoStage({
   actorRole,
   audioMuted,
+  localVideoPlayerRef,
   localVideoRef,
   localPreviewUnavailable = false,
   onRetryRemoteVideo,
@@ -68,6 +70,7 @@ export function ZoomVideoStage({
         isConnected={isConnected}
         kind="local"
         label="Você"
+        localVideoPlayerRef={localVideoPlayerRef}
         localPreviewUnavailable={localPreviewUnavailable}
         videoOn={videoOn}
       />
@@ -105,6 +108,7 @@ function VideoTile({
   isConnected,
   kind,
   label,
+  localVideoPlayerRef,
   localPreviewUnavailable = false,
   onRetryRemoteVideo,
   remoteParticipantPresent = false,
@@ -119,6 +123,7 @@ function VideoTile({
   isConnected: boolean;
   kind: "local" | "remote";
   label: string;
+  localVideoPlayerRef?: React.MutableRefObject<HTMLElement | null>;
   localPreviewUnavailable?: boolean;
   onRetryRemoteVideo?: () => void;
   remoteParticipantPresent?: boolean;
@@ -198,11 +203,20 @@ function VideoTile({
           </div>
         </div>
       ) : null}
-      {createElement("video-player-container", {
-        "aria-hidden": !showsVideo,
-        class: "absolute inset-0 block h-full w-full overflow-hidden",
-        ref: containerRef,
-      })}
+      {createElement(
+        "video-player-container",
+        {
+          "aria-hidden": !showsVideo,
+          class: "absolute inset-0 block h-full w-full overflow-hidden",
+          ref: containerRef,
+        },
+        kind === "local"
+          ? createElement("video-player", {
+              class: "block h-full w-full object-cover",
+              ref: localVideoPlayerRef,
+            })
+          : null,
+      )}
       <div className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-2 rounded-[14px] bg-brand-deep/75 px-3 py-2 text-white backdrop-blur md:inset-x-3 md:bottom-3">
         <span className="truncate text-xs font-extrabold sm:text-sm">
           {label}

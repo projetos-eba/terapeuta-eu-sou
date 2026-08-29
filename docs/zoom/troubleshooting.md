@@ -21,6 +21,16 @@ inclusive quando chega depois de 1.200 ms ou durante um attach pendente. A
 instância antiga com o mesmo `userKey` não pode ser escolhida como remoto. Ver
 [self-view após reentrada abrupta](./abrupt-reentry-self-view-2026-08-28.md).
 
+Se a falha for exclusiva do mobile e o remoto receber a câmera local, separar
+quatro fatos: captura iniciada, vídeo publicado (`bVideoOn=true`), player
+criado e player vinculado (`node-id=localUserId`). Um `<video-player>` apenas
+conectado ao DOM não comprova vínculo. Procurar os códigos sanitizados
+`LOCAL_RENDER_PENDING`, `LOCAL_RENDER_BOUND` e `LOCAL_RENDER_TIMEOUT`.
+`PENDING` deve anteceder qualquer attach enquanto `bVideoOn` estiver falso;
+`TIMEOUT` deve desanexar somente o player local e preservar publicação e vídeo
+remoto. Ver
+[vinculação tardia da prévia mobile](./mobile-self-view-binding-2026-08-28.md).
+
 ## Aviso de encerramento durante uma chamada conectada
 
 Não interpretar esse aviso isolado como desconexão. A versão anterior misturava
