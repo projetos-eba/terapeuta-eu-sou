@@ -86,6 +86,13 @@ describe("AdminTherapyEditor", () => {
         target: { value: "green" },
       },
     );
+    const semanticIcon = document.querySelector<HTMLSelectElement>(
+      'select[name="approachIconKey"]',
+    );
+    expect(semanticIcon).not.toBeNull();
+    expect(semanticIcon).toHaveAttribute("name", "approachIconKey");
+    expect(semanticIcon).toHaveValue("sparkles");
+    fireEvent.change(semanticIcon!, { target: { value: "compass" } });
     fireEvent.change(screen.getByLabelText("Benefício 1"), {
       target: { value: "Pausa de presença" },
     });
@@ -129,6 +136,7 @@ describe("AdminTherapyEditor", () => {
           },
         ],
         calendarColorKey: "green",
+        publicContent: expect.objectContaining({ approachIconKey: "compass" }),
         themeIds: ["theme-1", "theme-2", "theme-3"],
       }),
     );

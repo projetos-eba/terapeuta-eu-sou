@@ -87,7 +87,7 @@ export default function AboutUsPage() {
           </div>
         </div>
 
-        <div className="relative mx-5 mt-8 aspect-[16/9] min-h-[300px] overflow-hidden sm:mx-8 sm:min-h-[390px] lg:mx-[60px] xl:absolute xl:inset-y-auto xl:left-[max(620px,calc((100vw-1440px)/2+620px))] xl:right-0 xl:top-0 xl:mx-0 xl:mt-0 xl:min-h-0">
+        <div className="relative mx-5 mt-8 aspect-[16/9] min-h-0 overflow-hidden bg-surface-page sm:mx-8 sm:min-h-[390px] lg:mx-[60px] xl:absolute xl:inset-y-auto xl:left-[max(620px,calc((100vw-1440px)/2+620px))] xl:right-0 xl:top-0 xl:mx-0 xl:mt-0 xl:min-h-0">
           <Image
             src="/about/figma-02.png"
             alt="Duas mulheres em ambientes de cuidado e trabalho conectadas pelo Terapeuta Eu Sou"
@@ -95,7 +95,7 @@ export default function AboutUsPage() {
             priority
             quality={95}
             sizes="(min-width: 1440px) calc(100vw - max(620px, calc((100vw - 1440px) / 2 + 620px))), (min-width: 1024px) calc(100vw - 620px), 100vw"
-            className="object-cover object-center"
+            className="object-contain object-center"
           />
           <div className="pointer-events-none absolute inset-y-0 left-0 w-[10%] bg-gradient-to-r from-surface-page to-transparent" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[16%] bg-gradient-to-t from-surface-page to-transparent" />

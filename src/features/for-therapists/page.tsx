@@ -282,12 +282,12 @@ function BentoCard({ card }: { card: (typeof benefitCards)[number] }) {
       {isRemote ? (
         <div className="relative mt-12 h-48 overflow-hidden rounded-[18px] border border-white/40 bg-white/10 xl:mt-auto xl:h-[330px]">
           <Image
-            src="/for-therapists/session-preview.png"
+            src="/home/tablet-video-session-2026-08-26-transparent.png"
             alt="Atendimento online pela plataforma"
             fill
             quality={95}
             sizes="320px"
-            className="object-cover"
+            className="object-contain"
           />
         </div>
       ) : null}

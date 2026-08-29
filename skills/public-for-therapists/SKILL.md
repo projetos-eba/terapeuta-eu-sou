@@ -62,7 +62,7 @@ Consultar antes de alterar:
 
 - Homologar visualmente e transacionalmente os dois planos mensais no Stripe
   Test Mode. Live Mode recebe somente configuração e verificação de leitura.
-- Assets do Figma foram substituidos por fallbacks locais em `public/for-therapists/` quando download direto nao estiver disponivel.
+- O card “Atenda de onde estiver” usa o asset local `public/home/tablet-video-session-2026-08-26-transparent.png`, mantendo a imagem versionada compartilhada com a Home. No bento desktop, o tablet deve usar `object-contain` para permanecer inteiro no card vertical.
 
 ## QA
 

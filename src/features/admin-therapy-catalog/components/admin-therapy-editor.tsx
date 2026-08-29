@@ -266,11 +266,11 @@ export function AdminTherapyEditor({
             label="Rótulo de abordagem"
             name="approachLabel"
           />
-          <Field
+          <TherapyIconSelect
             defaultValue={therapy?.publicContent.approachIconKey}
+            fallbackIconKey="sparkles"
             label="Ícone semântico"
             name="approachIconKey"
-            placeholder="sparkles"
           />
           <label>
             <span className="mb-2 block text-sm font-extrabold text-brand-deep">
@@ -352,9 +352,10 @@ export function AdminTherapyEditor({
                   placeholder="Ex.: Pausa de presença"
                   required={isRequired}
                 />
-                <BenefitIconSelect
+                <TherapyIconSelect
                   defaultValue={benefit?.iconKey}
-                  index={index}
+                  label={`Ícone visual ${index + 1}`}
+                  name="benefitIconKey"
                 />
                 <Field
                   defaultValue={benefit?.description}
@@ -693,20 +694,24 @@ function ThemePreviewOption({
   );
 }
 
-function BenefitIconSelect({
+function TherapyIconSelect({
   defaultValue,
-  index,
+  fallbackIconKey = "heart",
+  label,
+  name,
 }: {
   defaultValue?: string | null;
-  index: number;
+  fallbackIconKey?: string;
+  label: string;
+  name: string;
 }) {
-  const normalizedDefault = normalizeTherapyIconKey(defaultValue);
+  const normalizedDefault = normalizeTherapyIconKey(defaultValue, fallbackIconKey);
   const [selectedIconKey, setSelectedIconKey] = useState(normalizedDefault);
 
   return (
     <label>
       <span className="mb-2 block text-sm font-extrabold text-brand-deep">
-        Ícone visual {index + 1}
+        {label}
       </span>
       <div className="flex min-h-11 items-center gap-2 rounded-xl border border-brand-lavender bg-white px-3 focus-within:ring-4 focus-within:ring-ring/20">
         <span className="text-brand-primary" aria-hidden="true">
@@ -714,7 +719,7 @@ function BenefitIconSelect({
         </span>
         <select
           className="min-w-0 flex-1 bg-transparent text-sm font-bold text-brand-deep outline-none"
-          name="benefitIconKey"
+          name={name}
           onChange={(event) => setSelectedIconKey(event.target.value)}
           value={selectedIconKey}
         >
@@ -988,11 +993,11 @@ function normalizeColorKey(value?: string | null) {
     : "neutral";
 }
 
-function normalizeTherapyIconKey(value?: string | null) {
+function normalizeTherapyIconKey(value?: string | null, fallbackIconKey = "heart") {
   return typeof value === "string" &&
     therapyDetailIconOptions.some((option) => option.key === value)
     ? value
-    : "heart";
+    : fallbackIconKey;
 }
 
 function parseFocalPoint(value: string): "center" | "left" | "right" {
