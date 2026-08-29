@@ -3,17 +3,17 @@
 ## Ativação após a entrada
 
 Em navegadores móveis, a câmera escolhida na sala de espera não é publicada
-automaticamente ao entrar na sala ativa. O paciente vê o botão **Ativar minha
-câmera** somente depois que o container da sala foi montado; o clique chama
-`startVideo()` diretamente no gesto do usuário e, em seguida, reconcilia o
-self-view. Isso evita que o `join`, a rede ou a renderização React consumam a
-janela de ativação exigida pelo Safari/iOS.
+automaticamente ao entrar na sala ativa. Depois que o container “Você” está
+montado, o ícone da câmera chama `startVideo()` diretamente no gesto do usuário
+e o adapter reconcilia o self-view. Não existe CTA ou link textual de ativação.
+Isso evita que `join`, rede ou renderização React consumam a janela de ativação
+exigida pelos navegadores móveis.
 
-Se a câmera já estiver publicada, a ação manual apenas refaz o vínculo do
-self-view. O navegador não permite revogar programaticamente uma permissão já
-concedida; `stopVideo()` libera a captura, mas não redefine a permissão do
-site. Em caso de permissão negada/resetada, a interface orienta a revisão nas
-configurações do Safari/iOS, sem repetir tentativas em loop.
+O navegador não permite revogar programaticamente uma permissão já concedida;
+`stopVideo()` libera a captura, mas não redefine a permissão do site. Em caso de
+permissão negada/resetada, a interface orienta a revisão nas configurações do
+navegador, sem repetir tentativas em loop. A recuperação automática da prévia
+é acionada pela montagem do container, eventos de captura e reconexões.
 
 ## Sintoma e isolamento
 
@@ -38,19 +38,18 @@ self-view de aparecer, sem impedir que o terapeuta receba os frames.
 
 ## Contrato corrigido
 
-- O React monta e preserva um único `<video-player>` dentro do container local.
-- Quando a câmera vem habilitada da sala de espera, o adapter aguarda o React
-  montar esse container e player antes de chamar `startVideo()`. A montagem
-  tardia também dispara reconciliação automática; um diálogo de permissão não
-  pode ser necessário para a self-view aparecer.
+- O React monta e preserva um único `video-player-container` local.
+- No mobile, o player local é o elemento retornado pelo SDK em
+  `attachVideo(localUserId, quality)` e é anexado somente ao container “Você”.
+- A montagem tardia do container dispara reconciliação automática; um diálogo
+  de permissão não pode ser necessário para a self-view aparecer.
 - `startVideo()` confirma publicação, não prévia.
 - Depois de `startVideo()` e de identificar o participante local, o adapter
-  chama `attachVideo(localUserId, quality, localPlayer)` imediatamente. O
+  chama `attachVideo(localUserId, quality)` imediatamente. O
   `bVideoOn` do roster é telemetria e gatilho de reconciliação, não
   pré-requisito de attachment.
-- O retorno de `attachVideo()` inicia o estado `binding`; sucesso só ocorre
-  quando `node-id` corresponde ao `userId` local.
-- Estar conectado ao DOM, isoladamente, nunca confirma self-view.
+- O retorno de `attachVideo()` só pode ser anexado depois de validar ownership,
+  geração, cliente, stream, ciclo de captura e container local.
 - O ciclo interno distingue `attaching`, `binding`, `attached` e `degraded`.
 - Timeout de vínculo desanexa exatamente o player local e permite nova
   reconciliação sem repetir captura, join, acesso ou JWT. Quando o player
@@ -59,8 +58,8 @@ self-view de aparecer, sem impedir que o terapeuta receba os frames.
 - Observer, timer e Promise validam `generation + client + stream +
 captureEpoch + localUserId` antes de alterar UI. Cleanup invalida a geração,
   aguarda a operação limitada e desanexa o mesmo player.
-- O nó local pertence ao React e nunca é removido manualmente. Desligar e
-  religar a câmera reutiliza esse nó.
+- O container local pertence ao React. O player retornado pertence ao ciclo de
+  captura do SDK e é removido/desanexado no cleanup correspondente.
 
 Os eventos `user-updated`, `video-capturing-change: Started`,
 `connection-change: Connected`, `visibilitychange` e
@@ -96,7 +95,7 @@ user-agent completo.
 
 - publicação ativa com `bVideoOn=false` chama attach local sem nova captura,
   join ou JWT;
-- câmera pré-ativada só inicia após o `<video-player>` local estar montado;
+- câmera mobile só inicia pelo ícone após o container local estar montado;
 - montagem tardia do renderer recupera a self-view automaticamente, sem clique
   no microfone, nova captura, join ou JWT;
 - player conectado e ainda sem `node-id` permanece pendente;
@@ -133,13 +132,13 @@ na transição móvel. Frame dedicado da chamada no Figma:
 | Gate                          | Resultado                                                 |
 | ----------------------------- | --------------------------------------------------------- |
 | Regressão antes da correção   | Falha esperada: o attach local foi bloqueado por `bVideoOn=false` |
-| Vitest dirigido               | 93 testes aprovados em stage, sala de espera e adapter    |
-| `npm run zoom:video-sdk:test` | 21 testes Deno + 115 testes Vitest aprovados              |
+| Vitest dirigido               | 90 testes aprovados em stage, controles e adapter         |
+| `npm run zoom:video-sdk:test` | 21 testes Deno + 117 testes Vitest aprovados              |
 | Playwright Chromium mobile    | 4 cenários aprovados                                      |
 | Playwright WebKit mobile      | 4 cenários aprovados                                      |
 | `npm run typecheck`           | Aprovado                                                  |
 | `npm run lint`                | Aprovado, sem avisos do projeto                           |
-| `npm run build`               | Aprovado; artefatos de produção gerados                   |
+| `npm run build`               | Aprovado; Supabase local indisponível durante prerender sem falhar o build |
 | iPhone/Safari físico          | Pendente; gate manual obrigatório                         |
 
 `git diff --check` é executado no fechamento da entrega. Nenhuma etapa desta

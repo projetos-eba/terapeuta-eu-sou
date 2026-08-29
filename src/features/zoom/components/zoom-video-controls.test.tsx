@@ -121,21 +121,14 @@ describe("ZoomVideoControls", () => {
     ).not.toBeNull();
   });
 
-  it("offers a direct mobile camera activation action", () => {
-    const onActivateCamera = vi.fn();
+  it("keeps camera activation in the icon control on mobile", () => {
     render(
-      <ZoomVideoControls
-        {...baseProps}
-        actorRole="patient"
-        isMobileDevice
-        onActivateCamera={onActivateCamera}
-        roleType={0}
-      />,
+      <ZoomVideoControls {...baseProps} actorRole="patient" roleType={0} />,
     );
 
-    const button = screen.getByRole("button", { name: "Ativar minha câmera" });
-    expect(button).toBeVisible();
-    button.click();
-    expect(onActivateCamera).toHaveBeenCalledTimes(1);
+    expect(
+      screen.queryByRole("button", { name: "Ativar minha câmera" }),
+    ).toBeNull();
+    expect(screen.getByRole("button", { name: "Ativar câmera" })).toBeVisible();
   });
 });
