@@ -2,14 +2,9 @@ import "server-only";
 
 import { cache } from "react";
 
-import { adminModuleRegistry } from "@/features/admin-shell/admin-shell-config";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
-import {
-  buildIntegrationHealth,
-  buildModuleSignals,
-  buildSecurityReviewItems,
-} from "./admin-platform.mappers";
+import { buildIntegrationHealth } from "./admin-platform.mappers";
 import type {
   AdminIntegrationsPageData,
   AdminOperationalSignal,
@@ -63,7 +58,10 @@ export const getAdminIntegrationsPage = cache(
       };
     }
 
-    const readModel = await fetchIntegrationHealthReadModel(config, accessToken);
+    const readModel = await fetchIntegrationHealthReadModel(
+      config,
+      accessToken,
+    );
     const countResults = readModel.countResults;
 
     const signal = createSignalLookup(countResults);
@@ -87,11 +85,13 @@ export const getAdminIntegrationsPage = cache(
         signals: [signal("restricted-connect-accounts")],
       }),
       buildIntegrationHealth({
-        description:
-          "Sessões online e participação nos encontros.",
+        description: "Sessões online e participação nos encontros.",
         key: "zoom",
         label: "Encontros online",
-        signals: [signal("failed-zoom-webhooks"), signal("failed-video-sessions")],
+        signals: [
+          signal("failed-zoom-webhooks"),
+          signal("failed-video-sessions"),
+        ],
       }),
       buildIntegrationHealth({
         description:
@@ -122,7 +122,7 @@ export const getAdminSecurityPage = cache(async function getAdminSecurityPage({
 
   if (!config) {
     return {
-        message: "Não foi possível carregar a segurança agora.",
+      message: "Não foi possível carregar a segurança agora.",
       status: "error",
     };
   }
@@ -130,20 +130,10 @@ export const getAdminSecurityPage = cache(async function getAdminSecurityPage({
   const [auditEventsResult] = await Promise.all([
     fetchRecentAuditEvents(config, accessToken),
   ]);
-  const enabledCount = adminModuleRegistry.filter(
-    (module) => module.status === "enabled",
-  ).length;
-  const hiddenCount = adminModuleRegistry.filter(
-    (module) => module.status === "hidden",
-  ).length;
-
   return {
     data: {
       auditEvents: auditEventsResult.events,
       auditEventsStatus: auditEventsResult.status,
-      generatedAt: new Date().toISOString(),
-      moduleSignals: buildModuleSignals({ enabledCount, hiddenCount }),
-      reviewItems: buildSecurityReviewItems(),
     },
     status: "success",
   };

@@ -90,6 +90,10 @@ Read in this order, only as needed:
   sequence rather than a compressed desktop grid. Keep the platform-media slot
   compact on mobile (`16:10`) so a transparent asset never creates a perceived
   empty section between its editorial heading and the feature pills.
+- The institutional hero image must use `object-contain` and keep the mobile
+  media slot governed by its `16:9` aspect ratio (without a larger mobile
+  minimum height), so the full editorial composition remains visible within the
+  device width at every breakpoint.
 
 ## Data and Fallback
 

@@ -148,7 +148,7 @@ export const adminModuleRegistry: AdminModule[] = [
   {
     group: "platform",
     href: routes.admin.security,
-    icon: "settings",
+    icon: "shield",
     key: "security",
     label: "Segurança",
     permission: "admin.security.read",
