@@ -36,15 +36,6 @@ export type AdminIntegrationsPageData = {
   summary: AdminOperationalSignal[];
 };
 
-export type AdminSecurityReviewItem = {
-  description: string;
-  key: string;
-  label: string;
-  severity: "critical" | "info" | "warning";
-  source: string;
-  status: AdminOperationalStatus;
-};
-
 export type AdminSecurityPageData = {
   auditEvents: Array<{
     actorRole: string;
@@ -57,9 +48,6 @@ export type AdminSecurityPageData = {
     source: string;
   }>;
   auditEventsStatus: "available" | "unavailable";
-  generatedAt: string;
-  moduleSignals: AdminOperationalSignal[];
-  reviewItems: AdminSecurityReviewItem[];
 };
 
 export type AdminPlatformPageResult<T> =

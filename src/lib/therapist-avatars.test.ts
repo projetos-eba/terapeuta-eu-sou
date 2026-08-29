@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { getTherapistAvatarUrl } from "./therapist-avatars";
+import {
+  DEFAULT_THERAPIST_AVATAR_URL,
+  getTherapistAvatarUrl,
+} from "./therapist-avatars";
 
 describe("getTherapistAvatarUrl", () => {
   it("preserves a therapist photo uploaded to public media over a legacy local fallback", () => {
@@ -15,9 +18,9 @@ describe("getTherapistAvatarUrl", () => {
     ).toBe(uploadedPhoto);
   });
 
-  it("uses the versioned local fallback only when no public photo exists", () => {
+  it("uses the provided default avatar only when no public photo exists", () => {
     expect(
       getTherapistAvatarUrl(null, { slug: "andre-lima" }),
-    ).toBe("/therapists/andre-lima.png");
+    ).toBe(DEFAULT_THERAPIST_AVATAR_URL);
   });
 });

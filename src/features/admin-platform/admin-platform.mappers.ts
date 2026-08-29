@@ -2,7 +2,6 @@ import type {
   AdminIntegrationHealth,
   AdminOperationalSignal,
   AdminOperationalStatus,
-  AdminSecurityReviewItem,
 } from "./admin-platform.types";
 
 type IntegrationInput = {
@@ -59,65 +58,4 @@ export function resolveSignalStatus(
   }
 
   return "healthy";
-}
-
-export function buildModuleSignals({
-  enabledCount,
-  hiddenCount,
-}: {
-  enabledCount: number;
-  hiddenCount: number;
-}): AdminOperationalSignal[] {
-  return [
-    {
-      description: "Módulos disponíveis na navegação administrativa.",
-      key: "enabled-admin-modules",
-      label: "Módulos habilitados",
-      source: "adminModuleRegistry",
-      status: "available",
-      tone: "success",
-      value: enabledCount,
-    },
-    {
-      description: "Módulos planejados ainda ocultos para evitar links mortos.",
-      key: "hidden-admin-modules",
-      label: "Módulos ocultos",
-      source: "adminModuleRegistry",
-      status: "available",
-      tone: hiddenCount > 0 ? "warning" : "success",
-      value: hiddenCount,
-    },
-  ];
-}
-
-export function buildSecurityReviewItems(): AdminSecurityReviewItem[] {
-  return [
-    {
-      description:
-        "A revisão de segurança encontrou áreas públicas que precisam de conferência antes da liberação completa.",
-      key: "security-definer-views",
-      label: "Áreas públicas em conferência",
-      severity: "warning",
-      source: "Revisão de segurança",
-      status: "manual_review",
-    },
-    {
-      description:
-        "Há permissões que precisam de classificação por área antes de qualquer alteração.",
-      key: "authenticated-security-definer-functions",
-      label: "Funções privilegiadas expostas",
-      severity: "warning",
-      source: "Revisão de segurança",
-      status: "manual_review",
-    },
-    {
-      description:
-        "Algumas áreas precisam de regras de acesso específicas antes de serem liberadas.",
-      key: "rls-enabled-no-policy",
-      label: "Regras de acesso pendentes",
-      severity: "info",
-      source: "Revisão de segurança",
-      status: "manual_review",
-    },
-  ];
 }

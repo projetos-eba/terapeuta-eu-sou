@@ -1,5 +1,8 @@
 import { buildPublicReservationUrl } from "@/features/booking/services/public-booking";
-import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
+import {
+  DEFAULT_THERAPIST_AVATAR_URL,
+  getTherapistAvatarUrl,
+} from "@/lib/therapist-avatars";
 
 import type {
   AvailabilityDay,
@@ -240,7 +243,7 @@ export function mapProfileRow(
       getTherapistAvatarUrl(row.photo_url, {
         name: row.public_name,
         slug: row.slug,
-      }) ?? "/therapists/ana-oliveira.png",
+      }) ?? DEFAULT_THERAPIST_AVATAR_URL,
     id: row.id,
     isAcceptingBookings: row.is_accepting_bookings,
     isVerified: row.plan !== "free" && Boolean(row.is_verified),

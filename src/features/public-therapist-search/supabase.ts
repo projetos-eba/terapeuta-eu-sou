@@ -5,7 +5,10 @@ import {
   type PublicDataDegradedReason,
 } from "@/lib/public-data-result";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
-import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
+import {
+  DEFAULT_THERAPIST_AVATAR_URL,
+  getTherapistAvatarUrl,
+} from "@/lib/therapist-avatars";
 import { buildPublicTherapistTherapyChips } from "@/features/public-therapists/therapy-presentation";
 
 import { fallbackTherapists, THERAPIST_SEARCH_PAGE_SIZE } from "./content";
@@ -169,7 +172,7 @@ function mapTherapistRow(
       getTherapistAvatarUrl(row.photo_url, {
         name: row.public_name,
         slug: row.slug,
-      }) || "/therapists/ana-oliveira.png",
+      }) || DEFAULT_THERAPIST_AVATAR_URL,
     name: row.public_name,
     therapistProfileId: row.therapist_profile_id,
     nextSlotAt: row.next_slot_at,
