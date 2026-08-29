@@ -468,7 +468,7 @@ export function mapAdminTherapyCatalogDatabaseError(error: unknown) {
   return new DomainError(
     "catalog_command_failed",
     400,
-    "Nao foi possivel atualizar o catalogo agora.",
+    "Nao foi possivel salvar a terapia. Verifique a categoria, os temas do Match e os campos obrigatorios e tente novamente.",
   );
 }
 

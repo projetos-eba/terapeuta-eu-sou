@@ -170,6 +170,7 @@ const RECOVERY_RETRY_DELAYS_MS = [0, 1_500, 3_000] as const;
 const MAX_JOIN_ATTEMPTS = RECOVERY_RETRY_DELAYS_MS.length;
 const MAX_LOCAL_PREVIEW_ATTEMPTS = 3;
 const LOCAL_PREVIEW_BIND_TIMEOUT_MS = 2_500;
+const LOCAL_PREVIEW_MANUAL_RECHECK_DELAYS_MS = [250, 700, 1_400] as const;
 
 // A transient Video SDK failure is safe to retry because every attempt reuses
 // the access payload already issued by the backend. Do not gate this on a
@@ -330,6 +331,7 @@ export function ZoomVideoSessionAdapter({
   } | null>(null);
   const localPreviewIssueLoggedGenerationRef = useRef<number | null>(null);
   const localPreviewAttemptsRef = useRef(0);
+  const localPreviewManualRecheckTimersRef = useRef<number[]>([]);
   const localCaptureEpochRef = useRef(0);
   const localCaptureStateRef = useRef<LocalCaptureState>("off");
   const localPreviewStateRef = useRef<LocalPreviewState>("off");
@@ -460,6 +462,7 @@ export function ZoomVideoSessionAdapter({
       authRefreshAbortControllerRef.current?.abort();
       recoveryAbortControllerRef.current?.abort();
       clearRemoteVideoResyncTimers();
+      clearLocalPreviewManualRecheckTimers();
       clearReconnectTimer();
       window.removeEventListener("pagehide", handlePageHide);
       document.removeEventListener("visibilitychange", handleActiveVisibility);
@@ -1833,6 +1836,7 @@ export function ZoomVideoSessionAdapter({
   function disableVideoForSession(stream: ZoomMediaStream) {
     return runLocalVideoOperation(async (generation) => {
       localVideoStoppingRef.current = true;
+      clearLocalPreviewManualRecheckTimers();
       try {
         // Privacy: stop publishing before detaching; failed rendering cleanup
         // must not leave a camera transmitting after the user switches it off.
@@ -1880,11 +1884,47 @@ export function ZoomVideoSessionAdapter({
     if (
       !["joined", "media_degraded"].includes(stateRef.current) ||
       leavingRef.current ||
-      localVideoStoppingRef.current ||
-      sdkOperationInFlightRef.current
+      localVideoStoppingRef.current
     )
       return;
-    requestLocalPreviewReconcile({ resetAttempts: true, trigger: "manual" });
+
+    // On mobile the SDK can publish the camera before its roster reflects
+    // bVideoOn. A manual retry must survive that short gap, but it must not
+    // publish again, join again, or grow into an unbounded polling loop.
+    clearLocalPreviewManualRecheckTimers();
+    const client = clientRef.current;
+    const generation = attemptGenerationRef.current;
+    const captureEpoch = localCaptureEpochRef.current;
+    const requestRetry = (resetAttempts: boolean) => {
+      if (
+        !client ||
+        !isCurrentVideoOwner(client, generation) ||
+        localCaptureEpochRef.current !== captureEpoch ||
+        !videoStartedRef.current ||
+        localVideoStoppingRef.current ||
+        leavingRef.current
+      ) {
+        return;
+      }
+      requestLocalPreviewReconcile({
+        client,
+        generation,
+        resetAttempts,
+        trigger: "manual",
+      });
+    };
+
+    requestRetry(true);
+    for (const delayMs of LOCAL_PREVIEW_MANUAL_RECHECK_DELAYS_MS) {
+      const timer = window.setTimeout(() => {
+        localPreviewManualRecheckTimersRef.current =
+          localPreviewManualRecheckTimersRef.current.filter(
+            (activeTimer) => activeTimer !== timer,
+          );
+        requestRetry(false);
+      }, delayMs);
+      localPreviewManualRecheckTimersRef.current.push(timer);
+    }
     scheduleRemoteVideoResync();
   }
 
@@ -2063,6 +2103,7 @@ export function ZoomVideoSessionAdapter({
   }): Promise<CleanupFailure[]> {
     const failures: CleanupFailure[] = [];
     attemptGenerationRef.current += 1;
+    clearLocalPreviewManualRecheckTimers();
     const client = clientRef.current;
     const stream = streamRef.current;
     // An AbortController stops our wait, not the SDK operation itself. Never
@@ -2792,6 +2833,13 @@ export function ZoomVideoSessionAdapter({
       window.clearTimeout(timer);
     }
     remoteVideoResyncTimersRef.current = [];
+  }
+
+  function clearLocalPreviewManualRecheckTimers() {
+    for (const timer of localPreviewManualRecheckTimersRef.current) {
+      window.clearTimeout(timer);
+    }
+    localPreviewManualRecheckTimersRef.current = [];
   }
 
   function scheduleRemoteVideoResync(

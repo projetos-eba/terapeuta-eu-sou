@@ -91,7 +91,9 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   pendentes; desligar câmera para a publicação antes do detach.
 - Prévia deve recuperar também identidade `null → userId`, não só mudança
   entre dois IDs. Preservar reconciliação idempotente por geração, retries
-  limitados e “Tentar mostrar minha câmera” sem repetir captura/JWT. Falha de
+  limitados e “Tentar mostrar minha câmera” sem repetir captura/JWT. A ação
+  manual cobre a curta defasagem móvel entre captura publicada e
+  `bVideoOn=true` por novas leituras limitadas do roster. Falha de
   detach ativo é diagnóstico de renderização, nunca aviso de encerramento.
   Em reentrada abrupta, `video-capturing-change: Started` reabre o orçamento de
   attach do ciclo de captura atual, inclusive se chega durante uma operação
