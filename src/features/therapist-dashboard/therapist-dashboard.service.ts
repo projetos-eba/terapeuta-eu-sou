@@ -23,6 +23,7 @@ import { createEmptyTherapistDashboardData } from "./therapist-dashboard-empty";
 import {
   mapTherapistDashboardResponse,
   mapTherapistAuraPage,
+  reconcileTherapistDashboardProfile,
 } from "./therapist-dashboard.mappers";
 import { queryTherapistDashboard } from "./therapist-dashboard.queries";
 import type {
@@ -50,10 +51,21 @@ export const getTherapistDashboardPage = cache(
       });
 
       if (plan === TherapistPlan.Premium) {
-        return enrichPremiumDashboard(base, accessToken, profileId);
+        const enriched = await enrichPremiumDashboard(
+          base,
+          accessToken,
+          profileId,
+        );
+        return reconcileTherapistDashboardProfile({
+          data: enriched,
+          profileCompleteness,
+        });
       }
 
-      return base;
+      return reconcileTherapistDashboardProfile({
+        data: base,
+        profileCompleteness,
+      });
     }
 
     const [dashboard, auraResult, timeline] = await Promise.all([
@@ -79,13 +91,16 @@ export const getTherapistDashboardPage = cache(
           recommendedActions: [],
         };
 
-    return {
-      ...main,
-      ...recommendations,
-      upcomingSessions: timeline.upcomingSessions,
-      upcomingSessionsState: timeline.upcomingSessionsState,
-      week: timeline.week,
-    };
+    return reconcileTherapistDashboardProfile({
+      data: {
+        ...main,
+        ...recommendations,
+        upcomingSessions: timeline.upcomingSessions,
+        upcomingSessionsState: timeline.upcomingSessionsState,
+        week: timeline.week,
+      },
+      profileCompleteness,
+    });
   },
 );
 

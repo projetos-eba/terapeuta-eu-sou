@@ -117,4 +117,32 @@ describe("parseTherapistServicesCommand", () => {
       TherapistServicesContractError,
     );
   });
+
+  it.each([
+    [135, true],
+    [136, false],
+  ])("validates service description length %s", (length, isValid) => {
+    const command = {
+      action: "create" as const,
+      description: "x".repeat(length),
+      durationMinutes: 60,
+      interestIds: [],
+      priceCents: 12000,
+      requestId,
+      themeIds: [themeId],
+      therapyId,
+      title: "Reiki online",
+    };
+
+    if (isValid) {
+      expect(parseTherapistServicesCommand(command)).toMatchObject({
+        description: command.description,
+      });
+      return;
+    }
+
+    expect(() => parseTherapistServicesCommand(command)).toThrow(
+      TherapistServicesContractError,
+    );
+  });
 });

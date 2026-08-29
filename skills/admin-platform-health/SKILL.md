@@ -50,6 +50,11 @@ sanitizado e normalizando ações, entidades e ator pelo catálogo local em
 português.
 Leituras bloqueadas por RLS/grants aparecem como `Indisponível`. Erro ou
 bloqueio nunca deve ser transformado em zero.
+A auditoria é carregada em páginas de 8 registros pela URL (`page`), com
+ordenação determinística da mais recente para a mais antiga por
+`created_at.desc,id.desc`. O total e a existência de próxima página vêm do
+`Content-Range` do endpoint, sem carregar a trilha inteira no servidor ou no
+navegador.
 
 ## Regras
 
@@ -82,6 +87,8 @@ bloqueio nunca deve ser transformado em zero.
     sinais operacionais;
   - acessar `/admin/seguranca` e confirmar a auditoria recente, sem expor
     identificadores técnicos de ação ou entidade;
+  - navegar entre as páginas da auditoria e confirmar a ordem decrescente por
+    data, o limite de 8 registros e os estados corretos dos controles;
   - confirmar que leitura indisponível aparece como `Indisponível`.
 
 ## Copy responsável

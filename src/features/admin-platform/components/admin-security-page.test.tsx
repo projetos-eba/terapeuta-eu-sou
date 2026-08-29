@@ -73,12 +73,53 @@ describe("AdminSecurityPage", () => {
     ).toBeInTheDocument();
     expect(screen.queryByText("professional.publish")).not.toBeInTheDocument();
   });
+
+  it("shows pagination controls for additional audit pages", () => {
+    render(
+      <AdminSecurityPage
+        data={{
+          ...makeData({
+            auditEvents: [
+              {
+                actorRole: "admin",
+                createdAt: "2026-08-08T12:00:00.000Z",
+                entityType: "therapist_profile",
+                eventType: "professional.publish",
+                id: "audit-1",
+                permission: null,
+                reason: null,
+                source: "admin-operation-command",
+              },
+            ],
+            auditEventsStatus: "available",
+          }),
+          auditPage: { hasNext: true, page: 1, pageSize: 8, total: 9 },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Mostrando 1-8 de 9 registros")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /próxima/i })).toHaveAttribute(
+      "href",
+      "/admin/seguranca?page=2",
+    );
+    expect(screen.getByRole("link", { name: /anterior/i })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+  });
 });
 
 function makeData(
   overrides: Pick<AdminSecurityPageData, "auditEvents" | "auditEventsStatus">,
 ): AdminSecurityPageData {
   return {
+    auditPage: {
+      hasNext: false,
+      page: 1,
+      pageSize: 8,
+      total: overrides.auditEvents.length,
+    },
     auditEvents: overrides.auditEvents,
     auditEventsStatus: overrides.auditEventsStatus,
   };

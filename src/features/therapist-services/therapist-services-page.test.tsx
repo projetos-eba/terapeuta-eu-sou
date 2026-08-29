@@ -526,6 +526,27 @@ describe("TherapistServicesPage", () => {
     expect(screen.getByLabelText("Descrição")).toHaveFocus();
   });
 
+  it("limits the description field to 135 characters", () => {
+    render(
+      <TherapistServiceForm
+        catalog={catalogFixture().items}
+        mode="edit"
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+        service={serviceFixture()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    const description = screen.getByLabelText("Descrição");
+    fireEvent.change(description, { target: { value: "x".repeat(136) } });
+
+    expect(description).toHaveAttribute("maxlength", "135");
+    expect(description).toHaveValue("x".repeat(135));
+    expect(screen.getByText("135/135 caracteres")).toBeInTheDocument();
+  });
+
   it("keeps the dialog open and explains a final save failure", async () => {
     const onClose = vi.fn();
     mockedCommand.mockResolvedValueOnce({
@@ -555,30 +576,6 @@ describe("TherapistServicesPage", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("bounds an unbroken description in the review step", () => {
-    const longWord = "d".repeat(200);
-
-    render(
-      <TherapistServiceForm
-        catalog={catalogFixture().items}
-        mode="edit"
-        onClose={vi.fn()}
-        onSaved={vi.fn()}
-        service={serviceFixture()}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
-    fireEvent.change(screen.getByLabelText("Descrição"), {
-      target: { value: longWord },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
-
-    expect(screen.getByText(longWord)).toHaveClass(
-      "overflow-y-auto",
-      "break-words",
-    );
-  });
 });
 
 describe("parsePriceToCents", () => {

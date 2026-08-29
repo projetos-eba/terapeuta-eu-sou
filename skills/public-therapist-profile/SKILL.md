@@ -109,6 +109,9 @@ Preservar o padrão do node:
 - A seção `Vivências e terapias` usa a terapia canônica como identidade
   pública. Não exibir títulos operacionais de serviço como chip/aba, por
   exemplo “Reiki online”.
+- No mobile, a seção de vivências e terapias permanece disponível como
+  carrossel horizontal de arraste manual, sem botões de seta; em tablet/desktop,
+  preserva o grid existente.
 - Painel roxo `Próximos horários disponíveis` com seleção de serviço quando houver mais de uma oferta ativa.
 - Avaliações em carrossel automático sem dependência nova. Respostas do
   terapeuta aparecem inicialmente com uma frase e expandem sob ação explícita.

@@ -12,6 +12,7 @@ import {
   sendTherapistServicesCommand,
 } from "../therapist-services.commands";
 import {
+  THERAPIST_SERVICE_DESCRIPTION_MAX_LENGTH,
   THERAPIST_SERVICE_DURATION_MAX_MINUTES,
   THERAPIST_SERVICE_DURATION_MIN_MINUTES,
 } from "../therapist-services.constants";
@@ -437,11 +438,14 @@ function OfferFields({
           }
           className="min-h-[118px] w-full rounded-lg border border-brand-lavender px-4 py-3 text-sm font-semibold leading-6 text-brand-deep outline-none focus:border-brand-primary"
           id="service-description"
-          maxLength={200}
+          maxLength={THERAPIST_SERVICE_DESCRIPTION_MAX_LENGTH}
           onChange={(event) =>
             onChange((current) => ({
               ...current,
-              description: event.target.value,
+              description: event.target.value.slice(
+                0,
+                THERAPIST_SERVICE_DESCRIPTION_MAX_LENGTH,
+              ),
             }))
           }
           placeholder={`Exemplo de descrição:
@@ -462,7 +466,8 @@ Se esta for sua primeira sessão, explicarei como o encontro funciona antes de c
           value={values.description}
         />
         <p className="mt-1 text-xs font-semibold text-tesText-secondary">
-          {values.description.length}/200 caracteres
+          {values.description.length}/{THERAPIST_SERVICE_DESCRIPTION_MAX_LENGTH}{" "}
+          caracteres
         </p>
       </Field>
       <div className="grid gap-4 sm:grid-cols-3">
@@ -808,8 +813,10 @@ function validate(
   if (values.description.trim().length < 20) {
     errors.description = "A descrição precisa ter pelo menos 20 caracteres.";
   }
-  if (values.description.trim().length > 200) {
-    errors.description = "Use no máximo 200 caracteres.";
+  if (
+    values.description.trim().length > THERAPIST_SERVICE_DESCRIPTION_MAX_LENGTH
+  ) {
+    errors.description = `Use no máximo ${THERAPIST_SERVICE_DESCRIPTION_MAX_LENGTH} caracteres.`;
   }
   if (
     !Number.isInteger(values.durationMinutes) ||

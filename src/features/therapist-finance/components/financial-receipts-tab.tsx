@@ -55,16 +55,16 @@ export function FinancialReceiptsTab({
     <div className="grid min-w-0 gap-5 [&>*]:min-w-0">
       <AppPageSection className="grid gap-4">
         <form
-          className="grid gap-3 lg:grid-cols-[150px_180px_1fr_auto]"
+          className="grid gap-3 lg:gap-4 lg:grid-cols-[150px_180px_1fr_auto]"
           method="get"
         >
           <input name="tab" type="hidden" value="recebimentos" />
           <input name="period" type="hidden" value={dateRange.key} />
 
-          <label className="grid gap-1 text-sm font-extrabold text-brand-deep">
+          <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
             Situação
             <select
-              className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+              className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
               defaultValue={filters.status ?? ""}
               name="status"
             >
@@ -77,10 +77,10 @@ export function FinancialReceiptsTab({
             </select>
           </label>
 
-          <label className="grid gap-1 text-sm font-extrabold text-brand-deep">
+          <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
             Terapia
             <select
-              className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+              className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
               defaultValue={filters.therapyId ?? ""}
               name="therapyId"
             >
@@ -93,7 +93,7 @@ export function FinancialReceiptsTab({
             </select>
           </label>
 
-          <label className="grid gap-1 text-sm font-extrabold text-brand-deep">
+          <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
             Buscar paciente
             <span className="relative">
               <Search
