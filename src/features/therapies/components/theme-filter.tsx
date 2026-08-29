@@ -5,27 +5,27 @@ import { ChevronDown, Command, SlidersHorizontal } from "lucide-react";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
-import type { PublicTherapyCategory, TherapySearchParams } from "../types";
+import type { PublicTherapyTheme, TherapySearchParams } from "../types";
 
-type CategoryFilterProps = {
-  activeCategory?: string;
-  categories: PublicTherapyCategory[];
+type ThemeFilterProps = {
+  activeTheme?: string;
+  themes: PublicTherapyTheme[];
   params: TherapySearchParams;
   totalCount: number;
 };
 
-export function CategoryFilter({
-  activeCategory,
-  categories,
+export function ThemeFilter({
+  activeTheme,
+  themes,
   params,
   totalCount,
-}: CategoryFilterProps) {
+}: ThemeFilterProps) {
   return (
     <>
       <aside className="hidden lg:block">
-        <CategoryPanel
-          activeCategory={activeCategory}
-          categories={categories}
+        <ThemePanel
+          activeTheme={activeTheme}
+          themes={themes}
           params={params}
           totalCount={totalCount}
         />
@@ -40,9 +40,9 @@ export function CategoryFilter({
           <ChevronDown className="h-5 w-5 text-brand-primary transition group-open:rotate-180" />
         </summary>
         <div className="mt-4 border-t border-brand-lavender/70 pt-4">
-          <CategoryPanel
-            activeCategory={activeCategory}
-            categories={categories}
+          <ThemePanel
+            activeTheme={activeTheme}
+            themes={themes}
             params={params}
             totalCount={totalCount}
           />
@@ -52,31 +52,31 @@ export function CategoryFilter({
   );
 }
 
-function CategoryPanel({
-  activeCategory,
-  categories,
+function ThemePanel({
+  activeTheme,
+  themes,
   params,
   totalCount,
-}: CategoryFilterProps) {
+}: ThemeFilterProps) {
   return (
     <div className="rounded-[14px] border border-brand-lavender/80 bg-white p-5 shadow-[0_12px_28px_rgba(46,26,71,0.07)]">
       <h2 className="text-xl font-extrabold leading-7 text-brand-deep">
-        Categorias
+        Temas do Match
       </h2>
-      <nav className="mt-4 grid gap-1.5" aria-label="Categorias de terapias">
-        <CategoryLink
-          active={!activeCategory}
+      <nav className="mt-4 grid gap-1.5" aria-label="Temas do Match">
+        <ThemeLink
+          active={!activeTheme}
           count={totalCount}
-          href={buildHref(params, { category: undefined, page: 1 })}
+          href={buildHref(params, { theme: undefined, page: 1 })}
           label="Todas as terapias"
         />
-        {categories.map((category) => (
-          <CategoryLink
-            key={category.slug}
-            active={activeCategory === category.slug}
-            count={category.count}
-            href={buildHref(params, { category: category.slug, page: 1 })}
-            label={category.name}
+        {themes.map((theme) => (
+          <ThemeLink
+            key={theme.slug}
+            active={activeTheme === theme.slug}
+            count={theme.count}
+            href={buildHref(params, { theme: theme.slug, page: 1 })}
+            label={theme.name}
           />
         ))}
       </nav>
@@ -84,14 +84,14 @@ function CategoryPanel({
   );
 }
 
-type CategoryLinkProps = {
+type ThemeLinkProps = {
   active: boolean;
   count: number;
   href: string;
   label: string;
 };
 
-function CategoryLink({ active, count, href, label }: CategoryLinkProps) {
+function ThemeLink({ active, count, href, label }: ThemeLinkProps) {
   return (
     <Link
       href={href as Route<string>}
@@ -127,7 +127,7 @@ export function buildHref(
   const query = new URLSearchParams();
 
   if (next.q) query.set("q", next.q);
-  if (next.category) query.set("category", next.category);
+  if (next.theme) query.set("theme", next.theme);
   if (next.sort !== "relevance") query.set("sort", next.sort);
   if (next.page > 1) query.set("page", String(next.page));
 

@@ -370,7 +370,7 @@ function TherapySection({ therapies }: { therapies: PublicHomeTherapy[] }) {
             </div>
             <div className="p-6">
               <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-brand-primary">
-                {therapy.categoryName}
+                {therapy.themeName}
               </p>
               <h3 className="mt-2 font-display text-3xl font-light italic text-brand-deep">
                 {therapy.name}

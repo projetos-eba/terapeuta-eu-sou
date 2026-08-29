@@ -8,7 +8,6 @@ describe("TherapyCard", () => {
     render(
       <TherapyCard
         therapy={{
-          category: { name: "Energia", slug: "energia" },
           id: "therapy-1",
           imageUrl: "/therapies/reiki-editorial.png",
           isNew: false,

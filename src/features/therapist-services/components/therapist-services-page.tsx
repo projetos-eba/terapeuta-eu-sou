@@ -101,7 +101,7 @@ export function TherapistServicesPage({
         return [
           service.title,
           service.therapy.name,
-          service.category.name,
+          getServiceThemeLabels(service, catalog).map((theme) => theme.label).join(" "),
           service.description ?? "",
         ].some((value) =>
           value.toLocaleLowerCase("pt-BR").includes(normalized),

@@ -3,7 +3,6 @@ import {
   type AdminTherapy,
   type AdminTherapyCatalogContract,
   type AdminTherapyCatalogRequest,
-  type AdminTherapyCategory,
   type AdminTherapyImpact,
   type AdminMatchingTheme,
   type AdminTherapyPublicContent,
@@ -23,23 +22,10 @@ export function parseAdminTherapyCatalogContract(
   if (record.contractVersion !== 1) invalid();
 
   return {
-    categories: parseArray(record.categories, parseCategory),
     contractVersion: 1,
     items: parseArray(record.items, parseTherapy),
     matchingThemes: parseArray(record.matchingThemes, parseMatchingTheme),
     requests: parseArray(record.requests, parseRequest),
-  };
-}
-
-function parseCategory(value: unknown): AdminTherapyCategory {
-  const record = asRecord(value);
-
-  return {
-    id: asString(record.id),
-    isActive: asBoolean(record.isActive),
-    name: asString(record.name),
-    slug: asString(record.slug),
-    sortOrder: asNumber(record.sortOrder),
   };
 }
 
@@ -67,10 +53,6 @@ function parseTherapy(value: unknown): AdminTherapy {
     aliases: parseStringArray(record.aliases),
     archivedAt: asNullableString(record.archivedAt),
     calendarColorKey: asString(record.calendarColorKey) || "neutral",
-    categoryId: asString(record.categoryId),
-    categoryIsActive: asBoolean(record.categoryIsActive),
-    categoryName: asString(record.categoryName),
-    categorySlug: asString(record.categorySlug),
     deprecatedAt: asNullableString(record.deprecatedAt),
     description: asNullableString(record.description),
     hasPublishedMatchWeights: asBoolean(record.hasPublishedMatchWeights),

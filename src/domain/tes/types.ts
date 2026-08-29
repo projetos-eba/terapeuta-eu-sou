@@ -84,7 +84,6 @@ export interface TherapyTheme extends TimestampedRecord {
 
 export interface Therapy extends TimestampedRecord {
   id: UUID;
-  categoryId: UUID;
   name: string;
   slug: string;
   shortDescription: string;

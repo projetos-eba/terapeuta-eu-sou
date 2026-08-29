@@ -6,7 +6,7 @@ import {
 } from "../schemas/therapy-search-params";
 import type {
   PublicTherapiesResult,
-  PublicTherapyCategory,
+  PublicTherapyTheme,
   PublicTherapyListItem,
   PublicTherapyRow,
   TherapySearchParams,
@@ -22,7 +22,7 @@ function emptyResult(
   errorMessage?: string,
 ): PublicTherapiesResult {
   return {
-    categories: [],
+    themes: [],
     errorMessage,
     items: [],
     page: params.page,
@@ -79,7 +79,7 @@ export async function getPublicTherapies(
   }
 
   try {
-    const [list, categoryRows] = await Promise.all([
+    const [list, themeRows] = await Promise.all([
       fetchRows<PublicTherapyRow>(buildListPath(params), {
         headers: {
           Range: `${(params.page - 1) * params.pageSize}-${
@@ -88,7 +88,7 @@ export async function getPublicTherapies(
         },
       }),
       fetchRows<PublicTherapyRow>(
-        "public_therapies_v?select=category_slug,category_name,category_sort_order&order=category_sort_order.asc,category_name.asc",
+        "public_therapies_v?select=id,theme_names,theme_slugs",
       ),
     ]);
 
@@ -96,7 +96,7 @@ export async function getPublicTherapies(
     const totalPages = Math.max(Math.ceil(totalCount / params.pageSize), 1);
 
     return {
-      categories: mapCategories(categoryRows.rows),
+      themes: mapThemes(themeRows.rows),
       items: list.rows.map(mapTherapy),
       page: params.page > totalPages ? 1 : params.page,
       pageSize: params.pageSize,
@@ -134,9 +134,8 @@ function buildListPath(params: TherapySearchParams) {
       "name",
       "short_description",
       "image_url",
-      "category_slug",
-      "category_name",
-      "category_sort_order",
+      "theme_names",
+      "theme_slugs",
       "therapist_count",
       "is_popular",
       "is_new",
@@ -145,8 +144,8 @@ function buildListPath(params: TherapySearchParams) {
     ].join(","),
   );
 
-  if (params.category) {
-    query.set("category_slug", `eq.${params.category}`);
+  if (params.theme) {
+    query.set("theme_slugs", `cs.{${params.theme}}`);
   }
 
   if (params.q) {
@@ -170,10 +169,6 @@ function getOrder(params: TherapySearchParams) {
 
 function mapTherapy(row: PublicTherapyRow): PublicTherapyListItem {
   return {
-    category: {
-      name: row.category_name,
-      slug: row.category_slug,
-    },
     id: row.id,
     imageUrl: row.image_url,
     isNew: row.is_new,
@@ -185,17 +180,23 @@ function mapTherapy(row: PublicTherapyRow): PublicTherapyListItem {
   };
 }
 
-function mapCategories(rows: PublicTherapyRow[]): PublicTherapyCategory[] {
-  const categories = new Map<string, PublicTherapyCategory>();
+function mapThemes(rows: PublicTherapyRow[]): PublicTherapyTheme[] {
+  const themes = new Map<string, PublicTherapyTheme>();
 
   rows.forEach((row) => {
-    const current = categories.get(row.category_slug);
-    categories.set(row.category_slug, {
+    row.theme_slugs?.forEach((slug, index) => {
+      const name = row.theme_names?.[index];
+      if (!name) return;
+      const current = themes.get(slug);
+      themes.set(slug, {
       count: (current?.count ?? 0) + 1,
-      name: row.category_name,
-      slug: row.category_slug,
+        name,
+        slug,
+      });
     });
   });
 
-  return Array.from(categories.values());
+  return Array.from(themes.values()).sort((left, right) =>
+    left.name.localeCompare(right.name, "pt-BR"),
+  );
 }

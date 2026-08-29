@@ -9,13 +9,13 @@ type TherapySortOption = {
 
 export function TherapySortSelect({
   action,
-  category,
+  theme,
   currentSort,
   options,
   q,
 }: {
   action: string;
-  category?: string;
+  theme?: string;
   currentSort: TherapySort;
   options: TherapySortOption[];
   q?: string;
@@ -26,8 +26,8 @@ export function TherapySortSelect({
       className="flex flex-col gap-3 sm:flex-row sm:items-center"
     >
       {q ? <input type="hidden" name="q" value={q} /> : null}
-      {category ? (
-        <input type="hidden" name="category" value={category} />
+      {theme ? (
+        <input type="hidden" name="theme" value={theme} />
       ) : null}
       <label className="sr-only" htmlFor="therapy-sort">
         Ordenar terapias

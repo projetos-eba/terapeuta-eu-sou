@@ -1,5 +1,5 @@
 export type PublicHomeTherapy = {
-  categoryName: string;
+  themeName: string;
   href: string;
   imageUrl?: string | null;
   isFeatured: boolean;

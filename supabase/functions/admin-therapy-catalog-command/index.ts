@@ -198,7 +198,6 @@ async function listCatalogRequests(client: SupabaseRestClient) {
       relatedTherapyId: row.related_therapy_id,
       status: row.status,
       submission: row.submission ?? {},
-      suggestedCategoryId: row.suggested_category_id,
       updatedAt: row.updated_at,
     })),
   };

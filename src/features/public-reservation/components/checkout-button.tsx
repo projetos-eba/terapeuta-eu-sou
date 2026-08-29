@@ -88,9 +88,53 @@ export function CheckoutButton({
   const handledPromotionRequestRef = useRef<string | null>(null);
   const requestIdRef = useRef<string | null>(null);
   const completedRef = useRef(false);
+  const abandonmentStartedRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkoutReady, setCheckoutReady] = useState(false);
+
+  useEffect(() => {
+    const abandonPendingCheckout = () => {
+      if (abandonmentStartedRef.current || completedRef.current) return;
+
+      const bookingId = currentCheckoutRef.current?.bookingId;
+      if (!bookingId) return;
+
+      abandonmentStartedRef.current = true;
+      const body = JSON.stringify({
+        bookingId,
+        requestId: crypto.randomUUID(),
+      });
+      const url = "/api/public/reservation/abandon";
+
+      if (
+        typeof navigator.sendBeacon === "function" &&
+        navigator.sendBeacon(
+          url,
+          new Blob([body], { type: "application/json" }),
+        )
+      ) {
+        return;
+      }
+
+      void fetch(url, {
+        body,
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        keepalive: true,
+        method: "POST",
+      }).catch(() => undefined);
+    };
+
+    window.addEventListener("pagehide", abandonPendingCheckout);
+
+    return () => {
+      window.removeEventListener("pagehide", abandonPendingCheckout);
+      checkoutRef.current?.destroy();
+      checkoutRef.current = null;
+      abandonPendingCheckout();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -126,6 +170,8 @@ export function CheckoutButton({
         requestIdRef.current = crypto.randomUUID();
         currentCheckoutRef.current = null;
         handledPromotionRequestRef.current = null;
+        completedRef.current = false;
+        abandonmentStartedRef.current = false;
       }
 
       try {
@@ -269,17 +315,6 @@ export function CheckoutButton({
       cancelled = true;
       checkoutRef.current?.destroy();
       checkoutRef.current = null;
-      const bookingId = currentCheckoutRef.current?.bookingId;
-      const requestId = requestIdRef.current;
-      if (bookingId && requestId && !completedRef.current) {
-        void fetch("/api/public/reservation/abandon", {
-          body: JSON.stringify({ bookingId, requestId: crypto.randomUUID() }),
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-          keepalive: true,
-          method: "POST",
-        }).catch(() => undefined);
-      }
     };
   }, [
     acceptedTerms,

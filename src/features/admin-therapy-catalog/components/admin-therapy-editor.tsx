@@ -25,14 +25,12 @@ const contentLimits = {
 } as const;
 
 export function AdminTherapyEditor({
-  categories,
   isSaving,
   matchingThemes,
   onCancel,
   onSave,
   therapy,
 }: {
-  categories: AdminTherapyCatalogContract["categories"];
   isSaving: boolean;
   matchingThemes: AdminTherapyCatalogContract["matchingThemes"];
   onCancel: () => void;
@@ -77,7 +75,6 @@ export function AdminTherapyEditor({
       aliases: splitLines(String(form.get("aliases") ?? "")),
       benefits: collectBenefits(form),
       calendarColorKey: String(form.get("calendarColorKey") || "neutral"),
-      categoryId: String(form.get("categoryId") ?? ""),
       description: nullable(String(form.get("description") ?? "")),
       highlights: splitLines(String(form.get("highlights") ?? "")).map(
         (title) => ({
@@ -143,24 +140,6 @@ export function AdminTherapyEditor({
             name="slug"
             required
           />
-          <label>
-            <span className="mb-2 block text-sm font-extrabold text-brand-deep">
-              Categoria
-            </span>
-            <select
-              className="min-h-11 w-full rounded-xl border border-brand-lavender px-3 text-sm font-bold text-brand-deep"
-              defaultValue={therapy?.categoryId ?? categories[0]?.id}
-              name="categoryId"
-              required
-            >
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                  {category.isActive ? "" : " (inativa)"}
-                </option>
-              ))}
-            </select>
-          </label>
           <ColorSelect defaultValue={therapy?.calendarColorKey} />
         </div>
         <Textarea
@@ -422,8 +401,7 @@ export function AdminTherapyEditor({
             Selecione de 1 a 3 temas do Match para recomendar esta terapia
           </legend>
           <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-            Categoria continua sendo uma classificação única da terapia. Temas
-            do Match podem ser múltiplos e conectam esta terapia à jornada do
+            Os temas podem ser múltiplos e conectam esta terapia à jornada do
             paciente.
           </p>
           <p
@@ -472,8 +450,9 @@ export function AdminTherapyEditor({
           required
         />
         <div className="rounded-xl bg-surface-soft p-4 text-sm font-semibold leading-6 text-tesText-secondary">
-          Publicar exige categoria ativa e conteúdo público mínimo. Disponível
-          no Match exige de um a três temas canônicos. Refinamentos são
+          Publicar e disponibilizar para novos serviços exige de um a três temas
+          ativos e conteúdo público mínimo. A presença no Match é independente.
+          Refinamentos são
           escolhidos somente nos serviços dos terapeutas.
         </div>
       </Section>

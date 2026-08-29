@@ -20,15 +20,6 @@ describe("AdminTherapyEditor", () => {
 
     render(
       <AdminTherapyEditor
-        categories={[
-          {
-            id: "category-1",
-            isActive: true,
-            name: "Energia",
-            slug: "energia",
-            sortOrder: 1,
-          },
-        ]}
         isSaving={false}
         matchingThemes={[
           {
@@ -147,15 +138,6 @@ describe("AdminTherapyEditor", () => {
 
     render(
       <AdminTherapyEditor
-        categories={[
-          {
-            id: "category-1",
-            isActive: true,
-            name: "Energia",
-            slug: "energia",
-            sortOrder: 1,
-          },
-        ]}
         isSaving={false}
         matchingThemes={[{ id: "theme-1", imageUrl: null, name: "Tema", slug: "tema", sortOrder: 1 }]}
         onCancel={() => undefined}
@@ -198,7 +180,6 @@ describe("AdminTherapyEditor", () => {
 
     render(
       <AdminTherapyEditor
-        categories={[]}
         isSaving={false}
         matchingThemes={[]}
         onCancel={() => undefined}

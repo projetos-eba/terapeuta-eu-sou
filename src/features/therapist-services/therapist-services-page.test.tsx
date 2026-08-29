@@ -101,11 +101,6 @@ describe("TherapistServicesPage", () => {
     renderPage({
       items: [
         serviceFixture({
-          category: {
-            id: "c1000000-0000-4000-8000-000000000005",
-            name: "Energia e proteção",
-            slug: "energia-protecao",
-          },
           matching: {
             interestIds: [],
             themeIds: [
@@ -631,11 +626,6 @@ function serviceFixture(
   return {
     archivedAt: null,
     blockingReason: null,
-    category: {
-      id: "c1000000-0000-4000-8000-000000000001",
-      name: "Terapias Energéticas",
-      slug: "terapias-energeticas",
-    },
     createdAt: "2026-07-28T10:00:00.000Z",
     currency: "BRL",
     deliveryFormat: "online",
@@ -680,11 +670,6 @@ function catalogFixture(): TherapyCatalogContract {
     contractVersion: 1,
     items: [
       {
-        category: {
-          id: "c1000000-0000-4000-8000-000000000001",
-          name: "Terapias Energéticas",
-          slug: "terapias-energeticas",
-        },
         isAvailableForServices: true,
         isPubliclyVisible: true,
         isVisibleInMatching: true,

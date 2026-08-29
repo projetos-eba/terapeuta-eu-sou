@@ -1,4 +1,4 @@
-export * from "./components/category-filter";
+export * from "./components/theme-filter";
 export * from "./components/therapy-card";
 export * from "./components/therapy-filters";
 export * from "./components/therapy-grid";
