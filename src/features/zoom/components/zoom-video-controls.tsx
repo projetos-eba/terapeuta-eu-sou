@@ -22,6 +22,7 @@ type ZoomVideoControlsProps = {
   onJoin: () => void;
   onLeave: () => void;
   onReviewPermissions: () => void;
+  onActivateCamera?: () => void;
   supportHref?: string;
   onToggleAudio: () => void;
   onToggleVideo: () => void;
@@ -42,6 +43,7 @@ type ZoomVideoControlsProps = {
     | "error"
     | "reload_required";
   videoOn: boolean;
+  isMobileDevice?: boolean;
 };
 
 export function ZoomVideoControls({
@@ -53,6 +55,7 @@ export function ZoomVideoControls({
   onJoin,
   onLeave,
   onReviewPermissions,
+  onActivateCamera,
   supportHref,
   onToggleAudio,
   onToggleVideo,
@@ -60,6 +63,7 @@ export function ZoomVideoControls({
   roleType,
   state,
   videoOn,
+  isMobileDevice = false,
 }: ZoomVideoControlsProps) {
   const isLive = [
     "joined",
@@ -113,6 +117,19 @@ export function ZoomVideoControls({
 
   return (
     <div className="flex flex-wrap items-start justify-center gap-3">
+      {isMobileDevice && !videoOn && onActivateCamera ? (
+        <TESButton
+          className="basis-full sm:basis-auto"
+          disabled={mediaBusy || !isOnline}
+          onClick={onActivateCamera}
+          size="lg"
+          type="button"
+          variant="gradient"
+        >
+          <Video aria-hidden="true" size={20} />
+          Ativar minha câmera
+        </TESButton>
+      ) : null}
       <div className="flex flex-wrap items-center justify-center gap-2 rounded-[24px] border border-brand-lavender/70 bg-white/95 p-2.5 shadow-card sm:gap-3 sm:p-3">
         <ControlButton
           active={!audioMuted}

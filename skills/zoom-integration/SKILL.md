@@ -5,6 +5,14 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
 
 # Integracao Zoom Video SDK
 
+## Contrato mobile de câmera
+
+Em mobile, a preferência de câmera da sala de espera não dispara publicação
+automática após o join. O CTA da sala ativa chama `startVideo()` diretamente no
+gesto do usuário e só depois reconcilia o self-view. Se a captura já estiver
+publicada, recuperar apenas o attach; nunca tentar revogar a permissão ou
+forçar `stop/start` durante reconexão.
+
 ## Fontes
 
 1. `AGENTS.md`.

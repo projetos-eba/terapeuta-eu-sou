@@ -5,6 +5,14 @@ description: Implementar e validar as salas dedicadas de videochamada Zoom para 
 
 # Sala dedicada de videochamada
 
+## Ativação mobile
+
+No mobile, a câmera selecionada no preflight é uma intenção transitória: a sala
+ativa exibe "Ativar minha câmera" depois de montada e publica somente no clique.
+A ativação deve chamar `startVideo()` sem `await` anterior; quando a publicação
+já existe, "Mostrar minha câmera" executa apenas reconciliação. Permissão negada
+ou resetada deve orientar o usuário a revisar o Safari/iOS, sem loop automático.
+
 ## Fontes obrigatórias
 
 1. `AGENTS.md`.
