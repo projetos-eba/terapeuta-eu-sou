@@ -13,6 +13,7 @@ declare global {
     Stripe?: (publishableKey: string) => {
       initEmbeddedCheckout: (options: {
         fetchClientSecret: () => Promise<string>;
+        onComplete?: () => void;
       }) => Promise<{
         destroy: () => void;
         mount: (selector: string) => void;
@@ -86,6 +87,7 @@ export function CheckoutButton({
   } | null>(null);
   const handledPromotionRequestRef = useRef<string | null>(null);
   const requestIdRef = useRef<string | null>(null);
+  const completedRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkoutReady, setCheckoutReady] = useState(false);
@@ -193,6 +195,9 @@ export function CheckoutButton({
 
         const checkout = await stripe.initEmbeddedCheckout({
           fetchClientSecret,
+          onComplete: () => {
+            completedRef.current = true;
+          },
         });
 
         if (cancelled) {
@@ -264,6 +269,17 @@ export function CheckoutButton({
       cancelled = true;
       checkoutRef.current?.destroy();
       checkoutRef.current = null;
+      const bookingId = currentCheckoutRef.current?.bookingId;
+      const requestId = requestIdRef.current;
+      if (bookingId && requestId && !completedRef.current) {
+        void fetch("/api/public/reservation/abandon", {
+          body: JSON.stringify({ bookingId, requestId: crypto.randomUUID() }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          keepalive: true,
+          method: "POST",
+        }).catch(() => undefined);
+      }
     };
   }, [
     acceptedTerms,
