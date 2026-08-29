@@ -1168,6 +1168,14 @@ describe("ZoomVideoSessionAdapter", () => {
         mediaDevices: { getUserMedia },
       });
       vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+      mockStream.startVideo.mockImplementation(async () => {
+        expect(
+          screen
+            .getByTestId("zoom-local-video")
+            .querySelector("video-player"),
+        ).toBeInTheDocument();
+        return undefined;
+      });
 
       render(
         <ZoomVideoSessionAdapter

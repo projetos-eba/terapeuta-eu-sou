@@ -31,6 +31,12 @@ participante atual; `TIMEOUT` deve desanexar somente o player local e preservar
 publicação e vídeo remoto. Ver
 [vinculação tardia da prévia mobile](./mobile-self-view-binding-2026-08-28.md).
 
+Se o defeito ocorrer apenas quando câmera ou microfone já foram testados na
+sala de espera, verificar também a ordem React: o `<video-player>` local deve
+estar montado antes de iniciar a captura pré-ativada. A montagem tardia deve
+refazer somente o attach local; não depender de novo prompt de permissão nem
+de clique em microfone/câmera.
+
 Quando o usuário aciona a recuperação manual enquanto a câmera já foi publicada,
 o adapter refaz somente o vínculo da self-view. O roster pode ser relido como
 diagnóstico, mas não bloqueia o attach nem repete captura, `join` ou emissão de

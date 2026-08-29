@@ -24,6 +24,10 @@ self-view de aparecer, sem impedir que o terapeuta receba os frames.
 ## Contrato corrigido
 
 - O React monta e preserva um único `<video-player>` dentro do container local.
+- Quando a câmera vem habilitada da sala de espera, o adapter aguarda o React
+  montar esse container e player antes de chamar `startVideo()`. A montagem
+  tardia também dispara reconciliação automática; um diálogo de permissão não
+  pode ser necessário para a self-view aparecer.
 - `startVideo()` confirma publicação, não prévia.
 - Depois de `startVideo()` e de identificar o participante local, o adapter
   chama `attachVideo(localUserId, quality, localPlayer)` imediatamente. O
@@ -49,6 +53,10 @@ Os eventos `user-updated`, `video-capturing-change: Started`,
 continua sendo a fonte de reconciliação, mas não pode atrasar o primeiro attach
 de uma captura local que `startVideo()` já confirmou.
 
+A montagem do renderer local é um gatilho adicional e explícito. Ela resolve a
+barreira da transição espera → sala sem depender de tempo arbitrário, do prompt
+de microfone ou de qualquer evento remoto.
+
 ## Diferença para as correções anteriores
 
 As correções de identidade e reentrada garantiram que o adapter conhecesse o
@@ -73,6 +81,9 @@ user-agent completo.
 
 - publicação ativa com `bVideoOn=false` chama attach local sem nova captura,
   join ou JWT;
+- câmera pré-ativada só inicia após o `<video-player>` local estar montado;
+- montagem tardia do renderer recupera a self-view automaticamente, sem clique
+  no microfone, nova captura, join ou JWT;
 - player conectado e ainda sem `node-id` permanece pendente;
 - vínculo tardio recupera a prévia sem novo `startVideo`, join ou JWT;
 - timeout desanexa somente o player local e aceita nova tentativa;
@@ -107,8 +118,8 @@ na transição móvel. Frame dedicado da chamada no Figma:
 | Gate                          | Resultado                                                 |
 | ----------------------------- | --------------------------------------------------------- |
 | Regressão antes da correção   | Falha esperada: o attach local foi bloqueado por `bVideoOn=false` |
-| Vitest dirigido               | 90 testes aprovados em sala de espera e adapter           |
-| `npm run zoom:video-sdk:test` | 21 testes Deno + 114 testes Vitest aprovados              |
+| Vitest dirigido               | 93 testes aprovados em stage, sala de espera e adapter    |
+| `npm run zoom:video-sdk:test` | 21 testes Deno + 115 testes Vitest aprovados              |
 | Playwright Chromium mobile    | 4 cenários aprovados                                      |
 | Playwright WebKit mobile      | 4 cenários aprovados                                      |
 | `npm run typecheck`           | Aprovado                                                  |
