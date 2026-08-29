@@ -382,11 +382,16 @@ function Services({
           Vivências e terapias
         </h2>
       </div>
-      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+      <div
+        aria-label="Vivências e terapias disponíveis"
+        className="mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain pb-3 touch-pan-x [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:grid md:snap-none md:overflow-visible md:pb-0 lg:grid-cols-2"
+        role="list"
+      >
         {profile.services.map((service) => (
           <article
             key={service.id}
-            className="grid min-h-[220px] gap-5 overflow-hidden rounded-[18px] border border-border bg-white p-5 shadow-card sm:grid-cols-[128px_minmax(0,1fr)]"
+            className="grid w-[calc(100%-1rem)] min-w-0 shrink-0 snap-start gap-5 overflow-hidden rounded-[18px] border border-border bg-white p-5 shadow-card sm:grid-cols-[128px_minmax(0,1fr)] md:w-auto md:shrink md:snap-none"
+            role="listitem"
           >
             <div className="relative grid min-h-[112px] place-items-center overflow-hidden rounded-[16px] bg-brand-lavenderSoft text-brand-primary sm:min-h-0">
               {service.imageUrl ? (
@@ -474,9 +479,7 @@ export function TherapistProfilePage({
       <PublicHeader showMobileSearch staticPreview={mode === "preview"} />
       <Hero mode={mode} profile={profile} />
       <IntroCards mode={mode} profile={profile} />
-      <div className="hidden md:block">
-        <Services mode={mode} profile={profile} />
-      </div>
+      <Services mode={mode} profile={profile} />
       <section className="mx-auto mt-8 grid max-w-[1348px] items-start gap-8 px-5 pb-10 sm:px-8 lg:grid-cols-[1.05fr_0.95fr]">
         <AvailabilitySelector
           staticPreview={mode === "preview"}

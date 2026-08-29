@@ -95,6 +95,7 @@ type ZoomVideoClient = {
 };
 
 type ZoomMediaStream = {
+  isCapturingVideo?: () => boolean;
   isSupportMultipleVideos?: () => boolean;
   getMaxRenderableVideos?: () => number;
   attachVideo?: (
@@ -1599,21 +1600,19 @@ export function ZoomVideoSessionAdapter({
       } catch {
         participant = undefined;
       }
+      // The SDK documents self-view as startVideo() followed by attachVideo().
+      // On iPhone the roster's bVideoOn can arrive after publication (or remain
+      // stale for the local participant), so it is useful for diagnostics but
+      // cannot be a prerequisite for attaching the current user's renderer.
       if (participant?.bVideoOn !== true) {
-        localPreviewStateRef.current = "waiting_provider";
-        setLocalPreviewUnavailable(true);
-        if (localPreviewIssueLoggedGenerationRef.current !== generation) {
-          localPreviewIssueLoggedGenerationRef.current = generation;
-          console.warn(
-            JSON.stringify({
-              code: "LOCAL_RENDER_PENDING",
-              operation: "video.attach.local",
-              state: "waiting_provider",
-              trigger,
-            }),
-          );
-        }
-        return;
+        console.info(
+          JSON.stringify({
+            code: "LOCAL_RENDER_ROSTER_LAG",
+            operation: "video.attach.local",
+            trigger,
+            ...readVideoCapabilities(stream),
+          }),
+        );
       }
 
       if (localPreviewAttemptsRef.current >= MAX_LOCAL_PREVIEW_ATTEMPTS) {
@@ -1650,6 +1649,7 @@ export function ZoomVideoSessionAdapter({
           );
           throw new Error("local_preview_element_mismatch");
         }
+        styleLocalVideoElement(player);
         if (
           !isCurrentVideoOwner(client, generation) ||
           streamRef.current !== stream ||
@@ -1853,7 +1853,7 @@ export function ZoomVideoSessionAdapter({
       ) {
         return false;
       }
-      styleVideoElement(fallbackElement);
+      styleLocalVideoElement(fallbackElement);
       input.container.appendChild(fallbackElement);
       const bound = await waitForVideoPlayerBinding({
         element: fallbackElement,
@@ -3721,9 +3721,11 @@ function readVideoCapturingState(
 function readVideoCapabilities(stream: ZoomMediaStream | null) {
   // Diagnostics must never fail a valid call or infer a browser limitation.
   try {
+    const capturing = stream?.isCapturingVideo?.();
     const multiple = stream?.isSupportMultipleVideos?.();
     const maximum = stream?.getMaxRenderableVideos?.();
     return {
+      ...(typeof capturing === "boolean" ? { capturingVideo: capturing } : {}),
       ...(typeof multiple === "boolean"
         ? { supportsMultipleVideos: multiple }
         : {}),
@@ -3738,6 +3740,14 @@ function readVideoCapabilities(stream: ZoomMediaStream | null) {
 
 function styleVideoElement(element: HTMLElement) {
   element.classList.add("block", "h-full", "w-full", "object-cover");
+}
+
+function styleLocalVideoElement(element: HTMLElement) {
+  styleVideoElement(element);
+  // An SDK-created fallback is a sibling of React's persistent player. Keep
+  // it in the same visual layer so it cannot be laid out below the clipped
+  // tile on mobile browsers.
+  element.classList.add("absolute", "inset-0");
 }
 
 function formatClosedReason(reason: string | undefined) {

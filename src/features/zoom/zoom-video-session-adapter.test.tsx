@@ -584,7 +584,7 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(countAccessRequests(fetchMock, "join")).toBe(1);
   });
 
-  it("keeps a manual self-view retry alive until a delayed mobile roster reflects published video", async () => {
+  it("attaches the mobile self-view when the roster lags behind published video", async () => {
     const fetchMock = accessResponse(0);
     vi.stubGlobal("fetch", fetchMock);
     let providerReflectsVideo = false;
@@ -605,15 +605,6 @@ describe("ZoomVideoSessionAdapter", () => {
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
     await screen.findByText(/voc[eê] entrou no encontro/i);
     fireEvent.click(screen.getByRole("button", { name: /ativar c.mera/i }));
-    const retry = await screen.findByRole("button", {
-      name: /tentar mostrar minha c.mera/i,
-    });
-
-    fireEvent.click(retry);
-    // Some mobile SDK pipelines publish first and expose bVideoOn only after
-    // the local attach request has already returned. No new user event follows.
-    providerReflectsVideo = true;
-
     await waitFor(
       () =>
         expect(screen.getByTestId("zoom-local-video")).toContainElement(
@@ -621,6 +612,12 @@ describe("ZoomVideoSessionAdapter", () => {
         ),
       { timeout: 2_000 },
     );
+    // On iPhone the SDK may publish first and expose bVideoOn later, without
+    // emitting another roster event. Rendering must not wait for that flag.
+    expect(providerReflectsVideo).toBe(false);
+    expect(
+      screen.queryByRole("button", { name: /tentar mostrar minha c.mera/i }),
+    ).not.toBeInTheDocument();
     expect(mockStream.startVideo).toHaveBeenCalledTimes(1);
     expect(mockClient.join).toHaveBeenCalledTimes(1);
     expect(countAccessRequests(fetchMock, "join")).toBe(1);
@@ -1619,7 +1616,7 @@ describe("ZoomVideoSessionAdapter", () => {
     ).toHaveLength(1);
   });
 
-  it("waits for the local provider roster before attaching a published mobile self-view", async () => {
+  it("does not gate published mobile self-view attachment on the local roster", async () => {
     vi.stubGlobal("fetch", accessResponse(0));
     mockClient.getCurrentUserInfo.mockReturnValue({
       bVideoOn: false,
@@ -1651,9 +1648,14 @@ describe("ZoomVideoSessionAdapter", () => {
     await screen.findByText(/voc[eê] entrou no encontro/i);
     fireEvent.click(screen.getByRole("button", { name: /ativar câmera/i }));
     await waitFor(() => expect(mockStream.startVideo).toHaveBeenCalledTimes(1));
-    expect(
-      mockStream.attachVideo.mock.calls.filter(([userId]) => userId === 7),
-    ).toHaveLength(0);
+    await waitFor(() =>
+      expect(
+        mockStream.attachVideo.mock.calls.filter(([userId]) => userId === 7),
+      ).toHaveLength(1),
+    );
+    expect(screen.getByTestId("zoom-local-video")).toContainElement(
+      localElement,
+    );
     expect(screen.getByTestId("zoom-remote-video")).toContainElement(
       remoteElement,
     );
@@ -1685,11 +1687,12 @@ describe("ZoomVideoSessionAdapter", () => {
       ]);
     });
 
-    await waitFor(() =>
-      expect(
-        mockStream.attachVideo.mock.calls.filter(([userId]) => userId === 7),
-      ).toHaveLength(1),
-    );
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    });
+    expect(
+      mockStream.attachVideo.mock.calls.filter(([userId]) => userId === 7),
+    ).toHaveLength(1);
     expect(mockStream.startVideo).toHaveBeenCalledTimes(1);
     expect(mockClient.join).toHaveBeenCalledTimes(1);
   });

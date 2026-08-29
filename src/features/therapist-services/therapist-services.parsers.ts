@@ -8,6 +8,7 @@ import {
   type TherapistServiceStatus,
 } from "./therapist-services.types";
 import {
+  THERAPIST_SERVICE_DESCRIPTION_MAX_LENGTH,
   THERAPIST_SERVICE_DURATION_MAX_MINUTES,
   THERAPIST_SERVICE_DURATION_MIN_MINUTES,
 } from "./therapist-services.constants";
@@ -36,7 +37,10 @@ export function parseTherapistServicesCommand(
       action,
       currency: optionalCurrency(value.currency),
       deliveryFormat: optionalDeliveryFormat(value.deliveryFormat),
-      description: optionalNullableString(value.description, 200),
+      description: optionalNullableString(
+        value.description,
+        THERAPIST_SERVICE_DESCRIPTION_MAX_LENGTH,
+      ),
       durationMinutes: boundedInteger(
         value.durationMinutes,
         THERAPIST_SERVICE_DURATION_MIN_MINUTES,
@@ -56,7 +60,10 @@ export function parseTherapistServicesCommand(
       action,
       currency: optionalCurrency(value.currency),
       deliveryFormat: optionalDeliveryFormat(value.deliveryFormat),
-      description: optionalNullableString(value.description, 200),
+      description: optionalNullableString(
+        value.description,
+        THERAPIST_SERVICE_DESCRIPTION_MAX_LENGTH,
+      ),
       durationMinutes: optionalInteger(
         value.durationMinutes,
         THERAPIST_SERVICE_DURATION_MIN_MINUTES,
