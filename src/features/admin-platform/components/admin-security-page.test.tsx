@@ -43,6 +43,36 @@ describe("AdminSecurityPage", () => {
       screen.queryByText(/Auditoria central indisponível/i),
     ).not.toBeInTheDocument();
   });
+
+  it("presents catalogued audit events in Portuguese", () => {
+    render(
+      <AdminSecurityPage
+        data={makeData({
+          auditEvents: [
+            {
+              actorRole: "admin",
+              createdAt: "2026-08-08T12:00:00.000Z",
+              entityType: "therapist_profile",
+              eventType: "professional.publish",
+              id: "audit-1",
+              permission: "admin.professionals.verify",
+              reason: null,
+              source: "admin-operation-command",
+            },
+          ],
+          auditEventsStatus: "available",
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByText("Perfil profissional publicado"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/perfil profissional · Administração/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("professional.publish")).not.toBeInTheDocument();
+  });
 });
 
 function makeData(
@@ -51,27 +81,5 @@ function makeData(
   return {
     auditEvents: overrides.auditEvents,
     auditEventsStatus: overrides.auditEventsStatus,
-    generatedAt: "2026-08-08T12:00:00.000Z",
-    moduleSignals: [
-      {
-        description: "Sessões administrativas autenticadas.",
-        key: "sessions",
-        label: "Sessões admin",
-        source: "requireAdminSession",
-        status: "available",
-        tone: "success",
-        value: 1,
-      },
-    ],
-    reviewItems: [
-      {
-        description: "Validar findings reais antes de homologar.",
-        key: "advisor",
-        label: "Revisão de segurança",
-        severity: "warning",
-        source: "Revisão de segurança",
-        status: "manual_review",
-      },
-    ],
   };
 }

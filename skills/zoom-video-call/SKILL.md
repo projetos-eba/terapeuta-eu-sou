@@ -38,7 +38,9 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
   controles, reconexão e encerramento.
 - O cabeçalho da sala e o cartão da sala de espera exibem o ID completo da
   reserva logo abaixo do participante. A referência é o `bookingId` já
-  autorizado pela rota e não é um identificador do provedor Zoom.
+  autorizado pela rota e não é um identificador do provedor Zoom. No cartão
+  responsivo, o ID nunca pode extrapolar o container: truncar com reticências
+  e permitir revelar o valor completo por foco, hover ou toque.
 - A apresentação fica separada da integração: `ZoomVideoStage` concentra a
   composição desktop/mobile e `ZoomVideoControls` concentra preflight,
   microfone, câmera, suporte e saída. O adapter continua sendo a autoridade
@@ -144,6 +146,8 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   encerramento conforme o papel.
 - Validar bloqueio antes de T-15, espera com terapeuta ausente, liberação do
   paciente após join do terapeuta, ambos os joins, saída e estados de ocorrência.
+- Confirmar que a mensagem “O terapeuta iniciou o encontro” aparece somente
+  para paciente quando a entrada é liberada; terapeuta não recebe essa copy.
 - Validar `leave -> espera -> reentrada`, inclusive com a saída disponível sem
   conexão, `final end -> feedback`, feedback já enviado, erro de leitura,
   erro de envio, resposta realizada, não realização, comentário de 500

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildIntegrationHealth,
-  buildModuleSignals,
   resolveSignalStatus,
 } from "./admin-platform.mappers";
 import type { AdminOperationalSignal } from "./admin-platform.types";
@@ -57,20 +56,5 @@ describe("admin platform mappers", () => {
         signals: [{ ...baseSignal, tone: "warning", value: 3 }],
       }).status,
     ).toBe("degraded");
-  });
-
-  it("builds module visibility signals for the admin shell", () => {
-    expect(buildModuleSignals({ enabledCount: 5, hiddenCount: 10 })).toEqual([
-      expect.objectContaining({
-        key: "enabled-admin-modules",
-        status: "available",
-        value: 5,
-      }),
-      expect.objectContaining({
-        key: "hidden-admin-modules",
-        tone: "warning",
-        value: 10,
-      }),
-    ]);
   });
 });

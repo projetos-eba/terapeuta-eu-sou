@@ -32,7 +32,7 @@ export function TherapyCard({ className, therapy }: TherapyCardProps) {
             fill
             quality={95}
             sizes="(min-width: 1180px) 240px, (min-width: 768px) 33vw, 100vw"
-            className="object-cover transition duration-500 group-hover:scale-105"
+            className="object-contain transition duration-500"
           />
         ) : (
           <div className="flex h-full items-center justify-center">

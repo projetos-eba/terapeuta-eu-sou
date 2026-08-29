@@ -41,12 +41,13 @@ o registry de módulos do shell admin.
 - Mapeadores:
   - `buildIntegrationHealth`
   - `resolveSignalStatus`
-  - `buildModuleSignals`
-  - `buildSecurityReviewItems`
+  - `getAdminAuditEventLabel`
 
 `/admin/integracoes` usa RPC Supabase autenticado com token admin via
 `admin_get_integration_health_v1()`, sem `service_role` no Next. `/admin/seguranca`
-continua lendo `admin_audit_events` sanitizado para auditoria recente.
+mostra exclusivamente a auditoria recente, lendo `admin_audit_events`
+sanitizado e normalizando ações, entidades e ator pelo catálogo local em
+português.
 Leituras bloqueadas por RLS/grants aparecem como `Indisponível`. Erro ou
 bloqueio nunca deve ser transformado em zero.
 
@@ -79,8 +80,8 @@ bloqueio nunca deve ser transformado em zero.
   - autenticar admin local quando houver seed;
   - acessar `/admin/integracoes` e confirmar Stripe, Connect, Zoom, E-mail e
     sinais operacionais;
-  - acessar `/admin/seguranca` e confirmar superfície admin, revisões
-    obrigatórias e auditoria recente;
+  - acessar `/admin/seguranca` e confirmar a auditoria recente, sem expor
+    identificadores técnicos de ação ou entidade;
   - confirmar que leitura indisponível aparece como `Indisponível`.
 
 ## Copy responsável

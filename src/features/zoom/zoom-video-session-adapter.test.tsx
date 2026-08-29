@@ -2991,6 +2991,28 @@ describe("ZoomVideoSessionAdapter", () => {
     );
   });
 
+  it("does not announce therapist entry to the therapist when preview access is allowed", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({ data: { access: allowedAccess }, ok: true }),
+      ok: true,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="therapist"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /atualizar sala/i }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(
+      screen.queryByText(/o terapeuta iniciou o encontro/i),
+    ).not.toBeInTheDocument();
+  });
+
   it("retries the initial preview after an upstream failure", async () => {
     vi.useFakeTimers();
     const fetchMock = vi
