@@ -1484,6 +1484,7 @@ export function ZoomVideoSessionAdapter({
       }
 
       await enableVideoForSession(stream, { userGesture: true });
+      if (isMobileBrowser()) retryLocalPreview();
       scheduleRemoteVideoResync();
     } catch (error) {
       if (!mounted.current || leavingRef.current) return;
@@ -1525,6 +1526,10 @@ export function ZoomVideoSessionAdapter({
         if (!mounted.current || leavingRef.current) return;
         if (stateRef.current === "media_degraded") setState("joined");
         setMessage("Câmera ativada.");
+        // The mobile capture pipeline can finish a few ticks after
+        // startVideo resolves. Reconcile the self-view with bounded retries so
+        // a page refresh is never required to obtain the local player.
+        retryLocalPreview();
         scheduleRemoteVideoResync();
       })
       .catch((error) => {
