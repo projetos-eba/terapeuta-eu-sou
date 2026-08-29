@@ -43,6 +43,12 @@ export function createRecipientAccountV2(input: {
   );
 }
 
+export function getStripeV2ErrorCode(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  const match = message.match(/STRIPE_V2_REQUEST_FAILED:\d+:([a-z0-9_]+)/i);
+  return match?.[1] ?? null;
+}
+
 export function buildRecipientAccountIdempotencyKey(input: {
   accountGeneration: number;
   environment: string;

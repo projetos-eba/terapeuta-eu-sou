@@ -44,6 +44,12 @@ webhook. O parametro `checkout=success` continua sem autoridade propria.
   sessoes continuam como cobranca na plataforma com separate charges and
   transfers, e o terapeuta nao recebe formulario local de cobranca.
 
+Se a Stripe retornar `account_create_activation_required`, a plataforma Live
+ainda nao foi ativada para criar contas conectadas. A Edge Function traduz esse
+bloqueio em estado temporario de habilitacao, sem criar registro local de conta
+nem apresentar erro tecnico ao terapeuta. A ativacao precisa ser concluida no
+Stripe antes de novos cadastros de recebimento.
+
 Essa configuracao permite reter fundos antes de liberar repasse. Como a plataforma paga as taxas Stripe nesse fluxo, a taxa nao e descontada dos 85% devidos ao terapeuta em novos pagamentos sob a política vigente.
 
 ## Modelo financeiro inicial

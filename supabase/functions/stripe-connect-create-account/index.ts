@@ -12,6 +12,7 @@ import {
 import {
   createRecipientAccountV2,
   deriveConnectAccountState,
+  getStripeV2ErrorCode,
   getAccountId,
 } from "../_shared/payments/connect.ts";
 import {
@@ -59,14 +60,34 @@ runtime.serve(async (request) => {
       `/rest/v1/profiles?select=email&id=eq.${encodeURIComponent(user.id)}&limit=1`,
     );
     const accountGeneration = await getNextAccountGeneration(client, therapist.id);
-    const account = await createRecipientAccountV2({
-      accountGeneration,
-      apiKey: config.stripeApiKey,
-      email: profileRows[0]?.email,
-      environment: config.environment,
-      therapistId: therapist.id,
-      therapistName: therapist.public_name,
-    });
+    let account: Record<string, unknown>;
+    try {
+      account = await createRecipientAccountV2({
+        accountGeneration,
+        apiKey: config.stripeApiKey,
+        email: profileRows[0]?.email,
+        environment: config.environment,
+        therapistId: therapist.id,
+        therapistName: therapist.public_name,
+      });
+    } catch (error) {
+      const providerCode = getStripeV2ErrorCode(error);
+      if (providerCode === "account_create_activation_required") {
+        console.warn(
+          JSON.stringify({
+            code: "CONNECT_PLATFORM_ACTIVATION_REQUIRED",
+            provider_code: providerCode,
+            request_id: requestId,
+          }),
+        );
+        throw new DomainError(
+          "connect_platform_activation_required",
+          503,
+          "A conta de recebimento ainda está sendo habilitada. Tente novamente mais tarde.",
+        );
+      }
+      throw error;
+    }
     const stripeAccountId = getAccountId(account);
     const state = deriveConnectAccountState(account);
     const inserted = await insertConnectAccount(client, {
