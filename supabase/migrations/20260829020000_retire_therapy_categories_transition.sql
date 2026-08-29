@@ -386,5 +386,65 @@ begin
   return jsonb_build_object('contractVersion',2,'idempotentReplay',false,'requestId',v_request.id,'status',v_request.status);
 end; $$;
 
+-- Retain the legacy signature only as a compatibility wrapper; it now follows
+-- the same theme-only validation as v2 and never reads a category identifier.
+create or replace function public.submit_therapy_catalog_request_v1(p_actor_user_id uuid, p_payload jsonb)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+begin
+  return public.submit_therapy_catalog_request_v2(
+    p_actor_user_id,
+    jsonb_build_object(
+      'informedName', p_payload->>'informedName',
+      'themeIds', coalesce(p_payload->'themeIds', '[]'::jsonb),
+      'submission', coalesce(p_payload->'submission', jsonb_build_object(
+        'description', p_payload->>'description',
+        'objective', p_payload->>'justification',
+        'useCases', p_payload->>'useCases',
+        'sessionProcess', p_payload->>'sessionProcess'
+      ))
+    ),
+    gen_random_uuid()
+  );
+end; $$;
+
+create or replace function public.get_public_therapy_therapists_v1(
+  p_therapy_slug text,
+  p_theme_ids uuid[] default '{}'::uuid[],
+  p_interest_ids uuid[] default '{}'::uuid[],
+  p_limit integer default 6
+)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare v_therapy_id uuid; v_relevant_themes uuid[];
+begin
+  select therapy.id into v_therapy_id
+  from public.therapies therapy
+  where therapy.slug=p_therapy_slug and therapy.status='published'
+    and therapy.is_public_visible and public.therapy_has_active_matching_theme_v1(therapy.id);
+  if v_therapy_id is null then raise exception 'NOT_FOUND'; end if;
+  select coalesce(array_agg(distinct link.theme_id),'{}'::uuid[]) into v_relevant_themes
+  from public.therapy_matching_themes link join public.matching_themes theme on theme.id=link.theme_id and theme.is_active
+  where link.therapy_id=v_therapy_id and link.theme_id=any(coalesce(p_theme_ids,'{}'::uuid[]));
+  return coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'slug', profile.slug, 'public_name', profile.public_name,
+      'photo_url', profile.photo_url, 'therapist_headline', profile.headline,
+      'service_description', service.description, 'tags', coalesce(tags.items,array[therapy.name]),
+      'average_rating', null, 'review_count', 0, 'completed_session_count', 0,
+      'next_slot_at', null, 'service_id', service.id,
+      'matching_interest_count', coalesce(interest_match.count,0),
+      'matching_service_theme_count', coalesce(theme_match.count,0)
+    ) order by coalesce(theme_match.count,0) desc, service.position, service.price_cents, profile.slug)
+    from public.therapist_services service
+    join public.therapist_profiles profile on profile.id=service.therapist_profile_id
+    join public.therapies therapy on therapy.id=service.therapy_id
+    left join lateral (select array_agg(value order by value) as items from jsonb_array_elements_text(case when jsonb_typeof(profile.metadata->'care_tags')='array' then profile.metadata->'care_tags' else '[]'::jsonb end) value) tags on true
+    left join lateral (select count(*)::integer as count from public.therapist_service_matching_interests service_interest where service_interest.therapist_service_id=service.id and service_interest.interest_id=any(coalesce(p_interest_ids,'{}'::uuid[]))) interest_match on true
+    left join lateral (select count(*)::integer as count from public.therapist_service_matching_themes service_theme where service_theme.therapist_service_id=service.id and service_theme.theme_id=any(v_relevant_themes)) theme_match on true
+    where service.therapy_id=v_therapy_id and service.archived_at is null and service.status='active' and service.is_bookable and service.online_only
+      and public.is_public_service_booking_eligible_v1(service.id)
+    limit least(greatest(coalesce(p_limit,6),1),24)
+  ),'[]'::jsonb);
+end; $$;
+
 comment on function public.therapy_has_active_matching_theme_v1(uuid) is
   'Canonical eligibility primitive after retirement of therapy categories.';

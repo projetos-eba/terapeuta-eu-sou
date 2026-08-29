@@ -6,12 +6,14 @@ do $$
 begin
   if exists (
     select 1 from public.therapies therapy
-    where (therapy.status = 'published' and therapy.is_public_visible)
-       or therapy.is_available_for_services
-       or exists (
-         select 1 from public.therapist_services service
-         where service.therapy_id = therapy.id and service.status = 'active' and service.archived_at is null
-       )
+    where (
+      (therapy.status = 'published' and therapy.is_public_visible)
+      or therapy.is_available_for_services
+      or exists (
+        select 1 from public.therapist_services service
+        where service.therapy_id = therapy.id and service.status = 'active' and service.archived_at is null
+      )
+    )
     and not public.therapy_has_active_matching_theme_v1(therapy.id)
   ) then
     raise exception 'THERAPY_CATEGORY_RETIREMENT_PREFLIGHT_FAILED';
