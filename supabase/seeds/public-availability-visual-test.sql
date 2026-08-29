@@ -66,10 +66,9 @@ select
   'online',
   true
 from public.therapies as therapy
-join public.therapy_categories as category on category.id = therapy.category_id
 where therapy.status = 'published'
   and therapy.is_public_visible
-  and category.is_active
+  and public.therapy_has_active_matching_theme_v1(therapy.id)
 order by therapy.slug
 limit 1
 on conflict (id) do update

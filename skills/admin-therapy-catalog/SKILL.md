@@ -17,7 +17,7 @@ públicas dependentes do catálogo canônico e da taxonomia do Match.
 - `supabase/migrations/*therapy*`
 - `supabase/migrations/*matching*`
 - `supabase/functions/admin-therapy-catalog-command/*`
-- planilhas aprovadas de categoria/refinamento quando usadas como fonte de seed
+- planilhas aprovadas de temas/refinamentos quando usadas como fonte de seed
 
 ## Rotas
 
@@ -89,8 +89,12 @@ admin autenticado, sem `service_role` no frontend.
 - Temas do Match exibidos no cadastro de terapia devem mostrar a mesma prévia
   visual usada na jornada pública sempre que `matching_themes.image_url`
   existir.
-- Terapias podem selecionar de 1 a 3 temas do Match. `category_id` permanece
-  uma categoria canônica singular da terapia.
+- Temas do Match são a única classificação ativa da terapia. O Admin exige de
+  1 a 3 temas ativos e distintos em cada salvamento atômico; não existe campo,
+  fallback ou contrato operacional de Categoria.
+- Publicar e despublicar alteram somente o estado editorial e `published_at`.
+  As configurações de visibilidade pública, novos serviços e Match são
+  preservadas; uma terapia não publicada não aparece nessas superfícies.
 - Edição de imagem de tema e de terapia aceita URL e upload de arquivo JPG, PNG
   ou WebP, com arraste/soltura, limite de 5 MB e preview antes de salvar. O
   upload de terapia usa o contexto `therapy-image` em `/api/admin/media` e
@@ -107,6 +111,8 @@ admin autenticado, sem `service_role` no frontend.
 
 - Testar filtros, busca, criação de rascunho, edição, publicação bloqueada por
   conteúdo incompleto, despublicação, descontinuação e decisão de request.
+- Confirmar que `Publicar` fica visível em terapias não publicadas e
+  `Despublicar` fica visível diretamente no card publicado, com confirmação.
 - Testar clique real em login/admin, modal de tema, foco durante digitação,
   slug automático, lista de temas ativa no cadastro de terapia e payload
   estruturado de benefícios, sem FAQ de terapia.

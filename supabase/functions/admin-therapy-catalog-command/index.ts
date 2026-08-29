@@ -183,7 +183,7 @@ runtime.serve(async (request) => {
 
 async function listCatalogRequests(client: SupabaseRestClient) {
   const rows = await client.get<Array<CatalogRequestRow>>(
-    "/rest/v1/therapy_catalog_requests?select=id,informed_name,description,justification,status,related_therapy_id,decision,created_at,updated_at,suggested_category_id,submission,therapy_catalog_request_materials(id,file_name,file_size_bytes,mime_type,created_at)&order=updated_at.desc",
+    "/rest/v1/therapy_catalog_requests?select=id,informed_name,description,justification,status,related_therapy_id,decision,created_at,updated_at,submission,therapy_catalog_request_materials(id,file_name,file_size_bytes,mime_type,created_at)&order=updated_at.desc",
   );
 
   return {
@@ -269,7 +269,6 @@ type CatalogRequestRow = {
   related_therapy_id: string | null;
   status: string;
   submission: Record<string, unknown> | null;
-  suggested_category_id: string | null;
   therapy_catalog_request_materials?: Array<{
     created_at: string;
     file_name: string;

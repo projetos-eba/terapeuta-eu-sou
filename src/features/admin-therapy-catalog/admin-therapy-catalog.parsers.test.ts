@@ -8,15 +8,6 @@ import {
 describe("admin therapy catalog parsers", () => {
   it("parses a complete admin catalog contract", () => {
     const parsed = parseAdminTherapyCatalogContract({
-      categories: [
-        {
-          id: "cat-1",
-          isActive: true,
-          name: "Energia",
-          slug: "energia",
-          sortOrder: 1,
-        },
-      ],
       contractVersion: 1,
       matchingThemes: [
         {
@@ -32,10 +23,6 @@ describe("admin therapy catalog parsers", () => {
           aliases: ["energia"],
           archivedAt: null,
           calendarColorKey: "purple",
-          categoryId: "cat-1",
-          categoryIsActive: true,
-          categoryName: "Energia",
-          categorySlug: "energia",
           deprecatedAt: null,
           description: "Descrição segura.",
           hasPublishedMatchWeights: true,
@@ -56,6 +43,7 @@ describe("admin therapy catalog parsers", () => {
           isFeatured: false,
           isPubliclyVisible: true,
           isVisibleInMatching: true,
+          matchingThemeIds: ["theme-1"],
           name: "Reiki",
           publicContent: {
             approachIconKey: "sparkles",
@@ -93,17 +81,12 @@ describe("admin therapy catalog parsers", () => {
   it("rejects unknown status values", () => {
     expect(() =>
       parseAdminTherapyCatalogContract({
-        categories: [],
         contractVersion: 1,
         items: [
           {
             aliases: [],
             archivedAt: null,
             calendarColorKey: "neutral",
-            categoryId: "cat",
-            categoryIsActive: true,
-            categoryName: "Categoria",
-            categorySlug: "categoria",
             deprecatedAt: null,
             description: null,
             hasPublishedMatchWeights: false,
@@ -115,6 +98,7 @@ describe("admin therapy catalog parsers", () => {
             isFeatured: false,
             isPubliclyVisible: false,
             isVisibleInMatching: false,
+            matchingThemeIds: [],
             name: "Teste",
             publicContent: {},
             publishedAt: null,

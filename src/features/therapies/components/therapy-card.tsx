@@ -16,6 +16,7 @@ type TherapyCardProps = {
 
 export function TherapyCard({ className, therapy }: TherapyCardProps) {
   const detailHref = routes.public.therapyDetail(therapy.slug);
+  const [primaryTheme, ...additionalThemes] = therapy.themes;
 
   return (
     <TESCard
@@ -42,6 +43,25 @@ export function TherapyCard({ className, therapy }: TherapyCardProps) {
       </div>
 
       <div className="flex flex-1 flex-col items-center overflow-hidden pb-1 pt-5">
+        {primaryTheme ? (
+          <div className="mb-2 flex flex-wrap items-center justify-center gap-1.5">
+            <span className="rounded-full bg-brand-lavenderSoft px-2.5 py-1 text-xs font-bold text-brand-primary">
+              {primaryTheme.name}
+            </span>
+            {additionalThemes.length > 0 ? (
+              <span
+                aria-label={`${additionalThemes.length} ${additionalThemes.length === 1 ? "tema adicional" : "temas adicionais"} de ${therapy.name}`}
+                className="rounded-full bg-surface-soft px-2 py-1 text-xs font-bold text-tesText-secondary"
+              >
+                +{additionalThemes.length}
+                <span className="sr-only">
+                  <span>: </span>
+                  {additionalThemes.map((theme) => theme.name).join(", ")}
+                </span>
+              </span>
+            ) : null}
+          </div>
+        ) : null}
         <h2 className="text-[1.38rem] font-semibold leading-[1.18] text-brand-deep">
           {therapy.name}
         </h2>

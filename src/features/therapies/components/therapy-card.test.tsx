@@ -16,6 +16,10 @@ describe("TherapyCard", () => {
           shortDescription: "Uma prática complementar de presença.",
           slug: "reiki",
           therapistCount: 3,
+          themes: [
+            { name: "Energia e equilíbrio", slug: "energia-equilibrio" },
+            { name: "Bem-estar", slug: "bem-estar" },
+          ],
         }}
       />,
     );
@@ -24,5 +28,9 @@ describe("TherapyCard", () => {
       decodeURIComponent(screen.getByAltText("").getAttribute("src")!),
     ).toContain("/therapies/reiki-editorial.png");
     expect(screen.queryByText("Reiki")).toBeInTheDocument();
+    expect(screen.getByText("Energia e equilíbrio")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("1 tema adicional de Reiki"),
+    ).toHaveTextContent("Bem-estar");
   });
 });

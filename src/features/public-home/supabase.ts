@@ -22,7 +22,7 @@ import type {
 } from "./types";
 
 type PublicHomeTherapyRow = {
-  theme_name: string | null;
+  theme_names: string[] | null;
   href_slug?: string;
   image_url: string | null;
   is_featured: boolean | null;
@@ -189,7 +189,7 @@ function normalizeGuideItems(
 
 function mapTherapy(row: PublicHomeTherapyRow): PublicHomeTherapy {
   return {
-    themeName: row.theme_name ?? "Terapia",
+    themeName: row.theme_names?.[0] ?? "Terapia",
     href: routes.public.therapyDetail(row.href_slug || row.slug),
     imageUrl: row.image_url,
     isFeatured: Boolean(row.is_featured),
@@ -422,7 +422,7 @@ export async function getPublicHomeData(): Promise<PublicHomeData> {
       await Promise.all([
         fetchPublicHomeRows<PublicHomeTherapyRow>(
           "public_therapies_v",
-          "select=theme_name,slug,is_featured,name,short_description,image_url&order=is_popular.desc,popularity_score.desc,name.asc&limit=8",
+          "select=theme_names,slug,is_featured,name,short_description,image_url&order=is_popular.desc,popularity_score.desc,name.asc&limit=8",
         ),
         getPublicHomeFeaturedTherapistsPage(),
         fetchPublicHomeRows<PublicHomeTestimonialRow>(

@@ -103,7 +103,9 @@ select ok(
       jsonb_build_object(
         'name', 'Terapia Admin Teste',
         'slug', 'terapia-admin-teste',
-        'categoryId', '11111111-1111-4111-8111-111111111117',
+        'themeIds', jsonb_build_array(
+          (select id from public.matching_themes where is_active order by sort_order, name limit 1)
+        ),
         'shortDescription', 'Rascunho administrativo seguro.',
         'description', 'Conteudo editorial sem promessa de resultado.',
         'isPubliclyVisible', false,
@@ -191,7 +193,13 @@ select ok(
       'aaaaaaaa-0000-4000-8000-000000000001',
       jsonb_build_object(
         'informedName', 'Terapia solicitada pgTAP',
-        'justification', 'Solicitacao de fixture.'
+        'description', 'Descrição responsável para análise.',
+        'justification', 'Solicitacao de fixture.',
+        'useCases', 'Acolhimento e organização da experiência.',
+        'sessionProcess', 'Sessão online conduzida com escuta responsável.',
+        'themeIds', jsonb_build_array(
+          (select id from public.matching_themes where is_active order by sort_order, name limit 1)
+        )
       )
     ) ->> 'status'
   ) = 'submitted',

@@ -97,7 +97,7 @@ describe("TherapistServicesPage", () => {
     ).toHaveAttribute("src", "https://cdn.example.test/reiki-ranking.jpg");
   });
 
-  it("shows the service category and selected themes in an accessible tooltip", () => {
+  it("shows the primary theme once and the remaining themes accessibly", () => {
     renderPage({
       items: [
         serviceFixture({
@@ -122,21 +122,16 @@ describe("TherapistServicesPage", () => {
       ],
     });
 
-    expect(screen.getAllByText("Energia e proteção")).toHaveLength(2);
+    expect(screen.getAllByText("Autoconhecimento")).toHaveLength(1);
     const moreThemes = screen.getByRole("button", {
-      name: /ver mais 2 temas/i,
+      name: /ver mais 1 tema/i,
     });
-    expect(moreThemes).toHaveTextContent("+2");
-    expect(moreThemes).toHaveClass("min-h-11", "min-w-11");
-    expect(moreThemes.querySelector("span")).toHaveClass(
-      "size-6",
-      "text-[11px]",
-    );
+    expect(moreThemes).toHaveTextContent("+1");
+    expect(moreThemes).toHaveClass("min-h-11");
     expect(screen.getByRole("tooltip")).toHaveClass("hidden");
 
     fireEvent.mouseEnter(moreThemes);
 
-    expect(screen.getByRole("tooltip")).toHaveTextContent("Autoconhecimento");
     expect(screen.getByRole("tooltip")).toHaveTextContent("Espiritualidade");
   });
 

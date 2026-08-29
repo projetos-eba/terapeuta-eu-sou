@@ -4,7 +4,6 @@ select plan(18);
 
 insert into public.therapies (
   id,
-  category_id,
   name,
   slug,
   short_description,
@@ -16,7 +15,6 @@ insert into public.therapies (
 )
 select
   fixture.id,
-  category.id,
   fixture.name,
   fixture.slug,
   'Fixture publica para Match.',
@@ -67,13 +65,20 @@ from (
       true,
       now()
     )
-) as fixture(id, slug, name, status, is_public_visible, archived_at)
+) as fixture(id, slug, name, status, is_public_visible, archived_at);
+
+insert into public.therapy_matching_themes (therapy_id, theme_id, sort_order)
+select fixture.therapy_id, theme.id, 1
+from (values
+  ('e0000000-0000-4000-8000-000000000001'::uuid),
+  ('e0000000-0000-4000-8000-000000000002'::uuid),
+  ('e0000000-0000-4000-8000-000000000003'::uuid),
+  ('e0000000-0000-4000-8000-000000000004'::uuid),
+  ('e0000000-0000-4000-8000-000000000005'::uuid)
+) fixture(therapy_id)
 cross join lateral (
-  select id
-  from public.therapy_categories
-  order by sort_order, name
-  limit 1
-) as category;
+  select id from public.matching_themes where is_active order by sort_order, name limit 1
+) theme;
 
 insert into public.matching_therapy_settings (
   therapy_id,

@@ -73,7 +73,7 @@ integração técnica Zoom Video SDK, runbooks e documentação operacional em
 
 - Jornada guiada: `/` -> `/sobre-nos` -> `/sua-jornada` -> `/sua-jornada/resultado` -> `/terapias/:slug` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso` -> `/app`. O Match é público, anônimo, determinístico, recomenda terapias e guarda escolhas apenas em `sessionStorage`.
 - Busca direta: `/` -> `/terapeutas` -> `/terapeutas/:slug` -> `/reserva` -> `/reserva/sucesso`.
-- Terapias: `/` -> `/terapias?q=&category=&sort=&page=` -> `/terapias/:slug` -> `/terapeutas?therapy=:slug&source=therapy` -> `/terapeutas/:slug?therapy=:slug&source=therapy`. A listagem usa `public_therapies_v`; o detalhe usa `public_therapy_details_v` e profissionais de `public_therapist_search`. Ambas mostram terapias com `status = published`, categoria ativa e mantêm filtros/origem na URL. O Match só considera terapias publicadas e ativadas em `matching_therapy_settings` e aponta para `/terapias/:slug?source=match`.
+- Terapias: `/` -> `/terapias?q=&theme=&sort=&page=` -> `/terapias/:slug` -> `/terapeutas?therapy=:slug&source=therapy` -> `/terapeutas/:slug?therapy=:slug&source=therapy`. A listagem usa `public_therapies_v`; o detalhe usa `public_therapy_details_v` e profissionais de `public_therapist_search`. Ambas mostram terapias com `status = published`, visibilidade pública e ao menos um Tema do Match ativo, mantendo filtros/origem na URL. O Match exige ainda ativação em `matching_therapy_settings` e aponta para `/terapias/:slug?source=match`. Links legados com `category` perdem somente esse filtro e preservam os parâmetros compatíveis.
 - Clientes visitantes: `/` -> `/cliente/cadastro` ou `/cliente/login` -> `/app`.
 - Terapeuta Free: `/` -> `/para-terapeutas` -> `/terapeuta/cadastro?plan=free` -> `/terapeuta/login` -> `/terapeuta`.
 - Terapeuta de plano pago: `/` -> `/para-terapeutas` -> `/terapeuta/cadastro?plan=premium|premium_plus` -> `/terapeuta/checkout?plan=*`. A conta nasce com plano ativo `free`; Premium ou Premium Plus só é liberado após confirmação do Stripe por webhook.
@@ -272,7 +272,7 @@ Plano premium com IA, insights e histórico operacional no detalhe do paciente.
 - Aprovação: `/admin/profissionais` -> `/admin/profissionais/verificacoes` -> aprovar, solicitar ajuste ou reprovar.
 - Sessões: `/admin/sessoes` -> filtrar status -> abrir caso -> suporte ou pagamento.
 - Financeiro: `/admin/pagamentos` -> transações, repasses e relatórios.
-- Catálogo: `/admin/terapias` -> categorias e tags -> `/admin/matching`.
+- Catálogo: `/admin/terapias` -> temas da terapia -> `/admin/matching`.
 - E-mails: `/admin/configuracoes` -> E-mails -> evento transacional -> voltar
   para a central.
 

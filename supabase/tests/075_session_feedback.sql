@@ -133,6 +133,11 @@ values (
 on conflict (booking_id) do update
 set financial_status = excluded.financial_status;
 
+update public.bookings
+set starts_at = '2020-01-01 14:00:00-03'::timestamptz,
+    ends_at = '2020-01-01 15:00:00-03'::timestamptz
+where id = '96000000-0000-4000-8000-000000000001';
+
 insert into public.video_sessions (
   id,
   booking_id,

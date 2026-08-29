@@ -100,7 +100,10 @@ export function AdminTherapyCatalogPage({
             therapy.shortDescription,
             therapy.aliases.join(" "),
             therapy.matchingThemeIds
-              .map((id) => catalog.matchingThemes.find((theme) => theme.id === id)?.name)
+              .map(
+                (id) =>
+                  catalog.matchingThemes.find((theme) => theme.id === id)?.name,
+              )
               .filter(Boolean)
               .join(" "),
           ].join(" "),
@@ -146,7 +149,7 @@ export function AdminTherapyCatalogPage({
       }
       return true;
     });
-  }, [catalog.items, filters]);
+  }, [catalog.items, catalog.matchingThemes, filters]);
   const publishedCount = catalog.items.filter(
     (therapy) => therapy.status === "published",
   ).length;
@@ -631,6 +634,18 @@ function TherapyCard({
                 {name}
               </span>
             ))}
+            {themeNames.length > 1 ? (
+              <span
+                aria-label={`${themeNames.length - 1} ${themeNames.length === 2 ? "tema adicional" : "temas adicionais"} de ${therapy.name}`}
+                className="rounded-full bg-surface-soft px-2 py-1 text-xs font-bold text-tesText-secondary"
+              >
+                +{themeNames.length - 1}
+                <span className="sr-only">
+                  <span>: </span>
+                  {themeNames.slice(1).join(", ")}
+                </span>
+              </span>
+            ) : null}
             {therapy.isVisibleInMatching ? (
               <span className="rounded-full bg-status-successBg px-3 py-1 text-xs font-extrabold text-status-success">
                 Match
@@ -705,8 +720,9 @@ function ContextualActions({
 }) {
   const secondaryActions = getSecondaryActions(therapy.status);
   const primaryAction = getPrimaryAction(therapy.status);
+  const publicationAction = getPublicationAction(therapy.status);
 
-  if (!primaryAction && secondaryActions.length === 0) return null;
+  if (!primaryAction && !publicationAction && secondaryActions.length === 0) return null;
 
   return (
     <div className="mt-4 flex flex-col gap-2 border-t border-brand-lavender pt-4 sm:flex-row sm:flex-wrap sm:items-start">
@@ -716,6 +732,13 @@ function ContextualActions({
           label={primaryAction.label}
           onTransition={onTransition}
           variant="primary"
+        />
+      ) : null}
+      {publicationAction ? (
+        <ActionButton
+          action={publicationAction.action}
+          label={publicationAction.label}
+          onTransition={onTransition}
         />
       ) : null}
       {secondaryActions.length > 0 ? (
@@ -748,6 +771,13 @@ function getPrimaryAction(status: AdminTherapy["status"]) {
   return null;
 }
 
+function getPublicationAction(status: AdminTherapy["status"]) {
+  if (status === "published") {
+    return { action: "unpublish" as const, label: "Despublicar" };
+  }
+  return null;
+}
+
 function getSecondaryActions(status: AdminTherapy["status"]): Array<{
   action: AdminTherapyTransition;
   label: string;
@@ -767,7 +797,6 @@ function getSecondaryActions(status: AdminTherapy["status"]): Array<{
   }
   if (status === "published") {
     return [
-      { action: "unpublish", label: "Retirar publicação" },
       { action: "deprecate", label: "Descontinuar" },
       { action: "archive", label: "Arquivar" },
     ];

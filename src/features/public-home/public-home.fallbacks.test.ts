@@ -61,6 +61,46 @@ describe("public home fallback contract", () => {
     expect(result.therapists).toEqual([]);
   });
 
+  it("reads the ordered Match theme array exposed by the therapy catalog", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable");
+    const fetchMock = vi.fn((input: string | URL) => {
+      const url = String(input);
+
+      if (url.includes("public_therapies_v")) {
+        return Promise.resolve(
+          jsonResponse([
+            {
+              image_url: null,
+              is_featured: true,
+              name: "Reiki",
+              short_description: "Prática de acolhimento.",
+              slug: "reiki",
+              theme_names: ["Emoções e bem-estar", "Propósito e direção"],
+            },
+          ]),
+        );
+      }
+
+      return Promise.resolve(jsonResponse([]));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getPublicHomeData();
+
+    expect(result.therapies[0]?.themeName).toBe("Emoções e bem-estar");
+    expect(
+      fetchMock.mock.calls.some(([input]) =>
+        String(input).includes("select=theme_names"),
+      ),
+    ).toBe(true);
+    expect(
+      fetchMock.mock.calls.some(([input]) =>
+        String(input).includes("select=theme_name,"),
+      ),
+    ).toBe(false);
+  });
+
   it("prioritizes paid therapists and completes the page with Free profiles only below five paid profiles", async () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "publishable");
