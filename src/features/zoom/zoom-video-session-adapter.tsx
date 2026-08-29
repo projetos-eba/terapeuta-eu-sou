@@ -461,7 +461,7 @@ export function ZoomVideoSessionAdapter({
           if (refreshedAccess) {
             setPreviewUnavailable(false);
             updateCurrentAccess(refreshedAccess);
-            if (refreshedAccess.allowed) {
+            if (refreshedAccess.allowed && actorRole === "patient") {
               setMessage(
                 "O terapeuta iniciou o encontro. Voce ja pode entrar.",
               );

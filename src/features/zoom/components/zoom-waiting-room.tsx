@@ -334,14 +334,16 @@ export function ZoomWaitingRoom({
                 <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-brand-primary">
                   <CalendarClock aria-hidden="true" size={22} />
                 </span>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className="text-xs font-extrabold uppercase tracking-[0.17em] text-brand-primary">
                     {actorRole === "patient" ? "ENCONTRO" : "SESSÃO"}
                   </p>
                   <p className="mt-1 truncate text-base font-extrabold text-brand-deep sm:text-lg">
                     {participantLabel.replace(/^Com\s+/i, "")}
                   </p>
-                  {bookingId ? <BookingReference id={bookingId} /> : null}
+                  {bookingId ? (
+                    <BookingReference id={bookingId} revealOnInteraction />
+                  ) : null}
                   {scheduleLabel ? (
                     <p className="mt-1 text-sm font-semibold text-tesText-secondary">
                       {scheduleLabel}
