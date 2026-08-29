@@ -278,14 +278,14 @@ describe("ZoomVideoSessionAdapter", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
-    await screen.findByRole("button", { name: "Ativar minha câmera" });
+    await screen.findByRole("button", { name: "Ativar câmera" });
     expect(mockStream.startVideo).not.toHaveBeenCalled();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Ativar minha câmera" }),
-    );
+    expect(
+      screen.queryByRole("button", { name: "Ativar minha câmera" }),
+    ).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Ativar câmera" }));
     await waitFor(() => expect(mockStream.startVideo).toHaveBeenCalledTimes(1));
-    expect(screen.getByText("Câmera ativada.")).toBeInTheDocument();
     expect(mockStream.attachVideo).toHaveBeenCalledWith(7, 2);
     expect(screen.getByTestId("zoom-local-video")).toContainElement(
       localElement,
@@ -560,7 +560,7 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(track.stop).toHaveBeenCalled();
   });
 
-  it("bounds failed self-view retries and lets the patient retry preview without restarting publication", async () => {
+  it("bounds automatic self-view retries and keeps recovery in the camera icon", async () => {
     const fetchMock = accessResponse(0);
     vi.stubGlobal("fetch", fetchMock);
     mockClient.getAllUser.mockReturnValue([{ userId: 9, bVideoOn: true }]);
@@ -601,17 +601,17 @@ describe("ZoomVideoSessionAdapter", () => {
       remoteElement,
     );
     previewAvailable = true;
-    fireEvent.click(
-      screen.getByRole("button", { name: "Tentar mostrar minha câmera" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Desligar câmera" }));
+    await waitFor(() => expect(mockStream.stopVideo).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByRole("button", { name: "Ativar câmera" }));
     await waitFor(() =>
       expect(screen.getByTestId("zoom-local-video")).toContainElement(
         localElement,
       ),
     );
     expect(selfAttaches()).toHaveLength(4);
-    expect(mockStream.startVideo).toHaveBeenCalledTimes(1);
-    expect(mockStream.stopVideo).not.toHaveBeenCalled();
+    expect(mockStream.startVideo).toHaveBeenCalledTimes(2);
+    expect(mockStream.stopVideo).toHaveBeenCalledTimes(1);
     expect(mockClient.leave).not.toHaveBeenCalled();
     expect(countAccessRequests(fetchMock, "join")).toBe(1);
   });
