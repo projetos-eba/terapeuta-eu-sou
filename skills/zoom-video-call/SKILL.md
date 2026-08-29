@@ -102,12 +102,14 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   `docs/zoom/patient-preview-recovery-2026-08-28.md` e
   `docs/zoom/abrupt-reentry-self-view-2026-08-28.md` e
   `docs/zoom/mobile-self-view-binding-2026-08-28.md`.
-- No mobile, montar um único `<video-player>` local persistente. Depois de
-  `startVideo` e da identidade local autoritativa, chamar `attachVideo` mesmo
-  se `bVideoOn` ainda estiver falso; não usar esse campo nem `isConnected` como
-  prova de prévia. Passar o player como terceiro argumento e confirmar o
-  vínculo pelo `node-id` do participante local. Timeout desanexa exatamente
-  esse player e permite retry sem nova captura, join ou JWT. Observer, timer e Promise
+- No mobile, montar um único `<video-player>` local persistente. A câmera
+  pré-ativada deve aguardar a montagem desse renderer antes de
+  `startVideo`; a montagem tardia também reconcilia o attach sem interação.
+  Depois de `startVideo` e da identidade local autoritativa, chamar
+  `attachVideo` mesmo se `bVideoOn` ainda estiver falso; não usar esse campo nem
+  `isConnected` como prova de prévia. Passar o player como terceiro argumento e
+  confirmar o vínculo pelo `node-id` do participante local. Timeout desanexa
+  exatamente esse player e permite retry sem nova captura, join ou JWT. Observer, timer e Promise
   pertencem a `generation + client + stream + captureEpoch + localUserId`. Se o
   vínculo do player persistente expirar no Safari móvel, uma única tentativa
   complementar usa o player criado pelo próprio SDK no mesmo container; ela

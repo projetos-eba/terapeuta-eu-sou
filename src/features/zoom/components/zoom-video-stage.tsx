@@ -2,7 +2,7 @@
 
 import { MicOff, UserRound, UserRoundX } from "lucide-react";
 import Image from "next/image";
-import { createElement } from "react";
+import { createElement, useCallback } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -12,6 +12,7 @@ type ZoomVideoStageProps = {
   localVideoPlayerRef: React.MutableRefObject<HTMLElement | null>;
   localVideoRef: React.MutableRefObject<HTMLElement | null>;
   localPreviewUnavailable?: boolean;
+  onLocalRendererReady?: () => void;
   onRetryRemoteVideo?: () => void;
   participantLabel: string;
   remoteParticipantPresent: boolean;
@@ -40,6 +41,7 @@ export function ZoomVideoStage({
   localVideoPlayerRef,
   localVideoRef,
   localPreviewUnavailable = false,
+  onLocalRendererReady,
   onRetryRemoteVideo,
   participantLabel,
   remoteParticipantPresent,
@@ -72,6 +74,7 @@ export function ZoomVideoStage({
         label="Você"
         localVideoPlayerRef={localVideoPlayerRef}
         localPreviewUnavailable={localPreviewUnavailable}
+        onLocalRendererReady={onLocalRendererReady}
         videoOn={videoOn}
       />
       <VideoTile
@@ -110,6 +113,7 @@ function VideoTile({
   label,
   localVideoPlayerRef,
   localPreviewUnavailable = false,
+  onLocalRendererReady,
   onRetryRemoteVideo,
   remoteParticipantPresent = false,
   remoteVideoState = "off",
@@ -125,12 +129,34 @@ function VideoTile({
   label: string;
   localVideoPlayerRef?: React.MutableRefObject<HTMLElement | null>;
   localPreviewUnavailable?: boolean;
+  onLocalRendererReady?: () => void;
   onRetryRemoteVideo?: () => void;
   remoteParticipantPresent?: boolean;
   remoteVideoState?: "off" | "attaching" | "on" | "error";
   videoOn?: boolean;
   waitingLabel?: string;
 }) {
+  const setVideoContainer = useCallback(
+    (node: HTMLElement | null) => {
+      containerRef.current = node;
+      if (
+        kind === "local" &&
+        node?.contains(localVideoPlayerRef?.current ?? null)
+      ) {
+        onLocalRendererReady?.();
+      }
+    },
+    [containerRef, kind, localVideoPlayerRef, onLocalRendererReady],
+  );
+  const setLocalVideoPlayer = useCallback(
+    (node: HTMLElement | null) => {
+      if (localVideoPlayerRef) localVideoPlayerRef.current = node;
+      if (node && containerRef.current?.contains(node)) {
+        onLocalRendererReady?.();
+      }
+    },
+    [containerRef, localVideoPlayerRef, onLocalRendererReady],
+  );
   const showsVideo =
     kind === "local"
       ? videoOn && !localPreviewUnavailable
@@ -208,12 +234,12 @@ function VideoTile({
         {
           "aria-hidden": !showsVideo,
           class: "absolute inset-0 block h-full w-full overflow-hidden",
-          ref: containerRef,
+          ref: setVideoContainer,
         },
         kind === "local"
           ? createElement("video-player", {
               class: "block h-full w-full object-cover",
-              ref: localVideoPlayerRef,
+              ref: setLocalVideoPlayer,
             })
           : null,
       )}

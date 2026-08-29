@@ -153,10 +153,18 @@ type LocalPreviewTrigger =
   | "capture_started"
   | "connected"
   | "manual"
+  | "renderer_ready"
   | "roster"
   | "video_detail"
   | "video_start"
   | "visibility";
+
+type LocalPreviewReconcileRequest = {
+  client?: ZoomVideoClient | null;
+  generation?: number;
+  resetAttempts?: boolean;
+  trigger: LocalPreviewTrigger;
+};
 
 type CleanupFailure = {
   operation: string;
@@ -172,6 +180,7 @@ const MAX_JOIN_ATTEMPTS = RECOVERY_RETRY_DELAYS_MS.length;
 const MAX_LOCAL_PREVIEW_ATTEMPTS = 3;
 const LOCAL_PREVIEW_BIND_TIMEOUT_MS = 2_500;
 const LOCAL_PREVIEW_MANUAL_RECHECK_DELAYS_MS = [250, 700, 1_400] as const;
+const LOCAL_RENDERER_READY_TIMEOUT_MS = 1_500;
 
 // A transient Video SDK failure is safe to retry because every attempt reuses
 // the access payload already issued by the backend. Do not gate this on a
@@ -333,6 +342,14 @@ export function ZoomVideoSessionAdapter({
   const localPreviewIssueLoggedGenerationRef = useRef<number | null>(null);
   const localPreviewAttemptsRef = useRef(0);
   const localPreviewManualRecheckTimersRef = useRef<number[]>([]);
+  const localRendererReadyWaitRef = useRef<{
+    generation: number;
+    resolve: (ready: boolean) => void;
+    timer: number;
+  } | null>(null);
+  const requestLocalPreviewReconcileRef = useRef<
+    (input: LocalPreviewReconcileRequest) => void
+  >(() => undefined);
   const localPreviewFallbackAttemptedRef = useRef(false);
   const localCaptureEpochRef = useRef(0);
   const localCaptureStateRef = useRef<LocalCaptureState>("off");
@@ -465,6 +482,7 @@ export function ZoomVideoSessionAdapter({
       recoveryAbortControllerRef.current?.abort();
       clearRemoteVideoResyncTimers();
       clearLocalPreviewManualRecheckTimers();
+      clearLocalRendererReadyWait();
       clearReconnectTimer();
       window.removeEventListener("pagehide", handlePageHide);
       document.removeEventListener("visibilitychange", handleActiveVisibility);
@@ -1064,6 +1082,10 @@ export function ZoomVideoSessionAdapter({
     connectionStateRef.current = "Connected";
     setState("media_initializing");
     setMessage("Você entrou. Preparando câmera e áudio...");
+    // Do not let a permission prompt determine whether React has mounted the
+    // local video-player. Safari can otherwise publish before that renderer
+    // exists, leaving the self-view without a deterministic first attach.
+    const localRendererReady = waitForLocalVideoRenderer(generation);
     let stream: ZoomMediaStream;
     try {
       stream = client.getMediaStream();
@@ -1122,6 +1144,7 @@ export function ZoomVideoSessionAdapter({
 
     if (mediaPreferencesRef.current.cameraEnabled) {
       try {
+        await localRendererReady;
         await enableVideoForSession(stream);
       } catch (error) {
         mediaPreferencesRef.current.cameraEnabled = false;
@@ -1805,6 +1828,59 @@ export function ZoomVideoSessionAdapter({
     return pending;
   }
 
+  function waitForLocalVideoRenderer(generation: number): Promise<boolean> {
+    if (hasLocalVideoRenderer()) return Promise.resolve(true);
+
+    const existing = localRendererReadyWaitRef.current;
+    if (existing) {
+      window.clearTimeout(existing.timer);
+      existing.resolve(false);
+    }
+
+    return new Promise((resolve) => {
+      const finish = (ready: boolean) => {
+        const pending = localRendererReadyWaitRef.current;
+        if (pending?.generation !== generation) return;
+        window.clearTimeout(pending.timer);
+        localRendererReadyWaitRef.current = null;
+        resolve(ready);
+      };
+      const timer = window.setTimeout(
+        () => finish(false),
+        LOCAL_RENDERER_READY_TIMEOUT_MS,
+      );
+      localRendererReadyWaitRef.current = { generation, resolve: finish, timer };
+      if (hasLocalVideoRenderer()) finish(true);
+    });
+  }
+
+  function hasLocalVideoRenderer() {
+    const container = localVideoRef.current;
+    const player = localVideoPlayerRef.current;
+    return Boolean(container && player && container.contains(player));
+  }
+
+  const handleLocalRendererReady = useCallback(() => {
+    const pending = localRendererReadyWaitRef.current;
+    if (pending && hasLocalVideoRenderer()) {
+      pending.resolve(true);
+    }
+
+    const client = clientRef.current;
+    const generation = attemptGenerationRef.current;
+    if (
+      client &&
+      videoStartedRef.current &&
+      isCurrentVideoOwner(client, generation)
+    ) {
+      requestLocalPreviewReconcileRef.current({
+        client,
+        generation,
+        trigger: "renderer_ready",
+      });
+    }
+  }, []);
+
   async function attachSdkCreatedLocalPreview(input: {
     client: ZoomVideoClient;
     container: HTMLElement;
@@ -1913,12 +1989,7 @@ export function ZoomVideoSessionAdapter({
     }
   }
 
-  function requestLocalPreviewReconcile(input: {
-    client?: ZoomVideoClient | null;
-    generation?: number;
-    resetAttempts?: boolean;
-    trigger: LocalPreviewTrigger;
-  }) {
+  function requestLocalPreviewReconcile(input: LocalPreviewReconcileRequest) {
     const client = input.client ?? clientRef.current;
     const generation = input.generation ?? attemptGenerationRef.current;
     const captureEpoch = localCaptureEpochRef.current;
@@ -1964,6 +2035,7 @@ export function ZoomVideoSessionAdapter({
         }
       });
   }
+  requestLocalPreviewReconcileRef.current = requestLocalPreviewReconcile;
 
   function disableVideoForSession(stream: ZoomMediaStream) {
     return runLocalVideoOperation(async (generation) => {
@@ -2236,6 +2308,7 @@ export function ZoomVideoSessionAdapter({
     const failures: CleanupFailure[] = [];
     attemptGenerationRef.current += 1;
     clearLocalPreviewManualRecheckTimers();
+    clearLocalRendererReadyWait();
     const client = clientRef.current;
     const stream = streamRef.current;
     // An AbortController stops our wait, not the SDK operation itself. Never
@@ -2976,6 +3049,10 @@ export function ZoomVideoSessionAdapter({
     localPreviewManualRecheckTimersRef.current = [];
   }
 
+  function clearLocalRendererReadyWait() {
+    localRendererReadyWaitRef.current?.resolve(false);
+  }
+
   function scheduleRemoteVideoResync(
     generation = attemptGenerationRef.current,
     client = clientRef.current,
@@ -3148,6 +3225,7 @@ export function ZoomVideoSessionAdapter({
           localVideoPlayerRef={localVideoPlayerRef}
           localVideoRef={localVideoRef}
           localPreviewUnavailable={localPreviewUnavailable}
+          onLocalRendererReady={handleLocalRendererReady}
           onRetryRemoteVideo={scheduleRemoteVideoResync}
           participantLabel={participantLabel}
           remoteParticipantPresent={remoteParticipantPresent}
