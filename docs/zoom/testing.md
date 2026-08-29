@@ -107,17 +107,30 @@ renderização, sem novo `startVideo`, `join` ou JWT; `pagehide` preserva o
 cleanup de mídia. Ver
 [reentrada abrupta](./abrupt-reentry-self-view-2026-08-28.md).
 
+No mobile, separar também prontidão do provider e vínculo do player. O teste
+deve manter um único `<video-player>` local já montado, impedir attach enquanto
+`getUser(localId).bVideoOn` não for `true`, devolver esse elemento
+imediatamente de `attachVideo` e escrever seu `node-id` somente depois. O
+estado visual só pode concluir após o `node-id` correto. Cobrir timeout,
+detach pelo elemento exato, retry sem nova captura/join/JWT e callback antigo
+após cleanup. Ver
+[vinculação tardia mobile](./mobile-self-view-binding-2026-08-28.md).
+
 Browser isolado, sem Supabase ou Zoom real:
 
 ```bash
 npx playwright test tests/e2e/zoom-preview.spec.ts --project=chromium --workers=1
+npx playwright test tests/e2e/zoom-preview.spec.ts --project=webkit-mobile --workers=1
 ```
 
 Esse harness serve somente o adapter/componentes reais pelo Vite local, sem
 ler .env; simula SDK/acesso, usa mídia falsa e bloqueia requisições externas.
+O projeto `webkit-mobile` usa o perfil iPhone 13 do Playwright e continua sendo
+emulação, não evidência de aparelho físico.
 Não substitui testes de Auth, webhooks, host-first real ou aparelhos físicos.
 Detalhes em [recuperação de prévia](./patient-preview-recovery-2026-08-28.md)
-e [reentrada abrupta](./abrupt-reentry-self-view-2026-08-28.md).
+e [reentrada abrupta](./abrupt-reentry-self-view-2026-08-28.md) e
+[vinculação tardia mobile](./mobile-self-view-binding-2026-08-28.md).
 
 Os testes temporais cobrem T-15, chegada em T+10, bloqueio em T+10+1 ms,
 reconexão por chegada da versão atual ou join confiável e bloqueio em

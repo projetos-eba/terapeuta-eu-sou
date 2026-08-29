@@ -34,5 +34,12 @@ export default defineConfig({
         ...devices["Desktop Chrome"],
       },
     },
+    {
+      name: "webkit-mobile",
+      testMatch: /zoom-preview\.spec\.ts/,
+      use: {
+        ...devices["iPhone 13"],
+      },
+    },
   ],
 });

@@ -9,6 +9,7 @@ describe("ZoomVideoStage", () => {
       <ZoomVideoStage
         actorRole="patient"
         audioMuted
+        localVideoPlayerRef={{ current: null }}
         localVideoRef={{ current: null }}
         participantLabel="Com Juliane Moore"
         remoteParticipantPresent={false}
@@ -31,6 +32,9 @@ describe("ZoomVideoStage", () => {
     );
     expect(screen.getByText("Sua câmera está")).toBeVisible();
     expect(screen.getByText("terapeuta entrar")).toBeVisible();
+    expect(
+      screen.getByTestId("zoom-local-video").querySelector("video-player"),
+    ).toBeInTheDocument();
   });
 
   it("offers explicit recovery when a remote camera cannot be attached", () => {
@@ -38,6 +42,7 @@ describe("ZoomVideoStage", () => {
       <ZoomVideoStage
         actorRole="patient"
         audioMuted
+        localVideoPlayerRef={{ current: null }}
         localVideoRef={{ current: null }}
         onRetryRemoteVideo={() => undefined}
         participantLabel="Com Juliane Moore"

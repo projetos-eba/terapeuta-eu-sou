@@ -30,7 +30,7 @@ const destroyClient = vi.fn(() => {
   calls.push("destroy");
 });
 const remoteElement = document.createElement("video");
-const localElement = document.createElement("video");
+let localElement: HTMLElement = document.createElement("video");
 const mockClient = {
   getAllUser: vi.fn(
     (): Array<{
@@ -41,7 +41,10 @@ const mockClient = {
     }> => [],
   ),
   getCurrentUserInfo: vi.fn(
-    (): { userId: number; userKey?: string } | undefined => ({
+    ():
+      | { bVideoOn?: boolean; userId: number; userKey?: string }
+      | undefined => ({
+      bVideoOn: true,
       userId: 7,
       userKey: "tes-v1-p-local-participant",
     }),
@@ -73,10 +76,20 @@ const mockClient = {
   }),
 };
 const mockStream = {
-  attachVideo: vi.fn(async (userId: number) =>
-    userId === 7 ? localElement : remoteElement,
+  attachVideo: vi.fn(
+    async (userId: number, _quality?: number, element?: HTMLElement) => {
+      if (element) {
+        localElement = element;
+        element.setAttribute("node-id", String(userId));
+        return element;
+      }
+      return userId === 7 ? localElement : remoteElement;
+    },
   ),
-  detachVideo: vi.fn(async () => undefined),
+  detachVideo: vi.fn(async (_userId: number, element?: HTMLElement) => {
+    element?.setAttribute("node-id", "0");
+    return element;
+  }),
   muteAudio: vi.fn(async () => "" as const),
   startAudio: vi.fn(async (): Promise<"" | MockExecutedFailure> => "" as const),
   // SDK 2.4.5 resolves capture success without a value (not ExecutedResult).
@@ -86,6 +99,27 @@ const mockStream = {
   stopVideo: vi.fn(async () => "" as const),
   unmuteAudio: vi.fn(async () => "" as const),
 };
+
+function getLocalAttachCalls(userId = 7) {
+  return mockStream.attachVideo.mock.calls.filter(
+    ([candidateUserId]) => candidateUserId === userId,
+  );
+}
+
+function expectLocalAttach(userId = 7) {
+  expect(getLocalAttachCalls(userId)).toContainEqual([
+    userId,
+    2,
+    expect.any(HTMLElement),
+  ]);
+}
+
+function bindLocalMockPlayer(userId: number, element?: HTMLElement) {
+  if (!element) return localElement;
+  localElement = element;
+  element.setAttribute("node-id", String(userId));
+  return element;
+}
 const createClient = vi.fn(() => mockClient);
 
 vi.mock("@zoom/videosdk", () => ({
@@ -117,6 +151,7 @@ describe("ZoomVideoSessionAdapter", () => {
     handlers.clear();
     remoteElement.remove();
     localElement.remove();
+    localElement = document.createElement("video");
     vi.clearAllMocks();
     createClient.mockImplementation(() => mockClient);
     destroyClient.mockImplementation(() => {
@@ -136,16 +171,29 @@ describe("ZoomVideoSessionAdapter", () => {
     });
     mockClient.getAllUser.mockReturnValue([]);
     mockClient.getCurrentUserInfo.mockReturnValue({
+      bVideoOn: true,
       userId: 7,
       userKey: "tes-v1-p-local-participant",
     });
     mockClient.getUser.mockImplementation((userId: number) =>
       mockClient.getAllUser().find((user) => user.userId === userId),
     );
-    mockStream.attachVideo.mockImplementation(async (userId: number) =>
-      userId === 7 ? localElement : remoteElement,
+    mockStream.attachVideo.mockImplementation(
+      async (userId: number, _quality?: number, element?: HTMLElement) => {
+        if (element) {
+          localElement = element;
+          element.setAttribute("node-id", String(userId));
+          return element;
+        }
+        return userId === 7 ? localElement : remoteElement;
+      },
     );
-    mockStream.detachVideo.mockResolvedValue(undefined);
+    mockStream.detachVideo.mockImplementation(
+      async (_userId: number, element?: HTMLElement) => {
+        element?.setAttribute("node-id", "0");
+        return element;
+      },
+    );
     mockStream.muteAudio.mockResolvedValue("" as const);
     mockStream.startAudio.mockResolvedValue("" as const);
     mockStream.startVideo.mockResolvedValue(undefined);
@@ -297,7 +345,7 @@ describe("ZoomVideoSessionAdapter", () => {
     fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
     await screen.findByText(/voc[eê] entrou no encontro/i);
 
-    expect(mockStream.attachVideo).not.toHaveBeenCalledWith(7, 2);
+    expect(getLocalAttachCalls()).toHaveLength(0);
     expect(mockStream.attachVideo).toHaveBeenCalledWith(9, 2);
     expect(screen.getByTestId("zoom-remote-video")).not.toContainElement(
       localElement,
@@ -365,7 +413,7 @@ describe("ZoomVideoSessionAdapter", () => {
 
     await screen.findByText(/sem prévia neste dispositivo/i);
     expect(mockStream.startVideo).toHaveBeenCalledTimes(1);
-    expect(mockStream.attachVideo).not.toHaveBeenCalledWith(7, 2);
+    expect(getLocalAttachCalls()).toHaveLength(0);
 
     mockClient.getCurrentUserInfo.mockReturnValue({
       userId: 7,
@@ -376,7 +424,7 @@ describe("ZoomVideoSessionAdapter", () => {
     });
 
     await waitFor(() => {
-      expect(mockStream.attachVideo).toHaveBeenCalledWith(7, 2);
+      expectLocalAttach();
       expect(screen.getByTestId("zoom-local-video")).toContainElement(
         localElement,
       );
@@ -485,11 +533,15 @@ describe("ZoomVideoSessionAdapter", () => {
     vi.stubGlobal("fetch", fetchMock);
     mockClient.getAllUser.mockReturnValue([{ userId: 9, bVideoOn: true }]);
     let previewAvailable = false;
-    mockStream.attachVideo.mockImplementation(async (userId) => {
-      if (userId === 7 && !previewAvailable)
-        throw new Error("preview unavailable");
-      return userId === 7 ? localElement : remoteElement;
-    });
+    mockStream.attachVideo.mockImplementation(
+      async (userId, _quality, element) => {
+        if (userId === 7 && !previewAvailable)
+          throw new Error("preview unavailable");
+        return userId === 7
+          ? bindLocalMockPlayer(userId, element)
+          : remoteElement;
+      },
+    );
     render(
       <ZoomVideoSessionAdapter
         access={allowedAccess}
@@ -557,15 +609,17 @@ describe("ZoomVideoSessionAdapter", () => {
       },
       { bVideoOn: true, userId: 9, userKey: "tes-v1-t-remote" },
     ]);
-    mockStream.attachVideo.mockImplementation(async (userId: number) => {
-      if (userId === reenteredLocalUserId) {
-        if (!captureReady) {
-          throw { errorCode: 2, type: "INTERNAL_ERROR" };
+    mockStream.attachVideo.mockImplementation(
+      async (userId: number, _quality?: number, element?: HTMLElement) => {
+        if (userId === reenteredLocalUserId) {
+          if (!captureReady) {
+            throw { errorCode: 2, type: "INTERNAL_ERROR" };
+          }
+          return bindLocalMockPlayer(userId, element);
         }
-        return localElement;
-      }
-      return remoteElement;
-    });
+        return remoteElement;
+      },
+    );
 
     render(
       <ZoomVideoSessionAdapter
@@ -612,7 +666,7 @@ describe("ZoomVideoSessionAdapter", () => {
     expect(mockStream.startVideo).toHaveBeenCalledTimes(1);
     expect(mockClient.join).toHaveBeenCalledTimes(1);
     expect(countAccessRequests(fetchMock, "join")).toBe(1);
-    expect(mockStream.attachVideo).not.toHaveBeenCalledWith(7, 2);
+    expect(getLocalAttachCalls()).toHaveLength(0);
   });
 
   it("retries after capture readiness when the provisional self-view attach is still pending", async () => {
@@ -624,12 +678,14 @@ describe("ZoomVideoSessionAdapter", () => {
       },
     );
     let localAttempts = 0;
-    mockStream.attachVideo.mockImplementation(async (userId: number) => {
-      if (userId !== 7) return remoteElement;
-      localAttempts += 1;
-      if (localAttempts === 1) return provisionalAttach;
-      return localElement;
-    });
+    mockStream.attachVideo.mockImplementation(
+      async (userId: number, _quality?: number, element?: HTMLElement) => {
+        if (userId !== 7) return remoteElement;
+        localAttempts += 1;
+        if (localAttempts === 1) return provisionalAttach;
+        return bindLocalMockPlayer(userId, element);
+      },
+    );
 
     render(
       <ZoomVideoSessionAdapter
@@ -667,13 +723,15 @@ describe("ZoomVideoSessionAdapter", () => {
         release = resolve;
       });
       let localAttempts = 0;
-      mockStream.attachVideo.mockImplementation(async (userId) => {
-        if (userId !== 7) return remoteElement;
-        if (++localAttempts === 1)
-          throw new Error("initial preview unavailable");
-        await gate;
-        return localElement;
-      });
+      mockStream.attachVideo.mockImplementation(
+        async (userId, _quality, element) => {
+          if (userId !== 7) return remoteElement;
+          if (++localAttempts === 1)
+            throw new Error("initial preview unavailable");
+          await gate;
+          return bindLocalMockPlayer(userId, element);
+        },
+      );
       const view = render(
         <ZoomVideoSessionAdapter
           access={allowedAccess}
@@ -705,11 +763,13 @@ describe("ZoomVideoSessionAdapter", () => {
       });
       await waitFor(() => {
         expect(mockStream.detachVideo).toHaveBeenCalledWith(7, localElement);
-        expect(localElement.isConnected).toBe(false);
+        expect(localElement.getAttribute("node-id")).toBe("0");
       });
       if (action === "unmount") {
+        expect(localElement.isConnected).toBe(false);
         await waitFor(() => expect(destroyClient).toHaveBeenCalledTimes(1));
       } else {
+        expect(localElement.isConnected).toBe(true);
         expect(
           screen.getByRole("button", { name: /ativar câmera/i }),
         ).toBeEnabled();
@@ -1099,7 +1159,7 @@ describe("ZoomVideoSessionAdapter", () => {
       await waitFor(() => {
         expect(mockStream.unmuteAudio).toHaveBeenCalled();
         expect(mockStream.startVideo).toHaveBeenCalled();
-        expect(mockStream.attachVideo).toHaveBeenCalledWith(7, 2);
+        expectLocalAttach();
         expect(screen.getByTestId("zoom-local-video")).toContainElement(
           localElement,
         );
@@ -1263,7 +1323,7 @@ describe("ZoomVideoSessionAdapter", () => {
     await screen.findByText(/voc[eê] entrou no encontro/i);
 
     mockClient.getAllUser.mockReturnValue([
-      { bVideoOn: false, userId: 7 },
+      { bVideoOn: true, userId: 7 },
       { bVideoOn: true, userId: 9 },
     ]);
 
@@ -1286,10 +1346,14 @@ describe("ZoomVideoSessionAdapter", () => {
     const attachGate = new Promise<void>((resolve) => {
       releaseAttach = resolve;
     });
-    mockStream.attachVideo.mockImplementation(async (userId: number) => {
-      if (userId === 9) await attachGate;
-      return userId === 7 ? localElement : remoteElement;
-    });
+    mockStream.attachVideo.mockImplementation(
+      async (userId: number, _quality?: number, element?: HTMLElement) => {
+        if (userId === 9) await attachGate;
+        return userId === 7
+          ? bindLocalMockPlayer(userId, element)
+          : remoteElement;
+      },
+    );
 
     render(
       <ZoomVideoSessionAdapter
@@ -1326,13 +1390,17 @@ describe("ZoomVideoSessionAdapter", () => {
       releaseStaleAttach = resolve;
     });
     let remoteAttachCount = 0;
-    mockStream.attachVideo.mockImplementation(async (userId: number) => {
-      if (userId === 9 && remoteAttachCount++ === 0) {
-        await staleAttachGate;
-        return staleRemoteElement;
-      }
-      return userId === 7 ? localElement : remoteElement;
-    });
+    mockStream.attachVideo.mockImplementation(
+      async (userId: number, _quality?: number, element?: HTMLElement) => {
+        if (userId === 9 && remoteAttachCount++ === 0) {
+          await staleAttachGate;
+          return staleRemoteElement;
+        }
+        return userId === 7
+          ? bindLocalMockPlayer(userId, element)
+          : remoteElement;
+      },
+    );
 
     render(
       <ZoomVideoSessionAdapter
@@ -1477,17 +1545,241 @@ describe("ZoomVideoSessionAdapter", () => {
     await waitFor(() => {
       expect(mockClient.getCurrentUserInfo).toHaveBeenCalled();
       expect(mockStream.startVideo).toHaveBeenCalled();
-      expect(mockStream.attachVideo).toHaveBeenCalledWith(7, 2);
+      expectLocalAttach();
       expect(screen.getByTestId("zoom-local-video")).toContainElement(
         localElement,
       );
     });
+    const persistentPlayer = localElement;
+    expect(
+      screen
+        .getByTestId("zoom-local-video")
+        .querySelectorAll("video-player-container > video-player"),
+    ).toHaveLength(1);
 
     fireEvent.click(screen.getByRole("button", { name: /desligar câmera/i }));
     await waitFor(() => {
       expect(mockStream.detachVideo).toHaveBeenCalledWith(7, localElement);
       expect(mockStream.stopVideo).toHaveBeenCalled();
     });
+    expect(persistentPlayer.isConnected).toBe(true);
+    expect(persistentPlayer.getAttribute("node-id")).toBe("0");
+
+    fireEvent.click(screen.getByRole("button", { name: /ativar câmera/i }));
+    await waitFor(() => expect(getLocalAttachCalls()).toHaveLength(2));
+    expect(localElement).toBe(persistentPlayer);
+    expect(persistentPlayer.getAttribute("node-id")).toBe("7");
+    expect(mockStream.startVideo).toHaveBeenCalledTimes(2);
+    expect(
+      screen
+        .getByTestId("zoom-local-video")
+        .querySelectorAll("video-player-container > video-player"),
+    ).toHaveLength(1);
+  });
+
+  it("waits for the local provider roster before attaching a published mobile self-view", async () => {
+    vi.stubGlobal("fetch", accessResponse(0));
+    mockClient.getCurrentUserInfo.mockReturnValue({
+      bVideoOn: false,
+      userId: 7,
+      userKey: "tes-v1-p-local-participant",
+    });
+    mockClient.getAllUser.mockReturnValue([
+      {
+        bVideoOn: false,
+        userId: 7,
+        userKey: "tes-v1-p-local-participant",
+      },
+      {
+        bVideoOn: true,
+        userId: 9,
+        userKey: "tes-v1-t-remote-participant",
+      },
+    ]);
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/voc[eê] entrou no encontro/i);
+    fireEvent.click(screen.getByRole("button", { name: /ativar câmera/i }));
+    await waitFor(() => expect(mockStream.startVideo).toHaveBeenCalledTimes(1));
+    expect(
+      mockStream.attachVideo.mock.calls.filter(([userId]) => userId === 7),
+    ).toHaveLength(0);
+    expect(screen.getByTestId("zoom-remote-video")).toContainElement(
+      remoteElement,
+    );
+
+    mockClient.getCurrentUserInfo.mockReturnValue({
+      bVideoOn: true,
+      userId: 7,
+      userKey: "tes-v1-p-local-participant",
+    });
+    mockClient.getAllUser.mockReturnValue([
+      {
+        bVideoOn: true,
+        userId: 7,
+        userKey: "tes-v1-p-local-participant",
+      },
+      {
+        bVideoOn: true,
+        userId: 9,
+        userKey: "tes-v1-t-remote-participant",
+      },
+    ]);
+    act(() => {
+      handlers.get("user-updated")?.([
+        {
+          bVideoOn: true,
+          userId: 7,
+          userKey: "tes-v1-p-local-participant",
+        },
+      ]);
+    });
+
+    await waitFor(() =>
+      expect(
+        mockStream.attachVideo.mock.calls.filter(([userId]) => userId === 7),
+      ).toHaveLength(1),
+    );
+    expect(mockStream.startVideo).toHaveBeenCalledTimes(1);
+    expect(mockClient.join).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the mobile self-view pending until the persistent player is bound", async () => {
+    const fetchMock = accessResponse(0);
+    vi.stubGlobal("fetch", fetchMock);
+    mockClient.getAllUser.mockReturnValue([
+      {
+        bVideoOn: true,
+        userId: 7,
+        userKey: "tes-v1-p-local-participant",
+      },
+      {
+        bVideoOn: true,
+        userId: 9,
+        userKey: "tes-v1-t-remote-participant",
+      },
+    ]);
+    mockStream.attachVideo.mockImplementation(
+      async (userId: number, _quality?: number, element?: HTMLElement) => {
+        if (userId !== 7) return remoteElement;
+        if (!element) throw new Error("persistent player required");
+        localElement = element;
+        return element;
+      },
+    );
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/voc[eê] entrou no encontro/i);
+    fireEvent.click(screen.getByRole("button", { name: /ativar câmera/i }));
+
+    await waitFor(() => expectLocalAttach());
+    expect(localElement.isConnected).toBe(true);
+    expect(localElement.getAttribute("node-id")).toBeNull();
+    expect(
+      screen.getByText(/sem prévia neste dispositivo/i),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("zoom-remote-video")).toContainElement(
+      remoteElement,
+    );
+
+    act(() => {
+      localElement.setAttribute("node-id", "7");
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.queryByText(/sem prévia neste dispositivo/i),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByTestId("zoom-local-video")).toContainElement(
+      localElement,
+    );
+    expect(getLocalAttachCalls()).toHaveLength(1);
+    expect(mockStream.startVideo).toHaveBeenCalledTimes(1);
+    expect(mockClient.join).toHaveBeenCalledTimes(1);
+    expect(countAccessRequests(fetchMock, "join")).toBe(1);
+  });
+
+  it("detaches only the timed-out local player and retries binding without restarting capture", async () => {
+    const fetchMock = accessResponse(0);
+    vi.stubGlobal("fetch", fetchMock);
+    mockClient.getAllUser.mockReturnValue([
+      {
+        bVideoOn: true,
+        userId: 7,
+        userKey: "tes-v1-p-local-participant",
+      },
+      {
+        bVideoOn: true,
+        userId: 9,
+        userKey: "tes-v1-t-remote-participant",
+      },
+    ]);
+    let bindOnAttach = false;
+    mockStream.attachVideo.mockImplementation(
+      async (userId: number, _quality?: number, element?: HTMLElement) => {
+        if (userId !== 7) return remoteElement;
+        if (!element) throw new Error("persistent player required");
+        localElement = element;
+        if (bindOnAttach) element.setAttribute("node-id", String(userId));
+        return element;
+      },
+    );
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByText(/voc[eê] entrou no encontro/i);
+    fireEvent.click(screen.getByRole("button", { name: /ativar câmera/i }));
+    await waitFor(() => expect(getLocalAttachCalls()).toHaveLength(1));
+    await waitFor(
+      () =>
+        expect(mockStream.detachVideo).toHaveBeenCalledWith(7, localElement),
+      { timeout: 4_000 },
+    );
+    expect(localElement.isConnected).toBe(true);
+    expect(localElement.getAttribute("node-id")).toBe("0");
+    expect(screen.getByTestId("zoom-remote-video")).toContainElement(
+      remoteElement,
+    );
+
+    bindOnAttach = true;
+    act(() => {
+      handlers.get("video-detailed-data-change")?.({ userId: 7 });
+    });
+
+    await waitFor(() => expect(getLocalAttachCalls()).toHaveLength(2));
+    await waitFor(() =>
+      expect(
+        screen.queryByText(/sem prévia neste dispositivo/i),
+      ).not.toBeInTheDocument(),
+    );
+    expect(localElement.getAttribute("node-id")).toBe("7");
+    expect(mockStream.startVideo).toHaveBeenCalledTimes(1);
+    expect(mockClient.join).toHaveBeenCalledTimes(1);
+    expect(countAccessRequests(fetchMock, "join")).toBe(1);
   });
 
   it.each(["resolved", "rejected"])(
@@ -1520,7 +1812,7 @@ describe("ZoomVideoSessionAdapter", () => {
       expect(
         screen.getByRole("button", { name: /ativar câmera/i }),
       ).toBeEnabled();
-      expect(mockStream.attachVideo).not.toHaveBeenCalledWith(7, 2);
+      expect(getLocalAttachCalls()).toHaveLength(0);
       expect(mockClient.leave).not.toHaveBeenCalled();
       expect(mockClient.join).toHaveBeenCalledTimes(1);
     },
@@ -1578,8 +1870,13 @@ describe("ZoomVideoSessionAdapter", () => {
     fireEvent.click(screen.getByRole("button", { name: /desligar câmera/i }));
     await screen.findByRole("button", { name: /ativar câmera/i });
     expect(mockStream.stopVideo).toHaveBeenCalledTimes(1);
-    await waitFor(() => expect(localElement.isConnected).toBe(false));
+    expect(localElement.isConnected).toBe(true);
+    expect(localElement.getAttribute("node-id")).toBe("7");
     expect(mockClient.leave).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /ativar câmera/i }));
+    await waitFor(() => expect(getLocalAttachCalls()).toHaveLength(2));
+    expect(mockStream.startVideo).toHaveBeenCalledTimes(2);
   });
 
   it.each(["capture", "attachment"])(
@@ -1593,10 +1890,12 @@ describe("ZoomVideoSessionAdapter", () => {
       if (phase === "capture")
         mockStream.startVideo.mockImplementationOnce(() => gate);
       else
-        mockStream.attachVideo.mockImplementationOnce(async () => {
-          await gate;
-          return localElement;
-        });
+        mockStream.attachVideo.mockImplementationOnce(
+          async (userId, _quality, element) => {
+            await gate;
+            return bindLocalMockPlayer(userId, element);
+          },
+        );
       const view = render(
         <ZoomVideoSessionAdapter
           access={allowedAccess}
@@ -1611,10 +1910,7 @@ describe("ZoomVideoSessionAdapter", () => {
         expect(mockStream.startVideo).toHaveBeenCalledTimes(1),
       );
       fireEvent.click(screen.getByRole("button", { name: /câmera/i }));
-      if (phase === "attachment")
-        await waitFor(() =>
-          expect(mockStream.attachVideo).toHaveBeenCalledWith(7, 2),
-        );
+      if (phase === "attachment") await waitFor(() => expectLocalAttach());
       view.unmount();
       await act(async () => {
         await Promise.resolve();
@@ -1634,7 +1930,7 @@ describe("ZoomVideoSessionAdapter", () => {
   it("keeps the therapist video attached when the patient enables their own camera", async () => {
     vi.stubGlobal("fetch", accessResponse(0));
     mockClient.getAllUser.mockReturnValue([
-      { bVideoOn: false, userId: 7 },
+      { bVideoOn: true, userId: 7 },
       { bVideoOn: true, userId: 9 },
     ]);
 
@@ -1680,7 +1976,7 @@ describe("ZoomVideoSessionAdapter", () => {
   it("never moves the patient self-view into the therapist tile when the therapist stops video", async () => {
     vi.stubGlobal("fetch", accessResponse(0));
     mockClient.getAllUser.mockReturnValue([
-      { bVideoOn: false, userId: 7 },
+      { bVideoOn: true, userId: 7 },
       { bVideoOn: true, userId: 9 },
     ]);
 
@@ -1728,7 +2024,7 @@ describe("ZoomVideoSessionAdapter", () => {
   it("fails the self-view closed when the SDK returns an element already owned by the remote tile", async () => {
     vi.stubGlobal("fetch", accessResponse(0));
     mockClient.getAllUser.mockReturnValue([
-      { bVideoOn: false, userId: 7 },
+      { bVideoOn: true, userId: 7 },
       { bVideoOn: true, userId: 9 },
     ]);
     mockStream.attachVideo.mockResolvedValue(remoteElement);
@@ -1767,8 +2063,11 @@ describe("ZoomVideoSessionAdapter", () => {
 
   it("fails remote rendering closed when the SDK returns the element owned by the self-view", async () => {
     vi.stubGlobal("fetch", accessResponse(0));
-    mockClient.getAllUser.mockReturnValue([{ bVideoOn: false, userId: 7 }]);
-    mockStream.attachVideo.mockResolvedValue(localElement);
+    mockClient.getAllUser.mockReturnValue([{ bVideoOn: true, userId: 7 }]);
+    mockStream.attachVideo.mockImplementation(
+      async (userId, _quality, element) =>
+        element ? bindLocalMockPlayer(userId, element) : localElement,
+    );
 
     render(
       <ZoomVideoSessionAdapter
@@ -1809,15 +2108,17 @@ describe("ZoomVideoSessionAdapter", () => {
   it("refreshes local identity and reattaches the correct tiles after a native reconnect", async () => {
     vi.stubGlobal("fetch", accessResponse(0));
     mockClient.getAllUser.mockReturnValue([
-      { bVideoOn: false, userId: 7, userKey: "tes-v1-p-local" },
+      { bVideoOn: true, userId: 7, userKey: "tes-v1-p-local" },
       { bVideoOn: true, userId: 9, userKey: "tes-v1-t-remote" },
     ]);
     mockClient.getCurrentUserInfo.mockReturnValue({
+      bVideoOn: true,
       userId: 7,
       userKey: "tes-v1-p-local",
     });
-    mockStream.attachVideo.mockImplementation(async (userId: number) =>
-      userId === 9 ? remoteElement : localElement,
+    mockStream.attachVideo.mockImplementation(
+      async (userId: number, _quality?: number, element?: HTMLElement) =>
+        userId === 9 ? remoteElement : bindLocalMockPlayer(userId, element),
     );
 
     render(
@@ -1838,6 +2139,7 @@ describe("ZoomVideoSessionAdapter", () => {
     );
 
     mockClient.getCurrentUserInfo.mockReturnValue({
+      bVideoOn: true,
       userId: 17,
       userKey: "tes-v1-p-local",
     });
@@ -1852,7 +2154,7 @@ describe("ZoomVideoSessionAdapter", () => {
 
     await waitFor(() => {
       expect(mockStream.detachVideo).toHaveBeenCalledWith(7, localElement);
-      expect(mockStream.attachVideo).toHaveBeenCalledWith(17, 2);
+      expectLocalAttach(17);
       expect(screen.getByTestId("zoom-local-video")).toContainElement(
         localElement,
       );
