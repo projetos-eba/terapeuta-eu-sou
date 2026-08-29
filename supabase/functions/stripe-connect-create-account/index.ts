@@ -158,7 +158,7 @@ async function insertConnectAccount(
 ): Promise<{ reused: boolean; rows: ConnectAccountRow[] }> {
   try {
     const rows = await client.post<ConnectAccountRow[]>(
-      "/rest/v1/therapist_connect_accounts?select=id,stripe_account_id,onboarding_status,stripe_transfers_status",
+      "/rest/v1/therapist_connect_accounts?select=id,stripe_account_id,onboarding_status,stripe_transfers_status,account_generation",
       {
         dashboard_type: "express",
         fees_collector: "application",
