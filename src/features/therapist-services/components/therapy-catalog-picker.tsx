@@ -20,23 +20,20 @@ export function TherapyCatalogPicker({
   selectedTherapyId: string | null;
 }) {
   const [query, setQuery] = useState("");
-  const grouped = useMemo(() => {
+  const therapies = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("pt-BR");
     const filtered = catalog.filter((therapy) => {
       if (!normalized) return true;
       return (
         therapy.name.toLocaleLowerCase("pt-BR").includes(normalized) ||
-        therapy.category.name.toLocaleLowerCase("pt-BR").includes(normalized)
+        therapy.matchingThemes.some((theme) =>
+          theme.name.toLocaleLowerCase("pt-BR").includes(normalized),
+        )
       );
     });
-    const groups = new Map<string, TherapyCatalogOption[]>();
-
-    for (const therapy of filtered) {
-      const key = therapy.category.name;
-      groups.set(key, [...(groups.get(key) ?? []), therapy]);
-    }
-
-    return Array.from(groups.entries());
+    return filtered.sort((left, right) =>
+      left.name.localeCompare(right.name, "pt-BR"),
+    );
   }, [catalog, query]);
 
   return (
@@ -63,14 +60,9 @@ export function TherapyCatalogPicker({
         className="mt-4 max-h-[42vh] space-y-5 overflow-y-auto pr-1"
         role="listbox"
       >
-        {grouped.length > 0 ? (
-          grouped.map(([category, therapies]) => (
-            <section key={category}>
-              <h3 className="text-xs font-extrabold uppercase tracking-[0.08em] text-tesText-muted">
-                {category}
-              </h3>
-              <div className="mt-2 grid gap-2">
-                {therapies.map((therapy) => {
+        {therapies.length > 0 ? (
+          <div className="grid gap-2">
+            {therapies.map((therapy) => {
                   const selected = therapy.therapyId === selectedTherapyId;
 
                   return (
@@ -110,7 +102,7 @@ export function TherapyCatalogPicker({
                             {therapy.name}
                           </strong>
                           <span className="mt-1 block text-xs font-bold text-brand-primary">
-                            {therapy.category.name}
+                            {therapy.matchingThemes.map((theme) => theme.name).join(" · ")}
                           </span>
                         </span>
                         <span className="rounded-full bg-status-successBg px-3 py-1 text-[11px] font-extrabold text-status-success">
@@ -124,10 +116,8 @@ export function TherapyCatalogPicker({
                       ) : null}
                     </button>
                   );
-                })}
-              </div>
-            </section>
-          ))
+            })}
+          </div>
         ) : (
           <div className="rounded-lg border border-brand-lavender bg-brand-lavenderSoft/50 p-4">
             <p className="text-sm font-extrabold text-brand-deep">

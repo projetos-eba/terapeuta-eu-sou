@@ -30,7 +30,6 @@ const request: TherapyRequestSummary = {
     themeIds: ["theme-1"],
     useCases: "Pessoas que desejam conversar sobre o momento atual.",
   },
-  suggestedCategoryId: null,
   updatedAt: "2026-08-27T12:00:00.000Z",
 };
 

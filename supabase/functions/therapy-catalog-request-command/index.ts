@@ -319,7 +319,6 @@ async function listOwnRequests(client: SupabaseRestClient, userId: string) {
       materials: await listMaterials(client, item.id),
       status: item.status,
       submission: item.submission,
-      suggestedCategoryId: item.suggested_category_id,
       updatedAt: item.updated_at,
     })),
   );

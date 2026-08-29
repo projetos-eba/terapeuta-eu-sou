@@ -5,7 +5,7 @@ import { ArrowDownAZ, Flame, Sparkles, Star, X } from "lucide-react";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
-import { buildHref } from "./category-filter";
+import { buildHref } from "./theme-filter";
 import { TherapySortSelect } from "./therapy-sort-select";
 import { therapySortOptions } from "../schemas/therapy-search-params";
 import type { TherapySearchParams, TherapySort } from "../types";
@@ -60,7 +60,7 @@ export function TherapyFilters({ params, totalCount }: TherapyFiltersProps) {
             );
           })}
 
-          {(params.q || params.category || params.sort !== "relevance") && (
+          {(params.q || params.theme || params.sort !== "relevance") && (
             <Link
               href={routes.public.therapies as Route<string>}
               className="inline-flex min-h-[50px] min-w-[172px] shrink-0 snap-start items-center justify-center gap-2 rounded-[13px] border border-[#E8E2F6] bg-white px-5 text-sm font-extrabold text-brand-primary shadow-[0_8px_11px_rgba(46,26,71,0.05)] transition hover:bg-brand-lavenderSoft focus:outline-none focus:ring-4 focus:ring-ring/20"
@@ -80,7 +80,7 @@ export function TherapyFilters({ params, totalCount }: TherapyFiltersProps) {
 
           <TherapySortSelect
             action={routes.public.therapies}
-            category={params.category}
+            theme={params.theme}
             currentSort={params.sort}
             options={therapySortOptions}
             q={params.q}

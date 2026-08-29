@@ -6,10 +6,7 @@ export type PublicTherapyDetail = {
     iconKey: string;
     title: string;
   }>;
-  category: {
-    name: string;
-    slug: string;
-  };
+  themes: Array<{ name: string; slug: string }>;
   complementaryDescription: string | null;
   description: string;
   heroImageUrl: string | null;
@@ -54,8 +51,6 @@ export type PublicTherapyDetailRow = {
   approach_icon_key: string | null;
   approach_label: string | null;
   benefits: unknown;
-  category_name: string;
-  category_slug: string;
   complementary_description: string | null;
   description: string | null;
   hero_focal_point: string | null;
@@ -72,6 +67,8 @@ export type PublicTherapyDetailRow = {
   slug: string;
   subtitle: string | null;
   therapist_count: number | null;
+  theme_names: string[] | null;
+  theme_slugs: string[] | null;
   visual_theme_key: string | null;
 };
 

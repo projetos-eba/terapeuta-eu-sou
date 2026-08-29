@@ -32,7 +32,7 @@ import type {
 import { AdminTherapyEditor } from "./admin-therapy-editor";
 
 type FilterState = {
-  categoryId: string;
+  themeId: string;
   match: "all" | "hidden" | "visible";
   publicVisibility: "all" | "hidden" | "visible";
   query: string;
@@ -41,7 +41,7 @@ type FilterState = {
 };
 
 const initialFilters: FilterState = {
-  categoryId: "all",
+  themeId: "all",
   match: "all",
   publicVisibility: "all",
   query: "",
@@ -99,15 +99,18 @@ export function AdminTherapyCatalogPage({
             therapy.slug,
             therapy.shortDescription,
             therapy.aliases.join(" "),
-            therapy.categoryName,
+            therapy.matchingThemeIds
+              .map((id) => catalog.matchingThemes.find((theme) => theme.id === id)?.name)
+              .filter(Boolean)
+              .join(" "),
           ].join(" "),
         ).includes(query)
       ) {
         return false;
       }
       if (
-        filters.categoryId !== "all" &&
-        therapy.categoryId !== filters.categoryId
+        filters.themeId !== "all" &&
+        !therapy.matchingThemeIds.includes(filters.themeId)
       ) {
         return false;
       }
@@ -303,7 +306,7 @@ export function AdminTherapyCatalogPage({
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px]">
         <main className="space-y-4">
           <Filters
-            categories={catalog.categories}
+            matchingThemes={catalog.matchingThemes}
             filters={filters}
             onChange={setFilters}
           />
@@ -316,6 +319,7 @@ export function AdminTherapyCatalogPage({
                 onTransition={(action) =>
                   setTransitionTarget({ action, therapy })
                 }
+                matchingThemes={catalog.matchingThemes}
                 therapy={therapy}
               />
             ))}
@@ -408,7 +412,6 @@ export function AdminTherapyCatalogPage({
           title={editingTherapy === "new" ? "Criar rascunho" : "Editar terapia"}
         >
           <AdminTherapyEditor
-            categories={catalog.categories}
             isSaving={isMutating}
             matchingThemes={catalog.matchingThemes}
             onCancel={() => setEditingTherapy(null)}
@@ -467,11 +470,11 @@ export function AdminTherapyCatalogPage({
 }
 
 function Filters({
-  categories,
+  matchingThemes,
   filters,
   onChange,
 }: {
-  categories: AdminTherapyCatalogContract["categories"];
+  matchingThemes: AdminTherapyCatalogContract["matchingThemes"];
   filters: FilterState;
   onChange: (filters: FilterState) => void;
 }) {
@@ -495,16 +498,16 @@ function Filters({
           </span>
         </label>
         <Select
-          label="Categoria"
-          onChange={(value) => onChange({ ...filters, categoryId: value })}
+          label="Tema"
+          onChange={(value) => onChange({ ...filters, themeId: value })}
           options={[
             { label: "Todas", value: "all" },
-            ...categories.map((category) => ({
-              label: category.name,
-              value: category.id,
+            ...matchingThemes.map((theme) => ({
+              label: theme.name,
+              value: theme.id,
             })),
           ]}
-          value={filters.categoryId}
+          value={filters.themeId}
         />
         <Select
           label="Status"
@@ -602,11 +605,16 @@ function TherapyCard({
   onEdit,
   onTransition,
   therapy,
+  matchingThemes,
 }: {
   onEdit: () => void;
   onTransition: (action: AdminTherapyTransition) => void;
   therapy: AdminTherapy;
+  matchingThemes: AdminTherapyCatalogContract["matchingThemes"];
 }) {
+  const themeNames = therapy.matchingThemeIds
+    .map((id) => matchingThemes.find((theme) => theme.id === id)?.name)
+    .filter((name): name is string => Boolean(name));
   return (
     <article className="rounded-[28px] border border-brand-lavender/70 bg-white p-5 shadow-[0_22px_60px_rgba(20,16,90,0.09)] sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -615,9 +623,14 @@ function TherapyCard({
             <span className="rounded-full bg-brand-lavenderSoft px-3 py-1 text-xs font-extrabold text-brand-primary">
               {statusLabels[therapy.status]}
             </span>
-            <span className="rounded-full bg-surface-soft px-3 py-1 text-xs font-bold text-tesText-secondary">
-              {therapy.categoryName}
-            </span>
+            {themeNames.slice(0, 1).map((name) => (
+              <span
+                className="rounded-full bg-surface-soft px-3 py-1 text-xs font-bold text-tesText-secondary"
+                key={name}
+              >
+                {name}
+              </span>
+            ))}
             {therapy.isVisibleInMatching ? (
               <span className="rounded-full bg-status-successBg px-3 py-1 text-xs font-extrabold text-status-success">
                 Match

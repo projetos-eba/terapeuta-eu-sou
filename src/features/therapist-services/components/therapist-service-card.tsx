@@ -85,7 +85,7 @@ export function TherapistServiceCard({
             <div className="flex min-w-0 flex-col gap-3">
               <div className="min-w-0">
                 <p className="break-words text-xs font-extrabold text-brand-primary [overflow-wrap:anywhere]">
-                  {service.category.name}
+                  {themeLabels[0]?.label ?? "Tema do Match"}
                 </p>
                 <h3 className="mt-1 break-words font-display text-2xl font-light italic leading-tight text-brand-deep [overflow-wrap:anywhere]">
                   {service.therapy.name}
@@ -156,7 +156,6 @@ export function TherapistServiceCard({
                 {formatCurrency(service.priceCents)}
               </InfoPill>
               <ServiceThemeBadges
-                category={service.category}
                 serviceName={service.title}
                 themes={themeLabels}
               />
@@ -198,11 +197,9 @@ function InfoPill({
 }
 
 function ServiceThemeBadges({
-  category,
   serviceName,
   themes,
 }: {
-  category: { id: string; name: string; slug: string };
   serviceName: string;
   themes: Array<{ id: string; label: string; slug: string }>;
 }) {
@@ -210,12 +207,13 @@ function ServiceThemeBadges({
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
   const tooltipId = useId();
-  const hiddenThemes = themes.slice(0, 2);
+  const primaryTheme = themes[0];
+  const hiddenThemes = themes.slice(1);
   const tooltipOpen = clickedOpen || focused || hovered;
 
   return (
     <ul
-      aria-label={`Categoria e temas selecionados para ${serviceName}`}
+      aria-label={`Temas selecionados para ${serviceName}`}
       className="flex flex-wrap items-center gap-2"
     >
       <li
@@ -224,8 +222,8 @@ function ServiceThemeBadges({
         onMouseLeave={() => setHovered(false)}
       >
         <InfoPill icon={<Tags aria-hidden="true" size={14} />}>
-          <span className="max-w-[220px] truncate" title={category.name}>
-            {category.name}
+          <span className="max-w-[220px] truncate" title={primaryTheme?.label}>
+            {primaryTheme?.label ?? "Tema do Match"}
           </span>
         </InfoPill>
         {hiddenThemes.length > 0 ? (
@@ -282,8 +280,8 @@ function hashString(value: string) {
 
 function getBlockingReasonLabel(reason: string) {
   const labels: Record<string, string> = {
-    category_inactive:
-      "Esta terapia pertence a uma categoria indisponível no momento.",
+    therapy_without_active_theme:
+      "Esta terapia precisa ter ao menos um tema ativo do Match para receber agendamentos.",
     service_archived:
       "Esta terapia foi arquivada e permanece apenas para histórico.",
     service_not_accepting_bookings:

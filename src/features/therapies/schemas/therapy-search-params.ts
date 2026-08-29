@@ -22,7 +22,7 @@ export function parseTherapySearchParams(
   searchParams?: Record<string, string | string[] | undefined>,
 ): TherapySearchParams {
   const q = firstValue(searchParams?.q)?.trim();
-  const category = firstValue(searchParams?.category)?.trim();
+  const theme = firstValue(searchParams?.theme)?.trim();
   const sortParam = firstValue(searchParams?.sort) as TherapySort | undefined;
   const page = parsePositiveInt(firstValue(searchParams?.page), 1);
   const pageSize = Math.min(
@@ -31,7 +31,7 @@ export function parseTherapySearchParams(
   );
 
   return {
-    category: category || undefined,
+    theme: theme && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(theme) ? theme : undefined,
     page,
     pageSize,
     q: q || undefined,
