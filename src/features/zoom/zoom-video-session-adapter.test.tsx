@@ -286,6 +286,10 @@ describe("ZoomVideoSessionAdapter", () => {
     );
     await waitFor(() => expect(mockStream.startVideo).toHaveBeenCalledTimes(1));
     expect(screen.getByText("Câmera ativada.")).toBeInTheDocument();
+    expect(mockStream.attachVideo).toHaveBeenCalledWith(7, 2);
+    expect(screen.getByTestId("zoom-local-video")).toContainElement(
+      localElement,
+    );
   });
 
   it("keeps the therapist in the room when initial audio setup resolves with a transient failure", async () => {
