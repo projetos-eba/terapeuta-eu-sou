@@ -8,13 +8,16 @@
 
 ## Referência visual e composição
 
-- Figma principal: arquivo `OSXJi8tknHHCj82MTY2NbG`, nó `13366:1634`.
+- Figma principal: arquivo `OSXJi8tknHHCj82MTY2NbG`, nó `13366:1634`; o
+  cabeçalho usa o nó `13366:1636`.
 - A página segue uma composição editorial com hero Aura, personagem visual
   local, faixa de período 30/90 dias, quatro KPIs, três leituras contextuais,
   recomendações e bloco final de resultados.
-- O personagem aprovado é reutilizado de
-  `public/therapist/dashboard/aura.png`; não usar URL temporária do Figma no
-  produto.
+- O cabeçalho dedicado usa o export aprovado
+  `public/therapist/aura/hero-aura.png`, obtido do nó `13366:1636`; não usar
+  URL temporária do Figma no produto. A personagem recortada em
+  `public/therapist/dashboard/aura.png` permanece exclusiva do card da Aura na
+  Visão geral.
 - KPIs e barras de referência devem distinguir claramente dado pronto de
   estrutura visual ainda sem base. Ausência de dados não vira zero falso.
 - A página é responsiva: hero empilhado e cards em uma coluna no mobile;
@@ -25,6 +28,10 @@
   frame Figma ainda chama a superfície visual de `Aura IA`, mas o nome público
   e exibido no produto é `Assessora Aura`; isso é uma referência visual
   histórica, não uma segunda feature ou capability.
+- No cabeçalho, preservar o nome público `Assessora Aura`, a composição
+  editorial com asset panorâmico, a hierarquia de título/badges e a informação
+  de que os sinais são calculados por regras. Em telas pequenas, priorizar a
+  legibilidade do conteúdo sobre o enquadramento completo do asset.
 
 ## Fontes Obrigatórias
 

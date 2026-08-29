@@ -322,7 +322,6 @@ export function AdminTherapyCatalogPage({
                 onTransition={(action) =>
                   setTransitionTarget({ action, therapy })
                 }
-                matchingThemes={catalog.matchingThemes}
                 therapy={therapy}
               />
             ))}
@@ -608,16 +607,11 @@ function TherapyCard({
   onEdit,
   onTransition,
   therapy,
-  matchingThemes,
 }: {
   onEdit: () => void;
   onTransition: (action: AdminTherapyTransition) => void;
   therapy: AdminTherapy;
-  matchingThemes: AdminTherapyCatalogContract["matchingThemes"];
 }) {
-  const themeNames = therapy.matchingThemeIds
-    .map((id) => matchingThemes.find((theme) => theme.id === id)?.name)
-    .filter((name): name is string => Boolean(name));
   return (
     <article className="rounded-[28px] border border-brand-lavender/70 bg-white p-5 shadow-[0_22px_60px_rgba(20,16,90,0.09)] sm:p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -626,26 +620,6 @@ function TherapyCard({
             <span className="rounded-full bg-brand-lavenderSoft px-3 py-1 text-xs font-extrabold text-brand-primary">
               {statusLabels[therapy.status]}
             </span>
-            {themeNames.slice(0, 1).map((name) => (
-              <span
-                className="rounded-full bg-surface-soft px-3 py-1 text-xs font-bold text-tesText-secondary"
-                key={name}
-              >
-                {name}
-              </span>
-            ))}
-            {themeNames.length > 1 ? (
-              <span
-                aria-label={`${themeNames.length - 1} ${themeNames.length === 2 ? "tema adicional" : "temas adicionais"} de ${therapy.name}`}
-                className="rounded-full bg-surface-soft px-2 py-1 text-xs font-bold text-tesText-secondary"
-              >
-                +{themeNames.length - 1}
-                <span className="sr-only">
-                  <span>: </span>
-                  {themeNames.slice(1).join(", ")}
-                </span>
-              </span>
-            ) : null}
             {therapy.isVisibleInMatching ? (
               <span className="rounded-full bg-status-successBg px-3 py-1 text-xs font-extrabold text-status-success">
                 Match

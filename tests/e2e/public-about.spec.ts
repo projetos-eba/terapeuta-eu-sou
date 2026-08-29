@@ -33,6 +33,14 @@ for (const viewport of viewports) {
       /platform-dashboard-2026-08-26-transparent\.png/,
     );
 
+    const connectionBannerImage = page.getByAltText(
+      "Duas pessoas se encontrando diante de um portal iluminado",
+    );
+    await expect(connectionBannerImage).toHaveAttribute(
+      "src",
+      /tes-connection-banner\.png/,
+    );
+
     await expect(page.getByRole("heading", { level: 1 })).toHaveCSS(
       "font-weight",
       "300",
@@ -70,6 +78,16 @@ for (const viewport of viewports) {
       expect(headingBounds!.x + headingBounds!.width).toBeLessThanOrEqual(
         viewport.width - 16,
       );
+
+      const bannerBounds = await page
+        .getByTestId("about-connection-banner")
+        .boundingBox();
+      const imageBounds = await connectionBannerImage.boundingBox();
+
+      expect(bannerBounds).not.toBeNull();
+      expect(imageBounds).not.toBeNull();
+      expect(imageBounds!.y).toBeGreaterThan(bannerBounds!.y);
+      expect(imageBounds!.width).toBeCloseTo(bannerBounds!.width, 0);
     }
 
     await page.evaluate(async () => {

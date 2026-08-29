@@ -47,6 +47,12 @@ export type AdminSecurityPageData = {
     reason: string | null;
     source: string;
   }>;
+  auditPage: {
+    hasNext: boolean;
+    page: number;
+    pageSize: number;
+    total: number;
+  };
   auditEventsStatus: "available" | "unavailable";
 };
 

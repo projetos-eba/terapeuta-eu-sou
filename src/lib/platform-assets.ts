@@ -35,6 +35,9 @@ export const platformAssets = {
   therapistAuraCharacter: {
     src: "/therapist/dashboard/aura.png",
   },
+  therapistAuraHero: {
+    src: "/therapist/aura/hero-aura.png",
+  },
   therapistFinanceHero: {
     src: "/assets/plataforma/therapist-finance-hero.png",
   },

@@ -78,6 +78,7 @@ type FeaturedTherapistsCursor = {
 };
 
 const FEATURED_THERAPISTS_PAGE_SIZE = 6;
+const PUBLIC_HOME_CACHE_TAG = "public-home";
 
 function hasSupabaseConfig() {
   return Boolean(getSupabasePublicConfig());
@@ -98,7 +99,7 @@ async function fetchPublicHomeRows<Row>(
       apikey: config.apiKey,
       Authorization: `Bearer ${config.apiKey}`,
     },
-    next: { revalidate: 900 },
+    next: { revalidate: 900, tags: [PUBLIC_HOME_CACHE_TAG] },
   });
 
   if (!response.ok) {
@@ -124,7 +125,7 @@ async function fetchPublicHomeRowsWithCount<Row>(
       Authorization: `Bearer ${config.apiKey}`,
       Prefer: "count=exact",
     },
-    next: { revalidate: 900 },
+    next: { revalidate: 900, tags: [PUBLIC_HOME_CACHE_TAG] },
   });
 
   if (!response.ok) {

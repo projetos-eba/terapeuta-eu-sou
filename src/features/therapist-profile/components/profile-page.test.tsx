@@ -627,6 +627,11 @@ describe("TherapistProfilePage video block", () => {
     expect(
       screen.getByRole("heading", { name: "Vivências e terapias" }),
     ).toBeInTheDocument();
+    const services = screen.getByRole("list", {
+      name: "Vivências e terapias disponíveis",
+    });
+    expect(services).toHaveClass("overflow-x-auto", "snap-x");
+    expect(within(services).getByRole("listitem")).toBeInTheDocument();
     expect(screen.queryByText("Serviços online")).not.toBeInTheDocument();
     expect(screen.getAllByText("Reiki").length).toBeGreaterThan(0);
     expect(
