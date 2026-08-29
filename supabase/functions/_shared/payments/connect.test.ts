@@ -6,6 +6,7 @@ import {
   derivePayoutSettingsState,
   getCardPaymentsStatus,
   getPendingRequirements,
+  getStripeV2ErrorCode,
   getTransfersStatus,
   isManualPayoutScheduleUnavailable,
 } from "./connect.ts";
@@ -201,6 +202,16 @@ Deno.test("Connect v2 account creation idempotency key is stable per therapist e
     key,
     "tes-connect-recipient-v4-test-c1000000-0000-4000-8000-000000000001-2",
   );
+});
+
+Deno.test("Connect v2 exposes the provider error code without exposing its payload", () => {
+  assertEquals(
+    getStripeV2ErrorCode(
+      new Error("STRIPE_V2_REQUEST_FAILED:400:account_create_activation_required"),
+    ),
+    "account_create_activation_required",
+  );
+  assertEquals(getStripeV2ErrorCode(new Error("provider unavailable")), null);
 });
 
 function accountWithTransferStatus(
