@@ -68,6 +68,7 @@ Rules:
   activate it silently. Demo data requires `TES_ENABLE_DEMO_DATA=true` on the
   server and must be visible in the UI.
 - Therapy fallback content must stay aligned with the current public catalog phase: `reiki`, `taro` and `constelacao-familiar`. Do not link fallback cards to therapy slugs that are `draft`, not visible, or missing public detail content.
+- Public Home therapy data is cached under the `public-home` tag. Administrative therapy mutations must invalidate that tag and the `/` and `/sitemap.xml` paths so a despublication or republication is reflected across the marquee and preview shelf immediately.
 - Featured therapist photos must use the stable local assets in `public/therapists/`, shared with `/terapeutas`, `/terapeutas/:slug`, therapy detail cards and patient session cards.
 - The featured therapists carousel should show five real profiles on desktop
   when possible. If the public view returns zero rows, show an honest empty

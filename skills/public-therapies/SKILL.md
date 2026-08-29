@@ -100,11 +100,12 @@ Para profissionais relacionados:
 
 ## Responsividade
 
-- Desktop: hero com imagem lateral, filtros horizontais, sidebar de categorias e grid de 4 colunas.
+- Desktop: hero com imagem lateral, filtros horizontais, sidebar de Temas do Match e grid de 4 colunas.
 - Desktop: manter o conteúdo em container central de até `1440px`, com margens laterais de `68px` a partir de `lg`; o cabeçalho público ocupa uma faixa branca própria, separada dos assets do hero.
 - Tablet: grid de 2 colunas, filtros acima da listagem.
 - Mobile: hero reduzido, busca primeiro, filtros em accordion, grid em 1 coluna quando a descrição precisar respirar.
 - Cards do catálogo devem seguir o padrão visual compacto do Figma `13273:1439`: imagem editorial no topo, nome centralizado, descrição com `line-clamp` de 3 linhas e CTA “Saiba mais”. As imagens usam `object-contain`, preservando a composição integral no mobile e em larguras intermediárias; não aplicar zoom de hover que corte a imagem.
+- Cards do catálogo não exibem badges de temas acima do nome da terapia; os temas permanecem disponíveis no filtro e nos contratos de detalhe quando necessários.
 - Detalhe desktop: grade editorial única; coluna esquerda com abordagem, nome, subtítulo, três destaques e “O que é”; coluna direita com imagem hero e benefícios; profissionais e banner inferior de descoberta de terapeutas em largura total.
 - Detalhe mobile: blocos empilhados, profissionais em uma coluna, banner de descoberta em largura total e sem posicionamento absoluto estrutural.
 - Títulos editoriais do detalhe, especialmente o nome da terapia no hero, devem usar `font-display` (`IvyPresto Display`) com tamanho responsivo seguro para nomes longos. UI, formulários, descrições e cards usam Manrope via `font-sans`.

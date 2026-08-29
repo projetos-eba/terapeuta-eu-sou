@@ -94,6 +94,11 @@ Read in this order, only as needed:
   media slot governed by its `16:9` aspect ratio (without a larger mobile
   minimum height), so the full editorial composition remains visible within the
   device width at every breakpoint.
+- The closing connection banner uses
+  `public/about/tes-connection-banner.png`: on desktop, copy stays entirely in
+  the left column while the right media column blends into the purple surface
+  through a left-edge fade. On mobile, the full asset moves below the CTA using
+  `object-contain`; never overlay copy on it.
 
 ## Data and Fallback
 

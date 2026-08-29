@@ -18,7 +18,6 @@ export type ShellNavigationItem = {
   children?: ShellNavigationItem[];
   href: string;
   icon:
-    | "brain"
     | "calendar"
     | "chart"
     | "credit-card"
@@ -26,6 +25,7 @@ export type ShellNavigationItem = {
     | "heart"
     | "help"
     | "home"
+    | "lightbulb"
     | "message"
     | "route"
     | "search"

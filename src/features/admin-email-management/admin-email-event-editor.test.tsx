@@ -113,4 +113,42 @@ describe("AdminEmailEventEditor", () => {
       enabled: true,
     });
   });
+
+  it("shows the mailbox address instead of the sender display name", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => ({
+        json: async () => ({
+          data: {
+            ...detail,
+            senders: [
+              {
+                active: true,
+                display_name: "Equipe TES",
+                id: "sender-1",
+                is_default: true,
+                mailbox_address: "contato@terapeutaeusou.com.br",
+                provider: "hostinger_mail_api",
+              },
+            ],
+          },
+          ok: true,
+        }),
+        ok: true,
+      })),
+    );
+
+    render(
+      <AdminEmailEventEditor actionKey="therapy_catalog_request_submitted" />,
+    );
+
+    expect(
+      await screen.findByRole("option", {
+        name: "contato@terapeutaeusou.com.br (padrão)",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "Equipe TES (padrão)" }),
+    ).not.toBeInTheDocument();
+  });
 });
