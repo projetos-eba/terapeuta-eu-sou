@@ -343,6 +343,11 @@ Stack real identificada:
   destroy, separação entre mídia/conexão e fim técnico/lógico, identidade local
   antes da mídia, seleção remota 1:1 e ownership por geração. Preservar os
   normalizadores por operação e regressões; não generalizar sucesso vazio.
+- Recuperação de self-view: ler também
+  `docs/zoom/patient-preview-recovery-2026-08-28.md`. Identidade tardia
+  `null → userId` deve recuperar prévia sem reiniciar captura/join; o attach
+  local pertence à geração e integra o cleanup. Não misturar falhas de detach
+  durante chamada ativa com aviso de encerramento.
 - Videochamada e feedback: a sala visual abre em T-15, o feedback de qualidade
   exige joins confiáveis de paciente e terapeuta, e confirmações bilaterais
   independentes usam a política ativa de 7 dias + 1 dia de segurança. A chegada

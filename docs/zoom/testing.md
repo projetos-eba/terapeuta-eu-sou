@@ -92,6 +92,23 @@ detach pelo elemento exato; colisão entre elemento local e remoto; e attach de
 geração anterior resolvendo após cleanup/rejoin. O aceite exige no máximo um
 player por container e nenhum movimento do self-view para o quadro remoto.
 
+Cobrir também publicação já ativa com identidade local inicialmente nula:
+`Connected` e timers devem recuperar o self-view sem novo `startVideo`
+ou JWT. Exercitar retry limitado/manual, stop e unmount durante attach de
+recuperação e avisos separados para detach ativo versus teardown real.
+Eventos locais não anunciam entrada/saída da contraparte.
+
+Browser isolado, sem Supabase ou Zoom real:
+
+```bash
+npx playwright test tests/e2e/zoom-preview.spec.ts --project=chromium --workers=1
+```
+
+Esse harness serve somente o adapter/componentes reais pelo Vite local, sem
+ler .env; simula SDK/acesso, usa mídia falsa e bloqueia requisições externas.
+Não substitui testes de Auth, webhooks, host-first real ou aparelhos físicos.
+Detalhes em [recuperação de prévia](./patient-preview-recovery-2026-08-28.md).
+
 Os testes temporais cobrem T-15, chegada em T+10, bloqueio em T+10+1 ms,
 reconexão por chegada da versão atual ou join confiável e bloqueio em
 `scheduled_ends_at`. Para 17:45–18:35, o contador mostra 7 minutos antes do

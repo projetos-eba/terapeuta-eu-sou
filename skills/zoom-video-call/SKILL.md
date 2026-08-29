@@ -87,6 +87,11 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   O SDK 2.4.5 resolve `startVideo` com `undefined`; preservar o normalizador
   específico e os testes com esse retorno. Cleanup espera captura/attach
   pendentes; desligar câmera para a publicação antes do detach.
+- Prévia deve recuperar também identidade `null → userId`, não só mudança
+  entre dois IDs. Preservar reconciliação idempotente por geração, retries
+  limitados e “Tentar mostrar minha câmera” sem repetir captura/JWT. Falha de
+  detach ativo é diagnóstico de renderização, nunca aviso de encerramento.
+  Consultar `docs/zoom/patient-preview-recovery-2026-08-28.md`.
 - Antes de alterar integração ou mocks, ler
   `docs/zoom/investigation-2026-08-27.md` e
   `docs/zoom/self-view-2026-08-27.md` e
