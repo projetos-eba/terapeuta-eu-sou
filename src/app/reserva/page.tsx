@@ -108,13 +108,6 @@ export default async function PublicReservationPage({
       if (accessToken && patient && scheduleWindow) {
         const patientSchedule = await getPatientScheduleIntervals({
           accessToken,
-          currentReservation:
-            context.serviceId && context.selectedSlot
-              ? {
-                  serviceId: context.serviceId,
-                  startsAt: context.selectedSlot,
-                }
-              : undefined,
           ...scheduleWindow,
         });
         if (patientSchedule.status === "success") {

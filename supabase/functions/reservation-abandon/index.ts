@@ -1,6 +1,6 @@
 import { handleOptions } from "../_shared/auth/cors.ts";
-import { getRuntime, getServiceRoleKey } from "../_shared/auth/runtime.ts";
 import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
+import { expireOpenCheckoutForAbandonment } from "../_shared/payments/checkout-abandonment.ts";
 import {
   DomainError,
   failure,
@@ -8,12 +8,17 @@ import {
   requirePatient,
   success,
 } from "../_shared/payments/http.ts";
+import {
+  getPaymentsConfig,
+  getPaymentsRuntime,
+} from "../_shared/payments/runtime.ts";
+import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 
 type Body = { bookingId?: string; requestId?: string };
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const runtime = getRuntime("reservation-abandon");
+const runtime = getPaymentsRuntime("reservation-abandon");
 
 runtime.serve(async (request) => {
   const optionsResponse = handleOptions(request);
@@ -22,15 +27,12 @@ runtime.serve(async (request) => {
   try {
     if (request.method !== "POST")
       throw new DomainError("method_not_allowed", 405, "Metodo nao permitido.");
-    const supabaseUrl = runtime.env.get("SUPABASE_URL");
-    const serviceRoleKey = getServiceRoleKey(runtime);
-    if (!supabaseUrl || !serviceRoleKey)
-      throw new DomainError(
-        "missing_supabase_env",
-        503,
-        "Configuracao Supabase ausente.",
-      );
-    const client = new SupabaseRestClient(supabaseUrl, serviceRoleKey);
+    const config = getPaymentsConfig(runtime);
+    const client = new SupabaseRestClient(
+      config.supabaseUrl,
+      config.serviceRoleKey,
+    );
+    const stripe = createStripeClient(config.stripeApiKey);
     const { profile } = await requirePatient(client, request);
     const body = (await parseJsonBody<Body>(request)) ?? {};
     if (
@@ -59,12 +61,27 @@ runtime.serve(async (request) => {
       );
     if (!["draft", "pending_payment"].includes(booking.status))
       return success({ released: false, status: booking.status });
-    const payments = await client.get<Array<{ financial_status: string }>>(
-      `/rest/v1/session_payments?select=financial_status&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
+    const payments = await client.get<
+      Array<{
+        financial_status: string;
+        stripe_checkout_session_id: string | null;
+      }>
+    >(
+      `/rest/v1/session_payments?select=financial_status,stripe_checkout_session_id&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
     );
     if (
       payments[0] &&
       !["pending", "failed", "canceled"].includes(payments[0].financial_status)
+    ) {
+      return success({ released: false, status: booking.status });
+    }
+    const checkoutSessionId = payments[0]?.stripe_checkout_session_id;
+    if (
+      checkoutSessionId &&
+      !(await expireOpenCheckoutForAbandonment({
+        checkoutSessionId,
+        stripe,
+      }))
     ) {
       return success({ released: false, status: booking.status });
     }
