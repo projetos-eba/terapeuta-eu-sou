@@ -14,25 +14,22 @@ insert into public.bookings (
   ('a1030000-0000-4000-8000-000000000002', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000001', 'd1000000-0000-4000-8000-000000000001', '2099-01-02 10:00:00+00', '2099-01-02 10:50:00+00', 'America/Sao_Paulo', 'confirmed', 'paid'),
   ('a1030000-0000-4000-8000-000000000003', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000001', 'd1000000-0000-4000-8000-000000000001', '2099-01-03 10:05:00+00', '2099-01-03 10:55:00+00', 'America/Sao_Paulo', 'confirmed', 'paid');
 
-select throws_ok(
+select lives_ok(
   $$insert into public.bookings (id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at, timezone, status, payment_status)
     values ('a1030000-0000-4000-8000-000000000011', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000002', 'd1000000-0000-4000-8000-000000000002', '2099-01-01 10:00:00+00', '2099-01-01 11:00:00+00', 'America/Sao_Paulo', 'draft', 'not_started')$$,
-  'P0001', 'PATIENT_SCHEDULE_CONFLICT',
-  'same patient and start with another therapist is rejected'
+  'unpaid patient attempt with another therapist is allowed'
 );
 
-select throws_ok(
+select lives_ok(
   $$insert into public.bookings (id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at, timezone, status, payment_status)
     values ('a1030000-0000-4000-8000-000000000012', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000002', 'd1000000-0000-4000-8000-000000000002', '2099-01-02 10:30:00+00', '2099-01-02 11:30:00+00', 'America/Sao_Paulo', 'pending_payment', 'pending')$$,
-  'P0001', 'PATIENT_SCHEDULE_CONFLICT',
-  'partial patient booking overlap is rejected'
+  'unpaid overlapping patient attempt is allowed'
 );
 
-select throws_ok(
+select lives_ok(
   $$insert into public.bookings (id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at, timezone, status, payment_status)
     values ('a1030000-0000-4000-8000-000000000013', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000002', 'd1000000-0000-4000-8000-000000000002', '2099-01-03 10:00:00+00', '2099-01-03 11:00:00+00', 'America/Sao_Paulo', 'draft', 'not_started')$$,
-  'P0001', 'PATIENT_SCHEDULE_CONFLICT',
-  'total patient booking containment is rejected'
+  'unpaid contained patient attempt is allowed'
 );
 
 select lives_ok(
@@ -59,31 +56,45 @@ insert into public.booking_holds (
   'patient-guard-hold-0001', '2099-12-31 00:00:00+00'
 );
 
-select throws_ok(
+select lives_ok(
   $$insert into public.booking_holds (id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at, timezone, idempotency_key, expires_at)
     values ('a1030000-0000-4000-8000-000000000032', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000002', 'd1000000-0000-4000-8000-000000000002', '2099-01-06 10:00:00+00', '2099-01-06 11:00:00+00', 'America/Sao_Paulo', 'patient-guard-hold-0002', '2099-12-31 00:00:00+00')$$,
-  'P0001', 'PATIENT_SCHEDULE_CONFLICT',
-  'overlapping active holds for the same patient are rejected'
+  'overlapping unpaid holds for the same patient are allowed'
 );
 
 insert into public.bookings (id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at, timezone, status, payment_status)
 values ('a1030000-0000-4000-8000-000000000041', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000001', 'd1000000-0000-4000-8000-000000000001', '2099-01-07 10:00:00+00', '2099-01-07 10:50:00+00', 'America/Sao_Paulo', 'confirmed', 'paid');
 
+insert into public.session_payments (
+  booking_id, patient_profile_id, therapist_profile_id, service_id,
+  policy_version_id, gross_amount_cents, platform_commission_bps,
+  platform_gross_commission_cents, therapist_amount_cents, financial_status,
+  paid_at
+)
+select
+  'a1030000-0000-4000-8000-000000000041',
+  'b1000000-0000-4000-8000-000000000001',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000001',
+  id, 12000, 2000, 2400, 9600, 'paid', now()
+from public.financial_policy_versions
+where is_active
+limit 1;
+
 select throws_ok(
   $$insert into public.booking_holds (id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at, timezone, idempotency_key, expires_at)
     values ('a1030000-0000-4000-8000-000000000042', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000002', 'd1000000-0000-4000-8000-000000000002', '2099-01-07 10:00:00+00', '2099-01-07 11:00:00+00', 'America/Sao_Paulo', 'patient-guard-hold-0003', '2099-12-31 00:00:00+00')$$,
   'P0001', 'PATIENT_SCHEDULE_CONFLICT',
-  'an active booking blocks a patient hold with another therapist'
+  'a paid booking blocks a patient hold with another therapist'
 );
 
 insert into public.booking_holds (id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at, timezone, idempotency_key, expires_at)
 values ('a1030000-0000-4000-8000-000000000051', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000001', 'd1000000-0000-4000-8000-000000000001', '2099-01-08 10:00:00+00', '2099-01-08 10:50:00+00', 'America/Sao_Paulo', 'patient-guard-hold-0004', '2099-12-31 00:00:00+00');
 
-select throws_ok(
+select lives_ok(
   $$insert into public.bookings (id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at, timezone, status, payment_status)
     values ('a1030000-0000-4000-8000-000000000052', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000002', 'd1000000-0000-4000-8000-000000000002', '2099-01-08 10:00:00+00', '2099-01-08 11:00:00+00', 'America/Sao_Paulo', 'draft', 'not_started')$$,
-  'P0001', 'PATIENT_SCHEDULE_CONFLICT',
-  'an active hold blocks a patient booking with another therapist'
+  'an active unpaid hold does not block a patient booking with another therapist'
 );
 
 insert into public.booking_holds (id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at, timezone, status, idempotency_key, expires_at)
