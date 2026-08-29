@@ -62,6 +62,13 @@ autoritativo vem de `getAllUser()`. Como a sala é 1:1, o adapter seleciona uma
 mesmo `userKey` não são empilhadas, e identidades remotas conflitantes falham
 fechado. Ver [incidente de roteamento de câmera](./camera-routing-2026-08-28.md).
 
+Publicação e prévia local têm recuperação independente. Identidade tardia
+(`null → userId`), timers de roster e `Connected` reconciliam o self-view
+sem repetir captura ou join. O attach local é idempotente por geração e sua
+Promise integra o cleanup; retries são limitados, com recuperação explícita
+sem novo JWT. Falhas de renderização ativa não alimentam o aviso de teardown.
+Ver [recuperação da prévia do paciente](./patient-preview-recovery-2026-08-28.md).
+
 Antes do join, a sala de espera pode abrir uma prévia exclusivamente local no
 navegador: o teste de câmera solicita somente vídeo e substitui a capa visual;
 o teste de áudio solicita somente microfone e mostra um indicador local. Esses
@@ -197,7 +204,7 @@ fantasmas. O `requestId` retornado pela emissao de acesso permite correlacionar
 o codigo sanitizado do browser com os logs da Edge Function sem persistir token
 ou mensagem interna do Zoom.
 
-Timers e operações de vídeo remoto pertencem ao conjunto
+Timers e operações de vídeo local/remoto pertencem ao conjunto
 `generation + client + stream`. O cleanup invalida a geração, aguarda attaches
 pendentes dentro do deadline e desanexa pelo par `userId + element`; uma
 operação antiga nunca pode anexar ou remover elementos da tentativa nova. Cada

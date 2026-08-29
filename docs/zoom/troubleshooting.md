@@ -8,7 +8,20 @@ validar somente `""` fabrica erro 2 e impede o `attachVideo` local. Usar o
 normalizador específico de captura, sem relaxar contratos de init/áudio.
 Ver [causa, regressões e continuidade da espera](./self-view-2026-08-27.md).
 Falha real de attach deve mostrar câmera ligada sem prévia, não câmera
-desligada; desligar/ligar a câmera permite repetir a exibição local.
+desligada. A prévia é reconciliada quando a identidade fica disponível, por
+timers/eventos e reconexão, com até três tentativas de attach. “Tentar mostrar
+minha câmera” repete apenas a exibição, sem desligar publicação nem refazer join.
+Ver [identidade tardia e recuperação](./patient-preview-recovery-2026-08-28.md).
+
+## Aviso de encerramento durante uma chamada conectada
+
+Não interpretar esse aviso isolado como desconexão. A versão anterior misturava
+falhas de detach de renderização ativa com falhas de saída. Agora
+`ZOOM_VIDEO_RENDER_CLEANUP_PARTIAL_FAILURE` é diagnóstico de renderização;
+`ZOOM_VIDEO_CLEANUP_PARTIAL_FAILURE` pertence à saída. O aviso visual de
+encerramento fica restrito à saída/erro de recuperação, nunca a um detach de
+reconciliação ativa. Conferir operação sanitizada e estado da conexão antes de
+atribuir o problema a join, permissão ou backend.
 
 ## Entrada falha com código 2, cleanup parcial e depois 5012
 

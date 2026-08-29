@@ -24,6 +24,10 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
   não dispensam rejeitar falhas resolvidas. A identidade devolvida pelo join
   deve ser preservada antes da mídia. `destroyClient` preserva o receiver.
   Falha de mídia/prévia não deve destruir uma conexão válida.
+- Identidade tardia também precisa recuperar self-view já publicado. Não
+  limitar reconciliação ao remoto nem repetir `startVideo`/join por falha de
+  prévia. Preservar Promise de attach por geração e separar render cleanup
+  de teardown; ver `docs/zoom/patient-preview-recovery-2026-08-28.md`.
 - Browser: `@zoom/videosdk`.
 - Paciente acessa a sala dedicada por `/app/encontros/:bookingId/video`.
 - Terapeuta acessa a sala dedicada por
