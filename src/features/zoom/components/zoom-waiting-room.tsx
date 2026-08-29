@@ -241,6 +241,16 @@ export function ZoomWaitingRoom({
     };
   }
 
+  function enterVideoRoom() {
+    // The native preflight streams and the Video SDK each own camera/audio
+    // capture. Release the former synchronously before the parent starts the
+    // SDK join, while retaining the user's chosen media preferences.
+    const mediaPreferences = getMediaPreferences();
+    stopCameraPreview();
+    stopAudioPreview();
+    onJoin(mediaPreferences);
+  }
+
   async function toggleMusic() {
     const audio = audioRef.current;
     if (!audio || !ambientAudioSrc) return;
@@ -365,7 +375,7 @@ export function ZoomWaitingRoom({
                   disabled={
                     previewLoading || !isOnline || deviceTestState === "loading"
                   }
-                  onClick={() => onJoin(getMediaPreferences())}
+                  onClick={enterVideoRoom}
                   type="button"
                 >
                   <Video aria-hidden="true" size={19} />

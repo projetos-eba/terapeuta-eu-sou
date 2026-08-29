@@ -91,9 +91,9 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   pendentes; desligar câmera para a publicação antes do detach.
 - Prévia deve recuperar também identidade `null → userId`, não só mudança
   entre dois IDs. Preservar reconciliação idempotente por geração, retries
-  limitados e “Tentar mostrar minha câmera” sem repetir captura/JWT. A ação
-  manual cobre a curta defasagem móvel entre captura publicada e
-  `bVideoOn=true` por novas leituras limitadas do roster. Falha de
+  limitados e “Tentar mostrar minha câmera” sem repetir captura/JWT. Após
+  `startVideo`, `bVideoOn` atrasado é apenas diagnóstico: a ação manual refaz o
+  vínculo local, sem depender de nova leitura positiva do roster. Falha de
   detach ativo é diagnóstico de renderização, nunca aviso de encerramento.
   Em reentrada abrupta, `video-capturing-change: Started` reabre o orçamento de
   attach do ciclo de captura atual, inclusive se chega durante uma operação
@@ -102,11 +102,12 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   `docs/zoom/patient-preview-recovery-2026-08-28.md` e
   `docs/zoom/abrupt-reentry-self-view-2026-08-28.md` e
   `docs/zoom/mobile-self-view-binding-2026-08-28.md`.
-- No mobile, montar um único `<video-player>` local persistente. Não chamar
-  `attachVideo` antes de `bVideoOn=true` e não usar `isConnected` como prova de
-  prévia. Passar o player como terceiro argumento e confirmar o vínculo pelo
-  `node-id` do participante local. Timeout desanexa exatamente esse player e
-  permite retry sem nova captura, join ou JWT. Observer, timer e Promise
+- No mobile, montar um único `<video-player>` local persistente. Depois de
+  `startVideo` e da identidade local autoritativa, chamar `attachVideo` mesmo
+  se `bVideoOn` ainda estiver falso; não usar esse campo nem `isConnected` como
+  prova de prévia. Passar o player como terceiro argumento e confirmar o
+  vínculo pelo `node-id` do participante local. Timeout desanexa exatamente
+  esse player e permite retry sem nova captura, join ou JWT. Observer, timer e Promise
   pertencem a `generation + client + stream + captureEpoch + localUserId`. Se o
   vínculo do player persistente expirar no Safari móvel, uma única tentativa
   complementar usa o player criado pelo próprio SDK no mesmo container; ela

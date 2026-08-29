@@ -22,20 +22,19 @@ instância antiga com o mesmo `userKey` não pode ser escolhida como remoto. Ver
 [self-view após reentrada abrupta](./abrupt-reentry-self-view-2026-08-28.md).
 
 Se a falha for exclusiva do mobile e o remoto receber a câmera local, separar
-quatro fatos: captura iniciada, vídeo publicado (`bVideoOn=true`), player
-criado e player vinculado (`node-id=localUserId`). Um `<video-player>` apenas
-conectado ao DOM não comprova vínculo. Procurar os códigos sanitizados
-`LOCAL_RENDER_PENDING`, `LOCAL_RENDER_BOUND` e `LOCAL_RENDER_TIMEOUT`.
-`PENDING` deve anteceder qualquer attach enquanto `bVideoOn` estiver falso;
-`TIMEOUT` deve desanexar somente o player local e preservar publicação e vídeo
-remoto. Ver
+quatro fatos: captura iniciada, vídeo publicado, roster (`bVideoOn`) e player
+vinculado (`node-id=localUserId`). Um `<video-player>` apenas conectado ao DOM
+não comprova vínculo. Procurar os códigos sanitizados
+`LOCAL_RENDER_ROSTER_LAG`, `LOCAL_RENDER_BOUND` e `LOCAL_RENDER_TIMEOUT`.
+Após `startVideo`, roster local atrasado não pode bloquear `attachVideo` do
+participante atual; `TIMEOUT` deve desanexar somente o player local e preservar
+publicação e vídeo remoto. Ver
 [vinculação tardia da prévia mobile](./mobile-self-view-binding-2026-08-28.md).
 
 Quando o usuário aciona a recuperação manual enquanto a câmera já foi publicada,
-o adapter faz uma janela curta e limitada de novas leituras do roster. Isso cobre
-o atraso móvel entre `startVideo()` e `bVideoOn=true`, sem repetir a captura, o
-`join` ou a emissão de JWT. Os timers são cancelados ao desligar a câmera, sair
-ou desmontar a sala.
+o adapter refaz somente o vínculo da self-view. O roster pode ser relido como
+diagnóstico, mas não bloqueia o attach nem repete captura, `join` ou emissão de
+JWT. Os timers são cancelados ao desligar a câmera, sair ou desmontar a sala.
 
 Se o `node-id` do player persistente expirar no Safari mobile, o adapter faz uma
 única tentativa complementar com um `video-player` criado pelo próprio SDK no

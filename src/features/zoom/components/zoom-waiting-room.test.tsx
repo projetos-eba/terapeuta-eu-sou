@@ -82,7 +82,10 @@ describe("ZoomWaitingRoom", () => {
     const getUserMedia = vi.fn(async (constraints: MediaStreamConstraints) =>
       constraints.video ? cameraStream : audioStream,
     );
-    const onJoin = vi.fn();
+    const onJoin = vi.fn(() => {
+      expect(cameraTrack.stop).toHaveBeenCalledTimes(1);
+      expect(audioTrack.stop).toHaveBeenCalledTimes(1);
+    });
 
     vi.stubGlobal("navigator", {
       ...navigator,
@@ -112,6 +115,8 @@ describe("ZoomWaitingRoom", () => {
       cameraEnabled: true,
       microphoneEnabled: true,
     });
+    expect(cameraTrack.stop).toHaveBeenCalledTimes(1);
+    expect(audioTrack.stop).toHaveBeenCalledTimes(1);
   });
 
   it("releases a microphone stream when the local level meter cannot start", async () => {

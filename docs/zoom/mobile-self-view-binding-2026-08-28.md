@@ -15,25 +15,28 @@ prévia pronta. No Video SDK 2.4.5, `attachVideo()` pode devolver o
 encontrava o elemento conectado, encerrava cedo como sucesso e deixava a capa
 “sem prévia neste dispositivo” sem uma recuperação confiável.
 
-A regressão foi escrita antes da correção e falhou porque o adapter chamou
-`attachVideo(7, 2)` enquanto o roster ainda informava `bVideoOn=false`. O
-harness anterior mascarava a corrida: criava e devolvia um `<video>` já pronto,
-sem separar criação do elemento e vinculação do player.
+A correção inicial ainda deixava uma condição indevida: bloqueava
+`attachVideo(7, 2, localPlayer)` enquanto o roster local informava
+`bVideoOn=false`. Em iPhone esse campo pode atrasar ou permanecer defasado após
+`startVideo()` já ter publicado a mídia; esperar por ele impede precisamente a
+self-view de aparecer, sem impedir que o terapeuta receba os frames.
 
 ## Contrato corrigido
 
 - O React monta e preserva um único `<video-player>` dentro do container local.
 - `startVideo()` confirma publicação, não prévia.
-- `attachVideo(localUserId, quality, localPlayer)` só é chamado quando o roster
-  autoritativo informa `bVideoOn=true`.
+- Depois de `startVideo()` e de identificar o participante local, o adapter
+  chama `attachVideo(localUserId, quality, localPlayer)` imediatamente. O
+  `bVideoOn` do roster é telemetria e gatilho de reconciliação, não
+  pré-requisito de attachment.
 - O retorno de `attachVideo()` inicia o estado `binding`; sucesso só ocorre
   quando `node-id` corresponde ao `userId` local.
 - Estar conectado ao DOM, isoladamente, nunca confirma self-view.
-- O ciclo interno distingue `waiting_provider`, `attaching`, `binding`,
-  `attached` e `degraded`.
-- Esperar `bVideoOn` não consome tentativas. Timeout de vínculo desanexa
-  exatamente o player local e permite nova reconciliação sem repetir captura,
-  join, acesso ou JWT.
+- O ciclo interno distingue `attaching`, `binding`, `attached` e `degraded`.
+- Timeout de vínculo desanexa exatamente o player local e permite nova
+  reconciliação sem repetir captura, join, acesso ou JWT. Quando o player
+  persistente não recebe `node-id`, o fallback criado pelo SDK ocupa a mesma
+  camada visual do tile local, sem entrar no container remoto.
 - Observer, timer e Promise validam `generation + client + stream +
 captureEpoch + localUserId` antes de alterar UI. Cleanup invalida a geração,
   aguarda a operação limitada e desanexa o mesmo player.
@@ -42,8 +45,9 @@ captureEpoch + localUserId` antes de alterar UI. Cleanup invalida a geração,
 
 Os eventos `user-updated`, `video-capturing-change: Started`,
 `connection-change: Connected`, `visibilitychange` e
-`video-detailed-data-change` são somente gatilhos. A decisão continua baseada
-no roster completo do SDK.
+`video-detailed-data-change` são somente gatilhos. O roster completo do SDK
+continua sendo a fonte de reconciliação, mas não pode atrasar o primeiro attach
+de uma captura local que `startVideo()` já confirmou.
 
 ## Diferença para as correções anteriores
 
@@ -57,7 +61,8 @@ os frames do participante local. Nenhuma regra de identidade remota, seleção
 
 Os logs sanitizados são:
 
-- `LOCAL_RENDER_PENDING`: publicação ativa, aguardando prontidão do provider;
+- `LOCAL_RENDER_ROSTER_LAG`: o roster local ainda informa vídeo desligado,
+  embora a captura publicada já esteja sendo vinculada;
 - `LOCAL_RENDER_BOUND`: player confirmado para o participante local;
 - `LOCAL_RENDER_TIMEOUT`: `node-id` não confirmou dentro do deadline.
 
@@ -66,7 +71,8 @@ user-agent completo.
 
 ## Regressões
 
-- publicação ativa com `bVideoOn=false` não chama attach nem consome retry;
+- publicação ativa com `bVideoOn=false` chama attach local sem nova captura,
+  join ou JWT;
 - player conectado e ainda sem `node-id` permanece pendente;
 - vínculo tardio recupera a prévia sem novo `startVideo`, join ou JWT;
 - timeout desanexa somente o player local e aceita nova tentativa;
@@ -90,22 +96,24 @@ homologação posteriormente autorizada. Não foi adicionado o fallback legado
 `startVideo({ videoElement })`; ele só deve ser avaliado se o gate físico ainda
 falhar.
 
-Não houve migration, banco, RPC, Edge Function, webhook, rota, dependência ou
-mudança visual. Frame dedicado da chamada no Figma:
+Não houve migration, banco, RPC, Edge Function, webhook, rota ou dependência.
+A saída da sala de espera passa a parar sincronamente as faixas nativas de
+câmera e áudio antes de iniciar o join do SDK, eliminando a disputa de captura
+na transição móvel. Frame dedicado da chamada no Figma:
 `Não identificado nos arquivos analisados.`
 
 ## Validação local
 
 | Gate                          | Resultado                                                 |
 | ----------------------------- | --------------------------------------------------------- |
-| Regressão antes da correção   | Falha esperada: attach local ocorreu com `bVideoOn=false` |
-| Vitest dirigido               | 79 testes aprovados no adapter e stage após a correção    |
-| `npm run zoom:video-sdk:test` | 21 testes Deno + 110 testes Vitest aprovados              |
+| Regressão antes da correção   | Falha esperada: o attach local foi bloqueado por `bVideoOn=false` |
+| Vitest dirigido               | 90 testes aprovados em sala de espera e adapter           |
+| `npm run zoom:video-sdk:test` | 21 testes Deno + 114 testes Vitest aprovados              |
 | Playwright Chromium mobile    | 4 cenários aprovados                                      |
 | Playwright WebKit mobile      | 4 cenários aprovados                                      |
 | `npm run typecheck`           | Aprovado                                                  |
 | `npm run lint`                | Aprovado, sem avisos do projeto                           |
-| `npm run build`               | Aprovado; 121 páginas estáticas geradas                   |
+| `npm run build`               | Aprovado; artefatos de produção gerados                   |
 | iPhone/Safari físico          | Pendente; gate manual obrigatório                         |
 
 `git diff --check` é executado no fechamento da entrega. Nenhuma etapa desta
