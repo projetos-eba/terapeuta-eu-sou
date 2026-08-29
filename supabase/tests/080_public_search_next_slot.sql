@@ -33,20 +33,39 @@ select is(
   ),
   (
     select min((slot.value ->> 'startsAt')::timestamptz)
-    from jsonb_array_elements(
-      public.get_service_available_slots_v1(
-        (
-          select service_id
-          from public.public_therapist_search
-          where slug = 'ana-oliveira'
-        ),
-        now(),
-        now() + interval '31 days',
-        1
-      ) -> 'slots'
+    from public.therapist_services candidate
+    join public.therapies candidate_therapy on candidate_therapy.id = candidate.therapy_id
+    join public.therapy_categories candidate_category on candidate_category.id = candidate_therapy.category_id
+    cross join lateral pg_catalog.generate_series(
+      now(),
+      now() + interval '30 days',
+      interval '5 days'
+    ) as slot_window(range_start)
+    cross join lateral jsonb_array_elements(
+      coalesce(
+        public.get_service_available_slots_v1(
+          candidate.id,
+          slot_window.range_start,
+          least(slot_window.range_start + interval '5 days', now() + interval '31 days'),
+          500
+        ) -> 'slots',
+        '[]'::jsonb
+      )
     ) as slot(value)
+    where candidate.therapist_profile_id = (
+      select therapist_profile_id
+      from public.public_therapist_search
+      where slug = 'ana-oliveira'
+    )
+      and candidate.status = 'active'
+      and candidate.is_bookable
+      and candidate.online_only
+      and candidate_therapy.status = 'published'
+      and candidate_therapy.is_public_visible
+      and candidate_category.is_active
+      and public.is_public_service_booking_eligible_v1(candidate.id)
   ),
-  'search next slot matches the authoritative public availability endpoint'
+  'search next slot is the first usable slot across every eligible public service'
 );
 
 select is(
@@ -60,25 +79,42 @@ select is(
 );
 
 select is(
+  0,
   (
     select count(*)::integer
-    from public.public_therapist_search
-    where next_slot_at is not distinct from (
+    from public.public_therapist_search as search
+    where next_slot_at is distinct from (
       select min((slot.value ->> 'startsAt')::timestamptz)
-      from jsonb_array_elements(
-        public.get_service_available_slots_v1(
-          service_id,
-          now(),
-          now() + interval '31 days',
-          1
-        ) -> 'slots'
+      from public.therapist_services candidate
+      join public.therapies candidate_therapy on candidate_therapy.id = candidate.therapy_id
+      join public.therapy_categories candidate_category on candidate_category.id = candidate_therapy.category_id
+      cross join lateral pg_catalog.generate_series(
+        now(),
+        now() + interval '30 days',
+        interval '5 days'
+      ) as slot_window(range_start)
+      cross join lateral jsonb_array_elements(
+        coalesce(
+          public.get_service_available_slots_v1(
+            candidate.id,
+            slot_window.range_start,
+            least(slot_window.range_start + interval '5 days', now() + interval '31 days'),
+            500
+          ) -> 'slots',
+          '[]'::jsonb
+        )
       ) as slot(value)
+      where candidate.therapist_profile_id = search.therapist_profile_id
+        and candidate.status = 'active'
+        and candidate.is_bookable
+        and candidate.online_only
+        and candidate_therapy.status = 'published'
+        and candidate_therapy.is_public_visible
+        and candidate_category.is_active
+        and public.is_public_service_booking_eligible_v1(candidate.id)
     )
   ),
-  (
-    select count(*)::integer from public.public_therapist_search
-  ),
-  'every public search row agrees with its service availability projection'
+  'every public search row uses the earliest usable slot across eligible services'
 );
 
 select * from finish();
