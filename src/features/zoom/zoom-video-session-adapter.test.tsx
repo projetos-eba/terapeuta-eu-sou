@@ -1891,6 +1891,46 @@ describe("ZoomVideoSessionAdapter", () => {
     await screen.findByRole("button", { name: /ativar câmera/i });
   });
 
+  it("uses an SDK-created local player after the persistent mobile player times out", async () => {
+    vi.stubGlobal("fetch", accessResponse(0));
+    const createdPlayer = document.createElement("video-player");
+    mockStream.attachVideo.mockImplementation(
+      async (userId: number, _quality?: number, element?: HTMLElement) => {
+        if (element) return element;
+        createdPlayer.setAttribute("node-id", String(userId));
+        return createdPlayer;
+      },
+    );
+
+    render(
+      <ZoomVideoSessionAdapter
+        access={allowedAccess}
+        actorRole="patient"
+        bookingId="96000000-0000-4000-8000-000000000001"
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /entrar/i }));
+    await screen.findByRole("button", { name: /ativar c.mera/i });
+    fireEvent.click(screen.getByRole("button", { name: /ativar c.mera/i }));
+
+    await waitFor(
+      () =>
+        expect(screen.getByTestId("zoom-local-video")).toContainElement(
+          createdPlayer,
+        ),
+      { timeout: 7_000 },
+    );
+    expect(mockStream.attachVideo).toHaveBeenNthCalledWith(
+      1,
+      7,
+      2,
+      expect.any(HTMLElement),
+    );
+    expect(mockStream.attachVideo).toHaveBeenNthCalledWith(2, 7, 2);
+    expect(mockStream.startVideo).toHaveBeenCalledTimes(1);
+    expect(mockClient.join).toHaveBeenCalledTimes(1);
+  });
+
   it("stops publishing even when local detachment fails", async () => {
     vi.stubGlobal("fetch", accessResponse(0));
     render(

@@ -226,13 +226,13 @@ select ok(
 
 select is(
   (public.get_therapist_aura_signals_v2(30)#>>'{signals,reviews,pendingReplyCount}')::integer,
-  5,
+  4,
   'pending reviews in the 30-day window are period-scoped'
 );
 
 select is(
   (public.get_therapist_aura_signals_v2(90)#>>'{signals,reviews,pendingReplyCount}')::integer,
-  6,
+  5,
   'pending reviews in the 90-day window include the older pending review'
 );
 

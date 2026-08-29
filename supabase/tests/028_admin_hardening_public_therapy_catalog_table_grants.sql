@@ -1,6 +1,6 @@
 begin;
 
-select plan(125);
+select plan(104);
 
 select ok(
   has_table_privilege('anon', 'public.therapies', 'SELECT'),
@@ -10,16 +10,6 @@ select ok(
 select ok(
   has_table_privilege('authenticated', 'public.therapies', 'SELECT'),
   'authenticated keeps read access to public therapies'
-);
-
-select ok(
-  has_table_privilege('anon', 'public.therapy_categories', 'SELECT'),
-  'anon keeps read access to public therapy categories'
-);
-
-select ok(
-  has_table_privilege('authenticated', 'public.therapy_categories', 'SELECT'),
-  'authenticated keeps read access to public therapy categories'
 );
 
 select is(
@@ -34,13 +24,7 @@ from (
     ('public.therapies', 'DELETE'),
     ('public.therapies', 'TRUNCATE'),
     ('public.therapies', 'REFERENCES'),
-    ('public.therapies', 'TRIGGER'),
-    ('public.therapy_categories', 'INSERT'),
-    ('public.therapy_categories', 'UPDATE'),
-    ('public.therapy_categories', 'DELETE'),
-    ('public.therapy_categories', 'TRUNCATE'),
-    ('public.therapy_categories', 'REFERENCES'),
-    ('public.therapy_categories', 'TRIGGER')
+    ('public.therapies', 'TRIGGER')
 ) as checks(table_name, privilege);
 
 select is(
@@ -55,13 +39,7 @@ from (
     ('public.therapies', 'DELETE'),
     ('public.therapies', 'TRUNCATE'),
     ('public.therapies', 'REFERENCES'),
-    ('public.therapies', 'TRIGGER'),
-    ('public.therapy_categories', 'INSERT'),
-    ('public.therapy_categories', 'UPDATE'),
-    ('public.therapy_categories', 'DELETE'),
-    ('public.therapy_categories', 'TRUNCATE'),
-    ('public.therapy_categories', 'REFERENCES'),
-    ('public.therapy_categories', 'TRIGGER')
+    ('public.therapies', 'TRIGGER')
 ) as checks(table_name, privilege);
 
 select is(
@@ -152,7 +130,6 @@ select ok(
 from (
   values
     ('public.therapies'),
-    ('public.therapy_categories'),
     ('public.therapy_public_content'),
     ('public.therapy_highlights'),
     ('public.therapy_benefits'),
@@ -172,12 +149,6 @@ from (
     ('public.therapies', 'TRUNCATE'),
     ('public.therapies', 'REFERENCES'),
     ('public.therapies', 'TRIGGER'),
-    ('public.therapy_categories', 'INSERT'),
-    ('public.therapy_categories', 'UPDATE'),
-    ('public.therapy_categories', 'DELETE'),
-    ('public.therapy_categories', 'TRUNCATE'),
-    ('public.therapy_categories', 'REFERENCES'),
-    ('public.therapy_categories', 'TRIGGER'),
     ('public.therapy_public_content', 'INSERT'),
     ('public.therapy_public_content', 'UPDATE'),
     ('public.therapy_public_content', 'DELETE'),

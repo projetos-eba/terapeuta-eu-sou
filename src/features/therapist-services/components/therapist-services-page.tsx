@@ -101,7 +101,9 @@ export function TherapistServicesPage({
         return [
           service.title,
           service.therapy.name,
-          getServiceThemeLabels(service, catalog).map((theme) => theme.label).join(" "),
+          getServiceThemeLabels(service, catalog)
+            .map((theme) => theme.label)
+            .join(" "),
           service.description ?? "",
         ].some((value) =>
           value.toLocaleLowerCase("pt-BR").includes(normalized),
@@ -118,7 +120,7 @@ export function TherapistServicesPage({
         }
         return a.position - b.position;
       });
-  }, [query, services, sortMode, statusFilter]);
+  }, [catalog, query, services, sortMode, statusFilter]);
 
   const visibleServices = filteredServices.slice(0, visibleCount);
 
@@ -407,7 +409,7 @@ function Toolbar({
             />
           }
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar por terapia ou categoria"
+          placeholder="Buscar por terapia ou tema"
           value={query}
           wrapperClassName="h-12 rounded-lg shadow-none"
         />

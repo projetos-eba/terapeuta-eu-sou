@@ -28,6 +28,17 @@ values
   ('f9810000-0000-4000-8000-000000000003', 'f9800000-0000-4000-8000-000000000003', 'match-premium-plus', 'Match Premium Plus', '9800003', 'premium_plus', 'approved', 'published', true, true, true),
   ('f9810000-0000-4000-8000-000000000004', 'f9800000-0000-4000-8000-000000000004', 'match-free-interesse', 'Match Free Interesse', '9800004', 'free', 'approved', 'published', true, true, true);
 
+-- Isolate the ranking contract from the broad local seed. The fixtures below
+-- are the only public candidates considered by this test.
+update public.therapist_profiles profile
+set is_public = false
+where profile.id not in (
+  'f9810000-0000-4000-8000-000000000001',
+  'f9810000-0000-4000-8000-000000000002',
+  'f9810000-0000-4000-8000-000000000003',
+  'f9810000-0000-4000-8000-000000000004'
+);
+
 insert into public.therapist_services (
   id,
   therapist_profile_id,
@@ -90,11 +101,10 @@ select
   true,
   1
 from public.therapies therapy
-join public.therapy_categories category on category.id = therapy.category_id
 where therapy.slug <> 'reiki'
   and therapy.status = 'published'
   and therapy.is_public_visible
-  and category.is_active
+  and public.therapy_has_active_matching_theme_v1(therapy.id)
 order by therapy.slug
 limit 1;
 
@@ -205,7 +215,6 @@ select is(
     select count(distinct service.therapist_profile_id)::integer
     from public.therapist_services service
     join public.therapies therapy on therapy.id = service.therapy_id
-    join public.therapy_categories category on category.id = therapy.category_id
     where therapy.slug = 'reiki'
       and service.archived_at is null
       and service.status = 'active'
@@ -213,7 +222,7 @@ select is(
       and service.online_only
       and therapy.status = 'published'
       and therapy.is_public_visible
-      and category.is_active
+      and public.therapy_has_active_matching_theme_v1(therapy.id)
       and public.is_public_service_booking_eligible_v1(service.id)
   ),
   'public Match count and RPC candidate eligibility use the same service rules'

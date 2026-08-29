@@ -132,7 +132,13 @@ select ok(
       'aaaaaaaa-0000-4000-8000-000000000001',
       jsonb_build_object(
         'informedName', 'Terapia solicitada sem auditoria admin',
-        'justification', 'Validar que terapeuta nao cria evento admin.'
+        'description', 'Descrição responsável para análise administrativa.',
+        'justification', 'Validar que terapeuta nao cria evento admin.',
+        'useCases', 'Acolhimento e organização da experiência.',
+        'sessionProcess', 'Sessão online conduzida com escuta responsável.',
+        'themeIds', jsonb_build_array(
+          (select id from public.matching_themes where is_active order by sort_order, name limit 1)
+        )
       )
     ) ->> 'status'
   ) = 'submitted',

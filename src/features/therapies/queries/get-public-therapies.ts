@@ -177,6 +177,10 @@ function mapTherapy(row: PublicTherapyRow): PublicTherapyListItem {
     shortDescription: row.short_description,
     slug: row.slug,
     therapistCount: row.therapist_count ?? 0,
+    themes: (row.theme_slugs ?? []).flatMap((slug, index) => {
+      const name = row.theme_names?.[index];
+      return name ? [{ name, slug }] : [];
+    }),
   };
 }
 
@@ -189,7 +193,7 @@ function mapThemes(rows: PublicTherapyRow[]): PublicTherapyTheme[] {
       if (!name) return;
       const current = themes.get(slug);
       themes.set(slug, {
-      count: (current?.count ?? 0) + 1,
+        count: (current?.count ?? 0) + 1,
         name,
         slug,
       });

@@ -105,8 +105,8 @@ select is(
     from public.public_therapy_details_v
     where slug = 'reiki'
   ),
-  array['Autoconhecimento', 'Equilíbrio emocional']::text[],
-  'public therapy details expose safe theme names for Reiki'
+  array['Energia e Equilíbrio Energético', 'Emoções e Bem-Estar']::text[],
+  'public therapy details expose ordered Match theme names for Reiki'
 );
 
 select is(
@@ -115,8 +115,8 @@ select is(
     from public.public_therapy_details_v
     where slug = 'taro'
   ),
-  array['Autoconhecimento', 'Clareza nas escolhas']::text[],
-  'public therapy details expose safe theme names for Taro'
+  array['Autoconhecimento e Transformação', 'Relacionamentos', 'Emoções e Bem-Estar']::text[],
+  'public therapy details expose ordered Match theme names for Taro'
 );
 
 set role anon;

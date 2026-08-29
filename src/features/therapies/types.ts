@@ -17,6 +17,7 @@ export type PublicTherapyListItem = {
   shortDescription: string;
   slug: string;
   therapistCount: number;
+  themes: Array<{ name: string; slug: string }>;
 };
 
 export type PublicTherapyTheme = {

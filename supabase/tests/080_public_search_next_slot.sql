@@ -35,7 +35,6 @@ select is(
     select min((slot.value ->> 'startsAt')::timestamptz)
     from public.therapist_services candidate
     join public.therapies candidate_therapy on candidate_therapy.id = candidate.therapy_id
-    join public.therapy_categories candidate_category on candidate_category.id = candidate_therapy.category_id
     cross join lateral pg_catalog.generate_series(
       now(),
       now() + interval '30 days',
@@ -62,7 +61,7 @@ select is(
       and candidate.online_only
       and candidate_therapy.status = 'published'
       and candidate_therapy.is_public_visible
-      and candidate_category.is_active
+      and public.therapy_has_active_matching_theme_v1(candidate_therapy.id)
       and public.is_public_service_booking_eligible_v1(candidate.id)
   ),
   'search next slot is the first usable slot across every eligible public service'
@@ -87,7 +86,6 @@ select is(
       select min((slot.value ->> 'startsAt')::timestamptz)
       from public.therapist_services candidate
       join public.therapies candidate_therapy on candidate_therapy.id = candidate.therapy_id
-      join public.therapy_categories candidate_category on candidate_category.id = candidate_therapy.category_id
       cross join lateral pg_catalog.generate_series(
         now(),
         now() + interval '30 days',
@@ -110,7 +108,7 @@ select is(
         and candidate.online_only
         and candidate_therapy.status = 'published'
         and candidate_therapy.is_public_visible
-        and candidate_category.is_active
+        and public.therapy_has_active_matching_theme_v1(candidate_therapy.id)
         and public.is_public_service_booking_eligible_v1(candidate.id)
     )
   ),

@@ -207,65 +207,51 @@ function ServiceThemeBadges({
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
   const tooltipId = useId();
-  const primaryTheme = themes[0];
   const hiddenThemes = themes.slice(1);
   const tooltipOpen = clickedOpen || focused || hovered;
 
+  if (hiddenThemes.length === 0) return null;
+
   return (
-    <ul
+    <div
       aria-label={`Temas selecionados para ${serviceName}`}
-      className="flex flex-wrap items-center gap-2"
+      className="relative"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      <li
-        className="relative pr-2"
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+      <button
+        aria-controls={tooltipId}
+        aria-describedby={tooltipOpen ? tooltipId : undefined}
+        aria-expanded={tooltipOpen}
+        aria-label={`Ver mais ${hiddenThemes.length} ${hiddenThemes.length === 1 ? "tema" : "temas"} de ${serviceName}`}
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-brand-lavenderSoft px-3 text-xs font-extrabold text-brand-primary transition hover:bg-brand-lavender focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+        onBlur={() => setFocused(false)}
+        onClick={() => setClickedOpen((current) => !current)}
+        onFocus={() => setFocused(true)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            setClickedOpen(false);
+            setFocused(false);
+            event.currentTarget.blur();
+          }
+        }}
+        type="button"
       >
-        <InfoPill icon={<Tags aria-hidden="true" size={14} />}>
-          <span className="max-w-[220px] truncate" title={primaryTheme?.label}>
-            {primaryTheme?.label ?? "Tema do Match"}
-          </span>
-        </InfoPill>
-        {hiddenThemes.length > 0 ? (
-          <>
-            <button
-              aria-controls={tooltipId}
-              aria-describedby={tooltipOpen ? tooltipId : undefined}
-              aria-expanded={tooltipOpen}
-              aria-label={`Ver mais ${hiddenThemes.length} ${hiddenThemes.length === 1 ? "tema" : "temas"} de ${serviceName}`}
-              className="group absolute -right-2 -top-2 z-20 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border-0 bg-transparent p-0 text-sm font-extrabold text-brand-primary transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-              onBlur={() => setFocused(false)}
-              onClick={() => setClickedOpen((current) => !current)}
-              onFocus={() => setFocused(true)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") {
-                  setClickedOpen(false);
-                  setFocused(false);
-                  event.currentTarget.blur();
-                }
-              }}
-              type="button"
-            >
-              <span className="inline-flex size-6 items-center justify-center rounded-full border border-brand-lavender bg-brand-lavenderSoft px-0 text-[11px] font-extrabold leading-none text-brand-primary shadow-card transition group-hover:bg-brand-lavender group-focus-visible:ring-2 group-focus-visible:ring-brand-primary">
-                +{hiddenThemes.length}
-              </span>
-            </button>
-            <div
-              className={`absolute bottom-full right-0 z-30 mb-2 w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-brand-lavender bg-white p-3 text-left text-sm font-semibold leading-5 text-tesText-secondary shadow-card ${tooltipOpen ? "block" : "hidden"}`}
-              id={tooltipId}
-              role="tooltip"
-            >
-              <p className="font-extrabold text-brand-deep">Outros temas</p>
-              <ul className="mt-1 space-y-1">
-                {hiddenThemes.map((theme) => (
-                  <li key={theme.id}>{theme.label}</li>
-                ))}
-              </ul>
-            </div>
-          </>
-        ) : null}
-      </li>
-    </ul>
+        <Tags aria-hidden="true" size={14} />+{hiddenThemes.length}
+      </button>
+      <div
+        className={`absolute bottom-full right-0 z-30 mb-2 w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-brand-lavender bg-white p-3 text-left text-sm font-semibold leading-5 text-tesText-secondary shadow-card ${tooltipOpen ? "block" : "hidden"}`}
+        id={tooltipId}
+        role="tooltip"
+      >
+        <p className="font-extrabold text-brand-deep">Outros temas</p>
+        <ul className="mt-1 space-y-1">
+          {hiddenThemes.map((theme) => (
+            <li key={theme.id}>{theme.label}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
   );
 }
 

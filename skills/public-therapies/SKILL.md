@@ -21,7 +21,9 @@ Use esta skill ao criar, revisar ou refatorar a página pública `/terapias`, o 
 - Rota canônica: `/terapias`
 - Detalhe: `/terapias/:slug`
 - API: `GET /api/public/therapies`
-- Query params: `q`, `category`, `sort`, `page`, `pageSize`
+- Query params: `q`, `theme`, `sort`, `page`, `pageSize`
+- Links legados com `category` são normalizados para `/terapias` sem filtro,
+  preservando `q`, `sort`, `page` e `pageSize` compatíveis.
 - Sorts públicos: `relevance`, `most_searched`, `popular`, `newest`, `az`
 - Match deve apontar para `/terapias/:slug?source=match`
 - Detalhe deve usar `routes.public.therapyDetail(slug)` e preservar `source=match` nos links seguintes.
@@ -31,7 +33,7 @@ Use esta skill ao criar, revisar ou refatorar a página pública `/terapias`, o 
 Fonte central:
 
 - `therapies`
-- `therapy_categories`
+- `therapy_matching_themes`, `matching_themes`
 - `therapy_public_content`
 - `therapy_highlights`
 - `therapy_benefits`
@@ -45,7 +47,14 @@ View pública:
   `therapy_slug`; a RPC consulta os serviços elegíveis daquela terapia
   diretamente e consolida no máximo um serviço relevante por terapeuta.
 
-As views devem expor somente terapias com `therapies.status = published`, visíveis publicamente e com categoria ativa. O Match usa `public_matching_therapies_v` como projeção única de candidatos; uma terapia só entra no Match se também estiver publicada, com detalhe público elegível e ativa em `matching_therapy_settings`. Elas podem retornar dados editoriais, categoria, contagem de terapeutas disponíveis, sinalizadores de popularidade e novidade. Não expor pesos do Match, dados internos de admin, terapeutas não aprovados, perfis privados ou serviços inativos.
+As views devem expor somente terapias com `therapies.status = published`,
+visíveis publicamente e com ao menos um Tema do Match ativo. O Match usa
+`public_matching_therapies_v` como projeção única de candidatos; uma terapia só
+entra no Match se também estiver publicada, com detalhe público elegível e
+ativa em `matching_therapy_settings`. Elas podem retornar dados editoriais,
+temas ordenados, contagem de terapeutas disponíveis, sinalizadores de
+popularidade e novidade. Não expor pesos do Match, dados internos de admin,
+terapeutas não aprovados, perfis privados ou serviços inativos.
 
 Campos editoriais do detalhe:
 
@@ -67,7 +76,7 @@ Para profissionais relacionados:
 
 - consultar `get_public_therapy_therapists_v1` com limite máximo de 6;
 - a elegibilidade e a contagem pública usam o mesmo critério: serviço ativo,
-  online, reservável, não arquivado, terapia/categoria publicadas e perfil
+  online, reservável, não arquivado, terapia pública com tema ativo e perfil
   publicável;
 - sessões concluídas não são exibidas no card relacionado; avaliações públicas
   usam exclusivamente a avaliação canônica `published` e não substituída;
@@ -82,7 +91,7 @@ Para profissionais relacionados:
 - Hero com imagem `public/therapies/hero-therapies.png`
 - Busca ampla por URL
 - `TherapyFilters`
-- `CategoryFilter`
+- `ThemeFilter`
 - `TherapyGrid`
 - `TherapyCard`
 - CTA para `/sua-jornada`
@@ -116,7 +125,9 @@ Para profissionais relacionados:
 
 - `/terapias`
 - `/terapias?q=reiki`
-- `/terapias?category=emocional`
+- `/terapias?theme=emocoes-bem-estar`
+- `/terapias?category=emocional` normaliza para `/terapias` sem o filtro
+  legado e preserva os demais parâmetros compatíveis
 - `/terapias?sort=newest&page=2`
 - `/terapias/reiki`
 - `/terapias/reiki?source=match`
@@ -146,7 +157,7 @@ Rodar:
 
 - Persistência real de favoritos de terapias para usuário autenticado.
 - Métricas reais separadas para “Mais procuradas” e “Mais populares”.
-- Drawer/bottom sheet mobile completo caso a lista de categorias cresça muito.
+- Drawer/bottom sheet mobile completo caso a lista de temas cresça muito.
 - Auditar `/admin/terapias` para editar `therapy_public_content`, highlights e benefícios sem alterar pesos do Match.
 - Criar interface admin para `approach_label`, `approach_icon_key`, `visual_theme_key` e `hero_focal_point`.
 

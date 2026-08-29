@@ -63,9 +63,9 @@ select is(
   'request stores the canonical Match themes selected by the therapist'
 );
 
-select is(
-  (
-    public.submit_therapy_catalog_request_v2(
+select throws_ok(
+  $$
+    select public.submit_therapy_catalog_request_v2(
       'aaaaaaaa-0000-4000-8000-000000000001',
       jsonb_build_object(
         'informedName', 'Terapia legada pgTAP',
@@ -78,10 +78,20 @@ select is(
         )
       ),
       '55000000-0000-4000-8000-000000000010'
-    ) ->> 'status'
-  ),
-  'submitted',
-  'legacy category submissions remain compatible without themeIds'
+    )
+  $$,
+  null,
+  'THERAPY_CATALOG_REQUEST_INVALID_PAYLOAD',
+  'legacy category identifiers cannot replace Match themes'
+);
+
+insert into public.matching_themes (name, slug, description, sort_order, is_active)
+values (
+  'Tema inativo pgTAP',
+  'tema-inativo-pgtap',
+  'Tema inativo usado somente para validar o contrato de solicitações.',
+  999,
+  false
 );
 
 select throws_ok(
@@ -218,15 +228,12 @@ select throws_ok(
     select public.submit_therapy_catalog_request_v2(
       'aaaaaaaa-0000-4000-8000-000000000001',
       jsonb_build_object(
-        'informedName', 'Terapia invalida categoria',
-        'suggestedCategoryId', 'categoria-invalida',
+        'informedName', 'Terapia com tema inativo',
         'submission', jsonb_build_object(
           'description', 'Descrição responsável para revisão.',
           'objective', 'Objetivo informado para análise.',
-          'themeIds', (
-            select jsonb_agg(theme.id order by theme.sort_order)
-            from public.matching_themes as theme
-            where theme.slug in ('emocoes-bem-estar', 'relacionamentos')
+          'themeIds', jsonb_build_array(
+            (select id from public.matching_themes where slug = 'tema-inativo-pgtap')
           ),
           'useCases', 'Situações relatadas pela pessoa terapeuta.',
           'sessionProcess', 'Atendimento online com etapas explicadas.'
@@ -237,7 +244,7 @@ select throws_ok(
   $$,
   null,
   'THERAPY_CATALOG_REQUEST_INVALID_PAYLOAD',
-  'invalid legacy category text is rejected with a controlled payload error'
+  'inactive Match themes are rejected'
 );
 
 select is(

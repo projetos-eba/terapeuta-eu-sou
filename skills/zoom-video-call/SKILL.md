@@ -107,7 +107,10 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   prévia. Passar o player como terceiro argumento e confirmar o vínculo pelo
   `node-id` do participante local. Timeout desanexa exatamente esse player e
   permite retry sem nova captura, join ou JWT. Observer, timer e Promise
-  pertencem a `generation + client + stream + captureEpoch + localUserId`.
+  pertencem a `generation + client + stream + captureEpoch + localUserId`. Se o
+  vínculo do player persistente expirar no Safari móvel, uma única tentativa
+  complementar usa o player criado pelo próprio SDK no mesmo container; ela
+  também exige `node-id` e é desanexada integralmente em caso de falha.
 - Antes de alterar integração ou mocks, ler
   `docs/zoom/investigation-2026-08-27.md` e
   `docs/zoom/self-view-2026-08-27.md` e

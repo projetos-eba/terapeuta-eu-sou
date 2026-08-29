@@ -59,6 +59,10 @@ The home may read public content through REST Supabase using only public env var
 
 Rules:
 
+- A prateleira de terapias consome `public_therapies_v.theme_names`, uma lista
+  ordenada; o primeiro tema é o rótulo resumido do card. Não consultar o campo
+  singular legado `theme_name` nesse contrato.
+
 - Never expose operational therapist fields, private patient data, payment data, intake data, Zoom links, or secrets.
 - Keep local demo content in `src/features/public-home/content.ts`, but never
   activate it silently. Demo data requires `TES_ENABLE_DEMO_DATA=true` on the

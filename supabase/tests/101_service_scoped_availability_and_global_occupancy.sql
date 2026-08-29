@@ -73,12 +73,14 @@ where id in (
 update public.therapist_profiles
 set status = 'approved',
     is_public = true,
-    is_accepting_bookings = true
+    is_accepting_bookings = true,
+    accepts_online_sessions = true
 where id = 'c1000000-0000-4000-8000-000000000001';
 
 update public.therapies
 set status = 'published',
-    is_public_visible = true
+    is_public_visible = true,
+    is_available_for_services = true
 where id in (
   select therapy_id
   from public.therapist_services
@@ -89,21 +91,44 @@ where id in (
   )
 );
 
-update public.therapy_categories
+update public.matching_themes theme
 set is_active = true
-where id in (
-  select category_id
-  from public.therapies
-  where id in (
-    select therapy_id
-    from public.therapist_services
-    where id in (
+where exists (
+  select 1
+  from public.therapy_matching_themes therapy_theme
+  join public.therapist_services service
+    on service.therapy_id = therapy_theme.therapy_id
+  where therapy_theme.theme_id = theme.id
+    and service.id in (
       'd1000000-0000-4000-8000-000000000001',
       'd1000000-0000-4000-8000-000000000006',
       'd1000000-0000-4000-8000-000000000021'
     )
-  )
 );
+
+insert into public.therapy_matching_themes (therapy_id, theme_id, sort_order)
+select service.therapy_id, theme.id, 1
+from public.therapist_services service
+cross join lateral (
+  select id
+  from public.matching_themes
+  where is_active
+  order by sort_order, name
+  limit 1
+) theme
+where service.id in (
+  'd1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000006',
+  'd1000000-0000-4000-8000-000000000021'
+)
+  and not exists (
+    select 1
+    from public.therapy_matching_themes existing
+    join public.matching_themes existing_theme
+      on existing_theme.id = existing.theme_id
+     and existing_theme.is_active
+    where existing.therapy_id = service.therapy_id
+  );
 
 insert into public.therapist_service_booking_settings (
   service_id,
