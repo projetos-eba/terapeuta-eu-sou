@@ -245,10 +245,12 @@ Scripts:
 - `npm run zoom:video-sdk:env`: audita variaveis sem imprimir valores.
 - `npm run zoom:video-sdk:test`: roda testes Deno e Vitest da integracao.
 - `npx playwright test tests/e2e/zoom-preview.spec.ts --project=chromium --workers=1`:
-  regressão isolada de prévia, identidade tardia, refresh e reentrada, com
+  regressão isolada de prévia, identidade tardia, refresh, reentrada abrupta e
+  captura móvel tardia, com
   componentes reais e SDK/acesso simulados. Não usa Supabase, HML ou Zoom real;
   não substitui homologação de câmera em aparelhos físicos. Diagnóstico em
-  `docs/zoom/patient-preview-recovery-2026-08-28.md`.
+  `docs/zoom/patient-preview-recovery-2026-08-28.md` e
+  `docs/zoom/abrupt-reentry-self-view-2026-08-28.md`.
 - `npm run zoom:video-sdk:webhook:smoke`: envia payloads locais assinados.
 - `npm run zoom:video-sdk:webhook:tunnel`: abre tunel ngrok local para validar
   webhook real, sem alterar o Zoom Marketplace, e grava metadados nao secretos

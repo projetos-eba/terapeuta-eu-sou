@@ -90,16 +90,16 @@ Auth, backend, host-first por webhook nem transporte real do Zoom. Cobre:
 
 Resultados executados:
 
-| Gate | Resultado |
-| --- | --- |
-| Quatro regressões contra adapter original | 4 falharam, comprovando as lacunas |
-| Vitest dirigido (Zoom, access route e estado do encontro) | 124 aprovados em 8 arquivos; 72 no adapter |
-| `npm run zoom:video-sdk:test` | 21 Deno + 105 Vitest aprovados |
-| Playwright `zoom-preview.spec.ts`, Chromium | 2 aprovados headless e 2 aprovados com `--headed` |
-| `npm run typecheck` | Aprovado |
-| `npm run lint` | Aprovado; aviso existente de depreciação do next lint |
-| `npm run build` | Aprovado, 120 páginas geradas |
-| `git diff --check` | Aprovado |
+| Gate                                                      | Resultado                                             |
+| --------------------------------------------------------- | ----------------------------------------------------- |
+| Quatro regressões contra adapter original                 | 4 falharam, comprovando as lacunas                    |
+| Vitest dirigido (Zoom, access route e estado do encontro) | 124 aprovados em 8 arquivos; 72 no adapter            |
+| `npm run zoom:video-sdk:test`                             | 21 Deno + 105 Vitest aprovados                        |
+| Playwright `zoom-preview.spec.ts`, Chromium               | 2 aprovados headless e 2 aprovados com `--headed`     |
+| `npm run typecheck`                                       | Aprovado                                              |
+| `npm run lint`                                            | Aprovado; aviso existente de depreciação do next lint |
+| `npm run build`                                           | Aprovado, 120 páginas geradas                         |
+| `git diff --check`                                        | Aprovado                                              |
 
 O harness teve falhas de preparação corrigidas antes do aceite: middleware
 registrado depois do fallback 404 do Vite e ambiente Next ausente no bundle
@@ -150,3 +150,12 @@ de recuperação e aviso funcional de 14px conforme tokens e patterns TES.
 O placeholder preexistente dentro do self-view compacto tem texto parcialmente
 recortado em 390×844; o novo controle externo de recuperação permanece visível
 e operável. A composição interna do tile não foi redesenhada nesta correção.
+
+## Continuidade: reentrada abrupta
+
+Uma ocorrência posterior mostrou que as três tentativas temporizadas ainda
+podiam terminar antes de o pipeline móvel anunciar captura pronta após o
+aparelho desligar sem cleanup. A continuação orientada por
+`video-capturing-change: Started`, novo ciclo de captura e preservação do
+cleanup de privacidade em `pagehide` está em
+[self-view após reentrada abrupta](./abrupt-reentry-self-view-2026-08-28.md).

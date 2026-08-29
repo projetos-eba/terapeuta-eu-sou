@@ -91,7 +91,12 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   entre dois IDs. Preservar reconciliação idempotente por geração, retries
   limitados e “Tentar mostrar minha câmera” sem repetir captura/JWT. Falha de
   detach ativo é diagnóstico de renderização, nunca aviso de encerramento.
-  Consultar `docs/zoom/patient-preview-recovery-2026-08-28.md`.
+  Em reentrada abrupta, `video-capturing-change: Started` reabre o orçamento de
+  attach do ciclo de captura atual, inclusive se chega durante uma operação
+  pendente. Retorno à visibilidade reconcilia somente a prévia; `pagehide`
+  continua limpando a mídia. Consultar
+  `docs/zoom/patient-preview-recovery-2026-08-28.md` e
+  `docs/zoom/abrupt-reentry-self-view-2026-08-28.md`.
 - Antes de alterar integração ou mocks, ler
   `docs/zoom/investigation-2026-08-27.md` e
   `docs/zoom/self-view-2026-08-27.md` e
@@ -169,6 +174,10 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
 - Validar câmera inicialmente desligada, ativação após o join, desligamento e
   visualização bidirecional real. Exercitar também permissão negada, nova
   concessão e recuperação sem recriar booking ou relaxar autorização.
+- Validar processo móvel descartado sem `leave/pagehide`, novo `userId` com o
+  mesmo `userKey`, instância antiga ainda no roster, remoto anexado primeiro e
+  `video-capturing-change: Started` tardio. A recuperação não repete
+  `startVideo`, join nem JWT.
 - Validar para paciente e terapeuta que câmera e microfone ligados na sala de
   espera entram ligados na sala ativa e que, sem teste habilitado, ambos entram
   desligados/silenciados.

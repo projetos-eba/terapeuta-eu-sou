@@ -13,6 +13,14 @@ timers/eventos e reconexão, com até três tentativas de attach. “Tentar most
 minha câmera” repete apenas a exibição, sem desligar publicação nem refazer join.
 Ver [identidade tardia e recuperação](./patient-preview-recovery-2026-08-28.md).
 
+Se isso ocorre somente depois que o aparelho fecha ou desliga abruptamente,
+verifique `operation=video.attach.local`, `captureState`, `captureEpoch` e
+`localPreviewTrigger` no log sanitizado. O evento
+`video-capturing-change: Started` deve reabrir as tentativas do ciclo atual,
+inclusive quando chega depois de 1.200 ms ou durante um attach pendente. A
+instância antiga com o mesmo `userKey` não pode ser escolhida como remoto. Ver
+[self-view após reentrada abrupta](./abrupt-reentry-self-view-2026-08-28.md).
+
 ## Aviso de encerramento durante uma chamada conectada
 
 Não interpretar esse aviso isolado como desconexão. A versão anterior misturava
