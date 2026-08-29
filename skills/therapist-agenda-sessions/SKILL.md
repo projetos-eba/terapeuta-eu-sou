@@ -292,7 +292,10 @@ histórica.
   não podem esconder um horário como se fossem outro encontro. Eles continuam
   sendo protegidos pelo PostgreSQL para a disponibilidade do terapeuta até a
   expiração ou o abandono autorizado; o banco permanece a autoridade final
-  contra sobreposição.
+  contra sobreposição. Os gatilhos de escrita aplicam a mesma regra: o conflito
+  `PATIENT_SCHEDULE_CONFLICT` só considera sessão confirmada/concluída com
+  pagamento `paid`; tentativas `draft`/`pending_payment` e holds do paciente
+  nunca bloqueiam um novo checkout.
 - `occupied_during` e constraints GiST impedem conflito entre serviços.
 - Um reembolso integral confirmado na fonte canônica
   `session_payments.financial_status = 'refunded'` move o booking para

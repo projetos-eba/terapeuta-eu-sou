@@ -37,6 +37,11 @@ o atraso móvel entre `startVideo()` e `bVideoOn=true`, sem repetir a captura, o
 `join` ou a emissão de JWT. Os timers são cancelados ao desligar a câmera, sair
 ou desmontar a sala.
 
+Se o `node-id` do player persistente expirar no Safari mobile, o adapter faz uma
+única tentativa complementar com um `video-player` criado pelo próprio SDK no
+mesmo container. Essa rota reutiliza a captura e a sessão ativas, exige o mesmo
+vínculo de participante e desanexa o elemento se o vínculo não for confirmado.
+
 ## Aviso de encerramento durante uma chamada conectada
 
 Não interpretar esse aviso isolado como desconexão. A versão anterior misturava
