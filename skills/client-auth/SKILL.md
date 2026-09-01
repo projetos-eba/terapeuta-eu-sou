@@ -138,3 +138,8 @@ uma solicitação ambígua deve falhar fechada para evitar mistura de perfis.
 - Validar header público autenticado e logout por `/api/auth/client/session`.
 - Validar renovação próxima à expiração, role incorreto, cookies rotacionados e
   rejeição de origem cruzada em `/api/auth/session/refresh`.
+### Telefone
+
+O cadastro usa `PhoneInput`, com formatação durante a digitação e validação no
+cliente, na rota Next e na Edge Function. O DDI é persistido separadamente em
+`phone_country_code`.

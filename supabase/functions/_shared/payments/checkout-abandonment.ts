@@ -1,5 +1,12 @@
 import type { StripeClient } from "./stripe-client.ts";
 
+export function isCurrentCheckoutForAbandonment(input: {
+  currentCheckoutSessionId: string | null;
+  requestedCheckoutSessionId: string;
+}) {
+  return input.currentCheckoutSessionId === input.requestedCheckoutSessionId;
+}
+
 export async function expireOpenCheckoutForAbandonment(input: {
   checkoutSessionId: string;
   stripe: Pick<StripeClient, "checkout">;

@@ -137,6 +137,7 @@ function toSignupInput(value: unknown) {
     fullName: asString(record.fullName),
     password: asString(record.password),
     phone: asString(record.phone),
+    phoneCountryCode: asString(record.phoneCountryCode),
     plan: typeof record.plan === "string" ? record.plan : null,
     termsAccepted: record.termsAccepted === true,
   };

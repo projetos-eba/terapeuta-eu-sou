@@ -431,6 +431,7 @@ describe("therapist finance mappers", () => {
         totalPages: 1,
       },
       summary: {
+        blockedReasonCodes: ["account", "refund"],
         blockedCents: 0,
         eligibleForPayoutCents: 0,
         nextBatchAt: null,
@@ -444,6 +445,7 @@ describe("therapist finance mappers", () => {
     expect(payouts.items[0]?.therapistNetAmountCents).toBe(8000);
     expect(payouts.items[0]?.refundedAmountCents).toBe(0);
     expect(payouts.items[0]?.reconciliationStatus).toBe("matched");
+    expect(payouts.summary.blockedReasonCodes).toEqual(["account", "refund"]);
   });
 
   it("never accepts a bank-account summary in the Connect read model", () => {

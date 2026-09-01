@@ -330,10 +330,23 @@ describe("TherapistFinancePage", () => {
       },
     });
 
-    expect(screen.getAllByText("31/07/2026, 10:00").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("31/07/2026").length).toBeGreaterThan(0);
     expect(
-      screen.getByText("Próximo repasse previsto para 31/07/2026, 10:00."),
+      screen.getByText(
+        "Próximo lote de transferência previsto para 31/07/2026.",
+      ),
     ).toBeInTheDocument();
+  });
+
+  it("does not promise a batch when the therapist has no eligible value", () => {
+    renderPage("payouts");
+
+    expect(
+      screen.getByText("Sem valores elegíveis para o próximo lote."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Sem valores elegíveis para o próximo lote").length,
+    ).toBeGreaterThan(0);
   });
 });
 
@@ -535,6 +548,7 @@ function fixture(): TherapistFinancePageData {
         totalPages: 1,
       },
       summary: {
+        blockedReasonCodes: [],
         blockedCents: 0,
         eligibleForPayoutCents: 8000,
         nextBatchAt: null,

@@ -53,3 +53,8 @@ superfície de carregamento correspondente.
 ## Pendências
 
 - Homologação de upload no Storage e provisionamento remoto do bucket permanecem pendentes; esta alteração declara o bucket no `supabase/config.toml` para o ambiente local.
+### Contrato de telefone
+
+`PhoneInput` mantém o número nacional em `phone` e o DDI em
+`phone_country_code`; linhas antigas sem DDI usam `55` apenas como fallback de
+leitura.

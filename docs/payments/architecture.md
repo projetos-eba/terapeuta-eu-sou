@@ -98,7 +98,7 @@ pagamentos já criados:
 - confirmação automática da resposta ausente do paciente após 7 dias;
 - confirmação automática da resposta ausente do terapeuta após 30 dias;
 - prazo de segurança de 24 horas completas após a segunda confirmação válida;
-- lote semanal terca-feira 10:00 America/Sao_Paulo, com cutoff explicito e periodo unico por indice idempotente;
+- lote semanal terça-feira às 02:00 America/Sao_Paulo, com cutoff explícito e período único por índice idempotente;
 - upgrades de assinatura cobram prorrata imediatamente; downgrades e cancelamentos entram no fim do periodo.
 - Premium Plus para Premium cria Subscription Schedule e registra o plano/data
   futuros na metadata da assinatura local e remota para projeção consistente.

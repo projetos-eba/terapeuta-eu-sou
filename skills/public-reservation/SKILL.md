@@ -80,6 +80,23 @@ revalidada no servidor antes do checkout.
 - O campo de código promocional fica no `ReservationSummary`, fora do iframe.
   Aplicar/remover chama a rota com `action=replace`, cria uma nova tentativa,
   destrói o checkout anterior e remonta o iframe sem recarregar a página.
+- Durante a substituição promocional, o navegador não pode iniciar abandono.
+  O abandono enviado em `pagehide` identifica o `checkoutSessionId`; a Edge
+  Function só libera a reserva quando esse ID ainda corresponde à tentativa
+  atual. Desmontagem React não é sinal suficiente de abandono.
+- A transição interna entre `preparar` e `pagamento`, inclusive pelo
+  voltar/avançar do navegador, não é abandono. O aceite dos Termos e o
+  `checkoutAttemptId` devem ser preservados somente no estado do histórico da
+  aba, associado à combinação serviço/horário. Ao retornar ao pagamento, a
+  mesma tentativa idempotente deve ser reutilizada. A Edge Function deve
+  resolver primeiro o hold/booking da mesma tentativa, antes de consultar os
+  slots disponíveis, pois a própria reserva pendente deixa o horário oculto.
+  Nunca persistir nesse estado texto de preparo ou dados de pagamento.
+- Na etapa de pagamento, `ShellHelpCard` aparece no resumo lateral antes da
+  Política de cuidado. Seu CTA abre o formulário autenticado de novo chamado
+  em `TESDialog` sobre a própria reserva, sem navegar ou recarregar o checkout.
+  Após a criação, o protocolo persistido é confirmado e a pessoa retorna ao
+  pagamento; não criar rota ou fonte de suporte paralela.
 - O navegador nunca envia Promotion Code ID, Coupon ID ou totais como
   autoridade. A Edge Function resolve o código na Stripe e exige
   `tes_checkout_scope=session`.
@@ -126,6 +143,10 @@ revalidada no servidor antes do checkout.
   devem compartilhar a mesma fonte de verdade do aceite.
 - Acesso direto a `etapa=pagamento` sem aceite deve voltar para preparação sem
   criar checkout.
+- Avançar de `preparar` para `pagamento` e voltar para `preparar` deve manter
+  o aceite dos Termos e deixar o CTA de pagamento habilitado. Ao avançar outra
+  vez, a requisição precisa reutilizar o mesmo `checkoutAttemptId`, sem envio
+  de abandono ou criação de uma segunda reserva.
 - O checkout real exige `service` + `slot` + `termsAccepted` e revalida serviço,
   preço, duração e slot no servidor.
 - O texto opcional compartilhado no preparo é controlado pelo fluxo, enviado
@@ -160,6 +181,10 @@ revalidada no servidor antes do checkout.
   um pagamento real anterior ainda deve ser aceito uma única vez.
 - Um slot `2026-08-24T12:10:00.000Z` no timezone `America/Sao_Paulo` deve ser
   exibido como `09:10`, inclusive no resumo antes do checkout.
+- Aplicar/remover cupom não pode enviar abandono; uma solicitação atrasada de
+  Checkout anterior não pode cancelar a tentativa atual.
+- A etapa de pagamento não exibe CTA para `#stripe-checkout`, pois o Checkout
+  já está visível nessa mesma etapa.
 - Sem Supabase configurado, submit deve retornar erro controlado sem expor
   segredo.
 - Mobile deve empilhar formulário e resumo sem sobreposição.

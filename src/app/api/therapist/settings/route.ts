@@ -87,6 +87,7 @@ export async function PATCH(request: Request) {
       displayName: payload.displayName,
       identity: payload.identity,
       phone: payload.phone,
+      phoneCountryCode: payload.phoneCountryCode,
       userId: user.id,
     });
 

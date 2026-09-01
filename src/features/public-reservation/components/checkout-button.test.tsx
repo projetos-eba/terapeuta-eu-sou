@@ -44,7 +44,43 @@ afterEach(() => {
 });
 
 describe("CheckoutButton", () => {
-  it("does not abandon the reservation while checkout is reinitialized, but abandons it on exit", async () => {
+  it("reuses the checkout attempt after an internal reservation transition", async () => {
+    vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
+
+    const mount = vi.fn();
+    window.Stripe = vi.fn(() => ({
+      initEmbeddedCheckout: vi
+        .fn()
+        .mockResolvedValue({ destroy: vi.fn(), mount }),
+    }));
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => checkoutResponse,
+      ok: true,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const checkoutAttemptId = "a1000000-0000-4000-8000-000000000001";
+    const first = render(
+      <CheckoutButton {...props({ checkoutAttemptId })} />,
+    );
+    await waitFor(() => expect(mount).toHaveBeenCalledOnce());
+    first.unmount();
+
+    render(<CheckoutButton {...props({ checkoutAttemptId })} />);
+    await waitFor(() => expect(mount).toHaveBeenCalledTimes(2));
+
+    const checkoutAttempts = fetchMock.mock.calls
+      .filter(([url]) => url === "/api/public/reservation/checkout")
+      .map(([, init]) => JSON.parse(init?.body as string).checkoutAttemptId);
+    expect(checkoutAttempts).toEqual([checkoutAttemptId, checkoutAttemptId]);
+    expect(
+      fetchMock.mock.calls.filter(
+        ([url]) => url === "/api/public/reservation/abandon",
+      ),
+    ).toHaveLength(0);
+  });
+
+  it("does not abandon the reservation while checkout is replaced, but abandons the current Checkout on page exit", async () => {
     vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
     Object.defineProperty(navigator, "sendBeacon", {
       configurable: true,
@@ -67,8 +103,16 @@ describe("CheckoutButton", () => {
 
     await waitFor(() => expect(mount).toHaveBeenCalledOnce());
     rendered.rerender(
-      <CheckoutButton {...firstProps} onCheckoutChange={vi.fn()} />,
+      <CheckoutButton
+        {...firstProps}
+        promotionRequest={{
+          code: "PROMO100",
+          requestId: "a1000000-0000-4000-8000-000000000001",
+        }}
+      />,
     );
+
+    window.dispatchEvent(new Event("pagehide"));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(
@@ -77,7 +121,7 @@ describe("CheckoutButton", () => {
       ),
     ).toHaveLength(0);
 
-    rendered.unmount();
+    window.dispatchEvent(new Event("pagehide"));
 
     await waitFor(() =>
       expect(
@@ -86,6 +130,19 @@ describe("CheckoutButton", () => {
         ),
       ).toHaveLength(1),
     );
+    const abandonCall = fetchMock.mock.calls.find(
+      ([url]) => url === "/api/public/reservation/abandon",
+    );
+    expect(JSON.parse(abandonCall?.[1]?.body as string)).toMatchObject({
+      bookingId: checkoutResponse.checkout.bookingId,
+      checkoutSessionId: checkoutResponse.checkout.checkoutSessionId,
+    });
+    rendered.unmount();
+    expect(
+      fetchMock.mock.calls.filter(
+        ([url]) => url === "/api/public/reservation/abandon",
+      ),
+    ).toHaveLength(1);
     expect(destroy).toHaveBeenCalled();
   });
 });

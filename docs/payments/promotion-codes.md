@@ -67,6 +67,12 @@ a versão do Dashboard:
 Não reutilize o mesmo Promotion Code entre sessão e assinatura. Um Coupon pode
 originar códigos distintos, mas cada Promotion Code TES possui um único escopo.
 
+Durante a troca promocional, o abandono fica suspenso no navegador. Qualquer
+pedido de abandono identifica também a Checkout Session que o originou; o
+backend só libera a reserva se ela ainda for a tentativa atual. Assim, uma
+solicitação atrasada de uma montagem anterior não pode cancelar a tentativa
+substituta.
+
 ## Modelos de campanha
 
 ### Sessões
@@ -221,6 +227,8 @@ cartão.
 - [ ] Pagamento real de tentativa anterior é aceito uma vez e expira irmãs.
 - [ ] Subtotal, desconto, total, comissão, terapeuta e ledger convergem.
 - [ ] Campo nativo Stripe não aparece; interface Stripe está em pt-BR.
+- [ ] Abandono atrasado de uma tentativa substituída não cancela a tentativa
+      atual.
 - [ ] Desktop, tablet, mobile e fallback hospedado validados.
 - [ ] Webhook duplicado e fora de ordem permanece idempotente.
 - [ ] Logs/evidências não contêm secrets ou dados de cartão.

@@ -14,6 +14,7 @@ export type ClientSignupInput = {
   name: string;
   password: string;
   phone: string;
+  phoneCountryCode?: string;
   termsAccepted: boolean;
 };
 
@@ -26,6 +27,7 @@ export type ClientSignupValue = Omit<ClientSignupInput, "termsAccepted"> & {
   email: string;
   name: string;
   phoneDigits: string;
+  phoneCountryCode: string;
   termsAccepted: true;
 };
 

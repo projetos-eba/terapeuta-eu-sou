@@ -70,6 +70,23 @@ ocorrência.
 
 ## Prontidão Connect
 
+O próximo lote é uma previsão operacional do Transfer TES, não uma promessa de
+crédito bancário. O TES agrupa valores elegíveis às terças-feiras às 02:00
+(`America/Sao_Paulo`); o Payout automático diário da Stripe disponibiliza o
+saldo conforme o calendário e os requisitos da conta conectada.
+
+### Remediação controlada de lote
+
+Qualquer divergência deve começar por evidência somente leitura: política ativa,
+scheduler, conta Connect corrente, itens do lote, ledger, Transfers, Balance
+Transactions e alocações de Payout. Lotes globais ou de outro terapeuta não
+podem alimentar previsões privadas e não devem ser apagados, cancelados ou
+recriados. A reconciliação com a Stripe deve classificar o estado operacional
+antes de qualquer correção. A reavaliação automática é idempotente e limitada a
+bloqueios `connect_not_ready`; reembolso, disputa, contestação e relato de não
+realização permanecem bloqueados. Alterações em HML ou Stripe exigem aprovação
+específica e registro auditável.
+
 Antes do Transfer, revalidar somente as contas Connect correntes do projeto
 Supabase alvo:
 

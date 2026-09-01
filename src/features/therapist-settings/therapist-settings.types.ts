@@ -7,6 +7,7 @@ import type {
 export type TherapistSettingsEditableFields = {
   displayName: string;
   phone: string;
+  phoneCountryCode?: string;
   identity: TherapistPrivateIdentityFields;
 };
 

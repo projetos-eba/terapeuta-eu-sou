@@ -1,6 +1,6 @@
 # ADR-018 — Transfer semanal e Payout automático diário
 
-Status: aprovado e implementado localmente; ativação pendente de homologação HML.
+Status: aprovado e implementado; política operacional confirmada em HML e produção.
 
 ## Contexto
 

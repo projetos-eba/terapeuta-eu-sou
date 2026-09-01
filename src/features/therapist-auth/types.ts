@@ -17,6 +17,7 @@ export type TherapistSignupInput = {
   fullName: string;
   password: string;
   phone: string;
+  phoneCountryCode?: string;
   plan?: string | null;
   termsAccepted: boolean;
 };
@@ -33,6 +34,7 @@ export type TherapistSignupValue = Omit<
   email: string;
   fullName: string;
   phoneDigits: string;
+  phoneCountryCode: string;
   plan: TherapistPlan;
   termsAccepted: true;
 };

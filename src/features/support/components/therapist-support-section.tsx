@@ -137,7 +137,7 @@ export function SupportTicketSection({
         />
       ) : null}
       {isOpen ? (
-        <NewTicketDialog
+        <NewSupportTicketDialog
           actorRole={actorRole}
           onClose={() => setIsOpen(false)}
         />
@@ -240,12 +240,19 @@ function SupportTicketPagination({
   );
 }
 
-function NewTicketDialog({
+export type CreatedSupportTicket = {
+  id: string;
+  protocol: string;
+};
+
+export function NewSupportTicketDialog({
   actorRole,
   onClose,
+  onTicketCreated,
 }: {
   actorRole: "patient" | "therapist";
   onClose: () => void;
+  onTicketCreated?: (ticket: CreatedSupportTicket) => void;
 }) {
   const router = useRouter();
   const [category, setCategory] = useState<SupportTicketCategory>("outro");
@@ -289,6 +296,10 @@ function NewTicketDialog({
       );
       return;
     }
+    if (onTicketCreated) {
+      onTicketCreated(payload.ticket);
+      return;
+    }
     router.push(
       actorRole === "patient"
         ? routes.patient.supportTicketDetail(payload.ticket.id)
@@ -305,12 +316,13 @@ function NewTicketDialog({
       title="Novo chamado"
     >
       <form className="grid gap-4" onSubmit={submit}>
-        <label className="grid gap-2">
+        <label className="grid gap-2" htmlFor="support-ticket-category">
           <span className="text-sm font-extrabold text-brand-deep">
             Categoria
           </span>
           <select
             className="min-h-12 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-semibold text-brand-deep"
+            id="support-ticket-category"
             onChange={(event) =>
               setCategory(event.target.value as SupportTicketCategory)
             }
@@ -323,12 +335,13 @@ function NewTicketDialog({
             ))}
           </select>
         </label>
-        <label className="grid gap-2">
+        <label className="grid gap-2" htmlFor="support-ticket-subject">
           <span className="text-sm font-extrabold text-brand-deep">
             Assunto
           </span>
           <input
             className="min-h-12 rounded-lg border border-brand-lavender px-3 text-sm font-semibold text-brand-deep"
+            id="support-ticket-subject"
             maxLength={120}
             onChange={(event) => {
               setSubject(event.target.value);
@@ -338,12 +351,13 @@ function NewTicketDialog({
             value={subject}
           />
         </label>
-        <label className="grid gap-2">
+        <label className="grid gap-2" htmlFor="support-ticket-description">
           <span className="text-sm font-extrabold text-brand-deep">
             Conte mais sobre o que aconteceu
           </span>
           <textarea
             className="min-h-36 w-full resize-y rounded-lg border border-brand-lavender px-3 py-3 text-sm font-semibold leading-6 text-brand-deep"
+            id="support-ticket-description"
             maxLength={supportTicketBodyLimit}
             onChange={(event) => {
               setDescription(event.target.value);

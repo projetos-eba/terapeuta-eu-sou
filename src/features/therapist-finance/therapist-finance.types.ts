@@ -131,6 +131,7 @@ export type TherapistPayoutItem = {
 };
 
 export type TherapistPayoutSummary = {
+  blockedReasonCodes: Array<"account" | "review" | "refund" | "other">;
   blockedCents: number;
   eligibleForPayoutCents: number;
   nextBatchAt: string | null;

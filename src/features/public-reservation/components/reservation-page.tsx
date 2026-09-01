@@ -20,11 +20,13 @@ import {
   UserRound,
 } from "lucide-react";
 
-import { PublicLogo, TESButton, TESCard } from "@/components/tes";
+import { PublicLogo, TESButton, TESCard, TESDialog } from "@/components/tes";
+import { ShellHelpCard } from "@/components/authenticated-shell/shell-help-card";
 import {
   PromotionCodeField,
   type PromotionCheckoutAmounts,
 } from "@/features/payments";
+import { NewSupportTicketDialog } from "@/features/support/components/therapist-support-section";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +45,17 @@ import type {
 import { CheckoutButton, ReservationLinkButton } from "./checkout-button";
 import { HoldCountdown } from "./hold-countdown";
 import { PrepareForm } from "./prepare-form";
+
+const reservationJourneyDraftHistoryKey = "tes.reservation.journey-draft.v1";
+const UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+type ReservationJourneyDraft = {
+  acceptedTerms: boolean;
+  checkoutAttemptId: string | null;
+  marketingConsent: boolean;
+  reservationKey: string;
+};
 
 export function ReservationPage({
   availabilityDays,
@@ -75,17 +88,27 @@ export function ReservationPage({
   const therapistProfileHref = buildReservationReturnHref(
     context.therapist.slug,
   );
+  const initialJourneyDraft = readReservationJourneyDraft(reservationKey);
+  const [acceptedTerms, setAcceptedTerms] = useState(
+    () => initialJourneyDraft?.acceptedTerms ?? false,
+  );
+  const [marketingConsent, setMarketingConsent] = useState(
+    () => initialJourneyDraft?.marketingConsent ?? context.marketingConsent,
+  );
+  const [checkoutAttemptId, setCheckoutAttemptId] = useState<string | null>(
+    () => initialJourneyDraft?.checkoutAttemptId ?? null,
+  );
   const [currentStep, setCurrentStep] = useState<ReservationStep>(() =>
     context.selectedSlotHasPatientConflict
       ? "momento"
       : context.step === "pagamento"
-        ? context.hasRequiredCheckoutData
-          ? "preparar"
+        ? context.hasRequiredCheckoutData && initialJourneyDraft?.acceptedTerms
+          ? "pagamento"
+          : context.hasRequiredCheckoutData
+            ? "preparar"
           : "momento"
         : context.step,
   );
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [marketingConsent, setMarketingConsent] = useState(false);
   const [sharedNote, setSharedNote] = useState("");
   const [promotionCode, setPromotionCode] = useState("");
   const [promotionRequest, setPromotionRequest] = useState<{
@@ -97,6 +120,10 @@ export function ReservationPage({
   const [promotionError, setPromotionError] = useState<string | null>(null);
   const [promotionPending, setPromotionPending] = useState(false);
   const [checkoutReady, setCheckoutReady] = useState(false);
+  const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
+  const [supportTicketProtocol, setSupportTicketProtocol] = useState<
+    string | null
+  >(null);
   const previousReservationKeyRef = useRef(reservationKey);
   const [journeyError, setJourneyError] = useState<string | null>(
     context.selectedSlotHasPatientConflict
@@ -111,6 +138,8 @@ export function ReservationPage({
     previousReservationKeyRef.current = reservationKey;
     setAcceptedTerms(false);
     setMarketingConsent(false);
+    setCheckoutAttemptId(null);
+    clearReservationJourneyDraft();
     setSharedNote("");
     setPromotionCode("");
     setPromotionRequest(null);
@@ -138,6 +167,35 @@ export function ReservationPage({
     context.hasRequiredCheckoutData,
     context.selectedSlotHasPatientConflict,
     context.step,
+    reservationKey,
+  ]);
+
+  useEffect(() => {
+    const restoreJourneyDraft = () => {
+      const draft = readReservationJourneyDraft(reservationKey);
+      setAcceptedTerms(draft?.acceptedTerms ?? false);
+      setMarketingConsent(draft?.marketingConsent ?? context.marketingConsent);
+      setCheckoutAttemptId(draft?.checkoutAttemptId ?? null);
+
+      const requestedStep = new URL(window.location.href).searchParams.get(
+        "etapa",
+      );
+      if (requestedStep === "pagamento") {
+        setCurrentStep(
+          draft?.acceptedTerms && context.hasRequiredCheckoutData
+            ? "pagamento"
+            : "preparar",
+        );
+      } else if (requestedStep === "momento" || requestedStep === "preparar") {
+        setCurrentStep(requestedStep);
+      }
+    };
+
+    window.addEventListener("popstate", restoreJourneyDraft);
+    return () => window.removeEventListener("popstate", restoreJourneyDraft);
+  }, [
+    context.hasRequiredCheckoutData,
+    context.marketingConsent,
     reservationKey,
   ]);
 
@@ -210,17 +268,52 @@ export function ReservationPage({
         return;
       }
 
+      const nextCheckoutAttemptId =
+        step === "pagamento"
+          ? checkoutAttemptId ?? crypto.randomUUID()
+          : checkoutAttemptId;
+      const draft = {
+        acceptedTerms,
+        checkoutAttemptId: nextCheckoutAttemptId,
+        marketingConsent,
+        reservationKey,
+      };
+      writeReservationJourneyDraft(draft);
+      if (nextCheckoutAttemptId !== checkoutAttemptId) {
+        setCheckoutAttemptId(nextCheckoutAttemptId);
+      }
       setJourneyError(null);
       setCurrentStep(step);
-      router.push(
+      const href =
         step === "momento"
           ? momentStepHref
           : step === "preparar"
             ? prepareStepHref
-            : paymentStepHref,
+            : paymentStepHref;
+      if (typeof window === "undefined") {
+        router.push(href);
+        return;
+      }
+      window.history.pushState(
+        {
+          ...(window.history.state ?? {}),
+          [reservationJourneyDraftHistoryKey]: draft,
+        },
+        "",
+        href,
       );
     },
-    [canPay, momentStepHref, paymentStepHref, prepareStepHref, router],
+    [
+      acceptedTerms,
+      canPay,
+      checkoutAttemptId,
+      marketingConsent,
+      momentStepHref,
+      paymentStepHref,
+      prepareStepHref,
+      reservationKey,
+      router,
+    ],
   );
 
   return (
@@ -260,9 +353,23 @@ export function ReservationPage({
                 context={context}
                 marketingConsent={marketingConsent}
                 onSharedNoteChange={setSharedNote}
-                onMarketingConsentChange={setMarketingConsent}
+                onMarketingConsentChange={(accepted) => {
+                  setMarketingConsent(accepted);
+                  writeReservationJourneyDraft({
+                    acceptedTerms,
+                    checkoutAttemptId,
+                    marketingConsent: accepted,
+                    reservationKey,
+                  });
+                }}
                 onTermsChange={(accepted) => {
                   setAcceptedTerms(accepted);
+                  writeReservationJourneyDraft({
+                    acceptedTerms: accepted,
+                    checkoutAttemptId,
+                    marketingConsent,
+                    reservationKey,
+                  });
                   if (accepted) setJourneyError(null);
                 }}
                 onAdvanceToPayment={() => goToStep("pagamento")}
@@ -272,6 +379,7 @@ export function ReservationPage({
             {currentStep === "pagamento" ? (
               <PaymentStep
                 acceptedTerms={acceptedTerms}
+                checkoutAttemptId={checkoutAttemptId}
                 context={context}
                 loginHref={loginHref}
                 sharedNote={sharedNote}
@@ -311,13 +419,92 @@ export function ReservationPage({
               }}
               onAdvanceToPayment={() => goToStep("pagamento")}
             />
+            {currentStep === "pagamento" ? (
+              <ShellHelpCard
+                onClick={() => setIsSupportDialogOpen(true)}
+              />
+            ) : null}
             <PolicyCard />
           </aside>
         </div>
       </div>
       <ReservationFooter />
+      {isSupportDialogOpen ? (
+        <NewSupportTicketDialog
+          actorRole="patient"
+          onClose={() => setIsSupportDialogOpen(false)}
+          onTicketCreated={(ticket) => {
+            setIsSupportDialogOpen(false);
+            setSupportTicketProtocol(ticket.protocol);
+          }}
+        />
+      ) : null}
+      {supportTicketProtocol ? (
+        <TESDialog
+          onClose={() => setSupportTicketProtocol(null)}
+          title="Chamado aberto"
+        >
+          <div className="grid gap-5">
+            <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+              Recebemos seu chamado. Seu protocolo é {supportTicketProtocol}.
+              Você pode continuar seu pagamento enquanto nossa equipe analisa a
+              solicitação.
+            </p>
+            <TESButton
+              className="min-h-11 rounded-lg"
+              onClick={() => setSupportTicketProtocol(null)}
+              type="button"
+            >
+              Voltar ao pagamento
+            </TESButton>
+          </div>
+        </TESDialog>
+      ) : null}
     </main>
   );
+}
+
+function readReservationJourneyDraft(
+  reservationKey: string,
+): ReservationJourneyDraft | null {
+  if (typeof window === "undefined") return null;
+  const state = window.history.state as Record<string, unknown> | null;
+  const value = state?.[reservationJourneyDraftHistoryKey];
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  const draft = value as Partial<ReservationJourneyDraft>;
+  if (
+    draft.reservationKey !== reservationKey ||
+    typeof draft.acceptedTerms !== "boolean" ||
+    typeof draft.marketingConsent !== "boolean" ||
+    (draft.checkoutAttemptId !== null &&
+      (typeof draft.checkoutAttemptId !== "string" ||
+        !UUID.test(draft.checkoutAttemptId)))
+  ) {
+    return null;
+  }
+
+  return {
+    acceptedTerms: draft.acceptedTerms,
+    checkoutAttemptId: draft.checkoutAttemptId,
+    marketingConsent: draft.marketingConsent,
+    reservationKey: draft.reservationKey,
+  };
+}
+
+function writeReservationJourneyDraft(draft: ReservationJourneyDraft) {
+  if (typeof window === "undefined") return;
+  window.history.replaceState(
+    { ...(window.history.state ?? {}), [reservationJourneyDraftHistoryKey]: draft },
+    "",
+  );
+}
+
+function clearReservationJourneyDraft() {
+  if (typeof window === "undefined") return;
+  const state = { ...(window.history.state ?? {}) } as Record<string, unknown>;
+  delete state[reservationJourneyDraftHistoryKey];
+  window.history.replaceState(state, "");
 }
 
 function ReservationTopbar() {
@@ -625,6 +812,7 @@ function PrepareStep({
 
 function PaymentStep({
   acceptedTerms,
+  checkoutAttemptId,
   context,
   loginHref,
   onCheckoutChange,
@@ -633,6 +821,7 @@ function PaymentStep({
   sharedNote,
 }: {
   acceptedTerms: boolean;
+  checkoutAttemptId: string | null;
   context: ReservationContext;
   loginHref: string;
   onCheckoutChange: (input: {
@@ -691,6 +880,7 @@ function PaymentStep({
             </div>
             <CheckoutButton
               acceptedTerms={acceptedTerms}
+              checkoutAttemptId={checkoutAttemptId}
               disabled={!context.hasRequiredCheckoutData}
               isPatientAuthenticated={context.isPatientAuthenticated}
               loginHref={loginHref}
@@ -994,14 +1184,6 @@ function ReservationSummary({
                 value={promotionCode}
               />
             </div>
-            <TESButton
-              href="#stripe-checkout"
-              variant="secondary"
-              size="lg"
-              className="w-full"
-            >
-              Ir para pagamento seguro
-            </TESButton>
           </>
         ) : context.step === "preparar" ? (
           <button

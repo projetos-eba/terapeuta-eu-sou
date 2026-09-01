@@ -1,4 +1,5 @@
 import type { MatchingConfig, MatchingTherapy, MatchingWeight } from "./types";
+import { JOURNEY_THEME_COPY } from "./theme-copy";
 
 export const fallbackMatchingVersionId = "73000000-0000-4000-8000-000000000001";
 
@@ -216,7 +217,9 @@ function theme(
   const id = `71000000-0000-4000-8000-${suffix}`;
 
   return {
-    description: "Escolha este tema se ele conversa com o seu momento atual.",
+    description:
+      JOURNEY_THEME_COPY[slug]?.description ??
+      "Escolha este tema se ele conversa com o seu momento atual.",
     id,
     imageUrl: null,
     interests: interests.map(
@@ -228,7 +231,7 @@ function theme(
         themeId: id,
       }),
     ),
-    name,
+    name: JOURNEY_THEME_COPY[slug]?.title ?? name,
     slug,
     sortOrder,
   };

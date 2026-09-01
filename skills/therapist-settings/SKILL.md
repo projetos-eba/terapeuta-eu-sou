@@ -152,3 +152,8 @@ the unique index after reconciliation requires a separate reviewed migration.
   dedicated notification-preferences contract exists.
 - Public visibility toggles are intentionally read-only here to avoid
   duplicating publication rules from the profile editor.
+### Telefone
+
+O campo reutiliza `PhoneInput`; `profiles.phone` guarda dígitos nacionais e
+`profiles.phone_country_code` guarda o DDI selecionado. Legados sem DDI usam 55
+somente na leitura.

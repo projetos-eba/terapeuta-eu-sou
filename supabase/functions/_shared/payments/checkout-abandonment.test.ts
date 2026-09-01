@@ -1,6 +1,9 @@
 import { assertEquals } from "jsr:@std/assert@1";
 
-import { expireOpenCheckoutForAbandonment } from "./checkout-abandonment.ts";
+import {
+  expireOpenCheckoutForAbandonment,
+  isCurrentCheckoutForAbandonment,
+} from "./checkout-abandonment.ts";
 import type { StripeClient } from "./stripe-client.ts";
 
 function stripeWithCheckoutStatus(status: "complete" | "expired" | "open") {
@@ -47,5 +50,25 @@ Deno.test(
 
     assertEquals(released, false);
     assertEquals(expireCalls, []);
+  },
+);
+
+Deno.test(
+  "a stale abandonment cannot release the Checkout that replaced it",
+  () => {
+    assertEquals(
+      isCurrentCheckoutForAbandonment({
+        currentCheckoutSessionId: "cs_current",
+        requestedCheckoutSessionId: "cs_superseded",
+      }),
+      false,
+    );
+    assertEquals(
+      isCurrentCheckoutForAbandonment({
+        currentCheckoutSessionId: "cs_current",
+        requestedCheckoutSessionId: "cs_current",
+      }),
+      true,
+    );
   },
 );

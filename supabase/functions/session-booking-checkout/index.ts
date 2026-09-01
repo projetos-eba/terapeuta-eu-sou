@@ -10,9 +10,11 @@ import {
 } from "../_shared/payments/http.ts";
 import {
   type BookingCheckoutCommandBody,
+  type ExistingCheckoutHold,
   mapBookingCheckoutDatabaseError,
-  selectAvailableSlot,
   MAX_SHARED_NOTE_LENGTH,
+  resolveExistingCheckoutHold,
+  selectAvailableSlot,
   type ServiceAvailableSlotsResponse,
   slotRangeEnd,
   validateBookingCheckoutCommand,
@@ -22,6 +24,18 @@ import type { PromotionSummary } from "../_shared/payments/promotion-codes.ts";
 type BookingHoldRow = {
   expires_at: string;
   id: string;
+};
+
+type ExistingBookingHoldRow = {
+  consumed_booking_id: string | null;
+  ends_at: string;
+  expires_at: string;
+  id: string;
+  patient_profile_id: string;
+  service_id: string;
+  starts_at: string;
+  status: string;
+  timezone: string;
 };
 
 type BookingRow = {
@@ -62,6 +76,24 @@ const runtime = getRuntime("session-booking-checkout");
 const DEFAULT_SHARED_NOTE =
   "Você poderá complementar suas informações antes do encontro, se desejar.";
 
+function toExistingCheckoutHold(
+  row: ExistingBookingHoldRow | undefined,
+): ExistingCheckoutHold | null {
+  if (!row) return null;
+
+  return {
+    consumedBookingId: row.consumed_booking_id,
+    endsAt: row.ends_at,
+    expiresAt: row.expires_at,
+    id: row.id,
+    patientProfileId: row.patient_profile_id,
+    serviceId: row.service_id,
+    startsAt: row.starts_at,
+    status: row.status,
+    timezone: row.timezone,
+  };
+}
+
 runtime.serve(async (request) => {
   const optionsResponse = handleOptions(request);
   if (optionsResponse) return optionsResponse;
@@ -93,24 +125,23 @@ runtime.serve(async (request) => {
     );
 
     try {
-      operation = "preflight_checkout_legal_documents";
-      await assertCheckoutLegalDocumentsPublished(client);
-
-      operation = "get_service_available_slots_v1";
-      const slots = await client.rpc<ServiceAvailableSlotsResponse | null>(
-        operation,
-        {
-          p_limit: 50,
-          p_range_end: slotRangeEnd(command.startsAt),
-          p_range_start: command.startsAt,
-          p_service_id: command.serviceId,
-        },
+      operation = "get_existing_booking_hold";
+      const existingHolds = await client.get<ExistingBookingHoldRow[]>(
+        `/rest/v1/booking_holds?select=id,expires_at,patient_profile_id,service_id,starts_at,ends_at,timezone,status,consumed_booking_id&idempotency_key=eq.${
+          encodeURIComponent(command.requestId)
+        }&limit=1`,
       );
-      const selectedSlot = selectAvailableSlot(slots, command.startsAt);
+      const existingHold = resolveExistingCheckoutHold(
+        toExistingCheckoutHold(existingHolds[0]),
+        command,
+        patient.id,
+      );
 
       operation = "get_booking_intake_context";
       const serviceRows = await client.get<ServiceIntakeContextRow[]>(
-        `/rest/v1/therapist_services?select=id,therapist_profile_id,description&id=eq.${encodeURIComponent(command.serviceId)}&limit=1`,
+        `/rest/v1/therapist_services?select=id,therapist_profile_id,description&id=eq.${
+          encodeURIComponent(command.serviceId)
+        }&limit=1`,
       );
       const service = serviceRows[0];
       if (!service) {
@@ -121,37 +152,78 @@ runtime.serve(async (request) => {
         );
       }
 
-      operation = "reserve_booking_hold_v1";
-      const hold = await client.rpc<BookingHoldRow>(operation, {
-        p_ends_at: selectedSlot.endsAt,
-        p_idempotency_key: command.requestId,
-        p_patient_profile_id: patient.id,
-        p_service_id: command.serviceId,
-        p_starts_at: selectedSlot.startsAt,
-        p_timezone: selectedSlot.timezone,
-        p_ttl_seconds: command.holdTtlSeconds,
-      });
+      let hold: BookingHoldRow;
+      let booking: BookingRow;
+      let bookingWasJustConsumed = false;
+      if (existingHold) {
+        hold = {
+          expires_at: existingHold.hold.expiresAt,
+          id: existingHold.hold.id,
+        };
+        if (existingHold.bookingId) {
+          booking = { id: existingHold.bookingId };
+        } else {
+          operation = "preflight_checkout_legal_documents";
+          await assertCheckoutLegalDocumentsPublished(client);
 
-      operation = "consume_booking_hold_v1";
-      const booking = await client.rpc<BookingRow>(operation, {
-        p_hold_id: hold.id,
-        p_idempotency_key: command.requestId,
-      });
+          operation = "consume_booking_hold_v1";
+          booking = await client.rpc<BookingRow>(operation, {
+            p_hold_id: hold.id,
+            p_idempotency_key: command.requestId,
+          });
+          bookingWasJustConsumed = true;
+        }
+      } else {
+        operation = "preflight_checkout_legal_documents";
+        await assertCheckoutLegalDocumentsPublished(client);
 
-      operation = "register_checkout_legal_acceptances";
-      const legalAcceptances = await registerCheckoutLegalAcceptances({
-        bookingId: booking.id,
-        client,
-        profileId: patient.user_id,
-        requestId: command.requestId,
-      });
+        operation = "get_service_available_slots_v1";
+        const slots = await client.rpc<ServiceAvailableSlotsResponse | null>(
+          operation,
+          {
+            p_limit: 50,
+            p_range_end: slotRangeEnd(command.startsAt),
+            p_range_start: command.startsAt,
+            p_service_id: command.serviceId,
+          },
+        );
+        const selectedSlot = selectAvailableSlot(slots, command.startsAt);
 
-      operation = "snapshot_booking_legal_versions";
-      await snapshotBookingLegalVersions({
-        bookingId: booking.id,
-        client,
-        legalAcceptances,
-      });
+        operation = "reserve_booking_hold_v1";
+        hold = await client.rpc<BookingHoldRow>(operation, {
+          p_ends_at: selectedSlot.endsAt,
+          p_idempotency_key: command.requestId,
+          p_patient_profile_id: patient.id,
+          p_service_id: command.serviceId,
+          p_starts_at: selectedSlot.startsAt,
+          p_timezone: selectedSlot.timezone,
+          p_ttl_seconds: command.holdTtlSeconds,
+        });
+
+        operation = "consume_booking_hold_v1";
+        booking = await client.rpc<BookingRow>(operation, {
+          p_hold_id: hold.id,
+          p_idempotency_key: command.requestId,
+        });
+        bookingWasJustConsumed = true;
+      }
+
+      if (bookingWasJustConsumed) {
+        operation = "register_checkout_legal_acceptances";
+        const legalAcceptances = await registerCheckoutLegalAcceptances({
+          bookingId: booking.id,
+          client,
+          profileId: patient.user_id,
+          requestId: command.requestId,
+        });
+
+        operation = "snapshot_booking_legal_versions";
+        await snapshotBookingLegalVersions({
+          bookingId: booking.id,
+          client,
+          legalAcceptances,
+        });
+      }
 
       operation = "save_booking_intake_response";
       await saveBookingIntakeResponse({
@@ -194,10 +266,9 @@ runtime.serve(async (request) => {
         actor_role: "patient",
         correlation_id: correlationId,
         duration_ms: Math.max(0, Math.round(performance.now() - startedAt)),
-        error_code:
-          error instanceof DomainError
-            ? error.code
-            : "session_booking_checkout_failed",
+        error_code: error instanceof DomainError
+          ? error.code
+          : "session_booking_checkout_failed",
         operation,
       }),
     );
@@ -215,9 +286,11 @@ async function assertCheckoutLegalDocumentsPublished(
   ];
   const effectiveAt = encodeURIComponent(new Date().toISOString());
   const rows = await client.get<LegalDocumentVersionRow[]>(
-    `/rest/v1/legal_document_versions?select=document_key&document_key=in.(${documentKeys.join(
-      ",",
-    )})&status=eq.published&effective_at=lte.${effectiveAt}`,
+    `/rest/v1/legal_document_versions?select=document_key&document_key=in.(${
+      documentKeys.join(
+        ",",
+      )
+    })&status=eq.published&effective_at=lte.${effectiveAt}`,
   );
   const publishedKeys = new Set(rows.map((row) => row.document_key));
   const hasAllDocuments = documentKeys.every((key) => publishedKeys.has(key));
@@ -254,8 +327,7 @@ async function saveBookingIntakeResponse(input: {
       patient_profile_id: input.patientProfileId,
       shared_note: input.sharedNote,
       therapist_profile_id: input.service.therapist_profile_id,
-      therapy_goal:
-        input.service.description?.trim() ||
+      therapy_goal: input.service.description?.trim() ||
         "Acompanhar sua jornada com presença e cuidado.",
       visibility: "patient_therapist",
     },
@@ -275,11 +347,13 @@ async function registerCheckoutLegalAcceptances(input: {
   };
   const acceptances: LegalAcceptanceRow[] = [];
 
-  for (const documentKey of [
-    "terms-of-use",
-    "privacy-policy",
-    "cancellation-reschedule-refund-policy",
-  ]) {
+  for (
+    const documentKey of [
+      "terms-of-use",
+      "privacy-policy",
+      "cancellation-reschedule-refund-policy",
+    ]
+  ) {
     const acceptance = await input.client.rpc<LegalAcceptanceRow>(
       "register_legal_acceptance_v1",
       {
@@ -351,9 +425,9 @@ async function invokeSessionPaymentCheckout(input: {
   const payload = (await response.json().catch(() => null)) as
     | CheckoutResponse
     | {
-        ok: false;
-        error?: { code?: string; message?: string };
-      }
+      ok: false;
+      error?: { code?: string; message?: string };
+    }
     | null;
 
   if (!response.ok || payload?.ok !== true) {

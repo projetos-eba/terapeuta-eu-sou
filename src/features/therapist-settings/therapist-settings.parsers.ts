@@ -3,6 +3,7 @@ import type {
   TherapistPrivateIdentityFields,
   TherapistSettingsUpdatePayload,
 } from "./therapist-settings.types";
+import { validatePhoneNumber } from "@/lib/phone";
 
 export class TherapistSettingsContractError extends Error {
   readonly reason: string;
@@ -20,7 +21,11 @@ export function parseTherapistSettingsUpdatePayload(
   const value = object(input);
   const payload: TherapistSettingsUpdatePayload = {
     displayName: boundedString(value.displayName, 2, 120),
-    phone: optionalPhone(value.phone),
+    phone: optionalPhone(
+      value.phone,
+      optionalCountryCode(value.phoneCountryCode),
+    ),
+    phoneCountryCode: optionalCountryCode(value.phoneCountryCode),
   };
 
   if (value.identity !== undefined) {
@@ -149,7 +154,7 @@ function boundedString(value: unknown, min: number, max: number) {
   return normalized;
 }
 
-function optionalPhone(value: unknown) {
+function optionalPhone(value: unknown, countryCode: string) {
   if (value === null || value === undefined) return "";
   if (typeof value !== "string") throw invalid("phone");
   const normalized = value.trim();
@@ -157,7 +162,20 @@ function optionalPhone(value: unknown) {
   if (normalized.length > 30 || !/^[+()0-9\s-]+$/.test(normalized)) {
     throw invalid("phone");
   }
+  const digits = normalized.replace(/\D/g, "");
+  const national =
+    normalized.startsWith("+") && digits.startsWith(countryCode)
+      ? digits.slice(countryCode.length)
+      : normalized;
+  if (validatePhoneNumber(countryCode, national, true)) throw invalid("phone");
   return normalized;
+}
+
+function optionalCountryCode(value: unknown) {
+  if (value === null || value === undefined || value === "") return "55";
+  if (typeof value !== "string" || !/^[1-9]\d{0,2}$/.test(value))
+    throw invalid("phone_country_code");
+  return value;
 }
 
 function invalid(reason: string) {
