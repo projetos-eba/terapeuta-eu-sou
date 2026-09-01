@@ -8,8 +8,15 @@ import {
 } from "../_shared/payments/connect.ts";
 import { syncAutomaticStripePayout } from "../_shared/payments/automatic-payouts.ts";
 import { failure, success } from "../_shared/payments/http.ts";
-import { getPaymentsConfig, getPaymentsRuntime, getWebhookSecret } from "../_shared/payments/runtime.ts";
-import { createStripeClient, TES_STRIPE_API_VERSION } from "../_shared/payments/stripe-client.ts";
+import {
+  getPaymentsConfig,
+  getPaymentsRuntime,
+  getWebhookSecret,
+} from "../_shared/payments/runtime.ts";
+import {
+  createStripeClient,
+  TES_STRIPE_API_VERSION,
+} from "../_shared/payments/stripe-client.ts";
 import {
   eventCreatedAt,
   markWebhook,
@@ -30,31 +37,49 @@ const runtime = getPaymentsRuntime("stripe-connect-webhook");
 runtime.serve(async (request) => {
   const requestId = crypto.randomUUID();
   try {
-    if (request.method !== "POST") return new Response("Method not allowed", { status: 405 });
+    if (request.method !== "POST")
+      return new Response("Method not allowed", { status: 405 });
     const config = getPaymentsConfig(runtime);
-    const client = new SupabaseRestClient(config.supabaseUrl, config.serviceRoleKey);
+    const client = new SupabaseRestClient(
+      config.supabaseUrl,
+      config.serviceRoleKey,
+    );
     const stripe = createStripeClient(config.stripeApiKey);
     const rawBody = await request.text();
     const signature = request.headers.get("stripe-signature");
-    if (!signature) return new Response("Missing Stripe signature", { status: 400 });
+    if (!signature)
+      return new Response("Missing Stripe signature", { status: 400 });
 
     const envelope = parseEnvelope(rawBody);
     const isThinEvent = envelope.object === "v2.core.event";
     const parsed = isThinEvent
-      ? await stripe.parseEventNotificationAsync(rawBody, signature, getWebhookSecret(runtime, "STRIPE_CONNECT_V2_WEBHOOK_SECRET"))
-      : await stripe.webhooks.constructEventAsync(rawBody, signature, getWebhookSecret(runtime, "STRIPE_CONNECT_WEBHOOK_SECRET"));
+      ? await stripe.parseEventNotificationAsync(
+          rawBody,
+          signature,
+          getWebhookSecret(runtime, "STRIPE_CONNECT_V2_WEBHOOK_SECRET"),
+        )
+      : await stripe.webhooks.constructEventAsync(
+          rawBody,
+          signature,
+          getWebhookSecret(runtime, "STRIPE_CONNECT_WEBHOOK_SECRET"),
+        );
     const event = parsed as unknown as Record<string, unknown>;
     const eventId = String(event.id);
     const eventType = String(event.type);
-    const eventTime = eventCreatedAt(event.created as number | string | undefined);
+    const eventTime = eventCreatedAt(
+      event.created as number | string | undefined,
+    );
     const snapshot = isThinEvent ? null : asRecord(asRecord(event.data).object);
     const related = asRecord(event.related_object);
     const accountId = isThinEvent
       ? (stringOrNull(event.context) ?? stringOrNull(related.id))
-      : (stringOrNull(event.account) ?? (PAYOUT_EVENTS.has(eventType) ? null : objectId(snapshot)));
+      : (stringOrNull(event.account) ??
+        (PAYOUT_EVENTS.has(eventType) ? null : objectId(snapshot)));
     const reservation = await reserveWebhookEvent(client, {
       accountId,
-      apiVersion: isThinEvent ? TES_STRIPE_API_VERSION : stringOrNull(event.api_version),
+      apiVersion: isThinEvent
+        ? TES_STRIPE_API_VERSION
+        : stringOrNull(event.api_version),
       eventCreatedAt: eventTime,
       eventId,
       eventType,
@@ -64,7 +89,10 @@ runtime.serve(async (request) => {
       source: "connect",
     });
     if (!reservation?.acquired) {
-      return success({ duplicate: true, status: reservation?.processing_status ?? "processing" });
+      return success({
+        duplicate: true,
+        status: reservation?.processing_status ?? "processing",
+      });
     }
 
     try {
@@ -72,7 +100,11 @@ runtime.serve(async (request) => {
       if (PAYOUT_EVENTS.has(eventType) && accountId && snapshot) {
         const payoutId = objectId(snapshot);
         if (payoutId) {
-          const authoritative = await stripe.payouts.retrieve(payoutId, {}, { stripeContext: accountId });
+          const authoritative = await stripe.payouts.retrieve(
+            payoutId,
+            {},
+            { stripeContext: accountId },
+          );
           if (authoritative.automatic) {
             await syncAutomaticStripePayout({
               accountId,
@@ -92,7 +124,9 @@ runtime.serve(async (request) => {
                 : null,
               p_failure_code: authoritative.failure_code ?? null,
               p_failure_message: authoritative.failure_message ?? null,
-              p_payout_batch_therapist_id: uuidOrNull(authoritative.metadata?.tes_payout_batch_therapist_id),
+              p_payout_batch_therapist_id: uuidOrNull(
+                authoritative.metadata?.tes_payout_batch_therapist_id,
+              ),
               p_provider_status: authoritative.status,
               p_stripe_account_id: accountId,
               p_stripe_event_created_at: eventTime,
@@ -110,16 +144,27 @@ runtime.serve(async (request) => {
           // default. Always retrieve the authoritative Account v2 snapshot
           // with the required includes so an out-of-order thin event can't
           // downgrade an operational account to an incomplete local state.
-          const account = await retrieveAccountV2(config.stripeApiKey, accountId);
+          const account = await retrieveAccountV2(
+            config.stripeApiKey,
+            accountId,
+          );
           await syncConnectAccount(client, stripe, account, eventId, eventTime);
         }
         handled = true;
       }
 
       await markWebhook(client, eventId, handled ? "processed" : "ignored");
-      return success({ payloadStyle: isThinEvent ? "thin" : "snapshot", received: true });
+      return success({
+        payloadStyle: isThinEvent ? "thin" : "snapshot",
+        received: true,
+      });
     } catch (error) {
-      await markWebhook(client, eventId, "failed", error instanceof Error ? error.message : "UNKNOWN");
+      await markWebhook(
+        client,
+        eventId,
+        "failed",
+        error instanceof Error ? error.message : "UNKNOWN",
+      );
       throw error;
     }
   } catch (error) {
@@ -135,40 +180,59 @@ async function syncConnectAccount(
   eventTime: string,
 ) {
   const stripeAccountId = getAccountId(account);
-  const rows = await client.get<Array<{ id: string }>>(
-    `/rest/v1/therapist_connect_accounts?select=id&stripe_account_id=eq.${encodeURIComponent(stripeAccountId)}&is_current=eq.true&limit=1`,
+  const rows = await client.get<
+    Array<{ id: string; therapist_profile_id: string }>
+  >(
+    `/rest/v1/therapist_connect_accounts?select=id,therapist_profile_id&stripe_account_id=eq.${encodeURIComponent(stripeAccountId)}&is_current=eq.true&limit=1`,
   );
   if (!rows[0]) return;
-  const balanceSettings = await retrieveBalanceSettings(stripe, stripeAccountId);
-  const payoutSettings = derivePayoutSettingsState(balanceSettings as unknown as Record<string, unknown>);
+  const balanceSettings = await retrieveBalanceSettings(
+    stripe,
+    stripeAccountId,
+  );
+  const payoutSettings = derivePayoutSettingsState(
+    balanceSettings as unknown as Record<string, unknown>,
+  );
   const state = deriveConnectAccountState(account, payoutSettings);
-  await client.patch(`/rest/v1/therapist_connect_accounts?id=eq.${encodeURIComponent(rows[0].id)}`, {
-    balance_settings_synced_at: new Date().toISOString(),
-    charges_enabled: state.chargesEnabled,
-    details_submitted: state.detailsSubmitted,
-    disabled_reason: state.disabledReason,
-    last_synced_at: new Date().toISOString(),
-    onboarding_status: state.onboardingStatus,
-    operational_status: state.operationalStatus,
-    payout_schedule_interval: payoutSettings.interval,
-    payout_status: payoutSettings.payoutStatus,
-    payouts_enabled: payoutSettings.payoutsEnabled,
-    pending_requirements: state.pendingRequirements,
-    stripe_event_created_at: eventTime,
-    stripe_event_id: eventId,
-    stripe_transfers_status: state.transfersStatus,
-  }, "return=minimal");
-  await client.post("/rest/v1/therapist_connect_account_snapshots", {
-    connect_account_id: rows[0].id,
-    stripe_event_id: eventId,
-    snapshot: {
-      account_status: state.operationalStatus,
+  await client.patch(
+    `/rest/v1/therapist_connect_accounts?id=eq.${encodeURIComponent(rows[0].id)}`,
+    {
+      balance_settings_synced_at: new Date().toISOString(),
+      charges_enabled: state.chargesEnabled,
+      details_submitted: state.detailsSubmitted,
+      disabled_reason: state.disabledReason,
+      last_synced_at: new Date().toISOString(),
       onboarding_status: state.onboardingStatus,
+      operational_status: state.operationalStatus,
       payout_schedule_interval: payoutSettings.interval,
       payout_status: payoutSettings.payoutStatus,
-      transfers_status: state.transfersStatus,
+      payouts_enabled: payoutSettings.payoutsEnabled,
+      pending_requirements: state.pendingRequirements,
+      stripe_event_created_at: eventTime,
+      stripe_event_id: eventId,
+      stripe_transfers_status: state.transfersStatus,
     },
-  }, "return=minimal");
+    "return=minimal",
+  );
+  await client.rpc("recheck_connect_blocked_payments_v1", {
+    p_now: new Date().toISOString(),
+    p_therapist_profile_id: rows[0].therapist_profile_id,
+  });
+  await client.post(
+    "/rest/v1/therapist_connect_account_snapshots",
+    {
+      connect_account_id: rows[0].id,
+      stripe_event_id: eventId,
+      snapshot: {
+        account_status: state.operationalStatus,
+        onboarding_status: state.onboardingStatus,
+        payout_schedule_interval: payoutSettings.interval,
+        payout_status: payoutSettings.payoutStatus,
+        transfers_status: state.transfersStatus,
+      },
+    },
+    "return=minimal",
+  );
 }
 
 async function disableClosedAccount(
@@ -186,20 +250,32 @@ async function disableClosedAccount(
 }
 
 function isAccountOrBalanceEvent(type: string) {
-  return type === "account.updated" ||
+  return (
+    type === "account.updated" ||
     type === "balance_settings.updated" ||
     type === "account.external_account.updated" ||
-    type.startsWith("v2.core.account");
+    type.startsWith("v2.core.account")
+  );
 }
 function parseEnvelope(rawBody: string) {
-  try { return asRecord(JSON.parse(rawBody)); } catch { return {}; }
+  try {
+    return asRecord(JSON.parse(rawBody));
+  } catch {
+    return {};
+  }
 }
 function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }
-function stringOrNull(value: unknown) { return typeof value === "string" && value.length > 0 ? value : null; }
+function stringOrNull(value: unknown) {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
 function uuidOrNull(value: unknown) {
-  return typeof value === "string" && /^[0-9a-f-]{36}$/i.test(value) ? value : null;
+  return typeof value === "string" && /^[0-9a-f-]{36}$/i.test(value)
+    ? value
+    : null;
 }
 
 export {};

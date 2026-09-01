@@ -35,6 +35,7 @@ import {
 } from "@/components/app-page";
 import {
   PasswordVisibilityToggle,
+  PhoneInput,
   TESButton,
   TESFeedbackDialog,
 } from "@/components/tes";
@@ -65,6 +66,7 @@ export function PatientAccountPage({ data }: { data: PatientAccountData }) {
       address: data.address,
       name: data.account.name,
       phone: data.account.phone,
+      phoneCountryCode: data.account.phoneCountryCode,
     }),
     [data],
   );
@@ -107,6 +109,7 @@ export function PatientAccountPage({ data }: { data: PatientAccountData }) {
       address: result.data.address,
       name: result.data.name,
       phone: result.data.phone,
+      phoneCountryCode: result.data.phoneCountryCode,
     };
     setFields(nextFields);
     setSavedFields(nextFields);
@@ -357,12 +360,13 @@ function PersonalDataSection({
           label="E-mail"
           value={email || "E-mail não informado"}
         />
-        <AccountField
+        <PhoneInput
+          countryCode={fields.phoneCountryCode ?? "55"}
           id="patient-phone"
           label="Telefone"
-          onChange={(value) => onChange({ phone: value })}
-          placeholder="(11) 99999-9999"
-          value={fields.phone}
+          onCountryCodeChange={(value) => onChange({ phoneCountryCode: value })}
+          onPhoneChange={(value) => onChange({ phone: value })}
+          phone={fields.phone}
         />
       </div>
     </AppPageSection>

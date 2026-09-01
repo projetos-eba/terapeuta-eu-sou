@@ -29,6 +29,10 @@ description: Manter tickets e threads de suporte de pacientes e terapeutas sem m
 - `support_ticket_messages` é a thread plain text. `visibility=requester` é legível pelo solicitante; `visibility=internal` é exclusivamente TES/Admin.
 - Nunca usar `messages`, `conversations` ou o endpoint participante para suporte. Nunca adicionar texto livre ao fluxo paciente ↔ terapeuta.
 - `requestId` é obrigatório para criação e resposta, protegendo contra retry.
+- `NewSupportTicketDialog` é o formulário reutilizável de abertura de chamado.
+  Superfícies autenticadas que o incorporarem podem receber o ticket criado e
+  manter a pessoa no fluxo atual; não duplicar o formulário nem abrir uma rota
+  de suporte paralela.
 - A identidade é derivada do cookie autenticado e validada como `patient` ou
   `therapist`; nunca confiar em `actorRole` enviado pelo navegador.
 - Renderizar `body` como texto; não usar HTML, Markdown privilegiado ou `dangerouslySetInnerHTML`.

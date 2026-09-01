@@ -3,17 +3,13 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import {
-  Check,
-  Gem,
-  LockKeyhole,
-  Mail,
-  Phone,
-  Star,
-  UserRound,
-} from "lucide-react";
+import { Check, Gem, LockKeyhole, Mail, Star, UserRound } from "lucide-react";
 
-import { PasswordVisibilityToggle, TESButton } from "@/components/tes";
+import {
+  PasswordVisibilityToggle,
+  PhoneInput,
+  TESButton,
+} from "@/components/tes";
 import {
   TherapistPlan,
   getPlanFeatureDefinition,
@@ -145,6 +141,8 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
   const [fieldErrors, setFieldErrors] = useState<TherapistAuthFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [phoneCountryCode, setPhoneCountryCode] = useState("55");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -163,6 +161,7 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
           fullName: String(form.get("fullName") ?? ""),
           password: String(form.get("password") ?? ""),
           phone: String(form.get("phone") ?? ""),
+          phoneCountryCode: String(form.get("phoneCountryCode") ?? "55"),
           plan,
           termsAccepted: form.get("termsAccepted") === "on",
         }),
@@ -238,14 +237,16 @@ export function TherapistSignupForm({ plan }: { plan: TherapistPlan }) {
           placeholder="seuemail@exemplo.com"
           type="email"
         />
-        <Field
-          autoComplete="tel"
+        <PhoneInput
+          countryCode={phoneCountryCode}
           error={fieldErrors.phone}
-          icon={<Phone className="size-4" aria-hidden="true" />}
+          id="phone"
           label="Celular"
           name="phone"
-          placeholder="(00) 00000-0000"
-          type="tel"
+          onCountryCodeChange={setPhoneCountryCode}
+          onPhoneChange={setPhone}
+          phone={phone}
+          required
         />
         <Field
           error={fieldErrors.birthDate}

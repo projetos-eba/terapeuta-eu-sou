@@ -36,6 +36,7 @@ type ClientSignupValue = {
   name: string;
   password: string;
   phoneDigits: string;
+  phoneCountryCode?: string;
   termsAccepted?: boolean;
 };
 
@@ -132,6 +133,7 @@ clientSignupRuntime.serve(async (request) => {
         email,
         id: userId,
         phone: value.phoneDigits,
+        phone_country_code: value.phoneCountryCode ?? "55",
         role: "patient",
       },
       method: "POST",
@@ -159,10 +161,12 @@ clientSignupRuntime.serve(async (request) => {
             },
             signup: {
               phoneDigits: value.phoneDigits,
+              phoneCountryCode: value.phoneCountryCode ?? "55",
               source: "client_auth",
             },
           },
           phone: value.phoneDigits,
+          phone_country_code: value.phoneCountryCode ?? "55",
           timezone: "America/Sao_Paulo",
           user_id: userId,
         },

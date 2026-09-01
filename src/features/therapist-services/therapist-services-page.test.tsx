@@ -128,11 +128,48 @@ describe("TherapistServicesPage", () => {
     });
     expect(moreThemes).toHaveTextContent("+1");
     expect(moreThemes).toHaveClass("min-h-11");
+    expect(moreThemes).toHaveClass("bg-brand-lavenderSoft");
     expect(screen.getByRole("tooltip")).toHaveClass("hidden");
 
     fireEvent.mouseEnter(moreThemes);
 
     expect(screen.getByRole("tooltip")).toHaveTextContent("Espiritualidade");
+  });
+
+  it("closes the theme tooltip when clicking outside the card", () => {
+    renderPage({
+      items: [
+        serviceFixture({
+          matching: {
+            interestIds: [],
+            themeIds: [
+              "71000000-0000-4000-8000-000000000002",
+              "71000000-0000-4000-8000-000000000003",
+            ],
+          },
+          therapy: {
+            id: "22222222-2222-4222-8222-222222222229",
+            imageUrl: null,
+            isAvailableForServices: true,
+            isPubliclyVisible: true,
+            name: "Aromaterapia",
+            slug: "aromaterapia",
+            status: "published",
+          },
+          therapyId: "22222222-2222-4222-8222-222222222229",
+        }),
+      ],
+    });
+
+    const moreThemes = screen.getByRole("button", {
+      name: /ver mais 1 tema/i,
+    });
+    fireEvent.click(moreThemes);
+    expect(screen.getByRole("tooltip")).not.toHaveClass("hidden");
+
+    fireEvent.pointerDown(document.body);
+
+    expect(screen.getByRole("tooltip")).toHaveClass("hidden");
   });
 
   it("contains an unbroken service description inside the card", () => {
@@ -154,7 +191,7 @@ describe("TherapistServicesPage", () => {
     expect(screen.queryByText("Reiki inicial")).not.toBeInTheDocument();
   });
 
-  it("keeps archived services out of the default list", () => {
+  it("includes archived services in the default list", () => {
     renderPage({
       items: [
         serviceFixture({ status: "active", title: "Reiki inicial" }),
@@ -177,7 +214,7 @@ describe("TherapistServicesPage", () => {
       ],
     });
 
-    expect(screen.queryByText("Aromaterapia")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Aromaterapia").length).toBeGreaterThan(0);
 
     fireEvent.change(screen.getByLabelText("Filtrar por status"), {
       target: { value: "archived" },
@@ -190,6 +227,93 @@ describe("TherapistServicesPage", () => {
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText("service_archived")).not.toBeInTheDocument();
+  });
+
+  it("uses semantic colors for service status and booking availability", () => {
+    renderPage({
+      items: [
+        serviceFixture({
+          isReservable: true,
+          status: "active",
+          title: "Reiki disponível",
+        }),
+        serviceFixture({
+          serviceId: "d1000000-0000-4222-8222-000000000010",
+          status: "paused",
+          title: "Reiki pausado",
+        }),
+        serviceFixture({
+          serviceId: "d1000000-0000-4222-8222-000000000011",
+          status: "archived",
+          title: "Reiki arquivado",
+        }),
+      ],
+    });
+
+    expect(screen.getByText("Ativo")).toHaveClass("bg-status-successBg");
+    expect(screen.getByText("Pausado")).toHaveClass("bg-status-warningBg");
+    expect(screen.getByText("Arquivado")).toHaveClass("bg-status-dangerBg");
+    expect(screen.getByText("Disponível para agendamento")).toHaveClass(
+      "bg-status-successBg",
+    );
+    expect(screen.getAllByText("60 min")[0]).toHaveClass(
+      "bg-brand-lavenderSoft",
+    );
+    expect(screen.getAllByText("R$ 120,00")[0]).toHaveClass("bg-status-infoBg");
+    expect(
+      screen.getAllByText("Não disponível para agendamento").length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("offers unarchive for archived services and reactivates them", async () => {
+    const archived = serviceFixture({
+      archivedAt: "2026-08-01T10:00:00.000Z",
+      serviceId: "d1000000-0000-4222-8222-000000000012",
+      status: "archived",
+      title: "Reiki arquivado",
+      version: 5,
+    });
+    mockedCommand.mockResolvedValueOnce({
+      data: {
+        contractVersion: 1,
+        idempotentReplay: false,
+        service: {
+          ...archived,
+          archivedAt: null,
+          isBookable: true,
+          isReservable: true,
+          status: "active",
+          version: 6,
+        },
+      },
+      status: "success",
+    });
+
+    renderPage({ items: [archived] });
+    fireEvent.click(
+      screen.getByRole("button", { name: /abrir ações de Reiki arquivado/i }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Desarquivar" }));
+    expect(
+      screen.getByRole("heading", { name: "Desarquivar terapia?" }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Desarquivar terapia" }),
+    );
+
+    await waitFor(() => {
+      expect(mockedCommand).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: "activate",
+          expectedVersion: 5,
+          serviceId: archived.serviceId,
+        }),
+      );
+    });
+    expect(
+      await screen.findByText("Terapia desarquivada."),
+    ).toBeInTheDocument();
   });
 
   it("does not allow creating a service from free text", () => {
@@ -575,7 +699,6 @@ describe("TherapistServicesPage", () => {
     expect(error).toHaveTextContent("Não foi possível salvar a terapia agora.");
     expect(onClose).not.toHaveBeenCalled();
   });
-
 });
 
 describe("parsePriceToCents", () => {

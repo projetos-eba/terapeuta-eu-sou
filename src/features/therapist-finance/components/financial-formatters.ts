@@ -30,6 +30,19 @@ export function formatDateTime(
   }).format(new Date(value));
 }
 
+export function formatDateOnly(
+  value: string | null,
+  timezone = "America/Sao_Paulo",
+) {
+  if (!value) return "Não informado";
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: timezone,
+    year: "numeric",
+  }).format(new Date(value));
+}
+
 export function formatDate(value: string | null, timezone = "UTC") {
   if (!value) return "Não informado";
   return new Intl.DateTimeFormat("pt-BR", {

@@ -462,6 +462,7 @@ function payoutSummary(input: unknown): TherapistPayoutSummary {
   const value = record(input);
 
   return {
+    blockedReasonCodes: payoutBlockedReasonCodes(value.blockedReasonCodes),
     blockedCents: nonNegativeInteger(value.blockedCents),
     eligibleForPayoutCents: nonNegativeInteger(value.eligibleForPayoutCents),
     nextBatchAt: nullableDateTime(value.nextBatchAt),
@@ -473,6 +474,19 @@ function payoutSummary(input: unknown): TherapistPayoutSummary {
       value.waitingSafetyPeriodCents,
     ),
   };
+}
+
+function payoutBlockedReasonCodes(
+  input: unknown,
+): TherapistPayoutSummary["blockedReasonCodes"] {
+  if (!Array.isArray(input)) return [];
+  return input.filter(
+    (item): item is TherapistPayoutSummary["blockedReasonCodes"][number] =>
+      item === "account" ||
+      item === "review" ||
+      item === "refund" ||
+      item === "other",
+  );
 }
 
 function therapyOption(input: unknown): TherapistReceiptTherapyOption {

@@ -100,6 +100,7 @@ function toSignupInput(value: unknown) {
     next: asString(record.next),
     password: asString(record.password),
     phone: asString(record.phone),
+    phoneCountryCode: asString(record.phoneCountryCode),
     termsAccepted: record.termsAccepted === true,
   };
 }
@@ -117,7 +118,12 @@ function buildClientLoginRedirect(
   extras: Record<string, string>,
 ) {
   const params = new URLSearchParams(extras);
-  if (next && next.startsWith("/") && !next.startsWith("//") && !/[\r\n]/.test(next)) {
+  if (
+    next &&
+    next.startsWith("/") &&
+    !next.startsWith("//") &&
+    !/[\r\n]/.test(next)
+  ) {
     params.set("next", next);
   }
 

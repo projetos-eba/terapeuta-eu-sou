@@ -25,6 +25,7 @@ export type MessageCenterThread = {
   messages: MessageCenterMessage[];
   name: string;
   timeLabel: string;
+  timezone?: string;
   title: string;
   cta: MessageCenterCta | null;
   sessionContext: string | null;

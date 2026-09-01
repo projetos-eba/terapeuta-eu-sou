@@ -13,4 +13,5 @@ export * from "./tes-decorative-media";
 export * from "./tes-dialog";
 export * from "./tes-feedback-dialog";
 export * from "./tes-input";
+export * from "./phone-input";
 export * from "./therapist-card";

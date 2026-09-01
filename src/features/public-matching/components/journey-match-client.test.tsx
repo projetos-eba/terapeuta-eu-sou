@@ -70,7 +70,7 @@ describe("JourneyMatchClient", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Autoconhecimento e TransformaçãoUm tema para o teste.",
+        name: "Autoconhecimento e TransformaçãoQuestões sobre quem você é, padrões que se repetem, autoaceitação e desejo de mudança ou desenvolvimento pessoal.",
       }),
     );
     const submitButton = screen.getByRole("button", {
@@ -94,7 +94,7 @@ describe("JourneyMatchClient", () => {
 
     fireEvent.click(
       screen.getByRole("button", {
-        name: /Autoconhecimento e Transform.*Um tema para o teste/,
+        name: /Autoconhecimento e Transform.*Questões sobre quem você é/,
       }),
     );
 
@@ -121,7 +121,7 @@ describe("JourneyMatchClient", () => {
     render(<JourneyMatchClient config={config} />);
 
     const themeButton = screen.getByRole("button", {
-      name: /Autoconhecimento e Transform.*Um tema para o teste/,
+      name: /Autoconhecimento e Transform.*Questões sobre quem você é/,
     });
     fireEvent.click(themeButton);
     fireEvent.click(screen.getByRole("button", { name: /Ansiedade/ }));
