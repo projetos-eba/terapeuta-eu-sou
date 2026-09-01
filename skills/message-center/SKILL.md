@@ -89,6 +89,12 @@ Cada card de chamado apresenta categoria, assunto, última mensagem pública,
 badge de quem precisa agir, última atualização e protocolo persistido. Não usar
 UUID como protocolo e não duplicar chamados em avisos da plataforma.
 
+Datas e horários de mensagens e do contexto de sessão devem ser formatados com
+`timezone` explícito da reserva. Quando não houver reserva ou o fuso for
+inválido, usar o fuso de negócio TES `America/Sao_Paulo`. A Central compartilha
+os mesmos formatadores entre servidor e navegador para evitar divergência de
+SSR, hidratação ou runtime; nunca depender do fuso implícito do ambiente.
+
 Conversas e chamados são tabelas independentes e paginadas de dez em dez itens
 por `conversationPage` e `supportPage`, preservando a página da outra coleção.
 Conversas com mensagem recebida não lida usam ponto vermelho. Ao abrir a thread,

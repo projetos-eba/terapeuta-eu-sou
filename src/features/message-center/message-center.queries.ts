@@ -6,6 +6,11 @@ import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 import { getTherapistAvatarUrl } from "@/lib/therapist-avatars";
 
 import {
+  formatMessageRelativeTime,
+  formatMessageSessionContext,
+  normalizeMessageTimezone,
+} from "./message-center-date-formatters";
+import {
   getParticipantTemplates,
   getSupportTemplates,
 } from "./message-center.templates";
@@ -78,6 +83,7 @@ type BookingRow = {
   id: string;
   starts_at: string;
   status: string;
+  timezone: string | null;
 };
 
 type SupportTicketRow = {
@@ -183,7 +189,7 @@ async function getSupabaseMessageCenter(
     conversations.some((conversation) => conversation.booking_id)
       ? supabaseRequest<BookingRow[]>(
           config,
-          `/rest/v1/bookings?select=id,starts_at,ends_at,status&id=in.(${[...new Set(conversations.map((conversation) => conversation.booking_id).filter(Boolean))].join(",")})`,
+          `/rest/v1/bookings?select=id,starts_at,ends_at,status,timezone&id=in.(${[...new Set(conversations.map((conversation) => conversation.booking_id).filter(Boolean))].join(",")})`,
         )
       : Promise.resolve([]),
     supabaseCount(
@@ -357,6 +363,7 @@ function toThread(input: {
   const booking = input.bookings.find(
     (item) => item.id === input.conversation.booking_id,
   );
+  const timezone = normalizeMessageTimezone(booking?.timezone);
   const metadata = isRecord(input.message?.metadata)
     ? input.message?.metadata
     : null;
@@ -388,13 +395,15 @@ function toThread(input: {
     unreadCount,
     messages: threadMessages,
     name: input.name,
-    timeLabel: formatRelativeTime(
+    timeLabel: formatMessageRelativeTime(
       input.message?.created_at ?? input.conversation.last_message_at,
+      timezone,
     ),
+    timezone,
     title: getThreadTitle(category),
     cta,
     sessionContext: booking
-      ? `Sobre a sessão de ${formatSessionDate(booking.starts_at)}`
+      ? `Sobre a sessão de ${formatMessageSessionContext(booking.starts_at, timezone)}`
       : null,
   };
 }
@@ -445,13 +454,6 @@ function isCtaAction(
   );
 }
 
-function formatSessionDate(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short",
-    timeStyle: "short",
-  }).format(new Date(value));
-}
-
 function mapPlatformItems(
   notifications: NotificationRow[],
 ): MessageCenterPlatformItem[] {
@@ -467,7 +469,7 @@ function mapPlatformItems(
         id: notification.id,
         isNotification: true,
         isUnread: notification.read_at === null,
-        timeLabel: formatRelativeTime(notification.created_at),
+        timeLabel: formatMessageRelativeTime(notification.created_at),
         title: notification.title,
       };
     },
@@ -803,30 +805,4 @@ function getCategoryLabel(category: MessageCenterCategory) {
   };
 
   return labels[category];
-}
-
-function formatRelativeTime(value: string | null | undefined) {
-  if (!value) return "Sem data";
-
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "Sem data";
-
-  const now = new Date();
-  const sameDay = date.toDateString() === now.toDateString();
-  const yesterday = new Date(now);
-  yesterday.setDate(now.getDate() - 1);
-
-  const time = new Intl.DateTimeFormat("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-
-  if (sameDay) return `Hoje · ${time}`;
-  if (date.toDateString() === yesterday.toDateString())
-    return `Ontem · ${time}`;
-
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "short",
-  }).format(date);
 }

@@ -61,6 +61,10 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
   segundo contrato. Assim, regras, período, dismissals e filtros de origem
   demonstrativa permanecem iguais nas duas superfícies.
 - Assets locais: `public/therapist/dashboard/`.
+- No resumo de estatísticas do hero, “Novas conexões” usa o par semântico de
+  sucesso (verde + fundo claro) e “Avaliações sem resposta” usa o par semântico
+  de atenção (amarelo/atenção + fundo claro); os demais indicadores permanecem
+  na cor de marca.
 
 ## Dados temporais do painel
 

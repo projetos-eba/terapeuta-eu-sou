@@ -10,6 +10,7 @@ import type {
   MessageCenterActorRole,
   MessageCenterThread,
 } from "../message-center.types";
+import { formatMessageTimestamp } from "../message-center-date-formatters";
 
 export function MessageThreadDialogButton({
   actorRole,
@@ -105,7 +106,10 @@ export function MessageThreadDialogButton({
                       className="text-[11px] font-semibold text-tesText-secondary"
                       dateTime={message.createdAt}
                     >
-                      {formatDate(message.createdAt)}
+                      {formatMessageTimestamp(
+                        message.createdAt,
+                        thread.timezone,
+                      )}
                     </time>
                   </div>
                   <p className="mt-2 whitespace-pre-wrap text-sm font-semibold leading-6 text-tesText-secondary">
@@ -139,13 +143,4 @@ export function MessageThreadDialogButton({
       ) : null}
     </>
   );
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
 }

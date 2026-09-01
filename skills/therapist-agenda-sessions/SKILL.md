@@ -92,6 +92,15 @@ histórica.
   escolha de formato porque o TES é online-only.
 - A busca por texto filtra cliente e terapia no recorte carregado; paginação
   continua preservando os filtros suportados e o texto da busca.
+- A listagem de Sessões é apresentada em dois cards empilhados: “Sessões que
+  irão acontecer” reúne somente sessões futuras ainda possíveis, enquanto
+  “Sessões que já passaram” reúne horários ultrapassados e estados encerrados,
+  incluindo cancelamentos com data futura. Cada card tem estado vazio próprio e
+  paginação incremental independente por cursor (`startsAt`, `bookingId`), sem
+  alterar o RPC; os parâmetros de navegação usam `upcomingCursor*` e
+  `pastCursor*` e preservam busca, status e período.
+- O badge de estado `cancelled` usa o tom TES de perigo; estados
+  `refunded` continuam visualmente diferenciados.
 - Ações de sala apontam primeiro para `/terapeuta/sessoes/:bookingId`; o
   detalhe direciona para `/terapeuta/sessoes/:bookingId/video`, onde a
   autorização final continua por `zoom-video-session-access`.
@@ -246,6 +255,10 @@ histórica.
   de oferta, fuso horário e antecedência mínima. O texto reforça a referência
   operacional de São Paulo/Brasília para terapeutas que atendem de fora do
   Brasil.
+- A regra “Antecedência mínima” explica o intervalo entre o agendamento e o
+  início da sessão, com exemplos de 2 e 48 horas. O informativo é responsivo,
+  usa largura limitada ao viewport e reposiciona-se acima quando não há espaço
+  abaixo do controle, mantendo a leitura acessível em desktop, tablet e mobile.
 - O comando de criação usa `create_therapist_block_v2` na Edge Function. Além
   dos impactos A4 já registrados, ele retorna somente as sessões confirmadas
   cuja fonte financeira canônica está em `session_payments.financial_status =

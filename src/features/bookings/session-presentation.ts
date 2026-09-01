@@ -141,7 +141,7 @@ export function mapSessionPresentation(
       "Cancelada",
       "O pagamento desta sessão foi cancelado e ela não pode mais acontecer.",
       "medium",
-      "neutral",
+      "danger",
       actions,
     );
   }
@@ -155,7 +155,7 @@ export function mapSessionPresentation(
       "Não realizada",
       "Esta sessão já foi encerrada e não pode ser cancelada novamente.",
       "medium",
-      "neutral",
+      "danger",
       actions,
     );
   }
@@ -166,7 +166,7 @@ export function mapSessionPresentation(
       "Cancelada",
       getCancellationDescription(session),
       "medium",
-      "neutral",
+      "danger",
       actions,
     );
   }
@@ -283,6 +283,17 @@ export function mapSessionPresentation(
     "warning",
     actions,
   );
+}
+
+export function isSessionUpcoming(
+  session: SessionReadModelItem,
+  now = new Date(),
+) {
+  const startsAt = new Date(session.startsAt).getTime();
+  if (startsAt < now.getTime()) return false;
+
+  const state = mapSessionPresentation(session, now).state;
+  return state !== "cancelled" && state !== "completed" && state !== "refunded";
 }
 
 export function getZoomAccessLabel(access: SessionReadModelItem["zoomAccess"]) {

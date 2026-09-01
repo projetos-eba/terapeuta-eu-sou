@@ -85,6 +85,29 @@ describe("TherapistScheduleHours", () => {
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 
+  it("explains the minimum notice rule with the scheduling examples", () => {
+    renderSchedule();
+
+    expect(
+      screen.getByText(
+        "É o tempo mínimo entre o momento do agendamento e o início da sessão.",
+      ),
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Saiba mais sobre Antecedência mínima",
+      }),
+    );
+
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "Por exemplo: com 2 horas de antecedência, uma sessão às 12h só poderá ser agendada com pelo menos 2 horas de antecedência, ou seja até às 09:59am.",
+    );
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "Essa configuração ajuda você a ter tempo suficiente para se organizar e se preparar para cada atendimento.",
+    );
+  });
+
   it("distinguishes unavailable agenda insights from a legitimate empty list", () => {
     renderSchedule();
 

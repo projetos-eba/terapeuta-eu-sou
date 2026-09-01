@@ -28,9 +28,11 @@ import {
   BookingReference,
   formatSessionDateTime,
   formatSessionMoney,
+  isSessionUpcoming,
   mapSessionPresentation,
   type SessionPresentation,
   type SessionReadModelItem,
+  type TherapistSessionsCursor,
   type TherapistSessionsSummary,
 } from "@/features/bookings";
 import {
@@ -43,7 +45,9 @@ import { therapistRoutePolicies } from "@/features/therapist-shell";
 import {
   buildNextSessionsHref,
   getTherapistSessionsPage,
+  parseTherapistSessionCursor,
   parseTherapistSessionFilters,
+  type TherapistSessionCursorScope,
 } from "@/features/therapist-sessions";
 import { getSessionTimingBadge } from "@/features/therapist-sessions/session-timing-badge";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
@@ -65,15 +69,32 @@ export default async function TherapistSessionsPage({
     return <SessionsErrorState message={parsedFilters.message} />;
   }
 
-  const now = new Date().toISOString();
+  const referenceDate = new Date();
+  const now = referenceDate.toISOString();
+  const pastCursorResult = parseTherapistSessionCursor(rawSearchParams, "past");
+  const upcomingCursorResult = parseTherapistSessionCursor(
+    rawSearchParams,
+    "upcoming",
+  );
+
+  if (!pastCursorResult.valid) {
+    return <SessionsErrorState message={pastCursorResult.message} />;
+  }
+  if (!upcomingCursorResult.valid) {
+    return <SessionsErrorState message={upcomingCursorResult.message} />;
+  }
+
+  const legacyCursor = parsedFilters.filters.cursor;
+  const pastCursor = pastCursorResult.cursor ?? legacyCursor;
+  const upcomingCursor = upcomingCursorResult.cursor;
   const historyFilters = {
     ...parsedFilters.filters,
-    cursor: undefined,
+    cursor: pastCursor,
     periodEnd: now,
   };
   const upcomingFilters = {
     ...parsedFilters.filters,
-    cursor: undefined,
+    cursor: upcomingCursor,
     periodEnd: undefined,
     periodPreset: undefined,
     periodStart: now,
@@ -100,15 +121,24 @@ export default async function TherapistSessionsPage({
     historyResult.status === "success" ? historyResult.data : null;
   const upcomingData =
     upcomingResult.status === "success" ? upcomingResult.data : null;
-  const historyItems = filterSessionsByQuery(
+  const historyQueryItems = filterSessionsByQuery(
     historyData?.items ?? [],
     searchQuery,
   );
-  const upcomingItems = filterSessionsByQuery(
+  const upcomingQueryItems = filterSessionsByQuery(
     upcomingData?.items ?? [],
     searchQuery,
   );
-  const allItems = dedupeSessions([...historyItems, ...upcomingItems]);
+  const allItems = dedupeSessions([
+    ...historyQueryItems,
+    ...upcomingQueryItems,
+  ]);
+  const upcomingItems = allItems.filter((item) =>
+    isSessionUpcoming(item, referenceDate),
+  );
+  const pastItems = allItems.filter(
+    (item) => !isSessionUpcoming(item, referenceDate),
+  );
   const metrics = historyData
     ? getSessionMetrics(historyData.items, historyData.summary)
     : null;
@@ -150,88 +180,67 @@ export default async function TherapistSessionsPage({
               correlationId={readError.error.correlationId}
               message={readError.error.message}
             />
-          ) : !historyData && !upcomingData ? (
-            <SessionsEmptyState />
           ) : (
             <>
               {metrics ? <SessionMetricsGrid metrics={metrics} /> : null}
               <section
                 aria-label="Lista de sessões"
-                className="min-w-0 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card"
+                className="grid min-w-0 gap-5"
               >
-                <SessionsFilterBar
-                  bookingStatus={parsedFilters.filters.bookingStatus}
-                  hasActiveFilters={hasActiveFilters}
-                  itemCount={allItems.length}
-                  periodPreset={parsedFilters.filters.periodPreset}
-                  searchQuery={searchQuery}
+                <section
+                  aria-label="Filtros de sessões"
+                  className="min-w-0 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card"
+                >
+                  <SessionsFilterBar
+                    bookingStatus={parsedFilters.filters.bookingStatus}
+                    hasActiveFilters={hasActiveFilters}
+                    itemCount={allItems.length}
+                    periodPreset={parsedFilters.filters.periodPreset}
+                    searchQuery={searchQuery}
+                  />
+                </section>
+                <SessionGroup
+                  description="Atendimentos futuros que seguem disponíveis para acontecer."
+                  emptyMessage="Não há sessões futuras neste recorte."
+                  items={upcomingItems}
+                  nextHref={buildScopedNextSessionsHref(
+                    upcomingFilters,
+                    upcomingData?.page.nextCursor,
+                    "upcoming",
+                    searchQuery,
+                    { past: pastCursor, upcoming: upcomingCursor },
+                  )}
+                  page={upcomingData?.page ?? null}
+                  title="Sessões que irão acontecer"
                 />
-                {historyItems.length > 0 ? (
-                  <SessionGroup
-                    description="Sessões realizadas, canceladas ou pendentes dentro do período selecionado."
-                    items={historyItems}
-                    title="Histórico do período"
-                  />
-                ) : null}
-                {upcomingItems.length > 0 ? (
-                  <SessionGroup
-                    description="Próximos atendimentos confirmados ou em processamento."
-                    items={upcomingItems}
-                    title="Próximas sessões"
-                  />
-                ) : null}
-                {allItems.length === 0 ? <SessionsNoFilterResults /> : null}
-                <footer className="flex flex-col gap-2 border-t border-brand-lavender/60 px-5 py-5 text-xs font-semibold text-tesText-muted sm:flex-row sm:items-center sm:justify-between">
+                <SessionGroup
+                  description="Sessões encerradas, canceladas ou com horário já ultrapassado."
+                  emptyMessage="Não há sessões passadas neste recorte."
+                  items={pastItems}
+                  nextHref={buildScopedNextSessionsHref(
+                    historyFilters,
+                    historyData?.page.nextCursor,
+                    "past",
+                    searchQuery,
+                    { past: pastCursor, upcoming: upcomingCursor },
+                  )}
+                  page={historyData?.page ?? null}
+                  title="Sessões que já passaram"
+                />
+                <footer className="flex flex-col gap-2 rounded-card border border-brand-lavender/60 bg-surface-soft/60 px-5 py-5 text-xs font-semibold text-tesText-muted sm:flex-row sm:items-center sm:justify-between">
                   <span>
                     Mostrando {allItems.length} sessão(ões) neste recorte.
                   </span>
                   <span>Os estados são atualizados conforme cada reserva.</span>
                 </footer>
               </section>
-
-              {historyData?.page.hasMore && historyData.page.nextCursor ? (
-                <div className="flex justify-center">
-                  <Link
-                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                    href={
-                      withSearchQuery(
-                        buildNextSessionsHref(
-                          historyFilters,
-                          historyData.page.nextCursor,
-                        ),
-                        searchQuery,
-                      ) as Route
-                    }
-                  >
-                    Carregar histórico
-                  </Link>
-                </div>
-              ) : null}
-              {upcomingData?.page.hasMore && upcomingData.page.nextCursor ? (
-                <div className="flex justify-center">
-                  <Link
-                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                    href={
-                      withSearchQuery(
-                        buildNextSessionsHref(
-                          upcomingFilters,
-                          upcomingData.page.nextCursor,
-                        ),
-                        searchQuery,
-                      ) as Route
-                    }
-                  >
-                    Carregar próximas
-                  </Link>
-                </div>
-              ) : null}
             </>
           )}
         </AppPageMain>
 
         {allItems.length > 0 ? (
           <AppPageAside className="auto-rows-min self-start content-start !grid-cols-1 gap-5 lg:!grid-cols-2 xl:!block">
-            <SessionsRightRail items={allItems} />
+            <SessionsRightRail items={allItems} referenceDate={referenceDate} />
           </AppPageAside>
         ) : null}
       </AppPageGrid>
@@ -580,10 +589,16 @@ function SessionsMobileList({ items }: { items: SessionReadModelItem[] }) {
   );
 }
 
-function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
-  const nextSession = getNextSession(items);
+function SessionsRightRail({
+  items,
+  referenceDate,
+}: {
+  items: SessionReadModelItem[];
+  referenceDate: Date;
+}) {
+  const nextSession = getNextSession(items, referenceDate);
   const nextSessionPresentation = nextSession
-    ? mapSessionPresentation(nextSession)
+    ? mapSessionPresentation(nextSession, referenceDate)
     : null;
 
   return (
@@ -628,7 +643,8 @@ function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
                 }
               >
                 <Video aria-hidden="true" size={16} />
-                {nextSessionPresentation?.actions.primary.label ?? "Ver detalhes"}
+                {nextSessionPresentation?.actions.primary.label ??
+                  "Ver detalhes"}
               </Link>
               <Link
                 className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-brand-lavender text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
@@ -841,38 +857,6 @@ function AvatarInitials({ name }: { name: string }) {
   );
 }
 
-function SessionsEmptyState() {
-  return (
-    <section className="mt-6 rounded-card border border-brand-lavender bg-white p-8 text-center shadow-card">
-      <h2 className="font-display text-3xl font-light italic text-brand-deep">
-        Nenhuma sessão encontrada
-      </h2>
-      <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-        Não há sessões para o período e os filtros informados.
-      </p>
-    </section>
-  );
-}
-
-function SessionsNoFilterResults() {
-  return (
-    <section className="mt-6 rounded-card border border-brand-lavender bg-white p-8 text-center shadow-card">
-      <h2 className="font-display text-3xl font-light italic text-brand-deep">
-        Nenhuma sessão neste recorte
-      </h2>
-      <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-        Ajuste a busca ou limpe os filtros para voltar à lista carregada.
-      </p>
-      <Link
-        className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg border border-brand-lavender px-5 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft"
-        href={routes.therapist.sessions as Route}
-      >
-        Limpar filtros
-      </Link>
-    </section>
-  );
-}
-
 function SessionsErrorState({
   correlationId,
   message,
@@ -933,23 +917,67 @@ const periodOptions = [
 
 function SessionGroup({
   description,
+  emptyMessage,
   items,
+  nextHref,
+  page,
   title,
 }: {
   description: string;
+  emptyMessage: string;
   items: SessionReadModelItem[];
+  nextHref: string | null;
+  page: {
+    hasMore: boolean;
+    nextCursor: TherapistSessionsCursor | null;
+  } | null;
   title: string;
 }) {
   return (
-    <section aria-label={title}>
-      <header className="border-b border-brand-lavender/40 px-4 py-4 sm:px-5">
-        <h3 className="text-base font-extrabold text-brand-deep">{title}</h3>
-        <p className="mt-1 text-xs font-semibold leading-5 text-tesText-secondary">
-          {description}
-        </p>
+    <section
+      aria-label={title}
+      className="min-w-0 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card"
+    >
+      <header className="border-b border-brand-lavender/40 px-4 py-5 sm:px-5">
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-base font-extrabold text-brand-deep">
+              {title}
+            </h2>
+            <p className="mt-1 text-xs font-semibold leading-5 text-tesText-secondary">
+              {description}
+            </p>
+          </div>
+          <span
+            aria-label={`${items.length} ${items.length === 1 ? "sessão" : "sessões"}`}
+            className="shrink-0 rounded-full bg-brand-lavenderSoft px-3 py-1 text-xs font-extrabold text-brand-primary"
+          >
+            {items.length}
+          </span>
+        </div>
       </header>
-      <SessionsMobileList items={items} />
-      <SessionsTable items={items} />
+      {items.length > 0 ? (
+        <>
+          <SessionsMobileList items={items} />
+          <SessionsTable items={items} />
+        </>
+      ) : (
+        <div className="px-5 py-8 text-center">
+          <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+            {emptyMessage}
+          </p>
+        </div>
+      )}
+      {page?.hasMore && page.nextCursor && nextHref ? (
+        <div className="flex justify-center border-t border-brand-lavender/40 px-4 py-4 sm:px-5">
+          <Link
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
+            href={nextHref as Route}
+          >
+            Carregar mais
+          </Link>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -1000,13 +1028,9 @@ function dedupeSessions(items: SessionReadModelItem[]) {
   });
 }
 
-function getNextSession(items: SessionReadModelItem[]) {
-  const now = Date.now();
+function getNextSession(items: SessionReadModelItem[], referenceDate: Date) {
   return [...items]
-    .filter(
-      (item) =>
-        new Date(item.startsAt).getTime() >= now && !isCancelledSession(item),
-    )
+    .filter((item) => isSessionUpcoming(item, referenceDate))
     .sort(
       (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
     )[0];
@@ -1040,15 +1064,7 @@ function isCancelledSession(item: SessionReadModelItem) {
 
 function buildCsvDataHref(items: SessionReadModelItem[]) {
   const rows = [
-    [
-      "Paciente",
-      "Terapia",
-      "Inicio",
-      "Fim",
-      "Status",
-      "Valor",
-      "Formato",
-    ],
+    ["Paciente", "Terapia", "Inicio", "Fim", "Status", "Valor", "Formato"],
     ...items.map((item) => [
       item.patientName,
       item.serviceTitle,
@@ -1118,6 +1134,33 @@ function withSearchQuery(href: string, searchQuery: string) {
   const [pathname, query = ""] = href.split("?");
   const params = new URLSearchParams(query);
   params.set("q", searchQuery);
+  return `${pathname}?${params.toString()}`;
+}
+
+function buildScopedNextSessionsHref(
+  filters: Parameters<typeof buildNextSessionsHref>[0],
+  cursor: TherapistSessionsCursor | null | undefined,
+  scope: TherapistSessionCursorScope,
+  searchQuery: string,
+  currentCursors: Partial<
+    Record<TherapistSessionCursorScope, TherapistSessionsCursor | undefined>
+  >,
+) {
+  if (!cursor) return null;
+
+  const href = withSearchQuery(
+    buildNextSessionsHref(filters, cursor, scope),
+    searchQuery,
+  );
+  const otherScope = scope === "past" ? "upcoming" : "past";
+  const otherCursor = currentCursors[otherScope];
+  if (!otherCursor) return href;
+
+  const [pathname, query = ""] = href.split("?");
+  const params = new URLSearchParams(query);
+  const otherPrefix = `${otherScope}Cursor`;
+  params.set(`${otherPrefix}StartsAt`, otherCursor.startsAt);
+  params.set(`${otherPrefix}BookingId`, otherCursor.bookingId);
   return `${pathname}?${params.toString()}`;
 }
 

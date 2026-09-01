@@ -2,6 +2,7 @@ import { BookingStatus } from "@/domain/tes";
 import type {
   SessionModality,
   TherapistSessionFilters,
+  TherapistSessionsCursor,
   TherapistSessionPeriodPreset,
 } from "@/features/bookings";
 
@@ -9,6 +10,12 @@ type SearchParams = Record<string, string | string[] | undefined>;
 
 export type ParsedTherapistSessionFilters =
   | { filters: TherapistSessionFilters; valid: true }
+  | { message: string; valid: false };
+
+export type TherapistSessionCursorScope = "past" | "upcoming";
+
+export type ParsedTherapistSessionCursor =
+  | { cursor: TherapistSessionsCursor | undefined; valid: true }
   | { message: string; valid: false };
 
 export function parseTherapistSessionFilters(
@@ -95,6 +102,7 @@ export function parseTherapistSessionFilters(
 export function buildNextSessionsHref(
   filters: TherapistSessionFilters,
   cursor: { bookingId: string; startsAt: string },
+  cursorScope?: TherapistSessionCursorScope,
 ) {
   const params = new URLSearchParams();
   if (filters.bookingStatus) params.set("status", filters.bookingStatus);
@@ -105,13 +113,44 @@ export function buildNextSessionsHref(
   if (filters.periodStart) params.set("periodStart", filters.periodStart);
   if (filters.serviceId) params.set("service", filters.serviceId);
   params.set("limit", String(filters.limit));
-  params.set("cursorStartsAt", cursor.startsAt);
-  params.set("cursorBookingId", cursor.bookingId);
+  const cursorPrefix = cursorScope ? `${cursorScope}Cursor` : "cursor";
+  params.set(`${cursorPrefix}StartsAt`, cursor.startsAt);
+  params.set(`${cursorPrefix}BookingId`, cursor.bookingId);
 
   return `/terapeuta/sessoes?${params.toString()}`;
 }
 
+export function parseTherapistSessionCursor(
+  searchParams: SearchParams,
+  scope: TherapistSessionCursorScope,
+): ParsedTherapistSessionCursor {
+  const prefix = `${scope}Cursor`;
+  const cursorStartsAt = first(searchParams[`${prefix}StartsAt`]);
+  const cursorBookingId = first(searchParams[`${prefix}BookingId`]);
+
+  if (Boolean(cursorStartsAt) !== Boolean(cursorBookingId)) {
+    return invalidCursor();
+  }
+  if (cursorStartsAt && !isIsoDate(cursorStartsAt)) return invalidCursor();
+  if (cursorBookingId && !isUuid(cursorBookingId)) return invalidCursor();
+
+  return {
+    cursor:
+      cursorStartsAt && cursorBookingId
+        ? { bookingId: cursorBookingId, startsAt: cursorStartsAt }
+        : undefined,
+    valid: true,
+  };
+}
+
 function invalidFilters(): ParsedTherapistSessionFilters {
+  return {
+    message: "Revise os filtros informados e tente novamente.",
+    valid: false,
+  };
+}
+
+function invalidCursor(): { message: string; valid: false } {
   return {
     message: "Revise os filtros informados e tente novamente.",
     valid: false,

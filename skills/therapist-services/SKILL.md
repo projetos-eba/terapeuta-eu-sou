@@ -43,8 +43,9 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - A terapia precisa estar `published`, com ao menos um Tema do Match ativo e
   `is_available_for_services = true`.
 - Terapia sem visibilidade pública não deve ficar disponível para criação de
-  novos serviços. Serviços históricos/arquivados podem permanecer para
-  rastreabilidade, mas não aparecem no filtro padrão “Todos”.
+  novos serviços. Serviços históricos/arquivados permanecem para
+  rastreabilidade e aparecem no filtro “Todos”, mas nunca entram no catálogo
+  reservável.
 - `matching_therapy_settings` continua separado da criacao de servicos.
 - Quando a terapia não estiver no catálogo, o CTA deve abrir
   `/terapeuta/mensagens/solicitar-terapia`. Essa solicitação é estruturada,
@@ -128,9 +129,15 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - Terapeuta nao ve/altera servico de outro terapeuta.
 - Paciente nao acessa a projecao privada.
 - Serviço pausado não aparece em views públicas reserváveis.
+- O filtro “Todos” inclui serviços arquivados para preservar a visão completa
+  da carteira; o filtro “Arquivados” continua disponível para refinamento.
+- Serviços arquivados exibem a ação “Desarquivar”. A ação usa a transição de
+  ativação autorizada e limpa `archived_at` no backend antes de atualizar o
+  cartão.
 - Motivos técnicos de bloqueio devem ser traduzidos para texto de produto na UI.
 - A UI fala em `Suas terapias`, `Adicionar terapia`, `Ativar terapia`,
-  `Terapias mais agendadas`, `Novo serviço` e `Editar serviço`. A etapa de
+  `Desarquivar`, `Terapias mais agendadas`, `Novo serviço` e `Editar serviço`.
+  A etapa de
   configuração usa `Atendimento` e a revisão usa `Prática`; identificadores
   técnicos como `service` e `therapist_services` permanecem no contrato interno.
 - Nos cards, o primeiro tema aparece uma única vez como rótulo resumido. Temas

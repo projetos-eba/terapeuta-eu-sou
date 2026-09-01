@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays, Clock, HandCoins, Tags } from "lucide-react";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { TESCard } from "@/components/tes";
 import { TherapistPlan } from "@/domain/tes";
@@ -149,7 +149,10 @@ export function TherapistServiceCard({
               </button>
             ) : null}
             <div className="mt-5 flex flex-wrap gap-2">
-              <InfoPill icon={<Clock aria-hidden="true" size={14} />}>
+              <InfoPill
+                icon={<Clock aria-hidden="true" size={14} />}
+                tone="brand"
+              >
                 {service.durationMinutes} min
               </InfoPill>
               <InfoPill icon={<HandCoins aria-hidden="true" size={14} />}>
@@ -159,8 +162,13 @@ export function TherapistServiceCard({
                 serviceName={service.title}
                 themes={themeLabels}
               />
-              <InfoPill icon={<CalendarDays aria-hidden="true" size={14} />}>
-                {service.isReservable ? "Reservável" : "Não reservável"}
+              <InfoPill
+                icon={<CalendarDays aria-hidden="true" size={14} />}
+                tone={getBookingPillTone(service)}
+              >
+                {service.isReservable
+                  ? "Disponível para agendamento"
+                  : "Não disponível para agendamento"}
               </InfoPill>
             </div>
             {service.blockingReason ? (
@@ -184,16 +192,40 @@ export function TherapistServiceCard({
 function InfoPill({
   children,
   icon,
+  tone = "info",
 }: {
   children: React.ReactNode;
   icon: React.ReactNode;
+  tone?: "brand" | "danger" | "info" | "success" | "warning";
 }) {
+  const toneClasses = {
+    brand: "bg-brand-lavenderSoft text-brand-primary",
+    danger: "bg-status-dangerBg text-status-danger",
+    info: "bg-status-infoBg text-status-info",
+    success: "bg-status-successBg text-status-success",
+    warning: "bg-status-warningBg text-status-warning",
+  } as const;
+
   return (
-    <span className="inline-flex min-h-8 items-center gap-2 rounded-full bg-brand-lavenderSoft px-3 text-xs font-extrabold text-brand-primary">
+    <span
+      className={cn(
+        "inline-flex min-h-8 max-w-full items-center gap-2 rounded-full px-3 text-xs font-extrabold",
+        toneClasses[tone],
+      )}
+    >
       {icon}
       {children}
     </span>
   );
+}
+
+function getBookingPillTone(
+  service: TherapistServiceSummary,
+): "danger" | "info" | "success" | "warning" {
+  if (service.status === "archived") return "danger";
+  if (service.status === "paused") return "warning";
+  if (service.isReservable) return "success";
+  return "info";
 }
 
 function ServiceThemeBadges({
@@ -206,9 +238,25 @@ function ServiceThemeBadges({
   const [clickedOpen, setClickedOpen] = useState(false);
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   const tooltipId = useId();
   const hiddenThemes = themes.slice(1);
   const tooltipOpen = clickedOpen || focused || hovered;
+
+  useEffect(() => {
+    if (!clickedOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+      if (target instanceof Node && !containerRef.current?.contains(target)) {
+        setClickedOpen(false);
+        setFocused(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [clickedOpen]);
 
   if (hiddenThemes.length === 0) return null;
 
@@ -216,6 +264,7 @@ function ServiceThemeBadges({
     <div
       aria-label={`Temas selecionados para ${serviceName}`}
       className="relative"
+      ref={containerRef}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >

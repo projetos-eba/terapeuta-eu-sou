@@ -46,6 +46,22 @@ import type {
   JourneyHistorySummary,
 } from "./therapist-journey-history.types";
 
+const journeyPeopleTitleByStatus: Record<
+  JourneyHistoryFilters["status"],
+  string
+> = {
+  active: "Pessoas em acompanhamento",
+  all: "Pessoas acompanhadas",
+  paused: "Pessoas com jornada pausada",
+  stale: "Pessoas sem sessão realizada ou agendada há 30 dias.",
+};
+
+export function getJourneyPeopleTitle(
+  status: JourneyHistoryFilters["status"],
+) {
+  return journeyPeopleTitleByStatus[status];
+}
+
 export function TherapistJourneyHistoryPage({
   data,
   filters,
@@ -204,7 +220,7 @@ export function TherapistJourneyDetailPage({
               href={routes.therapist.messages}
             >
               <MessageCircle aria-hidden="true" size={17} />
-              Usar template
+              Enviar mensagem
             </Link>
           </div>
         </div>
@@ -623,9 +639,9 @@ function JourneyFilters({
       className="grid grid-cols-2 gap-3 border-b border-brand-lavender/60 p-4 sm:p-5 xl:grid-cols-[minmax(220px,1fr)_minmax(132px,0.58fr)_minmax(146px,0.62fr)_112px]"
     >
       <div className="col-span-2 flex items-center justify-between gap-3 xl:col-span-4">
-        <div>
-          <h2 className="text-base font-extrabold text-brand-deep">
-            Pessoas acompanhadas
+        <div className="min-w-0">
+          <h2 className="break-words text-base font-extrabold text-brand-deep">
+            {getJourneyPeopleTitle(filters.status)}
           </h2>
           <p className="mt-1 text-xs font-semibold text-tesText-secondary">
             Busque, filtre e organize a sua jornada.

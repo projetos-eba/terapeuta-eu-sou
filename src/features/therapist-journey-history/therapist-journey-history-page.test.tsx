@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildJourneyHistoryHref,
   buildJourneyCsvHref,
+  getJourneyPeopleTitle,
   paginateJourneyClients,
   parseJourneyHistoryFilters,
   TherapistJourneyDetailPage,
@@ -42,6 +43,42 @@ describe("TherapistJourneyDetailPage", () => {
 });
 
 describe("TherapistJourneyHistoryPage", () => {
+  it("changes the people title according to the selected situation", () => {
+    const filters = {
+      page: 1,
+      q: "",
+      segment: "",
+      sort: "last_session" as const,
+      status: "stale" as const,
+    };
+    const view = render(
+      <TherapistJourneyHistoryPage data={pageFixture()} filters={filters} />,
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Pessoas sem sessão realizada ou agendada há 30 dias.",
+      }),
+    ).toBeInTheDocument();
+
+    view.rerender(
+      <TherapistJourneyHistoryPage
+        data={pageFixture()}
+        filters={{ ...filters, status: "active" }}
+      />,
+    );
+    expect(
+      screen.getByRole("heading", { name: "Pessoas em acompanhamento" }),
+    ).toBeInTheDocument();
+
+    expect(getJourneyPeopleTitle("all")).toBe("Pessoas acompanhadas");
+    expect(getJourneyPeopleTitle("paused")).toBe(
+      "Pessoas com jornada pausada",
+    );
+
+    view.unmount();
+  });
+
   it("keeps the portfolio hierarchy and an accessible export action", () => {
     const view = render(
       <TherapistJourneyHistoryPage

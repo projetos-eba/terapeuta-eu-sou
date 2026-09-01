@@ -5,6 +5,7 @@ import { formatSessionDateTime } from "@/features/bookings";
 
 import {
   buildNextSessionsHref,
+  parseTherapistSessionCursor,
   parseTherapistSessionFilters,
 } from "./therapist-session-filters";
 
@@ -108,6 +109,36 @@ describe("therapist session filters", () => {
     expect(href).not.toContain("payment=");
     expect(href).not.toContain("modality=");
     expect(href).toContain("cursorBookingId=f2000000");
+  });
+
+  it("keeps the pagination cursor independent for each session group", () => {
+    const cursor = {
+      bookingId: "f2000000-0000-4000-8000-000000000001",
+      startsAt: "2026-07-26T13:00:00.000Z",
+    };
+    const href = buildNextSessionsHref(
+      { limit: 20, periodPreset: "30" },
+      cursor,
+      "upcoming",
+    );
+
+    expect(href).toContain(
+      "upcomingCursorStartsAt=2026-07-26T13%3A00%3A00.000Z",
+    );
+    expect(href).toContain("upcomingCursorBookingId=f2000000");
+    expect(href).not.toContain("pastCursor");
+    expect(buildNextSessionsHref({ limit: 20 }, cursor, "past")).toContain(
+      "pastCursorBookingId=f2000000",
+    );
+    expect(
+      parseTherapistSessionCursor(
+        {
+          upcomingCursorBookingId: cursor.bookingId,
+          upcomingCursorStartsAt: cursor.startsAt,
+        },
+        "upcoming",
+      ),
+    ).toEqual({ cursor, valid: true });
   });
 });
 

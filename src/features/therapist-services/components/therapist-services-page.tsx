@@ -43,7 +43,7 @@ type DialogState =
   | { type: "create" }
   | { service: TherapistServiceSummary; type: "edit" }
   | {
-      action: "activate" | "archive" | "pause";
+      action: "activate" | "archive" | "pause" | "unarchive";
       service: TherapistServiceSummary;
       type: "confirm";
     }
@@ -91,9 +91,6 @@ export function TherapistServicesPage({
     const normalized = query.trim().toLocaleLowerCase("pt-BR");
     return [...services]
       .filter((service) => {
-        if (statusFilter === "all" && service.status === "archived") {
-          return false;
-        }
         if (statusFilter !== "all" && service.status !== statusFilter) {
           return false;
         }
@@ -300,7 +297,10 @@ export function TherapistServicesPage({
 
         <aside className="grid gap-5 md:grid-cols-2 xl:grid-cols-1">
           <TherapistServicesTips />
-          <TherapistServicesRanking plan={initialServices.plan} services={services} />
+          <TherapistServicesRanking
+            plan={initialServices.plan}
+            services={services}
+          />
         </aside>
       </section>
 
@@ -493,7 +493,7 @@ function ConfirmServiceActionDialog({
   service,
   setPendingServiceId,
 }: {
-  action: "activate" | "archive" | "pause";
+  action: "activate" | "archive" | "pause" | "unarchive";
   onClose: () => void;
   onSaved: (service: TherapistServiceSummary, message: string) => void;
   plan: TherapistServicesContract["plan"];
@@ -521,6 +521,12 @@ function ConfirmServiceActionDialog({
       success: "Terapia pausada.",
       title: "Pausar terapia?",
     },
+    unarchive: {
+      body: "A terapia será retirada do arquivo e voltará a ficar disponível para novos agendamentos, se estiver apta para isso.",
+      button: "Desarquivar terapia",
+      success: "Terapia desarquivada.",
+      title: "Desarquivar terapia?",
+    },
   }[action];
 
   async function submit() {
@@ -529,7 +535,7 @@ function ConfirmServiceActionDialog({
     setError(null);
 
     const result = await sendTherapistServicesCommand({
-      action,
+      action: action === "unarchive" ? "activate" : action,
       expectedVersion: service.version,
       requestId: createStableRequestId(),
       serviceId: service.serviceId,
