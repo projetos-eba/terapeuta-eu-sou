@@ -1,6 +1,6 @@
 begin;
 
-select plan(28);
+select plan(30);
 
 select has_table('public', 'support_ticket_messages', 'support ticket thread table exists');
 select has_column('public', 'support_tickets', 'last_activity_at', 'ticket activity is persisted');
@@ -187,9 +187,26 @@ select lives_ok(
   'authorized admin can send a public reply'
 );
 
+select lives_ok(
+  $$
+    select public.admin_reply_support_ticket_v1(
+      current_setting('test.support_ticket_id')::uuid,
+      'f9000000-0000-4000-8000-000000000009'::uuid,
+      'Também envio este complemento antes de receber uma nova resposta.'
+    )
+  $$,
+  'admin can add a consecutive public reply while waiting for the requester'
+);
+
+select is(
+  (select status from public.support_tickets where id = current_setting('test.support_ticket_id')::uuid),
+  'waiting_requester',
+  'consecutive admin reply preserves requester queue state'
+);
+
 select is(
   (select count(*) from public.admin_get_support_ticket_thread_v1(current_setting('test.support_ticket_id')::uuid)),
-  5::bigint,
+  6::bigint,
   'authorized admin reads the complete support thread including the internal note'
 );
 select is(
@@ -231,7 +248,7 @@ select set_config(
 );
 select is(
   (select count(*) from public.support_ticket_messages where ticket_id = current_setting('test.support_ticket_id')::uuid),
-  4::bigint,
+  5::bigint,
   'requester sees only public thread messages and never the internal note'
 );
 

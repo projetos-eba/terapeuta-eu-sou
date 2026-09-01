@@ -185,7 +185,7 @@ resposta do TES”, `waiting_requester` é “Aguardando sua resposta” e `reso
 “Em atendimento”, “Aguardando resposta da equipe TES”, “Aguardando resposta do
 solicitante” e “Resolvido”.
 
-Nota interna, alteração de prioridade e atribuição atualizam `last_activity_at`, mas não podem expor conteúdo ou autor administrativo ao solicitante. Admin só pode iniciar atendimento a partir de `open` ou `waiting_support`; resposta pública só é aceita em `open`, `in_progress` ou `waiting_support`; resolução exige ticket ainda não resolvido; reabertura administrativa exige `resolved`.
+Nota interna, alteração de prioridade e atribuição atualizam `last_activity_at`, mas não podem expor conteúdo ou autor administrativo ao solicitante. Admin só pode iniciar atendimento a partir de `open` ou `waiting_support`; resposta pública é aceita em `open`, `in_progress`, `waiting_support` ou `waiting_requester`, para que uma conversa não fique travada depois de uma resposta da equipe. Resolução exige ticket ainda não resolvido; reabertura administrativa exige `resolved`.
 
 ## Leitura e paginação da Central
 
