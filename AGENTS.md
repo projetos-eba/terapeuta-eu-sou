@@ -397,7 +397,10 @@ Stack real identificada:
   A telemetria pública nasce desativada em
   `therapist_metrics_runtime_config` até validação formal de base legal, aviso
   e retenção. Não ativar por variável pública nem simular descoberta,
-  ocupação, Aura ou amostra insuficiente. MTR-6/Aura permanece pendente.
+  ocupação, Aura ou amostra insuficiente. MTR-6/Aura permanece pendente. A
+  Assessora Aura está em soft launch com `AURA_ENABLED` server-only e fail-closed:
+  somente `true` libera a feature, sempre em conjunto com `aura_full`; desligada,
+  ela permanece visível como “Em breve” sem executar leituras ou RPCs da Aura.
 - A composição visual da visão geral de Métricas foi alinhada ao frame
   `13366:3628`: hero editorial, faixa de período/CSV separada, seis KPIs,
   funil, agenda, ranking, comparativo, roscas e heatmaps. Os componentes

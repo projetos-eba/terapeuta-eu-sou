@@ -13,6 +13,7 @@ import type { TherapistShellNavigation } from "./therapist-shell.types";
 type NavigationDefinition = {
   capability?: TherapistCapability;
   feature?: PlanFeatureCode;
+  featureGate?: "aura";
   href: string;
   icon: TherapistShellNavigation[number]["icon"];
   label: string;
@@ -80,10 +81,17 @@ const definitions: NavigationDefinition[] = [
   },
   {
     capability: "aura_full",
+    featureGate: "aura",
     href: routes.therapist.assessorIa,
     icon: "lightbulb",
     label: "Assessora Aura",
     planLabel: "Premium Plus",
+  },
+  {
+    capability: "operation_essentials",
+    href: routes.therapist.finance,
+    icon: "wallet",
+    label: "Financeiro",
   },
   {
     href: routes.therapist.plan,
@@ -94,12 +102,6 @@ const definitions: NavigationDefinition[] = [
   },
   {
     capability: "operation_essentials",
-    href: routes.therapist.finance,
-    icon: "wallet",
-    label: "Financeiro",
-  },
-  {
-    capability: "operation_essentials",
     href: routes.therapist.settings,
     icon: "settings",
     label: "Configurações",
@@ -107,9 +109,11 @@ const definitions: NavigationDefinition[] = [
 ];
 
 export function buildTherapistNavigation({
+  auraLaunchEnabled,
   plan,
   unreadMessagesCount,
 }: {
+  auraLaunchEnabled: boolean;
   plan: TherapistPlan;
   unreadMessagesCount: number;
 }): TherapistShellNavigation {
@@ -123,6 +127,16 @@ export function buildTherapistNavigation({
         icon: definition.icon,
         label: definition.label,
         tone: definition.tone,
+      };
+    }
+
+    if (definition.featureGate === "aura" && !auraLaunchEnabled) {
+      return {
+        accessState: "coming_soon" as const,
+        availabilityLabel: "Em breve",
+        href: definition.href,
+        icon: definition.icon,
+        label: definition.label,
       };
     }
     const hasAccess = definition.capability

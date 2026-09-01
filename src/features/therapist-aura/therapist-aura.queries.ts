@@ -3,6 +3,7 @@ import "server-only";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
 
 import { TherapistAuraError } from "./therapist-aura.errors";
+import { isTherapistAuraEnabled } from "./therapist-aura-feature";
 
 export async function queryTherapistAuraSignals(
   accessToken: string,
@@ -39,6 +40,10 @@ async function requestAuraRpc(
   rpc: "dismiss_therapist_aura_signal_v2" | "get_therapist_aura_signals_v2",
   body: Record<string, unknown>,
 ) {
+  if (!isTherapistAuraEnabled()) {
+    throw new TherapistAuraError("coming_soon");
+  }
+
   const config = getSupabasePublicConfig();
   if (!config) throw new TherapistAuraError("unavailable");
 

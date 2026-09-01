@@ -674,7 +674,10 @@ function TherapyCard({
                 <strong className="text-brand-deep">
                   {historyLabel(event.eventType)}
                 </strong>{" "}
-                em {new Date(event.createdAt).toLocaleString("pt-BR")}
+                em{" "}
+                {new Date(event.createdAt).toLocaleString("pt-BR", {
+                  timeZone: "America/Sao_Paulo",
+                })}
                 {event.reason ? ` - ${event.reason}` : ""}
               </p>
             ))
@@ -696,7 +699,8 @@ function ContextualActions({
   const primaryAction = getPrimaryAction(therapy.status);
   const publicationAction = getPublicationAction(therapy.status);
 
-  if (!primaryAction && !publicationAction && secondaryActions.length === 0) return null;
+  if (!primaryAction && !publicationAction && secondaryActions.length === 0)
+    return null;
 
   return (
     <div className="mt-4 flex flex-col gap-2 border-t border-brand-lavender pt-4 sm:flex-row sm:flex-wrap sm:items-start">
@@ -725,7 +729,11 @@ function ContextualActions({
             {secondaryActions.map((item) => (
               <ActionButton
                 action={item.action}
-                icon={item.action === "archive" ? <Archive aria-hidden="true" className="size-4" /> : undefined}
+                icon={
+                  item.action === "archive" ? (
+                    <Archive aria-hidden="true" className="size-4" />
+                  ) : undefined
+                }
                 key={item.action}
                 label={item.label}
                 onTransition={onTransition}
@@ -739,7 +747,12 @@ function ContextualActions({
 }
 
 function getPrimaryAction(status: AdminTherapy["status"]) {
-  if (status === "draft" || status === "in_review" || status === "active" || status === "inactive") {
+  if (
+    status === "draft" ||
+    status === "in_review" ||
+    status === "active" ||
+    status === "inactive"
+  ) {
     return { action: "publish" as const, label: "Publicar" };
   }
   return null;
@@ -775,7 +788,8 @@ function getSecondaryActions(status: AdminTherapy["status"]): Array<{
       { action: "archive", label: "Arquivar" },
     ];
   }
-  if (status === "deprecated") return [{ action: "archive", label: "Arquivar" }];
+  if (status === "deprecated")
+    return [{ action: "archive", label: "Arquivar" }];
   return [];
 }
 
@@ -1050,7 +1064,11 @@ function InfoItem({ label, value }: { label: string; value: string }) {
 
 function formatDate(value: string) {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "—" : date.toLocaleDateString("pt-BR");
+  return Number.isNaN(date.getTime())
+    ? "—"
+    : date.toLocaleDateString("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+      });
 }
 
 function requestStatusLabel(status: string) {

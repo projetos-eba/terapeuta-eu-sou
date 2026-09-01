@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  formatSupportTicketActivity,
   formatSupportTicketProtocol,
   getSupportTicketStatusPresentation,
 } from "./support-ticket-presentation";
@@ -14,7 +15,8 @@ describe("support ticket presentation", () => {
       getSupportTicketStatusPresentation("waiting_support", "requester").label,
     ).toBe("Aguardando resposta do TES");
     expect(
-      getSupportTicketStatusPresentation("waiting_requester", "requester").label,
+      getSupportTicketStatusPresentation("waiting_requester", "requester")
+        .label,
     ).toBe("Aguardando sua resposta");
   });
 
@@ -33,5 +35,11 @@ describe("support ticket presentation", () => {
   it("formats only persisted protocol values", () => {
     expect(formatSupportTicketProtocol("582914730p")).toBe("#582914730P");
     expect(formatSupportTicketProtocol(null)).toBe("#—");
+  });
+
+  it("formats ticket activity in Brasília time", () => {
+    expect(formatSupportTicketActivity("2026-09-01T02:30:00.000Z")).toBe(
+      "31 de ago., 23:30",
+    );
   });
 });

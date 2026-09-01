@@ -10,6 +10,7 @@ import {
   TherapistAuraError,
   type TherapistAuraErrorCode,
 } from "./therapist-aura.errors";
+import { isTherapistAuraEnabled } from "./therapist-aura-feature";
 import { dismissTherapistAuraSignal } from "./therapist-aura.queries";
 
 const recommendationKeyPattern = /^[A-Za-z0-9._:-]{8,220}$/;
@@ -23,6 +24,8 @@ export async function dismissAuraRecommendationAction(
   _previousState: AuraDismissActionState,
   formData: FormData,
 ): Promise<AuraDismissActionState> {
+  if (!isTherapistAuraEnabled()) return errorState("coming_soon");
+
   const recommendationKey = stringField(formData, "recommendationKey");
   const periodStart = stringField(formData, "periodStart");
   const periodEnd = stringField(formData, "periodEnd");

@@ -5,27 +5,51 @@ import type { AvailabilityDay, TherapistProfileData } from "./types";
 const reikiServiceId = "d1000000-0000-4000-8000-000000000001";
 const aromatherapyServiceId = "d1000000-0000-4000-8000-000000000006";
 const rafaelServiceId = "d1000000-0000-4000-8000-000000000002";
+const BRAZIL_TIMEZONE = "America/Sao_Paulo";
 
 function getFallbackDate(daysAhead: number, timeLabel: string) {
   const [hours = "0", minutes = "0"] = timeLabel.split(":");
-  const date = new Date();
-  date.setDate(date.getDate() + daysAhead);
-  date.setHours(Number(hours), Number(minutes), 0, 0);
-  return date;
+  const dateKey = getBrazilDateKey(daysAhead);
+  return new Date(
+    `${dateKey}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00-03:00`,
+  );
+}
+
+function getBrazilDateKey(daysAhead: number) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: BRAZIL_TIMEZONE,
+    year: "numeric",
+  }).formatToParts(new Date());
+  const read = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const date = new Date(
+    Date.UTC(read("year"), read("month") - 1, read("day") + daysAhead),
+  );
+
+  return new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "UTC",
+    year: "numeric",
+  }).format(date);
 }
 
 function formatFallbackDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
+  return new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: BRAZIL_TIMEZONE,
+    year: "numeric",
+  }).format(date);
 }
 
 function formatFallbackDateLabel(date: Date) {
   return date.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
+    timeZone: BRAZIL_TIMEZONE,
   });
 }
 
@@ -34,7 +58,10 @@ function formatFallbackDayLabel(daysAhead: number, date: Date) {
   if (daysAhead === 1) return "Amanhã";
 
   return date
-    .toLocaleDateString("pt-BR", { weekday: "short" })
+    .toLocaleDateString("pt-BR", {
+      timeZone: BRAZIL_TIMEZONE,
+      weekday: "short",
+    })
     .replace(".", "");
 }
 

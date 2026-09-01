@@ -1,4 +1,5 @@
 export type TherapistAuraErrorCode =
+  | "coming_soon"
   | "forbidden"
   | "invalid_recommendation"
   | "invalid_contract"
@@ -14,6 +15,7 @@ export class TherapistAuraError extends Error {
 
 export function getTherapistAuraErrorMessage(code: TherapistAuraErrorCode) {
   const messages: Record<TherapistAuraErrorCode, string> = {
+    coming_soon: "A Assessora Aura estará disponível em breve.",
     forbidden:
       "A Assessora Aura está disponível para terapeutas Premium Plus com conta ativa.",
     invalid_recommendation:

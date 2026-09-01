@@ -192,15 +192,13 @@ function ProfileActions({
   return (
     <div className="mt-7 flex w-full flex-wrap items-center justify-center gap-4 md:justify-start">
       {hasAvailableBooking ? (
-        <TrackedBookingLink
-          href={primaryService.bookingUrl}
-          serviceId={primaryService.id}
-          therapistSlug={profile.slug}
+        <a
+          href="#agenda-terapeuta"
           className="inline-flex h-[52px] w-full items-center justify-center gap-3 rounded-[15px] bg-brand-primary text-sm font-extrabold text-white sm:w-[204px]"
         >
           Agendar sessão
           <span>→</span>
-        </TrackedBookingLink>
+        </a>
       ) : (
         <span className="inline-flex min-h-[52px] items-center justify-center rounded-[15px] bg-brand-lavenderSoft px-6 text-sm font-extrabold text-brand-primary">
           Agenda temporariamente indisponível
@@ -409,7 +407,7 @@ function Services({
               <h3 className="break-words font-display text-[26px] font-light italic leading-tight text-brand-deep [overflow-wrap:anywhere]">
                 {service.therapyName}
               </h3>
-              <p className="mt-3 min-h-[46px] max-w-full overflow-hidden break-words text-sm leading-[1.5] text-tesText-secondary [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3] [overflow-wrap:anywhere]">
+              <p className="mt-3 min-h-[46px] max-w-full break-words text-sm leading-[1.5] text-tesText-secondary [overflow-wrap:anywhere]">
                 {service.description}
               </p>
               <p className="mt-4 flex items-center gap-2 text-xs font-medium text-brand-deep">
@@ -480,7 +478,10 @@ export function TherapistProfilePage({
       <Hero mode={mode} profile={profile} />
       <IntroCards mode={mode} profile={profile} />
       <Services mode={mode} profile={profile} />
-      <section className="mx-auto mt-8 grid max-w-[1348px] items-start gap-8 px-5 pb-10 sm:px-8 lg:grid-cols-[1.05fr_0.95fr]">
+      <section
+        id="agenda-terapeuta"
+        className="mx-auto mt-8 grid max-w-[1348px] items-start gap-8 px-5 pb-10 sm:px-8 lg:grid-cols-[1.05fr_0.95fr]"
+      >
         <AvailabilitySelector
           staticPreview={mode === "preview"}
           services={profile.services}

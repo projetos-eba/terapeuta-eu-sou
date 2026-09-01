@@ -26,6 +26,9 @@ uma segunda implementação da thread.
 - Ações permitidas: `assign_self`, `unassign`, `set_priority`, `start`,
   `resolve`, `reopen`. Mudanças são auditadas.
 - `waiting_support` significa que TES precisa agir e deve ter prioridade visual, sem alterar a ordenação padrão por recência.
+- Respostas públicas do Admin podem incluir anexos privados; a verificação de
+  idempotência deve usar o contrato administrativo, sem consultar a tabela de
+  mensagens diretamente sob RLS.
 - Exibir o protocolo persistido, nunca UUID: nove dígitos e a letra da categoria. A busca por protocolo é resolvida somente na RPC administrativa.
 - Os estados Admin são “Novo chamado”, “Em atendimento”, “Aguardando resposta da equipe TES”, “Aguardando resposta do solicitante” e “Resolvido”.
 - Lista, detalhe, triagem e conversa usam SSE mediado pelo servidor; a Inbox relê pelo evento de `support_tickets` e ordena por `last_activity_at DESC`, `created_at DESC`, `id DESC`. Quando ele cair, o polling é temporário e a reconexão usa espera progressiva.

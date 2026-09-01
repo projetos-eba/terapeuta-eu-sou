@@ -8,9 +8,11 @@ import {
   getTherapistCalendar,
 } from "@/features/therapist-agenda";
 import { getTherapistAuraPage } from "@/features/therapist-aura/therapist-aura.service";
+import { isTherapistAuraEnabled } from "@/features/therapist-aura/therapist-aura-feature";
 import { getTherapistMetricsPage } from "@/features/therapist-metrics/therapist-metrics.service";
 import { getTherapistReviewsPage } from "@/features/therapist-reviews/therapist-reviews.service";
 import { getTherapistSessionsPage } from "@/features/therapist-sessions/therapist-sessions.service";
+import { routes } from "@/lib/routes";
 
 import { TherapistDashboardError } from "./therapist-dashboard.errors";
 import {
@@ -40,6 +42,8 @@ export const getTherapistDashboardPage = cache(
     plan,
     profileCompleteness,
   }: TherapistDashboardQueryInput): Promise<TherapistDashboardPageData> {
+    const auraEnabled = isTherapistAuraEnabled();
+
     if (plan !== TherapistPlan.PremiumPlus) {
       const base = await getTherapistBaseDashboardPage({
         accessToken,
@@ -56,16 +60,50 @@ export const getTherapistDashboardPage = cache(
           accessToken,
           profileId,
         );
-        return reconcileTherapistDashboardProfile({
-          data: enriched,
-          profileCompleteness,
-        });
+        return withAuraFeatureState(
+          reconcileTherapistDashboardProfile({
+            data: enriched,
+            profileCompleteness,
+          }),
+          auraEnabled,
+        );
       }
 
-      return reconcileTherapistDashboardProfile({
-        data: base,
-        profileCompleteness,
-      });
+      return withAuraFeatureState(
+        reconcileTherapistDashboardProfile({
+          data: base,
+          profileCompleteness,
+        }),
+        auraEnabled,
+      );
+    }
+
+    if (!auraEnabled) {
+      const [dashboard, timeline] = await Promise.all([
+        queryTherapistDashboard(accessToken),
+        getTherapistDashboardTimeline({ accessToken, profileId }),
+      ]);
+      const main = mapTherapistDashboardResponse(dashboard);
+
+      if (main.therapist.profileId !== profileId) {
+        throw new TherapistDashboardError("forbidden");
+      }
+
+      return withAuraFeatureState(
+        reconcileTherapistDashboardProfile({
+          data: {
+            ...main,
+            aura: null,
+            auraState: "disabled",
+            recommendedActions: [],
+            upcomingSessions: timeline.upcomingSessions,
+            upcomingSessionsState: timeline.upcomingSessionsState,
+            week: timeline.week,
+          },
+          profileCompleteness,
+        }),
+        auraEnabled,
+      );
     }
 
     const [dashboard, auraResult, timeline] = await Promise.all([
@@ -73,6 +111,7 @@ export const getTherapistDashboardPage = cache(
       getTherapistAuraPage({
         accessToken,
         periodDays: 30,
+        plan,
         profileId,
       }),
       getTherapistDashboardTimeline({ accessToken, profileId }),
@@ -91,18 +130,37 @@ export const getTherapistDashboardPage = cache(
           recommendedActions: [],
         };
 
-    return reconcileTherapistDashboardProfile({
-      data: {
-        ...main,
-        ...recommendations,
-        upcomingSessions: timeline.upcomingSessions,
-        upcomingSessionsState: timeline.upcomingSessionsState,
-        week: timeline.week,
-      },
-      profileCompleteness,
-    });
+    return withAuraFeatureState(
+      reconcileTherapistDashboardProfile({
+        data: {
+          ...main,
+          ...recommendations,
+          upcomingSessions: timeline.upcomingSessions,
+          upcomingSessionsState: timeline.upcomingSessionsState,
+          week: timeline.week,
+        },
+        profileCompleteness,
+      }),
+      auraEnabled,
+    );
   },
 );
+
+function withAuraFeatureState(
+  data: TherapistDashboardPageData,
+  auraEnabled: boolean,
+): TherapistDashboardPageData {
+  if (auraEnabled) return data;
+
+  return {
+    ...data,
+    aura: null,
+    auraState: "disabled",
+    recommendedActions: data.recommendedActions.filter(
+      (action) => action.href !== routes.therapist.assessorIa,
+    ),
+  };
+}
 
 async function getTherapistBaseDashboardPage({
   accessToken,
@@ -155,8 +213,7 @@ async function getTherapistBaseDashboardPage({
       dateKeyInTimezone(
         session.startsAt,
         session.timezone ?? "America/Sao_Paulo",
-      ) === todayKey &&
-      isActiveSession(session.bookingStatus),
+      ) === todayKey && isActiveSession(session.bookingStatus),
   );
   const timeline = await getTherapistDashboardTimeline({
     accessToken,

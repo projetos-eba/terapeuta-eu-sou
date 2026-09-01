@@ -121,6 +121,9 @@ Regra de acompanhamento:
   `Pessoas em acompanhamento`, `Pessoas com jornada pausada` ou `Pessoas sem
   sessão realizada ou agendada há 30 dias.`. O título deve quebrar linha
   dentro do espaço disponível para permanecer legível em tablet e mobile.
+- Datas e horários operacionais da jornada devem ser apresentados explicitamente
+  no fuso `America/Sao_Paulo` (Brasília, UTC−3), independentemente do fuso do
+  servidor ou do navegador.
 
 ## Copy Responsável
 

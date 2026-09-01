@@ -13,7 +13,8 @@ import { ShellTopbar } from "./shell-topbar";
 import { AuthSessionGuard } from "./auth-session-guard";
 
 export type ShellNavigationItem = {
-  accessState?: "enabled" | "hidden" | "locked";
+  accessState?: "coming_soon" | "enabled" | "hidden" | "locked";
+  availabilityLabel?: string;
   badge?: number;
   children?: ShellNavigationItem[];
   href: string;

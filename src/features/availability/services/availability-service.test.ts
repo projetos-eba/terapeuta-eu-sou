@@ -22,13 +22,9 @@ describe("buildAvailabilityDays", () => {
       }),
     );
 
-    const starts = result[0]?.slots.map((slot) => new Date(slot.startsAt));
-    expect(starts?.some((date) => date.getHours() === 10)).toBe(false);
-    expect(
-      starts?.some(
-        (date) => date.getHours() === 11 && date.getMinutes() === 30,
-      ),
-    ).toBe(true);
+    const labels = result[0]?.slots.map((slot) => slot.timeLabel);
+    expect(labels).not.toContain("10:00");
+    expect(labels).toContain("11:30");
   });
 
   it("anchors the first session start to the availability window", () => {
@@ -142,5 +138,7 @@ function localIso(
   hours: number,
   minutes: number,
 ) {
-  return new Date(year, month - 1, day, hours, minutes).toISOString();
+  return new Date(
+    `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00-03:00`,
+  ).toISOString();
 }

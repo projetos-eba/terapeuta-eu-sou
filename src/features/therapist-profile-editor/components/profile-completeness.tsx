@@ -1,7 +1,4 @@
-import Link from "next/link";
 import { Star } from "lucide-react";
-
-import { routes } from "@/lib/routes";
 
 import type { TherapistProfileEditorData } from "../therapist-profile-editor.types";
 import { ProfileInfoBanner, ProfileSection } from "./profile-section";
@@ -74,12 +71,9 @@ export function ProfileCompletenessChecklist({
           </li>
         ))}
       </ul>
-      <Link
-        className="mt-5 inline-flex min-h-11 items-center text-sm font-extrabold text-brand-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary"
-        href={routes.therapist.assessorIa}
-      >
-        Ver mais dicas com a Assessora Aura →
-      </Link>
+      <p className="mt-5 text-sm font-extrabold text-brand-primary">
+        Mais dicas com a Assessora Aura em breve.
+      </p>
     </ProfileSection>
   );
 }

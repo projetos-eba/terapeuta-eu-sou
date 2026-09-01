@@ -26,11 +26,13 @@ export function TherapistDashboardPage({
       </div>
       <TherapistKpiGrid kpis={data.kpis} plan={data.therapist.plan} />
       <TherapistAttentionSection items={data.attentionItems} />
-      <TherapistAuraCard
-        aura={data.aura}
-        auraState={data.auraState}
-        plan={data.therapist.plan}
-      />
+      {data.auraState !== "disabled" ? (
+        <TherapistAuraCard
+          aura={data.aura}
+          auraState={data.auraState}
+          plan={data.therapist.plan}
+        />
+      ) : null}
       <div className="grid gap-6 lg:grid-cols-2 2xl:grid-cols-[1fr_1fr_1.17fr]">
         <TherapistJourneyHistory
           history={data.history}

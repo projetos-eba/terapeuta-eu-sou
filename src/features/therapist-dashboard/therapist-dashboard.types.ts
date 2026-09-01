@@ -26,7 +26,7 @@ export type TherapistDashboardPageData = {
     periodDays: 30 | 90;
     suggestions: string[];
   };
-  auraState: "empty" | "ready" | "unavailable";
+  auraState: "disabled" | "empty" | "ready" | "unavailable";
   history: {
     activePatients: number;
     averageRating: number | null;

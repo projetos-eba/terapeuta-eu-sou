@@ -60,6 +60,9 @@ Antes de alterar `/terapeutas`, consultar:
 - `schedule_timezone` acompanha a projeção pública e deve ser usado para
   classificar e formatar “Hoje”, “Amanhã” e dias da semana; instantes continuam
   persistidos como UTC.
+- A projeção específica de terapeutas relacionados ainda não transporta
+  `schedule_timezone`; enquanto esse contrato não evoluir, o card usa
+  `America/Sao_Paulo` (Brasília, UTC−3) como fuso de apresentação.
 - Nota, contagem e trecho de avaliação usam somente avaliações canônicas
   `published` e não substituídas de
   `public_therapist_profile_reviews_v_internal`. Depois de publicada, a

@@ -10,6 +10,9 @@ import { useSupportLiveRefresh } from "./support-live-refresh";
 import {
   formatSupportTicketProtocol,
   getSupportTicketCategoryLabel,
+  supportTicketAttachmentErrorMessage,
+  supportTicketAttachmentGuidance,
+  supportTicketWaitingSupportMessage,
 } from "../support-ticket-presentation";
 import { SupportTicketStatusBadge } from "./support-ticket-status-badge";
 
@@ -123,6 +126,7 @@ export function SupportTicketPage({
   const isRequesterMessage = (
     authorRole: Ticket["messages"][number]["author_role"],
   ) => authorRole === actorRole || authorRole === "requester";
+  const isWaitingSupport = ticket?.status === "waiting_support";
 
   return (
     <main className="mx-auto w-full max-w-[980px] pb-10 text-tesText-primary">
@@ -235,6 +239,20 @@ export function SupportTicketPage({
               </button>
             </div>
           ) : null}
+          {isWaitingSupport ? (
+            <div
+              aria-live="polite"
+              className="border-t border-brand-lavender/70 bg-brand-lavenderSoft/45 px-5 py-5 sm:px-7"
+              role="status"
+            >
+              <p className="text-sm font-extrabold text-brand-deep">
+                Aguardando resposta da equipe TES
+              </p>
+              <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+                {supportTicketWaitingSupportMessage}
+              </p>
+            </div>
+          ) : null}
           {ticket.status !== "resolved" || isReopening ? (
             <form
               className="border-t border-brand-lavender/70 px-5 py-5 sm:px-7"
@@ -245,7 +263,8 @@ export function SupportTicketPage({
             >
               <label className="grid gap-2">
                 <span className="text-xs font-semibold leading-5 text-tesText-secondary">
-                  Somente você e a equipe TES podem ver as mensagens deste chamado.
+                  Somente você e a equipe TES podem ver as mensagens deste
+                  chamado.
                 </span>
                 <span className="text-sm font-extrabold text-brand-deep">
                   Responder ao suporte
@@ -291,7 +310,7 @@ export function SupportTicketPage({
                 </span>
                 <span className="flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border border-dashed border-brand-primary px-3 text-sm font-bold text-brand-primary">
                   <Paperclip aria-hidden="true" size={16} />
-                  Adicionar PDF ou imagem
+                  Adicionar arquivo
                   <input
                     accept={supportTicketAttachmentMimeTypes.join(",")}
                     className="sr-only"
@@ -304,11 +323,14 @@ export function SupportTicketPage({
                             file.type as (typeof supportTicketAttachmentMimeTypes)[number],
                           ) || file.size > supportTicketAttachmentSizeLimit,
                       );
-                      if (invalid) {
-                        setFeedback(
-                          "Use até 5 arquivos PDF ou imagens de até 10 MB.",
-                        );
+                      const exceedsLimit =
+                        attachments.length + selected.length >
+                        supportTicketAttachmentLimit;
+                      if (invalid || exceedsLimit) {
+                        setFeedback(supportTicketAttachmentErrorMessage);
                       } else {
+                        setFeedback(null);
+                        requestId.current = null;
                         setAttachments((current) =>
                           [...current, ...selected].slice(
                             0,
@@ -321,6 +343,9 @@ export function SupportTicketPage({
                     type="file"
                   />
                 </span>
+                <span className="text-xs font-semibold leading-5 text-tesText-secondary">
+                  {supportTicketAttachmentGuidance}
+                </span>
                 {attachments.length > 0 ? (
                   <div className="grid gap-2">
                     {attachments.map((file, index) => (
@@ -332,13 +357,14 @@ export function SupportTicketPage({
                         <button
                           aria-label={`Remover ${file.name}`}
                           className="shrink-0 text-brand-primary"
-                          onClick={() =>
+                          onClick={() => {
+                            requestId.current = null;
                             setAttachments((current) =>
                               current.filter(
                                 (_, itemIndex) => itemIndex !== index,
                               ),
-                            )
-                          }
+                            );
+                          }}
                           type="button"
                         >
                           <X aria-hidden="true" size={15} />
@@ -371,6 +397,7 @@ function date(value: string) {
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "America/Sao_Paulo",
   }).format(new Date(value));
 }
 

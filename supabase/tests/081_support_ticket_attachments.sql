@@ -1,6 +1,6 @@
 begin;
 
-select plan(10);
+select plan(11);
 
 select is(
   (select public from storage.buckets where id = 'support-ticket-attachments'),
@@ -23,6 +23,7 @@ select is(
 select has_table('public', 'support_ticket_message_attachments', 'attachment metadata table exists');
 select has_function('public', 'attach_support_ticket_requester_attachments_v1', array['uuid', 'uuid', 'jsonb'], 'requester attachment command exists');
 select has_function('public', 'admin_get_support_ticket_thread_v2', array['uuid'], 'admin thread attachment read model exists');
+select has_function('public', 'admin_support_ticket_message_exists_v1', array['uuid', 'uuid'], 'admin attachment retry check exists without raw message reads');
 
 select ok(
   exists (

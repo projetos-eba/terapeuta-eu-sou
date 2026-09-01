@@ -50,5 +50,7 @@ description: Manter tickets e threads de suporte de pacientes e terapeutas sem m
   interna criada pelo Admin não aparece após o reload do detalhe do terapeuta.
 - Validar desktop, tablet e mobile sem overflow do textarea.
 - Validar que o paciente consegue criar o chamado e abrir a thread pública.
-- Validar protocolo persistido, estado após resposta do TES/solicitante, retorno do ticket ao topo por `last_activity_at` e atualização entre duas sessões autenticadas.
+- Validar protocolo persistido, complementos consecutivos em `waiting_support`,
+  estado após resposta do TES/solicitante, retorno do ticket ao topo por
+  `last_activity_at` e atualização entre duas sessões autenticadas.
 - Rodar testes API/Vitest, pgTAP de suporte e o teste de bypass de participante.

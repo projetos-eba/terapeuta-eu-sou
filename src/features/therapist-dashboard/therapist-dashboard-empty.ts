@@ -1,4 +1,5 @@
 import { routes } from "@/lib/routes";
+import { isTherapistAuraEnabled } from "@/features/therapist-aura";
 import type { AuthenticatedTherapistSession } from "@/lib/auth/therapist-session";
 
 import type { TherapistDashboardPageData } from "./therapist-dashboard.types";
@@ -30,7 +31,7 @@ export function createEmptyTherapistDashboardData({
       },
     ],
     aura: null,
-    auraState: "empty",
+    auraState: isTherapistAuraEnabled() ? "empty" : "disabled",
     history: {
       activePatients: 0,
       averageRating: null,

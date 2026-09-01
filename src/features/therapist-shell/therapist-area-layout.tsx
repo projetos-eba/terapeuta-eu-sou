@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { AuthenticatedShell } from "@/components/authenticated-shell";
+import { getTherapistAuraFeatureAccess } from "@/features/therapist-aura";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
 import { getTherapistShellConfig } from "./therapist-shell-config";
@@ -19,6 +20,8 @@ export async function TherapistAreaLayout({
     profileId: session.profileId,
   });
   const config = getTherapistShellConfig({
+    auraLaunchEnabled: getTherapistAuraFeatureAccess(session.plan)
+      .launchEnabled,
     plan: session.plan,
     unreadMessagesCount: counters.unreadMessages,
   });

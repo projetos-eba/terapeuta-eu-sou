@@ -1,13 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import {
-  ArrowRight,
-  CalendarClock,
-  Heart,
-  Sparkles,
-  Star,
-} from "lucide-react";
+import { ArrowRight, CalendarClock, Heart, Sparkles, Star } from "lucide-react";
 
 import { PremiumTherapistBadge, TESButton } from "@/components/tes";
 import { routes } from "@/lib/routes";
@@ -157,6 +151,7 @@ function formatNextSlot(value: string) {
     hour: "2-digit",
     minute: "2-digit",
     month: "short",
+    timeZone: "America/Sao_Paulo",
   }).format(date);
 }
 
