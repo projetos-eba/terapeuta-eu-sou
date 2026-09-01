@@ -247,7 +247,8 @@ function TicketRow({
             <SupportTicketStatusBadge status={ticket.status} viewer="admin" />
           </div>
           <p className="mt-1 text-sm font-semibold text-tesText-secondary">
-            {formatSupportTicketProtocol(ticket.protocol)} · {ticket.requesterName ?? "Solicitante"} ·{" "}
+            {formatSupportTicketProtocol(ticket.protocol)} ·{" "}
+            {ticket.requesterName ?? "Solicitante"} ·{" "}
             {personaLabel(ticket.requesterRole)}
           </p>
         </div>
@@ -343,5 +344,9 @@ function relativeDate(value: string) {
   if (minutes < 60) return `Há ${minutes} min`;
   const hours = Math.floor(minutes / 60);
   if (hours < 24) return `Há ${hours} h`;
-  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    timeZone: "America/Sao_Paulo",
+  });
 }

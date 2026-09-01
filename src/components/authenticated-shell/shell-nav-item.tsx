@@ -65,27 +65,26 @@ export function ShellNavItem({
     pathname === item.href ||
     (!isNamespaceRoot && pathname.startsWith(`${item.href}/`));
   const isLocked = item.accessState === "locked";
+  const isComingSoon = item.accessState === "coming_soon";
   const destination =
     isLocked && item.upgradeHref ? item.upgradeHref : item.href;
 
-  return (
-    <Link
-      aria-disabled={isLocked && !item.upgradeHref ? true : undefined}
-      aria-current={isActive ? "page" : undefined}
-      className={cn(
-        "group flex h-12 w-full shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium outline-none transition focus-visible:ring-4 focus-visible:ring-ring/20",
-        depth > 0 && "h-10 pl-10 text-[13px]",
-        item.tone === "upgrade" &&
-          "border border-status-warning/25 bg-status-warningBg/55 text-brand-primary hover:bg-status-warningBg",
-        isActive
-          ? "bg-brand-lavenderSoft text-brand-primary"
-          : isLocked
-            ? "text-tesText-muted hover:bg-surface-soft"
-            : "text-tesText-secondary hover:bg-surface-soft hover:text-brand-primary",
-      )}
-      href={destination as Route<string>}
-      onClick={onNavigate}
-    >
+  const className = cn(
+    "group flex h-12 w-full shrink-0 items-center gap-3 rounded-md px-3 text-sm font-medium outline-none transition focus-visible:ring-4 focus-visible:ring-ring/20",
+    depth > 0 && "h-10 pl-10 text-[13px]",
+    item.tone === "upgrade" &&
+      "border border-status-warning/25 bg-status-warningBg/55 text-brand-primary hover:bg-status-warningBg",
+    isComingSoon
+      ? "cursor-not-allowed text-tesText-muted"
+      : isActive
+        ? "bg-brand-lavenderSoft text-brand-primary"
+        : isLocked
+          ? "text-tesText-muted hover:bg-surface-soft"
+          : "text-tesText-secondary hover:bg-surface-soft hover:text-brand-primary",
+  );
+
+  const content = (
+    <>
       <Icon
         aria-hidden="true"
         className="pointer-events-none size-5 shrink-0"
@@ -94,6 +93,11 @@ export function ShellNavItem({
       <span className="pointer-events-none min-w-0 flex-1 truncate">
         {item.label}
       </span>
+      {isComingSoon ? (
+        <span className="pointer-events-none inline-flex min-h-6 shrink-0 items-center rounded-full bg-brand-lavenderSoft px-2 text-xs font-semibold text-brand-primary">
+          {item.availabilityLabel ?? "Em breve"}
+        </span>
+      ) : null}
       {item.planLabel ? (
         <span className="pointer-events-none inline-flex min-h-6 shrink-0 items-center gap-1 rounded-full bg-status-warningBg px-2 text-xs font-semibold text-brand-deep">
           <Star aria-hidden="true" className="size-3" />
@@ -111,6 +115,30 @@ export function ShellNavItem({
           {item.badge > 99 ? "99+" : item.badge}
         </span>
       ) : null}
+    </>
+  );
+
+  if (isComingSoon) {
+    return (
+      <span
+        aria-disabled="true"
+        aria-label={`${item.label}: ${item.availabilityLabel ?? "Em breve"}`}
+        className={className}
+      >
+        {content}
+      </span>
+    );
+  }
+
+  return (
+    <Link
+      aria-disabled={isLocked && !item.upgradeHref ? true : undefined}
+      aria-current={isActive ? "page" : undefined}
+      className={className}
+      href={destination as Route<string>}
+      onClick={onNavigate}
+    >
+      {content}
     </Link>
   );
 }

@@ -76,11 +76,11 @@ Deno.test("rejects free-text therapy creation payloads", () => {
   );
 });
 
-Deno.test("rejects service descriptions longer than 135 characters", () => {
+Deno.test("rejects service descriptions longer than 180 characters", () => {
   assertDomainError(() =>
     validateTherapistServicesCommand({
       action: "create",
-      description: "x".repeat(136),
+      description: "x".repeat(181),
       durationMinutes: 60,
       priceCents: 12000,
       requestId,

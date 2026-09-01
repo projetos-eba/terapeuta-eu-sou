@@ -69,6 +69,12 @@ function getFeatureCellState(
       : { type: "excluded" };
   }
 
+  if (featureCode === "aura") {
+    return plan === TherapistPlan.PremiumPlus
+      ? { type: "text", label: "Incluso (Em breve)" }
+      : { type: "excluded" };
+  }
+
   if (featureCode === "tes_academy") {
     if (plan === TherapistPlan.Premium) {
       return { type: "text", label: "Opcional (Em breve)" };

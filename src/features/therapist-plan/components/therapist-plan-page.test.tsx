@@ -63,6 +63,7 @@ describe("TherapistPlanPage", () => {
     expect(screen.getByText("Seu plano mais completo")).toBeInTheDocument();
     expect(screen.queryByText(/Escolher plano/)).toBeNull();
     expect(screen.queryByText(/Mudar para Premium/)).toBeNull();
+    expect(screen.getByText("Assessora Aura (Em breve)")).toBeInTheDocument();
   });
 });
 

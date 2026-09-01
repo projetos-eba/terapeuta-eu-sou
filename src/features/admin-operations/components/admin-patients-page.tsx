@@ -108,8 +108,7 @@ export function AdminPatientsPage({ data }: { data: AdminOperationPageData }) {
                   Base de clientes
                 </h2>
                 <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                  Listagem operacional com dados mínimos e sem conteúdo
-                  clínico.
+                  Listagem operacional com dados mínimos e sem conteúdo clínico.
                 </p>
               </div>
               <Link
@@ -298,7 +297,8 @@ function CompactBarsCard({
                   style={{
                     width: `${Math.max(
                       8,
-                      (item.value / Math.max(...items.map((entry) => entry.value))) *
+                      (item.value /
+                        Math.max(...items.map((entry) => entry.value))) *
                         100,
                     )}%`,
                   }}
@@ -652,7 +652,9 @@ function StateMessage({ message }: { message: string }) {
         <span className="mx-auto grid size-12 place-items-center rounded-[18px] bg-brand-lavenderSoft text-brand-primary">
           <Clock3 aria-hidden="true" className="size-5" />
         </span>
-        <p className="mt-4 text-base font-extrabold text-brand-deep">{message}</p>
+        <p className="mt-4 text-base font-extrabold text-brand-deep">
+          {message}
+        </p>
       </div>
     </div>
   );
@@ -798,7 +800,12 @@ function buildActivityBreakdown(rows: AdminOperationRow[]) {
 
 function buildActivityAgeBreakdown(rows: AdminOperationRow[]) {
   const buckets = [
-    { colorClass: "bg-brand-primary", label: "Até 7 dias", maxDays: 7, value: 0 },
+    {
+      colorClass: "bg-brand-primary",
+      label: "Até 7 dias",
+      maxDays: 7,
+      value: 0,
+    },
     {
       colorClass: "bg-brand-primary",
       label: "8 a 15 dias",
@@ -859,7 +866,8 @@ function donutStyle(items: BreakdownItem[]) {
       const start = (accumulated / total) * 100;
       accumulated += item.value;
       const end = (accumulated / total) * 100;
-      const color = colorMap[item.colorClass] ?? "var(--tes-color-brand-primary)";
+      const color =
+        colorMap[item.colorClass] ?? "var(--tes-color-brand-primary)";
 
       return `${color} ${start}% ${end}%`;
     })
@@ -888,7 +896,7 @@ function translateStatus(status?: string) {
     deleted: "Excluído",
   };
 
-  return status ? labels[status] ?? status : "Sem status";
+  return status ? (labels[status] ?? status) : "Sem status";
 }
 
 function statusPillClass(status?: string) {
@@ -989,5 +997,6 @@ function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "short",
     timeStyle: "short",
+    timeZone: "America/Sao_Paulo",
   }).format(date);
 }

@@ -10,6 +10,13 @@ type StatusPresentation = {
   tone: "brand" | "soft" | "success";
 };
 
+export const supportTicketWaitingSupportMessage =
+  "A equipe TES foi avisada sobre sua mensagem. Se precisar, você pode enviar outros complementos ou anexos enquanto aguarda a resposta.";
+export const supportTicketAttachmentGuidance =
+  "Até 5 arquivos, com até 10 MB cada. Formatos permitidos: PDF, JPG, PNG ou WebP.";
+export const supportTicketAttachmentErrorMessage =
+  "Não foi possível enviar o anexo. Use até 5 arquivos de até 10 MB cada, nos formatos PDF, JPG, PNG ou WebP.";
+
 const categoryLabels: Record<SupportTicketCategory, string> = {
   agenda_sessoes: "Agenda e sessões",
   zoom_acesso: "Acesso à sala",
@@ -55,7 +62,9 @@ export function getSupportTicketStatusPresentation(
   return statuses[status as SupportTicketStatus] ?? statuses.in_progress;
 }
 
-export function formatSupportTicketProtocol(protocol: string | null | undefined) {
+export function formatSupportTicketProtocol(
+  protocol: string | null | undefined,
+) {
   const normalized = protocol?.trim().toUpperCase() ?? "";
   return normalized ? `#${normalized.replace(/^#/, "")}` : "#—";
 }
@@ -69,5 +78,6 @@ export function formatSupportTicketActivity(value: string) {
     hour: "2-digit",
     minute: "2-digit",
     month: "short",
+    timeZone: "America/Sao_Paulo",
   }).format(date);
 }

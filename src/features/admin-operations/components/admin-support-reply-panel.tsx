@@ -9,6 +9,10 @@ import {
   supportTicketAttachmentMimeTypes,
   supportTicketAttachmentSizeLimit,
 } from "@/features/support/support-contracts";
+import {
+  supportTicketAttachmentErrorMessage,
+  supportTicketAttachmentGuidance,
+} from "@/features/support/support-ticket-presentation";
 
 export function AdminSupportReplyPanel({
   onSuccess,
@@ -88,16 +92,20 @@ export function AdminSupportReplyPanel({
             multiple
             onChange={(event) => {
               const selected = Array.from(event.target.files ?? []);
-              if (
-                selected.some(
-                  (file) =>
-                    !supportTicketAttachmentMimeTypes.includes(
-                      file.type as (typeof supportTicketAttachmentMimeTypes)[number],
-                    ) || file.size > supportTicketAttachmentSizeLimit,
-                )
-              ) {
-                setError("Use até 5 arquivos PDF ou imagens de até 10 MB.");
+              const invalid = selected.some(
+                (file) =>
+                  !supportTicketAttachmentMimeTypes.includes(
+                    file.type as (typeof supportTicketAttachmentMimeTypes)[number],
+                  ) || file.size > supportTicketAttachmentSizeLimit,
+              );
+              const exceedsLimit =
+                attachments.length + selected.length >
+                supportTicketAttachmentLimit;
+              if (invalid || exceedsLimit) {
+                setError(supportTicketAttachmentErrorMessage);
               } else {
+                setError(null);
+                requestId.current = null;
                 setAttachments((current) =>
                   [...current, ...selected].slice(
                     0,
@@ -110,6 +118,9 @@ export function AdminSupportReplyPanel({
             type="file"
           />
         </span>
+        <span className="text-xs font-semibold leading-5 text-tesText-secondary">
+          {supportTicketAttachmentGuidance}
+        </span>
         {attachments.length > 0 ? (
           <div className="grid gap-2">
             {attachments.map((file, index) => (
@@ -121,11 +132,12 @@ export function AdminSupportReplyPanel({
                 <button
                   aria-label={`Remover ${file.name}`}
                   className="text-brand-primary"
-                  onClick={() =>
+                  onClick={() => {
+                    requestId.current = null;
                     setAttachments((current) =>
                       current.filter((_, itemIndex) => itemIndex !== index),
-                    )
-                  }
+                    );
+                  }}
                   type="button"
                 >
                   <X aria-hidden="true" size={15} />

@@ -47,6 +47,7 @@ export type AvailabilityServiceInput = {
 };
 
 const blockedStatuses = new Set(["draft", "pending_payment", "confirmed"]);
+const DEFAULT_TIMEZONE = "America/Sao_Paulo";
 
 const defaultBookingSettings = {
   bufferAfterMinutes: 10,
@@ -61,19 +62,95 @@ type AvailabilityWindow = {
   start: Date;
 };
 
-function formatDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+type DateParts = {
+  day: number;
+  month: number;
+  year: number;
+};
 
-  return `${year}-${month}-${day}`;
+function getDateParts(value: Date, timezone: string): DateParts {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: timezone,
+    year: "numeric",
+  }).formatToParts(value);
+  const read = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value ?? 0);
+
+  return { day: read("day"), month: read("month"), year: read("year") };
 }
 
-function parseClock(date: Date, time: string) {
+function zonedDateTimeToInstant(
+  dateKey: string,
+  time: string,
+  timezone: string,
+) {
+  const wallClock = new Date(`${dateKey}T${time}:00Z`);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    hourCycle: "h23",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "2-digit",
+    second: "2-digit",
+    timeZone: timezone,
+    year: "numeric",
+  }).formatToParts(wallClock);
+  const read = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value ?? 0);
+  const offset =
+    Date.UTC(
+      read("year"),
+      read("month") - 1,
+      read("day"),
+      read("hour") % 24,
+      read("minute"),
+      read("second"),
+    ) - wallClock.getTime();
+
+  return new Date(wallClock.getTime() - offset);
+}
+
+function addCalendarDays(dateKey: string, days: number) {
+  const date = new Date(`${dateKey}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return [
+    date.getUTCFullYear(),
+    String(date.getUTCMonth() + 1).padStart(2, "0"),
+    String(date.getUTCDate()).padStart(2, "0"),
+  ].join("-");
+}
+
+function calendarDayDifference(targetKey: string, baseKey: string) {
+  const toUtc = (key: string) => Date.parse(`${key}T00:00:00Z`);
+  return Math.round((toUtc(targetKey) - toUtc(baseKey)) / 86_400_000);
+}
+
+function getDayOfWeek(date: Date, timezone: string) {
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    weekday: "short",
+  })
+    .format(date)
+    .slice(0, 3)
+    .toLowerCase();
+  return ["sun", "mon", "tue", "wed", "thu", "fri", "sat"].indexOf(weekday);
+}
+
+function formatDateKey(date: Date, timezone: string) {
+  const parts = getDateParts(date, timezone);
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
+}
+
+function parseClock(date: Date, time: string, timezone: string) {
   const [hours = "0", minutes = "0"] = time.split(":");
-  const next = new Date(date);
-  next.setHours(Number(hours), Number(minutes), 0, 0);
-  return next;
+  const dateKey = formatDateKey(date, timezone);
+  return zonedDateTimeToInstant(
+    dateKey,
+    `${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}`,
+    timezone,
+  );
 }
 
 function isValidClock(value: string) {
@@ -94,32 +171,35 @@ function overlaps(
   return leftStart < rightEnd && rightStart < leftEnd;
 }
 
-function formatDayLabel(date: Date, now: Date) {
-  const today = new Date(now);
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(date);
-  target.setHours(0, 0, 0, 0);
-  const days = Math.round((target.getTime() - today.getTime()) / 86_400_000);
+function formatDayLabel(date: Date, now: Date, timezone: string) {
+  const todayKey = formatDateKey(now, timezone);
+  const targetKey = formatDateKey(date, timezone);
+  const days = calendarDayDifference(targetKey, todayKey);
 
   if (days === 0) return "Hoje";
   if (days === 1) return "Amanhã";
 
   return date
-    .toLocaleDateString("pt-BR", { weekday: "short" })
+    .toLocaleDateString("pt-BR", {
+      timeZone: timezone,
+      weekday: "short",
+    })
     .replace(".", "");
 }
 
-function formatDateLabel(date: Date) {
+function formatDateLabel(date: Date, timezone: string) {
   return date.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
+    timeZone: timezone,
   });
 }
 
-function formatTimeLabel(date: Date) {
+function formatTimeLabel(date: Date, timezone: string) {
   return date.toLocaleTimeString("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: timezone,
   });
 }
 
@@ -130,15 +210,14 @@ function matchesExceptionService(
   return !serviceId || serviceId === selectedServiceId;
 }
 
-function getDayBounds(now: Date, dayOffset: number) {
-  const start = new Date(now);
-  start.setDate(now.getDate() + dayOffset);
-  start.setHours(0, 0, 0, 0);
+function getDayBounds(now: Date, dayOffset: number, timezone: string) {
+  const dateKey = addCalendarDays(formatDateKey(now, timezone), dayOffset);
+  const nextDateKey = addCalendarDays(dateKey, 1);
 
-  const end = new Date(start);
-  end.setDate(start.getDate() + 1);
-
-  return { end, start };
+  return {
+    end: zonedDateTimeToInstant(nextDateKey, "00:00", timezone),
+    start: zonedDateTimeToInstant(dateKey, "00:00", timezone),
+  };
 }
 
 function uniqueSlots(slots: AvailabilitySlot[]) {
@@ -160,6 +239,7 @@ function buildSlotsForWindow({
   selectedServiceId,
   serviceDurationMinutes,
   settings,
+  timezone,
   window,
 }: {
   bookings: BookingConflictInput[];
@@ -171,14 +251,15 @@ function buildSlotsForWindow({
   serviceDurationMinutes: number;
   settings: BookingSettingsInput;
   window: AvailabilityWindow;
+  timezone: string;
 }) {
   const slots: AvailabilitySlot[] = [];
 
   for (
     let cursor = new Date(window.start);
     cursor.getTime() +
-        (serviceDurationMinutes + settings.bufferAfterMinutes) * 60_000 <=
-      window.end.getTime();
+      (serviceDurationMinutes + settings.bufferAfterMinutes) * 60_000 <=
+    window.end.getTime();
     cursor = new Date(cursor.getTime() + settings.intervalMinutes * 60_000)
   ) {
     const startsAt = new Date(cursor);
@@ -224,12 +305,12 @@ function buildSlotsForWindow({
     if (blockedByBooking) continue;
 
     slots.push({
-      dateLabel: formatDateLabel(date),
-      dayLabel: formatDayLabel(date, now),
+      dateLabel: formatDateLabel(date, timezone),
+      dayLabel: formatDayLabel(date, now, timezone),
       endsAt: endsAt.toISOString(),
       serviceId: selectedServiceId,
       startsAt: startsAt.toISOString(),
-      timeLabel: formatTimeLabel(startsAt),
+      timeLabel: formatTimeLabel(startsAt, timezone),
     });
   }
 
@@ -261,20 +342,27 @@ export function buildAvailabilityDays({
   const earliestStart = new Date(
     now.getTime() + resolvedSettings.minNoticeMinutes * 60_000,
   );
+  const timezone =
+    rules.find((rule) => rule.serviceId === selectedServiceId)?.timezone ??
+    DEFAULT_TIMEZONE;
   const days: AvailabilityDay[] = [];
 
   for (let dayOffset = 0; dayOffset < horizonDays; dayOffset += 1) {
-    const { end: nextDay, start: date } = getDayBounds(now, dayOffset);
+    const { end: nextDay, start: date } = getDayBounds(
+      now,
+      dayOffset,
+      timezone,
+    );
 
     const matchingRules = rules.filter(
       (rule) =>
         rule.isActive &&
-        rule.dayOfWeek === date.getDay() &&
+        rule.dayOfWeek === getDayOfWeek(date, rule.timezone) &&
         rule.serviceId === selectedServiceId,
     );
     const ruleWindows = matchingRules.map((rule) => ({
-      end: parseClock(date, rule.endTime),
-      start: parseClock(date, rule.startTime),
+      end: parseClock(date, rule.endTime, rule.timezone),
+      start: parseClock(date, rule.startTime, rule.timezone),
     }));
     const exceptionWindows = exceptions
       .filter(
@@ -307,6 +395,7 @@ export function buildAvailabilityDays({
             selectedServiceId,
             serviceDurationMinutes,
             settings: resolvedSettings,
+            timezone,
             window,
           }),
         )
@@ -320,9 +409,9 @@ export function buildAvailabilityDays({
     if (slots.length === 0) continue;
 
     days.push({
-      date: formatDateKey(date),
-      dateLabel: formatDateLabel(date),
-      dayLabel: formatDayLabel(date, now),
+      date: formatDateKey(date, timezone),
+      dateLabel: formatDateLabel(date, timezone),
+      dayLabel: formatDayLabel(date, now, timezone),
       slots,
     });
   }
@@ -369,7 +458,8 @@ function validateAvailabilityInput({
 
     const anchor = new Date(2026, 0, 4);
     return (
-      parseClock(anchor, rule.startTime) >= parseClock(anchor, rule.endTime)
+      parseClock(anchor, rule.startTime, rule.timezone) >=
+      parseClock(anchor, rule.endTime, rule.timezone)
     );
   });
   const hasInvalidException = exceptions.some(
@@ -398,13 +488,12 @@ function validateAvailabilityInput({
   }
 
   const relevantRules = rules.filter(
-    (rule) =>
-      rule.isActive && rule.serviceId === settings.serviceId,
+    (rule) => rule.isActive && rule.serviceId === settings.serviceId,
   );
   const hasOverlappingRule = relevantRules.some((rule, index) => {
     const anchor = new Date(2026, 0, 4);
-    const start = parseClock(anchor, rule.startTime);
-    const end = parseClock(anchor, rule.endTime);
+    const start = parseClock(anchor, rule.startTime, rule.timezone);
+    const end = parseClock(anchor, rule.endTime, rule.timezone);
 
     return relevantRules.slice(index + 1).some((candidate) => {
       if (candidate.dayOfWeek !== rule.dayOfWeek) return false;
@@ -412,8 +501,8 @@ function validateAvailabilityInput({
       return overlaps(
         start,
         end,
-        parseClock(anchor, candidate.startTime),
-        parseClock(anchor, candidate.endTime),
+        parseClock(anchor, candidate.startTime, candidate.timezone),
+        parseClock(anchor, candidate.endTime, candidate.timezone),
       );
     });
   });

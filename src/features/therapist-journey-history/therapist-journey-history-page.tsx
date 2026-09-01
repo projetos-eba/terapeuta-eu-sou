@@ -56,9 +56,7 @@ const journeyPeopleTitleByStatus: Record<
   stale: "Pessoas sem sessão realizada ou agendada há 30 dias.",
 };
 
-export function getJourneyPeopleTitle(
-  status: JourneyHistoryFilters["status"],
-) {
+export function getJourneyPeopleTitle(status: JourneyHistoryFilters["status"]) {
   return journeyPeopleTitleByStatus[status];
 }
 
@@ -116,10 +114,7 @@ export function TherapistJourneyHistoryPage({
           </section>
 
           <section className="min-w-0 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card">
-            <JourneyFilters
-              filters={filters}
-              statusSummary={data.summary}
-            />
+            <JourneyFilters filters={filters} statusSummary={data.summary} />
 
             {visibleClients.length > 0 ? (
               <>
@@ -347,11 +342,7 @@ function JourneyTopics({ client }: { client: JourneyHistoryClient }) {
       </div>
 
       <div className="mt-6 rounded-card border border-dashed border-brand-lavender bg-brand-lavenderSoft/40 p-5">
-        <Sparkles
-          aria-hidden="true"
-          className="text-brand-primary"
-          size={22}
-        />
+        <Sparkles aria-hidden="true" className="text-brand-primary" size={22} />
         <p className="mt-3 text-sm font-extrabold text-brand-deep">
           {client.topicLabels.length > 0
             ? "Temas compartilhados na jornada"
@@ -841,9 +832,7 @@ export function paginateJourneyClients(
   const totalPages =
     total === 0 ? 0 : Math.ceil(total / JOURNEY_HISTORY_PAGE_SIZE);
   const page =
-    totalPages === 0
-      ? 1
-      : Math.min(Math.max(requestedPage, 1), totalPages);
+    totalPages === 0 ? 1 : Math.min(Math.max(requestedPage, 1), totalPages);
   const start = (page - 1) * JOURNEY_HISTORY_PAGE_SIZE;
 
   return {
@@ -1235,8 +1224,6 @@ function ChipList({
   );
 }
 
-
-
 function MiniFact({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-brand-lavenderSoft/50 p-2.5 sm:p-3">
@@ -1318,13 +1305,9 @@ export function filterJourneyClients(
       filters.status === "all" || client.status === filters.status;
     const matchesQuery =
       !query ||
-        normalize(
-          [
-            client.name,
-            client.emailLabel,
-            ...client.therapyLabels,
-          ].join(" "),
-        ).includes(query);
+      normalize(
+        [client.name, client.emailLabel, ...client.therapyLabels].join(" "),
+      ).includes(query);
 
     return matchesStatus && matchesQuery;
   });
@@ -1382,10 +1365,12 @@ function formatShortDateTime(value: string | null) {
   const dayMonth = new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "short",
+    timeZone: "America/Sao_Paulo",
   }).format(date);
   const hour = new Intl.DateTimeFormat("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "America/Sao_Paulo",
   }).format(date);
 
   return `${dayMonth.replace(".", "")} · ${hour}`;
@@ -1397,11 +1382,13 @@ function formatJourneyDuration(value: string | null) {
   if (!Number.isFinite(startedAt.getTime())) return "-";
 
   const now = new Date();
+  const startedCalendar = getBrazilCalendarParts(startedAt);
+  const nowCalendar = getBrazilCalendarParts(now);
   const monthDifference = Math.max(
     0,
-    (now.getFullYear() - startedAt.getFullYear()) * 12 +
-      now.getMonth() -
-      startedAt.getMonth(),
+    (nowCalendar.year - startedCalendar.year) * 12 +
+      nowCalendar.month -
+      startedCalendar.month,
   );
   if (monthDifference >= 12) {
     const years = Math.floor(monthDifference / 12);
@@ -1418,6 +1405,22 @@ function formatJourneyDuration(value: string | null) {
   return `${days} ${days === 1 ? "dia" : "dias"}`;
 }
 
+function getBrazilCalendarParts(value: Date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+  }).formatToParts(value);
+  const read = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((part) => part.type === type)?.value ?? 0);
+
+  return {
+    month: read("month"),
+    year: read("year"),
+  };
+}
+
 function formatCompactDate(value: string) {
   const date = new Date(value);
   if (!Number.isFinite(date.getTime())) return "-";
@@ -1425,6 +1428,7 @@ function formatCompactDate(value: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",
+    timeZone: "America/Sao_Paulo",
   }).format(date);
 }
 
@@ -1434,6 +1438,7 @@ function formatDateOnly(value: string) {
 
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "medium",
+    timeZone: "America/Sao_Paulo",
   }).format(date);
 }
 
@@ -1444,6 +1449,7 @@ function formatSessionMeta(value: string, serviceTitle: string | null) {
   const time = new Intl.DateTimeFormat("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "America/Sao_Paulo",
   }).format(date);
   return `${time} · ${serviceTitle ?? "Sessão TES"}`;
 }
@@ -1455,6 +1461,7 @@ function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("pt-BR", {
     dateStyle: "medium",
     timeStyle: "short",
+    timeZone: "America/Sao_Paulo",
   }).format(date);
 }
 

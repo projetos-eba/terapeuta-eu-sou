@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { normalizePlainText } from "@/features/support/support-contracts";
+import { supportTicketAttachmentErrorMessage } from "@/features/support/support-ticket-presentation";
 import {
   readSupportAttachmentFiles,
   removeSupportAttachments,
@@ -355,11 +356,17 @@ function rpcFailure(error: unknown) {
     error && typeof error === "object" && "code" in error
       ? (error as { code?: string }).code
       : undefined;
-  if (code === "22023")
+  const detail =
+    error && typeof error === "object" && "message" in error
+      ? (error as { message?: string }).message?.toLowerCase()
+      : undefined;
+  if (code === "22023" && detail?.includes("already awaiting tes"))
     return failure(
-      "Este chamado não está disponível para nova resposta agora.",
-      422,
+      "Não foi possível enviar este complemento agora. Tente novamente.",
+      409,
     );
+  if (code === "22023" && detail?.includes("support attachment"))
+    return failure(supportTicketAttachmentErrorMessage, 422);
   if (code === "42501")
     return failure("Você não pode responder este chamado.", 403);
   if (code === "P0001")

@@ -71,6 +71,8 @@ Preservar o padrão do node:
 
 - Hero com foto grande, badges, avaliação, CTA e ações favoritar/compartilhar;
   não exibir chips derivados de `therapist.tags` no perfil público.
+  O CTA `Agendar sessão` do hero deve rolar para a seção de agenda, permitindo
+  escolher terapia e horário; a reserva só começa após a escolha de um slot.
   Favoritos são exclusivos de paciente autenticado, persistem em
   `favorite_therapists` e sincronizam com `/app/favoritos/terapeutas`; sem
   sessão, a ação encaminha ao login de cliente e retorna ao mesmo perfil.
@@ -106,6 +108,9 @@ Preservar o padrão do node:
 - O registro compartilhado de temas alimenta editor, hero e snapshots; não
   duplicar componentes de perfil. O `photoShape` é determinístico por `themeId`.
 - Seção `Vivências e terapias` com serviços, duração, preço e CTA.
+- As descrições dos serviços devem exibir todo o conteúdo publicado, sem
+  truncamento visual; o card pode crescer conforme o texto e deve preservar a
+  quebra segura de palavras em larguras menores.
 - A seção `Vivências e terapias` usa a terapia canônica como identidade
   pública. Não exibir títulos operacionais de serviço como chip/aba, por
   exemplo “Reiki online”.

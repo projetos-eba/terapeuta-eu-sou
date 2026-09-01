@@ -24,7 +24,7 @@ export function readSupportAttachmentFiles(formData: FormData) {
   const files: SupportAttachmentFile[] = [];
 
   for (const value of values) {
-    if (typeof File === "undefined" || !(value instanceof File)) {
+    if (!isFileValue(value)) {
       return { error: "Selecione arquivos válidos.", files: [] };
     }
     if (value.size === 0) continue;
@@ -54,6 +54,16 @@ export function readSupportAttachmentFiles(formData: FormData) {
   }
 
   return { error: null, files };
+}
+
+function isFileValue(value: FormDataEntryValue): value is File {
+  return (
+    typeof value !== "string" &&
+    typeof value.name === "string" &&
+    typeof value.type === "string" &&
+    typeof value.size === "number" &&
+    typeof value.arrayBuffer === "function"
+  );
 }
 
 export async function uploadSupportAttachments(input: {

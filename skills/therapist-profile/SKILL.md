@@ -136,6 +136,8 @@ que possível. A publicação continua sendo uma ação separada.
   `supabase/audits/therapist_public_slug_preflight.sql`; colisão entre
   profissionais interrompe a aplicação.
 - Sem mocks silenciosos em produção.
+- Horários do fallback demonstrativo são gerados e apresentados no fuso
+  `America/Sao_Paulo` (Brasília, UTC−3), sem depender do fuso do servidor.
 - A prévia autenticada da versão publicada é uma composição estática do próprio
   perfil público, em canvas desktop de 1440 px reduzido proporcionalmente. Ela
   não é screenshot persistido, não executa reserva, favoritos, compartilhamento,

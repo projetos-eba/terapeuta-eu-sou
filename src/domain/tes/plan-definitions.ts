@@ -176,9 +176,9 @@ export const therapistPlanFeatureDefinitions: PlanFeatureDefinition[] = [
     category: "premium_plus",
     code: "aura",
     description:
-      "Dicas da Assessora Aura para cuidar melhor da sua presença no TES.",
+      "Assessora Aura em preparação para apoiar sua presença no TES.",
     minimumPlan: TherapistPlan.PremiumPlus,
-    label: "Aura",
+    label: "Assessora Aura (Em breve)",
     capability: "aura_full",
   },
   {
