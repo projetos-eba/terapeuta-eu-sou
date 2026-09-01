@@ -29,6 +29,9 @@ uma segunda implementação da thread.
 - Respostas públicas do Admin podem incluir anexos privados; a verificação de
   idempotência deve usar o contrato administrativo, sem consultar a tabela de
   mensagens diretamente sob RLS.
+- `waiting_requester` organiza a fila, mas não bloqueia o Admin: a equipe pode
+  enviar complementos e anexos consecutivos sem aguardar uma nova mensagem do
+  solicitante. Tickets resolvidos continuam exigindo reabertura explícita.
 - Exibir o protocolo persistido, nunca UUID: nove dígitos e a letra da categoria. A busca por protocolo é resolvida somente na RPC administrativa.
 - Os estados Admin são “Novo chamado”, “Em atendimento”, “Aguardando resposta da equipe TES”, “Aguardando resposta do solicitante” e “Resolvido”.
 - Lista, detalhe, triagem e conversa usam SSE mediado pelo servidor; a Inbox relê pelo evento de `support_tickets` e ordena por `last_activity_at DESC`, `created_at DESC`, `id DESC`. Quando ele cair, o polling é temporário e a reconexão usa espera progressiva.
@@ -48,5 +51,7 @@ uma segunda implementação da thread.
 - Testar URL filters, busca, paginação e ordenação por atividade mais recente primeiro, inclusive desempates estáveis.
 - Testar atribuição, prioridade, transições válidas/inválidas e audit.
 - Testar que resposta pública, nota interna e triagem atualizam cabeçalho, status e conversa sem recarregar manualmente.
+- Testar duas respostas públicas consecutivas do Admin, incluindo uma com
+  anexo, enquanto o chamado permanece em `waiting_requester`.
 - Repetir isolamento requester/internal note e `PARTICIPANT FREE TEXT BYPASS = BLOCKED`.
 - Antes de HML, conferir migrations Fase 1, Fase 2, `20260821224500` e Fase 3.

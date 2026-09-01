@@ -99,15 +99,58 @@ describe("admin support reply route", () => {
     expect(response.status).toBe(201);
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
+  it("uploads a supported PNG attachment through the same protected reply flow", async () => {
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/rpc/admin_support_ticket_message_exists_v1")) {
+          return Response.json(false);
+        }
+        if (url.includes("/storage/v1/object/support-ticket-attachments/")) {
+          expect(init?.headers).toMatchObject({ "Content-Type": "image/png" });
+          return new Response(null, { status: 201 });
+        }
+        if (
+          url.includes("/rpc/admin_reply_support_ticket_with_attachments_v1")
+        ) {
+          const payload = JSON.parse(String(init?.body));
+          expect(payload.p_attachments).toEqual([
+            expect.objectContaining({
+              mimeType: "image/png",
+              originalName: "evidencia.png",
+              sizeBytes: 3,
+            }),
+          ]);
+          return Response.json({ id: "33333333-3333-4333-8333-333333333333" });
+        }
+        return new Response(null, { status: 404 });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      multipartRequest({ name: "evidencia.png", type: "image/png" }),
+      params,
+    );
+
+    expect(response.status, JSON.stringify(await response.json())).toBe(201);
+  });
 });
 
-function multipartRequest() {
+function multipartRequest({
+  name = "orientacao.pdf",
+  type = "application/pdf",
+}: {
+  name?: string;
+  type?: string;
+} = {}) {
   const formData = new FormData();
   formData.set("body", "Segue o documento solicitado.");
   formData.set("requestId", requestId);
   formData.append(
     "attachments",
-    new File(["pdf"], "orientacao.pdf", { type: "application/pdf" }),
+    new File(["bin"], name, { type }),
   );
 
   return {
