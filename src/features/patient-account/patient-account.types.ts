@@ -37,6 +37,7 @@ export type PatientAccountData = {
     id: string;
     name: string;
     phone: string;
+    phoneCountryCode?: string;
   };
   address: PatientAddress;
   paymentSummary: {
@@ -51,6 +52,7 @@ export type PatientAccountEditableFields = {
   address: PatientAddress;
   name: string;
   phone: string;
+  phoneCountryCode?: string;
 };
 
 export const emptyPatientAddress: PatientAddress = {

@@ -24,10 +24,11 @@ import {
   AppPageMain,
   AppPageSection,
 } from "@/components/app-page";
-import { TESButton, TESFeedbackDialog } from "@/components/tes";
+import { PhoneInput, TESButton, TESFeedbackDialog } from "@/components/tes";
 import { SubscriptionManagementPanel } from "@/features/therapist-plan/components/subscription-management-panel";
 import type { TherapistPlanPageData } from "@/features/therapist-plan/therapist-plan.types";
 import { routes } from "@/lib/routes";
+import { validatePhoneNumber } from "@/lib/phone";
 
 import {
   lookupTherapistAddressByCep,
@@ -293,12 +294,15 @@ function AccountSection({
             value={fields.displayName}
           />
           <TextField disabled id="email" label="E-mail" value={email} />
-          <TextField
+          <PhoneInput
+            countryCode={fields.phoneCountryCode ?? "55"}
             id="phone"
             label="Telefone"
-            onChange={(value) => onChange({ phone: value })}
-            placeholder="+55 11 99999-9999"
-            value={fields.phone}
+            onCountryCodeChange={(value) =>
+              onChange({ phoneCountryCode: value })
+            }
+            onPhoneChange={(value) => onChange({ phone: value })}
+            phone={fields.phone}
           />
         </div>
         <div className="grid gap-5 border-t border-border pt-6">
@@ -877,7 +881,7 @@ function validateSettingsFields(fields: TherapistSettingsEditableFields) {
   if (displayName.length > 120) {
     return "Seu nome completo deve ter até 120 caracteres.";
   }
-  if (phone && (phone.length > 30 || !/^[+()0-9\s-]+$/.test(phone))) {
+  if (phone && validatePhoneNumber(fields.phoneCountryCode ?? "55", phone)) {
     return "Informe um telefone válido ou deixe o campo vazio.";
   }
   const identity = fields.identity;
@@ -901,6 +905,7 @@ function pickEditableFields(
   return {
     displayName: settings.account.displayName,
     phone: settings.account.phone,
+    phoneCountryCode: settings.account.phoneCountryCode,
     identity: settings.account.identity,
   };
 }

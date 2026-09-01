@@ -4007,6 +4007,7 @@ export type Database = {
           marketing_consent: boolean
           metadata: Json
           phone: string | null
+          phone_country_code: string | null
           sensitive_data_consent_at: string | null
           timezone: string
           updated_at: string
@@ -4021,6 +4022,7 @@ export type Database = {
           marketing_consent?: boolean
           metadata?: Json
           phone?: string | null
+          phone_country_code?: string | null
           sensitive_data_consent_at?: string | null
           timezone?: string
           updated_at?: string
@@ -4035,6 +4037,7 @@ export type Database = {
           marketing_consent?: boolean
           metadata?: Json
           phone?: string | null
+          phone_country_code?: string | null
           sensitive_data_consent_at?: string | null
           timezone?: string
           updated_at?: string
@@ -4947,6 +4950,7 @@ export type Database = {
           email_confirmed_at: string | null
           id: string
           phone: string | null
+          phone_country_code: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
@@ -4961,6 +4965,7 @@ export type Database = {
           email_confirmed_at?: string | null
           id: string
           phone?: string | null
+          phone_country_code?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
@@ -4975,6 +4980,7 @@ export type Database = {
           email_confirmed_at?: string | null
           id?: string
           phone?: string | null
+          phone_country_code?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }

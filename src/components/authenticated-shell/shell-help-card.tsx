@@ -6,12 +6,23 @@ import { cn } from "@/lib/utils";
 export function ShellHelpCard({
   href,
   label = "Fale conosco",
+  onClick,
+  target,
   variant = "default",
 }: {
-  href: string;
+  href?: string;
   label?: string;
+  onClick?: () => void;
+  target?: "_blank";
   variant?: "default" | "priority" | "therapist";
 }) {
+  const actionClassName = cn(
+    "mt-4 flex min-h-11 items-center justify-center rounded-sm px-3 text-sm font-medium outline-none transition focus-visible:ring-4 focus-visible:ring-ring/20",
+    variant === "therapist" || variant === "priority"
+      ? "bg-brand-cyan/30 text-status-info hover:bg-brand-cyan/45"
+      : "bg-brand-primary text-white hover:bg-brand-primaryHover",
+  );
+
   return (
     <section
       className={cn(
@@ -40,17 +51,20 @@ export function ShellHelpCard({
           </p>
         </div>
       </div>
-      <Link
-        className={cn(
-          "mt-4 flex min-h-11 items-center justify-center rounded-sm px-3 text-sm font-medium outline-none transition focus-visible:ring-4 focus-visible:ring-ring/20",
-          variant === "therapist" || variant === "priority"
-            ? "bg-brand-cyan/30 text-status-info hover:bg-brand-cyan/45"
-            : "bg-brand-primary text-white hover:bg-brand-primaryHover",
-        )}
-        href={href as Route<string>}
-      >
-        {label}
-      </Link>
+      {onClick ? (
+        <button className={actionClassName} onClick={onClick} type="button">
+          {label}
+        </button>
+      ) : href ? (
+        <Link
+          className={actionClassName}
+          href={href as Route<string>}
+          rel={target === "_blank" ? "noreferrer" : undefined}
+          target={target}
+        >
+          {label}
+        </Link>
+      ) : null}
     </section>
   );
 }

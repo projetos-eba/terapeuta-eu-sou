@@ -189,6 +189,15 @@ features or bank-form fields.
 
 ## QA
 
+- Previsões de repasse são sempre calculadas por pagamentos `eligible` do
+  terapeuta autenticado; nunca derivar `nextBatchAt` de lote global.
+- Exibir “próximo lote de transferência” e explicar que o Payout bancário
+  diário é criado pela Stripe, sem prometer data de crédito.
+- Elegibilidade exige conta Connect corrente (`is_current`) pronta, Transfer
+  ativo, Payout habilitado, agenda `daily` e estado operacional `ready`.
+- Sincronização Connect pode reavaliar de forma idempotente somente bloqueios
+  recuperáveis `connect_not_ready`; preservar bloqueios financeiros definitivos.
+
 Run focused tests for `src/features/therapist-finance`, Connect Deno tests and
 pgTAP finance tests. For full delivery, run the standard project validation:
 format, lint, typecheck, unit tests, Deno, build, Supabase reset/lint/test db.

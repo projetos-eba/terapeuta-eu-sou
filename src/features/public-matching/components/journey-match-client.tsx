@@ -9,6 +9,7 @@ import { platformAssets } from "@/lib/platform-assets";
 import { routes } from "@/lib/routes";
 
 import type { MatchingConfig, MatchingTheme } from "../types";
+import { JOURNEY_THEME_COPY } from "../theme-copy";
 
 export const MATCHING_SESSION_KEY = "tes.publicMatching.selection.v1";
 
@@ -470,16 +471,19 @@ function decorateThemes(themes: MatchingTheme[]): DecoratedTheme[] {
     .sort((first, second) => first.sortOrder - second.sortOrder)
     .map((theme) => {
       const visual = JOURNEY_VISUALS[theme.slug];
+      const copy = JOURNEY_THEME_COPY[theme.slug];
 
       return {
         ...theme,
+        description: copy?.description ?? theme.description,
+        name: copy?.title ?? theme.name,
         visual: {
           image:
             visual?.image ??
             (theme.imageUrl && !theme.imageUrl.startsWith("/journey/")
               ? theme.imageUrl
               : "/journey/emocoes-bem-estar.png"),
-          title: visual?.title ?? theme.name,
+          title: copy?.title ?? visual?.title ?? theme.name,
         },
       };
     });

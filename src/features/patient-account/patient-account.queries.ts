@@ -21,6 +21,7 @@ type ProfileRow = {
   display_name: string | null;
   email: string | null;
   id: string;
+  phone_country_code: string | null;
 };
 
 type PatientProfileRow = {
@@ -29,6 +30,7 @@ type PatientProfileRow = {
   id: string;
   metadata: unknown;
   phone: string | null;
+  phone_country_code: string | null;
 };
 
 type PaymentRow = {
@@ -85,11 +87,11 @@ async function getSupabasePatientAccount(
   const [profiles, patientProfiles] = await Promise.all([
     supabaseRequest<ProfileRow[]>(
       config,
-      `/rest/v1/profiles?select=id,display_name,email,avatar_url&id=eq.${encodeURIComponent(profileId)}&limit=1`,
+      `/rest/v1/profiles?select=id,display_name,email,avatar_url,phone_country_code&id=eq.${encodeURIComponent(profileId)}&limit=1`,
     ),
     supabaseRequest<PatientProfileRow[]>(
       config,
-      `/rest/v1/patient_profiles?select=id,display_name,phone,avatar_url,metadata&user_id=eq.${encodeURIComponent(profileId)}&limit=1`,
+      `/rest/v1/patient_profiles?select=id,display_name,phone,phone_country_code,avatar_url,metadata&user_id=eq.${encodeURIComponent(profileId)}&limit=1`,
     ),
   ]);
 
@@ -127,7 +129,11 @@ async function getSupabasePatientAccount(
     const therapist = booking
       ? therapistById.get(booking.therapist_profile_id)
       : undefined;
-    return mapPayment(payment, booking?.service_title_snapshot, therapist?.public_name);
+    return mapPayment(
+      payment,
+      booking?.service_title_snapshot,
+      therapist?.public_name,
+    );
   });
 
   return {
@@ -137,10 +143,13 @@ async function getSupabasePatientAccount(
       id: profile.id,
       name: patientProfile.display_name || profile.display_name || "Paciente",
       phone: patientProfile.phone ?? "",
+      phoneCountryCode:
+        patientProfile.phone_country_code ?? profile.phone_country_code ?? "55",
     },
     address: getPatientAddressFromMetadata(patientProfile.metadata),
     paymentSummary: {
-      count: payments.filter((payment) => isPaid(payment.financial_status)).length,
+      count: payments.filter((payment) => isPaid(payment.financial_status))
+        .length,
       totalPaidCents: payments
         .filter((payment) => isPaid(payment.financial_status))
         .reduce((total, payment) => total + payment.gross_amount_cents, 0),
@@ -196,6 +205,7 @@ function createDemoPatientAccount(profileId: string): PatientAccountData {
       id: profileId,
       name: "Carlos",
       phone: "",
+      phoneCountryCode: "55",
     },
     address: {
       city: "",

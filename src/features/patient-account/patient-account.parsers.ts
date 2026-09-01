@@ -2,6 +2,7 @@ import type {
   PatientAccountEditableFields,
   PatientAddress,
 } from "./patient-account.types";
+import { validatePhoneNumber } from "@/lib/phone";
 
 export class PatientAccountContractError extends Error {
   constructor(message = "Invalid patient account payload.") {
@@ -17,7 +18,11 @@ export function parsePatientAccountUpdatePayload(
   return {
     address: parseAddress(value.address),
     name: boundedString(value.name, 2, 120),
-    phone: optionalPhone(value.phone),
+    phone: optionalPhone(
+      value.phone,
+      optionalCountryCode(value.phoneCountryCode),
+    ),
+    phoneCountryCode: optionalCountryCode(value.phoneCountryCode),
   };
 }
 
@@ -54,7 +59,7 @@ function compactPostalCode(value: string) {
   return value.replace(/\D/g, "").slice(0, 8);
 }
 
-function optionalPhone(value: unknown) {
+function optionalPhone(value: unknown, countryCode: string) {
   if (value === null || value === undefined) return "";
   if (typeof value !== "string") throw invalid("phone");
   const normalized = value.trim();
@@ -62,7 +67,20 @@ function optionalPhone(value: unknown) {
   if (normalized.length > 30 || !/^[+()0-9\s-]+$/.test(normalized)) {
     throw invalid("phone");
   }
+  const digits = normalized.replace(/\D/g, "");
+  const national =
+    normalized.startsWith("+") && digits.startsWith(countryCode)
+      ? digits.slice(countryCode.length)
+      : normalized;
+  if (validatePhoneNumber(countryCode, national, true)) throw invalid("phone");
   return normalized;
+}
+
+function optionalCountryCode(value: unknown) {
+  if (value === null || value === undefined || value === "") return "55";
+  if (typeof value !== "string" || !/^[1-9]\d{0,2}$/.test(value))
+    throw invalid("phone_country_code");
+  return value;
 }
 
 function optionalBoundedString(value: unknown, max: number) {

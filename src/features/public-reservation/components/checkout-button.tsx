@@ -47,6 +47,7 @@ type CheckoutResponse =
 
 export function CheckoutButton({
   acceptedTerms,
+  checkoutAttemptId,
   disabled,
   isPatientAuthenticated,
   loginHref,
@@ -58,6 +59,7 @@ export function CheckoutButton({
   startsAt,
 }: {
   acceptedTerms: boolean;
+  checkoutAttemptId?: string | null;
   disabled?: boolean;
   isPatientAuthenticated: boolean;
   loginHref: string;
@@ -89,20 +91,28 @@ export function CheckoutButton({
   const requestIdRef = useRef<string | null>(null);
   const completedRef = useRef(false);
   const abandonmentStartedRef = useRef(false);
+  const replacementInFlightRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkoutReady, setCheckoutReady] = useState(false);
 
   useEffect(() => {
     const abandonPendingCheckout = () => {
-      if (abandonmentStartedRef.current || completedRef.current) return;
+      if (
+        abandonmentStartedRef.current ||
+        completedRef.current ||
+        replacementInFlightRef.current
+      ) {
+        return;
+      }
 
-      const bookingId = currentCheckoutRef.current?.bookingId;
-      if (!bookingId) return;
+      const currentCheckout = currentCheckoutRef.current;
+      if (!currentCheckout) return;
 
       abandonmentStartedRef.current = true;
       const body = JSON.stringify({
-        bookingId,
+        bookingId: currentCheckout.bookingId,
+        checkoutSessionId: currentCheckout.checkoutSessionId,
         requestId: crypto.randomUUID(),
       });
       const url = "/api/public/reservation/abandon";
@@ -132,12 +142,17 @@ export function CheckoutButton({
       window.removeEventListener("pagehide", abandonPendingCheckout);
       checkoutRef.current?.destroy();
       checkoutRef.current = null;
-      abandonPendingCheckout();
     };
   }, []);
 
   useEffect(() => {
     let cancelled = false;
+    const replacementRequest =
+      promotionRequest &&
+      promotionRequest.requestId !== handledPromotionRequestRef.current &&
+      currentCheckoutRef.current
+        ? promotionRequest
+        : null;
 
     async function initializeCheckout() {
       checkoutRef.current?.destroy();
@@ -164,10 +179,11 @@ export function CheckoutButton({
 
       setIsSubmitting(true);
       setError(null);
-      const checkoutInputKey = `${serviceId}:${startsAt}`;
+      if (replacementRequest) replacementInFlightRef.current = true;
+      const checkoutInputKey = `${serviceId}:${startsAt}:${checkoutAttemptId ?? "new"}`;
       if (checkoutInputKeyRef.current !== checkoutInputKey) {
         checkoutInputKeyRef.current = checkoutInputKey;
-        requestIdRef.current = crypto.randomUUID();
+        requestIdRef.current = checkoutAttemptId ?? crypto.randomUUID();
         currentCheckoutRef.current = null;
         handledPromotionRequestRef.current = null;
         completedRef.current = false;
@@ -183,10 +199,7 @@ export function CheckoutButton({
           throw new Error("stripe_not_loaded");
         }
 
-        const isPromotionReplacement =
-          promotionRequest &&
-          promotionRequest.requestId !== handledPromotionRequestRef.current &&
-          currentCheckoutRef.current;
+        const isPromotionReplacement = Boolean(replacementRequest);
         const previousCheckout = currentCheckoutRef.current;
         const response = await fetch("/api/public/reservation/checkout", {
           body: JSON.stringify(
@@ -194,8 +207,8 @@ export function CheckoutButton({
               ? {
                   action: "replace",
                   bookingId: previousCheckout?.bookingId,
-                  checkoutAttemptId: promotionRequest.requestId,
-                  promotionCode: promotionRequest.code,
+                  checkoutAttemptId: replacementRequest!.requestId,
+                  promotionCode: replacementRequest!.code,
                   replaceCheckoutSessionId: previousCheckout?.checkoutSessionId,
                 }
               : {
@@ -305,6 +318,9 @@ export function CheckoutButton({
           setError(message);
         }
       } finally {
+        if (replacementRequest?.requestId === promotionRequest?.requestId) {
+          replacementInFlightRef.current = false;
+        }
         if (!cancelled) setIsSubmitting(false);
       }
     }
@@ -318,6 +334,7 @@ export function CheckoutButton({
     };
   }, [
     acceptedTerms,
+    checkoutAttemptId,
     disabled,
     isPatientAuthenticated,
     onCheckoutChange,

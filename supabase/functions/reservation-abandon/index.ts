@@ -1,6 +1,9 @@
 import { handleOptions } from "../_shared/auth/cors.ts";
 import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
-import { expireOpenCheckoutForAbandonment } from "../_shared/payments/checkout-abandonment.ts";
+import {
+  expireOpenCheckoutForAbandonment,
+  isCurrentCheckoutForAbandonment,
+} from "../_shared/payments/checkout-abandonment.ts";
 import {
   DomainError,
   failure,
@@ -14,7 +17,11 @@ import {
 } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 
-type Body = { bookingId?: string; requestId?: string };
+type Body = {
+  bookingId?: string;
+  checkoutSessionId?: string;
+  requestId?: string;
+};
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -38,6 +45,7 @@ runtime.serve(async (request) => {
     if (
       !body.bookingId ||
       !UUID.test(body.bookingId) ||
+      !body.checkoutSessionId?.startsWith("cs_") ||
       !body.requestId ||
       !UUID.test(body.requestId)
     ) {
@@ -69,17 +77,26 @@ runtime.serve(async (request) => {
     >(
       `/rest/v1/session_payments?select=financial_status,stripe_checkout_session_id&booking_id=eq.${booking.id}&order=created_at.desc&limit=1`,
     );
+    const currentPayment = payments[0];
     if (
-      payments[0] &&
-      !["pending", "failed", "canceled"].includes(payments[0].financial_status)
+      !currentPayment ||
+      !isCurrentCheckoutForAbandonment({
+        currentCheckoutSessionId: currentPayment.stripe_checkout_session_id,
+        requestedCheckoutSessionId: body.checkoutSessionId,
+      })
     ) {
       return success({ released: false, status: booking.status });
     }
-    const checkoutSessionId = payments[0]?.stripe_checkout_session_id;
     if (
-      checkoutSessionId &&
+      !["pending", "failed", "canceled"].includes(
+        currentPayment.financial_status,
+      )
+    ) {
+      return success({ released: false, status: booking.status });
+    }
+    if (
       !(await expireOpenCheckoutForAbandonment({
-        checkoutSessionId,
+        checkoutSessionId: body.checkoutSessionId,
         stripe,
       }))
     ) {

@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
@@ -13,6 +13,7 @@ import {
 
 afterEach(() => {
   cleanup();
+  window.history.replaceState({}, "", "/reserva");
 });
 
 describe("ReservationPage", () => {
@@ -108,5 +109,82 @@ describe("ReservationPage", () => {
         "Não conseguimos comparar estes horários com seus outros encontros agora. A confirmação será feita antes do pagamento.",
       ),
     ).toBeInTheDocument();
+  });
+
+  it("keeps the accepted terms and checkout attempt when returning to preparation", () => {
+    const context = resolveReservationContext({
+      isPatientAuthenticated: true,
+      searchParams: {
+        etapa: "preparar",
+        service: "d1000000-0000-4000-8000-000000000001",
+        slot: "2026-09-01T16:15:00.000Z",
+      },
+    });
+
+    render(<ReservationPage context={context} />);
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /aceito os/i }));
+    fireEvent.click(
+      screen
+        .getAllByRole("button", { name: /avan/i })
+        .find((button) => button.getAttribute("type") === "submit")!,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: /confirme seus dados/i }),
+    ).toBeInTheDocument();
+
+    window.history.replaceState(
+      window.history.state,
+      "",
+      "/reserva?etapa=preparar",
+    );
+    fireEvent.popState(window);
+
+    const advanceButton = screen
+      .getAllByRole("button", { name: /avan/i })
+      .find((button) => button.getAttribute("type") === "submit");
+
+    expect(advanceButton).toBeDefined();
+    expect(advanceButton).toBeEnabled();
+  });
+
+  it("opens support in the checkout and removes the redundant payment anchor", () => {
+    const context = resolveReservationContext({
+      isPatientAuthenticated: true,
+      searchParams: {
+        etapa: "preparar",
+        service: "d1000000-0000-4000-8000-000000000001",
+        slot: "2026-09-01T16:15:00.000Z",
+      },
+    });
+
+    render(<ReservationPage context={context} />);
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /aceito os/i }));
+    fireEvent.click(
+      screen
+        .getAllByRole("button", { name: /avan/i })
+        .find((button) => button.getAttribute("type") === "submit")!,
+    );
+
+    const support = screen.getByRole("heading", { name: "Precisa de ajuda?" });
+    const policy = screen.getByRole("heading", { name: /Pol/ });
+    expect(
+      support.compareDocumentPosition(policy) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Fale conosco" }));
+    expect(
+      screen.getByRole("dialog", { name: "Novo chamado" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Categoria")).toHaveValue("outro");
+    expect(screen.getByLabelText("Assunto")).toBeInTheDocument();
+    expect(
+      screen.getByRole("dialog", { name: "Novo chamado" }).querySelector("textarea"),
+    ).not.toBeNull();
+    expect(
+      screen.queryByRole("link", { name: "Ir para pagamento seguro" }),
+    ).toBeNull();
   });
 });

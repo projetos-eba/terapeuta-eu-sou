@@ -20,6 +20,7 @@ import type {
 import {
   formatCurrency,
   formatDate,
+  formatDateOnly,
   formatDateTime,
   payoutStatusLabels,
 } from "./financial-formatters";
@@ -36,6 +37,17 @@ export function FinancialPayoutsTab({
   payouts: TherapistPayoutsContract;
 }) {
   const hasRefunds = payouts.items.some((item) => item.refundedAmountCents > 0);
+  const blockedReasons = payouts.summary.blockedReasonCodes
+    .map(
+      (reason) =>
+        ({
+          account: "conta de recebimento",
+          other: "análise financeira",
+          refund: "reembolso",
+          review: "revisão da sessão",
+        })[reason],
+    )
+    .join(", ");
 
   return (
     <div className="grid min-w-0 gap-5 [&>*]:min-w-0">
@@ -52,17 +64,17 @@ export function FinancialPayoutsTab({
         <PayoutMetricCard
           description={
             payouts.summary.nextBatchAt
-              ? `Próximo repasse previsto para ${formatDateTime(
+              ? `Próximo lote de transferência previsto para ${formatDateOnly(
                   payouts.summary.nextBatchAt,
                   payouts.filters.timezone,
                 )}.`
-              : "Nenhum repasse futuro identificado para este período."
+              : "Sem valores elegíveis para o próximo lote."
           }
           icon={CalendarClock}
-          label="Próximo repasse"
+          label="Próximo lote de transferência"
           valueText={
             payouts.summary.nextBatchAt
-              ? formatDateTime(
+              ? formatDateOnly(
                   payouts.summary.nextBatchAt,
                   payouts.filters.timezone,
                 )
@@ -77,7 +89,11 @@ export function FinancialPayoutsTab({
         />
         {payouts.summary.blockedCents > 0 ? (
           <PayoutMetricCard
-            description="Valores bloqueados por revisão, disputa ou conta."
+            description={
+              blockedReasons
+                ? `Motivos identificados: ${blockedReasons}.`
+                : "Valores em análise ou aguardando regularização."
+            }
             icon={ShieldAlert}
             label="Bloqueado"
             value={payouts.summary.blockedCents}
@@ -381,9 +397,9 @@ function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
     },
     {
       detail: payouts.summary.nextBatchAt
-        ? formatDateTime(payouts.summary.nextBatchAt, payouts.filters.timezone)
-        : "Sem previsão para o período",
-      label: "Próximo repasse",
+        ? formatDateOnly(payouts.summary.nextBatchAt, payouts.filters.timezone)
+        : "Sem valores elegíveis para o próximo lote",
+      label: "Próximo lote de transferência",
       tone: payouts.summary.nextBatchAt
         ? "bg-brand-primary text-white"
         : "bg-brand-lavender text-brand-primary",
@@ -411,7 +427,9 @@ function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
           Próximos repasses
         </h2>
         <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-          Uma visão rápida do que está disponível, previsto e em transferência.
+          O TES organiza Transfers no lote semanal de terça às 02:00 (horário de
+          São Paulo). O crédito bancário depende do Payout automático diário da
+          Stripe e não tem data prometida aqui.
         </p>
       </div>
       <ol className="grid gap-4 md:grid-cols-3 md:gap-0">

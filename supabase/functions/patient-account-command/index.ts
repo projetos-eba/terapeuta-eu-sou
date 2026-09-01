@@ -30,6 +30,7 @@ type PatientProfileRow = {
   id: string;
   metadata: unknown;
   phone: string | null;
+  phone_country_code: string | null;
 };
 
 runtime.serve(async (request) => {
@@ -93,13 +94,17 @@ runtime.serve(async (request) => {
 
     const payload = parseProfilePayload(command.payload);
     const currentRows = await client.get<PatientProfileRow[]>(
-      `/rest/v1/patient_profiles?select=id,display_name,phone,avatar_url,metadata&id=eq.${encodeURIComponent(
+      `/rest/v1/patient_profiles?select=id,display_name,phone,phone_country_code,avatar_url,metadata&id=eq.${encodeURIComponent(
         profile.id,
       )}&limit=1`,
     );
     const current = currentRows[0];
     if (!current) {
-      throw new DomainError("patient_profile_not_found", 403, "Perfil não encontrado.");
+      throw new DomainError(
+        "patient_profile_not_found",
+        403,
+        "Perfil não encontrado.",
+      );
     }
 
     const metadata = asObject(current.metadata);
@@ -112,7 +117,11 @@ runtime.serve(async (request) => {
     const [profileRows] = await Promise.all([
       client.patch<Array<{ display_name: string; phone: string | null }>>(
         `/rest/v1/profiles?id=eq.${encodeURIComponent(user.id)}&limit=1`,
-        { display_name: payload.name, phone: payload.phone || null },
+        {
+          display_name: payload.name,
+          phone: payload.phone || null,
+          phone_country_code: payload.phoneCountryCode,
+        },
         "return=representation",
       ),
       client.patch(
@@ -121,6 +130,7 @@ runtime.serve(async (request) => {
           display_name: payload.name,
           metadata: nextMetadata,
           phone: payload.phone || null,
+          phone_country_code: payload.phoneCountryCode,
         },
         "return=minimal",
       ),
@@ -133,6 +143,7 @@ runtime.serve(async (request) => {
       id: user.id,
       name: profileRows?.[0]?.display_name ?? payload.name,
       phone: profileRows?.[0]?.phone ?? payload.phone,
+      phoneCountryCode: payload.phoneCountryCode,
     });
   } catch (error) {
     return failure(error, requestId);
@@ -160,10 +171,18 @@ async function uploadAvatar({
   userId: string;
 }) {
   if (!(file instanceof File) || !isSupportedImageType(file.type)) {
-    throw new DomainError("invalid_file", 422, "Escolha uma imagem em JPG, PNG ou WebP.");
+    throw new DomainError(
+      "invalid_file",
+      422,
+      "Escolha uma imagem em JPG, PNG ou WebP.",
+    );
   }
   if (file.size > maxAvatarBytes) {
-    throw new DomainError("file_too_large", 422, "A imagem deve ter no máximo 5 MB.");
+    throw new DomainError(
+      "file_too_large",
+      422,
+      "A imagem deve ter no máximo 5 MB.",
+    );
   }
 
   const objectPath = `${userId}/avatar-${crypto.randomUUID()}${extensionFor(file.type)}`;
@@ -181,7 +200,11 @@ async function uploadAvatar({
     },
   );
   if (!uploadResponse.ok) {
-    throw new DomainError("avatar_upload_failed", 502, "Não foi possível enviar a foto agora.");
+    throw new DomainError(
+      "avatar_upload_failed",
+      502,
+      "Não foi possível enviar a foto agora.",
+    );
   }
 
   const avatarUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${objectPath}`;
@@ -203,7 +226,11 @@ async function uploadAvatar({
 
 function parseProfilePayload(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
-    throw new DomainError("invalid_payload", 422, "Revise os dados antes de salvar.");
+    throw new DomainError(
+      "invalid_payload",
+      422,
+      "Revise os dados antes de salvar.",
+    );
   }
   const payload = value as Record<string, unknown>;
   if (typeof payload.name !== "string") {
@@ -217,11 +244,28 @@ function parseProfilePayload(value: unknown) {
   if (phone.length > 30 || (phone && !/^[+()0-9\s-]+$/.test(phone))) {
     throw new DomainError("invalid_phone", 422, "Revise o telefone informado.");
   }
+  const phoneCountryCode =
+    typeof payload.phoneCountryCode === "string" &&
+    /^[1-9]\d{0,2}$/.test(payload.phoneCountryCode)
+      ? payload.phoneCountryCode
+      : "55";
+  const phoneDigits = phone.replace(/\D/g, "");
+  if (
+    phoneDigits &&
+    (phoneDigits.length < 4 ||
+      phoneDigits.length > 15 ||
+      /^(\d)\1+$/.test(phoneDigits) ||
+      (phoneCountryCode === "55" &&
+        (phoneDigits.length < 10 || phoneDigits.length > 11)))
+  ) {
+    throw new DomainError("invalid_phone", 422, "Revise o telefone informado.");
+  }
 
   return {
     address: parseAddress(payload.address),
     name,
     phone,
+    phoneCountryCode,
   };
 }
 
@@ -237,7 +281,11 @@ function parseAddress(value: unknown): Address {
     streetNumber: text(record.streetNumber, 20),
   };
   if (address.postalCode && !/^\d{8}$/.test(address.postalCode)) {
-    throw new DomainError("invalid_postal_code", 422, "Revise o CEP informado.");
+    throw new DomainError(
+      "invalid_postal_code",
+      422,
+      "Revise o CEP informado.",
+    );
   }
   if (address.state && !/^[A-Z]{2}$/.test(address.state)) {
     throw new DomainError("invalid_state", 422, "Revise o estado informado.");
@@ -272,7 +320,9 @@ function asObject(value: unknown): Record<string, unknown> {
 }
 
 function isSupportedImageType(value: string) {
-  return value === "image/jpeg" || value === "image/png" || value === "image/webp";
+  return (
+    value === "image/jpeg" || value === "image/png" || value === "image/webp"
+  );
 }
 
 function extensionFor(value: string) {

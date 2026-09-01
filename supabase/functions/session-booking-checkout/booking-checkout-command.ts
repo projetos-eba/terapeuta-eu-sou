@@ -41,6 +41,48 @@ export type SelectedServiceSlot = {
   timezone: string;
 };
 
+export type ExistingCheckoutHold = {
+  consumedBookingId: string | null;
+  endsAt: string;
+  expiresAt: string;
+  id: string;
+  patientProfileId: string;
+  serviceId: string;
+  startsAt: string;
+  status: string;
+  timezone: string;
+};
+
+export function resolveExistingCheckoutHold(
+  hold: ExistingCheckoutHold | null,
+  command: ValidBookingCheckoutCommand,
+  patientProfileId: string,
+) {
+  if (!hold) return null;
+
+  if (
+    hold.patientProfileId !== patientProfileId ||
+    hold.serviceId !== command.serviceId ||
+    new Date(hold.startsAt).getTime() !== new Date(command.startsAt).getTime()
+  ) {
+    throw new DomainError(
+      "idempotency_key_reused",
+      409,
+      "Esta tentativa de reserva ja foi usada com outros dados.",
+    );
+  }
+
+  if (hold.status === "active") {
+    return { bookingId: null, hold };
+  }
+
+  if (hold.status === "consumed" && isUuid(hold.consumedBookingId)) {
+    return { bookingId: hold.consumedBookingId, hold };
+  }
+
+  return null;
+}
+
 export function validateBookingCheckoutCommand(
   body: BookingCheckoutCommandBody,
 ): ValidBookingCheckoutCommand {

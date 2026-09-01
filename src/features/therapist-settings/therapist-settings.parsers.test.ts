@@ -17,6 +17,7 @@ describe("therapist settings parsers", () => {
     ).toEqual({
       displayName: "Ana Oliveira",
       phone: "+55 11 99999-9999",
+      phoneCountryCode: "55",
     });
   });
 

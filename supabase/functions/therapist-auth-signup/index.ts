@@ -36,6 +36,7 @@ type TherapistSignupValue = {
   fullName: string;
   password: string;
   phoneDigits: string;
+  phoneCountryCode?: string;
   plan: "free" | "premium" | "premium_plus";
   termsAccepted?: boolean;
 };
@@ -137,6 +138,7 @@ therapistSignupRuntime.serve(async (request) => {
         email,
         id: userId,
         phone: value.phoneDigits,
+        phone_country_code: value.phoneCountryCode ?? "55",
         role: "therapist",
       },
       method: "POST",
@@ -167,6 +169,7 @@ therapistSignupRuntime.serve(async (request) => {
             signup: {
               birthDate: value.birthDate,
               phoneDigits: value.phoneDigits,
+              phoneCountryCode: value.phoneCountryCode ?? "55",
               requestedPlan: value.plan,
               source: "therapist_auth",
             },

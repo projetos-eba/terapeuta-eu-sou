@@ -29,10 +29,14 @@ export async function PATCH(request: Request) {
 
   try {
     const payload = parsePatientAccountUpdatePayload(body);
-    const result = await invokeSupabaseFunction(config, "patient-account-command", {
-      accessToken,
-      body: { action: "update_profile", payload },
-    });
+    const result = await invokeSupabaseFunction(
+      config,
+      "patient-account-command",
+      {
+        accessToken,
+        body: { action: "update_profile", payload },
+      },
+    );
     return NextResponse.json(result, { headers: noStoreHeaders });
   } catch (error) {
     if (error instanceof PatientAccountContractError) {
