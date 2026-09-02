@@ -163,12 +163,13 @@ function optionalPhone(value: unknown, countryCode: string) {
     throw invalid("phone");
   }
   const digits = normalized.replace(/\D/g, "");
-  const national =
+  const nationalDigits =
     normalized.startsWith("+") && digits.startsWith(countryCode)
       ? digits.slice(countryCode.length)
-      : normalized;
-  if (validatePhoneNumber(countryCode, national, true)) throw invalid("phone");
-  return normalized;
+      : digits;
+  if (validatePhoneNumber(countryCode, nationalDigits, true))
+    throw invalid("phone");
+  return nationalDigits;
 }
 
 function optionalCountryCode(value: unknown) {

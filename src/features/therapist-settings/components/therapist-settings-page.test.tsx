@@ -50,7 +50,8 @@ describe("TherapistSettingsPage", () => {
       data: {
         account: {
           displayName: "Ana Oliveira",
-          phone: "+55 11 99999-9999",
+          phone: "11999999999",
+          phoneCountryCode: "55",
           identity: {
             city: "São Paulo",
             complement: "Apto 42",
@@ -169,14 +170,15 @@ describe("TherapistSettingsPage", () => {
     );
 
     fireEvent.change(screen.getByLabelText("Telefone"), {
-      target: { value: "+55 11 99999-9999" },
+      target: { value: "11 99999-9999" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Salvar meus dados" }));
 
     await waitFor(() => {
       expect(commandMocks.updateTherapistSettings).toHaveBeenCalledWith({
         displayName: "Ana Oliveira",
-        phone: "+55 11 99999-9999",
+        phone: "(11) 99999-9999",
+        phoneCountryCode: "55",
         identity: {
           city: "São Paulo",
           complement: "Apto 42",
@@ -212,7 +214,7 @@ describe("TherapistSettingsPage", () => {
     );
 
     fireEvent.change(screen.getByLabelText("Telefone"), {
-      target: { value: "+55 11 99999-9999" },
+      target: { value: "11 99999-9999" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Salvar meus dados" }));
 
@@ -235,7 +237,7 @@ describe("TherapistSettingsPage", () => {
     );
 
     fireEvent.change(screen.getByLabelText("Telefone"), {
-      target: { value: "telefone<script>" },
+      target: { value: "119999" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Salvar meus dados" }));
 
@@ -381,6 +383,7 @@ function settingsFixture(): TherapistSettingsData {
       displayName: "Ana Oliveira",
       email: "ana@example.test",
       phone: "",
+      phoneCountryCode: "55",
       userId: "c1000000-0000-4000-8000-000000000001",
       identity: {
         city: "São Paulo",
