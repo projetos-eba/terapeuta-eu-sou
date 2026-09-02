@@ -20,6 +20,7 @@ import {
   getPaymentsRuntime,
 } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
+import { resolveCheckoutReturnUrlBase } from "./checkout-return-url.ts";
 
 type Body = {
   attemptKind?: "initial_hold" | "payment_retry";
@@ -29,6 +30,7 @@ type Body = {
   promotionCode?: string | null;
   replaceCheckoutSessionId?: string | null;
   reservationExpiresAt?: string | null;
+  returnUrlBase?: string | null;
 };
 
 type ReservationCheckoutMode = "initial_hold" | "payment_retry";
@@ -82,6 +84,11 @@ runtime.serve(async (request) => {
     const stripe = createStripeClient(config.stripeApiKey);
     const { profile: patient, user } = await requirePatient(client, request);
     const body = await parseJsonBody<Body>(request);
+    const checkoutReturnUrlBase = resolveCheckoutReturnUrlBase({
+      configuredSiteUrl: config.siteUrl,
+      requestedReturnUrlBase: body.returnUrlBase,
+      stripeMode: config.stripeMode,
+    });
     const bookingId = requireUuid(body.bookingId, "booking_id");
     const checkoutAttemptId = requireUuid(
       body.checkoutAttemptId,
@@ -333,7 +340,7 @@ runtime.serve(async (request) => {
         },
         transfer_group: `tes_booking_${booking.id}`,
       },
-      return_url: `${config.siteUrl}/reserva/sucesso?booking=${booking.id}&session_id={CHECKOUT_SESSION_ID}`,
+      return_url: `${checkoutReturnUrlBase}/reserva/sucesso?booking=${booking.id}&session_id={CHECKOUT_SESSION_ID}`,
       ui_mode: "embedded_page" as const,
     };
     let checkout: Awaited<ReturnType<typeof stripe.checkout.sessions.create>>;
@@ -548,7 +555,9 @@ async function assertInitialHoldAttempt(
   const rows = await client.get<Array<{ expires_at: string }>>(
     `/rest/v1/booking_holds?select=expires_at&id=eq.${encodeURIComponent(
       input.bookingHoldId,
-    )}&consumed_booking_id=eq.${encodeURIComponent(input.bookingId)}&status=eq.consumed&limit=1`,
+    )}&consumed_booking_id=eq.${encodeURIComponent(
+      input.bookingId,
+    )}&status=eq.consumed&limit=1`,
   );
   const expiresAt = rows[0]?.expires_at;
   if (

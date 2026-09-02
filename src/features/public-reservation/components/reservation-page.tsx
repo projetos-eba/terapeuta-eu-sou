@@ -133,7 +133,8 @@ export function ReservationPage({
       ? null
       : context.selectedSlotHasPatientConflict
         ? "Você já tem outro encontro nesse horário. Escolha outro momento."
-        : context.step === "pagamento"
+        : context.step === "pagamento" &&
+            initialJourneyDraft?.acceptedTerms !== true
           ? "Aceite os termos antes de seguir para o pagamento."
           : null,
   );
@@ -187,6 +188,11 @@ export function ReservationPage({
         "etapa",
       );
       if (requestedStep === "pagamento") {
+        setJourneyError(
+          draft?.acceptedTerms || isPaymentRetry
+            ? null
+            : "Aceite os termos antes de seguir para o pagamento.",
+        );
         setCurrentStep(
           draft?.acceptedTerms && context.hasRequiredCheckoutData
             ? "pagamento"
