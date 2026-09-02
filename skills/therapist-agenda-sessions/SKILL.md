@@ -148,6 +148,10 @@ histórica.
   mobile, as superfícies de apoio podem ocupar duas colunas quando houver
   espaço legível; o conteúdo principal permanece em uma sequência vertical.
 
+Free keeps the operational calendar available, but the demand heatmap in
+“Acompanhe sua agenda” is blurred and removed from the accessible content;
+the related demand tip is not rendered without `agenda_insights`.
+
 ## Disponibilidade
 
 - A aba Horários usa o frame Figma `13366:7977` e a rota canônica

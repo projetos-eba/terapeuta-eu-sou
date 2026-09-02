@@ -17,6 +17,15 @@ afterEach(() => {
 });
 
 describe("ReservationPage", () => {
+  it("does not show a reservation countdown before checkout", () => {
+    const context = resolveReservationContext({
+      isPatientAuthenticated: true,
+    });
+    render(<ReservationPage context={context} />);
+
+    expect(screen.queryByText(/Reserva por/i)).not.toBeInTheDocument();
+  });
+
   it("renders the connected client card with a wider layout and no phone confirmation badge", () => {
     const context = resolveReservationContext({
       isPatientAuthenticated: true,

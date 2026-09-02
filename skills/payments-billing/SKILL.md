@@ -48,6 +48,18 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   a real paid older attempt remains authoritative and closes siblings.
 - Webhook reservation must be atomic; failed/stale leases may be retried.
 - Checkout completion only confirms a session when `payment_status` is paid.
+- Session Checkout uses `capture_method=manual`. For `initial_hold`, the
+  database deadline is five minutes; for `payment_retry`, no slot is occupied
+  before authorization. On `payment_intent.amount_capturable_updated`, the
+  service-role claim RPC locks therapist then patient, revalidates the current
+  attempt and slot, and only the winner captures. A loser cancels the
+  authorization and records `slot_conflict`.
+- A consumed initial hold without persisted Stripe Checkout must be released by
+  `cancel_unstarted_initial_checkout_v1`; maintenance also sweeps expired
+  bootstrap orphans. Never cancel when a Checkout Session is already persisted.
+- `cancelled_by_payment -> pending_payment` is forbidden to RLS, direct SQL and
+  generic booking commands; only `claim_session_payment_authorization_v1` may
+  reopen it. Superseded attempts never release or confirm the current one.
 - Subscription plan comes from the effective Stripe Price mapping.
 - Paid catalog Prices are monthly only. Public catalog reads require
   `is_public=true`; hidden offers require a server-resolved `offer_key` and
@@ -83,7 +95,7 @@ Edge Functions:
 
 - Billing: `stripe-sync-billing-catalog`, `stripe-create-subscription-checkout`, `stripe-subscription-checkout-status`, `stripe-change-therapist-subscription`, `stripe-cancel-therapist-subscription`, `stripe-create-billing-portal`, `stripe-billing-webhook`.
 - Connect: `stripe-connect-create-account`, `stripe-connect-create-account-link`, `stripe-connect-create-login-link`, `stripe-connect-sync-account`, `stripe-connect-webhook`.
-- Sessions and payouts: `stripe-create-session-payment`, `request-session-cancellation`, `confirm-session-by-therapist`, `auto-confirm-sessions`, `evaluate-transfer-eligibility`, `create-weekly-payout-batch`, `process-payout-batch`, `retry-failed-payout-items`, `reconcile-stripe-transfers`, `weekly-payout-scheduler`, `stripe-connect-payout-schedule`.
+- Sessions and payouts: `stripe-create-session-payment`, `reservation-checkout-maintenance`, `request-session-cancellation`, `confirm-session-by-therapist`, `auto-confirm-sessions`, `evaluate-transfer-eligibility`, `create-weekly-payout-batch`, `process-payout-batch`, `retry-failed-payout-items`, `reconcile-stripe-transfers`, `weekly-payout-scheduler`, `stripe-connect-payout-schedule`.
 - Read `docs/payments/weekly-payouts.md` before changing weekly batches, Balance Settings, Transfer/Payout states, retry, reconciliation or alerts.
 - `payouts_enabled` comes from Balance Settings, never from the Transfer capability. Scheduler must not auto-correct the payout schedule.
 - ADR-018 is authoritative for BR: weekly TES Transfers followed by Stripe

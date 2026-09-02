@@ -70,7 +70,18 @@ revalidada no servidor antes do checkout.
   `requestId`, `termsAccepted` e `holdTtlSeconds`. Sem aceite obrigatório, o
   endpoint deve falhar antes de criar hold, booking ou pagamento.
 - `session-booking-checkout` revalida slot, cria hold/booking, consome hold e
-  chama `stripe-create-session-payment`.
+  chama `stripe-create-session-payment`. Falha antes de persistir a Checkout
+  deve compensar o booking consumido; a manutenção recupera o mesmo órfão após
+  o prazo como segunda barreira.
+- O hold inicial nasce somente ao montar `Confirme sua reserva`, dura 300
+  segundos e usa `reservationExpiresAt`/`serverNow` retornados pelo backend. Não
+  renderizar cronômetro em `momento` ou `preparar`, nem reiniciar o prazo por
+  remount, refresh ou troca de cupom.
+- A retomada usa apenas `/reserva?booking=<uuid>&etapa=pagamento`. O servidor
+  autentica o paciente e hidrata serviço, preço, horário e terapeuta do snapshot
+  persistido; parâmetros equivalentes enviados pelo navegador não são
+  autoridade. `payment_retry` não cria hold nem contador enquanto o formulário
+  Stripe está aberto.
 - `PATIENT_SCHEDULE_CONFLICT` deve virar `patient_schedule_conflict` 409 na
   Edge e voltar como `PATIENT_SCHEDULE_CONFLICT` na API Next, com copy TES. A
   Stripe não pode ser iniciada após esse erro.
@@ -102,6 +113,9 @@ revalidada no servidor antes do checkout.
   `tes_checkout_scope=session`.
 - Redirecionamento de sucesso nunca confirma pagamento. Apenas webhook Stripe
   atualiza pagamento/booking de forma definitiva.
+- `/reserva/sucesso` consulta o status autenticado por no máximo 30 segundos e
+  só mostra confirmação quando `session_payments.financial_status=paid` e o
+  booking está `confirmed`; expiração, conflito e falha têm estados honestos.
 - Não coletar número de cartão, CVC ou dados bancários no Next.
 
 ## Componentes esperados

@@ -382,6 +382,7 @@ const platformEvents = [
   "checkout.session.completed",
   "customer.subscription.updated",
   "invoice.paid",
+  "payment_intent.amount_capturable_updated",
   "payment_intent.requires_action",
   "payment_intent.succeeded",
   "charge.refunded",

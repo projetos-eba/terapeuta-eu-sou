@@ -191,6 +191,12 @@ verify_jwt = false
 [functions.session-booking-checkout]
 verify_jwt = false
 
+[functions.reservation-abandon]
+verify_jwt = false
+
+[functions.reservation-checkout-maintenance]
+verify_jwt = false
+
 [functions.session-reschedule]
 verify_jwt = false
 

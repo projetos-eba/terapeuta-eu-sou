@@ -104,9 +104,11 @@ const colorStyles: Record<
 };
 
 export function TherapistCalendar({
+  canViewAgendaInsights = true,
   data,
   scheduleRules = null,
 }: {
+  canViewAgendaInsights?: boolean;
   data: TherapistCalendarReadModel;
   scheduleRules?: TherapistScheduleRule[] | null;
 }) {
@@ -317,11 +319,14 @@ export function TherapistCalendar({
             timezone={data.timezone}
           />
           <AttentionCard items={data.attentionItems} timezone={data.timezone} />
-          <DemandCard demand={data.demand} />
+          <DemandCard
+            canViewAgendaInsights={canViewAgendaInsights}
+            demand={data.demand}
+          />
         </aside>
       </div>
 
-      <TesScheduleTip demand={data.demand} />
+      {canViewAgendaInsights ? <TesScheduleTip demand={data.demand} /> : null}
 
       {selectedBooking ? (
         <BookingDialog
@@ -702,7 +707,10 @@ function TimelineBooking({
   if (!placement) return null;
   const style = colorStyles[booking.colorKey];
   const status = mapSessionPresentation(booking);
-  const isClosed = isClosedCalendarBooking(status.state, booking.financialStatus);
+  const isClosed = isClosedCalendarBooking(
+    status.state,
+    booking.financialStatus,
+  );
 
   return (
     <button
@@ -1225,11 +1233,41 @@ function AttentionCard({
   );
 }
 
-function DemandCard({ demand }: { demand: TherapistCalendarDemandItem[] }) {
+function DemandCard({
+  canViewAgendaInsights,
+  demand,
+}: {
+  canViewAgendaInsights: boolean;
+  demand: TherapistCalendarDemandItem[];
+}) {
   const values = new Map(
     demand.map((item) => [`${item.dayOfWeek}-${item.hourBlock}`, item.count]),
   );
   const maximum = Math.max(0, ...demand.map((item) => item.count));
+
+  if (!canViewAgendaInsights) {
+    return (
+      <article className="rounded-xl bg-white p-5 md:col-span-2 xl:col-span-1 xl:rounded-none xl:border-t xl:border-brand-lavender/60 xl:bg-transparent xl:px-0 xl:py-6">
+        <h2 className="text-lg font-extrabold text-brand-deep">
+          Acompanhe sua agenda
+        </h2>
+        <p className="mt-1 text-[10px] font-bold text-tesText-muted md:text-[11px]">
+          Com base nos últimos 90 dias
+        </p>
+        <div className="relative mt-4 overflow-hidden rounded-lg border border-brand-lavender bg-brand-lavenderSoft/40 p-4">
+          <div aria-hidden="true" className="select-none blur-md">
+            <DemandHeatmapContent maximum={maximum} values={values} />
+          </div>
+          <div className="absolute inset-0 grid place-items-center bg-white/55 p-4 text-center backdrop-blur-[1px]">
+            <p className="max-w-[220px] text-sm font-extrabold leading-6 text-brand-deep">
+              Acompanhe os períodos mais procurados ao conhecer o plano Premium.
+            </p>
+          </div>
+        </div>
+      </article>
+    );
+  }
+
   return (
     <article className="rounded-xl bg-white p-5 md:col-span-2 xl:col-span-1 xl:rounded-none xl:border-t xl:border-brand-lavender/60 xl:bg-transparent xl:px-0 xl:py-6">
       <h2 className="text-lg font-extrabold text-brand-deep">

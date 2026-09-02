@@ -16,6 +16,7 @@ import {
   resolveReservationContext,
 } from "@/features/public-reservation";
 import { getPatientScheduleIntervals } from "@/features/public-reservation/queries/patient-schedule";
+import { getReservationRetrySnapshot } from "@/features/public-reservation/queries/reservation-retry-context";
 import { getPublicTherapistProfileResult } from "@/features/therapist-profile/queries/public-profile";
 import type { AvailabilityDay } from "@/features/therapist-profile/types";
 
@@ -40,14 +41,46 @@ export default async function PublicReservationPage({
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("tes_patient_access_token")?.value;
   const patient = await getClientSessionSummary(accessToken);
+  const requestedBooking =
+    typeof params?.booking === "string" ? params.booking : null;
+  const retrySnapshot =
+    accessToken && requestedBooking
+      ? await getReservationRetrySnapshot({
+          accessToken,
+          bookingId: requestedBooking,
+        })
+      : null;
+  const trustedParams = retrySnapshot
+    ? {
+        ...params,
+        booking: retrySnapshot.bookingId,
+        duration: String(retrySnapshot.durationMinutes),
+        etapa: "pagamento",
+        price: String(retrySnapshot.priceCents),
+        service: retrySnapshot.serviceId,
+        serviceName: retrySnapshot.serviceLabel,
+        slot: retrySnapshot.startsAt,
+        therapist: retrySnapshot.therapist.slug,
+      }
+    : requestedBooking
+      ? { ...params, booking: undefined }
+      : params;
   let context = resolveReservationContext({
     isPatientAuthenticated: Boolean(patient),
     patient,
-    searchParams: params,
+    searchParams: trustedParams,
+    timezone: retrySnapshot?.timezone,
   });
+  if (retrySnapshot) {
+    context = {
+      ...context,
+      canPrepareEncounter: true,
+      therapist: retrySnapshot.therapist,
+    };
+  }
   let availabilityDays: AvailabilityDay[] = [];
 
-  if (context.therapist.slug) {
+  if (context.therapist.slug && !retrySnapshot) {
     const profileResult = await getPublicTherapistProfileResult(
       context.therapist.slug,
     );

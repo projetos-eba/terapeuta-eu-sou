@@ -48,7 +48,7 @@ export function PhoneInput({
       >
         <select
           aria-label="Código do país"
-          className="w-[112px] shrink-0 border-r border-border bg-brand-lavenderSoft px-3 text-sm font-bold text-brand-deep outline-none"
+          className="w-[80px] shrink-0 border-r border-border bg-brand-lavenderSoft px-1 text-sm font-bold text-brand-deep outline-none"
           onChange={(event) => {
             onCountryCodeChange(event.target.value);
             onPhoneChange(formatPhoneNumber(phone, event.target.value));

@@ -20,6 +20,7 @@ import { createStripeClient } from "../_shared/payments/stripe-client.ts";
 type Body = {
   bookingId?: string;
   checkoutSessionId?: string;
+  reason?: string;
   requestId?: string;
 };
 const UUID =
@@ -67,7 +68,11 @@ runtime.serve(async (request) => {
         404,
         "Reserva nao encontrada.",
       );
-    if (!["draft", "pending_payment"].includes(booking.status))
+    if (
+      !["draft", "pending_payment", "cancelled_by_payment"].includes(
+        booking.status,
+      )
+    )
       return success({ released: false, status: booking.status });
     const payments = await client.get<
       Array<{
@@ -102,21 +107,20 @@ runtime.serve(async (request) => {
     ) {
       return success({ released: false, status: booking.status });
     }
-    const released = await client.rpc<{ status?: string }>(
-      "transition_booking_status_v1",
+    const released = await client.rpc<{ released?: boolean; reason?: string }>(
+      "cancel_reservation_checkout_attempt_v1",
       {
-        p_actor_profile_id: profile.user_id,
         p_booking_id: booking.id,
-        p_expected_version: null,
-        p_reason: "reservation_abandoned",
-        p_request_id: body.requestId,
-        p_source: "reservation_abandon",
-        p_target_status: "cancelled_by_patient",
+        p_reason:
+          body.reason === "reservation_expired"
+            ? "reservation_expired"
+            : "reservation_abandoned",
+        p_stripe_checkout_session_id: body.checkoutSessionId,
       },
     );
     return success({
-      released: true,
-      status: released?.status ?? "cancelled_by_patient",
+      released: released?.released === true,
+      status: released?.reason ?? booking.status,
     });
   } catch (error) {
     console.error(

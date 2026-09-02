@@ -58,7 +58,45 @@ describe("patient encounters mapper", () => {
 
     expect(result.nextEncounter?.status).toBe("pending_payment");
     expect(result.nextEncounter?.statusLabel).toBe("Pagamento pendente");
-    expect(result.nextEncounter?.primaryAction.label).toBe("Ver pagamento");
+    expect(result.nextEncounter?.primaryAction.label).toBe(
+      "Continuar pagamento",
+    );
+    expect(result.nextEncounter?.primaryAction).toMatchObject({
+      href: `/reserva?booking=${booking.id}&etapa=pagamento`,
+    });
+  });
+
+  it("distinguishes an incomplete payment and links to a safe retry", () => {
+    const booking = {
+      ...createBooking(
+        "95000000-0000-4000-8000-000000000011",
+        new Date(Date.now() + 48 * 60 * 60 * 1000),
+      ),
+      status: "cancelled_by_payment",
+    };
+    const result = mapPatientEncountersPage({
+      bookings: [booking],
+      favoriteTherapistsCount: 0,
+      patient,
+      rescheduleByBookingId: new Map(),
+      reviews: [],
+      serviceById: new Map([[service.id, service]]),
+      sessionPaymentByBookingId: new Map([
+        [booking.id, { booking_id: booking.id, financial_status: "failed" }],
+      ]),
+      summaries: [],
+      therapistById: new Map([[therapist.id, therapist]]),
+      therapyById: new Map([[therapy.id, therapy]]),
+      unreadMessagesCount: 0,
+      unreadNotificationsCount: 0,
+    });
+
+    expect(result.nextEncounter?.status).toBe("payment_incomplete");
+    expect(result.nextEncounter?.statusLabel).toBe("Pagamento não concluído");
+    expect(result.nextEncounter?.primaryAction).toMatchObject({
+      href: `/reserva?booking=${booking.id}&etapa=pagamento`,
+      label: "Tentar pagamento novamente",
+    });
   });
 
   it("surfaces pending reschedule requests on active encounters", () => {

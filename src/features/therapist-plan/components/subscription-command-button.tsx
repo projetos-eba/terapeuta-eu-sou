@@ -7,11 +7,19 @@ import { useState } from "react";
 import { TESButton, TESDialog, TESFeedbackDialog } from "@/components/tes";
 import type { TherapistPlan } from "@/domain/tes";
 
+export type SubscriptionCommandResult = {
+  cancelAtPeriodEnd?: boolean;
+  currentPeriodEnd?: string | null;
+  scheduledChangeAt?: string | null;
+  scheduledPlan?: TherapistPlan | null;
+};
+
 export function SubscriptionCommandButton({
   action,
   children,
   className,
   description,
+  onSuccess,
   targetPlan,
   title,
   variant = "primary",
@@ -20,6 +28,7 @@ export function SubscriptionCommandButton({
   children: string;
   className?: string;
   description: string;
+  onSuccess?: (result: SubscriptionCommandResult) => void;
   targetPlan?: TherapistPlan;
   title: string;
   variant?: "primary" | "secondary" | "ghost";
@@ -39,6 +48,7 @@ export function SubscriptionCommandButton({
         method: "POST",
       });
       const payload = (await response.json().catch(() => null)) as {
+        data?: SubscriptionCommandResult;
         message?: string;
         ok?: boolean;
       } | null;
@@ -50,12 +60,14 @@ export function SubscriptionCommandButton({
         return;
       }
 
+      onSuccess?.(payload.data ?? {});
+      setOpen(false);
+      router.refresh();
+
       const projected = await waitForSubscriptionProjection({
         action,
         targetPlan,
       });
-      router.refresh();
-      setOpen(false);
       if (!projected) {
         setMessage(
           "Alteração recebida. A confirmação pode levar alguns instantes.",

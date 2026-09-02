@@ -156,7 +156,19 @@ Criar, editar, ocultar ou republicar `reviews` não altera `bookings`,
 - `therapist_subscriptions`: assinatura paga do terapeuta.
 - `therapist_connect_accounts`: conta conectada e status operacional.
 - `session_payments`: fonte financeira canonica das sessoes.
-- `session_payment_attempts`: tentativas idempotentes de cobranca.
+- `session_payment_attempts`: tentativas idempotentes de cobrança, classificadas
+  como `legacy`, `initial_hold` ou `payment_retry`, com prazo autoritativo,
+  autorização, reivindicação do slot e motivo terminal auditáveis.
+
+Pagamentos de encontro usam autorização e captura separadas. O Checkout inicial
+ocupa a agenda por cinco minutos a partir da abertura do formulário. Uma
+retomada não ocupa o horário enquanto o cartão é preenchido; no evento
+`payment_intent.amount_capturable_updated`, o PostgreSQL reivindica o intervalo
+atomicamente antes da captura. Conflito cancela a autorização sem captura. O
+job `reservation-checkout-maintenance` expira leases abandonados a cada minuto
+e libera bootstraps órfãos que consumiram o hold sem persistir uma Checkout
+Session. A criação também compensa esse estado imediatamente após falha da
+chamada Stripe, sem cancelar uma Checkout que já tenha sido persistida.
 - `session_refunds`, `session_cancellation_decisions` e `session_disputes`: eventos compensatorios, decisoes de politica e bloqueios. Cancelamento usa `request_id` único e o RPC `claim_session_cancellation_decision_v1` (somente `service_role`) para registrar uma única decisão antes de chamar Stripe; retries reutilizam a decisão, a chave de idempotência do refund e a transição do booking.
 - `session_service_confirmations`: prova de realizacao da sessao.
 - `session_participant_confirmations`: respostas canônicas por papel, com
@@ -438,6 +450,7 @@ Configuracao detalhada para o Dashboard Stripe:
 - `invoice.payment_action_required`
 - `invoice.finalization_failed`
 - `payment_intent.processing`
+- `payment_intent.amount_capturable_updated`
 - `payment_intent.requires_action`
 - `payment_intent.succeeded`
 - `payment_intent.payment_failed`

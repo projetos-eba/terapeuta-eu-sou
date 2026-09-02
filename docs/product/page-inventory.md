@@ -222,6 +222,10 @@ onboarding submetido, a análise externa pode continuar sem bloquear a entrada.
 
 ## Observações de Fonte
 
+- A reserva cria o lease de 5 minutos somente em `Confirme sua reserva`. A
+  retomada autenticada por `booking` não ocupa a agenda antes da autorização;
+  o retorno pós-Checkout diferencia processamento, confirmação, expiração,
+  conflito e falha.
 - A Jornada `12272:2` confirma os 6 perfis, 24 fluxos e 92 etapas usados neste inventário.
 - `/termos` e `/privacidade` não aparecem como etapas da Jornada. Permanecem
   por necessidade legal. As antigas superfícies públicas `/ajuda` e
