@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ExternalLink, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useRef } from "react";
 
 import { TESFeedbackDialog } from "@/components/tes";
 
@@ -10,10 +11,12 @@ import { sendTherapistFinanceConnectCommand } from "../therapist-finance.command
 import type { TherapistFinanceConnectAction } from "../therapist-finance.types";
 
 export function FinancialConnectAccountActions({
+  autoSync = false,
   primaryAction,
   primaryLabel,
   showSync = true,
 }: {
+  autoSync?: boolean;
   primaryAction: TherapistFinanceConnectAction;
   primaryLabel: string;
   showSync?: boolean;
@@ -23,32 +26,49 @@ export function FinancialConnectAccountActions({
     useState<TherapistFinanceConnectAction | null>(null);
   const [message, setMessage] = useState("");
   const [feedback, setFeedback] = useState("");
+  const autoSyncAttempted = useRef(false);
 
-  async function run(action: TherapistFinanceConnectAction) {
-    setMessage("");
-    setFeedback("");
-    setPendingAction(action);
-    const result = await sendTherapistFinanceConnectCommand(action);
-    setPendingAction(null);
+  const run = useCallback(
+    async (action: TherapistFinanceConnectAction, automatic = false) => {
+      setMessage("");
+      setFeedback("");
+      setPendingAction(action);
+      const result = await sendTherapistFinanceConnectCommand(action);
+      setPendingAction(null);
 
-    if (result.status === "error") {
-      setFeedback(result.error.message);
-      return;
-    }
+      if (result.status === "error") {
+        setFeedback(
+          automatic
+            ? "Ainda não foi possível confirmar automaticamente sua conta. Abra Financeiro > Conta de recebimento e clique em Verificar situação para consultar a informação mais recente."
+            : result.error.message,
+        );
+        return;
+      }
 
-    if (result.data.url) {
-      window.location.assign(result.data.url);
-      return;
-    }
+      if (result.data.url) {
+        window.location.assign(result.data.url);
+        return;
+      }
 
-    if (result.data.accountClosed) {
+      if (result.data.accountClosed) {
+        router.refresh();
+        return;
+      }
+
+      setMessage(result.data.message ?? "Dados atualizados.");
       router.refresh();
-      return;
-    }
+      if (automatic && result.data.onboardingStatus !== "ready") {
+        setFeedback(automaticSyncFeedback(result.data.onboardingStatus));
+      }
+    },
+    [router],
+  );
 
-    setMessage(result.data.message ?? "Dados atualizados.");
-    router.refresh();
-  }
+  useEffect(() => {
+    if (!autoSync || !showSync || autoSyncAttempted.current) return;
+    autoSyncAttempted.current = true;
+    void run("sync", true);
+  }, [autoSync, run, showSync]);
 
   return (
     <div className="grid gap-3" aria-live="polite">
@@ -75,7 +95,10 @@ export function FinancialConnectAccountActions({
         ) : null}
       </div>
       {message ? (
-        <p className="text-sm font-bold leading-6 text-status-success" role="status">
+        <p
+          className="text-sm font-bold leading-6 text-status-success"
+          role="status"
+        >
           {message}
         </p>
       ) : null}
@@ -84,4 +107,16 @@ export function FinancialConnectAccountActions({
       ) : null}
     </div>
   );
+}
+
+function automaticSyncFeedback(status?: string) {
+  if (status === "requirements_due") {
+    return "Ainda há informações pendentes na sua conta. Abra Financeiro > Conta de recebimento e clique em Verificar situação para consultar a informação mais recente.";
+  }
+
+  if (status === "restricted" || status === "disabled") {
+    return "Sua conta precisa de uma atualização antes de receber repasses. Abra Financeiro > Conta de recebimento e clique em Verificar situação para consultar a informação mais recente.";
+  }
+
+  return "Sua conta foi recebida, mas a confirmação ainda está pendente. Abra Financeiro > Conta de recebimento e clique em Verificar situação para consultar a informação mais recente.";
 }

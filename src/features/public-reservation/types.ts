@@ -31,6 +31,7 @@ export type ReservationContext = {
   paymentStepHref: string;
   priceCents: number | null;
   priceLabel: string;
+  retryBookingId: string | null;
   patientScheduleCheckStatus: PatientScheduleCheckStatus;
   prepareStepHref: string;
   selectedSlot: string | null;

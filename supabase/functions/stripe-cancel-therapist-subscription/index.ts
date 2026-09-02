@@ -15,13 +15,17 @@ import {
   getPaymentsRuntime,
 } from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
-import { getStripeSubscriptionScheduleId } from "../_shared/payments/stripe-subscription.ts";
+import {
+  getStripeSubscriptionPeriod,
+  getStripeSubscriptionScheduleId,
+} from "../_shared/payments/stripe-subscription.ts";
 
 type SubscriptionRow = {
   id: string;
   metadata: Record<string, unknown>;
   plan_code: "premium" | "premium_plus";
   stripe_subscription_id: string;
+  current_period_end: string | null;
   updated_at: string;
 };
 
@@ -54,7 +58,7 @@ runtime.serve(async (request) => {
     const body = (await parseJson<Body>(request)) ?? {};
     const action = normalizeAction(body.action);
     const [localSubscription] = await client.get<SubscriptionRow[]>(
-      `/rest/v1/therapist_subscriptions?select=id,plan_code,stripe_subscription_id,metadata,updated_at&therapist_profile_id=eq.${encodeURIComponent(
+      `/rest/v1/therapist_subscriptions?select=id,plan_code,stripe_subscription_id,current_period_end,metadata,updated_at&therapist_profile_id=eq.${encodeURIComponent(
         therapist.id,
       )}&status=in.(active,trialing,past_due)&order=created_at.desc&limit=1`,
     );
@@ -202,9 +206,13 @@ runtime.serve(async (request) => {
       "return=minimal",
     );
 
-    const currentPeriodEnd = numberOrNull(
-      (subscription as unknown as Record<string, unknown>).current_period_end,
-    );
+    const { currentPeriodEnd: stripePeriodEndValue } =
+      getStripeSubscriptionPeriod(
+        subscription as unknown as Record<string, unknown>,
+      );
+    const currentPeriodEnd =
+      stripePeriodEndValue ??
+      unixSecondsOrNull(localSubscription.current_period_end);
 
     await client.patch(
       `/rest/v1/therapist_subscriptions?id=eq.${encodeURIComponent(localSubscription.id)}`,
@@ -232,10 +240,6 @@ runtime.serve(async (request) => {
   }
 });
 
-function numberOrNull(value: unknown) {
-  return typeof value === "number" ? value : null;
-}
-
 function clearScheduledChange(metadata: Record<string, unknown>) {
   const {
     scheduled_plan_code: _scheduledPlan,
@@ -252,10 +256,16 @@ function clearCancellationPolicy(metadata: Record<string, unknown>) {
 }
 
 function stripePeriodEnd(subscription: unknown) {
-  const periodEnd = numberOrNull(
-    (subscription as Record<string, unknown>).current_period_end,
+  const { currentPeriodEnd: periodEnd } = getStripeSubscriptionPeriod(
+    subscription as Record<string, unknown>,
   );
   return periodEnd === null ? null : new Date(periodEnd * 1000).toISOString();
+}
+
+function unixSecondsOrNull(value: string | null) {
+  if (!value) return null;
+  const milliseconds = Date.parse(value);
+  return Number.isFinite(milliseconds) ? milliseconds / 1000 : null;
 }
 
 function normalizeAction(value: unknown): "cancel" | "resume" {

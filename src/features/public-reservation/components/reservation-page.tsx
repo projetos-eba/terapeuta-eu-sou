@@ -43,7 +43,6 @@ import type {
   ReservationStep,
 } from "../types";
 import { CheckoutButton, ReservationLinkButton } from "./checkout-button";
-import { HoldCountdown } from "./hold-countdown";
 import { PrepareForm } from "./prepare-form";
 
 const reservationJourneyDraftHistoryKey = "tes.reservation.journey-draft.v1";
@@ -69,6 +68,7 @@ export function ReservationPage({
   const loginHref = buildClientAuthHref("login", context.currentPath);
   const signupHref = buildClientAuthHref("signup", context.currentPath);
   const reservationKey = `${context.serviceId ?? "service"}:${context.selectedSlot ?? "slot"}`;
+  const isPaymentRetry = Boolean(context.retryBookingId);
   const query = useMemo(
     () => new URLSearchParams(context.currentPath.split("?")[1] ?? ""),
     [context.currentPath],
@@ -90,7 +90,7 @@ export function ReservationPage({
   );
   const initialJourneyDraft = readReservationJourneyDraft(reservationKey);
   const [acceptedTerms, setAcceptedTerms] = useState(
-    () => initialJourneyDraft?.acceptedTerms ?? false,
+    () => isPaymentRetry || initialJourneyDraft?.acceptedTerms === true,
   );
   const [marketingConsent, setMarketingConsent] = useState(
     () => initialJourneyDraft?.marketingConsent ?? context.marketingConsent,
@@ -99,15 +99,18 @@ export function ReservationPage({
     () => initialJourneyDraft?.checkoutAttemptId ?? null,
   );
   const [currentStep, setCurrentStep] = useState<ReservationStep>(() =>
-    context.selectedSlotHasPatientConflict
-      ? "momento"
-      : context.step === "pagamento"
-        ? context.hasRequiredCheckoutData && initialJourneyDraft?.acceptedTerms
-          ? "pagamento"
-          : context.hasRequiredCheckoutData
-            ? "preparar"
-          : "momento"
-        : context.step,
+    isPaymentRetry
+      ? "pagamento"
+      : context.selectedSlotHasPatientConflict
+        ? "momento"
+        : context.step === "pagamento"
+          ? context.hasRequiredCheckoutData &&
+            initialJourneyDraft?.acceptedTerms
+            ? "pagamento"
+            : context.hasRequiredCheckoutData
+              ? "preparar"
+              : "momento"
+          : context.step,
   );
   const [sharedNote, setSharedNote] = useState("");
   const [promotionCode, setPromotionCode] = useState("");
@@ -126,11 +129,13 @@ export function ReservationPage({
   >(null);
   const previousReservationKeyRef = useRef(reservationKey);
   const [journeyError, setJourneyError] = useState<string | null>(
-    context.selectedSlotHasPatientConflict
-      ? "Você já tem outro encontro nesse horário. Escolha outro momento."
-      : context.step === "pagamento"
-        ? "Aceite os termos antes de seguir para o pagamento."
-        : null,
+    isPaymentRetry
+      ? null
+      : context.selectedSlotHasPatientConflict
+        ? "Você já tem outro encontro nesse horário. Escolha outro momento."
+        : context.step === "pagamento"
+          ? "Aceite os termos antes de seguir para o pagamento."
+          : null,
   );
 
   useEffect(() => {
@@ -204,7 +209,7 @@ export function ReservationPage({
       setCurrentStep("momento");
       return;
     }
-    if (context.step === "pagamento" && !acceptedTerms) {
+    if (context.step === "pagamento" && !acceptedTerms && !isPaymentRetry) {
       setCurrentStep(context.hasRequiredCheckoutData ? "preparar" : "momento");
       return;
     }
@@ -215,6 +220,7 @@ export function ReservationPage({
     context.hasRequiredCheckoutData,
     context.selectedSlotHasPatientConflict,
     context.step,
+    isPaymentRetry,
   ]);
 
   useEffect(() => {
@@ -222,20 +228,22 @@ export function ReservationPage({
       router.replace(momentStepHref);
       return;
     }
-    if (context.step === "pagamento" && !acceptedTerms) {
+    if (context.step === "pagamento" && !acceptedTerms && !isPaymentRetry) {
       router.replace(prepareStepHref);
     }
   }, [
     acceptedTerms,
     context.selectedSlotHasPatientConflict,
     context.step,
+    isPaymentRetry,
     momentStepHref,
     prepareStepHref,
     router,
   ]);
 
   const canPrepare =
-    context.canPrepareEncounter && context.isPatientAuthenticated;
+    (context.canPrepareEncounter || isPaymentRetry) &&
+    context.isPatientAuthenticated;
   const canPay = canPrepare && acceptedTerms;
   const activeContext = { ...context, step: currentStep };
   const handleCheckoutChange = useCallback(
@@ -270,7 +278,7 @@ export function ReservationPage({
 
       const nextCheckoutAttemptId =
         step === "pagamento"
-          ? checkoutAttemptId ?? crypto.randomUUID()
+          ? (checkoutAttemptId ?? crypto.randomUUID())
           : checkoutAttemptId;
       const draft = {
         acceptedTerms,
@@ -420,9 +428,7 @@ export function ReservationPage({
               onAdvanceToPayment={() => goToStep("pagamento")}
             />
             {currentStep === "pagamento" ? (
-              <ShellHelpCard
-                onClick={() => setIsSupportDialogOpen(true)}
-              />
+              <ShellHelpCard onClick={() => setIsSupportDialogOpen(true)} />
             ) : null}
             <PolicyCard />
           </aside>
@@ -495,7 +501,10 @@ function readReservationJourneyDraft(
 function writeReservationJourneyDraft(draft: ReservationJourneyDraft) {
   if (typeof window === "undefined") return;
   window.history.replaceState(
-    { ...(window.history.state ?? {}), [reservationJourneyDraftHistoryKey]: draft },
+    {
+      ...(window.history.state ?? {}),
+      [reservationJourneyDraftHistoryKey]: draft,
+    },
     "",
   );
 }
@@ -619,7 +628,7 @@ function MomentStep({
       />
 
       <TESCard as="section" className="rounded-[28px] p-5 sm:p-7">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
           <div>
             <h2 className="text-2xl font-extrabold text-brand-deep">
               Agenda disponível
@@ -629,9 +638,6 @@ function MomentStep({
               em outro lugar, confira a diferença local antes de reservar.
             </p>
           </div>
-          <span className="rounded-full bg-brand-lavenderSoft px-4 py-2 text-sm font-extrabold text-brand-primary">
-            Reserva por <HoldCountdown />
-          </span>
         </div>
 
         <div className="mt-6 flex items-center justify-between gap-3">
@@ -887,6 +893,7 @@ function PaymentStep({
               onCheckoutChange={onCheckoutChange}
               onPromotionSettled={onPromotionSettled}
               promotionRequest={promotionRequest}
+              retryBookingId={context.retryBookingId}
               serviceId={context.serviceId}
               sharedNote={sharedNote}
               startsAt={context.selectedSlot}
@@ -1284,6 +1291,84 @@ function getFirstName(name: string) {
 }
 
 export function ReservationSuccessPage() {
+  const [status, setStatus] = useState<
+    | "waiting_payment"
+    | "authorizing"
+    | "confirmed"
+    | "expired"
+    | "slot_conflict"
+    | "failed"
+  >("authorizing");
+
+  useEffect(() => {
+    let cancelled = false;
+    const startedAt = Date.now();
+    const poll = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const response = await fetch(
+        `/api/public/reservation/checkout/status?${params.toString()}`,
+        { credentials: "include", cache: "no-store" },
+      ).catch(() => null);
+      if (cancelled) return;
+      if (response?.ok) {
+        const body = (await response.json()) as { status?: typeof status };
+        if (body.status) setStatus(body.status);
+        if (
+          body.status === "confirmed" ||
+          body.status === "expired" ||
+          body.status === "slot_conflict" ||
+          body.status === "failed"
+        ) {
+          return;
+        }
+      }
+      if (Date.now() - startedAt < 30_000) window.setTimeout(poll, 2_000);
+    };
+    void poll();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const copy = {
+    authorizing: {
+      eyebrow: "Pagamento em processamento",
+      title: "Estamos validando sua reserva",
+      description:
+        "Aguarde a confirmação financeira antes de considerar o horário confirmado.",
+    },
+    waiting_payment: {
+      eyebrow: "Pagamento em andamento",
+      title: "Ainda aguardamos a conclusão",
+      description:
+        "O encontro só será confirmado depois que o pagamento for concluído.",
+    },
+    confirmed: {
+      eyebrow: "Reserva confirmada",
+      title: "Seu encontro está confirmado",
+      description:
+        "O pagamento foi confirmado e o encontro já está disponível na sua área de cliente.",
+    },
+    expired: {
+      eyebrow: "Prazo encerrado",
+      title: "O horário foi liberado",
+      description:
+        "O pagamento não foi confirmado dentro dos 5 minutos. Escolha novamente um horário disponível.",
+    },
+    slot_conflict: {
+      eyebrow: "Horário indisponível",
+      title: "Outra pessoa reservou este horário",
+      description:
+        "A autorização foi cancelada sem captura. Escolha outro horário para continuar.",
+    },
+    failed: {
+      eyebrow: "Pagamento não concluído",
+      title: "Não foi possível confirmar a reserva",
+      description:
+        "Nenhuma confirmação foi registrada. Você pode tentar o pagamento novamente na área de encontros.",
+    },
+  }[status];
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,#F4ECFA_0%,#FFFFFF_52%,#F8F5FF_100%)] text-brand-deep">
       <ReservationTopbar />
@@ -1292,14 +1377,13 @@ export function ReservationSuccessPage() {
           <Sparkles className="size-10" aria-hidden="true" />
         </div>
         <p className="mt-8 text-xs font-extrabold uppercase tracking-[0.24em] text-brand-primary">
-          Reserva em andamento
+          {copy.eyebrow}
         </p>
         <h1 className="mt-4 font-display text-5xl font-light italic leading-tight text-brand-deep sm:text-6xl">
-          Estamos preparando seu encontro
+          {copy.title}
         </h1>
         <p className="mt-5 max-w-2xl text-lg font-semibold leading-8 text-tesText-secondary">
-          Assim que o pagamento for confirmado, o encontro aparecerá na sua área
-          de cliente com as orientações de acesso online.
+          {copy.description}
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row">
           <TESButton href={routes.patient.home} variant="gradient" size="lg">

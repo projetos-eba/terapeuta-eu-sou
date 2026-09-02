@@ -114,6 +114,10 @@ Read `AGENTS.md`, `docs/product/sitemap.md`,
 - Run payment E2E headed when Stripe/Supabase local services and test-mode
   credentials are available.
 
+After a successful cancellation command, the settings projection updates the
+benefits-until card immediately and then reconciles through the authenticated
+refresh; the period end must remain the paid subscription period.
+
 ## Known Limits
 
 - Payment method summary is not exposed by the current safe subscription

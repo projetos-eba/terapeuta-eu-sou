@@ -101,6 +101,7 @@ export function resolveReservationContext(input: {
     prepareStepHref,
     priceCents,
     priceLabel: formatCurrency(priceCents),
+    retryBookingId: parseUuid(params.get("booking")),
     patientScheduleCheckStatus: input.isPatientAuthenticated
       ? "unavailable"
       : "not_applicable",

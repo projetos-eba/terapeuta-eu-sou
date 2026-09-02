@@ -8,8 +8,10 @@ import { FinancialConnectAccountActions } from "./financial-connect-account-acti
 
 export function FinancialConnectAccountTab({
   account,
+  autoSync = false,
 }: {
   account: TherapistConnectAccount;
+  autoSync?: boolean;
 }) {
   const state = getConnectState(account);
   const Icon =
@@ -73,6 +75,9 @@ export function FinancialConnectAccountTab({
           </p>
           <div className="mt-5">
             <FinancialConnectAccountActions
+              autoSync={
+                autoSync || (account.accountExists && state.tone !== "ready")
+              }
               primaryAction={state.primaryAction}
               primaryLabel={state.primaryLabel}
               showSync={account.accountExists}

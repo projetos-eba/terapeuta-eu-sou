@@ -10,10 +10,13 @@ const checkoutResponse = {
     clientSecret: "checkout_client_secret",
     currency: "brl",
     discountAmountCents: 0,
-    holdExpiresAt: "2026-08-29T04:40:00.000Z",
+    holdExpiresAt: "2099-08-29T04:40:00.000Z",
     holdId: "h1000000-0000-4000-8000-000000000001",
+    mode: "initial_hold" as const,
     originalAmountCents: 12300,
     promotion: null,
+    reservationExpiresAt: "2099-08-29T04:40:00.000Z",
+    serverNow: new Date().toISOString(),
     sessionPaymentId: "p1000000-0000-4000-8000-000000000001",
     totalAmountCents: 12300,
   },
@@ -44,6 +47,45 @@ afterEach(() => {
 });
 
 describe("CheckoutButton", () => {
+  it("opens a payment retry without a countdown or a new slot payload", async () => {
+    vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
+    const mount = vi.fn();
+    window.Stripe = vi.fn(() => ({
+      initEmbeddedCheckout: vi
+        .fn()
+        .mockResolvedValue({ destroy: vi.fn(), mount }),
+    }));
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        ...checkoutResponse,
+        checkout: {
+          ...checkoutResponse.checkout,
+          mode: "payment_retry",
+          reservationExpiresAt: null,
+        },
+      }),
+      ok: true,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const bookingId = "d1000000-0000-4000-8000-000000000099";
+    render(
+      <CheckoutButton
+        {...props({
+          retryBookingId: bookingId,
+          serviceId: null,
+          startsAt: null,
+        })}
+      />,
+    );
+    await waitFor(() => expect(mount).toHaveBeenCalledOnce());
+
+    const request = JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string);
+    expect(request).toMatchObject({ action: "retry", bookingId });
+    expect(request).not.toHaveProperty("serviceId");
+    expect(document.body).not.toHaveTextContent("Seu horário está reservado");
+  });
+
   it("reuses the checkout attempt after an internal reservation transition", async () => {
     vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
 
@@ -60,9 +102,7 @@ describe("CheckoutButton", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const checkoutAttemptId = "a1000000-0000-4000-8000-000000000001";
-    const first = render(
-      <CheckoutButton {...props({ checkoutAttemptId })} />,
-    );
+    const first = render(<CheckoutButton {...props({ checkoutAttemptId })} />);
     await waitFor(() => expect(mount).toHaveBeenCalledOnce());
     first.unmount();
 

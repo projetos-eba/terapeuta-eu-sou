@@ -7,6 +7,8 @@ type ConnectApiEnvelope =
       data: {
         accountClosed?: boolean;
         message?: string;
+        onboardingStatus?: string;
+        transferCapabilityStatus?: string;
         url?: string;
       };
       ok: true;
@@ -25,6 +27,8 @@ export type TherapistFinanceConnectResult =
       data: {
         accountClosed?: boolean;
         message?: string;
+        onboardingStatus?: string;
+        transferCapabilityStatus?: string;
         url?: string;
       };
       status: "success";

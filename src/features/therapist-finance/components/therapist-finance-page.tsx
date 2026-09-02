@@ -53,7 +53,10 @@ export function TherapistFinancePage({
       ) : null}
 
       {tab === "account" ? (
-        <FinancialConnectAccountTab account={data.account} />
+        <FinancialConnectAccountTab
+          account={data.account}
+          autoSync={connectNotice === "return"}
+        />
       ) : null}
 
       {tab === "summary" ? (

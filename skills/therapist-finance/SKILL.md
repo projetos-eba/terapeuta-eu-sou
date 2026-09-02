@@ -126,6 +126,12 @@ recebimento`; provider and reconciliation terminology stays in the service
   `TES_FINANCE_TEST_CONTROLS_ENABLED=true` and Stripe test mode; never expose
   them to browser flows or production.
 
+The receiving-account tab performs one automatic authenticated sync when an
+existing account is not ready or when returning from hosted onboarding. If
+confirmation remains pending, show an actionable dialog directing the
+therapist to Financeiro > Conta de recebimento > Verificar situacao; keep the
+manual sync action available.
+
 ## Figma
 
 Reference file: `Z42SR0Pi0m307SmcAkDqHb`.

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 
 import { TESButton } from "@/components/tes";
 import type { PromotionCheckoutAmounts } from "@/features/payments";
+import { HoldCountdown } from "./hold-countdown";
 
 declare global {
   interface Window {
@@ -31,12 +32,15 @@ type CheckoutResponse =
         clientSecret: string | null;
         currency: string;
         discountAmountCents: number;
-        holdExpiresAt: string;
-        holdId: string;
+        holdExpiresAt?: string;
+        holdId?: string;
+        mode: "initial_hold" | "payment_retry";
         originalAmountCents: number;
         promotion: PromotionCheckoutAmounts["promotion"];
         sessionPaymentId: string;
         totalAmountCents: number;
+        reservationExpiresAt: string | null;
+        serverNow: string;
       };
     }
   | {
@@ -54,6 +58,7 @@ export function CheckoutButton({
   onCheckoutChange,
   onPromotionSettled,
   promotionRequest,
+  retryBookingId,
   serviceId,
   sharedNote,
   startsAt,
@@ -73,6 +78,7 @@ export function CheckoutButton({
     requestId: string;
   }) => void;
   promotionRequest?: { code: string | null; requestId: string } | null;
+  retryBookingId?: string | null;
   serviceId: string | null;
   sharedNote: string;
   startsAt: string | null;
@@ -95,6 +101,35 @@ export function CheckoutButton({
   const [isSubmitting, setIsSubmitting] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkoutReady, setCheckoutReady] = useState(false);
+  const [reservationLease, setReservationLease] = useState<{
+    expiresAt: string;
+    serverNow: string;
+  } | null>(null);
+
+  const expireReservation = useCallback(() => {
+    const currentCheckout = currentCheckoutRef.current;
+    if (!currentCheckout || abandonmentStartedRef.current) return;
+    abandonmentStartedRef.current = true;
+    checkoutRef.current?.destroy();
+    checkoutRef.current = null;
+    setCheckoutReady(false);
+    setReservationLease(null);
+    setError(
+      "O prazo de 5 minutos terminou. O horário foi liberado; escolha-o novamente se ainda estiver disponível.",
+    );
+    void fetch("/api/public/reservation/abandon", {
+      body: JSON.stringify({
+        bookingId: currentCheckout.bookingId,
+        checkoutSessionId: currentCheckout.checkoutSessionId,
+        reason: "reservation_expired",
+        requestId: crypto.randomUUID(),
+      }),
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      keepalive: true,
+      method: "POST",
+    }).catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     const abandonPendingCheckout = () => {
@@ -162,8 +197,7 @@ export function CheckoutButton({
       if (
         !isPatientAuthenticated ||
         !acceptedTerms ||
-        !serviceId ||
-        !startsAt ||
+        (!retryBookingId && (!serviceId || !startsAt)) ||
         disabled
       ) {
         setIsSubmitting(false);
@@ -180,7 +214,7 @@ export function CheckoutButton({
       setIsSubmitting(true);
       setError(null);
       if (replacementRequest) replacementInFlightRef.current = true;
-      const checkoutInputKey = `${serviceId}:${startsAt}:${checkoutAttemptId ?? "new"}`;
+      const checkoutInputKey = `${retryBookingId ?? serviceId}:${startsAt ?? "retry"}:${checkoutAttemptId ?? "new"}`;
       if (checkoutInputKeyRef.current !== checkoutInputKey) {
         checkoutInputKeyRef.current = checkoutInputKey;
         requestIdRef.current = checkoutAttemptId ?? crypto.randomUUID();
@@ -211,14 +245,20 @@ export function CheckoutButton({
                   promotionCode: replacementRequest!.code,
                   replaceCheckoutSessionId: previousCheckout?.checkoutSessionId,
                 }
-              : {
-                  action: "create",
-                  checkoutAttemptId: requestIdRef.current,
-                  serviceId,
-                  sharedNote,
-                  startsAt,
-                  termsAccepted: true,
-                },
+              : retryBookingId
+                ? {
+                    action: "retry",
+                    bookingId: retryBookingId,
+                    checkoutAttemptId: requestIdRef.current,
+                  }
+                : {
+                    action: "create",
+                    checkoutAttemptId: requestIdRef.current,
+                    serviceId,
+                    sharedNote,
+                    startsAt,
+                    termsAccepted: true,
+                  },
           ),
           headers: { "Content-Type": "application/json" },
           method: "POST",
@@ -235,6 +275,15 @@ export function CheckoutButton({
           checkoutSessionId: data.checkout.checkoutSessionId,
           clientSecret: data.checkout.clientSecret,
         };
+        setReservationLease(
+          data.checkout.mode === "initial_hold" &&
+            data.checkout.reservationExpiresAt
+            ? {
+                expiresAt: data.checkout.reservationExpiresAt,
+                serverNow: data.checkout.serverNow,
+              }
+            : null,
+        );
         if (promotionRequest) {
           handledPromotionRequestRef.current = promotionRequest.requestId;
         }
@@ -340,6 +389,7 @@ export function CheckoutButton({
     onCheckoutChange,
     onPromotionSettled,
     promotionRequest,
+    retryBookingId,
     serviceId,
     sharedNote,
     startsAt,
@@ -361,6 +411,17 @@ export function CheckoutButton({
 
   return (
     <div className="mt-6 space-y-4">
+      {reservationLease ? (
+        <div className="rounded-[18px] border border-brand-lavender bg-brand-lavenderSoft p-4 text-sm font-extrabold text-brand-primary">
+          Seu horário está reservado por mais{" "}
+          <HoldCountdown
+            expiresAt={reservationLease.expiresAt}
+            onExpire={expireReservation}
+            serverNow={reservationLease.serverNow}
+          />
+          . Conclua o pagamento dentro deste prazo.
+        </div>
+      ) : null}
       <div className="rounded-[18px] bg-surface-muted p-5">
         <div className="flex items-start gap-3">
           <ShieldCheck className="mt-1 size-5 shrink-0 text-brand-primary" />

@@ -86,7 +86,7 @@ export function resolveExistingCheckoutHold(
 export function validateBookingCheckoutCommand(
   body: BookingCheckoutCommandBody,
 ): ValidBookingCheckoutCommand {
-  const ttl = body.holdTtlSeconds ?? 600;
+  const ttl = body.holdTtlSeconds ?? 300;
   const sharedNote = normalizeSharedNote(body.sharedNote);
 
   if (

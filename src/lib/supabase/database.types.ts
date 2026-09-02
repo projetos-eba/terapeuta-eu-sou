@@ -7,6 +7,31 @@ export type Json =
   | Json[]
 
 export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       admin_audit_events: {
@@ -5780,42 +5805,67 @@ export type Database = {
       }
       session_payment_attempts: {
         Row: {
+          attempt_kind: string
+          authorization_received_at: string | null
+          booking_hold_id: string | null
           created_at: string
           id: string
           idempotency_key: string
           request_metadata: Json
+          reservation_expires_at: string | null
           response_metadata: Json
           session_payment_id: string
+          slot_claimed_at: string | null
           status: string
           stripe_checkout_session_id: string | null
           stripe_payment_intent_id: string | null
+          terminal_reason: string | null
           updated_at: string
         }
         Insert: {
+          attempt_kind?: string
+          authorization_received_at?: string | null
+          booking_hold_id?: string | null
           created_at?: string
           id?: string
           idempotency_key: string
           request_metadata?: Json
+          reservation_expires_at?: string | null
           response_metadata?: Json
           session_payment_id: string
+          slot_claimed_at?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
+          terminal_reason?: string | null
           updated_at?: string
         }
         Update: {
+          attempt_kind?: string
+          authorization_received_at?: string | null
+          booking_hold_id?: string | null
           created_at?: string
           id?: string
           idempotency_key?: string
           request_metadata?: Json
+          reservation_expires_at?: string | null
           response_metadata?: Json
           session_payment_id?: string
+          slot_claimed_at?: string | null
           status?: string
           stripe_checkout_session_id?: string | null
           stripe_payment_intent_id?: string | null
+          terminal_reason?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "session_payment_attempts_booking_hold_id_fkey"
+            columns: ["booking_hold_id"]
+            isOneToOne: false
+            referencedRelation: "booking_holds"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "session_payment_attempts_session_payment_id_fkey"
             columns: ["session_payment_id"]
@@ -13269,6 +13319,7 @@ export type Database = {
           email_confirmed_at: string | null
           id: string
           phone: string | null
+          phone_country_code: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
@@ -13433,6 +13484,10 @@ export type Database = {
           p_request_id: string
         }
         Returns: Json
+      }
+      admin_support_ticket_message_exists_v1: {
+        Args: { p_request_id: string; p_ticket_id: string }
+        Returns: boolean
       }
       admin_therapy_impact_v1: {
         Args: { p_actor_user_id: string; p_therapy_id: string }
@@ -13671,6 +13726,14 @@ export type Database = {
         Args: { p_booking_id: string; p_reason?: string }
         Returns: number
       }
+      cancel_reservation_checkout_attempt_v1: {
+        Args: {
+          p_booking_id: string
+          p_reason: string
+          p_stripe_checkout_session_id: string
+        }
+        Returns: Json
+      }
       cancel_therapist_block_v1: {
         Args: {
           p_actor_user_id: string
@@ -13679,6 +13742,10 @@ export type Database = {
           p_request_id: string
           p_scope: string
         }
+        Returns: Json
+      }
+      cancel_unstarted_initial_checkout_v1: {
+        Args: { p_booking_id: string; p_hold_id: string; p_reason?: string }
         Returns: Json
       }
       cancel_video_session_for_booking_v1: {
@@ -13817,6 +13884,16 @@ export type Database = {
           session_payment_id: string
           therapist_retained_cents: number
         }[]
+      }
+      claim_session_payment_authorization_v1: {
+        Args: {
+          p_event_created_at: string
+          p_request_id: string
+          p_session_payment_id: string
+          p_stripe_checkout_session_id: string
+          p_stripe_payment_intent_id: string
+        }
+        Returns: Json
       }
       claim_weekly_payout_scheduler_run_v1: {
         Args: { p_lease_minutes?: number; p_now: string; p_worker_id: string }
@@ -14217,6 +14294,19 @@ export type Database = {
         Args: { p_now?: string }
         Returns: number
       }
+      expire_due_initial_checkout_attempts_v1: {
+        Args: { p_limit?: number; p_now?: string }
+        Returns: {
+          checkout_session_id: string
+          session_payment_id: string
+        }[]
+      }
+      expire_due_initial_checkout_orphans_v1: {
+        Args: { p_limit?: number; p_now?: string }
+        Returns: {
+          booking_id: string
+        }[]
+      }
       fail_payout_transfer_v1: {
         Args: {
           p_disposition: string
@@ -14238,6 +14328,14 @@ export type Database = {
       generate_therapist_free_public_slug_v1: { Args: never; Returns: string }
       get_admin_payout_operations_v1: {
         Args: { p_limit?: number }
+        Returns: Json
+      }
+      get_patient_reservation_attempt_status_v1: {
+        Args: { p_booking_id: string; p_stripe_checkout_session_id?: string }
+        Returns: Json
+      }
+      get_patient_reservation_retry_context_v1: {
+        Args: { p_booking_id: string }
         Returns: Json
       }
       get_patient_session_feedback_queue_v1: { Args: never; Returns: Json }
@@ -14379,6 +14477,10 @@ export type Database = {
           p_timezone?: string
         }
         Returns: Json
+      }
+      get_public_therapist_next_slot_v1: {
+        Args: { p_therapist_profile_id: string }
+        Returns: string
       }
       get_public_therapy_theme_names_v1: {
         Args: { p_therapy_id: string }
@@ -14655,6 +14757,14 @@ export type Database = {
         Args: { p_actor_user_id: string }
         Returns: Json
       }
+      list_recoverable_session_captures_v1: {
+        Args: { p_limit?: number; p_now?: string }
+        Returns: {
+          session_payment_id: string
+          slot_claimed_at: string
+          stripe_payment_intent_id: string
+        }[]
+      }
       list_service_schedule_candidates_v1: {
         Args: {
           p_limit?: number
@@ -14714,6 +14824,10 @@ export type Database = {
       }
       patient_review_payload_v1: {
         Args: { p_review: Database["public"]["Tables"]["reviews"]["Row"] }
+        Returns: Json
+      }
+      preflight_session_payment_retry_v1: {
+        Args: { p_booking_id: string }
         Returns: Json
       }
       preview_structured_participant_message_v2: {
@@ -14799,6 +14913,10 @@ export type Database = {
       queue_therapist_profile_review_v1: {
         Args: { p_therapist_profile_id: string }
         Returns: undefined
+      }
+      recheck_connect_blocked_payments_v1: {
+        Args: { p_now?: string; p_therapist_profile_id: string }
+        Returns: number
       }
       reconcile_automatic_stripe_payout_v1: {
         Args: {
@@ -16125,6 +16243,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       auth_action_purpose: ["email_verification", "password_reset"],
@@ -16348,4 +16469,3 @@ export const Constants = {
     },
   },
 } as const
-

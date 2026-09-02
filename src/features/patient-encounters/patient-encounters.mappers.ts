@@ -250,12 +250,18 @@ function getEncounterStatus(
     return "awaiting_confirmation";
   }
   if (isCompletedBookingStatus(booking.status)) return "completed";
+  if (
+    booking.status === "cancelled_by_payment" &&
+    (payment?.financial_status === "failed" ||
+      payment?.financial_status === "canceled")
+  ) {
+    return "payment_incomplete";
+  }
   if (isCancelledBookingStatus(booking.status)) return "cancelled";
   if (
     booking.status === "pending_payment" ||
     payment?.financial_status === "pending" ||
-    payment?.financial_status === "processing" ||
-    payment?.financial_status === "failed"
+    payment?.financial_status === "processing"
   ) {
     return "pending_payment";
   }
@@ -291,11 +297,14 @@ function getPrimaryAction(
     };
   }
 
-  if (status === "pending_payment") {
+  if (status === "pending_payment" || status === "payment_incomplete") {
     return {
-      href: routes.patient.encounterDetail(booking.id),
+      href: `/reserva?booking=${encodeURIComponent(booking.id)}&etapa=pagamento`,
       kind: "link",
-      label: "Ver pagamento",
+      label:
+        status === "payment_incomplete"
+          ? "Tentar pagamento novamente"
+          : "Continuar pagamento",
     };
   }
 
@@ -370,6 +379,7 @@ function getStatusLabel(status: PatientEncounterStatus) {
     completed: "Já realizada",
     confirmed: "Confirmada",
     live: "Ao vivo agora",
+    payment_incomplete: "Pagamento não concluído",
     pending_payment: "Pagamento pendente",
     reschedule_requested: "Reagendamento solicitado",
   };
