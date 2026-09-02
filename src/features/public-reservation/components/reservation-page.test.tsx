@@ -197,7 +197,12 @@ describe("ReservationPage", () => {
         screen.getByRole("heading", { name: /confirme seus dados/i }),
       ).toBeInTheDocument(),
     );
-    expect(window.history.state["tes.reservation.journey-draft.v1"]).toMatchObject({
+    expect(
+      screen.queryByText("Aceite os termos antes de seguir para o pagamento."),
+    ).not.toBeInTheDocument();
+    expect(
+      window.history.state["tes.reservation.journey-draft.v1"],
+    ).toMatchObject({
       acceptedTerms: true,
       checkoutAttemptId,
       reservationKey,
@@ -236,7 +241,9 @@ describe("ReservationPage", () => {
     expect(screen.getByLabelText("Categoria")).toHaveValue("outro");
     expect(screen.getByLabelText("Assunto")).toBeInTheDocument();
     expect(
-      screen.getByRole("dialog", { name: "Novo chamado" }).querySelector("textarea"),
+      screen
+        .getByRole("dialog", { name: "Novo chamado" })
+        .querySelector("textarea"),
     ).not.toBeNull();
     expect(
       screen.queryByRole("link", { name: "Ir para pagamento seguro" }),

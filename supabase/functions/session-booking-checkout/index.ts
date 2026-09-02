@@ -258,6 +258,7 @@ runtime.serve(async (request) => {
         bookingHoldId: hold.id,
         checkoutAttemptId: command.requestId,
         reservationExpiresAt: hold.expires_at,
+        returnUrlBase: command.returnUrlBase,
         serviceRoleKey,
         supabaseUrl,
       });
@@ -441,6 +442,7 @@ async function invokeSessionPaymentCheckout(input: {
   bookingHoldId: string;
   checkoutAttemptId: string;
   reservationExpiresAt: string;
+  returnUrlBase: string | null;
   serviceRoleKey: string;
   supabaseUrl: string;
 }) {
@@ -456,6 +458,7 @@ async function invokeSessionPaymentCheckout(input: {
             checkoutUiMode: "embedded",
             attemptKind: "initial_hold",
             reservationExpiresAt: input.reservationExpiresAt,
+            returnUrlBase: input.returnUrlBase,
           }),
           headers: {
             apikey: input.serviceRoleKey,

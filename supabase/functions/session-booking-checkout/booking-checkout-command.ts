@@ -7,6 +7,7 @@ const UUID =
 export type BookingCheckoutCommandBody = {
   holdTtlSeconds?: number;
   requestId?: string;
+  returnUrlBase?: string | null;
   serviceId?: string;
   sharedNote?: string | null;
   startsAt?: string;
@@ -16,6 +17,7 @@ export type BookingCheckoutCommandBody = {
 export type ValidBookingCheckoutCommand = {
   holdTtlSeconds: number;
   requestId: string;
+  returnUrlBase: string | null;
   serviceId: string;
   sharedNote: string | null;
   startsAt: string;
@@ -88,6 +90,7 @@ export function validateBookingCheckoutCommand(
 ): ValidBookingCheckoutCommand {
   const ttl = body.holdTtlSeconds ?? 300;
   const sharedNote = normalizeSharedNote(body.sharedNote);
+  const returnUrlBase = normalizeReturnUrlBase(body.returnUrlBase);
 
   if (
     (body.sharedNote !== undefined &&
@@ -128,10 +131,23 @@ export function validateBookingCheckoutCommand(
   return {
     holdTtlSeconds: ttl,
     requestId: body.requestId,
+    returnUrlBase,
     serviceId: body.serviceId,
     sharedNote,
     startsAt: new Date(body.startsAt).toISOString(),
   };
+}
+
+function normalizeReturnUrlBase(value: string | null | undefined) {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string" || value.length > 200) {
+    throw new DomainError(
+      "invalid_booking_checkout_payload",
+      422,
+      "Revise os dados da reserva.",
+    );
+  }
+  return value;
 }
 
 function normalizeSharedNote(value: string | null | undefined) {

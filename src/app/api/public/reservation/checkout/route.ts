@@ -57,11 +57,12 @@ export async function POST(request: Request) {
   }
 
   const input = toCheckoutInput(body);
+  const returnUrlBase = getLocalCheckoutReturnUrlBase(request);
   if (input.action === "replace") {
-    return replaceCheckout(input);
+    return replaceCheckout(input, returnUrlBase);
   }
   if (input.action === "retry") {
-    return retryCheckout(input);
+    return retryCheckout(input, returnUrlBase);
   }
 
   if (
@@ -130,6 +131,7 @@ export async function POST(request: Request) {
         body: {
           holdTtlSeconds: 300,
           requestId: input.checkoutAttemptId,
+          returnUrlBase,
           serviceId: input.serviceId,
           sharedNote: input.sharedNote,
           startsAt: new Date(input.startsAt).toISOString(),
@@ -226,7 +228,10 @@ function normalizeSharedNote(value: unknown) {
 
 type CheckoutInput = ReturnType<typeof toCheckoutInput>;
 
-async function retryCheckout(input: CheckoutInput) {
+async function retryCheckout(
+  input: CheckoutInput,
+  returnUrlBase: string | null,
+) {
   if (!UUID.test(input.bookingId) || !UUID.test(input.checkoutAttemptId)) {
     return NextResponse.json(
       { ok: false, message: "Revise os dados do pagamento." },
@@ -253,6 +258,7 @@ async function retryCheckout(input: CheckoutInput) {
         attemptKind: "payment_retry",
         bookingId: input.bookingId,
         checkoutAttemptId: input.checkoutAttemptId,
+        returnUrlBase,
       },
     });
     if (!response.data.clientSecret) {
@@ -278,7 +284,10 @@ async function retryCheckout(input: CheckoutInput) {
   }
 }
 
-async function replaceCheckout(input: CheckoutInput) {
+async function replaceCheckout(
+  input: CheckoutInput,
+  returnUrlBase: string | null,
+) {
   if (
     !UUID.test(input.bookingId) ||
     !UUID.test(input.checkoutAttemptId) ||
@@ -315,6 +324,7 @@ async function replaceCheckout(input: CheckoutInput) {
         checkoutAttemptId: input.checkoutAttemptId,
         promotionCode: input.promotionCode,
         replaceCheckoutSessionId: input.replaceCheckoutSessionId,
+        returnUrlBase,
       },
     });
 
@@ -371,4 +381,16 @@ function asString(value: unknown) {
 function isIsoInstant(value: string) {
   const date = new Date(value);
   return Boolean(value && !Number.isNaN(date.getTime()));
+}
+
+function getLocalCheckoutReturnUrlBase(request: Request) {
+  const url = new URL(request.url);
+  if (
+    url.protocol !== "http:" ||
+    !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
+  ) {
+    return null;
+  }
+
+  return url.origin;
 }
