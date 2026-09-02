@@ -59,10 +59,10 @@ describe("patient encounters mapper", () => {
     expect(result.nextEncounter?.status).toBe("pending_payment");
     expect(result.nextEncounter?.statusLabel).toBe("Pagamento pendente");
     expect(result.nextEncounter?.primaryAction.label).toBe(
-      "Continuar pagamento",
+      "Acompanhar pagamento",
     );
     expect(result.nextEncounter?.primaryAction).toMatchObject({
-      href: `/reserva?booking=${booking.id}&etapa=pagamento`,
+      href: `/reserva/sucesso?booking=${booking.id}`,
     });
   });
 

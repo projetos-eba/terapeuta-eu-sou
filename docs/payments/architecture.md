@@ -169,6 +169,10 @@ job `reservation-checkout-maintenance` expira leases abandonados a cada minuto
 e libera bootstraps órfãos que consumiram o hold sem persistir uma Checkout
 Session. A criação também compensa esse estado imediatamente após falha da
 chamada Stripe, sem cancelar uma Checkout que já tenha sido persistida.
+Uma recarga preserva a tentativa idempotente e o prazo absoluto. `pagehide` não
+é usado como autoridade de abandono, pois o navegador também o dispara em
+refresh; ao fechar ou sair da página, a manutenção libera o intervalo no prazo
+canônico. Tentativas `payment_retry` nunca disparam abandono de booking.
 - `session_refunds`, `session_cancellation_decisions` e `session_disputes`: eventos compensatorios, decisoes de politica e bloqueios. Cancelamento usa `request_id` único e o RPC `claim_session_cancellation_decision_v1` (somente `service_role`) para registrar uma única decisão antes de chamar Stripe; retries reutilizam a decisão, a chave de idempotência do refund e a transição do booking.
 - `session_service_confirmations`: prova de realizacao da sessao.
 - `session_participant_confirmations`: respostas canônicas por papel, com

@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/navigation", () => ({
@@ -156,6 +162,46 @@ describe("ReservationPage", () => {
 
     expect(advanceButton).toBeDefined();
     expect(advanceButton).toBeEnabled();
+  });
+
+  it("restores the checkout journey after a browser refresh", async () => {
+    const serviceId = "d1000000-0000-4000-8000-000000000001";
+    const slot = "2026-09-01T16:15:00.000Z";
+    const checkoutAttemptId = "a1000000-0000-4000-8000-000000000001";
+    const reservationKey = `${serviceId}:${slot}`;
+    window.history.replaceState(
+      {
+        "tes.reservation.journey-draft.v1": {
+          acceptedTerms: true,
+          checkoutAttemptId,
+          marketingConsent: false,
+          reservationKey,
+        },
+      },
+      "",
+      `/reserva?etapa=pagamento&service=${serviceId}&slot=${encodeURIComponent(slot)}`,
+    );
+    const context = resolveReservationContext({
+      isPatientAuthenticated: true,
+      searchParams: {
+        etapa: "pagamento",
+        service: serviceId,
+        slot,
+      },
+    });
+
+    render(<ReservationPage context={context} />);
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("heading", { name: /confirme seus dados/i }),
+      ).toBeInTheDocument(),
+    );
+    expect(window.history.state["tes.reservation.journey-draft.v1"]).toMatchObject({
+      acceptedTerms: true,
+      checkoutAttemptId,
+      reservationKey,
+    });
   });
 
   it("opens support in the checkout and removes the redundant payment anchor", () => {

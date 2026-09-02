@@ -95,9 +95,7 @@ export function CheckoutButton({
   } | null>(null);
   const handledPromotionRequestRef = useRef<string | null>(null);
   const requestIdRef = useRef<string | null>(null);
-  const completedRef = useRef(false);
   const abandonmentStartedRef = useRef(false);
-  const replacementInFlightRef = useRef(false);
   const [isSubmitting, setIsSubmitting] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkoutReady, setCheckoutReady] = useState(false);
@@ -131,54 +129,13 @@ export function CheckoutButton({
     }).catch(() => undefined);
   }, []);
 
-  useEffect(() => {
-    const abandonPendingCheckout = () => {
-      if (
-        abandonmentStartedRef.current ||
-        completedRef.current ||
-        replacementInFlightRef.current
-      ) {
-        return;
-      }
-
-      const currentCheckout = currentCheckoutRef.current;
-      if (!currentCheckout) return;
-
-      abandonmentStartedRef.current = true;
-      const body = JSON.stringify({
-        bookingId: currentCheckout.bookingId,
-        checkoutSessionId: currentCheckout.checkoutSessionId,
-        requestId: crypto.randomUUID(),
-      });
-      const url = "/api/public/reservation/abandon";
-
-      if (
-        typeof navigator.sendBeacon === "function" &&
-        navigator.sendBeacon(
-          url,
-          new Blob([body], { type: "application/json" }),
-        )
-      ) {
-        return;
-      }
-
-      void fetch(url, {
-        body,
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        keepalive: true,
-        method: "POST",
-      }).catch(() => undefined);
-    };
-
-    window.addEventListener("pagehide", abandonPendingCheckout);
-
-    return () => {
-      window.removeEventListener("pagehide", abandonPendingCheckout);
+  useEffect(
+    () => () => {
       checkoutRef.current?.destroy();
       checkoutRef.current = null;
-    };
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -213,14 +170,12 @@ export function CheckoutButton({
 
       setIsSubmitting(true);
       setError(null);
-      if (replacementRequest) replacementInFlightRef.current = true;
       const checkoutInputKey = `${retryBookingId ?? serviceId}:${startsAt ?? "retry"}:${checkoutAttemptId ?? "new"}`;
       if (checkoutInputKeyRef.current !== checkoutInputKey) {
         checkoutInputKeyRef.current = checkoutInputKey;
         requestIdRef.current = checkoutAttemptId ?? crypto.randomUUID();
         currentCheckoutRef.current = null;
         handledPromotionRequestRef.current = null;
-        completedRef.current = false;
         abandonmentStartedRef.current = false;
       }
 
@@ -303,9 +258,6 @@ export function CheckoutButton({
 
         const checkout = await stripe.initEmbeddedCheckout({
           fetchClientSecret,
-          onComplete: () => {
-            completedRef.current = true;
-          },
         });
 
         if (cancelled) {
@@ -367,9 +319,6 @@ export function CheckoutButton({
           setError(message);
         }
       } finally {
-        if (replacementRequest?.requestId === promotionRequest?.requestId) {
-          replacementInFlightRef.current = false;
-        }
         if (!cancelled) setIsSubmitting(false);
       }
     }
