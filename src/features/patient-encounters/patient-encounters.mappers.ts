@@ -297,14 +297,19 @@ function getPrimaryAction(
     };
   }
 
-  if (status === "pending_payment" || status === "payment_incomplete") {
+  if (status === "pending_payment") {
+    return {
+      href: `/reserva/sucesso?booking=${encodeURIComponent(booking.id)}`,
+      kind: "link",
+      label: "Acompanhar pagamento",
+    };
+  }
+
+  if (status === "payment_incomplete") {
     return {
       href: `/reserva?booking=${encodeURIComponent(booking.id)}&etapa=pagamento`,
       kind: "link",
-      label:
-        status === "payment_incomplete"
-          ? "Tentar pagamento novamente"
-          : "Continuar pagamento",
+      label: "Tentar pagamento novamente",
     };
   }
 

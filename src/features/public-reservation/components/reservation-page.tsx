@@ -177,6 +177,7 @@ export function ReservationPage({
 
   useEffect(() => {
     const restoreJourneyDraft = () => {
+      if (isPaymentRetry) return;
       const draft = readReservationJourneyDraft(reservationKey);
       setAcceptedTerms(draft?.acceptedTerms ?? false);
       setMarketingConsent(draft?.marketingConsent ?? context.marketingConsent);
@@ -196,11 +197,13 @@ export function ReservationPage({
       }
     };
 
+    restoreJourneyDraft();
     window.addEventListener("popstate", restoreJourneyDraft);
     return () => window.removeEventListener("popstate", restoreJourneyDraft);
   }, [
     context.hasRequiredCheckoutData,
     context.marketingConsent,
+    isPaymentRetry,
     reservationKey,
   ]);
 

@@ -120,7 +120,7 @@ describe("CheckoutButton", () => {
     ).toHaveLength(0);
   });
 
-  it("does not abandon the reservation while checkout is replaced, but abandons the current Checkout on page exit", async () => {
+  it("does not treat pagehide as abandonment because it also fires during refresh", async () => {
     vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
     Object.defineProperty(navigator, "sendBeacon", {
       configurable: true,
@@ -162,27 +162,17 @@ describe("CheckoutButton", () => {
     ).toHaveLength(0);
 
     window.dispatchEvent(new Event("pagehide"));
-
-    await waitFor(() =>
-      expect(
-        fetchMock.mock.calls.filter(
-          ([url]) => url === "/api/public/reservation/abandon",
-        ),
-      ).toHaveLength(1),
-    );
-    const abandonCall = fetchMock.mock.calls.find(
-      ([url]) => url === "/api/public/reservation/abandon",
-    );
-    expect(JSON.parse(abandonCall?.[1]?.body as string)).toMatchObject({
-      bookingId: checkoutResponse.checkout.bookingId,
-      checkoutSessionId: checkoutResponse.checkout.checkoutSessionId,
-    });
+    expect(
+      fetchMock.mock.calls.filter(
+        ([url]) => url === "/api/public/reservation/abandon",
+      ),
+    ).toHaveLength(0);
     rendered.unmount();
     expect(
       fetchMock.mock.calls.filter(
         ([url]) => url === "/api/public/reservation/abandon",
       ),
-    ).toHaveLength(1);
+    ).toHaveLength(0);
     expect(destroy).toHaveBeenCalled();
   });
 });

@@ -92,9 +92,10 @@ revalidada no servidor antes do checkout.
   Aplicar/remover chama a rota com `action=replace`, cria uma nova tentativa,
   destrói o checkout anterior e remonta o iframe sem recarregar a página.
 - Durante a substituição promocional, o navegador não pode iniciar abandono.
-  O abandono enviado em `pagehide` identifica o `checkoutSessionId`; a Edge
-  Function só libera a reserva quando esse ID ainda corresponde à tentativa
-  atual. Desmontagem React não é sinal suficiente de abandono.
+  `pagehide` e desmontagem React não são sinais suficientes de abandono porque
+  também ocorrem durante refresh e transições internas. O hold inicial conserva
+  o prazo absoluto e é liberado pelo contador aberto ou pela manutenção; uma
+  `payment_retry` nunca dispara abandono de booking.
 - A transição interna entre `preparar` e `pagamento`, inclusive pelo
   voltar/avançar do navegador, não é abandono. O aceite dos Termos e o
   `checkoutAttemptId` devem ser preservados somente no estado do histórico da
