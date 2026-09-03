@@ -57,7 +57,9 @@ insert into public.session_payments (
   stripe_balance_transaction_id, gross_amount_cents, platform_commission_bps,
   platform_gross_commission_cents, therapist_amount_cents, financial_status,
   service_status, transfer_status, service_confirmed_at,
-  service_confirmation_source, eligible_at, paid_at, metadata
+  service_confirmation_source, eligible_at, paid_at,
+  stripe_balance_status, stripe_balance_available_on,
+  stripe_balance_checked_at, metadata
 )
 select
   'fa100000-0000-4000-8000-000000000001',
@@ -67,8 +69,9 @@ select
   'd1000000-0000-4000-8000-000000000001',
   policy.id, 'pi_tes_local_weekly_fixture', 'ch_tes_local_weekly_fixture',
   'txn_tes_local_weekly_fixture', 12000, 2000, 2400, 9600, 'paid',
-  'auto_confirmed', 'eligible', now() - interval '10 days', 'automatic',
-  now() - interval '9 days', now() - interval '20 days',
+  'auto_confirmed', 'eligible', '2026-08-20T12:00:00Z', 'automatic',
+  '2026-08-21T12:00:00Z', '2026-08-05T12:00:00Z', 'available',
+  '2026-08-06T12:00:00Z', '2026-08-25T04:30:00Z',
   '{"fixture":"weekly_payout_local"}'::jsonb
 from public.financial_policy_versions policy
 where policy.is_active

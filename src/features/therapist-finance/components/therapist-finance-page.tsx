@@ -39,7 +39,6 @@ export function TherapistFinancePage({
         <FinancialReceiptsTab
           dateRange={dateRange}
           filters={filters}
-          overview={data.overview}
           receipts={data.receipts}
         />
       ) : null}

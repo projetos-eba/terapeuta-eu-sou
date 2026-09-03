@@ -265,7 +265,15 @@ Realizacao do servico:
 
 Repasse:
 
-- `not_eligible`, `waiting_confirmation`, `waiting_safety_period`, `eligible`, `batched`, `transfer_pending`, `transferred`, `blocked`, `reversed`, `failed`.
+- `not_eligible`, `waiting_confirmation`, `waiting_safety_period`,
+  `waiting_settlement`, `eligible`, `batched`, `transfer_pending`, `transferred`,
+  `blocked`, `reversed`, `failed`.
+
+`waiting_settlement` é obrigatório depois da segurança enquanto a Balance
+Transaction da Charge não estiver `available` com `available_on` vencido e
+snapshot recente. A reconciliação financeira horária mantém essa projeção
+visível; o lote semanal repete a consulta no cutoff e o worker revalida a Stripe
+imediatamente antes do Transfer com `source_transaction`.
 
 ## Fluxos
 
@@ -476,6 +484,7 @@ Configuracao detalhada para o Dashboard Stripe:
 `stripe-billing-webhook`, escopo `Sua conta`:
 
 - `checkout.session.completed`
+- `balance.available`
 - `checkout.session.async_payment_succeeded`
 - `checkout.session.async_payment_failed`
 - `checkout.session.expired`

@@ -9,8 +9,13 @@ import {
   success,
 } from "../_shared/payments/http.ts";
 import { runPayoutBatchWorker } from "../_shared/payments/payout-worker.ts";
-import { getPaymentsConfig, getPaymentsRuntime } from "../_shared/payments/runtime.ts";
+import {
+  getPaymentsConfig,
+  getPaymentsRuntime,
+} from "../_shared/payments/runtime.ts";
 import { createStripeClient } from "../_shared/payments/stripe-client.ts";
+import { reconcileChargeSettlements } from "../_shared/payments/charge-settlement.ts";
+import { resolveWeeklyPayoutStartWindow } from "../_shared/payments/weekly-window.ts";
 
 type Body = { nowOverride?: string };
 type Claim = {
@@ -43,23 +48,65 @@ runtime.serve(async (request) => {
       fieldName: "now_override",
       override: body.nowOverride,
     });
-    const client = new SupabaseRestClient(config.supabaseUrl, config.serviceRoleKey);
+    const client = new SupabaseRestClient(
+      config.supabaseUrl,
+      config.serviceRoleKey,
+    );
+    const stripe = createStripeClient(config.stripeApiKey);
+    const startWindow = resolveWeeklyPayoutStartWindow(now);
+    const existingRun = startWindow.open
+      ? await client.get<Array<{ id: string }>>(
+          `/rest/v1/payout_scheduler_runs?select=id&business_date=eq.${startWindow.businessDate}&limit=1`,
+        )
+      : [];
+    const settlements =
+      startWindow.open && existingRun.length === 0
+        ? await reconcileChargeSettlements({
+            client,
+            limit: 500,
+            observedAt: now,
+            stripe,
+          })
+        : [];
     const workerId = crypto.randomUUID();
-    const claim = await client.rpc<Claim>("claim_weekly_payout_scheduler_run_v1", {
-      p_lease_minutes: 5,
-      p_now: now,
-      p_worker_id: workerId,
-    });
+    const claim = await client.rpc<Claim>(
+      "claim_weekly_payout_scheduler_run_v1",
+      {
+        p_lease_minutes: 5,
+        p_now: now,
+        p_worker_id: workerId,
+      },
+    );
 
-    if (!claim.acquired || !claim.batchId || !claim.runId) {
-      return success({ acquired: false, reason: claim.reason ?? "not_available" });
+    if (!claim.acquired || !claim.runId) {
+      return success({
+        acquired: false,
+        reason: claim.reason ?? "not_available",
+      });
+    }
+
+    if (!claim.batchId) {
+      const finalized = await client.rpc<Record<string, unknown>>(
+        "finalize_payout_scheduler_run_v1",
+        { p_scheduler_run_id: claim.runId },
+      );
+      return success({
+        acquired: true,
+        batchId: null,
+        finalized,
+        reason: "no_eligible_payments",
+        runId: claim.runId,
+        settlementsReconciled: settlements.length,
+        transfersProcessed: 0,
+        windowOpen: claim.windowOpen === true,
+      });
     }
 
     const result = await runPayoutBatchWorker({
       batchId: claim.batchId,
       client,
       operationInstant: now,
-      stripe: createStripeClient(config.stripeApiKey),
+      stripe,
       stripeApiKey: config.stripeApiKey,
       stripeMode: config.stripeMode,
       workerId,
@@ -79,6 +126,7 @@ runtime.serve(async (request) => {
       finalized,
       payoutsProcessed: result.payouts.length,
       runId: claim.runId,
+      settlementsReconciled: settlements.length,
       transfersProcessed: result.transfers.length,
       windowOpen: claim.windowOpen === true,
     });

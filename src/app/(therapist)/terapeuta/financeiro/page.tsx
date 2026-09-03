@@ -11,26 +11,35 @@ import { canUseTherapistCapability } from "@/domain/tes";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
 const financialStatuses = new Set([
+  "bank_pending",
+  "blocked",
   "canceled",
   "disputed",
+  "eligible",
   "failed",
   "paid",
-  "partially_refunded",
-  "pending",
-  "processing",
+  "payout_processing",
+  "receivable",
   "refunded",
+  "reversed",
+  "waiting_confirmation",
+  "waiting_safety_period",
+  "waiting_settlement",
 ]);
 
 const payoutStatuses = new Set([
+  "bank_pending",
   "batched",
   "blocked",
   "eligible",
   "failed",
+  "paid",
   "reversed",
   "transferred",
   "transfer_pending",
   "waiting_confirmation",
   "waiting_safety_period",
+  "waiting_settlement",
 ]);
 
 export default async function TherapistFinanceRoute({
@@ -84,7 +93,7 @@ function parseDateRange(value: string | undefined): TherapistFinanceDateRange {
 
   if (key === "month") {
     return {
-      end: today,
+      end: endOfMonth(today),
       key,
       start: `${today.slice(0, 8)}01`,
     };
@@ -95,6 +104,13 @@ function parseDateRange(value: string | undefined): TherapistFinanceDateRange {
     key,
     start: addDays(today, key === "90" ? -89 : -29),
   };
+}
+
+function endOfMonth(value: string) {
+  const [year, month] = value.split("-").map(Number);
+  const day = new Date(Date.UTC(year, month, 0)).getUTCDate();
+
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 function parseFilters(

@@ -25,10 +25,16 @@ import {
   extractCheckoutFinancialSnapshot,
 } from "../_shared/payments/checkout-financials.ts";
 import { shouldApplySessionAttemptEvent } from "../_shared/payments/session-attempt-policy.ts";
+import { reconcileChargeSettlements } from "../_shared/payments/charge-settlement.ts";
 
 type FinancialStatus = "canceled" | "failed" | "paid" | "processing";
 
 type StripePaymentReconciliation = {
+  balanceAmountCents: number | null;
+  balanceAvailableOn: string | null;
+  balanceCurrency: string | null;
+  balanceSourceChargeId: string | null;
+  balanceStatus: "available" | "pending" | null;
   balanceTransactionId: string | null;
   feeAmountCents: number | null;
   netAmountCents: number | null;
@@ -264,6 +270,9 @@ async function handleEvent(
     case "transfer.updated":
     case "transfer.reversed":
       await handleTransferEvent(client, dataObject, eventTime);
+      return "processed";
+    case "balance.available":
+      await reconcileChargeSettlements({ client, stripe });
       return "processed";
     default:
       return "ignored";
@@ -677,6 +686,14 @@ async function applySessionPaymentState(
       paymentMethodType: input.reconciliation?.paymentMethodType ?? null,
       receiptUrl: input.reconciliation?.receiptUrl ?? null,
       sessionPaymentId: input.sessionPaymentId,
+      stripeBalanceAmountCents:
+        input.reconciliation?.balanceAmountCents ?? null,
+      stripeBalanceAvailableOn:
+        input.reconciliation?.balanceAvailableOn ?? null,
+      stripeBalanceCurrency: input.reconciliation?.balanceCurrency ?? null,
+      stripeBalanceSourceChargeId:
+        input.reconciliation?.balanceSourceChargeId ?? null,
+      stripeBalanceStatus: input.reconciliation?.balanceStatus ?? null,
       stripeBalanceTransactionId:
         input.reconciliation?.balanceTransactionId ?? null,
       stripeFeeAmountCents: input.reconciliation?.feeAmountCents ?? null,
@@ -897,9 +914,19 @@ async function recordSessionPaymentReconciliation(
     stripeBalanceTransactionId: string | null;
     stripeFeeAmountCents: number | null;
     stripeNetAmountCents: number | null;
+    stripeBalanceAmountCents: number | null;
+    stripeBalanceAvailableOn: string | null;
+    stripeBalanceCurrency: string | null;
+    stripeBalanceSourceChargeId: string | null;
+    stripeBalanceStatus: "available" | "pending" | null;
   },
 ) {
-  await client.rpc("record_session_payment_stripe_reconciliation_v1", {
+  await client.rpc("record_session_payment_stripe_reconciliation_v2", {
+    p_balance_amount_cents: input.stripeBalanceAmountCents,
+    p_balance_available_on: input.stripeBalanceAvailableOn,
+    p_balance_currency: input.stripeBalanceCurrency,
+    p_balance_source_charge_id: input.stripeBalanceSourceChargeId,
+    p_balance_status: input.stripeBalanceStatus,
     p_payment_method_type: input.paymentMethodType,
     p_payment_origin: "stripe_checkout",
     p_receipt_url: input.receiptUrl,
@@ -1232,6 +1259,18 @@ function extractChargeReconciliation(
   const paymentMethodDetails = asRecord(charge.payment_method_details);
 
   return {
+    balanceAmountCents: numberOrNull(balanceTransaction.amount),
+    balanceAvailableOn: unixToIso(balanceTransaction.available_on),
+    balanceCurrency: stringOrNull(balanceTransaction.currency),
+    balanceSourceChargeId:
+      typeof balanceTransaction.source === "string"
+        ? balanceTransaction.source
+        : stringOrNull(asRecord(balanceTransaction.source).id),
+    balanceStatus:
+      balanceTransaction.status === "available" ||
+      balanceTransaction.status === "pending"
+        ? balanceTransaction.status
+        : null,
     balanceTransactionId: stringOrNull(balanceTransaction.id),
     feeAmountCents: numberOrNull(balanceTransaction.fee),
     netAmountCents: numberOrNull(balanceTransaction.net),

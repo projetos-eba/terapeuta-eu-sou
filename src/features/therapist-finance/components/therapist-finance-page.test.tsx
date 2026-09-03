@@ -5,7 +5,7 @@ import type {
   TherapistAdvancedFinancialDashboard,
   TherapistFinanceFilters,
   TherapistFinancePageData,
-  TherapistFinancialStatus,
+  TherapistReceiptStatus,
 } from "../therapist-finance.types";
 import { financialReceiptCopyByStatus } from "./financial-formatters";
 import { TherapistFinancePage } from "./therapist-finance-page";
@@ -166,7 +166,7 @@ describe("TherapistFinancePage", () => {
     expect(screen.getAllByText("Cartão").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Pagamento online").length).toBeGreaterThan(0);
     expect(screen.getByText("Reembolsos")).toBeInTheDocument();
-    expect(screen.getByText("Recebimentos por semana")).toBeInTheDocument();
+    expect(screen.getByText("Tendência dos recebimentos")).toBeInTheDocument();
     expect(screen.getByText("Distribuição por status")).toBeInTheDocument();
   });
 
@@ -188,7 +188,7 @@ describe("TherapistFinancePage", () => {
             },
           },
         },
-        { status: status as TherapistFinancialStatus },
+        { status: status as TherapistReceiptStatus },
       );
 
       expect(
@@ -215,6 +215,7 @@ describe("TherapistFinancePage", () => {
             {
               ...baseReceipts.items[0],
               financialStatus: "canceled",
+              receiptStatus: "canceled",
             },
           ],
         },
@@ -253,9 +254,7 @@ describe("TherapistFinancePage", () => {
       },
     );
 
-    expect(
-      screen.getByRole("link", { name: "Próxima página" }),
-    ).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Carregar mais" })).toHaveAttribute(
       "href",
       "/terapeuta/financeiro?tab=recebimentos&page=2&status=canceled&therapyId=therapy-1&q=Lucas",
     );
@@ -492,12 +491,14 @@ function fixture(): TherapistFinancePageData {
     },
     overview: {
       blockedCents: 0,
-      contractVersion: 1,
+      contractVersion: 2,
       disputedCents: 0,
       eligibleForPayoutCents: 8000,
       generatedAt: "2026-07-28T12:00:00.000Z",
       grossPaidCents: 10000,
       payoutProcessingCents: 0,
+      processingCents: 8000,
+      receivedCents: 0,
       periodEnd: "2026-07-28",
       periodStart: "2026-06-29",
       plan: "premium",
@@ -509,9 +510,10 @@ function fixture(): TherapistFinancePageData {
       transferredCents: 8000,
       waitingConfirmationCents: 0,
       waitingSafetyPeriodCents: 0,
+      waitingSettlementCents: 0,
     },
     payouts: {
-      contractVersion: 1,
+      contractVersion: 2,
       filters: {
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
@@ -555,11 +557,12 @@ function fixture(): TherapistFinancePageData {
         payoutProcessingCents: 0,
         waitingConfirmationCents: 0,
         waitingSafetyPeriodCents: 0,
+        waitingSettlementCents: 0,
       },
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
     },
     receipts: {
-      contractVersion: 1,
+      contractVersion: 2,
       filters: {
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
@@ -580,6 +583,8 @@ function fixture(): TherapistFinancePageData {
           paymentMethodType: "card",
           paymentOrigin: "stripe_checkout",
           receiptUrl: "https://stripe.test/receipt",
+          receiptStatus: "refunded",
+          receivedAt: null,
           refundedAmountCents: 1000,
           sessionDate: "2026-07-28T13:00:00.000Z",
           sessionPaymentId: "payment-1",
@@ -594,6 +599,22 @@ function fixture(): TherapistFinancePageData {
         pageSize: 12,
         totalCount: 1,
         totalPages: 1,
+      },
+      monthlyTrend: [
+        {
+          month: "2026-07",
+          processingCents: 7000,
+          receivedCents: 0,
+        },
+      ],
+      statusDistribution: [
+        { amountCents: 7000, itemCount: 1, status: "refunded" },
+      ],
+      summary: {
+        disputedCents: 0,
+        processingCents: 0,
+        receivedCents: 0,
+        refundedCents: 1000,
       },
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
       therapyOptions: [{ name: "Reiki", therapyId: "therapy-1" }],

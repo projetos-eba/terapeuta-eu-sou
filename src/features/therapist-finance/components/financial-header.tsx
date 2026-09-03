@@ -40,31 +40,37 @@ export function FinancialHeader({
           </p>
         </div>
 
-        <form
-          className="grid min-w-0 w-full gap-2 sm:flex sm:w-auto lg:shrink-0"
-          method="get"
-        >
-          <input name="tab" type="hidden" value={toFinanceTabQueryValue(tab)} />
-          <label className="sr-only" htmlFor="finance-period">
-            Período financeiro
-          </label>
-          <select
-            className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary sm:w-auto sm:min-w-[190px]"
-            defaultValue={dateRange.key}
-            id="finance-period"
-            name="period"
+        {tab === "summary" ? (
+          <form
+            className="grid min-w-0 w-full gap-2 sm:flex sm:w-auto lg:shrink-0"
+            method="get"
           >
-            <option value="30">Últimos 30 dias</option>
-            <option value="90">Últimos 90 dias</option>
-            <option value="month">Mês atual</option>
-          </select>
-          <button
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
-            type="submit"
-          >
-            Atualizar
-          </button>
-        </form>
+            <input
+              name="tab"
+              type="hidden"
+              value={toFinanceTabQueryValue(tab)}
+            />
+            <label className="sr-only" htmlFor="finance-period">
+              Período financeiro
+            </label>
+            <select
+              className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-4 text-sm font-extrabold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary sm:w-auto sm:min-w-[190px]"
+              defaultValue={dateRange.key}
+              id="finance-period"
+              name="period"
+            >
+              <option value="30">Últimos 30 dias</option>
+              <option value="90">Últimos 90 dias</option>
+              <option value="month">Mês atual</option>
+            </select>
+            <button
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
+              type="submit"
+            >
+              Atualizar
+            </button>
+          </form>
+        ) : null}
       </div>
 
       <div className="min-w-0 border-b border-brand-lavender">

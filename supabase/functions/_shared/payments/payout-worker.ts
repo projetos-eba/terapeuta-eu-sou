@@ -10,6 +10,11 @@ import { extractTransferDestinationReference } from "./automatic-payouts.ts";
 import { buildSessionTransferCreateParams } from "./finance-lifecycle.ts";
 import { classifyProviderFailure } from "./payouts.ts";
 import type { StripeClient } from "./stripe-client.ts";
+import {
+  isChargeSettlementAvailable,
+  persistChargeSettlementSnapshot,
+  retrieveChargeSettlementSnapshot,
+} from "./charge-settlement.ts";
 
 type TransferClaim = {
   amount_cents: number;
@@ -31,9 +36,11 @@ type PaymentState = {
   disputed_at: string | null;
   eligible_at: string | null;
   financial_status: string;
+  gross_amount_cents: number;
   internal_contested_at: string | null;
   refund_pending: boolean;
   stripe_balance_transaction_id: string | null;
+  stripe_balance_status: string | null;
   stripe_charge_id: string | null;
   therapist_amount_cents: number;
   transfer_status: string;
@@ -87,21 +94,28 @@ export async function runPayoutBatchWorker(input: {
         destination = extractTransferDestinationReference(authoritative);
       }
       if (!destination) {
-        throw Object.assign(new Error("Transfer sem contrapartida conciliavel."), {
-          code: "provider_response_unknown",
-          type: "StripeConnectionError",
-        });
+        throw Object.assign(
+          new Error("Transfer sem contrapartida conciliavel."),
+          {
+            code: "provider_response_unknown",
+            type: "StripeConnectionError",
+          },
+        );
       }
       await input.client.rpc("complete_payout_transfer_v2", {
         p_connected_balance_available_on: destination.availableOn,
-        p_stripe_connected_balance_transaction_id: destination.balanceTransactionId,
+        p_stripe_connected_balance_transaction_id:
+          destination.balanceTransactionId,
         p_stripe_destination_payment_id: destination.destinationPaymentId,
         p_stripe_transfer_id: transfer.id,
         p_transfer_id: claim.transfer_id,
         p_transferred_at: new Date(transfer.created * 1000).toISOString(),
         p_worker_id: input.workerId,
       });
-      transfers.push({ itemId: claim.payout_batch_item_id, status: "transferred" });
+      transfers.push({
+        itemId: claim.payout_batch_item_id,
+        status: "transferred",
+      });
     } catch (error) {
       const failure = classifyProviderFailure(error);
       await input.client.rpc("fail_payout_transfer_v1", {
@@ -126,9 +140,9 @@ async function assertTransferClaimIsReady(
   claim: TransferClaim,
 ) {
   const [payment] = await input.client.get<PaymentState[]>(
-    `/rest/v1/session_payments?select=financial_status,refund_pending,disputed_at,internal_contested_at,admin_blocked_at,stripe_charge_id,stripe_balance_transaction_id,therapist_amount_cents,transfer_status,eligible_at&id=eq.${
-      encodeURIComponent(claim.session_payment_id)
-    }&limit=1`,
+    `/rest/v1/session_payments?select=financial_status,gross_amount_cents,refund_pending,disputed_at,internal_contested_at,admin_blocked_at,stripe_charge_id,stripe_balance_transaction_id,stripe_balance_status,therapist_amount_cents,transfer_status,eligible_at&id=eq.${encodeURIComponent(
+      claim.session_payment_id,
+    )}&limit=1`,
   );
   const accountRows = await input.client.get<
     Array<{
@@ -140,11 +154,11 @@ async function assertTransferClaimIsReady(
       therapist_profiles: { status: string } | null;
     }>
   >(
-    `/rest/v1/therapist_connect_accounts?select=operational_status,payout_schedule_interval,payout_status,payouts_enabled,stripe_transfers_status,therapist_profiles!inner(status)&id=eq.${
-      encodeURIComponent(claim.connect_account_id)
-    }&therapist_profile_id=eq.${
-      encodeURIComponent(claim.therapist_profile_id)
-    }&limit=1`,
+    `/rest/v1/therapist_connect_accounts?select=operational_status,payout_schedule_interval,payout_status,payouts_enabled,stripe_transfers_status,therapist_profiles!inner(status)&id=eq.${encodeURIComponent(
+      claim.connect_account_id,
+    )}&therapist_profile_id=eq.${encodeURIComponent(
+      claim.therapist_profile_id,
+    )}&limit=1`,
   );
   const account = accountRows[0];
 
@@ -157,28 +171,68 @@ async function assertTransferClaimIsReady(
     payment.admin_blocked_at !== null ||
     payment.stripe_charge_id !== claim.stripe_charge_id ||
     !payment.stripe_balance_transaction_id ||
+    payment.stripe_balance_status !== "available" ||
     payment.therapist_amount_cents !== claim.amount_cents ||
     payment.therapist_amount_cents <= 0 ||
-    !isEligibleAtOperationInstant(payment.eligible_at, input.operationInstant) ||
+    !isEligibleAtOperationInstant(
+      payment.eligible_at,
+      input.operationInstant,
+    ) ||
     !account ||
     account.therapist_profiles?.status !== "approved" ||
     account.operational_status !== "ready" ||
     account.stripe_transfers_status !== "active"
   ) {
-    throw Object.assign(new Error("Pagamento ou conta nao elegivel para repasse."), {
-      code: "transfer_business_block",
-      statusCode: 422,
-    });
+    throw Object.assign(
+      new Error("Pagamento ou conta nao elegivel para repasse."),
+      {
+        code: "transfer_business_block",
+        statusCode: 422,
+      },
+    );
   }
 
-  const remote = await retrieveAccountV2(input.stripeApiKey, claim.stripe_account_id);
+  const settlement = await retrieveChargeSettlementSnapshot(
+    input.stripe,
+    claim.stripe_charge_id,
+  );
+  if (
+    !isChargeSettlementAvailable(settlement, {
+      amountCents: payment.gross_amount_cents,
+      balanceTransactionId: payment.stripe_balance_transaction_id,
+      chargeId: claim.stripe_charge_id,
+      operationInstant: input.operationInstant,
+    })
+  ) {
+    throw Object.assign(
+      new Error("Cobranca ainda nao liquidada para repasse."),
+      {
+        code: "source_balance_not_available",
+        statusCode: 422,
+      },
+    );
+  }
+  await persistChargeSettlementSnapshot({
+    client: input.client,
+    eventCreatedAt: input.operationInstant ?? new Date().toISOString(),
+    eventId: `transfer-preflight:${claim.session_payment_id}:${settlement!.balanceTransactionId}`,
+    paymentId: claim.session_payment_id,
+    snapshot: settlement!,
+  });
+
+  const remote = await retrieveAccountV2(
+    input.stripeApiKey,
+    claim.stripe_account_id,
+  );
   const payoutSettings = await retrieveBalanceSettings(
     input.stripe,
     claim.stripe_account_id,
   );
   const state = deriveConnectAccountState(
     remote,
-    derivePayoutSettingsState(payoutSettings as unknown as Record<string, unknown>),
+    derivePayoutSettingsState(
+      payoutSettings as unknown as Record<string, unknown>,
+    ),
   );
   assertConnectAccountOwnership(remote, {
     environment: input.stripeMode,
@@ -190,10 +244,13 @@ async function assertTransferClaimIsReady(
     !state.payoutsEnabled ||
     state.payoutScheduleInterval !== "daily"
   ) {
-    throw Object.assign(new Error("Conta Connect nao esta pronta para Transfer."), {
-      code: "connect_account_not_ready",
-      statusCode: 422,
-    });
+    throw Object.assign(
+      new Error("Conta Connect nao esta pronta para Transfer."),
+      {
+        code: "connect_account_not_ready",
+        statusCode: 422,
+      },
+    );
   }
 }
 
@@ -203,7 +260,9 @@ export function isEligibleAtOperationInstant(
 ) {
   if (!eligibleAt) return false;
   const eligibleEpoch = Date.parse(eligibleAt);
-  const operationEpoch = operationInstant ? Date.parse(operationInstant) : Date.now();
+  const operationEpoch = operationInstant
+    ? Date.parse(operationInstant)
+    : Date.now();
   return (
     Number.isFinite(eligibleEpoch) &&
     Number.isFinite(operationEpoch) &&

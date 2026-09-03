@@ -14,13 +14,12 @@ import { routes } from "@/lib/routes";
 import type {
   TherapistFinanceDateRange,
   TherapistFinanceFilters,
-  TherapistFinancialOverview,
   TherapistReceiptsContract,
 } from "../therapist-finance.types";
 import {
   defaultFinancialReceiptCopy,
   financialReceiptCopyByStatus,
-  financialStatusLabels,
+  receiptStatusLabels,
   formatCurrency,
   formatDateTime,
   formatPaymentMethod,
@@ -32,21 +31,12 @@ import { FinancialStatusBadge } from "./financial-status-badge";
 export function FinancialReceiptsTab({
   dateRange,
   filters,
-  overview,
   receipts,
 }: {
   dateRange: TherapistFinanceDateRange;
   filters: TherapistFinanceFilters;
-  overview: TherapistFinancialOverview;
   receipts: TherapistReceiptsContract;
 }) {
-  const processingCents = receipts.items
-    .filter((item) => item.financialStatus === "processing")
-    .reduce((total, item) => total + item.therapistNetAmountCents, 0);
-  const refundedCents = receipts.items.reduce(
-    (total, item) => total + item.refundedAmountCents,
-    0,
-  );
   const receiptCopy = filters.status
     ? financialReceiptCopyByStatus[filters.status]
     : defaultFinancialReceiptCopy;
@@ -55,11 +45,23 @@ export function FinancialReceiptsTab({
     <div className="grid min-w-0 gap-5 [&>*]:min-w-0">
       <AppPageSection className="grid gap-4">
         <form
-          className="grid gap-3 lg:gap-4 lg:grid-cols-[150px_180px_1fr_auto]"
+          className="grid gap-3 lg:gap-4 lg:grid-cols-[170px_170px_180px_1fr_auto]"
           method="get"
         >
           <input name="tab" type="hidden" value="recebimentos" />
-          <input name="period" type="hidden" value={dateRange.key} />
+
+          <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
+            Período
+            <select
+              className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+              defaultValue={dateRange.key}
+              name="period"
+            >
+              <option value="30">Últimos 30 dias</option>
+              <option value="90">Últimos 90 dias</option>
+              <option value="month">Mês atual</option>
+            </select>
+          </label>
 
           <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
             Situação
@@ -69,7 +71,7 @@ export function FinancialReceiptsTab({
               name="status"
             >
               <option value="">Todos</option>
-              {Object.entries(financialStatusLabels).map(([status, label]) => (
+              {Object.entries(receiptStatusLabels).map(([status, label]) => (
                 <option key={status} value={status}>
                   {label}
                 </option>
@@ -137,34 +139,36 @@ export function FinancialReceiptsTab({
         className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
       >
         <ReceiptMetricCard
-          description="Valor bruto pago dentro do período."
+          description="Valor líquido depositado em Payouts pagos e integralmente conciliados."
           icon={ReceiptText}
           label="Recebido no período"
-          value={overview.grossPaidCents}
+          value={receipts.summary.receivedCents}
         />
         <ReceiptMetricCard
           description="Pagamentos ainda em processamento."
           icon={Hourglass}
           label="Em processamento"
-          value={processingCents}
+          value={receipts.summary.processingCents}
         />
-        {refundedCents > 0 ? (
+        {receipts.summary.refundedCents > 0 ? (
           <ReceiptMetricCard
             description="Valores devolvidos ao cliente."
             icon={RotateCcw}
             label="Reembolsos"
-            value={refundedCents}
+            value={receipts.summary.refundedCents}
           />
         ) : null}
-        {overview.disputedCents > 0 ? (
+        {receipts.summary.disputedCents > 0 ? (
           <ReceiptMetricCard
             description="Pagamentos com disputa registrada."
             icon={FileText}
             label="Disputas"
-            value={overview.disputedCents}
+            value={receipts.summary.disputedCents}
           />
         ) : null}
       </section>
+
+      <ReceiptsVisualSummary receipts={receipts} />
 
       <AppPageSection className="grid gap-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -183,7 +187,11 @@ export function FinancialReceiptsTab({
 
         {receipts.items.length ? (
           <>
-            <div className="hidden lg:block">
+            <div
+              aria-label="Lista de recebimentos, seis linhas visíveis"
+              className="hidden max-h-[520px] overflow-auto lg:block"
+              tabIndex={0}
+            >
               <table className="w-full border-separate border-spacing-0 text-left">
                 <thead>
                   <tr className="text-xs font-extrabold uppercase text-tesText-muted">
@@ -254,8 +262,8 @@ export function FinancialReceiptsTab({
                       </td>
                       <td className="border-b border-brand-lavender/70 py-4 pr-3">
                         <FinancialStatusBadge
-                          status={item.financialStatus}
-                          type="payment"
+                          status={item.receiptStatus}
+                          type="receipt"
                         />
                         {item.disputeStatus ? (
                           <p className="mt-1 text-xs font-bold text-status-danger">
@@ -288,8 +296,8 @@ export function FinancialReceiptsTab({
                       </p>
                     </div>
                     <FinancialStatusBadge
-                      status={item.financialStatus}
-                      type="payment"
+                      status={item.receiptStatus}
+                      type="receipt"
                     />
                   </div>
                   <dl className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -339,13 +347,11 @@ export function FinancialReceiptsTab({
           </div>
         )}
 
-        <ReceiptsVisualSummary receipts={receipts} />
-
         <Pagination
           dateRange={dateRange}
           filters={filters}
           hasNextPage={receipts.pagination.hasNextPage}
-          page={receipts.pagination.page}
+          page={filters.page}
         />
       </AppPageSection>
     </div>
@@ -357,11 +363,25 @@ function ReceiptsVisualSummary({
 }: {
   receipts: TherapistReceiptsContract;
 }) {
-  const points = buildWeeklyPoints(receipts.items);
-  const statusTotals = buildStatusTotals(receipts.items);
+  const points = receipts.monthlyTrend;
+  const statusTotals = buildStatusTotals(receipts.statusDistribution);
   const total = statusTotals.reduce((sum, item) => sum + item.value, 0);
-  const hasData = total > 0;
-  const max = Math.max(1, ...points.map((point) => point.value));
+  const hasStatusData = total > 0;
+  const hasData = points.some(
+    (point) => point.processingCents > 0 || point.receivedCents > 0,
+  );
+  const max = Math.max(
+    1,
+    ...points.flatMap((point) => [point.processingCents, point.receivedCents]),
+  );
+  const receivedPoints = chartPoints(
+    points.map((point) => point.receivedCents),
+    max,
+  );
+  const processingPoints = chartPoints(
+    points.map((point) => point.processingCents),
+    max,
+  );
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
@@ -369,21 +389,21 @@ function ReceiptsVisualSummary({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-xl font-extrabold text-brand-deep">
-              Recebimentos por semana
+              Tendência dos recebimentos
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Valores brutos com pagamento confirmado no período.
+              Valores líquidos recebidos e ainda em processamento, por mês.
             </p>
           </div>
           <span className="rounded-lg bg-brand-lavenderSoft px-3 py-2 text-sm font-extrabold text-brand-primary">
-            Semanal
+            Mensal
           </span>
         </div>
         <div
           aria-label={
             hasData
-              ? "Recebimentos brutos por semana"
-              : "Recebimentos por semana: ainda sem dados"
+              ? "Tendência mensal de valores recebidos e em processamento"
+              : "Tendência mensal: ainda sem dados"
           }
           className="mt-5 grid min-h-[190px] grid-cols-[auto_minmax(0,1fr)] gap-3"
           role="img"
@@ -394,36 +414,50 @@ function ReceiptsVisualSummary({
             <span>{formatCurrency(Math.round(max / 2))}</span>
             <span>R$ 0</span>
           </div>
-          <div className="flex items-end gap-3 overflow-x-auto rounded-card border border-brand-lavender bg-surface-soft px-4 pb-3 pt-5">
-            {(points.length
-              ? points
-              : Array.from({ length: 5 }, (_, index) => ({
-                  label: `ref-${index}`,
-                  value: 0,
-                }))
-            ).map((point) => (
-              <div
-                className="flex min-w-[48px] flex-1 flex-col items-center gap-2"
-                key={point.label}
-              >
-                <span
-                  aria-hidden="true"
-                  className={`w-7 rounded-t ${hasData ? "bg-brand-primary" : "border border-dashed border-brand-lavender bg-transparent"}`}
-                  style={{
-                    height: `${Math.max(4, (point.value / max) * 112)}px`,
-                  }}
+          <div className="min-w-0 overflow-x-auto rounded-card border border-brand-lavender bg-surface-soft px-4 pb-3 pt-5">
+            <svg
+              aria-hidden="true"
+              className="h-32 min-w-[360px] w-full"
+              viewBox="0 0 500 128"
+            >
+              <path d="M0 112H500" stroke="var(--tes-color-brand-lavender)" />
+              {hasData ? (
+                <>
+                  <polyline
+                    fill="none"
+                    points={receivedPoints}
+                    stroke="var(--tes-color-status-success)"
+                    strokeWidth="4"
+                  />
+                  <polyline
+                    fill="none"
+                    points={processingPoints}
+                    stroke="var(--tes-color-brand-primary)"
+                    strokeDasharray="7 5"
+                    strokeWidth="4"
+                  />
+                </>
+              ) : (
+                <path
+                  d="M0 88 C120 84 180 94 260 82 S410 90 500 78"
+                  fill="none"
+                  stroke="var(--tes-color-brand-lavender)"
+                  strokeDasharray="6 6"
+                  strokeWidth="2"
                 />
-                <span className="text-[11px] font-bold text-tesText-muted">
-                  {hasData ? point.label : ""}
-                </span>
-              </div>
-            ))}
+              )}
+            </svg>
+            <div className="flex min-w-[360px] justify-between gap-3 text-[11px] font-bold text-tesText-muted">
+              {points.map((point) => (
+                <span key={point.month}>{formatMonth(point.month)}</span>
+              ))}
+            </div>
           </div>
         </div>
         <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
           {hasData
-            ? "Acompanhe a distribuição dos recebimentos dentro do período selecionado."
-            : "O gráfico será preenchido conforme os pagamentos forem confirmados."}
+            ? "Linha verde: recebido no banco. Linha roxa: valores ativos ainda não recebidos."
+            : "O gráfico será preenchido quando houver movimentação no período."}
         </p>
       </section>
 
@@ -437,7 +471,7 @@ function ReceiptsVisualSummary({
         <div className="mt-4 grid gap-4 sm:grid-cols-[170px_minmax(0,1fr)] sm:items-center">
           <ReceiptDonut
             label={
-              hasData
+              hasStatusData
                 ? "Distribuição de recebimentos por status"
                 : "Distribuição por status: ainda sem dados"
             }
@@ -445,7 +479,7 @@ function ReceiptsVisualSummary({
             values={statusTotals}
           />
           <ul className="grid gap-3 text-sm font-bold text-tesText-secondary">
-            {(hasData
+            {(hasStatusData
               ? statusTotals
               : [
                   {
@@ -468,7 +502,7 @@ function ReceiptsVisualSummary({
                   {item.label}
                 </span>
                 <strong className="shrink-0 text-brand-deep">
-                  {hasData ? formatCurrency(item.value) : "-"}
+                  {hasStatusData ? formatCurrency(item.value) : "-"}
                 </strong>
               </li>
             ))}
@@ -479,49 +513,36 @@ function ReceiptsVisualSummary({
   );
 }
 
-function buildWeeklyPoints(items: TherapistReceiptsContract["items"]) {
-  const buckets = new Map<string, number>();
-  for (const item of items) {
-    const date = new Date(item.sessionDate);
-    const weekStart = new Date(date);
-    weekStart.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-    const key = weekStart.toISOString().slice(0, 10);
-    buckets.set(key, (buckets.get(key) ?? 0) + item.grossAmountCents);
-  }
-
-  return [...buckets.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([label, value]) => ({
-      label: formatDateTime(`${label}T12:00:00.000Z`).slice(0, 5),
-      value,
-    }));
-}
-
-function buildStatusTotals(items: TherapistReceiptsContract["items"]) {
+function buildStatusTotals(
+  items: TherapistReceiptsContract["statusDistribution"],
+) {
   const colors: Record<string, string> = {
     paid: "var(--tes-color-status-success)",
-    processing: "var(--tes-color-brand-cyan)",
-    scheduled: "var(--tes-color-brand-primary)",
+    waiting_settlement: "var(--tes-color-brand-cyan)",
+    eligible: "var(--tes-color-brand-primary)",
+    blocked: "var(--tes-color-status-warning)",
   };
-  const labels: Record<string, string> = {
-    paid: "Pago",
-    processing: "Processando",
-    scheduled: "Agendado",
-  };
-  const totals = new Map<string, number>();
-  for (const item of items)
-    totals.set(
-      item.financialStatus,
-      (totals.get(item.financialStatus) ?? 0) + item.grossAmountCents,
-    );
-  return [...totals.entries()].map(([status, value]) => ({
-    color: colors[status] ?? "var(--tes-color-brand-lavender)",
-    label:
-      labels[status] ??
-      financialStatusLabels[status as keyof typeof financialStatusLabels] ??
-      "Outro",
-    value,
+  return items.map((item) => ({
+    color: colors[item.status] ?? "var(--tes-color-brand-lavender)",
+    label: receiptStatusLabels[item.status],
+    value: item.amountCents,
   }));
+}
+
+function chartPoints(values: number[], max: number) {
+  if (!values.length) return "";
+  return values
+    .map((value, index) => {
+      const x = values.length === 1 ? 250 : (index / (values.length - 1)) * 500;
+      const y = 112 - (value / max) * 96;
+      return `${x},${y}`;
+    })
+    .join(" ");
+}
+
+function formatMonth(value: string) {
+  const [year, month] = value.split("-");
+  return `${month}/${year.slice(-2)}`;
 }
 
 function ReceiptDonut({
@@ -650,7 +671,7 @@ function Pagination({
             tab: "receipts",
           })}
         >
-          Anterior
+          Mostrar menos
         </Link>
       ) : null}
       {hasNextPage ? (
@@ -663,7 +684,7 @@ function Pagination({
             tab: "receipts",
           })}
         >
-          Próxima página
+          Carregar mais
         </Link>
       ) : null}
     </div>
