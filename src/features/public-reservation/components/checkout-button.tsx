@@ -381,14 +381,12 @@ export function CheckoutButton({
     <div className="mt-6 space-y-4">
       {reservationLease ? (
         <div className="rounded-[18px] border border-brand-lavender bg-brand-lavenderSoft p-4 text-sm font-extrabold text-brand-primary">
-          Seu horário está reservado por mais{" "}
+          Horário reservado por até{" "}
           <HoldCountdown
             expiresAt={reservationLease.expiresAt}
             onExpire={expireReservation}
             serverNow={reservationLease.serverNow}
           />
-          . Depois deste prazo, você ainda poderá pagar, sujeito à
-          disponibilidade.
         </div>
       ) : null}
       {expiredCheckout ? (

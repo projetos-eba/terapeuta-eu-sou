@@ -5,7 +5,8 @@ import { getClientSessionSummary } from "@/features/client-auth/session-summary"
 import {
   formatAvailabilityDateKey,
   getPublicServiceAvailability,
-  getPublicServiceAvailabilityForDay,
+  getPublicServiceAvailabilityForWindow,
+  isDateKey,
 } from "@/features/availability/queries/public-service-availability";
 import {
   applyPatientScheduleConflicts,
@@ -94,22 +95,50 @@ export default async function PublicReservationPage({
         ) ??
         profile.services[0];
 
-      let availabilityResult = selectedService
-        ? await getPublicServiceAvailability(selectedService.id)
-        : null;
-      if (
-        selectedService &&
-        context.selectedSlot &&
-        availabilityResult?.status === "success"
-      ) {
-        availabilityResult = await getPublicServiceAvailabilityForDay(
-          selectedService.id,
-          formatAvailabilityDateKey(
+      const serviceTimezone =
+        selectedService?.availabilityTimezone ?? context.timezone;
+      const requestedDate =
+        typeof trustedParams?.date === "string" && isDateKey(trustedParams.date)
+          ? trustedParams.date
+          : null;
+      let anchorDate = context.selectedSlot
+        ? formatAvailabilityDateKey(
             new Date(context.selectedSlot),
-            availabilityResult.data.timezone,
-          ),
-        );
+            serviceTimezone,
+          )
+        : requestedDate;
+      let discoveryResult = null;
+
+      if (selectedService && !anchorDate) {
+        const knownFirstDate = selectedService.availability
+          .filter((day) => day.slots.length > 0)
+          .map((day) => day.date)
+          .sort()[0];
+        anchorDate = knownFirstDate ?? null;
+
+        if (!anchorDate) {
+          const rangeStart = new Date();
+          const rangeEnd = new Date(rangeStart);
+          rangeEnd.setUTCDate(rangeEnd.getUTCDate() + 91);
+          discoveryResult = await getPublicServiceAvailability(
+            selectedService.id,
+            { end: rangeEnd, start: rangeStart },
+          );
+          anchorDate =
+            discoveryResult.status === "success"
+              ? (discoveryResult.data.days[0]?.date ?? null)
+              : null;
+        }
       }
+
+      anchorDate ??= formatAvailabilityDateKey(new Date(), serviceTimezone);
+      const availabilityResult = selectedService
+        ? await getPublicServiceAvailabilityForWindow(
+            selectedService.id,
+            anchorDate,
+            serviceTimezone,
+          )
+        : null;
       availabilityDays =
         availabilityResult?.status === "success"
           ? availabilityResult.data.days
@@ -132,7 +161,9 @@ export default async function PublicReservationPage({
         timezone:
           availabilityResult?.status === "success"
             ? availabilityResult.data.timezone
-            : undefined,
+            : discoveryResult?.status === "success"
+              ? discoveryResult.data.timezone
+              : undefined,
       });
       const scheduleWindow = getReservationScheduleWindow(
         availabilityDays,

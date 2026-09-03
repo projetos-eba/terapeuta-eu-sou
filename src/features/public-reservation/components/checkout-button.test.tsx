@@ -284,4 +284,34 @@ describe("CheckoutButton", () => {
     ).toHaveLength(1);
     expect(destroy).not.toHaveBeenCalled();
   });
+
+  it("shows only the requested hold copy during the initial checkout", async () => {
+    vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
+    const mount = vi.fn();
+    window.Stripe = vi.fn(() => ({
+      initEmbeddedCheckout: vi
+        .fn()
+        .mockResolvedValue({ destroy: vi.fn(), mount }),
+    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => checkoutResponse,
+        ok: true,
+      }),
+    );
+
+    render(<CheckoutButton {...props()} />);
+    await waitFor(() => expect(mount).toHaveBeenCalledOnce());
+
+    expect(document.body).toHaveTextContent(
+      /Horário reservado por até \d+:\d{2}/,
+    );
+    expect(document.body).not.toHaveTextContent(
+      "Seu horário está reservado por mais",
+    );
+    expect(document.body).not.toHaveTextContent(
+      "Depois deste prazo, você ainda poderá pagar",
+    );
+  });
 });

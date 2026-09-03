@@ -126,4 +126,5 @@ autorização, navegação e comandos.
   adicionou `session-booking-checkout` para orquestrar slot, hold, booking e
   `stripe-create-session-payment` por Edge Function autenticada.
 - `/reserva` já consome a disponibilidade calculada do perfil público e `session-booking-checkout` por `/api/public/reservation/checkout`; o checkout incorporado depende de acesso a `js.stripe.com` no navegador e a confirmação real ainda depende de webhook Stripe assinado ativo.
+- A agenda de `/reserva` consulta uma faixa autoritativa única de cinco dias civis no timezone do serviço. A primeira coluna segue `slot`, `date`, primeiro dia disponível e hoje; a paginação avança ou retrocede cinco dias sem preservar um `slot` antigo.
 - Zoom depende de secrets nas Edge Functions, webhooks Video SDK configurados manualmente e homologação real controlada antes de produção.

@@ -173,6 +173,16 @@ O encerramento automatico usa `video_session_control_jobs` e a Edge Function
 `zoom-video-session-maintenance`, acionada por cron interno conforme template em
 `supabase/schedules/zoom-video-session-maintenance.sql`.
 
+O cenário de não comparecimento exige uma regressão adicional: em T+10 exato,
+o paciente ainda registra a chegada; em T+10+1 ms sem chegada ou join confiável
+do paciente, ambos recebem `ARRIVAL_WINDOW_EXPIRED` e a maintenance reserva
+somente `end_patient_no_show`. Se a chegada ocorreu no prazo, o terapeuta pode
+entrar depois de T+10 e o paciente permanece em `THERAPIST_NOT_IN_SESSION`
+apenas enquanto ele estiver ausente. Exercitar também chegada/join concorrente,
+reagendamento após job enfileirado, ID remoto presente, e descoberta por nome
+exato quando o webhook ainda não persistiu o ID. Nunca encerrar uma sessão
+remota ambígua.
+
 Se o harness falhar antes de capturar `provider_session_id`, ele tenta descobrir
 uma sessao ativa unica no cleanup. A rotina operacional
 `zoom:video-sdk:emergency-end -- --active-singleton` existe somente para esse

@@ -31,6 +31,21 @@ retornava corretamente `SESSION_ENDED`, apesar de ainda haver tempo agendado.
   agendado, hard timeout e estados terminais da reserva/pagamento.
 - Sessões com término já confirmado não são reabertas automaticamente.
 
+## Exceção terminal: não comparecimento do paciente
+
+Após T+10 estrito, uma sessão ativa somente recebe o término
+`patient_no_show` quando não existe, para a versão e horário atuais da reserva,
+nem chegada autenticada na sala de espera nem `session.user_joined` confiável
+do paciente. A mesma evidência libera ambos até o fim agendado: se o paciente
+chegou no prazo e o terapeuta entra em T+15, a sala continua host-first e o
+paciente pode entrar assim que a presença atual do terapeuta for confirmada.
+
+O job `end_patient_no_show` revalida a evidência sob o lock consultado pela
+chegada da espera. Ele não reutiliza `end_therapist_absent` ou
+`reconcile_orphan`; atraso, saída e reconexão do terapeuta seguem reentrantes.
+O backend bloqueia a emissão de novos acessos imediatamente e a maintenance
+encerra a instância remota no ciclo seguinte.
+
 ## Implementação local
 
 A migration `zoom_preserve_reentry_until_scheduled_end`:

@@ -136,14 +136,16 @@ export async function getAuthorizedVideoBooking(input: {
           { p_therapist_profile_id: booking.therapist_profile_id },
         )
       : true;
-  const patientArrivalEvents =
-    input.role === "patient"
-      ? await input.client.get<Array<{ payload: unknown }>>(
-          `/rest/v1/booking_events?select=payload&booking_id=eq.${encodeURIComponent(
-            input.bookingId,
-          )}&event_type=eq.zoom_waiting_room_entered&limit=20`,
-        )
-      : [];
+  // Both actors are governed by the same patient-attendance evidence after
+  // T+10. This remains read-only for therapists; only the patient access path
+  // records a new arrival through the service-only RPC.
+  const patientArrivalEvents = await input.client.get<
+    Array<{ payload: unknown }>
+  >(
+    `/rest/v1/booking_events?select=payload&booking_id=eq.${encodeURIComponent(
+      input.bookingId,
+    )}&event_type=eq.zoom_waiting_room_entered&limit=20`,
+  );
   const patientHasTimelyArrival = patientArrivalEvents.some((event) =>
     isCurrentBookingArrival(event.payload, booking.version, booking.starts_at),
   );

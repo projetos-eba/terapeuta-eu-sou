@@ -16154,6 +16154,7 @@ export type Database = {
         | "done"
         | "dead_letter"
       video_session_control_operation:
+        | "end_patient_no_show"
         | "end_scheduled"
         | "end_hard_timeout"
         | "end_therapist_absent"
@@ -16497,6 +16498,7 @@ export const Constants = {
         "dead_letter",
       ],
       video_session_control_operation: [
+        "end_patient_no_show",
         "end_scheduled",
         "end_hard_timeout",
         "end_therapist_absent",

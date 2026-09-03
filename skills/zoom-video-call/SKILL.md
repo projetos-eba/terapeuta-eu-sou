@@ -74,8 +74,10 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
   estado host-first; nunca liberar JWT do paciente apenas por query string.
 - A chegada do paciente é registrada ao abrir a espera autenticada entre T-15 e
   T+10, inclusive, por booking e versão. Essa chegada ou uma participação
-  confiável anterior permite reconexão antes de `scheduled_ends_at`; cada join
-  ainda exige presença atual do terapeuta. T+10+1 ms bloqueia quem não chegou.
+  confiável anterior permite reconexão de ambos antes de `scheduled_ends_at`;
+  cada join do paciente ainda exige presença atual do terapeuta. Em T+10+1 ms,
+  os dois papéis são bloqueados somente se não houver nenhuma dessas evidências.
+  Atraso, saída e reconexão do terapeuta nunca equivalem a ausência do paciente.
 - Somente terapeuta encerra para todos, pelo backend, entre T-5 inclusive e o
   fim agendado. Antes disso o controle fica desabilitado. Nunca chamar
   `client.leave(true)` no navegador.

@@ -55,8 +55,9 @@ revalidada no servidor antes do checkout.
   autenticado para header público, reserva e logout.
 - `/reserva` deve hidratar terapeuta, serviço e disponibilidade a partir das
   mesmas views públicas usadas em `/terapeutas/:slug`. Não criar grade local de
-  horários. Quando houver `slot` na URL, deve consultar e revalidar o dia local
-  específico pelo contrato autoritativo, inclusive para datas entre 31 e 90 dias.
+  horários. A janela consulta de forma atômica os cinco dias locais a partir do
+  slot selecionado, da navegação explícita ou do primeiro dia disponível no
+  horizonte autoritativo, inclusive para datas entre 31 e 90 dias.
 - Para cliente autenticado, `/reserva` lê por RPC autenticado somente
   `starts_at`/`ends_at` dos intervalos próprios que realmente bloqueiam sua
   agenda: encontro confirmado/completo, pagamento pago ainda não projetado ou
@@ -175,14 +176,16 @@ revalidada no servidor antes do checkout.
 - `/reserva` sem query deve renderizar sem quebrar e orientar escolha de horário.
 - `/reserva?service=<uuid>&slot=<iso>&duration=50&price=17000&therapist=ana-oliveira`
   deve mostrar resumo completo.
-- A agenda mostra uma janela de 5 dias. Quando o horário selecionado está ao
-  menos 2 dias à frente de hoje, a janela pode mostrar 2 dias anteriores e 2
-  seguintes; datas anteriores a hoje nunca devem aparecer como reserváveis.
+- A agenda mostra uma janela de 5 dias. A primeira coluna é, nesta ordem, a data
+  do horário selecionado, a data explícita de navegação, o primeiro dia
+  disponível no horizonte autoritativo e hoje quando não há disponibilidade.
+  Datas anteriores a hoje nunca devem aparecer como reserváveis.
 - Cada coluna de dia deve exibir no máximo 11 horários de uma vez; quando
   houver mais opções, a lista usa rolagem interna sem aumentar indefinidamente
   a altura da página.
-- Setas de navegação avançam/retrocedem 2 dias via `date`, bloqueando o
-  retrocesso que cairia antes da data atual e sem gerar slot artificial.
+- Setas de navegação avançam/retrocedem exatamente 5 dias via `date`, removem
+  `slot`, retornam para `etapa=momento`, preservam o restante do contexto e
+  bloqueiam o retrocesso que iniciaria antes da data atual.
 - A etapa "Preparar meu encontro" exige conta de cliente autenticada, slot e
   aceite explícito dos Termos de Uso/Política de Privacidade. Todos os CTAs
   devem compartilhar a mesma fonte de verdade do aceite.
