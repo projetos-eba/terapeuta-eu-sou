@@ -82,7 +82,7 @@ export function FinancialPayoutsTab({
           }
         />
         <PayoutMetricCard
-          description="Valores já separados para repasse ou transferência."
+          description="Todos os valores ativos que ainda não chegaram à conta bancária."
           icon={Clock3}
           label="Em processamento"
           value={payouts.summary.payoutProcessingCents}
@@ -105,11 +105,22 @@ export function FinancialPayoutsTab({
 
       <AppPageSection className="grid gap-4">
         <form
-          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+          className="grid gap-3 sm:grid-cols-[190px_190px_auto] sm:items-end"
           method="get"
         >
           <input name="tab" type="hidden" value="repasses" />
-          <input name="period" type="hidden" value={dateRange.key} />
+          <label className="grid gap-1 text-sm font-extrabold text-brand-deep">
+            Período do histórico
+            <select
+              className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+              defaultValue={dateRange.key}
+              name="period"
+            >
+              <option value="30">Últimos 30 dias</option>
+              <option value="90">Últimos 90 dias</option>
+              <option value="month">Mês atual</option>
+            </select>
+          </label>
           <label className="grid gap-1 text-sm font-extrabold text-brand-deep">
             Situação
             <select
@@ -162,7 +173,11 @@ export function FinancialPayoutsTab({
 
         {payouts.items.length ? (
           <>
-            <div className="hidden lg:block">
+            <div
+              aria-label="Histórico de repasses, seis linhas visíveis"
+              className="hidden max-h-[520px] overflow-auto lg:block"
+              tabIndex={0}
+            >
               <table className="w-full border-separate border-spacing-0 text-left">
                 <thead>
                   <tr className="text-xs font-extrabold uppercase text-tesText-muted">
@@ -342,7 +357,7 @@ export function FinancialPayoutsTab({
           dateRange={dateRange}
           filters={filters}
           hasNextPage={payouts.pagination.hasNextPage}
-          page={payouts.pagination.page}
+          page={filters.page}
         />
       </AppPageSection>
 
@@ -409,7 +424,7 @@ function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
         payouts.summary.payoutProcessingCents > 0
           ? formatCurrency(payouts.summary.payoutProcessingCents)
           : "Nenhum valor em processamento",
-      label: "Transferência",
+      label: "Em processamento",
       tone:
         payouts.summary.payoutProcessingCents > 0
           ? "bg-status-warning text-white"
@@ -552,6 +567,7 @@ function reconciliationLabel(
     failed: "Precisa de conferência",
     matched: "Conferido",
     needs_reconciliation: "Precisa de conferência",
+    paid: "Pago e conciliado",
     pending: "Em conferência",
     reversed: "Repasse revertido",
   } satisfies Record<typeof status, string>;
@@ -590,7 +606,7 @@ function PayoutPagination({
             tab: "payouts",
           })}
         >
-          Anterior
+          Mostrar menos
         </Link>
       ) : null}
       {hasNextPage ? (
@@ -603,7 +619,7 @@ function PayoutPagination({
             tab: "payouts",
           })}
         >
-          Próxima página
+          Carregar mais
         </Link>
       ) : null}
     </div>

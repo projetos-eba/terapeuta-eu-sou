@@ -1,4 +1,5 @@
 export const platformSnapshotEvents = [
+  "balance.available",
   "charge.refunded",
   "charge.dispute.closed",
   "charge.dispute.created",

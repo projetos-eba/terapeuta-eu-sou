@@ -75,6 +75,10 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   `cancel_at_period_end` and can be reversed without removing already-paid
   benefits.
 - Separate transfers require the session Charge as `source_transaction`.
+- Do not mark a session payment `eligible` until its source Charge Balance
+  Transaction is `available`, `available_on` has passed, and the Stripe snapshot
+  is recent. Use `waiting_settlement` before that gate; reconcile hourly and
+  again at the weekly cutoff.
 - Ledger is append-only; use compensating entries.
 - Refunds, disputes, internal contests, and admin blocks prevent payout.
 - A session cancellation must claim exactly one local financial decision before
@@ -102,7 +106,8 @@ Edge Functions:
   automatic daily Payouts. Persist `destination_payment`, import Payouts without
   TES metadata and reconcile `balance_transactions?payout=...` into the
   allocation table. Each Transfer belongs to one Payout; batches and Payouts
-  derive the many-to-many relation. Keep policy v5 and cron disabled until HML.
+derive the many-to-many relation. Exclude the aggregate Payout debit from the
+component list and require full Transfer allocation before bank-paid status.
 - A Transfer creates the ledger debit; the Payout is a separate bank-delivery state and must not create a second ledger debit.
 - Only `payout.paid` queues payout success. Accept and escalate a later `payout.failed`.
 

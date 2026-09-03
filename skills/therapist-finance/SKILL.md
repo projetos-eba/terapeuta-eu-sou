@@ -107,8 +107,14 @@ recebimento`; provider and reconciliation terminology stays in the service
 - F4 operational payout lifecycle uses the existing authorities: Stripe webhook
   marks payment, `confirm_session_service` records realization,
   `refresh_session_transfer_eligibility` applies the safety period,
-  `create_weekly_payout_batch` reserves eligible payments and
+  hourly reconciliation verifies the source Charge Balance Transaction,
+  `create_weekly_payout_batch_v2` reserves only settled eligible payments and
   `process-payout-batch` creates Connect Transfers with `source_transaction`.
+- Keep `waiting_settlement` visible between the safety period and Stripe
+  availability. `eligible` requires a recent authoritative `available` snapshot;
+  the weekly cutoff and worker must revalidate it.
+- Treat therapist receipt status as paid only after a paid, completed automatic
+  Payout allocates the complete Transfer amount.
 - Realized, contracted and estimated values must remain visually separated.
 - Potential agenda revenue is an estimate, not guaranteed revenue, and never
   affects ledger, payouts or balances.
@@ -149,8 +155,8 @@ four product-approved tabs and adapts the reference into:
 - Resumo: editorial header, four summary cards, occupancy/potential donut,
   opportunity panel, four metrics, therapy ranking, financial evolution and
   methodology rows;
-- Recebimentos: filters, period cards, receipts table/cards, weekly bars and
-  status donut;
+- Recebimentos: one filter panel, period cards, monthly received/processing
+  trend, full-filter status donut and then the receipt table/cards;
 - Repasses: summary cards, payout timeline, paginated list and calculation
   formula;
 - Conta de recebimento: secure Connect status, next action and account

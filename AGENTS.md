@@ -432,7 +432,10 @@ Stack real identificada:
   automático diário criado pela Stripe para contas BR. `destination_payment` e
   Balance Transactions atribuem cada Transfer a um Payout; lotes e Payouts
   formam a relação muitos-para-muitos, sem metadata TES no Payout. Transfer liquida a obrigação no ledger;
-  somente cobertura reconciliada em Payout `paid` conclui o banco. A política
+  elegibilidade exige Balance Transaction da Charge `available` após o prazo
+  de segurança, atualizada por reconciliação financeira horária e revalidada no
+  cutoff/Transfer. Somente cobertura integral reconciliada em Payout `paid`
+  conclui o banco. A política
   v5 e o cron permanecem inativos até preflight e prova externa. Runbook em
   `docs/payments/weekly-payouts.md`.
 - A apresentação visual de Aura e Financeiro foi alinhada aos nós Figma

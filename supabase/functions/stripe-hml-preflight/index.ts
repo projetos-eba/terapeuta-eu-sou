@@ -209,8 +209,12 @@ runtime.serve(async (request) => {
           candidate.status === "enabled" &&
           candidate.event_payload === "snapshot" &&
           candidate.events_from?.includes("@self") &&
-          candidate.webhook_endpoint?.url?.includes("/functions/v1/stripe-billing-webhook") &&
-          candidate.webhook_endpoint.url.includes(new URL(config.supabaseUrl).host),
+          candidate.webhook_endpoint?.url?.includes(
+            "/functions/v1/stripe-billing-webhook",
+          ) &&
+          candidate.webhook_endpoint.url.includes(
+            new URL(config.supabaseUrl).host,
+          ),
       );
       if (!endpoint || !hasEvents(endpoint.enabled_events, platformEvents)) {
         throw new Error("platform_webhook_missing_or_incomplete");
@@ -228,13 +232,14 @@ runtime.serve(async (request) => {
           candidate.status === "enabled" &&
           candidate.event_payload === "snapshot" &&
           candidate.events_from?.includes("@accounts") &&
-          candidate.webhook_endpoint?.url?.includes("/functions/v1/stripe-connect-webhook") &&
-          candidate.webhook_endpoint.url.includes(new URL(config.supabaseUrl).host),
+          candidate.webhook_endpoint?.url?.includes(
+            "/functions/v1/stripe-connect-webhook",
+          ) &&
+          candidate.webhook_endpoint.url.includes(
+            new URL(config.supabaseUrl).host,
+          ),
       );
-      if (
-        !endpoint ||
-        !hasEvents(endpoint.enabled_events, connectEvents)
-      ) {
+      if (!endpoint || !hasEvents(endpoint.enabled_events, connectEvents)) {
         throw new Error("connect_webhook_missing_or_incomplete");
       }
       return "Webhook Connect esta habilitado com eventos de conta, saldo e payout.";
@@ -257,10 +262,7 @@ runtime.serve(async (request) => {
             new URL(config.supabaseUrl).host,
           ),
       );
-      if (
-        !endpoint ||
-        !hasEvents(endpoint.enabled_events, connectThinEvents)
-      ) {
+      if (!endpoint || !hasEvents(endpoint.enabled_events, connectThinEvents)) {
         throw new Error("connect_thin_webhook_missing_or_incomplete");
       }
       return "Webhook Connect thin esta habilitado com eventos Accounts v2.";
@@ -318,43 +320,51 @@ runtime.serve(async (request) => {
           therapistProfileId: row.therapist_profile_id,
         });
         const remoteSettings = derivePayoutSettingsState(
-          await retrieveBalanceSettings(stripe, row.stripe_account_id) as unknown as
-            Record<string, unknown>,
+          (await retrieveBalanceSettings(
+            stripe,
+            row.stripe_account_id,
+          )) as unknown as Record<string, unknown>,
         );
         const remoteAccountState = deriveConnectAccountState(
           remoteAccount,
           remoteSettings,
         );
-        const positiveFinancialHistory = await client.get<Array<{ id: string }>>(
+        const positiveFinancialHistory = await client.get<
+          Array<{ id: string }>
+        >(
           `/rest/v1/session_payments?select=id&therapist_profile_id=eq.${encodeURIComponent(
             row.therapist_profile_id,
           )}&therapist_amount_cents=gt.0&limit=1`,
         );
 
-        decisions.push(evaluateConnectReadiness({
-          hasPositiveFinancialHistory: positiveFinancialHistory.length > 0,
-          local: toLocalConnectState(row),
-          remote: {
-            operationalStatus: remoteAccountState.operationalStatus,
-            payoutScheduleInterval: remoteAccountState.payoutScheduleInterval,
-            payoutStatus: remoteAccountState.payoutStatus,
-            payoutsEnabled: remoteAccountState.payoutsEnabled,
-            transfersStatus: remoteAccountState.transfersStatus,
-          },
-        }));
+        decisions.push(
+          evaluateConnectReadiness({
+            hasPositiveFinancialHistory: positiveFinancialHistory.length > 0,
+            local: toLocalConnectState(row),
+            remote: {
+              operationalStatus: remoteAccountState.operationalStatus,
+              payoutScheduleInterval: remoteAccountState.payoutScheduleInterval,
+              payoutStatus: remoteAccountState.payoutStatus,
+              payoutsEnabled: remoteAccountState.payoutsEnabled,
+              transfersStatus: remoteAccountState.transfersStatus,
+            },
+          }),
+        );
       }
 
-      const blockedAccounts = decisions.filter((decision) =>
-        decision.kind === "blocked"
+      const blockedAccounts = decisions.filter(
+        (decision) => decision.kind === "blocked",
       );
       if (blockedAccounts.length > 0) {
-        throw new Error("connect_accounts_not_ready_for_daily_automatic_payout");
+        throw new Error(
+          "connect_accounts_not_ready_for_daily_automatic_payout",
+        );
       }
-      const readyAccounts = decisions.filter((decision) =>
-        decision.kind === "ready"
+      const readyAccounts = decisions.filter(
+        (decision) => decision.kind === "ready",
       ).length;
-      const isolatedAccounts = decisions.filter((decision) =>
-        decision.kind === "isolated"
+      const isolatedAccounts = decisions.filter(
+        (decision) => decision.kind === "isolated",
       ).length;
       return `${rows.length} conta(s) Connect corrente(s) observada(s); ${readyAccounts} pronta(s) e ${isolatedAccounts} isolada(s) sem historico financeiro positivo.`;
     });
@@ -379,6 +389,7 @@ runtime.serve(async (request) => {
 });
 
 const platformEvents = [
+  "balance.available",
   "checkout.session.completed",
   "customer.subscription.updated",
   "invoice.paid",
@@ -547,9 +558,11 @@ async function findCleanGoldenPathFixture(
     if (
       connect?.operational_status !== "ready" ||
       connect?.stripe_transfers_status !== "active" ||
-      !connect?.payouts_enabled || connect?.payout_status !== "enabled" ||
+      !connect?.payouts_enabled ||
+      connect?.payout_status !== "enabled" ||
       connect?.payout_schedule_interval !== "daily"
-    ) continue;
+    )
+      continue;
     const [bookingSettings] = await client.get<ServiceBookingSettingsRow[]>(
       `/rest/v1/therapist_service_booking_settings?select=buffer_before_minutes,buffer_after_minutes&service_id=eq.${encodeURIComponent(
         service.id,
@@ -950,21 +963,24 @@ async function inspectWebhookEvent(
         )}`,
       )
     : [];
-  const payments = paymentRows.length || !event.object_id
-    ? paymentRows
-    : await client.get<
-        Array<{
-          booking_id: string;
-          financial_status: string;
-          stripe_event_id: string | null;
-          stripe_event_created_at: string | null;
-        }>
-      >(
-        `/rest/v1/session_payments?select=booking_id,financial_status,stripe_event_id,stripe_event_created_at&stripe_payment_intent_id=eq.${encodeURIComponent(
-          event.object_id,
-        )}`,
-      );
-  const bookingIds = [...new Set(payments.map((payment) => payment.booking_id))];
+  const payments =
+    paymentRows.length || !event.object_id
+      ? paymentRows
+      : await client.get<
+          Array<{
+            booking_id: string;
+            financial_status: string;
+            stripe_event_id: string | null;
+            stripe_event_created_at: string | null;
+          }>
+        >(
+          `/rest/v1/session_payments?select=booking_id,financial_status,stripe_event_id,stripe_event_created_at&stripe_payment_intent_id=eq.${encodeURIComponent(
+            event.object_id,
+          )}`,
+        );
+  const bookingIds = [
+    ...new Set(payments.map((payment) => payment.booking_id)),
+  ];
   const bookings = await Promise.all(
     bookingIds.map(async (bookingId) => {
       const [booking] = await client.get<
@@ -978,8 +994,9 @@ async function inspectWebhookEvent(
     }),
   );
 
-  const paymentStates = [...new Set(payments.map((payment) => payment.financial_status))]
-    .sort();
+  const paymentStates = [
+    ...new Set(payments.map((payment) => payment.financial_status)),
+  ].sort();
   const bookingStates = bookings
     .filter((booking): booking is { payment_status: string; status: string } =>
       Boolean(booking),

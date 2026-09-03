@@ -20,7 +20,8 @@ export function extractTransferDestinationReference(
       destinationPaymentId: destinationPayment,
     };
   }
-  if (!destinationPayment || typeof destinationPayment !== "object") return null;
+  if (!destinationPayment || typeof destinationPayment !== "object")
+    return null;
   const payment = destinationPayment as unknown as Record<string, unknown>;
   const id = stringOrNull(payment.id);
   if (!id) return null;
@@ -50,11 +51,20 @@ export function sanitizePayoutBalanceTransaction(
     id: transaction.id,
     net: transaction.net,
     reporting_category: transaction.reporting_category,
-    source: typeof transaction.source === "string"
-      ? transaction.source
-      : stringOrNull(asRecord(transaction.source).id),
+    source:
+      typeof transaction.source === "string"
+        ? transaction.source
+        : stringOrNull(asRecord(transaction.source).id),
     type: transaction.type,
   };
+}
+
+export function isAllocatablePayoutBalanceTransaction(
+  transaction: Stripe.BalanceTransaction,
+) {
+  return (
+    transaction.type !== "payout" && transaction.reporting_category !== "payout"
+  );
 }
 
 export async function syncAutomaticStripePayout(input: {
@@ -92,9 +102,11 @@ export async function syncAutomaticStripePayout(input: {
       p_currency: input.payout.currency,
       p_failure_code: input.payout.failure_code ?? null,
       p_failure_message: input.payout.failure_message ?? null,
-      p_payout_balance_transaction_id: objectId(input.payout.balance_transaction),
-      p_provider_reconciliation_status: input.payout.reconciliation_status ??
-        "not_applicable",
+      p_payout_balance_transaction_id: objectId(
+        input.payout.balance_transaction,
+      ),
+      p_provider_reconciliation_status:
+        input.payout.reconciliation_status ?? "not_applicable",
       p_provider_status: input.payout.status,
       p_source_type: input.payout.source_type ?? null,
       p_stripe_account_id: input.accountId,
@@ -108,7 +120,8 @@ export async function syncAutomaticStripePayout(input: {
     return {
       handled: true,
       payoutId: recorded.payoutId ?? null,
-      reconciliationStatus: input.payout.reconciliation_status ?? "not_applicable",
+      reconciliationStatus:
+        input.payout.reconciliation_status ?? "not_applicable",
     };
   }
 
@@ -123,7 +136,11 @@ export async function syncAutomaticStripePayout(input: {
       },
       { stripeContext: input.accountId },
     );
-    transactions.push(...page.data.map(sanitizePayoutBalanceTransaction));
+    transactions.push(
+      ...page.data
+        .filter(isAllocatablePayoutBalanceTransaction)
+        .map(sanitizePayoutBalanceTransaction),
+    );
     startingAfter = page.has_more ? page.data.at(-1)?.id : undefined;
     if (page.has_more && !startingAfter) {
       throw Object.assign(new Error("Paginacao de conciliacao incompleta."), {
@@ -155,7 +172,7 @@ function objectId(value: unknown) {
 }
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
+    ? (value as Record<string, unknown>)
     : {};
 }
 function stringOrNull(value: unknown) {

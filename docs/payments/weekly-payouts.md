@@ -51,16 +51,29 @@ ocorrência.
   ocorre no dia 30.
 - `service_confirmed_at` é o instante da segunda confirmação válida.
 - Segurança: 24 horas completas após `service_confirmed_at`.
+- Liquidação: depois da segurança, a Balance Transaction da Charge deve estar
+  `available`, com `available_on` vencido e conferência Stripe recente. Enquanto
+  isso, o pagamento fica em `waiting_settlement` e não entra em lote.
 - O job horário `tes-session-confirmation-hourly-v1` está registrado, auditado
   e ativo em HML e produção. Ele é idempotente, recupera atrasos com o
   vencimento contratual e não depende da telemetria Zoom.
+- O job `tes-financial-reconciliation-hourly-v1` chama
+  `reconcile-stripe-transfers` no minuto 7 de cada hora. Ele possui lease único
+  e auditoria em `financial_reconciliation_runs`, recupera Charges ausentes,
+  atualiza segurança/liquidação/elegibilidade e também reconcilia Transfers e
+  Payouts. O minuto 7 não coincide com os ticks semanais (:00/:15/:30/:45).
 - Relato `not_performed`, cancelamento, reembolso, disputa, contestação ou
   bloqueio administrativo impede confirmação automática e inclusão no lote.
 - Avaliações públicas do terapeuta não confirmam sessão nem alteram repasse.
 - Início: terça, 02:00 inclusive a 04:00 exclusivo, em
   `America/Sao_Paulo`.
 - Cutoff fixo: terça às 02:00 locais.
-- Todo backlog elegível até o cutoff é incluído.
+- Todo backlog com liquidação Stripe confirmada até o cutoff é incluído.
+- O scheduler semanal repete a reconciliação antes de adquirir o lote e cada
+  Transfer consulta novamente a Charge/Balance Transaction. Se a Stripe mudar
+  de `pending` para `available` depois da leitura do cutoff, o pagamento fica
+  elegível para a terça seguinte; ele não é anexado a um lote já fechado.
+- Execução sem itens elegíveis é auditada como no-op e não cria lote vazio.
 - O scheduler encerra quando os Transfers estão resolvidos. O lote financeiro
   permanece `processing` até a cobertura bancária.
 - Ativação operacional versionada:
@@ -96,6 +109,8 @@ Supabase alvo:
 - Balance Settings `payments.payouts.status=enabled`;
 - `payments.payouts.schedule.interval=daily`;
 - pagamento, Charge e Balance Transaction da cobrança reconciliados;
+- Balance Transaction `available`, `available_on <= cutoff` e snapshot
+  verificado nas duas horas anteriores ao cutoff;
 - BRL, valor positivo, sem disputa, refund pendente ou bloqueio.
 
 `stripe-connect-payout-schedule` permanece uma operação interna separada e
@@ -131,13 +146,15 @@ Para Payout automático:
 2. recuperar o Payout no contexto da conta conectada;
 3. exigir ambiente esperado, BRL, valor positivo e `automatic=true`;
 4. persistir o objeto sem metadata TES;
-5. aguardar `reconciliation_status=completed`;
+5. remover da atribuição o débito agregado de tipo/categoria `payout` e usar
+   somente as transações componentes;
+6. aguardar `reconciliation_status=completed`;
 6. paginar `balance_transactions?payout={payoutId}`;
 7. enviar ao RPC somente campos allowlisted;
 8. casar `source` com `destination_payment` ou o ID da Balance Transaction;
 9. falhar fechado se houver valor ou movimentação sem associação;
-10. concluir cada lote somente após todos os Transfers terem cobertura em
-    Payouts reconciliados e `paid`.
+11. concluir cada lote somente após todos os Transfers terem cobertura integral
+    em Payouts reconciliados e `paid`.
 
 Eventos duplicados e reconciliações repetidas não duplicam alocações, ledger,
 e-mails ou notificações. `paid → failed` é aceito, reabre o estado financeiro,

@@ -73,8 +73,8 @@ select
   'd1000000-0000-4000-8000-000000000001', policy.id,
   fixture.intent_id, fixture.charge_id, fixture.balance_id,
   10000, 2000, 2000, 8000, 'paid', 'auto_confirmed', 'eligible',
-  now() - interval '10 days', 'automatic', now() - interval '9 days',
-  now() - interval '18 days', '{"fixture":"automatic_payout_many"}'::jsonb
+  '2026-08-19T12:00:00Z', 'automatic', '2026-08-20T12:00:00Z',
+  '2026-08-05T12:00:00Z', '{"fixture":"automatic_payout_many"}'::jsonb
 from public.financial_policy_versions policy
 cross join (values
   (
