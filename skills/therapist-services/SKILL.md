@@ -121,6 +121,23 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
   antes de avançar ou salvar quando o valor estiver fora do intervalo.
 - CTA "Nao encontrou sua terapia?" e apenas informativo/futuro; nunca cria
   terapia.
+- O subtítulo do novo serviço orienta: “Escolha a terapia que você quer
+  oferecer. Se ela for autoral ou não estiver na lista, selecione “Não encontrou
+  sua terapia?” e envie uma solicitação de cadastro.”
+- A etapa de temas usa o título “Temas e refinamentos deste serviço” e a
+  instrução “Marque os temas que fazem parte do seu trabalho e, em cada um
+  deles, escolha até 3 situações com as quais você costuma trabalhar”. O ícone
+  informativo abre um popover acessível, com fechamento por clique fora ou
+  `Escape`, área mínima de toque de 44px e posicionamento ajustado ao viewport.
+  O popover explica: “Por que fazemos essas perguntas? Essas escolhas ajudam o
+  TES a entender melhor como você trabalha. Quando uma pessoa faz o Match, ela
+  conta um pouco sobre o que está vivendo e o que busca naquele momento. A
+  partir disso, o TES encontra caminhos e terapeutas que podem fazer mais
+  sentido para ela. Por isso, escolha apenas os temas que realmente fazem parte
+  da sua atuação com essa terapia e, em cada um deles, até 3 situações com que
+  você costuma trabalhar. Você não precisa marcar tudo. Quanto mais fiel essa
+  escolha for ao seu trabalho, melhores podem ser as conexões feitas pelo
+  Match.”
 - Catalogo permitido nao inclui terapia `draft`, `deprecated`, `archived` ou
   sem ao menos um Tema do Match ativo.
 - Criacao por `therapyName` falha.

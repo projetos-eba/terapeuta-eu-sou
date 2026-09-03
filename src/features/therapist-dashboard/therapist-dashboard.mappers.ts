@@ -92,9 +92,7 @@ export function buildTherapistWeekSummary(
     attendanceRate: calculateAttendanceRate(completed, noShows),
     days,
     rangeLabel: `${formatDateKey(start)} – ${formatDateKey(addDateKey(start, 6))}`,
-    state: days.some(
-      (day) => day.cancelled || day.completed || day.scheduled,
-    )
+    state: days.some((day) => day.cancelled || day.completed || day.scheduled)
       ? "ready"
       : "empty",
   };
@@ -296,13 +294,18 @@ export function reconcileTherapistDashboardProfile({
     ...data,
     attentionItems: data.attentionItems
       .map((item) => {
-        if (!isProfileAttentionItem(item)) return item;
+        const routedItem = {
+          ...item,
+          href: resolveTherapistAttentionItemHref(item, data.therapist.plan),
+        };
+
+        if (!isProfileAttentionItem(routedItem)) return routedItem;
 
         const tone: TherapistDashboardPageData["attentionItems"][number]["tone"] =
           canonicalProfileCompleteness < 100 ? "warning" : "info";
 
         return {
-          ...item,
+          ...routedItem,
           label: `Perfil ${canonicalProfileCompleteness}% completo`,
           tone,
         };
@@ -316,6 +319,38 @@ export function reconcileTherapistDashboardProfile({
       profileCompleteness: canonicalProfileCompleteness,
     },
   };
+}
+
+export function resolveTherapistAttentionItemHref(
+  item: TherapistDashboardPageData["attentionItems"][number],
+  plan: TherapistPlan,
+) {
+  if (
+    item.id === "profile-completeness" ||
+    item.id === "base-dashboard-profile"
+  ) {
+    return routes.therapist.profile;
+  }
+
+  if (item.id === "pending-payments") {
+    return routes.therapist.sessions;
+  }
+
+  if (item.id === "reschedule-requests") {
+    return routes.therapist.agenda;
+  }
+
+  if (item.id === "pending-confirmations") {
+    return plan === TherapistPlan.Free
+      ? `${routes.therapist.sessions}?period=all#pending-confirmations`
+      : `${routes.therapist.reviews}?tab=session#pending-session-confirmations`;
+  }
+
+  if (item.id === "base-dashboard-agenda") {
+    return routes.therapist.agenda;
+  }
+
+  return getCanonicalTherapistPath(item.href);
 }
 
 function isProfileAttentionItem(

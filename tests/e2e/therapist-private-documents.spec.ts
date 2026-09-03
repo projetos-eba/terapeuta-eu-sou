@@ -53,8 +53,8 @@ test.describe("therapist private documents", () => {
         }),
       ).toBeVisible();
 
-      // The controlled fixture is renewable: each run replaces both current
-      // documents without needing to reset the database or Storage.
+      // The controlled fixture starts with documents that can be replaced until
+      // a decision is recorded by the Admin.
       await readDocumentCenter(therapistPage);
 
       await uploadFromCard(
@@ -193,6 +193,40 @@ test.describe("therapist private documents", () => {
       expect(documentCenter.verificationStatus).toBe(
         verificationBeforeDocumentReview,
       );
+      await expect(
+        therapistPage.getByLabel("Enviar Documento de identidade"),
+      ).toHaveCount(0);
+      await expect(
+        therapistPage.getByRole("button", { name: "Substituir documento" }),
+      ).toHaveCount(0);
+      await expect(
+        therapistPage.getByRole("button", {
+          name: "Enviar novo documento",
+        }),
+      ).toBeVisible();
+
+      const acceptedReplacementResponse = await therapistPage.evaluate(
+        async () => {
+          const formData = new FormData();
+          formData.set("kind", "identity_document");
+          formData.set(
+            "file",
+            new File(["%PDF-1.4\n%%EOF"], "identidade-bloqueada.pdf", {
+              type: "application/pdf",
+            }),
+          );
+          const response = await fetch("/api/therapist/profile/documents", {
+            body: formData,
+            method: "POST",
+          });
+          return {
+            body: await response.text(),
+            status: response.status,
+          };
+        },
+      );
+      expect(acceptedReplacementResponse.status).toBe(409);
+      expect(acceptedReplacementResponse.body).toMatch(/já foi aprovado/i);
 
       await uploadFromCard(
         therapistPage,
@@ -308,13 +342,15 @@ async function assertAdminDocumentsResponsiveLayout(
             bounds.bottom <= rowBounds.bottom + 1,
         );
         const controlsOverlap = controls.some((bounds, index) =>
-          controls.slice(index + 1).some(
-            (other) =>
-              bounds.left < other.right &&
-              bounds.right > other.left &&
-              bounds.top < other.bottom &&
-              bounds.bottom > other.top,
-          ),
+          controls
+            .slice(index + 1)
+            .some(
+              (other) =>
+                bounds.left < other.right &&
+                bounds.right > other.left &&
+                bounds.top < other.bottom &&
+                bounds.bottom > other.top,
+            ),
         );
 
         return {
@@ -331,7 +367,9 @@ async function assertAdminDocumentsResponsiveLayout(
 
     await page.screenshot({
       fullPage: true,
-      path: testInfo.outputPath(`admin-private-documents-${viewport.label}.png`),
+      path: testInfo.outputPath(
+        `admin-private-documents-${viewport.label}.png`,
+      ),
     });
   }
 

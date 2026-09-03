@@ -57,11 +57,14 @@ test.describe("therapist profile editor", () => {
     await expect(publishButton.first()).toBeEnabled();
     await publishButton.first().scrollIntoViewIfNeeded();
     await publishButton.first().click();
-    await expect(
-      page.getByRole("dialog", { name: "Publicar alterações?" }),
-    ).toBeVisible();
-    await page
-      .getByRole("dialog", { name: "Publicar alterações?" })
+    const publishDialog = page.getByRole("dialog", {
+      name: "Publicar alterações?",
+    });
+    await expect(publishDialog).toBeVisible();
+    await expect(publishDialog).toContainText(
+      /sem nova análise administrativa/i,
+    );
+    await publishDialog
       .getByRole("button", { name: "Publicar alterações" })
       .click();
     await expect(

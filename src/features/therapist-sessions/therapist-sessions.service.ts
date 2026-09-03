@@ -2,11 +2,13 @@ import "server-only";
 
 import {
   parseTherapistSessionDetailReadModel,
+  parseTherapistPendingConfirmationsSummary,
   parseTherapistSessionsReadModel,
   SessionReadModelContractError,
   type ReadModelErrorCode,
   type ReadModelResult,
   type TherapistSessionDetailReadModel,
+  type TherapistPendingConfirmationsSummary,
   type TherapistSessionFilters,
   type TherapistSessionsReadModel,
 } from "@/features/bookings";
@@ -18,6 +20,7 @@ import { SupabaseServerRestError } from "@/lib/supabase/server-rest";
 
 import {
   queryTherapistPendingReschedule,
+  queryTherapistPendingConfirmations,
   queryTherapistSessionDetail,
   queryTherapistSessionFeedback,
   queryTherapistSessions,
@@ -58,6 +61,19 @@ export async function getTherapistSessionsPage(input: {
   }
 
   return result;
+}
+
+export async function getTherapistPendingConfirmationsSummary(input: {
+  accessToken: string;
+  profileId: string;
+}): Promise<ReadModelResult<TherapistPendingConfirmationsSummary>> {
+  return runReadOperation({
+    accessToken: input.accessToken,
+    operation: "get_therapist_pending_confirmations_v1",
+    parse: parseTherapistPendingConfirmationsSummary,
+    profileId: input.profileId,
+    query: () => queryTherapistPendingConfirmations(input.accessToken),
+  });
 }
 
 export async function getTherapistSessionDetail(input: {

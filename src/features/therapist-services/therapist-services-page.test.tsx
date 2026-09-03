@@ -334,7 +334,7 @@ describe("TherapistServicesPage", () => {
     expect(mockedCommand).not.toHaveBeenCalled();
   });
 
-  it("uses clear attendance copy in the create dialog", () => {
+  it("uses clear service and theme copy in the create dialog", () => {
     renderPage();
 
     fireEvent.click(screen.getByRole("button", { name: /adicionar terapia/i }));
@@ -346,11 +346,9 @@ describe("TherapistServicesPage", () => {
     expect(
       screen.getByRole("heading", { name: "Novo serviço" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Crie um atendimento para uma terapia já aprovada no TES.",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toHaveTextContent(
+      "Escolha a terapia que você quer oferecer. Se ela for autoral ou não estiver na lista, selecione “Não encontrou sua terapia?” e envie uma solicitação de cadastro.",
+    );
     expect(
       screen.getByText("Como esse atendimento vai aparecer?"),
     ).toBeInTheDocument();
@@ -389,6 +387,41 @@ describe("TherapistServicesPage", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("3. Atendimento")).toBeInTheDocument();
     expect(screen.queryByText(/oferta/i)).not.toBeInTheDocument();
+  });
+
+  it("explains the purpose of theme selections through an accessible popover", () => {
+    renderPage();
+
+    fireEvent.click(screen.getByRole("button", { name: /adicionar terapia/i }));
+    fireEvent.click(screen.getByRole("option", { name: /Aromaterapia/i }));
+    fireEvent.click(screen.getByRole("button", { name: /continuar/i }));
+
+    expect(
+      screen.getByText("Temas e refinamentos deste serviço"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Marque os temas que fazem parte do seu trabalho e, em cada um deles, escolha até 3 situações com as quais você costuma trabalhar",
+      ),
+    ).toBeInTheDocument();
+
+    const infoButton = screen.getByRole("button", {
+      name: "Saiba mais sobre os temas e refinamentos",
+    });
+    expect(infoButton).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(infoButton);
+
+    expect(infoButton).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "Por que fazemos essas perguntas?",
+    );
+    expect(screen.getByRole("tooltip")).toHaveTextContent(
+      "Quanto mais fiel essa escolha for ao seu trabalho, melhores podem ser as conexões feitas pelo Match.",
+    );
+
+    fireEvent.keyDown(infoButton, { key: "Escape" });
+    expect(infoButton).toHaveAttribute("aria-expanded", "false");
   });
 
   it("creates a draft with therapyId and price in cents", async () => {

@@ -292,6 +292,64 @@ describe("TherapistSettingsPage", () => {
     });
   });
 
+  it("locks an accepted document while keeping a rejected document available for re-submission", () => {
+    const settings = settingsFixture();
+    settings.documentCenter.documents = [
+      {
+        createdAt: "2026-09-02T12:00:00.000Z",
+        fileName: "identidade.pdf",
+        fileSizeBytes: 2048,
+        id: "document-identity",
+        kind: "identity_document",
+        mimeType: "application/pdf",
+        reviewNote: null,
+        reviewedAt: "2026-09-02T13:00:00.000Z",
+        status: "accepted",
+        updatedAt: "2026-09-02T13:00:00.000Z",
+        validationState: "passed",
+      },
+      {
+        createdAt: "2026-09-02T12:00:00.000Z",
+        fileName: "endereco.pdf",
+        fileSizeBytes: 2048,
+        id: "document-address",
+        kind: "address_proof",
+        mimeType: "application/pdf",
+        reviewNote: "Envie um comprovante mais recente.",
+        reviewedAt: "2026-09-02T13:00:00.000Z",
+        status: "rejected",
+        updatedAt: "2026-09-02T13:00:00.000Z",
+        validationState: "failed",
+      },
+    ];
+
+    render(
+      <TherapistSettingsPage
+        planData={planFixture("premium_plus")}
+        settings={settings}
+      />,
+    );
+
+    expect(screen.getByText("Aprovado")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Este documento foi aprovado pela equipe TES. Um novo envio só será liberado se ela solicitar.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Enviar Documento de identidade"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Substituir documento" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Enviar novo documento" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Enviar Comprovante de endereço"),
+    ).toBeInTheDocument();
+  });
+
   it("offers cancellation and the next upgrade to a Premium therapist", () => {
     const settings = settingsFixture();
     settings.profile.plan = "premium";

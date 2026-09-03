@@ -1,7 +1,7 @@
 "use client";
 
-import { ArrowLeft, ArrowRight, Check, Save } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, Check, Info, Save } from "lucide-react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 
 import { TESButton, TESDialog } from "@/components/tes";
 import { TherapistPlan } from "@/domain/tes";
@@ -246,9 +246,16 @@ export function TherapistServiceForm({
 
   const title = mode === "edit" ? "Editar serviço" : "Novo serviço";
   const description =
-    mode === "edit"
-      ? "Atualize os detalhes do atendimento sem perder o histórico desta terapia."
-      : "Crie um atendimento para uma terapia já aprovada no TES.";
+    mode === "edit" ? (
+      "Atualize os detalhes do atendimento sem perder o histórico desta terapia."
+    ) : (
+      <>
+        <strong>Escolha a terapia que você quer oferecer.</strong> Se ela for
+        autoral ou não estiver na lista, selecione{" "}
+        <strong>“Não encontrou sua terapia?”</strong> e envie uma solicitação de
+        cadastro.
+      </>
+    );
 
   return (
     <TESDialog
@@ -596,12 +603,13 @@ function MatchingFields({
 
   return (
     <fieldset className="space-y-4">
-      <legend className="text-sm font-extrabold text-brand-deep">
-        Temas e detalhes desta terapia
+      <legend className="flex items-center gap-2 text-xl font-extrabold leading-7 text-brand-deep">
+        <span>Temas e refinamentos deste serviço</span>
+        <MatchingInfoPopover />
       </legend>
       <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-        Escolha os temas desta terapia que você trabalha e até três refinamentos
-        em cada tema selecionado.
+        Marque os temas que fazem parte do seu trabalho e, em cada um deles,
+        escolha até 3 situações com as quais você costuma trabalhar
       </p>
       {errors.matching ? (
         <p
@@ -672,6 +680,132 @@ function MatchingFields({
         </p>
       ) : null}
     </fieldset>
+  );
+}
+
+function MatchingInfoPopover() {
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<{
+    left: number;
+    top: number;
+    width: number;
+  } | null>(null);
+  const id = useId();
+  const rootRef = useRef<HTMLSpanElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  function updatePosition() {
+    const anchor = rootRef.current?.getBoundingClientRect();
+    if (!anchor) return;
+
+    const viewportPadding = 16;
+    const width = Math.min(416, window.innerWidth - viewportPadding * 2);
+    const maxLeft = window.innerWidth - width - viewportPadding;
+    const height = popoverRef.current?.getBoundingClientRect().height ?? 320;
+    const spaceBelow = window.innerHeight - anchor.bottom - viewportPadding;
+    const spaceAbove = anchor.top - viewportPadding;
+    const placeAbove = height > spaceBelow && spaceAbove > spaceBelow;
+    const top = placeAbove
+      ? Math.max(viewportPadding, anchor.top - height - 8)
+      : Math.min(
+          anchor.bottom + 8,
+          Math.max(
+            viewportPadding,
+            window.innerHeight - height - viewportPadding,
+          ),
+        );
+
+    setPosition({
+      left: Math.min(Math.max(viewportPadding, anchor.right - width), maxLeft),
+      top,
+      width,
+    });
+  }
+
+  useEffect(() => {
+    if (!open) return;
+
+    updatePosition();
+
+    function closeOnOutside(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    document.addEventListener("pointerdown", closeOnOutside);
+    document.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+      document.removeEventListener("pointerdown", closeOnOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [open]);
+
+  return (
+    <span className="relative inline-flex shrink-0" ref={rootRef}>
+      <button
+        aria-controls={id}
+        aria-expanded={open}
+        aria-label="Saiba mais sobre os temas e refinamentos"
+        className="inline-flex size-11 items-center justify-center rounded-full text-brand-primary outline-none transition hover:bg-brand-lavenderSoft focus-visible:ring-4 focus-visible:ring-ring/20"
+        onClick={() => {
+          if (!open) updatePosition();
+          setOpen((current) => !current);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            event.stopPropagation();
+            setOpen(false);
+          }
+        }}
+        type="button"
+      >
+        <Info aria-hidden="true" size={18} />
+      </button>
+      {open && position ? (
+        <div
+          aria-labelledby={`${id}-title`}
+          className="fixed z-20 max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-2rem)] overflow-y-auto break-words rounded-xl border border-brand-lavender bg-white p-4 text-left text-sm font-semibold leading-6 text-tesText-secondary shadow-float"
+          id={id}
+          ref={popoverRef}
+          role="tooltip"
+          style={position}
+        >
+          <h3
+            className="text-base font-extrabold leading-6 text-brand-primary"
+            id={`${id}-title`}
+          >
+            Por que fazemos essas perguntas?
+          </h3>
+          <p className="mt-3">
+            Essas escolhas ajudam o TES a entender melhor como você trabalha.
+          </p>
+          <p className="mt-3">
+            Quando uma pessoa faz o Match, ela conta um pouco sobre o que está
+            vivendo e o que busca naquele momento. A partir disso, o TES
+            encontra caminhos e terapeutas que podem fazer mais sentido para
+            ela.
+          </p>
+          <p className="mt-3">
+            Por isso, escolha apenas os temas que realmente fazem parte da sua
+            atuação com essa terapia e, em cada um deles, até 3 situações com
+            que você costuma trabalhar.
+          </p>
+          <p className="mt-3 font-extrabold text-brand-primary">
+            Você não precisa marcar tudo. Quanto mais fiel essa escolha for ao
+            seu trabalho, melhores podem ser as conexões feitas pelo Match.
+          </p>
+        </div>
+      ) : null}
+    </span>
   );
 }
 

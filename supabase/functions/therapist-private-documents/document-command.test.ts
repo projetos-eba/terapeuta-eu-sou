@@ -1,5 +1,6 @@
 import { DomainError } from "../_shared/payments/http.ts";
 import {
+  assertPrivateDocumentUploadAllowed,
   fileExtension,
   parseTherapistPrivateDocumentsAction as parseAction,
   validatePrivateDocumentUpload as validateUpload,
@@ -96,4 +97,27 @@ Deno.test("explains the 10 MB private document limit", async () => {
   ) {
     throw new Error("Expected explicit 10 MB document limit message.");
   }
+});
+
+Deno.test("blocks a replacement after a required document is accepted", () => {
+  let uploadError: unknown = null;
+  try {
+    assertPrivateDocumentUploadAllowed("accepted");
+  } catch (error) {
+    uploadError = error;
+  }
+
+  if (!(uploadError instanceof DomainError)) {
+    throw new Error("Expected accepted document replacement to be blocked.");
+  }
+
+  if (
+    uploadError.code !== "DOCUMENT_ALREADY_ACCEPTED" ||
+    uploadError.status !== 409 ||
+    !uploadError.message.includes("já foi aprovado")
+  ) {
+    throw new Error("Expected a safe accepted-document replacement error.");
+  }
+
+  assertPrivateDocumentUploadAllowed("rejected");
 });

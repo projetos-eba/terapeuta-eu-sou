@@ -197,7 +197,9 @@ describe("TherapistProfileEditorPage", () => {
     expect(
       screen.queryByRole("heading", { name: "Conteúdos / Reflexões" }),
     ).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Adicionar conteúdo" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Adicionar conteúdo" }),
+    ).not.toBeInTheDocument();
   });
 
   it("opens the library and keeps theme selection in the draft state", () => {
@@ -795,14 +797,12 @@ describe("TherapistProfileEditorPage", () => {
     render(<TherapistProfileEditorPage editor={editorWithDraft} />);
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Publicar alterações" }),
+      screen.getAllByRole("button", { name: "Publicar alterações" })[0],
     );
     const dialog = await screen.findByRole("dialog", {
       name: "Publicar alterações?",
     });
-    expect(dialog).toHaveTextContent(
-      /confirme em Configurações se seus dados e documentos obrigatórios estão completos/i,
-    );
+    expect(dialog).toHaveTextContent(/sem nova análise administrativa/i);
     fireEvent.click(
       within(dialog).getByRole("button", { name: "Publicar alterações" }),
     );
@@ -826,21 +826,22 @@ describe("TherapistProfileEditorPage", () => {
   });
 
   it("shows when the publication is waiting for administrative review", async () => {
-    const editorWithDraft = makeEditor({
+    const editorWithDraft = makeFirstConfigurationEditor({
       draft: {
-        baseProfileVersion: 4,
+        baseProfileVersion: 1,
         contentVersionId: "draft-version",
         fields: {
-          ...makeEditor().published.fields,
+          ...makeFirstConfigurationEditor().published.fields,
           publicName: "Ana em análise",
           shortIntro: "Conteúdo pronto para análise.",
+          essenceBody: "Uma essência completa para a primeira publicação.",
         },
         publishedAt: null,
         status: "draft",
         updatedAt: "2026-07-28T13:00:00.000Z",
       },
     });
-    const submittedEditor = makeEditor({
+    const submittedEditor = makeFirstConfigurationEditor({
       derived: { publicStatus: "unpublished", verificationStatus: "submitted" },
       draft: null,
       published: {
@@ -848,7 +849,7 @@ describe("TherapistProfileEditorPage", () => {
         fields: editorWithDraft.draft!.fields,
         updatedAt: "2026-07-28T14:00:00.000Z",
       },
-      version: 5,
+      version: 2,
     });
     commandMocks.sendTherapistProfileCommand.mockResolvedValueOnce({
       data: { editor: submittedEditor, idempotentReplay: false },
@@ -858,7 +859,7 @@ describe("TherapistProfileEditorPage", () => {
     render(<TherapistProfileEditorPage editor={editorWithDraft} />);
 
     fireEvent.click(
-      screen.getByRole("button", { name: "Publicar alterações" }),
+      screen.getAllByRole("button", { name: "Publicar alterações" })[0],
     );
     const confirmation = await screen.findByRole("dialog", {
       name: "Publicar alterações?",

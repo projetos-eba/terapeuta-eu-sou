@@ -94,6 +94,8 @@ export function TherapistProfileEditorPage({
   const hasDraft = Boolean(editor.draft);
   const isPublished = editor.derived.publicStatus === "published";
   const isFirstConfiguration = !isPublished;
+  const requiresInitialReview =
+    editor.derived.verificationStatus !== "approved";
   const mustSaveBeforePublishing =
     hasUnsavedChanges || (isFirstConfiguration && !hasDraft);
   const reviewReason = getTherapistProfileReviewReason(editor);
@@ -369,6 +371,7 @@ export function TherapistProfileEditorPage({
             pendingAction={pendingAction}
             propagationNotice={editor.propagationNotice}
             published={isPublished}
+            requiresInitialReview={requiresInitialReview}
           />
         </AppPageMain>
 
@@ -383,9 +386,9 @@ export function TherapistProfileEditorPage({
           <ProfileManagedElsewhere plan={editor.derived.plan} />
           <ProfileSection title="Importante">
             <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-              Para enviar seu perfil para análise, complete também seus dados e
-              envie os documentos obrigatórios em Configurações. Salvar rascunho
-              não altera o que as pessoas veem.
+              {requiresInitialReview
+                ? "Para enviar seu perfil para análise, complete também seus dados e envie os documentos obrigatórios em Configurações. Salvar rascunho não altera o que as pessoas veem."
+                : "Seu cadastro já foi aprovado. Salvar rascunho não altera o que as pessoas veem; publique as alterações quando quiser atualizar o perfil público."}
             </p>
             <TESButton
               className="mt-4 min-h-11 rounded-lg"
@@ -414,6 +417,7 @@ export function TherapistProfileEditorPage({
             }
             void runMutation(confirmAction);
           }}
+          requiresInitialReview={requiresInitialReview}
         />
       ) : null}
 
@@ -490,11 +494,13 @@ function ConfirmDialog({
   loading,
   onClose,
   onConfirm,
+  requiresInitialReview,
 }: {
   action: ConfirmAction;
   loading: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  requiresInitialReview: boolean;
 }) {
   const copy = {
     discard_draft: {
@@ -505,8 +511,9 @@ function ConfirmDialog({
     },
     publish: {
       button: "Publicar alterações",
-      description:
-        "Seu perfil será enviado para análise. Antes disso, confirme em Configurações se seus dados e documentos obrigatórios estão completos.",
+      description: requiresInitialReview
+        ? "Seu perfil será enviado para análise. Antes disso, confirme em Configurações se seus dados e documentos obrigatórios estão completos."
+        : "As alterações serão publicadas sem nova análise administrativa. Elas podem levar até 2 a 3 horas para aparecer em todas as superfícies públicas.",
       title: "Publicar alterações?",
     },
     reset: {

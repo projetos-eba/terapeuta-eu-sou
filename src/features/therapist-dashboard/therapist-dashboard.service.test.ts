@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TherapistPlan } from "@/domain/tes";
 
 const auraPageMock = vi.hoisted(() => vi.fn());
+const pendingConfirmationsMock = vi.hoisted(() => vi.fn());
 const queryDashboardMock = vi.hoisted(() => vi.fn());
 
 vi.mock("react", async (importOriginal) => ({
@@ -28,6 +29,7 @@ vi.mock("@/features/therapist-reviews/therapist-reviews.service", () => ({
 }));
 
 vi.mock("@/features/therapist-sessions/therapist-sessions.service", () => ({
+  getTherapistPendingConfirmationsSummary: pendingConfirmationsMock,
   getTherapistSessionsPage: vi.fn(),
 }));
 
@@ -58,6 +60,19 @@ afterEach(() => {
 });
 
 describe("getTherapistDashboardPage", () => {
+  beforeEach(() => {
+    pendingConfirmationsMock.mockResolvedValue({
+      data: {
+        generatedAt: "2026-09-03T12:00:00.000Z",
+        pendingBookingIds: [],
+        pendingCount: 0,
+        therapistProfileId: "profile-id",
+        version: 1,
+      },
+      status: "success",
+    });
+  });
+
   it("does not execute Aura reads for Premium Plus while the launch is disabled", async () => {
     vi.stubEnv("AURA_ENABLED", "false");
     queryDashboardMock.mockResolvedValue({});
@@ -99,6 +114,38 @@ describe("getTherapistDashboardPage", () => {
       periodDays: 30,
       plan: TherapistPlan.PremiumPlus,
       profileId: "profile-id",
+    });
+  });
+
+  it("adds pending confirmations to the Premium Plus attention items", async () => {
+    vi.stubEnv("AURA_ENABLED", "false");
+    queryDashboardMock.mockResolvedValue({});
+    pendingConfirmationsMock.mockResolvedValue({
+      data: {
+        generatedAt: "2026-09-03T12:00:00.000Z",
+        pendingBookingIds: ["booking-1", "booking-2"],
+        pendingCount: 2,
+        therapistProfileId: "profile-id",
+        version: 1,
+      },
+      status: "success",
+    });
+
+    const data = await getTherapistDashboardPage({
+      accessToken: "token",
+      avatarUrl: null,
+      name: "Ana",
+      plan: TherapistPlan.PremiumPlus,
+      profileCompleteness: 100,
+      profileId: "profile-id",
+    });
+
+    expect(data.attentionItems).toContainEqual({
+      count: 2,
+      href: "/terapeuta/sessoes",
+      id: "pending-confirmations",
+      label: "Confirmações pendentes",
+      tone: "warning",
     });
   });
 });
