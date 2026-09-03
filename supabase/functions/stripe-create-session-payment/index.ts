@@ -149,14 +149,21 @@ runtime.serve(async (request) => {
         reason?: string;
       }>("preflight_session_payment_retry_v1", { p_booking_id: bookingId });
       if (!preflight?.allowed) {
+        const patientConflict =
+          preflight?.reason === "patient_schedule_conflict";
+        const slotConflict = preflight?.reason === "slot_conflict";
         throw new DomainError(
-          preflight?.reason === "slot_conflict"
-            ? "slot_not_available"
-            : "booking_not_payable",
+          patientConflict
+            ? "patient_schedule_conflict"
+            : slotConflict
+              ? "slot_not_available"
+              : "booking_not_payable",
           409,
-          preflight?.reason === "slot_conflict"
-            ? "Este horário já está sendo reservado. Escolha outro horário."
-            : "Este pagamento não pode ser retomado agora.",
+          patientConflict
+            ? "Você já tem outro encontro nesse horário. Escolha outro momento."
+            : slotConflict
+              ? "Este horário já está sendo reservado. Escolha outro horário."
+              : "Este pagamento não pode ser retomado agora.",
         );
       }
     }

@@ -123,20 +123,20 @@ export function ReservationPage({
   const [promotionError, setPromotionError] = useState<string | null>(null);
   const [promotionPending, setPromotionPending] = useState(false);
   const [checkoutReady, setCheckoutReady] = useState(false);
+  const [isPatientConflictDialogOpen, setIsPatientConflictDialogOpen] =
+    useState(context.selectedSlotHasPatientConflict);
   const [isSupportDialogOpen, setIsSupportDialogOpen] = useState(false);
   const [supportTicketProtocol, setSupportTicketProtocol] = useState<
     string | null
   >(null);
   const previousReservationKeyRef = useRef(reservationKey);
   const [journeyError, setJourneyError] = useState<string | null>(
-    isPaymentRetry
+    isPaymentRetry || context.selectedSlotHasPatientConflict
       ? null
-      : context.selectedSlotHasPatientConflict
-        ? "Você já tem outro encontro nesse horário. Escolha outro momento."
-        : context.step === "pagamento" &&
-            initialJourneyDraft?.acceptedTerms !== true
-          ? "Aceite os termos antes de seguir para o pagamento."
-          : null,
+      : context.step === "pagamento" &&
+          initialJourneyDraft?.acceptedTerms !== true
+        ? "Aceite os termos antes de seguir para o pagamento."
+        : null,
   );
 
   useEffect(() => {
@@ -155,7 +155,7 @@ export function ReservationPage({
     setCheckoutReady(false);
     setJourneyError(
       context.selectedSlotHasPatientConflict
-        ? "Você já tem outro encontro nesse horário. Escolha outro momento."
+        ? null
         : context.step === "pagamento"
           ? "Aceite os termos antes de seguir para o pagamento."
           : null,
@@ -179,6 +179,11 @@ export function ReservationPage({
   useEffect(() => {
     const restoreJourneyDraft = () => {
       if (isPaymentRetry) return;
+      if (context.selectedSlotHasPatientConflict) {
+        setJourneyError(null);
+        setCurrentStep("momento");
+        return;
+      }
       const draft = readReservationJourneyDraft(reservationKey);
       setAcceptedTerms(draft?.acceptedTerms ?? false);
       setMarketingConsent(draft?.marketingConsent ?? context.marketingConsent);
@@ -209,6 +214,7 @@ export function ReservationPage({
   }, [
     context.hasRequiredCheckoutData,
     context.marketingConsent,
+    context.selectedSlotHasPatientConflict,
     isPaymentRetry,
     reservationKey,
   ]);
@@ -234,6 +240,8 @@ export function ReservationPage({
 
   useEffect(() => {
     if (context.selectedSlotHasPatientConflict) {
+      setJourneyError(null);
+      setIsPatientConflictDialogOpen(true);
       router.replace(momentStepHref);
       return;
     }
@@ -275,6 +283,15 @@ export function ReservationPage({
     },
     [],
   );
+  const openPatientScheduleConflict = useCallback(() => {
+    setIsPatientConflictDialogOpen(true);
+  }, []);
+  const handleCheckoutPatientScheduleConflict = useCallback(() => {
+    setCheckoutReady(false);
+    setCurrentStep("momento");
+    setIsPatientConflictDialogOpen(true);
+    router.replace(momentStepHref);
+  }, [momentStepHref, router]);
 
   const goToStep = useCallback(
     (step: ReservationStep) => {
@@ -360,6 +377,7 @@ export function ReservationPage({
               <MomentStep
                 context={context}
                 loginHref={loginHref}
+                onPatientScheduleConflict={openPatientScheduleConflict}
                 schedule={schedule}
                 signupHref={signupHref}
               />
@@ -399,6 +417,9 @@ export function ReservationPage({
                 checkoutAttemptId={checkoutAttemptId}
                 context={context}
                 loginHref={loginHref}
+                onPatientScheduleConflict={
+                  handleCheckoutPatientScheduleConflict
+                }
                 sharedNote={sharedNote}
                 onCheckoutChange={handleCheckoutChange}
                 onPromotionSettled={handlePromotionSettled}
@@ -475,6 +496,30 @@ export function ReservationPage({
           </div>
         </TESDialog>
       ) : null}
+      {isPatientConflictDialogOpen ? (
+        <TESDialog
+          description="Para evitar dois atendimentos ao mesmo tempo, escolha outro horário disponível."
+          onClose={() => setIsPatientConflictDialogOpen(false)}
+          title="Você já tem um encontro nesse horário"
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <TESButton
+              className="min-h-11 rounded-lg"
+              onClick={() => setIsPatientConflictDialogOpen(false)}
+              type="button"
+            >
+              Escolher outro horário
+            </TESButton>
+            <TESButton
+              className="min-h-11 rounded-lg"
+              href={routes.patient.encounters}
+              variant="secondary"
+            >
+              Ver meus encontros
+            </TESButton>
+          </div>
+        </TESDialog>
+      ) : null}
     </main>
   );
 }
@@ -484,7 +529,17 @@ function readReservationJourneyDraft(
 ): ReservationJourneyDraft | null {
   if (typeof window === "undefined") return null;
   const state = window.history.state as Record<string, unknown> | null;
-  const value = state?.[reservationJourneyDraftHistoryKey];
+  let value = state?.[reservationJourneyDraftHistoryKey];
+  if (!value) {
+    try {
+      const stored = window.sessionStorage.getItem(
+        reservationJourneyDraftHistoryKey,
+      );
+      value = stored ? (JSON.parse(stored) as unknown) : null;
+    } catch {
+      // History state remains the in-memory fallback when storage is blocked.
+    }
+  }
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
 
   const draft = value as Partial<ReservationJourneyDraft>;
@@ -516,6 +571,16 @@ function writeReservationJourneyDraft(draft: ReservationJourneyDraft) {
     },
     "",
   );
+  try {
+    // This contains only journey state. Never persist the preparation note,
+    // card data, checkout client secret or other sensitive information here.
+    window.sessionStorage.setItem(
+      reservationJourneyDraftHistoryKey,
+      JSON.stringify(draft),
+    );
+  } catch {
+    // A restrictive browser may still use history state for this navigation.
+  }
 }
 
 function clearReservationJourneyDraft() {
@@ -523,6 +588,11 @@ function clearReservationJourneyDraft() {
   const state = { ...(window.history.state ?? {}) } as Record<string, unknown>;
   delete state[reservationJourneyDraftHistoryKey];
   window.history.replaceState(state, "");
+  try {
+    window.sessionStorage.removeItem(reservationJourneyDraftHistoryKey);
+  } catch {
+    // No cleanup is needed when storage is unavailable.
+  }
 }
 
 function ReservationTopbar() {
@@ -616,11 +686,13 @@ function ReservationStepper({
 function MomentStep({
   context,
   loginHref,
+  onPatientScheduleConflict,
   schedule,
   signupHref,
 }: {
   context: ReservationContext;
   loginHref: string;
+  onPatientScheduleConflict: () => void;
   schedule: ReservationSchedule;
   signupHref: string;
 }) {
@@ -673,11 +745,6 @@ function MomentStep({
           </Link>
         </div>
 
-        {context.hiddenPatientConflictCount > 0 ? (
-          <p className="mt-5 rounded-2xl bg-brand-lavenderSoft px-4 py-3 text-sm font-bold text-brand-deep">
-            Horários que coincidem com seus encontros atuais não são exibidos.
-          </p>
-        ) : null}
         {context.patientScheduleCheckStatus === "unavailable" &&
         context.isPatientAuthenticated ? (
           <p className="mt-5 rounded-2xl border border-status-warning/30 bg-status-warningBg px-4 py-3 text-sm font-bold text-brand-deep">
@@ -704,20 +771,33 @@ function MomentStep({
                 style={{ scrollbarGutter: "stable" }}
               >
                 {day.slots.length > 0 ? (
-                  day.slots.map((slot) => (
-                    <Link
-                      className={cn(
-                        "inline-flex min-h-11 items-center justify-center rounded-xl border px-3 text-sm font-extrabold transition focus:outline-none focus:ring-4 focus:ring-ring/20",
-                        slot.isSelected
-                          ? "border-brand-primary bg-brand-primary text-white"
-                          : "border-border bg-brand-lavenderSoft text-brand-primary hover:border-brand-primary",
-                      )}
-                      href={slot.href as Route<string>}
-                      key={slot.startsAt}
-                    >
-                      {slot.timeLabel}
-                    </Link>
-                  ))
+                  day.slots.map((slot) => {
+                    const className = cn(
+                      "inline-flex min-h-11 items-center justify-center rounded-xl border px-3 text-sm font-extrabold transition focus:outline-none focus:ring-4 focus:ring-ring/20",
+                      slot.isSelected
+                        ? "border-brand-primary bg-brand-primary text-white"
+                        : "border-border bg-brand-lavenderSoft text-brand-primary hover:border-brand-primary",
+                    );
+                    return slot.hasPatientConflict ? (
+                      <button
+                        aria-label={`${slot.timeLabel}, coincide com outro encontro seu`}
+                        className={className}
+                        key={slot.startsAt}
+                        onClick={onPatientScheduleConflict}
+                        type="button"
+                      >
+                        {slot.timeLabel}
+                      </button>
+                    ) : (
+                      <Link
+                        className={className}
+                        href={slot.href as Route<string>}
+                        key={slot.startsAt}
+                      >
+                        {slot.timeLabel}
+                      </Link>
+                    );
+                  })
                 ) : (
                   <p className="rounded-xl bg-surface-muted px-3 py-4 text-center text-xs font-bold leading-5 text-tesText-muted">
                     Sem horários neste dia
@@ -831,6 +911,7 @@ function PaymentStep({
   context,
   loginHref,
   onCheckoutChange,
+  onPatientScheduleConflict,
   onPromotionSettled,
   promotionRequest,
   sharedNote,
@@ -843,6 +924,7 @@ function PaymentStep({
     amounts: PromotionCheckoutAmounts;
     ready: boolean;
   }) => void;
+  onPatientScheduleConflict: () => void;
   onPromotionSettled: (input: {
     error: string | null;
     promotion?: PromotionCheckoutAmounts["promotion"];
@@ -900,6 +982,7 @@ function PaymentStep({
               isPatientAuthenticated={context.isPatientAuthenticated}
               loginHref={loginHref}
               onCheckoutChange={onCheckoutChange}
+              onPatientScheduleConflict={onPatientScheduleConflict}
               onPromotionSettled={onPromotionSettled}
               promotionRequest={promotionRequest}
               retryBookingId={context.retryBookingId}
@@ -1300,6 +1383,9 @@ function getFirstName(name: string) {
 }
 
 export function ReservationSuccessPage() {
+  const [conflictKind, setConflictKind] = useState<
+    "patient_schedule" | "therapist_slot" | null
+  >(null);
   const [status, setStatus] = useState<
     | "waiting_payment"
     | "authorizing"
@@ -1307,21 +1393,60 @@ export function ReservationSuccessPage() {
     | "expired"
     | "slot_conflict"
     | "failed"
+    | "unavailable"
+    | "sign_in_required"
   >("authorizing");
 
   useEffect(() => {
     let cancelled = false;
     const startedAt = Date.now();
+    const controller = new AbortController();
+    let pollTimer: number | undefined;
+    const deadlineTimer = window.setTimeout(() => {
+      controller.abort();
+    }, 30_000);
     const poll = async () => {
+      if (cancelled) return;
       const params = new URLSearchParams(window.location.search);
       const response = await fetch(
         `/api/public/reservation/checkout/status?${params.toString()}`,
-        { credentials: "include", cache: "no-store" },
+        {
+          credentials: "include",
+          cache: "no-store",
+          signal: controller.signal,
+        },
       ).catch(() => null);
       if (cancelled) return;
-      if (response?.ok) {
-        const body = (await response.json()) as { status?: typeof status };
-        if (body.status) setStatus(body.status);
+      if (response?.status === 401) {
+        setStatus("sign_in_required");
+        return;
+      }
+      if (response && [403, 404, 422].includes(response.status)) {
+        setStatus("unavailable");
+        return;
+      }
+      const body = response?.ok
+        ? await response.json().catch(() => null)
+        : null;
+      if (cancelled) return;
+      const validStatus =
+        body &&
+        [
+          "waiting_payment",
+          "authorizing",
+          "confirmed",
+          "expired",
+          "slot_conflict",
+          "failed",
+        ].includes(body.status);
+      if (validStatus) {
+        setStatus(body.status);
+        if (
+          body.conflictKind === "patient_schedule" ||
+          body.conflictKind === "therapist_slot"
+        ) {
+          setConflictKind(body.conflictKind);
+        }
         if (
           body.status === "confirmed" ||
           body.status === "expired" ||
@@ -1331,11 +1456,16 @@ export function ReservationSuccessPage() {
           return;
         }
       }
-      if (Date.now() - startedAt < 30_000) window.setTimeout(poll, 2_000);
+      if (Date.now() - startedAt < 30_000) {
+        pollTimer = window.setTimeout(poll, 2_000);
+      } else if (!validStatus) setStatus("unavailable");
     };
     void poll();
     return () => {
       cancelled = true;
+      controller.abort();
+      window.clearTimeout(deadlineTimer);
+      window.clearTimeout(pollTimer);
     };
   }, []);
 
@@ -1362,19 +1492,36 @@ export function ReservationSuccessPage() {
       eyebrow: "Prazo encerrado",
       title: "O horário foi liberado",
       description:
-        "O pagamento não foi confirmado dentro dos 5 minutos. Escolha novamente um horário disponível.",
+        "O prazo de exclusividade terminou. Você ainda pode tentar o pagamento pela área de encontros, sujeito à disponibilidade do horário.",
     },
     slot_conflict: {
       eyebrow: "Horário indisponível",
-      title: "Outra pessoa reservou este horário",
+      title:
+        conflictKind === "patient_schedule"
+          ? "Você já tem um encontro nesse horário"
+          : "Outra pessoa reservou este horário",
       description:
-        "A autorização foi cancelada sem captura. Escolha outro horário para continuar.",
+        conflictKind === "patient_schedule"
+          ? "A autorização foi cancelada sem captura. Escolha um horário que não coincida com seus outros encontros."
+          : "A autorização foi cancelada sem captura. Escolha outro horário para continuar.",
     },
     failed: {
       eyebrow: "Pagamento não concluído",
       title: "Não foi possível confirmar a reserva",
       description:
         "Nenhuma confirmação foi registrada. Você pode tentar o pagamento novamente na área de encontros.",
+    },
+    unavailable: {
+      eyebrow: "Confirmação indisponível",
+      title: "Confira a situação do pagamento",
+      description:
+        "Não conseguimos consultar este pagamento agora. Confira se está na conta correta e consulte seus encontros antes de tentar pagar novamente.",
+    },
+    sign_in_required: {
+      eyebrow: "Acesso necessário",
+      title: "Entre para acompanhar o pagamento",
+      description:
+        "Sua sessão de acesso não está disponível nesta página. Entre na conta usada na reserva e confira seus encontros. Não é necessário pagar novamente para consultar a confirmação.",
     },
   }[status];
 

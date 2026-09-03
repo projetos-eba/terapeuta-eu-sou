@@ -8,6 +8,7 @@ import {
 } from "@/lib/supabase/edge-functions";
 
 import { mapCheckoutError } from "./checkout-errors";
+import { getLocalCheckoutReturnUrlBase } from "./local-checkout-return-url";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -353,6 +354,14 @@ async function replaceCheckout(
 }
 
 function mapPromotionError(error: SupabaseFunctionError) {
+  if (error.status === 409 && error.code === "patient_schedule_conflict") {
+    return {
+      code: "PATIENT_SCHEDULE_CONFLICT",
+      message:
+        "Você já tem outro encontro nesse horário. Escolha outro momento.",
+      status: 409,
+    };
+  }
   if (error.status === 422) {
     return {
       code: error.code ?? "PROMOTION_INVALID",
@@ -381,16 +390,4 @@ function asString(value: unknown) {
 function isIsoInstant(value: string) {
   const date = new Date(value);
   return Boolean(value && !Number.isNaN(date.getTime()));
-}
-
-function getLocalCheckoutReturnUrlBase(request: Request) {
-  const url = new URL(request.url);
-  if (
-    url.protocol !== "http:" ||
-    !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)
-  ) {
-    return null;
-  }
-
-  return url.origin;
 }

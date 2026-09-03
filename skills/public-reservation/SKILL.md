@@ -57,9 +57,14 @@ revalidada no servidor antes do checkout.
   mesmas views públicas usadas em `/terapeutas/:slug`. Não criar grade local de
   horários. Quando houver `slot` na URL, deve consultar e revalidar o dia local
   específico pelo contrato autoritativo, inclusive para datas entre 31 e 90 dias.
-- Para cliente autenticado, `/reserva` lê no servidor, com o bearer do próprio
-  paciente e RLS, apenas `starts_at`/`ends_at` de bookings ativos e holds ativos
-  não expirados. Slots que sobrepõem `[starts_at, ends_at)` são ocultados.
+- Para cliente autenticado, `/reserva` lê por RPC autenticado somente
+  `starts_at`/`ends_at` dos intervalos próprios que realmente bloqueiam sua
+  agenda: encontro confirmado/completo, pagamento pago ainda não projetado ou
+  autorização manual atual em captura. Holds iniciais e pagamentos ainda não
+  autorizados não bloqueiam o paciente.
+- Slots que sobrepõem `[starts_at, ends_at)` permanecem visíveis. O clique abre
+  `TESDialog`, não muda a URL e não avança; URL direta e corrida continuam
+  protegidas pelo checkout e pelos triggers.
 - Falha nessa leitura nunca confirma agenda livre: mostrar indisponibilidade
   honesta e manter o trigger/checkout como autoridade final.
 - O slot é um instante UTC. Resumo, dia de referência e faixa de horário devem
@@ -77,17 +82,34 @@ revalidada no servidor antes do checkout.
   segundos e usa `reservationExpiresAt`/`serverNow` retornados pelo backend. Não
   renderizar cronômetro em `momento` ou `preparar`, nem reiniciar o prazo por
   remount, refresh ou troca de cupom.
+- O fim dos cinco minutos encerra a exclusividade, não a possibilidade de
+  pagamento. `ExpiredCheckoutRecovery` encerra a tentativa inicial e, somente
+  após resposta autoritativa de liberação, oferece `Continuar pagamento` pela
+  rota autenticada de retomada do mesmo booking. Não exigir nova seleção por
+  mera expiração. O novo formulário continua sujeito a conflitos e pode exigir
+  redigitar dados na Stripe; o TES não os copia entre tentativas.
+- Se a liberação for recusada (por pagamento em confirmação ou tentativa
+  substituída), encaminhar para acompanhar o pagamento, sem abrir outro
+  Checkout. Falha de rede oferece `Verificar novamente`, sem afirmar liberação.
 - A retomada usa apenas `/reserva?booking=<uuid>&etapa=pagamento`. O servidor
   autentica o paciente e hidrata serviço, preço, horário e terapeuta do snapshot
   persistido; parâmetros equivalentes enviados pelo navegador não são
   autoridade. `payment_retry` não cria hold nem contador enquanto o formulário
   Stripe está aberto.
+- No status de uma retomada, a tentativa Stripe atual tem precedência sobre o
+  `canceled` financeiro herdado da tentativa anterior. Enquanto ela estiver em
+  `checkout_created` ou `waiting_payment`, retornar `waiting_payment`; só um
+  estado terminal da tentativa atual pode apresentar falha.
 - `PATIENT_SCHEDULE_CONFLICT` deve virar `patient_schedule_conflict` 409 na
   Edge e voltar como `PATIENT_SCHEDULE_CONFLICT` na API Next, com copy TES. A
   Stripe não pode ser iniciada após esse erro.
 - A experiência de pagamento usa Stripe Embedded Checkout. O backend retorna
   apenas o `clientSecret` da Checkout Session incorporada; dados de cartão ficam
   nos componentes oficiais da Stripe.
+- Callbacks do container para o Checkout devem manter identidade estável;
+  atualizações de prontidão, contador ou suporte não podem destruir/recriar o
+  iframe. Após expiração, respostas e inicializações Stripe tardias devem ser
+  descartadas, sem montar formulário nem apagar o estado terminal.
 - O campo de código promocional fica no `ReservationSummary`, fora do iframe.
   Aplicar/remover chama a rota com `action=replace`, cria uma nova tentativa,
   destrói o checkout anterior e remonta o iframe sem recarregar a página.
@@ -103,7 +125,9 @@ revalidada no servidor antes do checkout.
   mesma tentativa idempotente deve ser reutilizada. A Edge Function deve
   resolver primeiro o hold/booking da mesma tentativa, antes de consultar os
   slots disponíveis, pois a própria reserva pendente deixa o horário oculto.
-  Nunca persistir nesse estado texto de preparo ou dados de pagamento.
+  O estado de jornada pode usar `history.state` e `sessionStorage` por aba para
+  sobreviver a refresh ou substituição do estado pelo Next. Nunca persistir
+  nesse estado texto de preparo, client secret ou dados de pagamento.
 - Na etapa de pagamento, `ShellHelpCard` aparece no resumo lateral antes da
   Política de cuidado. Seu CTA abre o formulário autenticado de novo chamado
   em `TESDialog` sobre a própria reserva, sem navegar ou recarregar o checkout.
@@ -117,6 +141,12 @@ revalidada no servidor antes do checkout.
 - `/reserva/sucesso` consulta o status autenticado por no máximo 30 segundos e
   só mostra confirmação quando `session_payments.financial_status=paid` e o
   booking está `confirmed`; expiração, conflito e falha têm estados honestos.
+- Falhas de autenticação, resposta inválida e indisponibilidade de consulta não
+  são falhas financeiras. O polling é cancelável, limitado a 30 segundos e não
+  aceita status desconhecido. A origem local de retorno deve preservar o host
+  do cookie, sem aceitar origem externa ou outra porta.
+- Webhooks de cancelamento não apagam o motivo de conflito/expiração; conclusão
+  de encontro histórico confirmado com intervalo inalterado continua permitida.
 - Não coletar número de cartão, CVC ou dados bancários no Next.
 
 ## Componentes esperados
@@ -179,12 +209,11 @@ revalidada no servidor antes do checkout.
 - Cliente autenticado deve conseguir chamar `/api/public/reservation/checkout`
   somente com `termsAccepted: true`.
 - Slot inexistente/indisponível deve retornar erro seguro.
-- Slots que coincidem com encontros do paciente ficam ocultos e exibem a nota
-  explicativa somente quando ao menos um slot foi removido. Um slot exatamente
-  consecutivo permanece disponível.
+- Slots que coincidem com encontros do paciente permanecem visíveis, mas o
+  clique abre “Você já tem um encontro nesse horário”, não navega e mantém o
+  avanço bloqueado. Um slot exatamente consecutivo permanece disponível.
 - URL antiga em `preparar`/`pagamento` com conflito do paciente volta para
-  `momento`, mostra “Você já tem outro encontro nesse horário. Escolha outro
-  momento.” e mantém o CTA bloqueado.
+  `momento`, abre o mesmo modal e mantém o CTA bloqueado.
 - Cupom percentual/fixo válido deve exibir subtotal, desconto e total da
   resposta Stripe; total zero por desconto autorizado deve concluir pelo
   webhook assinado, enquanto outro escopo, código inválido, desconto acima do
@@ -192,6 +221,14 @@ revalidada no servidor antes do checkout.
   tentativa válida.
 - O iframe não deve mostrar o campo nativo “Add code” e todo o checkout deve
   usar `pt-BR`.
+- Prontidão do checkout e abertura de suporte não podem gerar outra chamada de
+  criação ou montagem Stripe. Inicialização que termina depois dos cinco
+  minutos deve destruir a instância recebida sem montá-la; expiração envia um
+  único abandono e não pode ser revertida por resposta tardia de cupom.
+- Após liberação confirmada, `Continuar pagamento` preserva o booking na URL
+  e não envia novo slot, preço ou hold. Retomada não mostra contador nem banner
+  adicional sobre disponibilidade. Nunca abrir retry automaticamente quando a resposta de
+  expiração estiver ausente, recusada ou inconclusiva.
 - Evento expirado/falhado de tentativa superseded não pode cancelar a reserva;
   um pagamento real anterior ainda deve ser aceito uma única vez.
 - Um slot `2026-08-24T12:10:00.000Z` no timezone `America/Sao_Paulo` deve ser

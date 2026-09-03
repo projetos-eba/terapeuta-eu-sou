@@ -173,6 +173,39 @@ Uma recarga preserva a tentativa idempotente e o prazo absoluto. `pagehide` não
 é usado como autoridade de abandono, pois o navegador também o dispara em
 refresh; ao fechar ou sair da página, a manutenção libera o intervalo no prazo
 canônico. Tentativas `payment_retry` nunca disparam abandono de booking.
+Durante uma retomada, o status público prioriza a tentativa Stripe atual sobre
+o `canceled` financeiro herdado da tentativa anterior: `checkout_created` e
+`waiting_payment` permanecem aguardando, e somente um estado terminal da nova
+tentativa pode apresentar falha. Isso evita uma falsa falha enquanto o webhook
+de autorização ainda está em trânsito.
+O aceite e o identificador idempotente da jornada ficam limitados à aba por
+`history.state` e `sessionStorage`, pois o Next pode substituir o primeiro no
+reload. Texto de preparação, client secret e dados do formulário Stripe nunca
+são gravados nesse armazenamento.
+Ao terminar o prazo com a página aberta, o cliente pode usar `Continuar
+pagamento` depois que o backend confirma a liberação da tentativa inicial.
+Esse CTA reabre o Stripe pela rota autenticada do mesmo booking, sem nova
+seleção e sem hold ou contador; o horário é revalidado no preflight e antes da
+captura. O formulário inicial expirado não pode ser reutilizado. Recusa de
+liberação encaminha para acompanhar o pagamento, pois autorização/captura ou
+uma substituição em outra aba podem ter vencido a corrida. Erro de rede exige
+nova verificação e nunca é tratado como liberação confirmada.
+
+Projeções genéricas de cancelamento/falha não apagam `slot_conflict` ou
+`expired` nas novas tentativas; `processing` também não remove uma autorização
+já reivindicada. Evidência financeira de pagamento continua prioritária.
+Conclusão e reconciliação de encontros históricos já confirmados não são novas
+reservas: se paciente e intervalo não mudaram, preservam-se essas operações,
+sem admitir inserções ou reagendamentos sobrepostos.
+
+O retorno local preserva a origem HTTP de loopback do navegador na mesma porta
+(por exemplo, `127.0.0.1`), somente no override já restrito à Stripe Test.
+Isso evita perder cookies ao trocar inadvertidamente para `localhost`.
+Falha de acesso/consulta nunca significa pagamento recusado. A tela de retorno
+limita a consulta a 30 segundos, cancela pedidos ao sair e trata respostas
+inválidas como indisponibilidade. Sessão Stripe divergente não recebe o status
+do booking; o endpoint retorna 404 sem dados financeiros.
+
 - `session_refunds`, `session_cancellation_decisions` e `session_disputes`: eventos compensatorios, decisoes de politica e bloqueios. Cancelamento usa `request_id` único e o RPC `claim_session_cancellation_decision_v1` (somente `service_role`) para registrar uma única decisão antes de chamar Stripe; retries reutilizam a decisão, a chave de idempotência do refund e a transição do booking.
 - `session_service_confirmations`: prova de realizacao da sessao.
 - `session_participant_confirmations`: respostas canônicas por papel, com
