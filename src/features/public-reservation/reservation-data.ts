@@ -7,6 +7,14 @@ import type {
   ReservationStep,
 } from "./types";
 import type { AvailabilityDay } from "@/features/therapist-profile/types";
+import {
+  addAvailabilityDateKeyDays,
+  formatAvailabilityDateKey,
+  getReservationWindowDateKeys,
+  isAvailabilityDateKey,
+  parseAvailabilityDateKey,
+  RESERVATION_WINDOW_DAYS,
+} from "@/features/availability/reservation-window";
 import { normalizeTimeZone } from "@/features/bookings/session-formatters";
 import { routes } from "@/lib/routes";
 
@@ -220,38 +228,42 @@ export function buildReservationSchedule(
   const availabilityByDate = new Map(
     availabilityDays.map((day) => [day.date, day]),
   );
-  const today = startOfLocalDay(new Date());
-  const referenceDate = context.selectedSlot
-    ? new Date(context.selectedSlot)
-    : (parseDateKey(current.get("date")) ?? today);
-  const referenceStart = startOfLocalDay(referenceDate);
-  const firstDay = new Date(referenceStart);
-  firstDay.setDate(referenceStart.getDate() - 2);
-
-  if (firstDay < today) {
-    firstDay.setTime(today.getTime());
-  }
-
-  const previousReference = new Date(referenceDate);
-  previousReference.setDate(referenceDate.getDate() - 2);
+  const todayKey = formatAvailabilityDateKey(new Date(), context.timezone);
+  const selectedDateKey = context.selectedSlot
+    ? formatAvailabilityDateKey(
+        new Date(context.selectedSlot),
+        context.timezone,
+      )
+    : null;
+  const requestedDateKey = parseDateKey(current.get("date"));
+  const firstAvailableDateKey = availabilityDays
+    .filter((day) => day.slots.length > 0)
+    .map((day) => day.date)
+    .sort()[0];
+  const requestedFirstDay =
+    selectedDateKey ?? requestedDateKey ?? firstAvailableDateKey ?? todayKey;
+  const firstDayKey =
+    requestedFirstDay < todayKey ? todayKey : requestedFirstDay;
+  const previousReference = addAvailabilityDateKeyDays(
+    firstDayKey,
+    -RESERVATION_WINDOW_DAYS,
+  );
   const previousHref =
-    startOfLocalDay(previousReference) < today
+    !previousReference || previousReference < todayKey
       ? null
       : buildReservationHref(current, {
-          date: formatDateKey(previousReference),
+          date: previousReference,
           etapa: "momento",
           slot: null,
         });
-
-  const nextReference = new Date(referenceDate);
-  nextReference.setDate(referenceDate.getDate() + 2);
+  const nextReference = addAvailabilityDateKeyDays(
+    firstDayKey,
+    RESERVATION_WINDOW_DAYS,
+  );
 
   return {
-    days: Array.from({ length: 5 }, (_, dayIndex) => {
-      const date = new Date(firstDay);
-      date.setDate(firstDay.getDate() + dayIndex);
-
-      const dateKey = formatDateKey(date);
+    days: getReservationWindowDateKeys(firstDayKey).map((dateKey) => {
+      const date = parseAvailabilityDateKey(dateKey)!;
       const slots =
         availabilityByDate.get(dateKey)?.slots.map((slot) => ({
           hasPatientConflict: context.patientScheduleIntervals.some(
@@ -271,13 +283,14 @@ export function buildReservationSchedule(
         dateLabel: date.toLocaleDateString("pt-BR", {
           day: "2-digit",
           month: "short",
+          timeZone: "UTC",
         }),
-        dayLabel: formatRelativeDayLabel(date, today),
+        dayLabel: formatRelativeDayLabel(dateKey, todayKey),
         slots,
       };
     }),
     nextHref: buildReservationHref(current, {
-      date: formatDateKey(nextReference),
+      date: nextReference ?? firstDayKey,
       etapa: "momento",
       slot: null,
     }),
@@ -416,9 +429,7 @@ function parseIsoDate(value: string | null) {
 }
 
 function parseDateKey(value: string | null) {
-  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
-  const date = new Date(`${value}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? null : date;
+  return value && isAvailabilityDateKey(value) ? value : null;
 }
 
 function parsePositiveInteger(value: string | null) {
@@ -494,29 +505,16 @@ export function formatReservationTime(
   };
 }
 
-function startOfLocalDay(date: Date) {
-  const clone = new Date(date);
-  clone.setHours(0, 0, 0, 0);
-  return clone;
-}
+function formatRelativeDayLabel(dateKey: string, todayKey: string) {
+  if (dateKey === todayKey) return "Hoje";
+  if (dateKey === addAvailabilityDateKeyDays(todayKey, 1)) return "Amanhã";
 
-function formatRelativeDayLabel(date: Date, today: Date) {
-  const day = startOfLocalDay(date);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(today.getDate() + 1);
-
-  if (day.getTime() === today.getTime()) return "Hoje";
-  if (day.getTime() === tomorrow.getTime()) return "Amanhã";
-
-  const label = date.toLocaleDateString("pt-BR", { weekday: "short" });
+  const date = parseAvailabilityDateKey(dateKey)!;
+  const label = date.toLocaleDateString("pt-BR", {
+    timeZone: "UTC",
+    weekday: "short",
+  });
   return `${label.charAt(0).toUpperCase()}${label.slice(1)}`;
-}
-
-function formatDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
 }
 
 function formatCurrency(value: number | null) {

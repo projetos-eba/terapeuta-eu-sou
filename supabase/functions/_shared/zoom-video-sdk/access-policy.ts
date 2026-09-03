@@ -62,10 +62,11 @@ export function evaluateVideoSessionAccess(input: {
   const patientEntryEntitled = Boolean(
     input.patientHasJoined || input.patientHasTimelyArrival,
   );
-  const availableUntil =
-    input.actorRole === "patient" && !patientEntryEntitled
-      ? firstPatientJoinUntil
-      : endsAt;
+  // A timely waiting-room arrival (or a trusted patient join) belongs to the
+  // booking, not to one actor. Without it, neither participant may keep or
+  // obtain access after T+10. Once it exists, host-first remains the only
+  // patient-specific restriction until the scheduled end.
+  const availableUntil = patientEntryEntitled ? endsAt : firstPatientJoinUntil;
   const hardEndsAt = input.hardEndsAt ? new Date(input.hardEndsAt) : null;
   let reason: VideoAccessReason | null = null;
 
@@ -101,11 +102,7 @@ export function evaluateVideoSessionAccess(input: {
     input.videoSessionStatus === "canceled"
   ) {
     reason = "SESSION_ENDED";
-  } else if (
-    input.actorRole === "patient" &&
-    !patientEntryEntitled &&
-    now > firstPatientJoinUntil
-  ) {
+  } else if (!patientEntryEntitled && now > firstPatientJoinUntil) {
     reason = "ARRIVAL_WINDOW_EXPIRED";
   } else if (hardEndsAt && now >= hardEndsAt) {
     reason = "HARD_TIMEOUT";

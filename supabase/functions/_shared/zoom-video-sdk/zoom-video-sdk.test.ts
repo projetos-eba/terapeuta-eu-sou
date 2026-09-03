@@ -5,7 +5,10 @@ import {
 
 import { parseStrictBoolean } from "./config.ts";
 import { evaluateVideoSessionAccess } from "./access-policy.ts";
-import { ZoomVideoSdkApiClient } from "./api-client.ts";
+import {
+  resolveExactLiveSessionId,
+  ZoomVideoSdkApiClient,
+} from "./api-client.ts";
 import type { SupabaseRestClient } from "../auth/supabase-rest.ts";
 import { createVideoSdkApiJwt } from "./api-jwt.ts";
 import { getAuthorizedVideoBooking } from "./booking-authorization.ts";
@@ -168,6 +171,38 @@ Deno.test(
     assertEquals(url.searchParams.get("session_name"), "tesvs-session");
     assertEquals(Boolean(url.searchParams.get("from")), true);
     assertEquals(Boolean(url.searchParams.get("to")), true);
+  },
+);
+
+Deno.test(
+  "live-session fallback accepts one exact name and rejects ambiguity",
+  () => {
+    assertEquals(
+      resolveExactLiveSessionId(
+        { sessions: [{ session_id: "provider-1", session_name: "tesvs-a" }] },
+        "tesvs-a",
+      ),
+      { kind: "one", sessionId: "provider-1" },
+    );
+    assertEquals(
+      resolveExactLiveSessionId(
+        { sessions: [{ session_id: "provider-1", session_name: "other" }] },
+        "tesvs-a",
+      ),
+      { kind: "none" },
+    );
+    assertEquals(
+      resolveExactLiveSessionId(
+        {
+          sessions: [
+            { session_id: "provider-1", session_name: "tesvs-a" },
+            { session_id: "provider-2", session_name: "tesvs-a" },
+          ],
+        },
+        "tesvs-a",
+      ),
+      { kind: "ambiguous" },
+    );
   },
 );
 
@@ -345,7 +380,7 @@ Deno.test(
 );
 
 Deno.test(
-  "patient first arrival is inclusive at T+10 and reconnect remains open until scheduled end",
+  "T+10 is inclusive for both actors and a patient arrival preserves late therapist entry",
   () => {
     const base = {
       actorRole: "patient" as const,
@@ -378,9 +413,23 @@ Deno.test(
     assertEquals(
       evaluateVideoSessionAccess({
         ...base,
+        actorRole: "therapist",
+        now: new Date("2026-07-26T13:10:00.001Z"),
+        patientHasJoined: false,
+        therapistProfileEligible: true,
+        therapistStatus: "approved",
+      }).reason,
+      "ARRIVAL_WINDOW_EXPIRED",
+    );
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        actorRole: "therapist",
         now: new Date("2026-07-26T13:49:59.999Z"),
         patientHasJoined: false,
         patientHasTimelyArrival: true,
+        therapistProfileEligible: true,
+        therapistStatus: "approved",
       }).allowed,
       true,
     );
@@ -407,10 +456,19 @@ Deno.test(
       startsAt: "2026-07-26T13:00:00Z",
       endsAt: "2026-07-26T14:00:00Z",
       now: new Date("2026-07-26T13:15:00Z"),
+      patientHasTimelyArrival: true,
       videoSessionReady: true,
       videoSessionStatus: "active",
     };
     assertEquals(evaluateVideoSessionAccess(base).allowed, true);
+    assertEquals(
+      evaluateVideoSessionAccess({
+        ...base,
+        patientHasJoined: false,
+        patientHasTimelyArrival: false,
+      }).reason,
+      "ARRIVAL_WINDOW_EXPIRED",
+    );
     assertEquals(
       evaluateVideoSessionAccess({ ...base, videoSessionStatus: "ended" })
         .reason,
@@ -445,6 +503,7 @@ Deno.test(
         ...base,
         actorRole: "patient",
         patientHasJoined: false,
+        patientHasTimelyArrival: false,
       }).reason,
       "ARRIVAL_WINDOW_EXPIRED",
     );
@@ -464,6 +523,82 @@ Deno.test(
         patientHasTimelyArrival: true,
         therapistPresent: true,
       }).allowed,
+      true,
+    );
+  },
+);
+
+Deno.test(
+  "therapist authorization reads a current patient waiting-room arrival",
+  async () => {
+    const calls: string[] = [];
+    const client = {
+      get: (path: string) => {
+        calls.push(path);
+        if (path.startsWith("/rest/v1/bookings")) {
+          return Promise.resolve([
+            {
+              ends_at: "2026-07-26T13:50:00.000Z",
+              id: "94000000-0000-4000-8000-000000000021",
+              patient_profile_id: "patient-owner",
+              starts_at: "2026-07-26T13:00:00.000Z",
+              status: "confirmed",
+              therapist_profile_id: "therapist-owner",
+              therapist_profiles: { status: "approved" },
+              timezone: "America/Sao_Paulo",
+              version: 4,
+            },
+          ]);
+        }
+        if (path.startsWith("/rest/v1/session_payments")) {
+          return Promise.resolve([{ financial_status: "paid" }]);
+        }
+        if (path.startsWith("/rest/v1/video_sessions")) {
+          return Promise.resolve([
+            {
+              hard_ends_at: null,
+              id: "video-session",
+              provider_session_id: "provider-session",
+              session_key: "key",
+              session_name: "tesvs-session",
+              status: "active",
+              termination_confirmed_at: null,
+              termination_requested_at: null,
+              therapist_first_joined_at: null,
+              therapist_last_left_at: null,
+              therapist_present: false,
+            },
+          ]);
+        }
+        if (path.startsWith("/rest/v1/video_session_participations")) {
+          return Promise.resolve([]);
+        }
+        if (path.startsWith("/rest/v1/booking_events")) {
+          return Promise.resolve([
+            {
+              payload: {
+                bookingVersion: 4,
+                scheduledStartsAt: "2026-07-26T13:00:00.000Z",
+              },
+            },
+          ]);
+        }
+        return Promise.resolve([]);
+      },
+      rpc: () => Promise.resolve(true),
+    } as unknown as SupabaseRestClient;
+
+    const booking = await getAuthorizedVideoBooking({
+      bookingId: "94000000-0000-4000-8000-000000000021",
+      client,
+      environment: "development",
+      profileId: "therapist-owner",
+      role: "therapist",
+    });
+
+    assertEquals(booking.patientHasTimelyArrival, true);
+    assertEquals(
+      calls.some((path) => path.startsWith("/rest/v1/booking_events")),
       true,
     );
   },

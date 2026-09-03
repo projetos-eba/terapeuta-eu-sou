@@ -9,6 +9,7 @@ vi.mock("@/lib/supabase/public-config", () => ({
 
 import {
   getPublicServiceAvailabilityForDay,
+  getPublicServiceAvailabilityForWindow,
   getPublicServiceAvailabilityMonth,
   getPublicServiceAvailability,
   mapAvailableSlots,
@@ -127,5 +128,93 @@ describe("public service availability", () => {
         "2026-10-14",
       ),
     ).resolves.toMatchObject({ status: "success" });
+  });
+
+  it("loads all five reservation days and keeps neighboring slots", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(
+          JSON.stringify({
+            horizonEndsAt: "2026-11-09T12:00:00.000Z",
+            slots: [
+              {
+                endsAt: "2026-10-16T14:20:00.000Z",
+                startsAt: "2026-10-16T14:00:00.000Z",
+              },
+            ],
+            timezone: "America/Sao_Paulo",
+          }),
+          { status: 200 },
+        ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getPublicServiceAvailabilityForWindow(
+      "e2e10000-0000-4000-8000-000000000001",
+      "2026-10-14",
+      "America/Sao_Paulo",
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(
+      JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)),
+    ).toMatchObject({
+      p_range_end: "2026-10-19T03:00:00.000Z",
+      p_range_start: "2026-10-14T03:00:00.000Z",
+    });
+    expect(result).toMatchObject({
+      data: {
+        days: [
+          {
+            date: "2026-10-16",
+            slots: [expect.objectContaining({ timeLabel: "11:00" })],
+          },
+        ],
+      },
+      status: "success",
+    });
+  });
+
+  it("fails the five-day window as a unit instead of returning partial data", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(null, { status: 503 })),
+    );
+
+    await expect(
+      getPublicServiceAvailabilityForWindow(
+        "e2e10000-0000-4000-8000-000000000001",
+        "2026-10-14",
+        "America/Sao_Paulo",
+      ),
+    ).resolves.toEqual({ data: null, status: "error" });
+  });
+
+  it("uses calendar boundaries across a daylight-saving transition", async () => {
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(
+          JSON.stringify({
+            horizonEndsAt: "2026-06-01T12:00:00.000Z",
+            slots: [],
+            timezone: "America/New_York",
+          }),
+          { status: 200 },
+        ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await getPublicServiceAvailabilityForWindow(
+      "e2e10000-0000-4000-8000-000000000001",
+      "2026-03-08",
+      "America/New_York",
+    );
+
+    expect(
+      JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)),
+    ).toMatchObject({
+      p_range_end: "2026-03-13T04:00:00.000Z",
+      p_range_start: "2026-03-08T05:00:00.000Z",
+    });
   });
 });

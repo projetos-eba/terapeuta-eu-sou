@@ -7,6 +7,56 @@ export type ZoomVideoSdkApiClientOptions = {
   fetchImpl?: typeof fetch;
 };
 
+export type ExactLiveSessionResolution =
+  | { kind: "none" }
+  | { kind: "one"; sessionId: string }
+  | { kind: "ambiguous" };
+
+// A missing webhook must never make maintenance guess which provider session
+// to end. The session name is an opaque, booking-scoped identifier, but the
+// provider response is still validated before its ID is used.
+export function resolveExactLiveSessionId(
+  value: unknown,
+  expectedSessionName: string,
+): ExactLiveSessionResolution {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new ZoomVideoSdkError(
+      "zoom_video_sessions_response_invalid",
+      502,
+      "Resposta de sessoes do Zoom invalida.",
+    );
+  }
+
+  const sessions = (value as Record<string, unknown>).sessions;
+  if (!Array.isArray(sessions)) {
+    throw new ZoomVideoSdkError(
+      "zoom_video_sessions_response_invalid",
+      502,
+      "Resposta de sessoes do Zoom invalida.",
+    );
+  }
+
+  const matchingIds = new Set<string>();
+  for (const session of sessions) {
+    if (!session || typeof session !== "object" || Array.isArray(session)) {
+      continue;
+    }
+    const item = session as Record<string, unknown>;
+    if (item.session_name !== expectedSessionName) continue;
+    const sessionId =
+      typeof item.session_id === "string"
+        ? item.session_id.trim()
+        : typeof item.id === "string"
+          ? item.id.trim()
+          : "";
+    if (sessionId) matchingIds.add(sessionId);
+  }
+
+  if (matchingIds.size === 0) return { kind: "none" };
+  if (matchingIds.size !== 1) return { kind: "ambiguous" };
+  return { kind: "one", sessionId: [...matchingIds][0] };
+}
+
 export class ZoomVideoSdkApiClient {
   private readonly fetchImpl: typeof fetch;
 

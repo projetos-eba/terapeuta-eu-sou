@@ -156,6 +156,19 @@ describe("ReservationPage", () => {
     expect(screen.queryByText(/Reserva por/i)).not.toBeInTheDocument();
   });
 
+  it("labels the agenda navigation as five-day jumps", () => {
+    const context = resolveReservationContext({
+      isPatientAuthenticated: false,
+    });
+
+    render(<ReservationPage context={context} />);
+
+    expect(screen.getByText("5 dias anteriores")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "5 dias seguintes" }),
+    ).toBeInTheDocument();
+  });
+
   it("renders the connected client card with a wider layout and no phone confirmation badge", () => {
     const context = resolveReservationContext({
       isPatientAuthenticated: true,

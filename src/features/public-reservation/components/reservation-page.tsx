@@ -727,12 +727,12 @@ function MomentStep({
               href={schedule.previousHref as Route<string>}
               className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-white px-4 text-sm font-extrabold text-brand-primary shadow-card transition hover:border-brand-primary focus:outline-none focus:ring-4 focus:ring-ring/20"
             >
-              <ChevronLeft className="size-4" aria-hidden="true" />2 dias
+              <ChevronLeft className="size-4" aria-hidden="true" />5 dias
               anteriores
             </Link>
           ) : (
             <span className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-surface-muted px-4 text-sm font-extrabold text-tesText-muted">
-              <ChevronLeft className="size-4" aria-hidden="true" />2 dias
+              <ChevronLeft className="size-4" aria-hidden="true" />5 dias
               anteriores
             </span>
           )}
@@ -740,7 +740,7 @@ function MomentStep({
             href={schedule.nextHref as Route<string>}
             className="inline-flex min-h-11 items-center gap-2 rounded-full border border-border bg-white px-4 text-sm font-extrabold text-brand-primary shadow-card transition hover:border-brand-primary focus:outline-none focus:ring-4 focus:ring-ring/20"
           >
-            2 dias seguintes
+            5 dias seguintes
             <span aria-hidden="true">→</span>
           </Link>
         </div>

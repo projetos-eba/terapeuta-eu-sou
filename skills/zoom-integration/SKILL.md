@@ -69,8 +69,12 @@ nunca simular revogação nem forçar `stop/start` durante reconexão.
   técnica, não prazo de expiração.
 - A reserva de maintenance revalida os motivos e marca o pedido de fim sob
   lock da sessão antes de chamar o provider. Somente fim manual autorizado, fim
-  agendado e hard timeout bloqueiam novos acessos. Jobs legados de ausência ou
-  orphaning são no-op auditável; cron local fica inativo.
+  agendado, hard timeout e no-show do paciente verificado bloqueiam novos
+  acessos. `end_patient_no_show` só é elegível após T+10 estrito sem chegada
+  autenticada da versão atual nem `session.user_joined` confiável do paciente;
+  ele usa o mesmo lock consultivo da chegada e nunca trata atraso/saída do
+  terapeuta como ausência do paciente. Jobs legados de ausência ou orphaning
+  são no-op auditável; cron local fica inativo.
 - Stripe confirma pagamento; Zoom nunca confirma pagamento, repasse ou servico.
 - Nao ha criacao remota previa de sala. A sessao nasce no primeiro `join`.
 - Paciente so recebe JWT apos webhook confiavel de `session.user_joined` do
@@ -82,8 +86,10 @@ nunca simular revogação nem forçar `stop/start` durante reconexão.
   watchdog usa `end_hard_timeout`. Nenhum deles altera o horário da reserva.
 - A espera autenticada registra chegada pontual da versão atual entre T-15 e
   T+10 inclusive. Essa chegada ou `session.user_joined` confiável preserva a
-  reconexão até, mas não incluindo, `scheduled_ends_at`; todo join continua
-  exigindo presença atual do terapeuta.
+  reconexão de paciente e terapeuta até, mas não incluindo,
+  `scheduled_ends_at`; todo join do paciente continua exigindo presença atual
+  do terapeuta. Portanto um paciente pontual pode esperar e entrar com o
+  terapeuta mesmo que ele só chegue após T+10.
 - Encerramento definitivo é exclusivo do terapeuta entre T-5 inclusive e o fim
   agendado. O Edge valida horário do banco, ownership e sessão ativa, aciona o
   provedor e confirma `manual_end`; o browser nunca usa `leave(true)`.
