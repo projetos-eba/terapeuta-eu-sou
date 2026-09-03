@@ -42,5 +42,9 @@ export async function GET(request: Request) {
   if (!response.ok) {
     return NextResponse.json({ status: "failed" }, { status: response.status });
   }
-  return NextResponse.json(await response.json());
+  const result = await response.json();
+  if (result?.bookingId !== bookingId) {
+    return NextResponse.json({ status: "unavailable" }, { status: 404 });
+  }
+  return NextResponse.json(result);
 }

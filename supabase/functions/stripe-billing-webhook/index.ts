@@ -472,6 +472,35 @@ async function handleCapturableSessionPayment(
         {},
         { idempotencyKey: `tes-auth-cancel:${eventId}` },
       );
+      if (
+        claim.reason === "patient_schedule_conflict" ||
+        claim.reason === "slot_conflict" ||
+        claim.reason === "expired"
+      ) {
+        await applySessionPaymentState(client, {
+          checkoutSessionId: resolved.checkoutSessionId,
+          eventId: `authorization-canceled:${eventId}`,
+          eventTime,
+          paymentIntentId,
+          sessionPaymentId,
+          status: "canceled",
+        });
+      }
+      if (
+        claim.reason === "patient_schedule_conflict" ||
+        claim.reason === "slot_conflict"
+      ) {
+        await client.patch(
+          `/rest/v1/session_payment_attempts?stripe_checkout_session_id=eq.${encodeURIComponent(
+            resolved.checkoutSessionId ?? "",
+          )}`,
+          {
+            status: "slot_conflict",
+            terminal_reason: claim.reason,
+          },
+          "return=minimal",
+        );
+      }
     } catch (error) {
       console.warn(
         JSON.stringify({
@@ -485,11 +514,21 @@ async function handleCapturableSessionPayment(
     return;
   }
 
-  await stripe.paymentIntents.capture(
+  const capturedPaymentIntent = await stripe.paymentIntents.capture(
     paymentIntentId,
     {},
     { idempotencyKey: `tes-session-capture:${sessionPaymentId}` },
   );
+  if (capturedPaymentIntent.status === "succeeded") {
+    await applyPaymentIntentState(
+      client,
+      stripe,
+      capturedPaymentIntent as unknown as Record<string, unknown>,
+      "paid",
+      `capture:${eventId}`,
+      eventTime,
+    );
+  }
 }
 
 async function claimSessionPaymentAuthorization(

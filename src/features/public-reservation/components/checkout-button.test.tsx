@@ -1,4 +1,4 @@
-import { cleanup, render, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { CheckoutButton } from "./checkout-button";
@@ -47,6 +47,56 @@ afterEach(() => {
 });
 
 describe("CheckoutButton", () => {
+  it("does not mount a late Stripe instance after the reservation expires", async () => {
+    vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
+    const mount = vi.fn();
+    const destroy = vi.fn();
+    let finishInitialization!: (checkout: {
+      mount: typeof mount;
+      destroy: typeof destroy;
+    }) => void;
+    const initEmbeddedCheckout = vi.fn(
+      () =>
+        new Promise<{ mount: typeof mount; destroy: typeof destroy }>(
+          (resolve) => {
+            finishInitialization = resolve;
+          },
+        ),
+    );
+    window.Stripe = vi.fn(() => ({ initEmbeddedCheckout }));
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        ...checkoutResponse,
+        checkout: {
+          ...checkoutResponse.checkout,
+          reservationExpiresAt: new Date(Date.now() - 1_000).toISOString(),
+          serverNow: new Date().toISOString(),
+        },
+      }),
+      ok: true,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const onCheckoutChange = vi.fn();
+    render(<CheckoutButton {...props({ onCheckoutChange })} />);
+    await waitFor(() =>
+      expect(
+        screen.getByText("O prazo de exclusividade de 5 minutos terminou."),
+      ).toBeInTheDocument(),
+    );
+    await act(async () => finishInitialization({ mount, destroy }));
+
+    expect(mount).not.toHaveBeenCalled();
+    expect(destroy).toHaveBeenCalledOnce();
+    expect(onCheckoutChange.mock.calls.some(([value]) => value.ready)).toBe(
+      false,
+    );
+    expect(
+      fetchMock.mock.calls.filter(
+        ([url]) => url === "/api/public/reservation/abandon",
+      ),
+    ).toHaveLength(1);
+  });
+
   it("opens a payment retry without a countdown or a new slot payload", async () => {
     vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
     const mount = vi.fn();
@@ -84,6 +134,38 @@ describe("CheckoutButton", () => {
     expect(request).toMatchObject({ action: "retry", bookingId });
     expect(request).not.toHaveProperty("serviceId");
     expect(document.body).not.toHaveTextContent("Seu horário está reservado");
+    expect(document.body).not.toHaveTextContent(
+      "Você pode concluir o pagamento, mas o horário não fica reservado",
+    );
+  });
+
+  it("reports a patient schedule conflict before mounting Stripe", async () => {
+    vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
+    const mount = vi.fn();
+    window.Stripe = vi.fn(() => ({
+      initEmbeddedCheckout: vi
+        .fn()
+        .mockResolvedValue({ destroy: vi.fn(), mount }),
+    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: async () => ({
+          code: "PATIENT_SCHEDULE_CONFLICT",
+          message: "Você já tem um encontro nesse horário.",
+          ok: false,
+        }),
+        ok: false,
+      }),
+    );
+    const onPatientScheduleConflict = vi.fn();
+
+    render(<CheckoutButton {...props({ onPatientScheduleConflict })} />);
+
+    await waitFor(() =>
+      expect(onPatientScheduleConflict).toHaveBeenCalledOnce(),
+    );
+    expect(mount).not.toHaveBeenCalled();
   });
 
   it("reuses the checkout attempt after an internal reservation transition", async () => {
@@ -174,5 +256,32 @@ describe("CheckoutButton", () => {
       ),
     ).toHaveLength(0);
     expect(destroy).toHaveBeenCalled();
+  });
+
+  it("does not recreate Stripe when the parent rerenders after checkout readiness", async () => {
+    vi.stubEnv("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY", "pk_test_public");
+    const mount = vi.fn();
+    const destroy = vi.fn();
+    const initEmbeddedCheckout = vi.fn().mockResolvedValue({ destroy, mount });
+    window.Stripe = vi.fn(() => ({ initEmbeddedCheckout }));
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => checkoutResponse,
+      ok: true,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const stableProps = props();
+    const rendered = render(<CheckoutButton {...stableProps} />);
+    await waitFor(() => expect(mount).toHaveBeenCalledOnce());
+
+    rendered.rerender(<CheckoutButton {...stableProps} />);
+
+    expect(initEmbeddedCheckout).toHaveBeenCalledOnce();
+    expect(
+      fetchMock.mock.calls.filter(
+        ([url]) => url === "/api/public/reservation/checkout",
+      ),
+    ).toHaveLength(1);
+    expect(destroy).not.toHaveBeenCalled();
   });
 });

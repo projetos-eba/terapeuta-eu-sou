@@ -14,22 +14,25 @@ insert into public.bookings (
   ('a1030000-0000-4000-8000-000000000002', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000001', 'd1000000-0000-4000-8000-000000000001', '2099-01-02 10:00:00+00', '2099-01-02 10:50:00+00', 'America/Sao_Paulo', 'confirmed', 'paid'),
   ('a1030000-0000-4000-8000-000000000003', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000001', 'd1000000-0000-4000-8000-000000000001', '2099-01-03 10:05:00+00', '2099-01-03 10:55:00+00', 'America/Sao_Paulo', 'confirmed', 'paid');
 
-select lives_ok(
+select throws_ok(
   $$insert into public.bookings (id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at, timezone, status, payment_status)
     values ('a1030000-0000-4000-8000-000000000011', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000002', 'd1000000-0000-4000-8000-000000000002', '2099-01-01 10:00:00+00', '2099-01-01 11:00:00+00', 'America/Sao_Paulo', 'draft', 'not_started')$$,
-  'unpaid patient attempt with another therapist is allowed'
+  'P0001', 'PATIENT_SCHEDULE_CONFLICT',
+  'a confirmed encounter blocks a new patient attempt with another therapist'
 );
 
-select lives_ok(
+select throws_ok(
   $$insert into public.bookings (id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at, timezone, status, payment_status)
     values ('a1030000-0000-4000-8000-000000000012', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000002', 'd1000000-0000-4000-8000-000000000002', '2099-01-02 10:30:00+00', '2099-01-02 11:30:00+00', 'America/Sao_Paulo', 'pending_payment', 'pending')$$,
-  'unpaid overlapping patient attempt is allowed'
+  'P0001', 'PATIENT_SCHEDULE_CONFLICT',
+  'a confirmed encounter blocks an overlapping pending-payment attempt'
 );
 
-select lives_ok(
+select throws_ok(
   $$insert into public.bookings (id, patient_profile_id, therapist_profile_id, service_id, starts_at, ends_at, timezone, status, payment_status)
     values ('a1030000-0000-4000-8000-000000000013', 'b1000000-0000-4000-8000-000000000001', 'c1000000-0000-4000-8000-000000000002', 'd1000000-0000-4000-8000-000000000002', '2099-01-03 10:00:00+00', '2099-01-03 11:00:00+00', 'America/Sao_Paulo', 'draft', 'not_started')$$,
-  'unpaid contained patient attempt is allowed'
+  'P0001', 'PATIENT_SCHEDULE_CONFLICT',
+  'a confirmed encounter blocks a contained patient attempt'
 );
 
 select lives_ok(

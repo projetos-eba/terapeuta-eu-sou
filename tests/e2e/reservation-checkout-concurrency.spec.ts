@@ -1,11 +1,15 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 
 const password = "tes-mock-password";
+const nextWeek = new Date();
+nextWeek.setUTCDate(
+  nextWeek.getUTCDate() + ((10 - nextWeek.getUTCDay()) % 7 || 7),
+);
 const reservationUrl =
-  "/reserva?duration=50&price=17000" +
+  "/reserva?duration=50&price=12000" +
   "&service=d1000000-0000-4000-8000-000000000001" +
   "&therapist=ana-oliveira" +
-  "&slot=2026-09-02T13%3A00%3A00.000Z";
+  `&date=${nextWeek.toISOString().slice(0, 10)}`;
 
 type CheckoutResponse = {
   checkout?: {
@@ -35,14 +39,15 @@ async function assertBeforeCheckout(page: Page) {
 }
 
 test("grants one five-minute initial hold when two patients race", async ({
+  baseURL,
   browser,
 }) => {
   test.setTimeout(90_000);
   const contexts: BrowserContext[] = [];
 
   try {
-    const firstContext = await browser.newContext();
-    const secondContext = await browser.newContext();
+    const firstContext = await browser.newContext({ baseURL });
+    const secondContext = await browser.newContext({ baseURL });
     contexts.push(firstContext, secondContext);
     const firstPage = await firstContext.newPage();
     const secondPage = await secondContext.newPage();
@@ -56,6 +61,28 @@ test("grants one five-minute initial hold when two patients race", async ({
       assertBeforeCheckout(secondPage),
     ]);
 
+    // Select an actually published slot that is free for both authenticated
+    // patients, rather than a fixed date or a slot consumed by a prior test.
+    const slotsFor = (page: Page) =>
+      page
+        .locator('a[href*="slot="]')
+        .evaluateAll((links) =>
+          links.map((link) =>
+            new URL((link as HTMLAnchorElement).href).searchParams.get("slot"),
+          ),
+        );
+    const [firstSlots, secondSlots] = await Promise.all([
+      slotsFor(firstPage),
+      slotsFor(secondPage),
+    ]);
+    const startsAt = firstSlots.find(
+      (slot) => slot && secondSlots.includes(slot),
+    );
+    expect(
+      startsAt,
+      "a published slot free for both test patients",
+    ).toBeTruthy();
+
     const runCheckout = async (page: Page) => {
       const response = await page.request.post(
         "/api/public/reservation/checkout",
@@ -65,7 +92,7 @@ test("grants one five-minute initial hold when two patients race", async ({
             checkoutAttemptId: crypto.randomUUID(),
             serviceId: "d1000000-0000-4000-8000-000000000001",
             sharedNote: null,
-            startsAt: "2026-09-02T13:00:00.000Z",
+            startsAt,
             termsAccepted: true,
           },
         },
@@ -91,6 +118,10 @@ test("grants one five-minute initial hold when two patients race", async ({
     expect(losers[0]?.status).toBe(409);
     expect(winners[0]?.body.checkout?.mode).toBe("initial_hold");
     expect(winners[0]?.body.checkout?.reservationExpiresAt).not.toBeNull();
+    const remaining =
+      Date.parse(winners[0]!.body.checkout!.reservationExpiresAt!) - Date.now();
+    expect(remaining).toBeGreaterThan(240_000);
+    expect(remaining).toBeLessThanOrEqual(300_000);
     await expect(
       losers[0]!.page.getByText(/Seu horário está reservado por mais/i),
     ).toHaveCount(0);
