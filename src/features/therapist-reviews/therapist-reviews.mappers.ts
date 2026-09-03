@@ -79,8 +79,10 @@ export function mapTherapistReviewsPageData(
         endsAt: string(item.endsAt),
         patientName: string(item.patientName, "Paciente TES"),
         remainingSeconds: number(item.remainingSeconds),
+        sessionReference: string(item.sessionReference),
         serviceTitle: nullableString(item.serviceTitle),
         startsAt: string(item.startsAt),
+        timezone: string(item.timezone, "America/Sao_Paulo"),
       };
     }),
     privateFeedback: array(row.privateFeedback).map((value) => {

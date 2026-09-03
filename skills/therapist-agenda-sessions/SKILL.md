@@ -108,9 +108,9 @@ histórica.
   autoritativo indicar `ready`, `in_progress` ou `room_preparing`, a identidade
   da pessoa recebe um único badge contextual. O badge não concede acesso nem
   antecipa uma janela de reunião; a autorização final continua no detalhe.
-- O ID completo da reserva aparece como referência operacional logo abaixo do
-  nome do paciente na tabela, nos cards e no detalhe da sessão, usando o mesmo
-  `bookingId` da navegação.
+- A referência operacional imutável `Sessão #AAMNNNNNN` aparece logo abaixo do
+  nome do paciente na tabela, nos cards, Agenda, detalhe e sala. O `bookingId`
+  UUID continua exclusivamente como chave de navegação e autorização.
 - Desktop usa tabela operacional com right rail. Mobile usa cards cronológicos
   em uma coluna, com filtros em largura total e os mesmos links de detalhe;
   tablet pode promover o rail para duas colunas somente quando houver largura

@@ -1,6 +1,6 @@
 begin;
 
-select plan(17);
+select plan(25);
 
 select ok(
   has_function_privilege(
@@ -18,6 +18,21 @@ select ok(
     'EXECUTE'
   ),
   'the internal pending rows helper is not exposed to authenticated clients'
+);
+
+select ok(
+  not has_table_privilege(
+    'authenticated',
+    'public.booking_session_reference_counters',
+    'SELECT'
+  ),
+  'therapists cannot read the private session-reference counter'
+);
+
+select is(
+  public.booking_session_reference_month_code_v1('2026-09-01 12:00:00+00'),
+  'S',
+  'September maps to the unambiguous session-reference month letter'
 );
 
 select ok(
@@ -177,6 +192,61 @@ cross join lateral (
   limit 1
 ) as policy;
 
+select ok(
+  (
+    select session_reference ~ '^[0-9]{2}[JFMAIULGSOND][0-9]{6}$'
+    from public.bookings
+    where id = 'a9900000-0000-4000-8000-000000000001'
+  ),
+  'a booking receives a compact human-readable session reference'
+);
+
+select isnt(
+  (
+    select session_reference
+    from public.bookings
+    where id = 'a9900000-0000-4000-8000-000000000001'
+  ),
+  (
+    select session_reference
+    from public.bookings
+    where id = 'a9900000-0000-4000-8000-000000000002'
+  ),
+  'consecutive bookings receive unique session references'
+);
+
+select throws_ok(
+  $$update public.bookings
+      set session_reference = '26S999999'
+    where id = 'a9900000-0000-4000-8000-000000000001'$$,
+  '22000',
+  'session_reference_immutable',
+  'the human-readable reference cannot be changed'
+);
+
+create temporary table pending_confirmation_reference_before_reschedule as
+select id, session_reference
+from public.bookings
+where id = 'a9900000-0000-4000-8000-000000000002';
+
+update public.bookings
+set starts_at = starts_at - interval '14 days',
+    ends_at = ends_at - interval '14 days'
+where id = 'a9900000-0000-4000-8000-000000000002';
+
+select is(
+  (
+    select session_reference
+    from public.bookings
+    where id = 'a9900000-0000-4000-8000-000000000002'
+  ),
+  (
+    select session_reference
+    from pending_confirmation_reference_before_reschedule
+  ),
+  'rescheduling keeps the original session reference'
+);
+
 set local role authenticated;
 select set_config(
   'request.jwt.claims',
@@ -220,6 +290,22 @@ select is(
   ),
   (public.get_therapist_pending_confirmations_v1() ->> 'pendingCount')::integer,
   'pendingCount matches the pending booking ids'
+);
+
+select is(
+  jsonb_array_length(
+    public.get_therapist_pending_confirmations_v1() -> 'pendingSessions'
+  ),
+  (public.get_therapist_pending_confirmations_v1() ->> 'pendingCount')::integer,
+  'pending sessions expose one human-readable reference per pending booking'
+);
+
+select ok(
+  (
+    public.get_therapist_pending_confirmations_v1()
+      -> 'pendingSessions' -> 0 ->> 'sessionReference'
+  ) ~ '^[0-9]{2}[JFMAIULGSOND][0-9]{6}$',
+  'pending confirmation payload exposes the compact session reference'
 );
 
 select ok(

@@ -65,6 +65,7 @@ describe("getTherapistDashboardPage", () => {
       data: {
         generatedAt: "2026-09-03T12:00:00.000Z",
         pendingBookingIds: [],
+        pendingSessions: [],
         pendingCount: 0,
         therapistProfileId: "profile-id",
         version: 1,
@@ -124,6 +125,10 @@ describe("getTherapistDashboardPage", () => {
       data: {
         generatedAt: "2026-09-03T12:00:00.000Z",
         pendingBookingIds: ["booking-1", "booking-2"],
+        pendingSessions: [
+          { bookingId: "booking-1", sessionReference: "26S000001" },
+          { bookingId: "booking-2", sessionReference: "26S000002" },
+        ],
         pendingCount: 2,
         therapistProfileId: "profile-id",
         version: 1,

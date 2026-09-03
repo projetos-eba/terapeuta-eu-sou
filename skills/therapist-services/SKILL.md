@@ -55,7 +55,7 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - Ao criar/editar serviço, a duração é informada em minutos inteiros entre 20 e
   120, inclusive. O valor salvo é a fonte usada nos cards públicos e no
   snapshot de duração da reserva.
-- Ao criar/editar serviço, a descrição aceita no máximo 180 caracteres; o limite
+- Ao criar/editar serviço, a descrição aceita no máximo 550 caracteres; o limite
   aparece no campo e também é validado nas entradas do comando.
 - Refinamentos pertencem ao serviço específico, não ao perfil genérico.
 - Backend valida que tema pertence à terapia e refinamento pertence a tema

@@ -40,6 +40,9 @@ describe("PatientAppointmentCard", () => {
     expect(columns[2]).toHaveTextContent("Confirmada");
     expect(columns[3]?.tagName).toBe("DL");
     expect(columns[4]).toHaveTextContent("Ver detalhes");
+    expect(
+      screen.getByRole("link", { name: "Ver detalhes" }),
+    ).toHaveAttribute("href", "/app/encontros/booking-1");
     expect(menuButton.parentElement).toHaveClass(
       "absolute",
       "right-3",

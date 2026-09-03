@@ -119,6 +119,7 @@ export function mapUpcomingTherapistSessions(
       patientAvatarUrl: booking.patientAvatarUrl,
       patientName: booking.patientName,
       serviceTitle: booking.serviceTitle,
+      sessionReference: booking.sessionReference,
       startsAt: booking.startsAt,
       timezone: booking.timezone,
     }));
@@ -216,6 +217,7 @@ export function mapTherapistDashboardResponse(
         patientAvatarUrl: nullableString(row.patientAvatarUrl),
         patientName: string(row.patientName, "Paciente"),
         serviceTitle: string(row.serviceTitle, "Sessão"),
+        sessionReference: string(row.sessionReference),
         startsAt: string(row.startsAt),
         timezone: string(row.timezone, "America/Sao_Paulo"),
       };

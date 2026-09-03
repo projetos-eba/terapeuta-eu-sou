@@ -90,8 +90,10 @@ export type TherapistPendingConfirmation = {
   endsAt: string;
   patientName: string;
   remainingSeconds: number;
+  sessionReference: string;
   serviceTitle: string | null;
   startsAt: string;
+  timezone: string;
 };
 
 export type TherapistReviewReplyCommand = {

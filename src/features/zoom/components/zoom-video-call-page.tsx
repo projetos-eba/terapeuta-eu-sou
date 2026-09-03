@@ -15,6 +15,7 @@ export function ZoomVideoCallPage({
   backHref,
   bookingId,
   participantLabel,
+  sessionReference,
   scheduleLabel,
   scheduledEndsAt,
   scheduledStartsAt,
@@ -27,6 +28,7 @@ export function ZoomVideoCallPage({
   backHref: string;
   bookingId: string;
   participantLabel: string;
+  sessionReference?: string;
   scheduleLabel: string;
   scheduledEndsAt: string;
   scheduledStartsAt: string;
@@ -62,7 +64,11 @@ export function ZoomVideoCallPage({
               <p className="truncate text-xs font-semibold text-tesText-secondary lg:text-sm">
                 {participantLabel} · {scheduleLabel}
               </p>
-              <BookingReference className="max-w-[42ch]" id={bookingId} />
+              <BookingReference
+                className="max-w-[42ch]"
+                id={bookingId}
+                reference={sessionReference}
+              />
             </div>
           </div>
 

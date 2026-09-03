@@ -521,7 +521,10 @@ function SessionsTable({
                       >
                         {booking.patientName}
                       </Link>
-                      <BookingReference id={booking.bookingId} />
+                      <BookingReference
+                        id={booking.bookingId}
+                        reference={booking.sessionReference}
+                      />
                       <SessionTimingBadge presentation={presentation} />
                     </span>
                   </div>
@@ -592,7 +595,10 @@ function SessionsMobileList({
                 <span className="block truncate text-base font-extrabold text-brand-deep">
                   {booking.patientName}
                 </span>
-                <BookingReference id={booking.bookingId} />
+                <BookingReference
+                  id={booking.bookingId}
+                  reference={booking.sessionReference}
+                />
                 <SessionTimingBadge presentation={presentation} />
                 <span className="mt-1 block truncate text-sm font-semibold text-brand-primary">
                   {booking.serviceTitle}
@@ -652,7 +658,10 @@ function SessionsRightRail({
                 <p className="truncate text-sm font-extrabold text-brand-deep">
                   {nextSession.patientName}
                 </p>
-                <BookingReference id={nextSession.bookingId} />
+                <BookingReference
+                  id={nextSession.bookingId}
+                  reference={nextSession.sessionReference}
+                />
                 {nextSessionPresentation ? (
                   <SessionTimingBadge presentation={nextSessionPresentation} />
                 ) : null}

@@ -15,6 +15,7 @@ export type SessionReadModelItem = {
   attendanceSource: AttendanceSource;
   attendanceStatus: AttendanceStatus;
   bookingId: string;
+  sessionReference: string;
   bookingStatus: BookingStatus;
   bookingVersion: number;
   cancellationDecision: string | null;
@@ -98,6 +99,10 @@ export type TherapistSessionsSummary = {
 export type TherapistPendingConfirmationsSummary = {
   generatedAt: string;
   pendingBookingIds: string[];
+  pendingSessions: Array<{
+    bookingId: string;
+    sessionReference: string;
+  }>;
   pendingCount: number;
   therapistProfileId: string;
   version: 1;

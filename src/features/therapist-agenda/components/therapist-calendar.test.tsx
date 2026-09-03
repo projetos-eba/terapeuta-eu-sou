@@ -217,6 +217,7 @@ function calendarFixture(): TherapistCalendarReadModel {
         attendanceSource: AttendanceSource.Unavailable,
         attendanceStatus: AttendanceStatus.Pending,
         bookingId: "f2000000-0000-4000-8000-000000000001",
+        sessionReference: "26L000001",
         bookingStatus: BookingStatus.Confirmed,
         bookingVersion: 1,
         cancellationDecision: null,

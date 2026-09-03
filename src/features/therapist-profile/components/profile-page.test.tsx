@@ -249,7 +249,7 @@ describe("TherapistProfilePage video block", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows the full service description and wraps unbroken text", () => {
+  it("previews long service descriptions and opens the full text", async () => {
     const longWord = "x".repeat(220);
 
     render(
@@ -279,11 +279,22 @@ describe("TherapistProfilePage video block", () => {
       />,
     );
 
-    const description = screen.getByText(longWord);
+    const description = screen.getByText(`${longWord.slice(0, 180)}…`);
 
     expect(description).toHaveClass("break-words");
     expect(description).not.toHaveClass("overflow-hidden");
     expect(description.className).not.toContain("line-clamp");
+
+    const moreButton = screen.getByRole("button", {
+      name: "Ver mais sobre Reiki",
+    });
+    expect(moreButton).toHaveClass("font-bold");
+    fireEvent.click(moreButton);
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(longWord)).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
   it("reads the current favorite state for an authenticated patient", async () => {

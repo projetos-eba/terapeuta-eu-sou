@@ -16,6 +16,7 @@ import {
   AppPageSection,
 } from "@/components/app-page";
 import { TESDecorativeMedia } from "@/components/tes";
+import { formatSessionDateTime } from "@/features/bookings";
 import { platformAssets } from "@/lib/platform-assets";
 import { routes } from "@/lib/routes";
 
@@ -412,8 +413,17 @@ function SessionReviewsPanel({ data }: { data: TherapistReviewsPageData }) {
                 <h3 className="font-extrabold text-brand-deep">
                   {confirmation.patientName}
                 </h3>
+                <p className="mt-1 font-mono text-xs font-bold text-brand-primary">
+                  Sessão #{confirmation.sessionReference}
+                </p>
                 <p className="mt-1 text-sm font-semibold text-tesText-secondary">
                   {confirmation.serviceTitle ?? "Sessão terapêutica"}
+                </p>
+                <p className="mt-2 text-sm font-semibold text-tesText-secondary">
+                  {formatSessionDateTime(
+                    confirmation.startsAt,
+                    confirmation.timezone,
+                  )}
                 </p>
                 <p className="mt-3 text-sm font-bold text-status-warning">
                   {remainingLabel(confirmation.remainingSeconds)}
