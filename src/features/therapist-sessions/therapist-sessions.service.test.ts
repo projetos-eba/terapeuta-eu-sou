@@ -92,6 +92,12 @@ describe("therapist sessions service results", () => {
     queryTherapistPendingConfirmations.mockResolvedValueOnce({
       generatedAt: "2026-09-03T12:00:00.000Z",
       pendingBookingIds: ["f2000000-0000-4000-8000-000000000001"],
+      pendingSessions: [
+        {
+          bookingId: "f2000000-0000-4000-8000-000000000001",
+          sessionReference: "26S000001",
+        },
+      ],
       pendingCount: 1,
       therapistProfileId,
       version: 1,
@@ -106,6 +112,12 @@ describe("therapist sessions service results", () => {
       data: {
         pendingCount: 1,
         pendingBookingIds: ["f2000000-0000-4000-8000-000000000001"],
+        pendingSessions: [
+          {
+            bookingId: "f2000000-0000-4000-8000-000000000001",
+            sessionReference: "26S000001",
+          },
+        ],
       },
       status: "success",
     });
@@ -115,6 +127,7 @@ describe("therapist sessions service results", () => {
     queryTherapistPendingConfirmations.mockResolvedValueOnce({
       generatedAt: "2026-09-03T12:00:00.000Z",
       pendingBookingIds: [],
+      pendingSessions: [],
       pendingCount: 0,
       therapistProfileId: "c1000000-0000-4000-8000-000000000002",
       version: 1,

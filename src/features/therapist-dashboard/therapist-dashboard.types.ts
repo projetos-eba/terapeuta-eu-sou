@@ -74,6 +74,7 @@ export type TherapistDashboardPageData = {
     patientAvatarUrl: string | null;
     patientName: string;
     serviceTitle: string;
+    sessionReference: string;
     startsAt: string;
     timezone: string;
   }>;

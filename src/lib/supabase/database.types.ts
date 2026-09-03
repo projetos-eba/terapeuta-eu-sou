@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       admin_audit_events: {
@@ -2118,6 +2093,24 @@ export type Database = {
           },
         ]
       }
+      booking_session_reference_counters: {
+        Row: {
+          last_sequence: number
+          reference_month: number
+          reference_year: number
+        }
+        Insert: {
+          last_sequence: number
+          reference_month: number
+          reference_year: number
+        }
+        Update: {
+          last_sequence?: number
+          reference_month?: number
+          reference_year?: number
+        }
+        Relationships: []
+      }
       booking_session_summaries: {
         Row: {
           booking_id: string
@@ -2250,6 +2243,7 @@ export type Database = {
           service_id: string
           service_price_cents_snapshot: number
           service_title_snapshot: string
+          session_reference: string
           snapshot_captured_at: string
           starts_at: string
           status: Database["public"]["Enums"]["booking_status"]
@@ -2282,6 +2276,7 @@ export type Database = {
           service_id: string
           service_price_cents_snapshot: number
           service_title_snapshot: string
+          session_reference: string
           snapshot_captured_at: string
           starts_at: string
           status?: Database["public"]["Enums"]["booking_status"]
@@ -2314,6 +2309,7 @@ export type Database = {
           service_id?: string
           service_price_cents_snapshot?: number
           service_title_snapshot?: string
+          session_reference?: string
           snapshot_captured_at?: string
           starts_at?: string
           status?: Database["public"]["Enums"]["booking_status"]
@@ -13033,6 +13029,7 @@ export type Database = {
           rescheduleStatus: string | null
           serviceId: string | null
           serviceTitle: string | null
+          sessionReference: string | null
           startsAt: string | null
           therapistAmountCents: number | null
           timezone: string | null
@@ -13647,6 +13644,10 @@ export type Database = {
         Returns: Json
       }
       auto_confirm_sessions: { Args: { p_now?: string }; Returns: number }
+      booking_session_reference_month_code_v1: {
+        Args: { p_created_at: string }
+        Returns: string
+      }
       build_video_session_access_state_v1: {
         Args: {
           p_booking_status: Database["public"]["Enums"]["booking_status"]
@@ -14022,6 +14023,7 @@ export type Database = {
           service_id: string
           service_price_cents_snapshot: number
           service_title_snapshot: string
+          session_reference: string
           snapshot_captured_at: string
           starts_at: string
           status: Database["public"]["Enums"]["booking_status"]
@@ -14632,6 +14634,7 @@ export type Database = {
         }
         Returns: Json
       }
+      get_therapist_pending_confirmations_v1: { Args: never; Returns: Json }
       get_therapist_private_identity_v1: { Args: never; Returns: Json }
       get_therapist_profile_actor_m1: {
         Args: { p_actor_user_id: string }
@@ -14819,6 +14822,10 @@ export type Database = {
       mark_video_session_termination_requested_v1: {
         Args: { p_reason: string; p_video_session_id: string }
         Returns: undefined
+      }
+      next_booking_session_reference_v1: {
+        Args: { p_created_at: string }
+        Returns: string
       }
       next_weekly_payout_cutoff_v1: {
         Args: { p_eligible_at: string; p_now?: string }
@@ -15726,6 +15733,18 @@ export type Database = {
         }
         Returns: Json
       }
+      therapist_pending_confirmation_rows_v1: {
+        Args: { p_therapist_profile_id: string }
+        Returns: {
+          booking_id: string
+          due_at: string
+          ends_at: string
+          patient_name: string
+          remaining_seconds: number
+          service_title: string
+          starts_at: string
+        }[]
+      }
       therapist_profile_capabilities_json_m1: {
         Args: { p_plan: Database["public"]["Enums"]["therapist_plan"] }
         Returns: Json
@@ -15836,6 +15855,7 @@ export type Database = {
           service_id: string
           service_price_cents_snapshot: number
           service_title_snapshot: string
+          session_reference: string
           snapshot_captured_at: string
           starts_at: string
           status: Database["public"]["Enums"]["booking_status"]
@@ -16272,9 +16292,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       auth_action_purpose: ["email_verification", "password_reset"],

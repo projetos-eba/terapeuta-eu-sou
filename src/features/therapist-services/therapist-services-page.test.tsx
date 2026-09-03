@@ -683,7 +683,7 @@ describe("TherapistServicesPage", () => {
     expect(screen.getByLabelText("Descrição")).toHaveFocus();
   });
 
-  it("limits the description field to 180 characters", () => {
+  it("limits the description field to 550 characters", () => {
     render(
       <TherapistServiceForm
         catalog={catalogFixture().items}
@@ -697,11 +697,11 @@ describe("TherapistServicesPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Continuar" }));
 
     const description = screen.getByLabelText("Descrição");
-    fireEvent.change(description, { target: { value: "x".repeat(181) } });
+    fireEvent.change(description, { target: { value: "x".repeat(551) } });
 
-    expect(description).toHaveAttribute("maxlength", "180");
-    expect(description).toHaveValue("x".repeat(180));
-    expect(screen.getByText("180/180 caracteres")).toBeInTheDocument();
+    expect(description).toHaveAttribute("maxlength", "550");
+    expect(description).toHaveValue("x".repeat(550));
+    expect(screen.getByText("550/550 caracteres")).toBeInTheDocument();
   });
 
   it("keeps the dialog open and explains a final save failure", async () => {

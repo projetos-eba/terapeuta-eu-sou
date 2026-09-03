@@ -119,8 +119,8 @@ describe("parseTherapistServicesCommand", () => {
   });
 
   it.each([
-    [180, true],
-    [181, false],
+    [550, true],
+    [551, false],
   ])("validates service description length %s", (length, isValid) => {
     const command = {
       action: "create" as const,

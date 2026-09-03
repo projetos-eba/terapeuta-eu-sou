@@ -209,6 +209,7 @@ function sessionFixture(
     attendanceSource: AttendanceSource.Unavailable,
     attendanceStatus: AttendanceStatus.Pending,
     bookingId: "f2000000-0000-4000-8000-000000000001",
+    sessionReference: "26G000001",
     bookingStatus: BookingStatus.Confirmed,
     bookingVersion: 1,
     cancellationDecision: null,

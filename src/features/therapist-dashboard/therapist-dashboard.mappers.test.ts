@@ -102,6 +102,7 @@ describe("dashboard calculations", () => {
       "booking-later",
     ]);
     expect(result[0]?.timezone).toBe("America/Sao_Paulo");
+    expect(result[0]?.sessionReference).toBe("26G000001");
   });
 });
 
@@ -350,6 +351,7 @@ function session(
     attendanceSource: "none",
     attendanceStatus: "unknown",
     bookingId: "booking-default",
+    sessionReference: "26G000001",
     bookingStatus: "confirmed",
     bookingVersion: 1,
     cancellationDecision: null,

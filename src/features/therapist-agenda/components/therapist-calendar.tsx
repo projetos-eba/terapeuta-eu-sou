@@ -714,7 +714,7 @@ function TimelineBooking({
 
   return (
     <button
-      aria-label={`${booking.serviceTitle} com ${booking.patientName}, ${formatTimeRange(booking.startsAt, booking.endsAt, timezone)}, ${status.label}`}
+      aria-label={`Sessão ${booking.sessionReference}: ${booking.serviceTitle} com ${booking.patientName}, ${formatTimeRange(booking.startsAt, booking.endsAt, timezone)}, ${status.label}`}
       className={`absolute inset-x-2 z-10 overflow-hidden rounded-md border px-2.5 py-2 text-left shadow-sm transition hover:z-20 hover:brightness-[0.98] focus-visible:z-20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-primary ${isClosed ? "border-tesText-muted" : `${style.border} ${style.surface}`}`}
       data-session-state={status.state}
       onClick={() => onSelect(booking)}
@@ -735,6 +735,9 @@ function TimelineBooking({
       </span>
       <span className="mt-1 block truncate text-[10px] font-bold leading-tight text-tesText-secondary md:text-[11px]">
         {isClosed ? status.label : booking.patientName}
+      </span>
+      <span className="mt-1 block truncate font-mono text-[10px] font-semibold leading-tight text-tesText-muted md:text-[11px]">
+        #{booking.sessionReference}
       </span>
     </button>
   );
@@ -855,7 +858,7 @@ function MonthCalendar({
                       );
                       return (
                         <button
-                          aria-label={`${formatTime(booking.startsAt, timezone)}, ${booking.patientName}, ${presentation.label}`}
+                          aria-label={`Sessão ${booking.sessionReference}: ${formatTime(booking.startsAt, timezone)}, ${booking.patientName}, ${presentation.label}`}
                           className={`flex min-h-11 items-center gap-1.5 rounded border px-2.5 text-left text-sm font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-primary ${isClosed ? "border-tesText-muted text-tesText-secondary" : `border-transparent ${style.surface} ${style.text}`}`}
                           data-session-state={presentation.state}
                           key={booking.bookingId}
@@ -866,6 +869,9 @@ function MonthCalendar({
                           <span>{formatTime(booking.startsAt, timezone)}</span>
                           <span className="truncate">
                             {booking.patientName}
+                          </span>
+                          <span className="ml-auto font-mono text-[10px] font-semibold opacity-80 md:text-[11px]">
+                            #{booking.sessionReference}
                           </span>
                         </button>
                       );
@@ -1133,6 +1139,9 @@ function TodayCard({
                 </span>
                 <span className="block truncate text-[10px] font-bold text-tesText-secondary md:text-[11px]">
                   {booking.serviceTitle}
+                </span>
+                <span className="block truncate font-mono text-[10px] font-semibold text-tesText-muted md:text-[11px]">
+                  Sessão #{booking.sessionReference}
                 </span>
               </span>
               <ChevronRight
@@ -1407,6 +1416,9 @@ function BookingDialog({
           <div>
             <p className={`text-sm font-extrabold ${style.text}`}>
               {booking.serviceTitle}
+            </p>
+            <p className="mt-1 font-mono text-xs font-bold text-brand-primary">
+              Sessão #{booking.sessionReference}
             </p>
             <p className="mt-1 text-xs font-bold text-tesText-secondary">
               {booking.therapyName}

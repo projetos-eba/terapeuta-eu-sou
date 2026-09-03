@@ -23,6 +23,7 @@ import { therapyDetailIconOptions } from "@/features/therapies/components/detail
 import { AvailabilitySelector } from "./availability-selector";
 import { FavoriteTherapistButton } from "./favorite-therapist-button";
 import { ProfileShareButton } from "./profile-share-button";
+import { PublicServiceDescription } from "./public-service-description";
 import { ReviewsCarousel } from "./reviews-carousel";
 import type { PublicTherapistProfile, TherapistProfileReview } from "../types";
 import { getPublicVideoEmbedUrl } from "../video-embed";
@@ -407,9 +408,10 @@ function Services({
               <h3 className="break-words font-display text-[26px] font-light italic leading-tight text-brand-deep [overflow-wrap:anywhere]">
                 {service.therapyName}
               </h3>
-              <p className="mt-3 min-h-[46px] max-w-full break-words text-sm leading-[1.5] text-tesText-secondary [overflow-wrap:anywhere]">
-                {service.description}
-              </p>
+              <PublicServiceDescription
+                description={service.description}
+                serviceName={service.therapyName}
+              />
               <p className="mt-4 flex items-center gap-2 text-xs font-medium text-brand-deep">
                 <Clock className="size-4" />
                 {service.durationMinutes} min

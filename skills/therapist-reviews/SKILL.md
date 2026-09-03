@@ -58,6 +58,9 @@ altera `session_payments`, confirmação bilateral, elegibilidade ou lotes.
 - Métricas são agregadas, nunca editáveis.
 - Confirmação operacional pós-sessão fica disponível para todos os planos. O
   centro de feedbacks/analytics desta rota é Premium e Premium Plus.
+- Cada pendência mostra a referência operacional imutável `Sessão #AAMNNNNNN`,
+  paciente, terapia e horário. O código identifica a sessão; UUID continua
+  sendo usado somente por navegação e comandos autorizados.
 - Feedback privado das próprias sessões e pendências podem aparecer na gestão,
   mas a resposta do paciente é imutável e somente leitura para o terapeuta.
 - Não inventar deltas percentuais quando não houver base confiável.
@@ -93,6 +96,8 @@ altera `session_payments`, confirmação bilateral, elegibilidade ou lotes.
   sessão`, com feedbacks privados somente leitura e confirmações operacionais.
   A segunda aba mostra um contador amarelo igual ao número de confirmações
   pendentes; esses conteúdos não se misturam à lista pública.
+- O nó Figma `13366:5844` é a referência visual; o card de confirmação mantém
+  a hierarquia operacional desta skill porque esse detalhe não está no frame.
 - O rail mostra distribuição por nota e contexto sobre avaliações. No tablet,
   ocupa a faixa de duas colunas; no mobile, segue a lista principal.
 - Na comunicação, usar “Sessão” para a operação do terapeuta e “Terapia” para
