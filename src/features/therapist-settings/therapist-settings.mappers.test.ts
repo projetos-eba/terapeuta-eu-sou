@@ -75,12 +75,14 @@ describe("therapist settings mappers", () => {
         display_name: "Ana",
         email: "ana@example.test",
         phone: null,
+        phone_country_code: "351",
         role: "therapist",
       }),
     ).toEqual({
       account: {
         displayName: "Ana",
         phone: "",
+        phoneCountryCode: "351",
         identity: {
           city: "",
           complement: "",

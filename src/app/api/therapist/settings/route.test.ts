@@ -113,7 +113,8 @@ describe("therapist settings route", () => {
     const response = await PATCH(
       makeRequest({
         displayName: "  Ana Oliveira  ",
-        phone: "  +55 11 99999-9999  ",
+        phone: "  (11) 99999-9999  ",
+        phoneCountryCode: "55",
       }),
     );
     const payload = await response.json();
@@ -121,7 +122,8 @@ describe("therapist settings route", () => {
     expect(response.status).toBe(200);
     expect(payload.data.account).toEqual({
       displayName: "Ana Oliveira",
-      phone: "+55 11 99999-9999",
+      phone: "11999999999",
+      phoneCountryCode: "55",
       identity: {
         city: "",
         complement: "",
@@ -145,7 +147,8 @@ describe("therapist settings route", () => {
     expect(String(patchCall?.[0])).toContain("role=eq.therapist");
     expect(JSON.parse(String(patchCall?.[1]?.body))).toEqual({
       display_name: "Ana Oliveira",
-      phone: "+55 11 99999-9999",
+      phone: "11999999999",
+      phone_country_code: "55",
     });
   });
 
@@ -212,7 +215,8 @@ function makeFetchMock({
       return jsonResponse([
         {
           display_name: "Ana Oliveira",
-          phone: "+55 11 99999-9999",
+          phone: "11999999999",
+          phone_country_code: "55",
         },
       ]);
     }

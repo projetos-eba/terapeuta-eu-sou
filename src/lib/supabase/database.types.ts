@@ -14330,6 +14330,13 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: Json
       }
+      get_my_patient_schedule_blocking_intervals_v1: {
+        Args: { p_range_end: string; p_range_start: string }
+        Returns: {
+          ends_at: string
+          starts_at: string
+        }[]
+      }
       get_patient_reservation_attempt_status_v1: {
         Args: { p_booking_id: string; p_stripe_checkout_session_id?: string }
         Returns: Json
@@ -14337,6 +14344,19 @@ export type Database = {
       get_patient_reservation_retry_context_v1: {
         Args: { p_booking_id: string }
         Returns: Json
+      }
+      get_patient_schedule_blocking_bookings_v1: {
+        Args: {
+          p_exclude_booking_id: string
+          p_patient_profile_id: string
+          p_range_end: string
+          p_range_start: string
+        }
+        Returns: {
+          booking_id: string
+          ends_at: string
+          starts_at: string
+        }[]
       }
       get_patient_session_feedback_queue_v1: { Args: never; Returns: Json }
       get_patient_therapist_review_v1: {
@@ -14821,6 +14841,15 @@ export type Database = {
       normalize_therapist_public_slug_v1: {
         Args: { p_slug: string }
         Returns: string
+      }
+      patient_has_schedule_conflict_v1: {
+        Args: {
+          p_ends_at: string
+          p_exclude_booking_id: string
+          p_patient_profile_id: string
+          p_starts_at: string
+        }
+        Returns: boolean
       }
       patient_review_payload_v1: {
         Args: { p_review: Database["public"]["Tables"]["reviews"]["Row"] }

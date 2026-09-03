@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyPatientScheduleConflicts,
+  buildReservationSchedule,
   buildReservationReturnHref,
   mergeReservationContextWithPublicProfile,
   resolveReservationContext,
@@ -63,35 +64,35 @@ describe("public reservation data contract", () => {
     expect(hydrated.time?.timeRangeLabel).toBe("09:10 - 10:10");
   });
 
-  it("hides patient conflicts and preserves an exactly consecutive slot", () => {
+  it("keeps patient conflicts visible and preserves an exactly consecutive slot", () => {
     const context = resolveReservationContext({
       isPatientAuthenticated: true,
       searchParams: {
         duration: "50",
-        slot: "2026-08-29T21:30:00.000Z",
+        slot: "2026-09-03T21:30:00.000Z",
       },
     });
     const result = applyPatientScheduleConflicts({
       availabilityDays: [
         {
-          date: "2026-08-29",
-          dateLabel: "29/08",
+          date: "2026-09-03",
+          dateLabel: "03/09",
           dayLabel: "Amanhã",
           slots: [
             {
-              dateLabel: "29/08",
+              dateLabel: "03/09",
               dayLabel: "Amanhã",
-              endsAt: "2026-08-29T22:20:00.000Z",
+              endsAt: "2026-09-03T22:20:00.000Z",
               serviceId: "d1000000-0000-4000-8000-000000000001",
-              startsAt: "2026-08-29T21:30:00.000Z",
+              startsAt: "2026-09-03T21:30:00.000Z",
               timeLabel: "18:30",
             },
             {
-              dateLabel: "29/08",
+              dateLabel: "03/09",
               dayLabel: "Amanhã",
-              endsAt: "2026-08-29T23:10:00.000Z",
+              endsAt: "2026-09-03T23:10:00.000Z",
               serviceId: "d1000000-0000-4000-8000-000000000001",
-              startsAt: "2026-08-29T22:20:00.000Z",
+              startsAt: "2026-09-03T22:20:00.000Z",
               timeLabel: "19:20",
             },
           ],
@@ -100,15 +101,30 @@ describe("public reservation data contract", () => {
       context,
       intervals: [
         {
-          endsAt: "2026-08-29T22:20:00.000Z",
-          startsAt: "2026-08-29T21:30:00.000Z",
+          endsAt: "2026-09-03T22:20:00.000Z",
+          startsAt: "2026-09-03T21:30:00.000Z",
         },
       ],
     });
 
-    expect(result.availabilityDays[0]?.slots).toHaveLength(1);
-    expect(result.availabilityDays[0]?.slots[0]?.timeLabel).toBe("19:20");
-    expect(result.context.hiddenPatientConflictCount).toBe(1);
+    expect(result.availabilityDays[0]?.slots).toHaveLength(2);
+    const schedule = buildReservationSchedule(
+      result.context,
+      result.availabilityDays,
+    );
+    const slots = schedule.days.flatMap((day) => day.slots);
+    expect(slots).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          hasPatientConflict: true,
+          timeLabel: "18:30",
+        }),
+        expect.objectContaining({
+          hasPatientConflict: false,
+          timeLabel: "19:20",
+        }),
+      ]),
+    );
     expect(result.context.selectedSlotHasPatientConflict).toBe(true);
     expect(result.context.canPrepareEncounter).toBe(false);
   });

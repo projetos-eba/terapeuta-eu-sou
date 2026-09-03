@@ -94,7 +94,6 @@ export function resolveReservationContext(input: {
     hasRequiredCheckoutData: Boolean(serviceId && selectedSlot),
     isPatientAuthenticated: input.isPatientAuthenticated,
     marketingConsent: params.get("marketing") === "1",
-    hiddenPatientConflictCount: 0,
     nextStepHref: step === "momento" ? prepareStepHref : paymentStepHref,
     patient: input.patient ?? null,
     paymentStepHref,
@@ -102,6 +101,7 @@ export function resolveReservationContext(input: {
     priceCents,
     priceLabel: formatCurrency(priceCents),
     retryBookingId: parseUuid(params.get("booking")),
+    patientScheduleIntervals: [],
     patientScheduleCheckStatus: input.isPatientAuthenticated
       ? "unavailable"
       : "not_applicable",
@@ -136,17 +136,6 @@ export function applyPatientScheduleConflicts(input: {
   context: ReservationContext;
   intervals: PatientScheduleInterval[];
 }) {
-  let hiddenPatientConflictCount = 0;
-  const availabilityDays = input.availabilityDays.map((day) => ({
-    ...day,
-    slots: day.slots.filter((slot) => {
-      const conflicts = input.intervals.some((interval) =>
-        intervalsOverlap(slot, interval),
-      );
-      if (conflicts) hiddenPatientConflictCount += 1;
-      return !conflicts;
-    }),
-  }));
   const selectedEndsAt =
     input.context.selectedSlot && input.context.durationMinutes
       ? new Date(
@@ -166,12 +155,12 @@ export function applyPatientScheduleConflicts(input: {
   );
 
   return {
-    availabilityDays,
+    availabilityDays: input.availabilityDays,
     context: {
       ...input.context,
       canPrepareEncounter:
         input.context.canPrepareEncounter && !selectedSlotHasPatientConflict,
-      hiddenPatientConflictCount,
+      patientScheduleIntervals: input.intervals,
       patientScheduleCheckStatus: "available" as const,
       selectedSlotHasPatientConflict,
     },
@@ -265,6 +254,9 @@ export function buildReservationSchedule(
       const dateKey = formatDateKey(date);
       const slots =
         availabilityByDate.get(dateKey)?.slots.map((slot) => ({
+          hasPatientConflict: context.patientScheduleIntervals.some(
+            (interval) => intervalsOverlap(slot, interval),
+          ),
           href: buildReservationHref(current, {
             etapa: "momento",
             slot: slot.startsAt,

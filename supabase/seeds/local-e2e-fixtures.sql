@@ -3,6 +3,44 @@
 -- windows must stay valid after a developer reapplies local seeds. This file
 -- is referenced exclusively by supabase/config.toml and is never a production
 -- migration.
+with patient_conflict_fixture as (
+  select
+    (
+      date_trunc('week', now() at time zone 'America/Sao_Paulo')::date
+      + 9
+      + time '09:30'
+    ) at time zone 'America/Sao_Paulo' as starts_at
+)
+insert into public.bookings (
+  id,
+  patient_profile_id,
+  therapist_profile_id,
+  service_id,
+  starts_at,
+  ends_at,
+  timezone,
+  status,
+  payment_status
+)
+select
+  'fa060000-0000-4000-8000-000000000001',
+  'b1000000-0000-4000-8000-000000000001',
+  'c1000000-0000-4000-8000-000000000001',
+  'd1000000-0000-4000-8000-000000000001',
+  patient_conflict_fixture.starts_at,
+  patient_conflict_fixture.starts_at + interval '50 minutes',
+  'America/Sao_Paulo',
+  'confirmed',
+  'paid'
+from patient_conflict_fixture
+on conflict (id) do update
+set
+  starts_at = excluded.starts_at,
+  ends_at = excluded.ends_at,
+  status = excluded.status,
+  payment_status = excluded.payment_status,
+  updated_at = now();
+
 update public.bookings
 set
   starts_at = case id

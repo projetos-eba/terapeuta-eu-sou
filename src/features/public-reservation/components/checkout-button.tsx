@@ -8,6 +8,7 @@ import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import { TESButton } from "@/components/tes";
 import type { PromotionCheckoutAmounts } from "@/features/payments";
 import { HoldCountdown } from "./hold-countdown";
+import { ExpiredCheckoutRecovery } from "./expired-checkout-recovery";
 
 declare global {
   interface Window {
@@ -56,6 +57,7 @@ export function CheckoutButton({
   isPatientAuthenticated,
   loginHref,
   onCheckoutChange,
+  onPatientScheduleConflict,
   onPromotionSettled,
   promotionRequest,
   retryBookingId,
@@ -72,6 +74,7 @@ export function CheckoutButton({
     amounts: PromotionCheckoutAmounts;
     ready: boolean;
   }) => void;
+  onPatientScheduleConflict?: () => void;
   onPromotionSettled?: (input: {
     error: string | null;
     promotion?: PromotionCheckoutAmounts["promotion"];
@@ -96,6 +99,11 @@ export function CheckoutButton({
   const handledPromotionRequestRef = useRef<string | null>(null);
   const requestIdRef = useRef<string | null>(null);
   const abandonmentStartedRef = useRef(false);
+  const checkoutAmountsRef = useRef<PromotionCheckoutAmounts | null>(null);
+  const [expiredCheckout, setExpiredCheckout] = useState<{
+    bookingId: string;
+    checkoutSessionId: string;
+  } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkoutReady, setCheckoutReady] = useState(false);
@@ -111,23 +119,17 @@ export function CheckoutButton({
     checkoutRef.current?.destroy();
     checkoutRef.current = null;
     setCheckoutReady(false);
+    setIsSubmitting(false);
     setReservationLease(null);
-    setError(
-      "O prazo de 5 minutos terminou. O horário foi liberado; escolha-o novamente se ainda estiver disponível.",
-    );
-    void fetch("/api/public/reservation/abandon", {
-      body: JSON.stringify({
-        bookingId: currentCheckout.bookingId,
-        checkoutSessionId: currentCheckout.checkoutSessionId,
-        reason: "reservation_expired",
-        requestId: crypto.randomUUID(),
-      }),
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      keepalive: true,
-      method: "POST",
-    }).catch(() => undefined);
-  }, []);
+    setError(null);
+    setExpiredCheckout({
+      bookingId: currentCheckout.bookingId,
+      checkoutSessionId: currentCheckout.checkoutSessionId,
+    });
+    if (checkoutAmountsRef.current) {
+      onCheckoutChange?.({ amounts: checkoutAmountsRef.current, ready: false });
+    }
+  }, [onCheckoutChange]);
 
   useEffect(
     () => () => {
@@ -169,7 +171,6 @@ export function CheckoutButton({
       }
 
       setIsSubmitting(true);
-      setError(null);
       const checkoutInputKey = `${retryBookingId ?? serviceId}:${startsAt ?? "retry"}:${checkoutAttemptId ?? "new"}`;
       if (checkoutInputKeyRef.current !== checkoutInputKey) {
         checkoutInputKeyRef.current = checkoutInputKey;
@@ -177,7 +178,13 @@ export function CheckoutButton({
         currentCheckoutRef.current = null;
         handledPromotionRequestRef.current = null;
         abandonmentStartedRef.current = false;
+        setExpiredCheckout(null);
       }
+      if (abandonmentStartedRef.current) {
+        setIsSubmitting(false);
+        return;
+      }
+      setError(null);
 
       try {
         await loadStripeScript();
@@ -219,7 +226,13 @@ export function CheckoutButton({
           method: "POST",
         });
         const data = (await response.json()) as CheckoutResponse;
-        if (!data.ok) throw new Error(data.message);
+        if (cancelled || abandonmentStartedRef.current) return;
+        if (!data.ok) {
+          if (data.code === "PATIENT_SCHEDULE_CONFLICT") {
+            onPatientScheduleConflict?.();
+          }
+          throw new Error(data.message);
+        }
         if (!data.checkout.clientSecret) {
           throw new Error("Não conseguimos carregar o pagamento seguro agora.");
         }
@@ -242,14 +255,15 @@ export function CheckoutButton({
         if (promotionRequest) {
           handledPromotionRequestRef.current = promotionRequest.requestId;
         }
+        checkoutAmountsRef.current = {
+          currency: data.checkout.currency,
+          discountAmountCents: data.checkout.discountAmountCents,
+          originalAmountCents: data.checkout.originalAmountCents,
+          promotion: data.checkout.promotion,
+          totalAmountCents: data.checkout.totalAmountCents,
+        };
         onCheckoutChange?.({
-          amounts: {
-            currency: data.checkout.currency,
-            discountAmountCents: data.checkout.discountAmountCents,
-            originalAmountCents: data.checkout.originalAmountCents,
-            promotion: data.checkout.promotion,
-            totalAmountCents: data.checkout.totalAmountCents,
-          },
+          amounts: checkoutAmountsRef.current,
           ready: false,
         });
         const fetchClientSecret = () =>
@@ -260,7 +274,7 @@ export function CheckoutButton({
           fetchClientSecret,
         });
 
-        if (cancelled) {
+        if (cancelled || abandonmentStartedRef.current) {
           checkout.destroy();
           return;
         }
@@ -286,6 +300,7 @@ export function CheckoutButton({
           });
         }
       } catch (error) {
+        if (cancelled || abandonmentStartedRef.current) return;
         const message =
           error instanceof Error
             ? error.message
@@ -300,7 +315,7 @@ export function CheckoutButton({
                 fetchClientSecret: () =>
                   Promise.resolve(previousCheckout.clientSecret),
               });
-              if (!cancelled) {
+              if (!cancelled && !abandonmentStartedRef.current) {
                 checkoutRef.current = checkout;
                 checkout.mount("#reservation-embedded-checkout");
                 setCheckoutReady(true);
@@ -308,9 +323,12 @@ export function CheckoutButton({
                 checkout.destroy();
               }
             } catch {
-              setError("Atualize a página para retomar o pagamento seguro.");
+              if (!cancelled && !abandonmentStartedRef.current) {
+                setError("Atualize a página para retomar o pagamento seguro.");
+              }
             }
           }
+          if (cancelled || abandonmentStartedRef.current) return;
           onPromotionSettled?.({
             error: message,
             requestId: promotionRequest.requestId,
@@ -336,6 +354,7 @@ export function CheckoutButton({
     disabled,
     isPatientAuthenticated,
     onCheckoutChange,
+    onPatientScheduleConflict,
     onPromotionSettled,
     promotionRequest,
     retryBookingId,
@@ -368,8 +387,15 @@ export function CheckoutButton({
             onExpire={expireReservation}
             serverNow={reservationLease.serverNow}
           />
-          . Conclua o pagamento dentro deste prazo.
+          . Depois deste prazo, você ainda poderá pagar, sujeito à
+          disponibilidade.
         </div>
+      ) : null}
+      {expiredCheckout ? (
+        <ExpiredCheckoutRecovery
+          bookingId={expiredCheckout.bookingId}
+          checkoutSessionId={expiredCheckout.checkoutSessionId}
+        />
       ) : null}
       <div className="rounded-[18px] bg-surface-muted p-5">
         <div className="flex items-start gap-3">

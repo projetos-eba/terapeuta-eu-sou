@@ -18,6 +18,7 @@ $snapshotEvents = @(
   "invoice.payment_failed",
   "invoice.payment_action_required",
   "invoice.finalization_failed",
+  "payment_intent.amount_capturable_updated",
   "payment_intent.processing",
   "payment_intent.requires_action",
   "payment_intent.succeeded",

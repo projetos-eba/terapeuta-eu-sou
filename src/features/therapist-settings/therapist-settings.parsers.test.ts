@@ -13,11 +13,25 @@ describe("therapist settings parsers", () => {
       parseTherapistSettingsUpdatePayload({
         displayName: "  Ana Oliveira  ",
         phone: "  +55 11 99999-9999  ",
+        phoneCountryCode: "55",
       }),
     ).toEqual({
       displayName: "Ana Oliveira",
-      phone: "+55 11 99999-9999",
+      phone: "11999999999",
       phoneCountryCode: "55",
+    });
+  });
+
+  it("stores only national digits for a selected non-Brazilian DDI", () => {
+    expect(
+      parseTherapistSettingsUpdatePayload({
+        displayName: "Ana Oliveira",
+        phone: "+351 912 345 678",
+        phoneCountryCode: "351",
+      }),
+    ).toMatchObject({
+      phone: "912345678",
+      phoneCountryCode: "351",
     });
   });
 
@@ -118,9 +132,9 @@ describe("therapist settings parsers", () => {
   });
 
   it("rejects malformed, repeated and checksum-invalid CPF values", () => {
-    expect(() =>
-      parseIdentityWithDocumentNumber("1234567890"),
-    ).toThrow("cpf_invalid");
+    expect(() => parseIdentityWithDocumentNumber("1234567890")).toThrow(
+      "cpf_invalid",
+    );
     expect(() => parseIdentityWithDocumentNumber("11111111111")).toThrow(
       "cpf_invalid",
     );
