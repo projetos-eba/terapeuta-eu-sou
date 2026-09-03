@@ -2,6 +2,12 @@
 
 Data: 2026-08-22
 
+> **Estado atual (substituído parcialmente em 2026-09-02):** esta wave segue
+> sendo a origem da fila da primeira publicação e da projeção administrativa
+> segura. A regra de reenfileirar toda republicação foi substituída: perfil já
+> aprovado publica atualização editorial sem nova análise, preservando auditoria
+> e disponibilidade pública.
+
 ## Resultado
 
 Implementação local concluída para que toda nova publicação do perfil de

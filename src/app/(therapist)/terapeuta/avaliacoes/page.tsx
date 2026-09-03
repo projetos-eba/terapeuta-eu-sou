@@ -6,8 +6,13 @@ import { getTherapistReviewsPage } from "@/features/therapist-reviews/therapist-
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
-export default async function TherapistReviewsRoutePage() {
+export default async function TherapistReviewsRoutePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await requireTherapistSession(therapistRoutePolicies.reviews);
+  const rawSearchParams = await searchParams;
   const result = await getTherapistReviewsPage({
     accessToken: session.accessToken,
     profileId: session.profileId,
@@ -22,5 +27,10 @@ export default async function TherapistReviewsRoutePage() {
     );
   }
 
-  return <TherapistReviewsPage initialData={result.data} />;
+  return (
+    <TherapistReviewsPage
+      initialData={result.data}
+      initialSurface={rawSearchParams.tab === "session" ? "session" : "public"}
+    />
+  );
 }

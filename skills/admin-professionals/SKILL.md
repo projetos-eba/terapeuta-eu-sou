@@ -88,9 +88,11 @@ pendente” e impede a ação.
   de vídeo enviados e os dados privados de identidade necessários à validação,
   mas nunca inclui documentos privados, credenciais ou paths internos. A
   projeção é Admin-only e não é reutilizada em views públicas.
-- Toda nova publicação entra em `submitted`, mesmo quando o perfil anterior já
-  estava aprovado. O Admin precisa aprovar a nova versão antes que ela volte a
-  ficar pública e a receber reservas.
+- A primeira publicação de perfil ainda não aprovado entra em `submitted` e
+  requer decisão do Admin antes de ficar pública e receber reservas. Depois da
+  aprovação, atualizações editoriais publicadas pelo terapeuta não criam nova
+  verificação; a auditoria `profile_published` registra a alteração. Suspensão
+  e ações administrativas continuam sendo autoridade do Admin.
 
 ## Estados
 

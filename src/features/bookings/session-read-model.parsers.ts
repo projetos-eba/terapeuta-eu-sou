@@ -14,6 +14,7 @@ import type {
   SessionModality,
   SessionReadModelItem,
   TherapistAgendaReadModel,
+  TherapistPendingConfirmationsSummary,
   TherapistSessionDetailReadModel,
   TherapistSessionsCursor,
   TherapistSessionsReadModel,
@@ -163,6 +164,28 @@ export function parseTherapistShellCounters(
     therapistProfileId: requiredString(row.therapistProfileId),
     unreadMessages: requiredNumber(row.unreadMessages),
     unreadNotifications: requiredNumber(row.unreadNotifications),
+    version: version(row.version),
+  };
+}
+
+export function parseTherapistPendingConfirmationsSummary(
+  value: unknown,
+): TherapistPendingConfirmationsSummary {
+  const row = requiredRecord(value);
+  const pendingBookingIds = requiredArray(row.pendingBookingIds).map(
+    requiredString,
+  );
+  const pendingCount = requiredNumber(row.pendingCount);
+
+  if (pendingCount !== pendingBookingIds.length) {
+    throw new SessionReadModelContractError();
+  }
+
+  return {
+    generatedAt: requiredString(row.generatedAt),
+    pendingBookingIds,
+    pendingCount,
+    therapistProfileId: requiredString(row.therapistProfileId),
     version: version(row.version),
   };
 }

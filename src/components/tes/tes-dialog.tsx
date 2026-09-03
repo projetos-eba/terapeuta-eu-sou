@@ -18,7 +18,7 @@ const focusableSelector = [
 type TESDialogProps = {
   children: ReactNode;
   className?: string;
-  description?: string;
+  description?: ReactNode;
   hideHeader?: boolean;
   onClose: () => void;
   overlayClassName?: string;
@@ -110,7 +110,9 @@ export function TESDialog({
       }}
     >
       <div
-        aria-describedby={!hideHeader && description ? descriptionId : undefined}
+        aria-describedby={
+          !hideHeader && description ? descriptionId : undefined
+        }
         aria-label={hideHeader ? title : undefined}
         aria-labelledby={!hideHeader ? titleId : undefined}
         aria-modal="true"

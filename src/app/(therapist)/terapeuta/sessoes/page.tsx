@@ -44,12 +44,14 @@ import {
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import {
   buildNextSessionsHref,
+  getTherapistPendingConfirmationsSummary,
   getTherapistSessionsPage,
   parseTherapistSessionCursor,
   parseTherapistSessionFilters,
   type TherapistSessionCursorScope,
 } from "@/features/therapist-sessions";
 import { getSessionTimingBadge } from "@/features/therapist-sessions/session-timing-badge";
+import { getTherapistSessionStatusBadge } from "@/features/therapist-sessions/session-status-badge";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 import { routes } from "@/lib/routes";
 
@@ -99,18 +101,23 @@ export default async function TherapistSessionsPage({
     periodPreset: undefined,
     periodStart: now,
   };
-  const [historyResult, upcomingResult] = await Promise.all([
-    getTherapistSessionsPage({
-      accessToken: session.accessToken,
-      filters: historyFilters,
-      profileId: session.profileId,
-    }),
-    getTherapistSessionsPage({
-      accessToken: session.accessToken,
-      filters: upcomingFilters,
-      profileId: session.profileId,
-    }),
-  ]);
+  const [historyResult, upcomingResult, pendingConfirmationsResult] =
+    await Promise.all([
+      getTherapistSessionsPage({
+        accessToken: session.accessToken,
+        filters: historyFilters,
+        profileId: session.profileId,
+      }),
+      getTherapistSessionsPage({
+        accessToken: session.accessToken,
+        filters: upcomingFilters,
+        profileId: session.profileId,
+      }),
+      getTherapistPendingConfirmationsSummary({
+        accessToken: session.accessToken,
+        profileId: session.profileId,
+      }),
+    ]);
   const readError =
     historyResult.status === "error"
       ? historyResult
@@ -144,6 +151,11 @@ export default async function TherapistSessionsPage({
     : null;
   const csvHref = allItems.length > 0 ? buildCsvDataHref(allItems) : "#";
   const hasActiveFilters = hasFilterState(parsedFilters.filters, searchQuery);
+  const pendingConfirmationIds = new Set(
+    pendingConfirmationsResult.status === "success"
+      ? pendingConfirmationsResult.data.pendingBookingIds
+      : [],
+  );
 
   return (
     <AppPageContainer className="gap-6">
@@ -211,6 +223,7 @@ export default async function TherapistSessionsPage({
                     { past: pastCursor, upcoming: upcomingCursor },
                   )}
                   page={upcomingData?.page ?? null}
+                  pendingConfirmationIds={pendingConfirmationIds}
                   title="Sessões que irão acontecer"
                 />
                 <SessionGroup
@@ -225,7 +238,9 @@ export default async function TherapistSessionsPage({
                     { past: pastCursor, upcoming: upcomingCursor },
                   )}
                   page={historyData?.page ?? null}
+                  pendingConfirmationIds={pendingConfirmationIds}
                   title="Sessões que já passaram"
+                  id="pending-confirmations"
                 />
                 <footer className="flex flex-col gap-2 rounded-card border border-brand-lavender/60 bg-surface-soft/60 px-5 py-5 text-xs font-semibold text-tesText-muted sm:flex-row sm:items-center sm:justify-between">
                   <span>
@@ -461,7 +476,13 @@ function SelectField({
   );
 }
 
-function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
+function SessionsTable({
+  items,
+  pendingConfirmationIds,
+}: {
+  items: SessionReadModelItem[];
+  pendingConfirmationIds: ReadonlySet<string>;
+}) {
   return (
     <div className="hidden xl:block">
       <table className="w-full table-fixed border-collapse text-left">
@@ -520,7 +541,12 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
                   )}
                 </td>
                 <td className="px-2.5 py-4">
-                  <StatusBadge presentation={presentation} />
+                  <StatusBadge
+                    confirmationPending={pendingConfirmationIds.has(
+                      booking.bookingId,
+                    )}
+                    presentation={presentation}
+                  />
                 </td>
                 <td className="px-2.5 py-4 text-right font-extrabold text-brand-deep">
                   {formatSessionMoney(booking.priceCents, booking.currency)}
@@ -543,7 +569,13 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
   );
 }
 
-function SessionsMobileList({ items }: { items: SessionReadModelItem[] }) {
+function SessionsMobileList({
+  items,
+  pendingConfirmationIds,
+}: {
+  items: SessionReadModelItem[];
+  pendingConfirmationIds: ReadonlySet<string>;
+}) {
   return (
     <div className="grid grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-5 xl:hidden">
       {items.map((booking) => {
@@ -574,7 +606,12 @@ function SessionsMobileList({ items }: { items: SessionReadModelItem[] }) {
                   {formatSessionDateTime(booking.startsAt, booking.timezone)}
                 </span>
               </span>
-              <StatusBadge presentation={presentation} />
+              <StatusBadge
+                confirmationPending={pendingConfirmationIds.has(
+                  booking.bookingId,
+                )}
+                presentation={presentation}
+              />
             </span>
             <span className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-tesText-secondary">
               <span>Atendimento online</span>
@@ -822,7 +859,13 @@ function SessionTimingBadge({
   );
 }
 
-function StatusBadge({ presentation }: { presentation: SessionPresentation }) {
+function StatusBadge({
+  confirmationPending,
+  presentation,
+}: {
+  confirmationPending?: boolean;
+  presentation: SessionPresentation;
+}) {
   const toneClasses = {
     danger: "bg-status-dangerBg text-status-danger",
     info: "bg-brand-lavenderSoft text-brand-primary",
@@ -831,13 +874,16 @@ function StatusBadge({ presentation }: { presentation: SessionPresentation }) {
     warning: "bg-status-warningBg text-status-warning",
   };
 
+  const { label, tone } = getTherapistSessionStatusBadge(
+    presentation,
+    confirmationPending,
+  );
+
   return (
     <span
-      className={`inline-flex max-w-full rounded-full px-3 py-1 text-[10px] font-extrabold ${toneClasses[presentation.tone]}`}
+      className={`inline-flex max-w-full rounded-full px-3 py-1 text-[10px] font-extrabold sm:text-[11px] ${toneClasses[tone]}`}
     >
-      <span className="truncate">
-        {getCompactPresentationLabel(presentation)}
-      </span>
+      <span className="truncate">{label}</span>
     </span>
   );
 }
@@ -921,7 +967,9 @@ function SessionGroup({
   items,
   nextHref,
   page,
+  pendingConfirmationIds,
   title,
+  id,
 }: {
   description: string;
   emptyMessage: string;
@@ -931,12 +979,15 @@ function SessionGroup({
     hasMore: boolean;
     nextCursor: TherapistSessionsCursor | null;
   } | null;
+  pendingConfirmationIds: ReadonlySet<string>;
   title: string;
+  id?: string;
 }) {
   return (
     <section
       aria-label={title}
-      className="min-w-0 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card"
+      className="scroll-mt-24 min-w-0 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card"
+      id={id}
     >
       <header className="border-b border-brand-lavender/40 px-4 py-5 sm:px-5">
         <div className="flex min-w-0 items-start justify-between gap-3">
@@ -958,8 +1009,14 @@ function SessionGroup({
       </header>
       {items.length > 0 ? (
         <>
-          <SessionsMobileList items={items} />
-          <SessionsTable items={items} />
+          <SessionsMobileList
+            items={items}
+            pendingConfirmationIds={pendingConfirmationIds}
+          />
+          <SessionsTable
+            items={items}
+            pendingConfirmationIds={pendingConfirmationIds}
+          />
         </>
       ) : (
         <div className="px-5 py-8 text-center">
@@ -1100,14 +1157,6 @@ function formatCompactSessionDateTime(value: string, timezone: string) {
   }).format(new Date(value));
 
   return `${date} · ${time}`;
-}
-
-function getCompactPresentationLabel(presentation: SessionPresentation) {
-  if (presentation.state === "payment_pending") return "Pag. pendente";
-  if (presentation.state === "reschedule_requested") return "Reagendamento";
-  if (presentation.state === "requires_attention") return "Atenção";
-  if (presentation.state === "room_preparing") return "Sala preparando";
-  return presentation.label;
 }
 
 function getSearchQuery(value: string | string[] | undefined) {

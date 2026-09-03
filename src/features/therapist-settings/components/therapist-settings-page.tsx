@@ -130,9 +130,6 @@ export function TherapistSettingsPage({
           />
           <TherapistPrivateDocumentsSection
             initialDocuments={settings.documentCenter.documents}
-            initialVerificationStatus={
-              settings.documentCenter.verificationStatus
-            }
           />
           <SettingsShortcutSection
             description="Acesse rapidamente as áreas que ajudam você a cuidar do seu trabalho no TES."

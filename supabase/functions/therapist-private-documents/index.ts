@@ -1,6 +1,9 @@
 import { handleOptions } from "../_shared/auth/cors.ts";
 import { getRuntime, getServiceRoleKey } from "../_shared/auth/runtime.ts";
-import { SupabaseRestClient } from "../_shared/auth/supabase-rest.ts";
+import {
+  SupabaseHttpError,
+  SupabaseRestClient,
+} from "../_shared/auth/supabase-rest.ts";
 import {
   DomainError,
   failure,
@@ -9,6 +12,7 @@ import {
   success,
 } from "../_shared/payments/http.ts";
 import {
+  assertPrivateDocumentUploadAllowed,
   fileExtension,
   parseTherapistPrivateDocumentsAction,
   requiredDocumentDefinition,
@@ -433,6 +437,11 @@ async function storeTherapistDocument({
 }) {
   await validatePrivateDocumentUpload(file);
 
+  const currentDocument = (
+    await listLatestDocumentRows(client, therapistProfileId)
+  ).get(kind);
+  assertPrivateDocumentUploadAllowed(currentDocument?.status);
+
   const objectPath = `${therapistProfileId}/${kind}/${crypto.randomUUID()}${fileExtension(file.type)}`;
   const uploadResponse = await fetch(
     `${supabaseUrl}/storage/v1/object/${bucket}/${objectPath}`,
@@ -482,6 +491,9 @@ async function storeTherapistDocument({
     );
   } catch (error) {
     await deleteStoredObject({ objectPath, serviceRoleKey, supabaseUrl });
+    if (isAcceptedDocumentReplacementError(error)) {
+      assertPrivateDocumentUploadAllowed("accepted");
+    }
     throw error;
   }
 
@@ -508,6 +520,13 @@ async function storeTherapistDocument({
   );
 
   return inserted[0];
+}
+
+function isAcceptedDocumentReplacementError(error: unknown) {
+  return (
+    error instanceof SupabaseHttpError &&
+    error.safeDetails?.includes("DOCUMENT_ALREADY_ACCEPTED")
+  );
 }
 
 async function deleteStoredObject({

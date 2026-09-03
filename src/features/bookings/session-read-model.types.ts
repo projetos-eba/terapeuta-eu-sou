@@ -95,6 +95,14 @@ export type TherapistSessionsSummary = {
   total: number;
 };
 
+export type TherapistPendingConfirmationsSummary = {
+  generatedAt: string;
+  pendingBookingIds: string[];
+  pendingCount: number;
+  therapistProfileId: string;
+  version: 1;
+};
+
 export type TherapistSessionDetailReadModel = SessionReadModelItem & {
   therapistProfileId: string;
   version: 1;

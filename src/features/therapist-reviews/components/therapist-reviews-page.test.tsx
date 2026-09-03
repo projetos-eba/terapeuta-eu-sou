@@ -129,6 +129,28 @@ describe("TherapistReviewsPage", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("can open directly on the session evaluations tab", () => {
+    render(
+      <TherapistReviewsPage
+        initialData={pageFixture()}
+        initialSurface="session"
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Confirmações operacionais pendentes",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        level: 2,
+        name: "Avaliações recebidas",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
   it("publishes a therapist reply and updates the list", async () => {
     mockedCommand.mockResolvedValueOnce({
       data: {
