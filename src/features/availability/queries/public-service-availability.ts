@@ -4,7 +4,16 @@ import type {
   AvailabilityDay,
   AvailabilitySlot,
 } from "@/features/therapist-profile/types";
+import {
+  addAvailabilityDateKeyDays,
+  availabilityDateKeyStart,
+  formatAvailabilityDateKey,
+  isAvailabilityDateKey,
+  RESERVATION_WINDOW_DAYS,
+} from "@/features/availability/reservation-window";
 import { getSupabasePublicConfig } from "@/lib/supabase/public-config";
+
+export { formatAvailabilityDateKey } from "@/features/availability/reservation-window";
 
 type AvailableSlotsContract = {
   horizonEndsAt?: unknown;
@@ -94,6 +103,25 @@ export async function getPublicServiceAvailabilityForDay(
   };
 }
 
+export async function getPublicServiceAvailabilityForWindow(
+  serviceId: string,
+  startDate: string,
+  timezone: string,
+): Promise<PublicServiceAvailabilityResult> {
+  const endDate = addAvailabilityDateKeyDays(
+    startDate,
+    RESERVATION_WINDOW_DAYS,
+  );
+  const start = availabilityDateKeyStart(startDate, timezone);
+  const end = endDate ? availabilityDateKeyStart(endDate, timezone) : null;
+  if (!start || !end) return { data: null, status: "error" };
+
+  const result = await getPublicServiceAvailability(serviceId, { end, start });
+  return result.status === "success" && result.data.timezone === timezone
+    ? result
+    : { data: null, status: "error" };
+}
+
 export async function getPublicServiceAvailabilityMonth(
   serviceId: string,
   month: string,
@@ -163,15 +191,11 @@ function readIsoDate(value: unknown) {
 }
 
 export function isDateKey(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+  return isAvailabilityDateKey(value);
 }
 
 export function isMonthKey(value: string) {
   return /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
-}
-
-export function formatAvailabilityDateKey(value: Date, timezone: string) {
-  return formatDateKey(value, timezone);
 }
 
 export function mapAvailableSlots(

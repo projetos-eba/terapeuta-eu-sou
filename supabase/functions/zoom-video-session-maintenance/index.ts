@@ -7,7 +7,10 @@ import {
   success,
 } from "../_shared/payments/http.ts";
 import { getPaymentsRuntime } from "../_shared/payments/runtime.ts";
-import { ZoomVideoSdkApiClient } from "../_shared/zoom-video-sdk/api-client.ts";
+import {
+  resolveExactLiveSessionId,
+  ZoomVideoSdkApiClient,
+} from "../_shared/zoom-video-sdk/api-client.ts";
 import { getZoomVideoSdkConfig } from "../_shared/zoom-video-sdk/config.ts";
 import {
   hasConfirmedProviderClosure,
@@ -26,6 +29,7 @@ type ControlJob = {
   operation:
     | "end_scheduled"
     | "end_hard_timeout"
+    | "end_patient_no_show"
     | "end_therapist_absent"
     | "reconcile_orphan"
     | "confirm_end";
@@ -162,14 +166,21 @@ async function processJob(input: {
       return { ok: true, operation: input.job.operation };
     }
 
-    if (!input.job.provider_session_id) {
+    let providerSessionId = input.job.provider_session_id;
+    if (!providerSessionId) {
       const [session] = await input.client.get<
-        Array<{ metadata: unknown; provider_session_id: string | null }>
+        Array<{
+          metadata: unknown;
+          provider_session_id: string | null;
+          session_name: string;
+        }>
       >(
-        `/rest/v1/video_sessions?select=metadata,provider_session_id&id=eq.${encodeURIComponent(input.job.video_session_id)}&limit=1`,
+        `/rest/v1/video_sessions?select=metadata,provider_session_id,session_name&id=eq.${encodeURIComponent(input.job.video_session_id)}&limit=1`,
       );
+      providerSessionId = session?.provider_session_id ?? null;
       if (
-        session?.provider_session_id === null &&
+        session &&
+        providerSessionId === null &&
         hasConfirmedProviderClosure(session.metadata)
       ) {
         await input.client.rpc("mark_video_session_termination_confirmed_v1", {
@@ -179,15 +190,50 @@ async function processJob(input: {
         await completeJob(input.client, input.job.id, true);
         return { ok: true, operation: input.job.operation };
       }
-      await completeJob(input.client, input.job.id, false, {
-        code: "provider_session_id_missing",
-        message: "Sessao ativa sem ID de provedor para encerramento REST.",
-      });
-      return { ok: false, operation: input.job.operation };
+
+      if (
+        providerSessionId === null &&
+        input.job.operation === "end_patient_no_show" &&
+        session?.session_name
+      ) {
+        const resolution = resolveExactLiveSessionId(
+          await input.zoom.listSessions({ sessionName: session.session_name }),
+          session.session_name,
+        );
+        if (resolution.kind === "one") {
+          providerSessionId = resolution.sessionId;
+        } else if (resolution.kind === "none") {
+          // There is no live, exact-name provider session left to close. This
+          // is the only no-show path allowed to confirm without a stored ID.
+          await input.client.rpc(
+            "mark_video_session_termination_confirmed_v1",
+            {
+              p_reason: reason,
+              p_video_session_id: input.job.video_session_id,
+            },
+          );
+          await completeJob(input.client, input.job.id, true);
+          return { ok: true, operation: input.job.operation };
+        } else {
+          throw new ZoomVideoSdkError(
+            "zoom_video_session_name_ambiguous",
+            409,
+            "Mais de uma sessao Zoom corresponde a sessao logica.",
+          );
+        }
+      }
+
+      if (!providerSessionId) {
+        await completeJob(input.client, input.job.id, false, {
+          code: "provider_session_id_missing",
+          message: "Sessao ativa sem ID de provedor para encerramento REST.",
+        });
+        return { ok: false, operation: input.job.operation };
+      }
     }
 
     try {
-      await input.zoom.endSession(input.job.provider_session_id);
+      await input.zoom.endSession(providerSessionId);
     } catch (error) {
       if (!(error instanceof ZoomVideoSdkError && error.status === 404)) {
         throw error;
@@ -243,6 +289,7 @@ function getLimit(request: Request) {
 function getTerminationReason(operation: ControlJob["operation"]) {
   if (operation === "end_scheduled") return "scheduled_end";
   if (operation === "end_hard_timeout") return "hard_timeout";
+  if (operation === "end_patient_no_show") return "patient_no_show";
   if (operation === "end_therapist_absent") return "therapist_absent";
   if (operation === "reconcile_orphan") return "reconcile_orphan";
   return "manual_end";
