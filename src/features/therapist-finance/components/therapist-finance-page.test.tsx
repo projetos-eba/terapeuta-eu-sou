@@ -313,10 +313,80 @@ describe("TherapistFinancePage", () => {
     expect(
       screen.getByRole("link", { name: "Limpar filtros" }),
     ).toHaveAttribute("href", "/terapeuta/financeiro?tab=recebimentos");
-    fireEvent.click(loadMore);
-    expect(screen.getByRole("link", { name: "Carregando…" })).toHaveAttribute(
+  });
+
+  it("keeps previous and next receipt controls as distinct destinations after loading more", () => {
+    const baseReceipts = fixture().receipts;
+    const pageOneData = {
+      ...fixture(),
+      receipts: {
+        ...baseReceipts,
+        pagination: {
+          ...baseReceipts.pagination,
+          hasNextPage: true,
+          totalCount: 18,
+          totalPages: 3,
+        },
+      },
+    };
+    const pageTwoData = {
+      ...pageOneData,
+      receipts: {
+        ...pageOneData.receipts,
+        pagination: {
+          ...pageOneData.receipts.pagination,
+          page: 2,
+        },
+      },
+    };
+    const filters: TherapistFinanceFilters = {
+      page: 1,
+      payoutStatus: null,
+      search: null,
+      status: null,
+      therapyId: null,
+    };
+    const dateRange: TherapistFinanceDateRange = {
+      end: "2026-07-28",
+      key: "30",
+      start: "2026-06-29",
+    };
+    const rendered = render(
+      <TherapistFinancePage
+        data={pageOneData}
+        dateRange={dateRange}
+        filters={filters}
+        tab="receipts"
+      />,
+    );
+
+    expect(screen.queryByRole("link", { name: "Mostrar menos" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Carregar mais" })).toHaveAttribute(
+      "href",
+      "/terapeuta/financeiro?tab=recebimentos&page=2",
+    );
+
+    rendered.rerender(
+      <TherapistFinancePage
+        data={pageTwoData}
+        dateRange={dateRange}
+        filters={{ ...filters, page: 2 }}
+        tab="receipts"
+      />,
+    );
+
+    expect(screen.getByRole("link", { name: "Mostrar menos" })).toHaveAttribute(
+      "href",
+      "/terapeuta/financeiro?tab=recebimentos",
+    );
+    const nextPage = screen.getByRole("link", { name: "Carregar mais" });
+    expect(nextPage).toHaveAttribute(
+      "href",
+      "/terapeuta/financeiro?tab=recebimentos&page=3",
+    );
+    expect(within(nextPage).getByText("Carregar mais")).toHaveAttribute(
       "aria-busy",
-      "true",
+      "false",
     );
   });
 
@@ -540,7 +610,7 @@ function renderPage(
 ) {
   const data = { ...fixture(), ...overrides };
 
-  render(
+  return render(
     <TherapistFinancePage
       data={data}
       dateRange={dateRange}

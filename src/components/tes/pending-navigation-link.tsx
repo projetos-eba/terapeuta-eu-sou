@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import type { MouseEvent, ReactNode } from "react";
-import { useEffect, useState } from "react";
+import Link, { useLinkStatus } from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+import type { ReactNode } from "react";
+import { useEffect } from "react";
 
 const SCROLL_POSITION_KEY = "tes:pending-navigation-scroll";
 
@@ -24,10 +24,8 @@ export function PendingNavigationLink({
   href: string;
   pendingLabel?: string;
 }) {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [isPending, setIsPending] = useState(false);
   const search = searchParams.toString();
   const currentHref = `${pathname}${search ? `?${search}` : ""}`;
 
@@ -37,7 +35,6 @@ export function PendingNavigationLink({
     if (!saved || saved.href !== currentHref) return;
 
     window.sessionStorage.removeItem(SCROLL_POSITION_KEY);
-    setIsPending(false);
     window.requestAnimationFrame(() => {
       window.scrollTo({ behavior: "auto", top: saved.scrollY });
       window.requestAnimationFrame(() => {
@@ -46,20 +43,38 @@ export function PendingNavigationLink({
     });
   }, [currentHref]);
 
-  function handleClick(event: MouseEvent<HTMLAnchorElement>) {
-    if (
-      event.button !== 0 ||
-      event.altKey ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.shiftKey
-    ) {
-      return;
-    }
+  return (
+    <Link
+      className={className}
+      href={href}
+      onNavigate={() => saveScrollPosition(href)}
+      scroll={false}
+    >
+      <PendingNavigationLabel pendingLabel={pendingLabel}>
+        {children}
+      </PendingNavigationLabel>
+    </Link>
+  );
+}
 
-    event.preventDefault();
-    if (isPending) return;
+function PendingNavigationLabel({
+  children,
+  pendingLabel,
+}: {
+  children: ReactNode;
+  pendingLabel: string;
+}) {
+  const { pending } = useLinkStatus();
 
+  return (
+    <span aria-busy={pending} aria-live="polite">
+      {pending ? pendingLabel : children}
+    </span>
+  );
+}
+
+function saveScrollPosition(href: string) {
+  try {
     window.sessionStorage.setItem(
       SCROLL_POSITION_KEY,
       JSON.stringify({
@@ -69,22 +84,9 @@ export function PendingNavigationLink({
       }),
     );
     document.documentElement.style.minHeight = `${document.documentElement.scrollHeight}px`;
-    setIsPending(true);
-    router.push(href, { scroll: false });
+  } catch {
+    // Native Link navigation with scroll={false} remains functional when storage is unavailable.
   }
-
-  return (
-    <Link
-      aria-busy={isPending}
-      aria-disabled={isPending}
-      className={className}
-      href={href}
-      onClick={handleClick}
-      scroll={false}
-    >
-      <span aria-live="polite">{isPending ? pendingLabel : children}</span>
-    </Link>
-  );
 }
 
 function readSavedScrollPosition(): SavedScrollPosition | null {
