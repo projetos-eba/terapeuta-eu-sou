@@ -643,35 +643,44 @@ function Pagination({
   page: number;
 }) {
   if (page <= 1 && !hasNextPage) return null;
+  const previousHref =
+    page > 1
+      ? buildFinanceHref({
+          end: dateRange.end,
+          filters,
+          page: page - 1,
+          period: dateRange.key,
+          start: dateRange.start,
+          tab: "receipts",
+        })
+      : null;
+  const nextHref = hasNextPage
+    ? buildFinanceHref({
+        end: dateRange.end,
+        filters,
+        page: page + 1,
+        period: dateRange.key,
+        start: dateRange.start,
+        tab: "receipts",
+      })
+    : null;
 
   return (
     <div className="flex flex-wrap items-center justify-end gap-3">
-      {page > 1 ? (
+      {previousHref ? (
         <PendingNavigationLink
           className="inline-flex min-h-11 items-center rounded-lg border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-          href={buildFinanceHref({
-            end: dateRange.end,
-            filters,
-            page: page - 1,
-            period: dateRange.key,
-            start: dateRange.start,
-            tab: "receipts",
-          })}
+          href={previousHref}
+          key={previousHref}
         >
           Mostrar menos
         </PendingNavigationLink>
       ) : null}
-      {hasNextPage ? (
+      {nextHref ? (
         <PendingNavigationLink
           className="inline-flex min-h-11 items-center rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-          href={buildFinanceHref({
-            end: dateRange.end,
-            filters,
-            page: page + 1,
-            period: dateRange.key,
-            start: dateRange.start,
-            tab: "receipts",
-          })}
+          href={nextHref}
+          key={nextHref}
         >
           Carregar mais
         </PendingNavigationLink>

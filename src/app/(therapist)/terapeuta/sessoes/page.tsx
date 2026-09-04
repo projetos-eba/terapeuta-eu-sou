@@ -1040,6 +1040,7 @@ function SessionGroup({
           <PendingNavigationLink
             className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
             href={nextHref as Route}
+            key={nextHref}
           >
             Carregar mais
           </PendingNavigationLink>

@@ -2,7 +2,7 @@ begin;
 
 \ir fixtures/weekly-payout-local.inc
 
-select plan(26);
+select plan(27);
 
 select ok(
   'waiting_settlement' = any(enum_range(null::public.session_transfer_status)::text[]),
@@ -280,6 +280,20 @@ select is(
   )::integer,
   current_setting('tes.test_blocked_before_refund')::integer,
   'refunded terminal payments are not presented as operationally blocked'
+);
+
+select ok(
+  not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_private_therapist_payouts_v2(
+        date '2026-01-01', date '2026-12-31', null, 1, 6,
+        'America/Sao_Paulo'
+      )->'summary'->'blockedReasonCodes'
+    ) reason
+    where reason #>> '{}' = 'refund'
+  ),
+  'completed refunded payments do not contribute a refund reason to the blocked card'
 );
 
 reset role;
