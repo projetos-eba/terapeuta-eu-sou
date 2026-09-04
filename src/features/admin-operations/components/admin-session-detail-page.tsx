@@ -7,11 +7,7 @@ import {
 import { routes } from "@/lib/routes";
 
 import type { AdminOperationDetailPageData } from "../admin-operations.types";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Star,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, Star } from "lucide-react";
 
 import type {
   AdminSessionFeedbackData,
@@ -80,7 +76,10 @@ export function AdminSessionDetailPage({
 
   const participantSummary = [
     productField("Profissional", participantFields.get("Terapeuta")),
-    productField("ID do profissional", participantFields.get("ID do terapeuta")),
+    productField(
+      "ID do profissional",
+      participantFields.get("ID do terapeuta"),
+    ),
     productField("Cliente", participantFields.get("Cliente")),
     productField("ID do cliente", participantFields.get("ID do cliente")),
     productField("Formato", describeMeeting()),
@@ -296,14 +295,21 @@ export function AdminSessionDetailPage({
   );
 }
 
-function SessionFeedbackAuditSection({ data }: { data: AdminSessionFeedbackData }) {
+function SessionFeedbackAuditSection({
+  data,
+}: {
+  data: AdminSessionFeedbackData;
+}) {
   return (
     <section className="rounded-[28px] border border-brand-lavender/70 bg-white p-6 shadow-[0_22px_60px_rgba(20,16,90,0.09)]">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="text-2xl font-extrabold text-brand-deep">Feedback pós-sessão</h2>
+          <h2 className="text-2xl font-extrabold text-brand-deep">
+            Feedback pós-sessão
+          </h2>
           <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
-            Respostas privadas registradas por cada participante. O Admin pode auditar, mas não editar opiniões.
+            Respostas privadas registradas por cada participante. O Admin pode
+            auditar, mas não editar opiniões.
           </p>
         </div>
         {data.divergent ? (
@@ -316,19 +322,24 @@ function SessionFeedbackAuditSection({ data }: { data: AdminSessionFeedbackData 
 
       {data.pendingRoles.length > 0 ? (
         <p className="mt-4 rounded-2xl bg-surface-soft px-4 py-3 text-sm font-semibold leading-6 text-tesText-secondary">
-          Pendente: {data.pendingRoles.map(feedbackRoleLabel).join(" e ")} ainda não enviou uma resposta.
+          Pendente: {data.pendingRoles.map(feedbackRoleLabel).join(" e ")} ainda
+          não enviou uma resposta.
         </p>
       ) : null}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <AuditStatusCard
           label="Entrada do cliente"
-          value={data.attendance.patientJoined ? "Confirmada" : "Não confirmada"}
+          value={
+            data.attendance.patientJoined ? "Confirmada" : "Não confirmada"
+          }
           tone={data.attendance.patientJoined ? "success" : "neutral"}
         />
         <AuditStatusCard
           label="Entrada do terapeuta"
-          value={data.attendance.therapistJoined ? "Confirmada" : "Não confirmada"}
+          value={
+            data.attendance.therapistJoined ? "Confirmada" : "Não confirmada"
+          }
           tone={data.attendance.therapistJoined ? "success" : "neutral"}
         />
         <AuditStatusCard
@@ -350,14 +361,26 @@ function SessionFeedbackAuditSection({ data }: { data: AdminSessionFeedbackData 
       </div>
 
       <div className="mt-4 rounded-2xl border border-brand-lavender/70 bg-surface-soft p-4">
-        <p className="text-sm font-extrabold text-brand-deep">Repasse e prazo de confirmação</p>
+        <p className="text-sm font-extrabold text-brand-deep">
+          Repasse e prazo de confirmação
+        </p>
         <dl className="mt-3 grid gap-3 sm:grid-cols-3">
-          <AuditValue label="Elegibilidade financeira" value={formatFinancialStatus(data.financial)} />
-          <AuditValue label="Data de elegibilidade" value={formatFeedbackDate(data.financial?.eligibleAt ?? "")} />
-          <AuditValue label="Bloqueio atual" value={formatTransferStatus(data.financial?.transferStatus)} />
+          <AuditValue
+            label="Elegibilidade financeira"
+            value={formatFinancialStatus(data.financial)}
+          />
+          <AuditValue
+            label="Data de elegibilidade"
+            value={formatFeedbackDate(data.financial?.eligibleAt ?? "")}
+          />
+          <AuditValue
+            label="Bloqueio atual"
+            value={formatTransferStatus(data.financial?.transferStatus)}
+          />
         </dl>
         <p className="mt-3 text-xs font-semibold leading-5 text-tesText-muted">
-          Esta visão é somente de auditoria. Nenhuma resposta altera opiniões, pagamento ou repasse por conta própria.
+          Esta visão é somente de auditoria. Nenhuma resposta altera opiniões,
+          pagamento ou repasse por conta própria.
         </p>
       </div>
 
@@ -380,8 +403,16 @@ function AuditStatusCard({
 }) {
   return (
     <div className="rounded-2xl border border-brand-lavender/70 bg-surface-soft p-4">
-      <p className="text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">{label}</p>
-      <p className={tone === "success" ? "mt-2 text-sm font-extrabold text-status-success" : "mt-2 text-sm font-extrabold text-tesText-secondary"}>
+      <p className="text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">
+        {label}
+      </p>
+      <p
+        className={
+          tone === "success"
+            ? "mt-2 text-sm font-extrabold text-status-success"
+            : "mt-2 text-sm font-extrabold text-tesText-secondary"
+        }
+      >
         {value}
       </p>
     </div>
@@ -400,13 +431,35 @@ function ConfirmationAuditCard({
       <p className="text-sm font-extrabold text-brand-deep">{label}</p>
       {confirmation ? (
         <dl className="mt-3 grid gap-2 text-sm">
-          <AuditValue label="Resultado" value={confirmation.outcome === "completed" ? "Sessão realizada" : "Não realizada"} />
-          <AuditValue label="Origem" value={confirmation.source === "automatic" ? "Confirmação automática" : "Confirmação manual"} />
-          <AuditValue label="Confirmado em" value={formatFeedbackDate(confirmation.confirmedAt)} />
-          <AuditValue label="Prazo original" value={formatFeedbackDate(confirmation.dueAt)} />
+          <AuditValue
+            label="Resultado"
+            value={
+              confirmation.outcome === "completed"
+                ? "Sessão realizada"
+                : "Não realizada"
+            }
+          />
+          <AuditValue
+            label="Origem"
+            value={
+              confirmation.source === "automatic"
+                ? "Confirmação automática"
+                : "Confirmação manual"
+            }
+          />
+          <AuditValue
+            label="Confirmado em"
+            value={formatFeedbackDate(confirmation.confirmedAt)}
+          />
+          <AuditValue
+            label="Prazo original"
+            value={formatFeedbackDate(confirmation.dueAt)}
+          />
         </dl>
       ) : (
-        <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">Ainda pendente.</p>
+        <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
+          Ainda pendente.
+        </p>
       )}
     </div>
   );
@@ -415,18 +468,28 @@ function ConfirmationAuditCard({
 function AuditValue({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-bold uppercase tracking-[0.1em] text-tesText-muted">{label}</dt>
+      <dt className="text-xs font-bold uppercase tracking-[0.1em] text-tesText-muted">
+        {label}
+      </dt>
       <dd className="mt-1 text-sm font-extrabold text-brand-deep">{value}</dd>
     </div>
   );
 }
 
-function formatFinancialStatus(financial: AdminSessionFeedbackData["financial"]) {
+function formatFinancialStatus(
+  financial: AdminSessionFeedbackData["financial"],
+) {
   if (!financial) return "Sem dados financeiros";
   if (financial.transferStatus === "eligible") return "Apto, aguardando lote";
-  if (financial.transferStatus === "waiting_safety_period") return "Período de segurança";
+  if (
+    financial.transferStatus === "waiting_safety_period" ||
+    financial.transferStatus === "waiting_settlement"
+  )
+    return "Em liquidação";
   if (financial.transferStatus === "not_eligible") return "Não elegível";
-  return financial.serviceStatus === "confirmed" ? "Confirmação registrada" : "Em análise";
+  return financial.serviceStatus === "confirmed"
+    ? "Confirmação registrada"
+    : "Em análise";
 }
 
 function formatTransferStatus(value: string | undefined) {
@@ -434,7 +497,8 @@ function formatTransferStatus(value: string | undefined) {
   const labels: Record<string, string> = {
     eligible: "Nenhum bloqueio",
     not_eligible: "Não elegível",
-    waiting_safety_period: "Aguardando período de segurança",
+    waiting_safety_period: "Em liquidação",
+    waiting_settlement: "Em liquidação",
   };
   return labels[value] ?? "Acompanhamento financeiro";
 }
@@ -450,7 +514,9 @@ function FeedbackAuditCard({
     return (
       <article className="rounded-[22px] border border-dashed border-brand-lavender bg-surface-soft p-5">
         <p className="text-sm font-extrabold text-brand-deep">{label}</p>
-        <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">Ainda não enviado.</p>
+        <p className="mt-2 text-sm font-semibold leading-6 text-tesText-secondary">
+          Ainda não enviado.
+        </p>
       </article>
     );
   }
@@ -459,38 +525,64 @@ function FeedbackAuditCard({
     <article className="rounded-[22px] border border-brand-lavender/70 bg-surface-soft p-5">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-extrabold text-brand-deep">{label}</p>
-        <CheckCircle2 aria-hidden="true" className="text-status-success" size={18} />
+        <CheckCircle2
+          aria-hidden="true"
+          className="text-status-success"
+          size={18}
+        />
       </div>
       <dl className="mt-4 grid gap-3">
         <div>
-          <dt className="text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">Resultado</dt>
+          <dt className="text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">
+            Resultado
+          </dt>
           <dd className="mt-1 text-sm font-extrabold text-brand-deep">
-            {item.outcome === "completed" ? "Sessão realizada" : "Sessão não realizada"}
+            {item.outcome === "completed"
+              ? "Sessão realizada"
+              : "Sessão não realizada"}
           </dd>
         </div>
         {item.rating ? (
           <div>
-            <dt className="text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">Nota</dt>
+            <dt className="text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">
+              Nota
+            </dt>
             <dd className="mt-1 flex items-center gap-2 text-sm font-extrabold text-brand-deep">
-              <Star aria-hidden="true" className="fill-brand-primary text-brand-primary" size={17} />
+              <Star
+                aria-hidden="true"
+                className="fill-brand-primary text-brand-primary"
+                size={17}
+              />
               {item.rating}/5
             </dd>
           </div>
         ) : null}
         {item.notPerformedReason ? (
           <div>
-            <dt className="text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">Motivo</dt>
-            <dd className="mt-1 text-sm font-extrabold text-brand-deep">{formatFeedbackReason(item.notPerformedReason)}</dd>
+            <dt className="text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">
+              Motivo
+            </dt>
+            <dd className="mt-1 text-sm font-extrabold text-brand-deep">
+              {formatFeedbackReason(item.notPerformedReason)}
+            </dd>
           </div>
         ) : null}
         <div>
-          <dt className="text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">Enviado em</dt>
-          <dd className="mt-1 text-sm font-extrabold text-brand-deep">{formatFeedbackDate(item.createdAt)}</dd>
+          <dt className="text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">
+            Enviado em
+          </dt>
+          <dd className="mt-1 text-sm font-extrabold text-brand-deep">
+            {formatFeedbackDate(item.createdAt)}
+          </dd>
         </div>
         {item.comment ? (
           <div>
-            <dt className="text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">Observações</dt>
-            <dd className="mt-1 whitespace-pre-wrap text-sm font-semibold leading-6 text-tesText-secondary">{item.comment}</dd>
+            <dt className="text-xs font-bold uppercase tracking-[0.12em] text-tesText-muted">
+              Observações
+            </dt>
+            <dd className="mt-1 whitespace-pre-wrap text-sm font-semibold leading-6 text-tesText-secondary">
+              {item.comment}
+            </dd>
           </div>
         ) : null}
       </dl>

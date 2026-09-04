@@ -56,6 +56,7 @@ describe("admin finance mappers", () => {
           "not_eligible",
           "waiting_confirmation",
           "waiting_safety_period",
+          "waiting_settlement",
           "eligible",
           "batched",
           "transfer_pending",
@@ -75,7 +76,8 @@ describe("admin finance mappers", () => {
       transfer_pending: "Em processamento",
       transferred: "Transferido",
       waiting_confirmation: "Aguardando confirmação",
-      waiting_safety_period: "Período de segurança",
+      waiting_safety_period: "Em liquidação",
+      waiting_settlement: "Em liquidação",
     });
   });
 

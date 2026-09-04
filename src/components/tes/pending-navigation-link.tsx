@@ -33,6 +33,7 @@ export function PendingNavigationLink({
     if (!saved || saved.href !== currentHref) return;
 
     window.sessionStorage.removeItem(SCROLL_POSITION_KEY);
+    setIsPending(false);
     window.requestAnimationFrame(() => {
       window.scrollTo({ behavior: "auto", top: saved.scrollY });
     });
