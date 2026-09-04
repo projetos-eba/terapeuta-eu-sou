@@ -94,7 +94,7 @@ export function FinancialSummaryTab({
               )}
             />
             <FinancialKpiCard
-              description="Valores em confirmação, período de segurança ou processamento."
+              description="Valores em confirmação, liquidação ou processamento."
               icon={WalletCards}
               label="A receber"
               status={

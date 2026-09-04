@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type {
   TherapistAdvancedFinancialDashboard,
+  TherapistFinanceDateRange,
   TherapistFinanceFilters,
   TherapistFinancePageData,
   TherapistReceiptStatus,
@@ -12,6 +13,7 @@ import { TherapistFinancePage } from "./therapist-finance-page";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
+    push: vi.fn(),
     refresh: vi.fn(),
   }),
 }));
@@ -272,13 +274,19 @@ describe("TherapistFinancePage", () => {
       },
     );
 
-    expect(screen.getByRole("link", { name: "Carregar mais" })).toHaveAttribute(
+    const loadMore = screen.getByRole("link", { name: "Carregar mais" });
+    expect(loadMore).toHaveAttribute(
       "href",
       "/terapeuta/financeiro?tab=recebimentos&page=2&status=canceled&therapyId=therapy-1&q=Lucas",
     );
     expect(
       screen.getByRole("link", { name: "Limpar filtros" }),
     ).toHaveAttribute("href", "/terapeuta/financeiro?tab=recebimentos");
+    fireEvent.click(loadMore);
+    expect(screen.getByRole("link", { name: "Carregando…" })).toHaveAttribute(
+      "aria-busy",
+      "true",
+    );
   });
 
   it("does not render a local bank-data form for Connect", () => {
@@ -378,26 +386,33 @@ describe("TherapistFinancePage", () => {
     expect(select).not.toHaveTextContent("Disponível");
   });
 
-  it("orders the payout path from preparation through bank credit", () => {
+  it("shows the three approved payout phases in order", () => {
     renderPage("payouts");
 
+    const timeline = screen
+      .getByRole("heading", { name: "Próximos repasses" })
+      .closest("section");
     const labels = [
-      "Confirmação, segurança e liquidação",
-      "Disponível para o lote semanal",
+      "Processando",
+      "Disponível para o próximo lote",
       "Próximo lote de transferência",
-      "Transferência e crédito bancário",
-    ].map((label) => screen.getAllByText(label).at(-1)!);
+    ];
 
+    expect(timeline).not.toBeNull();
     expect(
       labels.every(
         (label, index) =>
           index === 0 ||
-          Boolean(
-            labels[index - 1].compareDocumentPosition(label) &
-            Node.DOCUMENT_POSITION_FOLLOWING,
-          ),
+          timeline!.textContent!.indexOf(labels[index - 1]) <
+            timeline!.textContent!.indexOf(label),
       ),
     ).toBe(true);
+    expect(
+      screen.queryByText("Transferência e crédito bancário"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/O TES organiza Transfers/i),
+    ).not.toBeInTheDocument();
   });
 
   it("offers a typed custom date range in the summary", () => {
@@ -416,19 +431,52 @@ describe("TherapistFinancePage", () => {
     expect(screen.queryByLabelText("De")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Até")).not.toBeInTheDocument();
   });
+
+  it.each(["receipts", "payouts"] as const)(
+    "shows custom date inputs in the %s filters and hides them for preset periods",
+    (tab) => {
+      renderPage(
+        tab,
+        {},
+        {},
+        {
+          end: "2026-08-31",
+          key: "custom",
+          start: "2026-08-01",
+        },
+      );
+
+      const periodLabel =
+        tab === "payouts" ? "Período do histórico" : "Período";
+      expect(screen.getByLabelText(periodLabel)).toHaveValue("custom");
+      expect(screen.getByLabelText("De")).toHaveValue("2026-08-01");
+      expect(screen.getByLabelText("Até")).toHaveValue("2026-08-31");
+
+      fireEvent.change(screen.getByLabelText(periodLabel), {
+        target: { value: "90" },
+      });
+      expect(screen.queryByLabelText("De")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText("Até")).not.toBeInTheDocument();
+    },
+  );
 });
 
 function renderPage(
   tab: "account" | "payouts" | "receipts" | "summary" = "summary",
   overrides: Partial<TherapistFinancePageData> = {},
   filtersOverride: Partial<TherapistFinanceFilters> = {},
+  dateRange: TherapistFinanceDateRange = {
+    end: "2026-07-28",
+    key: "30",
+    start: "2026-06-29",
+  },
 ) {
   const data = { ...fixture(), ...overrides };
 
   render(
     <TherapistFinancePage
       data={data}
-      dateRange={{ end: "2026-07-28", key: "30", start: "2026-06-29" }}
+      dateRange={dateRange}
       filters={{
         page: 1,
         payoutStatus: null,

@@ -52,8 +52,8 @@ select is(
 
 select is(
   (select transfer_safety_period_days from public.financial_policy_versions where is_active),
-  1,
-  'new active policy keeps one day of transfer safety after final confirmation'
+  0,
+  'active policy has no additional transfer safety period'
 );
 
 insert into public.session_payments (
@@ -177,7 +177,9 @@ insert into public.therapist_connect_accounts (
   charges_enabled,
   payouts_enabled,
   stripe_transfers_status,
-  operational_status
+  operational_status,
+  payout_status,
+  payout_schedule_interval
 )
 values (
   '97600000-0000-4000-8000-000000000021',
@@ -188,7 +190,9 @@ values (
   true,
   true,
   'active',
-  'ready'
+  'ready',
+  'enabled',
+  'daily'
 )
 on conflict (therapist_profile_id) where is_current do update
 set onboarding_status = excluded.onboarding_status,
@@ -196,7 +200,9 @@ set onboarding_status = excluded.onboarding_status,
     charges_enabled = excluded.charges_enabled,
     payouts_enabled = excluded.payouts_enabled,
     stripe_transfers_status = excluded.stripe_transfers_status,
-    operational_status = excluded.operational_status;
+    operational_status = excluded.operational_status,
+    payout_status = excluded.payout_status,
+    payout_schedule_interval = excluded.payout_schedule_interval;
 
 insert into public.video_sessions (
   id,
@@ -314,8 +320,8 @@ select is(
 
 select is(
   (select transfer_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000001'),
-  'waiting_safety_period',
-  'finalization starts the one-day transfer safety period'
+  'waiting_settlement',
+  'finalization moves directly to Stripe settlement verification'
 );
 
 select is(
@@ -324,8 +330,8 @@ select is(
     from public.session_payments
     where booking_id = '96000000-0000-4000-8000-000000000001'
   ),
-  interval '1 day',
-  'financial eligibility is one day after final confirmation'
+  interval '0 days',
+  'financial eligibility clock starts at final confirmation'
 );
 
 select set_config(
@@ -381,8 +387,8 @@ select is(
 
 select is(
   (select transfer_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000002'),
-  'eligible',
-  'legacy seven-day role deadlines become eligible after their one-day safety period'
+  'waiting_settlement',
+  'automatic confirmation moves the payment directly to settlement verification'
 );
 
 select is(
@@ -467,8 +473,8 @@ select is(
 
 select is(
   (select transfer_status::text from public.session_payments where booking_id = '96000000-0000-4000-8000-000000000005'),
-  'waiting_safety_period',
-  'legacy payment snapshot keeps the seven-day safety period'
+  'waiting_settlement',
+  'legacy policy snapshot no longer imposes an operational safety delay'
 );
 
 reset role;

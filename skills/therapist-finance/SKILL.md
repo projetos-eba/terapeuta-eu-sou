@@ -109,11 +109,12 @@ recebimento`; provider and reconciliation terminology stays in the service
   Premium Plus. Premium sees an upgrade card and keeps F2.
 - F4 operational payout lifecycle uses the existing authorities: Stripe webhook
   marks payment, `confirm_session_service` records realization,
-  `refresh_session_transfer_eligibility` applies the safety period,
+  `refresh_session_transfer_eligibility` requires service confirmation and then
+  applies the Stripe settlement gate without an additional time delay,
   hourly reconciliation verifies the source Charge Balance Transaction,
   `create_weekly_payout_batch_v2` reserves only settled eligible payments and
   `process-payout-batch` creates Connect Transfers with `source_transaction`.
-- Keep `waiting_settlement` visible between the safety period and Stripe
+- Keep `waiting_settlement` visible between service confirmation and Stripe
   availability. `eligible` requires a recent authoritative `available` snapshot;
   the weekly cutoff and worker must revalidate it.
 - The hourly worker must first re-evaluate only recoverable
