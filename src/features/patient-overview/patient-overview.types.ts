@@ -73,6 +73,7 @@ export type PendingPatientReview = {
     | "blocked_for_review"
     | "completed"
     | "next_batch"
+    | "processing_payment"
     | "safety_period";
   endsAt: string;
   professional: {

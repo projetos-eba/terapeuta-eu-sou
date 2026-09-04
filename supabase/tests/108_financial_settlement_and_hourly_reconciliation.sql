@@ -54,7 +54,7 @@ select is(
     'fa100000-0000-4000-8000-000000000001', now()
   )::text,
   'waiting_settlement',
-  'pending Balance Transaction remains in settlement after safety'
+  'pending Balance Transaction remains in settlement after confirmation'
 );
 
 update public.session_payments
@@ -84,7 +84,7 @@ select is(
     'fa100000-0000-4000-8000-000000000001', now()
   )::text,
   'eligible',
-  'confirmed available Balance Transaction becomes eligible after safety'
+  'confirmed available Balance Transaction becomes eligible without an extra safety delay'
 );
 
 update public.session_payments

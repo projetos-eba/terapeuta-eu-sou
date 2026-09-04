@@ -97,7 +97,8 @@ pagamentos já criados:
 - reembolsos antes de lote/transferencia podem ser automaticos; casos ja loteados, transferidos, disputados ou contestados entram em revisao manual;
 - confirmação automática da resposta ausente do paciente após 7 dias;
 - confirmação automática da resposta ausente do terapeuta após 30 dias;
-- prazo de segurança de 24 horas completas após a segunda confirmação válida;
+- sem espera fixa adicional após a segunda confirmação válida; a liquidação
+  Stripe é o único gate temporal antes da elegibilidade;
 - lote semanal terça-feira às 02:00 America/Sao_Paulo, com cutoff explícito e período único por índice idempotente;
 - upgrades de assinatura cobram prorrata imediatamente; downgrades e cancelamentos entram no fim do periodo.
 - Premium Plus para Premium cria Subscription Schedule e registra o plano/data
@@ -113,9 +114,11 @@ usa o vencimento contratual como `confirmed_at`, mesmo quando o job recupera
 uma execução atrasada; `created_at` preserva o instante real da execução.
 
 `service_confirmed_at` é o instante da segunda confirmação com resultado
-`completed`, calculado pelo maior `confirmed_at` entre os dois papéis. Somente
-então `eligible_at` é definido para 24 horas completas depois. O pagamento não
-é transferido nesse instante: ele apenas pode entrar no próximo lote cujo
+`completed`, calculado pelo maior `confirmed_at` entre os dois papéis. Nesse
+instante `eligible_at` passa a registrar o início da análise financeira, mas o
+pagamento só fica `eligible` quando a Balance Transaction da Charge estiver
+`available`, com `available_on` vencido e snapshot recente. Ele apenas pode
+entrar no próximo lote cujo
 `cutoff_at` seja igual ou posterior a `eligible_at`.
 
 Se qualquer participante responder `not_performed`, o feedback privado fica
@@ -123,7 +126,7 @@ imutável, o repasse é bloqueado e uma ocorrência administrativa é aberta. O
 job não cria respostas automáticas enquanto houver relato negativo ou
 cancelamento, reembolso, disputa, contestação ou bloqueio administrativo. A
 contraparte ainda pode responder manualmente. Uma decisão administrativa
-`performed_confirmed` inicia uma nova segurança de 24 horas na data da decisão;
+`performed_confirmed` inicia a verificação de liquidação na data da decisão;
 `not_performed_confirmed` mantém o bloqueio e segue o contrato de
 cancelamento/reembolso.
 
@@ -265,11 +268,11 @@ Realizacao do servico:
 
 Repasse:
 
-- `not_eligible`, `waiting_confirmation`, `waiting_safety_period`,
+- `not_eligible`, `waiting_confirmation`, `waiting_safety_period` (legado),
   `waiting_settlement`, `eligible`, `batched`, `transfer_pending`, `transferred`,
   `blocked`, `reversed`, `failed`.
 
-`waiting_settlement` é obrigatório depois da segurança enquanto a Balance
+`waiting_settlement` é obrigatório depois da confirmação enquanto a Balance
 Transaction da Charge não estiver `available` com `available_on` vencido e
 snapshot recente. A reconciliação financeira horária mantém essa projeção
 visível; o lote semanal repete a consulta no cutoff e o worker revalida a Stripe
@@ -277,7 +280,7 @@ imediatamente antes do Transfer com `source_transaction`.
 
 O job horário também reavalia pagamentos bloqueados exclusivamente por
 `connect_not_ready`. Assim, uma conta Connect que se tornou operacional libera
-o pagamento para segurança/liquidação sem remover bloqueios definitivos. A
+o pagamento para liquidação sem remover bloqueios definitivos. A
 confirmação automática roda no minuto `07` e a reconciliação financeira no
 minuto `17`; o lote semanal continua autoritativo no cutoff, portanto uma
 mudança concorrente não perde o pagamento nem o inclui depois do corte.
@@ -329,7 +332,8 @@ sequenceDiagram
   TES->>DB: confirma paciente ausente em +7 dias
   TES->>DB: confirma terapeuta ausente em +30 dias
   TES->>DB: service_confirmed_at = segunda confirmacao valida
-  TES->>DB: calcula eligible_at apos 24 horas completas
+  TES->>DB: inicia liquidacao sem espera fixa adicional
+  TES->>S: confirma Balance Transaction available e snapshot recente
   TES->>DB: reserva somente no proximo lote com cutoff aplicavel
   TES->>S: cria Transfer no processamento do lote
   Note over TES,S: Transfer usa source_transaction = Charge da sessão

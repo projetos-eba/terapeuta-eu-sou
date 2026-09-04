@@ -23,6 +23,7 @@ export type SessionTransferStatus =
   | "not_eligible"
   | "waiting_confirmation"
   | "waiting_safety_period"
+  | "waiting_settlement"
   | "eligible"
   | "batched"
   | "transfer_pending"
@@ -42,6 +43,11 @@ export type EligibilityInput = {
   refundPending?: boolean;
   serviceConfirmedAt?: Date | null;
   serviceStatus: SessionServiceStatus;
+  stripeBalanceAvailableOn?: Date | null;
+  stripeBalanceCheckedAt?: Date | null;
+  stripeBalanceStatus?: "available" | "pending" | null;
+  stripeBalanceTransactionId?: string | null;
+  stripeChargeId?: string | null;
   therapistAmountCents: number;
   transferredAt?: Date | null;
 };
@@ -52,7 +58,7 @@ export type EligibilityResult = {
   status: SessionTransferStatus;
 };
 
-const SAFETY_PERIOD_DAYS = 7;
+const SETTLEMENT_SNAPSHOT_MAX_AGE_MS = 2 * 60 * 60 * 1000;
 
 export function evaluateSessionTransferEligibility(
   input: EligibilityInput,
@@ -116,13 +122,22 @@ export function evaluateSessionTransferEligibility(
     };
   }
 
-  const eligibleAt = addDays(input.serviceConfirmedAt, SAFETY_PERIOD_DAYS);
+  const eligibleAt = input.serviceConfirmedAt;
 
-  if (input.now < eligibleAt) {
+  if (
+    !input.stripeChargeId ||
+    !input.stripeBalanceTransactionId ||
+    input.stripeBalanceStatus !== "available" ||
+    !input.stripeBalanceAvailableOn ||
+    input.stripeBalanceAvailableOn > input.now ||
+    !input.stripeBalanceCheckedAt ||
+    input.stripeBalanceCheckedAt.getTime() <
+      input.now.getTime() - SETTLEMENT_SNAPSHOT_MAX_AGE_MS
+  ) {
     return {
       eligibleAt,
-      reason: "waiting_safety_period",
-      status: "waiting_safety_period",
+      reason: "stripe_settlement_pending",
+      status: "waiting_settlement",
     };
   }
 

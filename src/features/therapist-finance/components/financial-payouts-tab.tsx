@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { AppPageSection } from "@/components/app-page";
+import { PendingNavigationLink } from "@/components/tes/pending-navigation-link";
 
 import type {
   TherapistFinanceDateRange,
@@ -25,6 +26,7 @@ import {
   payoutStatusLabels,
 } from "./financial-formatters";
 import { buildFinanceHref } from "./financial-route";
+import { FinancialPeriodFields } from "./financial-period-fields";
 import { FinancialStatusBadge } from "./financial-status-badge";
 
 const payoutHistoryStatuses = [
@@ -115,31 +117,14 @@ export function FinancialPayoutsTab({
 
       <AppPageSection className="grid gap-4">
         <form
-          className="grid gap-3 sm:grid-cols-[190px_190px_auto] sm:items-end"
+          className="flex min-w-0 flex-wrap items-end gap-3 [&>label]:w-full [&>label]:sm:w-[190px]"
           method="get"
         >
           <input name="tab" type="hidden" value="repasses" />
-          <label className="grid gap-1 text-sm font-extrabold text-brand-deep">
-            Período do histórico
-            <select
-              className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
-              defaultValue={dateRange.key}
-              name="period"
-            >
-              <option value="30">Últimos 30 dias</option>
-              <option value="90">Últimos 90 dias</option>
-              <option value="month">Mês atual</option>
-              {dateRange.key === "custom" ? (
-                <option value="custom">Período personalizado</option>
-              ) : null}
-            </select>
-          </label>
-          {dateRange.key === "custom" ? (
-            <>
-              <input name="start" type="hidden" value={dateRange.start} />
-              <input name="end" type="hidden" value={dateRange.end} />
-            </>
-          ) : null}
+          <FinancialPeriodFields
+            dateRange={dateRange}
+            label="Período do histórico"
+          />
           <label className="grid gap-1 text-sm font-extrabold text-brand-deep">
             Etapa do repasse
             <select
@@ -156,7 +141,7 @@ export function FinancialPayoutsTab({
             </select>
           </label>
           <button
-            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
             type="submit"
           >
             Filtrar
@@ -421,20 +406,13 @@ export function FinancialPayoutsTab({
 function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
   const preparingCents =
     payouts.summary.waitingConfirmationCents +
-    payouts.summary.waitingSafetyPeriodCents +
     payouts.summary.waitingSettlementCents;
-  const bankJourneyCents = Math.max(
-    payouts.summary.payoutProcessingCents -
-      preparingCents -
-      payouts.summary.eligibleForPayoutCents,
-    0,
-  );
   const steps = [
     {
       detail:
         preparingCents > 0 ? formatCurrency(preparingCents) : "Nenhum valor",
       Icon: Clock3,
-      label: "Confirmação, segurança e liquidação",
+      label: "Processando",
       tone:
         preparingCents > 0
           ? "bg-status-warning text-white"
@@ -446,7 +424,7 @@ function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
           ? formatCurrency(payouts.summary.eligibleForPayoutCents)
           : "Nenhum valor disponível",
       Icon: CheckCircle2,
-      label: "Disponível para o lote semanal",
+      label: "Disponível para o próximo lote",
       tone:
         payouts.summary.eligibleForPayoutCents > 0
           ? "bg-status-success text-white"
@@ -462,18 +440,6 @@ function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
         ? "bg-brand-primary text-white"
         : "bg-brand-lavender text-brand-primary",
     },
-    {
-      detail:
-        bankJourneyCents > 0
-          ? formatCurrency(bankJourneyCents)
-          : "Nenhum valor a caminho do banco",
-      Icon: Landmark,
-      label: "Transferência e crédito bancário",
-      tone:
-        bankJourneyCents > 0
-          ? "bg-brand-primary text-white"
-          : "bg-brand-lavender text-brand-primary",
-    },
   ];
 
   return (
@@ -485,13 +451,8 @@ function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
         <h2 className="mt-2 font-display text-[30px] font-light italic leading-tight text-brand-deep sm:text-[38px]">
           Próximos repasses
         </h2>
-        <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-tesText-secondary">
-          O TES organiza Transfers no lote semanal de terça às 02:00 (horário de
-          São Paulo). O crédito bancário depende do Payout automático diário da
-          Stripe e não tem data prometida aqui.
-        </p>
       </div>
-      <ol className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:gap-0">
+      <ol className="grid gap-4 md:grid-cols-3 md:gap-0">
         {steps.map((step, index) => (
           <li
             className="relative grid gap-3 md:px-5 first:md:pl-0 last:md:pr-0"
@@ -635,7 +596,7 @@ function PayoutPagination({
   return (
     <div className="flex flex-wrap items-center justify-end gap-3">
       {page > 1 ? (
-        <Link
+        <PendingNavigationLink
           className="inline-flex min-h-11 items-center rounded-lg border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           href={buildFinanceHref({
             end: dateRange.end,
@@ -645,13 +606,12 @@ function PayoutPagination({
             start: dateRange.start,
             tab: "payouts",
           })}
-          scroll={false}
         >
           Mostrar menos
-        </Link>
+        </PendingNavigationLink>
       ) : null}
       {hasNextPage ? (
-        <Link
+        <PendingNavigationLink
           className="inline-flex min-h-11 items-center rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           href={buildFinanceHref({
             end: dateRange.end,
@@ -661,10 +621,9 @@ function PayoutPagination({
             start: dateRange.start,
             tab: "payouts",
           })}
-          scroll={false}
         >
           Carregar mais
-        </Link>
+        </PendingNavigationLink>
       ) : null}
     </div>
   );

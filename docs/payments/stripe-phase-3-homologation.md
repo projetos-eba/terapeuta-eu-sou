@@ -382,7 +382,7 @@ Connect processing requires `PAYMENTS_LIVE_SESSION_PAYMENT_ID`. The script:
   `configuration.recipient.capabilities.stripe_balance.stripe_transfers.status`
   to be `active`.
 - Calls `evaluate-transfer-eligibility` without temporal override.
-- Does not accelerate the safety window in production.
+- Does not bypass Stripe settlement in production.
 - Creates/processes a payout batch only if the resulting batch has one item and
   total therapist amount is within R$ 5,00.
 - Uses the hardened `process-payout-batch` function, which creates Transfers
@@ -390,9 +390,9 @@ Connect processing requires `PAYMENTS_LIVE_SESSION_PAYMENT_ID`. The script:
   in the connected-account context and only completes on authoritative
   `payout.paid`; follow `docs/payments/weekly-payouts.md`.
 
-If the payment is still in the normal safety window, the stage exits as
-`BLOCKED` and the evidence records `transfer_status` and `eligible_at`; do not
-force eligibility in production.
+If the Charge Balance Transaction is not yet available, the stage exits as
+`BLOCKED` and records `transfer_status`, `stripe_balance_status` and
+`stripe_balance_available_on`; do not force eligibility in production.
 
 ### Sanitized Report
 

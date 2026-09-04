@@ -9,11 +9,13 @@ import {
 } from "lucide-react";
 
 import { AppPageSection } from "@/components/app-page";
+import { PendingNavigationLink } from "@/components/tes/pending-navigation-link";
 import { routes } from "@/lib/routes";
 
 import type {
   TherapistFinanceDateRange,
   TherapistFinanceFilters,
+  TherapistReceiptStatus,
   TherapistReceiptsContract,
 } from "../therapist-finance.types";
 import {
@@ -26,6 +28,7 @@ import {
   formatPaymentOrigin,
 } from "./financial-formatters";
 import { buildFinanceHref } from "./financial-route";
+import { FinancialPeriodFields } from "./financial-period-fields";
 import { FinancialStatusBadge } from "./financial-status-badge";
 
 export function FinancialReceiptsTab({
@@ -45,34 +48,14 @@ export function FinancialReceiptsTab({
     <div className="grid min-w-0 gap-5 [&>*]:min-w-0">
       <AppPageSection className="grid gap-4">
         <form
-          className="grid gap-3 lg:gap-4 lg:grid-cols-[170px_170px_180px_1fr_auto]"
+          className="flex min-w-0 flex-wrap items-end gap-3 lg:gap-4 [&>label]:w-full [&>label]:sm:w-[170px]"
           method="get"
         >
           <input name="tab" type="hidden" value="recebimentos" />
 
-          <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
-            Período
-            <select
-              className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
-              defaultValue={dateRange.key}
-              name="period"
-            >
-              <option value="30">Últimos 30 dias</option>
-              <option value="90">Últimos 90 dias</option>
-              <option value="month">Mês atual</option>
-              {dateRange.key === "custom" ? (
-                <option value="custom">Período personalizado</option>
-              ) : null}
-            </select>
-          </label>
-          {dateRange.key === "custom" ? (
-            <>
-              <input name="start" type="hidden" value={dateRange.start} />
-              <input name="end" type="hidden" value={dateRange.end} />
-            </>
-          ) : null}
+          <FinancialPeriodFields dateRange={dateRange} />
 
-          <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
+          <label className="grid min-w-0 flex-1 basis-full gap-1 text-sm font-extrabold text-brand-deep sm:min-w-[260px]">
             Situação
             <select
               className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
@@ -80,11 +63,17 @@ export function FinancialReceiptsTab({
               name="status"
             >
               <option value="">Todos</option>
-              {Object.entries(receiptStatusLabels).map(([status, label]) => (
-                <option key={status} value={status}>
-                  {label}
-                </option>
-              ))}
+              {(
+                Object.entries(receiptStatusLabels) as Array<
+                  [TherapistReceiptStatus, string]
+                >
+              )
+                .filter(([status]) => status !== "waiting_safety_period")
+                .map(([status, label]) => (
+                  <option key={status} value={status}>
+                    {label}
+                  </option>
+                ))}
             </select>
           </label>
 
@@ -123,7 +112,7 @@ export function FinancialReceiptsTab({
           </label>
 
           <button
-            className="inline-flex min-h-11 items-center justify-center self-end rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+            className="inline-flex min-h-11 w-full items-center justify-center self-end rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
             type="submit"
           >
             Filtrar
@@ -655,7 +644,7 @@ function Pagination({
   return (
     <div className="flex flex-wrap items-center justify-end gap-3">
       {page > 1 ? (
-        <Link
+        <PendingNavigationLink
           className="inline-flex min-h-11 items-center rounded-lg border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           href={buildFinanceHref({
             end: dateRange.end,
@@ -665,13 +654,12 @@ function Pagination({
             start: dateRange.start,
             tab: "receipts",
           })}
-          scroll={false}
         >
           Mostrar menos
-        </Link>
+        </PendingNavigationLink>
       ) : null}
       {hasNextPage ? (
-        <Link
+        <PendingNavigationLink
           className="inline-flex min-h-11 items-center rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           href={buildFinanceHref({
             end: dateRange.end,
@@ -681,10 +669,9 @@ function Pagination({
             start: dateRange.start,
             tab: "receipts",
           })}
-          scroll={false}
         >
           Carregar mais
-        </Link>
+        </PendingNavigationLink>
       ) : null}
     </div>
   );

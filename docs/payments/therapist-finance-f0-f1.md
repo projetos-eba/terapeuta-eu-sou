@@ -41,7 +41,7 @@ financeira do terapeuta. Premium mantém F2.
 
 Atualização F4: a homologação operacional passou a cobrir a cadeia completa:
 conta Connect, pagamento de sessão confirmado por webhook, comprovante,
-confirmação de realização, período de segurança controlado em test mode,
+confirmação de realização, liquidação Stripe controlada em test mode,
 elegibilidade, criação de lote, Transfer Connect com `source_transaction`,
 conclusão do repasse, dashboard atualizado e conciliação.
 
@@ -72,7 +72,7 @@ não autoriza saldo, pagamento, repasse ou acesso financeiro.
 | Reembolso               | Valor devolvido ao cliente.                                      | Soma de `session_refunds.amount_cents` com status `succeeded`.        |
 | Valor líquido           | Valor bruto menos Comissão TES e reembolsos do cliente.          | Read model privado em centavos.                                       |
 | Aguardando confirmação  | Sessão paga ainda sem confirmação operacional para repasse.      | `session_payments.transfer_status = waiting_confirmation`.            |
-| Período de segurança    | Janela após confirmação antes de elegibilidade.                  | `session_payments.transfer_status = waiting_safety_period`.           |
+| Estado legado de segurança | Compatibilidade; apresentado e recalculado como liquidação.  | `waiting_safety_period` não é mais produzido.                         |
 | Em liquidação           | Charge ainda não disponível no saldo Stripe.                     | `session_payments.transfer_status = waiting_settlement`.              |
 | Disponível para repasse | Valor elegível e liquidado para entrar em lote.                  | `transfer_status = eligible` + Balance Transaction `available`.       |
 | Em processamento        | Todo valor ativo ainda não pago ao banco.                         | Estados ativos de `A receber` até `A caminho do banco`.               |
@@ -199,7 +199,7 @@ sozinho e é executável somente por `service_role`.
 operacional interno. Para sandbox, aceitam `nowOverride` e
 `cutoffAtOverride` somente quando a flag server-side
 `TES_FINANCE_TEST_CONTROLS_ENABLED=true` estiver ativa em Stripe test mode.
-Esses controles existem para validar o período de segurança sem reduzir a
+Esses controles existem para validar a liquidação Stripe sem alterar a
 política real.
 
 ## Matriz Figma → dado real
@@ -207,7 +207,7 @@ política real.
 | Elemento implementado     | Definição                                                                        | Fonte                                                                                                 | Estado sem dados                              | Capability             |
 | ------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------- | ---------------------- |
 | Total líquido no período  | Resultado operacional do período.                                                | `get_private_therapist_financial_overview_v1`                                                         | R$ 0,00 com data de atualização.              | `operation_essentials` |
-| A receber                 | Confirmação, segurança e processamento.                                          | `session_payments.transfer_status` agregado                                                           | R$ 0,00.                                      | `operation_essentials` |
+| A receber                 | Confirmação, liquidação e processamento.                                         | `session_payments.transfer_status` agregado                                                           | R$ 0,00.                                      | `operation_essentials` |
 | Disponível para repasse   | Valor elegível para lote.                                                        | `session_payments.transfer_status = eligible`                                                         | R$ 0,00.                                      | `operation_essentials` |
 | Em processamento          | Valor em lote ou transferência pendente.                                         | `batched`/`transfer_pending`                                                                          | R$ 0,00.                                      | `operation_essentials` |
 | Transferido no período    | Transfers concluídos.                                                            | `stripe_transfers`                                                                                    | R$ 0,00.                                      | `operation_essentials` |
@@ -317,10 +317,10 @@ estiver pronta para repasses.
    `stripe_charge_id` e comprovante foram gravados.
 7. Confirmar a realização por `confirm-session-by-therapist` ou pelo mecanismo
    automático aplicável.
-8. Chamar `evaluate-transfer-eligibility` sem override para observar
-   `waiting_safety_period`.
-9. Chamar `evaluate-transfer-eligibility` com `nowOverride` futuro no sandbox
-   para observar `eligible`.
+8. Chamar `evaluate-transfer-eligibility` com Balance Transaction pendente para
+   observar `waiting_settlement`.
+9. Tornar a Balance Transaction disponível e reconciliar novamente para
+   observar `eligible`.
 10. Criar lote por `create-weekly-payout-batch` com `cutoffAtOverride` futuro.
 11. Processar lote por `process-payout-batch`, que cria
     `stripe.transfers.create` com `source_transaction = stripe_charge_id`.
@@ -353,7 +353,7 @@ Validações obrigatórias da fase:
   escrita no ledger, metodologias versionadas e separação entre realizado,
   contratado e estimado.
 - F4: pgTAP de lifecycle operacional com comprovante, confirmação de sessão,
-  segurança controlada, elegibilidade, lote, Transfer com `source_transaction`,
+  liquidação controlada, elegibilidade, lote, Transfer com `source_transaction`,
   conciliação e read models privados atualizados.
 
 ### Fixture local da conta de recebimento

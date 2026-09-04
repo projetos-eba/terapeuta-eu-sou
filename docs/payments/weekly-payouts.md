@@ -42,26 +42,27 @@ ocorrência.
 
 ## Política e scheduler
 
-- Política financeira ativa: `tes-payments-v8-commission-15-percent`, que
-  preserva a confirmação bilateral e o lote de terça às 02:00 da v7, com
-  comissão de 15% somente para novos pagamentos. Snapshots anteriores seguem
-  a política de origem.
+- Política financeira ativa: `tes-payments-v9-settlement-only`, que preserva a
+  comissão de 15% da v8, a confirmação bilateral e o lote de terça às 02:00 da
+  v7. Snapshots anteriores seguem a política de origem para auditoria; a
+  elegibilidade operacional não aplica mais a espera fixa.
 - Paciente ausente é confirmado no vencimento de 7 dias; terapeuta ausente,
   no vencimento de 30 dias. Sem nenhuma resposta manual, a segunda confirmação
   ocorre no dia 30.
 - `service_confirmed_at` é o instante da segunda confirmação válida.
-- Segurança: 24 horas completas após `service_confirmed_at`.
-- Liquidação: depois da segurança, a Balance Transaction da Charge deve estar
+- Não existe espera fixa adicional após `service_confirmed_at`.
+- Liquidação: após a confirmação, a Balance Transaction da Charge deve estar
   `available`, com `available_on` vencido e conferência Stripe recente. Enquanto
   isso, o pagamento fica em `waiting_settlement` e não entra em lote.
 - O job horário `tes-session-confirmation-hourly-v1` está registrado, auditado
   e ativo em HML e produção. Ele é idempotente, recupera atrasos com o
   vencimento contratual e não depende da telemetria Zoom.
 - O job `tes-financial-reconciliation-hourly-v1` chama
-  `reconcile-stripe-transfers` no minuto 7 de cada hora. Ele possui lease único
+  `reconcile-stripe-transfers` no minuto 17 de cada hora. Ele possui lease único
   e auditoria em `financial_reconciliation_runs`, recupera Charges ausentes,
-  atualiza segurança/liquidação/elegibilidade e também reconcilia Transfers e
-  Payouts. O minuto 7 não coincide com os ticks semanais (:00/:15/:30/:45).
+  atualiza liquidação/elegibilidade e também reconcilia Transfers e Payouts. O
+  minuto 17 não coincide com a confirmação automática (:07) nem com os ticks
+  semanais (:00/:15/:30/:45).
 - Relato `not_performed`, cancelamento, reembolso, disputa, contestação ou
   bloqueio administrativo impede confirmação automática e inclusão no lote.
 - Avaliações públicas do terapeuta não confirmam sessão nem alteram repasse.

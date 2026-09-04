@@ -196,9 +196,15 @@ select is(
     'f9000000-0000-4000-8000-000000000001',
     '2026-07-30T12:00:00Z'
   )::text,
-  'waiting_safety_period',
-  'controlled clock keeps payment in safety period before eligibility'
+  'waiting_confirmation',
+  'a controlled clock before service confirmation cannot enter settlement'
 );
+
+update public.session_payments
+set stripe_balance_status = 'available',
+    stripe_balance_available_on = '2039-04-15T10:00:00Z',
+    stripe_balance_checked_at = '2039-04-15T12:00:00Z'
+where id = 'f9000000-0000-4000-8000-000000000001';
 
 select is(
   public.refresh_session_transfer_eligibility(
@@ -206,7 +212,7 @@ select is(
     '2039-04-15T12:00:00Z'
   )::text,
   'eligible',
-  'controlled clock marks payment eligible after safety period'
+  'controlled clock marks payment eligible after recent settlement evidence'
 );
 
 select is(
