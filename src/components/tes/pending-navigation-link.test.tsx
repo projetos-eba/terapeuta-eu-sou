@@ -4,9 +4,13 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { PendingNavigationLink } from "./pending-navigation-link";
 
 const push = vi.fn();
+let currentPathname = "/";
+let currentSearchParams = new URLSearchParams();
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => currentPathname,
   useRouter: () => ({ push }),
+  useSearchParams: () => currentSearchParams,
 }));
 
 afterEach(() => {
@@ -15,10 +19,15 @@ afterEach(() => {
   document.documentElement.style.minHeight = "";
   window.sessionStorage.clear();
   window.history.replaceState(null, "", "/");
+  currentPathname = "/";
+  currentSearchParams = new URLSearchParams();
 });
 
 describe("PendingNavigationLink", () => {
   it("finishes the loading state after the destination is rendered", () => {
+    const scrollTo = vi
+      .spyOn(window, "scrollTo")
+      .mockImplementation(() => undefined);
     vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
       callback(0);
       return 1;
@@ -28,6 +37,8 @@ describe("PendingNavigationLink", () => {
       value: 4200,
     });
     window.history.replaceState(null, "", "/lista?page=1");
+    currentPathname = "/lista";
+    currentSearchParams = new URLSearchParams("page=1");
     const { rerender } = render(
       <PendingNavigationLink href="/lista?page=2">
         Carregar mais
@@ -42,8 +53,9 @@ describe("PendingNavigationLink", () => {
     expect(document.documentElement.style.minHeight).toBe("4200px");
 
     window.history.replaceState(null, "", "/lista?page=2");
+    currentSearchParams = new URLSearchParams("page=2");
     rerender(
-      <PendingNavigationLink href="/lista?page=3">
+      <PendingNavigationLink href="/lista?page=2">
         Carregar mais
       </PendingNavigationLink>,
     );
@@ -52,6 +64,7 @@ describe("PendingNavigationLink", () => {
       "aria-busy",
       "false",
     );
+    expect(scrollTo).toHaveBeenCalledWith({ behavior: "auto", top: 0 });
     expect(document.documentElement.style.minHeight).toBe("");
   });
 });

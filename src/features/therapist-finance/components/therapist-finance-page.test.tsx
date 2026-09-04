@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type {
@@ -12,10 +18,12 @@ import { financialReceiptCopyByStatus } from "./financial-formatters";
 import { TherapistFinancePage } from "./therapist-finance-page";
 
 vi.mock("next/navigation", () => ({
+  usePathname: () => window.location.pathname,
   useRouter: () => ({
     push: vi.fn(),
     refresh: vi.fn(),
   }),
+  useSearchParams: () => new URLSearchParams(window.location.search),
 }));
 
 afterEach(cleanup);
@@ -50,7 +58,9 @@ describe("TherapistFinancePage", () => {
     renderPage();
 
     expect(screen.getAllByText("Valor bruto").length).toBeGreaterThan(0);
-    expect(screen.getByText("Custos da plataforma")).toBeInTheDocument();
+    expect(screen.getAllByText("Custos da plataforma").length).toBeGreaterThan(
+      0,
+    );
     expect(
       screen.getByText("Incluídos no cálculo do repasse"),
     ).toBeInTheDocument();
@@ -188,6 +198,27 @@ describe("TherapistFinancePage", () => {
       screen.queryByText(/Linha roxa: valores ativos/i),
     ).not.toBeInTheDocument();
     expect(screen.getByText("Distribuição por status")).toBeInTheDocument();
+  });
+
+  it("does not render zero-value statuses in the distribution", () => {
+    const baseReceipts = fixture().receipts;
+
+    renderPage("receipts", {
+      receipts: {
+        ...baseReceipts,
+        statusDistribution: [
+          { amountCents: 7000, itemCount: 1, status: "refunded" },
+          { amountCents: 0, itemCount: 0, status: "canceled" },
+        ],
+      },
+    });
+
+    const distribution = screen
+      .getByRole("heading", { name: "Distribuição por status" })
+      .closest("section");
+
+    expect(distribution).not.toBeNull();
+    expect(distribution).not.toHaveTextContent("Cancelado");
   });
 
   it.each(Object.entries(financialReceiptCopyByStatus))(
@@ -413,6 +444,42 @@ describe("TherapistFinancePage", () => {
     expect(
       screen.queryByText(/O TES organiza Transfers/i),
     ).not.toBeInTheDocument();
+  });
+
+  it("puts processing first and explains its operational position", () => {
+    renderPage("payouts", {
+      payouts: {
+        ...fixture().payouts,
+        summary: {
+          ...fixture().payouts.summary,
+          payoutProcessingCents: 9600,
+        },
+      },
+    });
+
+    const summary = screen.getByRole("region", { name: "Resumo de repasses" });
+    expect(
+      within(summary).getAllByRole("heading", { level: 2 }).map((heading) =>
+        heading.textContent,
+      ),
+    ).toEqual([
+      "Em processamento",
+      "Disponível para repasse",
+      "Próximo lote de transferência",
+    ]);
+    expect(
+      screen.getByText(
+        "Pagamentos a receber, aguardando confirmação ou em liquidação",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Posição atual: inclui sessões futuras já pagas, independentemente do período do histórico.",
+      ),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByText("Custos da plataforma").length).toBeGreaterThan(
+      0,
+    );
   });
 
   it("offers a typed custom date range in the summary", () => {

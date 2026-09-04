@@ -85,7 +85,7 @@ export function FinancialSummaryTab({
           <>
             <FinancialKpiCard
               comparison={metrics?.revenue.comparison.therapistNet}
-              description="Valor que pertence a você após comissão e reembolsos aplicáveis."
+              description="Valor que pertence a você após os custos da plataforma e reembolsos aplicáveis."
               icon={CircleDollarSign}
               label="Receita líquida"
               value={formatCurrencyOrDash(
@@ -283,7 +283,7 @@ function MoneyCompositionPanel({
     {
       color: "bg-brand-primary",
       label: "Valor bruto",
-      note: "Antes de comissão e reembolsos",
+      note: "Antes dos custos da plataforma e reembolsos",
       value: formatCurrencyOrDash(overview.grossPaidCents, hasFinancialData),
     },
     {
@@ -802,7 +802,7 @@ function FinancialEvolutionCard({
     },
     {
       color: "var(--tes-color-status-danger)",
-      label: "Comissão TES",
+      label: "Custos da plataforma",
       value: hasFinancialData
         ? formatCurrency(overview.tesCommissionCents)
         : "-",
@@ -872,11 +872,11 @@ function FinancialMethodology({
 
       <div className="divide-y divide-brand-lavender rounded-card border border-brand-lavender bg-white shadow-card">
         <MethodologyRow
-          description="Entenda como recebimentos, comissão TES e reembolsos formam o valor líquido."
+          description="Entenda como recebimentos, custos da plataforma e reembolsos formam o valor líquido."
           icon={CircleDollarSign}
           title="Como o valor é composto"
         >
-          O valor líquido considera o bruto das sessões, a comissão TES e os
+          O valor líquido considera o bruto das sessões, os custos da plataforma e os
           reembolsos ao cliente confirmados no período.
         </MethodologyRow>
         <MethodologyRow

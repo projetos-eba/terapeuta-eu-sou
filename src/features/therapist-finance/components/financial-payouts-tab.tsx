@@ -68,6 +68,12 @@ export function FinancialPayoutsTab({
         className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
       >
         <PayoutMetricCard
+          description="Pagamentos a receber, aguardando confirmação ou em liquidação"
+          icon={Clock3}
+          label="Em processamento"
+          value={payouts.summary.payoutProcessingCents}
+        />
+        <PayoutMetricCard
           description="Valores prontos para entrar no próximo repasse."
           icon={Landmark}
           label="Disponível para repasse"
@@ -92,12 +98,6 @@ export function FinancialPayoutsTab({
                 )
               : "Sem previsão"
           }
-        />
-        <PayoutMetricCard
-          description="Posição atual: inclui sessões futuras já pagas, independentemente do período do histórico."
-          icon={Clock3}
-          label="Em processamento"
-          value={payouts.summary.payoutProcessingCents}
         />
         {payouts.summary.blockedCents > 0 ? (
           <PayoutMetricCard
@@ -200,7 +200,7 @@ export function FinancialPayoutsTab({
                       Bruto
                     </th>
                     <th className="border-b border-brand-lavender py-3 pr-3">
-                      Comissão TES
+                      Custos da plataforma
                     </th>
                     <th className="border-b border-brand-lavender py-3 pr-3">
                       Reembolso
@@ -309,7 +309,7 @@ export function FinancialPayoutsTab({
                       value={formatCurrency(item.grossAmountCents)}
                     />
                     <PayoutDetail
-                      label="Comissão TES"
+                      label="Custos da plataforma"
                       value={formatCurrency(item.tesCommissionCents)}
                     />
                     <PayoutDetail
@@ -383,7 +383,10 @@ export function FinancialPayoutsTab({
         <div className="grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr]">
           <FormulaCard label="Valor bruto" value="Sessões pagas" />
           <FormulaOperator value="-" />
-          <FormulaCard label="Comissão TES" value="Comissão da plataforma" />
+          <FormulaCard
+            label="Custos da plataforma"
+            value="Custos da plataforma"
+          />
           {hasRefunds ? (
             <>
               <FormulaOperator value="-" />
