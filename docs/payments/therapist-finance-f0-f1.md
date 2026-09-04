@@ -81,6 +81,10 @@ não autoriza saldo, pagamento, repasse ou acesso financeiro.
 | Bloqueado               | Valor bloqueado por disputa, revisão, conta ou regra financeira. | `session_payments.transfer_status = blocked`.                         |
 | Disputado               | Pagamento com disputa aberta ou registrada.                      | `session_payments.financial_status = disputed` ou `session_disputes`. |
 
+Na interface, `Custos da plataforma` é o nome amigável da Comissão TES no
+painel de composição. O valor continua sendo o snapshot financeiro imutável e
+entra no cálculo do repasse; não inclui uma dedução dinâmica da Stripe.
+
 ## Contratos privados
 
 Todos os contratos derivam o terapeuta de `auth.uid()` e exigem role
@@ -325,6 +329,11 @@ estiver pronta para repasses.
 13. Rodar `reconcile-stripe-transfers` para recuperar Charge/Transfer pendente
     quando necessário.
 14. Desativar `TES_FINANCE_TEST_CONTROLS_ENABLED` ao encerrar o sandbox.
+
+A reconciliação horária deve, antes das consultas de Charge, chamar
+`refresh_session_transfer_eligibility` somente para pagamentos em
+`blocked/connect_not_ready`. Isso recupera contas que ficaram prontas depois do
+pagamento e preserva disputa, reembolso e revisão como bloqueios fechados.
 
 ## QA
 

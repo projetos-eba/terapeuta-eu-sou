@@ -17,6 +17,31 @@ type SettlementCandidate = {
   stripe_charge_id: string;
 };
 
+type RecoverableConnectCandidate = {
+  id: string;
+};
+
+export async function refreshRecoverableConnectPayments(input: {
+  client: SupabaseRestClient;
+  limit?: number;
+}) {
+  const limit = Math.min(Math.max(input.limit ?? 500, 1), 500);
+  const rows = await input.client.get<RecoverableConnectCandidate[]>(
+    `/rest/v1/session_payments?select=id&financial_status=in.(paid,partially_refunded)&transfer_status=eq.blocked&transfer_blocked_reason=eq.connect_not_ready&order=updated_at.asc&limit=${limit}`,
+  );
+  const results = [];
+
+  for (const row of rows) {
+    const refreshed = await input.client.rpc<Record<string, unknown>>(
+      "refresh_session_transfer_eligibility",
+      { p_session_payment_id: row.id },
+    );
+    results.push({ paymentId: row.id, refreshed });
+  }
+
+  return results;
+}
+
 export function extractChargeSettlementSnapshot(
   charge: Record<string, unknown>,
 ): ChargeSettlementSnapshot | null {

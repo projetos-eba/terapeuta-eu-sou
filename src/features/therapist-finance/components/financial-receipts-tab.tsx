@@ -60,8 +60,17 @@ export function FinancialReceiptsTab({
               <option value="30">Últimos 30 dias</option>
               <option value="90">Últimos 90 dias</option>
               <option value="month">Mês atual</option>
+              {dateRange.key === "custom" ? (
+                <option value="custom">Período personalizado</option>
+              ) : null}
             </select>
           </label>
+          {dateRange.key === "custom" ? (
+            <>
+              <input name="start" type="hidden" value={dateRange.start} />
+              <input name="end" type="hidden" value={dateRange.end} />
+            </>
+          ) : null}
 
           <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
             Situação
@@ -125,7 +134,9 @@ export function FinancialReceiptsTab({
           <Link
             className="inline-flex min-h-11 w-fit items-center justify-center text-sm font-extrabold text-brand-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
             href={buildFinanceHref({
+              end: dateRange.end,
               period: dateRange.key,
+              start: dateRange.start,
               tab: "receipts",
             })}
           >
@@ -145,7 +156,7 @@ export function FinancialReceiptsTab({
           value={receipts.summary.receivedCents}
         />
         <ReceiptMetricCard
-          description="Pagamentos ainda em processamento."
+          description="Valores ativos das sessões dentro do período selecionado."
           icon={Hourglass}
           label="Em processamento"
           value={receipts.summary.processingCents}
@@ -367,19 +378,10 @@ function ReceiptsVisualSummary({
   const statusTotals = buildStatusTotals(receipts.statusDistribution);
   const total = statusTotals.reduce((sum, item) => sum + item.value, 0);
   const hasStatusData = total > 0;
-  const hasData = points.some(
-    (point) => point.processingCents > 0 || point.receivedCents > 0,
-  );
-  const max = Math.max(
-    1,
-    ...points.flatMap((point) => [point.processingCents, point.receivedCents]),
-  );
+  const hasData = points.some((point) => point.receivedCents > 0);
+  const max = Math.max(1, ...points.map((point) => point.receivedCents));
   const receivedPoints = chartPoints(
     points.map((point) => point.receivedCents),
-    max,
-  );
-  const processingPoints = chartPoints(
-    points.map((point) => point.processingCents),
     max,
   );
 
@@ -389,10 +391,10 @@ function ReceiptsVisualSummary({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-xl font-extrabold text-brand-deep">
-              Tendência dos recebimentos
+              Recebimento por mês
             </h2>
             <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-              Valores líquidos recebidos e ainda em processamento, por mês.
+              Valores líquidos recebidos no banco, por mês.
             </p>
           </div>
           <span className="rounded-lg bg-brand-lavenderSoft px-3 py-2 text-sm font-extrabold text-brand-primary">
@@ -402,8 +404,8 @@ function ReceiptsVisualSummary({
         <div
           aria-label={
             hasData
-              ? "Tendência mensal de valores recebidos e em processamento"
-              : "Tendência mensal: ainda sem dados"
+              ? "Recebimentos líquidos por mês"
+              : "Recebimentos por mês: ainda sem dados"
           }
           className="mt-5 grid min-h-[190px] grid-cols-[auto_minmax(0,1fr)] gap-3"
           role="img"
@@ -422,21 +424,12 @@ function ReceiptsVisualSummary({
             >
               <path d="M0 112H500" stroke="var(--tes-color-brand-lavender)" />
               {hasData ? (
-                <>
-                  <polyline
-                    fill="none"
-                    points={receivedPoints}
-                    stroke="var(--tes-color-status-success)"
-                    strokeWidth="4"
-                  />
-                  <polyline
-                    fill="none"
-                    points={processingPoints}
-                    stroke="var(--tes-color-brand-primary)"
-                    strokeDasharray="7 5"
-                    strokeWidth="4"
-                  />
-                </>
+                <polyline
+                  fill="none"
+                  points={receivedPoints}
+                  stroke="var(--tes-color-status-success)"
+                  strokeWidth="4"
+                />
               ) : (
                 <path
                   d="M0 88 C120 84 180 94 260 82 S410 90 500 78"
@@ -456,7 +449,7 @@ function ReceiptsVisualSummary({
         </div>
         <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
           {hasData
-            ? "Linha verde: recebido no banco. Linha roxa: valores ativos ainda não recebidos."
+            ? "Linha verde: valor líquido recebido no banco."
             : "O gráfico será preenchido quando houver movimentação no período."}
         </p>
       </section>
@@ -665,11 +658,14 @@ function Pagination({
         <Link
           className="inline-flex min-h-11 items-center rounded-lg border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           href={buildFinanceHref({
+            end: dateRange.end,
             filters,
             page: page - 1,
             period: dateRange.key,
+            start: dateRange.start,
             tab: "receipts",
           })}
+          scroll={false}
         >
           Mostrar menos
         </Link>
@@ -678,11 +674,14 @@ function Pagination({
         <Link
           className="inline-flex min-h-11 items-center rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           href={buildFinanceHref({
+            end: dateRange.end,
             filters,
             page: page + 1,
             period: dateRange.key,
+            start: dateRange.start,
             tab: "receipts",
           })}
+          scroll={false}
         >
           Carregar mais
         </Link>

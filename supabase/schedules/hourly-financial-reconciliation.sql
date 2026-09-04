@@ -1,5 +1,6 @@
 -- Versioned activation script. DO NOT run as part of migrations or local reset.
--- Runs at minute 7, away from the weekly scheduler ticks (:00/:15/:30/:45).
+-- Runs at minute 17, after the session confirmation job at :07 and away from
+-- the weekly scheduler ticks (:00/:15/:30/:45).
 -- The weekly scheduler still performs its own final reconciliation and each
 -- Transfer revalidates the source Balance Transaction immediately before creation.
 do $$
@@ -23,7 +24,7 @@ where jobname = 'tes-financial-reconciliation-hourly-v1';
 
 select cron.schedule(
   'tes-financial-reconciliation-hourly-v1',
-  '7 * * * *',
+  '17 * * * *',
   $cron$
   select net.http_post(
     url := (select decrypted_secret from vault.decrypted_secrets where name = 'SUPABASE_FUNCTIONS_BASE_URL')

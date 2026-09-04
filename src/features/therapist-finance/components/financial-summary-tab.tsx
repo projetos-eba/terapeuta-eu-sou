@@ -7,7 +7,6 @@ import {
   CircleDollarSign,
   Clock3,
   Info,
-  Sparkles,
   Target,
   TrendingUp,
   WalletCards,
@@ -40,6 +39,7 @@ import {
   formatIntegerOrDash,
   formatPercent,
 } from "./financial-formatters";
+import { FinancialInfoTooltip } from "./financial-info-tooltip";
 
 export function FinancialSummaryTab({
   advanced,
@@ -165,7 +165,7 @@ export function FinancialSummaryTab({
             variant="section"
           />
         ) : (
-          <MoneyCompositionPanel metrics={metrics} overview={overview} />
+          <MoneyCompositionPanel overview={overview} />
         )}
         {advanced.status === "locked" ? (
           <TherapistLockedCard
@@ -274,10 +274,8 @@ function FinancialKpiCard({
 }
 
 function MoneyCompositionPanel({
-  metrics,
   overview,
 }: {
-  metrics: TherapistFinancialMetrics | null;
   overview: TherapistFinancialOverview;
 }) {
   const hasFinancialData = hasOverviewFinancialData(overview);
@@ -290,8 +288,8 @@ function MoneyCompositionPanel({
     },
     {
       color: "bg-status-danger",
-      label: "Comissão TES",
-      note: "Registrada no valor das sessões",
+      label: "Custos da plataforma",
+      note: "Incluídos no cálculo do repasse",
       value: hasFinancialData
         ? `− ${formatCurrency(Math.abs(overview.tesCommissionCents))}`
         : "-",
@@ -333,9 +331,17 @@ function MoneyCompositionPanel({
                 className={`mt-1.5 size-2.5 shrink-0 rounded-full ${row.color}`}
               />
               <span>
-                <strong className="block text-sm font-extrabold text-brand-deep">
-                  {row.label}
-                </strong>
+                <span className="flex items-center gap-1">
+                  <strong className="block text-sm font-extrabold text-brand-deep">
+                    {row.label}
+                  </strong>
+                  {row.label === "Custos da plataforma" ? (
+                    <FinancialInfoTooltip
+                      label="Custos da plataforma"
+                      text="Custos da plataforma incluem os valores previstos para uso da plataforma e processamento dos atendimentos. Consulte o Termo de Uso."
+                    />
+                  ) : null}
+                </span>
                 <span className="mt-0.5 block text-xs font-semibold leading-5 text-tesText-secondary">
                   {row.note}
                 </span>
@@ -349,73 +355,7 @@ function MoneyCompositionPanel({
           </div>
         ))}
       </dl>
-
-      <MiniFinancialEvolution metrics={metrics} />
-
-      <div className="flex items-start gap-3 rounded-xl bg-brand-lavenderSoft/70 px-4 py-3 text-sm font-semibold leading-6 text-tesText-secondary">
-        <Sparkles
-          aria-hidden="true"
-          className="mt-0.5 shrink-0 text-brand-primary"
-          size={18}
-        />
-        <p>
-          {metrics
-            ? "Acompanhe a evolução abaixo para comparar esse valor com os períodos anteriores."
-            : "Os valores acima refletem somente movimentações financeiras confirmadas no período."}
-        </p>
-      </div>
     </section>
-  );
-}
-
-function MiniFinancialEvolution({
-  metrics,
-}: {
-  metrics: TherapistFinancialMetrics | null;
-}) {
-  const points = metrics?.financialEvolution.slice(-6) ?? [];
-  const max = Math.max(
-    1,
-    ...points.map((point) => point.therapistNetAmountCents),
-  );
-
-  return (
-    <div>
-      <p className="text-xs font-extrabold text-tesText-secondary">
-        Evolução recente
-      </p>
-      {points.length ? (
-        <div
-          aria-label="Barras da evolução recente da receita líquida"
-          className="mt-3 grid h-24 grid-cols-6 items-end gap-2"
-          role="img"
-          tabIndex={0}
-        >
-          {points.map((point) => (
-            <div
-              className="grid h-full grid-rows-[1fr_auto] gap-2"
-              key={point.periodStart}
-            >
-              <span className="flex items-end rounded-t-md bg-brand-lavenderSoft px-1">
-                <span
-                  className="block w-full rounded-t-md bg-brand-primary"
-                  style={{
-                    height: `${Math.max(12, (point.therapistNetAmountCents / max) * 100)}%`,
-                  }}
-                />
-              </span>
-              <span className="text-center text-[11px] font-bold text-tesText-muted">
-                {formatShortDate(point.periodStart)}
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="mt-3 grid min-h-24 place-items-center rounded-card border border-dashed border-brand-lavender bg-brand-lavenderSoft/45 px-4 text-center text-sm font-semibold text-tesText-secondary">
-          Sem dados suficientes para mostrar a evolução.
-        </div>
-      )}
-    </div>
   );
 }
 

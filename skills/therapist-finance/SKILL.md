@@ -72,6 +72,9 @@ All derive the therapist from `auth.uid()`. Do not accept
   show the prior 20% split and must not be recalculated in the UI.
 - Formula: Valor bruto das sessões - Comissão TES - Reembolsos ao cliente when
   present = Valor líquido do terapeuta.
+- No painel `Seu dinheiro`, apresentar Comissão TES como `Custos da plataforma`
+  com a explicação de que está incluída no cálculo do repasse. Não alterar o
+  snapshot nem a terminologia técnica dos contratos.
 - Do not show Stripe fees as therapist discounts.
 - Payment method and payment origin are separate.
 - No local form for bank, agency, account, Pix, CPF, CNPJ or documents.
@@ -113,6 +116,12 @@ recebimento`; provider and reconciliation terminology stays in the service
 - Keep `waiting_settlement` visible between the safety period and Stripe
   availability. `eligible` requires a recent authoritative `available` snapshot;
   the weekly cutoff and worker must revalidate it.
+- The hourly worker must first re-evaluate only recoverable
+  `blocked/connect_not_ready` payments. Run automatic confirmation at minute
+  `07` and financial reconciliation at minute `17`; weekly cutoff remains the
+  authority for inclusion in Tuesday's batch.
+- Receipts show a received-only monthly chart. Payout history filters expose
+  only batch/Transfer/Payout states, never payment preparation states.
 - Treat therapist receipt status as paid only after a paid, completed automatic
   Payout allocates the complete Transfer amount.
 - Realized, contracted and estimated values must remain visually separated.
@@ -155,8 +164,8 @@ four product-approved tabs and adapts the reference into:
 - Resumo: editorial header, four summary cards, occupancy/potential donut,
   opportunity panel, four metrics, therapy ranking, financial evolution and
   methodology rows;
-- Recebimentos: one filter panel, period cards, monthly received/processing
-  trend, full-filter status donut and then the receipt table/cards;
+- Recebimentos: one filter panel, period cards, monthly received-only trend,
+  full-filter status donut and then the receipt table/cards;
 - Repasses: summary cards, payout timeline, paginated list and calculation
   formula;
 - Conta de recebimento: secure Connect status, next action and account
