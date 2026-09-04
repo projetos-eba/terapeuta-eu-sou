@@ -209,7 +209,7 @@ export function FinancialReceiptsTab({
                       Bruto
                     </th>
                     <th className="border-b border-brand-lavender py-3 pr-3">
-                      Comissão TES
+                      Custos da plataforma
                     </th>
                     <th className="border-b border-brand-lavender py-3 pr-3">
                       Líquido
@@ -314,7 +314,7 @@ export function FinancialReceiptsTab({
                       value={formatCurrency(item.grossAmountCents)}
                     />
                     <ReceiptDetail
-                      label="Comissão TES"
+                      label="Custos da plataforma"
                       value={formatCurrency(item.tesCommissionCents)}
                     />
                     <ReceiptDetail
@@ -505,11 +505,13 @@ function buildStatusTotals(
     eligible: "var(--tes-color-brand-primary)",
     blocked: "var(--tes-color-status-warning)",
   };
-  return items.map((item) => ({
-    color: colors[item.status] ?? "var(--tes-color-brand-lavender)",
-    label: receiptStatusLabels[item.status],
-    value: item.amountCents,
-  }));
+  return items
+    .filter((item) => item.amountCents > 0)
+    .map((item) => ({
+      color: colors[item.status] ?? "var(--tes-color-brand-lavender)",
+      label: receiptStatusLabels[item.status],
+      value: item.amountCents,
+    }));
 }
 
 function chartPoints(values: number[], max: number) {

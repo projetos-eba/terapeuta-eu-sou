@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { MouseEvent, ReactNode } from "react";
 import { useEffect, useState } from "react";
 
@@ -25,11 +25,14 @@ export function PendingNavigationLink({
   pendingLabel?: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [isPending, setIsPending] = useState(false);
+  const search = searchParams.toString();
+  const currentHref = `${pathname}${search ? `?${search}` : ""}`;
 
   useEffect(() => {
     const saved = readSavedScrollPosition();
-    const currentHref = `${window.location.pathname}${window.location.search}`;
 
     if (!saved || saved.href !== currentHref) return;
 
@@ -41,7 +44,7 @@ export function PendingNavigationLink({
         document.documentElement.style.minHeight = saved.documentMinHeight;
       });
     });
-  }, [href]);
+  }, [currentHref]);
 
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     if (
