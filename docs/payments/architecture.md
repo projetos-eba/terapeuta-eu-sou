@@ -275,6 +275,13 @@ snapshot recente. A reconciliação financeira horária mantém essa projeção
 visível; o lote semanal repete a consulta no cutoff e o worker revalida a Stripe
 imediatamente antes do Transfer com `source_transaction`.
 
+O job horário também reavalia pagamentos bloqueados exclusivamente por
+`connect_not_ready`. Assim, uma conta Connect que se tornou operacional libera
+o pagamento para segurança/liquidação sem remover bloqueios definitivos. A
+confirmação automática roda no minuto `07` e a reconciliação financeira no
+minuto `17`; o lote semanal continua autoritativo no cutoff, portanto uma
+mudança concorrente não perde o pagamento nem o inclui depois do corte.
+
 ## Fluxos
 
 ```mermaid

@@ -1,9 +1,13 @@
 import {
   extractChargeSettlementSnapshot,
   isChargeSettlementAvailable,
+  refreshRecoverableConnectPayments,
 } from "./charge-settlement.ts";
+import type { SupabaseRestClient } from "../auth/supabase-rest.ts";
 
-declare const Deno: { test(name: string, fn: () => void): void };
+declare const Deno: {
+  test(name: string, fn: () => void | Promise<void>): void;
+};
 
 Deno.test(
   "extracts the authoritative source Charge Balance Transaction",
@@ -26,6 +30,38 @@ Deno.test(
     assertEquals(snapshot?.status, "available");
     assertEquals(snapshot?.currency, "brl");
     assertEquals(snapshot?.availableOn, "2026-08-29T10:40:00.000Z");
+  },
+);
+
+Deno.test(
+  "rechecks payments blocked only because Connect was not ready",
+  async () => {
+    const requests: Array<{ body?: unknown; name?: string; path?: string }> =
+      [];
+    const client = {
+      get: (path: string) => {
+        requests.push({ path });
+        return Promise.resolve([{ id: "payment-connect-ready" }]);
+      },
+      rpc: (name: string, body: unknown) => {
+        requests.push({ body, name });
+        return Promise.resolve({ transferStatus: "waiting_settlement" });
+      },
+    } as unknown as SupabaseRestClient;
+
+    const results = await refreshRecoverableConnectPayments({ client });
+
+    assertEquals(results.length, 1);
+    assertEquals(
+      requests[0]?.path,
+      "/rest/v1/session_payments?select=id&financial_status=in.(paid,partially_refunded)&transfer_status=eq.blocked&transfer_blocked_reason=eq.connect_not_ready&order=updated_at.asc&limit=500",
+    );
+    assertEquals(requests[1]?.name, "refresh_session_transfer_eligibility");
+    assertEquals(
+      (requests[1]?.body as { p_session_payment_id?: string })
+        ?.p_session_payment_id,
+      "payment-connect-ready",
+    );
   },
 );
 

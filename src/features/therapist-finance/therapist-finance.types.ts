@@ -4,7 +4,7 @@ export type TherapistFinanceTab =
   | "receipts"
   | "summary";
 
-export type TherapistFinancePeriodKey = "30" | "90" | "month";
+export type TherapistFinancePeriodKey = "30" | "90" | "custom" | "month";
 
 export type TherapistFinancialStatus =
   | "canceled"

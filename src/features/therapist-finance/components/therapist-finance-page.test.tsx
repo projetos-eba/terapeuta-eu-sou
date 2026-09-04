@@ -48,7 +48,22 @@ describe("TherapistFinancePage", () => {
     renderPage();
 
     expect(screen.getAllByText("Valor bruto").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Comissão TES").length).toBeGreaterThan(0);
+    expect(screen.getByText("Custos da plataforma")).toBeInTheDocument();
+    expect(
+      screen.getByText("Incluídos no cálculo do repasse"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Custos da plataforma incluem os valores previstos/i),
+    ).toBeInTheDocument();
+    const costTooltip = screen.getByRole("tooltip");
+    expect(costTooltip).toHaveClass("invisible");
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Saiba mais sobre Custos da plataforma",
+      }),
+    );
+    expect(costTooltip).toHaveClass("visible");
+    expect(screen.queryByText("Evolução recente")).not.toBeInTheDocument();
     expect(screen.getAllByText("Valor líquido").length).toBeGreaterThan(0);
     expect(
       screen.queryByText(new RegExp(["ajus", "tes"].join(""), "i")),
@@ -166,7 +181,10 @@ describe("TherapistFinancePage", () => {
     expect(screen.getAllByText("Cartão").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Pagamento online").length).toBeGreaterThan(0);
     expect(screen.getByText("Reembolsos")).toBeInTheDocument();
-    expect(screen.getByText("Tendência dos recebimentos")).toBeInTheDocument();
+    expect(screen.getByText("Recebimento por mês")).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Linha roxa: valores ativos/i),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Distribuição por status")).toBeInTheDocument();
   });
 
@@ -346,6 +364,57 @@ describe("TherapistFinancePage", () => {
     expect(
       screen.getAllByText("Sem valores elegíveis para o próximo lote").length,
     ).toBeGreaterThan(0);
+  });
+
+  it("shows only statuses that can occur in the payout history", () => {
+    renderPage("payouts");
+
+    const select = screen.getByLabelText("Etapa do repasse");
+    expect(select).toHaveTextContent("Incluído no próximo repasse");
+    expect(select).toHaveTextContent("A caminho do banco");
+    expect(select).toHaveTextContent("Pago");
+    expect(select).not.toHaveTextContent("Aguardando confirmação");
+    expect(select).not.toHaveTextContent("Em liquidação");
+    expect(select).not.toHaveTextContent("Disponível");
+  });
+
+  it("orders the payout path from preparation through bank credit", () => {
+    renderPage("payouts");
+
+    const labels = [
+      "Confirmação, segurança e liquidação",
+      "Disponível para o lote semanal",
+      "Próximo lote de transferência",
+      "Transferência e crédito bancário",
+    ].map((label) => screen.getAllByText(label).at(-1)!);
+
+    expect(
+      labels.every(
+        (label, index) =>
+          index === 0 ||
+          Boolean(
+            labels[index - 1].compareDocumentPosition(label) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+          ),
+      ),
+    ).toBe(true);
+  });
+
+  it("offers a typed custom date range in the summary", () => {
+    renderPage();
+
+    expect(screen.queryByLabelText("De")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Até")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Período"), {
+      target: { value: "custom" },
+    });
+    expect(screen.getByLabelText("De")).toHaveAttribute("type", "date");
+    expect(screen.getByLabelText("Até")).toHaveAttribute("type", "date");
+    fireEvent.change(screen.getByLabelText("Período"), {
+      target: { value: "90" },
+    });
+    expect(screen.queryByLabelText("De")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Até")).not.toBeInTheDocument();
   });
 });
 

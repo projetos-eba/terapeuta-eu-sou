@@ -27,6 +27,16 @@ import {
 import { buildFinanceHref } from "./financial-route";
 import { FinancialStatusBadge } from "./financial-status-badge";
 
+const payoutHistoryStatuses = [
+  "batched",
+  "transfer_pending",
+  "bank_pending",
+  "paid",
+  "blocked",
+  "failed",
+  "reversed",
+] as const;
+
 export function FinancialPayoutsTab({
   dateRange,
   filters,
@@ -82,7 +92,7 @@ export function FinancialPayoutsTab({
           }
         />
         <PayoutMetricCard
-          description="Todos os valores ativos que ainda não chegaram à conta bancária."
+          description="Posição atual: inclui sessões futuras já pagas, independentemente do período do histórico."
           icon={Clock3}
           label="Em processamento"
           value={payouts.summary.payoutProcessingCents}
@@ -119,19 +129,28 @@ export function FinancialPayoutsTab({
               <option value="30">Últimos 30 dias</option>
               <option value="90">Últimos 90 dias</option>
               <option value="month">Mês atual</option>
+              {dateRange.key === "custom" ? (
+                <option value="custom">Período personalizado</option>
+              ) : null}
             </select>
           </label>
+          {dateRange.key === "custom" ? (
+            <>
+              <input name="start" type="hidden" value={dateRange.start} />
+              <input name="end" type="hidden" value={dateRange.end} />
+            </>
+          ) : null}
           <label className="grid gap-1 text-sm font-extrabold text-brand-deep">
-            Situação
+            Etapa do repasse
             <select
               className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
               defaultValue={filters.payoutStatus ?? ""}
               name="payoutStatus"
             >
               <option value="">Todos</option>
-              {Object.entries(payoutStatusLabels).map(([status, label]) => (
+              {payoutHistoryStatuses.map((status) => (
                 <option key={status} value={status}>
-                  {label}
+                  {payoutStatusLabels[status]}
                 </option>
               ))}
             </select>
@@ -146,7 +165,9 @@ export function FinancialPayoutsTab({
             <Link
               className="inline-flex min-h-11 items-center justify-center text-sm font-extrabold text-brand-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
               href={buildFinanceHref({
+                end: dateRange.end,
                 period: dateRange.key,
+                start: dateRange.start,
                 tab: "payouts",
               })}
             >
@@ -398,13 +419,34 @@ export function FinancialPayoutsTab({
 }
 
 function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
+  const preparingCents =
+    payouts.summary.waitingConfirmationCents +
+    payouts.summary.waitingSafetyPeriodCents +
+    payouts.summary.waitingSettlementCents;
+  const bankJourneyCents = Math.max(
+    payouts.summary.payoutProcessingCents -
+      preparingCents -
+      payouts.summary.eligibleForPayoutCents,
+    0,
+  );
   const steps = [
+    {
+      detail:
+        preparingCents > 0 ? formatCurrency(preparingCents) : "Nenhum valor",
+      Icon: Clock3,
+      label: "Confirmação, segurança e liquidação",
+      tone:
+        preparingCents > 0
+          ? "bg-status-warning text-white"
+          : "bg-brand-lavender text-brand-primary",
+    },
     {
       detail:
         payouts.summary.eligibleForPayoutCents > 0
           ? formatCurrency(payouts.summary.eligibleForPayoutCents)
           : "Nenhum valor disponível",
-      label: "Disponível para repasse",
+      Icon: CheckCircle2,
+      label: "Disponível para o lote semanal",
       tone:
         payouts.summary.eligibleForPayoutCents > 0
           ? "bg-status-success text-white"
@@ -414,6 +456,7 @@ function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
       detail: payouts.summary.nextBatchAt
         ? formatDateOnly(payouts.summary.nextBatchAt, payouts.filters.timezone)
         : "Sem valores elegíveis para o próximo lote",
+      Icon: CalendarClock,
       label: "Próximo lote de transferência",
       tone: payouts.summary.nextBatchAt
         ? "bg-brand-primary text-white"
@@ -421,13 +464,14 @@ function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
     },
     {
       detail:
-        payouts.summary.payoutProcessingCents > 0
-          ? formatCurrency(payouts.summary.payoutProcessingCents)
-          : "Nenhum valor em processamento",
-      label: "Em processamento",
+        bankJourneyCents > 0
+          ? formatCurrency(bankJourneyCents)
+          : "Nenhum valor a caminho do banco",
+      Icon: Landmark,
+      label: "Transferência e crédito bancário",
       tone:
-        payouts.summary.payoutProcessingCents > 0
-          ? "bg-status-warning text-white"
+        bankJourneyCents > 0
+          ? "bg-brand-primary text-white"
           : "bg-brand-lavender text-brand-primary",
     },
   ];
@@ -447,7 +491,7 @@ function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
           Stripe e não tem data prometida aqui.
         </p>
       </div>
-      <ol className="grid gap-4 md:grid-cols-3 md:gap-0">
+      <ol className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 xl:gap-0">
         {steps.map((step, index) => (
           <li
             className="relative grid gap-3 md:px-5 first:md:pl-0 last:md:pr-0"
@@ -463,13 +507,7 @@ function PayoutTimeline({ payouts }: { payouts: TherapistPayoutsContract }) {
               <span
                 className={`grid size-12 place-items-center rounded-full ${step.tone}`}
               >
-                {index === 0 ? (
-                  <CheckCircle2 aria-hidden="true" size={21} />
-                ) : index === 1 ? (
-                  <CalendarClock aria-hidden="true" size={21} />
-                ) : (
-                  <Clock3 aria-hidden="true" size={21} />
-                )}
+                <step.Icon aria-hidden="true" size={21} />
               </span>
               <span className="text-base font-extrabold text-brand-deep">
                 {step.label}
@@ -600,11 +638,14 @@ function PayoutPagination({
         <Link
           className="inline-flex min-h-11 items-center rounded-lg border border-brand-lavender px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           href={buildFinanceHref({
+            end: dateRange.end,
             filters,
             page: page - 1,
             period: dateRange.key,
+            start: dateRange.start,
             tab: "payouts",
           })}
+          scroll={false}
         >
           Mostrar menos
         </Link>
@@ -613,11 +654,14 @@ function PayoutPagination({
         <Link
           className="inline-flex min-h-11 items-center rounded-lg bg-brand-primary px-4 text-sm font-extrabold text-white hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
           href={buildFinanceHref({
+            end: dateRange.end,
             filters,
             page: page + 1,
             period: dateRange.key,
+            start: dateRange.start,
             tab: "payouts",
           })}
+          scroll={false}
         >
           Carregar mais
         </Link>

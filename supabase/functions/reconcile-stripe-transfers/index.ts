@@ -15,7 +15,10 @@ import {
   extractTransferDestinationReference,
   syncAutomaticStripePayout,
 } from "../_shared/payments/automatic-payouts.ts";
-import { reconcileChargeSettlements } from "../_shared/payments/charge-settlement.ts";
+import {
+  reconcileChargeSettlements,
+  refreshRecoverableConnectPayments,
+} from "../_shared/payments/charge-settlement.ts";
 
 const runtime = getPaymentsRuntime("reconcile-stripe-transfers");
 
@@ -73,6 +76,9 @@ runtime.serve(async (request) => {
       "release_expired_payout_leases_v1",
       { p_limit: 50 },
     );
+    const recoverableConnectPayments = await refreshRecoverableConnectPayments({
+      client,
+    });
     const sourceChargesReconciled = await reconcileSourceCharges(
       client,
       stripe,
@@ -177,6 +183,7 @@ runtime.serve(async (request) => {
       acquired: true,
       expiredLeases,
       payoutsReconciled,
+      recoverableConnectPayments,
       runId: reconciliationRun?.runId ?? null,
       settlementsReconciled,
       sourceChargesReconciled,
