@@ -28,9 +28,11 @@ import {
   BookingReference,
   formatSessionDateTime,
   formatSessionMoney,
+  isSessionUpcoming,
   mapSessionPresentation,
   type SessionPresentation,
   type SessionReadModelItem,
+  type TherapistSessionsCursor,
   type TherapistSessionsSummary,
 } from "@/features/bookings";
 import {
@@ -42,10 +44,14 @@ import {
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import {
   buildNextSessionsHref,
+  getTherapistPendingConfirmationsSummary,
   getTherapistSessionsPage,
+  parseTherapistSessionCursor,
   parseTherapistSessionFilters,
+  type TherapistSessionCursorScope,
 } from "@/features/therapist-sessions";
 import { getSessionTimingBadge } from "@/features/therapist-sessions/session-timing-badge";
+import { getTherapistSessionStatusBadge } from "@/features/therapist-sessions/session-status-badge";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 import { routes } from "@/lib/routes";
 
@@ -65,31 +71,53 @@ export default async function TherapistSessionsPage({
     return <SessionsErrorState message={parsedFilters.message} />;
   }
 
-  const now = new Date().toISOString();
+  const referenceDate = new Date();
+  const now = referenceDate.toISOString();
+  const pastCursorResult = parseTherapistSessionCursor(rawSearchParams, "past");
+  const upcomingCursorResult = parseTherapistSessionCursor(
+    rawSearchParams,
+    "upcoming",
+  );
+
+  if (!pastCursorResult.valid) {
+    return <SessionsErrorState message={pastCursorResult.message} />;
+  }
+  if (!upcomingCursorResult.valid) {
+    return <SessionsErrorState message={upcomingCursorResult.message} />;
+  }
+
+  const legacyCursor = parsedFilters.filters.cursor;
+  const pastCursor = pastCursorResult.cursor ?? legacyCursor;
+  const upcomingCursor = upcomingCursorResult.cursor;
   const historyFilters = {
     ...parsedFilters.filters,
-    cursor: undefined,
+    cursor: pastCursor,
     periodEnd: now,
   };
   const upcomingFilters = {
     ...parsedFilters.filters,
-    cursor: undefined,
+    cursor: upcomingCursor,
     periodEnd: undefined,
     periodPreset: undefined,
     periodStart: now,
   };
-  const [historyResult, upcomingResult] = await Promise.all([
-    getTherapistSessionsPage({
-      accessToken: session.accessToken,
-      filters: historyFilters,
-      profileId: session.profileId,
-    }),
-    getTherapistSessionsPage({
-      accessToken: session.accessToken,
-      filters: upcomingFilters,
-      profileId: session.profileId,
-    }),
-  ]);
+  const [historyResult, upcomingResult, pendingConfirmationsResult] =
+    await Promise.all([
+      getTherapistSessionsPage({
+        accessToken: session.accessToken,
+        filters: historyFilters,
+        profileId: session.profileId,
+      }),
+      getTherapistSessionsPage({
+        accessToken: session.accessToken,
+        filters: upcomingFilters,
+        profileId: session.profileId,
+      }),
+      getTherapistPendingConfirmationsSummary({
+        accessToken: session.accessToken,
+        profileId: session.profileId,
+      }),
+    ]);
   const readError =
     historyResult.status === "error"
       ? historyResult
@@ -100,20 +128,34 @@ export default async function TherapistSessionsPage({
     historyResult.status === "success" ? historyResult.data : null;
   const upcomingData =
     upcomingResult.status === "success" ? upcomingResult.data : null;
-  const historyItems = filterSessionsByQuery(
+  const historyQueryItems = filterSessionsByQuery(
     historyData?.items ?? [],
     searchQuery,
   );
-  const upcomingItems = filterSessionsByQuery(
+  const upcomingQueryItems = filterSessionsByQuery(
     upcomingData?.items ?? [],
     searchQuery,
   );
-  const allItems = dedupeSessions([...historyItems, ...upcomingItems]);
+  const allItems = dedupeSessions([
+    ...historyQueryItems,
+    ...upcomingQueryItems,
+  ]);
+  const upcomingItems = allItems.filter((item) =>
+    isSessionUpcoming(item, referenceDate),
+  );
+  const pastItems = allItems.filter(
+    (item) => !isSessionUpcoming(item, referenceDate),
+  );
   const metrics = historyData
     ? getSessionMetrics(historyData.items, historyData.summary)
     : null;
   const csvHref = allItems.length > 0 ? buildCsvDataHref(allItems) : "#";
   const hasActiveFilters = hasFilterState(parsedFilters.filters, searchQuery);
+  const pendingConfirmationIds = new Set(
+    pendingConfirmationsResult.status === "success"
+      ? pendingConfirmationsResult.data.pendingBookingIds
+      : [],
+  );
 
   return (
     <AppPageContainer className="gap-6">
@@ -150,88 +192,70 @@ export default async function TherapistSessionsPage({
               correlationId={readError.error.correlationId}
               message={readError.error.message}
             />
-          ) : !historyData && !upcomingData ? (
-            <SessionsEmptyState />
           ) : (
             <>
               {metrics ? <SessionMetricsGrid metrics={metrics} /> : null}
               <section
                 aria-label="Lista de sessões"
-                className="min-w-0 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card"
+                className="grid min-w-0 gap-5"
               >
-                <SessionsFilterBar
-                  bookingStatus={parsedFilters.filters.bookingStatus}
-                  hasActiveFilters={hasActiveFilters}
-                  itemCount={allItems.length}
-                  periodPreset={parsedFilters.filters.periodPreset}
-                  searchQuery={searchQuery}
+                <section
+                  aria-label="Filtros de sessões"
+                  className="min-w-0 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card"
+                >
+                  <SessionsFilterBar
+                    bookingStatus={parsedFilters.filters.bookingStatus}
+                    hasActiveFilters={hasActiveFilters}
+                    itemCount={allItems.length}
+                    periodPreset={parsedFilters.filters.periodPreset}
+                    searchQuery={searchQuery}
+                  />
+                </section>
+                <SessionGroup
+                  description="Atendimentos futuros que seguem disponíveis para acontecer."
+                  emptyMessage="Não há sessões futuras neste recorte."
+                  items={upcomingItems}
+                  nextHref={buildScopedNextSessionsHref(
+                    upcomingFilters,
+                    upcomingData?.page.nextCursor,
+                    "upcoming",
+                    searchQuery,
+                    { past: pastCursor, upcoming: upcomingCursor },
+                  )}
+                  page={upcomingData?.page ?? null}
+                  pendingConfirmationIds={pendingConfirmationIds}
+                  title="Sessões que irão acontecer"
                 />
-                {historyItems.length > 0 ? (
-                  <SessionGroup
-                    description="Sessões realizadas, canceladas ou pendentes dentro do período selecionado."
-                    items={historyItems}
-                    title="Histórico do período"
-                  />
-                ) : null}
-                {upcomingItems.length > 0 ? (
-                  <SessionGroup
-                    description="Próximos atendimentos confirmados ou em processamento."
-                    items={upcomingItems}
-                    title="Próximas sessões"
-                  />
-                ) : null}
-                {allItems.length === 0 ? <SessionsNoFilterResults /> : null}
-                <footer className="flex flex-col gap-2 border-t border-brand-lavender/60 px-5 py-5 text-xs font-semibold text-tesText-muted sm:flex-row sm:items-center sm:justify-between">
+                <SessionGroup
+                  description="Sessões encerradas, canceladas ou com horário já ultrapassado."
+                  emptyMessage="Não há sessões passadas neste recorte."
+                  items={pastItems}
+                  nextHref={buildScopedNextSessionsHref(
+                    historyFilters,
+                    historyData?.page.nextCursor,
+                    "past",
+                    searchQuery,
+                    { past: pastCursor, upcoming: upcomingCursor },
+                  )}
+                  page={historyData?.page ?? null}
+                  pendingConfirmationIds={pendingConfirmationIds}
+                  title="Sessões que já passaram"
+                  id="pending-confirmations"
+                />
+                <footer className="flex flex-col gap-2 rounded-card border border-brand-lavender/60 bg-surface-soft/60 px-5 py-5 text-xs font-semibold text-tesText-muted sm:flex-row sm:items-center sm:justify-between">
                   <span>
                     Mostrando {allItems.length} sessão(ões) neste recorte.
                   </span>
                   <span>Os estados são atualizados conforme cada reserva.</span>
                 </footer>
               </section>
-
-              {historyData?.page.hasMore && historyData.page.nextCursor ? (
-                <div className="flex justify-center">
-                  <Link
-                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                    href={
-                      withSearchQuery(
-                        buildNextSessionsHref(
-                          historyFilters,
-                          historyData.page.nextCursor,
-                        ),
-                        searchQuery,
-                      ) as Route
-                    }
-                  >
-                    Carregar histórico
-                  </Link>
-                </div>
-              ) : null}
-              {upcomingData?.page.hasMore && upcomingData.page.nextCursor ? (
-                <div className="flex justify-center">
-                  <Link
-                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                    href={
-                      withSearchQuery(
-                        buildNextSessionsHref(
-                          upcomingFilters,
-                          upcomingData.page.nextCursor,
-                        ),
-                        searchQuery,
-                      ) as Route
-                    }
-                  >
-                    Carregar próximas
-                  </Link>
-                </div>
-              ) : null}
             </>
           )}
         </AppPageMain>
 
         {allItems.length > 0 ? (
           <AppPageAside className="auto-rows-min self-start content-start !grid-cols-1 gap-5 lg:!grid-cols-2 xl:!block">
-            <SessionsRightRail items={allItems} />
+            <SessionsRightRail items={allItems} referenceDate={referenceDate} />
           </AppPageAside>
         ) : null}
       </AppPageGrid>
@@ -452,7 +476,13 @@ function SelectField({
   );
 }
 
-function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
+function SessionsTable({
+  items,
+  pendingConfirmationIds,
+}: {
+  items: SessionReadModelItem[];
+  pendingConfirmationIds: ReadonlySet<string>;
+}) {
   return (
     <div className="hidden xl:block">
       <table className="w-full table-fixed border-collapse text-left">
@@ -491,7 +521,10 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
                       >
                         {booking.patientName}
                       </Link>
-                      <BookingReference id={booking.bookingId} />
+                      <BookingReference
+                        id={booking.bookingId}
+                        reference={booking.sessionReference}
+                      />
                       <SessionTimingBadge presentation={presentation} />
                     </span>
                   </div>
@@ -511,7 +544,12 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
                   )}
                 </td>
                 <td className="px-2.5 py-4">
-                  <StatusBadge presentation={presentation} />
+                  <StatusBadge
+                    confirmationPending={pendingConfirmationIds.has(
+                      booking.bookingId,
+                    )}
+                    presentation={presentation}
+                  />
                 </td>
                 <td className="px-2.5 py-4 text-right font-extrabold text-brand-deep">
                   {formatSessionMoney(booking.priceCents, booking.currency)}
@@ -534,7 +572,13 @@ function SessionsTable({ items }: { items: SessionReadModelItem[] }) {
   );
 }
 
-function SessionsMobileList({ items }: { items: SessionReadModelItem[] }) {
+function SessionsMobileList({
+  items,
+  pendingConfirmationIds,
+}: {
+  items: SessionReadModelItem[];
+  pendingConfirmationIds: ReadonlySet<string>;
+}) {
   return (
     <div className="grid grid-cols-1 gap-3 p-3 sm:gap-4 sm:p-5 xl:hidden">
       {items.map((booking) => {
@@ -551,7 +595,10 @@ function SessionsMobileList({ items }: { items: SessionReadModelItem[] }) {
                 <span className="block truncate text-base font-extrabold text-brand-deep">
                   {booking.patientName}
                 </span>
-                <BookingReference id={booking.bookingId} />
+                <BookingReference
+                  id={booking.bookingId}
+                  reference={booking.sessionReference}
+                />
                 <SessionTimingBadge presentation={presentation} />
                 <span className="mt-1 block truncate text-sm font-semibold text-brand-primary">
                   {booking.serviceTitle}
@@ -565,7 +612,12 @@ function SessionsMobileList({ items }: { items: SessionReadModelItem[] }) {
                   {formatSessionDateTime(booking.startsAt, booking.timezone)}
                 </span>
               </span>
-              <StatusBadge presentation={presentation} />
+              <StatusBadge
+                confirmationPending={pendingConfirmationIds.has(
+                  booking.bookingId,
+                )}
+                presentation={presentation}
+              />
             </span>
             <span className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold text-tesText-secondary">
               <span>Atendimento online</span>
@@ -580,10 +632,16 @@ function SessionsMobileList({ items }: { items: SessionReadModelItem[] }) {
   );
 }
 
-function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
-  const nextSession = getNextSession(items);
+function SessionsRightRail({
+  items,
+  referenceDate,
+}: {
+  items: SessionReadModelItem[];
+  referenceDate: Date;
+}) {
+  const nextSession = getNextSession(items, referenceDate);
   const nextSessionPresentation = nextSession
-    ? mapSessionPresentation(nextSession)
+    ? mapSessionPresentation(nextSession, referenceDate)
     : null;
 
   return (
@@ -600,7 +658,10 @@ function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
                 <p className="truncate text-sm font-extrabold text-brand-deep">
                   {nextSession.patientName}
                 </p>
-                <BookingReference id={nextSession.bookingId} />
+                <BookingReference
+                  id={nextSession.bookingId}
+                  reference={nextSession.sessionReference}
+                />
                 {nextSessionPresentation ? (
                   <SessionTimingBadge presentation={nextSessionPresentation} />
                 ) : null}
@@ -628,7 +689,8 @@ function SessionsRightRail({ items }: { items: SessionReadModelItem[] }) {
                 }
               >
                 <Video aria-hidden="true" size={16} />
-                {nextSessionPresentation?.actions.primary.label ?? "Ver detalhes"}
+                {nextSessionPresentation?.actions.primary.label ??
+                  "Ver detalhes"}
               </Link>
               <Link
                 className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-brand-lavender text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft"
@@ -806,7 +868,13 @@ function SessionTimingBadge({
   );
 }
 
-function StatusBadge({ presentation }: { presentation: SessionPresentation }) {
+function StatusBadge({
+  confirmationPending,
+  presentation,
+}: {
+  confirmationPending?: boolean;
+  presentation: SessionPresentation;
+}) {
   const toneClasses = {
     danger: "bg-status-dangerBg text-status-danger",
     info: "bg-brand-lavenderSoft text-brand-primary",
@@ -815,13 +883,16 @@ function StatusBadge({ presentation }: { presentation: SessionPresentation }) {
     warning: "bg-status-warningBg text-status-warning",
   };
 
+  const { label, tone } = getTherapistSessionStatusBadge(
+    presentation,
+    confirmationPending,
+  );
+
   return (
     <span
-      className={`inline-flex max-w-full rounded-full px-3 py-1 text-[10px] font-extrabold ${toneClasses[presentation.tone]}`}
+      className={`inline-flex max-w-full rounded-full px-3 py-1 text-[10px] font-extrabold sm:text-[11px] ${toneClasses[tone]}`}
     >
-      <span className="truncate">
-        {getCompactPresentationLabel(presentation)}
-      </span>
+      <span className="truncate">{label}</span>
     </span>
   );
 }
@@ -838,38 +909,6 @@ function AvatarInitials({ name }: { name: string }) {
     <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-lavenderSoft text-sm font-extrabold text-brand-primary">
       {initials || "P"}
     </span>
-  );
-}
-
-function SessionsEmptyState() {
-  return (
-    <section className="mt-6 rounded-card border border-brand-lavender bg-white p-8 text-center shadow-card">
-      <h2 className="font-display text-3xl font-light italic text-brand-deep">
-        Nenhuma sessão encontrada
-      </h2>
-      <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-        Não há sessões para o período e os filtros informados.
-      </p>
-    </section>
-  );
-}
-
-function SessionsNoFilterResults() {
-  return (
-    <section className="mt-6 rounded-card border border-brand-lavender bg-white p-8 text-center shadow-card">
-      <h2 className="font-display text-3xl font-light italic text-brand-deep">
-        Nenhuma sessão neste recorte
-      </h2>
-      <p className="mt-3 text-sm font-semibold leading-6 text-tesText-secondary">
-        Ajuste a busca ou limpe os filtros para voltar à lista carregada.
-      </p>
-      <Link
-        className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg border border-brand-lavender px-5 text-sm font-extrabold text-brand-primary hover:bg-brand-lavenderSoft"
-        href={routes.therapist.sessions as Route}
-      >
-        Limpar filtros
-      </Link>
-    </section>
   );
 }
 
@@ -933,23 +972,79 @@ const periodOptions = [
 
 function SessionGroup({
   description,
+  emptyMessage,
   items,
+  nextHref,
+  page,
+  pendingConfirmationIds,
   title,
+  id,
 }: {
   description: string;
+  emptyMessage: string;
   items: SessionReadModelItem[];
+  nextHref: string | null;
+  page: {
+    hasMore: boolean;
+    nextCursor: TherapistSessionsCursor | null;
+  } | null;
+  pendingConfirmationIds: ReadonlySet<string>;
   title: string;
+  id?: string;
 }) {
   return (
-    <section aria-label={title}>
-      <header className="border-b border-brand-lavender/40 px-4 py-4 sm:px-5">
-        <h3 className="text-base font-extrabold text-brand-deep">{title}</h3>
-        <p className="mt-1 text-xs font-semibold leading-5 text-tesText-secondary">
-          {description}
-        </p>
+    <section
+      aria-label={title}
+      className="scroll-mt-24 min-w-0 overflow-hidden rounded-panel border border-brand-lavender/60 bg-white shadow-card"
+      id={id}
+    >
+      <header className="border-b border-brand-lavender/40 px-4 py-5 sm:px-5">
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-base font-extrabold text-brand-deep">
+              {title}
+            </h2>
+            <p className="mt-1 text-xs font-semibold leading-5 text-tesText-secondary">
+              {description}
+            </p>
+          </div>
+          <span
+            aria-label={`${items.length} ${items.length === 1 ? "sessão" : "sessões"}`}
+            className="shrink-0 rounded-full bg-brand-lavenderSoft px-3 py-1 text-xs font-extrabold text-brand-primary"
+          >
+            {items.length}
+          </span>
+        </div>
       </header>
-      <SessionsMobileList items={items} />
-      <SessionsTable items={items} />
+      {items.length > 0 ? (
+        <>
+          <SessionsMobileList
+            items={items}
+            pendingConfirmationIds={pendingConfirmationIds}
+          />
+          <SessionsTable
+            items={items}
+            pendingConfirmationIds={pendingConfirmationIds}
+          />
+        </>
+      ) : (
+        <div className="px-5 py-8 text-center">
+          <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+            {emptyMessage}
+          </p>
+        </div>
+      )}
+      {page?.hasMore && page.nextCursor && nextHref ? (
+        <div className="flex justify-center border-t border-brand-lavender/40 px-4 py-4 sm:px-5">
+          <Link
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
+            href={nextHref as Route}
+            scroll={false}
+          >
+            Carregar mais
+          </Link>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -1000,13 +1095,9 @@ function dedupeSessions(items: SessionReadModelItem[]) {
   });
 }
 
-function getNextSession(items: SessionReadModelItem[]) {
-  const now = Date.now();
+function getNextSession(items: SessionReadModelItem[], referenceDate: Date) {
   return [...items]
-    .filter(
-      (item) =>
-        new Date(item.startsAt).getTime() >= now && !isCancelledSession(item),
-    )
+    .filter((item) => isSessionUpcoming(item, referenceDate))
     .sort(
       (a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime(),
     )[0];
@@ -1040,15 +1131,7 @@ function isCancelledSession(item: SessionReadModelItem) {
 
 function buildCsvDataHref(items: SessionReadModelItem[]) {
   const rows = [
-    [
-      "Paciente",
-      "Terapia",
-      "Inicio",
-      "Fim",
-      "Status",
-      "Valor",
-      "Formato",
-    ],
+    ["Paciente", "Terapia", "Inicio", "Fim", "Status", "Valor", "Formato"],
     ...items.map((item) => [
       item.patientName,
       item.serviceTitle,
@@ -1086,14 +1169,6 @@ function formatCompactSessionDateTime(value: string, timezone: string) {
   return `${date} · ${time}`;
 }
 
-function getCompactPresentationLabel(presentation: SessionPresentation) {
-  if (presentation.state === "payment_pending") return "Pag. pendente";
-  if (presentation.state === "reschedule_requested") return "Reagendamento";
-  if (presentation.state === "requires_attention") return "Atenção";
-  if (presentation.state === "room_preparing") return "Sala preparando";
-  return presentation.label;
-}
-
 function getSearchQuery(value: string | string[] | undefined) {
   const firstValue = Array.isArray(value) ? value[0] : value;
   return firstValue ? firstValue.trim().slice(0, 80) : "";
@@ -1118,6 +1193,33 @@ function withSearchQuery(href: string, searchQuery: string) {
   const [pathname, query = ""] = href.split("?");
   const params = new URLSearchParams(query);
   params.set("q", searchQuery);
+  return `${pathname}?${params.toString()}`;
+}
+
+function buildScopedNextSessionsHref(
+  filters: Parameters<typeof buildNextSessionsHref>[0],
+  cursor: TherapistSessionsCursor | null | undefined,
+  scope: TherapistSessionCursorScope,
+  searchQuery: string,
+  currentCursors: Partial<
+    Record<TherapistSessionCursorScope, TherapistSessionsCursor | undefined>
+  >,
+) {
+  if (!cursor) return null;
+
+  const href = withSearchQuery(
+    buildNextSessionsHref(filters, cursor, scope),
+    searchQuery,
+  );
+  const otherScope = scope === "past" ? "upcoming" : "past";
+  const otherCursor = currentCursors[otherScope];
+  if (!otherCursor) return href;
+
+  const [pathname, query = ""] = href.split("?");
+  const params = new URLSearchParams(query);
+  const otherPrefix = `${otherScope}Cursor`;
+  params.set(`${otherPrefix}StartsAt`, otherCursor.startsAt);
+  params.set(`${otherPrefix}BookingId`, otherCursor.bookingId);
   return `${pathname}?${params.toString()}`;
 }
 

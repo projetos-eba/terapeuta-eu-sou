@@ -85,9 +85,22 @@ resposta usam `/api/support/tickets/:ticketId`; a thread vive em
 `support_ticket_messages` e não compartilha tabelas, composer ou endpoint com
 participantes.
 
+Após uma resposta pública do solicitante, o ticket fica aguardando a equipe TES
+(`waiting_support`). O detalhe deve explicar que a mensagem já foi recebida,
+mas manter composer e anexo disponíveis para complementos enquanto o TES
+responde; esse estado prioriza a fila e não bloqueia a conversa. Respostas podem
+incluir até 5 anexos privados de 10 MB por arquivo, nos formatos PDF, JPG, PNG
+ou WebP, sempre validados no cliente e novamente no servidor/Storage/RPC.
+
 Cada card de chamado apresenta categoria, assunto, última mensagem pública,
 badge de quem precisa agir, última atualização e protocolo persistido. Não usar
 UUID como protocolo e não duplicar chamados em avisos da plataforma.
+
+Datas e horários de mensagens e do contexto de sessão devem ser formatados com
+`timezone` explícito da reserva. Quando não houver reserva ou o fuso for
+inválido, usar o fuso de negócio TES `America/Sao_Paulo`. A Central compartilha
+os mesmos formatadores entre servidor e navegador para evitar divergência de
+SSR, hidratação ou runtime; nunca depender do fuso implícito do ambiente.
 
 Conversas e chamados são tabelas independentes e paginadas de dez em dez itens
 por `conversationPage` e `supportPage`, preservando a página da outra coleção.
@@ -141,6 +154,9 @@ aguardar recarregamento manual.
 - Verificar que não existe input de texto livre entre participante e terapeuta.
 - Verificar criação, lista, detalhe e resposta do ticket de suporte do
   paciente e do terapeuta, inclusive estado resolvido e mobile.
+- Verificar o estado `waiting_support`: mensagem explicativa, composer e anexo
+  continuam acionáveis para complementos; validar também limites e formatos dos
+  anexos permitidos.
 - Verificar histórico bidirecional do participante e o CTA de encontro/sessão.
 - Verificar que `Ver sessão`/`Ver encontro` genérico não aparece nos tickets de
   participante, tanto no fluxo terapeuta-paciente quanto no paciente-terapeuta.

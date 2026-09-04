@@ -369,26 +369,26 @@ begin
   -- Normalize only the reconstructed definition before applying exact guards.
   v_definition := replace(v_definition, chr(13), '');
 
-  v_updated_definition := replace(
+  -- `pg_get_functiondef` is canonicalized by the server and its indentation
+  -- differs between PostgreSQL versions. Match the historical fragments by
+  -- structure instead of exact whitespace so a clean shadow replay remains
+  -- deterministic on both the local and hosted engines.
+  v_updated_definition := regexp_replace(
     v_definition,
-    'and (
-        left_rule.service_id is null
-        or right_rule.service_id is null
-        or left_rule.service_id = right_rule.service_id
-      )',
-    'and left_rule.service_id = right_rule.service_id'
+    'and[[:space:]]*\([[:space:]]*left_rule\.service_id[[:space:]]+is[[:space:]]+null[[:space:]]+or[[:space:]]+right_rule\.service_id[[:space:]]+is[[:space:]]+null[[:space:]]+or[[:space:]]+left_rule\.service_id[[:space:]]*=[[:space:]]*right_rule\.service_id[[:space:]]*\)',
+    'and left_rule.service_id = right_rule.service_id',
+    'n'
   );
-  v_updated_definition := replace(
+  v_updated_definition := regexp_replace(
     v_updated_definition,
-    'if v_rule.service_id is not null
-      and not exists (',
-    'if v_rule.service_id is null
-      or not exists ('
+    'if[[:space:]]+v_rule\.service_id[[:space:]]+is[[:space:]]+not[[:space:]]+null[[:space:]]+and[[:space:]]+not[[:space:]]+exists[[:space:]]*\(',
+    'if v_rule.service_id is null or not exists (',
+    'n'
   );
 
   if v_updated_definition = v_definition
-    or v_updated_definition ~ 'left_rule\.service_id is null'
-    or v_updated_definition ~ 'v_rule\.service_id is not null'
+    or v_updated_definition ~ 'left_rule\.service_id[[:space:]]+is[[:space:]]+null'
+    or v_updated_definition ~ 'v_rule\.service_id[[:space:]]+is[[:space:]]+not[[:space:]]+null'
   then
     raise exception 'SAVE_THERAPIST_SCHEDULE_DEFINITION_DRIFT'
       using errcode = 'P0001';

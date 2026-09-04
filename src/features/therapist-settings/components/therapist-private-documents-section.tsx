@@ -10,10 +10,7 @@ import {
   uploadTherapistPrivateDocument,
   type TherapistPrivateDocumentKind,
 } from "@/features/therapist-profile-editor/therapist-profile-editor.commands";
-import type {
-  TherapistPrivateDocumentSummary,
-  TherapistProfileVerificationStatus,
-} from "@/features/therapist-profile-editor/therapist-profile-editor.types";
+import type { TherapistPrivateDocumentSummary } from "@/features/therapist-profile-editor/therapist-profile-editor.types";
 import { ProfileSection } from "@/features/therapist-profile-editor/components/profile-section";
 
 export const requiredPrivateDocuments: Array<{
@@ -44,16 +41,11 @@ const documentSizeExceededMessage =
 
 export function TherapistPrivateDocumentsSection({
   initialDocuments,
-  initialVerificationStatus,
 }: {
   initialDocuments: TherapistPrivateDocumentSummary[];
-  initialVerificationStatus: TherapistProfileVerificationStatus;
 }) {
   const router = useRouter();
   const [documents, setDocuments] = useState(initialDocuments);
-  const [verificationStatus, setVerificationStatus] = useState(
-    initialVerificationStatus,
-  );
   const [uploadingKind, setUploadingKind] =
     useState<TherapistPrivateDocumentKind | null>(null);
   const [message, setMessage] = useState<{
@@ -66,15 +58,14 @@ export function TherapistPrivateDocumentsSection({
     setDocuments(initialDocuments);
   }, [initialDocuments]);
 
-  useEffect(() => {
-    setVerificationStatus(initialVerificationStatus);
-  }, [initialVerificationStatus]);
-
   const documentsByKind = new Map(documents.map((item) => [item.kind, item]));
-  const documentsComplete = requiredPrivateDocuments.every((item) => {
+  const documentsReceived = requiredPrivateDocuments.every((item) => {
     const document = documentsByKind.get(item.kind);
     return Boolean(document && document.status !== "rejected");
   });
+  const documentsAccepted = requiredPrivateDocuments.every(
+    (item) => documentsByKind.get(item.kind)?.status === "accepted",
+  );
 
   async function handleUpload(kind: TherapistPrivateDocumentKind, file: File) {
     setUploadingKind(kind);
@@ -93,7 +84,6 @@ export function TherapistPrivateDocumentsSection({
     }
 
     setDocuments(result.data.documents);
-    setVerificationStatus(result.data.verificationStatus);
     setMessage({
       text: "Documento recebido. A equipe TES vai conferir as informações.",
       tone: "success",
@@ -141,11 +131,11 @@ export function TherapistPrivateDocumentsSection({
         </div>
 
         <p className="text-sm font-semibold leading-6 text-tesText-secondary">
-          {documentsComplete
-            ? verificationStatus === "approved"
-              ? "Os documentos desta etapa foram aprovados."
-              : "Recebemos os documentos desta etapa. A equipe TES avisará você se precisar de algum ajuste."
-            : "Falta enviar os documentos obrigatórios para continuarmos com a análise."}
+          {documentsAccepted
+            ? "Seus documentos foram aprovados. Você só precisa agir se a equipe TES solicitar um novo envio."
+            : documentsReceived
+              ? "Recebemos os documentos desta etapa. A equipe TES avisará você se precisar de algum ajuste."
+              : "Falta enviar os documentos obrigatórios para continuarmos com a análise."}
         </p>
         {feedback ? (
           <TESFeedbackDialog
@@ -178,21 +168,25 @@ function PrivateDocumentCard({
   uploading: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const accepted = currentDocument?.status === "accepted";
+  const rejected = currentDocument?.status === "rejected";
 
   return (
     <div className="rounded-[24px] border border-border bg-white p-5">
-      <input
-        accept=".pdf,image/jpeg,image/png"
-        aria-label={`Enviar ${title}`}
-        className="sr-only"
-        onChange={(event) => {
-          const file = event.currentTarget.files?.[0];
-          event.currentTarget.value = "";
-          if (file) onUpload(file);
-        }}
-        ref={inputRef}
-        type="file"
-      />
+      {!accepted ? (
+        <input
+          accept=".pdf,image/jpeg,image/png"
+          aria-label={`Enviar ${title}`}
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.currentTarget.files?.[0];
+            event.currentTarget.value = "";
+            if (file) onUpload(file);
+          }}
+          ref={inputRef}
+          type="file"
+        />
+      ) : null}
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-base font-extrabold text-brand-deep">{title}</p>
@@ -230,23 +224,32 @@ function PrivateDocumentCard({
       </div>
 
       <div className="mt-4 flex flex-wrap gap-3">
-        <TESButton
-          className="min-h-11 rounded-lg"
-          onClick={() => inputRef.current?.click()}
-          type="button"
-          variant={currentDocument ? "secondary" : "primary"}
-        >
-          {uploading ? (
-            <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-          ) : (
-            <Upload aria-hidden="true" className="size-4" />
-          )}
-          {uploading
-            ? "Enviando..."
-            : currentDocument
-              ? "Substituir documento"
-              : "Enviar documento"}
-        </TESButton>
+        {accepted ? (
+          <p className="text-sm font-semibold leading-6 text-tesText-secondary">
+            Este documento foi aprovado pela equipe TES. Um novo envio só será
+            liberado se ela solicitar.
+          </p>
+        ) : (
+          <TESButton
+            className="min-h-11 rounded-lg"
+            onClick={() => inputRef.current?.click()}
+            type="button"
+            variant={currentDocument ? "secondary" : "primary"}
+          >
+            {uploading ? (
+              <Loader2 aria-hidden="true" className="size-4 animate-spin" />
+            ) : (
+              <Upload aria-hidden="true" className="size-4" />
+            )}
+            {uploading
+              ? "Enviando..."
+              : rejected
+                ? "Enviar novo documento"
+                : currentDocument
+                  ? "Substituir documento"
+                  : "Enviar documento"}
+          </TESButton>
+        )}
         {kind === "identity_document" ? (
           <p className="flex items-center gap-2 text-sm font-semibold text-tesText-secondary">
             <FileBadge2 aria-hidden="true" className="size-4" />
@@ -268,18 +271,27 @@ function DocumentStatusPill({
 }: {
   document?: TherapistPrivateDocumentSummary;
 }) {
+  const accepted = document?.status === "accepted";
   const rejected = document?.status === "rejected";
-  const classes = rejected
-    ? "bg-status-dangerBg text-status-danger"
-    : document
-      ? "bg-status-successBg text-status-success"
-      : "bg-status-warningBg text-status-warning";
+  const classes = accepted
+    ? "bg-status-successBg text-status-success"
+    : rejected
+      ? "bg-status-dangerBg text-status-danger"
+      : document
+        ? "bg-status-successBg text-status-success"
+        : "bg-status-warningBg text-status-warning";
 
   return (
     <span
       className={`inline-flex min-h-8 items-center rounded-full px-3 text-[11px] font-extrabold uppercase tracking-[0.08em] sm:text-xs ${classes}`}
     >
-      {rejected ? "Novo envio" : document ? "Recebido" : "Falta enviar"}
+      {accepted
+        ? "Aprovado"
+        : rejected
+          ? "Novo envio"
+          : document
+            ? "Recebido"
+            : "Falta enviar"}
     </span>
   );
 }

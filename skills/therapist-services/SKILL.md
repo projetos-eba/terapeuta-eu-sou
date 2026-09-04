@@ -43,8 +43,9 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - A terapia precisa estar `published`, com ao menos um Tema do Match ativo e
   `is_available_for_services = true`.
 - Terapia sem visibilidade pública não deve ficar disponível para criação de
-  novos serviços. Serviços históricos/arquivados podem permanecer para
-  rastreabilidade, mas não aparecem no filtro padrão “Todos”.
+  novos serviços. Serviços históricos/arquivados permanecem para
+  rastreabilidade e aparecem no filtro “Todos”, mas nunca entram no catálogo
+  reservável.
 - `matching_therapy_settings` continua separado da criacao de servicos.
 - Quando a terapia não estiver no catálogo, o CTA deve abrir
   `/terapeuta/mensagens/solicitar-terapia`. Essa solicitação é estruturada,
@@ -54,7 +55,7 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - Ao criar/editar serviço, a duração é informada em minutos inteiros entre 20 e
   120, inclusive. O valor salvo é a fonte usada nos cards públicos e no
   snapshot de duração da reserva.
-- Ao criar/editar serviço, a descrição aceita no máximo 135 caracteres; o limite
+- Ao criar/editar serviço, a descrição aceita no máximo 550 caracteres; o limite
   aparece no campo e também é validado nas entradas do comando.
 - Refinamentos pertencem ao serviço específico, não ao perfil genérico.
 - Backend valida que tema pertence à terapia e refinamento pertence a tema
@@ -120,6 +121,23 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
   antes de avançar ou salvar quando o valor estiver fora do intervalo.
 - CTA "Nao encontrou sua terapia?" e apenas informativo/futuro; nunca cria
   terapia.
+- O subtítulo do novo serviço orienta: “Escolha a terapia que você quer
+  oferecer. Se ela for autoral ou não estiver na lista, selecione “Não encontrou
+  sua terapia?” e envie uma solicitação de cadastro.”
+- A etapa de temas usa o título “Temas e refinamentos deste serviço” e a
+  instrução “Marque os temas que fazem parte do seu trabalho e, em cada um
+  deles, escolha até 3 situações com as quais você costuma trabalhar”. O ícone
+  informativo abre um popover acessível, com fechamento por clique fora ou
+  `Escape`, área mínima de toque de 44px e posicionamento ajustado ao viewport.
+  O popover explica: “Por que fazemos essas perguntas? Essas escolhas ajudam o
+  TES a entender melhor como você trabalha. Quando uma pessoa faz o Match, ela
+  conta um pouco sobre o que está vivendo e o que busca naquele momento. A
+  partir disso, o TES encontra caminhos e terapeutas que podem fazer mais
+  sentido para ela. Por isso, escolha apenas os temas que realmente fazem parte
+  da sua atuação com essa terapia e, em cada um deles, até 3 situações com que
+  você costuma trabalhar. Você não precisa marcar tudo. Quanto mais fiel essa
+  escolha for ao seu trabalho, melhores podem ser as conexões feitas pelo
+  Match.”
 - Catalogo permitido nao inclui terapia `draft`, `deprecated`, `archived` ou
   sem ao menos um Tema do Match ativo.
 - Criacao por `therapyName` falha.
@@ -128,9 +146,15 @@ Terapeuta, a API `/api/therapist/services`, a Edge Function
 - Terapeuta nao ve/altera servico de outro terapeuta.
 - Paciente nao acessa a projecao privada.
 - Serviço pausado não aparece em views públicas reserváveis.
+- O filtro “Todos” inclui serviços arquivados para preservar a visão completa
+  da carteira; o filtro “Arquivados” continua disponível para refinamento.
+- Serviços arquivados exibem a ação “Desarquivar”. A ação usa a transição de
+  ativação autorizada e limpa `archived_at` no backend antes de atualizar o
+  cartão.
 - Motivos técnicos de bloqueio devem ser traduzidos para texto de produto na UI.
 - A UI fala em `Suas terapias`, `Adicionar terapia`, `Ativar terapia`,
-  `Terapias mais agendadas`, `Novo serviço` e `Editar serviço`. A etapa de
+  `Desarquivar`, `Terapias mais agendadas`, `Novo serviço` e `Editar serviço`.
+  A etapa de
   configuração usa `Atendimento` e a revisão usa `Prática`; identificadores
   técnicos como `service` e `therapist_services` permanecem no contrato interno.
 - Nos cards, o primeiro tema aparece uma única vez como rótulo resumido. Temas

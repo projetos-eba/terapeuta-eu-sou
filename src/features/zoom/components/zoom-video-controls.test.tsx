@@ -120,4 +120,15 @@ describe("ZoomVideoControls", () => {
       screen.getByRole("button", { name: "Desligar câmera" }).querySelector(".lucide-video"),
     ).not.toBeNull();
   });
+
+  it("keeps camera activation in the icon control on mobile", () => {
+    render(
+      <ZoomVideoControls {...baseProps} actorRole="patient" roleType={0} />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Ativar minha câmera" }),
+    ).toBeNull();
+    expect(screen.getByRole("button", { name: "Ativar câmera" })).toBeVisible();
+  });
 });

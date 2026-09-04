@@ -101,6 +101,10 @@ runtime.serve(async (request) => {
       },
       "return=minimal",
     );
+    await client.rpc("recheck_connect_blocked_payments_v1", {
+      p_now: new Date().toISOString(),
+      p_therapist_profile_id: therapist.id,
+    });
     await client.post(
       "/rest/v1/therapist_connect_account_snapshots",
       {

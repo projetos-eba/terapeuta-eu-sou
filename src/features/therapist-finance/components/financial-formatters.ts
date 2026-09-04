@@ -2,6 +2,7 @@ import type {
   FinancialMetricComparison,
   TherapistFinancialStatus,
   TherapistPayoutStatus,
+  TherapistReceiptStatus,
 } from "../therapist-finance.types";
 
 export function formatCurrency(cents: number) {
@@ -24,6 +25,19 @@ export function formatDateTime(
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    month: "2-digit",
+    timeZone: timezone,
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+export function formatDateOnly(
+  value: string | null,
+  timezone = "America/Sao_Paulo",
+) {
+  if (!value) return "Não informado";
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
     month: "2-digit",
     timeZone: timezone,
     year: "numeric",
@@ -124,9 +138,17 @@ export const defaultFinancialReceiptCopy: FinancialReceiptCopy = {
 };
 
 export const financialReceiptCopyByStatus: Record<
-  TherapistFinancialStatus,
+  TherapistReceiptStatus,
   FinancialReceiptCopy
 > = {
+  bank_pending: receiptCopy(
+    "A caminho do banco",
+    "O Transfer foi concluído e aguarda o Payout bancário.",
+  ),
+  blocked: receiptCopy(
+    "Recebimentos bloqueados",
+    "Estes valores precisam de uma análise antes de seguir.",
+  ),
   canceled: {
     description:
       "Veja cada recebimento, a sessão cancelada e a forma de pagamento. Essa sessão não aconteceu.",
@@ -153,36 +175,24 @@ export const financialReceiptCopyByStatus: Record<
   },
   paid: {
     description:
-      "Veja cada recebimento, a sessão e a forma de pagamento. O pagamento foi confirmado.",
+      "Veja os valores já depositados por Payout pago e integralmente conciliado.",
     emptyDescription:
       "Não há recebimentos pagos neste período. Tente outro período ou limpe os filtros.",
     emptyTitle: "Nenhum recebimento pago encontrado",
     title: "Recebimentos pagos",
   },
-  partially_refunded: {
-    description:
-      "Veja cada recebimento, a sessão e a forma de pagamento. Parte do valor foi devolvida ao cliente.",
-    emptyDescription:
-      "Não há recebimentos com reembolso parcial neste período. Tente outro período ou limpe os filtros.",
-    emptyTitle: "Nenhum recebimento com reembolso parcial encontrado",
-    title: "Recebimentos com reembolso parcial",
-  },
-  pending: {
-    description:
-      "Veja cada recebimento, a sessão e a forma de pagamento. O pagamento ainda aguarda confirmação.",
-    emptyDescription:
-      "Não há recebimentos pendentes neste período. Tente outro período ou limpe os filtros.",
-    emptyTitle: "Nenhum recebimento pendente encontrado",
-    title: "Recebimentos pendentes",
-  },
-  processing: {
-    description:
-      "Veja cada recebimento, a sessão e a forma de pagamento. O pagamento ainda está sendo processado.",
-    emptyDescription:
-      "Não há recebimentos em processamento neste período. Tente outro período ou limpe os filtros.",
-    emptyTitle: "Nenhum recebimento em processamento encontrado",
-    title: "Recebimentos em processamento",
-  },
+  eligible: receiptCopy(
+    "Elegíveis para o próximo repasse",
+    "Estes valores já atendem a todas as regras e aguardam o lote semanal.",
+  ),
+  payout_processing: receiptCopy(
+    "Repasses em processamento",
+    "Estes valores já entraram em lote ou têm Transfer em andamento.",
+  ),
+  receivable: receiptCopy(
+    "Valores a receber",
+    "Sessões futuras pagas que ainda vão cumprir as etapas do repasse.",
+  ),
   refunded: {
     description:
       "Veja cada recebimento, a sessão e a forma de pagamento. O valor foi devolvido ao cliente.",
@@ -191,18 +201,63 @@ export const financialReceiptCopyByStatus: Record<
     emptyTitle: "Nenhum recebimento reembolsado encontrado",
     title: "Recebimentos reembolsados",
   },
+  reversed: receiptCopy(
+    "Repasses revertidos",
+    "Estes valores tiveram o Transfer revertido e precisam de conferência.",
+  ),
+  waiting_confirmation: receiptCopy(
+    "Aguardando confirmação",
+    "Sessões pagas que ainda aguardam a confirmação da realização.",
+  ),
+  waiting_safety_period: receiptCopy(
+    "No prazo de segurança",
+    "Sessões confirmadas dentro do prazo de segurança anterior à liquidação.",
+  ),
+  waiting_settlement: receiptCopy(
+    "Em liquidação",
+    "A Stripe ainda não disponibilizou estes valores para repasse.",
+  ),
+};
+
+function receiptCopy(title: string, description: string): FinancialReceiptCopy {
+  return {
+    description,
+    emptyDescription: `Não há ${title.toLocaleLowerCase("pt-BR")} neste período. Tente outro período ou limpe os filtros.`,
+    emptyTitle: `Nenhum item em ${title.toLocaleLowerCase("pt-BR")}`,
+    title,
+  };
+}
+
+export const receiptStatusLabels: Record<TherapistReceiptStatus, string> = {
+  bank_pending: "A caminho do banco",
+  blocked: "Bloqueado",
+  canceled: "Cancelado",
+  disputed: "Contestado",
+  eligible: "Elegível para o próximo repasse",
+  failed: "Falhou",
+  paid: "Pago",
+  payout_processing: "Repasse em processamento",
+  receivable: "A receber",
+  refunded: "Reembolsado",
+  reversed: "Revertido",
+  waiting_confirmation: "Aguardando confirmação",
+  waiting_safety_period: "Prazo de segurança",
+  waiting_settlement: "Em liquidação",
 };
 
 export const payoutStatusLabels: Record<TherapistPayoutStatus, string> = {
+  bank_pending: "A caminho do banco",
   batched: "Incluído no próximo repasse",
   blocked: "Bloqueado",
   eligible: "Disponível",
   failed: "Falhou",
+  paid: "Pago",
   reversed: "Estornado",
   transferred: "Transferido",
   transfer_pending: "Processando",
   waiting_confirmation: "Aguardando confirmação",
   waiting_safety_period: "Período de segurança",
+  waiting_settlement: "Em liquidação",
 };
 
 export function formatPaymentMethod(value: string | null) {

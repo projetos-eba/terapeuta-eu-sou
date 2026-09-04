@@ -8,6 +8,7 @@ import { SupabaseHttpError } from "../_shared/auth/supabase-rest.ts";
 import { DomainError } from "../_shared/payments/http.ts";
 import {
   mapBookingCheckoutDatabaseError,
+  resolveExistingCheckoutHold,
   selectAvailableSlot,
   slotRangeEnd,
   validateBookingCheckoutCommand,
@@ -28,7 +29,7 @@ Deno.test(
       termsAccepted: true,
     });
 
-    assertEquals(command.holdTtlSeconds, 600);
+    assertEquals(command.holdTtlSeconds, 300);
     assertEquals(command.requestId, requestId);
     assertEquals(command.serviceId, serviceId);
     assertEquals(command.sharedNote, null);
@@ -166,6 +167,69 @@ Deno.test(
 Deno.test("booking checkout command derives a bounded lookup range", () => {
   assertEquals(slotRangeEnd(startsAt), "2026-07-29T12:00:00.000Z");
 });
+
+Deno.test(
+  "booking checkout resumes a consumed idempotent hold before checking availability",
+  () => {
+    const command = validateBookingCheckoutCommand({
+      requestId,
+      serviceId,
+      startsAt,
+      termsAccepted: true,
+    });
+    const result = resolveExistingCheckoutHold(
+      {
+        consumedBookingId: "b6000000-0000-4000-8000-000000000001",
+        endsAt,
+        expiresAt: "2026-07-28T12:10:00.000Z",
+        id: "c6000000-0000-4000-8000-000000000001",
+        patientProfileId: "b1000000-0000-4000-8000-000000000005",
+        serviceId,
+        startsAt,
+        status: "consumed",
+        timezone: "America/Sao_Paulo",
+      },
+      command,
+      "b1000000-0000-4000-8000-000000000005",
+    );
+
+    assertEquals(result?.bookingId, "b6000000-0000-4000-8000-000000000001");
+    assertEquals(result?.hold.id, "c6000000-0000-4000-8000-000000000001");
+  },
+);
+
+Deno.test(
+  "booking checkout rejects a reused attempt with different input",
+  () => {
+    const command = validateBookingCheckoutCommand({
+      requestId,
+      serviceId,
+      startsAt,
+      termsAccepted: true,
+    });
+    const error = assertThrows(
+      () =>
+        resolveExistingCheckoutHold(
+          {
+            consumedBookingId: "b6000000-0000-4000-8000-000000000001",
+            endsAt,
+            expiresAt: "2026-07-28T12:10:00.000Z",
+            id: "c6000000-0000-4000-8000-000000000001",
+            patientProfileId: "b1000000-0000-4000-8000-000000000005",
+            serviceId,
+            startsAt: "2026-07-28T12:10:00.000Z",
+            status: "consumed",
+            timezone: "America/Sao_Paulo",
+          },
+          command,
+          "b1000000-0000-4000-8000-000000000005",
+        ),
+      DomainError,
+    );
+
+    assertEquals(error.code, "idempotency_key_reused");
+  },
+);
 
 Deno.test("booking checkout command maps A2 and A5 database errors", () => {
   const unavailable = mapBookingCheckoutDatabaseError(

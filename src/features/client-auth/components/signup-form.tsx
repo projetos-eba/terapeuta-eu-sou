@@ -3,9 +3,13 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import Link from "next/link";
 import type { Route } from "next";
-import { LockKeyhole, Mail, Phone, UserRound } from "lucide-react";
+import { LockKeyhole, Mail, UserRound } from "lucide-react";
 
-import { PasswordVisibilityToggle, TESButton } from "@/components/tes";
+import {
+  PasswordVisibilityToggle,
+  PhoneInput,
+  TESButton,
+} from "@/components/tes";
 import { routes } from "@/lib/routes";
 
 import type { ClientAuthApiError } from "../errors";
@@ -19,6 +23,8 @@ export function ClientSignupForm({ next }: { next?: string }) {
   const [fieldErrors, setFieldErrors] = useState<ClientAuthFieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [phoneCountryCode, setPhoneCountryCode] = useState("55");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -38,6 +44,7 @@ export function ClientSignupForm({ next }: { next?: string }) {
           next,
           password: String(form.get("password") ?? ""),
           phone: String(form.get("phone") ?? ""),
+          phoneCountryCode: String(form.get("phoneCountryCode") ?? "55"),
           termsAccepted: form.get("termsAccepted") === "on",
         }),
         headers: {
@@ -107,14 +114,16 @@ export function ClientSignupForm({ next }: { next?: string }) {
           placeholder="seuemail@exemplo.com"
           type="email"
         />
-        <Field
-          autoComplete="tel"
+        <PhoneInput
+          countryCode={phoneCountryCode}
           error={fieldErrors.phone}
-          icon={<Phone className="size-4" aria-hidden="true" />}
+          id="phone"
           label="Celular"
           name="phone"
-          placeholder="(00) 00000-0000"
-          type="tel"
+          onCountryCodeChange={setPhoneCountryCode}
+          onPhoneChange={setPhone}
+          phone={phone}
+          required
         />
         <Field
           error={fieldErrors.birthDate}

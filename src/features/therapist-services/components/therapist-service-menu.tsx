@@ -1,6 +1,14 @@
 "use client";
 
-import { Archive, Edit3, MoreVertical, Pause, Play, Rows3 } from "lucide-react";
+import {
+  Archive,
+  ArchiveRestore,
+  Edit3,
+  MoreVertical,
+  Pause,
+  Play,
+  Rows3,
+} from "lucide-react";
 import { useState } from "react";
 
 import { TESDialog } from "@/components/tes";
@@ -14,7 +22,8 @@ export type TherapistServiceMenuAction =
   | "edit"
   | "move_down"
   | "move_up"
-  | "pause";
+  | "pause"
+  | "unarchive";
 
 export function TherapistServiceMenu({
   canMoveDown,
@@ -30,7 +39,10 @@ export function TherapistServiceMenu({
   service: TherapistServiceSummary;
 }) {
   const [open, setOpen] = useState(false);
-  const canActivate = service.status === "draft" || service.status === "paused";
+  const canActivate =
+    service.status === "draft" ||
+    service.status === "paused" ||
+    service.status === "archived";
   const canPause = service.status === "active";
   const canArchive = service.status !== "archived";
 
@@ -63,11 +75,19 @@ export function TherapistServiceMenu({
             />
             <MenuButton
               disabled={!canActivate}
-              icon={<Play aria-hidden="true" size={17} />}
-              label="Ativar"
+              icon={
+                service.status === "archived" ? (
+                  <ArchiveRestore aria-hidden="true" size={17} />
+                ) : (
+                  <Play aria-hidden="true" size={17} />
+                )
+              }
+              label={service.status === "archived" ? "Desarquivar" : "Ativar"}
               onClick={() => {
                 setOpen(false);
-                onAction("activate");
+                onAction(
+                  service.status === "archived" ? "unarchive" : "activate",
+                );
               }}
             />
             <MenuButton

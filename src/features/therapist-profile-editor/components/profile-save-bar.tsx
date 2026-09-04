@@ -24,6 +24,7 @@ export function ProfileSaveBar({
   pendingAction,
   propagationNotice,
   published,
+  requiresInitialReview,
 }: {
   autoSaveState: AutoSaveState;
   firstConfiguration: boolean;
@@ -36,6 +37,7 @@ export function ProfileSaveBar({
   pendingAction: PendingAction | null;
   propagationNotice: string;
   published: boolean;
+  requiresInitialReview: boolean;
 }) {
   const publishDisabled =
     pendingAction !== null ||
@@ -46,6 +48,7 @@ export function ProfileSaveBar({
     hasDraft,
     hasUnsavedChanges,
     propagationNotice,
+    requiresInitialReview,
   });
 
   return (
@@ -157,13 +160,39 @@ function getSaveBarMessage({
   hasDraft,
   hasUnsavedChanges,
   propagationNotice,
+  requiresInitialReview,
 }: {
   firstConfiguration: boolean;
   hasDraft: boolean;
   hasUnsavedChanges: boolean;
   propagationNotice: string;
+  requiresInitialReview: boolean;
 }) {
   if (firstConfiguration) {
+    if (!requiresInitialReview) {
+      if (hasUnsavedChanges) {
+        return {
+          description:
+            "A publicação salva os dados preenchidos e atualiza o perfil público sem nova análise administrativa.",
+          title:
+            "Publique esta versão quando as informações estiverem prontas.",
+        };
+      }
+
+      if (hasDraft) {
+        return {
+          description: propagationNotice,
+          title: "Existe uma versão salva aguardando publicação.",
+        };
+      }
+
+      return {
+        description:
+          "Faça alterações, salve um rascunho e publique quando quiser atualizar o perfil público.",
+        title: "Seu cadastro já foi aprovado.",
+      };
+    }
+
     if (hasUnsavedChanges) {
       return {
         description:

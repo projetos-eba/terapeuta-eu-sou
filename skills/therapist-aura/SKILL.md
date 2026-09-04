@@ -6,6 +6,16 @@
 - Capability: `aura_full`
 - Plano: Premium Plus
 
+## Soft launch
+
+- `AURA_ENABLED` é uma flag server-only e fail-closed: apenas o valor literal
+  `true` libera a Assessora Aura.
+- O acesso funcional exige `AURA_ENABLED` e a capability `aura_full`.
+- Com a flag desligada, sidebar e rota exibem “Em breve”; a rota autenticada,
+  dashboard, service, queries e dismiss não podem executar leituras ou RPCs da
+  Aura.
+- A reativação ocorre por configuração de ambiente seguida de deploy/restart.
+
 ## Referência visual e composição
 
 - Figma principal: arquivo `OSXJi8tknHHCj82MTY2NbG`, nó `13366:1634`; o
@@ -94,6 +104,8 @@
 - `npm run typecheck`
 - `npm run lint`
 - `npm run build`
+- Cobrir flag desligada/ligada, deep link sem chamada de dados e dashboard sem
+  RPC quando a flag estiver desligada.
 - `npx vitest run src/features/therapist-aura` (rules, mapper, page and dismiss UX)
 - `npx supabase test db --local supabase/tests/083_aura_contract_security.sql`
 - Playwright headed em `/terapeuta/assessor-ia` para Premium Plus logado.

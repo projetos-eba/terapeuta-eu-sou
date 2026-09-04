@@ -25,8 +25,20 @@ test.describe("therapist Sessions operational surface", () => {
     await expect(page.getByText(/Horário mais agendado/i)).toHaveCount(0);
     await expect(page.getByText(/Terapia mais realizada/i)).toHaveCount(0);
     await expect(
-      page.getByRole("heading", { name: "Próximas sessões" }),
+      page.getByRole("heading", { name: "Sessões que irão acontecer" }),
     ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Sessões que já passaram" }),
+    ).toBeVisible();
+    const sessionCardTitles = await page
+      .locator(
+        'section[aria-label="Lista de sessões"] > section[aria-label="Sessões que irão acontecer"] h2, section[aria-label="Lista de sessões"] > section[aria-label="Sessões que já passaram"] h2',
+      )
+      .allTextContents();
+    expect(sessionCardTitles.slice(0, 2)).toEqual([
+      "Sessões que irão acontecer",
+      "Sessões que já passaram",
+    ]);
     await expect(
       page.getByRole("cell", { name: "Processando" }).first(),
     ).toBeVisible();
@@ -35,7 +47,7 @@ test.describe("therapist Sessions operational surface", () => {
     await page.getByRole("button", { name: "Filtrar" }).click();
     await expect(page).toHaveURL(/period=7/);
     await expect(
-      page.getByRole("heading", { name: "Histórico do período" }),
+      page.getByRole("heading", { name: "Sessões que já passaram" }),
     ).toBeVisible();
 
     await page.locator('select[name="period"]').selectOption("90");
@@ -59,6 +71,17 @@ test.describe("therapist Sessions operational surface", () => {
       await expect(
         page.getByRole("heading", { name: "Taxa de presença" }),
       ).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Sessões que irão acontecer" }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("heading", { name: "Sessões que já passaram" }),
+      ).toBeVisible();
+      if (width >= 1280) {
+        await expect(page.locator("table").first()).toBeVisible();
+      } else {
+        await expect(page.locator("table").first()).toBeHidden();
+      }
       await expectNoHorizontalPageOverflow(page);
     }
   });

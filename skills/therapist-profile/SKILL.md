@@ -81,12 +81,12 @@ que possível. A publicação continua sendo uma ação separada.
   `Perfil completo` (conteúdo editorial preenchido), `Cadastro aprovado`
   (análise administrativa concluída) e `Perfil publicado` (versão visível para
   o público).
-- Toda publicação de uma nova versão, inclusive uma republicação de perfil já
-  aprovado, envia atomicamente o conteúdo para a fila administrativa: cria ou
-  reenfileira `therapist_verifications` em `submitted`, mantém a versão para a
-  leitura segura do Admin e remove visibilidade/recebimento de reservas até a
-  aprovação. Falha na fila deve abortar a publicação em vez de produzir
-  sucesso parcial.
+- A primeira publicação de perfil ainda não aprovado envia atomicamente o
+  conteúdo para a fila administrativa e remove visibilidade/recebimento de
+  reservas até a decisão. Depois de aprovado, o terapeuta pode publicar uma
+  nova versão editorial sem reenfileirar `therapist_verifications`, sem remover
+  a visibilidade ou interromper reservas; `profile_published` registra a
+  alteração de modo imutável. Perfis suspensos não publicam.
 - Depois de publicar, a interface deve confirmar o resultado em `TESDialog`:
   `Publicação enviada com sucesso` quando a resposta já estiver aprovada e
   `Perfil enviado para análise` enquanto a verificação administrativa estiver
@@ -136,6 +136,8 @@ que possível. A publicação continua sendo uma ação separada.
   `supabase/audits/therapist_public_slug_preflight.sql`; colisão entre
   profissionais interrompe a aplicação.
 - Sem mocks silenciosos em produção.
+- Horários do fallback demonstrativo são gerados e apresentados no fuso
+  `America/Sao_Paulo` (Brasília, UTC−3), sem depender do fuso do servidor.
 - A prévia autenticada da versão publicada é uma composição estática do próprio
   perfil público, em canvas desktop de 1440 px reduzido proporcionalmente. Ela
   não é screenshot persistido, não executa reserva, favoritos, compartilhamento,
@@ -202,9 +204,10 @@ rascunho` como ação concorrente quando o perfil ainda não tem versão
   obrigatórios `identity_document` e `address_proof`, validação de assinatura
   de arquivo, tamanho máximo de 10 MB, tipos PDF/JPG/PNG e linguagem de
   produto sem expor buckets ou detalhes técnicos.
-- A UI deve deixar claro que os documentos são privados, usados apenas para
-  validação administrativa e podem ser substituídos pelo terapeuta via nova
-  anexação do mesmo tipo.
+- A UI deve deixar claro que os documentos são privados e usados apenas para
+  validação administrativa. Documento `accepted` mostra somente seu estado
+  aprovado e não oferece envio/substituição; novo envio só volta a ser
+  permitido para o tipo cujo Admin solicitou reenvio.
 - A comunicação editorial usa `Sua apresentação` para o texto principal. Os
   campos legados `headline`, `shortIntro` e `bio` permanecem apenas no contrato
   interno e não aparecem como nomes técnicos para o terapeuta.

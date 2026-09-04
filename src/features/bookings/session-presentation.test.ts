@@ -14,6 +14,7 @@ import {
 import type { SessionReadModelItem } from "./session-read-model.types";
 import {
   getSessionOperationDisabledReason,
+  isSessionUpcoming,
   mapSessionPresentation,
 } from "./session-presentation";
 
@@ -85,8 +86,36 @@ describe("mapSessionPresentation", () => {
     );
 
     expect(result.state).toBe("cancelled");
+    expect(result.tone).toBe("danger");
     expect(result.actions.canAccessZoom).toBe(false);
     expect(result.actions.canCancel).toBe(false);
+  });
+
+  it("keeps a future cancelled session out of the upcoming group", () => {
+    expect(
+      isSessionUpcoming(
+        sessionFixture({
+          bookingStatus: BookingStatus.CancelledByPatient,
+          endsAt: "2026-07-28T14:00:00.000Z",
+          startsAt: "2026-07-28T13:00:00.000Z",
+        }),
+        now,
+      ),
+    ).toBe(false);
+  });
+
+  it("keeps a closed session out of the upcoming group even with a future date", () => {
+    expect(
+      isSessionUpcoming(
+        sessionFixture({
+          bookingStatus: BookingStatus.Completed,
+          endsAt: "2026-07-28T14:00:00.000Z",
+          fulfillmentStatus: FulfillmentStatus.ConfirmedByTherapist,
+          startsAt: "2026-07-28T13:00:00.000Z",
+        }),
+        now,
+      ),
+    ).toBe(false);
   });
 
   it.each([
@@ -180,6 +209,7 @@ function sessionFixture(
     attendanceSource: AttendanceSource.Unavailable,
     attendanceStatus: AttendanceStatus.Pending,
     bookingId: "f2000000-0000-4000-8000-000000000001",
+    sessionReference: "26G000001",
     bookingStatus: BookingStatus.Confirmed,
     bookingVersion: 1,
     cancellationDecision: null,

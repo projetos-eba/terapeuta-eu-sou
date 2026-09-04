@@ -39,7 +39,6 @@ export function TherapistFinancePage({
         <FinancialReceiptsTab
           dateRange={dateRange}
           filters={filters}
-          overview={data.overview}
           receipts={data.receipts}
         />
       ) : null}
@@ -53,7 +52,10 @@ export function TherapistFinancePage({
       ) : null}
 
       {tab === "account" ? (
-        <FinancialConnectAccountTab account={data.account} />
+        <FinancialConnectAccountTab
+          account={data.account}
+          autoSync={connectNotice === "return"}
+        />
       ) : null}
 
       {tab === "summary" ? (

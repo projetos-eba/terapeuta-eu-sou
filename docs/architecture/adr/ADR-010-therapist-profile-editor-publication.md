@@ -1,6 +1,6 @@
 # ADR-010 — Meu Perfil: rascunho privado e publicação pelo terapeuta
 
-Status: aceito em 2026-07-28; ampliado em 2026-08-18.
+Status: aceito em 2026-07-28; ampliado em 2026-08-18 e 2026-09-02.
 
 ## Contexto
 
@@ -19,6 +19,11 @@ público existente já derivava de `therapist_profiles` e de
   publicada de conteúdo e invalida apenas superfícies públicas afetadas.
 - Administração continua responsável por verificação, suspensão, documentos,
   plano e bloqueios.
+- A primeira publicação de um perfil ainda não aprovado entra na análise
+  administrativa. Depois de `therapist_profiles.status = approved`, publicar
+  uma nova versão editorial não reabre `therapist_verifications`, não remove a
+  visibilidade e não interrompe reservas; o evento imutável
+  `profile_published` permanece o registro da alteração.
 - Mutações passam por Edge Function autenticada com `service_role`; a identidade
   do terapeuta é derivada de `auth.users`, nunca de `therapist_profile_id`
   enviado pelo navegador.
@@ -43,6 +48,9 @@ público existente já derivava de `therapist_profiles` e de
   somente leitura no editor.
 - Documentos privados usam tabela e bucket separados e não entram em DTOs
   públicos.
+- Um documento privado aceito fica bloqueado para novo envio ou substituição.
+  O bloqueio é aplicado no banco e na Edge Function; apenas uma solicitação
+  administrativa de reenvio volta a liberar aquele tipo de documento.
 - Alterações futuras devem preservar o contrato entre:
   `TherapistProfileEditorData`, `TherapistSearchCard`,
   `TherapistProfilePublicDetail`, `TherapistProfileAdminDetail`,

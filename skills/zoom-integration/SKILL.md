@@ -5,6 +5,15 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
 
 # Integracao Zoom Video SDK
 
+## Contrato mobile de câmera
+
+Em mobile, a preferência de câmera da sala de espera não dispara publicação
+automática após o join. Na sala ativa, somente o ícone da câmera chama
+`startVideo()` diretamente no gesto do usuário. O container local montado,
+os eventos de captura e as reconexões reconciliam o self-view automaticamente.
+Uma página web não consegue revogar a permissão persistida do navegador;
+nunca simular revogação nem forçar `stop/start` durante reconexão.
+
 ## Fontes
 
 1. `AGENTS.md`.
@@ -33,13 +42,12 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
   `docs/zoom/patient-preview-recovery-2026-08-28.md` e
   `docs/zoom/abrupt-reentry-self-view-2026-08-28.md` e
   `docs/zoom/mobile-self-view-binding-2026-08-28.md`.
-- Prévia mobile usa um `<video-player>` persistente montado pelo React. Quando
-  a câmera vem pré-ativada, aguardar esse renderer antes de `startVideo`; sua
-  montagem tardia deve reconciliar a prévia automaticamente. Depois da captura,
-  `bVideoOn` é diagnóstico, não bloqueio: passar o nó ao terceiro argumento de
-  `attachVideo` e só confirmar sucesso quando `node-id` corresponder ao
-  participante local. Elemento conectado não basta. Timeout e cleanup usam
-  `detachVideo(userId, element)` sem repetir publicação, join, access ou JWT.
+- No mobile, o React preserva o `video-player-container`, mas o player local é
+  o elemento retornado por `attachVideo(userId, quality)` e anexado somente ao
+  tile “Você”. A montagem tardia do container dispara reconciliação automática.
+  Depois da captura, `bVideoOn` é diagnóstico, não bloqueio. Ownership,
+  geração, cliente, stream e ciclo de captura são revalidados antes de anexar
+  ou remover o player; falha de self-view não repete join, access ou JWT.
 - Browser: `@zoom/videosdk`.
 - Paciente acessa a sala dedicada por `/app/encontros/:bookingId/video`.
 - Terapeuta acessa a sala dedicada por
@@ -61,8 +69,12 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
   técnica, não prazo de expiração.
 - A reserva de maintenance revalida os motivos e marca o pedido de fim sob
   lock da sessão antes de chamar o provider. Somente fim manual autorizado, fim
-  agendado e hard timeout bloqueiam novos acessos. Jobs legados de ausência ou
-  orphaning são no-op auditável; cron local fica inativo.
+  agendado, hard timeout e no-show do paciente verificado bloqueiam novos
+  acessos. `end_patient_no_show` só é elegível após T+10 estrito sem chegada
+  autenticada da versão atual nem `session.user_joined` confiável do paciente;
+  ele usa o mesmo lock consultivo da chegada e nunca trata atraso/saída do
+  terapeuta como ausência do paciente. Jobs legados de ausência ou orphaning
+  são no-op auditável; cron local fica inativo.
 - Stripe confirma pagamento; Zoom nunca confirma pagamento, repasse ou servico.
 - Nao ha criacao remota previa de sala. A sessao nasce no primeiro `join`.
 - Paciente so recebe JWT apos webhook confiavel de `session.user_joined` do
@@ -74,8 +86,10 @@ description: Implementar e manter integracao Zoom Video SDK no TES com JWT backe
   watchdog usa `end_hard_timeout`. Nenhum deles altera o horário da reserva.
 - A espera autenticada registra chegada pontual da versão atual entre T-15 e
   T+10 inclusive. Essa chegada ou `session.user_joined` confiável preserva a
-  reconexão até, mas não incluindo, `scheduled_ends_at`; todo join continua
-  exigindo presença atual do terapeuta.
+  reconexão de paciente e terapeuta até, mas não incluindo,
+  `scheduled_ends_at`; todo join do paciente continua exigindo presença atual
+  do terapeuta. Portanto um paciente pontual pode esperar e entrar com o
+  terapeuta mesmo que ele só chegue após T+10.
 - Encerramento definitivo é exclusivo do terapeuta entre T-5 inclusive e o fim
   agendado. O Edge valida horário do banco, ownership e sessão ativa, aciona o
   provedor e confirma `manual_end`; o browser nunca usa `leave(true)`.
@@ -106,9 +120,9 @@ regressao pgTAP para as duas assinaturas.
 - Validar descarte abrupto do processo do paciente sem cleanup observável,
   reentrada com novo `userId`/mesmo `userKey`, captura tardia e recuperação da
   prévia sem nova publicação ou JWT. `pagehide` continua limpando a mídia.
-- Validar renderer local montado antes da câmera pré-ativada e vínculo tardio
-  do player em Chromium e WebKit mobile: `bVideoOn` atrasado, `node-id` tardio,
-  timeout com detach exato e operação antiga incapaz de alterar a geração nova.
+- Validar container local montado antes da ativação e vínculo tardio do player
+  retornado pelo SDK em Chromium e WebKit mobile: `bVideoOn` atrasado, attach
+  tardio, detach exato e operação antiga incapaz de alterar a geração nova.
 - Validar desktop e mobile, foco visível, nomes acessíveis e retorno ao detalhe.
 - `npm run zoom:video-sdk:env`
 - `npm run zoom:video-sdk:test`

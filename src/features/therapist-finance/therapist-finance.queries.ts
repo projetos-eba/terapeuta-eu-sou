@@ -10,21 +10,21 @@ export function queryTherapistFinancialOverview(
   accessToken: string,
   body: QueryBody,
 ) {
-  return requestFinanceRpc("get_private_therapist_financial_overview_v1", {
+  return requestFinanceRpc("get_private_therapist_financial_overview_v2", {
     accessToken,
     body,
   });
 }
 
 export function queryTherapistReceipts(accessToken: string, body: QueryBody) {
-  return requestFinanceRpc("get_private_therapist_receipts_v1", {
+  return requestFinanceRpc("get_private_therapist_receipts_v2", {
     accessToken,
     body,
   });
 }
 
 export function queryTherapistPayouts(accessToken: string, body: QueryBody) {
-  return requestFinanceRpc("get_private_therapist_payouts_v1", {
+  return requestFinanceRpc("get_private_therapist_payouts_v2", {
     accessToken,
     body,
   });

@@ -813,9 +813,9 @@ function SessionRulesCard({
             a pessoa atendida estiverem fora do Brasil.
           </p>
           <RuleRow
-            description="Tempo mínimo para um novo agendamento."
+            description="É o tempo mínimo entre o momento do agendamento e o início da sessão."
             icon={CalendarDays}
-            info="É o tempo mínimo entre o momento do agendamento e o início da sessão. Por exemplo: 120 minutos significa que a pessoa precisa agendar com pelo menos 2 horas de antecedência."
+            info="Por exemplo: com 2 horas de antecedência, uma sessão às 12h só poderá ser agendada com pelo menos 2 horas de antecedência, ou seja até às 09:59am. Com 48 horas, o cliente só poderá agendar horários que estejam a pelo menos 48 horas do início da sessão. Essa configuração ajuda você a ter tempo suficiente para se organizar e se preparar para cada atendimento."
             label="Antecedência mínima"
           >
             <MinutesSelect
@@ -885,24 +885,41 @@ function RuleInfoPopover({ label, text }: { label: string; text: string }) {
   const [position, setPosition] = useState<{
     left: number;
     top: number;
+    width: number;
   } | null>(null);
   const id = useId();
   const rootRef = useRef<HTMLSpanElement>(null);
+  const tooltipRef = useRef<HTMLSpanElement>(null);
 
   function updatePosition() {
     const anchor = rootRef.current?.getBoundingClientRect();
     if (!anchor) return;
 
     const viewportPadding = 16;
-    const tooltipWidth = Math.min(288, window.innerWidth - viewportPadding * 2);
+    const tooltipWidth = Math.min(416, window.innerWidth - viewportPadding * 2);
     const maxLeft = window.innerWidth - tooltipWidth - viewportPadding;
+    const tooltipHeight =
+      tooltipRef.current?.getBoundingClientRect().height ?? 320;
+    const spaceBelow = window.innerHeight - anchor.bottom - viewportPadding;
+    const spaceAbove = anchor.top - viewportPadding;
+    const placeAbove = tooltipHeight > spaceBelow && spaceAbove > spaceBelow;
+    const top = placeAbove
+      ? Math.max(viewportPadding, anchor.top - tooltipHeight - 8)
+      : Math.min(
+          anchor.bottom + 8,
+          Math.max(
+            viewportPadding,
+            window.innerHeight - tooltipHeight - viewportPadding,
+          ),
+        );
 
     setPosition({
       left: Math.min(
         Math.max(viewportPadding, anchor.right - tooltipWidth),
         maxLeft,
       ),
-      top: anchor.bottom + 8,
+      top,
+      width: tooltipWidth,
     });
   }
 
@@ -949,9 +966,10 @@ function RuleInfoPopover({ label, text }: { label: string; text: string }) {
       </button>
       {open && position ? (
         <span
-          className="fixed z-20 max-h-[calc(100dvh-2rem)] w-[18rem] max-w-[calc(100vw-2rem)] overflow-y-auto rounded-xl border border-brand-lavender bg-white p-4 text-left text-sm font-semibold leading-6 text-tesText-secondary shadow-float"
+          className="fixed z-20 max-h-[calc(100dvh-2rem)] max-w-[calc(100vw-2rem)] overflow-y-auto break-words rounded-xl border border-brand-lavender bg-white p-4 text-left text-sm font-semibold leading-6 text-tesText-secondary shadow-float"
           id={id}
           role="tooltip"
+          ref={tooltipRef}
           style={position}
         >
           {text}

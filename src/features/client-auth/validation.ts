@@ -5,6 +5,7 @@ import type {
   ClientSignupInput,
   ClientSignupValue,
 } from "./types";
+import { validatePhoneNumber } from "@/lib/phone";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
@@ -18,6 +19,7 @@ export function validateClientSignup(
   const name = input.name.trim().replace(/\s+/g, " ");
   const email = input.email.trim().toLowerCase();
   const phoneDigits = input.phone.replace(/\D/g, "");
+  const phoneCountryCode = input.phoneCountryCode || "55";
   const birthDate = input.birthDate.trim();
 
   if (name.length < 2) {
@@ -28,14 +30,14 @@ export function validateClientSignup(
     fieldErrors.email = "Informe um e-mail válido.";
   }
 
-  if (phoneDigits.length < 10 || phoneDigits.length > 13) {
-    fieldErrors.phone = "Informe um celular com DDD.";
-  }
+  const phoneError = validatePhoneNumber(phoneCountryCode, phoneDigits, true);
+  if (phoneError) fieldErrors.phone = phoneError;
 
   if (!birthDate) {
     fieldErrors.birthDate = "Informe sua data de nascimento.";
   } else if (!isAtLeastAge(birthDate, MIN_AGE, now)) {
-    fieldErrors.birthDate = "Cadastro permitido apenas para maiores de 18 anos.";
+    fieldErrors.birthDate =
+      "Cadastro permitido apenas para maiores de 18 anos.";
   }
 
   if (input.password.length < MIN_PASSWORD_LENGTH) {
@@ -63,6 +65,7 @@ export function validateClientSignup(
       email,
       name,
       phoneDigits,
+      phoneCountryCode,
       termsAccepted: true,
     },
   };

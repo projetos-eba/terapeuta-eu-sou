@@ -5,6 +5,15 @@ description: Implementar e validar as salas dedicadas de videochamada Zoom para 
 
 # Sala dedicada de videochamada
 
+## Ativação mobile
+
+No mobile, a câmera selecionada no preflight é uma intenção transitória. A sala
+ativa mantém somente os controles por ícone; o ícone da câmera publica no clique
+e deve chamar `startVideo()` sem `await` anterior. O container “Você”, eventos
+de captura e reconexões recuperam o self-view automaticamente. Permissão negada
+deve orientar a revisão nas configurações do navegador, sem loop automático.
+Uma página web não consegue revogar a permissão persistida do iOS ou Android.
+
 ## Fontes obrigatórias
 
 1. `AGENTS.md`.
@@ -65,8 +74,10 @@ fornecidas em 2026-08-24 e as capas locais aprovadas são:
   estado host-first; nunca liberar JWT do paciente apenas por query string.
 - A chegada do paciente é registrada ao abrir a espera autenticada entre T-15 e
   T+10, inclusive, por booking e versão. Essa chegada ou uma participação
-  confiável anterior permite reconexão antes de `scheduled_ends_at`; cada join
-  ainda exige presença atual do terapeuta. T+10+1 ms bloqueia quem não chegou.
+  confiável anterior permite reconexão de ambos antes de `scheduled_ends_at`;
+  cada join do paciente ainda exige presença atual do terapeuta. Em T+10+1 ms,
+  os dois papéis são bloqueados somente se não houver nenhuma dessas evidências.
+  Atraso, saída e reconexão do terapeuta nunca equivalem a ausência do paciente.
 - Somente terapeuta encerra para todos, pelo backend, entre T-5 inclusive e o
   fim agendado. Antes disso o controle fica desabilitado. Nunca chamar
   `client.leave(true)` no navegador.
@@ -90,10 +101,9 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   específico e os testes com esse retorno. Cleanup espera captura/attach
   pendentes; desligar câmera para a publicação antes do detach.
 - Prévia deve recuperar também identidade `null → userId`, não só mudança
-  entre dois IDs. Preservar reconciliação idempotente por geração, retries
-  limitados e “Tentar mostrar minha câmera” sem repetir captura/JWT. Após
-  `startVideo`, `bVideoOn` atrasado é apenas diagnóstico: a ação manual refaz o
-  vínculo local, sem depender de nova leitura positiva do roster. Falha de
+  entre dois IDs. Preservar reconciliação idempotente por geração e retries
+  automáticos limitados, sem botão ou link textual e sem repetir captura/JWT.
+  Após `startVideo`, `bVideoOn` atrasado é apenas diagnóstico. Falha de
   detach ativo é diagnóstico de renderização, nunca aviso de encerramento.
   Em reentrada abrupta, `video-capturing-change: Started` reabre o orçamento de
   attach do ciclo de captura atual, inclusive se chega durante uma operação
@@ -102,14 +112,12 @@ video: false })` e um indicador local de nível. Ambos encerram tracks ao
   `docs/zoom/patient-preview-recovery-2026-08-28.md` e
   `docs/zoom/abrupt-reentry-self-view-2026-08-28.md` e
   `docs/zoom/mobile-self-view-binding-2026-08-28.md`.
-- No mobile, montar um único `<video-player>` local persistente. A câmera
-  pré-ativada deve aguardar a montagem desse renderer antes de
-  `startVideo`; a montagem tardia também reconcilia o attach sem interação.
-  Depois de `startVideo` e da identidade local autoritativa, chamar
-  `attachVideo` mesmo se `bVideoOn` ainda estiver falso; não usar esse campo nem
-  `isConnected` como prova de prévia. Passar o player como terceiro argumento e
-  confirmar o vínculo pelo `node-id` do participante local. Timeout desanexa
-  exatamente esse player e permite retry sem nova captura, join ou JWT. Observer, timer e Promise
+- No mobile, manter um único `video-player-container` local persistente e anexar
+  nele o player devolvido por `attachVideo(userId, quality)`. A montagem tardia
+  do container reconcilia o attach sem interação. Depois de `startVideo` e da
+  identidade local autoritativa, chamar `attachVideo` mesmo se `bVideoOn` ainda
+  estiver falso; não usar esse campo como pré-requisito. Timeout desanexa
+  exatamente o player retornado e permite retry sem nova captura, join ou JWT. Observer, timer e Promise
   pertencem a `generation + client + stream + captureEpoch + localUserId`. Se o
   vínculo do player persistente expirar no Safari móvel, uma única tentativa
   complementar usa o player criado pelo próprio SDK no mesmo container; ela

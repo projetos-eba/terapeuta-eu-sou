@@ -2,35 +2,39 @@ import {
   getTherapistFinancePage,
   TherapistFinanceErrorState,
   TherapistFinancePage,
-  type TherapistFinanceDateRange,
   type TherapistFinanceFilters,
   type TherapistFinanceTab,
 } from "@/features/therapist-finance";
+import { resolveTherapistFinanceDateRange } from "@/features/therapist-finance/therapist-finance-date-range";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import { canUseTherapistCapability } from "@/domain/tes";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
 
 const financialStatuses = new Set([
+  "bank_pending",
+  "blocked",
   "canceled",
   "disputed",
+  "eligible",
   "failed",
   "paid",
-  "partially_refunded",
-  "pending",
-  "processing",
+  "payout_processing",
+  "receivable",
   "refunded",
+  "reversed",
+  "waiting_confirmation",
+  "waiting_safety_period",
+  "waiting_settlement",
 ]);
 
 const payoutStatuses = new Set([
+  "bank_pending",
   "batched",
   "blocked",
-  "eligible",
   "failed",
+  "paid",
   "reversed",
-  "transferred",
   "transfer_pending",
-  "waiting_confirmation",
-  "waiting_safety_period",
 ]);
 
 export default async function TherapistFinanceRoute({
@@ -41,7 +45,11 @@ export default async function TherapistFinanceRoute({
   const params = await searchParams;
   const session = await requireTherapistSession(therapistRoutePolicies.finance);
   const tab = parseTab(first(params?.tab));
-  const dateRange = parseDateRange(first(params?.period));
+  const dateRange = resolveTherapistFinanceDateRange(
+    first(params?.period),
+    first(params?.start),
+    first(params?.end),
+  );
   const filters = parseFilters(params);
   const result = await getTherapistFinancePage({
     accessToken: session.accessToken,
@@ -76,25 +84,6 @@ function parseTab(value: string | undefined): TherapistFinanceTab {
   if (value === "repasses" || value === "payouts") return "payouts";
   if (value === "account" || value === "conta") return "account";
   return "summary";
-}
-
-function parseDateRange(value: string | undefined): TherapistFinanceDateRange {
-  const key = value === "90" || value === "month" ? value : "30";
-  const today = todayInSaoPaulo();
-
-  if (key === "month") {
-    return {
-      end: today,
-      key,
-      start: `${today.slice(0, 8)}01`,
-    };
-  }
-
-  return {
-    end: today,
-    key,
-    start: addDays(today, key === "90" ? -89 : -29),
-  };
 }
 
 function parseFilters(
@@ -141,23 +130,4 @@ function normalizeUuid(value: string | undefined) {
   )
     ? value
     : null;
-}
-
-function todayInSaoPaulo() {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-  }).formatToParts(new Date());
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((value) => value.type === type)?.value ?? "01";
-
-  return `${part("year")}-${part("month")}-${part("day")}`;
-}
-
-function addDays(date: string, days: number) {
-  const value = new Date(`${date}T12:00:00.000Z`);
-  value.setUTCDate(value.getUTCDate() + days);
-  return value.toISOString().slice(0, 10);
 }

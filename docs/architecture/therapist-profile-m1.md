@@ -83,6 +83,10 @@ automática.
 - cada documento obrigatório tem decisão própria (`uploaded`, `accepted` ou
   `rejected`); solicitar reenvio exige uma orientação e registra evento
   imutável de auditoria, sem alterar automaticamente a verificação geral;
+- documento com status `accepted` não pode ser enviado ou substituído pelo
+  terapeuta. A interface remove o controle e o banco/Edge Function recusam a
+  tentativa; `resubmission_requested` altera somente aquele documento para
+  `rejected` e volta a liberar o envio;
 - a aba `Documentos` em `/admin/profissionais/:id` usa adapter administrativo
   próprio e também solicita uma URL temporária. Ela não usa projection pública
   do perfil.
@@ -116,17 +120,17 @@ Todas as mutações usam `requestId`, `profile_version` e ledger
 
 ### Publicação e revisão administrativa
 
-A publicação de um perfil elegível e sua entrada na revisão administrativa são
-uma única unidade transacional. O trigger
-`sync_therapist_verification_queue_on_publish`, apoiado por
-`sync_therapist_verification_queue_on_publish_v1`, garante que:
+A primeira publicação elegível de um perfil ainda não aprovado e sua entrada na
+revisão administrativa são uma única unidade transacional. A publicação cria
+ou retorna a entrada de revisão para `submitted`, mantém o perfil sem
+visibilidade/recebimento de reservas até a decisão e reverte a publicação se a
+sincronização falhar.
 
-- perfil publicado sem verificação receba uma entrada `submitted`;
-- reenvio após ajustes ou não aprovação retorne a entrada existente para
-  `submitted`, sem duplicá-la;
-- `therapist_profiles.status` acompanhe `submitted` ou `in_review`;
-- perfis `approved` e `suspended` nunca sejam rebaixados por republicação;
-- falha ao sincronizar a fila reverta também a publicação.
+Depois de `therapist_profiles.status = approved`, uma nova publicação editorial
+não cria, reabre ou altera `therapist_verifications`; preserva status aprovado,
+visibilidade e recebimento de reservas. A alteração continua rastreada em
+`therapist_profile_events` como `profile_published`. Perfis suspensos continuam
+impedidos de publicar.
 
 O trigger `enforce_therapist_verification_transition` impede que comandos
 ignorem a sequência `submitted -> in_review -> decisão`. Ajustes solicitados e

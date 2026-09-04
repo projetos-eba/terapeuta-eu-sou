@@ -6,10 +6,12 @@ import { cn } from "@/lib/utils";
 
 export function BookingReference({
   id,
+  reference,
   className,
   revealOnInteraction = false,
 }: {
   id: string;
+  reference?: string;
   className?: string;
   revealOnInteraction?: boolean;
 }) {
@@ -20,7 +22,7 @@ export function BookingReference({
 
   if (!id) return null;
 
-  const label = `ID: ${id}`;
+  const label = reference ? `Sessão #${reference}` : `ID: ${id}`;
   const tooltipOpen = clickedOpen || focused || hovered;
 
   if (revealOnInteraction) {
@@ -34,11 +36,17 @@ export function BookingReference({
           aria-controls={tooltipId}
           aria-describedby={tooltipOpen ? tooltipId : undefined}
           aria-expanded={tooltipOpen}
-          aria-label={`${label}. Pressione para ver o identificador completo.`}
+          aria-label={
+            reference
+              ? label
+              : `${label}. Pressione para ver o identificador completo.`
+          }
           className="block w-full truncate whitespace-nowrap text-left text-[11px] font-semibold leading-4 text-tesText-muted underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:text-xs"
           data-testid="booking-reference"
           onBlur={() => setFocused(false)}
-          onClick={() => setClickedOpen((current) => !current)}
+          onClick={() => {
+            if (!reference) setClickedOpen((current) => !current);
+          }}
           onFocus={() => setFocused(true)}
           onKeyDown={(event) => {
             if (event.key === "Escape") {
@@ -47,18 +55,29 @@ export function BookingReference({
               event.currentTarget.blur();
             }
           }}
-          title={label}
+          title={reference ? undefined : label}
           type="button"
         >
-          ID: <span className="font-mono tracking-[-0.01em]">{id}</span>
+          {reference ? (
+            <>
+              Sessão #{" "}
+              <span className="font-mono tracking-[-0.01em]">{reference}</span>
+            </>
+          ) : (
+            <>
+              ID: <span className="font-mono tracking-[-0.01em]">{id}</span>
+            </>
+          )}
         </button>
-        <span
-          className={`absolute left-0 top-full z-20 mt-2 w-max max-w-full break-all rounded-xl border border-brand-lavender bg-white p-3 text-xs font-semibold leading-5 text-tesText-secondary shadow-card ${tooltipOpen ? "block" : "hidden"}`}
-          id={tooltipId}
-          role="tooltip"
-        >
-          {label}
-        </span>
+        {!reference ? (
+          <span
+            className={`absolute left-0 top-full z-20 mt-2 w-max max-w-full break-all rounded-xl border border-brand-lavender bg-white p-3 text-xs font-semibold leading-5 text-tesText-secondary shadow-card ${tooltipOpen ? "block" : "hidden"}`}
+            id={tooltipId}
+            role="tooltip"
+          >
+            {label}
+          </span>
+        ) : null}
       </div>
     );
   }
@@ -70,9 +89,18 @@ export function BookingReference({
         className,
       )}
       data-testid="booking-reference"
-      title={label}
+      title={reference ? undefined : label}
     >
-      ID: <span className="font-mono tracking-[-0.01em]">{id}</span>
+      {reference ? (
+        <>
+          Sessão #{" "}
+          <span className="font-mono tracking-[-0.01em]">{reference}</span>
+        </>
+      ) : (
+        <>
+          ID: <span className="font-mono tracking-[-0.01em]">{id}</span>
+        </>
+      )}
     </p>
   );
 }

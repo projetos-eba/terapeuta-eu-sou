@@ -8,9 +8,14 @@ import {
   getTherapistCalendar,
 } from "@/features/therapist-agenda";
 import { getTherapistAuraPage } from "@/features/therapist-aura/therapist-aura.service";
+import { isTherapistAuraEnabled } from "@/features/therapist-aura/therapist-aura-feature";
 import { getTherapistMetricsPage } from "@/features/therapist-metrics/therapist-metrics.service";
 import { getTherapistReviewsPage } from "@/features/therapist-reviews/therapist-reviews.service";
-import { getTherapistSessionsPage } from "@/features/therapist-sessions/therapist-sessions.service";
+import {
+  getTherapistPendingConfirmationsSummary,
+  getTherapistSessionsPage,
+} from "@/features/therapist-sessions/therapist-sessions.service";
+import { routes } from "@/lib/routes";
 
 import { TherapistDashboardError } from "./therapist-dashboard.errors";
 import {
@@ -40,6 +45,8 @@ export const getTherapistDashboardPage = cache(
     plan,
     profileCompleteness,
   }: TherapistDashboardQueryInput): Promise<TherapistDashboardPageData> {
+    const auraEnabled = isTherapistAuraEnabled();
+
     if (plan !== TherapistPlan.PremiumPlus) {
       const base = await getTherapistBaseDashboardPage({
         accessToken,
@@ -56,27 +63,69 @@ export const getTherapistDashboardPage = cache(
           accessToken,
           profileId,
         );
-        return reconcileTherapistDashboardProfile({
-          data: enriched,
-          profileCompleteness,
-        });
+        return withAuraFeatureState(
+          reconcileTherapistDashboardProfile({
+            data: enriched,
+            profileCompleteness,
+          }),
+          auraEnabled,
+        );
       }
 
-      return reconcileTherapistDashboardProfile({
-        data: base,
-        profileCompleteness,
-      });
+      return withAuraFeatureState(
+        reconcileTherapistDashboardProfile({
+          data: base,
+          profileCompleteness,
+        }),
+        auraEnabled,
+      );
     }
 
-    const [dashboard, auraResult, timeline] = await Promise.all([
-      queryTherapistDashboard(accessToken),
-      getTherapistAuraPage({
-        accessToken,
-        periodDays: 30,
-        profileId,
-      }),
-      getTherapistDashboardTimeline({ accessToken, profileId }),
-    ]);
+    if (!auraEnabled) {
+      const [dashboard, pendingConfirmationsResult, timeline] =
+        await Promise.all([
+          queryTherapistDashboard(accessToken),
+          getTherapistPendingConfirmationsSummary({ accessToken, profileId }),
+          getTherapistDashboardTimeline({ accessToken, profileId }),
+        ]);
+      const main = mapTherapistDashboardResponse(dashboard);
+
+      if (main.therapist.profileId !== profileId) {
+        throw new TherapistDashboardError("forbidden");
+      }
+
+      return withAuraFeatureState(
+        reconcileTherapistDashboardProfile({
+          data: {
+            ...withPendingConfirmationAttention(
+              main,
+              pendingConfirmationsResult,
+            ),
+            aura: null,
+            auraState: "disabled",
+            recommendedActions: [],
+            upcomingSessions: timeline.upcomingSessions,
+            upcomingSessionsState: timeline.upcomingSessionsState,
+            week: timeline.week,
+          },
+          profileCompleteness,
+        }),
+        auraEnabled,
+      );
+    }
+
+    const [dashboard, auraResult, pendingConfirmationsResult, timeline] =
+      await Promise.all([
+        queryTherapistDashboard(accessToken),
+        getTherapistAuraPage({
+          accessToken,
+          periodDays: 30,
+          plan,
+          profileId,
+        }),
+        getTherapistPendingConfirmationsSummary({ accessToken, profileId }),
+        getTherapistDashboardTimeline({ accessToken, profileId }),
+      ]);
     const main = mapTherapistDashboardResponse(dashboard);
 
     if (main.therapist.profileId !== profileId) {
@@ -91,18 +140,63 @@ export const getTherapistDashboardPage = cache(
           recommendedActions: [],
         };
 
-    return reconcileTherapistDashboardProfile({
-      data: {
-        ...main,
-        ...recommendations,
-        upcomingSessions: timeline.upcomingSessions,
-        upcomingSessionsState: timeline.upcomingSessionsState,
-        week: timeline.week,
-      },
-      profileCompleteness,
-    });
+    return withAuraFeatureState(
+      reconcileTherapistDashboardProfile({
+        data: {
+          ...withPendingConfirmationAttention(main, pendingConfirmationsResult),
+          ...recommendations,
+          upcomingSessions: timeline.upcomingSessions,
+          upcomingSessionsState: timeline.upcomingSessionsState,
+          week: timeline.week,
+        },
+        profileCompleteness,
+      }),
+      auraEnabled,
+    );
   },
 );
+
+function withPendingConfirmationAttention(
+  data: Omit<
+    TherapistDashboardPageData,
+    "aura" | "auraState" | "recommendedActions"
+  >,
+  result: Awaited<ReturnType<typeof getTherapistPendingConfirmationsSummary>>,
+) {
+  if (result.status !== "success") return data;
+
+  const attentionItems = data.attentionItems.filter(
+    (item) => item.id !== "pending-confirmations",
+  );
+
+  if (result.data.pendingCount > 0) {
+    attentionItems.push({
+      count: result.data.pendingCount,
+      href: routes.therapist.sessions,
+      id: "pending-confirmations",
+      label: "Confirmações pendentes",
+      tone: "warning",
+    });
+  }
+
+  return { ...data, attentionItems };
+}
+
+function withAuraFeatureState(
+  data: TherapistDashboardPageData,
+  auraEnabled: boolean,
+): TherapistDashboardPageData {
+  if (auraEnabled) return data;
+
+  return {
+    ...data,
+    aura: null,
+    auraState: "disabled",
+    recommendedActions: data.recommendedActions.filter(
+      (action) => action.href !== routes.therapist.assessorIa,
+    ),
+  };
+}
 
 async function getTherapistBaseDashboardPage({
   accessToken,
@@ -119,15 +213,18 @@ async function getTherapistBaseDashboardPage({
   const rangeEnd = new Date(now);
   rangeEnd.setDate(rangeEnd.getDate() + 90);
 
-  const result = await getTherapistSessionsPage({
-    accessToken,
-    filters: {
-      limit: 100,
-      periodEnd: rangeEnd.toISOString(),
-      periodStart: previousMonthStart.toISOString(),
-    },
-    profileId,
-  });
+  const [result, pendingConfirmationsResult] = await Promise.all([
+    getTherapistSessionsPage({
+      accessToken,
+      filters: {
+        limit: 100,
+        periodEnd: rangeEnd.toISOString(),
+        periodStart: previousMonthStart.toISOString(),
+      },
+      profileId,
+    }),
+    getTherapistPendingConfirmationsSummary({ accessToken, profileId }),
+  ]);
 
   if (result.status === "error") {
     throw new TherapistDashboardError("unavailable");
@@ -155,31 +252,45 @@ async function getTherapistBaseDashboardPage({
       dateKeyInTimezone(
         session.startsAt,
         session.timezone ?? "America/Sao_Paulo",
-      ) === todayKey &&
-      isActiveSession(session.bookingStatus),
+      ) === todayKey && isActiveSession(session.bookingStatus),
   );
   const timeline = await getTherapistDashboardTimeline({
     accessToken,
     profileId,
   });
 
+  const attentionItems: TherapistDashboardPageData["attentionItems"] = [
+    {
+      href: routes.therapist.agenda,
+      id: "base-dashboard-agenda",
+      label: sessions.length
+        ? "Acompanhe seus próximos horários na agenda"
+        : "Configure sua agenda para começar a receber reservas",
+      tone: "info",
+    },
+    {
+      href: routes.therapist.profile,
+      id: "base-dashboard-profile",
+      label: `Seu perfil está ${profileCompleteness}% completo`,
+      tone: profileCompleteness < 100 ? "warning" : "info",
+    },
+  ];
+
+  if (
+    pendingConfirmationsResult.status === "success" &&
+    pendingConfirmationsResult.data.pendingCount > 0
+  ) {
+    attentionItems.push({
+      count: pendingConfirmationsResult.data.pendingCount,
+      href: routes.therapist.sessions,
+      id: "pending-confirmations",
+      label: "Confirmações pendentes",
+      tone: "warning",
+    });
+  }
+
   return {
-    attentionItems: [
-      {
-        href: "/terapeuta/agenda",
-        id: "base-dashboard-agenda",
-        label: sessions.length
-          ? "Acompanhe seus próximos horários na agenda"
-          : "Configure sua agenda para começar a receber reservas",
-        tone: "info",
-      },
-      {
-        href: "/terapeuta/perfil",
-        id: "base-dashboard-profile",
-        label: `Seu perfil está ${profileCompleteness}% completo`,
-        tone: profileCompleteness < 100 ? "warning" : "info",
-      },
-    ],
+    attentionItems,
     aura: null,
     auraState: "empty",
     history: {

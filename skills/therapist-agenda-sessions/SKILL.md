@@ -92,6 +92,15 @@ histórica.
   escolha de formato porque o TES é online-only.
 - A busca por texto filtra cliente e terapia no recorte carregado; paginação
   continua preservando os filtros suportados e o texto da busca.
+- A listagem de Sessões é apresentada em dois cards empilhados: “Sessões que
+  irão acontecer” reúne somente sessões futuras ainda possíveis, enquanto
+  “Sessões que já passaram” reúne horários ultrapassados e estados encerrados,
+  incluindo cancelamentos com data futura. Cada card tem estado vazio próprio e
+  paginação incremental independente por cursor (`startsAt`, `bookingId`), sem
+  alterar o RPC; os parâmetros de navegação usam `upcomingCursor*` e
+  `pastCursor*` e preservam busca, status e período.
+- O badge de estado `cancelled` usa o tom TES de perigo; estados
+  `refunded` continuam visualmente diferenciados.
 - Ações de sala apontam primeiro para `/terapeuta/sessoes/:bookingId`; o
   detalhe direciona para `/terapeuta/sessoes/:bookingId/video`, onde a
   autorização final continua por `zoom-video-session-access`.
@@ -99,9 +108,9 @@ histórica.
   autoritativo indicar `ready`, `in_progress` ou `room_preparing`, a identidade
   da pessoa recebe um único badge contextual. O badge não concede acesso nem
   antecipa uma janela de reunião; a autorização final continua no detalhe.
-- O ID completo da reserva aparece como referência operacional logo abaixo do
-  nome do paciente na tabela, nos cards e no detalhe da sessão, usando o mesmo
-  `bookingId` da navegação.
+- A referência operacional imutável `Sessão #AAMNNNNNN` aparece logo abaixo do
+  nome do paciente na tabela, nos cards, Agenda, detalhe e sala. O `bookingId`
+  UUID continua exclusivamente como chave de navegação e autorização.
 - Desktop usa tabela operacional com right rail. Mobile usa cards cronológicos
   em uma coluna, com filtros em largura total e os mesmos links de detalhe;
   tablet pode promover o rail para duas colunas somente quando houver largura
@@ -138,6 +147,10 @@ histórica.
 - No detalhe, o ContextRail mantém somente sua altura de conteúdo. Em tablet e
   mobile, as superfícies de apoio podem ocupar duas colunas quando houver
   espaço legível; o conteúdo principal permanece em uma sequência vertical.
+
+Free keeps the operational calendar available, but the demand heatmap in
+“Acompanhe sua agenda” is blurred and removed from the accessible content;
+the related demand tip is not rendered without `agenda_insights`.
 
 ## Disponibilidade
 
@@ -246,6 +259,10 @@ histórica.
   de oferta, fuso horário e antecedência mínima. O texto reforça a referência
   operacional de São Paulo/Brasília para terapeutas que atendem de fora do
   Brasil.
+- A regra “Antecedência mínima” explica o intervalo entre o agendamento e o
+  início da sessão, com exemplos de 2 e 48 horas. O informativo é responsivo,
+  usa largura limitada ao viewport e reposiciona-se acima quando não há espaço
+  abaixo do controle, mantendo a leitura acessível em desktop, tablet e mobile.
 - O comando de criação usa `create_therapist_block_v2` na Edge Function. Além
   dos impactos A4 já registrados, ele retorna somente as sessões confirmadas
   cuja fonte financeira canônica está em `session_payments.financial_status =

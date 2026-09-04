@@ -30,6 +30,7 @@ export function mapTherapistSettingsData(
       displayName: stringOr(value.displayName, ""),
       email: stringOr(value.email, ""),
       phone: stringOr(value.phone, ""),
+      phoneCountryCode: stringOr(value.phoneCountryCode, "55"),
       userId: requiredString(value.id),
       identity: mapIdentity(value.identity),
     },
@@ -92,6 +93,7 @@ export function mapTherapistSettingsUpdateResult(
     account: {
       displayName: stringOr(value.display_name, ""),
       phone: stringOr(value.phone, ""),
+      phoneCountryCode: stringOr(value.phone_country_code, "55"),
       identity: mapIdentity(value.identity),
     },
   };

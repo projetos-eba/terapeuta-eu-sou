@@ -117,11 +117,20 @@ Regra de acompanhamento:
 - Os controles de filtro usam o select nativo; a área da seta decorativa deve
   ser transparente aos eventos (`pointer-events: none`) para que clicar na
   seta abra o filtro da mesma forma que clicar no texto.
+- O título da lista acompanha a situação selecionada: `Pessoas acompanhadas`,
+  `Pessoas em acompanhamento`, `Pessoas com jornada pausada` ou `Pessoas sem
+  sessão realizada ou agendada há 30 dias.`. O título deve quebrar linha
+  dentro do espaço disponível para permanecer legível em tablet e mobile.
+- Datas e horários operacionais da jornada devem ser apresentados explicitamente
+  no fuso `America/Sao_Paulo` (Brasília, UTC−3), independentemente do fuso do
+  servidor ou do navegador.
 
 ## Copy Responsável
 
 - Não prometer cura, diagnóstico, resolução emocional ou resultado garantido.
 - Usar linguagem operacional: jornada, sessões, registros, continuidade, cuidado.
+- O atalho principal de comunicação no hero usa o rótulo `Enviar mensagem` e
+  direciona para `/terapeuta/mensagens`.
 - Deixar claro que a timeline é operacional e não substitui prontuário clínico.
 
 ## QA

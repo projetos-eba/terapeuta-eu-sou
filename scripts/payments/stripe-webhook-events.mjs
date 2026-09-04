@@ -1,4 +1,5 @@
 export const platformSnapshotEvents = [
+  "balance.available",
   "charge.refunded",
   "charge.dispute.closed",
   "charge.dispute.created",
@@ -14,6 +15,7 @@ export const platformSnapshotEvents = [
   "invoice.paid",
   "invoice.payment_action_required",
   "invoice.payment_failed",
+  "payment_intent.amount_capturable_updated",
   "payment_intent.canceled",
   "payment_intent.payment_failed",
   "payment_intent.processing",

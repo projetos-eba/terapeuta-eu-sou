@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   parseTherapistAgendaReadModel,
+  parseTherapistPendingConfirmationsSummary,
   SessionReadModelContractError,
 } from "./session-read-model.parsers";
 
@@ -37,6 +38,62 @@ describe("parseTherapistAgendaReadModel", () => {
 
     expect(parsed.availability.rules[0]?.serviceId).toBe("service-1");
     expect(parsed.availability.exceptions[0]?.serviceId).toBeNull();
+  });
+});
+
+describe("parseTherapistPendingConfirmationsSummary", () => {
+  it("keeps the pending count consistent with the returned booking ids", () => {
+    expect(
+      parseTherapistPendingConfirmationsSummary({
+        generatedAt: "2026-09-03T12:00:00.000Z",
+        pendingBookingIds: ["booking-1", "booking-2"],
+        pendingSessions: [
+          { bookingId: "booking-1", sessionReference: "26S000001" },
+          { bookingId: "booking-2", sessionReference: "26S000002" },
+        ],
+        pendingCount: 2,
+        therapistProfileId: "therapist-1",
+        version: 1,
+      }),
+    ).toMatchObject({
+      pendingBookingIds: ["booking-1", "booking-2"],
+      pendingSessions: [
+        { bookingId: "booking-1", sessionReference: "26S000001" },
+        { bookingId: "booking-2", sessionReference: "26S000002" },
+      ],
+      pendingCount: 2,
+      version: 1,
+    });
+  });
+
+  it("rejects a count that does not match the booking ids", () => {
+    expect(() =>
+      parseTherapistPendingConfirmationsSummary({
+        generatedAt: "2026-09-03T12:00:00.000Z",
+        pendingBookingIds: ["booking-1"],
+        pendingSessions: [
+          { bookingId: "booking-1", sessionReference: "26S000001" },
+        ],
+        pendingCount: 2,
+        therapistProfileId: "therapist-1",
+        version: 1,
+      }),
+    ).toThrow(SessionReadModelContractError);
+  });
+
+  it("rejects a pending session reference paired with another booking", () => {
+    expect(() =>
+      parseTherapistPendingConfirmationsSummary({
+        generatedAt: "2026-09-03T12:00:00.000Z",
+        pendingBookingIds: ["booking-1"],
+        pendingSessions: [
+          { bookingId: "booking-2", sessionReference: "26S000001" },
+        ],
+        pendingCount: 1,
+        therapistProfileId: "therapist-1",
+        version: 1,
+      }),
+    ).toThrow(SessionReadModelContractError);
   });
 });
 

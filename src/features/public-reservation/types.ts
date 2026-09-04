@@ -25,12 +25,13 @@ export type ReservationContext = {
   hasRequiredCheckoutData: boolean;
   isPatientAuthenticated: boolean;
   marketingConsent: boolean;
-  hiddenPatientConflictCount: number;
   nextStepHref: string;
   patient: ReservationPatientSummary | null;
   paymentStepHref: string;
   priceCents: number | null;
   priceLabel: string;
+  retryBookingId: string | null;
+  patientScheduleIntervals: PatientScheduleInterval[];
   patientScheduleCheckStatus: PatientScheduleCheckStatus;
   prepareStepHref: string;
   selectedSlot: string | null;
@@ -67,6 +68,7 @@ export type ReservationDay = {
   dateLabel: string;
   dayLabel: string;
   slots: Array<{
+    hasPatientConflict: boolean;
     href: string;
     isSelected: boolean;
     startsAt: string;

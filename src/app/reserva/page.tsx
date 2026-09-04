@@ -5,7 +5,8 @@ import { getClientSessionSummary } from "@/features/client-auth/session-summary"
 import {
   formatAvailabilityDateKey,
   getPublicServiceAvailability,
-  getPublicServiceAvailabilityForDay,
+  getPublicServiceAvailabilityForWindow,
+  isDateKey,
 } from "@/features/availability/queries/public-service-availability";
 import {
   applyPatientScheduleConflicts,
@@ -16,6 +17,7 @@ import {
   resolveReservationContext,
 } from "@/features/public-reservation";
 import { getPatientScheduleIntervals } from "@/features/public-reservation/queries/patient-schedule";
+import { getReservationRetrySnapshot } from "@/features/public-reservation/queries/reservation-retry-context";
 import { getPublicTherapistProfileResult } from "@/features/therapist-profile/queries/public-profile";
 import type { AvailabilityDay } from "@/features/therapist-profile/types";
 
@@ -40,14 +42,46 @@ export default async function PublicReservationPage({
   const cookieStore = await cookies();
   const accessToken = cookieStore.get("tes_patient_access_token")?.value;
   const patient = await getClientSessionSummary(accessToken);
+  const requestedBooking =
+    typeof params?.booking === "string" ? params.booking : null;
+  const retrySnapshot =
+    accessToken && requestedBooking
+      ? await getReservationRetrySnapshot({
+          accessToken,
+          bookingId: requestedBooking,
+        })
+      : null;
+  const trustedParams = retrySnapshot
+    ? {
+        ...params,
+        booking: retrySnapshot.bookingId,
+        duration: String(retrySnapshot.durationMinutes),
+        etapa: "pagamento",
+        price: String(retrySnapshot.priceCents),
+        service: retrySnapshot.serviceId,
+        serviceName: retrySnapshot.serviceLabel,
+        slot: retrySnapshot.startsAt,
+        therapist: retrySnapshot.therapist.slug,
+      }
+    : requestedBooking
+      ? { ...params, booking: undefined }
+      : params;
   let context = resolveReservationContext({
     isPatientAuthenticated: Boolean(patient),
     patient,
-    searchParams: params,
+    searchParams: trustedParams,
+    timezone: retrySnapshot?.timezone,
   });
+  if (retrySnapshot) {
+    context = {
+      ...context,
+      canPrepareEncounter: true,
+      therapist: retrySnapshot.therapist,
+    };
+  }
   let availabilityDays: AvailabilityDay[] = [];
 
-  if (context.therapist.slug) {
+  if (context.therapist.slug && !retrySnapshot) {
     const profileResult = await getPublicTherapistProfileResult(
       context.therapist.slug,
     );
@@ -61,22 +95,50 @@ export default async function PublicReservationPage({
         ) ??
         profile.services[0];
 
-      let availabilityResult = selectedService
-        ? await getPublicServiceAvailability(selectedService.id)
-        : null;
-      if (
-        selectedService &&
-        context.selectedSlot &&
-        availabilityResult?.status === "success"
-      ) {
-        availabilityResult = await getPublicServiceAvailabilityForDay(
-          selectedService.id,
-          formatAvailabilityDateKey(
+      const serviceTimezone =
+        selectedService?.availabilityTimezone ?? context.timezone;
+      const requestedDate =
+        typeof trustedParams?.date === "string" && isDateKey(trustedParams.date)
+          ? trustedParams.date
+          : null;
+      let anchorDate = context.selectedSlot
+        ? formatAvailabilityDateKey(
             new Date(context.selectedSlot),
-            availabilityResult.data.timezone,
-          ),
-        );
+            serviceTimezone,
+          )
+        : requestedDate;
+      let discoveryResult = null;
+
+      if (selectedService && !anchorDate) {
+        const knownFirstDate = selectedService.availability
+          .filter((day) => day.slots.length > 0)
+          .map((day) => day.date)
+          .sort()[0];
+        anchorDate = knownFirstDate ?? null;
+
+        if (!anchorDate) {
+          const rangeStart = new Date();
+          const rangeEnd = new Date(rangeStart);
+          rangeEnd.setUTCDate(rangeEnd.getUTCDate() + 91);
+          discoveryResult = await getPublicServiceAvailability(
+            selectedService.id,
+            { end: rangeEnd, start: rangeStart },
+          );
+          anchorDate =
+            discoveryResult.status === "success"
+              ? (discoveryResult.data.days[0]?.date ?? null)
+              : null;
+        }
       }
+
+      anchorDate ??= formatAvailabilityDateKey(new Date(), serviceTimezone);
+      const availabilityResult = selectedService
+        ? await getPublicServiceAvailabilityForWindow(
+            selectedService.id,
+            anchorDate,
+            serviceTimezone,
+          )
+        : null;
       availabilityDays =
         availabilityResult?.status === "success"
           ? availabilityResult.data.days
@@ -99,7 +161,9 @@ export default async function PublicReservationPage({
         timezone:
           availabilityResult?.status === "success"
             ? availabilityResult.data.timezone
-            : undefined,
+            : discoveryResult?.status === "success"
+              ? discoveryResult.data.timezone
+              : undefined,
       });
       const scheduleWindow = getReservationScheduleWindow(
         availabilityDays,

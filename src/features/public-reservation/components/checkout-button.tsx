@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 
 import { TESButton } from "@/components/tes";
 import type { PromotionCheckoutAmounts } from "@/features/payments";
+import { HoldCountdown } from "./hold-countdown";
+import { ExpiredCheckoutRecovery } from "./expired-checkout-recovery";
 
 declare global {
   interface Window {
@@ -31,12 +33,15 @@ type CheckoutResponse =
         clientSecret: string | null;
         currency: string;
         discountAmountCents: number;
-        holdExpiresAt: string;
-        holdId: string;
+        holdExpiresAt?: string;
+        holdId?: string;
+        mode: "initial_hold" | "payment_retry";
         originalAmountCents: number;
         promotion: PromotionCheckoutAmounts["promotion"];
         sessionPaymentId: string;
         totalAmountCents: number;
+        reservationExpiresAt: string | null;
+        serverNow: string;
       };
     }
   | {
@@ -47,17 +52,21 @@ type CheckoutResponse =
 
 export function CheckoutButton({
   acceptedTerms,
+  checkoutAttemptId,
   disabled,
   isPatientAuthenticated,
   loginHref,
   onCheckoutChange,
+  onPatientScheduleConflict,
   onPromotionSettled,
   promotionRequest,
+  retryBookingId,
   serviceId,
   sharedNote,
   startsAt,
 }: {
   acceptedTerms: boolean;
+  checkoutAttemptId?: string | null;
   disabled?: boolean;
   isPatientAuthenticated: boolean;
   loginHref: string;
@@ -65,12 +74,14 @@ export function CheckoutButton({
     amounts: PromotionCheckoutAmounts;
     ready: boolean;
   }) => void;
+  onPatientScheduleConflict?: () => void;
   onPromotionSettled?: (input: {
     error: string | null;
     promotion?: PromotionCheckoutAmounts["promotion"];
     requestId: string;
   }) => void;
   promotionRequest?: { code: string | null; requestId: string } | null;
+  retryBookingId?: string | null;
   serviceId: string | null;
   sharedNote: string;
   startsAt: string | null;
@@ -87,57 +98,55 @@ export function CheckoutButton({
   } | null>(null);
   const handledPromotionRequestRef = useRef<string | null>(null);
   const requestIdRef = useRef<string | null>(null);
-  const completedRef = useRef(false);
   const abandonmentStartedRef = useRef(false);
+  const checkoutAmountsRef = useRef<PromotionCheckoutAmounts | null>(null);
+  const [expiredCheckout, setExpiredCheckout] = useState<{
+    bookingId: string;
+    checkoutSessionId: string;
+  } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [checkoutReady, setCheckoutReady] = useState(false);
+  const [reservationLease, setReservationLease] = useState<{
+    expiresAt: string;
+    serverNow: string;
+  } | null>(null);
 
-  useEffect(() => {
-    const abandonPendingCheckout = () => {
-      if (abandonmentStartedRef.current || completedRef.current) return;
+  const expireReservation = useCallback(() => {
+    const currentCheckout = currentCheckoutRef.current;
+    if (!currentCheckout || abandonmentStartedRef.current) return;
+    abandonmentStartedRef.current = true;
+    checkoutRef.current?.destroy();
+    checkoutRef.current = null;
+    setCheckoutReady(false);
+    setIsSubmitting(false);
+    setReservationLease(null);
+    setError(null);
+    setExpiredCheckout({
+      bookingId: currentCheckout.bookingId,
+      checkoutSessionId: currentCheckout.checkoutSessionId,
+    });
+    if (checkoutAmountsRef.current) {
+      onCheckoutChange?.({ amounts: checkoutAmountsRef.current, ready: false });
+    }
+  }, [onCheckoutChange]);
 
-      const bookingId = currentCheckoutRef.current?.bookingId;
-      if (!bookingId) return;
-
-      abandonmentStartedRef.current = true;
-      const body = JSON.stringify({
-        bookingId,
-        requestId: crypto.randomUUID(),
-      });
-      const url = "/api/public/reservation/abandon";
-
-      if (
-        typeof navigator.sendBeacon === "function" &&
-        navigator.sendBeacon(
-          url,
-          new Blob([body], { type: "application/json" }),
-        )
-      ) {
-        return;
-      }
-
-      void fetch(url, {
-        body,
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        keepalive: true,
-        method: "POST",
-      }).catch(() => undefined);
-    };
-
-    window.addEventListener("pagehide", abandonPendingCheckout);
-
-    return () => {
-      window.removeEventListener("pagehide", abandonPendingCheckout);
+  useEffect(
+    () => () => {
       checkoutRef.current?.destroy();
       checkoutRef.current = null;
-      abandonPendingCheckout();
-    };
-  }, []);
+    },
+    [],
+  );
 
   useEffect(() => {
     let cancelled = false;
+    const replacementRequest =
+      promotionRequest &&
+      promotionRequest.requestId !== handledPromotionRequestRef.current &&
+      currentCheckoutRef.current
+        ? promotionRequest
+        : null;
 
     async function initializeCheckout() {
       checkoutRef.current?.destroy();
@@ -147,8 +156,7 @@ export function CheckoutButton({
       if (
         !isPatientAuthenticated ||
         !acceptedTerms ||
-        !serviceId ||
-        !startsAt ||
+        (!retryBookingId && (!serviceId || !startsAt)) ||
         disabled
       ) {
         setIsSubmitting(false);
@@ -163,16 +171,20 @@ export function CheckoutButton({
       }
 
       setIsSubmitting(true);
-      setError(null);
-      const checkoutInputKey = `${serviceId}:${startsAt}`;
+      const checkoutInputKey = `${retryBookingId ?? serviceId}:${startsAt ?? "retry"}:${checkoutAttemptId ?? "new"}`;
       if (checkoutInputKeyRef.current !== checkoutInputKey) {
         checkoutInputKeyRef.current = checkoutInputKey;
-        requestIdRef.current = crypto.randomUUID();
+        requestIdRef.current = checkoutAttemptId ?? crypto.randomUUID();
         currentCheckoutRef.current = null;
         handledPromotionRequestRef.current = null;
-        completedRef.current = false;
         abandonmentStartedRef.current = false;
+        setExpiredCheckout(null);
       }
+      if (abandonmentStartedRef.current) {
+        setIsSubmitting(false);
+        return;
+      }
+      setError(null);
 
       try {
         await loadStripeScript();
@@ -183,10 +195,7 @@ export function CheckoutButton({
           throw new Error("stripe_not_loaded");
         }
 
-        const isPromotionReplacement =
-          promotionRequest &&
-          promotionRequest.requestId !== handledPromotionRequestRef.current &&
-          currentCheckoutRef.current;
+        const isPromotionReplacement = Boolean(replacementRequest);
         const previousCheckout = currentCheckoutRef.current;
         const response = await fetch("/api/public/reservation/checkout", {
           body: JSON.stringify(
@@ -194,24 +203,36 @@ export function CheckoutButton({
               ? {
                   action: "replace",
                   bookingId: previousCheckout?.bookingId,
-                  checkoutAttemptId: promotionRequest.requestId,
-                  promotionCode: promotionRequest.code,
+                  checkoutAttemptId: replacementRequest!.requestId,
+                  promotionCode: replacementRequest!.code,
                   replaceCheckoutSessionId: previousCheckout?.checkoutSessionId,
                 }
-              : {
-                  action: "create",
-                  checkoutAttemptId: requestIdRef.current,
-                  serviceId,
-                  sharedNote,
-                  startsAt,
-                  termsAccepted: true,
-                },
+              : retryBookingId
+                ? {
+                    action: "retry",
+                    bookingId: retryBookingId,
+                    checkoutAttemptId: requestIdRef.current,
+                  }
+                : {
+                    action: "create",
+                    checkoutAttemptId: requestIdRef.current,
+                    serviceId,
+                    sharedNote,
+                    startsAt,
+                    termsAccepted: true,
+                  },
           ),
           headers: { "Content-Type": "application/json" },
           method: "POST",
         });
         const data = (await response.json()) as CheckoutResponse;
-        if (!data.ok) throw new Error(data.message);
+        if (cancelled || abandonmentStartedRef.current) return;
+        if (!data.ok) {
+          if (data.code === "PATIENT_SCHEDULE_CONFLICT") {
+            onPatientScheduleConflict?.();
+          }
+          throw new Error(data.message);
+        }
         if (!data.checkout.clientSecret) {
           throw new Error("Não conseguimos carregar o pagamento seguro agora.");
         }
@@ -222,17 +243,27 @@ export function CheckoutButton({
           checkoutSessionId: data.checkout.checkoutSessionId,
           clientSecret: data.checkout.clientSecret,
         };
+        setReservationLease(
+          data.checkout.mode === "initial_hold" &&
+            data.checkout.reservationExpiresAt
+            ? {
+                expiresAt: data.checkout.reservationExpiresAt,
+                serverNow: data.checkout.serverNow,
+              }
+            : null,
+        );
         if (promotionRequest) {
           handledPromotionRequestRef.current = promotionRequest.requestId;
         }
+        checkoutAmountsRef.current = {
+          currency: data.checkout.currency,
+          discountAmountCents: data.checkout.discountAmountCents,
+          originalAmountCents: data.checkout.originalAmountCents,
+          promotion: data.checkout.promotion,
+          totalAmountCents: data.checkout.totalAmountCents,
+        };
         onCheckoutChange?.({
-          amounts: {
-            currency: data.checkout.currency,
-            discountAmountCents: data.checkout.discountAmountCents,
-            originalAmountCents: data.checkout.originalAmountCents,
-            promotion: data.checkout.promotion,
-            totalAmountCents: data.checkout.totalAmountCents,
-          },
+          amounts: checkoutAmountsRef.current,
           ready: false,
         });
         const fetchClientSecret = () =>
@@ -241,12 +272,9 @@ export function CheckoutButton({
 
         const checkout = await stripe.initEmbeddedCheckout({
           fetchClientSecret,
-          onComplete: () => {
-            completedRef.current = true;
-          },
         });
 
-        if (cancelled) {
+        if (cancelled || abandonmentStartedRef.current) {
           checkout.destroy();
           return;
         }
@@ -272,6 +300,7 @@ export function CheckoutButton({
           });
         }
       } catch (error) {
+        if (cancelled || abandonmentStartedRef.current) return;
         const message =
           error instanceof Error
             ? error.message
@@ -286,7 +315,7 @@ export function CheckoutButton({
                 fetchClientSecret: () =>
                   Promise.resolve(previousCheckout.clientSecret),
               });
-              if (!cancelled) {
+              if (!cancelled && !abandonmentStartedRef.current) {
                 checkoutRef.current = checkout;
                 checkout.mount("#reservation-embedded-checkout");
                 setCheckoutReady(true);
@@ -294,9 +323,12 @@ export function CheckoutButton({
                 checkout.destroy();
               }
             } catch {
-              setError("Atualize a página para retomar o pagamento seguro.");
+              if (!cancelled && !abandonmentStartedRef.current) {
+                setError("Atualize a página para retomar o pagamento seguro.");
+              }
             }
           }
+          if (cancelled || abandonmentStartedRef.current) return;
           onPromotionSettled?.({
             error: message,
             requestId: promotionRequest.requestId,
@@ -318,11 +350,14 @@ export function CheckoutButton({
     };
   }, [
     acceptedTerms,
+    checkoutAttemptId,
     disabled,
     isPatientAuthenticated,
     onCheckoutChange,
+    onPatientScheduleConflict,
     onPromotionSettled,
     promotionRequest,
+    retryBookingId,
     serviceId,
     sharedNote,
     startsAt,
@@ -344,6 +379,22 @@ export function CheckoutButton({
 
   return (
     <div className="mt-6 space-y-4">
+      {reservationLease ? (
+        <div className="rounded-[18px] border border-brand-lavender bg-brand-lavenderSoft p-4 text-sm font-extrabold text-brand-primary">
+          Horário reservado por até{" "}
+          <HoldCountdown
+            expiresAt={reservationLease.expiresAt}
+            onExpire={expireReservation}
+            serverNow={reservationLease.serverNow}
+          />
+        </div>
+      ) : null}
+      {expiredCheckout ? (
+        <ExpiredCheckoutRecovery
+          bookingId={expiredCheckout.bookingId}
+          checkoutSessionId={expiredCheckout.checkoutSessionId}
+        />
+      ) : null}
       <div className="rounded-[18px] bg-surface-muted p-5">
         <div className="flex items-start gap-3">
           <ShieldCheck className="mt-1 size-5 shrink-0 text-brand-primary" />

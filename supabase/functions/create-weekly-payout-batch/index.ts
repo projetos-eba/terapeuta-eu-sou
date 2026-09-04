@@ -53,13 +53,21 @@ runtime.serve(async (request) => {
       fieldName: "cutoff_at_override",
       override: body.cutoffAtOverride,
     });
-    const batchId = await client.rpc<string>("create_weekly_payout_batch", {
-      p_cutoff_at: cutoffAt,
-      p_reference_period_end: end,
-      p_reference_period_start: start,
-    });
+    const batchId = await client.rpc<string | null>(
+      "create_weekly_payout_batch_v2",
+      {
+        p_cutoff_at: cutoffAt,
+        p_reference_period_end: end,
+        p_reference_period_start: start,
+      },
+    );
 
-    return success({ batchId, cutoffAt });
+    return success({
+      batchId,
+      cutoffAt,
+      created: batchId !== null,
+      reason: batchId === null ? "no_eligible_payments" : null,
+    });
   } catch (error) {
     return failure(error, requestId);
   }

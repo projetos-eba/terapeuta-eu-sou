@@ -119,6 +119,77 @@ describe("support ticket detail route", () => {
     });
   });
 
+  it("keeps an actionable error if a stale backend rejects a consecutive reply", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/auth/v1/user")) {
+        return Response.json({ id: "10000000-0000-4000-8000-000000000001" });
+      }
+      if (url.includes("/rest/v1/profiles")) {
+        return Response.json([{ role: "therapist" }]);
+      }
+      if (url.includes("/rpc/send_support_ticket_requester_message_v1")) {
+        return Response.json(
+          { code: "22023", message: "support ticket is already awaiting TES" },
+          { status: 400 },
+        );
+      }
+      return new Response(null, { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      request({ body: "Complemento repetido.", requestId }),
+      context,
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: {
+        message:
+          "Não foi possível enviar este complemento agora. Tente novamente.",
+      },
+    });
+  });
+
+  it("explains attachment validation failures without exposing storage details", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes("/auth/v1/user")) {
+        return Response.json({ id: "10000000-0000-4000-8000-000000000001" });
+      }
+      if (url.includes("/rest/v1/profiles")) {
+        return Response.json([{ role: "therapist" }]);
+      }
+      if (url.includes("/rpc/send_support_ticket_requester_message_v1")) {
+        return Response.json(
+          {
+            code: "22023",
+            message: "support attachment metadata is invalid",
+          },
+          { status: 400 },
+        );
+      }
+      return new Response(null, { status: 404 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(
+      request({ body: "Complemento com anexo.", requestId }),
+      context,
+    );
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toMatchObject({
+      ok: false,
+      error: {
+        message:
+          "Não foi possível enviar o anexo. Use até 5 arquivos de até 10 MB cada, nos formatos PDF, JPG, PNG ou WebP.",
+      },
+    });
+  });
+
   it("renders a legacy description as the initial public message", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
@@ -199,6 +270,48 @@ describe("support ticket detail route", () => {
     expect(response.status).toBe(201);
   });
 
+  it("uploads an allowed attachment and sends its server-side descriptor", async () => {
+    const fetchMock = vi.fn(
+      async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input);
+        if (url.includes("/auth/v1/user")) {
+          return Response.json({ id: "10000000-0000-4000-8000-000000000001" });
+        }
+        if (url.includes("/rest/v1/profiles")) {
+          return Response.json([{ role: "therapist" }]);
+        }
+        if (url.includes("/rest/v1/support_ticket_messages")) {
+          return Response.json([]);
+        }
+        if (url.includes("/storage/v1/object/support-ticket-attachments/")) {
+          return new Response(null, { status: 201 });
+        }
+        if (
+          url.includes(
+            "/rpc/send_support_ticket_requester_message_with_attachments_v1",
+          )
+        ) {
+          const payload = JSON.parse(String(init?.body));
+          expect(payload.p_body).toBe("Complemento com comprovante.");
+          expect(payload.p_ticket_id).toBe(ticketId);
+          expect(payload.p_attachments).toHaveLength(1);
+          expect(payload.p_attachments[0]).toMatchObject({
+            mimeType: "application/pdf",
+            originalName: "comprovante.pdf",
+            sizeBytes: 3,
+          });
+          return Response.json({ id: "40000000-0000-4000-8000-000000000004" });
+        }
+        return new Response(null, { status: 404 });
+      },
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await POST(multipartRequest(), context);
+
+    expect(response.status, JSON.stringify(await response.json())).toBe(201);
+  });
+
   it("loads and replies to a patient-owned support thread", async () => {
     headerMocks.cookieGet.mockImplementation((name: string) =>
       name === "tes_patient_access_token"
@@ -222,8 +335,8 @@ describe("support ticket detail route", () => {
               created_at: "2026-08-21T12:00:00Z",
               description: "Não consigo entrar.",
               id: ticketId,
-            last_activity_at: "2026-08-21T12:00:00Z",
-            protocol: "582914730Z",
+              last_activity_at: "2026-08-21T12:00:00Z",
+              protocol: "582914730Z",
               resolved_at: null,
               status: "open",
               subject: "Acesso à sessão",
@@ -271,4 +384,20 @@ function request(body: unknown) {
     headers: { "Content-Type": "application/json" },
     method: "POST",
   });
+}
+
+function multipartRequest() {
+  const formData = new FormData();
+  formData.set("actorRole", "therapist");
+  formData.set("body", "Complemento com comprovante.");
+  formData.set("requestId", requestId);
+  formData.append(
+    "attachments",
+    new File(["pdf"], "comprovante.pdf", { type: "application/pdf" }),
+  );
+
+  return {
+    formData: async () => formData,
+    headers: new Headers({ "Content-Type": "multipart/form-data" }),
+  } as unknown as Request;
 }

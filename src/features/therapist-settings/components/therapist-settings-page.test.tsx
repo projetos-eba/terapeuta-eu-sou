@@ -50,7 +50,8 @@ describe("TherapistSettingsPage", () => {
       data: {
         account: {
           displayName: "Ana Oliveira",
-          phone: "+55 11 99999-9999",
+          phone: "11999999999",
+          phoneCountryCode: "55",
           identity: {
             city: "São Paulo",
             complement: "Apto 42",
@@ -169,14 +170,15 @@ describe("TherapistSettingsPage", () => {
     );
 
     fireEvent.change(screen.getByLabelText("Telefone"), {
-      target: { value: "+55 11 99999-9999" },
+      target: { value: "11 99999-9999" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Salvar meus dados" }));
 
     await waitFor(() => {
       expect(commandMocks.updateTherapistSettings).toHaveBeenCalledWith({
         displayName: "Ana Oliveira",
-        phone: "+55 11 99999-9999",
+        phone: "(11) 99999-9999",
+        phoneCountryCode: "55",
         identity: {
           city: "São Paulo",
           complement: "Apto 42",
@@ -212,7 +214,7 @@ describe("TherapistSettingsPage", () => {
     );
 
     fireEvent.change(screen.getByLabelText("Telefone"), {
-      target: { value: "+55 11 99999-9999" },
+      target: { value: "11 99999-9999" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Salvar meus dados" }));
 
@@ -235,7 +237,7 @@ describe("TherapistSettingsPage", () => {
     );
 
     fireEvent.change(screen.getByLabelText("Telefone"), {
-      target: { value: "telefone<script>" },
+      target: { value: "119999" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Salvar meus dados" }));
 
@@ -290,6 +292,64 @@ describe("TherapistSettingsPage", () => {
         "Não foi possível concluir a operação, o tamanho do documento excede o limite de 10 MB.",
       );
     });
+  });
+
+  it("locks an accepted document while keeping a rejected document available for re-submission", () => {
+    const settings = settingsFixture();
+    settings.documentCenter.documents = [
+      {
+        createdAt: "2026-09-02T12:00:00.000Z",
+        fileName: "identidade.pdf",
+        fileSizeBytes: 2048,
+        id: "document-identity",
+        kind: "identity_document",
+        mimeType: "application/pdf",
+        reviewNote: null,
+        reviewedAt: "2026-09-02T13:00:00.000Z",
+        status: "accepted",
+        updatedAt: "2026-09-02T13:00:00.000Z",
+        validationState: "passed",
+      },
+      {
+        createdAt: "2026-09-02T12:00:00.000Z",
+        fileName: "endereco.pdf",
+        fileSizeBytes: 2048,
+        id: "document-address",
+        kind: "address_proof",
+        mimeType: "application/pdf",
+        reviewNote: "Envie um comprovante mais recente.",
+        reviewedAt: "2026-09-02T13:00:00.000Z",
+        status: "rejected",
+        updatedAt: "2026-09-02T13:00:00.000Z",
+        validationState: "failed",
+      },
+    ];
+
+    render(
+      <TherapistSettingsPage
+        planData={planFixture("premium_plus")}
+        settings={settings}
+      />,
+    );
+
+    expect(screen.getByText("Aprovado")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Este documento foi aprovado pela equipe TES. Um novo envio só será liberado se ela solicitar.",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Enviar Documento de identidade"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Substituir documento" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Enviar novo documento" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Enviar Comprovante de endereço"),
+    ).toBeInTheDocument();
   });
 
   it("offers cancellation and the next upgrade to a Premium therapist", () => {
@@ -381,6 +441,7 @@ function settingsFixture(): TherapistSettingsData {
       displayName: "Ana Oliveira",
       email: "ana@example.test",
       phone: "",
+      phoneCountryCode: "55",
       userId: "c1000000-0000-4000-8000-000000000001",
       identity: {
         city: "São Paulo",

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { TherapistPlan } from "@/domain/tes";
 import type { SessionReadModelItem } from "@/features/bookings";
 import { routes } from "@/lib/routes";
 
@@ -13,6 +14,7 @@ import {
   mapTherapistDashboardResponse,
   mapTherapistAuraPage,
   reconcileTherapistDashboardProfile,
+  resolveTherapistAttentionItemHref,
 } from "./therapist-dashboard.mappers";
 
 describe("dashboard calculations", () => {
@@ -100,10 +102,61 @@ describe("dashboard calculations", () => {
       "booking-later",
     ]);
     expect(result[0]?.timezone).toBe("America/Sao_Paulo");
+    expect(result[0]?.sessionReference).toBe("26G000001");
   });
 });
 
 describe("dashboard mapper", () => {
+  it.each([
+    ["free", "/terapeuta/sessoes?period=all#pending-confirmations"],
+    [
+      "premium",
+      "/terapeuta/avaliacoes?tab=session#pending-session-confirmations",
+    ],
+    [
+      "premium_plus",
+      "/terapeuta/avaliacoes?tab=session#pending-session-confirmations",
+    ],
+  ] as const)("routes pending confirmations for %s", (plan, expectedHref) => {
+    expect(
+      resolveTherapistAttentionItemHref(
+        {
+          count: 1,
+          href: routes.therapist.sessions,
+          id: "pending-confirmations",
+          label: "Confirmações pendentes",
+          tone: "warning",
+        },
+        plan,
+      ),
+    ).toBe(expectedHref);
+  });
+
+  it("keeps legacy attention hrefs on their canonical destinations", () => {
+    expect(
+      resolveTherapistAttentionItemHref(
+        {
+          href: "/plus/perfil",
+          id: "profile-completeness",
+          label: "Perfil 40% completo",
+          tone: "warning",
+        },
+        TherapistPlan.PremiumPlus,
+      ),
+    ).toBe(routes.therapist.profile);
+    expect(
+      resolveTherapistAttentionItemHref(
+        {
+          href: "/plus/agenda",
+          id: "reschedule-requests",
+          label: "Pedidos de reagendamento",
+          tone: "warning",
+        },
+        TherapistPlan.PremiumPlus,
+      ),
+    ).toBe(routes.therapist.agenda);
+  });
+
   it("uses the canonical profile readiness when the dashboard RPC is stale", () => {
     const result = reconcileTherapistDashboardProfile({
       data: {
@@ -298,6 +351,7 @@ function session(
     attendanceSource: "none",
     attendanceStatus: "unknown",
     bookingId: "booking-default",
+    sessionReference: "26G000001",
     bookingStatus: "confirmed",
     bookingVersion: 1,
     cancellationDecision: null,

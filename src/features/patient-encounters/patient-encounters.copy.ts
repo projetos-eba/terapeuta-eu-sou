@@ -13,6 +13,8 @@ const STATUS_GUIDANCE: Record<PatientEncounterStatus, string> = {
   confirmed:
     "Seu horário está confirmado. Os detalhes ficam disponíveis quando você precisar.",
   live: "A entrada está disponível agora.",
+  payment_incomplete:
+    "O pagamento não foi concluído. Você pode tentar novamente, mas o horário só será garantido após a autorização.",
   pending_payment:
     "O pagamento precisa de atenção antes da confirmação do encontro.",
   reschedule_requested: "Há uma solicitação de reagendamento em andamento.",
@@ -27,7 +29,11 @@ export function getEncounterGuidance(encounter: PatientEncounter) {
 export function getSpotlightEyebrow(encounter: PatientEncounter | null) {
   if (!encounter) return "Próximo passo";
   if (encounter.status === "live") return "Entrada disponível";
-  if (encounter.status === "pending_payment") return "Atenção necessária";
+  if (
+    encounter.status === "pending_payment" ||
+    encounter.status === "payment_incomplete"
+  )
+    return "Atenção necessária";
   if (encounter.status === "reschedule_requested") return "Reagendamento";
 
   return "Próximo encontro";

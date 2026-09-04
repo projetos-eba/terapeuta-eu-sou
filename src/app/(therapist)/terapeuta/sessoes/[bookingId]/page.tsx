@@ -172,7 +172,10 @@ function SessionOverview({
                 >
                   {booking.patientName}
                 </h2>
-                <BookingReference id={booking.bookingId} />
+                <BookingReference
+                  id={booking.bookingId}
+                  reference={booking.sessionReference}
+                />
                 <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary sm:text-base">
                   {booking.serviceTitle} · Atendimento online
                 </p>

@@ -4,7 +4,7 @@ export type TherapistFinanceTab =
   | "receipts"
   | "summary";
 
-export type TherapistFinancePeriodKey = "30" | "90" | "month";
+export type TherapistFinancePeriodKey = "30" | "90" | "custom" | "month";
 
 export type TherapistFinancialStatus =
   | "canceled"
@@ -16,16 +16,35 @@ export type TherapistFinancialStatus =
   | "processing"
   | "refunded";
 
+export type TherapistReceiptStatus =
+  | "bank_pending"
+  | "blocked"
+  | "canceled"
+  | "disputed"
+  | "eligible"
+  | "failed"
+  | "paid"
+  | "payout_processing"
+  | "receivable"
+  | "refunded"
+  | "reversed"
+  | "waiting_confirmation"
+  | "waiting_safety_period"
+  | "waiting_settlement";
+
 export type TherapistPayoutStatus =
   | "batched"
   | "blocked"
+  | "bank_pending"
   | "eligible"
   | "failed"
+  | "paid"
   | "reversed"
   | "transferred"
   | "transfer_pending"
   | "waiting_confirmation"
-  | "waiting_safety_period";
+  | "waiting_safety_period"
+  | "waiting_settlement";
 
 export type TherapistConnectOnboardingStatus =
   | "account_created"
@@ -52,12 +71,14 @@ export type TherapistFinancePeriod = {
 
 export type TherapistFinancialOverview = TherapistFinancePeriod & {
   blockedCents: number;
-  contractVersion: 1;
+  contractVersion: 2;
   disputedCents: number;
   eligibleForPayoutCents: number;
   generatedAt: string;
   grossPaidCents: number;
   payoutProcessingCents: number;
+  processingCents: number;
+  receivedCents: number;
   plan: "free" | "premium" | "premium_plus";
   refundedToCustomersCents: number;
   tesCommissionCents: number;
@@ -66,6 +87,7 @@ export type TherapistFinancialOverview = TherapistFinancePeriod & {
   transferredCents: number;
   waitingConfirmationCents: number;
   waitingSafetyPeriodCents: number;
+  waitingSettlementCents: number;
 };
 
 export type TherapistReceiptItem = {
@@ -78,6 +100,8 @@ export type TherapistReceiptItem = {
   paymentMethodType: string | null;
   paymentOrigin: string;
   receiptUrl: string | null;
+  receiptStatus: TherapistReceiptStatus;
+  receivedAt: string | null;
   refundedAmountCents: number;
   sessionDate: string;
   sessionPaymentId: string;
@@ -92,15 +116,31 @@ export type TherapistReceiptTherapyOption = {
 };
 
 export type TherapistReceiptsContract = {
-  contractVersion: 1;
+  contractVersion: 2;
   filters: TherapistFinancePeriod & {
     search: string | null;
-    status: TherapistFinancialStatus | null;
+    status: TherapistReceiptStatus | null;
     therapyId: string | null;
   };
   generatedAt: string;
   items: TherapistReceiptItem[];
   pagination: TherapistFinancePagination;
+  monthlyTrend: Array<{
+    month: string;
+    processingCents: number;
+    receivedCents: number;
+  }>;
+  statusDistribution: Array<{
+    amountCents: number;
+    itemCount: number;
+    status: TherapistReceiptStatus;
+  }>;
+  summary: {
+    disputedCents: number;
+    processingCents: number;
+    receivedCents: number;
+    refundedCents: number;
+  };
   therapistProfileId: string;
   therapyOptions: TherapistReceiptTherapyOption[];
 };
@@ -118,6 +158,7 @@ export type TherapistPayoutItem = {
     | "matched"
     | "needs_reconciliation"
     | "pending"
+    | "paid"
     | "reversed";
   reconciliationUpdatedAt: string | null;
   refundedAmountCents: number;
@@ -131,16 +172,18 @@ export type TherapistPayoutItem = {
 };
 
 export type TherapistPayoutSummary = {
+  blockedReasonCodes: Array<"account" | "review" | "refund" | "other">;
   blockedCents: number;
   eligibleForPayoutCents: number;
   nextBatchAt: string | null;
   payoutProcessingCents: number;
   waitingConfirmationCents: number;
   waitingSafetyPeriodCents: number;
+  waitingSettlementCents: number;
 };
 
 export type TherapistPayoutsContract = {
-  contractVersion: 1;
+  contractVersion: 2;
   filters: TherapistFinancePeriod & {
     status: TherapistPayoutStatus | null;
   };
@@ -175,7 +218,7 @@ export type TherapistFinanceFilters = {
   page: number;
   payoutStatus: TherapistPayoutStatus | null;
   search: string | null;
-  status: TherapistFinancialStatus | null;
+  status: TherapistReceiptStatus | null;
   therapyId: string | null;
 };
 

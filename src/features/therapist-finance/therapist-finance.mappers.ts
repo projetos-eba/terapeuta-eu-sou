@@ -19,6 +19,7 @@ import type {
   TherapistPayoutSummary,
   TherapistPayoutsContract,
   TherapistReceiptItem,
+  TherapistReceiptStatus,
   TherapistReceiptTherapyOption,
   TherapistReceiptsContract,
 } from "./therapist-finance.types";
@@ -35,20 +36,40 @@ const financialStatuses = new Set<TherapistFinancialStatus>([
 ]);
 
 const payoutStatuses = new Set<TherapistPayoutStatus>([
+  "bank_pending",
   "batched",
   "blocked",
   "eligible",
   "failed",
+  "paid",
   "reversed",
   "transferred",
   "transfer_pending",
   "waiting_confirmation",
   "waiting_safety_period",
+  "waiting_settlement",
+]);
+
+const receiptStatuses = new Set<TherapistReceiptStatus>([
+  "bank_pending",
+  "blocked",
+  "canceled",
+  "disputed",
+  "eligible",
+  "failed",
+  "paid",
+  "payout_processing",
+  "receivable",
+  "refunded",
+  "reversed",
+  "waiting_confirmation",
+  "waiting_safety_period",
+  "waiting_settlement",
 ]);
 
 const payoutReconciliationStatuses = new Set<
   TherapistPayoutItem["reconciliationStatus"]
->(["failed", "matched", "needs_reconciliation", "pending", "reversed"]);
+>(["failed", "matched", "needs_reconciliation", "paid", "pending", "reversed"]);
 
 const connectStatuses = new Set<TherapistConnectOnboardingStatus>([
   "account_created",
@@ -97,12 +118,14 @@ export function mapTherapistFinancialOverview(
 
     return {
       blockedCents: integer(value.blockedCents),
-      contractVersion: literalOne(value.contractVersion),
+      contractVersion: literalTwo(value.contractVersion),
       disputedCents: integer(value.disputedCents),
       eligibleForPayoutCents: integer(value.eligibleForPayoutCents),
       generatedAt: dateTime(value.generatedAt),
       grossPaidCents: integer(value.grossPaidCents),
       payoutProcessingCents: integer(value.payoutProcessingCents),
+      processingCents: integer(value.processingCents),
+      receivedCents: integer(value.receivedCents),
       periodEnd: dateString(value.periodEnd),
       periodStart: dateString(value.periodStart),
       plan: plan(value.plan),
@@ -114,6 +137,7 @@ export function mapTherapistFinancialOverview(
       transferredCents: integer(value.transferredCents),
       waitingConfirmationCents: integer(value.waitingConfirmationCents),
       waitingSafetyPeriodCents: integer(value.waitingSafetyPeriodCents),
+      waitingSettlementCents: integer(value.waitingSettlementCents),
     };
   } catch (error) {
     if (error instanceof TherapistFinanceError) throw error;
@@ -129,18 +153,23 @@ export function mapTherapistReceiptsContract(
     const filters = record(value.filters);
 
     return {
-      contractVersion: literalOne(value.contractVersion),
+      contractVersion: literalTwo(value.contractVersion),
       filters: {
         periodEnd: dateString(filters.periodEnd),
         periodStart: dateString(filters.periodStart),
         search: nullableString(filters.search),
-        status: nullableFinancialStatus(filters.status),
+        status: nullableReceiptStatus(filters.status),
         therapyId: nullableString(filters.therapyId),
         timezone: nonEmptyString(filters.timezone),
       },
       generatedAt: dateTime(value.generatedAt),
       items: array(value.items).map(receiptItem),
+      monthlyTrend: array(value.monthlyTrend).map(monthlyTrendPoint),
       pagination: pagination(value.pagination),
+      statusDistribution: array(value.statusDistribution).map(
+        statusDistributionItem,
+      ),
+      summary: receiptSummary(value.summary),
       therapistProfileId: nonEmptyString(value.therapistProfileId),
       therapyOptions: array(value.therapyOptions).map(therapyOption),
     };
@@ -158,7 +187,7 @@ export function mapTherapistPayoutsContract(
     const filters = record(value.filters);
 
     return {
-      contractVersion: literalOne(value.contractVersion),
+      contractVersion: literalTwo(value.contractVersion),
       filters: {
         periodEnd: dateString(filters.periodEnd),
         periodStart: dateString(filters.periodStart),
@@ -423,6 +452,8 @@ function receiptItem(input: unknown): TherapistReceiptItem {
     paymentMethodType: nullableString(value.paymentMethodType),
     paymentOrigin: nonEmptyString(value.paymentOrigin),
     receiptUrl: nullableString(value.receiptUrl),
+    receiptStatus: receiptStatus(value.receiptStatus),
+    receivedAt: nullableDateTime(value.receivedAt),
     refundedAmountCents: nonNegativeInteger(value.refundedAmountCents),
     sessionDate: dateTime(value.sessionDate),
     sessionPaymentId: nonEmptyString(value.sessionPaymentId),
@@ -462,6 +493,7 @@ function payoutSummary(input: unknown): TherapistPayoutSummary {
   const value = record(input);
 
   return {
+    blockedReasonCodes: payoutBlockedReasonCodes(value.blockedReasonCodes),
     blockedCents: nonNegativeInteger(value.blockedCents),
     eligibleForPayoutCents: nonNegativeInteger(value.eligibleForPayoutCents),
     nextBatchAt: nullableDateTime(value.nextBatchAt),
@@ -472,7 +504,53 @@ function payoutSummary(input: unknown): TherapistPayoutSummary {
     waitingSafetyPeriodCents: nonNegativeInteger(
       value.waitingSafetyPeriodCents,
     ),
+    waitingSettlementCents: nonNegativeInteger(value.waitingSettlementCents),
   };
+}
+
+function receiptSummary(input: unknown): TherapistReceiptsContract["summary"] {
+  const value = record(input);
+  return {
+    disputedCents: nonNegativeInteger(value.disputedCents),
+    processingCents: nonNegativeInteger(value.processingCents),
+    receivedCents: nonNegativeInteger(value.receivedCents),
+    refundedCents: nonNegativeInteger(value.refundedCents),
+  };
+}
+
+function monthlyTrendPoint(
+  input: unknown,
+): TherapistReceiptsContract["monthlyTrend"][number] {
+  const value = record(input);
+  return {
+    month: nonEmptyString(value.month),
+    processingCents: nonNegativeInteger(value.processingCents),
+    receivedCents: nonNegativeInteger(value.receivedCents),
+  };
+}
+
+function statusDistributionItem(
+  input: unknown,
+): TherapistReceiptsContract["statusDistribution"][number] {
+  const value = record(input);
+  return {
+    amountCents: nonNegativeInteger(value.amountCents),
+    itemCount: nonNegativeInteger(value.itemCount),
+    status: receiptStatus(value.status),
+  };
+}
+
+function payoutBlockedReasonCodes(
+  input: unknown,
+): TherapistPayoutSummary["blockedReasonCodes"] {
+  if (!Array.isArray(input)) return [];
+  return input.filter(
+    (item): item is TherapistPayoutSummary["blockedReasonCodes"][number] =>
+      item === "account" ||
+      item === "review" ||
+      item === "refund" ||
+      item === "other",
+  );
 }
 
 function therapyOption(input: unknown): TherapistReceiptTherapyOption {
@@ -696,6 +774,21 @@ function nullableFinancialStatus(value: unknown) {
   return financialStatus(value);
 }
 
+function receiptStatus(value: unknown): TherapistReceiptStatus {
+  if (
+    typeof value === "string" &&
+    receiptStatuses.has(value as TherapistReceiptStatus)
+  ) {
+    return value as TherapistReceiptStatus;
+  }
+  throw new Error("Invalid receipt status.");
+}
+
+function nullableReceiptStatus(value: unknown) {
+  if (value === null || value === undefined) return null;
+  return receiptStatus(value);
+}
+
 function payoutStatus(value: unknown): TherapistPayoutStatus {
   if (
     typeof value === "string" &&
@@ -836,6 +929,11 @@ function array(value: unknown): unknown[] {
 
 function literalOne(value: unknown): 1 {
   if (value === 1) return 1;
+  throw new Error("Invalid contract version.");
+}
+
+function literalTwo(value: unknown): 2 {
+  if (value === 2) return 2;
   throw new Error("Invalid contract version.");
 }
 

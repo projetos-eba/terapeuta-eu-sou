@@ -3,7 +3,8 @@ import { DomainError } from "../_shared/payments/http.ts";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const DESCRIPTION_MAX_LENGTH = 135;
+// Canonical service contract: descriptions accept up to 550 characters.
+const DESCRIPTION_MAX_LENGTH = 550;
 
 export type TherapistServicesCommandBody =
   | { action?: "catalog" | "list" }
@@ -359,8 +360,7 @@ function isOptionalDescription(value: unknown) {
   return (
     value === undefined ||
     value === null ||
-    (typeof value === "string" &&
-      value.trim().length <= DESCRIPTION_MAX_LENGTH)
+    (typeof value === "string" && value.trim().length <= DESCRIPTION_MAX_LENGTH)
   );
 }
 

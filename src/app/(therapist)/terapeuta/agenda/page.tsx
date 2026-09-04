@@ -15,6 +15,7 @@ import { getTherapistSchedule } from "@/features/therapist-schedule";
 import { TherapistScheduleHours } from "@/features/therapist-schedule/components/therapist-schedule-hours";
 import { therapistRoutePolicies } from "@/features/therapist-shell";
 import { requireTherapistSession } from "@/lib/auth/therapist-session";
+import { canUseAgendaInsights } from "@/lib/permissions";
 import { routes } from "@/lib/routes";
 
 type AgendaTab = "bloqueios" | "calendario" | "horarios";
@@ -202,6 +203,7 @@ export default async function TherapistAgendaPage({
 
   return (
     <TherapistCalendar
+      canViewAgendaInsights={canUseAgendaInsights(session.plan)}
       data={calendarResult.data}
       scheduleRules={
         scheduleResult.status === "success" ? scheduleResult.data.rules : null

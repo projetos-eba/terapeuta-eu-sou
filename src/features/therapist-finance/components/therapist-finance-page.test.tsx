@@ -5,7 +5,7 @@ import type {
   TherapistAdvancedFinancialDashboard,
   TherapistFinanceFilters,
   TherapistFinancePageData,
-  TherapistFinancialStatus,
+  TherapistReceiptStatus,
 } from "../therapist-finance.types";
 import { financialReceiptCopyByStatus } from "./financial-formatters";
 import { TherapistFinancePage } from "./therapist-finance-page";
@@ -48,7 +48,22 @@ describe("TherapistFinancePage", () => {
     renderPage();
 
     expect(screen.getAllByText("Valor bruto").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Comissão TES").length).toBeGreaterThan(0);
+    expect(screen.getByText("Custos da plataforma")).toBeInTheDocument();
+    expect(
+      screen.getByText("Incluídos no cálculo do repasse"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Custos da plataforma incluem os valores previstos/i),
+    ).toBeInTheDocument();
+    const costTooltip = screen.getByRole("tooltip");
+    expect(costTooltip).toHaveClass("invisible");
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Saiba mais sobre Custos da plataforma",
+      }),
+    );
+    expect(costTooltip).toHaveClass("visible");
+    expect(screen.queryByText("Evolução recente")).not.toBeInTheDocument();
     expect(screen.getAllByText("Valor líquido").length).toBeGreaterThan(0);
     expect(
       screen.queryByText(new RegExp(["ajus", "tes"].join(""), "i")),
@@ -166,7 +181,10 @@ describe("TherapistFinancePage", () => {
     expect(screen.getAllByText("Cartão").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Pagamento online").length).toBeGreaterThan(0);
     expect(screen.getByText("Reembolsos")).toBeInTheDocument();
-    expect(screen.getByText("Recebimentos por semana")).toBeInTheDocument();
+    expect(screen.getByText("Recebimento por mês")).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Linha roxa: valores ativos/i),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Distribuição por status")).toBeInTheDocument();
   });
 
@@ -188,7 +206,7 @@ describe("TherapistFinancePage", () => {
             },
           },
         },
-        { status: status as TherapistFinancialStatus },
+        { status: status as TherapistReceiptStatus },
       );
 
       expect(
@@ -215,6 +233,7 @@ describe("TherapistFinancePage", () => {
             {
               ...baseReceipts.items[0],
               financialStatus: "canceled",
+              receiptStatus: "canceled",
             },
           ],
         },
@@ -253,9 +272,7 @@ describe("TherapistFinancePage", () => {
       },
     );
 
-    expect(
-      screen.getByRole("link", { name: "Próxima página" }),
-    ).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Carregar mais" })).toHaveAttribute(
       "href",
       "/terapeuta/financeiro?tab=recebimentos&page=2&status=canceled&therapyId=therapy-1&q=Lucas",
     );
@@ -330,10 +347,74 @@ describe("TherapistFinancePage", () => {
       },
     });
 
-    expect(screen.getAllByText("31/07/2026, 10:00").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("31/07/2026").length).toBeGreaterThan(0);
     expect(
-      screen.getByText("Próximo repasse previsto para 31/07/2026, 10:00."),
+      screen.getByText(
+        "Próximo lote de transferência previsto para 31/07/2026.",
+      ),
     ).toBeInTheDocument();
+  });
+
+  it("does not promise a batch when the therapist has no eligible value", () => {
+    renderPage("payouts");
+
+    expect(
+      screen.getByText("Sem valores elegíveis para o próximo lote."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText("Sem valores elegíveis para o próximo lote").length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("shows only statuses that can occur in the payout history", () => {
+    renderPage("payouts");
+
+    const select = screen.getByLabelText("Etapa do repasse");
+    expect(select).toHaveTextContent("Incluído no próximo repasse");
+    expect(select).toHaveTextContent("A caminho do banco");
+    expect(select).toHaveTextContent("Pago");
+    expect(select).not.toHaveTextContent("Aguardando confirmação");
+    expect(select).not.toHaveTextContent("Em liquidação");
+    expect(select).not.toHaveTextContent("Disponível");
+  });
+
+  it("orders the payout path from preparation through bank credit", () => {
+    renderPage("payouts");
+
+    const labels = [
+      "Confirmação, segurança e liquidação",
+      "Disponível para o lote semanal",
+      "Próximo lote de transferência",
+      "Transferência e crédito bancário",
+    ].map((label) => screen.getAllByText(label).at(-1)!);
+
+    expect(
+      labels.every(
+        (label, index) =>
+          index === 0 ||
+          Boolean(
+            labels[index - 1].compareDocumentPosition(label) &
+            Node.DOCUMENT_POSITION_FOLLOWING,
+          ),
+      ),
+    ).toBe(true);
+  });
+
+  it("offers a typed custom date range in the summary", () => {
+    renderPage();
+
+    expect(screen.queryByLabelText("De")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Até")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Período"), {
+      target: { value: "custom" },
+    });
+    expect(screen.getByLabelText("De")).toHaveAttribute("type", "date");
+    expect(screen.getByLabelText("Até")).toHaveAttribute("type", "date");
+    fireEvent.change(screen.getByLabelText("Período"), {
+      target: { value: "90" },
+    });
+    expect(screen.queryByLabelText("De")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Até")).not.toBeInTheDocument();
   });
 });
 
@@ -479,12 +560,14 @@ function fixture(): TherapistFinancePageData {
     },
     overview: {
       blockedCents: 0,
-      contractVersion: 1,
+      contractVersion: 2,
       disputedCents: 0,
       eligibleForPayoutCents: 8000,
       generatedAt: "2026-07-28T12:00:00.000Z",
       grossPaidCents: 10000,
       payoutProcessingCents: 0,
+      processingCents: 8000,
+      receivedCents: 0,
       periodEnd: "2026-07-28",
       periodStart: "2026-06-29",
       plan: "premium",
@@ -496,9 +579,10 @@ function fixture(): TherapistFinancePageData {
       transferredCents: 8000,
       waitingConfirmationCents: 0,
       waitingSafetyPeriodCents: 0,
+      waitingSettlementCents: 0,
     },
     payouts: {
-      contractVersion: 1,
+      contractVersion: 2,
       filters: {
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
@@ -535,17 +619,19 @@ function fixture(): TherapistFinancePageData {
         totalPages: 1,
       },
       summary: {
+        blockedReasonCodes: [],
         blockedCents: 0,
         eligibleForPayoutCents: 8000,
         nextBatchAt: null,
         payoutProcessingCents: 0,
         waitingConfirmationCents: 0,
         waitingSafetyPeriodCents: 0,
+        waitingSettlementCents: 0,
       },
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
     },
     receipts: {
-      contractVersion: 1,
+      contractVersion: 2,
       filters: {
         periodEnd: "2026-07-28",
         periodStart: "2026-06-29",
@@ -566,6 +652,8 @@ function fixture(): TherapistFinancePageData {
           paymentMethodType: "card",
           paymentOrigin: "stripe_checkout",
           receiptUrl: "https://stripe.test/receipt",
+          receiptStatus: "refunded",
+          receivedAt: null,
           refundedAmountCents: 1000,
           sessionDate: "2026-07-28T13:00:00.000Z",
           sessionPaymentId: "payment-1",
@@ -580,6 +668,22 @@ function fixture(): TherapistFinancePageData {
         pageSize: 12,
         totalCount: 1,
         totalPages: 1,
+      },
+      monthlyTrend: [
+        {
+          month: "2026-07",
+          processingCents: 7000,
+          receivedCents: 0,
+        },
+      ],
+      statusDistribution: [
+        { amountCents: 7000, itemCount: 1, status: "refunded" },
+      ],
+      summary: {
+        disputedCents: 0,
+        processingCents: 0,
+        receivedCents: 0,
+        refundedCents: 1000,
       },
       therapistProfileId: "c1000000-0000-4000-8000-000000000001",
       therapyOptions: [{ name: "Reiki", therapyId: "therapy-1" }],

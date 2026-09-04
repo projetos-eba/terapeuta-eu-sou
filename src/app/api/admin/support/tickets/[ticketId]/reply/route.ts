@@ -81,7 +81,6 @@ export async function POST(
         config,
         accessToken,
         ticketId,
-        session.userId,
         requestId,
       );
       if (existingMessage) {
@@ -150,23 +149,27 @@ async function findExistingAdminMessage(
   config: NonNullable<ReturnType<typeof getSupabasePublicConfig>>,
   accessToken: string,
   ticketId: string,
-  userId: string,
   requestId: string,
 ) {
   const response = await fetch(
-    `${config.url}/rest/v1/support_ticket_messages?select=id&ticket_id=eq.${ticketId}&author_profile_id=eq.${userId}&request_id=eq.${encodeURIComponent(requestId)}&visibility=eq.requester&limit=1`,
+    `${config.url}/rest/v1/rpc/admin_support_ticket_message_exists_v1`,
     {
       cache: "no-store",
       headers: {
         apikey: config.apiKey,
         Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        p_request_id: requestId,
+        p_ticket_id: ticketId,
+      }),
+      method: "POST",
     },
   );
   if (!response.ok)
     throw new Error("Support message idempotency lookup failed");
-  const messages = (await response.json()) as Array<{ id: string }>;
-  return messages[0] ?? null;
+  return (await response.json()) === true;
 }
 
 function formValue(formData: FormData, key: string) {

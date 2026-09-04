@@ -28,7 +28,7 @@ export async function queryTherapistSettings({
     id: `eq.${userId}`,
     limit: "1",
     select:
-      "id,displayName:display_name,email,phone,therapistProfile:therapist_profiles!therapist_profiles_user_id_fkey(id,slug,publicName:public_name,plan,status,isPublic:is_public,isAcceptingBookings:is_accepting_bookings,publicStatus:public_status)",
+      "id,displayName:display_name,email,phone,phoneCountryCode:phone_country_code,therapistProfile:therapist_profiles!therapist_profiles_user_id_fkey(id,slug,publicName:public_name,plan,status,isPublic:is_public,isAcceptingBookings:is_accepting_bookings,publicStatus:public_status)",
   });
 
   const response = await fetch(`${config.url}/rest/v1/profiles?${query}`, {
@@ -67,6 +67,7 @@ export async function updateTherapistAccountSettings({
   displayName,
   identity,
   phone,
+  phoneCountryCode,
   userId,
 }: {
   accessToken: string;
@@ -83,6 +84,7 @@ export async function updateTherapistAccountSettings({
     streetNumber: string;
   };
   phone: string;
+  phoneCountryCode?: string;
   userId: string;
 }) {
   const config = getSupabasePublicConfig();
@@ -91,12 +93,13 @@ export async function updateTherapistAccountSettings({
   const query = new URLSearchParams({
     id: `eq.${userId}`,
     role: "eq.therapist",
-    select: "display_name,phone",
+    select: "display_name,phone,phone_country_code",
   });
   const response = await fetch(`${config.url}/rest/v1/profiles?${query}`, {
     body: JSON.stringify({
       display_name: displayName,
       phone: phone || null,
+      phone_country_code: phoneCountryCode ?? "55",
     }),
     cache: "no-store",
     headers: {

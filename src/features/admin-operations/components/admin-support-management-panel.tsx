@@ -242,7 +242,11 @@ function formatBookingDate(value: string) {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? "Sessão relacionada"
-    : date.toLocaleString("pt-BR", { dateStyle: "medium", timeStyle: "short" });
+    : date.toLocaleString("pt-BR", {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: "America/Sao_Paulo",
+      });
 }
 function statusLabel(value: string) {
   return value.replaceAll("_", " ");

@@ -72,6 +72,9 @@ All derive the therapist from `auth.uid()`. Do not accept
   show the prior 20% split and must not be recalculated in the UI.
 - Formula: Valor bruto das sessões - Comissão TES - Reembolsos ao cliente when
   present = Valor líquido do terapeuta.
+- No painel `Seu dinheiro`, apresentar Comissão TES como `Custos da plataforma`
+  com a explicação de que está incluída no cálculo do repasse. Não alterar o
+  snapshot nem a terminologia técnica dos contratos.
 - Do not show Stripe fees as therapist discounts.
 - Payment method and payment origin are separate.
 - No local form for bank, agency, account, Pix, CPF, CNPJ or documents.
@@ -107,8 +110,20 @@ recebimento`; provider and reconciliation terminology stays in the service
 - F4 operational payout lifecycle uses the existing authorities: Stripe webhook
   marks payment, `confirm_session_service` records realization,
   `refresh_session_transfer_eligibility` applies the safety period,
-  `create_weekly_payout_batch` reserves eligible payments and
+  hourly reconciliation verifies the source Charge Balance Transaction,
+  `create_weekly_payout_batch_v2` reserves only settled eligible payments and
   `process-payout-batch` creates Connect Transfers with `source_transaction`.
+- Keep `waiting_settlement` visible between the safety period and Stripe
+  availability. `eligible` requires a recent authoritative `available` snapshot;
+  the weekly cutoff and worker must revalidate it.
+- The hourly worker must first re-evaluate only recoverable
+  `blocked/connect_not_ready` payments. Run automatic confirmation at minute
+  `07` and financial reconciliation at minute `17`; weekly cutoff remains the
+  authority for inclusion in Tuesday's batch.
+- Receipts show a received-only monthly chart. Payout history filters expose
+  only batch/Transfer/Payout states, never payment preparation states.
+- Treat therapist receipt status as paid only after a paid, completed automatic
+  Payout allocates the complete Transfer amount.
 - Realized, contracted and estimated values must remain visually separated.
 - Potential agenda revenue is an estimate, not guaranteed revenue, and never
   affects ledger, payouts or balances.
@@ -125,6 +140,12 @@ recebimento`; provider and reconciliation terminology stays in the service
 - Test-mode temporal overrides are allowed only for internal operations with
   `TES_FINANCE_TEST_CONTROLS_ENABLED=true` and Stripe test mode; never expose
   them to browser flows or production.
+
+The receiving-account tab performs one automatic authenticated sync when an
+existing account is not ready or when returning from hosted onboarding. If
+confirmation remains pending, show an actionable dialog directing the
+therapist to Financeiro > Conta de recebimento > Verificar situacao; keep the
+manual sync action available.
 
 ## Figma
 
@@ -143,8 +164,8 @@ four product-approved tabs and adapts the reference into:
 - Resumo: editorial header, four summary cards, occupancy/potential donut,
   opportunity panel, four metrics, therapy ranking, financial evolution and
   methodology rows;
-- Recebimentos: filters, period cards, receipts table/cards, weekly bars and
-  status donut;
+- Recebimentos: one filter panel, period cards, monthly received-only trend,
+  full-filter status donut and then the receipt table/cards;
 - Repasses: summary cards, payout timeline, paginated list and calculation
   formula;
 - Conta de recebimento: secure Connect status, next action and account
@@ -188,6 +209,15 @@ Respect hierarchy, spacing and density, but do not copy unsupported product
 features or bank-form fields.
 
 ## QA
+
+- Previsões de repasse são sempre calculadas por pagamentos `eligible` do
+  terapeuta autenticado; nunca derivar `nextBatchAt` de lote global.
+- Exibir “próximo lote de transferência” e explicar que o Payout bancário
+  diário é criado pela Stripe, sem prometer data de crédito.
+- Elegibilidade exige conta Connect corrente (`is_current`) pronta, Transfer
+  ativo, Payout habilitado, agenda `daily` e estado operacional `ready`.
+- Sincronização Connect pode reavaliar de forma idempotente somente bloqueios
+  recuperáveis `connect_not_ready`; preservar bloqueios financeiros definitivos.
 
 Run focused tests for `src/features/therapist-finance`, Connect Deno tests and
 pgTAP finance tests. For full delivery, run the standard project validation:

@@ -200,6 +200,41 @@ describe("TherapistProfilePage video block", () => {
     expect(screen.queryByTitle("Vídeo de apresentação")).toBeNull();
   });
 
+  it("scrolls the hero booking CTA to the therapist agenda", () => {
+    render(
+      <TherapistProfilePage
+        profile={{
+          ...baseProfile,
+          isAcceptingBookings: true,
+          services: [
+            {
+              availability: [],
+              bookingUrl: "/reserva?serviceId=service-1",
+              currency: "BRL",
+              description: "Atendimento online com presença.",
+              durationMinutes: 50,
+              id: "service-1",
+              imageUrl: null,
+              priceCents: 12000,
+              priceLabel: "R$ 120",
+              themeNames: [],
+              title: "Reiki online",
+              therapyId: "therapy-1",
+              therapyName: "Reiki",
+              therapySlug: "reiki",
+            },
+          ],
+        }}
+        reviews={[]}
+      />,
+    );
+
+    expect(
+      screen.getByRole("link", { name: /Agendar sessão/ }),
+    ).toHaveAttribute("href", "#agenda-terapeuta");
+    expect(document.getElementById("agenda-terapeuta")).toBeInTheDocument();
+  });
+
   it("uses the plural label when the profile has zero reviews", () => {
     render(<TherapistProfilePage profile={baseProfile} reviews={[]} />);
 
@@ -214,7 +249,7 @@ describe("TherapistProfilePage video block", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("keeps an unbroken service description inside the public card", () => {
+  it("previews long service descriptions and opens the full text", async () => {
     const longWord = "x".repeat(220);
 
     render(
@@ -244,7 +279,22 @@ describe("TherapistProfilePage video block", () => {
       />,
     );
 
-    expect(screen.getByText(longWord)).toHaveClass("break-words");
+    const description = screen.getByText(`${longWord.slice(0, 180)}…`);
+
+    expect(description).toHaveClass("break-words");
+    expect(description).not.toHaveClass("overflow-hidden");
+    expect(description.className).not.toContain("line-clamp");
+
+    const moreButton = screen.getByRole("button", {
+      name: "Ver mais sobre Reiki",
+    });
+    expect(moreButton).toHaveClass("font-bold");
+    fireEvent.click(moreButton);
+
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(longWord)).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
   it("reads the current favorite state for an authenticated patient", async () => {

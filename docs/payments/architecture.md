@@ -98,7 +98,7 @@ pagamentos já criados:
 - confirmação automática da resposta ausente do paciente após 7 dias;
 - confirmação automática da resposta ausente do terapeuta após 30 dias;
 - prazo de segurança de 24 horas completas após a segunda confirmação válida;
-- lote semanal terca-feira 10:00 America/Sao_Paulo, com cutoff explicito e periodo unico por indice idempotente;
+- lote semanal terça-feira às 02:00 America/Sao_Paulo, com cutoff explícito e período único por índice idempotente;
 - upgrades de assinatura cobram prorrata imediatamente; downgrades e cancelamentos entram no fim do periodo.
 - Premium Plus para Premium cria Subscription Schedule e registra o plano/data
   futuros na metadata da assinatura local e remota para projeção consistente.
@@ -156,7 +156,56 @@ Criar, editar, ocultar ou republicar `reviews` não altera `bookings`,
 - `therapist_subscriptions`: assinatura paga do terapeuta.
 - `therapist_connect_accounts`: conta conectada e status operacional.
 - `session_payments`: fonte financeira canonica das sessoes.
-- `session_payment_attempts`: tentativas idempotentes de cobranca.
+- `session_payment_attempts`: tentativas idempotentes de cobrança, classificadas
+  como `legacy`, `initial_hold` ou `payment_retry`, com prazo autoritativo,
+  autorização, reivindicação do slot e motivo terminal auditáveis.
+
+Pagamentos de encontro usam autorização e captura separadas. O Checkout inicial
+ocupa a agenda por cinco minutos a partir da abertura do formulário. Uma
+retomada não ocupa o horário enquanto o cartão é preenchido; no evento
+`payment_intent.amount_capturable_updated`, o PostgreSQL reivindica o intervalo
+atomicamente antes da captura. Conflito cancela a autorização sem captura. O
+job `reservation-checkout-maintenance` expira leases abandonados a cada minuto
+e libera bootstraps órfãos que consumiram o hold sem persistir uma Checkout
+Session. A criação também compensa esse estado imediatamente após falha da
+chamada Stripe, sem cancelar uma Checkout que já tenha sido persistida.
+Uma recarga preserva a tentativa idempotente e o prazo absoluto. `pagehide` não
+é usado como autoridade de abandono, pois o navegador também o dispara em
+refresh; ao fechar ou sair da página, a manutenção libera o intervalo no prazo
+canônico. Tentativas `payment_retry` nunca disparam abandono de booking.
+Durante uma retomada, o status público prioriza a tentativa Stripe atual sobre
+o `canceled` financeiro herdado da tentativa anterior: `checkout_created` e
+`waiting_payment` permanecem aguardando, e somente um estado terminal da nova
+tentativa pode apresentar falha. Isso evita uma falsa falha enquanto o webhook
+de autorização ainda está em trânsito.
+O aceite e o identificador idempotente da jornada ficam limitados à aba por
+`history.state` e `sessionStorage`, pois o Next pode substituir o primeiro no
+reload. Texto de preparação, client secret e dados do formulário Stripe nunca
+são gravados nesse armazenamento.
+Ao terminar o prazo com a página aberta, o cliente pode usar `Continuar
+pagamento` depois que o backend confirma a liberação da tentativa inicial.
+Esse CTA reabre o Stripe pela rota autenticada do mesmo booking, sem nova
+seleção e sem hold ou contador; o horário é revalidado no preflight e antes da
+captura. O formulário inicial expirado não pode ser reutilizado. Recusa de
+liberação encaminha para acompanhar o pagamento, pois autorização/captura ou
+uma substituição em outra aba podem ter vencido a corrida. Erro de rede exige
+nova verificação e nunca é tratado como liberação confirmada.
+
+Projeções genéricas de cancelamento/falha não apagam `slot_conflict` ou
+`expired` nas novas tentativas; `processing` também não remove uma autorização
+já reivindicada. Evidência financeira de pagamento continua prioritária.
+Conclusão e reconciliação de encontros históricos já confirmados não são novas
+reservas: se paciente e intervalo não mudaram, preservam-se essas operações,
+sem admitir inserções ou reagendamentos sobrepostos.
+
+O retorno local preserva a origem HTTP de loopback do navegador na mesma porta
+(por exemplo, `127.0.0.1`), somente no override já restrito à Stripe Test.
+Isso evita perder cookies ao trocar inadvertidamente para `localhost`.
+Falha de acesso/consulta nunca significa pagamento recusado. A tela de retorno
+limita a consulta a 30 segundos, cancela pedidos ao sair e trata respostas
+inválidas como indisponibilidade. Sessão Stripe divergente não recebe o status
+do booking; o endpoint retorna 404 sem dados financeiros.
+
 - `session_refunds`, `session_cancellation_decisions` e `session_disputes`: eventos compensatorios, decisoes de politica e bloqueios. Cancelamento usa `request_id` único e o RPC `claim_session_cancellation_decision_v1` (somente `service_role`) para registrar uma única decisão antes de chamar Stripe; retries reutilizam a decisão, a chave de idempotência do refund e a transição do booking.
 - `session_service_confirmations`: prova de realizacao da sessao.
 - `session_participant_confirmations`: respostas canônicas por papel, com
@@ -216,7 +265,22 @@ Realizacao do servico:
 
 Repasse:
 
-- `not_eligible`, `waiting_confirmation`, `waiting_safety_period`, `eligible`, `batched`, `transfer_pending`, `transferred`, `blocked`, `reversed`, `failed`.
+- `not_eligible`, `waiting_confirmation`, `waiting_safety_period`,
+  `waiting_settlement`, `eligible`, `batched`, `transfer_pending`, `transferred`,
+  `blocked`, `reversed`, `failed`.
+
+`waiting_settlement` é obrigatório depois da segurança enquanto a Balance
+Transaction da Charge não estiver `available` com `available_on` vencido e
+snapshot recente. A reconciliação financeira horária mantém essa projeção
+visível; o lote semanal repete a consulta no cutoff e o worker revalida a Stripe
+imediatamente antes do Transfer com `source_transaction`.
+
+O job horário também reavalia pagamentos bloqueados exclusivamente por
+`connect_not_ready`. Assim, uma conta Connect que se tornou operacional libera
+o pagamento para segurança/liquidação sem remover bloqueios definitivos. A
+confirmação automática roda no minuto `07` e a reconciliação financeira no
+minuto `17`; o lote semanal continua autoritativo no cutoff, portanto uma
+mudança concorrente não perde o pagamento nem o inclui depois do corte.
 
 ## Fluxos
 
@@ -427,6 +491,7 @@ Configuracao detalhada para o Dashboard Stripe:
 `stripe-billing-webhook`, escopo `Sua conta`:
 
 - `checkout.session.completed`
+- `balance.available`
 - `checkout.session.async_payment_succeeded`
 - `checkout.session.async_payment_failed`
 - `checkout.session.expired`
@@ -438,6 +503,7 @@ Configuracao detalhada para o Dashboard Stripe:
 - `invoice.payment_action_required`
 - `invoice.finalization_failed`
 - `payment_intent.processing`
+- `payment_intent.amount_capturable_updated`
 - `payment_intent.requires_action`
 - `payment_intent.succeeded`
 - `payment_intent.payment_failed`

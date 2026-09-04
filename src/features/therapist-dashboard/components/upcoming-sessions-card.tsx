@@ -57,6 +57,9 @@ export function UpcomingSessionsCard({
                   <span className="mt-0.5 block truncate text-[11px] font-semibold text-tesText-muted">
                     {session.serviceTitle}
                   </span>
+                  <span className="mt-0.5 block font-mono text-[11px] font-semibold text-tesText-muted">
+                    Sessão #{session.sessionReference}
+                  </span>
                 </span>
               </Link>
             </li>

@@ -51,6 +51,21 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
   navegação por teclado e área de toque mínima de 44px. O comportamento é o
   mesmo em mobile, tablet e desktop; não há link aninhado apenas no ícone.
 - Read model: RPC `public.get_therapist_dashboard_v1()`.
+- Atenção operacional: `TherapistAttentionSection` mostra no máximo três itens
+  no painel. A ação “Ver todos os itens” só aparece com mais de três avisos e
+  abre um `TESDialog` com a lista completa; cada item mantém seu destino
+  canônico resolvido por identificador no mapper do dashboard.
+- Confirmações pendentes: o serviço server-only compartilha o RPC
+  `get_therapist_pending_confirmations_v1()` com Sessões e Avaliações. O
+  contrato retorna apenas `pendingBookingIds`, `pendingCount`, `generatedAt`,
+  `therapistProfileId` e `version: 1`; a lista de Sessões aplica o badge
+  “Aguardando confirmação” nos IDs retornados. Free usa
+  `/terapeuta/sessoes?period=all#pending-confirmations`; Premium e Premium Plus
+  usam `/terapeuta/avaliacoes?tab=session#pending-session-confirmations`.
+- A rota de Avaliações aceita `tab=session` e abre a aba de confirmação da
+  sessão. A rota de Sessões ancora o grupo de sessões passadas em
+  `pending-confirmations`; em ambos os casos a ausência de sucesso do read
+  model não fabrica pendências nem altera os estados transacionais.
 - O percentual do perfil exibido no dashboard vem do readiness canônico do
   editor (`therapist_profile_completeness_json_m1`); valores legados retornados
   pelo RPC não podem rebaixar esse estado nem manter um item de atenção quando
@@ -61,6 +76,10 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
   segundo contrato. Assim, regras, período, dismissals e filtros de origem
   demonstrativa permanecem iguais nas duas superfícies.
 - Assets locais: `public/therapist/dashboard/`.
+- No resumo de estatísticas do hero, “Novas conexões” usa o par semântico de
+  sucesso (verde + fundo claro) e “Avaliações sem resposta” usa o par semântico
+  de atenção (amarelo/atenção + fundo claro); os demais indicadores permanecem
+  na cor de marca.
 
 ## Dados temporais do painel
 
@@ -146,6 +165,13 @@ Não distribuir queries pelos componentes. A entrada única da página é
   resumo de perfil e rail de orientação em 1440px, 1024px e 390px, sem rolagem
   horizontal.
 - Confirmar drawer, foco visível, item ativo, badges e logout.
+- Confirmar os estados zero, um, três e mais de três itens de atenção; o
+  diálogo deve abrir/fechar com foco, `Escape` e navegação por teclado, sem
+  redirecionamento implícito para Sessões.
+- Confirmar que “Confirmações pendentes” usa Sessões no Free e abre
+  diretamente “Avaliações da sessão” no Premium/Premium Plus; validar o badge
+  “Aguardando confirmação” em desktop e mobile e sua remoção após confirmação,
+  cancelamento, reembolso ou confirmação automática.
 - Confirmar que todos os links do menu evitam 404.
 - Confirmar RLS entre Ana, Rafael e paciente.
 - Confirmar idempotência do seed.

@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const {
+  queryTherapistPendingConfirmations,
   queryTherapistSessionDetail,
   queryTherapistSessionFeedback,
   queryTherapistSessions,
 } = vi.hoisted(
   () => ({
+    queryTherapistPendingConfirmations: vi.fn(),
     queryTherapistSessionDetail: vi.fn(),
     queryTherapistSessionFeedback: vi.fn(),
     queryTherapistSessions: vi.fn(),
@@ -13,12 +15,14 @@ const {
 );
 
 vi.mock("./therapist-sessions.queries", () => ({
+  queryTherapistPendingConfirmations,
   queryTherapistSessionDetail,
   queryTherapistSessionFeedback,
   queryTherapistSessions,
 }));
 
 import {
+  getTherapistPendingConfirmationsSummary,
   getTherapistSessionDetail,
   getTherapistSessionFeedbackStatus,
   getTherapistSessionsPage,
@@ -82,6 +86,62 @@ describe("therapist sessions service results", () => {
     });
 
     expect(result.status).toBe("empty");
+  });
+
+  it("parses the all-plan pending confirmation summary", async () => {
+    queryTherapistPendingConfirmations.mockResolvedValueOnce({
+      generatedAt: "2026-09-03T12:00:00.000Z",
+      pendingBookingIds: ["f2000000-0000-4000-8000-000000000001"],
+      pendingSessions: [
+        {
+          bookingId: "f2000000-0000-4000-8000-000000000001",
+          sessionReference: "26S000001",
+        },
+      ],
+      pendingCount: 1,
+      therapistProfileId,
+      version: 1,
+    });
+
+    await expect(
+      getTherapistPendingConfirmationsSummary({
+        accessToken: "test-token",
+        profileId: therapistProfileId,
+      }),
+    ).resolves.toMatchObject({
+      data: {
+        pendingCount: 1,
+        pendingBookingIds: ["f2000000-0000-4000-8000-000000000001"],
+        pendingSessions: [
+          {
+            bookingId: "f2000000-0000-4000-8000-000000000001",
+            sessionReference: "26S000001",
+          },
+        ],
+      },
+      status: "success",
+    });
+  });
+
+  it("rejects a pending confirmation summary attributed to another therapist", async () => {
+    queryTherapistPendingConfirmations.mockResolvedValueOnce({
+      generatedAt: "2026-09-03T12:00:00.000Z",
+      pendingBookingIds: [],
+      pendingSessions: [],
+      pendingCount: 0,
+      therapistProfileId: "c1000000-0000-4000-8000-000000000002",
+      version: 1,
+    });
+
+    const result = await getTherapistPendingConfirmationsSummary({
+      accessToken: "test-token",
+      profileId: therapistProfileId,
+    });
+
+    expect(result.status).toBe("error");
+    if (result.status === "error") {
+      expect(result.error.code).toBe("forbidden");
+    }
   });
 
   it("uses the participant-scoped feedback status without exposing its payload", async () => {

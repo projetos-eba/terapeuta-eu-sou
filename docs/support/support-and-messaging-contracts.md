@@ -36,10 +36,18 @@ Paciente e terapeuta podem comunicar somente texto previamente aprovado pelo TES
 Suporte é a relação entre o solicitante e o TES. Texto livre é permitido somente dentro de ticket autorizado; nunca reutiliza a API, tabela ou UI de mensagens entre participantes.
 
 - Paciente e terapeuta abrem e leem somente tickets próprios.
+- Depois de uma resposta pública do solicitante, o ticket fica em
+  `waiting_support`: a mensagem já foi recebida e a fila do TES recebe
+  prioridade. Esse estado não bloqueia a conversa: o solicitante pode enviar
+  complementos e anexos no mesmo ticket enquanto aguarda atendimento.
 - Cada ticket recebe um protocolo persistido e imutável no formato `#582914730P`: nove dígitos e uma letra da categoria. As letras são `A` (agenda e sessões), `Z` (acesso à sala), `P` (pagamentos), `F` (financeiro), `S` (plano), `V` (perfil e verificação), `C` (conta e acesso) e `O` (outro). O protocolo identifica o atendimento; autorização continua baseada no ticket e na sessão autenticada.
 - `requester_profile_id` e papel são derivados da sessão; o navegador não pode escolher outro solicitante.
 - `booking_id`, quando aceito, precisa pertencer ao solicitante segundo a relação canônica de booking.
 - Conteúdo é plain text, sem interpretação HTML ou Markdown e sem conteúdo em logs operacionais.
+- Anexos do suporte são opcionais e privados: até 5 arquivos por resposta, com
+  até 10 MB por arquivo, nos formatos PDF, JPG, PNG ou WebP. O navegador
+  informa esses limites, mas a API, o Storage e a RPC validam novamente o
+  contrato.
 - E-mail é uma notificação futura; a thread autenticada será a fonte canônica.
 
 ## Matriz de autorização
@@ -125,6 +133,11 @@ Contratos de thread vigentes, todos fora da API de participante:
   `assign_self`, `unassign`, `set_priority`, `start`, `resolve` e `reopen`,
   todas derivadas de `auth.uid()` e auditadas.
 
+Na resposta do solicitante, `422` informa payload ou anexo fora do contrato e
+`429` informa limite temporário de frequência. `waiting_support` não é motivo
+para rejeitar um novo complemento. O cliente não deve transformar esses estados
+em um erro genérico.
+
 ### Inbox administrativa — Fase 3
 
 `/admin/suporte` usa exclusivamente `admin_get_support_inbox_v1(jsonb)`. O
@@ -172,7 +185,7 @@ resposta do TES”, `waiting_requester` é “Aguardando sua resposta” e `reso
 “Em atendimento”, “Aguardando resposta da equipe TES”, “Aguardando resposta do
 solicitante” e “Resolvido”.
 
-Nota interna, alteração de prioridade e atribuição atualizam `last_activity_at`, mas não podem expor conteúdo ou autor administrativo ao solicitante. Admin só pode iniciar atendimento a partir de `open` ou `waiting_support`; resposta pública só é aceita em `open`, `in_progress` ou `waiting_support`; resolução exige ticket ainda não resolvido; reabertura administrativa exige `resolved`.
+Nota interna, alteração de prioridade e atribuição atualizam `last_activity_at`, mas não podem expor conteúdo ou autor administrativo ao solicitante. Admin só pode iniciar atendimento a partir de `open` ou `waiting_support`; resposta pública é aceita em `open`, `in_progress`, `waiting_support` ou `waiting_requester`, para que uma conversa não fique travada depois de uma resposta da equipe. Resolução exige ticket ainda não resolvido; reabertura administrativa exige `resolved`.
 
 ## Leitura e paginação da Central
 

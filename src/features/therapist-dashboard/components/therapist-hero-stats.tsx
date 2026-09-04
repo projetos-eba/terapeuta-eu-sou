@@ -31,32 +31,38 @@ export function TherapistHeroStats({
       icon: CalendarDays,
       label: "Sessões hoje",
       value: today.sessionsToday.toLocaleString("pt-BR"),
+      iconClassName: "bg-brand-lavenderSoft text-brand-primary",
     },
     {
       icon: UserRoundPlus,
       label: "Novas conexões",
       value: today.newConnections.toLocaleString("pt-BR"),
+      iconClassName: "bg-status-successBg text-status-success",
     },
     {
       icon: Star,
       label: "Avaliações sem resposta",
       value: today.pendingReviewReplies.toLocaleString("pt-BR"),
+      iconClassName: "bg-status-warningBg text-status-warning",
     },
     {
       icon: Clock3,
       label: "Tempo reservado hoje",
       value: formatMinutes(today.reservedMinutesToday),
+      iconClassName: "bg-brand-lavenderSoft text-brand-primary",
     },
   ];
 
   return (
     <div className="grid overflow-hidden rounded-panel border border-[var(--tes-color-border)]/70 bg-white sm:grid-cols-2 xl:grid-cols-4">
-      {stats.map(({ icon: Icon, label, value }) => (
+      {stats.map(({ icon: Icon, iconClassName, label, value }) => (
         <div
           className="flex min-h-24 items-center gap-3 border-b border-[var(--tes-color-border)]/70 px-4 py-4 last:border-b-0 sm:[&:nth-child(odd)]:border-r xl:border-b-0 xl:border-r xl:last:border-r-0"
           key={label}
         >
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-md bg-brand-lavenderSoft text-brand-primary">
+          <span
+            className={`flex size-11 shrink-0 items-center justify-center rounded-md ${iconClassName}`}
+          >
             <Icon aria-hidden="true" className="size-5" />
           </span>
           <span className="min-w-0">

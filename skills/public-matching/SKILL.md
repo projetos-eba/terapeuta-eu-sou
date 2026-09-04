@@ -75,6 +75,10 @@ Nesta fase, candidatos e fallback do Match devem conter somente `reiki`, `taro` 
 - `JourneyMatchClient`: selecao de temas, limites e envio. Os interesses
   associados a cada tema ficam visiveis para escolha, com limite de ate 3 por
   tema.
+- A copy editorial dos dez temas exibidos na jornada fica centralizada em
+  `src/features/public-matching/theme-copy.ts` e aplicada por slug tanto à
+  configuração publicada quanto ao fallback; IDs, slugs, imagens e interesses
+  permanecem inalterados.
 - `src/app/sua-jornada/resultado/page.tsx`: `noindex`.
 - `MatchingResultClient`: recarrega escolhas do `sessionStorage`, recalcula pela API e redireciona para `/sua-jornada` quando nao houver estado.
 - A selecao salva em `sessionStorage` deve incluir `matchingVersionId`. A API

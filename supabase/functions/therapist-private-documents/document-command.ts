@@ -169,6 +169,16 @@ export function requiredDocumentDefinition(kind: TherapistPrivateDocumentKind) {
   return requiredDocumentDefinitions[kind];
 }
 
+export function assertPrivateDocumentUploadAllowed(status: unknown) {
+  if (status === "accepted") {
+    throw new DomainError(
+      "DOCUMENT_ALREADY_ACCEPTED",
+      409,
+      "Este documento já foi aprovado. Se a equipe TES precisar de uma nova versão, ela solicitará o reenvio.",
+    );
+  }
+}
+
 function boundedUuid(value: unknown) {
   if (typeof value !== "string" || !UUID.test(value)) invalid();
   return value;

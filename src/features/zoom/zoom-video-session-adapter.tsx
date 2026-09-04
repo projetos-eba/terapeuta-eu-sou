@@ -288,8 +288,8 @@ export function ZoomVideoSessionAdapter({
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [audioMuted, setAudioMuted] = useState(true);
   const [videoOn, setVideoOn] = useState(false);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [localPreviewUnavailable, setLocalPreviewUnavailable] = useState(false);
-  const [localPreviewAttaching, setLocalPreviewAttaching] = useState(false);
   const [remoteParticipantPresent, setRemoteParticipantPresent] =
     useState(false);
   const [remoteVideoState, setRemoteVideoState] =
@@ -453,6 +453,13 @@ export function ZoomVideoSessionAdapter({
   useEffect(() => {
     isOnlineRef.current = isOnline;
   }, [isOnline]);
+
+  useEffect(() => {
+    const updateMobileState = () => setIsMobileDevice(isMobileBrowser());
+    updateMobileState();
+    window.addEventListener("resize", updateMobileState);
+    return () => window.removeEventListener("resize", updateMobileState);
+  }, []);
 
   useEffect(() => {
     mounted.current = true;
@@ -1142,7 +1149,7 @@ export function ZoomVideoSessionAdapter({
       }
     }
 
-    if (mediaPreferencesRef.current.cameraEnabled) {
+    if (mediaPreferencesRef.current.cameraEnabled && !isMobileBrowser()) {
       try {
         await localRendererReady;
         await enableVideoForSession(stream);
@@ -1475,14 +1482,23 @@ export function ZoomVideoSessionAdapter({
         return;
       }
 
-      await enableVideoForSession(stream);
+      if (isMobileBrowser()) {
+        console.info(
+          JSON.stringify({
+            code: "MOBILE_CAMERA_ACTIVATE_CLICK",
+            operation: "video.start.mobile",
+          }),
+        );
+      }
+      await enableVideoForSession(stream, { userGesture: true });
+      if (isMobileBrowser()) retryLocalPreview();
       scheduleRemoteVideoResync();
     } catch (error) {
       if (!mounted.current || leavingRef.current) return;
       setMessage(
         videoStartedRef.current
           ? "Não conseguimos desligar a câmera. Tente novamente ou saia do encontro."
-          : formatMediaError(error, "a câmera"),
+          : formatCameraActivationError(error),
       );
     }
   }
@@ -1491,12 +1507,19 @@ export function ZoomVideoSessionAdapter({
   // even when React unmounts before the SDK resolves. Repeated clicks cannot race.
   function runLocalVideoOperation(
     operation: (generation: number) => Promise<void>,
+    options?: { invokeImmediately?: boolean },
   ) {
     const generation = attemptGenerationRef.current;
-    const pending = Promise.resolve().then(() => {
+    let pending: Promise<void>;
+    if (options?.invokeImmediately) {
       ensureCurrentAttempt(generation);
-      return operation(generation);
-    });
+      pending = operation(generation);
+    } else {
+      pending = Promise.resolve().then(() => {
+        ensureCurrentAttempt(generation);
+        return operation(generation);
+      });
+    }
     sdkOperationInFlightRef.current = pending;
     return pending.finally(() => {
       if (sdkOperationInFlightRef.current === pending)
@@ -1504,7 +1527,10 @@ export function ZoomVideoSessionAdapter({
     });
   }
 
-  function enableVideoForSession(stream: ZoomMediaStream) {
+  function enableVideoForSession(
+    stream: ZoomMediaStream,
+    options?: { userGesture?: boolean },
+  ) {
     return runLocalVideoOperation(async (generation) => {
       const captureEpoch = localCaptureEpochRef.current + 1;
       localCaptureEpochRef.current = captureEpoch;
@@ -1514,7 +1540,17 @@ export function ZoomVideoSessionAdapter({
       localPreviewFallbackAttemptedRef.current = false;
       try {
         if (!stream.startVideo) throw new Error("video_start_unavailable");
-        assertZoomVideoStartResult(await stream.startVideo());
+        // Calling startVideo before the first await preserves the transient
+        // user activation required by Safari/iOS camera permissions.
+        console.info(
+          JSON.stringify({
+            code: "VIDEO_CAPTURE_START_REQUEST",
+            operation: "video.start",
+            trigger: options?.userGesture ? "user_gesture" : "lifecycle",
+          }),
+        );
+        const startVideoPromise = stream.startVideo();
+        assertZoomVideoStartResult(await startVideoPromise);
       } catch (error) {
         if (localCaptureEpochRef.current === captureEpoch) {
           localCaptureStateRef.current = "failed";
@@ -1526,6 +1562,13 @@ export function ZoomVideoSessionAdapter({
         throw error;
       }
       videoStartedRef.current = true;
+      console.info(
+        JSON.stringify({
+          code: "VIDEO_CAPTURE_STARTED",
+          operation: "video.start",
+          trigger: options?.userGesture ? "user_gesture" : "lifecycle",
+        }),
+      );
       ensureCurrentAttempt(generation);
       setVideoOn(true);
       mediaPreferencesRef.current.cameraEnabled = true;
@@ -1544,6 +1587,8 @@ export function ZoomVideoSessionAdapter({
         captureEpoch,
         trigger: "video_start",
       });
+    }, {
+      invokeImmediately: options?.userGesture === true,
     });
   }
 
@@ -1570,12 +1615,13 @@ export function ZoomVideoSessionAdapter({
       const stream = streamRef.current;
       const container = localVideoRef.current;
       const player = localVideoPlayerRef.current;
+      const useSdkCreatedLocalPlayer = isMobileBrowser();
       if (
         !client ||
         !stream?.attachVideo ||
         !container ||
-        !player ||
-        !container.contains(player) ||
+        (!useSdkCreatedLocalPlayer &&
+          (!player || !container.contains(player))) ||
         !videoStartedRef.current ||
         captureEpoch !== localCaptureEpochRef.current ||
         localVideoStoppingRef.current ||
@@ -1600,11 +1646,15 @@ export function ZoomVideoSessionAdapter({
         return;
       }
 
-      if (
-        localPreviewStateRef.current === "attached" &&
-        getVideoPlayerBoundUserId(player) === identity.userId
-      ) {
-        localUserElementsRef.current = [player];
+      const currentLocalElement = useSdkCreatedLocalPlayer
+        ? localUserElementsRef.current.find((element) =>
+            container.contains(element),
+          )
+        : player && getVideoPlayerBoundUserId(player) === identity.userId
+          ? player
+          : null;
+      if (localPreviewStateRef.current === "attached" && currentLocalElement) {
+        localUserElementsRef.current = [currentLocalElement];
         localPreviewStateRef.current = "attached";
         setLocalPreviewUnavailable(false);
         localPreviewIssueLoggedGenerationRef.current = null;
@@ -1638,6 +1688,31 @@ export function ZoomVideoSessionAdapter({
         );
       }
 
+      if (useSdkCreatedLocalPlayer) {
+        if (localPreviewAttemptsRef.current >= MAX_LOCAL_PREVIEW_ATTEMPTS) {
+          localPreviewStateRef.current = "degraded";
+          setLocalPreviewUnavailable(true);
+          return;
+        }
+        localPreviewTriggerRef.current = trigger;
+        const fallbackBound = await attachSdkCreatedLocalPreview({
+          client,
+          container,
+          captureEpoch,
+          generation,
+          stream,
+          trigger,
+          userId: identity.userId,
+        });
+        if (!fallbackBound) {
+          localPreviewStateRef.current = "waiting_provider";
+          setLocalPreviewUnavailable(true);
+        }
+        return;
+      }
+
+      if (!player) return;
+
       if (localPreviewAttemptsRef.current >= MAX_LOCAL_PREVIEW_ATTEMPTS) {
         localPreviewStateRef.current = "degraded";
         setLocalPreviewUnavailable(true);
@@ -1648,7 +1723,6 @@ export function ZoomVideoSessionAdapter({
       localPreviewTriggerRef.current = trigger;
       localPreviewStateRef.current = "attaching";
       setLocalPreviewUnavailable(true);
-      setLocalPreviewAttaching(true);
       try {
         const attached = throwIfZoomFailure(
           await stream.attachVideo(identity.userId, 2, player),
@@ -1808,12 +1882,6 @@ export function ZoomVideoSessionAdapter({
           );
           setLocalPreviewUnavailable(true);
         }
-      } finally {
-        if (
-          isCurrentVideoOwner(client, generation) &&
-          streamRef.current === stream
-        )
-          setLocalPreviewAttaching(false);
       }
     })().finally(() => {
       if (localPreviewOperationRef.current?.promise === pending) {
@@ -1905,7 +1973,6 @@ export function ZoomVideoSessionAdapter({
     localPreviewAttemptsRef.current += 1;
     localPreviewStateRef.current = "attaching";
     setLocalPreviewUnavailable(true);
-    setLocalPreviewAttaching(true);
 
     let fallbackElement: HTMLElement | null = null;
     try {
@@ -1931,19 +1998,19 @@ export function ZoomVideoSessionAdapter({
       }
       styleLocalVideoElement(fallbackElement);
       input.container.appendChild(fallbackElement);
-      const bound = await waitForVideoPlayerBinding({
-        element: fallbackElement,
-        isCurrentOwner: () =>
-          isCurrentVideoOwner(input.client, input.generation) &&
-          streamRef.current === input.stream &&
-          localCaptureEpochRef.current === input.captureEpoch &&
-          localUserIdRef.current === input.userId &&
-          videoStartedRef.current &&
-          !localVideoStoppingRef.current,
-        timeoutMs: LOCAL_PREVIEW_BIND_TIMEOUT_MS,
-        userId: input.userId,
-      });
-      if (!bound) return false;
+      // attachVideo(userId, quality) returns the SDK-owned player already
+      // wired to the stream. Unlike a caller-provided player, this path must
+      // not wait for a non-contractual node-id mutation on Safari/iOS.
+      if (
+        !isCurrentVideoOwner(input.client, input.generation) ||
+        streamRef.current !== input.stream ||
+        localCaptureEpochRef.current !== input.captureEpoch ||
+        localUserIdRef.current !== input.userId ||
+        !videoStartedRef.current ||
+        localVideoStoppingRef.current
+      ) {
+        return false;
+      }
 
       localUserElementsRef.current = [fallbackElement];
       localPreviewStateRef.current = "attached";
@@ -1979,12 +2046,6 @@ export function ZoomVideoSessionAdapter({
           // Cleanup is best effort; the owning generation remains valid.
         }
         fallbackElement.remove();
-      }
-      if (
-        isCurrentVideoOwner(input.client, input.generation) &&
-        streamRef.current === input.stream
-      ) {
-        setLocalPreviewAttaching(false);
       }
     }
   }
@@ -2442,7 +2503,6 @@ export function ZoomVideoSessionAdapter({
     localPreviewTriggerRef.current = "video_start";
     localVideoStoppingRef.current = false;
     identityResetOperationRef.current = null;
-    setLocalPreviewAttaching(false);
     remoteUserElementsRef.current.clear();
     selectedRemoteUserIdRef.current = null;
     selectedRemoteUserKeyRef.current = null;
@@ -3232,6 +3292,7 @@ export function ZoomVideoSessionAdapter({
           remoteVideoState={remoteVideoState}
           remoteVideoRef={remoteVideoRef}
           state={state}
+          useSdkCreatedLocalPlayer={isMobileDevice}
           videoOn={videoOn}
         />
 
@@ -3252,20 +3313,6 @@ export function ZoomVideoSessionAdapter({
           supportHref={`${actorRole === "patient" ? routes.patient.messages : routes.therapist.messages}?context=suporte&booking=${bookingId}`}
           videoOn={videoOn}
         />
-        {videoOn &&
-        localPreviewUnavailable &&
-        (state === "joined" || state === "media_degraded") ? (
-          <button
-            className="mx-auto min-h-11 rounded-lg px-4 text-sm font-semibold text-brand-primary underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-            disabled={localPreviewAttaching || isBusy}
-            onClick={retryLocalPreview}
-            type="button"
-          >
-            {localPreviewAttaching
-              ? "Preparando sua prévia…"
-              : "Tentar mostrar minha câmera"}
-          </button>
-        ) : null}
         {activeSessionCountdown ? (
           <p
             aria-live="polite"
@@ -3846,6 +3893,14 @@ function formatMediaError(error: unknown, target: string) {
   return `Não conseguimos ativar ${target}. Verifique as permissões e o dispositivo selecionado.`;
 }
 
+function formatCameraActivationError(error: unknown) {
+  const failure = normalizeZoomFailure(error, "video");
+  if (failure.category === "permission") {
+    return "A permissão da câmera está bloqueada. Libere o acesso nas configurações do navegador e toque novamente no ícone da câmera.";
+  }
+  return formatMediaError(error, "a câmera");
+}
+
 function formatInitialAudioError(error: unknown) {
   const failure = normalizeZoomFailure(error, "audio");
   if (failure.category === "permission") return failure.userMessage;
@@ -3955,6 +4010,15 @@ function getServerClockOffsetMs(access: ZoomAccessState | null) {
 
   const serverNowMs = Date.parse(access.serverNow);
   return Number.isFinite(serverNowMs) ? serverNowMs - Date.now() : 0;
+}
+
+function isMobileBrowser() {
+  if (typeof navigator === "undefined") return false;
+  const userAgent = navigator.userAgent || navigator.vendor || "";
+  return (
+    /Android|iPhone|iPad|iPod|IEMobile|Opera Mini/i.test(userAgent) ||
+    (/Macintosh/i.test(userAgent) && navigator.maxTouchPoints > 1)
+  );
 }
 
 function isAbortError(error: unknown) {

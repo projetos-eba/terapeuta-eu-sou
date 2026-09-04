@@ -6,6 +6,14 @@ continuam sob Stripe, `session_payments`, ledger e regras internas.
 
 ## Fluxo
 
+### Mobile camera activation
+
+On mobile browsers, the waiting-room camera choice is retained as a transient
+intent. The active room shows "Ativar minha camera" after its renderer mounts,
+and the click calls `startVideo()` directly in the user gesture. If capture is
+already published, recovery only reattaches self-view; the browser permission
+is never revoked programmatically and reconnect does not force `stop/start`.
+
 1. Stripe confirma `session_payments.financial_status = paid`.
 2. O backend cria ou atualiza uma `video_sessions` local para a booking.
 3. Nenhuma chamada ao Zoom e feita nessa etapa.

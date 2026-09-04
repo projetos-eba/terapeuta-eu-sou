@@ -7,6 +7,7 @@ const UUID =
 export type BookingCheckoutCommandBody = {
   holdTtlSeconds?: number;
   requestId?: string;
+  returnUrlBase?: string | null;
   serviceId?: string;
   sharedNote?: string | null;
   startsAt?: string;
@@ -16,6 +17,7 @@ export type BookingCheckoutCommandBody = {
 export type ValidBookingCheckoutCommand = {
   holdTtlSeconds: number;
   requestId: string;
+  returnUrlBase: string | null;
   serviceId: string;
   sharedNote: string | null;
   startsAt: string;
@@ -41,11 +43,54 @@ export type SelectedServiceSlot = {
   timezone: string;
 };
 
+export type ExistingCheckoutHold = {
+  consumedBookingId: string | null;
+  endsAt: string;
+  expiresAt: string;
+  id: string;
+  patientProfileId: string;
+  serviceId: string;
+  startsAt: string;
+  status: string;
+  timezone: string;
+};
+
+export function resolveExistingCheckoutHold(
+  hold: ExistingCheckoutHold | null,
+  command: ValidBookingCheckoutCommand,
+  patientProfileId: string,
+) {
+  if (!hold) return null;
+
+  if (
+    hold.patientProfileId !== patientProfileId ||
+    hold.serviceId !== command.serviceId ||
+    new Date(hold.startsAt).getTime() !== new Date(command.startsAt).getTime()
+  ) {
+    throw new DomainError(
+      "idempotency_key_reused",
+      409,
+      "Esta tentativa de reserva ja foi usada com outros dados.",
+    );
+  }
+
+  if (hold.status === "active") {
+    return { bookingId: null, hold };
+  }
+
+  if (hold.status === "consumed" && isUuid(hold.consumedBookingId)) {
+    return { bookingId: hold.consumedBookingId, hold };
+  }
+
+  return null;
+}
+
 export function validateBookingCheckoutCommand(
   body: BookingCheckoutCommandBody,
 ): ValidBookingCheckoutCommand {
-  const ttl = body.holdTtlSeconds ?? 600;
+  const ttl = body.holdTtlSeconds ?? 300;
   const sharedNote = normalizeSharedNote(body.sharedNote);
+  const returnUrlBase = normalizeReturnUrlBase(body.returnUrlBase);
 
   if (
     (body.sharedNote !== undefined &&
@@ -86,10 +131,23 @@ export function validateBookingCheckoutCommand(
   return {
     holdTtlSeconds: ttl,
     requestId: body.requestId,
+    returnUrlBase,
     serviceId: body.serviceId,
     sharedNote,
     startsAt: new Date(body.startsAt).toISOString(),
   };
+}
+
+function normalizeReturnUrlBase(value: string | null | undefined) {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string" || value.length > 200) {
+    throw new DomainError(
+      "invalid_booking_checkout_payload",
+      422,
+      "Revise os dados da reserva.",
+    );
+  }
+  return value;
 }
 
 function normalizeSharedNote(value: string | null | undefined) {

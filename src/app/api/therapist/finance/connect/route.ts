@@ -10,6 +10,9 @@ type EdgeEnvelope =
   | {
       data?: {
         accountClosed?: boolean;
+        onboardingStatus?: string;
+        stripeTransfersStatus?: string;
+        transferCapabilityStatus?: string;
         url?: string;
       };
       httpStatus?: number;
@@ -66,6 +69,8 @@ export async function POST(request: Request) {
               sync.data?.accountClosed === true
                 ? undefined
                 : "Conta sincronizada.",
+            onboardingStatus: sync.data?.onboardingStatus,
+            transferCapabilityStatus: sync.data?.stripeTransfersStatus,
           },
         },
         { headers: noStoreHeaders },

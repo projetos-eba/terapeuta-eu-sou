@@ -12,6 +12,7 @@ type ZoomVideoStageProps = {
   localVideoPlayerRef: React.MutableRefObject<HTMLElement | null>;
   localVideoRef: React.MutableRefObject<HTMLElement | null>;
   localPreviewUnavailable?: boolean;
+  useSdkCreatedLocalPlayer?: boolean;
   onLocalRendererReady?: () => void;
   onRetryRemoteVideo?: () => void;
   participantLabel: string;
@@ -41,6 +42,7 @@ export function ZoomVideoStage({
   localVideoPlayerRef,
   localVideoRef,
   localPreviewUnavailable = false,
+  useSdkCreatedLocalPlayer = false,
   onLocalRendererReady,
   onRetryRemoteVideo,
   participantLabel,
@@ -75,6 +77,7 @@ export function ZoomVideoStage({
         localVideoPlayerRef={localVideoPlayerRef}
         localPreviewUnavailable={localPreviewUnavailable}
         onLocalRendererReady={onLocalRendererReady}
+        useSdkCreatedLocalPlayer={useSdkCreatedLocalPlayer}
         videoOn={videoOn}
       />
       <VideoTile
@@ -117,6 +120,7 @@ function VideoTile({
   onRetryRemoteVideo,
   remoteParticipantPresent = false,
   remoteVideoState = "off",
+  useSdkCreatedLocalPlayer = false,
   videoOn = false,
   waitingLabel,
 }: {
@@ -133,6 +137,7 @@ function VideoTile({
   onRetryRemoteVideo?: () => void;
   remoteParticipantPresent?: boolean;
   remoteVideoState?: "off" | "attaching" | "on" | "error";
+  useSdkCreatedLocalPlayer?: boolean;
   videoOn?: boolean;
   waitingLabel?: string;
 }) {
@@ -141,12 +146,19 @@ function VideoTile({
       containerRef.current = node;
       if (
         kind === "local" &&
-        node?.contains(localVideoPlayerRef?.current ?? null)
+        (useSdkCreatedLocalPlayer ||
+          node?.contains(localVideoPlayerRef?.current ?? null))
       ) {
         onLocalRendererReady?.();
       }
     },
-    [containerRef, kind, localVideoPlayerRef, onLocalRendererReady],
+    [
+      containerRef,
+      kind,
+      localVideoPlayerRef,
+      onLocalRendererReady,
+      useSdkCreatedLocalPlayer,
+    ],
   );
   const setLocalVideoPlayer = useCallback(
     (node: HTMLElement | null) => {

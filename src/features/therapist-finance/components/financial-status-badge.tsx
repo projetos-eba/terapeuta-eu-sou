@@ -1,10 +1,12 @@
 import type {
   TherapistFinancialStatus,
   TherapistPayoutStatus,
+  TherapistReceiptStatus,
 } from "../therapist-finance.types";
 import {
   financialStatusLabels,
   payoutStatusLabels,
+  receiptStatusLabels,
 } from "./financial-formatters";
 
 const toneByStatus: Record<string, string> = {
@@ -24,19 +26,28 @@ const toneByStatus: Record<string, string> = {
   transfer_pending: "bg-status-infoBg text-status-info",
   waiting_confirmation: "bg-brand-lavenderSoft text-brand-primary",
   waiting_safety_period: "bg-status-warningBg text-status-warning",
+  waiting_settlement: "bg-status-infoBg text-status-info",
+  receivable: "bg-brand-lavenderSoft text-brand-primary",
+  payout_processing: "bg-status-infoBg text-status-info",
+  bank_pending: "bg-status-infoBg text-status-info",
 };
 
 export function FinancialStatusBadge({
   status,
   type,
 }: {
-  status: TherapistFinancialStatus | TherapistPayoutStatus;
-  type: "payment" | "payout";
+  status:
+    | TherapistFinancialStatus
+    | TherapistPayoutStatus
+    | TherapistReceiptStatus;
+  type: "payment" | "payout" | "receipt";
 }) {
   const label =
     type === "payment"
       ? financialStatusLabels[status as TherapistFinancialStatus]
-      : payoutStatusLabels[status as TherapistPayoutStatus];
+      : type === "receipt"
+        ? receiptStatusLabels[status as TherapistReceiptStatus]
+        : payoutStatusLabels[status as TherapistPayoutStatus];
 
   return (
     <span

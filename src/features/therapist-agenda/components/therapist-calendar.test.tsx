@@ -24,6 +24,23 @@ afterEach(() => {
 });
 
 describe("TherapistCalendar", () => {
+  it("blurs agenda demand insights for Free therapists", () => {
+    render(
+      <TherapistCalendar
+        canViewAgendaInsights={false}
+        data={calendarFixture()}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "Acompanhe os períodos mais procurados ao conhecer o plano Premium.",
+      ),
+    ).toBeInTheDocument();
+    expect(document.querySelector(".blur-md")).toBeInTheDocument();
+    expect(screen.queryByText("Dica do TES")).not.toBeInTheDocument();
+  });
+
   it("renders real calendar controls and connected Agenda tabs", () => {
     render(<TherapistCalendar data={calendarFixture()} />);
 
@@ -200,6 +217,7 @@ function calendarFixture(): TherapistCalendarReadModel {
         attendanceSource: AttendanceSource.Unavailable,
         attendanceStatus: AttendanceStatus.Pending,
         bookingId: "f2000000-0000-4000-8000-000000000001",
+        sessionReference: "26L000001",
         bookingStatus: BookingStatus.Confirmed,
         bookingVersion: 1,
         cancellationDecision: null,

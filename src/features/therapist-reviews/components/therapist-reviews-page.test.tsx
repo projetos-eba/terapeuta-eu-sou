@@ -63,8 +63,10 @@ describe("TherapistReviewsPage", () => {
               endsAt: "2026-08-27T15:00:00.000Z",
               patientName: "Marina Souza",
               remainingSeconds: 86_400,
+              sessionReference: "26G000001",
               serviceTitle: "Reiki online",
               startsAt: "2026-08-27T14:30:00.000Z",
+              timezone: "America/Sao_Paulo",
             },
             {
               bookingId: "a0000000-0000-4000-8000-000000000002",
@@ -72,8 +74,10 @@ describe("TherapistReviewsPage", () => {
               endsAt: "2026-08-28T15:00:00.000Z",
               patientName: "Beatriz Lima",
               remainingSeconds: 172_800,
+              sessionReference: "26G000002",
               serviceTitle: "Reiki online",
               startsAt: "2026-08-28T14:30:00.000Z",
+              timezone: "America/Sao_Paulo",
             },
           ],
           privateFeedback: [
@@ -102,6 +106,13 @@ describe("TherapistReviewsPage", () => {
 
     fireEvent.click(sessionTab);
 
+    expect(screen.getByText("Sessão #26G000001")).toBeInTheDocument();
+    expect(screen.getByText(/27 de ago\. de 2026/i)).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Confirmar sessão" })[0]).toHaveAttribute(
+      "href",
+      "/terapeuta/sessoes/a0000000-0000-4000-8000-000000000001/video?feedback=1",
+    );
+
     expect(
       screen.getByRole("heading", {
         level: 2,
@@ -125,6 +136,28 @@ describe("TherapistReviewsPage", () => {
       screen.queryByRole("heading", {
         level: 2,
         name: "Resumo das avaliações",
+      }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("can open directly on the session evaluations tab", () => {
+    render(
+      <TherapistReviewsPage
+        initialData={pageFixture()}
+        initialSurface="session"
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "Confirmações operacionais pendentes",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", {
+        level: 2,
+        name: "Avaliações recebidas",
       }),
     ).not.toBeInTheDocument();
   });

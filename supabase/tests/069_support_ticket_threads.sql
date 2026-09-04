@@ -1,6 +1,6 @@
 begin;
 
-select plan(25);
+select plan(30);
 
 select has_table('public', 'support_ticket_messages', 'support ticket thread table exists');
 select has_column('public', 'support_tickets', 'last_activity_at', 'ticket activity is persisted');
@@ -105,6 +105,29 @@ select is(
   'requester retry does not create a duplicate message'
 );
 
+select lives_ok(
+  $$
+    select public.send_support_ticket_requester_message_v1(
+      current_setting('test.support_ticket_id')::uuid,
+      'f9000000-0000-4000-8000-000000000008'::uuid,
+      'Também preciso acrescentar este complemento antes da resposta do TES.'
+    )
+  $$,
+  'requester can add a consecutive public message while TES is processing the ticket'
+);
+
+select is(
+  (select count(*) from public.support_ticket_messages where ticket_id = current_setting('test.support_ticket_id')::uuid),
+  3::bigint,
+  'consecutive requester message persists while ticket remains waiting_support'
+);
+
+select is(
+  (select status from public.support_tickets where id = current_setting('test.support_ticket_id')::uuid),
+  'waiting_support',
+  'consecutive requester message preserves TES queue priority'
+);
+
 select set_config(
   'request.jwt.claims',
   '{"sub":"aaaaaaaa-0000-4000-8000-000000000002","role":"authenticated"}',
@@ -164,9 +187,26 @@ select lives_ok(
   'authorized admin can send a public reply'
 );
 
+select lives_ok(
+  $$
+    select public.admin_reply_support_ticket_v1(
+      current_setting('test.support_ticket_id')::uuid,
+      'f9000000-0000-4000-8000-000000000009'::uuid,
+      'Também envio este complemento antes de receber uma nova resposta.'
+    )
+  $$,
+  'admin can add a consecutive public reply while waiting for the requester'
+);
+
+select is(
+  (select status from public.support_tickets where id = current_setting('test.support_ticket_id')::uuid),
+  'waiting_requester',
+  'consecutive admin reply preserves requester queue state'
+);
+
 select is(
   (select count(*) from public.admin_get_support_ticket_thread_v1(current_setting('test.support_ticket_id')::uuid)),
-  4::bigint,
+  6::bigint,
   'authorized admin reads the complete support thread including the internal note'
 );
 select is(
@@ -208,7 +248,7 @@ select set_config(
 );
 select is(
   (select count(*) from public.support_ticket_messages where ticket_id = current_setting('test.support_ticket_id')::uuid),
-  3::bigint,
+  5::bigint,
   'requester sees only public thread messages and never the internal note'
 );
 

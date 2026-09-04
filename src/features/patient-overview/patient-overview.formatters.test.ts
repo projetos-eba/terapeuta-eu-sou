@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { formatTimeRange } from "./patient-overview.formatters";
+import {
+  formatShortDate,
+  formatTimeRange,
+} from "./patient-overview.formatters";
 
 describe("patient overview formatters", () => {
   it("formats appointment times in the agenda timezone", () => {
@@ -11,5 +14,9 @@ describe("patient overview formatters", () => {
         "America/Sao_Paulo",
       ),
     ).toBe("09:10 - 10:00");
+  });
+
+  it("formats date-only support timestamps in Brasília time", () => {
+    expect(formatShortDate("2026-09-01T02:30:00.000Z")).toBe("31 de ago.");
   });
 });

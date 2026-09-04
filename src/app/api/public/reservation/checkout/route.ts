@@ -8,6 +8,7 @@ import {
 } from "@/lib/supabase/edge-functions";
 
 import { mapCheckoutError } from "./checkout-errors";
+import { getLocalCheckoutReturnUrlBase } from "./local-checkout-return-url";
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -23,11 +24,14 @@ type CheckoutPayload = {
     discountAmountCents: number;
     holdExpiresAt: string;
     holdId: string;
+    mode: "initial_hold" | "payment_retry";
     originalAmountCents: number;
     promotion: PromotionSummary | null;
     sessionPaymentId: string;
     totalAmountCents: number;
     url: string | null;
+    reservationExpiresAt: string | null;
+    serverNow: string;
   };
 };
 
@@ -54,8 +58,12 @@ export async function POST(request: Request) {
   }
 
   const input = toCheckoutInput(body);
+  const returnUrlBase = getLocalCheckoutReturnUrlBase(request);
   if (input.action === "replace") {
-    return replaceCheckout(input);
+    return replaceCheckout(input, returnUrlBase);
+  }
+  if (input.action === "retry") {
+    return retryCheckout(input, returnUrlBase);
   }
 
   if (
@@ -122,8 +130,9 @@ export async function POST(request: Request) {
       {
         accessToken,
         body: {
-          holdTtlSeconds: 600,
+          holdTtlSeconds: 300,
           requestId: input.checkoutAttemptId,
+          returnUrlBase,
           serviceId: input.serviceId,
           sharedNote: input.sharedNote,
           startsAt: new Date(input.startsAt).toISOString(),
@@ -153,10 +162,13 @@ export async function POST(request: Request) {
         discountAmountCents: response.data.discountAmountCents,
         holdExpiresAt: response.data.holdExpiresAt,
         holdId: response.data.holdId,
+        mode: response.data.mode,
         originalAmountCents: response.data.originalAmountCents,
         promotion: response.data.promotion,
         sessionPaymentId: response.data.sessionPaymentId,
         totalAmountCents: response.data.totalAmountCents,
+        reservationExpiresAt: response.data.reservationExpiresAt,
+        serverNow: response.data.serverNow,
       },
       ok: true,
     });
@@ -191,7 +203,12 @@ function toCheckoutInput(value: unknown) {
       : {};
 
   return {
-    action: record.action === "replace" ? "replace" : "create",
+    action:
+      record.action === "replace"
+        ? "replace"
+        : record.action === "retry"
+          ? "retry"
+          : "create",
     bookingId: asString(record.bookingId),
     checkoutAttemptId: asString(record.checkoutAttemptId ?? record.requestId),
     promotionCode:
@@ -212,7 +229,66 @@ function normalizeSharedNote(value: unknown) {
 
 type CheckoutInput = ReturnType<typeof toCheckoutInput>;
 
-async function replaceCheckout(input: CheckoutInput) {
+async function retryCheckout(
+  input: CheckoutInput,
+  returnUrlBase: string | null,
+) {
+  if (!UUID.test(input.bookingId) || !UUID.test(input.checkoutAttemptId)) {
+    return NextResponse.json(
+      { ok: false, message: "Revise os dados do pagamento." },
+      { status: 422 },
+    );
+  }
+
+  const config = getSupabasePublicConfig();
+  const accessToken = (await cookies()).get("tes_patient_access_token")?.value;
+  if (!config || !accessToken) {
+    return NextResponse.json(
+      { ok: false, message: "Entre na sua conta de cliente para continuar." },
+      { status: 401 },
+    );
+  }
+
+  try {
+    const response = await invokeSupabaseFunction<{
+      data: Omit<CheckoutPayload["data"], "holdExpiresAt" | "holdId">;
+      ok: true;
+    }>(config, "stripe-create-session-payment", {
+      accessToken,
+      body: {
+        attemptKind: "payment_retry",
+        bookingId: input.bookingId,
+        checkoutAttemptId: input.checkoutAttemptId,
+        returnUrlBase,
+      },
+    });
+    if (!response.data.clientSecret) {
+      throw new SupabaseFunctionError(
+        "stripe-create-session-payment",
+        502,
+        "checkout_client_secret_missing",
+      );
+    }
+    return NextResponse.json({ checkout: response.data, ok: true });
+  } catch (error) {
+    if (error instanceof SupabaseFunctionError) {
+      const mapped = mapCheckoutError(error);
+      return NextResponse.json(
+        { code: mapped.code, message: mapped.message, ok: false },
+        { status: error.status },
+      );
+    }
+    return NextResponse.json(
+      { ok: false, message: "Não foi possível retomar o pagamento agora." },
+      { status: 500 },
+    );
+  }
+}
+
+async function replaceCheckout(
+  input: CheckoutInput,
+  returnUrlBase: string | null,
+) {
   if (
     !UUID.test(input.bookingId) ||
     !UUID.test(input.checkoutAttemptId) ||
@@ -249,6 +325,7 @@ async function replaceCheckout(input: CheckoutInput) {
         checkoutAttemptId: input.checkoutAttemptId,
         promotionCode: input.promotionCode,
         replaceCheckoutSessionId: input.replaceCheckoutSessionId,
+        returnUrlBase,
       },
     });
 
@@ -277,6 +354,14 @@ async function replaceCheckout(input: CheckoutInput) {
 }
 
 function mapPromotionError(error: SupabaseFunctionError) {
+  if (error.status === 409 && error.code === "patient_schedule_conflict") {
+    return {
+      code: "PATIENT_SCHEDULE_CONFLICT",
+      message:
+        "Você já tem outro encontro nesse horário. Escolha outro momento.",
+      status: 409,
+    };
+  }
   if (error.status === 422) {
     return {
       code: error.code ?? "PROMOTION_INVALID",

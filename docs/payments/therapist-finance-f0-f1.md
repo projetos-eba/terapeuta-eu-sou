@@ -73,11 +73,17 @@ não autoriza saldo, pagamento, repasse ou acesso financeiro.
 | Valor líquido           | Valor bruto menos Comissão TES e reembolsos do cliente.          | Read model privado em centavos.                                       |
 | Aguardando confirmação  | Sessão paga ainda sem confirmação operacional para repasse.      | `session_payments.transfer_status = waiting_confirmation`.            |
 | Período de segurança    | Janela após confirmação antes de elegibilidade.                  | `session_payments.transfer_status = waiting_safety_period`.           |
-| Disponível para repasse | Valor elegível para entrar em lote.                              | `session_payments.transfer_status = eligible`.                        |
-| Em processamento        | Valor em lote ou transferência pendente.                         | `batched` ou `transfer_pending`.                                      |
-| Transferido             | Transfer concluído na Stripe.                                    | `stripe_transfers.status = transferred`.                              |
+| Em liquidação           | Charge ainda não disponível no saldo Stripe.                     | `session_payments.transfer_status = waiting_settlement`.              |
+| Disponível para repasse | Valor elegível e liquidado para entrar em lote.                  | `transfer_status = eligible` + Balance Transaction `available`.       |
+| Em processamento        | Todo valor ativo ainda não pago ao banco.                         | Estados ativos de `A receber` até `A caminho do banco`.               |
+| A caminho do banco      | Transfer concluído e ainda sem Payout bancário conciliado.       | `stripe_transfers.status = transferred`.                              |
+| Pago                    | Payout pago com reconciliação e alocação integral do Transfer.   | Payout `paid/completed` + alocação igual ao valor do Transfer.        |
 | Bloqueado               | Valor bloqueado por disputa, revisão, conta ou regra financeira. | `session_payments.transfer_status = blocked`.                         |
 | Disputado               | Pagamento com disputa aberta ou registrada.                      | `session_payments.financial_status = disputed` ou `session_disputes`. |
+
+Na interface, `Custos da plataforma` é o nome amigável da Comissão TES no
+painel de composição. O valor continua sendo o snapshot financeiro imutável e
+entra no cálculo do repasse; não inclui uma dedução dinâmica da Stripe.
 
 ## Contratos privados
 
@@ -106,6 +112,16 @@ reembolso, líquido, data prevista, data concluída, sessão contada e motivo de
 bloqueio ou falha quando houver. Na F4 também retorna status de conciliação,
 `stripeTransferId` e `stripeSourceChargeId` quando o Transfer já foi criado.
 Essas referências são operacionais e não substituem saldo, ledger ou webhook.
+
+### Contratos privados v2
+
+`get_private_therapist_financial_overview_v2`,
+`get_private_therapist_receipts_v2` e `get_private_therapist_payouts_v2`
+preservam os contratos v1 durante a transição e acrescentam o status financeiro
+derivado do terapeuta. Cards, tendência mensal e distribuição são calculados
+no servidor sobre todo o filtro, sem depender da página carregada. Valores
+ativos usam a data da sessão; recebidos usam a data do Payout pago e
+integralmente conciliado.
 
 ### `get_private_therapist_connect_account_v1`
 
@@ -313,6 +329,11 @@ estiver pronta para repasses.
 13. Rodar `reconcile-stripe-transfers` para recuperar Charge/Transfer pendente
     quando necessário.
 14. Desativar `TES_FINANCE_TEST_CONTROLS_ENABLED` ao encerrar o sandbox.
+
+A reconciliação horária deve, antes das consultas de Charge, chamar
+`refresh_session_transfer_eligibility` somente para pagamentos em
+`blocked/connect_not_ready`. Isso recupera contas que ficaram prontas depois do
+pagamento e preserva disputa, reembolso e revisão como bloqueios fechados.
 
 ## QA
 

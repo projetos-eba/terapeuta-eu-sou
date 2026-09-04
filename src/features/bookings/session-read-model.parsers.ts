@@ -14,6 +14,7 @@ import type {
   SessionModality,
   SessionReadModelItem,
   TherapistAgendaReadModel,
+  TherapistPendingConfirmationsSummary,
   TherapistSessionDetailReadModel,
   TherapistSessionsCursor,
   TherapistSessionsReadModel,
@@ -167,6 +168,42 @@ export function parseTherapistShellCounters(
   };
 }
 
+export function parseTherapistPendingConfirmationsSummary(
+  value: unknown,
+): TherapistPendingConfirmationsSummary {
+  const row = requiredRecord(value);
+  const pendingBookingIds = requiredArray(row.pendingBookingIds).map(
+    requiredString,
+  );
+  const pendingSessions = requiredArray(row.pendingSessions).map((value) => {
+    const session = requiredRecord(value);
+    return {
+      bookingId: requiredString(session.bookingId),
+      sessionReference: requiredString(session.sessionReference),
+    };
+  });
+  const pendingCount = requiredNumber(row.pendingCount);
+
+  if (
+    pendingCount !== pendingBookingIds.length ||
+    pendingCount !== pendingSessions.length ||
+    pendingBookingIds.some(
+      (bookingId, index) => pendingSessions[index]?.bookingId !== bookingId,
+    )
+  ) {
+    throw new SessionReadModelContractError();
+  }
+
+  return {
+    generatedAt: requiredString(row.generatedAt),
+    pendingBookingIds,
+    pendingSessions,
+    pendingCount,
+    therapistProfileId: requiredString(row.therapistProfileId),
+    version: version(row.version),
+  };
+}
+
 export function parseSessionReadModelItem(
   value: unknown,
 ): SessionReadModelItem {
@@ -176,6 +213,7 @@ export function parseSessionReadModelItem(
     attendanceSource: attendanceSource(row.attendanceSource),
     attendanceStatus: attendanceStatus(row.attendanceStatus),
     bookingId: requiredString(row.bookingId),
+    sessionReference: requiredString(row.sessionReference),
     bookingStatus: bookingStatus(row.bookingStatus),
     bookingVersion: requiredNumber(row.bookingVersion),
     cancellationDecision: nullableString(row.cancellationDecision),

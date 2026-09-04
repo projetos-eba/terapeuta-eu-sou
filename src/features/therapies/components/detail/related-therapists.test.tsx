@@ -114,4 +114,22 @@ describe("RelatedTherapists", () => {
     );
     expect(screen.getByRole("article")).toHaveClass("min-w-0");
   });
+
+  it("apresenta o próximo horário no fuso de Brasília", () => {
+    render(
+      <RelatedTherapists
+        source="directory"
+        sort="next_slot"
+        therapists={[
+          {
+            ...therapist,
+            nextSlotAt: "2026-09-01T02:30:00.000Z",
+          },
+        ]}
+        therapy={therapy}
+      />,
+    );
+
+    expect(screen.getByText("31 de ago., 23:30")).toBeInTheDocument();
+  });
 });

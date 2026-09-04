@@ -1,6 +1,7 @@
 "use client";
 
 import { CalendarClock, CheckCircle2, CreditCard, Crown } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { AppPageActions, AppPageSection } from "@/components/app-page";
 import { TESButton } from "@/components/tes";
@@ -13,15 +14,25 @@ import { routes } from "@/lib/routes";
 
 import { formatDate, formatMoney } from "../therapist-plan.formatters";
 import type { TherapistPlanPageData } from "../therapist-plan.types";
-import { SubscriptionCommandButton } from "./subscription-command-button";
+import {
+  SubscriptionCommandButton,
+  type SubscriptionCommandResult,
+} from "./subscription-command-button";
 
 export function SubscriptionManagementPanel({
   data,
 }: {
   data: TherapistPlanPageData;
 }) {
+  const [subscriptionOverride, setSubscriptionOverride] = useState(
+    data.subscription,
+  );
+  useEffect(() => {
+    setSubscriptionOverride(data.subscription);
+  }, [data.subscription]);
+
   const definition = getTherapistPlanDefinition(data.effectivePlan);
-  const subscription = data.subscription;
+  const subscription = subscriptionOverride;
   const catalogItem = data.catalog.find(
     (item) => item.code === data.effectivePlan,
   );
@@ -103,6 +114,7 @@ export function SubscriptionManagementPanel({
             description={`Seu plano será alterado para Premium em ${formatDate(subscription?.currentPeriodEnd ?? null)}. Até essa data, você continuará com todos os benefícios do Premium Plus.`}
             targetPlan={TherapistPlan.Premium}
             title="Mudar para Premium"
+            onSuccess={applySubscriptionCommandResult}
             variant="secondary"
           >
             Mudar para Premium
@@ -115,6 +127,7 @@ export function SubscriptionManagementPanel({
             action="resume"
             description="O cancelamento agendado será desfeito e sua assinatura continuará ativa nas próximas renovações."
             title="Manter minha assinatura"
+            onSuccess={applySubscriptionCommandResult}
           >
             Manter minha assinatura
           </SubscriptionCommandButton>
@@ -127,6 +140,7 @@ export function SubscriptionManagementPanel({
             action="cancel"
             description={`Você continuará com todos os benefícios do ${definition.name} até ${formatDate(subscription.currentPeriodEnd)}. Depois dessa data, seu plano será Free.`}
             title="Cancelar assinatura"
+            onSuccess={applySubscriptionCommandResult}
             variant="ghost"
           >
             Cancelar assinatura
@@ -135,6 +149,28 @@ export function SubscriptionManagementPanel({
       </AppPageActions>
     </AppPageSection>
   );
+
+  function applySubscriptionCommandResult(result: SubscriptionCommandResult) {
+    setSubscriptionOverride((current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        ...(typeof result.cancelAtPeriodEnd === "boolean"
+          ? { cancelAtPeriodEnd: result.cancelAtPeriodEnd }
+          : {}),
+        ...(result.currentPeriodEnd
+          ? { currentPeriodEnd: result.currentPeriodEnd }
+          : {}),
+        ...(result.scheduledChangeAt !== undefined
+          ? { scheduledChangeAt: result.scheduledChangeAt }
+          : {}),
+        ...(result.scheduledPlan !== undefined
+          ? { scheduledPlan: result.scheduledPlan }
+          : {}),
+      };
+    });
+  }
 }
 
 function SubscriptionNotice({ data }: { data: TherapistPlanPageData }) {

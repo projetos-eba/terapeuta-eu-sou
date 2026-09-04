@@ -1,6 +1,12 @@
 "use client";
 import { useMemo, useState } from "react";
-import { AlertCircle, Clock3, LockKeyhole, MessageCircle, Star } from "lucide-react";
+import {
+  AlertCircle,
+  Clock3,
+  LockKeyhole,
+  MessageCircle,
+  Star,
+} from "lucide-react";
 
 import {
   AppPageAside,
@@ -10,6 +16,7 @@ import {
   AppPageSection,
 } from "@/components/app-page";
 import { TESDecorativeMedia } from "@/components/tes";
+import { formatSessionDateTime } from "@/features/bookings";
 import { platformAssets } from "@/lib/platform-assets";
 import { routes } from "@/lib/routes";
 
@@ -38,13 +45,15 @@ type TherapistReviewsSurface = "public" | "session";
 
 export function TherapistReviewsPage({
   initialData,
+  initialSurface = "public",
 }: {
   initialData: TherapistReviewsPageData;
+  initialSurface?: TherapistReviewsSurface;
 }) {
   const [data, setData] = useState(initialData);
   const [filter, setFilter] = useState<TherapistReviewFilter>("all");
   const [surface, setSurface] =
-    useState<TherapistReviewsSurface>("public");
+    useState<TherapistReviewsSurface>(initialSurface);
   const [visibleCount, setVisibleCount] = useState(5);
   const [selectedReview, setSelectedReview] =
     useState<TherapistReviewItem | null>(null);
@@ -112,7 +121,10 @@ export function TherapistReviewsPage({
 
       <ReviewsHero />
 
-      <nav aria-label="Visões de avaliações" className="border-b border-brand-lavender">
+      <nav
+        aria-label="Visões de avaliações"
+        className="border-b border-brand-lavender"
+      >
         <div
           className="flex gap-2 overflow-x-auto"
           onKeyDown={(event) => {
@@ -121,8 +133,7 @@ export function TherapistReviewsPage({
             }
 
             event.preventDefault();
-            const nextSurface =
-              surface === "public" ? "session" : "public";
+            const nextSurface = surface === "public" ? "session" : "public";
             setSurface(nextSurface);
             document
               .getElementById(`therapist-reviews-${nextSurface}-tab`)
@@ -223,97 +234,97 @@ function PublicReviewsPanel({
   return (
     <AppPageGrid className="mt-5">
       <AppPageMain>
-          <AppPageSection className="overflow-hidden p-0">
-            <div className="border-b border-brand-lavender px-5 py-5 sm:px-6">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <h2 className="text-xl font-extrabold text-brand-deep sm:text-2xl">
-                    Avaliações recebidas
-                  </h2>
-                  <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
-                    Leia os retornos publicados e responda quando fizer sentido.
-                  </p>
-                </div>
-                <p className="text-sm font-bold text-tesText-muted">
-                  {reviewsCount} avaliaç
-                  {reviewsCount === 1 ? "ão" : "ões"}
+        <AppPageSection className="overflow-hidden p-0">
+          <div className="border-b border-brand-lavender px-5 py-5 sm:px-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <h2 className="text-xl font-extrabold text-brand-deep sm:text-2xl">
+                  Avaliações recebidas
+                </h2>
+                <p className="mt-1 text-sm font-semibold leading-6 text-tesText-secondary">
+                  Leia os retornos publicados e responda quando fizer sentido.
                 </p>
               </div>
+              <p className="text-sm font-bold text-tesText-muted">
+                {reviewsCount} avaliaç
+                {reviewsCount === 1 ? "ão" : "ões"}
+              </p>
             </div>
+          </div>
 
-            <div
-              className="flex gap-2 overflow-x-auto border-b border-brand-lavender px-5 py-3 sm:px-6"
-              aria-label="Filtros de avaliações públicas"
-              role="tablist"
-            >
-              {Object.entries(filterLabels).map(([key, label]) => {
-                const value = key as TherapistReviewFilter;
-                const count =
-                  value === "pending" ? data.metrics.pendingReplies : null;
+          <div
+            className="flex gap-2 overflow-x-auto border-b border-brand-lavender px-5 py-3 sm:px-6"
+            aria-label="Filtros de avaliações públicas"
+            role="tablist"
+          >
+            {Object.entries(filterLabels).map(([key, label]) => {
+              const value = key as TherapistReviewFilter;
+              const count =
+                value === "pending" ? data.metrics.pendingReplies : null;
 
-                return (
-                  <button
-                    aria-selected={filter === value}
-                    className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-4 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary ${
-                      filter === value
-                        ? "bg-brand-primary text-white"
-                        : "text-brand-primary hover:bg-brand-lavenderSoft"
-                    }`}
-                    key={value}
-                    onClick={() => {
-                      onSelectFilter(value);
-                    }}
-                    role="tab"
-                    type="button"
-                  >
-                    {label}
-                    {count !== null ? (
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs ${
-                          filter === value
-                            ? "bg-white/20 text-white"
-                            : "bg-brand-lavenderSoft text-brand-primary"
-                        }`}
-                      >
-                        {count}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="grid gap-4 p-5 sm:p-6">
-              {visibleReviews.length ? (
-                <div className="grid gap-4">
-                  {visibleReviews.map((review) => (
-                    <TherapistReviewCard
-                      key={review.id}
-                      onReply={() => onReply(review)}
-                      review={review}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <ReviewsEmptyState filter={filter} />
-              )}
-
-              {hasMore ? (
+              return (
                 <button
-                  className="mx-auto inline-flex min-h-11 min-w-[260px] items-center justify-center rounded-lg border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-                  onClick={onLoadMore}
+                  aria-selected={filter === value}
+                  className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg px-4 text-sm font-extrabold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary ${
+                    filter === value
+                      ? "bg-brand-primary text-white"
+                      : "text-brand-primary hover:bg-brand-lavenderSoft"
+                  }`}
+                  key={value}
+                  onClick={() => {
+                    onSelectFilter(value);
+                  }}
+                  role="tab"
                   type="button"
                 >
-                  Carregar mais avaliações
+                  {label}
+                  {count !== null ? (
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs ${
+                        filter === value
+                          ? "bg-white/20 text-white"
+                          : "bg-brand-lavenderSoft text-brand-primary"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  ) : null}
                 </button>
-              ) : null}
-            </div>
-          </AppPageSection>
-        </AppPageMain>
+              );
+            })}
+          </div>
 
-        <AppPageAside>
-          <TherapistReviewsSidebar data={data} />
-        </AppPageAside>
+          <div className="grid gap-4 p-5 sm:p-6">
+            {visibleReviews.length ? (
+              <div className="grid gap-4">
+                {visibleReviews.map((review) => (
+                  <TherapistReviewCard
+                    key={review.id}
+                    onReply={() => onReply(review)}
+                    review={review}
+                  />
+                ))}
+              </div>
+            ) : (
+              <ReviewsEmptyState filter={filter} />
+            )}
+
+            {hasMore ? (
+              <button
+                className="mx-auto inline-flex min-h-11 min-w-[260px] items-center justify-center rounded-lg border border-brand-lavender bg-white px-5 text-sm font-extrabold text-brand-primary transition hover:bg-brand-lavenderSoft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                onClick={onLoadMore}
+                type="button"
+              >
+                Carregar mais avaliações
+              </button>
+            ) : null}
+          </div>
+        </AppPageSection>
+      </AppPageMain>
+
+      <AppPageAside>
+        <TherapistReviewsSidebar data={data} />
+      </AppPageAside>
     </AppPageGrid>
   );
 }
@@ -373,7 +384,7 @@ function SessionReviewsPanel({ data }: { data: TherapistReviewsPageData }) {
     >
       <section
         aria-labelledby="pending-session-confirmations"
-        className="rounded-card border border-brand-lavender bg-white p-5 shadow-card sm:p-6"
+        className="scroll-mt-24 rounded-card border border-brand-lavender bg-white p-5 shadow-card sm:p-6"
       >
         <div className="flex items-start gap-3">
           <span className="grid size-11 shrink-0 place-items-center rounded-full bg-status-warningBg text-status-warning">
@@ -402,8 +413,17 @@ function SessionReviewsPanel({ data }: { data: TherapistReviewsPageData }) {
                 <h3 className="font-extrabold text-brand-deep">
                   {confirmation.patientName}
                 </h3>
+                <p className="mt-1 font-mono text-xs font-bold text-brand-primary">
+                  Sessão #{confirmation.sessionReference}
+                </p>
                 <p className="mt-1 text-sm font-semibold text-tesText-secondary">
                   {confirmation.serviceTitle ?? "Sessão terapêutica"}
+                </p>
+                <p className="mt-2 text-sm font-semibold text-tesText-secondary">
+                  {formatSessionDateTime(
+                    confirmation.startsAt,
+                    confirmation.timezone,
+                  )}
                 </p>
                 <p className="mt-3 text-sm font-bold text-status-warning">
                   {remainingLabel(confirmation.remainingSeconds)}
@@ -490,7 +510,8 @@ function SessionReviewsPanel({ data }: { data: TherapistReviewsPageData }) {
 }
 
 function remainingLabel(seconds: number) {
-  if (seconds <= 0) return "Prazo automático atingido; processamento horário pendente";
+  if (seconds <= 0)
+    return "Prazo automático atingido; processamento horário pendente";
   const days = Math.ceil(seconds / 86_400);
   return `${days} ${days === 1 ? "dia restante" : "dias restantes"} até a confirmação automática`;
 }

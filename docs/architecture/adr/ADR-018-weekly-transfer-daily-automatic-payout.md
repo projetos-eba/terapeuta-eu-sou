@@ -1,6 +1,6 @@
 # ADR-018 — Transfer semanal e Payout automático diário
 
-Status: aprovado e implementado localmente; ativação pendente de homologação HML.
+Status: aprovado e implementado; política operacional confirmada em HML e produção.
 
 ## Contexto
 
@@ -13,6 +13,10 @@ cronograma automático `daily`.
 
 - O TES cria Transfers às terças-feiras, com backlog até o cutoff de 02:00 em
   `America/Sao_Paulo`.
+- Antes de `eligible`, a Balance Transaction da Charge precisa estar
+  `available`, ter `available_on` vencido e ter sido consultada recentemente.
+  Um reconciliador horário materializa `waiting_settlement`/`eligible`; o lote
+  repete a reconciliação no cutoff e revalida a Stripe antes de cada Transfer.
 - A Stripe cria Payouts automáticos diários quando o saldo conectado fica
   disponível.
 - `destination_payment` e a Balance Transaction conectada identificam a
@@ -28,6 +32,10 @@ cronograma automático `daily`.
   após cobertura reconciliada em Payouts `paid`.
 - O ledger continua com uma única baixa no Transfer.
 - Valores sem correspondência falham fechado em ocorrência operacional.
+- Um Payout só conclui o pagamento ao terapeuta quando está `paid`, a
+  reconciliação terminou e a alocação corresponde integralmente ao Transfer.
+- O débito agregado do próprio Payout nunca participa da lista de componentes
+  atribuíveis, evitando somar a entrada e a saída do mesmo Payout.
 
 ## Consequências
 
