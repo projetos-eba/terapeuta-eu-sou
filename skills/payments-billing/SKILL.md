@@ -23,7 +23,10 @@ Use this skill for every change in TES payments. Read `AGENTS.md`, `docs/payment
   required by Stripe; this does not change the TES separate charges and
   transfers model.
 - Payment confirmed is not service performed.
-- Eligibility requires paid payment, service confirmation, safety period, Connect readiness, and no refund/dispute/block.
+- Eligibility requires paid payment, bilateral service confirmation, an
+  available and recently verified source Charge Balance Transaction, Connect
+  readiness, and no refund/dispute/block. There is no additional local safety
+  waiting period after confirmation.
 - The TES, nesta versao, nao emite nota fiscal. Para cobranca e comprovacao de pagamento, sao utilizadas invoices e recibos gerados pela Stripe. Esses documentos nao devem ser apresentados como substitutos de nota fiscal.
 
 ## Invariants

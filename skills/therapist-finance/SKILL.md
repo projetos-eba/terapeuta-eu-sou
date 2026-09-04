@@ -82,6 +82,10 @@ All derive the therapist from `auth.uid()`. Do not accept
 - User-facing copy should say `recebimentos`, `repasses` and `conta de
 recebimento`; provider and reconciliation terminology stays in the service
   boundary and is translated into a clear next step.
+- Nunca expor no front-end explicações de arquitetura ou do fluxo interno,
+  incluindo nomes de jobs, webhooks, read models, gates, Balance Transaction,
+  cutoff ou `source_transaction`. Mostrar apenas o status financeiro útil, seu
+  impacto e uma ação quando ela realmente existir.
 - Sem base financeira deve aparecer como `Sem dados` em textos e `-` em
   números. Zero só deve ser mostrado quando houver movimentação real no
   período.

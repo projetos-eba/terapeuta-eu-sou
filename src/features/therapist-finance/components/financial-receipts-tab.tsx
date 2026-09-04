@@ -47,72 +47,73 @@ export function FinancialReceiptsTab({
   return (
     <div className="grid min-w-0 gap-5 [&>*]:min-w-0">
       <AppPageSection className="grid gap-4">
-        <form
-          className="flex min-w-0 flex-wrap items-end gap-3 lg:gap-4 [&>label]:w-full [&>label]:sm:w-[170px]"
-          method="get"
-        >
+        <form className="grid min-w-0 gap-4" method="get">
           <input name="tab" type="hidden" value="recebimentos" />
 
-          <FinancialPeriodFields dateRange={dateRange} />
+          <div className="grid min-w-0 gap-3 sm:grid-cols-3 lg:max-w-[720px]">
+            <FinancialPeriodFields dateRange={dateRange} />
+          </div>
 
-          <label className="grid min-w-0 flex-1 basis-full gap-1 text-sm font-extrabold text-brand-deep sm:min-w-[260px]">
-            Situação
-            <select
-              className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
-              defaultValue={filters.status ?? ""}
-              name="status"
-            >
-              <option value="">Todos</option>
-              {(
-                Object.entries(receiptStatusLabels) as Array<
-                  [TherapistReceiptStatus, string]
-                >
-              )
-                .filter(([status]) => status !== "waiting_safety_period")
-                .map(([status, label]) => (
-                  <option key={status} value={status}>
-                    {label}
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(220px,280px)_minmax(180px,240px)_minmax(320px,1fr)]">
+            <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
+              Situação
+              <select
+                className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                defaultValue={filters.status ?? ""}
+                name="status"
+              >
+                <option value="">Todos</option>
+                {(
+                  Object.entries(receiptStatusLabels) as Array<
+                    [TherapistReceiptStatus, string]
+                  >
+                )
+                  .filter(([status]) => status !== "waiting_safety_period")
+                  .map(([status, label]) => (
+                    <option key={status} value={status}>
+                      {label}
+                    </option>
+                  ))}
+              </select>
+            </label>
+
+            <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
+              Terapia
+              <select
+                className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                defaultValue={filters.therapyId ?? ""}
+                name="therapyId"
+              >
+                <option value="">Todas</option>
+                {receipts.therapyOptions.map((option) => (
+                  <option key={option.therapyId} value={option.therapyId}>
+                    {option.name}
                   </option>
                 ))}
-            </select>
-          </label>
+              </select>
+            </label>
 
-          <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
-            Terapia
-            <select
-              className="min-h-11 w-full min-w-0 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
-              defaultValue={filters.therapyId ?? ""}
-              name="therapyId"
-            >
-              <option value="">Todas</option>
-              {receipts.therapyOptions.map((option) => (
-                <option key={option.therapyId} value={option.therapyId}>
-                  {option.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep">
-            Buscar paciente
-            <span className="relative">
-              <Search
-                aria-hidden="true"
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-primary"
-                size={18}
-              />
-              <input
-                className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white pl-10 pr-3 text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-muted focus-visible:ring-2 focus-visible:ring-brand-primary"
-                defaultValue={filters.search ?? ""}
-                name="q"
-                placeholder="Nome ou terapia"
-                type="search"
-              />
-            </span>
-          </label>
+            <label className="grid min-w-0 gap-1 text-sm font-extrabold text-brand-deep sm:col-span-2 lg:col-span-1">
+              Buscar paciente
+              <span className="relative">
+                <Search
+                  aria-hidden="true"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-primary"
+                  size={18}
+                />
+                <input
+                  className="min-h-11 w-full rounded-lg border border-brand-lavender bg-white pl-10 pr-3 text-sm font-bold text-brand-deep outline-none placeholder:text-tesText-muted focus-visible:ring-2 focus-visible:ring-brand-primary"
+                  defaultValue={filters.search ?? ""}
+                  name="q"
+                  placeholder="Nome ou terapia"
+                  type="search"
+                />
+              </span>
+            </label>
+          </div>
 
           <button
-            className="inline-flex min-h-11 w-full items-center justify-center self-end rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
+            className="inline-flex min-h-11 w-full items-center justify-center justify-self-start rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
             type="submit"
           >
             Filtrar

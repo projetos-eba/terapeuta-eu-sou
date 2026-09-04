@@ -338,7 +338,8 @@ export function formatTransferStatus(value: unknown) {
     transfer_pending: "Em processamento",
     transferred: "Transferido",
     waiting_confirmation: "Aguardando confirmação",
-    waiting_safety_period: "Período de segurança",
+    waiting_safety_period: "Em liquidação",
+    waiting_settlement: "Em liquidação",
   };
 
   return labels[status] ?? "Situação do repasse não identificada";

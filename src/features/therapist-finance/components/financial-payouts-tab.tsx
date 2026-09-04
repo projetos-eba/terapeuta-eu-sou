@@ -116,49 +116,52 @@ export function FinancialPayoutsTab({
       <PayoutTimeline payouts={payouts} />
 
       <AppPageSection className="grid gap-4">
-        <form
-          className="flex min-w-0 flex-wrap items-end gap-3 [&>label]:w-full [&>label]:sm:w-[190px]"
-          method="get"
-        >
+        <form className="grid min-w-0 gap-4" method="get">
           <input name="tab" type="hidden" value="repasses" />
-          <FinancialPeriodFields
-            dateRange={dateRange}
-            label="Período do histórico"
-          />
-          <label className="grid gap-1 text-sm font-extrabold text-brand-deep">
-            Etapa do repasse
-            <select
-              className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
-              defaultValue={filters.payoutStatus ?? ""}
-              name="payoutStatus"
+          <div className="grid min-w-0 gap-3 sm:grid-cols-3 lg:max-w-[720px]">
+            <FinancialPeriodFields
+              dateRange={dateRange}
+              label="Período do histórico"
+            />
+          </div>
+          <div className="grid min-w-0 gap-3 sm:max-w-[360px]">
+            <label className="grid gap-1 text-sm font-extrabold text-brand-deep">
+              Etapa do repasse
+              <select
+                className="min-h-11 rounded-lg border border-brand-lavender bg-white px-3 text-sm font-bold text-brand-deep outline-none focus-visible:ring-2 focus-visible:ring-brand-primary"
+                defaultValue={filters.payoutStatus ?? ""}
+                name="payoutStatus"
+              >
+                <option value="">Todos</option>
+                {payoutHistoryStatuses.map((status) => (
+                  <option key={status} value={status}>
+                    {payoutStatusLabels[status]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <button
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
+              type="submit"
             >
-              <option value="">Todos</option>
-              {payoutHistoryStatuses.map((status) => (
-                <option key={status} value={status}>
-                  {payoutStatusLabels[status]}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button
-            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-brand-primary px-5 text-sm font-extrabold text-white transition hover:bg-brand-primaryHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary sm:w-auto"
-            type="submit"
-          >
-            Filtrar
-          </button>
-          {filters.payoutStatus ? (
-            <Link
-              className="inline-flex min-h-11 items-center justify-center text-sm font-extrabold text-brand-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
-              href={buildFinanceHref({
-                end: dateRange.end,
-                period: dateRange.key,
-                start: dateRange.start,
-                tab: "payouts",
-              })}
-            >
-              Limpar filtros
-            </Link>
-          ) : null}
+              Filtrar
+            </button>
+            {filters.payoutStatus ? (
+              <Link
+                className="inline-flex min-h-11 items-center justify-center text-sm font-extrabold text-brand-primary hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary"
+                href={buildFinanceHref({
+                  end: dateRange.end,
+                  period: dateRange.key,
+                  start: dateRange.start,
+                  tab: "payouts",
+                })}
+              >
+                Limpar filtros
+              </Link>
+            ) : null}
+          </div>
         </form>
       </AppPageSection>
 
