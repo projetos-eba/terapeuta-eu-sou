@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 const SCROLL_POSITION_KEY = "tes:pending-navigation-scroll";
 
 type SavedScrollPosition = {
+  documentMinHeight: string;
   href: string;
   scrollY: number;
 };
@@ -36,6 +37,9 @@ export function PendingNavigationLink({
     setIsPending(false);
     window.requestAnimationFrame(() => {
       window.scrollTo({ behavior: "auto", top: saved.scrollY });
+      window.requestAnimationFrame(() => {
+        document.documentElement.style.minHeight = saved.documentMinHeight;
+      });
     });
   }, [href]);
 
@@ -55,8 +59,13 @@ export function PendingNavigationLink({
 
     window.sessionStorage.setItem(
       SCROLL_POSITION_KEY,
-      JSON.stringify({ href, scrollY: window.scrollY }),
+      JSON.stringify({
+        documentMinHeight: document.documentElement.style.minHeight,
+        href,
+        scrollY: window.scrollY,
+      }),
     );
+    document.documentElement.style.minHeight = `${document.documentElement.scrollHeight}px`;
     setIsPending(true);
     router.push(href, { scroll: false });
   }
@@ -85,7 +94,14 @@ function readSavedScrollPosition(): SavedScrollPosition | null {
       return null;
     }
 
-    return { href: parsed.href, scrollY: parsed.scrollY };
+    return {
+      documentMinHeight:
+        typeof parsed.documentMinHeight === "string"
+          ? parsed.documentMinHeight
+          : "",
+      href: parsed.href,
+      scrollY: parsed.scrollY,
+    };
   } catch {
     return null;
   }

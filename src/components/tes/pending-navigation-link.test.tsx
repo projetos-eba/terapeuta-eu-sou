@@ -11,12 +11,22 @@ vi.mock("next/navigation", () => ({
 
 afterEach(() => {
   push.mockReset();
+  vi.restoreAllMocks();
+  document.documentElement.style.minHeight = "";
   window.sessionStorage.clear();
   window.history.replaceState(null, "", "/");
 });
 
 describe("PendingNavigationLink", () => {
   it("finishes the loading state after the destination is rendered", () => {
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) => {
+      callback(0);
+      return 1;
+    });
+    Object.defineProperty(document.documentElement, "scrollHeight", {
+      configurable: true,
+      value: 4200,
+    });
     window.history.replaceState(null, "", "/lista?page=1");
     const { rerender } = render(
       <PendingNavigationLink href="/lista?page=2">
@@ -29,6 +39,7 @@ describe("PendingNavigationLink", () => {
       "aria-busy",
       "true",
     );
+    expect(document.documentElement.style.minHeight).toBe("4200px");
 
     window.history.replaceState(null, "", "/lista?page=2");
     rerender(
@@ -41,5 +52,6 @@ describe("PendingNavigationLink", () => {
       "aria-busy",
       "false",
     );
+    expect(document.documentElement.style.minHeight).toBe("");
   });
 });
