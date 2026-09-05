@@ -72,6 +72,13 @@ Antes de alterar `/terapeutas`, consultar:
   podem mudar o próximo horário sem uma publicação editorial do perfil. Não
   reintroduzir cache de 15 minutos nessa projeção sem um mecanismo equivalente
   de invalidação de disponibilidade.
+- Cada alteração em um select de filtro ou ordenação submete o formulário GET
+  imediatamente, preserva os demais parâmetros válidos e normaliza a página
+  para a primeira. A busca textual é submetida por Enter; “Limpar Filtros”
+  volta para `/terapeutas` sem parâmetros.
+- A paginação mostra até oito cards por página. A contagem de avaliações fica
+  logo abaixo da apresentação do terapeuta, associada visualmente à nota e às
+  estrelas mostradas no topo do card.
 
 Regra de apresentação dos cards:
 
@@ -133,6 +140,9 @@ Não substituir esses padrões por cards editoriais grandes, hero alternativo, c
 - `npx supabase db lint`
 - Se Docker/Supabase local permitir: `npx supabase db reset` e conferir a view `public_therapist_search`.
 - Validar URLs: `/terapeutas`, `/terapeutas?q=ana`, `/terapeutas?therapy=reiki`, `/terapeutas?therapy=taro`, `/terapeutas?therapy=constelacao-familiar`, `/terapeutas?price=100-150`, `/terapeutas?rating=4-plus`, `/terapeutas?sort=price_asc`, `/terapeutas?page=2`.
+- Alterar cada select e confirmar que a URL é atualizada, que os demais filtros
+  são preservados e que o resultado volta à primeira página. Confirmar oito
+  cards na primeira página quando houver ao menos oito resultados.
 - Validar responsividade desktop/mobile contra o Figma `13273:3587`.
 - Confirmar que a view não expõe email, telefone, dados internos de paciente, dados sensíveis, `meeting_url` ou campos privados.
 - Confirmar que um terapeuta com três ou mais terapias mostra duas etiquetas,

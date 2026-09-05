@@ -4,7 +4,6 @@ import Link from "next/link";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import {
-  AlertCircle,
   ArrowRight,
   CalendarDays,
   ChevronLeft,
@@ -12,7 +11,6 @@ import {
   ChevronDown,
   Clock3,
   Construction,
-  CreditCard,
   Plus,
   Search,
   SlidersHorizontal,
@@ -24,6 +22,7 @@ import { useEffect, useMemo, useState } from "react";
 import { mapSessionPresentation } from "@/features/bookings";
 import { TESDialog } from "@/components/tes/tes-dialog";
 import {
+  BookingStatus,
   SessionFinancialStatus,
   type TherapistScheduleRule,
 } from "@/domain/tes";
@@ -157,9 +156,11 @@ export function TherapistCalendar({
     () => data.blocks.filter((block) => matchesBlockFilters(block, filters)),
     [data.blocks, filters],
   );
-  const todayBookings = filteredBookings.filter(
+  const todayBookings = data.bookings.filter(
     (booking) =>
-      dateKeyForInstant(booking.startsAt, data.timezone) === todayKey,
+      dateKeyForInstant(booking.startsAt, data.timezone) === todayKey &&
+      booking.bookingStatus === BookingStatus.Confirmed &&
+      booking.financialStatus === SessionFinancialStatus.Paid,
   );
   const periodLabel = formatPeriodLabel(data);
   const step = data.view === "day" ? 1 : data.view === "week" ? 7 : 42;
@@ -1197,22 +1198,8 @@ function AttentionCard({
               href={routes.therapist.sessionDetail(item.bookingId) as Route}
               key={item.id}
             >
-              <span
-                className={`grid size-8 place-items-center rounded-full ${
-                  item.kind === "reschedule"
-                    ? "bg-status-warningBg text-status-warning"
-                    : item.kind === "pending_payment"
-                      ? "bg-brand-cyanSoft text-status-info"
-                      : "bg-status-dangerBg text-status-danger"
-                }`}
-              >
-                {item.kind === "pending_payment" ? (
-                  <CreditCard aria-hidden="true" size={15} />
-                ) : item.kind === "reschedule" ? (
-                  <Clock3 aria-hidden="true" size={15} />
-                ) : (
-                  <AlertCircle aria-hidden="true" size={15} />
-                )}
+              <span className="grid size-8 place-items-center rounded-full bg-status-warningBg text-status-warning">
+                <Clock3 aria-hidden="true" size={15} />
               </span>
               <span className="min-w-0">
                 <span className="block truncate text-sm font-extrabold text-brand-deep">

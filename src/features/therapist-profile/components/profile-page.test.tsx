@@ -403,11 +403,13 @@ describe("TherapistProfilePage video block", () => {
     );
   });
 
-  it("shows four guide themes in a two-by-two public layout", () => {
+  it("shows six guide themes in a compact responsive public layout", () => {
     const guideItems = [
       { icon: "heart", label: "Emoções e Bem-Estar" },
       { icon: "mind", label: "Autoconhecimento e Transformação" },
+      { icon: "connection", label: "Relacionamentos" },
       { icon: "star", label: "Autoestima e Poder Pessoal" },
+      { icon: "compass", label: "Propósito e Direção" },
       { icon: "sparkles", label: "Espiritualidade e Conexão Interior" },
     ];
 
@@ -429,8 +431,10 @@ describe("TherapistProfilePage video block", () => {
     const guideList = within(guideCard as HTMLElement).getByRole("list", {
       name: "Caminhos pelos quais posso te guiar",
     });
-    expect(guideList).toHaveClass("grid-cols-2");
-    expect(within(guideList).getAllByRole("listitem")).toHaveLength(4);
+    expect(guideList).toHaveClass("grid-cols-1");
+    expect(guideList).toHaveClass("min-[420px]:grid-cols-2");
+    expect(guideList).toHaveClass("xl:grid-cols-3");
+    expect(within(guideList).getAllByRole("listitem")).toHaveLength(6);
     guideItems.forEach((item) => {
       expect(within(guideList).getByText(item.label)).toBeVisible();
     });

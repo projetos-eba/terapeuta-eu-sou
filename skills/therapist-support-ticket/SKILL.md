@@ -18,7 +18,7 @@ description: Manter tickets e threads de suporte de pacientes e terapeutas sem m
 - Detalhe: `/terapeuta/mensagens/suporte/:ticketId`.
 - Central do paciente: `/app/mensagens`.
 - Detalhe do paciente: `/app/mensagens/suporte/:ticketId`.
-- APIs: `POST|GET /api/support/tickets`, `GET|POST /api/support/tickets/:ticketId`.
+- APIs: `POST|GET /api/support/tickets`, `GET|POST /api/support/tickets/:ticketId` e `POST /api/support/tickets/:ticketId/attachments`.
 - Admin mínimo: `GET /api/admin/support/tickets/:ticketId/thread`,
   `POST /api/admin/support/tickets/:ticketId/reply` e
   `POST /api/admin/support/tickets/:ticketId/notes`.
@@ -35,6 +35,10 @@ description: Manter tickets e threads de suporte de pacientes e terapeutas sem m
   de suporte paralela.
 - A identidade é derivada do cookie autenticado e validada como `patient` ou
   `therapist`; nunca confiar em `actorRole` enviado pelo navegador.
+- Para anexos, a Route Handler autoriza URLs curtas por ticket e `requestId`; o
+  binário sobe diretamente ao Storage privado e uma chamada autenticada conclui
+  a associação com a mensagem. Não proxyar o conjunto de arquivos pelo Next,
+  pois limites agregados de hospedagem podem contradizer o limite por arquivo.
 - Renderizar `body` como texto; não usar HTML, Markdown privilegiado ou `dangerouslySetInnerHTML`.
 - A thread Admin usa exclusivamente a RPC administrativa
   `admin_get_support_ticket_thread_v1`; somente ela pode incluir
@@ -53,4 +57,6 @@ description: Manter tickets e threads de suporte de pacientes e terapeutas sem m
 - Validar protocolo persistido, complementos consecutivos em `waiting_support`,
   estado após resposta do TES/solicitante, retorno do ticket ao topo por
   `last_activity_at` e atualização entre duas sessões autenticadas.
+- Validar dois a cinco anexos em uma única mensagem, incluindo upload direto,
+  confirmação no banco e limpeza segura se um arquivo falhar.
 - Rodar testes API/Vitest, pgTAP de suporte e o teste de bypass de participante.

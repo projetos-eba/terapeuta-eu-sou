@@ -49,7 +49,7 @@ export type TherapistCalendarAttentionItem = {
   bookingId: string;
   description: string;
   id: string;
-  kind: "block_impact" | "pending_payment" | "reschedule";
+  kind: "reschedule";
   startsAt: string;
   title: string;
 };
