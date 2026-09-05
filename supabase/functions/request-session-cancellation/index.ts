@@ -85,6 +85,13 @@ runtime.serve(async (request) => {
     const command = validateCancellationCommand(
       await parseJsonBody<CancellationCommandBody>(request),
     );
+    if (user.role === "patient" && !command.userReason) {
+      throw new DomainError(
+        "cancellation_reason_required",
+        422,
+        "Conte brevemente o motivo para continuar com o cancelamento.",
+      );
+    }
     const reason = resolveCancellationReason(command.reason, user.role);
     const [payment] = await client.get<SessionPaymentRow[]>(
       `/rest/v1/session_payments?select=id,booking_id,patient_profile_id,therapist_profile_id,gross_amount_cents,financial_status,transfer_status,stripe_payment_intent_id&booking_id=eq.${encodeURIComponent(
@@ -127,7 +134,10 @@ runtime.serve(async (request) => {
       {
         p_booking_id: command.bookingId,
         p_decision: decision.decision,
-        p_metadata: { stripeMode: config.stripeMode },
+        p_metadata: {
+          stripeMode: config.stripeMode,
+          ...(command.userReason ? { userReason: command.userReason } : {}),
+        },
         p_platform_retained_cents: decision.platform_retained_cents,
         p_policy_version_id: decision.policy_version_id,
         p_reason: reason,

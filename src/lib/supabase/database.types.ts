@@ -14479,6 +14479,16 @@ export type Database = {
         Args: { p_limit?: number };
         Returns: Json;
       };
+      get_booking_reschedule_availability_v1: {
+        Args: {
+          p_actor_profile_id: string;
+          p_anchor?: string;
+          p_booking_id: string;
+          p_limit?: number;
+          p_scope?: string;
+        };
+        Returns: Json;
+      };
       get_my_patient_schedule_blocking_intervals_v1: {
         Args: { p_range_end: string; p_range_start: string };
         Returns: {
@@ -14911,6 +14921,14 @@ export type Database = {
         };
         Returns: undefined;
       };
+      invalidate_booking_reschedule_request_v1: {
+        Args: {
+          p_actor_profile_id: string;
+          p_request_id: string;
+          p_reschedule_request_id: string;
+        };
+        Returns: Json;
+      };
       is_booking_participant_profile_v1: {
         Args: { p_booking_id: string; p_profile_id: string };
         Returns: boolean;
@@ -14961,6 +14979,21 @@ export type Database = {
         Returns: boolean;
       };
       is_valid_timezone_v1: { Args: { p_timezone: string }; Returns: boolean };
+      list_booking_reschedule_candidates_v1: {
+        Args: {
+          p_booking_id: string;
+          p_limit?: number;
+          p_range_end: string;
+          p_range_start: string;
+          p_reference_at?: string;
+        };
+        Returns: {
+          ends_at: string;
+          occupied_during: unknown;
+          starts_at: string;
+          timezone: string;
+        }[];
+      };
       list_private_therapist_services_v1: {
         Args: { p_actor_user_id: string };
         Returns: Json;
