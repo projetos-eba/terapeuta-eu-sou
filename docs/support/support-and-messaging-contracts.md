@@ -47,7 +47,10 @@ Suporte é a relação entre o solicitante e o TES. Texto livre é permitido som
 - Anexos do suporte são opcionais e privados: até 5 arquivos por resposta, com
   até 10 MB por arquivo, nos formatos PDF, JPG, PNG ou WebP. O navegador
   informa esses limites, mas a API, o Storage e a RPC validam novamente o
-  contrato.
+  contrato. O binário não passa pela Route Handler: após autorização autenticada
+  por ticket e `requestId`, cada arquivo usa uma URL de upload temporária e vai
+  diretamente ao bucket privado. A confirmação continua no servidor/RPC e só
+  então o anexo integra a mensagem.
 - E-mail é uma notificação futura; a thread autenticada será a fonte canônica.
 
 ## Matriz de autorização
@@ -121,6 +124,10 @@ Contratos de thread vigentes, todos fora da API de participante:
 - `GET /api/support/tickets`: tickets próprios paginados;
 - `GET /api/support/tickets/:ticketId`: detalhe próprio, sem notas internas;
 - `POST /api/support/tickets/:ticketId`: mensagem pública própria;
+- `POST /api/support/tickets/:ticketId/attachments`: etapa autenticada interna
+  de preparar, concluir ou limpar uploads diretos privados; aceita somente
+  metadados limitados e paths temporários gerados para o mesmo ticket e
+  `requestId`, nunca o binário;
 - `GET /api/admin/support/tickets/:ticketId/thread`: thread completa somente
   para Admin com `admin.support.read`, incluindo notas internas;
 - `POST /api/admin/support/tickets/:ticketId/reply`: resposta pública sob
@@ -217,5 +224,8 @@ RLS vigente:
 - A Fase 2 entrega Central de Mensagens do terapeuta com área separada “Suporte TES”, formulário de chamado, lista e detalhe de thread. A experiência do paciente permanece fora do escopo desta fase.
 - `message_templates` agora é a fonte server-side para os seis templates de participante. A Fase 4 deverá definir gestão/versionamento do catálogo antes de qualquer expansão.
 - Não houve mudança em e-mail, Stripe, Zoom, booking ou UI ampla.
+- O upload de anexos de suporte não atravessa mais a Function do Next. Isso
+  preserva o contrato de até cinco arquivos de 10 MB mesmo quando a hospedagem
+  impõe limite agregado menor para o corpo de uma requisição HTTP.
 
 > Entre terapeuta e paciente, o TES controla a linguagem. Entre usuário e TES, o TES controla o acesso — não a conversa.

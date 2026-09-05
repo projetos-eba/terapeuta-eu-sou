@@ -8,7 +8,10 @@ import {
   Star,
 } from "lucide-react";
 
-import type { PublicTherapistProfile } from "@/features/therapist-profile/types";
+import {
+  MAX_THERAPIST_PROFILE_GUIDE_ITEMS,
+  type PublicTherapistProfile,
+} from "@/features/therapist-profile/types";
 import {
   profilePhotoShapeClassName,
   publicProfileThemeById,
@@ -104,16 +107,18 @@ export function PublicProfileSnapshot({
           </SnapshotCard>
           <SnapshotCard title="Como posso te guiar">
             {profile.content.guideItems.length ? (
-              <div className="grid grid-cols-2 gap-3">
-                {profile.content.guideItems.slice(0, 4).map((item) => (
-                  <span
-                    className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-brand-lavender px-3 text-sm font-bold text-brand-deep"
-                    key={item.label}
-                  >
-                    <Sparkles aria-hidden="true" size={16} />
-                    {item.label}
-                  </span>
-                ))}
+              <div className="grid grid-cols-1 gap-3 min-[420px]:grid-cols-2 xl:grid-cols-3">
+                {profile.content.guideItems
+                  .slice(0, MAX_THERAPIST_PROFILE_GUIDE_ITEMS)
+                  .map((item) => (
+                    <span
+                      className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-brand-lavender px-3 text-sm font-bold text-brand-deep"
+                      key={item.label}
+                    >
+                      <Sparkles aria-hidden="true" size={16} />
+                      {item.label}
+                    </span>
+                  ))}
               </div>
             ) : (
               "Adicione itens para mostrar como você pode acompanhar a pessoa."

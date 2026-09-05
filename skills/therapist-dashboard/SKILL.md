@@ -43,7 +43,12 @@ description: Implementar e manter o dashboard autenticado do terapeuta nos plano
 - Onboarding: quando a prontidão essencial ou os documentos obrigatórios ainda
   não foram concluídos,
   `TherapistGettingStartedPage` apresenta o progresso circular, as etapas
-  reais, pendências de documentos, resumo do perfil e orientação de análise.
+  reais, pendências do cadastro, resumo do perfil e orientação de análise.
+  A seção aberta por “Ver pendências” deriva da mesma lista de etapas
+  incompletas do checklist e dos documentos: ela deve nomear cada pendência,
+  explicar a ação necessária e levar ao destino canônico. Nunca apresentar
+  sucesso de documentos enquanto outra etapa obrigatória, como Conta de
+  recebimento, ainda estiver pendente.
   Os documentos privados são resumidos apenas como estado e encaminham para
   `/terapeuta/configuracoes`, que é a área canônica de envio; não duplicar
   upload, URLs ou dados privados no dashboard.
@@ -164,6 +169,10 @@ Não distribuir queries pelos componentes. A entrada única da página é
 - No onboarding, validar o anel de progresso, checklist, pendências,
   resumo de perfil e rail de orientação em 1440px, 1024px e 390px, sem rolagem
   horizontal.
+- Validar que, com documentos concluídos e Conta de recebimento pendente,
+  “Ver pendências” mostra essa conta, sua explicação e o CTA para Financeiro;
+  a mensagem de itens concluídos só pode aparecer quando nenhuma etapa
+  obrigatória estiver faltando.
 - Confirmar drawer, foco visível, item ativo, badges e logout.
 - Confirmar os estados zero, um, três e mais de três itens de atenção; o
   diálogo deve abrir/fechar com foco, `Escape` e navegação por teclado, sem

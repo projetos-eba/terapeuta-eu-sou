@@ -55,6 +55,11 @@ export type SupportTicketAttachmentDescriptor = {
   storageObjectPath: string;
 };
 
+export type SupportTicketAttachmentInput = Omit<
+  SupportTicketAttachmentDescriptor,
+  "storageObjectPath"
+>;
+
 export type SupportTicketCreateContract = {
   bookingId: string | null;
   category: SupportTicketCategory;
@@ -148,6 +153,70 @@ export function attachmentMimeTypeIsAllowed(
   return (supportTicketAttachmentMimeTypes as readonly string[]).includes(
     value,
   );
+}
+
+export function parseSupportTicketAttachmentInputs(
+  value: unknown,
+): SupportTicketAttachmentInput[] | null {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.length > supportTicketAttachmentLimit
+  ) {
+    return null;
+  }
+
+  const attachments: SupportTicketAttachmentInput[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+    const mimeType = Reflect.get(item, "mimeType");
+    const originalName = Reflect.get(item, "originalName");
+    const sizeBytes = Reflect.get(item, "sizeBytes");
+    if (
+      typeof originalName !== "string" ||
+      typeof sizeBytes !== "number" ||
+      !Number.isInteger(sizeBytes) ||
+      sizeBytes < 1 ||
+      sizeBytes > supportTicketAttachmentSizeLimit ||
+      !attachmentMimeTypeIsAllowed(typeof mimeType === "string" ? mimeType : "")
+    ) {
+      return null;
+    }
+    attachments.push({
+      mimeType,
+      originalName: sanitizeSupportAttachmentName(originalName),
+      sizeBytes,
+    });
+  }
+  return attachments;
+}
+
+export function parseSupportTicketAttachmentDescriptors(
+  value: unknown,
+): SupportTicketAttachmentDescriptor[] | null {
+  if (
+    !Array.isArray(value) ||
+    value.length === 0 ||
+    value.length > supportTicketAttachmentLimit
+  ) {
+    return null;
+  }
+
+  const attachments: SupportTicketAttachmentDescriptor[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return null;
+    const parsed = parseSupportTicketAttachmentInputs([item]);
+    const storageObjectPath = Reflect.get(item, "storageObjectPath");
+    if (
+      !parsed ||
+      typeof storageObjectPath !== "string" ||
+      !storageObjectPath
+    ) {
+      return null;
+    }
+    attachments.push({ ...parsed[0], storageObjectPath });
+  }
+  return attachments;
 }
 
 function isOneOf<const T extends readonly string[]>(

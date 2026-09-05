@@ -52,6 +52,7 @@ rotas canônicas do perfil atual, nunca para o perfil público do terapeuta.
 - Prévia server-side de mensagem: `POST /api/messages/preview-template`.
 - Envio de template entre participantes: `POST /api/messages/send-template`.
 - Abertura de chamado de suporte: `POST /api/support/tickets`.
+- Autorização e conclusão de anexos privados: `POST /api/support/tickets/:ticketId/attachments`.
 - Leitura segura do sino do shell: `GET /api/notifications`.
 - Marcação de avisos como lidos: `POST /api/notifications/mark-read`.
 - Templates permitidos ficam em
@@ -90,7 +91,10 @@ Após uma resposta pública do solicitante, o ticket fica aguardando a equipe TE
 mas manter composer e anexo disponíveis para complementos enquanto o TES
 responde; esse estado prioriza a fila e não bloqueia a conversa. Respostas podem
 incluir até 5 anexos privados de 10 MB por arquivo, nos formatos PDF, JPG, PNG
-ou WebP, sempre validados no cliente e novamente no servidor/Storage/RPC.
+ou WebP, sempre validados no cliente e novamente no servidor/Storage/RPC. Os
+arquivos sobem individualmente e diretamente ao Storage privado por URL
+temporária autorizada para o ticket e `requestId`; nunca encaminhar todos os
+binários pela Route Handler ou expor token de sessão no navegador.
 
 Cada card de chamado apresenta categoria, assunto, última mensagem pública,
 badge de quem precisa agir, última atualização e protocolo persistido. Não usar
@@ -156,7 +160,8 @@ aguardar recarregamento manual.
   paciente e do terapeuta, inclusive estado resolvido e mobile.
 - Verificar o estado `waiting_support`: mensagem explicativa, composer e anexo
   continuam acionáveis para complementos; validar também limites e formatos dos
-  anexos permitidos.
+  anexos permitidos, inclusive dois a cinco arquivos na mesma mensagem e limpeza
+  em caso de falha parcial.
 - Verificar histórico bidirecional do participante e o CTA de encontro/sessão.
 - Verificar que `Ver sessão`/`Ver encontro` genérico não aparece nos tickets de
   participante, tanto no fluxo terapeuta-paciente quanto no paciente-terapeuta.

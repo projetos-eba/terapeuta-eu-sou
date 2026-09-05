@@ -19,6 +19,11 @@ import {
   supportTicketAttachmentMimeTypes,
   supportTicketAttachmentSizeLimit,
 } from "@/features/support/support-contracts";
+import {
+  completeSupportAttachmentUpload,
+  prepareAndUploadSupportAttachments,
+  SupportAttachmentUploadError,
+} from "@/features/support/support-direct-attachment-upload";
 
 import type {
   MessageCenterActorRole,
@@ -203,18 +208,9 @@ function TemplateDialog({
       source: "message_center",
       subject: supportSubject,
     };
-    const formData = new FormData();
-    for (const [key, value] of Object.entries(ticketInput)) {
-      formData.set(key, value === null ? "" : String(value));
-    }
-    for (const file of supportAttachments) formData.append("attachments", file);
     const response = await fetch("/api/support/tickets", {
-      body:
-        supportAttachments.length > 0 ? formData : JSON.stringify(ticketInput),
-      headers:
-        supportAttachments.length > 0
-          ? undefined
-          : { "Content-Type": "application/json" },
+      body: JSON.stringify(ticketInput),
+      headers: { "Content-Type": "application/json" },
       method: "POST",
     });
     const payload = (await response.json().catch(() => null)) as {
@@ -222,8 +218,8 @@ function TemplateDialog({
       ticket?: { id?: string; protocol?: string };
       error?: { message?: string };
     } | null;
-    setIsSubmitting(false);
     if (!response.ok || payload?.ok !== true) {
+      setIsSubmitting(false);
       setError(
         payload?.error?.message ?? "Não foi possível abrir o chamado agora.",
       );
@@ -231,6 +227,31 @@ function TemplateDialog({
     }
     const ticketId = (payload.ticket as { id?: string } | undefined)?.id;
     if (ticketId) {
+      try {
+        if (supportAttachments.length > 0) {
+          const uploadedAttachments = await prepareAndUploadSupportAttachments({
+            actorRole: props.actorRole,
+            files: supportAttachments,
+            requestId: supportRequestId.current,
+            ticketId,
+          });
+          await completeSupportAttachmentUpload({
+            actorRole: props.actorRole,
+            attachments: uploadedAttachments,
+            requestId: supportRequestId.current,
+            ticketId,
+          });
+        }
+      } catch (uploadError) {
+        setIsSubmitting(false);
+        setError(
+          uploadError instanceof SupportAttachmentUploadError
+            ? uploadError.message
+            : "O chamado foi registrado, mas não foi possível enviar os anexos agora. Tente novamente.",
+        );
+        return;
+      }
+      setIsSubmitting(false);
       const href =
         props.actorRole === "patient"
           ? routes.patient.supportTicketDetail(ticketId)
@@ -241,6 +262,7 @@ function TemplateDialog({
       onClose();
       return;
     }
+    setIsSubmitting(false);
     setProtocol(payload.ticket?.protocol ?? "registrado");
     setStep("success");
   }
@@ -317,12 +339,26 @@ function TemplateDialog({
                 multiple
                 onChange={(event) => {
                   const selected = Array.from(event.target.files ?? []);
-                  setSupportAttachments((current) =>
-                    [...current, ...selected].slice(
-                      0,
-                      supportTicketAttachmentLimit,
-                    ),
+                  const invalid = selected.some(
+                    (file) =>
+                      !supportTicketAttachmentMimeTypes.includes(
+                        file.type as (typeof supportTicketAttachmentMimeTypes)[number],
+                      ) || file.size > supportTicketAttachmentSizeLimit,
                   );
+                  const exceedsLimit =
+                    supportAttachments.length + selected.length >
+                    supportTicketAttachmentLimit;
+                  if (invalid || exceedsLimit) {
+                    setError(
+                      `Use até ${supportTicketAttachmentLimit} arquivos de até ${Math.round(supportTicketAttachmentSizeLimit / 1024 / 1024)} MB cada, nos formatos PDF, JPG, PNG ou WebP.`,
+                    );
+                  } else {
+                    setError(null);
+                    setSupportAttachments((current) => [
+                      ...current,
+                      ...selected,
+                    ]);
+                  }
                   event.currentTarget.value = "";
                   supportRequestId.current = null;
                 }}

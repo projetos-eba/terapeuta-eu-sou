@@ -25,7 +25,7 @@ describe("TherapistGettingStartedPage", () => {
     expect(screen.getByText(/Premium Plus/)).toBeInTheDocument();
     expect(screen.getByText("Seu progresso de cadastro")).toBeInTheDocument();
     expect(screen.getByText("Etapas do cadastro")).toBeInTheDocument();
-    expect(screen.getByText("Pendências para análise")).toBeInTheDocument();
+    expect(screen.getByText("Pendências do cadastro")).toBeInTheDocument();
     expect(screen.getByText("Resumo do seu perfil")).toBeInTheDocument();
     expect(screen.queryByText("Apresentação", { exact: true })).toBeNull();
     expect(screen.getByText("Como funciona")).toBeInTheDocument();
@@ -94,6 +94,66 @@ describe("TherapistGettingStartedPage", () => {
         "Seu cadastro está completo. O TES está analisando e logo você terá um retorno.",
       ),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Seus itens obrigatórios foram concluídos. Acompanhe a situação do cadastro.",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the receiving account as the real pending item after documents are sent", () => {
+    const readiness: TherapistHomeReadiness = {
+      ...readinessFixture,
+      checklist: readinessFixture.checklist.map((item) => ({
+        ...item,
+        complete: item.id !== "connect",
+        description:
+          item.id === "connect"
+            ? "Conecte sua conta de recebimento para preparar os repasses das sessões."
+            : item.description,
+        state: item.id === "connect" ? "pending" : "complete",
+      })),
+      completedRequiredCount: 5,
+      documents: readinessFixture.documents.map((item) => ({
+        ...item,
+        complete: true,
+        state: "complete",
+      })),
+      isOperationallyReady: false,
+      profilePublicStatus: "published",
+      therapistStatus: "draft",
+    };
+
+    render(
+      <TherapistGettingStartedPage
+        readiness={readiness}
+        session={{
+          name: "Antonio Silva",
+          plan: "premium_plus",
+          status: "draft",
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Pendências do cadastro" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Falta concluir: Conta de recebimento."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByText(
+        "Conecte sua conta de recebimento para preparar os repasses das sessões.",
+      ),
+    ).toHaveLength(2);
+    expect(
+      screen.getByRole("link", { name: "Conectar conta" }),
+    ).toHaveAttribute("href", "/terapeuta/financeiro?tab=conta");
+    expect(
+      screen.queryByText(
+        "Seus documentos obrigatórios foram enviados. Acompanhe o andamento da análise na situação ao lado.",
+      ),
+    ).toBeNull();
   });
 });
 

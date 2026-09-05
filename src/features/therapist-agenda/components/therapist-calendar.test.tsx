@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -20,6 +26,7 @@ vi.mock("next/navigation", () => ({
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -111,6 +118,66 @@ describe("TherapistCalendar", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText("Nenhum item encontrado com os filtros atuais."),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps only confirmed, paid bookings in today's operational summary", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-27T15:00:00.000Z"));
+
+    const fixture = calendarFixture();
+    const confirmedPaid = fixture.bookings[0]!;
+    fixture.bookings.push(
+      {
+        ...confirmedPaid,
+        bookingId: "f2000000-0000-4000-8000-000000000002",
+        financialStatus: SessionFinancialStatus.Pending,
+        patientName: "Pagamento ainda pendente",
+        sessionReference: "26L000002",
+      },
+      {
+        ...confirmedPaid,
+        bookingId: "f2000000-0000-4000-8000-000000000003",
+        bookingStatus: BookingStatus.PendingPayment,
+        patientName: "Reserva sem confirmação",
+        sessionReference: "26L000003",
+      },
+    );
+
+    render(<TherapistCalendar data={fixture} />);
+
+    const todayCard = screen
+      .getByRole("heading", { name: "Sessões de hoje" })
+      .closest("article");
+    expect(todayCard).not.toBeNull();
+    expect(within(todayCard!).getByText("1 sessão(ões)")).toBeInTheDocument();
+    expect(
+      within(todayCard!).getByText("Beatriz Almeida"),
+    ).toBeInTheDocument();
+    expect(
+      within(todayCard!).queryByText("Pagamento ainda pendente"),
+    ).not.toBeInTheDocument();
+    expect(
+      within(todayCard!).queryByText("Reserva sem confirmação"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("does not let local calendar filters hide today's confirmed paid sessions", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-27T15:00:00.000Z"));
+
+    render(<TherapistCalendar data={calendarFixture()} />);
+
+    fireEvent.change(screen.getByRole("searchbox"), {
+      target: { value: "sem resultado" },
+    });
+
+    const todayCard = screen
+      .getByRole("heading", { name: "Sessões de hoje" })
+      .closest("article");
+    expect(todayCard).not.toBeNull();
+    expect(
+      within(todayCard!).getByText("Beatriz Almeida"),
     ).toBeInTheDocument();
   });
 

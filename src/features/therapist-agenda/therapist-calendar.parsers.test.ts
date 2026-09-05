@@ -33,6 +33,15 @@ describe("parseTherapistCalendarReadModel", () => {
       "confirmed_bilateral",
     );
   });
+
+  it("rejects non-reschedule items from the operational attention rail", () => {
+    const payload = calendarPayload();
+    payload.attentionItems[0].kind = "pending_payment";
+
+    expect(() => parseTherapistCalendarReadModel(payload)).toThrow(
+      SessionReadModelContractError,
+    );
+  });
 });
 
 function calendarPayload() {
@@ -54,6 +63,7 @@ function calendarPayload() {
         attendanceSource: "unavailable",
         attendanceStatus: "pending",
         bookingId: "f2000000-0000-4000-8000-000000000001",
+        sessionReference: "26L000001",
         bookingStatus: "confirmed",
         bookingVersion: 1,
         cancellationDecision: null,

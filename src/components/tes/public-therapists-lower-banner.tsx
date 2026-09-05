@@ -25,7 +25,7 @@ export function PublicTherapistsLowerBanner() {
           acompanhar o seu momento.
         </p>
         <TESButton className="mt-5" href={routes.public.therapists}>
-          Ver terapeutas
+          Explorar caminhos
         </TESButton>
       </div>
     </div>
