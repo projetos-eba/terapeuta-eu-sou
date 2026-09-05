@@ -343,12 +343,16 @@ the related demand tip is not rendered without `agenda_insights`.
 - `request_booking_reschedule_v1`: cria proposta versionada.
 - `resolve_booking_reschedule_v1`: aplica resolução e sincroniza a sessão local de vídeo.
 - `session-reschedule`: Edge Function autenticada para paciente ou terapeuta;
-  valida participação, seleciona o slot por `get_service_available_slots_v1` e
-  então chama `request_booking_reschedule_v1` ou
-  `resolve_booking_reschedule_v1`.
+  valida participação e usa `get_booking_reschedule_availability_v1`, derivado
+  exclusivamente do booking. Serviço, duração, valor e buffers permanecem nos
+  snapshots; o browser não seleciona serviço nem calcula `endsAt`. Proposta não
+  cria hold nem libera o horário original. Criação e aceite revalidam o slot sob
+  locks; só o aceite move o mesmo booking e sincroniza vídeo/lembretes.
 - `request-session-cancellation`: continua sendo a função canônica de
   cancelamento de sessão, política de reembolso e bloqueio de repasse quando
-  necessário.
+  necessário. A retenção com horários é exclusiva da pessoa paciente; o fluxo
+  da terapeuta permanece direto. `metadata.userReason` é privado e separado do
+  código financeiro interno.
 - `session_payments` continua sendo a única fonte financeira.
 - O checkout de sessão deve usar o snapshot do booking, nunca o preço atual do
   serviço.
