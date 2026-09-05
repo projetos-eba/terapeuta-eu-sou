@@ -6,16 +6,17 @@ export type PublicSocialLink = {
   label: string;
 };
 
+const instagramLink: PublicSocialLink = {
+  href: "https://www.instagram.com/terapeutaeusou?igsi=YWh6NmQ5bXJnNG00",
+  icon: Instagram,
+  label: "Instagram do Terapeuta Eu Sou",
+};
+
 const socialLinkConfig: Array<{
   envKey: string;
   icon: LucideIcon;
   label: string;
 }> = [
-  {
-    envKey: "NEXT_PUBLIC_TES_INSTAGRAM_URL",
-    icon: Instagram,
-    label: "Instagram do Terapeuta Eu Sou",
-  },
   {
     envKey: "NEXT_PUBLIC_TES_LINKEDIN_URL",
     icon: Linkedin,
@@ -39,20 +40,27 @@ function isSafeExternalUrl(value: string | undefined) {
   }
 }
 
+export function getPublicInstagramLink() {
+  return instagramLink;
+}
+
 export function getPublicSocialLinks(): PublicSocialLink[] {
-  return socialLinkConfig.flatMap((item) => {
-    const href = process.env[item.envKey];
+  return [
+    instagramLink,
+    ...socialLinkConfig.flatMap((item) => {
+      const href = process.env[item.envKey];
 
-    if (!href || !isSafeExternalUrl(href)) return [];
+      if (!href || !isSafeExternalUrl(href)) return [];
 
-    const safeHref = href;
+      const safeHref = href;
 
-    return [
-      {
-        href: safeHref,
-        icon: item.icon,
-        label: item.label,
-      },
-    ];
-  });
+      return [
+        {
+          href: safeHref,
+          icon: item.icon,
+          label: item.label,
+        },
+      ];
+    }),
+  ];
 }

@@ -19,7 +19,9 @@ describe("PublicFooter", () => {
     ).toHaveAttribute("href", "/sobre-nos");
 
     expect(screen.queryByRole("link", { name: "Recursos" })).toBeNull();
-    expect(screen.queryByRole("link", { name: /Central de ajuda/i })).toBeNull();
+    expect(
+      screen.queryByRole("link", { name: /Central de ajuda/i }),
+    ).toBeNull();
     expect(screen.queryByRole("link", { name: /Ajuda com Zoom/i })).toBeNull();
     expect(screen.queryByRole("link", { name: "Políticas" })).toBeNull();
     expect(screen.queryByRole("link", { name: "LGPD" })).toBeNull();
@@ -35,6 +37,17 @@ describe("PublicFooter", () => {
     expect(screen.getByRole("link", { name: "Termos de uso" })).toHaveAttribute(
       "href",
       "/termos",
+    );
+  });
+
+  it("exposes the official Instagram link in the brand block", () => {
+    render(<PublicFooter />);
+
+    expect(
+      screen.getByRole("link", { name: "Instagram do Terapeuta Eu Sou" }),
+    ).toHaveAttribute(
+      "href",
+      "https://www.instagram.com/terapeutaeusou?igsi=YWh6NmQ5bXJnNG00",
     );
   });
 
